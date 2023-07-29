@@ -2412,7 +2412,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		File saveFile = abcSong.getSaveFile();
 		File allowOverwriteFile = allowOverwriteSaveFile ? saveFile : null;
 
-		if (saveFile == null)
+		if (saveFile == null || exportFilenameTemplate.isEnabled())
 		{
 			String defaultFolder;
 			if (abcSong.getExportFile() != null)
@@ -2423,14 +2423,23 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			String folder = prefs.get("saveDialogFolder", defaultFolder);
 			if (!new File(folder).exists())
 				folder = defaultFolder;
+			
+			String fileName = "mySong.msx";
+			
+			if (exportFilenameTemplate.isEnabled())
+			{
+				fileName = exportFilenameTemplate.formatName();
+			}
+			else
+			{
+				saveFile = abcSong.getExportFile();
+				if (saveFile == null)
+					saveFile = abcSong.getSourceFile();
+				if (saveFile == null)
+					saveFile = new File(folder, abcSong.getSequenceInfo().getFileName());
+				fileName = saveFile.getName();
+			}
 
-			saveFile = abcSong.getExportFile();
-			if (saveFile == null)
-				saveFile = abcSong.getSourceFile();
-			if (saveFile == null)
-				saveFile = new File(folder, abcSong.getSequenceInfo().getFileName());
-
-			String fileName = saveFile.getName();
 			int dot = fileName.lastIndexOf('.');
 			if (dot > 0)
 				fileName = fileName.substring(0, dot);
