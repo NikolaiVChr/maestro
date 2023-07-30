@@ -1102,54 +1102,68 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	private void doSettingsDialog(int tab)
 	{
-		SettingsDialog dialog = new SettingsDialog(ProjectFrame.this, partAutoNumberer,
-				partNameTemplate, exportFilenameTemplate, saveSettings.getCopy(), miscSettings.getCopy());
-		dialog.setActiveTab(tab);
-		dialog.setVisible(true);
-		if (dialog.isSuccess())
+		boolean showSettingsAgain = false;
+		int x = -1, y = -1;
+		do
 		{
-			if (dialog.isNumbererSettingsChanged())
+			showSettingsAgain = false;
+			SettingsDialog dialog = new SettingsDialog(ProjectFrame.this, partAutoNumberer,
+					partNameTemplate, exportFilenameTemplate, saveSettings.getCopy(), miscSettings.getCopy());
+			if (x > 0 && y > 0)
 			{
-				partAutoNumberer.setSettings(dialog.getNumbererSettings());
-				partAutoNumberer.renumberAllParts();
+				dialog.setLocation(x, y);
 			}
-			partNameTemplate.setSettings(dialog.getNameTemplateSettings());
-			partPanel.settingsChanged();
-			
-			exportFilenameTemplate.setSettings(dialog.getExportFilenameTemplateSettings());
-
-			saveSettings.copyFrom(dialog.getSaveAndExportSettings());
-			saveSettings.saveToPrefs();
-			onSaveAndExportSettingsChanged();
-			
-			miscSettings.copyFrom(dialog.getMiscSettings());
-			miscSettings.saveToPrefs();
-		}
-		else if (dialog.isSettingPageReset())
-		{
-			switch(dialog.getResetPageIndex())
+			dialog.setActiveTab(tab);
+			dialog.setVisible(true);
+			if (dialog.isSuccess())
 			{
-			case 0: // part auto numberer
-				partAutoNumberer.restoreDefaultSettings();
-				partAutoNumberer.renumberAllParts();
-				break;
-			case 1: // part naming
-				partNameTemplate.restoreDefaultSettings();
+				if (dialog.isNumbererSettingsChanged())
+				{
+					partAutoNumberer.setSettings(dialog.getNumbererSettings());
+					partAutoNumberer.renumberAllParts();
+				}
+				partNameTemplate.setSettings(dialog.getNameTemplateSettings());
 				partPanel.settingsChanged();
-				break;
-			case 2: // file naming
-				exportFilenameTemplate.restoreDefaultSettings();
-				break;
-			case 3: // save and export
-				saveSettings.restoreDefaults();
-				break;
-			case 4: // misc
-				miscSettings.restoreDefaults();
-				break;
+				
+				exportFilenameTemplate.setSettings(dialog.getExportFilenameTemplateSettings());
+
+				saveSettings.copyFrom(dialog.getSaveAndExportSettings());
+				saveSettings.saveToPrefs();
+				onSaveAndExportSettingsChanged();
+				
+				miscSettings.copyFrom(dialog.getMiscSettings());
+				miscSettings.saveToPrefs();
 			}
-		}
-		currentSettingsDialogTab = dialog.getActiveTab();
-		dialog.dispose();
+			else if (dialog.isSettingPageReset())
+			{
+				tab = dialog.getResetPageIndex();
+				switch(tab)
+				{
+				case 0: // part auto numberer
+					partAutoNumberer.restoreDefaultSettings();
+					partAutoNumberer.renumberAllParts();
+					break;
+				case 1: // part naming
+					partNameTemplate.restoreDefaultSettings();
+					partPanel.settingsChanged();
+					break;
+				case 2: // file naming
+					exportFilenameTemplate.restoreDefaultSettings();
+					break;
+				case 3: // save and export
+					saveSettings.restoreDefaults();
+					break;
+				case 4: // misc
+					miscSettings.restoreDefaults();
+					break;
+				}
+				showSettingsAgain = true;
+				x = dialog.getLocation().x;
+				y = dialog.getLocation().y;
+			}
+			currentSettingsDialogTab = dialog.getActiveTab();
+			dialog.dispose();
+		} while (showSettingsAgain);
 	}
 
 	private void onSaveAndExportSettingsChanged()

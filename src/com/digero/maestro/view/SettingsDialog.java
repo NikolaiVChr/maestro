@@ -1,14 +1,13 @@
 package com.digero.maestro.view;
 
-import info.clearthought.layout.TableLayout;
-import info.clearthought.layout.TableLayoutConstants;
-
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.prefs.BackingStoreException;
@@ -21,6 +20,7 @@ import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -37,17 +37,24 @@ import javax.swing.event.DocumentListener;
 
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.midi.NoteFilterSequencerWrapper;
+import com.digero.common.util.ExtensionFileFilter;
 import com.digero.common.util.Util;
+import com.digero.common.view.LinkButton;
 import com.digero.maestro.abc.AbcMetadataSource;
 import com.digero.maestro.abc.AbcPartMetadataSource;
 import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.abc.ExportFilenameTemplate;
 import com.digero.maestro.abc.PartAutoNumberer;
 import com.digero.maestro.abc.PartNameTemplate;
+import com.digero.maestro.abc.PartNumberingConfig;
+
+import info.clearthought.layout.TableLayout;
+import info.clearthought.layout.TableLayoutConstants;
 
 @SuppressWarnings("serial")
 public class SettingsDialog extends JDialog implements TableLayoutConstants
 {
+	private static final String PART_NUMBERING_CONFIG_DIRECTORY = "PartNumConfigDir";
 	public static final int NUMBERING_TAB = 0;
 	public static final int NAME_TEMPLATE_TAB = 1;
 	public static final int SAVE_EXPORT_TAB = 2;
@@ -74,6 +81,9 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants
 
 	private SaveAndExportSettings saveSettings;
 	private MiscSettings miscSettings;
+	
+	private List<InstrumentSpinner> instrumentSpinners = new ArrayList<>();
+	private JComboBox<Integer> incrementComboBox = new JComboBox<>(new Integer[]{1, 10});
 
 	public SettingsDialog(JFrame owner, PartAutoNumberer partNumberer, PartNameTemplate nameTemplate,
 			ExportFilenameTemplate exportTemplate, SaveAndExportSettings saveSettings, MiscSettings miscSettings)
@@ -182,8 +192,8 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants
 		instrumentsLayout.setVGap(3);
 		JPanel instrumentsPanel = new JPanel(instrumentsLayout);
 		instrumentsPanel.setBorder(BorderFactory.createEmptyBorder(0, PAD, 0, 0));
+		instrumentSpinners.clear();
 
-		final List<InstrumentSpinner> instrumentSpinners = new ArrayList<>();
 		LotroInstrument[] instruments = LotroInstrument.values();
 		for (int i = 0; i < instruments.length; i++)
 		{
@@ -211,7 +221,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants
 				+ "<b>1</b>: number Lute parts as 10, 11, 12, etc.<br>"
 				+ "<b>10</b>: number Lute parts as 1, 11, 21, etc.</html>");
 
-		final JComboBox<Integer> incrementComboBox = new JComboBox<>(new Integer[]{1, 10});
+		incrementComboBox = new JComboBox<>(new Integer[]{1, 10});
 		incrementComboBox.setSelectedItem(partNumbererSettings.getIncrement());
 		incrementComboBox.addActionListener(e -> {
 			int oldInc = partNumbererSettings.getIncrement();
@@ -248,19 +258,45 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants
 		incrementPanel.setBorder(BorderFactory.createEmptyBorder(0, PAD, 0, 0));
 		incrementPanel.add(incrementComboBox, "0, 0, C, T");
 		incrementPanel.add(incrementDescr, "1, 0");
+		
+		JLabel numberingConfigLabel = new JLabel("<html><b><u>Part Numbering Config: </u></b></html>");
+		
+		LinkButton importButton = new LinkButton("Import");
+		importButton.addActionListener(e -> {
+			loadPartNumberingConfig();
+		});
+		
+		JLabel separator = new JLabel(" | ");
+		
+		LinkButton exportButton = new LinkButton("Export");
+		exportButton.addActionListener(e -> {
+			savePartNumberingConfig();
+		});
+		
+		TableLayout mapLayout = new TableLayout(//
+				new double[] { PREFERRED, PREFERRED, PREFERRED, FILL },//
+				new double[] { PREFERRED });
+		mapLayout.setVGap(PAD);
+		mapLayout.setHGap(PAD);
+		JPanel mapPanel = new JPanel(mapLayout);
+		mapPanel.setBorder(BorderFactory.createEmptyBorder(PAD, 0, PAD, PAD));
+		mapPanel.add(numberingConfigLabel, "0, 0");
+		mapPanel.add(importButton, "1, 0");
+		mapPanel.add(separator, "2, 0");
+		mapPanel.add(exportButton, "3, 0");
 
 		TableLayout numberingLayout = new TableLayout(//
 				new double[] { FILL },//
-				new double[] { PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED });
+				new double[] { PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED });
 
 		numberingLayout.setVGap(PAD);
 		JPanel numberingPanel = new JPanel(numberingLayout);
 		numberingPanel.setBorder(BorderFactory.createEmptyBorder(PAD, PAD, PAD, PAD));
-
 		numberingPanel.add(instrumentsTitle, "0, 0");
 		numberingPanel.add(instrumentsPanel, "0, 1, L, F");
 		numberingPanel.add(incrementTitle, "0, 3");
 		numberingPanel.add(incrementPanel, "0, 4, F, F");
+		numberingPanel.add(mapPanel, "0, 5");
 		return numberingPanel;
 	}
 
@@ -287,6 +323,113 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants
 			partNumbererSettings.setFirstNumber(instrument, (Integer) getValue());
 			numbererSettingsChanged = true;
 		}
+	}
+	
+	private boolean loadPartNumberingConfig()
+	{
+		Preferences prefs = Preferences.userNodeForPackage(TrackPanel.class);
+		
+		String dirPath = prefs.get(PART_NUMBERING_CONFIG_DIRECTORY, null);
+		File dir;
+		if (dirPath == null || !(dir = new File(dirPath)).isDirectory())
+			dir = Util.getLotroMusicPath(false /* create */);
+
+		JFileChooser fileChooser = new JFileChooser(dir);
+		fileChooser.setFileFilter(new ExtensionFileFilter("Part numbering config file (*.partsconfig.txt)",
+				"partsconfig.txt"));
+		
+		if (fileChooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION)
+			return false;
+
+		File loadFile = fileChooser.getSelectedFile();
+		
+		PartNumberingConfig config = new PartNumberingConfig();
+
+		try
+		{
+			config.load(loadFile);
+		}
+		catch (Exception e)
+		{
+			JOptionPane.showMessageDialog(this, "Failed to load part numbering config:\n\n" + e.getMessage(),
+					"Failed to load part numbering config", JOptionPane.ERROR_MESSAGE);
+			return false;
+		}
+		
+		incrementComboBox.setSelectedItem(config.increment);
+		
+		for (LotroInstrument ins : config.firstPartMap.keySet())
+		{
+			int firstPartNo = config.firstPartMap.get(ins);
+		
+			for (InstrumentSpinner spinner : instrumentSpinners)
+			{
+				if (spinner.instrument.name().equals(ins.name()))
+				{
+					spinner.setValue(firstPartNo);
+				}
+			}
+		}
+		
+		prefs.put(PART_NUMBERING_CONFIG_DIRECTORY, fileChooser.getCurrentDirectory().getAbsolutePath());
+		return true;
+	}
+	
+	private boolean savePartNumberingConfig()
+	{
+		Preferences prefs = Preferences.userNodeForPackage(TrackPanel.class);
+		
+		String dirPath = prefs.get(PART_NUMBERING_CONFIG_DIRECTORY, null);
+		File dir;
+		if (dirPath == null || !(dir = new File(dirPath)).isDirectory())
+			dir = Util.getLotroMusicPath(false /* create */);
+
+		JFileChooser fileChooser = new JFileChooser(dir);
+		fileChooser.setFileFilter(new ExtensionFileFilter("Part numbering config file (*.partsconfig.txt)",
+				"partsconfig.txt"));
+		
+		File saveFile;
+		if (fileChooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
+			return false;
+
+		saveFile = fileChooser.getSelectedFile();
+
+		if (saveFile.getName().indexOf('.') < 0)
+		{
+			saveFile = new File(saveFile.getParentFile(), saveFile.getName() + ".partsconfig.txt");
+		}
+
+		if (saveFile.exists())
+		{
+			int result = JOptionPane.showConfirmDialog(this, "File " + saveFile.getName()
+					+ " already exists. Overwrite?", "Confirm overwrite", JOptionPane.OK_CANCEL_OPTION);
+			if (result != JOptionPane.OK_OPTION)
+				return false;
+		}
+		
+		HashMap<LotroInstrument, Integer> map = new HashMap<LotroInstrument, Integer>();
+		int increment = (int) incrementComboBox.getSelectedItem();
+		
+		for (InstrumentSpinner spinner : instrumentSpinners)
+		{
+			map.put(spinner.instrument, (Integer) spinner.getValue());
+		}
+		
+		PartNumberingConfig config = new PartNumberingConfig(increment, map);
+		
+		try
+		{
+			config.save(saveFile);
+		}
+		catch(IOException e)
+		{
+			JOptionPane.showMessageDialog(this, "Failed to save part numbering config:\n\n" + e.getMessage(),
+			"Failed to save part numbering config", JOptionPane.ERROR_MESSAGE);
+			return false;
+		}
+		
+		prefs.put(PART_NUMBERING_CONFIG_DIRECTORY, fileChooser.getCurrentDirectory().getAbsolutePath());
+		return true;
 	}
 
 	private JPanel createNameTemplatePanel()

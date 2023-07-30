@@ -751,26 +751,23 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 				DrumNoteMap.FILE_SUFFIX));
 
 		File saveFile;
-		do
+		if (fileChooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
+			return false;
+
+		saveFile = fileChooser.getSelectedFile();
+
+		if (saveFile.getName().indexOf('.') < 0)
 		{
-			if (fileChooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
+			saveFile = new File(saveFile.getParentFile(), saveFile.getName() + "." + DrumNoteMap.FILE_SUFFIX);
+		}
+
+		if (saveFile.exists())
+		{
+			int result = JOptionPane.showConfirmDialog(this, "File " + saveFile.getName()
+					+ " already exists. Overwrite?", "Confirm overwrite", JOptionPane.OK_CANCEL_OPTION);
+			if (result != JOptionPane.OK_OPTION)
 				return false;
-
-			saveFile = fileChooser.getSelectedFile();
-
-			if (saveFile.getName().indexOf('.') < 0)
-			{
-				saveFile = new File(saveFile.getParentFile(), saveFile.getName() + "." + DrumNoteMap.FILE_SUFFIX);
-			}
-
-			if (saveFile.exists())
-			{
-				int result = JOptionPane.showConfirmDialog(this, "File " + saveFile.getName()
-						+ " already exists. Overwrite?", "Confirm overwrite", JOptionPane.OK_CANCEL_OPTION);
-				if (result != JOptionPane.OK_OPTION)
-					continue;
-			}
-		} while (false);
+		}
 
 		try
 		{
