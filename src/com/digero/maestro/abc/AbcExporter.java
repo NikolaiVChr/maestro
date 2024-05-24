@@ -71,7 +71,7 @@ public class AbcExporter {
 		setKeySignature(keySignature);
 		
 		// We use this from AbcSong when getting micros
-		Pair<Long, Long> startEndTick = getSongStartEndTick(true, false, false);
+		Pair<Long, Long> startEndTick = getSongStartEndTick(false, true, false);
 		exportStartTick = startEndTick.first;
 		exportEndTick = startEndTick.second;
 	}
@@ -169,8 +169,7 @@ public class AbcExporter {
 			throws AbcConversionException, InvalidMidiDataException {
 		try {
 
-			Pair<Long, Long> startEndTick = getSongStartEndTick(true /* lengthenToBar */,
-					true /* accountForSustain */,false);
+			Pair<Long, Long> startEndTick = getSongStartEndTick(false, true, false);
 			exportStartTick = startEndTick.first;
 			exportEndTick = startEndTick.second;
 
@@ -203,7 +202,7 @@ public class AbcExporter {
 				throw new AbcConversionException("Songs with more than " + MAX_RAID + " parts can never be previewed.\n"
 						+ "This song currently has " + parts.size() + " parts and failed to preview.");
 			}
-			exportForChords(chordsMade, exportStartTick, exportEndTick);// export the chords here early, as we possibly
+			exportForChords(chordsMade);// export the chords here early, as we possibly
 																		// need to process them for sharing.
 			if (partsCount > MAX_PARTS) {
 				int target = partsCount - MAX_PARTS;// How many channels we need to free up.
@@ -272,7 +271,7 @@ public class AbcExporter {
 				int pan = (parts.size() > 1) ? panner.get(part.getInstrument(), part.getTitle(), stereoPan)
 						: PanGenerator.CENTER;
 				int chan = shareChannelSameVoiceMap.get(part);
-				ExportTrackInfo inf = exportPartToPreview(part, sequence, exportStartTick, exportEndTick, pan,
+				ExportTrackInfo inf = exportPartToPreview(part, sequence, pan,
 						useLotroInstruments, assignedChannels, chan, false, chordsMade);
 				infoList.add(inf);
 				// System.out.println(part.getTitle()+" assigned to share channel
@@ -290,7 +289,7 @@ public class AbcExporter {
 							pan = (parts.size() > 1) ? panner.get(part.getInstrument(), part.getTitle(), stereoPan)
 									: PanGenerator.CENTER;
 						}
-						ExportTrackInfo inf = exportPartToPreview(part, sequence, exportStartTick, exportEndTick, pan,
+						ExportTrackInfo inf = exportPartToPreview(part, sequence, pan,
 								useLotroInstruments, assignedChannels, chan, true, chordsMade);
 						infoList.add(inf);
 						// System.out.println(part.getTitle()+" assigned to switch channel
@@ -306,7 +305,7 @@ public class AbcExporter {
 						&& !assignedSharingPartsSwitchers.contains(part)) {
 					int pan = (parts.size() > 1) ? panner.get(part.getInstrument(), part.getTitle(), stereoPan)
 							: PanGenerator.CENTER;
-					ExportTrackInfo inf = exportPartToPreview(part, sequence, exportStartTick, exportEndTick, pan,
+					ExportTrackInfo inf = exportPartToPreview(part, sequence, pan,
 							useLotroInstruments, assignedChannels, null, false, chordsMade);
 					infoList.add(inf);
 					assignedChannels.add(inf.channel);
@@ -489,11 +488,11 @@ public class AbcExporter {
 	 * @param exportEndTick
 	 * @throws AbcConversionException
 	 */
-	private void exportForChords(Map<AbcPart, List<Chord>> chordsMade, long exportStartTick, long exportEndTick)
+	private void exportForChords(Map<AbcPart, List<Chord>> chordsMade)
 			throws AbcConversionException {
 		for (AbcPart part : parts) {
 			if (part.getEnabledTrackCount() > 0) {
-				List<Chord> chords = combineAndQuantize(part, false, exportStartTick, exportEndTick);
+				List<Chord> chords = combineAndQuantize(part, false);
 				chordsMade.put(part, chords);
 			} else {
 				try {
@@ -678,7 +677,7 @@ public class AbcExporter {
 		}
 	}
 
-	private ExportTrackInfo exportPartToPreview(AbcPart part, Sequence sequence, long songStartTick, long songEndTick,
+	private ExportTrackInfo exportPartToPreview(AbcPart part, Sequence sequence,
 			int pan, boolean useLotroInstruments, Set<Integer> assignedChannels, Integer chan,
 			boolean programChangeEveryChord, Map<AbcPart, List<Chord>> chordsMade) throws AbcConversionException {
 		List<Chord> chords = chordsMade.get(part);
@@ -812,7 +811,9 @@ public class AbcExporter {
 	}
 
 	public void exportToAbc(OutputStream os, boolean delayEnabled) throws AbcConversionException {
-		Pair<Long, Long> startEnd = getSongStartEndTick(true /* lengthenToBar */, false /* accountForSustain */,false);
+		// accountForSustain is true so that songbooks wont stop their timer before last note has finished sounding.
+		// lengthenToBar is false for opposite reason, so reporting the correct duration to songbooks.
+		Pair<Long, Long> startEnd = getSongStartEndTick(false, true, false);
 		exportStartTick = startEnd.first;
 		exportEndTick = startEnd.second;
 
@@ -857,7 +858,7 @@ public class AbcExporter {
 
 		for (AbcPart part : parts) {
 			if (part.getEnabledTrackCount() > 0) {
-				exportPartToAbc(part, exportStartTick, exportEndTick, out, delayEnabled);
+				exportPartToAbc(part, out, delayEnabled);
 			}
 		}
 	}
@@ -867,9 +868,9 @@ public class AbcExporter {
 				/ (double) qtm.getExportTempoFactor());
 	}
 
-	private void exportPartToAbc(AbcPart part, long songStartTick, long songEndTick, PrintStream out,
+	private void exportPartToAbc(AbcPart part, PrintStream out,
 			boolean delayEnabled) throws AbcConversionException {
-		List<Chord> chords = combineAndQuantize(part, true, songStartTick, songEndTick);
+		List<Chord> chords = combineAndQuantize(part, true);
 
 		out.println();
 		out.println("X: " + part.getPartNumber());
@@ -1118,8 +1119,7 @@ public class AbcExporter {
 	/**
 	 * Combine the tracks into one, quantize the note lengths, separate into chords.
 	 */
-	private List<Chord> combineAndQuantize(AbcPart part, boolean addTies, final long songStartTick,
-			final long songEndTick) throws AbcConversionException {
+	private List<Chord> combineAndQuantize(AbcPart part, boolean addTies) throws AbcConversionException {
 		// Combine the events from the enabled tracks
 		List<NoteEvent> events = new ArrayList<>();
 		for (int t = 0; t < part.getTrackCount(); t++) {
@@ -1164,8 +1164,7 @@ public class AbcExporter {
 				for (NoteEvent ne : listOfNotes) {
 					// Skip notes that are outside of the play range.
 					if (ne.getEndTick() <= exportStartTick || ne.getStartTick() >= exportEndTick) {
-						//System.out.println(metadata.getSongTitle()+": Skipping notes that are outside of the play range!\n"+ne);
-						// This is not an issue, they are not scheduled to be heard anyway.
+						//if (part.mapNoteEvent(t, ne) != null && part.shouldPlay(ne, t)) System.out.println(metadata.getSongTitle()+": Skipping note that are outside songs time range.\n"+ne);
 						continue;
 					}
 

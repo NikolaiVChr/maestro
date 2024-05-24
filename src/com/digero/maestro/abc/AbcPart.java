@@ -3,6 +3,7 @@ package com.digero.maestro.abc;
 import static com.digero.maestro.abc.AbcHelper.map;
 import static com.digero.maestro.abc.AbcHelper.matchNick;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
@@ -25,6 +26,7 @@ import org.w3c.dom.Element;
 
 import com.digero.common.abc.Dynamics;
 import com.digero.common.abc.LotroInstrument;
+import com.digero.common.abc.LotroInstrumentSampleDuration;
 import com.digero.common.midi.ITempoCache;
 import com.digero.common.midi.MidiConstants;
 import com.digero.common.midi.MidiDrum;
@@ -618,22 +620,29 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 
 		// The last note to start playing isn't necessarily the last note to end.
 		// Check the last several notes to find the one that ends last.
-		int notesToCheck = 1000;
 
 		for (int t = 0; t < getTrackCount(); t++) {
 			if (isTrackEnabled(t)) {
+				int notesToCheck = 500;
 				List<NoteEvent> evts = getTrackEvents(t);
 				ListIterator<NoteEvent> iter = evts.listIterator(evts.size());
 				while (iter.hasPrevious()) {
 					NoteEvent ne = iter.previous();
-					if (mapNote(t, ne.note.id, ne.getStartTick()) != null && shouldPlay(ne, t)) {
+					Note tone = mapNote(t, ne.note.id, ne.getStartTick());
+					if (tone != null && shouldPlay(ne, t)) {
 						long noteEndTick;
 						if (!accountForSustain || instrument.isSustainable(ne.note.id))
 							noteEndTick = ne.getEndTick();
 						else {
+							double dura = 1.0;
+							try {
+								dura = LotroInstrumentSampleDuration.getDura(getInstrument().friendlyName, tone.id);								
+							} catch (IOException | NullPointerException e) {
+								// will give null pointer if tone is not contained in the map, in conversion from Double to double.
+							}
 							ITempoCache tc = ne.getTempoCache();
 							noteEndTick = tc
-									.microsToTick(tc.tickToMicros(ne.getStartTick()) + TimingInfo.ONE_SECOND_MICROS);
+									.microsToTick(tc.tickToMicros(ne.getStartTick()) + (long)(TimingInfo.ONE_SECOND_MICROS*dura));
 						}
 
 						if (noteEndTick > endTick)
