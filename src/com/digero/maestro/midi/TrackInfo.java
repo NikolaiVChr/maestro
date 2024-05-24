@@ -78,7 +78,7 @@ public class TrackInfo implements MidiConstants {
 		noteEvents = new ArrayList<>();
 		notesInUse = new TreeSet<>();
 		List<NoteEvent>[] notesOn = new List[CHANNEL_COUNT_ABC];
-		int notesNotTurnedOff = 0;
+		int zeroNotesRemoved = 0;
 
 		int minVelocity = Integer.MAX_VALUE;
 		int maxVelocity = Integer.MIN_VALUE;
@@ -175,14 +175,24 @@ public class TrackInfo implements MidiConstants {
 					 * System.err.println("Time: "+Util.formatDuration(time)); }
 					 */
 
-					// If this Note ON was preceded by a similar Note ON without a Note OFF, lets turn it off
-					// If its a Note OFF or Note ON with zero velocity, lets do same.
+					// If this is a Note ON and was preceded by a similar Note ON without a Note OFF, lets turn it the preceding note off
+					// If this is a Note OFF lets do same.
 					Iterator<NoteEvent> iter = notesOn[c].iterator();
 					while (iter.hasNext()) {
 						NoteEvent ne = iter.next();
 						if (ne.note.id == noteId) {
 							iter.remove();
 							ne.setEndTick(tick);
+							if (tick == ne.getStartTick()) {
+								// Illegal zero duration note terminated, so Maestro don't have to process it and discard it in the abc export anyway.
+								// If we were wanting to keep it, we would need to give it a duration.
+								// If the current message is a note ON with velocity (which is what I observe most) then
+								// it would not be possible to keep it anyway, as next note will start with this pitch immediately.
+								noteEvents.remove(ne);
+								//System.out.println(name+" tick:"+tick+" file:"+sequenceInfo.getFileName()+" track:"+trackNumber+" mins:"+((sequenceCache.tickToMicros(tick)/1000000.0)/60));
+								// notesInUse.remove(ne.note.id); might not be the first of this pitch to be used, so we cannot do this call. Not a big deal.
+								zeroNotesRemoved++;
+							}
 							break;
 						}
 					}
@@ -205,16 +215,6 @@ public class TrackInfo implements MidiConstants {
 																				// constructor as only MIDI notes will
 																				// get this set, abc notes not.
 
-						Iterator<NoteEvent> onIter = notesOn[c].iterator();
-						while (onIter.hasNext()) {
-							NoteEvent on = onIter.next();
-							if (on.note.id == ne.note.id) {
-								onIter.remove();
-								noteEvents.remove(on);
-								notesNotTurnedOff++;
-								break;
-							}
-						}
 
 						if (velocity > maxVelocity)
 							maxVelocity = velocity;
@@ -282,12 +282,17 @@ public class TrackInfo implements MidiConstants {
 				ctNotesOn += notesOnChannel.size();
 		}
 		if (ctNotesOn > 0) {
-			System.err.println((ctNotesOn + notesNotTurnedOff) + " note(s) not turned off at the end of the track.");
+			System.err.println((ctNotesOn) + " note(s) not turned off at the end of the track.");
 
 			for (List<NoteEvent> notesOnChannel : notesOn) {
 				if (notesOnChannel != null)
 					noteEvents.removeAll(notesOnChannel);
 			}
+		}
+		
+		if (zeroNotesRemoved > 0) {
+			// Its mostly drum tracks that have zero duration notes as far as I have observed. ~Aifel
+			System.err.println(zeroNotesRemoved + " note(s) removed due to being zero duration in midi file "+sequenceInfo.getFileName()+" track:"+trackNumber);
 		}
 
 		if (minVelocity == Integer.MAX_VALUE)
