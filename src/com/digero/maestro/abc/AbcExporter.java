@@ -9,14 +9,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
-import java.util.TreeMap;
-
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Track;
@@ -57,11 +53,10 @@ public class AbcExporter {
 	// private boolean showPruned;
 	private long exportStartTick;
 	private long exportEndTick;
-	private int lastChannelUsedInPreview = -1;
-	private static final long PRE_TICK = -1L;
 
 	public int stereoPan = 100;// zero is mono, 100 is very wide.
 	private int firstBarNumber;
+	PreviewExporterCombiner combiner;
 
 	public AbcExporter(List<AbcPart> parts, QuantizedTimingInfo timingInfo, KeySignature keySignature,
 			AbcMetadataSource metadata) throws AbcConversionException {
@@ -76,95 +71,6 @@ public class AbcExporter {
 		exportEndTick = startEndTick.second;
 	}
 
-	public List<AbcPart> getParts() {
-		return parts;
-	}
-
-	public QuantizedTimingInfo getTimingInfo() {
-		return qtm;
-	}
-
-	public void setTimingInfo(QuantizedTimingInfo timingInfo) {
-		this.qtm = timingInfo;
-	}
-
-	public KeySignature getKeySignature() {
-		return keySignature;
-	}
-
-	public void setKeySignature(KeySignature keySignature) throws AbcConversionException {
-		if (keySignature.sharpsFlats != 0)
-			throw new AbcConversionException("Only C major and A minor are currently supported");
-
-		this.keySignature = keySignature;
-	}
-
-	public boolean isSkipSilenceAtStart() {
-		return skipSilenceAtStart;
-	}
-
-	public void setSkipSilenceAtStart(boolean skipSilenceAtStart) {
-		this.skipSilenceAtStart = skipSilenceAtStart;
-	}
-	
-	public boolean isDeleteMinimalNotes() {
-		return deleteMinimalNotes;
-	}
-
-	public void setDeleteMinimalNotes(boolean deleteMinimalNotes) {
-		this.deleteMinimalNotes = deleteMinimalNotes;
-	}
-
-	/*
-	 * public boolean isShowPruned() { return showPruned; }
-	 * 
-	 * public void setShowPruned(boolean showPruned) { this.showPruned = showPruned; }
-	 */
-
-	public AbcMetadataSource getMetadataSource() {
-		return metadata;
-	}
-
-	public long getExportStartTick() {
-		return exportStartTick;
-	}
-
-	public long getExportEndTick() {
-		return exportEndTick;
-	}
-
-	/**
-	 * Does not account for tempo adjustment
-	 * @return 
-	 */
-	public long getExportStartMicros() {
-		return qtm.tickToMicros(getExportStartTick());
-	}
-
-	/**
-	 * Does not account for tempo adjustment
-	 * @return 
-	 */
-	public long getExportEndMicros() {
-		return qtm.tickToMicros(getExportEndTick());
-	}
-
-	public static class ExportTrackInfo {
-		public final int trackNumber;
-		public final AbcPart part;
-		public final List<NoteEvent> noteEvents;
-		public final Integer channel;
-		public final Integer patch;
-
-		public ExportTrackInfo(int trackNumber, AbcPart part, List<NoteEvent> noteEvents, Integer channel, int patch) {
-			this.trackNumber = trackNumber;
-			this.part = part;
-			this.noteEvents = noteEvents;
-			this.channel = channel;
-			this.patch = patch;
-		}
-	}
-
 	public Pair<List<ExportTrackInfo>, Sequence> exportToPreview(boolean useLotroInstruments)
 			throws AbcConversionException, InvalidMidiDataException {
 		try {
@@ -174,15 +80,8 @@ public class AbcExporter {
 			exportEndTick = startEndTick.second;
 
 			Map<AbcPart, List<Chord>> chordsMade = new HashMap<>();// abcexported chords ready to be previewed
-			Map<AbcPart, TreeMap<Long, Boolean>> toneMap = null;// Tree is when notes are active.
-			List<Set<AbcPart>> shareChannelWithPatchChangesMap = null;// abcpart 1 can borrow channel from abcpart 2,
-																		// but need to switch voice all the time.
-			Map<AbcPart, Integer> shareChannelSameVoiceMap = null;// abcpart can use a certain channel (together with
-																	// another abcpart), no need for voice switching.
-			Set<AbcPart> assignedSharingPartsSwitchers = new HashSet<>();// Set of all parts that will share using
-																			// switching.
-			Set<AbcPart> assignedSharingPartsSameVoice = new HashSet<>();// Set of all parts that will share without
-																			// using switching.
+			
+			
 			List<ExportTrackInfo> infoList = new ArrayList<>();
 			
 			int partsCount = calculatePartsCount(parts);
@@ -204,56 +103,11 @@ public class AbcExporter {
 			}
 			exportForChords(chordsMade);// export the chords here early, as we possibly
 																		// need to process them for sharing.
-			if (partsCount > MAX_PARTS) {
-				int target = partsCount - MAX_PARTS;// How many channels we need to free up.
-				// System.out.println("\n\nPreview requested for more than 15 parts. Starting
-				// combine algorithms.");
-				Pair<Map<AbcPart, Integer>, Integer> shareResult = findSharableParts(target, chordsMade,
-						assignedSharingPartsSwitchers);
-				if (shareResult != null) {
-					shareChannelSameVoiceMap = shareResult.first;
-					assignedSharingPartsSameVoice = shareChannelSameVoiceMap.keySet();
-					target = shareResult.second;
-				}
+			
+			combiner = new PreviewExporterCombiner(chordsMade, partsCount, parts, useLotroInstruments, this);
+			combiner.startCombine();
 
-				if (target > 0) {
-					toneMap = findTones(chordsMade);
-					Triplet<List<Set<AbcPart>>, Set<AbcPart>, Integer> switchResult = null;
-					switchResult = findSharableChannelSwitchers(toneMap, target, assignedSharingPartsSameVoice);
-					shareChannelWithPatchChangesMap = switchResult.first;
-					assignedSharingPartsSwitchers = switchResult.second;
-					target = switchResult.third;
-				}
-				if (target > 0) {
-					// That didn't work, lets try the opposite order
-					// System.out.println("\nThat did not free up enough channels, trying the
-					// methods in opposite order.");
-					target = partsCount - MAX_PARTS;// How many channels we need to free up.
-					shareChannelSameVoiceMap = null;
-					assignedSharingPartsSameVoice = new HashSet<>();
-					Triplet<List<Set<AbcPart>>, Set<AbcPart>, Integer> switchResult = null;
-					switchResult = findSharableChannelSwitchers(toneMap, target, assignedSharingPartsSameVoice);
-					shareChannelWithPatchChangesMap = switchResult.first;
-					assignedSharingPartsSwitchers = switchResult.second;
-					target = switchResult.third;
-
-					if (target > 0) {
-						shareResult = findSharableParts(target, chordsMade, assignedSharingPartsSwitchers);
-						if (shareResult != null) {
-							shareChannelSameVoiceMap = shareResult.first;
-							assignedSharingPartsSameVoice = shareChannelSameVoiceMap.keySet();
-							target = shareResult.second;
-						}
-					}
-				}
-				if (target > 0) {
-					throw new AbcConversionException("Songs with more than " + MAX_PARTS
-							+ " parts can sometimes be previewed.\n" + "This song currently has " + partsCount
-							+ " active parts and failed to preview though.");
-				}
-			}
-
-			Set<Integer> assignedChannels = new HashSet<>();// channels that has been assigned one or two parts onto it.
+			
 
 			Sequence sequence = new Sequence(Sequence.PPQ, qtm.getMidiResolution());
 
@@ -263,52 +117,21 @@ public class AbcExporter {
 			addMidiTempoEvents(track0);
 
 			PanGenerator panner = new PanGenerator();
-			lastChannelUsedInPreview = -1;
 			
-			for (AbcPart part : assignedSharingPartsSameVoice) {
-				// Do the parts that is sharing channel first, as they will use the lower
-				// (already designated) numbered channels
-				int pan = (parts.size() > 1) ? panner.get(part.getInstrument(), part.getTitle(), stereoPan)
-						: PanGenerator.CENTER;
-				int chan = shareChannelSameVoiceMap.get(part);
-				ExportTrackInfo inf = exportPartToPreview(part, sequence, pan,
-						useLotroInstruments, assignedChannels, chan, false, chordsMade);
-				infoList.add(inf);
-				// System.out.println(part.getTitle()+" assigned to share channel
-				// "+inf.channel+" on track "+inf.trackNumber);
-				assignedChannels.add(inf.channel);
-			}
-			if (shareChannelWithPatchChangesMap != null) {
-				// Do the parts that is sharing channel with voice switching second, as they
-				// will use the medium numbered channels
-				for (Set<AbcPart> entry : shareChannelWithPatchChangesMap) {
-					int chan = lastChannelUsedInPreview + 1;
-					int pan = -100000;
-					for (AbcPart part : entry) {
-						if (pan == -100000) {
-							pan = (parts.size() > 1) ? panner.get(part.getInstrument(), part.getTitle(), stereoPan)
-									: PanGenerator.CENTER;
-						}
-						ExportTrackInfo inf = exportPartToPreview(part, sequence, pan,
-								useLotroInstruments, assignedChannels, chan, true, chordsMade);
-						infoList.add(inf);
-						// System.out.println(part.getTitle()+" assigned to switch channel
-						// "+inf.channel+" on track "+inf.trackNumber);
-						assignedChannels.add(inf.channel);
-					}
-				}
-			}
+			combiner.lastChannelUsedInPreview = -1;			
+			combiner.endCombine(infoList, panner, sequence);
+			
 			for (AbcPart part : parts) {
 				// Now do the rest of the parts that is not sharing channels at all. They will
 				// use 1 channel each.
-				if (part.getEnabledTrackCount() > 0 && !assignedSharingPartsSameVoice.contains(part)
-						&& !assignedSharingPartsSwitchers.contains(part)) {
+				if (part.getEnabledTrackCount() > 0 && !combiner.assignedSharingPartsSameVoice.contains(part)
+						&& !combiner.assignedSharingPartsSwitchers.contains(part)) {
 					int pan = (parts.size() > 1) ? panner.get(part.getInstrument(), part.getTitle(), stereoPan)
 							: PanGenerator.CENTER;
 					ExportTrackInfo inf = exportPartToPreview(part, sequence, pan,
-							useLotroInstruments, assignedChannels, null, false, chordsMade);
+							useLotroInstruments, combiner.assignedChannels, null, false, chordsMade);
 					infoList.add(inf);
-					assignedChannels.add(inf.channel);
+					combiner.assignedChannels.add(inf.channel);
 					// System.out.println(part.getTitle()+" assigned to channel "+inf.channel+" on track
 					// "+inf.trackNumber);
 					/*
@@ -344,143 +167,6 @@ public class AbcExporter {
 	}
 
 	/**
-	 * Find parts that can share a channel by switching voice.
-	 * 
-	 * @param toneMap                     Map of when a part has active notes.
-	 * @param target                      Number of pairs that needs to be found.
-	 * @param assignedSharingPartsChannel Will not check the parts in this set.
-	 * @return Map of pairs of parts that can share channels using this method.
-	 */
-	private Triplet<List<Set<AbcPart>>, Set<AbcPart>, Integer> findSharableChannelSwitchers(
-			Map<AbcPart, TreeMap<Long, Boolean>> toneMap, int target, Set<AbcPart> assignedSharingPartsChannel) {
-		// System.out.println("Attempting to free "+target+" channels by finding pairs
-		// that can share channel with voice switching.");
-		List<Set<AbcPart>> shareChannelWithPatchChangesMap = new ArrayList<>();
-		Set<AbcPart> assignedSharingPartsSwitchers = new HashSet<>();
-
-		List<AbcPart> keySet = new ArrayList<>(toneMap.keySet());
-
-		outer: for (int iterC = 0; iterC < keySet.size() - 1 && target > 0; iterC++) {
-			AbcPart partC = keySet.get(iterC);
-			if (assignedSharingPartsChannel.contains(partC)) {
-				continue outer;
-			}
-			TreeMap<Long, Boolean> tonesCtree = toneMap.get(partC);
-			if (tonesCtree != null && !assignedSharingPartsSwitchers.contains(partC)) {
-				inner: for (int iterD = keySet.size() - 1; iterD > iterC; iterD--) {
-					// iterate opposite direction than C since sparse tracks are often clumped, and
-					// we really should try to get non sparse matched with sparse.
-					AbcPart partD = keySet.get(iterD);
-					if (assignedSharingPartsChannel.contains(partD)) {
-						continue inner;
-					}
-					TreeMap<Long, Boolean> tonesDtree = toneMap.get(partD);
-					if (tonesDtree != null && !assignedSharingPartsSwitchers.contains(partD)) {
-						if (toneComparator(tonesCtree, tonesDtree)) {
-							// We have a match
-							// System.out.println("Found channel switch matches:\n "+partC.getTitle()+"\n
-							// "+partD.getTitle());
-							assignedSharingPartsSwitchers.add(partC);
-							assignedSharingPartsSwitchers.add(partD);
-							Set<AbcPart> sharePartSet = new HashSet<>();
-							Set<TreeMap<Long, Boolean>> shareTreeSet = new HashSet<>();
-							sharePartSet.add(partC);
-							sharePartSet.add(partD);
-							shareTreeSet.add(tonesCtree);
-							shareTreeSet.add(tonesDtree);
-							target--;
-							core: for (int iterE = 0; iterE < keySet.size() && target > 0; iterE++) {
-								AbcPart partE = keySet.get(iterE);
-								if (assignedSharingPartsChannel.contains(partE)
-										|| assignedSharingPartsSwitchers.contains(partE)) {
-									continue core;
-								}
-								TreeMap<Long, Boolean> tonesEtree = toneMap.get(partE);
-								if (tonesEtree != null) {
-									boolean result = true;
-									for (TreeMap<Long, Boolean> tree2 : shareTreeSet) {
-										result = result && toneComparator(tonesEtree, tree2);
-									}
-									if (result) {
-										// another match for same channel
-										assignedSharingPartsSwitchers.add(partE);
-										sharePartSet.add(partE);
-										shareTreeSet.add(tonesEtree);
-										target--;
-										// System.out.println(" "+partE.getTitle());
-									}
-								}
-							}
-							shareChannelWithPatchChangesMap.add(sharePartSet);
-							continue outer;
-						}
-					}
-				}
-			}
-		}
-		// System.out.println(" "+target+" more freed channels needed.");
-		return new Triplet<>(shareChannelWithPatchChangesMap, assignedSharingPartsSwitchers, target);
-	}
-
-	private boolean toneComparator(TreeMap<Long, Boolean> tonesCtree, TreeMap<Long, Boolean> tonesDtree) {
-		Set<Entry<Long, Boolean>> entriesC = tonesCtree.entrySet();
-		for (Entry<Long, Boolean> entryC : entriesC) {
-			if (entryC.getKey() != PRE_TICK && ((entryC.getValue() && tonesDtree.floorEntry(entryC.getKey()).getValue())
-					|| (!entryC.getValue() && tonesDtree.floorEntry(entryC.getKey() - 1).getValue()))) {
-				// part D has active notes at entryC tick. The -1 is to allow D to start right
-				// where C ends a note.
-				// System.out.println("part D has active notes at entryC tick
-				// ("+entryC.getKey()+") "+(qtm.tickToMicros(entryC.getKey())/1000000d));
-				// abort this pair
-				return false;
-			}
-		}
-		Set<Entry<Long, Boolean>> entriesD = tonesDtree.entrySet();
-		for (Entry<Long, Boolean> entryD : entriesD) {
-			if (entryD.getKey() != PRE_TICK && ((entryD.getValue() && tonesCtree.floorEntry(entryD.getKey()).getValue())
-					|| (!entryD.getValue() && tonesCtree.floorEntry(entryD.getKey() - 1).getValue()))) {
-				// part C has active notes at entryD tick. The -1 is to allow C to start right
-				// where D ends a note.
-				// System.out.println("part C has active notes at entryD tick
-				// ("+entryD.getKey()+") "+(qtm.tickToMicros(entryD.getKey())/1000000d));
-				// abort this pair
-				return false;
-			}
-		}
-		return true;
-	}
-
-	/**
-	 * Build tick treemaps of when notes are active for each part.
-	 * 
-	 * @param chordsMade The preview chords for each part.
-	 * @return TreeMaps of tick to active note.
-	 */
-	private Map<AbcPart, TreeMap<Long, Boolean>> findTones(Map<AbcPart, List<Chord>> chordsMade) {
-		Map<AbcPart, TreeMap<Long, Boolean>> toneMap = new HashMap<>();
-		for (Entry<AbcPart, List<Chord>> chordEntry : chordsMade.entrySet()) {
-			if (chordEntry.getValue() == null) {
-				// toneMap.put(chordEntry.getKey(), null);
-			} else {
-				TreeMap<Long, Boolean> tree = new TreeMap<>();
-				tree.put(PRE_TICK, false);
-				for (Chord chord : chordEntry.getValue()) {
-					if (!chord.isRest()) {
-						tree.put(chord.getStartTick(), true);
-						tree.putIfAbsent(chord.getLongestEndTick(), false);
-						// System.out.println(chord.isRest()+" "+chordEntry.getKey().getTitle()+":
-						// ("+chord.getStartTick()+","+chord.getEndTick()+")
-						// "+(qtm.tickToMicros(chord.getStartTick())/1000000d)+" to
-						// "+(qtm.tickToMicros(chord.getEndTick())/1000000d));
-					}
-				}
-				toneMap.put(chordEntry.getKey(), tree);
-			}
-		}
-		return toneMap;
-	}
-
-	/**
 	 * Build all the preview chords here.
 	 * 
 	 * @param chordsMade      the map of lists of chord that need to be filled.
@@ -505,163 +191,6 @@ public class AbcExporter {
 		}
 	}
 
-	/**
-	 * Use brute force to check which parts can share a preview midi channel. Two conditions for that to happen:
-	 * <p>
-	 * 1 - Must be the same lotro instrument 2 - Must not have any notes with same pitch playing at the same time.
-	 * 
-	 * @param target                        Number of pairs that need to be found.
-	 * @param chordsMade
-	 * @param assignedSharingPartsSwitchers
-	 * @return
-	 * @throws AbcConversionException
-	 */
-	private Pair<Map<AbcPart, Integer>, Integer> findSharableParts(int target, Map<AbcPart, List<Chord>> chordsMade,
-			Set<AbcPart> assignedSharingPartsSwitchers) throws AbcConversionException {
-		// System.out.println("Attempting to find parts that can share channel and
-		// voice. Need to free "+target+" channels.");
-		Map<AbcPart, Integer> shareMap = new HashMap<>();
-		int channel = 0;// We create the midi tracks for this method first, so we start at channel 0
-		// evaluate fiddles first as they are most likely to use only single notes.
-		LotroInstrument[] orderToEvaluate = { LotroInstrument.LONELY_MOUNTAIN_FIDDLE, LotroInstrument.BASIC_FIDDLE,
-				LotroInstrument.BARDIC_FIDDLE, LotroInstrument.SPRIGHTLY_FIDDLE, LotroInstrument.STUDENT_FIDDLE,
-				LotroInstrument.BASIC_FLUTE, LotroInstrument.BASIC_CLARINET, LotroInstrument.BASIC_HORN,
-				LotroInstrument.BASIC_BAGPIPE, LotroInstrument.LONELY_MOUNTAIN_BASSOON, LotroInstrument.BASIC_BASSOON,
-				LotroInstrument.BRUSQUE_BASSOON, LotroInstrument.BASIC_PIBGORN, LotroInstrument.BASIC_THEORBO,
-				LotroInstrument.BASIC_LUTE, LotroInstrument.LUTE_OF_AGES, LotroInstrument.BASIC_HARP,
-				LotroInstrument.MISTY_MOUNTAIN_HARP, LotroInstrument.BASIC_DRUM, LotroInstrument.BASIC_COWBELL,
-				LotroInstrument.MOOR_COWBELL, LotroInstrument.TRAVELLERS_TRUSTY_FIDDLE,
-				LotroInstrument.STUDENT_FX_FIDDLE };
-
-		for (LotroInstrument evalInstr : orderToEvaluate) {
-			if (target < 1)
-				break;
-			List<AbcPart> partsToCompare = new ArrayList<>();
-			for (AbcPart part : parts) {
-				if (part.getInstrument().equals(evalInstr) && !assignedSharingPartsSwitchers.contains(part)) {
-					partsToCompare.add(part);
-				}
-			}
-			int iterBParts = 0;
-			outer: for (int iterAParts = 0; iterAParts < partsToCompare.size() - 1 && target > 0; iterAParts++) {
-				AbcPart partA = partsToCompare.get(iterAParts);
-				if (shareMap.containsKey(partA)) {
-					continue outer;
-				}
-				List<Chord> chordsA = chordsMade.get(partA);
-				if (chordsA == null) {
-					continue outer;
-				}
-				boolean matchFound = false;
-				Set<List<Chord>> chordsSet = new HashSet<>();
-				chordsSet.add(chordsA);
-				inner: for (iterBParts = iterAParts + 1; iterBParts < partsToCompare.size()
-						&& target > 0; iterBParts++) {
-					AbcPart partB = partsToCompare.get(iterBParts);
-					if (shareMap.containsKey(partB)) {
-						continue inner;
-					}
-					List<Chord> chordsB = chordsMade.get(partB);
-					if (chordsB == null) {
-						continue inner;
-					}
-					boolean result = true;
-					core: for (List<Chord> compareUs : chordsSet) {
-						result = result && chordListComparator(chordsB, compareUs, false);
-					}
-					if (result) {
-						shareMap.put(partB, channel);
-						chordsSet.add(chordsB);
-						if (!matchFound) {
-							// System.out.println("Found match");
-							// System.out.println(" "+partA.getTitle());
-							shareMap.put(partA, channel);
-							matchFound = true;
-						}
-						// System.out.println(" "+partB.getTitle());
-						target--;
-					}
-				}
-				if (matchFound) {
-					channel++;
-					if (channel == MidiConstants.DRUM_CHANNEL) {
-						channel++;
-					}
-					if (channel > 15) {
-						return null;
-					}
-				}
-			}
-		}
-		// System.out.println(" "+target+" channels still need to be freed.");
-		return new Pair<>(shareMap, target);
-	}
-
-	/**
-	 * Use brute force to check for any notes with same pitch playing at the same time.
-	 * 
-	 * @return false if such notes were found, else true.
-	 */
-	private boolean chordListComparator(List<Chord> chordsA, List<Chord> chordsB, boolean test) {
-		for (Chord aChord : chordsA) {
-			if (aChord.isRest()) {
-				continue;
-			}
-			long startAChord = aChord.getStartTick();// All notes in a chord starts at same time as the chord itself
-			long endAChord = aChord.getLongestEndTick();
-
-			for (Chord bChord : chordsB) {
-				if (bChord.isRest()) {
-					continue;
-				}
-				if (bChord.getStartTick() >= endAChord) {
-					break;
-				}
-				if (bChord.getLongestEndTick() <= startAChord) {
-					continue;
-				}
-				long startBChord = bChord.getStartTick();
-				for (int k = 0; k < aChord.size(); k++) {
-					// Iterate the aChord notes
-					NoteEvent evtA = aChord.get(k);
-					if (Note.REST == evtA.note) {
-						continue;
-					}
-					int evtAId = evtA.note.id;
-					long endANote = evtA.getEndTick();
-					if (startBChord > endANote) {
-						continue;
-					}
-					// long startANote = evt.getStartTick();
-					for (int l = 0; l < bChord.size(); l++) {
-						// Iterate the bChord notes
-						NoteEvent evtB = bChord.get(l);
-						int evtIdB = evtB.note.id;
-						if (evtIdB != evtAId) {
-							continue;
-						}
-
-						long endBNote = evtB.getEndTick();
-						if (endBNote <= startAChord) {
-							continue;
-						}
-						// long startBNote = evtB.getStartTick();
-						if (startBChord >= endANote) {
-							continue;
-						}
-						// The notes are same pitch and overlap
-						if (test) {
-							System.out.println(evtA.note + " and " + evtB.note + " do not match.");
-							System.out.println(" at " + (evtA.getStartMicros() / 1000000) + " seconds.");
-						}
-						return false;
-					}
-				}
-			}
-		}
-		return true;
-	}
-
 	private void addMidiTempoEvents(Track track0) {
 		for (QuantizedTimingInfo.TimingInfoEvent event : qtm.getTimingInfoByTick().values()) {
 			if (event.tick > exportEndTick)
@@ -677,7 +206,7 @@ public class AbcExporter {
 		}
 	}
 
-	private ExportTrackInfo exportPartToPreview(AbcPart part, Sequence sequence,
+	ExportTrackInfo exportPartToPreview(AbcPart part, Sequence sequence,
 			int pan, boolean useLotroInstruments, Set<Integer> assignedChannels, Integer chan,
 			boolean programChangeEveryChord, Map<AbcPart, List<Chord>> chordsMade) throws AbcConversionException {
 		List<Chord> chords = chordsMade.get(part);
@@ -715,7 +244,7 @@ public class AbcExporter {
 		int trackNumber = out.getTracks().length;
 		part.setPreviewSequenceTrackNumber(trackNumber);
 
-		int channel = lastChannelUsedInPreview + 1;
+		int channel = combiner.lastChannelUsedInPreview + 1;
 		if (chan != null) {
 			channel = chan;
 			// System.out.println(" fixed: "+chan);
@@ -723,7 +252,7 @@ public class AbcExporter {
 			channel++;
 		}
 		// System.out.println("Channel using "+channel);
-		lastChannelUsedInPreview = Math.max(channel, lastChannelUsedInPreview);
+		combiner.lastChannelUsedInPreview = Math.max(channel, combiner.lastChannelUsedInPreview);
 
 		Track track = out.createTrack();
 
@@ -1153,7 +682,7 @@ public class AbcExporter {
 							removeList.add(ne);
 						} else if (possibleCombiNote != null && possibleCombiNote.id > LotroCombiDrumInfo.maxCombi.id) {
 							// Just for safety, should never land here.
-							System.out.println("// Just for safety, should never land here:+\n"+ne);
+							System.err.println("// Just for safety, should never land here:+\n"+ne);
 							removeList.add(ne);
 						}
 					}
@@ -1353,7 +882,7 @@ public class AbcExporter {
 		Collections.sort(events);
 		
 		if (events.size() == 0) {
-			System.out.println("Export to preview/abc: "+metadata.getSongTitle()+" has a part with no exported notes.");
+			System.err.println("Export to preview/abc: "+metadata.getSongTitle()+" has a part with no exported notes.");
 			return new ArrayList<>();
 		}
 		
@@ -1888,6 +1417,7 @@ public class AbcExporter {
 	}
 
 	/** Removes a note and breaks any ties the note has. */
+	@Deprecated
 	private void removeNote(List<NoteEvent> events, NoteEvent ne) {
 		removeNote(events, events.indexOf(ne));
 	}
@@ -1940,22 +1470,93 @@ public class AbcExporter {
 		}
 		return new Pair<>(startTickFinal, endTick);
 	}
+	
+	public List<AbcPart> getParts() {
+		return parts;
+	}
 
-	private static class Triplet<T, U, V> {
+	public QuantizedTimingInfo getTimingInfo() {
+		return qtm;
+	}
 
-		public final T first;
-		public final U second;
-		public final V third;
+	public void setTimingInfo(QuantizedTimingInfo timingInfo) {
+		this.qtm = timingInfo;
+	}
 
-		public Triplet(T first, U second, V third) {
-			this.first = first;
-			this.second = second;
-			this.third = third;
+	public KeySignature getKeySignature() {
+		return keySignature;
+	}
+
+	public void setKeySignature(KeySignature keySignature) throws AbcConversionException {
+		if (keySignature.sharpsFlats != 0)
+			throw new AbcConversionException("Only C major and A minor are currently supported");
+
+		this.keySignature = keySignature;
+	}
+
+	public boolean isSkipSilenceAtStart() {
+		return skipSilenceAtStart;
+	}
+
+	public void setSkipSilenceAtStart(boolean skipSilenceAtStart) {
+		this.skipSilenceAtStart = skipSilenceAtStart;
+	}
+	
+	public boolean isDeleteMinimalNotes() {
+		return deleteMinimalNotes;
+	}
+
+	public void setDeleteMinimalNotes(boolean deleteMinimalNotes) {
+		this.deleteMinimalNotes = deleteMinimalNotes;
+	}
+
+	/*
+	 * public boolean isShowPruned() { return showPruned; }
+	 * 
+	 * public void setShowPruned(boolean showPruned) { this.showPruned = showPruned; }
+	 */
+
+	public AbcMetadataSource getMetadataSource() {
+		return metadata;
+	}
+
+	public long getExportStartTick() {
+		return exportStartTick;
+	}
+
+	public long getExportEndTick() {
+		return exportEndTick;
+	}
+
+	/**
+	 * Does not account for tempo adjustment
+	 * @return 
+	 */
+	public long getExportStartMicros() {
+		return qtm.tickToMicros(getExportStartTick());
+	}
+
+	/**
+	 * Does not account for tempo adjustment
+	 * @return 
+	 */
+	public long getExportEndMicros() {
+		return qtm.tickToMicros(getExportEndTick());
+	}
+
+	public static class ExportTrackInfo {
+		public final int trackNumber;
+		public final AbcPart part;
+		public final List<NoteEvent> noteEvents;
+		public final Integer channel;
+		public final Integer patch;
+
+		public ExportTrackInfo(int trackNumber, AbcPart part, List<NoteEvent> noteEvents, Integer channel, int patch) {
+			this.trackNumber = trackNumber;
+			this.part = part;
+			this.noteEvents = noteEvents;
+			this.channel = channel;
+			this.patch = patch;
 		}
-
-		/*
-		 * public T getFirst() { return first; } public U getSecond() { return second; } public V getThird() { return
-		 * third; }
-		 */
 	}
 }
