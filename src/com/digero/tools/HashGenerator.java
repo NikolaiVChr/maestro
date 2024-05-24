@@ -24,7 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import jakarta.xml.bind.DatatypeConverter;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 
 import com.digero.common.util.ExtensionFileFilter;
 import com.digero.common.util.Util;
@@ -113,7 +114,7 @@ public class HashGenerator {
 				System.err.println("Unknown mode: " + args[0]);
 				return -1;
 			}
-		} catch (IOException e) {
+		} catch (IOException | DecoderException e) {
 			e.printStackTrace();
 			return -1;
 		}
@@ -130,7 +131,7 @@ public class HashGenerator {
 	}
 
 	private static void moveDir(boolean include, File truthDirectory, File sourceDirectory, File targetDirectory)
-			throws IOException {
+			throws IOException, DecoderException {
 		if (!sourceDirectory.exists())
 			throw new IOException("Source directory does not exist: " + sourceDirectory.getAbsolutePath());
 
@@ -199,7 +200,7 @@ public class HashGenerator {
 	}
 
 	private static void move(boolean include, File existingHashFile, File sourceDirectory, File targetDirectory)
-			throws IOException {
+			throws IOException, DecoderException {
 		Set<Hash> existingHashes = new HashSet<>(inputHashListFromFile(existingHashFile, true).values());
 		Map<File, Hash> sourceHashes = generateHashes(sourceDirectory, /* recursive = */true);
 		Map<File, Hash> targetHashes = new HashMap<>();
@@ -218,7 +219,7 @@ public class HashGenerator {
 		appendHashListToFile(targetHashes, new File(targetDirectory, cachedHashesFileName), false);
 	}
 
-	private static void list(boolean include, File existingHashFile, File sourceDirectory) throws IOException {
+	private static void list(boolean include, File existingHashFile, File sourceDirectory) throws IOException, DecoderException {
 		Set<Hash> existingHashes = new HashSet<>(inputHashListFromFile(existingHashFile, true).values());
 		Map<File, Hash> sourceHashes = generateHashes(sourceDirectory, true);
 
@@ -250,7 +251,7 @@ public class HashGenerator {
 		return files;
 	}
 
-	public static Map<File, Hash> generateHashes(File directory, boolean recursive) throws IOException {
+	public static Map<File, Hash> generateHashes(File directory, boolean recursive) throws IOException, DecoderException {
 		List<File> allFiles = listFiles(directory, recursive);
 
 		ConcurrentHashMap<File, Hash> hashes = new ConcurrentHashMap<>();
@@ -375,7 +376,7 @@ public class HashGenerator {
 			System.out.println("Wrote " + hashes.size() + " hashes to: " + outputFile.getAbsolutePath());
 	}
 
-	private static HashMap<File, Hash> inputHashListFromFile(File hashListFile, boolean verbose) throws IOException {
+	private static HashMap<File, Hash> inputHashListFromFile(File hashListFile, boolean verbose) throws IOException, DecoderException {
 		HashMap<File, Hash> hashes = new HashMap<>();
 		try (BufferedReader reader = new BufferedReader(new FileReader(hashListFile))) {
 			String line;
@@ -395,7 +396,7 @@ public class HashGenerator {
 	}
 
 	private static void appendHashListToFile(Map<File, Hash> hashes, File outputFile, boolean verbose)
-			throws IOException {
+			throws IOException, DecoderException {
 		Map<File, Hash> output;
 		if (outputFile.exists()) {
 			output = inputHashListFromFile(outputFile, false);
@@ -443,13 +444,13 @@ public class HashGenerator {
 			this.value = value;
 		}
 
-		public Hash(String hexString) {
-			this.value = DatatypeConverter.parseHexBinary(hexString);
+		public Hash(String hexString) throws DecoderException {
+			this.value = Hex.decodeHex(hexString);
 		}
 
 		@Override
 		public String toString() {
-			return DatatypeConverter.printHexBinary(value);
+			return Hex.encodeHexString(value);
 		}
 
 		@Override

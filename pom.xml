@@ -2,11 +2,13 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>LotroMaestro</groupId>
 	<artifactId>LotroMaestro</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.2-SNAPSHOT</version>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	    <!--maven.compiler.source>1.8</maven.compiler.source>
+	    <maven.compiler.target>1.8</maven.compiler.target-->
 	</properties>
-	<build>
+	<build>	
 		<sourceDirectory>src</sourceDirectory>
 		<testSourceDirectory>src/com/digero/test</testSourceDirectory>
 		<resources>
@@ -127,11 +129,17 @@
 		</repository>
 	</repositories>-->
 	<dependencies>
+		<!-- https://mvnrepository.com/artifact/commons-codec/commons-codec -->
 		<dependency>
+		    <groupId>commons-codec</groupId>
+		    <artifactId>commons-codec</artifactId>
+		    <version>1.17.0</version>
+		</dependency>
+		<!--dependency>
 			<groupId>jakarta.xml.bind</groupId>
 			<artifactId>jakarta.xml.bind-api</artifactId>
 			<version>3.0.0</version>
-		</dependency>
+		</dependency-->
 		<!--<dependency>
 			<groupId>org.tritonus</groupId>
 			<artifactId>tritonus_share</artifactId>
@@ -167,10 +175,12 @@
 			<artifactId>table-layout</artifactId>
 			<version>4.3.0</version>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api -->
 		<dependency>
-			<groupId>org.junit.jupiter</groupId>
-			<artifactId>junit-jupiter</artifactId>
-			<version>5.10.0-M1</version>
+		    <groupId>org.junit.jupiter</groupId>
+		    <artifactId>junit-jupiter-api</artifactId>
+		    <version>5.10.2</version>
+		    <scope>provided</scope>
 		</dependency>
 		<dependency>
 		    <groupId>com.miglayout</groupId>

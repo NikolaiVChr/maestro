@@ -2,7 +2,8 @@ package com.digero.maestro.util;
 
 import java.io.File;
 
-import jakarta.xml.bind.DatatypeConverter;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import javax.xml.xpath.XPathExpressionException;
 
 import org.w3c.dom.Element;
@@ -149,8 +150,8 @@ public class SaveUtil {
 			return defaultValue;
 
 		try {
-			return DatatypeConverter.parseBase64Binary(text);
-		} catch (IllegalArgumentException e) {
+			return Hex.decodeHex(text);
+		} catch (IllegalArgumentException | DecoderException e) {
 			throw invalidValueException(node, e.getMessage());
 		}
 	}
