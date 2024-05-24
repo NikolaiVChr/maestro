@@ -175,23 +175,26 @@ public class TrackInfo implements MidiConstants {
 					 * System.err.println("Time: "+Util.formatDuration(time)); }
 					 */
 
-					// If this is a Note ON and was preceded by a similar Note ON without a Note OFF, lets turn it the preceding note off
-					// If this is a Note OFF lets do same.
+					// If this is a Note ON and was preceded by a similar Note ON without a Note OFF, lets turn the preceding note off
+					// If this is a Note OFF lets do same, but also delete the preceding note if it has zero duration.
 					Iterator<NoteEvent> iter = notesOn[c].iterator();
 					while (iter.hasNext()) {
 						NoteEvent ne = iter.next();
 						if (ne.note.id == noteId) {
 							iter.remove();
 							ne.setEndTick(tick);
-							if (tick == ne.getStartTick()) {
+							if (tick == ne.getStartTick() && (cmd == ShortMessage.NOTE_ON && velocity > 0)) {
 								// Illegal zero duration note terminated, so Maestro don't have to process it and discard it in the abc export anyway.
-								// If we were wanting to keep it, we would need to give it a duration.
+								// 
 								// If the current message is a note ON with velocity (which is what I observe most) then
 								// it would not be possible to keep it anyway, as next note will start with this pitch immediately.
+								// If current message is note OFF we keep it though, and give it a small duration in AbcExporter.
+								//   (even though thats against MIDI standard, but some MIDI files are meant for them to be played)
+								
 								noteEvents.remove(ne);
-								//System.out.println(name+" tick:"+tick+" file:"+sequenceInfo.getFileName()+" track:"+trackNumber+" mins:"+((sequenceCache.tickToMicros(tick)/1000000.0)/60));
-								// notesInUse.remove(ne.note.id); might not be the first of this pitch to be used, so we cannot do this call. Not a big deal.
 								zeroNotesRemoved++;
+								
+								//System.out.println(name+" tick:"+tick+" file:"+sequenceInfo.getFileName()+" track:"+trackNumber+" mins:"+((sequenceCache.tickToMicros(tick)/1000000.0)/60));
 							}
 							break;
 						}
