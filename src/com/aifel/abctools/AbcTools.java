@@ -896,19 +896,10 @@ public class AbcTools {
 					openFileChooser.setDialogTitle("Source folder");
 				}
 				
-				try {
-					SwingUtilities.invokeAndWait(() -> {
-						result = openFileChooser.showOpenDialog(frame);
-					});
-					if (result == JFileChooser.APPROVE_OPTION) {
-						sourceFolderAuto = openFileChooser.getSelectedFile();
-						SwingUtilities.invokeAndWait(() -> {
-							refreshAuto();
-						});
-					}
-				} catch (InvocationTargetException | InterruptedException e1) {
-					appendToField("<br><font color='red'>"+e1.toString()+"</font>");
-					e1.printStackTrace();
+				result = openFileChooser.showOpenDialog(frame);
+				if (result == JFileChooser.APPROVE_OPTION) {
+					sourceFolderAuto = openFileChooser.getSelectedFile();
+					refreshAuto();
 				}
 			}
 		};
@@ -927,19 +918,10 @@ public class AbcTools {
 					openFileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 					openFileChooser.setDialogTitle("MIDI folder");
 				}
-				try {
-					SwingUtilities.invokeAndWait(() -> {
-						result = openFileChooser.showOpenDialog(frame);
-					});
-					if (result == JFileChooser.APPROVE_OPTION) {
-						midiFolderAuto = openFileChooser.getSelectedFile();
-						SwingUtilities.invokeAndWait(() -> {
-							refreshAuto();
-						});
-					}
-				} catch (InvocationTargetException | InterruptedException e1) {
-					appendToField("<br><font color='red'>"+e1.toString()+"</font>");
-					e1.printStackTrace();
+				result = openFileChooser.showOpenDialog(frame);
+				if (result == JFileChooser.APPROVE_OPTION) {
+					midiFolderAuto = openFileChooser.getSelectedFile();
+					refreshAuto();
 				}
 			}
 		};
@@ -957,19 +939,11 @@ public class AbcTools {
 					openFileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 					openFileChooser.setDialogTitle("Destination folder");
 				}
-				try {
-					SwingUtilities.invokeAndWait(() -> {
-						result = openFileChooser.showOpenDialog(frame);
-					});
-					if (result == JFileChooser.APPROVE_OPTION) {
-						destFolderAuto = openFileChooser.getSelectedFile();
-						SwingUtilities.invokeAndWait(() -> {
-							refreshAuto();
-						});
-					}
-				} catch (InvocationTargetException | InterruptedException e1) {
-					appendToField("<br><font color='red'>"+e1.toString()+"</font>");
-					e1.printStackTrace();
+				
+				result = openFileChooser.showOpenDialog(frame);
+				if (result == JFileChooser.APPROVE_OPTION) {
+					destFolderAuto = openFileChooser.getSelectedFile();
+					refreshAuto();
 				}
 			}
 		};
