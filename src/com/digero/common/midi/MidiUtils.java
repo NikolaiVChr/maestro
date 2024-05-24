@@ -109,13 +109,13 @@ public class MidiUtils {
 
 		// optimization to not always go through entire list of tempo events
 		int snapshotIndex = cache.snapshotIndex;
-		int snapshotMicro = cache.snapshotMicro;
+		long snapshotMicro = cache.snapshotMicro;
 
 		// walk through all tempo changes and add time for the respective blocks
-		long us = 0; // microsecond
+		long us = 0L; // microsecond
 
 		if (snapshotIndex <= 0 || snapshotIndex >= cacheCount || ticks[snapshotIndex] > tick) {
-			snapshotMicro = 0;
+			snapshotMicro = 0L;
 			snapshotIndex = 0;
 		}
 		if (cacheCount > 0) {
@@ -209,7 +209,7 @@ public class MidiUtils {
 		// index in ticks/tempos at the snapshot
 		int snapshotIndex = 0;
 		// microsecond at the snapshot
-		int snapshotMicro = 0;
+		long snapshotMicro = 0L;
 
 		int currTempo; // MPQ, used as return value for microsecond2tick
 
@@ -221,7 +221,7 @@ public class MidiUtils {
 			tempos = new int[1];
 			tempos[0] = DEFAULT_TEMPO_MPQ;
 			snapshotIndex = 0;
-			snapshotMicro = 0;
+			snapshotMicro = 0L;
 		}
 
 		public TempoCache(Sequence seq) {
@@ -267,7 +267,7 @@ public class MidiUtils {
 				tempos[e] = getTempoMPQ(evt.getMessage());
 			}
 			snapshotIndex = 0;
-			snapshotMicro = 0;
+			snapshotMicro = 0L;
 		}
 
 		public int getCurrTempoMPQ() {

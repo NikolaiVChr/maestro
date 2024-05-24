@@ -45,6 +45,9 @@ Thanks to all who gave feedback of features, bugs plus suggestions.
 
 Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 ================
+Version 3.1.13
+- Fix for Abc Tools UI freeze or slows down when using auto exporter.
+
 Version 3.1.12
 - Abc Tools auto exporter can now export into a folder-tree recursively.
 - Fix for Maestro exporting to wav would ignore skip silence option.

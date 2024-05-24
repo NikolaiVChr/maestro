@@ -28,6 +28,7 @@ public class TimingInfo {
 	private final int minNoteDivisor;
 	private final long minNoteLengthTicks;
 	private final long maxNoteLengthTicks;
+	private boolean useTripletTiming;
 
 	@Override
 	public String toString() {
@@ -39,6 +40,7 @@ public class TimingInfo {
 		str += "defaultDivisor "+defaultDivisor + "\n";
 		str += "minNoteDivisor "+minNoteDivisor + "\n";
 		str += "minNoteLengthTicks "+minNoteLengthTicks + "\n";
+		str += "swing "+useTripletTiming + "\n";
 		return str;
 	}
 
@@ -54,6 +56,7 @@ public class TimingInfo {
 		this.resolutionPPQ = resolutionPPQ;
 		this.exportTempoFactor = exportTempoFactor;
 		this.meter = meter;
+		this.useTripletTiming = useTripletTiming;
 
 		final long SHORTEST_NOTE_TICKS = (long) Math
 				.ceil((getShortestNoteMicros(abcSongBPM) * resolutionPPQ) / exportTempoMPQ);
@@ -72,6 +75,7 @@ public class TimingInfo {
 		// otherwise it is an eighth note. For example, 2/4 = 0.5, so the
 		// default note length is a sixteenth note, while 4/4 = 1.0 or
 		// 6/8 = 0.75, so the default is an eighth note.
+		assert ((meter.numerator / (double) meter.denominator < 0.75) ? 16 : 8) * 4 % meter.denominator == 0;
 		this.defaultDivisor = ((meter.numerator / (double) meter.denominator < 0.75) ? 16 : 8) * 4 / meter.denominator;
 
 		// Calculate min note length
@@ -79,7 +83,12 @@ public class TimingInfo {
 			int minNoteDivisor = defaultDivisor;
 			if (useTripletTiming)
 				minNoteDivisor *= 3;
-			long minNoteTicks = (4 * resolutionPPQ) / (minNoteDivisor);
+			
+			int nu = 4 * resolutionPPQ;
+			int de = minNoteDivisor;
+			
+			assert nu%de == 0 : nu+"/"+de+" default="+defaultDivisor;
+			long minNoteTicks = nu/de;
 
 			while (minNoteTicks < SHORTEST_NOTE_TICKS && minNoteDivisor % 2 == 0) {
 				minNoteTicks *= 2;
@@ -162,8 +171,19 @@ public class TimingInfo {
 		return maxNoteLengthTicks;
 	}
 
+	/*
+	 * Used by ABC exporter and ABC preview bar label. 
+	 * This is not used by UI to draw bar lines. And not by section and tune editor to edit song.
+	 * 
+	 * Makes no guarantee for this duration to fit on this TimingInfo's quantization. (due to the division)
+	 * 
+	 */
 	public long getBarLengthTicks() {
 		// for some songs this gives wrong result, but for most it works:
 		return minNoteDivisor * minNoteLengthTicks * meter.numerator / meter.denominator;
+	}
+
+	public boolean isUseTripletTiming() {
+		return useTripletTiming;
 	}
 }

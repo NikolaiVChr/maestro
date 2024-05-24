@@ -61,6 +61,7 @@ public class AbcExporter {
 	private static final long PRE_TICK = -1L;
 
 	public int stereoPan = 100;// zero is mono, 100 is very wide.
+	private int firstBarNumber;
 
 	public AbcExporter(List<AbcPart> parts, QuantizedTimingInfo timingInfo, KeySignature keySignature,
 			AbcMetadataSource metadata) throws AbcConversionException {
@@ -68,6 +69,11 @@ public class AbcExporter {
 		this.qtm = timingInfo;
 		this.metadata = metadata;
 		setKeySignature(keySignature);
+		
+		// We use this from AbcSong when getting micros
+		Pair<Long, Long> startEndTick = getSongStartEndTick(true, false, false);
+		exportStartTick = startEndTick.first;
+		exportEndTick = startEndTick.second;
 	}
 
 	public List<AbcPart> getParts() {
@@ -127,10 +133,18 @@ public class AbcExporter {
 		return exportEndTick;
 	}
 
+	/**
+	 * Does not account for tempo adjustment
+	 * @return 
+	 */
 	public long getExportStartMicros() {
 		return qtm.tickToMicros(getExportStartTick());
 	}
 
+	/**
+	 * Does not account for tempo adjustment
+	 * @return 
+	 */
 	public long getExportEndMicros() {
 		return qtm.tickToMicros(getExportEndTick());
 	}
@@ -156,7 +170,7 @@ public class AbcExporter {
 		try {
 
 			Pair<Long, Long> startEndTick = getSongStartEndTick(true /* lengthenToBar */,
-					false /* accountForSustain */);
+					true /* accountForSustain */,false);
 			exportStartTick = startEndTick.first;
 			exportEndTick = startEndTick.second;
 
@@ -798,7 +812,7 @@ public class AbcExporter {
 	}
 
 	public void exportToAbc(OutputStream os, boolean delayEnabled) throws AbcConversionException {
-		Pair<Long, Long> startEnd = getSongStartEndTick(true /* lengthenToBar */, true /* accountForSustain */);
+		Pair<Long, Long> startEnd = getSongStartEndTick(true /* lengthenToBar */, false /* accountForSustain */,false);
 		exportStartTick = startEnd.first;
 		exportEndTick = startEnd.second;
 
@@ -809,7 +823,7 @@ public class AbcExporter {
 			if (metadata.getComposer().length() > 0) {
 				out.println(AbcField.SONG_COMPOSER + StringCleaner.cleanForABC(metadata.getComposer()));
 			}
-			out.println(AbcField.SONG_DURATION + Util.formatDuration(metadata.getSongLengthMicros()));
+			out.println(AbcField.SONG_DURATION + Util.formatDuration(getSongLengthMicros()));
 			if (metadata.getTranscriber().length() > 0) {
 				out.println(AbcField.SONG_TRANSCRIBER + StringCleaner.cleanForABC(metadata.getTranscriber()));
 			}
@@ -846,6 +860,11 @@ public class AbcExporter {
 				exportPartToAbc(part, exportStartTick, exportEndTick, out, delayEnabled);
 			}
 		}
+	}
+
+	private long getSongLengthMicros() {
+		return (long) ((getExportEndMicros() - getExportStartMicros())
+				/ (double) qtm.getExportTempoFactor());
 	}
 
 	private void exportPartToAbc(AbcPart part, long songStartTick, long songEndTick, PrintStream out,
@@ -887,8 +906,7 @@ public class AbcExporter {
 
 		// Write out ABC notation
 		final int BAR_LENGTH = 160;
-		final long songStartMicros = qtm.tickToMicros(songStartTick);
-		final int firstBarNumber = qtm.tickToBarNumber(songStartTick);
+		final long songStartMicros = qtm.tickToMicros(exportStartTick);
 		final int primaryExportTempoBPM = qtm.getPrimaryExportTempoBPM();
 		int curBarNumber = firstBarNumber;
 		int curExportTempoBPM = primaryExportTempoBPM;
@@ -946,7 +964,7 @@ public class AbcExporter {
 				// delay is "+part.delay+"ms : "+"z"+numer+"/"+denom);
 			}
 		}
-
+		
 		for (Chord c : chords) {
 			if (c.size() == 0) {
 				assert false : "Chord has no notes!";
@@ -962,9 +980,10 @@ public class AbcExporter {
 			c.sort();
 
 			// Is this the start of a new bar?
-			int barNumber = qtm.tickToBarNumber(c.getStartTick());
-			assert curBarNumber <= barNumber;
-			if (curBarNumber < barNumber) {
+			int barNumber = Math.max(qtm.tickToBarNumber(c.getStartTick()), firstBarNumber);
+			assert barNumber >= curBarNumber : metadata.getSongTitle()+ ": Bar counting error. Part: "+part.getTitle()+" barNumber="+barNumber+" curBarNumber="+curBarNumber+" chordStartTick="+c.getStartTick();
+
+			if (barNumber > curBarNumber) {
 				// Print the previous bar
 				if (bar.length() > 0) {
 					addLineBreaks.run();
@@ -1117,6 +1136,7 @@ public class AbcExporter {
 					}
 				}
 				List<NoteEvent> listOfNotes = new ArrayList<>(part.getTrackEvents(t));
+
 				if (specialDrumNotes) {
 					List<NoteEvent> extraList = new ArrayList<>();
 					List<NoteEvent> removeList = new ArrayList<>();
@@ -1133,16 +1153,21 @@ public class AbcExporter {
 							removeList.add(ne);
 						} else if (possibleCombiNote != null && possibleCombiNote.id > LotroCombiDrumInfo.maxCombi.id) {
 							// Just for safety, should never land here.
+							System.out.println("// Just for safety, should never land here:+\n"+ne);
 							removeList.add(ne);
 						}
 					}
 					listOfNotes.removeAll(removeList);
 					listOfNotes.addAll(extraList);
 				}
+
 				for (NoteEvent ne : listOfNotes) {
 					// Skip notes that are outside of the play range.
-					if (ne.getEndTick() <= songStartTick || ne.getStartTick() >= songEndTick)
+					if (ne.getEndTick() <= exportStartTick || ne.getStartTick() >= exportEndTick) {
+						//System.out.println(metadata.getSongTitle()+": Skipping notes that are outside of the play range!\n"+ne);
+						// This is not an issue, they are not scheduled to be heard anyway.
 						continue;
+					}
 
 					// reset pruned flag
 					// ne.resetPruned(part);
@@ -1161,8 +1186,9 @@ public class AbcExporter {
 						// if (mappedNote.id > part.getInstrument().highestPlayable.id) {
 						// part.mapNoteEvent2(t, ne);
 						// }
-						long startTick = Math.max(ne.getStartTick(), songStartTick);
-						long endTick = Math.min(ne.getEndTick(), songEndTick);
+
+						long startTick = Math.max(ne.getStartTick(), exportStartTick);
+						long endTick = Math.min(ne.getEndTick(), exportEndTick);
 						if (part.isFXPart()) {
 							long endTickMin = qtm.microsToTick(
 									qtm.tickToMicros(startTick) + (long) (AbcConstants.STUDENT_FX_MIN_SECONDS
@@ -1213,11 +1239,13 @@ public class AbcExporter {
 							newNE2.doubledNote = true;
 							events.add(newNE2);
 						}
+					} else {
+						//System.out.println("Final skipping \n"+ne+"\n"+(mappedNote != null)+" "+(part.shouldPlay(ne, t)));
 					}
 				}
 			}
 		}
-
+		
 		if (events.isEmpty() && !addTies) {
 			try {
 				PolyphonyHistogram.count(part, events);
@@ -1234,6 +1262,7 @@ public class AbcExporter {
 		NoteEvent lastEvent = null;
 		List<NoteEvent> extraEvents = new ArrayList<>();
 		List<NoteEvent> deleteEvents = new ArrayList<>();
+		
 		int removedToAvoidDissonance = 0;
 		for (int cc = 0; cc < events.size() ; cc++) {
 			NoteEvent ne = events.get(cc);
@@ -1319,27 +1348,32 @@ public class AbcExporter {
 
 		events.addAll(extraEvents);// add all the pitchbend fractions to the main event list
 		events.removeAll(deleteEvents);
-		//System.out.println("Something removed: "+events.removeAll(deleteEvents));
-
+		//System.out.println("Something removed: "+deleteEvents.size());
+		//System.out.println("Something added: "+extraEvents.size());
+		
 		Collections.sort(events);
-
+		
+		if (events.size() == 0) {
+			System.out.println("Export to preview/abc: "+metadata.getSongTitle()+" has a part with no exported notes.");
+			return new ArrayList<>();
+		}
+		
 		// Add initial rest if necessary
-		long quantizedStartTick = qtm.quantize(songStartTick, part);
-		if (events.get(0).getStartTick() > quantizedStartTick) {
-			events.add(0, new NoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, quantizedStartTick,
+		
+		if (events.get(0).getStartTick() > exportStartTick) {
+			events.add(0, new NoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, exportStartTick,
 					events.get(0).getStartTick(), qtm));
 		}
 
 		// Add a rest at the end if necessary
-		if (songEndTick < Long.MAX_VALUE) {
-			long quantizedEndTick = qtm.quantize(songEndTick, part);
+		if (exportEndTick < Long.MAX_VALUE) {
 
-			if (lastEvent.getEndTick() < quantizedEndTick) {
+			if (lastEvent.getEndTick() < exportEndTick) {
 				if (lastEvent.note == Note.REST) {
-					lastEvent.setEndTick(quantizedEndTick);
+					lastEvent.setEndTick(exportEndTick);
 				} else {
 					events.add(new NoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, lastEvent.getEndTick(),
-							quantizedEndTick, qtm));
+							exportEndTick, qtm));
 				}
 			}
 		}
@@ -1551,6 +1585,26 @@ public class AbcExporter {
 			assert !curChord.hasRestAndNotes();
 		return chords;
 	}
+
+	/*
+	private void verifySort(List<NoteEvent> events) {
+		long c = -1000000L;
+		for (NoteEvent ne : events) {
+			//System.out.println(ne.getStartTick());
+			if (ne.getStartTick() < c) assert 1==0;
+			c = ne.getStartTick();
+		}		
+	}
+	
+	private void verifySortChords(List<Chord> chords) {
+		long c = -1000000L;
+		for (Chord ne : chords) {
+			//System.out.println("C "+ne.getStartTick());
+			if (ne.getStartTick() < c) assert 1==0;
+			c = ne.getStartTick();
+		}		
+	}
+	*/
 
 	private NoteEvent createNoteEvent(NoteEvent oldNe, Note note, int velocity, long startTick, long endTick,
 			ITempoCache tempos) {
@@ -1839,7 +1893,13 @@ public class AbcExporter {
 		removeNote(events, events.indexOf(ne));
 	}
 
-	public Pair<Long, Long> getSongStartEndTick(boolean lengthenToBar, boolean accountForSustain) {
+	/**
+	 * 
+	 * @param lengthenToBar lengthen ending to bar
+	 * @param accountForSustain lengthen to allow preview midi playback to decay
+	 * @return
+	 */
+	public Pair<Long, Long> getSongStartEndTick(boolean lengthenToBar, boolean accountForSustain, boolean debug) {
 		// Remove silent bars before the song starts
 		long startTick = skipSilenceAtStart ? Long.MAX_VALUE : 0;
 		long endTick = Long.MIN_VALUE;
@@ -1847,27 +1907,39 @@ public class AbcExporter {
 			if (skipSilenceAtStart) {
 				long firstNoteStart = part.firstNoteStartTick();
 				if (firstNoteStart < startTick) {
-					// Remove integral number of bars
-					startTick = qtm.tickToBarStartTick(firstNoteStart);
+					startTick = firstNoteStart;
 				}
 			}
 
 			long lastNoteEnd = part.lastNoteEndTick(accountForSustain);
 			if (lastNoteEnd > endTick) {
-				// Lengthen to an integral number of bars
-				if (lengthenToBar)
-					endTick = qtm.tickToBarEndTick(lastNoteEnd);
-				else
-					endTick = lastNoteEnd;
+				endTick = lastNoteEnd;
 			}
 		}
 
 		if (startTick == Long.MAX_VALUE)
 			startTick = 0;
 		if (endTick == Long.MIN_VALUE)
-			endTick = 0;
+			endTick = 0;				
 
-		return new Pair<>(startTick, endTick);
+		// Remove integral number of bars
+		long q = qtm.tickToBarStartTick(startTick);
+		firstBarNumber = qtm.tickToBarNumber(q);
+		long startTickFinal = qtm.quantizeDown(q);
+		if (debug) {
+			System.out.println(metadata.getSongTitle()+": firstBar "+firstBarNumber+"  q="+q+" startTick="+startTick+" startTickfinal="+startTickFinal+"\n"+qtm.getTimingEventForTick(q)+"\n"+qtm.getTimingEventForTick(q).info+"\n"+qtm.getTimingEventForTick(q).infoOdd);
+			System.out.println("Bar 1 starts at "+qtm.barNumberToBarStartTick(0)+" "+(qtm.barNumberToMicrosecond(0)/1000000.0));
+			System.out.println("Bar 2 starts at "+qtm.barNumberToBarStartTick(1)+" "+(qtm.barNumberToMicrosecond(1)/1000000.0));
+			System.out.println("Bar 3 starts at "+qtm.barNumberToBarStartTick(2)+" "+(qtm.barNumberToMicrosecond(2)/1000000.0)+"\n\n\n\n\n\n");
+		}
+		
+		if (lengthenToBar) {
+			// Lengthen to an integral number of bars
+			endTick = qtm.quantizeUp(qtm.tickToBarEndTick(endTick));
+		} else {
+			endTick = qtm.quantizeUp(endTick);
+		}
+		return new Pair<>(startTickFinal, endTick);
 	}
 
 	private static class Triplet<T, U, V> {

@@ -206,6 +206,12 @@ public final class Util {
 	public static long roundGrid(long value, long grid) {
 		return ((value + grid / 2) / grid) * grid;
 	}
+	
+	public static long ceilGrid(long value, long grid) {
+		long floor = floorGrid(value, grid);
+		if (floor < value) return floor + grid;
+		return floor;
+	}
 
 	public static int floorGrid(int value, int grid) {
 		return (value / grid) * grid;

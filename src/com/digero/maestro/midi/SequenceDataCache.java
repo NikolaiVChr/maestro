@@ -218,7 +218,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 									mapMSB.put(ch, tick, m.getData2());
 								} else if (ch == DRUM_CHANNEL && MidiStandard.XG == standard && m.getData2() != 126
 										&& m.getData2() != 127) {
-									System.err.println("XG Drum Part Protect Mode prevented bank select MSB.");
+									//System.err.println("XG Drum Part Protect Mode prevented bank select MSB.");
 								}
 								// if(ch==DRUM_CHANNEL) System.err.println("Bank select MSB "+m.getData2()+" "+tick);
 								break;
@@ -522,6 +522,10 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		return timeSignature;
 	}
 
+	/*
+	 * This is used by UI to draw bar lines. By section and tune editor to edit song.
+	 * Not used by ABC exporter.
+	 */
 	public long getBarLengthTicks() {
 		// tickResolution is in ticks per quarter note
 		return 4L * tickResolution * timeSignature.numerator / timeSignature.denominator;

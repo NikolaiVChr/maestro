@@ -16,9 +16,14 @@ public class ConvertPPQ {
 		}
 
 		int origPPQ = orig.getResolution();
+		int newPPQ = origPPQ;
+		
+		if (newPPQ % 3 != 0) {
+			newPPQ *= 3;
+		}
 
 		int halfTimes = 0;
-		int tempResult = origPPQ;
+		int tempResult = newPPQ / 3;
 		for (int i = halfTimes; i <= halfRequirement; i++) {
 			if (tempResult % 2 == 0) {
 				tempResult /= 2;
@@ -30,28 +35,16 @@ public class ConvertPPQ {
 
 		int doubleTimes = 0;
 		if (halfTimes < halfRequirement) {
-			doubleTimes = halfRequirement - halfTimes;
-		} else {
-			// System.out.println("PPQ fine . Old="+origPPQ);
-			return orig;
+			doubleTimes = Math.max(0, halfRequirement - halfTimes);
 		}
 
-		int multi = 1 << doubleTimes; // (int)Math.pow(2, doubleTimes);
+		int multi = 1 << doubleTimes; // Faster than (int)Math.pow(2, doubleTimes);
 
-		int newPPQ = origPPQ * multi;
+		newPPQ *= multi;
 
-		while (newPPQ > 3000) {
-			// Protection against too high PPQ
-			doubleTimes -= 1;
-			if (doubleTimes < 1) {
-				// System.out.println("PPQ high . Old="+origPPQ);
-				return orig;
-			}
-			multi = 1 << doubleTimes;
-			newPPQ = origPPQ * multi;
-		}
+		if (newPPQ == origPPQ) return orig;
 
-		// System.out.println("PPQ scaling. Old="+origPPQ+" New="+newPPQ);
+		//System.out.println("PPQ scaling. Old="+origPPQ+" New="+newPPQ);
 
 		Sequence edit = null;
 		try {
@@ -68,7 +61,7 @@ public class ConvertPPQ {
 			int eventSize = origTrack.size();
 			for (int j = 0; j < eventSize; j++) {
 				MidiEvent origEvent = origTrack.get(j);
-				origEvent.setTick(origEvent.getTick() * multi);
+				origEvent.setTick(origEvent.getTick() * ((long)(newPPQ/origPPQ)));
 				editTrack.add(origEvent);
 			}
 		}

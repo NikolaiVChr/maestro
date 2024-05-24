@@ -835,11 +835,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 		try {
 			AbcExporter exporter = getAbcExporter();
-			Pair<Long, Long> startEndTick = exporter.getSongStartEndTick(false /* lengthenToBar */,
-					true /* accountForSustain */);
-			QuantizedTimingInfo qtm = exporter.getTimingInfo();
 
-			return (long) ((qtm.tickToMicros(startEndTick.second) - qtm.tickToMicros(startEndTick.first))
+			return (long) ((exporter.getExportEndMicros() - exporter.getExportStartMicros())
 					/ (double) timingInfo.getExportTempoFactor());
 		} catch (AbcConversionException e) {
 			return 0;

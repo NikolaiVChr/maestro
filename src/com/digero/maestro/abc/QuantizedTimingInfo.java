@@ -138,6 +138,13 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 			TimingInfo infoOdd = new TimingInfo(sourceEvent.tempoMPQ, resolution, exportTempoFactor, meter,
 					!useTripletTiming, abcSongBPM);
 
+			// If bars durations differ greatly between midi and abc, print it out. This will often be in small tempo changed sections and of no practical consequence, except its not so neat.
+			/*if( info.getBarLengthTicks()/(double)source.getDataCache().getBarLengthTicks() > 1.4 ) System.out.println(song.getTitle()+" bar-factor:"+info.getBarLengthTicks()/(double)source.getDataCache().getBarLengthTicks()+" swing:"+infoOdd.isUseTripletTiming());
+			if( info.getBarLengthTicks()/(double)source.getDataCache().getBarLengthTicks() < 0.6 ) System.out.println(song.getTitle()+" bar-factor:"+info.getBarLengthTicks()/(double)source.getDataCache().getBarLengthTicks()+" swing:"+infoOdd.isUseTripletTiming());
+			if( infoOdd.getBarLengthTicks()/(double)source.getDataCache().getBarLengthTicks() > 1.4 ) System.out.println(song.getTitle()+" bar-factor:"+infoOdd.getBarLengthTicks()/(double)source.getDataCache().getBarLengthTicks()+" swing:"+infoOdd.isUseTripletTiming());
+			if( infoOdd.getBarLengthTicks()/(double)source.getDataCache().getBarLengthTicks() < 0.6 ) System.out.println(song.getTitle()+" bar-factor:"+infoOdd.getBarLengthTicks()/(double)source.getDataCache().getBarLengthTicks()+" swing:"+infoOdd.isUseTripletTiming());
+			*/
+			
 			// Iterate over the existing events in reverse order
 			Iterator<TimingInfoEvent> reverseIterator = reversedEvents.iterator();
 			while (reverseIterator.hasNext()) {
@@ -531,6 +538,34 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		}
 		return quan;
 	}
+	
+	public long quantizeUp(long tick) {
+		// exportEndTick, not really needed for end, but lets do it for good measure.
+		TimingInfoEvent e = getTimingEventForTick(tick);
+		long quan  = e.tick + Util.ceilGrid(tick - e.tick, e.info.getMinNoteLengthTicks());
+		if (!oddsAndEnds) return quan;
+		long quan2 = e.tick + Util.ceilGrid(quan - e.tick, e.infoOdd.getMinNoteLengthTicks());
+		int counter = 0;
+		while (quan != quan2 && counter < 1000) {
+			quan  += e.info.getMinNoteLengthTicks();
+			quan2 = e.tick + Util.ceilGrid(quan - e.tick, e.infoOdd.getMinNoteLengthTicks());
+			counter++;
+		}
+		return quan;
+	}
+	
+	public long quantizeDown(long tick) {
+		// exportStartTick, this is a double check to ensure we are on both grids for startTick.
+		TimingInfoEvent e = getTimingEventForTick(tick);
+		long quan  = e.tick + Util.floorGrid(tick - e.tick, e.info.getMinNoteLengthTicks());
+		if (!oddsAndEnds) return quan;
+		long quan2 = e.tick + Util.floorGrid(quan - e.tick, e.infoOdd.getMinNoteLengthTicks());
+		while (quan != quan2 && quan > 0L) {
+			quan  -= e.info.getMinNoteLengthTicks();
+			quan2 = e.tick + Util.floorGrid(quan - e.tick, e.infoOdd.getMinNoteLengthTicks());
+		}
+		return quan;
+	}
 
 	/**
 	 * Microseconds to tick. Does not take export tempo change into consideration.
@@ -709,6 +744,11 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 			this.barNumber = barNumber;
 			this.info = info;
 			this.infoOdd = infoOdd;
+		}
+		
+		@Override
+		public String toString() {
+			return "Tick="+tick+" micros="+micros+" bar="+barNumber+(info==null&&infoOdd!=null?" Info":(infoOdd==null&&info!=null?" InfoOdd":(info!=null?" Dual":" Faulty")));			
 		}
 	}
 
