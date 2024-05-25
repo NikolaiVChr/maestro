@@ -45,6 +45,12 @@ Thanks to all who gave feedback of features, bugs plus suggestions.
 
 Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 ================
+Version 3.1.15
+- Abc Tools auto exporter no longer save a new abc export filename when it saves an msx.
+
+Version 3.1.14
+- Fix for Abc Tools folder buttons did not react.
+
 Version 3.1.13
 - Fix for Abc Tools UI freeze or slows down when using auto exporter.
 - More strict parsing of zero duration notes in midi sequence.

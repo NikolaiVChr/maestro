@@ -776,80 +776,77 @@ public class AbcTools {
 	private void exportProject(File project) throws Exception {
 		appendToField("<br>Exporting " + project.getName());
 
-			projectModified = false;
-			AbcSong abcSong = new AbcSong(project, partAutoNumberer, partNameTemplate, exportFilenameTemplate,
-					instrNameSettings, openFileResolver, miscSettings);
+		projectModified = false;
+		AbcSong abcSong = new AbcSong(project, partAutoNumberer, partNameTemplate, exportFilenameTemplate,
+				instrNameSettings, openFileResolver, miscSettings);
 
-			if (frame.getForceMixTimingSelected()) {
-				abcSong.setMixTiming(true);
-			}
+		if (frame.getForceMixTimingSelected()) {
+			abcSong.setMixTiming(true);
+		}
 
-			abcSong.setSkipSilenceAtStart(saveSettings.skipSilenceAtStart);
-			abcSong.setDeleteMinimalNotes(saveSettings.deleteMinimalNotes);
-			abcSong.setAllOut(miscSettings.showBadger && miscSettings.allBadger);
-			abcSong.setBadger(miscSettings.showBadger);
-			StringCleaner.cleanABC = saveSettings.convertABCStringsToBasicAscii;
+		abcSong.setSkipSilenceAtStart(saveSettings.skipSilenceAtStart);
+		abcSong.setDeleteMinimalNotes(saveSettings.deleteMinimalNotes);
+		abcSong.setAllOut(miscSettings.showBadger && miscSettings.allBadger);
+		abcSong.setBadger(miscSettings.showBadger);
+		StringCleaner.cleanABC = saveSettings.convertABCStringsToBasicAscii;
 
-			File exportFile = abcSong.getExportFile();
-			String fileName = "mySong.abc";
+		File exportFile = abcSong.getExportFile();
+		String fileName = "mySong.abc";
 
-			// Always regenerate setting from pattern export is highest precedent
-			if (exportFilenameTemplate.shouldRegenerateFilename()) {
-				fileName = exportFilenameTemplate.formatName();
-			} else if (exportFile != null) // else use abc filename if exists already
-			{
-				fileName = exportFile.getName();
-			} else if (abcSong.getSaveFile() != null) // else use msx filename if exists already
-			{
-				fileName = abcSong.getSaveFile().getName();
-			} else if (exportFilenameTemplate.isEnabled()) // else use pattern if usage is enabled
-			{
-				fileName = exportFilenameTemplate.formatName();
-			} else if (abcSong.getSourceFile() != null) // else default to source file (midi/abc)
-			{
-				fileName = abcSong.getSourceFilename();
-			}
+		// Always regenerate setting from pattern export is highest precedent
+		if (exportFilenameTemplate.shouldRegenerateFilename()) {
+			fileName = exportFilenameTemplate.formatName();
+		} else if (exportFile != null) // else use abc filename if exists already
+		{
+			fileName = exportFile.getName();
+		} else if (abcSong.getSaveFile() != null) // else use msx filename if exists already
+		{
+			fileName = abcSong.getSaveFile().getName();
+		} else if (exportFilenameTemplate.isEnabled()) // else use pattern if usage is enabled
+		{
+			fileName = exportFilenameTemplate.formatName();
+		} else if (abcSong.getSourceFile() != null) // else default to source file (midi/abc)
+		{
+			fileName = abcSong.getSourceFilename();
+		}
 
-			int dot = fileName.lastIndexOf('.');
-			if (dot > 0)
-				fileName = fileName.substring(0, dot);
-			else if (dot == 0)
-				fileName = "";
-			fileName = StringCleaner.cleanForFileName(fileName);
-			fileName += ".abc";
-			
-			File finalFolder = getTreeFolder(sourceFolderAuto, destFolderAuto, project);
+		int dot = fileName.lastIndexOf('.');
+		if (dot > 0)
+			fileName = fileName.substring(0, dot);
+		else if (dot == 0)
+			fileName = "";
+		fileName = StringCleaner.cleanForFileName(fileName);
+		fileName += ".abc";
+		
+		File finalFolder = getTreeFolder(sourceFolderAuto, destFolderAuto, project);
 
-			exportFile = new File(finalFolder, fileName);
-			String finalName = exportFile.getName();
-			dot = finalName.lastIndexOf('.');
-			if (dot > 0)
-				finalName = finalName.substring(0, dot);
-			int n = 1;
-			while (exportFile.exists()) {
-				n++;
-				exportFile = new File(exportFile.getParentFile(), finalName + " (" + n + ").abc");
-			}
-			finalFolder.mkdirs();// for recursive exporting we need the folders to exist.
-			abcSong.exportAbc(exportFile);
+		exportFile = new File(finalFolder, fileName);
+		String finalName = exportFile.getName();
+		dot = finalName.lastIndexOf('.');
+		if (dot > 0)
+			finalName = finalName.substring(0, dot);
+		int n = 1;
+		while (exportFile.exists()) {
+			n++;
+			exportFile = new File(exportFile.getParentFile(), finalName + " (" + n + ").abc");
+		}
+		finalFolder.mkdirs();// for recursive exporting we need the folders to exist.
 
-			appendToField("<br>&nbsp;&nbsp;as " + exportFile.getName());
-
-			if (projectModified && frame.getSaveMSXSelected()) {
-				try {
-					XmlUtil.saveDocument(abcSong.saveToXml(), abcSong.getSaveFile());
-				} catch (FileNotFoundException e) {
-					appendToField("<br><font color='red'>&nbsp;&nbsp;msx saving failed.</font>");
-
-					return;
-				} catch (IOException | TransformerException e) {
-					appendToField("<br><font color='red'>&nbsp;&nbsp;msx saving failed.</font>");
-
-					return;
-				}
+		if (projectModified && frame.getSaveMSXSelected()) {
+			try {
+				XmlUtil.saveDocument(abcSong.saveToXml(), abcSong.getSaveFile());
 				appendToField("<br>&nbsp;&nbsp;msx saved.");
+			} catch (FileNotFoundException e) {
+				appendToField("<br><font color='red'>&nbsp;&nbsp;msx saving failed.</font>");
+			} catch (IOException | TransformerException e) {
+				appendToField("<br><font color='red'>&nbsp;&nbsp;msx saving failed.</font>");
+			}				
+		}
+		
+		// Save abc file after saving msx file, so we don't change the msx abc save filename.
+		abcSong.exportAbc(exportFile);
 
-			}
+		appendToField("<br>&nbsp;&nbsp;as " + exportFile.getName());
 	}
 
 	/**
