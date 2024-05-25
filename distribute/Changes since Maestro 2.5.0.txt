@@ -45,6 +45,9 @@ Thanks to all who gave feedback of features, bugs plus suggestions.
 
 Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 ================
+Version 3.1.16
+- Improved the visual updating of auto exporter.
+
 Version 3.1.15
 - Abc Tools auto exporter no longer save a new abc export filename when it saves an msx.
 

@@ -22,6 +22,8 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 import java.util.regex.Matcher;
@@ -83,6 +85,7 @@ public class AbcTools {
 	private static final int INFO_VALUE = 2;
 
 	private static MultiMergerView frame = null;
+	private static Timer swingUpdateTimer;
 
 	JList<File> theList = null;
 	private String lastExport = null;
@@ -97,7 +100,9 @@ public class AbcTools {
 	private volatile int totalExportCount = 0;
 	private volatile int result = 0;
 	private volatile String textAuto = "";
-	private volatile boolean primed = false;
+	private Boolean updatedField = false;// Also used as Mutex
+	private volatile int progressInt;
+	private static AbcTools instance = null;
 
 	public static void main(String[] args) {
 		try {
@@ -110,12 +115,20 @@ public class AbcTools {
 			try {
 
 				frame = new MultiMergerView();
-				new AbcTools();
+				instance = new AbcTools();
 				frame.setVisible(true);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
 		});
+		swingUpdateTimer = new Timer();
+		swingUpdateTimer.scheduleAtFixedRate(new TimerTask() {
+			  @Override
+			  public void run() {
+				  instance.updateProgress();
+				  instance.updateField();
+			  }
+			}, 250L, 250L);
 	}
 
 	AbcTools() {
@@ -148,6 +161,7 @@ public class AbcTools {
 
 		// Setup Maestro version number:
 		new MaestroMain();
+		frame.setTitle("ABC Tools v"+MaestroMain.APP_VERSION.toString());
 
 		// Setup action listeners
 		frame.getBtnDest().addActionListener(actionDest);
@@ -754,20 +768,32 @@ public class AbcTools {
 	}
 
 	private void setProgress(final int progress) {
-		SwingUtilities.invokeLater(() -> {
-			frame.setProgressBarValue(progress);
-		});
+		progressInt = progress;
 	}
 
 	private void appendToField(String txt) {
-		textAuto += txt;
-		if (!primed) {
-			// The primed stuff prevent Swing using too much time on formatting HTML.
-			primed = true;
-			SwingUtilities.invokeLater(() -> {
-				frame.getTxtAutoExport().setText("<html>" + textAuto + "</html>");
-				primed = false;
-			});
+		synchronized(updatedField) {
+			updatedField = true;
+			textAuto += txt;
+		}
+	}
+	
+	private void updateProgress() {
+		SwingUtilities.invokeLater(() -> {
+			frame.setProgressBarValue(progressInt);
+		});
+	}
+
+	private void updateField() {
+		synchronized(updatedField) {
+			if (updatedField) {
+				SwingUtilities.invokeLater(() -> {
+					synchronized(updatedField) {
+						frame.getTxtAutoExport().setText("<html>" + textAuto + "</html>");
+						updatedField = false;
+					}
+				});
+			}
 		}
 	}
 
