@@ -70,9 +70,9 @@ public class AbcTools {
 // @formatter:on
 	private File sourceFolder;
 	private File destFolder;
-	private File sourceFolderAuto;
-	private File destFolderAuto;
-	private File midiFolderAuto;
+	private volatile File sourceFolderAuto;
+	private volatile File destFolderAuto;
+	private volatile File midiFolderAuto;
 	private ActionListener actionSource = getSourceActionListener();
 	private ActionListener actionDest = getDestActionListener();
 	private ActionListener actionJoin = getJoinActionListener();
@@ -95,14 +95,18 @@ public class AbcTools {
 	private InstrNameSettings instrNameSettings;
 	private SaveAndExportSettings saveSettings;
 	private MiscSettings miscSettings;
-	private volatile double progressFactor = 1;
-	private volatile int exportCount = 0;
-	private volatile int totalExportCount = 0;
+	private double progressFactor = 1;
+	private int exportCount = 0;
+	private int totalExportCount = 0;
 	private volatile int result = 0;
 	private volatile String textAuto = "";
-	private Boolean updatedField = false;// Also used as Mutex
+	private boolean txtFieldDirty = false;
+	private final Object txtFieldMutex = new Object();
+	
 	private volatile int progressInt;
+	private volatile boolean txtFieldPrimedForUpdate = false;
 	private static AbcTools instance = null;
+	private boolean projectModified = false;
 
 	public static void main(String[] args) {
 		try {
@@ -117,18 +121,18 @@ public class AbcTools {
 				frame = new MultiMergerView();
 				instance = new AbcTools();
 				frame.setVisible(true);
+				swingUpdateTimer = new Timer();
+				swingUpdateTimer.scheduleAtFixedRate(new TimerTask() {
+					  @Override
+					  public void run() {
+						  instance.updateProgress();
+						  instance.updateField();
+					  }
+					}, 250L, 250L);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
-		});
-		swingUpdateTimer = new Timer();
-		swingUpdateTimer.scheduleAtFixedRate(new TimerTask() {
-			  @Override
-			  public void run() {
-				  instance.updateProgress();
-				  instance.updateField();
-			  }
-			}, 250L, 250L);
+		});		
 	}
 
 	AbcTools() {
@@ -174,13 +178,12 @@ public class AbcTools {
 		frame.getBtnMIDI().addActionListener(getMIDIAutoActionListener());
 		frame.getBtnSourceAuto().addActionListener(getSourceAutoActionListener());
 
-		frame.getTxtAutoExport()
-				.setText("<html>Start with selecting source, midi and dest folders."
+		setToField("Start with selecting source, midi and dest folders."
 						+ "<br>Destination folder must be empty!"
 						+ "<br>MIDI folder is optional. It is used when midi cannot be found,"
 						+ " then it looks in that folder before asking for location."
 						+ "<br>When exporting it will use your Maestro settings for filename, partname etc etc."
-						+ "<br>Close Maestro while this app runs.</html>");
+						+ "<br>Close Maestro while this app runs.");
 		/*
 		 * try { List<Image> icons = new ArrayList<>(); icons.add(ImageIO.read(new
 		 * FileInputStream("abcmergetool.ico"))); frame.setIconImages(icons); } catch (Exception ex) { // Ignore
@@ -618,14 +621,13 @@ public class AbcTools {
 		});
 		// Test if dest is empty
 		if (destFolderAuto.listFiles().length != 0) {
+			setToField("Start with selecting source, midi and dest folders.<br>"
+					+ "<font color='red'>Destination folder must be empty!</font>"
+					+ "<br>MIDI folder is optional. It is used when midi cannot be found,"
+					+ " then it looks in that folder before asking for location."
+					+ "<br>When exporting it will use your Maestro settings for filename, partname etc etc."
+					+ "<br>Close Maestro while this app runs.");
 			SwingUtilities.invokeLater(() -> {
-				frame.getTxtAutoExport()
-						.setText("<html>Start with selecting source, midi and dest folders.<br>"
-								+ "<font color='red'>Destination folder must be empty!</font>"
-								+ "<br>MIDI folder is optional. It is used when midi cannot be found,"
-								+ " then it looks in that folder before asking for location."
-								+ "<br>When exporting it will use your Maestro settings for filename, partname etc etc."
-								+ "<br>Close Maestro while this app runs.</html>");
 				frame.getBtnStartExport().setEnabled(true);
 				frame.setForceMixTimingEnabled(true);
 				frame.setBtnDestAutoEnabled(true);
@@ -638,8 +640,8 @@ public class AbcTools {
 			setProgress(0);
 			return;
 		}
-		textAuto = "";
-		appendToField("Keep Maestro closed while this app runs.<br><br>Exporting in progress");
+		
+		setToField("Keep Maestro closed while this app runs.<br><br>Exporting in progress");
 
 		partAutoNumberer = new PartAutoNumberer(prefs.node("partAutoNumberer"));
 		partNameTemplate = new PartNameTemplate(prefs.node("partNameTemplate"));
@@ -661,6 +663,7 @@ public class AbcTools {
 				exportProject(project);
 				exportCount++;
 				setProgress((int) (exportCount * progressFactor));
+				if (exportCount % 500 == 0) System.gc();
 			}
 		} else {		
 			totalExportCount = 0;
@@ -772,9 +775,16 @@ public class AbcTools {
 	}
 
 	private void appendToField(String txt) {
-		synchronized(updatedField) {
-			updatedField = true;
+		synchronized(txtFieldMutex) {
+			txtFieldDirty = true;
 			textAuto += txt;
+		}
+	}
+	
+	private void setToField(String txt) {
+		synchronized(txtFieldMutex) {
+			txtFieldDirty = true;
+			textAuto = txt;
 		}
 	}
 	
@@ -785,19 +795,19 @@ public class AbcTools {
 	}
 
 	private void updateField() {
-		synchronized(updatedField) {
-			if (updatedField) {
+		synchronized(txtFieldMutex) {
+			if (txtFieldDirty && !txtFieldPrimedForUpdate) {
+				txtFieldPrimedForUpdate = true;
 				SwingUtilities.invokeLater(() -> {
-					synchronized(updatedField) {
+					synchronized(txtFieldMutex) {
 						frame.getTxtAutoExport().setText("<html>" + textAuto + "</html>");
-						updatedField = false;
+						txtFieldDirty = false;
+						txtFieldPrimedForUpdate = false;
 					}
 				});
 			}
 		}
 	}
-
-	private volatile boolean projectModified = false;
 
 	private void exportProject(File project) throws Exception {
 		appendToField("<br>Exporting " + project.getName());

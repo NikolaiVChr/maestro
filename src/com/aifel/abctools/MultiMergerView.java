@@ -224,6 +224,7 @@ public class MultiMergerView extends JFrame {
 		contentPaneAutoExport.add(scrollPaneAutoTxt, BorderLayout.CENTER);
 
 		txtAutoExport = new JEditorPane();
+		txtAutoExport.setEditable(false);
 		txtAutoExport.setContentType("text/html");
 		txtAutoExport.setText("Text");
 		scrollPaneAutoTxt.setViewportView(txtAutoExport);
