@@ -424,7 +424,6 @@ public class AutoExporter {
 	 */
 	private File getTreeFolder(File sourceFolderAuto2, File destFolderAuto2, File project) throws IOException {
 		if (project.getParentFile().equals(sourceFolderAuto2)) {
-			//appendToField("<br><font color='red'> no tree! </font>");
 			return destFolderAuto2;
 		}
 		List<String> theList = new ArrayList<>();
