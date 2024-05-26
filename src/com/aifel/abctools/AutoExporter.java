@@ -47,7 +47,7 @@ public class AutoExporter {
 	private final String DIR_AUTO_DEST    = "dir_destination";
 
 	private final MultiMergerView frame;
-	private static Timer swingUpdateTimer;
+	private final Timer swingUpdateTimer;
 
 	private double progressFactor = 1;
 	private int exportCount = 0;
@@ -57,11 +57,11 @@ public class AutoExporter {
 	private boolean txtFieldDirty = false;
 	private final Object txtFieldMutex = new Object();
 	
-	private volatile int progressInt;
+	private volatile int progressInt = 0;
 	private volatile boolean txtFieldPrimedForUpdate = false;
 	private boolean projectModified = false;
 	private final AbcTools main;
-	private Preferences autoPrefs;
+	private final Preferences autoPrefs;
 	
 	AutoExporter (MultiMergerView frame, String myHome, AbcTools main, Preferences autoPrefs) {
 		this.frame = frame;
@@ -572,7 +572,7 @@ public class AutoExporter {
 		}
 	};
 	
-	void flush () {
+	void flushPrefs () {
 		autoPrefs.put(DIR_AUTO_SOURCE, sourceFolderAuto.getAbsolutePath());
 		autoPrefs.put(DIR_AUTO_MIDI, midiFolderAuto.getAbsolutePath());
 		autoPrefs.put(DIR_AUTO_DEST, destFolderAuto.getAbsolutePath());

@@ -143,7 +143,7 @@ public class AbcTools {
 	protected void writePrefs() {
 		mergePrefs.put(DIR_MERGE_SOURCE, sourceFolder.getAbsolutePath());
 		mergePrefs.put(DIR_MERGE_DEST, destFolder.getAbsolutePath());
-		autoInstance.flush();
+		autoInstance.flushPrefs();
 
 		try {
 			toolsPrefs.flush();
