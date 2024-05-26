@@ -105,34 +105,49 @@ public class AbcTools {
 	
 	private volatile int progressInt;
 	private volatile boolean txtFieldPrimedForUpdate = false;
-	private static AbcTools instance = null;
+	private volatile static AbcTools instance = null;
 	private boolean projectModified = false;
 
 	public static void main(String[] args) {
+		
 		try {
-			UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
-		} catch (ClassNotFoundException | InstantiationException | IllegalAccessException
-				| UnsupportedLookAndFeelException e) {
+			EventQueue.invokeAndWait(() -> {
+				try {
+					UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
+				} catch (ClassNotFoundException | InstantiationException | IllegalAccessException
+						| UnsupportedLookAndFeelException e) {
+					e.printStackTrace();
+				}
+				try {
+					frame = new MultiMergerView();
+					instance = new AbcTools();
+					frame.setVisible(true);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			});
+			
+			swingUpdateTimer = new Timer();
+			swingUpdateTimer.scheduleAtFixedRate(new TimerTask() {
+				@Override
+				public void run() {
+					try {
+						instance.updateProgress();
+						instance.updateField();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			}, 250L, 250L);
+			instance.setToField("Start with selecting source, midi and destination folders."
+					+ "<br>Destination folder must be empty!"
+					+ "<br>MIDI folder is optional. It is used when midi cannot be found,"
+					+ " then it looks in that folder before asking for location."
+					+ "<br>When exporting it will use your Maestro settings for filename, partname etc etc."
+					+ "<br>Close Maestro while this app runs.");
+		} catch (InvocationTargetException | InterruptedException e) {
 			e.printStackTrace();
 		}
-		EventQueue.invokeLater(() -> {
-			try {
-
-				frame = new MultiMergerView();
-				instance = new AbcTools();
-				frame.setVisible(true);
-				swingUpdateTimer = new Timer();
-				swingUpdateTimer.scheduleAtFixedRate(new TimerTask() {
-					  @Override
-					  public void run() {
-						  instance.updateProgress();
-						  instance.updateField();
-					  }
-					}, 250L, 250L);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		});		
 	}
 
 	AbcTools() {
@@ -178,18 +193,13 @@ public class AbcTools {
 		frame.getBtnMIDI().addActionListener(getMIDIAutoActionListener());
 		frame.getBtnSourceAuto().addActionListener(getSourceAutoActionListener());
 
-		setToField("Start with selecting source, midi and dest folders."
-						+ "<br>Destination folder must be empty!"
-						+ "<br>MIDI folder is optional. It is used when midi cannot be found,"
-						+ " then it looks in that folder before asking for location."
-						+ "<br>When exporting it will use your Maestro settings for filename, partname etc etc."
-						+ "<br>Close Maestro while this app runs.");
+		
 		/*
 		 * try { List<Image> icons = new ArrayList<>(); icons.add(ImageIO.read(new
 		 * FileInputStream("abcmergetool.ico"))); frame.setIconImages(icons); } catch (Exception ex) { // Ignore
 		 * ex.printStackTrace(); }
 		 */
-		refresh();
+		refreshMerge();
 		refreshAuto();
 	}
 
@@ -207,7 +217,7 @@ public class AbcTools {
 		}
 	}
 
-	private void refresh() {
+	private void refreshMerge() {
 		Component c = getGui(sourceFolder.listFiles(new AbcFileFilter()), false);
 		frame.setLblSourceText("Source: " + sourceFolder.getAbsolutePath());
 		frame.setLblDestText("Destination: " + destFolder.getAbsolutePath());
@@ -524,7 +534,7 @@ public class AbcTools {
 				int result = openFileChooser.showOpenDialog(frame);
 				if (result == JFileChooser.APPROVE_OPTION) {
 					sourceFolder = openFileChooser.getSelectedFile();
-					refresh();
+					refreshMerge();
 				}
 			}
 		};
@@ -546,7 +556,7 @@ public class AbcTools {
 				int result = openFileChooser.showOpenDialog(frame);
 				if (result == JFileChooser.APPROVE_OPTION) {
 					destFolder = openFileChooser.getSelectedFile();
-					refresh();
+					refreshMerge();
 				}
 			}
 		};
@@ -621,7 +631,7 @@ public class AbcTools {
 		});
 		// Test if dest is empty
 		if (destFolderAuto.listFiles().length != 0) {
-			setToField("Start with selecting source, midi and dest folders.<br>"
+			setToField("Start with selecting source, midi and destination folders.<br>"
 					+ "<font color='red'>Destination folder must be empty!</font>"
 					+ "<br>MIDI folder is optional. It is used when midi cannot be found,"
 					+ " then it looks in that folder before asking for location."
@@ -663,7 +673,6 @@ public class AbcTools {
 				exportProject(project);
 				exportCount++;
 				setProgress((int) (exportCount * progressFactor));
-				if (exportCount % 500 == 0) System.gc();
 			}
 		} else {		
 			totalExportCount = 0;
@@ -738,7 +747,7 @@ public class AbcTools {
 						exportProject(file.toFile());
 					} catch (Exception e) {
 						appendToField("<br><font color='red'>"+e.toString()+"</font>");
-						//e.printStackTrace();
+						e.printStackTrace();
 					}
 					exportCount++;
 					setProgress((int) (exportCount * progressFactor));
