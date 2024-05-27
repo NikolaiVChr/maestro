@@ -615,7 +615,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		return startTick;
 	}
 
-	public long lastNoteEndTick(boolean accountForSustain) {
+	public long lastNoteEndTick(boolean accountForSustain, float exportTempoFactor) {
 		long endTick = Long.MIN_VALUE;
 
 		// The last note to start playing isn't necessarily the last note to end.
@@ -631,9 +631,9 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 					Note tone = mapNote(t, ne.note.id, ne.getStartTick());
 					if (tone != null && shouldPlay(ne, t)) {
 						long noteEndTick;
-						if (!accountForSustain || instrument.isSustainable(ne.note.id))
+						if (!accountForSustain || instrument.isSustainable(tone.id)) {
 							noteEndTick = ne.getEndTick();
-						else {
+						} else {
 							double dura = 1.0;
 							try {
 								dura = LotroInstrumentSampleDuration.getDura(getInstrument().friendlyName, tone.id);								
@@ -642,7 +642,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 							}
 							ITempoCache tc = ne.getTempoCache();
 							noteEndTick = tc
-									.microsToTick(tc.tickToMicros(ne.getStartTick()) + (long)(TimingInfo.ONE_SECOND_MICROS*dura));
+									.microsToTick(tc.tickToMicros(ne.getStartTick()) + (long)(TimingInfo.ONE_SECOND_MICROS*dura*exportTempoFactor));
 						}
 
 						if (noteEndTick > endTick)

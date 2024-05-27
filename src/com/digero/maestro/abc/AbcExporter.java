@@ -1440,7 +1440,7 @@ public class AbcExporter {
 				}
 			}
 
-			long lastNoteEnd = part.lastNoteEndTick(accountForSustain);
+			long lastNoteEnd = part.lastNoteEndTick(accountForSustain, qtm.getExportTempoFactor());
 			if (lastNoteEnd > endTick) {
 				endTick = lastNoteEnd;
 			}
