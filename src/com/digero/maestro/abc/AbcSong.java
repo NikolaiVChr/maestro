@@ -57,7 +57,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = MaestroMain.APP_NAME + " Songs";
 	public static final String MSX_FILE_EXTENSION_NO_DOT = "msx";
 	public static final String MSX_FILE_EXTENSION = "." + MSX_FILE_EXTENSION_NO_DOT;
-	public static final Version SONG_FILE_VERSION = new Version(3, 2, 2, 300);// Keep build above 117 to make earlier
+	public static final Version SONG_FILE_VERSION = new Version(3, 1, 6, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
 
@@ -96,6 +96,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private File exportFile; // The ABC export file
 	private File saveFile; // The XML Maestro song file
 	private boolean usingOldVelocities = false;
+	private boolean keep = true;
 
 	private final ListModelWrapper<AbcPart> parts = new ListModelWrapper<>(new DefaultListModel<>());
 
@@ -180,7 +181,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		params.useLotroInstruments = false;
 		// params.stereo = false;
 		usingOldVelocities = true;// The abc volumes are tuned to old volume scheme
-		keep = false;
+		keep = true;//abc has never any zero dura notes, so this dont matter
 		sequenceInfo = SequenceInfo.fromAbc(params, miscSettings, usingOldVelocities);
 		exportFile = file;
 
@@ -478,7 +479,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private void appendImportSettings(Document doc, Element songEle) {
 		Element importSettingsEle = doc.createElement("importSettings");
 		importSettingsEle.setAttribute("useOldVelocities", String.valueOf(usingOldVelocities));
-		importSettingsEle.setAttribute("keepZeroNotes", String.valueOf(keep));
+		//importSettingsEle.setAttribute("keepZeroNotes", String.valueOf(keep));
 		if (importSettingsEle.getAttributes().getLength() > 0 || importSettingsEle.getChildNodes().getLength() > 0)
 			songEle.appendChild(importSettingsEle);
 	}
@@ -930,7 +931,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			fireChangeEvent(AbcSongProperty.PART_LIST_ORDER, e.getSource());
 		}
 	};
-	private boolean keep;
 
 	@Override
 	public String getBadgerTitle() {

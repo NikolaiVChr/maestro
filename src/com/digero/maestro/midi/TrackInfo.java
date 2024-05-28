@@ -194,7 +194,7 @@ public class TrackInfo implements MidiConstants {
 								zeroNotesRemoved++;
 								
 								//System.out.println(name+" tick:"+tick+" file:"+sequenceInfo.getFileName()+" track:"+trackNumber+" mins:"+((sequenceCache.tickToMicros(tick)/1000000.0)/60));
-							} else {
+							} else if (tick == ne.getStartTick()) {
 								parent.zeroNotes++;
 							}
 							break;
@@ -293,8 +293,7 @@ public class TrackInfo implements MidiConstants {
 		}
 		
 		if (zeroNotesRemoved > 0) {
-			// Its mostly drum tracks that have zero duration notes as far as I have observed. ~Aifel
-			System.err.println(zeroNotesRemoved + " note(s) removed due to being zero duration in midi file "+sequenceInfo.getFileName()+" track:"+trackNumber);
+			//System.err.println(zeroNotesRemoved + " note(s) removed due to being zero duration in midi file "+sequenceInfo.getFileName()+" track:"+trackNumber);
 		}
 
 		if (minVelocity == Integer.MAX_VALUE)

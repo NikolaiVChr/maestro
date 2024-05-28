@@ -779,9 +779,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		row++;
 		settingsLayout.insertRow(row, PREFERRED);
 		settingsPanel.add(prioCheckBox, "0, " + row + ", 2, " + row + ", C, C");
-		row++;
-		settingsLayout.insertRow(row, PREFERRED);
-		settingsPanel.add(zeroDropdown, "0, " + row + ", 2, " + row + ", L, C");
+		//row++;
+		//settingsLayout.insertRow(row, PREFERRED);
+		//settingsPanel.add(zeroDropdown, "0, " + row + ", 2, " + row + ", L, C");
 		row++;
 		settingsLayout.insertRow(row, PREFERRED);
 		settingsPanel.add(exportSuccessfulLabel, "0, " + row + ", 2, " + row + ", F, F");
