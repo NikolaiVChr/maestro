@@ -57,7 +57,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = MaestroMain.APP_NAME + " Songs";
 	public static final String MSX_FILE_EXTENSION_NO_DOT = "msx";
 	public static final String MSX_FILE_EXTENSION = "." + MSX_FILE_EXTENSION_NO_DOT;
-	public static final Version SONG_FILE_VERSION = new Version(3, 1, 6, 300);// Keep build above 117 to make earlier
+	public static final Version SONG_FILE_VERSION = new Version(3, 2, 2, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
 
@@ -164,6 +164,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		sequenceInfo = SequenceInfo.fromMidi(file, miscSettings, usingOldVelocities);
 		title = sequenceInfo.getTitle();
 		composer = sequenceInfo.getComposer();
+		keep = true;
+		sequenceInfo.setKeepZeroNotes(keep);
 		keySignature = (ICompileConstants.SHOW_KEY_FIELD) ? sequenceInfo.getKeySignature() : KeySignature.C_MAJOR;
 		timeSignature = sequenceInfo.getTimeSignature();
 		note = "";
@@ -178,6 +180,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		params.useLotroInstruments = false;
 		// params.stereo = false;
 		usingOldVelocities = true;// The abc volumes are tuned to old volume scheme
+		keep = false;
 		sequenceInfo = SequenceInfo.fromAbc(params, miscSettings, usingOldVelocities);
 		exportFile = file;
 
@@ -246,7 +249,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			usingOldVelocities = SaveUtil.parseValue(songEle, "importSettings/@useOldVelocities", true);// must be
 																										// before
 																										// tryToLoadFromFile
-
+			keep = SaveUtil.parseValue(songEle, "importSettings/@keepZeroNotes", true);
 			sourceFile = SaveUtil.parseValue(songEle, "sourceFile", (File) null);
 			if (sourceFile == null) {
 				throw SaveUtil.missingValueException(songEle, "<sourceFile>");
@@ -269,7 +272,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			if (!sourceFile.equals(origSourceFile)) {
 				MaestroMain.setMIDIFileResolved();
 			}
-
+			sequenceInfo.setKeepZeroNotes(keep);
 			title = SaveUtil.parseValue(songEle, "title", sequenceInfo.getTitle());
 			composer = SaveUtil.parseValue(songEle, "composer", sequenceInfo.getComposer());
 			transcriber = SaveUtil.parseValue(songEle, "transcriber", transcriber);
@@ -475,6 +478,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private void appendImportSettings(Document doc, Element songEle) {
 		Element importSettingsEle = doc.createElement("importSettings");
 		importSettingsEle.setAttribute("useOldVelocities", String.valueOf(usingOldVelocities));
+		importSettingsEle.setAttribute("keepZeroNotes", String.valueOf(keep));
 		if (importSettingsEle.getAttributes().getLength() > 0 || importSettingsEle.getChildNodes().getLength() > 0)
 			songEle.appendChild(importSettingsEle);
 	}
@@ -899,6 +903,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		if (abcExporter.isDeleteMinimalNotes() != deleteMinimalNotes)
 			abcExporter.setDeleteMinimalNotes(deleteMinimalNotes);
 		
+		if (abcExporter.isKeepZeroNotes() != keep)
+			abcExporter.setKeepZeroNotes(keep);
+		
 		// if (abcExporter.isShowPruned() != showPruned)
 		// abcExporter.setShowPruned(showPruned);
 
@@ -923,6 +930,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			fireChangeEvent(AbcSongProperty.PART_LIST_ORDER, e.getSource());
 		}
 	};
+	private boolean keep;
 
 	@Override
 	public String getBadgerTitle() {
@@ -1042,6 +1050,18 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	
 	public QuantizedTimingInfo getQTM() {
 		return timingInfo;
+	}
+
+	public void setKeepZeroNotes(boolean keep) {
+		if (this.keep != keep) {
+			this.keep = keep;
+			sequenceInfo.setKeepZeroNotes(keep);
+			fireChangeEvent(AbcSongProperty.KEEP_ZERO_NOTES);
+		}
+	}
+
+	public boolean isKeepZeroNotes() {
+		return keep;
 	}
 
 	/*

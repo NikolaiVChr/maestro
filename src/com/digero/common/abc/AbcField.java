@@ -17,7 +17,7 @@ public enum AbcField {
 	TEMPO("Q:"), //
 	SWING_RHYTHM, //
 	MIX_TIMINGS, //
-	MADE_FOR, EXPORT_TIMESTAMP, SKIP_SILENCE_AT_START, DELETE_MINIMAL_NOTES;
+	MADE_FOR, EXPORT_TIMESTAMP, SKIP_SILENCE_AT_START, DELETE_MINIMAL_NOTES, KEEP_ZERO_DURATION_NOTES;
 
 	private static class MetaData {
 		private static Map<String, Integer> longestByPrefix = new HashMap<>();

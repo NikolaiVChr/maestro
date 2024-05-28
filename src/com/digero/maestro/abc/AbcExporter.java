@@ -57,6 +57,8 @@ public class AbcExporter {
 	private int firstBarNumber;
 	PreviewExporterCombiner combiner;
 
+	private boolean keepZeroNotes = true;
+
 	public AbcExporter(List<AbcPart> parts, QuantizedTimingInfo timingInfo, KeySignature keySignature,
 			AbcMetadataSource metadata) throws AbcConversionException {
 		this.parts = parts;
@@ -362,6 +364,7 @@ public class AbcExporter {
 			out.println(AbcField.MIX_TIMINGS + Boolean.toString(qtm.isMixTiming()));
 			out.println(AbcField.SKIP_SILENCE_AT_START + Boolean.toString(skipSilenceAtStart));
 			out.println(AbcField.DELETE_MINIMAL_NOTES + Boolean.toString(deleteMinimalNotes));
+			out.println(AbcField.KEEP_ZERO_DURATION_NOTES + Boolean.toString(keepZeroNotes));
 			out.println(AbcField.ABC_VERSION + "2.1");
 			String gnr = StringCleaner.cleanForABC(metadata.getGenre()).toLowerCase().trim();
 			String mood = StringCleaner.cleanForABC(metadata.getMood()).toLowerCase().trim();
@@ -691,6 +694,10 @@ public class AbcExporter {
 					// Skip notes that are outside of the play range.
 					if (ne.getEndTick() <= exportStartTick || ne.getStartTick() >= exportEndTick) {
 						//if (part.mapNoteEvent(t, ne) != null && part.shouldPlay(ne, t)) System.out.println(metadata.getSongTitle()+": Skipping note that are outside songs time range.\n"+ne);
+						continue;
+					}
+					
+					if (!part.getAbcSong().isKeepZeroNotes() && ne.isZeroDuration()) {
 						continue;
 					}
 
@@ -1553,5 +1560,13 @@ public class AbcExporter {
 			this.channel = channel;
 			this.patch = patch;
 		}
+	}
+
+	public boolean isKeepZeroNotes() {
+		return keepZeroNotes;
+	}
+
+	public void setKeepZeroNotes(boolean keep) {
+		this.keepZeroNotes = keep;
 	}
 }

@@ -194,6 +194,8 @@ public class TrackInfo implements MidiConstants {
 								zeroNotesRemoved++;
 								
 								//System.out.println(name+" tick:"+tick+" file:"+sequenceInfo.getFileName()+" track:"+trackNumber+" mins:"+((sequenceCache.tickToMicros(tick)/1000000.0)/60));
+							} else {
+								parent.zeroNotes++;
 							}
 							break;
 						}

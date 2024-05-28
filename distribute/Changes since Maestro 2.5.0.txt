@@ -45,6 +45,13 @@ Thanks to all who gave feedback of features, bugs plus suggestions.
 
 Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 ================
+
+Version 3.2.2
+- Added option to discard zero duration notes.
+
+Version 3.2.1
+- Fix partname song duration were often some seconds too long.
+
 Version 3.2.0
 - Improved the visual updating of auto exporter.
 - Abc Tools auto exporter no longer save a new abc export filename to msx.

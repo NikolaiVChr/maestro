@@ -58,6 +58,8 @@ public class SequenceInfo implements MidiConstants {
 	private int primaryTempoMPQ;
 	private final List<TrackInfo> trackInfoList;
 	private TreeMap<Integer, Integer> portMap = new TreeMap<>();
+	public boolean keep;
+	int zeroNotes = 0;
 	public static List<ExportTrackInfo> lastTrackInfos = null;
 
 	/**
@@ -1014,5 +1016,13 @@ public class SequenceInfo implements MidiConstants {
 		public List<MidiEvent> bank = new ArrayList<>();
 		public List<MidiEvent> patch = new ArrayList<>();
 		public List<MidiEvent> sysex = new ArrayList<>();
+	}
+
+	public void setKeepZeroNotes(boolean keep) {
+		this.keep = keep;
+	}
+
+	public int getNumberOfZeroNotes() {
+		return zeroNotes ;
 	}
 }

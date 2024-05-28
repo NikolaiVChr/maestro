@@ -117,6 +117,10 @@ public class NoteEvent implements Comparable<NoteEvent> {
 	public int hashCode() {
 		return ((int) startTick) ^ ((int) endTick) ^ note.id ^ (velocity+1);
 	}*/
+	
+	public boolean isZeroDuration() {
+		return getStartTick() == getEndTick();
+	}
 
 	@Override
 	public int compareTo(NoteEvent that) {
