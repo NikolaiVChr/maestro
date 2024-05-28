@@ -14,7 +14,6 @@ import com.digero.common.abc.LotroInstrumentSampleDuration;
 import com.digero.common.midi.ITempoCache;
 import com.digero.common.midi.Note;
 import com.digero.maestro.midi.AbcNoteEvent;
-import com.digero.maestro.midi.NoteEvent;
 
 public class PolyphonyHistogram {
 	private static Map<AbcPart, TreeMap<Long, Integer>> histogramData = new HashMap<>();

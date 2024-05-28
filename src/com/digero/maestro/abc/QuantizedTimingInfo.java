@@ -19,7 +19,6 @@ import com.digero.common.midi.TimeSignature;
 import com.digero.common.util.Util;
 import com.digero.maestro.midi.BentMidiNoteEvent;
 import com.digero.maestro.midi.MidiNoteEvent;
-import com.digero.maestro.midi.NoteEvent;
 import com.digero.maestro.midi.SequenceDataCache;
 import com.digero.maestro.midi.SequenceDataCache.TempoEvent;
 import com.digero.maestro.midi.SequenceInfo;
@@ -329,7 +328,7 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 					}
 
 					if (ne instanceof BentMidiNoteEvent) {
-						// bent notes scores (the bent notes which range is less than 1 octave
+						// bent notes scores (the bent notes which range is less than 1 octave (or as the setting is set to)
 						BentMidiNoteEvent be = (BentMidiNoteEvent) ne;
 
 						for (Entry<Long, Integer> bend : be.bends.entrySet()) {

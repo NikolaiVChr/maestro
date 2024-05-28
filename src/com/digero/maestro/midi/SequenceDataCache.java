@@ -373,6 +373,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		songLengthTicks = lastTick;
 	}
 
+	@SuppressWarnings("unused")
 	private String formatBytes(byte[] portChange) {
 		StringBuilder str = new StringBuilder();
 		for (byte by : portChange) {

@@ -5,7 +5,6 @@ import java.util.Map;
 
 import com.digero.common.midi.Note;
 import com.digero.maestro.midi.MidiNoteEvent;
-import com.digero.maestro.midi.NoteEvent;
 
 public class LotroCombiDrumInfo {
 

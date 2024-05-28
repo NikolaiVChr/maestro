@@ -264,6 +264,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 			case SONG_DURATION:
 			case TEMPO:
 			case DELETE_MINIMAL_NOTES:
+			case KEEP_ZERO_DURATION_NOTES:
 			case SKIP_SILENCE_AT_START:
 			// Ignore
 			break;

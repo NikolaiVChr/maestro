@@ -141,6 +141,7 @@ public class TimeSignature implements MidiConstants {
 		}
 	}
 
+	@SuppressWarnings("unused")
 	private static boolean verifyDenom(int numerator, int denominator) {
 		// This will produce a divide by zero in TimingInfo if allowed, so return false.
 		return ((numerator / (double) denominator < 0.75) ? 16 : 8) * 4 / denominator >= 4;

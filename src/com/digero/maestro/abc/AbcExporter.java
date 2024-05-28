@@ -36,7 +36,6 @@ import com.digero.maestro.midi.BentAbcNoteEvent;
 import com.digero.maestro.midi.BentMidiNoteEvent;
 import com.digero.maestro.midi.Chord;
 import com.digero.maestro.midi.MidiNoteEvent;
-import com.digero.maestro.midi.NoteEvent;
 import com.digero.maestro.midi.TrackInfo;
 
 public class AbcExporter {

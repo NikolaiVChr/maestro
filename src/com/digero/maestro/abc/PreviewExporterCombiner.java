@@ -21,7 +21,6 @@ import com.digero.common.util.Triple;
 import com.digero.maestro.abc.AbcExporter.ExportTrackInfo;
 import com.digero.maestro.midi.AbcNoteEvent;
 import com.digero.maestro.midi.Chord;
-import com.digero.maestro.midi.NoteEvent;
 
 /**
  * This class is for compressing 15+ parts into 15 midi channels using a variety of methods.
