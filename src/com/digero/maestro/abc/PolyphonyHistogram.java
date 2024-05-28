@@ -13,6 +13,7 @@ import java.util.TreeMap;
 import com.digero.common.abc.LotroInstrumentSampleDuration;
 import com.digero.common.midi.ITempoCache;
 import com.digero.common.midi.Note;
+import com.digero.maestro.midi.AbcNoteEvent;
 import com.digero.maestro.midi.NoteEvent;
 
 public class PolyphonyHistogram {
@@ -29,11 +30,11 @@ public class PolyphonyHistogram {
 	 * @param events
 	 * @throws IOException 
 	 */
-	public static void count(AbcPart part, List<NoteEvent> events) throws IOException {
+	public static void count(AbcPart part, List<AbcNoteEvent> events) throws IOException {
 		if (!enabled) return;
 		TreeMap<Long, Integer> partMap = new TreeMap<>();
-		List<NoteEvent> done = new ArrayList<>();
-		for (NoteEvent event : events) {
+		List<AbcNoteEvent> done = new ArrayList<>();
+		for (AbcNoteEvent event : events) {
 			if (event.note.id == Note.REST.id || done.contains(event)) {
 				continue;
 			}
@@ -41,7 +42,7 @@ public class PolyphonyHistogram {
 			ITempoCache tc = event.getTempoCache();
 			QuantizedTimingInfo qtm = (QuantizedTimingInfo) tc;
 			
-			NoteEvent check = event;
+			AbcNoteEvent check = event;
 			while (check.tiesTo != null) {
 				check = check.tiesTo;
 				done.add(check);

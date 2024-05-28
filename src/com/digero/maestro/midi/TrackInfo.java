@@ -39,7 +39,7 @@ public class TrackInfo implements MidiConstants {
 	private KeySignature keySignature = null;
 	private Set<Integer> instruments;
 	private Set<String> instrumentExtensions;
-	private List<NoteEvent> noteEvents;
+	private List<MidiNoteEvent> noteEvents;
 	private SortedSet<Integer> notesInUse;// Used for knowing which drum sounds to display in DrumPanel
 	private boolean isDrumTrack;
 	private final int minVelocity;
@@ -77,7 +77,7 @@ public class TrackInfo implements MidiConstants {
 		instrumentExtensions = new HashSet<>();
 		noteEvents = new ArrayList<>();
 		notesInUse = new TreeSet<>();
-		List<NoteEvent>[] notesOn = new List[CHANNEL_COUNT_ABC];
+		List<MidiNoteEvent>[] notesOn = new List[CHANNEL_COUNT_ABC];
 		int zeroNotesRemoved = 0;
 
 		int minVelocity = Integer.MAX_VALUE;
@@ -85,7 +85,7 @@ public class TrackInfo implements MidiConstants {
 
 		int[] pitchBend = new int[CHANNEL_COUNT_ABC];
 
-		List<BentNoteEvent> allBentNotes = new ArrayList<>();
+		List<BentMidiNoteEvent> allBentNotes = new ArrayList<>();
 
 		long tick = -10000000;
 		for (int j = 0, sz = track.size(); j < sz; j++) {
@@ -101,25 +101,24 @@ public class TrackInfo implements MidiConstants {
 						int bend = entry.getValue();
 						long bendTick = entry.getKey();
 						if (bend != pitchBend[ch]) {
-							List<NoteEvent> bentNotes = new ArrayList<>();
+							List<MidiNoteEvent> bentNotes = new ArrayList<>();
 							if (notesOn[ch] != null) {
-								for (NoteEvent ne : notesOn[ch]) {
-									if (!(ne instanceof BentNoteEvent) && bend != 0) {
+								for (MidiNoteEvent ne : notesOn[ch]) {
+									if (!(ne instanceof BentMidiNoteEvent) && bend != 0) {
 										// This note is playing while this bend happens
 										// Lets convert it to a BentNoteEvent
-										BentNoteEvent be = new BentNoteEvent(ne.note, ne.velocity, ne.getStartTick(),
-												ne.getEndTick(), ne.getTempoCache());
+										BentMidiNoteEvent be = new BentMidiNoteEvent(ne.note, ne.velocity, ne.getStartTick(),
+												ne.getEndTick(), ne.getTempoCache(), ne.midiPan);
 										allBentNotes.add(be);
-										be.setMidiPan(ne.midiPan);
 										be.addBend(ne.getStartTick(), 0);// we need this initial bend in NoteGraph class
 										noteEvents.remove(ne);
 										ne = be;
 										noteEvents.add(ne);
 									}
-									if (ne instanceof BentNoteEvent && ((BentNoteEvent) ne).getBend(bendTick) != bend) {
+									if (ne instanceof BentMidiNoteEvent && ((BentMidiNoteEvent) ne).getBend(bendTick) != bend) {
 										// The if statement prevents double bend commands,
 										// which will make an extra split.
-										((BentNoteEvent) ne).addBend(bendTick, bend);
+										((BentMidiNoteEvent) ne).addBend(bendTick, bend);
 									}
 									bentNotes.add(ne);
 								}
@@ -177,9 +176,9 @@ public class TrackInfo implements MidiConstants {
 
 					// If this is a Note ON and was preceded by a similar Note ON without a Note OFF, lets turn the preceding note off
 					// If this is a Note OFF lets do same, but also delete the preceding note if it has zero duration.
-					Iterator<NoteEvent> iter = notesOn[c].iterator();
+					Iterator<MidiNoteEvent> iter = notesOn[c].iterator();
 					while (iter.hasNext()) {
-						NoteEvent ne = iter.next();
+						MidiNoteEvent ne = iter.next();
 						if (ne.note.id == noteId) {
 							iter.remove();
 							ne.setEndTick(tick);
@@ -206,17 +205,15 @@ public class TrackInfo implements MidiConstants {
 							continue; // Note was probably bent out of range. Not great, but not a reason to fail.
 						}
 
-						NoteEvent ne = new NoteEvent(note, velocity, tick, tick, sequenceCache);
+						MidiNoteEvent ne = new MidiNoteEvent(note, velocity, tick, tick, sequenceCache, sequenceCache.getPanMap().get(c, tick));
 						if (!isDrumTrack && sequenceCache.getBendMap().get(c, tick) != 0) {
 							// pitch bend active in channel already when note starts
-							BentNoteEvent be = new BentNoteEvent(note, velocity, tick, tick, sequenceCache);
+							BentMidiNoteEvent be = new BentMidiNoteEvent(note, velocity, tick, tick, sequenceCache, sequenceCache.getPanMap().get(c, tick));
 							allBentNotes.add(be);
 							be.addBend(tick, sequenceCache.getBendMap().get(c, tick));
 							ne = be;
 						}
-						ne.setMidiPan(sequenceCache.getPanMap().get(c, tick));// We don't set this in NoteEvent
-																				// constructor as only MIDI notes will
-																				// get this set, abc notes not.
+						
 
 
 						if (velocity > maxVelocity)
@@ -264,11 +261,11 @@ public class TrackInfo implements MidiConstants {
 			}
 		}
 
-		for (BentNoteEvent be : allBentNotes) {
+		for (BentMidiNoteEvent be : allBentNotes) {
 			// All bent notes that span more than an octave will
 			// already here be split into small pieces.
 			if (Math.abs(be.getMaxBend() - be.getMinBend()) > miscSettings.maxRangeForNewBendMethod) {
-				List<NoteEvent> prematureSplit = be.split();
+				List<MidiNoteEvent> prematureSplit = be.split();
 				noteEvents.addAll(prematureSplit);
 				noteEvents.remove(be);
 			} else {
@@ -280,14 +277,14 @@ public class TrackInfo implements MidiConstants {
 
 		// Turn off notes that are on at the end of the song. This shouldn't happen...
 		int ctNotesOn = 0;
-		for (List<NoteEvent> notesOnChannel : notesOn) {
+		for (List<MidiNoteEvent> notesOnChannel : notesOn) {
 			if (notesOnChannel != null)
 				ctNotesOn += notesOnChannel.size();
 		}
 		if (ctNotesOn > 0) {
 			System.err.println((ctNotesOn) + " note(s) not turned off at the end of the track.");
 
-			for (List<NoteEvent> notesOnChannel : notesOn) {
+			for (List<MidiNoteEvent> notesOnChannel : notesOn) {
 				if (notesOnChannel != null)
 					noteEvents.removeAll(notesOnChannel);
 			}
@@ -347,7 +344,7 @@ public class TrackInfo implements MidiConstants {
 	}
 
 	/** Gets an unmodifiable list of the note events in this track. */
-	public List<NoteEvent> getEvents() {
+	public List<MidiNoteEvent> getEvents() {
 		return noteEvents;
 	}
 

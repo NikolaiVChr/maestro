@@ -17,7 +17,8 @@ import com.digero.common.midi.IBarNumberCache;
 import com.digero.common.midi.ITempoCache;
 import com.digero.common.midi.TimeSignature;
 import com.digero.common.util.Util;
-import com.digero.maestro.midi.BentNoteEvent;
+import com.digero.maestro.midi.BentMidiNoteEvent;
+import com.digero.maestro.midi.MidiNoteEvent;
 import com.digero.maestro.midi.NoteEvent;
 import com.digero.maestro.midi.SequenceDataCache;
 import com.digero.maestro.midi.SequenceDataCache.TempoEvent;
@@ -226,18 +227,18 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 
 			// Lets us build an array of all notes in this part
 			// Combine-priorities means some notes might be added several times.
-			ArrayList<NoteEvent> eventList = new ArrayList<>();
+			ArrayList<MidiNoteEvent> eventList = new ArrayList<>();
 			for (int t = 0; t < tracks; t++) {
 				if (abcPart.isTrackEnabled(t)) {
 					int scoreMultiplier = (song.isPriorityActive() && abcPart.getEnabledTrackCount() > 1
 							&& abcPart.isTrackPriority(t)) ? COMBINE_PRIORITY_MULTIPLIER : 1;
 					if (abcPart.sectionsModified.get(t) == null && abcPart.nonSection.get(t) == null) {
 						eventList.addAll(abcPart.getTrackEvents(t));
-						for (NoteEvent note : abcPart.getTrackEvents(t)) {
+						for (MidiNoteEvent note : abcPart.getTrackEvents(t)) {
 							note.combinePrioritiesScoreMultiplier = scoreMultiplier;
 						}
 					} else {
-						for (NoteEvent note : abcPart.getTrackEvents(t)) {
+						for (MidiNoteEvent note : abcPart.getTrackEvents(t)) {
 							if (abcPart.getAudible(t, note.getStartTick()) && abcPart.shouldPlay(note, t)) {
 								note.combinePrioritiesScoreMultiplier = scoreMultiplier;
 								eventList.add(note);
@@ -292,7 +293,7 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 				}
 
 				int highest = -1;
-				for (NoteEvent ne : eventList) {
+				for (MidiNoteEvent ne : eventList) {
 					int endingWeightFinal = endingWeight;
 					if (!abcPart.getInstrument().sustainable) {
 						endingWeightFinal /= endingSustainedWeightFactor;
@@ -327,9 +328,9 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 						}
 					}
 
-					if (ne instanceof BentNoteEvent) {
+					if (ne instanceof BentMidiNoteEvent) {
 						// bent notes scores (the bent notes which range is less than 1 octave
-						BentNoteEvent be = (BentNoteEvent) ne;
+						BentMidiNoteEvent be = (BentMidiNoteEvent) ne;
 
 						for (Entry<Long, Integer> bend : be.bends.entrySet()) {
 							long tick = bend.getKey();

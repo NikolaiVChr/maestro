@@ -39,7 +39,8 @@ import com.digero.common.util.ParseException;
 import com.digero.common.util.Version;
 import com.digero.maestro.abc.AbcPartEvent.AbcPartProperty;
 import com.digero.maestro.abc.AbcSongEvent.AbcSongProperty;
-import com.digero.maestro.midi.BentNoteEvent;
+import com.digero.maestro.midi.BentMidiNoteEvent;
+import com.digero.maestro.midi.MidiNoteEvent;
 import com.digero.maestro.midi.NoteEvent;
 import com.digero.maestro.midi.SequenceDataCache;
 import com.digero.maestro.midi.SequenceInfo;
@@ -442,7 +443,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		}
 	};
 
-	public List<NoteEvent> getTrackEvents(int track) {
+	public List<MidiNoteEvent> getTrackEvents(int track) {
 		return abcSong.getSequenceInfo().getTrackInfo(track).getEvents();
 	}
 
@@ -506,8 +507,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				dstNote = getDrumMap(track).get(noteId);
 
 			return (dstNote == LotroDrumInfo.DISABLED.note.id) ? null : Note.fromId(dstNote);
-		} else if (ne instanceof BentNoteEvent) {
-			BentNoteEvent be = (BentNoteEvent) ne;
+		} else if (ne instanceof BentMidiNoteEvent) {
+			BentMidiNoteEvent be = (BentMidiNoteEvent) ne;
 			int minBend = be.getMinBend();
 			int maxBend = be.getMaxBend();
 			int transpose = getTranspose(track, tickStart);
@@ -566,17 +567,18 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	}
 
 	public boolean shouldPlay(NoteEvent ne, int track) {
-		if (ne.midiPan == -1) {
-			// This should never happen, all midi note events should have pan set.
+		if (!(ne instanceof MidiNoteEvent)) {
 			return true;
 		}
-		if (!playCenter[track] && ne.midiPan == MidiConstants.PAN_CENTER) {
+		MidiNoteEvent mne = (MidiNoteEvent) ne;
+		
+		if (!playCenter[track] && mne.midiPan == MidiConstants.PAN_CENTER) {
 			return false;
 		}
-		if (!playLeft[track] && ne.midiPan < MidiConstants.PAN_CENTER) {
+		if (!playLeft[track] && mne.midiPan < MidiConstants.PAN_CENTER) {
 			return false;
 		}
-		if (!playRight[track] && ne.midiPan > MidiConstants.PAN_CENTER) {
+		if (!playRight[track] && mne.midiPan > MidiConstants.PAN_CENTER) {
 			return false;
 		}
 		return true;
@@ -599,7 +601,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 
 		for (int t = 0; t < getTrackCount(); t++) {
 			if (isTrackEnabled(t)) {
-				for (NoteEvent ne : getTrackEvents(t)) {
+				for (MidiNoteEvent ne : getTrackEvents(t)) {
 					if (mapNote(t, ne.note.id, ne.getStartTick()) != null && shouldPlay(ne, t)) {
 						if (ne.getStartTick() < startTick)
 							startTick = ne.getStartTick();
@@ -624,10 +626,10 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		for (int t = 0; t < getTrackCount(); t++) {
 			if (isTrackEnabled(t)) {
 				int notesToCheck = 500;
-				List<NoteEvent> evts = getTrackEvents(t);
-				ListIterator<NoteEvent> iter = evts.listIterator(evts.size());
+				List<MidiNoteEvent> evts = getTrackEvents(t);
+				ListIterator<MidiNoteEvent> iter = evts.listIterator(evts.size());
 				while (iter.hasPrevious()) {
-					NoteEvent ne = iter.previous();
+					MidiNoteEvent ne = iter.previous();
 					Note tone = mapNote(t, ne.note.id, ne.getStartTick());
 					if (tone != null && shouldPlay(ne, t)) {
 						long noteEndTick;

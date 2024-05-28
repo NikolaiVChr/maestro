@@ -37,11 +37,11 @@ public class Chord implements AbcConstants {
 	private long startTick;
 	private long endTick;
 	private boolean hasTooManyNotes = false;
-	private List<NoteEvent> notes = new ArrayList<>();
+	private List<AbcNoteEvent> notes = new ArrayList<>();
 	private int highest = 0;
 	private int lowest = 200;
 
-	public Chord(NoteEvent firstNote) {
+	public Chord(AbcNoteEvent firstNote) {
 		tempoCache = firstNote.getTempoCache();
 		startTick = firstNote.getStartTick();
 		endTick = firstNote.getEndTick();
@@ -49,7 +49,7 @@ public class Chord implements AbcConstants {
 	}
 
 	public boolean isRest() {
-		for (NoteEvent evt : notes) {
+		for (AbcNoteEvent evt : notes) {
 			if (Note.REST != evt.note) {
 				return false;
 			}
@@ -60,7 +60,7 @@ public class Chord implements AbcConstants {
 	public boolean hasRestAndNotes() {
 		boolean hasNotes = false;
 		boolean hasRests = false;
-		for (NoteEvent evt : notes) {
+		for (AbcNoteEvent evt : notes) {
 			if (Note.REST == evt.note) {
 				hasRests = true;
 			} else if (Note.REST != evt.note) {
@@ -98,11 +98,11 @@ public class Chord implements AbcConstants {
 		return hasTooManyNotes;
 	}
 
-	public NoteEvent get(int i) {
+	public AbcNoteEvent get(int i) {
 		return notes.get(i);
 	}
 
-	public boolean add(NoteEvent ne, boolean force) {
+	public boolean add(AbcNoteEvent ne, boolean force) {
 		while (force && size() >= MAX_CHORD_NOTES) {
 			remove(size() - 1);
 			hasTooManyNotes = true;
@@ -110,7 +110,7 @@ public class Chord implements AbcConstants {
 		return add(ne);
 	}
 
-	public boolean add(NoteEvent ne) {
+	public boolean add(AbcNoteEvent ne) {
 		if (ne.getLengthTicks() == 0) {
 			hasTooManyNotes = true;
 			return false;
@@ -127,24 +127,24 @@ public class Chord implements AbcConstants {
 		return true;
 	}
 
-	public NoteEvent remove(int i) {
+	public AbcNoteEvent remove(int i) {
 		if (size() <= 1)
 			return null;
 
-		NoteEvent ne = notes.remove(i);
+		AbcNoteEvent ne = notes.remove(i);
 		if (ne.getEndTick() == endTick)
 			recalcEndTick();
 
 		return ne;
 	}
 
-	public boolean remove(NoteEvent ne) {
+	public boolean remove(AbcNoteEvent ne) {
 		return notes.remove(ne);
 	}
 
 	public Dynamics calcDynamics() {
 		int velocity = Integer.MIN_VALUE;
-		for (NoteEvent ne : notes) {
+		for (AbcNoteEvent ne : notes) {
 			if (ne.note != Note.REST && ne.tiesFrom == null && ne.velocity > velocity)
 				velocity = ne.velocity;
 		}
@@ -170,15 +170,15 @@ public class Chord implements AbcConstants {
 		Collections.sort(notes);
 	}
 
-	public List<NoteEvent> prune(final boolean sustained, final boolean drum) {
+	public List<AbcNoteEvent> prune(final boolean sustained, final boolean drum) {
 		// Determine which notes to prune to remain with a max of 6
-		List<NoteEvent> deadNotes = new ArrayList<>();
+		List<AbcNoteEvent> deadNotes = new ArrayList<>();
 		if (size() > MAX_CHORD_NOTES) {
 			recalcEdges();
 
-			List<NoteEvent> newNotes = new ArrayList<>();
+			List<AbcNoteEvent> newNotes = new ArrayList<>();
 
-			Comparator<NoteEvent> keepMe = (n1, n2) -> {
+			Comparator<AbcNoteEvent> keepMe = (n1, n2) -> {
 
 				if (n1.note == Note.REST) {
 					return 1;
@@ -370,7 +370,7 @@ public class Chord implements AbcConstants {
 		return deadNotes;
 	}
 
-	public boolean addAlways(NoteEvent ne) {
+	public boolean addAlways(AbcNoteEvent ne) {
 		if (ne.getLengthTicks() == 0) {
 			hasTooManyNotes = true;
 			return false;
@@ -389,7 +389,7 @@ public class Chord implements AbcConstants {
 	private void recalcEdges() {
 		highest = 0;
 		lowest = 200;
-		for (NoteEvent evt : notes) {
+		for (AbcNoteEvent evt : notes) {
 			if (evt.note != Note.REST) {
 				if (evt.origPitch != 0) {
 					if (evt.origPitch > highest) {
@@ -413,7 +413,7 @@ public class Chord implements AbcConstants {
 	public Long getLongestEndTick() {
 		long endNoteTick = getStartTick();
 		if (!notes.isEmpty()) {
-			for (NoteEvent note : notes) {
+			for (AbcNoteEvent note : notes) {
 				if (note.note != Note.REST && note.getEndTick() > endNoteTick) {
 					endNoteTick = note.getEndTick();
 				}
@@ -423,8 +423,8 @@ public class Chord implements AbcConstants {
 	}
 
 	public void removeRests() {
-		List<NoteEvent> rests = new ArrayList<>();
-		for (NoteEvent evt : notes) {
+		List<AbcNoteEvent> rests = new ArrayList<>();
+		for (AbcNoteEvent evt : notes) {
 			if (Note.REST == evt.note) {
 				rests.add(evt);
 			}
@@ -436,7 +436,7 @@ public class Chord implements AbcConstants {
 	public void printIfUneven() {
 		long endNoteTick = getEndTick();
 		if (!notes.isEmpty()) {
-			for (NoteEvent note : notes) {
+			for (AbcNoteEvent note : notes) {
 				if (note.note != Note.REST && note.getEndTick() != endNoteTick) {
 					System.out.println("Note in chord has bad length! " + (note.getEndTick() - endNoteTick));
 				}

@@ -19,6 +19,7 @@ import com.digero.common.midi.PanGenerator;
 import com.digero.common.util.Pair;
 import com.digero.common.util.Triple;
 import com.digero.maestro.abc.AbcExporter.ExportTrackInfo;
+import com.digero.maestro.midi.AbcNoteEvent;
 import com.digero.maestro.midi.Chord;
 import com.digero.maestro.midi.NoteEvent;
 
@@ -400,7 +401,7 @@ public class PreviewExporterCombiner {
 				long startBChord = bChord.getStartTick();
 				for (int k = 0; k < aChord.size(); k++) {
 					// Iterate the aChord notes
-					NoteEvent evtA = aChord.get(k);
+					AbcNoteEvent evtA = aChord.get(k);
 					if (Note.REST == evtA.note) {
 						continue;
 					}
@@ -412,7 +413,7 @@ public class PreviewExporterCombiner {
 					// long startANote = evt.getStartTick();
 					for (int l = 0; l < bChord.size(); l++) {
 						// Iterate the bChord notes
-						NoteEvent evtB = bChord.get(l);
+						AbcNoteEvent evtB = bChord.get(l);
 						int evtIdB = evtB.note.id;
 						if (evtIdB != evtAId) {
 							continue;

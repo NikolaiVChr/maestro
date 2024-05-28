@@ -26,36 +26,29 @@ import com.digero.common.midi.ITempoCache;
 import com.digero.common.midi.Note;
 
 public class NoteEvent implements Comparable<NoteEvent> {
-	private final ITempoCache tempoCache;
+	protected final ITempoCache tempoCache;
 
 	public final Note note;
 	public final int velocity;
-	public int midiPan = -1;
 
-	private long startTick;
-	private long endTick;
-	private long startMicrosCached;
-	private long endMicrosCached;
-
-	public NoteEvent tiesFrom = null;
-	public NoteEvent tiesTo = null;
-	public long continues = 0;
-
-	// public List<NoteEvent> origEvent;
-	public boolean alreadyMapped = false;
+	protected long startTick;
+	protected long endTick;
+	protected long startMicrosCached;
+	protected long endMicrosCached;
 
 	// private Map<AbcPart, Boolean> pruneMap = null;
 
-	public int origPitch = 0;
+	
 	public boolean doubledNote = false;
-	public int combinePrioritiesScoreMultiplier = 1;// This is a temp variable used by QuantizedTimingInfo
+	
 
 	public NoteEvent(Note note, int velocity, long startTick, long endTick, ITempoCache tempoCache) {
 		assert note != null;
 		this.note = note;
 		this.velocity = velocity;
 		this.tempoCache = tempoCache;
-		setStartTick(startTick);
+		this.startTick = startTick;
+		startMicrosCached = -1;//important since we set startTick directly
 		setEndTick(endTick);
 	}
 
@@ -89,14 +82,6 @@ public class NoteEvent implements Comparable<NoteEvent> {
 		return endTick - startTick;
 	}
 
-	public long getFullLengthTicks() {
-		long fullEndTick = endTick;
-		for (NoteEvent neTie = tiesTo; neTie != null; neTie = neTie.tiesTo) {
-			fullEndTick = neTie.endTick;
-		}
-		return fullEndTick - startTick;
-	}
-
 	public long getStartMicros() {
 		if (startMicrosCached == -1)
 			startMicrosCached = tempoCache.tickToMicros(startTick);
@@ -115,63 +100,23 @@ public class NoteEvent implements Comparable<NoteEvent> {
 		return getEndMicros() - getStartMicros();
 	}
 
-	public NoteEvent getTieStart() {
-		if (tiesFrom == null)
-			return this;
-		assert tiesFrom.startTick < this.startTick;
-		return tiesFrom.getTieStart();
-	}
-
-	public NoteEvent getTieEnd() {
-		if (tiesTo == null)
-			return this;
-		assert tiesTo.endTick > this.endTick;
-		return tiesTo.getTieEnd();
-	}
-
-	/**
-	 * Splits the NoteEvent into two events with a tie between them.
-	 * 
-	 * @param splitPointTick The tick index to split the NoteEvent.
-	 * @return The new NoteEvent that was created starting at splitPointTick.
-	 */
-	public NoteEvent splitWithTieAtTick(long splitPointTick) {
-		assert splitPointTick > startTick && splitPointTick < endTick;
-
-		NoteEvent next = new NoteEvent(note, velocity, splitPointTick, endTick, tempoCache);
-		setEndTick(splitPointTick);
-		next.origPitch = origPitch;
-
-		if (note != Note.REST) {
-			if (this.tiesTo != null) {
-				next.tiesTo = this.tiesTo;
-				this.tiesTo.tiesFrom = next;
-			}
-			next.tiesFrom = this;
-			this.tiesTo = next;
-		}
-		next.continues = this.continues;
-		return next;
-	}
-
-	@Override
+	/*@Override
 	public boolean equals(Object obj) {
 		if (obj instanceof NoteEvent) {
 			NoteEvent that = (NoteEvent) obj;
-			return (this.startTick == that.startTick) && (this.endTick == that.endTick)
+			return this.getStartTick() == that.getStartTick()
+					&& this.getEndTick() == that.getEndTick()
 					&& (this.note.id == that.note.id) && this.velocity == that.velocity
-					&& ((this.tiesFrom == null && that.tiesFrom == null) || (this.tiesFrom != null && that.tiesFrom != null))
-					&& ((this.tiesTo == null && that.tiesTo == null) || (this.tiesTo != null && that.tiesTo != null))
-					&& this.tempoCache == that.getTempoCache()
-					&& this.midiPan == that.midiPan && ((this instanceof BentNoteEvent) == (that instanceof BentNoteEvent));
+					&& this.getTempoCache() == that.getTempoCache()
+					&& this.getClass() == that.getClass();
 		}
 		return false;
 	}
 
 	@Override
 	public int hashCode() {
-		return ((int) startTick) ^ ((int) endTick) ^ note.id ^ (velocity+1) ^ (midiPan+1);
-	}
+		return ((int) startTick) ^ ((int) endTick) ^ note.id ^ (velocity+1);
+	}*/
 
 	@Override
 	public int compareTo(NoteEvent that) {
@@ -190,17 +135,9 @@ public class NoteEvent implements Comparable<NoteEvent> {
 		return 0;
 	}
 
-	public String printout() {
-		return "Note " + note.id + " dura " + getFullLengthTicks() + " |";
-	}
-	
 	@Override
 	public String toString() {
-		return "Note " + note.toString() + " duraTicks=" + getFullLengthTicks() + " tick:"+startTick+"-"+endTick+" pan="+midiPan+" vol="+velocity+" TiesIsNull: "+(tiesFrom==null)+" "+(tiesTo == null)+" time: "+(getStartMicros()/1000000.0)+" to "+(getEndMicros()/1000000.0);
-	}
-
-	public void setMidiPan(int pan) {
-		midiPan = pan;
+		return getClass().getName()+": " + note.toString() + " duraTicks=" + getLengthTicks() + " tick:"+startTick+"-"+endTick+" vol="+velocity+" time: "+(getStartMicros()/1000000.0)+" to "+(getEndMicros()/1000000.0);
 	}
 
 	/*

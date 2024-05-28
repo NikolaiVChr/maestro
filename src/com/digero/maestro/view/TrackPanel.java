@@ -52,7 +52,8 @@ import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcPartEvent;
 import com.digero.maestro.abc.AbcPartEvent.AbcPartProperty;
 import com.digero.maestro.abc.DrumNoteMap;
-import com.digero.maestro.midi.BentNoteEvent;
+import com.digero.maestro.midi.BentMidiNoteEvent;
+import com.digero.maestro.midi.MidiNoteEvent;
 import com.digero.maestro.midi.NoteEvent;
 import com.digero.maestro.midi.TrackInfo;
 
@@ -599,12 +600,9 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 	private void updateBadTooltipText() {
 		if (abcPart.getInstrument().ordinal() == LotroInstrument.BASIC_CLARINET.ordinal()) {
 			int g3count = 0;
-			List<NoteEvent> nel = trackInfo.getEvents();
-			for (NoteEvent ne : nel) {
-				if (ne.tiesFrom != null) {
-					continue;
-				}
-				if (!(ne instanceof BentNoteEvent)) {
+			List<MidiNoteEvent> nel = trackInfo.getEvents();
+			for (MidiNoteEvent ne : nel) {
+				if (!(ne instanceof BentMidiNoteEvent)) {
 					Note mn = abcPart.mapNote(trackInfo.getTrackNumber(), ne.note.id, ne.getStartTick());
 					if (mn != null && abcPart.shouldPlay(ne, trackInfo.getTrackNumber()) && mn.id == Note.G3.id) {
 						g3count += 1;
@@ -619,12 +617,9 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 		} else if (abcPart.getInstrument().ordinal() == LotroInstrument.BASIC_PIBGORN.ordinal()) {
 			int acount = 0;
-			List<NoteEvent> nel = trackInfo.getEvents();
-			for (NoteEvent ne : nel) {
-				if (ne.tiesFrom != null) {
-					continue;
-				}
-				if (!(ne instanceof BentNoteEvent)) {
+			List<MidiNoteEvent> nel = trackInfo.getEvents();
+			for (MidiNoteEvent ne : nel) {
+				if (!(ne instanceof BentMidiNoteEvent)) {
 					Note mn = abcPart.mapNote(trackInfo.getTrackNumber(), ne.note.id, ne.getStartTick());
 					if (mn != null && abcPart.shouldPlay(ne, trackInfo.getTrackNumber())
 							&& (mn.id == Note.A2.id || mn.id == Note.A3.id || mn.id == Note.A4.id)) {
@@ -1087,8 +1082,8 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 			if (trackInfo.isDrumTrack() && !abcPart.isTrackEnabled(trackInfo.getTrackNumber()))
 				return true;
 
-			if (ne instanceof BentNoteEvent) {
-				BentNoteEvent be = (BentNoteEvent) ne;
+			if (ne instanceof BentMidiNoteEvent) {
+				BentMidiNoteEvent be = (BentMidiNoteEvent) ne;
 
 				lowId = transposeNote(be.getMinNote() + addition, ne.getStartTick());
 				highId = transposeNote(be.getMaxNote() + addition, ne.getStartTick());

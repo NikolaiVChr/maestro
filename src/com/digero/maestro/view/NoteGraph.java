@@ -18,6 +18,7 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collections;
@@ -43,7 +44,7 @@ import com.digero.common.util.Listener;
 import com.digero.common.util.Util;
 import com.digero.common.view.BarNumberLabel;
 import com.digero.common.view.ColorTable;
-import com.digero.maestro.midi.BentNoteEvent;
+import com.digero.maestro.midi.BentMidiNoteEvent;
 import com.digero.maestro.midi.NoteEvent;
 import com.digero.maestro.midi.SequenceDataCache;
 import com.digero.maestro.midi.SequenceInfo;
@@ -272,7 +273,10 @@ public class NoteGraph extends JPanel implements Listener<SequencerEvent>, IDisc
 		if (trackInfo == null)
 			return Collections.emptyList();
 
-		return trackInfo.getEvents();
+		List<NoteEvent> list = new ArrayList<>();
+		list.addAll(trackInfo.getEvents());
+		
+		return list;
 	}
 
 	private AffineTransform noteToScreenXForm = null; // Always use getTransform()
@@ -429,8 +433,8 @@ public class NoteGraph extends JPanel implements Listener<SequencerEvent>, IDisc
 	@SuppressWarnings("unchecked")
 	private void fillNote(Graphics2D g2, NoteEvent ne, int noteId, double minWidth, double height, double extraWidth,
 			double extraHeight) {
-		if (ne instanceof BentNoteEvent) {
-			BentNoteEvent be = (BentNoteEvent) ne;
+		if (ne instanceof BentMidiNoteEvent) {
+			BentMidiNoteEvent be = (BentMidiNoteEvent) ne;
 
 			Set<Entry<Long, Integer>> bendSet = be.bends.entrySet();
 			Object[] bends = bendSet.toArray();

@@ -31,16 +31,15 @@ import com.digero.common.midi.PanGenerator;
 import com.digero.common.util.Pair;
 import com.digero.common.util.Util;
 import com.digero.maestro.MaestroMain;
-import com.digero.maestro.midi.BentNoteEvent;
+import com.digero.maestro.midi.AbcNoteEvent;
+import com.digero.maestro.midi.BentAbcNoteEvent;
+import com.digero.maestro.midi.BentMidiNoteEvent;
 import com.digero.maestro.midi.Chord;
+import com.digero.maestro.midi.MidiNoteEvent;
 import com.digero.maestro.midi.NoteEvent;
 import com.digero.maestro.midi.TrackInfo;
 
 public class AbcExporter {
-	// Max parts for MIDI preview
-	private static final int MAX_PARTS = 24;// MidiConstants.CHANNEL_COUNT - 1; // Channel 0 is no longer reserved for
-											// metadata, and Track 9 is reserved for
-											// drums
 	private static final int MAX_RAID = 24; // Max number of parts that in any case can be played in lotro
 
 	private final List<AbcPart> parts;
@@ -214,10 +213,10 @@ public class AbcExporter {
 		Pair<Integer, Integer> trackNumber = exportPartToMidi(part, sequence, chords, pan, useLotroInstruments,
 				assignedChannels, chan, programChangeEveryChord);
 
-		List<NoteEvent> noteEvents = new ArrayList<>(chords.size());
+		List<AbcNoteEvent> noteEvents = new ArrayList<>(chords.size());
 		for (Chord chord : chords) {
 			for (int i = 0; i < chord.size(); i++) {
-				NoteEvent ne = chord.get(i);
+				AbcNoteEvent ne = chord.get(i);
 				// Skip rests and notes that are the continuation of a tied note
 				if (ne.note == Note.REST || ne.tiesFrom != null)
 					continue;
@@ -271,7 +270,7 @@ public class AbcExporter {
 			track.add(MidiFactory.createPanEvent(pan, channel));
 		}
 
-		List<NoteEvent> notesOn = new ArrayList<>();
+		List<AbcNoteEvent> notesOn = new ArrayList<>();
 
 		int noteDelta = 0;
 		if (!useLotroInstruments)
@@ -286,22 +285,22 @@ public class AbcExporter {
 			if (dynamics == null)
 				dynamics = Dynamics.DEFAULT;
 			for (int j = 0; j < chord.size(); j++) {
-				NoteEvent ne = chord.get(j);
+				AbcNoteEvent ne = chord.get(j);
 				// Skip rests and notes that are the continuation of a tied note
 				if (ne.note == Note.REST || ne.tiesFrom != null)
 					continue;
 
 				// Add note off events for any notes that have been turned off by this point
-				Iterator<NoteEvent> onIter = notesOn.iterator();
+				Iterator<AbcNoteEvent> onIter = notesOn.iterator();
 				while (onIter.hasNext()) {
-					NoteEvent on = onIter.next();
+					AbcNoteEvent on = onIter.next();
 
 					// Shorten the note to end at the same time that the next one starts
 					long endTick = on.getEndTick();
 					if (on.note.id == ne.note.id && on.getEndTick() > ne.getStartTick())
 						endTick = ne.getStartTick();
 
-					if (endTick <= ne.getStartTick()) {
+					if (endTick <= ne.getStartTick()) {//TODO: Review this closer, and check for compatibility with TrackInfo behavior of zero dura notes.
 						// This note has been turned off
 						onIter.remove();
 						track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, endTick));
@@ -322,7 +321,7 @@ public class AbcExporter {
 
 				if (endTick != ne.getEndTick()) {
 					int oPitch = ne.origPitch;
-					ne = new NoteEvent(ne.note, ne.velocity, ne.getStartTick(), endTick, qtm);
+					ne = new AbcNoteEvent(ne.note, ne.velocity, ne.getStartTick(), endTick, qtm, ne.origNote);
 					ne.origPitch = oPitch;
 				}
 
@@ -332,7 +331,7 @@ public class AbcExporter {
 			}
 		}
 
-		for (NoteEvent on : notesOn) {
+		for (AbcNoteEvent on : notesOn) {
 			track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, on.getEndTick()));
 		}
 
@@ -565,7 +564,7 @@ public class AbcExporter {
 
 			int notesWritten = 0;
 			for (int j = 0; j < c.size(); j++) {
-				NoteEvent evt = c.get(j);
+				AbcNoteEvent evt = c.get(j);
 				if (evt.getLengthTicks() == 0) {
 					assert false : "Zero-length note";
 					continue;
@@ -650,7 +649,7 @@ public class AbcExporter {
 	 */
 	private List<Chord> combineAndQuantize(AbcPart part, boolean addTies) throws AbcConversionException {
 		// Combine the events from the enabled tracks
-		List<NoteEvent> events = new ArrayList<>();
+		List<AbcNoteEvent> events = new ArrayList<>();
 		for (int t = 0; t < part.getTrackCount(); t++) {
 			if (part.isTrackEnabled(t)) {
 				boolean specialDrumNotes = false;
@@ -664,19 +663,17 @@ public class AbcExporter {
 						}
 					}
 				}
-				List<NoteEvent> listOfNotes = new ArrayList<>(part.getTrackEvents(t));
+				List<MidiNoteEvent> listOfNotes = new ArrayList<>(part.getTrackEvents(t));
 
 				if (specialDrumNotes) {
-					List<NoteEvent> extraList = new ArrayList<>();
-					List<NoteEvent> removeList = new ArrayList<>();
-					for (NoteEvent ne : listOfNotes) {
+					List<MidiNoteEvent> extraList = new ArrayList<>();
+					List<MidiNoteEvent> removeList = new ArrayList<>();
+					for (MidiNoteEvent ne : listOfNotes) {
 						Note possibleCombiNote = part.mapNote(t, ne.note.id, ne.getStartTick());
 						if (possibleCombiNote != null && possibleCombiNote.id > part.getInstrument().highestPlayable.id
 								&& possibleCombiNote.id <= LotroCombiDrumInfo.maxCombi.id) {
-							NoteEvent extra1 = LotroCombiDrumInfo.getId1(ne, possibleCombiNote);
-							NoteEvent extra2 = LotroCombiDrumInfo.getId2(ne, possibleCombiNote);
-							extra1.setMidiPan(ne.midiPan);
-							extra2.setMidiPan(ne.midiPan);
+							MidiNoteEvent extra1 = LotroCombiDrumInfo.getId1(ne, possibleCombiNote, ne.midiPan);
+							MidiNoteEvent extra2 = LotroCombiDrumInfo.getId2(ne, possibleCombiNote, ne.midiPan);
 							extraList.add(extra1);
 							extraList.add(extra2);
 							removeList.add(ne);
@@ -690,7 +687,7 @@ public class AbcExporter {
 					listOfNotes.addAll(extraList);
 				}
 
-				for (NoteEvent ne : listOfNotes) {
+				for (MidiNoteEvent ne : listOfNotes) {
 					// Skip notes that are outside of the play range.
 					if (ne.getEndTick() <= exportStartTick || ne.getStartTick() >= exportEndTick) {
 						//if (part.mapNoteEvent(t, ne) != null && part.shouldPlay(ne, t)) System.out.println(metadata.getSongTitle()+": Skipping note that are outside songs time range.\n"+ne);
@@ -707,7 +704,7 @@ public class AbcExporter {
 					}
 
 					if (mappedNote != null && part.shouldPlay(ne, t)) {
-						if (!(ne instanceof BentNoteEvent)) {
+						if (!(ne instanceof BentMidiNoteEvent)) {
 							assert mappedNote.id >= part.getInstrument().lowestPlayable.id : mappedNote;
 							assert mappedNote.id <= part.getInstrument().highestPlayable.id : mappedNote;
 						}
@@ -728,7 +725,7 @@ public class AbcExporter {
 						int velocity = part.getSectionNoteVelocity(t, ne);
 						velocity = (int) ((velocity + part.getTrackVolumeAdjust(t) + sva[0]) * 0.01f * (float) sva[1] * 0.01f * (float) sva[2]);
 
-						NoteEvent newNE = createNoteEvent(ne, mappedNote, velocity, startTick, endTick, qtm);
+						AbcNoteEvent newNE = createNoteEvent(ne, mappedNote, velocity, startTick, endTick, qtm);
 						if (!part.isPercussionPart()) {
 							int origId = part.mapNoteFullOctaves(t, ne.note.id, ne.getStartTick());
 							if (mappedNote.id != origId) {
@@ -745,25 +742,25 @@ public class AbcExporter {
 
 						if (doubling[0] && ne.note.id - 24 > Note.MIN.id) {
 							Note mappedNote2 = part.mapNote(t, ne.note.id - 24, ne.getStartTick());
-							NoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
+							AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
 							newNE2.doubledNote = true;// prune these first
 							events.add(newNE2);
 						}
 						if (doubling[1] && ne.note.id - 12 > Note.MIN.id) {
 							Note mappedNote2 = part.mapNote(t, ne.note.id - 12, ne.getStartTick());
-							NoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
+							AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
 							newNE2.doubledNote = true;
 							events.add(newNE2);
 						}
 						if (doubling[2] && ne.note.id + 12 < Note.MAX.id) {
 							Note mappedNote2 = part.mapNote(t, ne.note.id + 12, ne.getStartTick());
-							NoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
+							AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
 							newNE2.doubledNote = true;
 							events.add(newNE2);
 						}
 						if (doubling[3] && ne.note.id + 24 < Note.MAX.id) {
 							Note mappedNote2 = part.mapNote(t, ne.note.id + 24, ne.getStartTick());
-							NoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
+							AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
 							newNE2.doubledNote = true;
 							events.add(newNE2);
 						}
@@ -787,13 +784,13 @@ public class AbcExporter {
 
 		// Quantize the events
 		long lastEnding = 0;
-		NoteEvent lastEvent = null;
-		List<NoteEvent> extraEvents = new ArrayList<>();
-		List<NoteEvent> deleteEvents = new ArrayList<>();
+		AbcNoteEvent lastEvent = null;
+		List<AbcNoteEvent> extraEvents = new ArrayList<>();
+		List<AbcNoteEvent> deleteEvents = new ArrayList<>();
 		
 		int removedToAvoidDissonance = 0;
 		for (int cc = 0; cc < events.size() ; cc++) {
-			NoteEvent ne = events.get(cc);
+			AbcNoteEvent ne = events.get(cc);
 			if (addTies)
 				assert ne.note != Note.REST : "Rest detected!";
 			
@@ -814,7 +811,7 @@ public class AbcExporter {
 					
 					long halfMin = qtm.getTimingInfo(newStart, part).getMinNoteLengthTicks()/2;
 					for (int ccc = cc+1; ccc < events.size() && ccc < cc+40; ccc++) {
-						NoteEvent neLeft = events.get(ccc);
+						AbcNoteEvent neLeft = events.get(ccc);
 						if (neLeft.getStartTick() >= newStart && neLeft.getStartTick() < newStart+halfMin && neLeft.getStartTick() >= oldEnd) {
 							// So a note coming after our note, starts very soon after our note.
 							// It did not overlap in the midi and they will most likely overlap after quantization to minimal note length.
@@ -837,12 +834,12 @@ public class AbcExporter {
 				}
 			}
 
-			List<NoteEvent> bentNotes = quantizePitchBends(part, ne);
+			List<AbcNoteEvent> bentNotes = quantizePitchBends(part, ne);
 			
 			if (bentNotes != null) {
 				assert !bentNotes.contains(ne);
 				deleteEvents.add(ne);
-				for (NoteEvent bent : bentNotes) {
+				for (AbcNoteEvent bent : bentNotes) {
 					assert bent.note != Note.REST;
 					if (!addTies && qtm.getPrimaryExportTempoBPM() >= 50 && part.delay != 0) {
 						// Make delay on instrument be audible in preview
@@ -889,8 +886,8 @@ public class AbcExporter {
 		// Add initial rest if necessary
 		
 		if (events.get(0).getStartTick() > exportStartTick) {
-			events.add(0, new NoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, exportStartTick,
-					events.get(0).getStartTick(), qtm));
+			events.add(0, new AbcNoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, exportStartTick,
+					events.get(0).getStartTick(), qtm, null));
 		}
 
 		// Add a rest at the end if necessary
@@ -900,20 +897,20 @@ public class AbcExporter {
 				if (lastEvent.note == Note.REST) {
 					lastEvent.setEndTick(exportEndTick);
 				} else {
-					events.add(new NoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, lastEvent.getEndTick(),
-							exportEndTick, qtm));
+					events.add(new AbcNoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, lastEvent.getEndTick(),
+							exportEndTick, qtm, null));
 				}
 			}
 		}
 
 		// Remove duplicate notes
-		List<NoteEvent> notesOn = new ArrayList<>();
-		Iterator<NoteEvent> neIter = events.iterator();
+		List<AbcNoteEvent> notesOn = new ArrayList<>();
+		Iterator<AbcNoteEvent> neIter = events.iterator();
 		dupLoop: while (neIter.hasNext()) {
-			NoteEvent ne = neIter.next();
-			Iterator<NoteEvent> onIter = notesOn.iterator();
+			AbcNoteEvent ne = neIter.next();
+			Iterator<AbcNoteEvent> onIter = notesOn.iterator();
 			while (onIter.hasNext()) {
-				NoteEvent on = onIter.next();
+				AbcNoteEvent on = onIter.next();
 				if (on.getEndTick() < ne.getStartTick()) {
 					// This note has already been turned off
 					onIter.remove();
@@ -951,7 +948,7 @@ public class AbcExporter {
 		breakLongNotes(part, events, addTies);
 
 		List<Chord> chords = new ArrayList<>(events.size() / 2);
-		List<NoteEvent> tmpEvents = new ArrayList<>();
+		List<AbcNoteEvent> tmpEvents = new ArrayList<>();
 		
 		if (!addTies) {
 			try {
@@ -965,7 +962,7 @@ public class AbcExporter {
 		Chord curChord = new Chord(events.get(0));
 		chords.add(curChord);
 		for (int i = 1; i < events.size(); i++) {
-			NoteEvent ne = events.get(i);
+			AbcNoteEvent ne = events.get(i);
 
 			if (curChord.getStartTick() == ne.getStartTick()) {
 				// This note starts at the same time as the rest of the notes in the chord
@@ -974,7 +971,7 @@ public class AbcExporter {
 				curChord.addAlways(ne);
 				// if (addTies) assert curChord.hasRestAndNotes() : "addTies is true!";
 			} else {
-				List<NoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
+				List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
 						part.getInstrument() == LotroInstrument.BASIC_DRUM);
 				removeNotes(events, deadnotes, part);
 				if (!deadnotes.isEmpty()) {
@@ -995,10 +992,10 @@ public class AbcExporter {
 					long targetEndTick = Math.min(nextChord.getStartTick(), curChord.getEndTick());
 
 					for (int j = 0; j < curChord.size(); j++) {
-						NoteEvent jne = curChord.get(j);
+						AbcNoteEvent jne = curChord.get(j);
 						if (jne.getEndTick() > targetEndTick) {
 							// This note extends past the end of the chord; break it into two tied notes
-							NoteEvent next = jne.splitWithTieAtTick(targetEndTick);
+							AbcNoteEvent next = jne.splitWithTieAtTick(targetEndTick);
 
 							int ins = Collections.binarySearch(events, next);
 							if (ins < 0)
@@ -1036,8 +1033,8 @@ public class AbcExporter {
 					// length
 					if (curChord.getEndTick() > nextChord.getStartTick()) {
 						// If the chord is too long, add a short rest in the chord to shorten it
-						curChord.addAlways(new NoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, curChord.getStartTick(),
-								nextChord.getStartTick(), qtm));
+						curChord.addAlways(new AbcNoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, curChord.getStartTick(),
+								nextChord.getStartTick(), qtm, null));
 						// No pruning after a rest is added, as this is for preview and 6 notes plus a
 						// rest should be allowed.
 					}
@@ -1046,11 +1043,11 @@ public class AbcExporter {
 				// Insert a rest between the chords if needed
 				if (curChord.getEndTick() < nextChord.getStartTick()) {
 					tmpEvents.clear();
-					tmpEvents.add(new NoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, curChord.getEndTick(),
-							nextChord.getStartTick(), qtm));
+					tmpEvents.add(new AbcNoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, curChord.getEndTick(),
+							nextChord.getStartTick(), qtm, null));
 					breakLongNotes(part, tmpEvents, addTies);
 
-					for (NoteEvent restEvent : tmpEvents) {
+					for (AbcNoteEvent restEvent : tmpEvents) {
 						chords.add(new Chord(restEvent));
 					}
 				}
@@ -1072,7 +1069,7 @@ public class AbcExporter {
 				// before the next chord starts.
 
 				// Last chord needs to be pruned as that hasn't happened yet.
-				List<NoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
+				List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
 						part.getInstrument() == LotroInstrument.BASIC_DRUM);
 				removeNotes(events, deadnotes, part);// we need to set the pruned flag for last chord too.
 				curChord.recalcEndTick();
@@ -1083,10 +1080,10 @@ public class AbcExporter {
 				Chord nextChord = null;
 
 				for (int j = 0; j < curChord.size(); j++) {
-					NoteEvent jne = curChord.get(j);
+					AbcNoteEvent jne = curChord.get(j);
 					if (jne.getEndTick() > targetEndTick) {
 						// This note extends past the end of the chord; break it into two tied notes
-						NoteEvent next = jne.splitWithTieAtTick(targetEndTick);
+						AbcNoteEvent next = jne.splitWithTieAtTick(targetEndTick);
 						if (nextChord == null) {
 							nextChord = new Chord(next);
 							chords.add(nextChord);
@@ -1104,7 +1101,7 @@ public class AbcExporter {
 			}
 		} else {
 			// Last chord needs to be pruned as that hasn't happened yet.
-			List<NoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
+			List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
 					part.getInstrument() == LotroInstrument.BASIC_DRUM);
 			removeNotes(events, deadnotes, part);// we need to set the pruned flag for last chord too.
 			curChord.recalcEndTick();
@@ -1134,14 +1131,13 @@ public class AbcExporter {
 	}
 	*/
 
-	private NoteEvent createNoteEvent(NoteEvent oldNe, Note note, int velocity, long startTick, long endTick,
+	private AbcNoteEvent createNoteEvent(MidiNoteEvent oldNe, Note mappednote, int velocity, long startTick, long endTick,
 			ITempoCache tempos) {
-		if (oldNe instanceof BentNoteEvent) {
-			BentNoteEvent newNe = new BentNoteEvent(note, velocity, startTick, endTick, tempos);
-			newNe.setBends(((BentNoteEvent) oldNe).bends);
+		if (oldNe instanceof BentMidiNoteEvent) {
+			BentAbcNoteEvent newNe = new BentAbcNoteEvent(mappednote, velocity, startTick, endTick, tempos, (BentMidiNoteEvent) oldNe);
 			return newNe;
 		} else {
-			return new NoteEvent(note, velocity, startTick, endTick, tempos);
+			return new AbcNoteEvent(mappednote, velocity, startTick, endTick, tempos, oldNe);
 		}
 	}
 
@@ -1152,16 +1148,16 @@ public class AbcExporter {
 	 * @param ne   The note event to be processed
 	 * @return List of multiple NoteEvents
 	 */
-	private List<NoteEvent> quantizePitchBends(AbcPart part, NoteEvent ne) {
+	private List<AbcNoteEvent> quantizePitchBends(AbcPart part, AbcNoteEvent ne) {
 		// Handle pitch bend by subdividing tone into shorter quantized notes.
 		// By the time this method is ran, start and end tick of the bent tone is already quantized.
-		if (ne instanceof BentNoteEvent) {
-			BentNoteEvent be = (BentNoteEvent) ne;
+		if (ne instanceof BentAbcNoteEvent) {
+			BentAbcNoteEvent be = (BentAbcNoteEvent) ne;
 			int noteID = be.note.id;
 			assert be.note != Note.REST;
 			int startPitch = noteID;
-			List<NoteEvent> benders = new ArrayList<>();
-			NoteEvent current = null;
+			List<AbcNoteEvent> benders = new ArrayList<>();
+			AbcNoteEvent current = null;
 			boolean changeAtLastGrid = true;
 			long lastGridTick = 0L;
 			for (long t = be.getStartTick(); t < be.getEndTick(); t++) {
@@ -1228,7 +1224,7 @@ public class AbcExporter {
 		}
 	}
 
-	private NoteEvent createBentSubNote(BentNoteEvent be, int noteID, NoteEvent current, long tick) {
+	private AbcNoteEvent createBentSubNote(BentAbcNoteEvent be, int noteID, AbcNoteEvent current, long tick) {
 		if (current != null) {
 			current.setEndTick(tick);
 		}
@@ -1238,14 +1234,13 @@ public class AbcExporter {
 			return null;
 		}
 		assert newNote != Note.REST;
-		NoteEvent sub = new NoteEvent(newNote, be.velocity, tick, be.getEndTick(), be.getTempoCache());
-		sub.setMidiPan(be.midiPan);
+		AbcNoteEvent sub = new AbcNoteEvent(newNote, be.velocity, tick, be.getEndTick(), be.getTempoCache(), be.origNote);
 		return sub;
 	}
 
-	private void breakLongNotes(AbcPart part, List<NoteEvent> events, boolean addTies) {
+	private void breakLongNotes(AbcPart part, List<AbcNoteEvent> events, boolean addTies) {
 		for (int i = 0; i < events.size(); i++) {
-			NoteEvent ne = events.get(i);
+			AbcNoteEvent ne = events.get(i);
 			TimingInfo tm = qtm.getTimingInfo(ne.getStartTick(), part);
 
 			long maxNoteEndTick = qtm.quantize(
@@ -1281,7 +1276,7 @@ public class AbcExporter {
 					// TODO: When making DP-CIT this assert kicks in at 51 BPM. But why..
 					//assert (ne.getEndTick() - maxNoteEndTick >= qtm.getTimingInfo(maxNoteEndTick, part)
 					//		.getMinNoteLengthTicks());
-					NoteEvent next = new NoteEvent(ne.note, ne.velocity, maxNoteEndTick, ne.getEndTick(), qtm);
+					AbcNoteEvent next = new AbcNoteEvent(ne.note, ne.velocity, maxNoteEndTick, ne.getEndTick(), qtm, ne.origNote);
 					next.origPitch = ne.origPitch;
 					int ins = Collections.binarySearch(events, next);
 					if (ins < 0)
@@ -1368,7 +1363,7 @@ public class AbcExporter {
 					assert (ne.getEndTick() - targetEndTick >= qtm.getTimingInfo(targetEndTick, part)
 							.getMinNoteLengthTicks());
 					assert (targetEndTick - ne.getStartTick() >= tm.getMinNoteLengthTicks());
-					NoteEvent next = ne.splitWithTieAtTick(targetEndTick);
+					AbcNoteEvent next = ne.splitWithTieAtTick(targetEndTick);
 					int ins = Collections.binarySearch(events, next);
 					if (ins < 0)
 						ins = -ins - 1;
@@ -1376,13 +1371,13 @@ public class AbcExporter {
 					events.add(ins, next);
 				}
 			}
-			assert ((part.delay > 0 && !addTies) || ne.getLengthTicks() >= tm.getMinNoteLengthTicks());
+			assert ((part.delay > 0 && !addTies) || ne.getLengthTicks() >= tm.getMinNoteLengthTicks()):part.delay +" " + addTies +" "+ ne.getLengthTicks() +">="+ tm.getMinNoteLengthTicks()+" \n"+ne;
 		}
 	}
 
 	/** Removes a note and breaks any ties the note has. */
-	private void removeNote(List<NoteEvent> events, int i) {
-		NoteEvent ne = events.remove(i);
+	private void removeNote(List<AbcNoteEvent> events, int i) {
+		AbcNoteEvent ne = events.remove(i);
 
 		// If the note is tied from another (previous) note, break the incoming tie
 		if (ne.tiesFrom != null) {
@@ -1391,13 +1386,13 @@ public class AbcExporter {
 		}
 
 		// Remove the remainder of the notes that this is tied to (if any)
-		for (NoteEvent neTie = ne.tiesTo; neTie != null; neTie = neTie.tiesTo) {
+		for (AbcNoteEvent neTie = ne.tiesTo; neTie != null; neTie = neTie.tiesTo) {
 			events.remove(neTie);
 		}
 	}
 
-	private void removeNotes(List<NoteEvent> events, List<NoteEvent> notes, AbcPart part) {
-		for (NoteEvent ne : notes) {
+	private void removeNotes(List<AbcNoteEvent> events, List<AbcNoteEvent> notes, AbcPart part) {
+		for (AbcNoteEvent ne : notes) {
 
 			// If the note is tied from another (previous) note, break the incoming tie
 			if (ne.tiesFrom != null) {
@@ -1409,7 +1404,7 @@ public class AbcExporter {
 				 */
 
 			// Remove the remainder of the notes that this is tied to (if any)
-			for (NoteEvent neTie = ne.tiesTo; neTie != null; neTie = neTie.tiesTo) {
+			for (AbcNoteEvent neTie = ne.tiesTo; neTie != null; neTie = neTie.tiesTo) {
 				events.remove(neTie);
 			}
 			ne.tiesTo = null;
@@ -1418,7 +1413,7 @@ public class AbcExporter {
 
 	/** Removes a note and breaks any ties the note has. */
 	@Deprecated
-	private void removeNote(List<NoteEvent> events, NoteEvent ne) {
+	private void removeNote(List<AbcNoteEvent> events, AbcNoteEvent ne) {
 		removeNote(events, events.indexOf(ne));
 	}
 
@@ -1547,11 +1542,11 @@ public class AbcExporter {
 	public static class ExportTrackInfo {
 		public final int trackNumber;
 		public final AbcPart part;
-		public final List<NoteEvent> noteEvents;
+		public final List<AbcNoteEvent> noteEvents;
 		public final Integer channel;
 		public final Integer patch;
 
-		public ExportTrackInfo(int trackNumber, AbcPart part, List<NoteEvent> noteEvents, Integer channel, int patch) {
+		public ExportTrackInfo(int trackNumber, AbcPart part, List<AbcNoteEvent> noteEvents, Integer channel, int patch) {
 			this.trackNumber = trackNumber;
 			this.part = part;
 			this.noteEvents = noteEvents;

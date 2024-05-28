@@ -4,6 +4,7 @@ import java.util.EnumMap;
 import java.util.Map;
 
 import com.digero.common.midi.Note;
+import com.digero.maestro.midi.MidiNoteEvent;
 import com.digero.maestro.midi.NoteEvent;
 
 public class LotroCombiDrumInfo {
@@ -61,16 +62,16 @@ public class LotroCombiDrumInfo {
 		return noteId >= minCombi.id && noteId <= maxCombi.id;
 	}
 
-	public static NoteEvent getId1(NoteEvent ne, Note extraNote) {
+	public static MidiNoteEvent getId1(MidiNoteEvent ne, Note extraNote, int pan) {
 		Note n1 = firstNotes.get(extraNote);
-		NoteEvent newNote = new NoteEvent(n1, ne.velocity, ne.getStartTick(), ne.getEndTick(), ne.getTempoCache());
+		MidiNoteEvent newNote = new MidiNoteEvent(n1, ne.velocity, ne.getStartTick(), ne.getEndTick(), ne.getTempoCache(), pan);
 		newNote.alreadyMapped = true;
 		return newNote;
 	}
 
-	public static NoteEvent getId2(NoteEvent ne, Note extraNote) {
+	public static MidiNoteEvent getId2(MidiNoteEvent ne, Note extraNote, int pan) {
 		Note n2 = secondNotes.get(extraNote);
-		NoteEvent newNote = new NoteEvent(n2, ne.velocity, ne.getStartTick(), ne.getEndTick(), ne.getTempoCache());
+		MidiNoteEvent newNote = new MidiNoteEvent(n2, ne.velocity, ne.getStartTick(), ne.getEndTick(), ne.getTempoCache(), pan);
 		newNote.alreadyMapped = true;
 		return newNote;
 	}

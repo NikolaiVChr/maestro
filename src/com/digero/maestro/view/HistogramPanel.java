@@ -21,6 +21,7 @@ import com.digero.common.util.Listener;
 import com.digero.common.view.ColorTable;
 import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.abc.PolyphonyHistogram;
+import com.digero.maestro.midi.FakeNoteEvent;
 import com.digero.maestro.midi.NoteEvent;
 import com.digero.maestro.midi.SequenceDataCache;
 import com.digero.maestro.midi.SequenceInfo;
@@ -192,7 +193,7 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 			for (Entry<Long, Integer> event : PolyphonyHistogram.getAll()) {
 				if (prevEvent != null) {
 					int id = Math.min(CLIP_MAX_NOTES,prevEvent.getValue());
-					events.add(new NoteEvent(Note.fromId(id), 127, abcSong.getQTM().microsToTickABC(prevEvent.getKey()), abcSong.getQTM().microsToTickABC(event.getKey()), dataCache));
+					events.add(new FakeNoteEvent(Note.fromId(id), abcSong.getQTM().microsToTickABC(prevEvent.getKey()), abcSong.getQTM().microsToTickABC(event.getKey()), dataCache));
 				}
 				prevEvent = event;
 			}
@@ -200,10 +201,10 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 			if (prevEvent != null) {
 				int id = Math.min(CLIP_MAX_NOTES,prevEvent.getValue());
 				events.add(
-						new NoteEvent(Note.fromId(id), 127, abcSong.getQTM().microsToTickABC(prevEvent.getKey()), dataCache.getSongLengthTicks(), dataCache));
+						new FakeNoteEvent(Note.fromId(id), abcSong.getQTM().microsToTickABC(prevEvent.getKey()), dataCache.getSongLengthTicks(), dataCache));
 			} else {
 				int id = 0;
-				events.add(new NoteEvent(Note.fromId(id), 127, 0, dataCache.getSongLengthTicks(), dataCache));
+				events.add(new FakeNoteEvent(Note.fromId(id), 0, dataCache.getSongLengthTicks(), dataCache));
 			}
 		}
 		

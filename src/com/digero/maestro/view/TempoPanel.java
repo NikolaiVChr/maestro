@@ -20,6 +20,7 @@ import com.digero.common.util.IDiscardable;
 import com.digero.common.util.Listener;
 import com.digero.common.view.ColorTable;
 import com.digero.maestro.abc.AbcSong;
+import com.digero.maestro.midi.FakeNoteEvent;
 import com.digero.maestro.midi.NoteEvent;
 import com.digero.maestro.midi.SequenceDataCache;
 import com.digero.maestro.midi.SequenceDataCache.TempoEvent;
@@ -198,7 +199,7 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
 			for (TempoEvent event : dataCache.getTempoEvents().values()) {
 				if (prevEvent != null) {
 					int id = tempoToNoteId(prevEvent.tempoMPQ, minBPM, maxBPM);
-					events.add(new NoteEvent(Note.fromId(id), 127, prevEvent.tick, event.tick, dataCache));
+					events.add(new FakeNoteEvent(Note.fromId(id), prevEvent.tick, event.tick, dataCache));
 				}
 				prevEvent = event;
 			}
@@ -206,10 +207,10 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
 			if (prevEvent != null) {
 				int id = tempoToNoteId(prevEvent.tempoMPQ, minBPM, maxBPM);
 				events.add(
-						new NoteEvent(Note.fromId(id), 127, prevEvent.tick, dataCache.getSongLengthTicks(), dataCache));
+						new FakeNoteEvent(Note.fromId(id), prevEvent.tick, dataCache.getSongLengthTicks(), dataCache));
 			} else {
 				int id = tempoToNoteId(sequenceInfo.getPrimaryTempoMPQ(), minBPM, maxBPM);
-				events.add(new NoteEvent(Note.fromId(id), 127, 0, dataCache.getSongLengthTicks(), dataCache));
+				events.add(new FakeNoteEvent(Note.fromId(id), 0, dataCache.getSongLengthTicks(), dataCache));
 			}
 		}
 
