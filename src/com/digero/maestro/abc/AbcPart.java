@@ -39,6 +39,7 @@ import com.digero.common.util.ParseException;
 import com.digero.common.util.Version;
 import com.digero.maestro.abc.AbcPartEvent.AbcPartProperty;
 import com.digero.maestro.abc.AbcSongEvent.AbcSongProperty;
+import com.digero.maestro.midi.AbcNoteEvent;
 import com.digero.maestro.midi.BentMidiNoteEvent;
 import com.digero.maestro.midi.MidiNoteEvent;
 import com.digero.maestro.midi.NoteEvent;
@@ -59,6 +60,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	public boolean[] playLeft;
 	public boolean[] playCenter;
 	public boolean[] playRight;
+	public Note[] from;
+	public Note[] to;
 	private int[] trackVolumeAdjust;
 	private DrumNoteMap[] drumNoteMap;
 	private StudentFXNoteMap[] fxNoteMap;
@@ -105,6 +108,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		this.sections = new ArrayList<>();
 		this.nonSection = new ArrayList<>();
 		this.sectionsModified = new ArrayList<>();
+		this.from = new Note[t];
+		this.to = new Note[t];
 		for (int i = 0; i < t; i++) {
 			this.sections.add(null);
 			this.nonSection.add(null);
@@ -112,6 +117,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			this.playLeft[i] = true;
 			this.playCenter[i] = true;
 			this.playRight[i] = true;
+			this.from[i] = Note.C0;
+			this.to[i] = Note.G9;
 		}
 	}
 
@@ -187,7 +194,13 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				trackEle.setAttribute("playCenter", String.valueOf(playCenter[t]));
 			if (!playRight[t])
 				trackEle.setAttribute("playRight", String.valueOf(playRight[t]));
-
+			
+			if (from[t].id != Note.C0.id)
+				trackEle.setAttribute("from", String.valueOf(from[t].id));
+			if (to[t].id != Note.G9.id)
+				trackEle.setAttribute("to", String.valueOf(to[t].id));
+			
+			
 			TreeMap<Integer, PartSection> tree = sections.get(t);
 			if (tree != null) {
 				for (Entry<Integer, PartSection> entry : tree.entrySet()) {
@@ -356,6 +369,9 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				playCenter[t] = SaveUtil.parseValue(trackEle, "@playCenter", true);
 				playRight[t] = SaveUtil.parseValue(trackEle, "@playRight", true);
 
+				from[t] = Note.fromId(SaveUtil.parseValue(trackEle, "@from", Note.C0.id));
+				to[t] = Note.fromId(SaveUtil.parseValue(trackEle, "@to", Note.G9.id));
+				
 				if (instrument.isPercussion) {
 					handlePercussion(fileVersion, trackEle, t);
 				}
@@ -579,6 +595,13 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			return false;
 		}
 		if (!playRight[track] && mne.midiPan > MidiConstants.PAN_CENTER) {
+			return false;
+		}
+		Note note = ne.note;
+		if (ne instanceof AbcNoteEvent) {
+			note = ((AbcNoteEvent) ne).origNote.note;
+		}
+		if (note.id > to[track].id || note.id < from[track].id) {
 			return false;
 		}
 		return true;

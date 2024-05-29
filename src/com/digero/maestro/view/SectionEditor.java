@@ -26,6 +26,7 @@ import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 
+import com.digero.common.midi.Note;
 import com.digero.common.util.Listener;
 import com.digero.common.view.PatchedJScrollPane;
 import com.digero.maestro.abc.AbcPart;
@@ -120,7 +121,7 @@ public class SectionEditor {
 				JPanel panel = new JPanel();
 
 				// 2 header rows, sections, remainder section, bottom buttons
-				LAYOUT_ROWS = new double[2 + numberOfSections + 1 + 1 + 1];
+				LAYOUT_ROWS = new double[2 + numberOfSections + 1 + 1 + 1 + 1];
 				// Set the index of the first row to 2. Rows 0 and 1 are titles and headers
 				final int firstRowIndex = 2;
 				LAYOUT_ROWS[0] = auxHeight;
@@ -128,8 +129,9 @@ public class SectionEditor {
 				for (int i = 0; i < numberOfSections + 1; i++) {
 					LAYOUT_ROWS[i + firstRowIndex] = rowHeight;
 				}
-				LAYOUT_ROWS[numberOfSections + firstRowIndex + 1] = auxHeight;// Checkboxes for panning
-				LAYOUT_ROWS[numberOfSections + firstRowIndex + 1 + 1] = rowHeight;
+				LAYOUT_ROWS[numberOfSections + firstRowIndex + 1] = auxHeight;// to from notes
+				LAYOUT_ROWS[numberOfSections + firstRowIndex + 1 + 1] = auxHeight;// Checkboxes for panning
+				LAYOUT_ROWS[numberOfSections + firstRowIndex + 1 + 1 + 1] = rowHeight;
 
 //		        LAYOUT_ROWS[0] = TableLayoutConstants.PREFERRED;
 //		        LAYOUT_ROWS[1] = 20;
@@ -169,6 +171,20 @@ public class SectionEditor {
 //		        panel.add(octDouble, "7, 0, 10, 0, f, f");
 				panel.add(new JLabel("Octave doubling"), "8, 0, 11, 0, c, c");
 
+				// second last row
+				JLabel rangeLabel = new JLabel("<html> Only play notes from midi between (inclusive):</html>");
+				JTextField from = new JTextField(abcPart.from[track].toString());
+				JTextField to = new JTextField(abcPart.to[track].toString());
+				from.setToolTipText("Enter the note name (like Gb4 or Fs4) or the midi note number (like 60).");
+				to.setToolTipText("Enter the note name (like Gb4 or Fs4) or the midi note number (like 60).");
+				
+				panel.add(rangeLabel, "1, " + (firstRowIndex + 2 + numberOfSections) + ", 4, "
+						+ (firstRowIndex + 2 + numberOfSections) + ", f, f");
+				panel.add(from, "5, " + (firstRowIndex + 2 + numberOfSections) + ", 5, "
+						+ (firstRowIndex + 2 + numberOfSections) + ", f, f");
+				panel.add(to, "6, " + (firstRowIndex + 2 + numberOfSections) + ", 6, "
+						+ (firstRowIndex + 2 + numberOfSections) + ", f, f");
+				
 				// Last row
 				JLabel panLabel = new JLabel("<html> Only play notes panned:</html>");
 				JCheckBox left = new JCheckBox("Left");
@@ -177,14 +193,14 @@ public class SectionEditor {
 				left.setSelected(abcPart.playLeft[track]);
 				center.setSelected(abcPart.playCenter[track]);
 				right.setSelected(abcPart.playRight[track]);
-				panel.add(panLabel, "1, " + (firstRowIndex + 2 + numberOfSections) + ", 4, "
-						+ (firstRowIndex + 2 + numberOfSections) + ", f, f");
-				panel.add(left, "5, " + (firstRowIndex + 2 + numberOfSections) + ", 6, "
-						+ (firstRowIndex + 2 + numberOfSections) + ", f, f");
-				panel.add(center, "7, " + (firstRowIndex + 2 + numberOfSections) + ", 8, "
-						+ (firstRowIndex + 2 + numberOfSections) + ", f, f");
-				panel.add(right, "9, " + (firstRowIndex + 2 + numberOfSections) + ", 10, "
-						+ (firstRowIndex + 2 + numberOfSections) + ", f, f");
+				panel.add(panLabel, "1, " + (firstRowIndex + 3 + numberOfSections) + ", 4, "
+						+ (firstRowIndex + 3 + numberOfSections) + ", f, f");
+				panel.add(left, "5, " + (firstRowIndex + 3 + numberOfSections) + ", 6, "
+						+ (firstRowIndex + 3 + numberOfSections) + ", f, f");
+				panel.add(center, "7, " + (firstRowIndex + 3 + numberOfSections) + ", 8, "
+						+ (firstRowIndex + 3 + numberOfSections) + ", f, f");
+				panel.add(right, "9, " + (firstRowIndex + 3 + numberOfSections) + ", 10, "
+						+ (firstRowIndex + 3 + numberOfSections) + ", f, f");
 
 				// Row 1
 				panel.add(new JLabel("Enable"), "0, 1, c, c");
@@ -465,7 +481,28 @@ public class SectionEditor {
 					abcPart.playLeft[track] = left.isSelected();
 					abcPart.playCenter[track] = center.isSelected();
 					abcPart.playRight[track] = right.isSelected();
-
+					try {
+						abcPart.from[track] = Note.fromName(from.getText());
+					}catch (IllegalArgumentException e1) {
+						try {
+							Note n = Note.fromId(Integer.valueOf(from.getText()));
+							if (n==null) throw new IllegalArgumentException();
+							abcPart.from[track] = n;
+						}catch (IllegalArgumentException e3) {
+							from.setText(abcPart.from[track].toString());
+						}
+					}
+					try {
+						abcPart.to[track] = Note.fromName(to.getText());
+					}catch (IllegalArgumentException e2) {
+						try {
+							Note n = Note.fromId(Integer.valueOf(to.getText()));
+							if (n==null) throw new IllegalArgumentException();
+							abcPart.to[track] = n;
+						}catch (IllegalArgumentException e4) {
+							to.setText(abcPart.to[track].toString());
+						}
+					}
 					SectionDialog.this.abcPart.sectionEdited(SectionDialog.this.track);
 				});
 				okButton.setToolTipText(

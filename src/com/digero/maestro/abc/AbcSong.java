@@ -57,7 +57,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = MaestroMain.APP_NAME + " Songs";
 	public static final String MSX_FILE_EXTENSION_NO_DOT = "msx";
 	public static final String MSX_FILE_EXTENSION = "." + MSX_FILE_EXTENSION_NO_DOT;
-	public static final Version SONG_FILE_VERSION = new Version(3, 1, 6, 300);// Keep build above 117 to make earlier
+	public static final Version SONG_FILE_VERSION = new Version(3, 2, 2, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
 

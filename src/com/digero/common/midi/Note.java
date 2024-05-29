@@ -37,10 +37,10 @@ public enum Note {
 	C6, Cs6, Db6(Cs6), D6, Ds6, Eb6(Ds6), E6, F6, Fs6, Gb6(Fs6), G6, Gs6, Ab6(Gs6), A6, As6, Bb6(As6), B6, //
 	C7, Cs7, Db7(Cs7), D7, Ds7, Eb7(Ds7), E7, F7, Fs7, Gb7(Fs7), G7, Gs7, Ab7(Gs7), A7, As7, Bb7(As7), B7, //
 	C8, Cs8, Db8(Cs8), D8, Ds8, Eb8(Ds8), E8, F8, Fs8, Gb8(Fs8), G8, Gs8, Ab8(Gs8), A8, As8, Bb8(As8), B8, //
-	C9, Cs9, Db9(Cs9), D9, Ds9, Eb9(Ds9), E9, F9, Fs9, Gb9(Fs9), G9, Gs9, Ab9(Gs9), A9, As9, Bb9(As9), B9;
+	C9, Cs9, Db9(Cs9), D9, Ds9, Eb9(Ds9), E9, F9, Fs9, Gb9(Fs9), G9;
 
 	public static final Note MIN = CX;
-	public static final Note MAX = B9;
+	public static final Note MAX = G9;// G9 == 127
 	public static final Note MIN_PLAYABLE = C2;
 	public static final Note MAX_PLAYABLE = C5;
 
@@ -88,7 +88,7 @@ public enum Note {
 			return REST;
 
 		if (lookupId == null) {
-			lookupId = new Note[B9.id + 1];
+			lookupId = new Note[MAX.id + 1];
 			for (Note n : values()) {
 				if (n != REST && lookupId[n.id] == null)
 					lookupId[n.id] = n;
