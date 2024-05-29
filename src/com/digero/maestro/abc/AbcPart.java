@@ -598,9 +598,18 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		if (!playRight[track] && mne.midiPan > MidiConstants.PAN_CENTER) {
 			return false;
 		}
-		Note note = ne.note;
-		if (note.id > to[track].id || note.id < from[track].id) {
-			return false;
+		if (mne instanceof BentMidiNoteEvent) {
+			// To determine if bent note is in range we use the lowest resultant note.
+			// Is just a convention, no particular advantage.
+			int note = ((BentMidiNoteEvent)mne).getMinNote();
+			if (note > to[track].id || note < from[track].id) {
+				return false;
+			}
+		} else {
+			Note note = mne.note;
+			if (note.id > to[track].id || note.id < from[track].id) {
+				return false;
+			}
 		}
 		return true;
 	}
