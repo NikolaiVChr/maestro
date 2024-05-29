@@ -175,6 +175,7 @@ public class SectionEditor {
 				JLabel rangeLabel = new JLabel("<html> Only play notes from midi between (inclusive):</html>");
 				JTextField from = new JTextField(abcPart.from[track].toString());
 				JTextField to = new JTextField(abcPart.to[track].toString());
+				JLabel rangeLabel2 = new JLabel("("+abcPart.from[track].id+" to "+abcPart.to[track].id+")");
 				from.setToolTipText("Enter the note name (like Gb4 or Fs4) or the midi note number (like 60).");
 				to.setToolTipText("Enter the note name (like Gb4 or Fs4) or the midi note number (like 60).");
 				
@@ -184,6 +185,8 @@ public class SectionEditor {
 						+ (firstRowIndex + 2 + numberOfSections) + ", f, f");
 				panel.add(to, "6, " + (firstRowIndex + 2 + numberOfSections) + ", 6, "
 						+ (firstRowIndex + 2 + numberOfSections) + ", f, f");
+				panel.add(rangeLabel2, "7, " + (firstRowIndex + 2 + numberOfSections) + ", 7, "
+						+ (firstRowIndex + 2 + numberOfSections) + ", c, c");
 				
 				// Last row
 				JLabel panLabel = new JLabel("<html> Only play notes panned:</html>");
@@ -503,6 +506,7 @@ public class SectionEditor {
 							to.setText(abcPart.to[track].toString());
 						}
 					}
+					rangeLabel2.setText("("+abcPart.from[track].id+" to "+abcPart.to[track].id+")");
 					SectionDialog.this.abcPart.sectionEdited(SectionDialog.this.track);
 				});
 				okButton.setToolTipText(
