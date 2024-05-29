@@ -1186,6 +1186,12 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	public void setSoloed(boolean soloed) {
 		this.soloed = soloed;
 	}
+	
+	public boolean isActive() {
+		if (soloed) return true;
+		if (abcSong.isAnyPartsSoloed()) return false;
+		return !muted;
+	}
 
 	public void addAbcListener(Listener<AbcPartEvent> l) {
 		listeners.add(l);

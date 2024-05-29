@@ -618,6 +618,15 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		}
 		return counter;
 	}
+	
+	public boolean isAnyPartsSoloed() {
+		for (AbcPart part : getParts()) {
+			if (part.isSoloed()) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 	@Override
 	public String getTranscriber() {
@@ -1063,6 +1072,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public boolean isKeepZeroNotes() {
 		return keep;
 	}
+
+	
 
 	/*
 	 * public boolean isKept(long tickStart) { SequenceInfo se = getSequenceInfo(); TreeMap<Integer, TuneLine> tree =

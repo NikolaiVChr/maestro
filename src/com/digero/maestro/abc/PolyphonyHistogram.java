@@ -12,16 +12,46 @@ import java.util.TreeMap;
 
 import com.digero.common.abc.LotroInstrumentSampleDuration;
 import com.digero.common.midi.ITempoCache;
+import com.digero.common.midi.LotroSequencerWrapper;
 import com.digero.common.midi.Note;
+import com.digero.common.midi.SequencerEvent;
+import com.digero.common.util.Listener;
 import com.digero.maestro.midi.AbcNoteEvent;
 
-public class PolyphonyHistogram {
+public class PolyphonyHistogram   {
+
 	private static Map<AbcPart, TreeMap<Long, Integer>> histogramData = new HashMap<>();
 	private static TreeMap<Long, Integer> sum = new TreeMap<>();// <micros,numberOfNotes>
 	private static boolean dirty = false;
 	private static int max = 0;
 	public static boolean enabled = true;// set to true to enable this system, set to false to save cpu power.
+	private static Listener<SequencerEvent> listener = new MyListener();
 
+	public static void setSequencer(LotroSequencerWrapper abcSequencer) {
+		abcSequencer.addChangeListener(listener);
+	}
+	
+	static class MyListener implements Listener<SequencerEvent> {
+		@Override
+		public void onEvent(SequencerEvent e) {
+			switch (e.getProperty()) {
+				case TRACK_ACTIVE:
+					dirty = true;
+					break;
+				case DRAG_POSITION:
+				case IS_DRAGGING:
+				case IS_LOADED:
+				case IS_RUNNING:
+				case LENGTH:
+				case POSITION:
+				case SEQUENCE:
+				case TEMPO:
+				default:
+					break;
+			}
+		}
+	}
+	
 	/**
 	 * Called from AbcExporter.java
 	 * 
@@ -31,6 +61,7 @@ public class PolyphonyHistogram {
 	 */
 	public static void count(AbcPart part, List<AbcNoteEvent> events) throws IOException {
 		if (!enabled) return;
+		
 		TreeMap<Long, Integer> partMap = new TreeMap<>();
 		List<AbcNoteEvent> done = new ArrayList<>();
 		for (AbcNoteEvent event : events) {
@@ -100,7 +131,7 @@ public class PolyphonyHistogram {
 		for (AbcPart part : partSet) {
 			if (part.discarded) {
 				histogramData.remove(part);
-			} else {
+			} else if (part.isActive()){
 				treeSet.add(histogramData.get(part));
 			}
 		}
@@ -178,4 +209,6 @@ public class PolyphonyHistogram {
 	public static void setClean() {
 		dirty = false;
 	}
+
+	
 }

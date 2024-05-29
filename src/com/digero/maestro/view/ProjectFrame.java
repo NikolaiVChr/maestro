@@ -120,6 +120,7 @@ import com.digero.maestro.abc.AbcSongEvent;
 import com.digero.maestro.abc.ExportFilenameTemplate;
 import com.digero.maestro.abc.PartAutoNumberer;
 import com.digero.maestro.abc.PartNameTemplate;
+import com.digero.maestro.abc.PolyphonyHistogram;
 import com.digero.maestro.midi.SequenceInfo;
 import com.digero.maestro.util.FileResolver;
 import com.digero.maestro.util.RecentlyOpenedList;
@@ -305,6 +306,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 								+ LotroSequencerWrapper.getLoadLotroSynthError());
 				failedToLoadLotroInstruments = true;
 			}
+			PolyphonyHistogram.setSequencer(abcSequencer);
 		} catch (MidiUnavailableException e) {
 			JOptionPane
 					.showMessageDialog(
