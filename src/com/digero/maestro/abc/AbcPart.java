@@ -583,8 +583,9 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	}
 
 	public boolean shouldPlay(NoteEvent ne, int track) {
-		if (!(ne instanceof MidiNoteEvent)) {
-			return true;
+		if (ne.note == Note.REST) return true;
+		if (ne instanceof AbcNoteEvent) {
+			ne = ((AbcNoteEvent) ne).origNote;
 		}
 		MidiNoteEvent mne = (MidiNoteEvent) ne;
 		
@@ -598,9 +599,6 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			return false;
 		}
 		Note note = ne.note;
-		if (ne instanceof AbcNoteEvent) {
-			note = ((AbcNoteEvent) ne).origNote.note;
-		}
 		if (note.id > to[track].id || note.id < from[track].id) {
 			return false;
 		}

@@ -363,7 +363,7 @@ public class AbcExporter {
 			out.println(AbcField.MIX_TIMINGS + Boolean.toString(qtm.isMixTiming()));
 			out.println(AbcField.SKIP_SILENCE_AT_START + Boolean.toString(skipSilenceAtStart));
 			out.println(AbcField.DELETE_MINIMAL_NOTES + Boolean.toString(deleteMinimalNotes));
-			out.println(AbcField.KEEP_ZERO_DURATION_NOTES + Boolean.toString(keepZeroNotes));
+			//out.println(AbcField.KEEP_ZERO_DURATION_NOTES + Boolean.toString(keepZeroNotes));
 			out.println(AbcField.ABC_VERSION + "2.1");
 			String gnr = StringCleaner.cleanForABC(metadata.getGenre()).toLowerCase().trim();
 			String mood = StringCleaner.cleanForABC(metadata.getMood()).toLowerCase().trim();
