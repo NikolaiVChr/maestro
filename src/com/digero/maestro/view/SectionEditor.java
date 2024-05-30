@@ -488,7 +488,7 @@ public class SectionEditor {
 						abcPart.from[track] = Note.fromName(from.getText());
 					}catch (IllegalArgumentException e1) {
 						try {
-							Note n = Note.fromId(Integer.valueOf(from.getText()));
+							Note n = Note.fromId(Integer.parseInt(from.getText()));
 							if (n==null) throw new IllegalArgumentException();
 							abcPart.from[track] = n;
 						}catch (IllegalArgumentException e3) {
@@ -499,7 +499,7 @@ public class SectionEditor {
 						abcPart.to[track] = Note.fromName(to.getText());
 					}catch (IllegalArgumentException e2) {
 						try {
-							Note n = Note.fromId(Integer.valueOf(to.getText()));
+							Note n = Note.fromId(Integer.parseInt(to.getText()));
 							if (n==null) throw new IllegalArgumentException();
 							abcPart.to[track] = n;
 						}catch (IllegalArgumentException e4) {

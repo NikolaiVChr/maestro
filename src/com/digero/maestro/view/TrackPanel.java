@@ -397,6 +397,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		updateState(true);
 	}
 	
+	@Override
 	public JPanel getNoteGraph() {
 		return noteGraphPanel;
 	}

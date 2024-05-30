@@ -111,6 +111,7 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 		abcSequencer.addChangeListener(sequencerListener);
 	}
 	
+	@Override
 	public HistogramNoteGraph getNoteGraph() {
 		return histoGraph;
 	}

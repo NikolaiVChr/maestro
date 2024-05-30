@@ -74,7 +74,7 @@ public class LotroDrumInfo implements Comparable<LotroDrumInfo> {
 		// add(Note.A6, "Xtra Reverse Cymbal");
 
 		int noteCount = Note.MAX_PLAYABLE.id - Note.MIN_PLAYABLE.id + 1 + LotroCombiDrumInfo.combiNoteCount;
-		if (byId.keySet().size() < noteCount) {
+		if (byId.size() < noteCount) {
 			List<Integer> unassigned = new ArrayList<>(noteCount);
 			for (int id = Note.MIN_PLAYABLE.id; id <= Note.MAX_PLAYABLE.id; id++) {
 				unassigned.add(id);

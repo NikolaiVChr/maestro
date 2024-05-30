@@ -20,8 +20,6 @@ import java.awt.Toolkit;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.awt.event.MouseWheelEvent;
-import java.awt.event.MouseWheelListener;
 import java.text.ParseException;
 
 import javax.swing.BorderFactory;
@@ -209,11 +207,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		});
 		
 		controlScrollPane.setWheelScrollingEnabled(false);
-		controlScrollPane.addMouseWheelListener(new MouseWheelListener() {
-		    public void mouseWheelMoved(MouseWheelEvent e) {
-		        noteGraphScrollPane.dispatchEvent(e);
-		    }
-		});
+		controlScrollPane.addMouseWheelListener(e -> noteGraphScrollPane.dispatchEvent(e));
 		
 		noteGraphPanel = new JPanel(new MigLayout((dbg? "debug, " : "") + "wrap 1, gap 0, ins 0, novisualpadding, fillx"));
 		noteGraphPanel.setBackground(ColorTable.PANEL_BACKGROUND_DISABLED.get());

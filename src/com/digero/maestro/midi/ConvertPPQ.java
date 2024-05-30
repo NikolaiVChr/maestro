@@ -48,7 +48,7 @@ public class ConvertPPQ {
 
 		Sequence edit = null;
 		try {
-			edit = new Sequence(Sequence.PPQ, (int) newPPQ);
+			edit = new Sequence(Sequence.PPQ, newPPQ);
 		} catch (InvalidMidiDataException e) {
 			e.printStackTrace();
 			return orig;

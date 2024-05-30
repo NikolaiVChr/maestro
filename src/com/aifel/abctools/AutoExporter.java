@@ -560,10 +560,7 @@ public class AutoExporter {
 				}
 		
 				return alternateFile;
-			} catch (InvocationTargetException e) {
-				appendToField("<br><font color='red'>"+e.toString()+"</font>");
-				e.printStackTrace();
-			} catch (InterruptedException e) {
+			} catch (InvocationTargetException | InterruptedException e) {
 				appendToField("<br><font color='red'>"+e.toString()+"</font>");
 				e.printStackTrace();
 			}

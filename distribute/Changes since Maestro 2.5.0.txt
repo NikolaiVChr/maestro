@@ -49,7 +49,8 @@ Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 Version 3.2.2
 - Polyphony histogram now reacts to muting or soloing parts.
 - Minimum and maximum midi note used can now be set in section editor.
-    Note that for bended notes of small range (as set in settings) it will be the lowest pitch that will decide if the note is in range.
+    Note that for bended notes of small range (as set in settings),
+    it will be the lowest pitch that will decide if the note is in range.
 
 Version 3.2.1
 - Fix partname song duration were often some seconds too long.

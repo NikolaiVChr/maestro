@@ -72,11 +72,13 @@ public class LotroSequencerWrapper extends NoteFilterSequencerWrapper {
 		if (sequencer.isRunning()) injectPatchChanges(false);
 	}
 
+	@Override
 	public void setTrackMute(int track, boolean mute) {
 		super.setTrackMute(track, mute);
 		if (sequencer.isRunning()) injectPatchChanges(false);
 	}
 
+	@Override
 	public void setTrackSolo(int track, boolean solo) {
 		super.setTrackSolo(track, solo);
 		if (sequencer.isRunning()) injectPatchChanges(false);

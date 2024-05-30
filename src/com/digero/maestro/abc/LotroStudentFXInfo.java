@@ -31,7 +31,7 @@ public class LotroStudentFXInfo implements Comparable<LotroStudentFXInfo> {
 		add(Note.D2, "Heavy Staccato");
 
 		int noteCount = 3 + 1;
-		if (byId.keySet().size() < noteCount) {
+		if (byId.size() < noteCount) {
 			List<Integer> unassigned = new ArrayList<>(noteCount);
 			for (int id = Note.MIN_PLAYABLE.id; id <= Note.MAX_PLAYABLE.id; id++) {
 				unassigned.add(id);

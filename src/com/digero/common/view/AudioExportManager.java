@@ -365,7 +365,7 @@ public class AudioExportManager {
 				File wavFile = File.createTempFile("AbcPlayer-", ".wav");
 				try (FileOutputStream fos = new FileOutputStream(wavFile)) {
 					MidiToWav.render(sequence, fos, 0L);
-					fos.close();;
+					fos.close();
 					String[] args = mp3Dialog.getCommandLineNew(wavFile, encodedBy).toArray(new String[0]);
 
 					ProcessBuilder ps = new ProcessBuilder(args);

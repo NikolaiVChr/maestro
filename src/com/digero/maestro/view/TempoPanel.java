@@ -115,6 +115,7 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
 		abcSequencer.addChangeListener(sequencerListener);
 	}
 	
+	@Override
 	public TempoNoteGraph getNoteGraph() {
 		return tempoGraph;
 	}

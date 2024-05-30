@@ -214,7 +214,7 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		// grid.
 		// System.err.println(" Odds And Ends:");
 		int tracks = song.getSequenceInfo().getTrackCount();
-		TimingInfoEvent[] timings = (TimingInfoEvent[]) timingInfoByTick.values().toArray(new TimingInfoEvent[0]);
+		TimingInfoEvent[] timings = timingInfoByTick.values().toArray(new TimingInfoEvent[0]);
 		// long totalSwing = 0;
 		// long totalEven = 0;
 
@@ -491,7 +491,7 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 	}
 
 	public int getPrimaryExportTempoMPQ() {
-		return (int) Math.round(primaryTempoMPQ / exportTempoFactor);
+		return Math.round(primaryTempoMPQ / exportTempoFactor);
 	}
 
 	/**

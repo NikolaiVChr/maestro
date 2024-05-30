@@ -106,26 +106,22 @@ public class DelayDialog {
 				}
 			};
 
-		    private Listener<AbcSongEvent> songListener = new Listener<AbcSongEvent>()
-			{
-				@Override public void onEvent(AbcSongEvent e)
-				{
-					switch (e.getProperty()) {
-						case BEFORE_PART_REMOVED:
-							AbcPart deleted = e.getPart();
-							if (deleted.equals(abcPart)) {
-								// The abcPart for this editor is being deleted, lets close the dialog.
-								dispose();
-								delayDialog = null;
-							}
-							break;
-						case SONG_CLOSING:
+		    private Listener<AbcSongEvent> songListener = e -> {
+				switch (e.getProperty()) {
+					case BEFORE_PART_REMOVED:
+						AbcPart deleted = e.getPart();
+						if (deleted.equals(abcPart)) {
+							// The abcPart for this editor is being deleted, lets close the dialog.
 							dispose();
 							delayDialog = null;
-							break;
-						default:
-							break;
-					}
+						}
+						break;
+					case SONG_CLOSING:
+						dispose();
+						delayDialog = null;
+						break;
+					default:
+						break;
 				}
 			};
 			

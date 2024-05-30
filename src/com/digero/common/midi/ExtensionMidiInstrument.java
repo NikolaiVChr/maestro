@@ -178,9 +178,9 @@ public class ExtensionMidiInstrument {
 			boolean theByteIsLSB, int lastPatch, int lookupByte, String[] splits) {
 		if (theByteIsLSB) {
 			if (firstColumnPatch) {
-				addInstrument(extension, (byte) lookupByte, (byte) theByte, (byte) lastPatch, splits[2].trim());
+				addInstrument(extension, (byte) lookupByte, theByte, (byte) lastPatch, splits[2].trim());
 			} else {
-				addInstrument(extension, (byte) lastPatch, (byte) theByte, (byte) lookupByte, splits[2].trim());
+				addInstrument(extension, (byte) lastPatch, theByte, (byte) lookupByte, splits[2].trim());
 			}
 		} else {
 			if (firstColumnPatch) {
