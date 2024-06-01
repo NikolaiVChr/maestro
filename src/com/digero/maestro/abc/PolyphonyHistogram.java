@@ -127,16 +127,16 @@ public class PolyphonyHistogram   {
 		sum = new TreeMap<>();
 		max = 0;
 		Set<AbcPart> partSet = new HashSet<>(histogramData.keySet());
-		Set<TreeMap<Long, Integer>> treeSet = new HashSet<TreeMap<Long, Integer>>();
+		List<TreeMap<Long, Integer>> treeList = new ArrayList<TreeMap<Long, Integer>>();
 		for (AbcPart part : partSet) {
 			if (part.discarded) {
 				histogramData.remove(part);
 			} else if (part.isActive()){
-				treeSet.add(histogramData.get(part));
+				treeList.add(histogramData.get(part));
 			}
 		}
 		TreeMap<Long, Integer> songMap = new TreeMap<>();
-		for (TreeMap<Long, Integer> partMap : treeSet) {
+		for (TreeMap<Long, Integer> partMap : treeList) {
 			Set<Entry<Long, Integer>> entrySet = partMap.entrySet();
 			
 			for (Entry<Long, Integer> entry : entrySet) {
