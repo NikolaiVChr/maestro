@@ -24,6 +24,7 @@ import javax.swing.SwingUtilities;
 import javax.xml.transform.TransformerException;
 
 import com.aifel.abctools.AbcTools.MsxFileFilter;
+import com.aifel.abctools.AbcTools.FolderFileFilter;
 import com.digero.common.abc.StringCleaner;
 import com.digero.maestro.MaestroMain;
 import com.digero.maestro.abc.AbcSong;
@@ -150,7 +151,7 @@ public class AutoExporter {
 			frame.setRecursiveCheckBoxEnabled(false);
 		});
 		// Test if dest is empty
-		if (destFolderAuto.listFiles().length != 0) {
+		if (destFolderAuto.listFiles(new FolderFileFilter()).length != 0) {
 			setToField("Start with selecting source, midi and destination folders.<br>"
 					+ "<font color='red'>Destination folder must be empty!</font>"
 					+ "<br>MIDI folder is optional. It is used when midi cannot be found,"

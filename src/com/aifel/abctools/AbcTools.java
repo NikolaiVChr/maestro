@@ -394,6 +394,17 @@ public class AbcTools {
 			return name.endsWith(".msx");
 		}
 	}
+	
+	/**
+	 * Allow .git files/folder to be ignored
+	 */
+	static class FolderFileFilter implements FileFilter {
+
+		@Override
+		public boolean accept(File file) {
+			return !file.getName().startsWith(".git");
+		}
+	}
 
 	private String getLongestCommonSubstring(String str1, String str2) {
 		int m = str1.length();
