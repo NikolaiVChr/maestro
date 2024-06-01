@@ -9,10 +9,15 @@ public class AbcNoteEvent extends NoteEvent {
 	public AbcNoteEvent tiesFrom = null;
 	public AbcNoteEvent tiesTo = null;
 	
-	public final MidiNoteEvent origNote;	
-	public int origPitch = 0;// TODO: replace by origNote 
-	
-	public long continues = 0;// Tick length that this continues as in seperate split note(s). Without ties.
+	// These fields are used by the pruning:
+	// Note that if several midi notes contributed to one abc note,
+	// then only one of the midi notes will be in origNote, as we do atm. not need to know about all of them.
+	@Deprecated
+	public boolean doubledNote = false;// Only used in Chord comparator.
+	public final MidiNoteEvent origNote;// Beware this can be null if note-event is a rest. Beside that, its guaranteed to be non-null.
+	public long continues = 0;// Tick length that this continues as in seperate split note(s). Beyond ties.
+	private Integer origBend = null;// The bend that was in effect when this noteEvent was 'born'. Its used only by pruning algorithm.
+	//public float fromHowManyTracks = 1.0f;// Let pruning system know this note originate from multiple tracks, so it can be prioritized.
 
 	public AbcNoteEvent(Note note, int velocity, long startTick, long endTick, ITempoCache tempoCache, MidiNoteEvent origNote) {
 		super(note, velocity, startTick, endTick, tempoCache);
@@ -53,7 +58,6 @@ public class AbcNoteEvent extends NoteEvent {
 
 		AbcNoteEvent next = new AbcNoteEvent(note, velocity, splitPointTick, endTick, tempoCache, this.origNote);
 		setEndTick(splitPointTick);
-		next.origPitch = origPitch;
 
 		if (note != Note.REST) {
 			if (this.tiesTo != null) {
@@ -89,5 +93,17 @@ public class AbcNoteEvent extends NoteEvent {
 	@Override
 	public String toString() {
 		return getClass().getName()+": " + note.toString() + " duraTicks=" + getFullLengthTicks() + " tick:"+startTick+"-"+endTick+" vol="+velocity+" TiesIsNull: "+(tiesFrom==null)+" "+(tiesTo == null)+" time: "+(getStartMicros()/1000000.0)+" to "+(getEndMicros()/1000000.0);
+	}
+
+	/**
+	 * 
+	 * @param bend The bend the midi note was affected by to create this abc note.
+	 */
+	public void setOrigBend(int bend) {
+		if (bend != 0) this.origBend  = bend;
+	}
+
+	final public Integer getOrigBend() {
+		return origBend;
 	}
 }

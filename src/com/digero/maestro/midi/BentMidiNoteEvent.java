@@ -37,6 +37,11 @@ public class BentMidiNoteEvent extends MidiNoteEvent {
 		cacheMax = -1;
 	}
 
+	/**
+	 * 
+	 * @param tick Absolute tick in source midi
+	 * @return relative semi-step bend
+	 */
 	public Integer getBend(long tick) {
 		Entry<Long, Integer> entry = bends.floorEntry(tick);
 		if (entry == null)

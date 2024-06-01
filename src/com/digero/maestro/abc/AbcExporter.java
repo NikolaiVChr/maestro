@@ -321,9 +321,7 @@ public class AbcExporter {
 				}
 
 				if (endTick != ne.getEndTick()) {
-					int oPitch = ne.origPitch;
 					ne = new AbcNoteEvent(ne.note, ne.velocity, ne.getStartTick(), endTick, qtm, ne.origNote);
-					ne.origPitch = oPitch;
 				}
 
 				track.add(MidiFactory.createNoteOnEventEx(ne.note.id + noteDelta, channel,
@@ -732,12 +730,7 @@ public class AbcExporter {
 						velocity = (int) ((velocity + part.getTrackVolumeAdjust(t) + sva[0]) * 0.01f * (float) sva[1] * 0.01f * (float) sva[2]);
 
 						AbcNoteEvent newNE = createNoteEvent(ne, mappedNote, velocity, startTick, endTick, qtm);
-						if (!part.isPercussionPart()) {
-							int origId = part.mapNoteFullOctaves(t, ne.note.id, ne.getStartTick());
-							if (mappedNote.id != origId) {
-								newNE.origPitch = origId;
-							}
-						}
+						
 						/*
 						 * if (!addTies) { // Only associate if doing preview newNE.origEvent = new
 						 * ArrayList<NoteEvent>(); newNE.origEvent.add(ne); }
@@ -749,25 +742,25 @@ public class AbcExporter {
 						if (doubling[0] && ne.note.id - 24 > Note.MIN.id) {
 							Note mappedNote2 = part.mapNote(t, ne.note.id - 24, ne.getStartTick());
 							AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
-							newNE2.doubledNote = true;// prune these first
+							//newNE2.doubledNote = true;// prune these first
 							events.add(newNE2);
 						}
 						if (doubling[1] && ne.note.id - 12 > Note.MIN.id) {
 							Note mappedNote2 = part.mapNote(t, ne.note.id - 12, ne.getStartTick());
 							AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
-							newNE2.doubledNote = true;
+							//newNE2.doubledNote = true;
 							events.add(newNE2);
 						}
 						if (doubling[2] && ne.note.id + 12 < Note.MAX.id) {
 							Note mappedNote2 = part.mapNote(t, ne.note.id + 12, ne.getStartTick());
 							AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
-							newNE2.doubledNote = true;
+							//newNE2.doubledNote = true;
 							events.add(newNE2);
 						}
 						if (doubling[3] && ne.note.id + 24 < Note.MAX.id) {
 							Note mappedNote2 = part.mapNote(t, ne.note.id + 24, ne.getStartTick());
 							AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
-							newNE2.doubledNote = true;
+							//newNE2.doubledNote = true;
 							events.add(newNE2);
 						}
 					} else {
@@ -924,9 +917,20 @@ public class AbcExporter {
 					if (on.getStartTick() == ne.getStartTick()) {
 						// If they start at the same time, remove the second event.
 						// Lengthen the first one if it's shorter than the second one.
-						if (on.getEndTick() < ne.getEndTick())
+						if (on.getEndTick() < ne.getEndTick()) {
 							on.setEndTick(ne.getEndTick());
-
+							//if (on.origNote.trackNumber != ne.origNote.trackNumber) on.fromHowManyTracks += 0.5f;
+							// Hard to quantify how to do velocity when not ending at same time. So skipping that.
+						}/* else if (on.getEndTick() == ne.getEndTick() && on.origNote.trackNumber != ne.origNote.trackNumber) {
+							on.fromHowManyTracks += 1.0f;
+							on.velocity = Math.max(ne.velocity, on.velocity);
+						} else if (on.origNote.trackNumber != ne.origNote.trackNumber) {
+							on.fromHowManyTracks += 0.5f;
+							// Hard to quantify how to do velocity when not ending at same time. So skipping that.
+						}*/
+						
+						
+						
 						// Remove the duplicate note
 						neIter.remove();
 						/*
@@ -938,9 +942,16 @@ public class AbcExporter {
 						// Otherwise, if they don't start at the same time:
 						// 1. Lengthen the second note if necessary, so it doesn't end before
 						// the first note would have ended.
-						if (ne.getEndTick() < on.getEndTick())
+						if (ne.getEndTick() < on.getEndTick()) {
 							ne.setEndTick(on.getEndTick());
-
+							/*ne.fromHowManyTracks += 0.75f;
+							ne.velocity = Math.max(ne.velocity, on.velocity);
+						} else {
+							ne.fromHowManyTracks += 0.25f;
+							// Hard to quantify how to do velocity when ne not a subset of on. So skipping that.
+							 */							 
+						}
+						
 						// 2. Shorten the note that's currently on to end at the same time that
 						// the next one starts.
 						on.setEndTick(ne.getStartTick());
@@ -974,11 +985,11 @@ public class AbcExporter {
 				// This note starts at the same time as the rest of the notes in the chord
 				if (addTies)
 					assert !curChord.isRest();
-				curChord.addAlways(ne);
+				curChord.add(ne);
 				// if (addTies) assert curChord.hasRestAndNotes() : "addTies is true!";
 			} else {
 				List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
-						part.getInstrument() == LotroInstrument.BASIC_DRUM);
+						part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion);
 				removeNotes(events, deadnotes, part);
 				if (!deadnotes.isEmpty()) {
 					// One of the tiedTo notes that was pruned might be the events.get(i) note,
@@ -1039,7 +1050,7 @@ public class AbcExporter {
 					// length
 					if (curChord.getEndTick() > nextChord.getStartTick()) {
 						// If the chord is too long, add a short rest in the chord to shorten it
-						curChord.addAlways(new AbcNoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, curChord.getStartTick(),
+						curChord.add(new AbcNoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, curChord.getStartTick(),
 								nextChord.getStartTick(), qtm, null));
 						// No pruning after a rest is added, as this is for preview and 6 notes plus a
 						// rest should be allowed.
@@ -1076,7 +1087,7 @@ public class AbcExporter {
 
 				// Last chord needs to be pruned as that hasn't happened yet.
 				List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
-						part.getInstrument() == LotroInstrument.BASIC_DRUM);
+						part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion);
 				removeNotes(events, deadnotes, part);// we need to set the pruned flag for last chord too.
 				curChord.recalcEndTick();
 				long targetEndTick = curChord.getEndTick();
@@ -1108,7 +1119,7 @@ public class AbcExporter {
 		} else {
 			// Last chord needs to be pruned as that hasn't happened yet.
 			List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
-					part.getInstrument() == LotroInstrument.BASIC_DRUM);
+					part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion);
 			removeNotes(events, deadnotes, part);// we need to set the pruned flag for last chord too.
 			curChord.recalcEndTick();
 		}
@@ -1178,7 +1189,7 @@ public class AbcExporter {
 					noteID = startPitch + entry;
 				}
 				if (current == null) {
-					current = createBentSubNote(be, noteID, current, t);
+					current = createBentSubNote(be, noteID, current, t, entry);
 					if (current == null)
 						return new ArrayList<>();
 					benders.add(current);
@@ -1189,7 +1200,7 @@ public class AbcExporter {
 					if (t == qTick) {
 						// this tick is on the grid
 						if (current.note.id != noteID) {
-							current = createBentSubNote(be, noteID, current, t);
+							current = createBentSubNote(be, noteID, current, t, entry);
 							if (current == null)
 								return new ArrayList<>();
 							benders.add(current);
@@ -1206,7 +1217,7 @@ public class AbcExporter {
 							 * Last grid point there was no pitch changes. So we round this pitch change back to last
 							 * gridpoint.
 							 */
-							current = createBentSubNote(be, noteID, current, lastGridTick);
+							current = createBentSubNote(be, noteID, current, lastGridTick, entry);
 							if (current == null)
 								return new ArrayList<>();
 							benders.add(current);
@@ -1230,7 +1241,7 @@ public class AbcExporter {
 		}
 	}
 
-	private AbcNoteEvent createBentSubNote(BentAbcNoteEvent be, int noteID, AbcNoteEvent current, long tick) {
+	private AbcNoteEvent createBentSubNote(BentAbcNoteEvent be, int noteID, AbcNoteEvent current, long tick, int bend) {
 		if (current != null) {
 			current.setEndTick(tick);
 		}
@@ -1241,6 +1252,7 @@ public class AbcExporter {
 		}
 		assert newNote != Note.REST;
 		AbcNoteEvent sub = new AbcNoteEvent(newNote, be.velocity, tick, be.getEndTick(), be.getTempoCache(), be.origNote);
+		sub.setOrigBend(bend);
 		return sub;
 	}
 
@@ -1283,7 +1295,6 @@ public class AbcExporter {
 					//assert (ne.getEndTick() - maxNoteEndTick >= qtm.getTimingInfo(maxNoteEndTick, part)
 					//		.getMinNoteLengthTicks());
 					AbcNoteEvent next = new AbcNoteEvent(ne.note, ne.velocity, maxNoteEndTick, ne.getEndTick(), qtm, ne.origNote);
-					next.origPitch = ne.origPitch;
 					int ins = Collections.binarySearch(events, next);
 					if (ins < 0)
 						ins = -ins - 1;

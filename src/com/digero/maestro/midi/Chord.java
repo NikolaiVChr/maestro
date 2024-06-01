@@ -36,9 +36,8 @@ public class Chord implements AbcConstants {
 	private ITempoCache tempoCache;
 	private long startTick;
 	private long endTick;
-	private boolean hasTooManyNotes = false;
 	private List<AbcNoteEvent> notes = new ArrayList<>();
-	private int highest = 0;
+	private int highest = 0;// source midi highest and lowest pitch in the chord
 	private int lowest = 200;
 
 	public Chord(AbcNoteEvent firstNote) {
@@ -46,32 +45,6 @@ public class Chord implements AbcConstants {
 		startTick = firstNote.getStartTick();
 		endTick = firstNote.getEndTick();
 		notes.add(firstNote);
-	}
-
-	public boolean isRest() {
-		for (AbcNoteEvent evt : notes) {
-			if (Note.REST != evt.note) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	public boolean hasRestAndNotes() {
-		boolean hasNotes = false;
-		boolean hasRests = false;
-		for (AbcNoteEvent evt : notes) {
-			if (Note.REST == evt.note) {
-				hasRests = true;
-			} else if (Note.REST != evt.note) {
-				hasNotes = true;
-			}
-		}
-		/*
-		 * if (hasRests && hasNotes) { for (NoteEvent evt : notes) {
-		 * System.out.println(evt.note.getDisplayName()+" "+evt.getStartTick()+" to "+evt.getEndTick()); } }
-		 */
-		return hasRests && hasNotes;
 	}
 
 	public long getStartTick() {
@@ -93,49 +66,20 @@ public class Chord implements AbcConstants {
 	public int size() {
 		return notes.size();
 	}
-
-	public boolean hasTooManyNotes() {
-		return hasTooManyNotes;
+	
+	/*
+	 * Size without rests
+	 */
+	public int sizeReal() {
+		int sz = 0;
+		for (NoteEvent ne : notes) {
+			if (ne.note != Note.REST) sz++;
+		}
+		return sz;
 	}
 
 	public AbcNoteEvent get(int i) {
 		return notes.get(i);
-	}
-
-	public boolean add(AbcNoteEvent ne, boolean force) {
-		while (force && size() >= MAX_CHORD_NOTES) {
-			remove(size() - 1);
-			hasTooManyNotes = true;
-		}
-		return add(ne);
-	}
-
-	public boolean add(AbcNoteEvent ne) {
-		if (ne.getLengthTicks() == 0) {
-			hasTooManyNotes = true;
-			return false;
-		}
-
-		if (size() >= MAX_CHORD_NOTES) {
-			return false;
-		}
-
-		notes.add(ne);
-		if (ne.getEndTick() < endTick) {
-			endTick = ne.getEndTick();
-		}
-		return true;
-	}
-
-	public AbcNoteEvent remove(int i) {
-		if (size() <= 1)
-			return null;
-
-		AbcNoteEvent ne = notes.remove(i);
-		if (ne.getEndTick() == endTick)
-			recalcEndTick();
-
-		return ne;
 	}
 
 	public boolean remove(AbcNoteEvent ne) {
@@ -169,210 +113,10 @@ public class Chord implements AbcConstants {
 	public void sort() {
 		Collections.sort(notes);
 	}
-
-	public List<AbcNoteEvent> prune(final boolean sustained, final boolean drum) {
-		// Determine which notes to prune to remain with a max of 6
-		List<AbcNoteEvent> deadNotes = new ArrayList<>();
-		if (size() > MAX_CHORD_NOTES) {
-			recalcEdges();
-
-			List<AbcNoteEvent> newNotes = new ArrayList<>();
-
-			Comparator<AbcNoteEvent> keepMe = (n1, n2) -> {
-
-				if (n1.note == Note.REST) {
-					return 1;
-				}
-				if (n2.note == Note.REST) {
-					return -1;
-				}
-
-				/*
-				 * if (n1.doubledNote && !n2.doubledNote) { return -1; } if (n2.doubledNote && !n1.doubledNote) { return
-				 * 1; }
-				 */
-
-				// At the point in time when prune() is run, there is very few tiedTo, mostly just tiedFrom.
-				// assert n1.tiesTo == null;
-				// assert n2.tiesTo == null;
-				/*
-				 * This was commented as experiments in lotro shows than can start a new note even if 6 prev. is still
-				 * playing. boolean n1Finished = false; boolean n2Finished = false; if (!sustained) { // Lets find out
-				 * if the notes have already finished long dura = 0; for (NoteEvent neTie = n1.tiesFrom; neTie != null;
-				 * neTie = neTie.tiesFrom) { dura += neTie.getLengthMicros(); } if (dura >
-				 * AbcConstants.NON_SUSTAINED_NOTE_HOLD_SECONDS) { n1Finished = true; } dura = 0; for (NoteEvent neTie =
-				 * n2.tiesFrom; neTie != null; neTie = neTie.tiesFrom) { dura += neTie.getLengthMicros(); } if (dura >
-				 * AbcConstants.NON_SUSTAINED_NOTE_HOLD_SECONDS) { n2Finished = true; } } if (n1Finished && !n2Finished)
-				 * { return -1; } else if (n2Finished && !n1Finished) { return 1; }
-				 */
-
-				if (!sustained) {
-					// discard tiedFrom notes.
-					// Although we already checked for finished notes,
-					// we don't mind stopping note and not let it decay
-					// to prioritize a new sound.
-					if (n1.tiesFrom != null && n2.tiesFrom == null) {
-						return -1;
-					}
-					if (n2.tiesFrom != null && n1.tiesFrom == null) {
-						return 1;
-					}
-				}
-
-				if (n1.velocity != n2.velocity) {
-					// The notes differ in volume, return the loudest
-					return n1.velocity - n2.velocity;
-				}
-
-				if (!drum) {
-					if (n1.note.id != n2.note.id) {
-						// return the note if its the highest in the chord
-						if ((n1.origPitch == 0 && highest == n1.note.id)
-								|| (n1.origPitch != 0 && highest == n1.origPitch)) {
-							return 1;
-						}
-						if ((n2.origPitch == 0 && highest == n2.note.id)
-								|| (n2.origPitch != 0 && highest == n2.origPitch)) {
-							return -1;
-						}
-						// return the note if its the lowest in the chord
-						if ((n1.origPitch == 0 && lowest == n1.note.id)
-								|| (n1.origPitch != 0 && lowest == n1.origPitch)) {
-							return 1;
-						}
-						if ((n2.origPitch == 0 && lowest == n2.note.id)
-								|| (n2.origPitch != 0 && lowest == n2.origPitch)) {
-							return -1;
-						}
-					}
-
-					if (n1.note.id == n2.note.id) {
-						// The notes have same pitch and same volume. Return the longest.
-						// The code should not get in here.
-						return (int) (n1.getFullLengthTicks() - n2.getFullLengthTicks());
-					}
-
-					int points = 0;
-
-					List<Integer> removeFirst = new ArrayList<>();
-
-					removeFirst.add(highest - 32);
-					removeFirst.add(highest - 24);
-					removeFirst.add(highest - 12);
-					removeFirst.add(lowest + 32);
-					removeFirst.add(lowest + 24);
-					removeFirst.add(lowest + 12);
-
-					int index1 = removeFirst.indexOf(n1.note.id);
-					int index2 = removeFirst.indexOf(n2.note.id);
-
-					// Discard notes first that has octave spacing from highest or lowest notes
-					if (index1 != -1) {
-						points += -2;
-					}
-					if (index2 != -1) {
-						points += 2;
-					}
-
-					if (sustained) {
-						// We keep the longest note, including continuation from notes broken up
-						if (n1.getFullLengthTicks() + n1.continues > n2.getFullLengthTicks() + n2.continues) {
-							points += 2;
-						} else if (n2.getFullLengthTicks() + n2.continues > n1.getFullLengthTicks() + n1.continues) {
-							points += -2;
-						}
-					}
-
-					if ((Math.abs(n1.note.id - n2.note.id) == 12 || Math.abs(n1.note.id - n2.note.id) == 24
-							|| Math.abs(n1.note.id - n2.note.id) == 36)) {
-						// If 2 notes have octave spacing, keep the highest pitched.
-						if (n1.note.id > n2.note.id) {
-							points += 2;
-						} else if (n2.note.id > n1.note.id) {
-							points += -2;
-						}
-					}
-
-					if (sustained) {
-						if (n1.tiesFrom != null) {
-							points += 1;
-						}
-						if (n2.tiesFrom != null) {
-							points += -1;
-						}
-					}
-
-					if (points > 0)
-						return 1;
-					if (points < 0)
-						return -1;
-
-				} else {
-
-					// Bass drums get priority:
-					if (n1.note == Note.As3) {// Open bass
-						return 1;
-					} else if (n2.note == Note.As3) {
-						return -1;
-					} else if (n1.note == Note.D3) {// Bass slap 2
-						return 1;
-					} else if (n2.note == Note.D3) {
-						return -1;
-					} else if (n1.note == Note.Gs3) {// Bass
-						return 1;
-					} else if (n2.note == Note.Gs3) {
-						return -1;
-					} else if (n1.note == Note.Cs3) {// Bass slap 1
-						return 1;
-					} else if (n2.note == Note.Cs3) {
-						return -1;
-					} else if (n1.note == Note.Cs4) {// Muted 2
-						return 1;
-					} else if (n2.note == Note.Cs4) {
-						return -1;
-					} else if (n1.note == Note.C3) {// Muted Mid
-						return 1;
-					} else if (n2.note == Note.C3) {
-						return -1;
-					}
-
-					// Its too constrained to prioritize the rest.
-					// No way to really prioritize them, depends
-					// on song and transcribers taste.
-					//
-					// Note that muted 1 is not included on purpose.
-				}
-
-				// discard the center-most note (for drum this is very random)
-				int center = Math.abs(n1.note.id - (lowest + (highest - lowest) / 2))
-						- Math.abs(n2.note.id - (lowest + (highest - lowest) / 2));
-
-				return Integer.compare(center, 0);
-
-				// 1: n1 wins -1: n2 wins 0:equal
-			};
-
-			notes.sort(keepMe);
-
-			// System.err.print("Prune\n");
-			for (int i = notes.size() - 1; i >= 0; i--) {
-				if (newNotes.size() < MAX_CHORD_NOTES) {
-					newNotes.add(notes.get(i));
-					// System.err.print(" keep " + notes.get(i).printout()+"\n");
-				} else {
-					deadNotes.add(notes.get(i));
-					// System.err.print(" prune " + notes.get(i).printout()+"\n");
-				}
-			}
-			notes = newNotes;
-			recalcEndTick();
-		}
-		return deadNotes;
-	}
-
-	public boolean addAlways(AbcNoteEvent ne) {
+	
+	public boolean add(AbcNoteEvent ne) {
 		if (ne.getLengthTicks() == 0) {
-			hasTooManyNotes = true;
+			System.err.println("Attempted to add zero duration note to chord!");
 			return false;
 		}
 		notes.add(ne);
@@ -391,20 +135,15 @@ public class Chord implements AbcConstants {
 		lowest = 200;
 		for (AbcNoteEvent evt : notes) {
 			if (evt.note != Note.REST) {
-				if (evt.origPitch != 0) {
-					if (evt.origPitch > highest) {
-						highest = evt.origPitch;
-					}
-					if (evt.origPitch < lowest) {
-						lowest = evt.origPitch;
-					}
-				} else {
-					if (evt.note.id > highest) {
-						highest = evt.note.id;
-					}
-					if (evt.note.id < lowest) {
-						lowest = evt.note.id;
-					}
+				int oldID = evt.origNote.note.id;
+				if (evt.origNote instanceof BentMidiNoteEvent && evt.getOrigBend() != null) {
+					oldID += evt.getOrigBend();
+				}
+				if (oldID > highest) {
+					highest = oldID;
+				}
+				if (oldID < lowest) {
+					lowest = oldID;
 				}
 			}
 		}
@@ -432,6 +171,32 @@ public class Chord implements AbcConstants {
 		notes.removeAll(rests);
 		recalcEndTick();
 	}
+	
+	public boolean isRest() {
+		for (AbcNoteEvent evt : notes) {
+			if (Note.REST != evt.note) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	public boolean hasRestAndNotes() {
+		boolean hasNotes = false;
+		boolean hasRests = false;
+		for (AbcNoteEvent evt : notes) {
+			if (Note.REST == evt.note) {
+				hasRests = true;
+			} else if (Note.REST != evt.note) {
+				hasNotes = true;
+			}
+		}
+		/*
+		 * if (hasRests && hasNotes) { for (NoteEvent evt : notes) {
+		 * System.out.println(evt.note.getDisplayName()+" "+evt.getStartTick()+" to "+evt.getEndTick()); } }
+		 */
+		return hasRests && hasNotes;
+	}
 
 	public void printIfUneven() {
 		long endNoteTick = getEndTick();
@@ -441,6 +206,249 @@ public class Chord implements AbcConstants {
 					System.out.println("Note in chord has bad length! " + (note.getEndTick() - endNoteTick));
 				}
 			}
+		}
+	}
+	
+	public List<AbcNoteEvent> prune(boolean sustained, boolean drum, boolean percussion) {
+		// Determine which notes to prune to remain with a max of 6
+		List<AbcNoteEvent> deadNotes = new ArrayList<>();
+
+		if (sizeReal() > MAX_CHORD_NOTES) {
+			recalcEdges();
+
+			List<AbcNoteEvent> newNotes = new ArrayList<>();
+
+			PruneComparator keepMe = new PruneComparator(sustained, drum, percussion);
+
+			notes.sort(keepMe);
+			
+			List<AbcNoteEvent> rests = new ArrayList<>();
+			AbcNoteEvent shortestRest = null;
+			long restDura = Long.MAX_VALUE;
+			for (AbcNoteEvent ne : notes) {
+				if (ne.note == Note.REST) {
+					if (ne.getLengthTicks() < restDura) {
+						// we only keep the shortest rest
+						restDura = ne.getLengthTicks();
+						shortestRest = ne;
+					}
+					rests.add(ne);
+				}
+			}
+			
+			notes.removeAll(rests);// no need to add the rests to deadnotes
+			
+			for (int i = notes.size() - 1; i >= 0; i--) {
+				if (newNotes.size() < MAX_CHORD_NOTES) {
+					newNotes.add(notes.get(i));
+				} else {
+					deadNotes.add(notes.get(i));
+				}
+			}
+			notes = newNotes;
+			
+			if (shortestRest != null) notes.add(shortestRest);
+			
+			recalcEndTick();
+		}
+		return deadNotes;
+	}
+	
+	class PruneComparator implements Comparator<AbcNoteEvent> {
+		final boolean sustained;
+		final boolean drum;
+		final boolean percussion;
+
+		PruneComparator (boolean sustained, boolean drum, boolean percussion) {
+			this.drum = drum;
+			this.sustained = sustained;
+			this.percussion = percussion;
+		}
+
+		@Override
+		public int compare(AbcNoteEvent n1, AbcNoteEvent n2) {
+
+			if (n1.note == Note.REST) {
+				return 1;
+			}
+			if (n2.note == Note.REST) {
+				return -1;
+			}
+			
+			int abcNote1 = n1.note.id;
+			int abcNote2 = n2.note.id;
+			
+			
+
+			/*
+			 * if (n1.doubledNote && !n2.doubledNote) { return -1; } if (n2.doubledNote && !n1.doubledNote) { return
+			 * 1; }
+			 */
+
+			/*
+			 * This was commented as experiments in lotro shows that can start a new note even if 6 prev. is still
+			 * playing. boolean n1Finished = false; boolean n2Finished = false; if (!sustained) { // Lets find out
+			 * if the notes have already finished long dura = 0; for (NoteEvent neTie = n1.tiesFrom; neTie != null;
+			 * neTie = neTie.tiesFrom) { dura += neTie.getLengthMicros(); } if (dura >
+			 * AbcConstants.NON_SUSTAINED_NOTE_HOLD_SECONDS) { n1Finished = true; } dura = 0; for (NoteEvent neTie =
+			 * n2.tiesFrom; neTie != null; neTie = neTie.tiesFrom) { dura += neTie.getLengthMicros(); } if (dura >
+			 * AbcConstants.NON_SUSTAINED_NOTE_HOLD_SECONDS) { n2Finished = true; } } if (n1Finished && !n2Finished)
+			 * { return -1; } else if (n2Finished && !n1Finished) { return 1; }
+			 */
+
+			if (!sustained) {
+				// discard tiedFrom notes.
+				// Although we already checked for finished notes,
+				// we don't mind stopping note and not let it decay
+				// to prioritize a new sound.
+				if (n1.tiesFrom != null && n2.tiesFrom == null) {
+					return -1;
+				}
+				if (n2.tiesFrom != null && n1.tiesFrom == null) {
+					return 1;
+				}
+			}
+
+			if (n1.velocity != n2.velocity) {
+				// The notes differ in volume, return the loudest
+				return n1.velocity - n2.velocity;
+			}
+
+			if (percussion && !drum) {
+				return 0;
+			} else if (!drum) {
+				
+				int midiNote1 = n1.origNote.note.id;
+				int midiNote2 = n2.origNote.note.id;
+				
+				if (!percussion && n1.origNote instanceof BentMidiNoteEvent && n1.getOrigBend() != null) {
+					midiNote1 += n1.getOrigBend();
+				}
+				if (!percussion && n2.origNote instanceof BentMidiNoteEvent && n2.getOrigBend() != null) {
+					midiNote2 += n2.getOrigBend();
+				}
+				
+				
+				if (midiNote1 != n2.origNote.note.id) {
+					// return the note if its the highest in the chord
+					if (midiNote1 == highest) {
+						return 1;
+					}
+					if (midiNote2 == highest) {
+						return -1;
+					}
+					// return the note if its the lowest in the chord
+					if (midiNote1 == lowest) {
+						return 1;
+					}
+					if (midiNote2 == lowest) {
+						return -1;
+					}
+				}
+
+				if (abcNote1 == abcNote2) {
+					// The notes have same pitch and same volume. Return the longest.
+					// The code should not get in here.
+					assert false: "Comparing two notes in a chord that only has room for one of them.";
+					return (int) (n1.getFullLengthTicks() - n2.getFullLengthTicks());
+				}
+
+				int points = 0;
+				
+				/*
+				// If coming from multiple tracks, a note is likely important
+				if (n1.fromHowManyTracks > n2.fromHowManyTracks) {
+					points += 2;
+				} else if (n1.fromHowManyTracks < n2.fromHowManyTracks) {
+					points -= 2;
+				}*/
+
+				boolean n1OctSpacing = (highest - midiNote1)%12 == 0 || (midiNote1 - lowest)%12 == 0;
+				boolean n2OctSpacing = (highest - midiNote2)%12 == 0 || (midiNote2 - lowest)%12 == 0;
+
+				// Lower prio for notes that has octave spacing from highest or lowest notes
+				if (n1OctSpacing && highest != midiNote1 && lowest != midiNote1) {
+					// orig n1 has that spacing
+					points += -2;
+				}
+				if (n2OctSpacing && highest != midiNote2 && lowest != midiNote2) {
+					// orig n2 has that spacing
+					points += 2;
+				}
+
+				if (sustained) {
+					// We keep the longest note, including continuation from notes broken up
+					if (n1.getFullLengthTicks() + n1.continues > n2.getFullLengthTicks() + n2.continues) {
+						points += 2;
+					} else if (n2.getFullLengthTicks() + n2.continues > n1.getFullLengthTicks() + n1.continues) {
+						points += -2;
+					}
+				}
+
+				if (Math.abs(abcNote1 - abcNote2) % 12 == 0) {
+					// If 2 notes have octave spacing, keep the highest pitched.
+					if (abcNote1 > abcNote2) {
+						points += 2;
+					} else if (abcNote2 > abcNote1) {
+						points += -2;
+					}
+				}
+
+				if (sustained) {
+					if (n1.tiesFrom != null) {
+						points += 1;
+					}
+					if (n2.tiesFrom != null) {
+						points += -1;
+					}
+				}
+
+				if (points > 0)
+					return 1;
+				if (points < 0)
+					return -1;
+
+			} else {
+
+				// Bass drums get priority:
+				if (n1.note == Note.As3) {// Open bass
+					return 1;
+				} else if (n2.note == Note.As3) {
+					return -1;
+				} else if (n1.note == Note.D3) {// Bass slap 2
+					return 1;
+				} else if (n2.note == Note.D3) {
+					return -1;
+				} else if (n1.note == Note.Gs3) {// Bass
+					return 1;
+				} else if (n2.note == Note.Gs3) {
+					return -1;
+				} else if (n1.note == Note.Cs3) {// Bass slap 1
+					return 1;
+				} else if (n2.note == Note.Cs3) {
+					return -1;
+				} else if (n1.note == Note.Cs4) {// Muted 2
+					return 1;
+				} else if (n2.note == Note.Cs4) {
+					return -1;
+				} else if (n1.note == Note.C3) {// Muted Mid
+					return 1;
+				} else if (n2.note == Note.C3) {
+					return -1;
+				}
+
+				// Its too constrained to prioritize the rest.
+				// No way to really prioritize them, depends
+				// on song and transcribers taste.
+				//
+				// Note that muted 1 is not included on purpose.
+			}
+
+			// Random choice if they got even scores.
+			// PS. They were not added in random order to this chord, so it wont be fully random.
+			return 0;
+
+			// 1: n1 wins -1: n2 wins 0:equal
 		}
 	}
 }
