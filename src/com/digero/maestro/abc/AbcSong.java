@@ -250,7 +250,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			usingOldVelocities = SaveUtil.parseValue(songEle, "importSettings/@useOldVelocities", true);// must be
 																										// before
 																										// tryToLoadFromFile
-			keep = SaveUtil.parseValue(songEle, "importSettings/@keepZeroNotes", true);
+			//keep = SaveUtil.parseValue(songEle, "importSettings/@keepZeroNotes", true);
 			sourceFile = SaveUtil.parseValue(songEle, "sourceFile", (File) null);
 			if (sourceFile == null) {
 				throw SaveUtil.missingValueException(songEle, "<sourceFile>");

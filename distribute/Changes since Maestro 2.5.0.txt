@@ -51,6 +51,7 @@ Version 3.2.2
 - Minimum and maximum midi note used can now be set in section editor.
     Note that for bended notes of small range (as set in settings),
     it will be the lowest pitch that will decide if the note is in range.
+- Fix for 2 identical parts would make 1 of them not counted in histogram.
 
 Version 3.2.1
 - Fix partname song duration were often some seconds too long.
