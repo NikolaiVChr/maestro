@@ -86,6 +86,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	private boolean soloed = false;
 	
 	public boolean discarded = false;
+	
+	private static final Note minDefault = Note.C0;//limit
 
 	public AbcPart(AbcSong abcSong) {
 		this.abcSong = abcSong;
@@ -117,8 +119,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			this.playLeft[i] = true;
 			this.playCenter[i] = true;
 			this.playRight[i] = true;
-			this.from[i] = Note.C0;
-			this.to[i] = Note.G9;
+			this.from[i] = minDefault;
+			this.to[i] = Note.MAX;
 		}
 	}
 
@@ -195,9 +197,9 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			if (!playRight[t])
 				trackEle.setAttribute("playRight", String.valueOf(playRight[t]));
 			
-			if (from[t].id != Note.C0.id)
+			if (from[t] != minDefault)
 				trackEle.setAttribute("from", String.valueOf(from[t].id));
-			if (to[t].id != Note.G9.id)
+			if (to[t] != Note.MAX)
 				trackEle.setAttribute("to", String.valueOf(to[t].id));
 			
 			
@@ -369,8 +371,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				playCenter[t] = SaveUtil.parseValue(trackEle, "@playCenter", true);
 				playRight[t] = SaveUtil.parseValue(trackEle, "@playRight", true);
 
-				from[t] = Note.fromId(SaveUtil.parseValue(trackEle, "@from", Note.C0.id));
-				to[t] = Note.fromId(SaveUtil.parseValue(trackEle, "@to", Note.G9.id));
+				from[t] = Note.fromId(SaveUtil.parseValue(trackEle, "@from", minDefault.id));
+				to[t] = Note.fromId(SaveUtil.parseValue(trackEle, "@to", Note.MAX.id));
 				
 				if (instrument.isPercussion) {
 					handlePercussion(fileVersion, trackEle, t);
@@ -469,6 +471,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	 * Notice this method does not work for bent notes, use mapNoteEvent for those.
 	 */
 	public Note mapNote(int track, int noteId, long tickStart) {
+		if (!isTrackEnabled(track))
+			return Note.fromId(noteId);
 		if (!getAudible(track, tickStart)) {
 			return null;
 		}
@@ -489,6 +493,9 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			return (dstNote == LotroDrumInfo.DISABLED.note.id) ? null : Note.fromId(dstNote);
 		} else {
 			noteId += getTranspose(track, tickStart);
+			if (noteId > to[track].id || noteId < from[track].id) {
+				return null;
+			}
 			while (noteId < instrument.lowestPlayable.id)
 				noteId += 12;
 			while (noteId > instrument.highestPlayable.id)
@@ -496,15 +503,34 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			return Note.fromId(noteId);
 		}
 	}
-
+	
 	/**
 	 * Maps from a MIDI note to an ABC note. If no mapping is available, returns <code>null</code>.
 	 * 
 	 * This method will also handle bent notes.
+	 * 
+	 * @param track track
+	 * @param ne noteevent
+	 * @return
 	 */
 	public Note mapNoteEvent(int track, NoteEvent ne) {
+		return mapNoteEvent(track, ne, ne.note.id);
+	}
+	
+	/**
+	 * Maps from a MIDI note to an ABC note. If no mapping is available, returns <code>null</code>.
+	 * 
+	 * This method will also handle bent notes.
+	 * 
+	 * @param track track
+	 * @param ne noteevent
+	 * @param noteId use a custom note id
+	 * @return
+	 */
+	public Note mapNoteEvent(int track, NoteEvent ne, int noteId) {
+		if (!isTrackEnabled(track))
+			return ne.note;
 		long tickStart = ne.getStartTick();
-		int noteId = ne.note.id;
 		if (!getAudible(track, tickStart)) {
 			return null;
 		}
@@ -532,6 +558,10 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			noteId += transpose;
 			minBend += ne.note.id + transpose;
 			maxBend += ne.note.id + transpose;
+			
+			if (minBend + getInstrument().octaveDelta * 12 > to[track].id || minBend + getInstrument().octaveDelta * 12 < from[track].id) {
+				return null;
+			}
 
 			while (noteId < instrument.lowestPlayable.id) {
 				noteId += 12;
@@ -574,6 +604,9 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			return Note.fromId(noteId);
 		} else {
 			noteId += getTranspose(track, tickStart);
+			if (noteId + getInstrument().octaveDelta * 12 > to[track].id || noteId + getInstrument().octaveDelta * 12 < from[track].id) {
+				return null;
+			}
 			while (noteId < instrument.lowestPlayable.id)
 				noteId += 12;
 			while (noteId > instrument.highestPlayable.id)
@@ -583,6 +616,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	}
 
 	public boolean shouldPlay(NoteEvent ne, int track) {
+		if (!isTrackEnabled(track))
+			return true;
 		if (ne.note == Note.REST) return true;
 		if (ne instanceof AbcNoteEvent) {
 			ne = ((AbcNoteEvent) ne).origNote;
@@ -598,19 +633,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		if (!playRight[track] && mne.midiPan > MidiConstants.PAN_CENTER) {
 			return false;
 		}
-		if (mne instanceof BentMidiNoteEvent) {
-			// To determine if bent note is in range we use the lowest resultant note.
-			// Is just a convention, no particular advantage.
-			int note = ((BentMidiNoteEvent)mne).getMinNote();
-			if (note > to[track].id || note < from[track].id) {
-				return false;
-			}
-		} else {
-			Note note = mne.note;
-			if (note.id > to[track].id || note.id < from[track].id) {
-				return false;
-			}
-		}
+		
 		return true;
 	}
 
@@ -632,7 +655,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		for (int t = 0; t < getTrackCount(); t++) {
 			if (isTrackEnabled(t)) {
 				for (MidiNoteEvent ne : getTrackEvents(t)) {
-					if (mapNote(t, ne.note.id, ne.getStartTick()) != null && shouldPlay(ne, t)) {
+					if (mapNoteEvent(t, ne) != null && shouldPlay(ne, t)) {
 						if (ne.getStartTick() < startTick)
 							startTick = ne.getStartTick();
 						break;
@@ -660,7 +683,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				ListIterator<MidiNoteEvent> iter = evts.listIterator(evts.size());
 				while (iter.hasPrevious()) {
 					MidiNoteEvent ne = iter.previous();
-					Note tone = mapNote(t, ne.note.id, ne.getStartTick());
+					Note tone = mapNoteEvent(t, ne);
 					if (tone != null && shouldPlay(ne, t)) {
 						long noteEndTick;
 						if (!accountForSustain || instrument.isSustainable(tone.id)) {

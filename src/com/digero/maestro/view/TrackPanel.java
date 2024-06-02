@@ -1039,7 +1039,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		@Override
 		protected boolean audibleNote(NoteEvent ne) {
 			return abcPart.getAudible(trackInfo.getTrackNumber(), ne.getStartTick())
-					&& abcPart.shouldPlay(ne, trackInfo.getTrackNumber());
+					&& abcPart.shouldPlay(ne, trackInfo.getTrackNumber()) && abcPart.mapNoteEvent(trackInfo.getTrackNumber(), ne) != null;
 		}
 
 		@Override

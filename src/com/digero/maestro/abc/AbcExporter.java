@@ -740,28 +740,36 @@ public class AbcExporter {
 						Boolean[] doubling = part.getSectionDoubling(ne.getStartTick(), t);
 
 						if (doubling[0] && ne.note.id - 24 > Note.MIN.id) {
-							Note mappedNote2 = part.mapNote(t, ne.note.id - 24, ne.getStartTick());
-							AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
-							//newNE2.doubledNote = true;// prune these first
-							events.add(newNE2);
+							Note mappedNote2 = part.mapNoteEvent(t, ne, ne.note.id - 24);
+							if (mappedNote2 != null) {
+								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
+								//newNE2.doubledNote = true;// prune these first
+								events.add(newNE2);
+							}
 						}
 						if (doubling[1] && ne.note.id - 12 > Note.MIN.id) {
-							Note mappedNote2 = part.mapNote(t, ne.note.id - 12, ne.getStartTick());
-							AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
-							//newNE2.doubledNote = true;
-							events.add(newNE2);
+							Note mappedNote2 = part.mapNoteEvent(t, ne, ne.note.id - 12);
+							if (mappedNote2 != null) {
+								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
+								//newNE2.doubledNote = true;
+								events.add(newNE2);
+							}
 						}
 						if (doubling[2] && ne.note.id + 12 < Note.MAX.id) {
-							Note mappedNote2 = part.mapNote(t, ne.note.id + 12, ne.getStartTick());
-							AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
-							//newNE2.doubledNote = true;
-							events.add(newNE2);
+							Note mappedNote2 = part.mapNoteEvent(t, ne, ne.note.id + 12);
+							if (mappedNote2 != null) {
+								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
+								//newNE2.doubledNote = true;
+								events.add(newNE2);
+							}
 						}
 						if (doubling[3] && ne.note.id + 24 < Note.MAX.id) {
-							Note mappedNote2 = part.mapNote(t, ne.note.id + 24, ne.getStartTick());
-							AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
-							//newNE2.doubledNote = true;
-							events.add(newNE2);
+							Note mappedNote2 = part.mapNoteEvent(t, ne, ne.note.id + 24);
+							if (mappedNote2 != null) {
+								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
+								//newNE2.doubledNote = true;
+								events.add(newNE2);
+							}
 						}
 					} else {
 						//System.out.println("Final skipping \n"+ne+"\n"+(mappedNote != null)+" "+(part.shouldPlay(ne, t)));

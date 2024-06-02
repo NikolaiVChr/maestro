@@ -172,12 +172,14 @@ public class SectionEditor {
 				panel.add(new JLabel("Octave doubling"), "8, 0, 11, 0, c, c");
 
 				// second last row
-				JLabel rangeLabel = new JLabel("<html> Only play notes from midi between (inclusive):</html>");
+				JLabel rangeLabel = new JLabel("<html> Only play notes between (inclusive):</html>");
 				JTextField from = new JTextField(abcPart.from[track].toString());
 				JTextField to = new JTextField(abcPart.to[track].toString());
 				JLabel rangeLabel2 = new JLabel("("+abcPart.from[track].id+" to "+abcPart.to[track].id+")");
-				from.setToolTipText("Enter the note name (like Gb4 or Fs4) or the midi note number (like 60).");
-				to.setToolTipText("Enter the note name (like Gb4 or Fs4) or the midi note number (like 60).");
+				from.setToolTipText("Enter the note name (like Gb4 or Fs4) or the note number (like 60).");
+				to.setToolTipText("Enter the note name (like Gb4 or Fs4) or the note number (like 60).");
+				to.setEnabled(!percussion);
+				from.setEnabled(!percussion);
 				
 				panel.add(rangeLabel, "1, " + (firstRowIndex + 2 + numberOfSections) + ", 4, "
 						+ (firstRowIndex + 2 + numberOfSections) + ", f, f");
