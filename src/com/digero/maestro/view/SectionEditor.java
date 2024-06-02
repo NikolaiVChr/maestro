@@ -68,6 +68,9 @@ public class SectionEditor {
 			JButton showVolume = new JButton("Show volume");
 			JButton copySections = new JButton("Copy");
 			JButton pasteSections = new JButton("Paste");
+			
+			private final JTextField to = new JTextField();
+			private final JTextField from = new JTextField();
 
 			// NoteGraph noteGraph = null;
 
@@ -173,8 +176,8 @@ public class SectionEditor {
 
 				// second last row
 				JLabel rangeLabel = new JLabel("<html> Only play notes between (inclusive):</html>");
-				JTextField from = new JTextField(abcPart.from[track].toString());
-				JTextField to = new JTextField(abcPart.to[track].toString());
+				from.setText(abcPart.from[track].toString());
+				to.setText(abcPart.to[track].toString());
 				JLabel rangeLabel2 = new JLabel("("+abcPart.from[track].id+" to "+abcPart.to[track].id+")");
 				from.setToolTipText("Enter the note name (like Gb4 or Fs4) or the note number (like 60).");
 				to.setToolTipText("Enter the note name (like Gb4 or Fs4) or the note number (like 60).");
@@ -574,8 +577,21 @@ public class SectionEditor {
 				} else if (e.getProperty() == AbcPartProperty.INSTRUMENT) {
 					titleLabel.setText("<html><b> " + abcPart.getTitle() + ": </b> "
 							+ abcPart.getInstrument().toString() + " on track " + track + " </html>");
-					// have to close and reopen dialog to enable/disable doubling in case we switched between percussion
-					// and non-percussion.
+					
+					boolean perc = abcPart.getInstrument().isPercussion;
+					to.setEnabled(!perc);
+					from.setEnabled(!perc);
+					for (SectionEditorLine l : sectionInputs) {
+						l.transpose.setEnabled(!perc);
+						l.doubling0.setEnabled(!perc);
+						l.doubling1.setEnabled(!perc);
+						l.doubling2.setEnabled(!perc);
+						l.doubling3.setEnabled(!perc);
+					}
+					nonSectionInput.doubling0.setEnabled(!perc);
+					nonSectionInput.doubling1.setEnabled(!perc);
+					nonSectionInput.doubling2.setEnabled(!perc);
+					nonSectionInput.doubling3.setEnabled(!perc);
 				}
 			};
 
@@ -595,6 +611,7 @@ public class SectionEditor {
 					break;
 				}
 			};
+			
 		}
 
 		openDialog = new SectionDialog(jf, noteGraph, "Section editor", false, abcPart, track);
