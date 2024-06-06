@@ -114,7 +114,13 @@ public class TimingInfo {
 	}
 
 	public static long getShortestNoteMicros(int bpm) {
-		if (bpm == 30 || bpm == 60 || bpm == 90 || bpm == 120) {
+		if (bpm == 30 || bpm == 60 || bpm == 90 || bpm == 120 || bpm == 180 || bpm == 240 || bpm == 360 || bpm == 480) {
+			// These tempos are an odd 'bug' in lotros music system.
+			// Trying to figure out a system in them:
+			// 30 -> 30 * 2 -> 30 * 2 * 2 -> 30 * 2 * 2 * 2
+			// 90 -> 90 * 2
+			// .. so 360 and 480 should be the next numbers..
+			// Verified, they are!
 			return 60001L;
 		}
 		return 60000L;
