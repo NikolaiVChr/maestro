@@ -23,18 +23,23 @@ public class Themer {
 				true);
 		String theme = settings.theme;
 		int fontSize = settings.fontSize;
-		boolean isDefaultTheme = false;
+		boolean isOldTheme = false;
+		
+		if ("Default".equals(theme)) {
+			Preferences.userNodeForPackage(MaestroMain.class).node("miscSettings").put("theme", themes[1]);
+			theme = themes[1];
+		}
 
 		if (theme.equals(themes[0])) {
 			UIManager.setLookAndFeel(new FlatMacDarkLaf());
 		} else if (theme.equals(themes[1])) {
 			UIManager.setLookAndFeel(new FlatMacLightLaf());
 		} else {
-			isDefaultTheme = true;
+			isOldTheme = true;
 			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 		}
 
-		if (!isDefaultTheme) {
+		if (!isOldTheme) {
 			Font font = UIManager.getFont("defaultFont");
 			Font newFont = StyleContext.getDefaultStyleContext().getFont(font.getFamily(), font.getStyle(), fontSize);
 			UIManager.put("defaultFont", newFont);

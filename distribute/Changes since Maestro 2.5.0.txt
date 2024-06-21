@@ -54,6 +54,7 @@ Version 3.2.3
 - Fix for 2 identical parts would make 1 of them not counted in histogram.
 - No longer have to reopen the section-editor if changing between percussion
     and non-percussion instruments for a part.
+- Retired Swing default look and feel. Flatlaf light is now default.
 
 Version 3.2.1
 - Fix partname song duration were often some seconds too long.

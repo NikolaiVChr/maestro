@@ -928,7 +928,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 
 		themeBox.setToolTipText(
 				"<html>Select the theme for Maestro. Must restart Maestro for it to take effect.</html>");
-		themeBox.addItem(defaultStr);
+		//themeBox.addItem(defaultStr);
 		for (String theme : Themer.themes) {
 			themeBox.addItem(theme);
 		}
