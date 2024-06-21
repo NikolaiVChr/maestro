@@ -1,5 +1,7 @@
 package com.digero.maestro.abc;
 
+import com.digero.common.midi.Note;
+
 public class PartSection {
 	public int octaveStep = 0;
 	public int volumeStep = 0;
@@ -12,4 +14,6 @@ public class PartSection {
 	// inclusive:
 	public int startBar = 0;
 	public int endBar = 0;
+	public Note fromPitch = Note.C0;
+	public Note toPitch = Note.MAX;
 }

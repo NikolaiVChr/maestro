@@ -6,6 +6,7 @@ import javax.xml.xpath.XPathExpressionException;
 
 import org.w3c.dom.Element;
 
+import com.digero.common.midi.Note;
 import com.digero.common.util.ParseException;
 import com.digero.maestro.util.SaveUtil;
 
@@ -45,6 +46,8 @@ public class AbcHelper {
 		ps.doubling[2] = SaveUtil.parseValue(sectionEle, "double1OctUp", false);
 		ps.doubling[3] = SaveUtil.parseValue(sectionEle, "double2OctUp", false);
 		ps.resetVelocities = SaveUtil.parseValue(sectionEle, "resetVelocities", false);
+		ps.fromPitch = Note.fromId(SaveUtil.parseValue(sectionEle, "fromPitch", Note.C0.id));
+		ps.toPitch = Note.fromId(SaveUtil.parseValue(sectionEle, "toPitch", Note.MAX.id));
 		boolean fadeout = SaveUtil.parseValue(sectionEle, "fadeout", false);
 		int fade = SaveUtil.parseValue(sectionEle, "fade", 0);
 		if (fade != 0) {
@@ -52,7 +55,7 @@ public class AbcHelper {
 		} else {
 			// backwards compatibility
 			ps.fade = (fadeout ? 100 : 0);
-		}
+		}		
 		ps.dialogLine = SaveUtil.parseValue(sectionEle, "dialogLine", -1);
 		return ps;
 	}

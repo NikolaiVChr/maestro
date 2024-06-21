@@ -1,6 +1,7 @@
 package com.digero.maestro.view;
 
 import javax.swing.JCheckBox;
+import javax.swing.JLabel;
 import javax.swing.JTextField;
 
 class SectionEditorLine {
@@ -16,6 +17,9 @@ class SectionEditorLine {
 	JCheckBox doubling1 = new JCheckBox();
 	JCheckBox doubling2 = new JCheckBox();
 	JCheckBox doubling3 = new JCheckBox();
+	JTextField fromPitch = new JTextField();
+	JTextField toPitch = new JTextField();
+	JLabel textPitch = new JLabel();
 	
 //	private JCheckBox enable = new JCheckBox();
 //	private JTextField barA = new JTextField("0");

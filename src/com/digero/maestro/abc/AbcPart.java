@@ -60,8 +60,6 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	public boolean[] playLeft;
 	public boolean[] playCenter;
 	public boolean[] playRight;
-	public Note[] from;
-	public Note[] to;
 	private int[] trackVolumeAdjust;
 	private DrumNoteMap[] drumNoteMap;
 	private StudentFXNoteMap[] fxNoteMap;
@@ -87,7 +85,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	
 	public boolean discarded = false;
 	
-	private static final Note minDefault = Note.C0;//limit
+	public static final Note minDefault = Note.C0;//limit
 
 	public AbcPart(AbcSong abcSong) {
 		this.abcSong = abcSong;
@@ -110,8 +108,6 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		this.sections = new ArrayList<>();
 		this.nonSection = new ArrayList<>();
 		this.sectionsModified = new ArrayList<>();
-		this.from = new Note[t];
-		this.to = new Note[t];
 		for (int i = 0; i < t; i++) {
 			this.sections.add(null);
 			this.nonSection.add(null);
@@ -119,8 +115,6 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			this.playLeft[i] = true;
 			this.playCenter[i] = true;
 			this.playRight[i] = true;
-			this.from[i] = minDefault;
-			this.to[i] = Note.MAX;
 		}
 	}
 
@@ -197,12 +191,6 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			if (!playRight[t])
 				trackEle.setAttribute("playRight", String.valueOf(playRight[t]));
 			
-			if (from[t] != minDefault)
-				trackEle.setAttribute("from", String.valueOf(from[t].id));
-			if (to[t] != Note.MAX)
-				trackEle.setAttribute("to", String.valueOf(to[t].id));
-			
-			
 			TreeMap<Integer, PartSection> tree = sections.get(t);
 			if (tree != null) {
 				for (Entry<Integer, PartSection> entry : tree.entrySet()) {
@@ -219,6 +207,10 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 					SaveUtil.appendChildTextElement(sectionEle, "dialogLine", String.valueOf(ps.dialogLine));
 					SaveUtil.appendChildTextElement(sectionEle, "resetVelocities", String.valueOf(ps.resetVelocities));
 					AbcHelper.appendIfNotPercussion(ps, sectionEle, instrument.isPercussion);
+					if (ps.fromPitch != minDefault || ps.toPitch != Note.MAX) {
+						SaveUtil.appendChildTextElement(sectionEle, "fromPitch", String.valueOf(ps.fromPitch.id));
+						SaveUtil.appendChildTextElement(sectionEle, "toPitch", String.valueOf(ps.toPitch.id));
+					}
 				}
 			}
 
@@ -228,6 +220,10 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				SaveUtil.appendChildTextElement(sectionEle, "silence", String.valueOf(ps.silence));
 				SaveUtil.appendChildTextElement(sectionEle, "resetVelocities", String.valueOf(ps.resetVelocities));
 				AbcHelper.appendIfNotPercussion(ps, sectionEle, instrument.isPercussion);
+				if (ps.fromPitch != minDefault || ps.toPitch != Note.MAX) {
+					SaveUtil.appendChildTextElement(sectionEle, "fromPitch", String.valueOf(ps.fromPitch.id));
+					SaveUtil.appendChildTextElement(sectionEle, "toPitch", String.valueOf(ps.toPitch.id));
+				}
 			}
 
 			if (instrument.isPercussion) {
@@ -354,6 +350,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 					ps.doubling[1] = SaveUtil.parseValue(nonSectionEle, "double1OctDown", false);
 					ps.doubling[2] = SaveUtil.parseValue(nonSectionEle, "double1OctUp", false);
 					ps.doubling[3] = SaveUtil.parseValue(nonSectionEle, "double2OctUp", false);
+					ps.fromPitch = Note.fromId(SaveUtil.parseValue(nonSectionEle, "fromPitch", minDefault.id));
+					ps.toPitch = Note.fromId(SaveUtil.parseValue(nonSectionEle, "toPitch", Note.MAX.id));
 					nonSection.set(t, ps);
 				}
 
@@ -370,9 +368,6 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				playLeft[t] = SaveUtil.parseValue(trackEle, "@playLeft", true);
 				playCenter[t] = SaveUtil.parseValue(trackEle, "@playCenter", true);
 				playRight[t] = SaveUtil.parseValue(trackEle, "@playRight", true);
-
-				from[t] = Note.fromId(SaveUtil.parseValue(trackEle, "@from", minDefault.id));
-				to[t] = Note.fromId(SaveUtil.parseValue(trackEle, "@to", Note.MAX.id));
 				
 				if (instrument.isPercussion) {
 					handlePercussion(fileVersion, trackEle, t);
@@ -493,7 +488,9 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			return (dstNote == LotroDrumInfo.DISABLED.note.id) ? null : Note.fromId(dstNote);
 		} else {
 			noteId += getTranspose(track, tickStart);
-			if (noteId > to[track].id || noteId < from[track].id) {
+			Pair<Integer,Integer> limits = getSectionPitchLimits(track, tickStart);
+
+			if (noteId > limits.second || noteId < limits.first) {
 				return null;
 			}
 			while (noteId < instrument.lowestPlayable.id)
@@ -554,12 +551,12 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			int minBend = be.getMinBend();
 			int maxBend = be.getMaxBend();
 			int transpose = getTranspose(track, tickStart);
-
+			Pair<Integer,Integer> limits = getSectionPitchLimits(track, tickStart);
 			noteId += transpose;
 			minBend += ne.note.id + transpose;
 			maxBend += ne.note.id + transpose;
 			
-			if (minBend + getInstrument().octaveDelta * 12 > to[track].id || minBend + getInstrument().octaveDelta * 12 < from[track].id) {
+			if (minBend + getInstrument().octaveDelta * 12 > limits.second || minBend + getInstrument().octaveDelta * 12 < limits.first) {
 				return null;
 			}
 
@@ -604,7 +601,9 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			return Note.fromId(noteId);
 		} else {
 			noteId += getTranspose(track, tickStart);
-			if (noteId + getInstrument().octaveDelta * 12 > to[track].id || noteId + getInstrument().octaveDelta * 12 < from[track].id) {
+			Pair<Integer,Integer> limits = getSectionPitchLimits(track, tickStart);
+			
+			if (noteId + getInstrument().octaveDelta * 12 > limits.second || noteId + getInstrument().octaveDelta * 12 < limits.first) {
 				return null;
 			}
 			while (noteId < instrument.lowestPlayable.id)
@@ -954,6 +953,52 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			return 0;
 		return abcSong.getTranspose() + abcSong.getTuneTranspose(tickStart) + trackTranspose[track]
 				- getInstrument().octaveDelta * 12 + getSectionTranspose(tickStart, track);
+	}
+	
+	public Pair<Integer, Integer> getSectionPitchLimits(int track, long tickStart) {
+		Pair<Integer, Integer> secLimits = new Pair(minDefault.id,Note.MAX.id);
+		if (isPercussionPart())
+			return secLimits;
+
+		
+		if (!isTrackEnabled(track))
+			return secLimits;
+		SequenceInfo se = getSequenceInfo();
+		TreeMap<Integer, PartSection> tree = sections.get(track);
+		boolean isSection = false;
+		if (se != null && tree != null) {
+			SequenceDataCache data = se.getDataCache();
+			long barLengthTicks = data.getBarLengthTicks();
+
+			long startTick = barLengthTicks;
+			long endTick = data.getSongLengthTicks();
+
+			int bar = -1;
+			int curBar = 1;
+			for (long barTick = startTick; barTick <= endTick + barLengthTicks; barTick += barLengthTicks) {
+				if (tickStart < barTick) {
+					bar = curBar;
+					break;
+				}
+				curBar += 1;
+			}
+			if (bar != -1) {
+				Entry<Integer, PartSection> entry = tree.floorEntry(bar);
+				if (entry != null) {
+					if (bar <= entry.getValue().endBar) {
+						secLimits.first = entry.getValue().fromPitch.id;
+						secLimits.second = entry.getValue().toPitch.id;
+						isSection = true;
+					}
+				}
+			}
+		}
+		
+		if (se != null && !isSection && nonSection.get(track) != null) {
+			return new Pair<Integer, Integer>(nonSection.get(track).fromPitch.id, nonSection.get(track).toPitch.id);
+		}
+
+		return secLimits;
 	}
 
 	public int getSectionTranspose(long tickStart, int track) {
