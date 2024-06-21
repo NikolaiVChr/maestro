@@ -55,6 +55,8 @@ Version 3.2.3
 - No longer have to reopen the section-editor if changing between percussion
     and non-percussion instruments for a part.
 - Retired Swing default look and feel. Flatlaf light is now default.
+- Add button to increase number of sections in tune and section-editor. Default is now 10.
+- Section-editor inputs are now organized in tabs.
 
 Version 3.2.1
 - Fix partname song duration were often some seconds too long.

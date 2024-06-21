@@ -25,6 +25,7 @@ import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
 
 import com.digero.common.util.Listener;
+import com.digero.common.util.ParseException;
 import com.digero.common.view.PatchedJScrollPane;
 import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.abc.AbcSongEvent;
@@ -45,7 +46,7 @@ public class TuneEditor {
 		@SuppressWarnings("serial")
 		class TuneDialog extends JDialog {
 
-			private final double[] LAYOUT_COLS = new double[] { 0.10, 0.18, 0.18, 0.18, 0.18, 0.18 };
+			private final double[] LAYOUT_COLS = new double[] { TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.PREFERRED };
 			private double[] LAYOUT_ROWS;
 			private AbcSong abcSong;
 
@@ -54,7 +55,7 @@ public class TuneEditor {
 			JButton copySections = new JButton("Copy");
 			JButton pasteSections = new JButton("Paste");
 
-			public TuneDialog(JFrame jf, String title, boolean modal, AbcSong abcSong) {
+			public TuneDialog(JFrame jf, String title, boolean modal, AbcSong abcSong) throws ParseException {
 				super(jf, title, modal);
 				this.abcSong = abcSong;
 
@@ -185,8 +186,18 @@ public class TuneEditor {
 								+ "meter is modified, then the bar counter in lower-right might<br>not match up, unless your preview mode is in 'Original'.</b></html>");
 				panel.add(help, "3," + (3 + SectionEditor.numberOfSections) + ", 3, "
 						+ (3 + SectionEditor.numberOfSections) + ",f,f");
+				
+				JButton add = new JButton("Add 5");
+				add.setToolTipText("Add 5 section lines. Close and open the window to see effect.");
+				add.addActionListener(e -> {SectionEditor.numberOfSections+=5;if (SectionEditor.numberOfSections >=20) SectionEditor.numberOfSections = 20;
+					this.setTitle("Reopen tune- and section-editors to apply changes");
+					add.setEnabled(SectionEditor.numberOfSections < 20);});
+				panel.add(add, "0," + (3 + 1 + SectionEditor.numberOfSections) + ", 0, "
+						+ (3 + 1 + SectionEditor.numberOfSections) + ",f,f");
+				add.setEnabled(SectionEditor.numberOfSections < 20);
 
 				JButton okButton = new JButton("APPLY");
+				numberOfSectionsFinal = SectionEditor.numberOfSections;
 				okButton.addActionListener(e -> {
 					TreeMap<Integer, TuneLine> tm = new TreeMap<>();
 
@@ -292,9 +303,11 @@ public class TuneEditor {
 					// panel.add(tuneInputs.get(i).remove, "5,"+(3+i)+",c,f");
 				}
 			}
-
+			
+			private final int numberOfSectionsFinal;
+			
 			private int processSections(TreeMap<Integer, TuneLine> tm, int lastEnd) {
-				for (int k = 0; k < SectionEditor.numberOfSections; k++) {
+				for (int k = 0; k < numberOfSectionsFinal; k++) {
 					if (TuneDialog.this.tuneInputs.get(k).enable.isSelected()) {
 						TuneLine ps = new TuneLine();
 						try {
@@ -334,7 +347,7 @@ public class TuneEditor {
 				return lastEnd;
 			}
 
-			private void processTree(SortedMap<Integer, TuneLine> tree) {
+			private void processTree(SortedMap<Integer, TuneLine> tree) throws ParseException {
 				int number = 0;
 				boolean useDialogLineNumbers = true;
 				for (Entry<Integer, TuneLine> entry : tree.entrySet()) {
@@ -345,9 +358,14 @@ public class TuneEditor {
 					if (useDialogLineNumbers) {
 						number = ps.dialogLine;
 					}
-					if (number >= SectionEditor.numberOfSections || number < 0) {
+					if (number < 0) {
+						System.err.println(
+								"Line numbers was badly edited in .msx file.");
+					} else if (number >= SectionEditor.numberOfSections) {
 						System.err.println(
 								"Too many sections in treemap in tune-editor, or line numbers was badly edited in .msx file.");
+						SectionEditor.numberOfSections+=5;
+						throw new ParseException("Dialog open failed, try again.","Non file");
 					} else {
 						tuneInputs.get(number).enable.setSelected(true);
 						tuneInputs.get(number).barA.setText(String.valueOf(ps.startBar));
@@ -372,7 +390,11 @@ public class TuneEditor {
 			};
 		}
 
-		openDialog = new TuneDialog(jf, "Tune editor", false, abcSong);
+		try {
+			openDialog = new TuneDialog(jf, "Tune editor", false, abcSong);
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
 	}
 
 	private static boolean soFarSoGood(TreeMap<Integer, TuneLine> tm, TuneLine ps) {

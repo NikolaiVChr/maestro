@@ -49,6 +49,7 @@ import com.digero.maestro.midi.TrackInfo;
 import com.digero.maestro.util.SaveUtil;
 import com.digero.maestro.util.XmlUtil;
 import com.digero.maestro.view.InstrNameSettings;
+import com.digero.maestro.view.SectionEditor;
 
 public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscardable {
 	private int partNumber = 1;
@@ -293,7 +294,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			instrument = SaveUtil.parseValue(ele, "instrument", instrument);
 			typeNumber = getTypeNumberMatchingTitle();// must be after instr and title
 			delay = SaveUtil.parseValue(ele, "delay", 0);
-
+			int maxDialogLine = 0;
+			int numberOfLines = 0;
 			for (Element trackEle : XmlUtil.selectElements(ele, "track")) {
 
 				// Try to find the specified track in the midi sequence by name, in case it
@@ -328,6 +330,11 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 							lastEnd = ps.endBar;
 						}
 						tree.put(ps.startBar, ps);
+						
+						if (ps.dialogLine > maxDialogLine) {
+							maxDialogLine = ps.dialogLine; 
+						}
+						numberOfLines++;
 					}
 				}
 				boolean[] booleanArray = new boolean[lastEnd + 1];
@@ -354,7 +361,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 					ps.toPitch = Note.fromId(SaveUtil.parseValue(nonSectionEle, "toPitch", Note.MAX.id));
 					nonSection.set(t, ps);
 				}
-
+				
 				// Now set the track info
 				trackEnabled[t] = true;
 				enabledTrackCount++;
@@ -373,6 +380,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 					handlePercussion(fileVersion, trackEle, t);
 				}
 			}
+			SectionEditor.numberOfSections = Math.min(20, Math.max(SectionEditor.numberOfSections, 5 + 5 * (Math.max(numberOfLines-1, maxDialogLine) / 5)));
 		} catch (XPathExpressionException e) {
 			throw new ParseException("XPath error: " + e.getMessage(), null);
 		}

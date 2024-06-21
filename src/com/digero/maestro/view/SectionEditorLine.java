@@ -20,31 +20,4 @@ class SectionEditorLine {
 	JTextField fromPitch = new JTextField();
 	JTextField toPitch = new JTextField();
 	JLabel textPitch = new JLabel();
-	
-//	private JCheckBox enable = new JCheckBox();
-//	private JTextField barA = new JTextField("0");
-//	private JTextField barB = new JTextField("0");
-//	private JTextField transpose = new JTextField("0");
-//	private JTextField velo = new JTextField("0");
-//	private JCheckBox silent = new JCheckBox();
-//	private JCheckBox resetVelocities = new JCheckBox();
-//	private JTextField fade = new JTextField("0");
-//	private JCheckBox doubling0 = new JCheckBox();
-//	private JCheckBox doubling1 = new JCheckBox();
-//	private JCheckBox doubling2 = new JCheckBox();
-//	private JCheckBox doubling3 = new JCheckBox();
-	
-//	boolean isPercussion = false;
-//	boolean isRestOfTrack = false;
-	
-//	public SectionEditorLine(boolean isPercussion, boolean isRestOfTrack) {
-//		this.isPercussion = isPercussion;
-//		this.isRestOfTrack = isRestOfTrack;
-//		
-//		transpose.setEnabled(!isPercussion);
-//		doubling0.setEnabled(!isPercussion);
-//		doubling1.setEnabled(!isPercussion);
-//		doubling2.setEnabled(!isPercussion);
-//		doubling3.setEnabled(!isPercussion);
-//	}
 }

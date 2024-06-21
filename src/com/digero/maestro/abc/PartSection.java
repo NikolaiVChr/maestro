@@ -2,7 +2,7 @@ package com.digero.maestro.abc;
 
 import com.digero.common.midi.Note;
 
-public class PartSection {
+public class PartSection implements Comparable<PartSection> {
 	public int octaveStep = 0;
 	public int volumeStep = 0;
 	public int fade = 0;
@@ -16,4 +16,10 @@ public class PartSection {
 	public int endBar = 0;
 	public Note fromPitch = Note.C0;
 	public Note toPitch = Note.MAX;
+	
+	@Override
+	public int compareTo(PartSection that) {
+		if (that == null) throw new NullPointerException();
+		return this.startBar - that.startBar;
+	}
 }
