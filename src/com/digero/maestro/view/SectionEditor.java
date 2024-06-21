@@ -7,7 +7,10 @@ import java.awt.GridBagConstraints;
 import java.awt.Insets;
 import java.awt.Point;
 import java.awt.Window;
+import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.TextEvent;
+import java.awt.event.TextListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
@@ -28,6 +31,9 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.SwingUtilities;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.text.BadLocationException;
 
 import com.digero.common.midi.Note;
 import com.digero.common.util.Listener;
@@ -106,7 +112,7 @@ public class SectionEditor {
 					}
 				});
 
-				double rowHeight = 24;//Must be fixed to align with the rows inside the tabbedPane
+				double rowHeight = TableLayout.PREFERRED;//Must be fixed to align with the rows inside the tabbedPane
 				double auxHeight = TableLayout.PREFERRED;
 //				int rowHeight = 16;
 //				int auxHeight = 24;
@@ -168,9 +174,10 @@ public class SectionEditor {
 				// Row 0
 				titleLabel = new JLabel("<html><b> " + abcPart.getTitle() + ": </b> "
 						+ abcPart.getInstrument().toString() + " on track " + track + " </html>");
-				panel.add(titleLabel, "0, 0, 5, 0, C, C");
+				panel.add(titleLabel, "0, 0, 7, 0, C, C");
 				JTabbedPane tabPanel = new JTabbedPane();
-				double[] LAYOUT_COLS_D = new double[] { 0.20,0.20,0.20,0.20,0.20 };
+				tabPanel.setTabPlacement(JTabbedPane.TOP);
+				double[] LAYOUT_COLS_D = new double[] { 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125 };
 				double[] LAYOUT_ROWS_D = new double[2 + numberOfSections];
 				for (int i = 0; i <= numberOfSections + 1; i++) {
 					LAYOUT_ROWS_D[i] = rowHeight;
@@ -180,11 +187,11 @@ public class SectionEditor {
 				
 				
 				
-				double[] LAYOUT_COLS_M = new double[] { 0.20,0.20,0.20,0.20,0.20 };
+				double[] LAYOUT_COLS_M = new double[] { 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125 };
 				TableLayout miscLayout = new TableLayout(LAYOUT_COLS_M, LAYOUT_ROWS_D);
 				JPanel miscPanel = new JPanel(miscLayout);
 				
-				double[] LAYOUT_COLS_R = new double[] { 0.25,0.25,0.25,0.25 };
+				double[] LAYOUT_COLS_R = new double[] { 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125 };
 				TableLayout rangeLayout = new TableLayout(LAYOUT_COLS_R, LAYOUT_ROWS_D);
 				JPanel rangePanel = new JPanel(rangeLayout);
 				
@@ -192,12 +199,12 @@ public class SectionEditor {
 				//octDouble.setEditable(false);
 				//octDouble.setHorizontalAlignment(CENTER);
 //		        panel.add(octDouble, "7, 0, 10, 0, f, f");
-				panel.add(tabPanel, "3, 1, 7, "+(numberOfSections+firstRowIndex)+", f, f");
+				panel.add(tabPanel, "0, 1, 7, "+(numberOfSections+firstRowIndex)+", f, f");
 
 								
 				tabPanel.addTab("Pitch & Vol", miscPanel);
 				tabPanel.addTab("Octave doubling", doublingPanel);
-				tabPanel.addTab("Range", rangePanel);
+				tabPanel.addTab("Notes", rangePanel);// Called notes due to planning to put custom note limit in it also
 				
 				// Last row
 				JLabel panLabel = new JLabel("<html> Only play notes panned:</html>");
@@ -207,7 +214,7 @@ public class SectionEditor {
 				left.setSelected(abcPart.playLeft[track]);
 				center.setSelected(abcPart.playCenter[track]);
 				right.setSelected(abcPart.playRight[track]);
-				panel.add(panLabel, "1, " + (firstRowIndex + 2 + numberOfSections) + ", 4, "
+				panel.add(panLabel, "2, " + (firstRowIndex + 2 + numberOfSections) + ", 4, "
 						+ (firstRowIndex + 2 + numberOfSections) + ", f, f");
 				panel.add(left, "5, " + (firstRowIndex + 2 + numberOfSections) + ", 5, "
 						+ (firstRowIndex + 2 + numberOfSections) + ", f, f");
@@ -217,25 +224,41 @@ public class SectionEditor {
 						+ (firstRowIndex + 2 + numberOfSections) + ", f, f");
 
 				// Row 1
-				panel.add(new JLabel("Enable"), "0, 1, c, c");
-				panel.add(new JLabel("From bar"), "1, 1, c, c");
-				panel.add(new JLabel("To bar"), "2, 1, c, c");
-				miscPanel.add(new JLabel("Octave"), "0, 0, c, c");
-				miscPanel.add(new JLabel("Volume"), "1, 0, c, c");
-				miscPanel.add(new JLabel("Silence"), "2, 0, c, c");
-				miscPanel.add(new JLabel("Fade %"), "3, 0, c, c");
-				miscPanel.add(new JLabel("Reset Vol"), "4, 0, c, c");
-				doublingPanel.add(new JLabel("2 down"), "0, 0, c, c");
-				doublingPanel.add(new JLabel("1 down"), "1, 0, c, c");
-				doublingPanel.add(new JLabel("1 up"),   "2, 0, c, c");
-				doublingPanel.add(new JLabel("2 up"),   "3, 0, c, c");
-				rangePanel.add(new JLabel("Low limit"), "0, 0, c, c");
-				rangePanel.add(new JLabel("High limit"), "1, 0, c, c");
+				miscPanel.add(new JLabel("Enable"), "0, 0, c, c");
+				miscPanel.add(new JLabel("From bar"), "1, 0, c, c");
+				miscPanel.add(new JLabel("To bar"), "2, 0, c, c");
+				miscPanel.add(new JLabel("Octave"), "3, 0, c, c");
+				miscPanel.add(new JLabel("Volume"), "4, 0, c, c");
+				miscPanel.add(new JLabel("Silence"), "5, 0, c, c");
+				miscPanel.add(new JLabel("Fade %"), "6, 0, c, c");
+				miscPanel.add(new JLabel("Reset Vol"), "7, 0, c, c");
+				doublingPanel.add(new JLabel("Enable"), "0, 0, c, c");
+				doublingPanel.add(new JLabel("From bar"), "1, 0, c, c");
+				doublingPanel.add(new JLabel("To bar"), "2, 0, c, c");
+				doublingPanel.add(new JLabel("2 down"), "3, 0, c, c");
+				doublingPanel.add(new JLabel("1 down"), "4, 0, c, c");
+				doublingPanel.add(new JLabel("1 up"),   "5, 0, c, c");
+				doublingPanel.add(new JLabel("2 up"),   "6, 0, c, c");
+				rangePanel.add(new JLabel("Enable"), "0, 0, c, c");
+				rangePanel.add(new JLabel("From bar"), "1, 0, c, c");
+				rangePanel.add(new JLabel("To bar"), "2, 0, c, c");
+				rangePanel.add(new JLabel("Low limit"), "3, 0, c, c");
+				rangePanel.add(new JLabel("High limit"), "4, 0, c, c");
 				JTextField nonSection = new JTextField("Rest of the track");
 				nonSection.setEditable(false);
 				nonSection.setHorizontalAlignment(CENTER);
-				panel.add(nonSection, "1, " + (firstRowIndex + numberOfSections) + ", 2, "
-						+ (firstRowIndex + numberOfSections) + ", f, f");
+				miscPanel.add(nonSection, "1, " + (1 + numberOfSections) + ", 2, "
+						+ (1 + numberOfSections) + ", f, f");
+				JTextField nonSection2 = new JTextField("Rest of the track");
+				nonSection2.setEditable(false);
+				nonSection2.setHorizontalAlignment(CENTER);
+				doublingPanel.add(nonSection2, "1, " + (1 + numberOfSections) + ", 2, "
+						+ (1 + numberOfSections) + ", f, f");
+				JTextField nonSection3 = new JTextField("Rest of the track");
+				nonSection3.setEditable(false);
+				nonSection3.setHorizontalAlignment(CENTER);
+				rangePanel.add(nonSection3, "1, " + (1 + numberOfSections) + ", 2, "
+						+ (1 + numberOfSections) + ", f, f");
 				// panel.add(new JLabel("Rest of the track"), "1, "+(3+numberOfSections)+", 2, "+(3+numberOfSections)+",
 				// c, c");
 				
@@ -271,9 +294,100 @@ public class SectionEditor {
 							System.err.println(
 									"Too many sections in treemap in section-editor, or line numbers was badly edited in .msx file.");
 						} else {
-							sectionInputs.get(number).enable.setSelected(true);
-							sectionInputs.get(number).barA.setText(String.valueOf(ps.startBar));
-							sectionInputs.get(number).barB.setText(String.valueOf(ps.endBar));
+							sectionInputs.get(number).enable[0].setSelected(true);
+							sectionInputs.get(number).barA[0].setText(String.valueOf(ps.startBar));
+							sectionInputs.get(number).barB[0].setText(String.valueOf(ps.endBar));
+							sectionInputs.get(number).enable[1].setSelected(true);
+							sectionInputs.get(number).barA[1].setText(String.valueOf(ps.startBar));
+							sectionInputs.get(number).barB[1].setText(String.valueOf(ps.endBar));
+							sectionInputs.get(number).enable[2].setSelected(true);
+							sectionInputs.get(number).barA[2].setText(String.valueOf(ps.startBar));
+							sectionInputs.get(number).barB[2].setText(String.valueOf(ps.endBar));
+							final SectionEditorLine inp = sectionInputs.get(number);
+							ActionListener enabler = new ActionListener () {
+								@Override
+								public void actionPerformed(ActionEvent a) {
+									for (JCheckBox chkbox : inp.enable) {
+										if (a.getSource() != chkbox) {
+											chkbox.setSelected(((JCheckBox)a.getSource()).isSelected());
+										}
+									}
+								}
+							};
+							sectionInputs.get(number).enable[0].addActionListener(enabler);
+							sectionInputs.get(number).enable[1].addActionListener(enabler);
+							sectionInputs.get(number).enable[2].addActionListener(enabler);
+							DocumentListener starter = new DocumentListener () {
+								volatile boolean working = false;
+								
+								public void myUpdate(DocumentEvent a) {	
+									if (working) return;
+									working = true;
+									for (JTextField stbar : inp.barA) {
+										if (a.getDocument() != stbar.getDocument()) {
+											try {
+												stbar.setText(a.getDocument().getText(0, a.getDocument().getLength()));
+											} catch (BadLocationException e) {
+												e.printStackTrace();
+											}
+										}
+									}
+									working = false;
+								}
+
+								@Override
+								public void insertUpdate(DocumentEvent e) {
+									myUpdate(e);
+								}
+								@Override
+								public void removeUpdate(DocumentEvent e) {
+									myUpdate(e);
+								}
+								@Override
+								public void changedUpdate(DocumentEvent a) {
+									myUpdate(a);
+								}
+							};
+							sectionInputs.get(number).barA[0].getDocument().addDocumentListener(starter);
+							sectionInputs.get(number).barA[1].getDocument().addDocumentListener(starter);
+							sectionInputs.get(number).barA[2].getDocument().addDocumentListener(starter);
+							DocumentListener ender = new DocumentListener () {
+								volatile boolean working = false;
+								
+								public void myUpdate(DocumentEvent a) {	
+									if (working) return;
+									working = true;
+									for (JTextField enbar : inp.barB) {
+										if (a.getDocument() != enbar.getDocument()) {
+											try {
+												enbar.setText(a.getDocument().getText(0, a.getDocument().getLength()));
+											} catch (BadLocationException e) {
+												e.printStackTrace();
+											}
+										}
+									}
+									working = false;
+								}
+
+								@Override
+								public void insertUpdate(DocumentEvent e) {
+									myUpdate(e);
+								}
+								@Override
+								public void removeUpdate(DocumentEvent e) {
+									myUpdate(e);
+								}
+								@Override
+								public void changedUpdate(DocumentEvent a) {
+									myUpdate(a);
+								}
+							};
+							sectionInputs.get(number).barB[0].getDocument().addDocumentListener(ender);
+							sectionInputs.get(number).barB[1].getDocument().addDocumentListener(ender);
+							sectionInputs.get(number).barB[2].getDocument().addDocumentListener(ender);
+							
+							
+							
 							sectionInputs.get(number).transpose.setText(String.valueOf(ps.octaveStep));
 							sectionInputs.get(number).velo.setText(String.valueOf(ps.volumeStep));
 							sectionInputs.get(number).silent.setSelected(ps.silence);
@@ -330,9 +444,15 @@ public class SectionEditor {
 					sectionInputs.get(i).silent.setToolTipText(silent);
 					sectionInputs.get(i).velo.setToolTipText(velo);
 					sectionInputs.get(i).transpose.setToolTipText(transpose);
-					sectionInputs.get(i).barB.setToolTipText(barB);
-					sectionInputs.get(i).barA.setToolTipText(barA);
-					sectionInputs.get(i).enable.setToolTipText(enable);
+					sectionInputs.get(i).barB[0].setToolTipText(barB);
+					sectionInputs.get(i).barA[0].setToolTipText(barA);
+					sectionInputs.get(i).enable[0].setToolTipText(enable);
+					sectionInputs.get(i).barB[1].setToolTipText(barB);
+					sectionInputs.get(i).barA[1].setToolTipText(barA);
+					sectionInputs.get(i).enable[1].setToolTipText(enable);
+					sectionInputs.get(i).barB[2].setToolTipText(barB);
+					sectionInputs.get(i).barA[2].setToolTipText(barA);
+					sectionInputs.get(i).enable[2].setToolTipText(enable);
 					sectionInputs.get(i).doubling0.setToolTipText(d0);
 					sectionInputs.get(i).doubling1.setToolTipText(d1);
 					sectionInputs.get(i).doubling2.setToolTipText(d2);
@@ -340,32 +460,43 @@ public class SectionEditor {
 					sectionInputs.get(i).fromPitch.setToolTipText("Enter the note name (like Gb4 or Fs4) or the note number (like 60).");
 					sectionInputs.get(i).toPitch.setToolTipText("Enter the note name (like Gb4 or Fs4) or the note number (like 60).");
 					
-					sectionInputs.get(i).barA.setHorizontalAlignment(CENTER);
-					sectionInputs.get(i).barB.setHorizontalAlignment(CENTER);
+					sectionInputs.get(i).barA[0].setHorizontalAlignment(CENTER);
+					sectionInputs.get(i).barB[0].setHorizontalAlignment(CENTER);
+					sectionInputs.get(i).barA[1].setHorizontalAlignment(CENTER);
+					sectionInputs.get(i).barB[1].setHorizontalAlignment(CENTER);
+					sectionInputs.get(i).barA[2].setHorizontalAlignment(CENTER);
+					sectionInputs.get(i).barB[2].setHorizontalAlignment(CENTER);
 					sectionInputs.get(i).transpose.setHorizontalAlignment(CENTER);
 					sectionInputs.get(i).velo.setHorizontalAlignment(CENTER);
 					sectionInputs.get(i).fade.setHorizontalAlignment(CENTER);
 					sectionInputs.get(i).fromPitch.setHorizontalAlignment(CENTER);
 					sectionInputs.get(i).toPitch.setHorizontalAlignment(CENTER);
 
-					panel.add(sectionInputs.get(i).enable, "0," + (firstRowIndex + i) + ",C,C");
-					panel.add(sectionInputs.get(i).barA, "1," + (firstRowIndex + i) + ",f,f");
-					panel.add(sectionInputs.get(i).barB, "2," + (firstRowIndex + i) + ",f,f");
-					miscPanel.add(sectionInputs.get(i).transpose, "0," + (1 + i) + ",f,f");
-					miscPanel.add(sectionInputs.get(i).velo, "1," + (1 + i) + ",f,f");
-					miscPanel.add(sectionInputs.get(i).silent, "2," + (1 + i) + ",c,f");
-					miscPanel.add(sectionInputs.get(i).fade, "3," + (1 + i) + ",f,f");
-					miscPanel.add(sectionInputs.get(i).resetVelocities, "4," + (1 + i) + ",c,f");
+					miscPanel.add(sectionInputs.get(i).enable[0], "0," + (1 + i) + ",C,C");
+					miscPanel.add(sectionInputs.get(i).barA[0], "1," + (1 + i) + ",f,f");
+					miscPanel.add(sectionInputs.get(i).barB[0], "2," + (1 + i) + ",f,f");
+					doublingPanel.add(sectionInputs.get(i).enable[1], "0," + (1 + i) + ",C,C");
+					doublingPanel.add(sectionInputs.get(i).barA[1], "1," + (1 + i) + ",f,f");
+					doublingPanel.add(sectionInputs.get(i).barB[1], "2," + (1 + i) + ",f,f");
+					rangePanel.add(sectionInputs.get(i).enable[2], "0," + (1 + i) + ",C,C");
+					rangePanel.add(sectionInputs.get(i).barA[2], "1," + (1 + i) + ",f,f");
+					rangePanel.add(sectionInputs.get(i).barB[2], "2," + (1 + i) + ",f,f");
 					
-					doublingPanel.add(sectionInputs.get(i).doubling0, "0, "+(i+1)+", c, c");
-					doublingPanel.add(sectionInputs.get(i).doubling1, "1, "+(i+1)+", c, c");
-					doublingPanel.add(sectionInputs.get(i).doubling2, "2, "+(i+1)+", c, c");
-					doublingPanel.add(sectionInputs.get(i).doubling3, "3, "+(i+1)+", c, c");
+					miscPanel.add(sectionInputs.get(i).transpose, "3," + (1 + i) + ",f,f");
+					miscPanel.add(sectionInputs.get(i).velo, "4," + (1 + i) + ",f,f");
+					miscPanel.add(sectionInputs.get(i).silent, "5," + (1 + i) + ",c,f");
+					miscPanel.add(sectionInputs.get(i).fade, "6," + (1 + i) + ",f,f");
+					miscPanel.add(sectionInputs.get(i).resetVelocities, "7," + (1 + i) + ",c,f");
+					
+					doublingPanel.add(sectionInputs.get(i).doubling0, "3, "+(i+1)+", c, c");
+					doublingPanel.add(sectionInputs.get(i).doubling1, "4, "+(i+1)+", c, c");
+					doublingPanel.add(sectionInputs.get(i).doubling2, "5, "+(i+1)+", c, c");
+					doublingPanel.add(sectionInputs.get(i).doubling3, "6, "+(i+1)+", c, c");
 
 					
-					rangePanel.add(sectionInputs.get(i).fromPitch, "0, "+(i+1)+", f, f");
-					rangePanel.add(sectionInputs.get(i).toPitch, "1, "+(i+1)+", f, f");
-					rangePanel.add(sectionInputs.get(i).textPitch, "2, "+(i+1)+", 3, "+(i+1)+", c, c");
+					rangePanel.add(sectionInputs.get(i).fromPitch, "3, "+(i+1)+", f, f");
+					rangePanel.add(sectionInputs.get(i).toPitch, "4, "+(i+1)+", f, f");
+					rangePanel.add(sectionInputs.get(i).textPitch, "5, "+(i+1)+", 3, "+(i+1)+", c, c");
 				}
 
 				nonSectionInput.silent.setToolTipText(silent);
@@ -374,25 +505,25 @@ public class SectionEditor {
 				nonSectionInput.doubling1.setToolTipText(d1);
 				nonSectionInput.doubling2.setToolTipText(d2);
 				nonSectionInput.doubling3.setToolTipText(d3);
-				miscPanel.add(nonSectionInput.silent, "2," + (1 + numberOfSections) + ",c,f");
-				miscPanel.add(nonSectionInput.resetVelocities, "4," + (1 + numberOfSections) + ",c,f");
-				doublingPanel.add(nonSectionInput.doubling0, "0,"+(numberOfSections+1)+",c,c");
-				doublingPanel.add(nonSectionInput.doubling1, "1,"+(numberOfSections+1)+",c,c");
-				doublingPanel.add(nonSectionInput.doubling2, "2,"+(numberOfSections+1)+",c,c");
-				doublingPanel.add(nonSectionInput.doubling3, "3,"+(numberOfSections+1)+",c,c");
+				miscPanel.add(nonSectionInput.silent, "5," + (1 + numberOfSections) + ",c,f");
+				miscPanel.add(nonSectionInput.resetVelocities, "7," + (1 + numberOfSections) + ",c,f");
+				doublingPanel.add(nonSectionInput.doubling0, "3,"+(numberOfSections+1)+",c,c");
+				doublingPanel.add(nonSectionInput.doubling1, "4,"+(numberOfSections+1)+",c,c");
+				doublingPanel.add(nonSectionInput.doubling2, "5,"+(numberOfSections+1)+",c,c");
+				doublingPanel.add(nonSectionInput.doubling3, "6,"+(numberOfSections+1)+",c,c");
 				nonSectionInput.fromPitch.setToolTipText("Enter the note name (like Gb4 or Fs4) or the note number (like 60).");
 				nonSectionInput.toPitch.setToolTipText("Enter the note name (like Gb4 or Fs4) or the note number (like 60).");
 				nonSectionInput.fromPitch.setHorizontalAlignment(CENTER);
 				nonSectionInput.toPitch.setHorizontalAlignment(CENTER);
-				rangePanel.add(nonSectionInput.fromPitch, "0, "+(numberOfSections+1)+", f, f");
-				rangePanel.add(nonSectionInput.toPitch, "1, "+(numberOfSections+1)+", f, f");
-				rangePanel.add(nonSectionInput.textPitch, "2, "+(numberOfSections+1)+", 3, "+(numberOfSections+1)+", c, c");
+				rangePanel.add(nonSectionInput.fromPitch, "3, "+(numberOfSections+1)+", f, f");
+				rangePanel.add(nonSectionInput.toPitch, "4, "+(numberOfSections+1)+", f, f");
+				rangePanel.add(nonSectionInput.textPitch, "5, "+(numberOfSections+1)+", 6, "+(numberOfSections+1)+", c, c");
 
 				copySections.getModel().addActionListener(e -> {
 					for (int i = 0; i < numberOfSections; i++) {
-						clipboardStart[i] = sectionInputs.get(i).barA.getText();
-						clipboardEnd[i] = sectionInputs.get(i).barB.getText();
-						clipboardEnabled[i] = sectionInputs.get(i).enable.isSelected();
+						clipboardStart[i] = sectionInputs.get(i).barA[0].getText();
+						clipboardEnd[i] = sectionInputs.get(i).barB[0].getText();
+						clipboardEnabled[i] = sectionInputs.get(i).enable[0].isSelected();
 					}
 					clipboardArmed = true;
 					pasteSections.setEnabled(clipboardArmed);
@@ -405,9 +536,12 @@ public class SectionEditor {
 					if (!clipboardArmed)
 						return;
 					for (int i = 0; i < numberOfSections; i++) {
-						sectionInputs.get(i).barA.setText(clipboardStart[i]);
-						sectionInputs.get(i).barB.setText(clipboardEnd[i]);
-						sectionInputs.get(i).enable.setSelected(clipboardEnabled[i]);
+						sectionInputs.get(i).barA[0].setText(clipboardStart[i]);
+						sectionInputs.get(i).barB[0].setText(clipboardEnd[i]);
+						// The other tabs; barA and B will be autoset by listeners
+						sectionInputs.get(i).enable[0].setSelected(clipboardEnabled[i]);
+						sectionInputs.get(i).enable[1].setSelected(clipboardEnabled[i]);
+						sectionInputs.get(i).enable[2].setSelected(clipboardEnabled[i]);
 					}
 				});
 				pasteSections.setToolTipText("<html><b> Paste the section starts and ends.</html>");
@@ -457,13 +591,13 @@ public class SectionEditor {
 
 					int lastEnd = 0;
 					for (int k = 0; k < numberOfSections; k++) {
-						if (SectionDialog.this.sectionInputs.get(k).enable.isSelected()) {
+						if (SectionDialog.this.sectionInputs.get(k).enable[0].isSelected()) {
 							PartSection ps1 = new PartSection();
 							try {
 								ps1.octaveStep = Integer.parseInt(sectionInputs.get(k).transpose.getText());
 								ps1.volumeStep = Integer.parseInt(sectionInputs.get(k).velo.getText());
-								ps1.startBar = Integer.parseInt(sectionInputs.get(k).barA.getText());
-								ps1.endBar = Integer.parseInt(sectionInputs.get(k).barB.getText());
+								ps1.startBar = Integer.parseInt(sectionInputs.get(k).barA[0].getText());
+								ps1.endBar = Integer.parseInt(sectionInputs.get(k).barB[0].getText());
 								ps1.silence = sectionInputs.get(k).silent.isSelected();
 								ps1.fade = Integer.parseInt(sectionInputs.get(k).fade.getText());
 								ps1.resetVelocities = sectionInputs.get(k).resetVelocities.isSelected();
@@ -484,7 +618,9 @@ public class SectionEditor {
 										lastEnd = ps1.endBar;
 									ps1.dialogLine = k;
 								} else {
-									SectionDialog.this.sectionInputs.get(k).enable.setSelected(false);
+									SectionDialog.this.sectionInputs.get(k).enable[0].setSelected(false);
+									SectionDialog.this.sectionInputs.get(k).enable[1].setSelected(false);
+									SectionDialog.this.sectionInputs.get(k).enable[2].setSelected(false);
 								}
 								
 								try {
@@ -511,7 +647,9 @@ public class SectionEditor {
 								}
 								SectionDialog.this.sectionInputs.get(k).textPitch.setText("("+ps1.fromPitch.id+" to "+ps1.toPitch.id+")");
 							} catch (NumberFormatException nfe) {
-								SectionDialog.this.sectionInputs.get(k).enable.setSelected(false);
+								SectionDialog.this.sectionInputs.get(k).enable[0].setSelected(false);
+								SectionDialog.this.sectionInputs.get(k).enable[1].setSelected(false);
+								SectionDialog.this.sectionInputs.get(k).enable[2].setSelected(false);
 							}
 						}
 					}
@@ -676,20 +814,6 @@ public class SectionEditor {
 					break;
 				}
 			};
-			
-			private GridBagConstraints makeGbc(int x, int y, int rowHeight) {
-		        GridBagConstraints gbc = new GridBagConstraints();
-		        gbc.gridwidth = 1;
-		        gbc.gridheight = rowHeight;
-		        gbc.gridx = x;
-		        gbc.gridy = y;
-		        gbc.weightx = x;
-		        gbc.weighty = 1.0;
-		        gbc.insets = new Insets(5, 5, 5, 5);
-		        gbc.anchor = (x == 0) ? GridBagConstraints.LINE_START : GridBagConstraints.LINE_END;
-		        gbc.fill = GridBagConstraints.HORIZONTAL;
-		        return gbc;
-		    }
 			
 		}
 

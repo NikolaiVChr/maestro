@@ -5,9 +5,9 @@ import javax.swing.JLabel;
 import javax.swing.JTextField;
 
 class SectionEditorLine {
-	JCheckBox enable = new JCheckBox();
-	JTextField barA = new JTextField("0");
-	JTextField barB = new JTextField("0");
+	JCheckBox[] enable = {new JCheckBox(),new JCheckBox(),new JCheckBox()};
+	JTextField[] barA = {new JTextField("0"),new JTextField("0"),new JTextField("0")};
+	JTextField[] barB = {new JTextField("0"),new JTextField("0"),new JTextField("0")};
 	JTextField transpose = new JTextField("0");
 	JTextField velo = new JTextField("0");
 	JCheckBox silent = new JCheckBox();
