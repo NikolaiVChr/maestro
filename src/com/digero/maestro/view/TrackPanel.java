@@ -45,6 +45,7 @@ import com.digero.common.util.ExtensionFileFilter;
 import com.digero.common.util.ICompileConstants;
 import com.digero.common.util.IDiscardable;
 import com.digero.common.util.Listener;
+import com.digero.common.util.Pair;
 import com.digero.common.util.ParseException;
 import com.digero.common.util.Util;
 import com.digero.common.view.ColorTable;
@@ -1118,6 +1119,14 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 				return Collections.emptyList();
 
 			return super.getEvents();
+		}
+
+		@Override
+		boolean isOutOfLimit(int noteId, long startTick) {
+			int trackNumber = trackInfo.getTrackNumber();
+			Pair<Integer, Integer> limits = abcPart.getSectionPitchLimits(trackNumber, startTick);
+			return noteId + abcPart.getInstrument().octaveDelta * 12 < limits.first || noteId + abcPart.getInstrument().octaveDelta * 12 > limits.second;
+			// The reason for the instrument octave addition is that it was subtracted when the note was instrument-transposed and limits should apply before that.
 		}
 	}
 

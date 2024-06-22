@@ -723,6 +723,10 @@ public class NoteGraph extends JPanel implements Listener<SequencerEvent>, IDisc
 						}
 
 						int noteIdDouble = transposeNote(ne.note.id + addition, ne.getStartTick());
+						
+						if (isOutOfLimit(noteIdDouble, ne.getStartTick())) {
+							continue;
+						}
 
 						if (showNotesOn && songPos >= ne.getStartMicros() && minSongPos <= ne.getEndMicros()
 								&& sequencer.isNoteActive(ne.note.id)) {
@@ -929,6 +933,10 @@ public class NoteGraph extends JPanel implements Listener<SequencerEvent>, IDisc
 
 		g2.setTransform(xformSav);
 		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, hintAntialiasSav);
+	}
+
+	boolean isOutOfLimit(int noteIdDouble, long startTick) {
+		return false;
 	}
 
 	private void setColorAndFillVelocity(Graphics2D g2, boolean showNotesOn, long minSongPos, NoteEvent ne,
