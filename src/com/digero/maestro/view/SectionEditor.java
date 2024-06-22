@@ -503,7 +503,7 @@ public class SectionEditor {
 					
 					rangePanel.add(sectionLine.fromPitch, "3, "+(i+1)+", f, f");
 					rangePanel.add(sectionLine.toPitch, "4, "+(i+1)+", f, f");
-					rangePanel.add(sectionLine.textPitch, "5, "+(i+1)+", 3, "+(i+1)+", c, c");
+					rangePanel.add(sectionLine.textPitch, "5, "+(i+1)+", 5, "+(i+1)+", c, c");
 				}
 
 				nonSectionInput.silent.setToolTipText(silent);
@@ -524,7 +524,7 @@ public class SectionEditor {
 				nonSectionInput.toPitch.setHorizontalAlignment(CENTER);
 				rangePanel.add(nonSectionInput.fromPitch, "3, "+(numberOfSections+1)+", f, f");
 				rangePanel.add(nonSectionInput.toPitch, "4, "+(numberOfSections+1)+", f, f");
-				rangePanel.add(nonSectionInput.textPitch, "5, "+(numberOfSections+1)+", 6, "+(numberOfSections+1)+", c, c");
+				rangePanel.add(nonSectionInput.textPitch, "5, "+(numberOfSections+1)+", 5, "+(numberOfSections+1)+", c, c");
 
 				copySections.getModel().addActionListener(e -> {
 					for (int i = 0; i < numberOfSections; i++) {
