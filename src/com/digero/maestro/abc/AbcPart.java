@@ -964,7 +964,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	}
 	
 	public Pair<Integer, Integer> getSectionPitchLimits(int track, long tickStart) {
-		Pair<Integer, Integer> secLimits = new Pair(minDefault.id,Note.MAX.id);
+		Pair<Integer, Integer> secLimits = new Pair<>(minDefault.id,Note.MAX.id);
 		if (isPercussionPart())
 			return secLimits;
 		if (!isTrackEnabled(track))
