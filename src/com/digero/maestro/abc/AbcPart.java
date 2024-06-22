@@ -24,6 +24,7 @@ import javax.xml.xpath.XPathExpressionException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
+import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.Dynamics;
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.abc.LotroInstrumentSampleDuration;
@@ -74,6 +75,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	private final ListenerList<AbcPartEvent> listeners = new ListenerList<>();
 	private Preferences drumPrefs = Preferences.userNodeForPackage(AbcPart.class).node("drums");
 
+	private int noteMax = AbcConstants.MAX_CHORD_NOTES;
 	public List<TreeMap<Integer, PartSection>> sections;
 	public List<PartSection> nonSection;
 	public List<boolean[]> sectionsModified;
@@ -153,6 +155,9 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		SaveUtil.appendChildTextElement(ele, "instrument", String.valueOf(instrument));
 		if (delay != 0) {
 			SaveUtil.appendChildTextElement(ele, "delay", String.valueOf(delay));
+		}
+		if (noteMax != AbcConstants.MAX_CHORD_NOTES) {
+			ele.setAttribute("noteMax", String.valueOf(noteMax));
 		}
 		for (int t = 0; t < getTrackCount(); t++) {
 			if (!isTrackEnabled(t))
@@ -294,6 +299,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			instrument = SaveUtil.parseValue(ele, "instrument", instrument);
 			typeNumber = getTypeNumberMatchingTitle();// must be after instr and title
 			delay = SaveUtil.parseValue(ele, "delay", 0);
+			noteMax = SaveUtil.parseValue(ele, "@noteMax", AbcConstants.MAX_CHORD_NOTES);
 			for (Element trackEle : XmlUtil.selectElements(ele, "track")) {
 
 				// Try to find the specified track in the midi sequence by name, in case it
@@ -1460,6 +1466,10 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	public void delayEdited() {
 		fireChangeEvent(AbcPartProperty.DELAY_EDIT);
 	}
+	
+	public void maxEdited() {
+		fireChangeEvent(AbcPartProperty.MAX_EDIT);
+	}
 
 	public void setTrackPriority(int track, boolean prio) {
 		if (trackPriority[track] != prio) {
@@ -1471,5 +1481,14 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 
 	public boolean isTrackPriority(int trackNumber) {
 		return trackPriority[trackNumber];
+	}
+
+	public int getNoteMax() {
+		return noteMax;
+	}
+
+	public void setNoteMax(int noteMax) {
+		if (noteMax <= AbcConstants.MAX_CHORD_NOTES && noteMax > 0)
+			this.noteMax = noteMax;
 	}
 }

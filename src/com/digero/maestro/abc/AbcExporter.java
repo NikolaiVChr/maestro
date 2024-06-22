@@ -997,7 +997,7 @@ public class AbcExporter {
 				// if (addTies) assert curChord.hasRestAndNotes() : "addTies is true!";
 			} else {
 				List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
-						part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion);
+						part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part);
 				removeNotes(events, deadnotes, part);
 				if (!deadnotes.isEmpty()) {
 					// One of the tiedTo notes that was pruned might be the events.get(i) note,
@@ -1095,7 +1095,7 @@ public class AbcExporter {
 
 				// Last chord needs to be pruned as that hasn't happened yet.
 				List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
-						part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion);
+						part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part);
 				removeNotes(events, deadnotes, part);// we need to set the pruned flag for last chord too.
 				curChord.recalcEndTick();
 				long targetEndTick = curChord.getEndTick();
@@ -1127,7 +1127,7 @@ public class AbcExporter {
 		} else {
 			// Last chord needs to be pruned as that hasn't happened yet.
 			List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
-					part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion);
+					part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part);
 			removeNotes(events, deadnotes, part);// we need to set the pruned flag for last chord too.
 			curChord.recalcEndTick();
 		}

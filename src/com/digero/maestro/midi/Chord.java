@@ -31,6 +31,7 @@ import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.Dynamics;
 import com.digero.common.midi.ITempoCache;
 import com.digero.common.midi.Note;
+import com.digero.maestro.abc.AbcPart;
 
 public class Chord implements AbcConstants {
 	private ITempoCache tempoCache;
@@ -209,11 +210,13 @@ public class Chord implements AbcConstants {
 		}
 	}
 	
-	public List<AbcNoteEvent> prune(boolean sustained, boolean drum, boolean percussion) {
+	public List<AbcNoteEvent> prune(boolean sustained, boolean drum, boolean percussion, AbcPart abcPart) {
 		// Determine which notes to prune to remain with a max of 6
 		List<AbcNoteEvent> deadNotes = new ArrayList<>();
 
-		if (sizeReal() > MAX_CHORD_NOTES) {
+		int noteMax = abcPart.getNoteMax();
+		
+		if (sizeReal() > noteMax) {
 			recalcEdges();
 
 			List<AbcNoteEvent> newNotes = new ArrayList<>();
@@ -238,8 +241,10 @@ public class Chord implements AbcConstants {
 			
 			notes.removeAll(rests);// no need to add the rests to deadnotes
 			
+			
+			
 			for (int i = notes.size() - 1; i >= 0; i--) {
-				if (newNotes.size() < MAX_CHORD_NOTES) {
+				if (newNotes.size() < noteMax) {
 					newNotes.add(notes.get(i));
 				} else {
 					deadNotes.add(notes.get(i));

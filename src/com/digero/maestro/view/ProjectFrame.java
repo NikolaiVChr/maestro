@@ -85,6 +85,7 @@ import javax.xml.transform.TransformerException;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
+import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.StringCleaner;
 import com.digero.common.icons.IconLoader;
 import com.digero.common.midi.KeySignature;
@@ -199,6 +200,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private JButton deletePartButton;
 	private JButton delayButton;
 	private JButton numerateButton;
+	private JButton maxButton;
 
 	private JPanel settingsPanel;
 
@@ -572,6 +574,14 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		});
 		numerateButton.setToolTipText("Auto assign numbers to identical instrument part titles.");
 
+		maxButton = new JButton("Max part notes");
+		maxButton.addActionListener(e -> {
+			if (partsList.getSelectedPart() != null) {
+				MaxDialog.show(ProjectFrame.this, partsList.getSelectedPart());
+			}
+		});
+		maxButton.setToolTipText("Open a small dialog to edit a parts max notes.");
+		
 		JPanel partsButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, HGAP, VGAP));
 		partsButtonPanel.add(newPartButton);
 		partsButtonPanel.add(deletePartButton);
@@ -585,6 +595,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		JPanel delayPanel = new JPanel(delayGrid);
 		delayPanel.add(delayButton);
 		delayPanel.add(numerateButton);
+		//delayPanel.add(maxButton); // TODO: Enable this to use this new feature.
 		partsListPanel.add(delayPanel, BorderLayout.SOUTH);
 	}
 
@@ -1642,6 +1653,19 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			delayButton.setForeground(new Color(0.6f, 0.6f, 0.6f));
 		}
 		delayButton.setEnabled(partsList.getSelectedIndex() != -1);
+		
+		if (partsList.getSelectedIndex() != -1 && partPanel != null && partPanel.getAbcPart() != null
+				&& partPanel.getAbcPart().getNoteMax() != AbcConstants.MAX_CHORD_NOTES) {
+			maxButton.setForeground(new Color(0.2f, 0.8f, 0.2f));// green
+		} else if (partsList.getSelectedIndex() != -1) {
+			Color c = UIManager.getColor("TextField.foreground");
+			maxButton.setForeground(c);
+		} else {
+			// This is needed since when starting to set foreground color manually,
+			// it will no longer appear greyed out when disabled automatically.
+			maxButton.setForeground(new Color(0.6f, 0.6f, 0.6f));
+		}
+		maxButton.setEnabled(partsList.getSelectedIndex() != -1);
 	}
 
 	private void updateButtons(boolean immediate) {
