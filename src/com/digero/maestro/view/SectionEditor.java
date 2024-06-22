@@ -47,6 +47,7 @@ public class SectionEditor {
 	static String[] clipboardEnd = null;
 	static boolean[] clipboardEnabled = null;
 	private static JDialog openDialog = null;
+	final static double[] LAYOUT_COLS_TABS = new double[] { 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125 };
 
 	public static void show(JFrame jf, NoteGraph noteGraph, AbcPart abcPart, int track, final boolean percussion,
 			final List<DrumPanel> dPanels) {
@@ -532,11 +533,9 @@ public class SectionEditor {
 
 			private void layoutTabs() {
 				double[] LAYOUT_ROWS_NEW = tabsRows();
-				double[] LAYOUT_COLS_NEW = new double[] { 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125 };
-								
-				TableLayout doublingLayout = new TableLayout(LAYOUT_COLS_NEW, LAYOUT_ROWS_NEW);
-				TableLayout miscLayout = new TableLayout(LAYOUT_COLS_NEW, LAYOUT_ROWS_NEW);
-				TableLayout rangeLayout = new TableLayout(LAYOUT_COLS_NEW, LAYOUT_ROWS_NEW);
+				TableLayout doublingLayout = new TableLayout(LAYOUT_COLS_TABS, LAYOUT_ROWS_NEW);
+				TableLayout miscLayout = new TableLayout(LAYOUT_COLS_TABS, LAYOUT_ROWS_NEW);
+				TableLayout rangeLayout = new TableLayout(LAYOUT_COLS_TABS, LAYOUT_ROWS_NEW);
 				
 				doublingPanel.setLayout(doublingLayout);
 				miscPanel.setLayout(miscLayout);
@@ -651,6 +650,8 @@ public class SectionEditor {
 					break;
 				}
 			};
+
+			
 		
 			
 		}

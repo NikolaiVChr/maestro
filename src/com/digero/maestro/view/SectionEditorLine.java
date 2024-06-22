@@ -15,7 +15,6 @@ import javax.swing.event.DocumentListener;
 import info.clearthought.layout.TableLayout;
 
 class SectionEditorLine implements Comparable<SectionEditorLine> {
-	private final double[] LAYOUT_COLS = new double[] { 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125, 0.125 };//{ TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.PREFERRED };
 	private final double[] LAYOUT_ROWS = new double[] { TableLayout.PREFERRED };	
 	
 	JCheckBox[] enable = {new JCheckBox(),new JCheckBox(),new JCheckBox()};
@@ -34,9 +33,9 @@ class SectionEditorLine implements Comparable<SectionEditorLine> {
 	JTextField toPitch = new JTextField();
 	JLabel textPitch = new JLabel();
 	
-	JPanel tab1line = new JPanel(new TableLayout(LAYOUT_COLS, LAYOUT_ROWS));
-	JPanel tab2line = new JPanel(new TableLayout(LAYOUT_COLS, LAYOUT_ROWS));
-	JPanel tab3line = new JPanel(new TableLayout(LAYOUT_COLS, LAYOUT_ROWS));
+	JPanel tab1line = new JPanel(new TableLayout(SectionEditor.LAYOUT_COLS_TABS, LAYOUT_ROWS));
+	JPanel tab2line = new JPanel(new TableLayout(SectionEditor.LAYOUT_COLS_TABS, LAYOUT_ROWS));
+	JPanel tab3line = new JPanel(new TableLayout(SectionEditor.LAYOUT_COLS_TABS, LAYOUT_ROWS));
 	
 	public SectionEditorLine() {
 		super();
