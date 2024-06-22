@@ -71,6 +71,12 @@ public class SectionEditor {
 			JButton copySections = new JButton("Copy");
 			JButton pasteSections = new JButton("Paste");
 			
+			private JPanel doublingPanel;
+			private JPanel miscPanel;
+			private JPanel rangePanel;
+
+			private final JButton add1 = new JButton("Add");
+			
 			// NoteGraph noteGraph = null;
 
 			public SectionDialog(JFrame jf, final NoteGraph noteGraph, String title, boolean modal, AbcPart abcPart,
@@ -168,27 +174,7 @@ public class SectionEditor {
 				panel.add(center, "6, 4, f, f");
 				panel.add(right, "7, 4, f, f");
 
-				// Row 1
-				miscPanel.add(new JLabel("Enable"), "0, 0, c, c");
-				miscPanel.add(new JLabel("From bar"), "1, 0, c, c");
-				miscPanel.add(new JLabel("To bar"), "2, 0, c, c");
-				miscPanel.add(new JLabel("Octave"), "3, 0, c, c");
-				miscPanel.add(new JLabel("Volume"), "4, 0, c, c");
-				miscPanel.add(new JLabel("Silence"), "5, 0, c, c");
-				miscPanel.add(new JLabel("Fade %"), "6, 0, c, c");
-				miscPanel.add(new JLabel("Reset Vol"), "7, 0, c, c");
-				doublingPanel.add(new JLabel("Enable"), "0, 0, c, c");
-				doublingPanel.add(new JLabel("From bar"), "1, 0, c, c");
-				doublingPanel.add(new JLabel("To bar"), "2, 0, c, c");
-				doublingPanel.add(new JLabel("2 down"), "3, 0, c, c");
-				doublingPanel.add(new JLabel("1 down"), "4, 0, c, c");
-				doublingPanel.add(new JLabel("1 up"),   "5, 0, c, c");
-				doublingPanel.add(new JLabel("2 up"),   "6, 0, c, c");
-				rangePanel.add(new JLabel("Enable"), "0, 0, c, c");
-				rangePanel.add(new JLabel("From bar"), "1, 0, c, c");
-				rangePanel.add(new JLabel("To bar"), "2, 0, c, c");
-				rangePanel.add(new JLabel("Low limit"), "3, 0, c, c");
-				rangePanel.add(new JLabel("High limit"), "4, 0, c, c");
+				
 				
 				TreeMap<Integer, PartSection> tree = abcPart.sections.get(track);
 				if (tree != null) {
@@ -555,9 +541,37 @@ public class SectionEditor {
 				doublingPanel.setLayout(doublingLayout);
 				miscPanel.setLayout(miscLayout);
 				rangePanel.setLayout(rangeLayout);
-
+				
+				doublingPanel.removeAll();
+				miscPanel.removeAll();
+				rangePanel.removeAll();
+				
+				addTitlesToTabs();
 			}
 			
+			private void addTitlesToTabs() {
+				miscPanel.add(new JLabel("Enable"), "0, 0, c, c");
+				miscPanel.add(new JLabel("From bar"), "1, 0, c, c");
+				miscPanel.add(new JLabel("To bar"), "2, 0, c, c");
+				miscPanel.add(new JLabel("Octave"), "3, 0, c, c");
+				miscPanel.add(new JLabel("Volume"), "4, 0, c, c");
+				miscPanel.add(new JLabel("Silence"), "5, 0, c, c");
+				miscPanel.add(new JLabel("Fade %"), "6, 0, c, c");
+				miscPanel.add(new JLabel("Reset Vol"), "7, 0, c, c");
+				doublingPanel.add(new JLabel("Enable"), "0, 0, c, c");
+				doublingPanel.add(new JLabel("From bar"), "1, 0, c, c");
+				doublingPanel.add(new JLabel("To bar"), "2, 0, c, c");
+				doublingPanel.add(new JLabel("2 down"), "3, 0, c, c");
+				doublingPanel.add(new JLabel("1 down"), "4, 0, c, c");
+				doublingPanel.add(new JLabel("1 up"),   "5, 0, c, c");
+				doublingPanel.add(new JLabel("2 up"),   "6, 0, c, c");
+				rangePanel.add(new JLabel("Enable"), "0, 0, c, c");
+				rangePanel.add(new JLabel("From bar"), "1, 0, c, c");
+				rangePanel.add(new JLabel("To bar"), "2, 0, c, c");
+				rangePanel.add(new JLabel("Low limit"), "3, 0, c, c");
+				rangePanel.add(new JLabel("High limit"), "4, 0, c, c");
+			}
+
 			private double[] tabsRows() {
 				double[] LAYOUT_ROWS_TAB = new double[2 + numberOfSections];
 				for (int i = 0; i < numberOfSections + 2; i++) {
@@ -637,11 +651,7 @@ public class SectionEditor {
 					break;
 				}
 			};
-			private JPanel doublingPanel;
-			private JPanel miscPanel;
-			private JPanel rangePanel;
-
-			private final JButton add1 = new JButton("Add");
+		
 			
 		}
 
