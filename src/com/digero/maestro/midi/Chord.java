@@ -321,6 +321,7 @@ public class Chord implements AbcConstants {
 				int midiNote1 = n1.origNote.note.id;
 				int midiNote2 = n2.origNote.note.id;
 				
+				// The orig midi notes might have been bended, so we fetch that initial bend and apply it.
 				if (!percussion && n1.origNote instanceof BentMidiNoteEvent && n1.getOrigBend() != null) {
 					midiNote1 += n1.getOrigBend();
 				}
@@ -329,7 +330,7 @@ public class Chord implements AbcConstants {
 				}
 				
 				
-				if (midiNote1 != n2.origNote.note.id) {
+				if (midiNote1 != midiNote2) {
 					// return the note if its the highest in the chord
 					if (midiNote1 == highest) {
 						return 1;
