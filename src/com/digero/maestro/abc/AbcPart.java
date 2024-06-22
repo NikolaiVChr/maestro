@@ -967,8 +967,6 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		Pair<Integer, Integer> secLimits = new Pair(minDefault.id,Note.MAX.id);
 		if (isPercussionPart())
 			return secLimits;
-
-		
 		if (!isTrackEnabled(track))
 			return secLimits;
 		SequenceInfo se = getSequenceInfo();
@@ -1013,6 +1011,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		int secTrans = 0;
 		if (!isTrackEnabled(track))
 			return secTrans;
+		if (isPercussionPart())
+			return secTrans;
 		SequenceInfo se = getSequenceInfo();
 		TreeMap<Integer, PartSection> tree = sections.get(track);
 		if (se != null && tree != null) {
@@ -1047,6 +1047,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	public Boolean[] getSectionDoubling(long tickStart, int track) {
 		Boolean[] secDoubling = { false, false, false, false };
 		if (!isTrackEnabled(track))
+			return secDoubling;
+		if (isPercussionPart())
 			return secDoubling;
 		SequenceInfo se = getSequenceInfo();
 		TreeMap<Integer, PartSection> tree = sections.get(track);
