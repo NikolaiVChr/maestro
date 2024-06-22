@@ -153,7 +153,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 		tuneBarsModified = null;
 		tuneBars = null;
-		SectionEditor.numberOfSections = 10;
 
 		/*
 		 * if (sequenceInfo != null) { // Make life easier for Garbage Collector for (TrackInfo ti :
@@ -366,8 +365,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 	private void handleTuneSections(Element songElement) throws XPathExpressionException, ParseException {
 		int lastEnd = 0;
-		int maxDialogLine = 0;
-		int numberOfLines = 0;
 		for (Element tuneEle : XmlUtil.selectElements(songElement, "tuneSection")) {
 			TuneLine tl = new TuneLine();
 			tl.startBar = SaveUtil.parseValue(tuneEle, "startBar", 0);
@@ -379,10 +376,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				tl.fade = fade;
 			}
 			tl.dialogLine = SaveUtil.parseValue(tuneEle, "dialogLine", -1);
-			if (tl.dialogLine > maxDialogLine) {
-				maxDialogLine = tl.dialogLine; 
-			}
-			numberOfLines++;
 			if (tl.startBar > 0 && tl.endBar >= tl.startBar) {
 				if (tuneBars == null) {
 					tuneBars = new TreeMap<>();
@@ -402,7 +395,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			}
 			tuneBarsModified = booleanArray;
 		}
-		SectionEditor.numberOfSections = Math.min(SectionEditor.numberOfSectionsMax, Math.max(SectionEditor.numberOfSections, 5 + 5 * (Math.max(numberOfLines-1, maxDialogLine) / 5)));
 	}
 
 	private void addListenerToParts(Element songEle, Version fileVersion)
