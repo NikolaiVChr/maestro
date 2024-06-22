@@ -45,10 +45,11 @@ public class SectionEditor {
 
 	private static Point lastLocation = new Point(100, 100);
 	public static int numberOfSections = 10;
+	public static final int numberOfSectionsMax = 20;
 	static boolean clipboardArmed = false;
-	static String[] clipboardStart = new String[numberOfSections];
-	static String[] clipboardEnd = new String[numberOfSections];
-	static boolean[] clipboardEnabled = new boolean[numberOfSections];
+	static String[] clipboardStart = new String[numberOfSectionsMax];
+	static String[] clipboardEnd = new String[numberOfSectionsMax];
+	static boolean[] clipboardEnabled = new boolean[numberOfSectionsMax];
 	private static JDialog openDialog = null;
 
 	public static void show(JFrame jf, NoteGraph noteGraph, AbcPart abcPart, int track, final boolean percussion,
@@ -77,6 +78,7 @@ public class SectionEditor {
 			public SectionDialog(JFrame jf, final NoteGraph noteGraph, String title, boolean modal, AbcPart abcPart,
 					int track) throws ParseException {
 				super(jf, title, modal);
+				final int numberOfSectionsFinal = numberOfSections;
 				this.abcPart = abcPart;
 				this.track = track;
 				// this.noteGraph = noteGraph;
@@ -527,10 +529,15 @@ public class SectionEditor {
 				rangePanel.add(nonSectionInput.textPitch, "5, "+(numberOfSections+1)+", 5, "+(numberOfSections+1)+", c, c");
 
 				copySections.getModel().addActionListener(e -> {
-					for (int i = 0; i < numberOfSections; i++) {
+					for (int i = 0; i < numberOfSectionsFinal; i++) {
 						clipboardStart[i] = sectionInputs.get(i).barA[0].getText();
 						clipboardEnd[i] = sectionInputs.get(i).barB[0].getText();
 						clipboardEnabled[i] = sectionInputs.get(i).enable[0].isSelected();
+					}
+					for (int i = numberOfSectionsFinal; i < numberOfSectionsMax; i++) {
+						clipboardStart[i] = "0";
+						clipboardEnd[i] = "0";
+						clipboardEnabled[i] = false;
 					}
 					clipboardArmed = true;
 					pasteSections.setEnabled(clipboardArmed);
@@ -542,7 +549,7 @@ public class SectionEditor {
 				pasteSections.getModel().addActionListener(e -> {
 					if (!clipboardArmed)
 						return;
-					for (int i = 0; i < numberOfSections; i++) {
+					for (int i = 0; i < numberOfSectionsFinal; i++) {
 						sectionInputs.get(i).barA[0].setText(clipboardStart[i]);
 						sectionInputs.get(i).barB[0].setText(clipboardEnd[i]);
 						// The other tabs; barA and B will be autoset by listeners
@@ -594,12 +601,12 @@ public class SectionEditor {
 
 				JButton add = new JButton("Add 5");
 				add.setToolTipText("Add 5 section lines. Close and open the window to see effect.");
-				add.addActionListener(e -> {numberOfSections+=5;if (numberOfSections >=20) numberOfSections = 20;
+				add.addActionListener(e -> {numberOfSections+=5;if (numberOfSections >=numberOfSectionsMax) numberOfSections = numberOfSectionsMax;
 					this.setTitle("Reopen tune- and section-editors to apply changes");
-					add.setEnabled(numberOfSections < 20);});
+					add.setEnabled(numberOfSections < numberOfSectionsMax);});
 				panel.add(add, "0," + (firstRowIndex + 1 + numberOfSections) + ", 0, "
 						+ (firstRowIndex + 1 + numberOfSections) + ",f,f");
-				add.setEnabled(numberOfSections < 20);
+				add.setEnabled(numberOfSections < numberOfSectionsMax);
 				
 				/*
 				 * To do sort and pack, best expand SectionEditorLine to be comparable and have 3 JPanels in it.
@@ -618,7 +625,6 @@ public class SectionEditor {
 				
 				
 				JButton okButton = new JButton("APPLY");
-				final int numberOfSectionsFinal = numberOfSections;
 				okButton.addActionListener(e -> {
 					TreeMap<Integer, PartSection> tm = new TreeMap<>();
 

@@ -402,7 +402,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			}
 			tuneBarsModified = booleanArray;
 		}
-		SectionEditor.numberOfSections = Math.min(20, Math.max(SectionEditor.numberOfSections, 5 + 5 * (Math.max(numberOfLines-1, maxDialogLine) / 5)));
+		SectionEditor.numberOfSections = Math.min(SectionEditor.numberOfSectionsMax, Math.max(SectionEditor.numberOfSections, 5 + 5 * (Math.max(numberOfLines-1, maxDialogLine) / 5)));
 	}
 
 	private void addListenerToParts(Element songEle, Version fileVersion)

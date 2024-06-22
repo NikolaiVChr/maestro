@@ -380,7 +380,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 					handlePercussion(fileVersion, trackEle, t);
 				}
 			}
-			SectionEditor.numberOfSections = Math.min(20, Math.max(SectionEditor.numberOfSections, 5 + 5 * (Math.max(numberOfLines-1, maxDialogLine) / 5)));
+			SectionEditor.numberOfSections = Math.min(SectionEditor.numberOfSectionsMax, Math.max(SectionEditor.numberOfSections, 5 + 5 * (Math.max(numberOfLines-1, maxDialogLine) / 5)));
 		} catch (XPathExpressionException e) {
 			throw new ParseException("XPath error: " + e.getMessage(), null);
 		}
