@@ -48,14 +48,14 @@ Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 
 Version 3.2.5
 - Polyphony histogram now reacts to muting or soloing parts.
-- Minimum and maximum midi note used can now be set in section editor.
+- Minimum and maximum note used can now be set in section editor.
     Note that for bended notes of small range (as set in settings),
     it will be the lowest pitch that will decide if the note is in range.
 - Fix for 2 identical parts would make 1 of them not counted in histogram.
 - No longer have to reopen the section-editor if changing between percussion
     and non-percussion instruments for a part.
 - Retired Swing default look and feel. Flatlaf light is now default.
-- Add button to increase number of sections in tune and section-editor. Default is now 10.
+- Add button to increase number of sections in section-editor. Default is now 8.
 - Section-editor inputs are now organized in tabs.
 - Added ability to set the max number of concurrent notes in an part. From 1 to 6 notes.
     Note that this wont be shown visually.

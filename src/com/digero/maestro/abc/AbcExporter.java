@@ -261,6 +261,12 @@ public class AbcExporter {
 		if (!useLotroInstruments)
 			noteDelta = part.getInstrument().octaveDelta * 12;
 
+		long delayMicros = 0;
+		if (qtm.getPrimaryExportTempoBPM() >= 50 && part.delay != 0) {
+			// Make delay on instrument be audible in preview
+			delayMicros = (long) (part.delay * 1000 * qtm.getExportTempoFactor());
+		}
+		
 		for (Chord chord : chords) {
 			Dynamics dynamics = chord.calcDynamics();
 			if (dynamics == null)
@@ -284,7 +290,7 @@ public class AbcExporter {
 					if (endTick <= ne.getStartTick()) {//TODO: Review this closer, and check for compatibility with TrackInfo behavior of zero dura notes.
 						// This note has been turned off
 						onIter.remove();
-						track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, endTick));
+						track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, qtm.microsToTick(qtm.tickToMicros(endTick) + delayMicros)));
 					}
 				}
 
@@ -297,21 +303,21 @@ public class AbcExporter {
 							: AbcConstants.NON_SUSTAINED_NOTE_HOLD_SECONDS;
 
 					endTick = qtm.microsToTick(qtm.tickToMicros(endTick)
-							+ (int) (extraSeconds * TimingInfo.ONE_SECOND_MICROS * qtm.getExportTempoFactor()));
+							+ (long) (extraSeconds * TimingInfo.ONE_SECOND_MICROS * qtm.getExportTempoFactor()));
 				}
-
+				
 				if (endTick != ne.getEndTick()) {
 					ne = new AbcNoteEvent(ne.note, ne.velocity, ne.getStartTick(), endTick, qtm, ne.origNote);
 				}
 
 				track.add(MidiFactory.createNoteOnEventEx(ne.note.id + noteDelta, channel,
-						dynamics.getVol(useLotroInstruments), ne.getStartTick()));
+						dynamics.getVol(useLotroInstruments), qtm.microsToTick(qtm.tickToMicros(ne.getStartTick()) + delayMicros)));
 				notesOn.add(ne);
 			}
 		}
 
 		for (AbcNoteEvent on : notesOn) {
-			track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, on.getEndTick()));
+			track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, qtm.microsToTick(qtm.tickToMicros(on.getEndTick()) + delayMicros)));
 		}
 
 		return new Pair<>(trackNumber, channel);
@@ -822,12 +828,6 @@ public class AbcExporter {
 				deleteEvents.add(ne);
 				for (AbcNoteEvent bent : bentNotes) {
 					assert bent.note != Note.REST;
-					if (preview && qtm.getPrimaryExportTempoBPM() >= 50 && part.delay != 0) {
-						// Make delay on instrument be audible in preview
-						long delayMicros = (long) (part.delay * 1000 * qtm.getExportTempoFactor());
-						bent.setEndTick(qtm.microsToTick(qtm.tickToMicros(bent.getEndTick()) + delayMicros));
-						bent.setStartTick(qtm.microsToTick(qtm.tickToMicros(bent.getStartTick()) + delayMicros));
-					}
 					if (bent.getEndTick() > lastEnding) {
 						lastEnding = bent.getEndTick();
 						lastEvent = bent;
@@ -835,12 +835,6 @@ public class AbcExporter {
 				}
 				extraEvents.addAll(bentNotes);
 			} else {
-				if (preview && qtm.getPrimaryExportTempoBPM() >= 50 && part.delay != 0) {
-					// Make delay on instrument be audible in preview
-					long delayMicros = (long) (part.delay * 1000 * qtm.getExportTempoFactor());
-					ne.setEndTick(qtm.microsToTick(qtm.tickToMicros(ne.getEndTick()) + delayMicros));
-					ne.setStartTick(qtm.microsToTick(qtm.tickToMicros(ne.getStartTick()) + delayMicros));
-				}
 				if (ne.getEndTick() > lastEnding) {
 					lastEnding = ne.getEndTick();
 					lastEvent = ne;
@@ -903,6 +897,7 @@ public class AbcExporter {
 							on.setEndTick(ne.getEndTick());
 							//if (on.origNote.trackNumber != ne.origNote.trackNumber) on.fromHowManyTracks += 0.5f;
 							// Hard to quantify how to do velocity when not ending at same time. So skipping that.
+
 						}/* else if (on.getEndTick() == ne.getEndTick() && on.origNote.trackNumber != ne.origNote.trackNumber) {
 							on.fromHowManyTracks += 1.0f;
 							on.velocity = Math.max(ne.velocity, on.velocity);
@@ -931,7 +926,7 @@ public class AbcExporter {
 						} else {
 							ne.fromHowManyTracks += 0.25f;
 							// Hard to quantify how to do velocity when ne not a subset of on. So skipping that.
-							 */							 
+							 */
 						}
 						
 						// 2. Shorten the note that's currently on to end at the same time that
@@ -1207,6 +1202,11 @@ public class AbcExporter {
 	private void breakLongNotes(AbcPart part, List<AbcNoteEvent> events) {
 		for (int i = 0; i < events.size(); i++) {
 			AbcNoteEvent ne = events.get(i);
+			
+			// preview might have delay so its okay to not be quant
+			assert qtm.quantize(ne.getEndTick(), part) == ne.getEndTick();
+			assert qtm.quantize(ne.getStartTick(), part) == ne.getStartTick();
+			
 			TimingInfo tm = qtm.getTimingInfo(ne.getStartTick(), part);
 
 			long maxNoteEndTick = qtm.quantize(
@@ -1261,19 +1261,21 @@ public class AbcExporter {
 					}
 					ne.continues = next.getLengthTicks();// needed for pruning
 				}
-
+				assert qtm.quantize(maxNoteEndTick, part) == maxNoteEndTick;
 				ne.setEndTick(maxNoteEndTick);
 			}
 
 			// Tie notes across bar boundaries
-			long targetEndTick = Math.min(ne.getEndTick(),
-					qtm.quantize(qtm.tickToBarEndTick(ne.getStartTick()), part));
-			if (targetEndTick < ne.getStartTick() + tm.getMinNoteLengthTicks()) {
-				// Mix Timings can cause code to come here.
-				targetEndTick = ne.getStartTick() + tm.getMinNoteLengthTicks();
+			
+			long targetEndTick = Math.min(ne.getEndTick(), qtm.quantize(qtm.tickToBarEndTick(ne.getStartTick()), part));
+			long minEnding = ne.getStartTick() + tm.getMinNoteLengthTicks();
+			if (targetEndTick < minEnding) {
+				// Mix Timings can cause code to come here since its bar ends might not be quantized.
+				targetEndTick = minEnding;
 			}
+			assert (targetEndTick >= minEnding);
+			assert (ne.getEndTick() >= minEnding) : "1="+(qtm.quantize(ne.getEndTick(), part) == ne.getEndTick())+" 2="+(qtm.quantize(ne.getStartTick(), part) == ne.getStartTick());
 			assert (targetEndTick <= ne.getEndTick());
-			assert (targetEndTick >= ne.getStartTick() + tm.getMinNoteLengthTicks());
 
 			// Tie notes across tempo boundaries
 			final QuantizedTimingInfo.TimingInfoEvent nextTempoEvent = qtm.getNextTimingEvent(ne.getStartTick(),
@@ -1324,8 +1326,7 @@ public class AbcExporter {
 			}
 
 			if (ne.getEndTick() > targetEndTick) {
-				assert (ne.getEndTick() - targetEndTick >= qtm.getTimingInfo(targetEndTick, part)
-						.getMinNoteLengthTicks());
+				assert (ne.getEndTick() - targetEndTick >= qtm.getTimingInfo(ne.getEndTick(), part).getMinNoteLengthTicks());
 				assert (targetEndTick - ne.getStartTick() >= tm.getMinNoteLengthTicks());
 				AbcNoteEvent next = ne.splitWithTieAtTick(targetEndTick);
 				int ins = Collections.binarySearch(events, next);
