@@ -248,9 +248,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private boolean midiResolved = false;
 	
 	private AudioExportManager audioExporter;
-	private JComboBox<String> zeroDropdown;
-	private final String keepTrue  = "Keep zero duration notes";
-	private final String keepFalse = "Discard zero duration notes";
+
 	
 	
 	/*
@@ -719,18 +717,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				refreshPreviewSequence(false);
 		});
 		
-		zeroDropdown = new JComboBox();
-		zeroDropdown.addItem(keepTrue);
-		zeroDropdown.addItem(keepFalse);
-		zeroDropdown.setEditable(false);
-		zeroDropdown.addActionListener(e -> {
-			if (zeroDropdown.getSelectedItem() != null)
-				abcSong.setKeepZeroNotes(zeroDropdown.getSelectedItem().equals(keepTrue));
-
-			//if (abcSequencer.isRunning())
-				refreshPreviewSequence(false);
-		});
-
 		exportSuccessfulLabel = new JLabel("Exported");
 		exportSuccessfulLabel.setIcon(IconLoader.getImageIcon("check_16.png"));
 		exportSuccessfulLabel.setBorder(BorderFactory.createEmptyBorder(0, 2, 0, 0));
@@ -1613,7 +1599,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		tripletCheckBox.setEnabled(midiLoaded);
 		mixCheckBox.setEnabled(midiLoaded);
 		prioCheckBox.setEnabled(midiLoaded && mixCheckBox.isSelected());
-		zeroDropdown.setEnabled(midiLoaded);
 		zoomButton.setEnabled(midiLoaded);
 		noteButton.setEnabled(midiLoaded);
 		if (midiLoaded) {
@@ -1786,13 +1771,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			maxNoteCountTotal = 0;
 			maxNoteCount = 0;
 			break;
-		case KEEP_ZERO_NOTES:
-			if (zeroDropdown.getSelectedItem().equals(keepTrue) != abcSong.isKeepZeroNotes()) {
-				setZeroBoxFromAbcSong(abcSong.getSequenceInfo().getNumberOfZeroNotes());
-			}
-			partPanel.repaint();
-			refreshPreviewSequence(false);
-			break;
 		case MIX_TIMING_COMBINE_PRIORITIES:
 			if (prioCheckBox.isSelected() != abcSong.isPriorityActive())
 				prioCheckBox.setSelected(abcSong.isPriorityActive());
@@ -1924,16 +1902,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			maxNoteCount = 0;
 			maxNoteCountTotal = 0;
 		}
-	}
-
-	private void setZeroBoxFromAbcSong(int zeroNotes) {
-		if (abcSong.isKeepZeroNotes()) {
-			zeroDropdown.setSelectedItem(keepTrue);
-		} else {
-			zeroDropdown.setSelectedItem(keepFalse);
-		}
-		zeroDropdown.setToolTipText(zeroNotes+ " zero duration note(s) in this song.");
-		partPanel.repaint();
 	}
 
 	public void setMIDIFileResolved() {
@@ -2086,7 +2054,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			tripletCheckBox.setSelected(abcSong.isTripletTiming());
 			mixCheckBox.setSelected(abcSong.isMixTiming());
 			prioCheckBox.setSelected(abcSong.isPriorityActive());
-			setZeroBoxFromAbcSong(abcSong.getSequenceInfo().getNumberOfZeroNotes());
 
 			SequenceInfo sequenceInfo = abcSong.getSequenceInfo();
 			sequencer.setSequence(sequenceInfo.getSequence());

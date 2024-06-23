@@ -97,7 +97,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private File exportFile; // The ABC export file
 	private File saveFile; // The XML Maestro song file
 	private boolean usingOldVelocities = false;
-	private boolean keep = true;
 
 	private final ListModelWrapper<AbcPart> parts = new ListModelWrapper<>(new DefaultListModel<>());
 
@@ -166,8 +165,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		sequenceInfo = SequenceInfo.fromMidi(file, miscSettings, usingOldVelocities);
 		title = sequenceInfo.getTitle();
 		composer = sequenceInfo.getComposer();
-		keep = true;
-		sequenceInfo.setKeepZeroNotes(keep);
 		keySignature = (ICompileConstants.SHOW_KEY_FIELD) ? sequenceInfo.getKeySignature() : KeySignature.C_MAJOR;
 		timeSignature = sequenceInfo.getTimeSignature();
 		note = "";
@@ -182,7 +179,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		params.useLotroInstruments = false;
 		// params.stereo = false;
 		usingOldVelocities = true;// The abc volumes are tuned to old volume scheme
-		keep = true;//abc has never any zero dura notes, so this dont matter
 		sequenceInfo = SequenceInfo.fromAbc(params, miscSettings, usingOldVelocities);
 		exportFile = file;
 
@@ -251,7 +247,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			usingOldVelocities = SaveUtil.parseValue(songEle, "importSettings/@useOldVelocities", true);// must be
 																										// before
 																										// tryToLoadFromFile
-			//keep = SaveUtil.parseValue(songEle, "importSettings/@keepZeroNotes", true);
+
 			sourceFile = SaveUtil.parseValue(songEle, "sourceFile", (File) null);
 			if (sourceFile == null) {
 				throw SaveUtil.missingValueException(songEle, "<sourceFile>");
@@ -274,7 +270,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			if (!sourceFile.equals(origSourceFile)) {
 				MaestroMain.setMIDIFileResolved();
 			}
-			sequenceInfo.setKeepZeroNotes(keep);
 			title = SaveUtil.parseValue(songEle, "title", sequenceInfo.getTitle());
 			composer = SaveUtil.parseValue(songEle, "composer", sequenceInfo.getComposer());
 			transcriber = SaveUtil.parseValue(songEle, "transcriber", transcriber);
@@ -480,7 +475,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private void appendImportSettings(Document doc, Element songEle) {
 		Element importSettingsEle = doc.createElement("importSettings");
 		importSettingsEle.setAttribute("useOldVelocities", String.valueOf(usingOldVelocities));
-		//importSettingsEle.setAttribute("keepZeroNotes", String.valueOf(keep));
 		if (importSettingsEle.getAttributes().getLength() > 0 || importSettingsEle.getChildNodes().getLength() > 0)
 			songEle.appendChild(importSettingsEle);
 	}
@@ -915,12 +909,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		if (abcExporter.isDeleteMinimalNotes() != deleteMinimalNotes)
 			abcExporter.setDeleteMinimalNotes(deleteMinimalNotes);
 		
-		if (abcExporter.isKeepZeroNotes() != keep)
-			abcExporter.setKeepZeroNotes(keep);
-		
-		// if (abcExporter.isShowPruned() != showPruned)
-		// abcExporter.setShowPruned(showPruned);
-
 		return abcExporter;
 	}
 
@@ -1062,33 +1050,4 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public QuantizedTimingInfo getQTM() {
 		return timingInfo;
 	}
-
-	public void setKeepZeroNotes(boolean keep) {
-		if (this.keep != keep) {
-			this.keep = keep;
-			sequenceInfo.setKeepZeroNotes(keep);
-			fireChangeEvent(AbcSongProperty.KEEP_ZERO_NOTES);
-		}
-	}
-
-	public boolean isKeepZeroNotes() {
-		return keep;
-	}
-
-	
-
-	/*
-	 * public boolean isKept(long tickStart) { SequenceInfo se = getSequenceInfo(); TreeMap<Integer, TuneLine> tree =
-	 * tuneBars; if (se != null && tree != null) { SequenceDataCache data = se.getDataCache(); long barLengthTicks =
-	 * data.getBarLengthTicks();
-	 * 
-	 * long startTick = barLengthTicks; long endTick = data.getSongLengthTicks();
-	 * 
-	 * int bar = -1; int curBar = 1; for (long barTick = startTick; barTick <= endTick+barLengthTicks; barTick +=
-	 * barLengthTicks) { if (tickStart < barTick) { bar = curBar; break; } curBar += 1; } if (bar != -1) {
-	 * Entry<Integer, TuneLine> entry = tree.floorEntry(bar); if (entry != null) { if (bar <= entry.getValue().endBar) {
-	 * return !entry.getValue().remove; } } } }
-	 * 
-	 * return true; }
-	 */
 }
