@@ -593,7 +593,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		JPanel delayPanel = new JPanel(delayGrid);
 		delayPanel.add(delayButton);
 		delayPanel.add(numerateButton);
-		//delayPanel.add(maxButton); // TODO: Enable this to use this new feature.
+		delayPanel.add(maxButton);
 		partsListPanel.add(delayPanel, BorderLayout.SOUTH);
 	}
 
