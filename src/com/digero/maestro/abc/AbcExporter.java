@@ -54,7 +54,7 @@ public class AbcExporter {
 	public int stereoPan = 100;// zero is mono, 100 is very wide.
 	private int firstBarNumber;
 
-	public int lastChannelUsedInPreview = -1;
+	private int lastChannelUsedInPreview = -1;
 
 	public AbcExporter(List<AbcPart> parts, QuantizedTimingInfo timingInfo, KeySignature keySignature,
 			AbcMetadataSource metadata) throws AbcConversionException {
@@ -99,7 +99,7 @@ public class AbcExporter {
 				throw new AbcConversionException("Songs with more than " + MAX_RAID + " parts can never be previewed.\n"
 						+ "This song currently has " + parts.size() + " parts and failed to preview.");
 			}
-			exportForChords(chordsMade);// export the chords here early, as we possibly
+			exportForPreviewChords(chordsMade);// export the chords here early, as we possibly
 																		// need to process them for sharing.
 			
 			
@@ -146,16 +146,6 @@ public class AbcExporter {
 		}
 	}
 
-	private static int calculatePartsCount(List<AbcPart> parts) {
-		int partsCount = 0;// Number of parts that has assigned tracks to them.
-		for (AbcPart p : parts) {
-			if (p.getEnabledTrackCount() > 0) {
-				partsCount++;
-			}
-		}
-		return partsCount;
-	}
-
 	/**
 	 * Build all the preview chords here.
 	 * 
@@ -164,7 +154,7 @@ public class AbcExporter {
 	 * @param exportEndTick
 	 * @throws AbcConversionException
 	 */
-	private void exportForChords(Map<AbcPart, List<Chord>> chordsMade)
+	private void exportForPreviewChords(Map<AbcPart, List<Chord>> chordsMade)
 			throws AbcConversionException {
 		for (AbcPart part : parts) {
 			if (part.getEnabledTrackCount() > 0) {
@@ -177,21 +167,6 @@ public class AbcExporter {
 					throw new AbcConversionException("Failed to read instrument sample durations.", e);
 				}
 				chordsMade.put(part, null);
-			}
-		}
-	}
-
-	private void addMidiTempoEvents(Track track0) {
-		for (QuantizedTimingInfo.TimingInfoEvent event : qtm.getTimingInfoByTick().values()) {
-			if (event.tick > exportEndTick)
-				break;
-
-			track0.add(MidiFactory.createTempoEvent(event.info.getExportTempoMPQ(), event.tick));
-
-			if (event.tick == 0) {
-				// The Java MIDI sequencer can sometimes miss a tempo event at tick 0
-				// Add another tempo event at tick 1 to work around the bug
-				track0.add(MidiFactory.createTempoEvent(event.info.getExportTempoMPQ(), 1));
 			}
 		}
 	}
@@ -374,11 +349,6 @@ public class AbcExporter {
 				exportPartToAbc(part, out, delayEnabled);
 			}
 		}
-	}
-
-	private long getSongLengthMicros() {
-		return (long) ((getExportEndMicros() - getExportStartMicros())
-				/ (double) qtm.getExportTempoFactor());
 	}
 
 	private void exportPartToAbc(AbcPart part, PrintStream out,
@@ -1071,133 +1041,6 @@ public class AbcExporter {
 		return chords;
 	}
 
-	/*
-	private void verifySort(List<NoteEvent> events) {
-		long c = -1000000L;
-		for (NoteEvent ne : events) {
-			//System.out.println(ne.getStartTick());
-			if (ne.getStartTick() < c) assert 1==0;
-			c = ne.getStartTick();
-		}		
-	}
-	
-	private void verifySortChords(List<Chord> chords) {
-		long c = -1000000L;
-		for (Chord ne : chords) {
-			//System.out.println("C "+ne.getStartTick());
-			if (ne.getStartTick() < c) assert 1==0;
-			c = ne.getStartTick();
-		}		
-	}
-	*/
-
-	private AbcNoteEvent createNoteEvent(MidiNoteEvent oldNe, Note mappednote, int velocity, long startTick, long endTick,
-			ITempoCache tempos) {
-		if (oldNe instanceof BentMidiNoteEvent) {
-			BentAbcNoteEvent newNe = new BentAbcNoteEvent(mappednote, velocity, startTick, endTick, tempos, (BentMidiNoteEvent) oldNe);
-			return newNe;
-		} else {
-			return new AbcNoteEvent(mappednote, velocity, startTick, endTick, tempos, oldNe);
-		}
-	}
-
-	/**
-	 * Split all BentNoteEvents into multiple quantized NoteEvents
-	 * 
-	 * @param part Abc Part
-	 * @param ne   The note event to be processed
-	 * @return List of multiple NoteEvents
-	 */
-	private List<AbcNoteEvent> quantizePitchBends(AbcPart part, AbcNoteEvent ne) {
-		// Handle pitch bend by subdividing tone into shorter quantized notes.
-		// By the time this method is ran, start and end tick of the bent tone is already quantized.
-		if (ne instanceof BentAbcNoteEvent) {
-			BentAbcNoteEvent be = (BentAbcNoteEvent) ne;
-			int noteID = be.note.id;
-			assert be.note != Note.REST;
-			int startPitch = noteID;
-			List<AbcNoteEvent> benders = new ArrayList<>();
-			AbcNoteEvent current = null;
-			boolean changeAtLastGrid = true;
-			long lastGridTick = 0L;
-			for (long t = be.getStartTick(); t < be.getEndTick(); t++) {
-				Integer entry = be.getBend(t);
-				if (entry != null) {
-					noteID = startPitch + entry;
-				} else {
-					// Since all bent notes have a bend at start tick,
-					// and that start tick might have been quantized to lower tick.
-					// Make sure we grab that initial value here.
-					entry = be.bends.firstEntry().getValue();
-					noteID = startPitch + entry;
-				}
-				if (current == null) {
-					current = createBentSubNote(be, noteID, current, t, entry);
-					if (current == null)
-						return new ArrayList<>();
-					benders.add(current);
-					lastGridTick = t;
-					changeAtLastGrid = true;
-				} else {
-					long qTick = qtm.quantize(t, part);
-					if (t == qTick) {
-						// this tick is on the grid
-						if (current.note.id != noteID) {
-							current = createBentSubNote(be, noteID, current, t, entry);
-							if (current == null)
-								return new ArrayList<>();
-							benders.add(current);
-							changeAtLastGrid = true;
-						} else {
-							changeAtLastGrid = false;
-						}
-						lastGridTick = t;
-					} else if (!changeAtLastGrid && entry != null && current.note.id != noteID) {
-						long grid = qtm.getGridSizeTicks(t, part);
-						if (grid >= 3 && t < lastGridTick + grid / 3L) {
-							/*
-							 * We have a pitch change, and we are less than a 3rd of a gridlength from last gridpoint.
-							 * Last grid point there was no pitch changes. So we round this pitch change back to last
-							 * gridpoint.
-							 */
-							current = createBentSubNote(be, noteID, current, lastGridTick, entry);
-							if (current == null)
-								return new ArrayList<>();
-							benders.add(current);
-							changeAtLastGrid = true;
-						}
-					}
-				}
-			}
-			//double dura = be.getLengthMicros() / 1000.0d;
-			//System.out.println(dura+" Note split into "+benders.size()+" bends");
-			//if (be.getStartTick() != benders.get(0).getStartTick() || be.getEndTick() != benders.get(benders.size()-1).getEndTick()) {
-			//	System.out.println("\nNote split wrongly "+be.getStartTick()+" to "+be.getEndTick());
-			//	System.out.println("        == "+benders.get(0).getStartTick()+" to "+benders.get(benders.size()-1).getEndTick());
-			//}
-			//if (benders.size() == 0) {
-			//	System.out.println(" empty benders");
-			//}
-			return benders;
-		} else {
-			return null;
-		}
-	}
-
-	private AbcNoteEvent createBentSubNote(BentAbcNoteEvent be, int noteID, AbcNoteEvent current, long tick, int bend) {
-		if (current != null) {
-			current.setEndTick(tick);
-		}
-		Note newNote = Note.fromId(noteID);
-		if (newNote == null) {
-			System.out.println("Note removed, pitch bend out of range");
-			return null;
-		}
-		assert newNote != Note.REST;
-		AbcNoteEvent sub = new AbcNoteEvent(newNote, be.velocity, tick, be.getEndTick(), be.getTempoCache(), be.origNote);
-		sub.setOrigBend(bend);
-		return sub;
-	}
 
 	private void breakLongNotes(AbcPart part, List<AbcNoteEvent> events) {
 		for (int i = 0; i < events.size(); i++) {
@@ -1338,6 +1181,129 @@ public class AbcExporter {
 		}
 	}
 
+	private AbcNoteEvent createNoteEvent(MidiNoteEvent oldNe, Note mappednote, int velocity, long startTick, long endTick,
+			ITempoCache tempos) {
+		if (oldNe instanceof BentMidiNoteEvent) {
+			BentAbcNoteEvent newNe = new BentAbcNoteEvent(mappednote, velocity, startTick, endTick, tempos, (BentMidiNoteEvent) oldNe);
+			return newNe;
+		} else {
+			return new AbcNoteEvent(mappednote, velocity, startTick, endTick, tempos, oldNe);
+		}
+	}
+
+	private void addMidiTempoEvents(Track track0) {
+		for (QuantizedTimingInfo.TimingInfoEvent event : qtm.getTimingInfoByTick().values()) {
+			if (event.tick > exportEndTick)
+				break;
+
+			track0.add(MidiFactory.createTempoEvent(event.info.getExportTempoMPQ(), event.tick));
+
+			if (event.tick == 0) {
+				// The Java MIDI sequencer can sometimes miss a tempo event at tick 0
+				// Add another tempo event at tick 1 to work around the bug
+				track0.add(MidiFactory.createTempoEvent(event.info.getExportTempoMPQ(), 1));
+			}
+		}
+	}
+
+	/**
+	 * Split all BentNoteEvents into multiple quantized NoteEvents
+	 * 
+	 * @param part Abc Part
+	 * @param ne   The note event to be processed
+	 * @return List of multiple NoteEvents
+	 */
+	private List<AbcNoteEvent> quantizePitchBends(AbcPart part, AbcNoteEvent ne) {
+		// Handle pitch bend by subdividing tone into shorter quantized notes.
+		// By the time this method is ran, start and end tick of the bent tone is already quantized.
+		if (ne instanceof BentAbcNoteEvent) {
+			BentAbcNoteEvent be = (BentAbcNoteEvent) ne;
+			int noteID = be.note.id;
+			assert be.note != Note.REST;
+			int startPitch = noteID;
+			List<AbcNoteEvent> benders = new ArrayList<>();
+			AbcNoteEvent current = null;
+			boolean changeAtLastGrid = true;
+			long lastGridTick = 0L;
+			for (long t = be.getStartTick(); t < be.getEndTick(); t++) {
+				Integer entry = be.getBend(t);
+				if (entry != null) {
+					noteID = startPitch + entry;
+				} else {
+					// Since all bent notes have a bend at start tick,
+					// and that start tick might have been quantized to lower tick.
+					// Make sure we grab that initial value here.
+					entry = be.bends.firstEntry().getValue();
+					noteID = startPitch + entry;
+				}
+				if (current == null) {
+					current = createBentSubNote(be, noteID, current, t, entry);
+					if (current == null)
+						return new ArrayList<>();
+					benders.add(current);
+					lastGridTick = t;
+					changeAtLastGrid = true;
+				} else {
+					long qTick = qtm.quantize(t, part);
+					if (t == qTick) {
+						// this tick is on the grid
+						if (current.note.id != noteID) {
+							current = createBentSubNote(be, noteID, current, t, entry);
+							if (current == null)
+								return new ArrayList<>();
+							benders.add(current);
+							changeAtLastGrid = true;
+						} else {
+							changeAtLastGrid = false;
+						}
+						lastGridTick = t;
+					} else if (!changeAtLastGrid && entry != null && current.note.id != noteID) {
+						long grid = qtm.getGridSizeTicks(t, part);
+						if (grid >= 3 && t < lastGridTick + grid / 3L) {
+							/*
+							 * We have a pitch change, and we are less than a 3rd of a gridlength from last gridpoint.
+							 * Last grid point there was no pitch changes. So we round this pitch change back to last
+							 * gridpoint.
+							 */
+							current = createBentSubNote(be, noteID, current, lastGridTick, entry);
+							if (current == null)
+								return new ArrayList<>();
+							benders.add(current);
+							changeAtLastGrid = true;
+						}
+					}
+				}
+			}
+			//double dura = be.getLengthMicros() / 1000.0d;
+			//System.out.println(dura+" Note split into "+benders.size()+" bends");
+			//if (be.getStartTick() != benders.get(0).getStartTick() || be.getEndTick() != benders.get(benders.size()-1).getEndTick()) {
+			//	System.out.println("\nNote split wrongly "+be.getStartTick()+" to "+be.getEndTick());
+			//	System.out.println("        == "+benders.get(0).getStartTick()+" to "+benders.get(benders.size()-1).getEndTick());
+			//}
+			//if (benders.size() == 0) {
+			//	System.out.println(" empty benders");
+			//}
+			return benders;
+		} else {
+			return null;
+		}
+	}
+
+	private AbcNoteEvent createBentSubNote(BentAbcNoteEvent be, int noteID, AbcNoteEvent current, long tick, int bend) {
+		if (current != null) {
+			current.setEndTick(tick);
+		}
+		Note newNote = Note.fromId(noteID);
+		if (newNote == null) {
+			System.out.println("Note removed, pitch bend out of range");
+			return null;
+		}
+		assert newNote != Note.REST;
+		AbcNoteEvent sub = new AbcNoteEvent(newNote, be.velocity, tick, be.getEndTick(), be.getTempoCache(), be.origNote);
+		sub.setOrigBend(bend);
+		return sub;
+	}
+
 	/** Removes a note and breaks any ties the note has. */
 	private void removeNote(List<AbcNoteEvent> events, int i) {
 		AbcNoteEvent ne = events.remove(i);
@@ -1429,6 +1395,16 @@ public class AbcExporter {
 		return new Pair<>(startTickFinal, endTick);
 	}
 	
+	private static int calculatePartsCount(List<AbcPart> parts) {
+		int partsCount = 0;// Number of parts that has assigned tracks to them.
+		for (AbcPart p : parts) {
+			if (p.getEnabledTrackCount() > 0) {
+				partsCount++;
+			}
+		}
+		return partsCount;
+	}
+	
 	public List<AbcPart> getParts() {
 		return parts;
 	}
@@ -1492,6 +1468,11 @@ public class AbcExporter {
 	 */
 	public long getExportStartMicros() {
 		return qtm.tickToMicros(getExportStartTick());
+	}
+	
+	private long getSongLengthMicros() {
+		return (long) ((getExportEndMicros() - getExportStartMicros())
+				/ (double) qtm.getExportTempoFactor());
 	}
 
 	/**
