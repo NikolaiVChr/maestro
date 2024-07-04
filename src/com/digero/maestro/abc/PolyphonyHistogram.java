@@ -17,6 +17,7 @@ import com.digero.common.midi.Note;
 import com.digero.common.midi.SequencerEvent;
 import com.digero.common.util.Listener;
 import com.digero.maestro.midi.AbcNoteEvent;
+import com.digero.maestro.midi.Chord;
 
 public class PolyphonyHistogram   {
 
@@ -56,63 +57,68 @@ public class PolyphonyHistogram   {
 	 * Called from AbcExporter.java
 	 * 
 	 * @param part
-	 * @param events
+	 * @param chords
 	 * @throws IOException 
 	 */
-	public static void count(AbcPart part, List<AbcNoteEvent> events) throws IOException {
+	public static void count(AbcPart part, List<Chord> chords) throws IOException {
 		if (!enabled) return;
 		
 		TreeMap<Long, Integer> partMap = new TreeMap<>();
 		List<AbcNoteEvent> done = new ArrayList<>();
-		for (AbcNoteEvent event : events) {
-			if (event.note.id == Note.REST.id || done.contains(event)) {
-				continue;
-			}
-			assert event.tiesFrom == null;
-			ITempoCache tc = event.getTempoCache();
-			QuantizedTimingInfo qtm = (QuantizedTimingInfo) tc;
-			
-			AbcNoteEvent check = event;
-			while (check.tiesTo != null) {
-				check = check.tiesTo;
-				done.add(check);
-			}
-			long endTick = check.getEndTick();
-			long start = qtm.tickToMicrosABC(event.getStartTick(), part);// delay is already in the start/end tick at this point 
-			long end   = qtm.tickToMicrosABC(endTick, part);
-			if (part.getInstrument().isSustainable(event.note.id)) {
-				end += 200000L;// 200ms
-				Double seconds = LotroInstrumentSampleDuration.getDura(part.getInstrument().friendlyName, event.note.id);
-				if (seconds != null) {
-					long dura = (long) (1000000L * seconds);
-					long endMax = start + dura;
-					end = Math.min(endMax, end);
-				}				
-			} else {
-				Double seconds = LotroInstrumentSampleDuration.getDura(part.getInstrument().friendlyName, event.note.id);
-				if (seconds == null) {
-					System.err.println("Error: LotroInstrumentSampleDuration has no "+part.getInstrument().friendlyName+" with note "+event.note.id);
-					seconds = 1.0d;
+		for (Chord chord : chords) {
+			for (AbcNoteEvent event : chord.getNotes()) {
+				if (event.note.id == Note.REST.id || done.contains(event)) {
+					continue;
 				}
-				long dura = (long) (1000000L * seconds);
-				end = start + dura;
+				assert event.tiesFrom == null;
+				ITempoCache tc = event.getTempoCache();
+				QuantizedTimingInfo qtm = (QuantizedTimingInfo) tc;
+				
+				AbcNoteEvent check = event;
+				while (check.tiesTo != null) {
+					// The reason we do this is that non-sustained instr.
+					// might have ties-to which often should not count for anything
+					// as the sample is short.
+					check = check.tiesTo;
+					done.add(check);
+				}
+				long endTick = check.getEndTick();
+				long start = qtm.tickToMicrosABC(event.getStartTick(), part);// delay is already in the start/end tick at this point 
+				long end   = qtm.tickToMicrosABC(endTick, part);
+				if (part.getInstrument().isSustainable(event.note.id)) {
+					end += 200000L;// 200ms
+					Double seconds = LotroInstrumentSampleDuration.getDura(part.getInstrument().friendlyName, event.note.id);
+					if (seconds != null) {
+						long dura = (long) (1000000L * seconds);
+						long endMax = start + dura;
+						end = Math.min(endMax, end);
+					}				
+				} else {
+					Double seconds = LotroInstrumentSampleDuration.getDura(part.getInstrument().friendlyName, event.note.id);
+					if (seconds == null) {
+						System.err.println("Error: LotroInstrumentSampleDuration has no "+part.getInstrument().friendlyName+" with note "+event.note.id);
+						seconds = 1.0d;
+					}
+					long dura = (long) (1000000L * seconds);
+					end = start + dura;
+				}
+				if (end == start) continue;
+				
+				Integer oldStart = partMap.get(start);
+				if (oldStart == null) {
+					oldStart = 0;
+				}
+				oldStart += 1;
+				partMap.put(start, oldStart);
+				Integer oldEnd = partMap.get(end);
+				if (oldEnd == null) {
+					oldEnd = 0;
+				}
+				oldEnd -= 1;
+				partMap.put(end, oldEnd);
+				
+				assert end - start > 0L;
 			}
-			if (end == start) continue;
-			
-			Integer oldStart = partMap.get(start);
-			if (oldStart == null) {
-				oldStart = 0;
-			}
-			oldStart += 1;
-			partMap.put(start, oldStart);
-			Integer oldEnd = partMap.get(end);
-			if (oldEnd == null) {
-				oldEnd = 0;
-			}
-			oldEnd -= 1;
-			partMap.put(end, oldEnd);
-			
-			assert end - start > 0L;
 		}
 		histogramData.put(part, partMap);
 		dirty = true;

@@ -457,4 +457,8 @@ public class Chord implements AbcConstants {
 			// 1: n1 wins -1: n2 wins 0:equal
 		}
 	}
+
+	public List<AbcNoteEvent> getNotes() {
+		return notes;
+	}
 }
