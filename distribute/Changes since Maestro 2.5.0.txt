@@ -46,11 +46,13 @@ Thanks to all who gave feedback of features, bugs plus suggestions.
 Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 ================
 
-Version 3.2.5
+Version 3.2.6
 - Polyphony histogram now reacts to muting or soloing parts.
 - Minimum and maximum note used can now be set in section editor.
     Note that for bended notes of small range (as set in settings),
     it will be the lowest pitch that will decide if the note is in range.
+    Both note names like 'C4' can be entered (case sensitive),
+    or a number like 60.
 - Fix for 2 identical parts would make 1 of them not counted in histogram.
 - No longer have to reopen the section-editor if changing between percussion
     and non-percussion instruments for a part.
