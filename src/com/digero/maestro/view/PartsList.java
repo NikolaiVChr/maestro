@@ -165,6 +165,15 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 	void ensureIndexIsVisible(int index) {
 
 	}
+	
+	private void updateSequencerState(PartsListItem item) {
+		int trackNo = item.getPart().getPreviewSequenceTrackNumber();
+
+		if (trackNo >= 0) {
+			abcSequencer.setTrackMute(trackNo, item.isMuted());
+			abcSequencer.setTrackSolo(trackNo, item.isSoloed());
+		}
+	}
 
 	private void updatePartSoloMute(AbcPart part) {
 		if (part == null) {
@@ -176,6 +185,24 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 		if (trackNo >= 0) {
 			abcSequencer.setTrackMute(trackNo, part.isMuted());
 			abcSequencer.setTrackSolo(trackNo, part.isSoloed());
+		}
+	}
+	
+	private void unsoloAll() {
+		for (PartsListItem item : parts) {
+			if (item.isSoloed()) {
+				item.setSolo(false);
+				updateSequencerState(item);
+			}
+		}
+	}
+	
+	private void unmuteAll() {
+		for (PartsListItem item : parts) {
+			if (item.isMuted()) {
+				item.setMute(false);
+				updateSequencerState(item);	
+			}
 		}
 	}
 
@@ -190,6 +217,12 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 		case SOLO:
 		case MUTE:
 			updatePartSoloMute(part);
+			break;
+		case UNSOLO_ALL:
+			unsoloAll();
+			break;
+		case UNMUTE_ALL:
+			unmuteAll();
 			break;
 		default:
 			break;

@@ -26,7 +26,7 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 	@SuppressWarnings("serial")
 	public static class PartsListItemEvent extends EventObject {
 		public enum EventType {
-			SELECTION, SOLO, MUTE,
+			SELECTION, SOLO, MUTE, UNSOLO_ALL, UNMUTE_ALL;
 		}
 
 		private final EventType type;
@@ -92,15 +92,11 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 		soloButton.setFocusable(false);
 		soloButton.addActionListener(e -> {
 			boolean isSolo = !part.isSoloed();
-			part.setSoloed(isSolo);
-			PartsListItemEvent ev = new PartsListItemEvent(PartsListItem.this, PartsListItemEvent.EventType.SOLO);
-			itemListener.onEvent(ev);
-			// TODO: ctrl-click to unsolo everything but the button clicked
-			if ((e.getModifiers() & ActionEvent.CTRL_MASK) != 0) {
-			} else {
+			if ((e.getModifiers() & ActionEvent.SHIFT_MASK) != 0) {
+				itemListener.onEvent(new PartsListItemEvent(PartsListItem.this, PartsListItemEvent.EventType.UNSOLO_ALL));
 			}
-			soloButton.setBackground(isSolo ? Color.decode("#7e7eff") : new JButton().getBackground());
-			soloButton.setText(isSolo ? "<html><b>S</b></html>" : "<html>S</html>");
+			setSolo(isSolo);
+			itemListener.onEvent(new PartsListItemEvent(PartsListItem.this, PartsListItemEvent.EventType.SOLO));
 		});
 
 		String muteText = part.isMuted() ? "<html><b>M</b></html>" : "<html>M</html>";
@@ -113,11 +109,11 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 		muteButton.setFocusable(false);
 		muteButton.addActionListener(e -> {
 			boolean isMute = !part.isMuted();
-			part.setMuted(isMute);
-			muteButton.setBackground(isMute ? Color.decode("#ff7777") : new JButton().getBackground());
-			muteButton.setText(isMute ? "<html><b>M</b></html>" : "<html>M</html>");
-			PartsListItemEvent ev = new PartsListItemEvent(PartsListItem.this, PartsListItemEvent.EventType.MUTE);
-			itemListener.onEvent(ev);
+			if ((e.getModifiers() & ActionEvent.SHIFT_MASK) != 0) {
+				itemListener.onEvent(new PartsListItemEvent(PartsListItem.this, PartsListItemEvent.EventType.UNMUTE_ALL));
+			}
+			setMute(isMute);
+			itemListener.onEvent(new PartsListItemEvent(PartsListItem.this, PartsListItemEvent.EventType.MUTE));
 		});
 
 		int col = -1;
@@ -158,6 +154,26 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 		add(title, ++col + ", 0");
 		add(soloButton, ++col + ", 0");
 		add(muteButton, ++col + ", 0");
+	}
+	
+	public void setSolo(boolean solo) {
+		part.setSoloed(solo);
+		soloButton.setBackground(solo ? Color.decode("#7e7eff") : new JButton().getBackground());
+		soloButton.setText(solo ? "<html><b>S</b></html>" : "<html>S</html>");
+	}
+	
+	public void setMute(boolean mute) {
+		part.setMuted(mute);
+		muteButton.setBackground(mute ? Color.decode("#ff7777") : new JButton().getBackground());
+		muteButton.setText(mute ? "<html><b>M</b></html>" : "<html>M</html>");
+	}
+	
+	public boolean isSoloed() {
+		return part.isSoloed();
+	}
+	
+	public boolean isMuted() {
+		return part.isMuted();
 	}
 
 	public static Dimension getProtoDimension() {
