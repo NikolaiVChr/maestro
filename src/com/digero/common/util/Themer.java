@@ -1,4 +1,4 @@
-package com.digero.maestro.view;
+package com.digero.common.util;
 
 import java.awt.Font;
 import java.util.prefs.Preferences;
@@ -8,14 +8,15 @@ import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.text.StyleContext;
 
 import com.digero.maestro.MaestroMain;
+import com.digero.maestro.view.MiscSettings;
 import com.formdev.flatlaf.FlatLaf;
 import com.formdev.flatlaf.themes.FlatMacDarkLaf;
 import com.formdev.flatlaf.themes.FlatMacLightLaf;
 
 public class Themer {
-	protected static final String[] themes = { "Flat Dark", "Flat Light", };
+	public static final String[] themes = { "Flat Dark", "Flat Light", };
 
-	protected static final int[] fontSizes = { 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 22, 24, 26, 28, 36 };
+	public static final int[] fontSizes = { 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 22, 24, 26, 28, 36 };
 
 	public static void setLookAndFeel() throws ClassNotFoundException, InstantiationException, IllegalAccessException,
 			UnsupportedLookAndFeelException {

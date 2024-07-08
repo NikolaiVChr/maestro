@@ -65,7 +65,9 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
+import javax.swing.text.StyleContext;
 
+import com.digero.abcplayer.view.AbcPlayerSettingsDialog;
 import com.digero.abcplayer.view.HighlightAbcNotesFrame;
 import com.digero.abcplayer.view.TrackListPanel;
 import com.digero.abcplayer.view.TrackListPanelCallback;
@@ -92,6 +94,9 @@ import com.digero.common.view.NativeVolumeBar;
 import com.digero.common.view.SongPositionBar;
 import com.digero.common.view.SongPositionLabel;
 import com.digero.common.view.TempoBar;
+import com.formdev.flatlaf.FlatLaf;
+import com.formdev.flatlaf.themes.FlatMacDarkLaf;
+import com.formdev.flatlaf.themes.FlatMacLightLaf;
 
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
@@ -131,7 +136,12 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		System.setProperty("sun.sound.useNewAudioEngine", "true");
 
 		try {
-			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+//			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+			UIManager.setLookAndFeel(new FlatMacLightLaf());
+			Font font = UIManager.getFont("defaultFont");
+			Font newFont = StyleContext.getDefaultStyleContext().getFont(font.getFamily(), font.getStyle(), 12);
+			UIManager.put("defaultFont", newFont);
+			FlatLaf.updateUI();
 		} catch (Exception e) {
 		}
 
@@ -747,7 +757,12 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		});
 
 		toolsMenu.addSeparator();
-
+		
+		JMenuItem otherOptions = toolsMenu.add(new JMenuItem("More Options..."));
+		otherOptions.addActionListener(e -> { doSettingsDialog(); });
+		
+		toolsMenu.addSeparator();
+		
 		JMenuItem about = toolsMenu.add(new JMenuItem("About " + APP_NAME + "..."));
 		about.setMnemonic(KeyEvent.VK_A);
 		about.addActionListener(
@@ -792,6 +807,11 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			recentItems.add(newRecent);
 		}
 		recentPrefsWrite();
+	}
+	
+	private void doSettingsDialog() {
+		AbcPlayerSettingsDialog dialog = new AbcPlayerSettingsDialog(this, prefs);
+		dialog.setVisible(true);
 	}
 
 	private void recentRemove(final String fileNameToRemove) {

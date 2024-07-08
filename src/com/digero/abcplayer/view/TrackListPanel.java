@@ -1,11 +1,8 @@
 package com.digero.abcplayer.view;
 
-import info.clearthought.layout.TableLayout;
-import info.clearthought.layout.TableLayoutConstants;
-
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Cursor;
+import java.awt.Font;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -26,6 +23,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JToggleButton;
 import javax.swing.SwingUtilities;
+import javax.swing.UIManager;
 
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.abctomidi.AbcInfo;
@@ -36,9 +34,12 @@ import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.util.Listener;
 import com.digero.common.view.InstrumentComboBox;
 
+import info.clearthought.layout.TableLayout;
+import info.clearthought.layout.TableLayoutConstants;
+
 @SuppressWarnings("serial")
 public class TrackListPanel extends JPanel implements Listener<SequencerEvent>, TableLayoutConstants {
-	public static final int TRACKLIST_ROWHEIGHT = 18;
+	public static int TRACKLIST_ROWHEIGHT = 22;
 	private static final Object TRACK_INDEX_KEY = new Object();
 
 	private final SequencerWrapper sequencer;
@@ -78,7 +79,7 @@ public class TrackListPanel extends JPanel implements Listener<SequencerEvent>, 
 
 	public TrackListPanel(SequencerWrapper sequencer, TrackListPanelCallback abcPlayer) {
 		super(new TableLayout(new double[] { HGAP, FILL, HGAP, PREFERRED, HGAP, PREFERRED, HGAP, PREFERRED, HGAP },
-				new double[] { 0, 0 }));
+				new double[] { PREFERRED, PREFERRED }));
 
 		this.sequencer = sequencer;
 		this.abcPlayer = abcPlayer;
@@ -88,8 +89,18 @@ public class TrackListPanel extends JPanel implements Listener<SequencerEvent>, 
 		layout = (TableLayout) getLayout();
 		layout.setVGap(4);
 		layout.setHGap(0);
+		
+		Font font = UIManager.getFont("defaultFont");
+		
+		if (font != null) {
+			int sizeDiff = font.getSize() - 10;
+			final double divider = 18.0 - 10.0; // Used for lerp
+			
+			// Lerp track height between 10pt (48) and 18pt (72)
+			TRACKLIST_ROWHEIGHT = (int) (22 + (36 - 22) * (sizeDiff / divider));
+		}
 
-		setBackground(Color.WHITE);
+//		setBackground(Color.WHITE);
 	}
 
 	@SuppressWarnings("rawtypes") //
@@ -161,6 +172,7 @@ public class TrackListPanel extends JPanel implements Listener<SequencerEvent>, 
 			checkBox.putClientProperty(TRACK_INDEX_KEY, index);
 			checkBox.setBackground(getBackground());
 			checkBox.setSelected(!sequencer.getTrackMute(index));
+			checkBox.setFocusable(false);
 			checkBox.addActionListener(trackMuteListener);
 
 			JLabel lineNumberLabel = new JLabel();
@@ -178,6 +190,7 @@ public class TrackListPanel extends JPanel implements Listener<SequencerEvent>, 
 			soloButton.putClientProperty(TRACK_INDEX_KEY, index);
 			soloButton.setBackground(getBackground());
 			soloButton.setSelected(sequencer.getTrackSolo(index));
+			soloButton.setFocusable(false);
 			soloButton.addActionListener(trackSoloListener);
 
 			JComboBox<LotroInstrument> comboBox = new InstrumentComboBox();
@@ -256,7 +269,7 @@ public class TrackListPanel extends JPanel implements Listener<SequencerEvent>, 
 	public void deselectAll() {
 		if (trackControls != null) {
 			for (TrackControls trackControl : trackControls) {
-				if (trackControl != null) {
+				if (trackControl != null && trackControl.checkBox.isSelected()) {
 					trackControl.checkBox.setSelected(false);
 					int j = (Integer) trackControl.checkBox.getClientProperty(TRACK_INDEX_KEY);
 					sequencer.setTrackMute(j, true);
@@ -268,10 +281,22 @@ public class TrackListPanel extends JPanel implements Listener<SequencerEvent>, 
 	public void selectAll() {
 		if (trackControls != null) {
 			for (TrackControls trackControl : trackControls) {
-				if (trackControl != null) {
+				if (trackControl != null && !trackControl.checkBox.isSelected()) {
 					trackControl.checkBox.setSelected(true);
 					int j = (Integer) trackControl.checkBox.getClientProperty(TRACK_INDEX_KEY);
 					sequencer.setTrackMute(j, false);
+				}
+			}
+		}
+	}
+	
+	public void desoloAll() {
+		if (trackControls != null) {
+			for (TrackControls trackControl : trackControls) {
+				if (trackControl != null && trackControl.soloButton.isSelected()) {
+					trackControl.soloButton.setSelected(false);
+					int j = (Integer) trackControl.soloButton.getClientProperty(TRACK_INDEX_KEY);
+					sequencer.setTrackSolo(j, false);
 				}
 			}
 		}
@@ -303,16 +328,26 @@ public class TrackListPanel extends JPanel implements Listener<SequencerEvent>, 
 		public void actionPerformed(ActionEvent e) {
 			JCheckBox checkBox = (JCheckBox) e.getSource();
 			int i = (Integer) checkBox.getClientProperty(TRACK_INDEX_KEY);
-			sequencer.setTrackMute(i, !checkBox.isSelected());
+			boolean selected = checkBox.isSelected();
+			if ((e.getModifiers() & ActionEvent.SHIFT_MASK) != 0) {
+				selectAll();
+				checkBox.setSelected(selected);
+			}
+			sequencer.setTrackMute(i, !selected);
 		}
 	};
 
 	private ActionListener trackSoloListener = new ActionListener() {
 		@Override
 		public void actionPerformed(ActionEvent e) {
-			JToggleButton checkBox = (JToggleButton) e.getSource();
-			int i = (Integer) checkBox.getClientProperty(TRACK_INDEX_KEY);
-			sequencer.setTrackSolo(i, checkBox.isSelected());
+			JToggleButton toggleButton = (JToggleButton) e.getSource();
+			int i = (Integer) toggleButton.getClientProperty(TRACK_INDEX_KEY);
+			boolean selected = toggleButton.isSelected();
+			if ((e.getModifiers() & ActionEvent.SHIFT_MASK) != 0) {
+				desoloAll();
+				toggleButton.setSelected(selected);
+			}
+			sequencer.setTrackSolo(i, toggleButton.isSelected());
 		}
 	};
 

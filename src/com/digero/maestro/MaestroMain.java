@@ -15,9 +15,10 @@ import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
 import javax.swing.SwingUtilities;
+
+import com.digero.common.util.Themer;
 import com.digero.common.util.Version;
 import com.digero.maestro.view.ProjectFrame;
-import com.digero.maestro.view.Themer;
 
 //import org.boris.winrun4j.DDE;
 

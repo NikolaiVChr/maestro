@@ -46,6 +46,9 @@ Thanks to all who gave feedback of features, bugs plus suggestions.
 Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 ================
 
+Version 3.2.7
+- You can hold shift while clicking a solo/mute button to deselect all the other buttons of that type. Works in Maestro and AbcPlayer.
+
 Version 3.2.6
 - Polyphony histogram now reacts to muting or soloing parts.
 - Minimum and maximum note used can now be set in section editor.

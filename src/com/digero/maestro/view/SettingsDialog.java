@@ -42,6 +42,7 @@ import com.digero.common.abc.LotroInstrument;
 import com.digero.common.abc.LotroInstrumentNick;
 import com.digero.common.midi.NoteFilterSequencerWrapper;
 import com.digero.common.util.ExtensionFileFilter;
+import com.digero.common.util.Themer;
 import com.digero.common.util.Util;
 import com.digero.common.view.LinkButton;
 import com.digero.maestro.MaestroMain;
