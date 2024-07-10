@@ -62,7 +62,7 @@ public class MaestroMain {
 		System.setProperty("sun.sound.useNewAudioEngine", "true");
 
 		try {
-			Themer.setLookAndFeel();
+			Themer.setLookAndFeel(Preferences.userNodeForPackage(MaestroMain.class).node("miscSettings"));
 		} catch (Exception e) {
 			// Reset theme to default if an error occurred setting look and feel
 			Preferences preferences = Preferences.userNodeForPackage(MaestroMain.class);

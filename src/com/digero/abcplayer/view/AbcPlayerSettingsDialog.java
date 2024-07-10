@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.util.prefs.Preferences;
 
+import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
@@ -11,6 +12,8 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTabbedPane;
+
+import com.digero.common.util.Themer;
 
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
@@ -69,10 +72,44 @@ public class AbcPlayerSettingsDialog extends JDialog implements TableLayoutConst
 	}
 	
 	private JPanel createMoreOptionsPanel() {
+		
+		final JLabel themeText = new JLabel("Theme (Requires restart):");
+		final JComboBox<String> themeBox = new JComboBox<>();
+		
+		themeBox.setToolTipText(
+				"<html>Select the theme for Maestro. Must restart Maestro for it to take effect.</html>");
+		//themeBox.addItem(defaultStr);
+		for (String theme : Themer.themes) {
+			themeBox.addItem(theme);
+		}
+		themeBox.setEditable(false);
+		themeBox.addActionListener(e -> {
+		});
+//		themeBox.setSelectedItem();
+		
 		final JLabel fontSizeLabel = new JLabel("Font size (requires restart)");
 		final JComboBox<String> fontBox = new JComboBox<>();
 		
-//		fontBox.setToolTipText();
-		return new JPanel();
+		fontBox.setEditable(false);
+		for (int i : Themer.fontSizes) {
+			fontBox.addItem(Integer.toString(i));
+		}
+		
+		TableLayout layout = new TableLayout();
+		layout.insertColumn(0, FILL);
+		layout.setVGap(PAD);
+
+		JPanel panel = new JPanel(layout);
+		panel.setBorder(BorderFactory.createEmptyBorder(PAD, PAD, PAD, PAD));
+		
+		int row = -1;
+		
+		layout.insertRow(++row, PREFERRED);
+		panel.add(fontSizeLabel, "0, " + row);
+		
+		layout.insertRow(++row, PREFERRED);
+		panel.add(fontBox, "0, " + row);
+		
+		return panel;
 	}
 }

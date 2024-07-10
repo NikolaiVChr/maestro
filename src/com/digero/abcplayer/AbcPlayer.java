@@ -85,6 +85,7 @@ import com.digero.common.util.ExtensionFileFilter;
 import com.digero.common.util.FileFilterDropListener;
 import com.digero.common.util.LotroParseException;
 import com.digero.common.util.ParseException;
+import com.digero.common.util.Themer;
 import com.digero.common.util.Util;
 import com.digero.common.util.Version;
 import com.digero.common.view.AboutDialog;
@@ -137,11 +138,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 
 		try {
 //			UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-			UIManager.setLookAndFeel(new FlatMacLightLaf());
-			Font font = UIManager.getFont("defaultFont");
-			Font newFont = StyleContext.getDefaultStyleContext().getFont(font.getFamily(), font.getStyle(), 12);
-			UIManager.put("defaultFont", newFont);
-			FlatLaf.updateUI();
+			Themer.setLookAndFeel(Preferences.userNodeForPackage(AbcPlayer.class).node("miscSettings"));
 		} catch (Exception e) {
 		}
 

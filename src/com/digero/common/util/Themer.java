@@ -18,9 +18,9 @@ public class Themer {
 
 	public static final int[] fontSizes = { 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 22, 24, 26, 28, 36 };
 
-	public static void setLookAndFeel() throws ClassNotFoundException, InstantiationException, IllegalAccessException,
+	public static void setLookAndFeel(Preferences node) throws ClassNotFoundException, InstantiationException, IllegalAccessException,
 			UnsupportedLookAndFeelException {
-		MiscSettings settings = new MiscSettings(Preferences.userNodeForPackage(MaestroMain.class).node("miscSettings"),
+		MiscSettings settings = new MiscSettings(node,
 				true);
 		String theme = settings.theme;
 		int fontSize = settings.fontSize;
