@@ -14,16 +14,20 @@ import com.formdev.flatlaf.themes.FlatMacDarkLaf;
 import com.formdev.flatlaf.themes.FlatMacLightLaf;
 
 public class Themer {
-	public static final String[] themes = { "Flat Dark", "Flat Light", };
+	public static final String FLAT_LIGHT_THEME = "Flat Light";
+	public static final String FLAT_DARK_THEME = "Flat Dark";
+	
+	public static final String[] themes = { FLAT_DARK_THEME, FLAT_LIGHT_THEME, };
 
+	public static final int DEFAULT_FONT_SIZE = 12;
 	public static final int[] fontSizes = { 10, 11, 12, 13, 14, 15, 16, 17, 18, 20, 22, 24, 26, 28, 36 };
 
-	public static void setLookAndFeel(Preferences node) throws ClassNotFoundException, InstantiationException, IllegalAccessException,
+	public static void setLookAndFeel(String theme, int fontSize) throws ClassNotFoundException, InstantiationException, IllegalAccessException,
 			UnsupportedLookAndFeelException {
-		MiscSettings settings = new MiscSettings(node,
-				true);
-		String theme = settings.theme;
-		int fontSize = settings.fontSize;
+//		MiscSettings settings = new MiscSettings(node,
+//				true);
+//		String theme = settings.theme;
+//		int fontSize = settings.fontSize;
 		boolean isOldTheme = false;
 		
 		if ("Default".equals(theme)) {

@@ -943,7 +943,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		themeBox.setSelectedItem(miscSettings.theme);
 
 		fontBox.setToolTipText(
-				"<html>Select a font size. Only supported with a non-default theme. Must restart Maestro for it to take effect.</html>");
+				"<html>Select a font size. Must restart Maestro for it to take effect.</html>");
 		for (int i : Themer.fontSizes) {
 			fontBox.addItem(Integer.toString(i));
 		}

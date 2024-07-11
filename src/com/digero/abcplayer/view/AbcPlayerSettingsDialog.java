@@ -19,28 +19,34 @@ import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
 
 public class AbcPlayerSettingsDialog extends JDialog implements TableLayoutConstants{
-
-	private boolean success = false;
 	
 	private JTabbedPane tabPanel;
 	
 	private static final int PAD = 4;
 	
+	private final JComboBox<String> themeBox = new JComboBox<>();
+	private final JComboBox<String> fontBox = new JComboBox<>();
+	
+	private final Preferences prefs;
+	
 	public AbcPlayerSettingsDialog(JFrame owner, Preferences abcPlayerPrefs) {
 		super(owner, "More Options", true);
+		
+		prefs = abcPlayerPrefs;
 		
 		JButton okButton = new JButton("OK");
 		getRootPane().setDefaultButton(okButton);
 		okButton.setMnemonic('O');
 		okButton.addActionListener(e -> {
-			success = true;
+			prefs.put("theme", (String)themeBox.getSelectedItem());
+			prefs.putInt("fontSize", Integer.parseInt((String) fontBox.getSelectedItem()));
+			System.out.println("test");
 			AbcPlayerSettingsDialog.this.setVisible(false);
 		});
 		
 		JButton cancelButton = new JButton("Cancel");
 		cancelButton.setMnemonic('C');
 		cancelButton.addActionListener(e -> {
-			success = false;
 			AbcPlayerSettingsDialog.this.setVisible(false);
 		});
 		
@@ -53,12 +59,13 @@ public class AbcPlayerSettingsDialog extends JDialog implements TableLayoutConst
 		JPanel buttonsContainerPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, PAD / 2));
 		buttonsContainerPanel.add(buttonsPanel);
 		
-		tabPanel = new JTabbedPane();
-		tabPanel.addTab("More Options", createMoreOptionsPanel());
-		tabPanel.setFocusable(false);
+//		tabPanel = new JTabbedPane();
+//		tabPanel.addTab("More Options", createMoreOptionsPanel());
+//		tabPanel.setFocusable(false);
 		
 		JPanel mainPanel = new JPanel(new BorderLayout(PAD,PAD));
-		mainPanel.add(tabPanel, BorderLayout.CENTER);
+		mainPanel.setBorder(BorderFactory.createEmptyBorder(PAD, PAD, PAD, PAD));
+		mainPanel.add(createMoreOptionsPanel(), BorderLayout.CENTER);
 		mainPanel.add(buttonsContainerPanel, BorderLayout.SOUTH);
 		
 		setContentPane(mainPanel);
@@ -73,27 +80,25 @@ public class AbcPlayerSettingsDialog extends JDialog implements TableLayoutConst
 	
 	private JPanel createMoreOptionsPanel() {
 		
-		final JLabel themeText = new JLabel("Theme (Requires restart):");
-		final JComboBox<String> themeBox = new JComboBox<>();
+		final JLabel themeLabel = new JLabel("Theme (Requires restart):");
 		
 		themeBox.setToolTipText(
 				"<html>Select the theme for Maestro. Must restart Maestro for it to take effect.</html>");
-		//themeBox.addItem(defaultStr);
 		for (String theme : Themer.themes) {
 			themeBox.addItem(theme);
 		}
 		themeBox.setEditable(false);
-		themeBox.addActionListener(e -> {
-		});
-//		themeBox.setSelectedItem();
+		themeBox.setSelectedItem(prefs.get("theme", Themer.FLAT_LIGHT_THEME));
 		
 		final JLabel fontSizeLabel = new JLabel("Font size (requires restart)");
-		final JComboBox<String> fontBox = new JComboBox<>();
 		
+		fontBox.setToolTipText(
+				"<html>Select a font size. Must restart Maestro for it to take effect.</html>");
 		fontBox.setEditable(false);
 		for (int i : Themer.fontSizes) {
 			fontBox.addItem(Integer.toString(i));
 		}
+		fontBox.setSelectedItem(Integer.toString(prefs.getInt("fontSize", Themer.DEFAULT_FONT_SIZE)));
 		
 		TableLayout layout = new TableLayout();
 		layout.insertColumn(0, FILL);
@@ -103,6 +108,12 @@ public class AbcPlayerSettingsDialog extends JDialog implements TableLayoutConst
 		panel.setBorder(BorderFactory.createEmptyBorder(PAD, PAD, PAD, PAD));
 		
 		int row = -1;
+		
+		layout.insertRow(++row, PREFERRED);
+		panel.add(themeLabel, "0, " + row);
+		
+		layout.insertRow(++row, PREFERRED);
+		panel.add(themeBox, "0, " + row);
 		
 		layout.insertRow(++row, PREFERRED);
 		panel.add(fontSizeLabel, "0, " + row);
