@@ -483,7 +483,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			return;
 
 		if (abcViewFrame == null) {
-			abcViewFrame = new HighlightAbcNotesFrame(sequencer);
+			abcViewFrame = new HighlightAbcNotesFrame(sequencer, prefs);
 			abcViewFrame.setTitle(getTitle());
 			abcViewFrame.setIconImages(getIconImages());
 			abcViewFrame.addDropListener(dropListener);

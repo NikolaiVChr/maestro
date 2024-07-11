@@ -60,6 +60,7 @@ import com.digero.common.midi.Note;
 import com.digero.common.midi.SequencerEvent.SequencerProperty;
 import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.util.NullCaret;
+import com.digero.common.util.Themer;
 import com.digero.common.util.Util;
 import com.digero.common.view.ColorTable;
 
@@ -98,7 +99,7 @@ public class HighlightAbcNotesFrame extends JFrame {
 	private JCheckBox autoScrollCheckBox;
 	private JComboBox<PartInfo> followTrackComboBox;
 
-	public HighlightAbcNotesFrame(SequencerWrapper seq) {
+	public HighlightAbcNotesFrame(SequencerWrapper seq, Preferences abcPlayerPreferences) {
 		super(AbcPlayer.APP_NAME);
 
 		setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
@@ -139,7 +140,7 @@ public class HighlightAbcNotesFrame extends JFrame {
 
 		textArea = new JTextArea();
 		textArea.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
-		textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
+		textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, abcPlayerPreferences.node("miscSettings").getInt("fontSize", Themer.DEFAULT_FONT_SIZE) + 2));
 		textArea.setEditable(false);
 		textArea.setLineWrap(false);
 		textArea.setHighlighter(highlighter);
