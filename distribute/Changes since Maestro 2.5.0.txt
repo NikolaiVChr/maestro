@@ -49,6 +49,7 @@ Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 Version 3.2.7
 - You can hold shift while clicking a solo/mute button to deselect all the other buttons of that type. Works in Maestro and AbcPlayer.
 - Flat light and dark themes are added for AbcPlayer, and the old default theme is removed.
+- Fixed a bug where Maestro would report incorrect song lengths for arrangements where the main tempo was changed.
 
 Version 3.2.6
 - Polyphony histogram now reacts to muting or soloing parts.
