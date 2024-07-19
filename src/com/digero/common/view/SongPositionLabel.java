@@ -60,18 +60,14 @@ public class SongPositionLabel extends JLabel implements Listener<SequencerEvent
 		long tickLength = Math.max(0, sequencer.getTickLength() - initialOffsetTick);
 		long tick = Math.max(0, Math.min(tickLength, sequencer.getThumbTick() - initialOffsetTick));
 
-		/*
-		 * if (adjustForTempo) { tick = Math.round(tick / sequencer.getTempoFactor()); tickLength =
-		 * Math.round(tickLength / sequencer.getTempoFactor()); }
-		 */
-
 		long micros = sequencer.tickToMicros(tick);
 		long length = sequencer.tickToMicros(tickLength);
 
-		if (adjustForTempo) {
-			micros = Math.round(micros / (double) sequencer.getTempoFactor());
-			length = Math.round(length / (double) sequencer.getTempoFactor());
-		}
+		// No longer needed after 3.0.2 - sequencer is already scaled by the tempo factor during refresh
+//		if (adjustForTempo) {
+//			micros = Math.round(micros / (double) sequencer.getTempoFactor());
+//			length = Math.round(length / (double) sequencer.getTempoFactor());
+//		}
 
 		if (micros != lastPrintedMicros || length != lastPrintedLength) {
 			lastPrintedMicros = micros;
