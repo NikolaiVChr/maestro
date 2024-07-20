@@ -94,6 +94,7 @@
 	<target name="-GenerateSoundFontInfo.CheckUpToDate" description="Test if LotroInstruments.txt needs making">
 		<uptodate property="GenerateSoundFontInfo.uptodate" value="true" targetfile="${basedir}/${audio}/LotroInstruments/LotroInstruments.txt">
 			<srcfiles dir="${src}/com/digero/tools/soundfont/" />
+			<srcfiles file="${src}/com/digero/common/abc/LotroInstrument.java" />
 			<!-- Since classes are rebuilt every run, we check against the src files instead -->
 		</uptodate>
 		<echo message="GenerateSoundFontInfo.uptodate is now ${GenerateSoundFontInfo.uptodate}."/>
