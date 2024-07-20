@@ -59,7 +59,7 @@ public enum LotroInstrument
 
 	BASIC_COWBELL            ( "Basic Cowbell",             false, MidiInstrument.WOODBLOCK,            0,       true,     0.0f, "Cowbell", "glocke", "cloche (de)? (vache)?","kuhglocke"),
 	MOOR_COWBELL             ( "Moor Cowbell",              false, MidiInstrument.STEEL_DRUMS,          0,       true,     0.0f, "More Cowbell", "Moor", "moorkuh-? glocke", "Moor Bell"),
-	BASIC_DRUM               ( "Basic Drum",                false, MidiInstrument.SYNTH_DRUM,           0,       true,     0.0f, "Drums?", "trommel", "tambour"),
+	BASIC_DRUM               ( "Basic Drum",                false, MidiInstrument.SYNTH_DRUM,           0,       true,     4.5f, "Drums?", "trommel", "tambour"),
 	STUDENT_FX_FIDDLE        ( "Student's FX Fiddle",       false, MidiInstrument.GUITAR_FRET_NOISE,    0,       true,     0.0f, "Student'?s? FX Fiddle", "Student'?s? FX", "ST FX Fiddle");
 // @formatter:on
 
