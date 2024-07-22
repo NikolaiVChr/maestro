@@ -2172,7 +2172,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			File alternateFile = null;
 			if (result == JOptionPane.OK_OPTION) {
 				JFileChooser jfc = new JFileChooser();
-				jfc.setDialogTitle("Open missing MIDI");
+				jfc.setFileFilter(new ExtensionFileFilter("MIDI and ABC files", "mid",
+						"midi", "kar", "abc", "txt"));
+				jfc.setDialogTitle("Open missing MIDI/ABC");
 				if (original != null)
 					jfc.setSelectedFile(original);
 
