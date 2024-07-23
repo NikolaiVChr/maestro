@@ -955,12 +955,19 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			fireChangeEvent(AbcPartProperty.TRACK_TRANSPOSE, isTrackEnabled(track) /* previewRelated */, track);
 		}
 	}
-
+	
 	public int getTranspose(int track, long tickStart) {
+		return getTranspose(track, tickStart, false);
+	}
+
+	public int getTranspose(int track, long tickStart, boolean includeEditorChanges) {
 		if (isPercussionPart())
 			return 0;
-		return abcSong.getTranspose() + abcSong.getTuneTranspose(tickStart) + trackTranspose[track]
-				- getInstrument().octaveDelta * 12 + getSectionTranspose(tickStart, track);
+		int temp = abcSong.getTranspose() + trackTranspose[track] - getInstrument().octaveDelta * 12;
+		if (includeEditorChanges) {
+			temp += abcSong.getTuneTranspose(tickStart) + getSectionTranspose(tickStart, track);
+		}
+		return temp;
 	}
 	
 	public Pair<Integer, Integer> getSectionPitchLimits(int track, long tickStart) {

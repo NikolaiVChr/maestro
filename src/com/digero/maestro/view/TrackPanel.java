@@ -1036,7 +1036,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		@Override
 		protected int transposeNote(int noteId, long tickStart) {
 			if (!trackInfo.isDrumTrack()) {
-				noteId += abcPart.getTranspose(trackInfo.getTrackNumber(), tickStart);
+				noteId += abcPart.getTranspose(trackInfo.getTrackNumber(), tickStart, isAbcPreviewMode);
 			}
 			return noteId;
 		}
@@ -1077,9 +1077,6 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		protected int[] getSectionVelocity(NoteEvent note) {
 			if (!isAbcPreviewMode) return super.getSectionVelocity(note);
 			return abcPart.getSectionVolumeAdjust(trackInfo.getTrackNumber(), note);
-			/*
-			 * int[] empty = new int[2]; empty[0] = 0; empty[1] = 100; return empty;
-			 */
 		}
 
 		@Override
