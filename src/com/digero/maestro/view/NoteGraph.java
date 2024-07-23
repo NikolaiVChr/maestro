@@ -592,7 +592,17 @@ public class NoteGraph extends JPanel implements Listener<SequencerEvent>, IDisc
 			for (long barTick = firstBarTick; barTick <= lastBarTick + barLengthTicks; barTick += barLengthTicks) {
 				barEdited = false;
 				long barTempMicros = data.tickToMicros(barTick);
-				if (barArray != null && barCount < barArray.length && barCount > -1) {
+				if (getFirstBar() != null && ((int) barCount+1) < getFirstBar()) {
+					rectTmp.setRect(barMicros + lineWidth, MIN_RENDERED - 1, barTempMicros - barMicros - lineWidth,
+							MAX_RENDERED - MIN_RENDERED + 2);
+					g2.setColor(ColorTable.BAR_SILENCED.get());
+					g2.fill(rectTmp);
+				} else if (getLastBar() != null && ((int) barCount+1) > getLastBar()) {
+					rectTmp.setRect(barMicros + lineWidth, MIN_RENDERED - 1, barTempMicros - barMicros - lineWidth,
+							MAX_RENDERED - MIN_RENDERED + 2);
+					g2.setColor(ColorTable.BAR_SILENCED.get());
+					g2.fill(rectTmp);
+				} else if ( barArray != null && barCount < barArray.length && barCount > -1) {
 					if (barArray[(int) barCount]) {
 						rectTmp.setRect(barMicros + lineWidth, MIN_RENDERED - 1, barTempMicros - barMicros - lineWidth,
 								MAX_RENDERED - MIN_RENDERED + 2);
@@ -651,7 +661,7 @@ public class NoteGraph extends JPanel implements Listener<SequencerEvent>, IDisc
 			// Highlight all notes that are on, or were on since we last painted (up to
 			// 100ms ago)
 			if (lastPaintedSongPos >= 0 && lastPaintedSongPos < songPos) {
-				minSongPos = Math.max(lastPaintedSongPos, songPos - 4 * SequencerWrapper.UPDATE_FREQUENCY_MICROS);
+				minSongPos = Math.max(lastPaintedSongPos, songPos - 2 * SequencerWrapper.UPDATE_FREQUENCY_MICROS);
 			}
 		}
 
@@ -692,8 +702,7 @@ public class NoteGraph extends JPanel implements Listener<SequencerEvent>, IDisc
 
 					int noteId = transposeNote(ne.note.id, ne.getStartTick());
 
-					if (showNotesOn && songPos >= ne.getStartMicros() && minSongPos <= ne.getEndMicros()
-							&& sequencer.isNoteActive(ne.note.id)) {
+					if (showNotesOn && songPos >= ne.getStartMicros() && minSongPos <= ne.getEndMicros()) {
 						if (notesOn == null)
 							notesOn = new BitSet(noteEvents.size());
 						notesOn.set(i);
@@ -1048,5 +1057,17 @@ public class NoteGraph extends JPanel implements Listener<SequencerEvent>, IDisc
 		empty[2] = false;
 		empty[3] = false;
 		return empty;
+	}
+
+	protected Integer getLastBar() {
+		return null;
+	}
+	
+	protected Integer getFirstBar() {
+		return null;
+	}
+	
+	protected boolean isActiveTrack() {
+		return false;
 	}
 }

@@ -602,12 +602,14 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 	private void updateBadTooltipText() {
 		if (abcPart.getInstrument().ordinal() == LotroInstrument.BASIC_CLARINET.ordinal()) {
 			int g3count = 0;
-			List<MidiNoteEvent> nel = trackInfo.getEvents();
-			for (MidiNoteEvent ne : nel) {
-				if (!(ne instanceof BentMidiNoteEvent)) {
-					Note mn = abcPart.mapNote(trackInfo.getTrackNumber(), ne.note.id, ne.getStartTick());
-					if (mn != null && abcPart.shouldPlay(ne, trackInfo.getTrackNumber()) && mn.id == Note.G3.id) {
-						g3count += 1;
+			if (abcPart.isTrackEnabled(trackInfo.getTrackNumber())) {
+				List<MidiNoteEvent> nel = trackInfo.getEvents();
+				for (MidiNoteEvent ne : nel) {
+					if (!(ne instanceof BentMidiNoteEvent)) {
+						Note mn = abcPart.mapNote(trackInfo.getTrackNumber(), ne.note.id, ne.getStartTick());
+						if (mn != null && abcPart.shouldPlay(ne, trackInfo.getTrackNumber()) && mn.id == Note.G3.id) {
+							g3count += 1;
+						}
 					}
 				}
 			}
@@ -619,13 +621,15 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 		} else if (abcPart.getInstrument().ordinal() == LotroInstrument.BASIC_PIBGORN.ordinal()) {
 			int acount = 0;
-			List<MidiNoteEvent> nel = trackInfo.getEvents();
-			for (MidiNoteEvent ne : nel) {
-				if (!(ne instanceof BentMidiNoteEvent)) {
-					Note mn = abcPart.mapNote(trackInfo.getTrackNumber(), ne.note.id, ne.getStartTick());
-					if (mn != null && abcPart.shouldPlay(ne, trackInfo.getTrackNumber())
-							&& (mn.id == Note.A2.id || mn.id == Note.A3.id || mn.id == Note.A4.id)) {
-						acount += 1;
+			if (abcPart.isTrackEnabled(trackInfo.getTrackNumber())) {
+				List<MidiNoteEvent> nel = trackInfo.getEvents();
+				for (MidiNoteEvent ne : nel) {
+					if (!(ne instanceof BentMidiNoteEvent)) {
+						Note mn = abcPart.mapNote(trackInfo.getTrackNumber(), ne.note.id, ne.getStartTick());
+						if (mn != null && abcPart.shouldPlay(ne, trackInfo.getTrackNumber())
+								&& (mn.id == Note.A2.id || mn.id == Note.A3.id || mn.id == Note.A4.id)) {
+							acount += 1;
+						}
 					}
 				}
 			}
@@ -1039,20 +1043,39 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 		@Override
 		protected boolean audibleNote(NoteEvent ne) {
-			return abcPart.getAudible(trackInfo.getTrackNumber(), ne.getStartTick())
-					&& abcPart.shouldPlay(ne, trackInfo.getTrackNumber()) && abcPart.mapNoteEvent(trackInfo.getTrackNumber(), ne) != null;
+			if (!isAbcPreviewMode) return true;
+			return abcPart.getAudible(trackInfo.getTrackNumber(), ne.getStartTick(), isActiveTrack())
+					&& abcPart.shouldPlay(ne, trackInfo.getTrackNumber()) && abcPart.mapNoteEvent(trackInfo.getTrackNumber(), ne, true) != null;
 		}
 
 		@Override
 		protected boolean[] getSectionsModified() {
-			if (!abcPart.isTrackEnabled(trackInfo.getTrackNumber())) {
+			if (!isActiveTrack() || !isAbcPreviewMode) {
 				return null;
 			}
 			return abcPart.sectionsModified.get(trackInfo.getTrackNumber());
 		}
+		
+		@Override
+		protected boolean isActiveTrack() {
+			return abcPart.isTrackEnabled(trackInfo.getTrackNumber());
+		}
+		
+		@Override
+		protected Integer getLastBar() {
+			if (!isAbcPreviewMode) return null;
+			return abcPart.getAbcSong().getLastBar();
+		}
+		
+		@Override
+		protected Integer getFirstBar() {
+			if (!isAbcPreviewMode) return null;
+			return abcPart.getAbcSong().getFirstBar();
+		}
 
 		@Override
 		protected int[] getSectionVelocity(NoteEvent note) {
+			if (!isAbcPreviewMode) return super.getSectionVelocity(note);
 			return abcPart.getSectionVolumeAdjust(trackInfo.getTrackNumber(), note);
 			/*
 			 * int[] empty = new int[2]; empty[0] = 0; empty[1] = 100; return empty;
@@ -1061,11 +1084,15 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 		@Override
 		protected int getSourceNoteVelocity(NoteEvent note) {
+			if (!isAbcPreviewMode) return note.velocity;
 			return abcPart.getSectionNoteVelocity(trackInfo.getTrackNumber(), note);
 		}
 
 		@Override
 		protected Boolean[] getSectionDoubling(long tick) {
+			if (!isAbcPreviewMode) {
+				return super.getSectionDoubling(tick);
+			}
 			return abcPart.getSectionDoubling(tick, trackInfo.getTrackNumber());
 		}
 

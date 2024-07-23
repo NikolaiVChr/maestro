@@ -58,7 +58,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = MaestroMain.APP_NAME + " Songs";
 	public static final String MSX_FILE_EXTENSION_NO_DOT = "msx";
 	public static final String MSX_FILE_EXTENSION = "." + MSX_FILE_EXTENSION_NO_DOT;
-	public static final Version SONG_FILE_VERSION = new Version(3, 2, 5, 300);// Keep build above 117 to make earlier
+	public static final Version SONG_FILE_VERSION = new Version(3, 2, 8, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
 
@@ -83,6 +83,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	// private boolean showPruned = false;
 	public NavigableMap<Integer, TuneLine> tuneBars = null;
 	public boolean[] tuneBarsModified = null;
+	private Integer firstBar = null;
+	private Integer lastBar = null;
 
 	private final boolean fromAbcFile;
 	private final boolean fromXmlFile;
@@ -152,6 +154,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 		tuneBarsModified = null;
 		tuneBars = null;
+		firstBar = null;
+		lastBar = null;
 
 		/*
 		 * if (sequenceInfo != null) { // Make life easier for Garbage Collector for (TrackInfo ti :
@@ -276,6 +280,11 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			genre = SaveUtil.parseValue(songEle, "genre", genre);
 			mood = SaveUtil.parseValue(songEle, "mood", mood);
 			note = SaveUtil.parseValue(songEle, "note", "");
+			
+			lastBar = SaveUtil.parseValue(songEle, "lastBar", -1);
+			if (lastBar < 1) lastBar = null;
+			firstBar = SaveUtil.parseValue(songEle, "firstBar", -1);
+			if (firstBar < 1) firstBar = null;
 
 			tempoFactor = SaveUtil.parseValue(songEle, "exportSettings/@tempoFactor", tempoFactor);
 			transpose = SaveUtil.parseValue(songEle, "exportSettings/@transpose", transpose);
@@ -440,6 +449,12 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 		if (tuneBars != null && tuneBarsModified != null) {
 			appendTuneSections(doc, songEle);
+		}
+		if (lastBar != null) {
+			SaveUtil.appendChildTextElement(songEle, "lastBar", String.valueOf(lastBar));
+		}
+		if (firstBar != null) {
+			SaveUtil.appendChildTextElement(songEle, "firstBar", String.valueOf(firstBar));
 		}
 
 		for (AbcPart part : parts) {
@@ -894,7 +909,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		KeySignature key = getKeySignature();
 
 		if (abcExporter == null) {
-			abcExporter = new AbcExporter(parts, qtm, key, this);
+			abcExporter = new AbcExporter(parts, qtm, key, this, skipSilenceAtStart);
 		}
 		if (abcExporter.getTimingInfo() != qtm) {
 			abcExporter.setTimingInfo(qtm);
@@ -930,6 +945,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			fireChangeEvent(AbcSongProperty.PART_LIST_ORDER, e.getSource());
 		}
 	};
+	
 
 	@Override
 	public String getBadgerTitle() {
@@ -1029,6 +1045,22 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			}
 		}
 		return treeChanges;
+	}
+	
+	public void setLastBar(Integer lastBar) {
+		this.lastBar = lastBar;
+	}
+	
+	public Integer getLastBar() {
+		return lastBar;
+	}
+	
+	public void setFirstBar(Integer firstBar) {
+		this.firstBar = firstBar;
+	}
+	
+	public Integer getFirstBar() {
+		return firstBar;
 	}
 
 	public InstrNameSettings getInstrNameSettings() {

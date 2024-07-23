@@ -67,6 +67,7 @@ public enum ColorTable
 	
 	BAR_EDITED(new Color(0,32,0)),
 	BAR_LINE_EDITED(new Color(30,75,30)),
+	BAR_SILENCED(new Color(32,0,0)),
 	
 	NOTE_POLYPHONY         (new Color(100,170,100)),
 	NOTE_POLYPHONY_ON      (new Color(0xF2F2F2)),

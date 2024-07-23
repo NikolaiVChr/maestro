@@ -382,21 +382,28 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 		protected boolean isNoteVisible(NoteEvent ne) {
 			return ne.note.id == drumId;
 		}
+		
+		@Override
+		protected boolean isActiveTrack() {
+			return abcPart.isTrackEnabled(trackInfo.getTrackNumber());
+		}
 
 		@Override
 		protected boolean audibleNote(NoteEvent ne) {
-			return abcPart.getAudible(trackInfo.getTrackNumber(), ne.getStartTick())
+			if (!isAbcPreviewMode) return true;
+			return abcPart.getAudible(trackInfo.getTrackNumber(), ne.getStartTick(), isActiveTrack())
 					&& abcPart.shouldPlay(ne, trackInfo.getTrackNumber());
 		}
 
 		@Override
 		protected int getSourceNoteVelocity(NoteEvent note) {
+			if (!isAbcPreviewMode) return note.velocity;
 			return abcPart.getSectionNoteVelocity(trackInfo.getTrackNumber(), note);
 		}
 
 		@Override
 		protected boolean[] getSectionsModified() {
-			if (!abcPart.isTrackEnabled(trackInfo.getTrackNumber())) {
+			if (!isActiveTrack() || !isAbcPreviewMode) {
 				return null;
 			}
 			return abcPart.sectionsModified.get(trackInfo.getTrackNumber());
@@ -404,6 +411,7 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 
 		@Override
 		protected int[] getSectionVelocity(NoteEvent note) {
+			if (!isAbcPreviewMode) return super.getSectionVelocity(note);
 			return abcPart.getSectionVolumeAdjust(trackInfo.getTrackNumber(), note);
 			/*
 			 * int[] empty = new int[2]; empty[0] = 0; empty[1] = 100; return empty;

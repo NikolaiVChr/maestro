@@ -15,6 +15,7 @@ import java.util.TreeMap;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComponent;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
@@ -108,7 +109,7 @@ public class TuneEditor {
 				}
 				LAYOUT_ROWS[3 + numberOfSections] = TableLayoutConstants.PREFERRED;
 				LAYOUT_ROWS[4 + numberOfSections] = TableLayoutConstants.PREFERRED;
-				LAYOUT_ROWS[5 + numberOfSections] = TableLayoutConstants.FILL;
+				LAYOUT_ROWS[5 + numberOfSections] = TableLayoutConstants.PREFERRED;
 				/*
 				 * LAYOUT_ROWS[6+numberOfSections] = TableLayoutConstants.PREFERRED;
 				 * LAYOUT_ROWS[7+numberOfSections] = TableLayoutConstants.PREFERRED;
@@ -198,6 +199,46 @@ public class TuneEditor {
 				panel.add(help, "3," + (3 + numberOfSections) + ", 3, "
 						+ (3 + numberOfSections) + ",f,f");
 				
+				Integer firstBar = abcSong.getFirstBar();
+				JTextField startSong = new JTextField(firstBar==null?"1":Integer.toString(firstBar)); 
+				JLabel startSongLabel = new JLabel("Start song in bar: ");
+				JCheckBox startSongEnable = new JCheckBox("Start song late");
+				
+				startSong.setHorizontalAlignment(CENTER);
+				
+				startSongLabel.setEnabled(firstBar != null);
+				startSong.setEnabled(firstBar != null);
+				startSongEnable.setSelected(firstBar != null);
+				
+				startSongEnable.addActionListener(al -> {
+					startSongLabel.setEnabled(startSongEnable.isSelected());
+					startSong.setEnabled(startSongEnable.isSelected());
+				});
+				
+				panel.add(startSongEnable, "0," + (4 + numberOfSections) + ", 1, "	+ (4 + numberOfSections) + ",f,f");
+				panel.add(startSongLabel, "2," + (4 + numberOfSections) + ", 3, "	+ (4 + numberOfSections) + ",f,f");
+				panel.add(startSong, "4," + (4 + numberOfSections) + ", 4, "	+ (4 + numberOfSections) + ",f,f");
+
+				Integer lastBar = abcSong.getLastBar();
+				JTextField endSong = new JTextField(lastBar==null?"100000":Integer.toString(lastBar)); 
+				JLabel endSongLabel = new JLabel("End song with bar: ");
+				JCheckBox endSongEnable = new JCheckBox("End song early");
+				
+				endSong.setHorizontalAlignment(CENTER);
+				
+				endSongLabel.setEnabled(lastBar != null);
+				endSong.setEnabled(lastBar != null);
+				endSongEnable.setSelected(lastBar != null);
+				
+				endSongEnable.addActionListener(al -> {
+					endSongLabel.setEnabled(endSongEnable.isSelected());
+					endSong.setEnabled(endSongEnable.isSelected());
+				});
+				
+				panel.add(endSongEnable, "0," + (5 + numberOfSections) + ", 1, "	+ (5 + numberOfSections) + ",f,f");
+				panel.add(endSongLabel, "2," + (5 + numberOfSections) + ", 3, "	+ (5 + numberOfSections) + ",f,f");
+				panel.add(endSong, "4," + (5 + numberOfSections) + ", 4, "	+ (5 + numberOfSections) + ",f,f");				
+				
 				JButton okButton = new JButton("APPLY");
 				numberOfSectionsFinal = numberOfSections;
 				okButton.addActionListener(e -> {
@@ -221,6 +262,39 @@ public class TuneEditor {
 
 						TuneDialog.this.abcSong.tuneBarsModified = booleanArray;
 					}
+					
+					try {
+						if (startSongEnable.isSelected()) {
+							int startBar = Integer.parseInt(startSong.getText());
+							if (startBar < 1) {
+								throw new NumberFormatException();
+							}
+							abcSong.setFirstBar(startBar);
+						} else {
+							abcSong.setFirstBar(null);
+						}
+					} catch (NumberFormatException nfe) {
+						Integer firstBars = abcSong.getFirstBar();
+						startSongEnable.setSelected(firstBars != null);
+						startSong.setText(firstBars==null?"1":Integer.toString(firstBars));
+					}
+					
+					try {
+						if (endSongEnable.isSelected()) {
+							int endBar = Integer.parseInt(endSong.getText());
+							if (endBar < 1) {
+								throw new NumberFormatException();
+							}
+							abcSong.setLastBar(endBar);
+						} else {
+							abcSong.setLastBar(null);
+						}
+					} catch (NumberFormatException nfe) {
+						Integer lastBars = abcSong.getLastBar();
+						endSongEnable.setSelected(lastBars != null);
+						endSong.setText(lastBars==null?"100000":Integer.toString(lastBars));
+					}					
+					
 					TuneDialog.this.abcSong.tuneEdited();
 					// System.err.println(Thread.currentThread().getName());
 				});

@@ -57,12 +57,13 @@ public class AbcExporter {
 	private int lastChannelUsedInPreview = -1;
 
 	public AbcExporter(List<AbcPart> parts, QuantizedTimingInfo timingInfo, KeySignature keySignature,
-			AbcMetadataSource metadata) throws AbcConversionException {
+			AbcMetadataSource metadata, boolean skipSilenceAtStart) throws AbcConversionException {
 		this.parts = parts;
 		this.qtm = timingInfo;
 		this.metadata = metadata;
 		setKeySignature(keySignature);
 		
+		this.skipSilenceAtStart = skipSilenceAtStart;// getSongStartEndTick needs this so we needed to pass it
 		// We use this from AbcSong when getting micros
 		Pair<Long, Long> startEndTick = getSongStartEndTick(false, true, false);
 		exportStartTick = startEndTick.first;

@@ -473,13 +473,11 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	 * Notice this method does not work for bent notes, use mapNoteEvent for those.
 	 */
 	public Note mapNote(int track, int noteId, long tickStart) {
-		if (!isTrackEnabled(track))
-			return Note.fromId(noteId);
 		if (!getAudible(track, tickStart)) {
 			return null;
 		}
 		if (isPercussionPart()) {
-			if (!isTrackEnabled(track) || !isDrumEnabled(track, noteId))
+			if (!isDrumEnabled(track, noteId))
 				return null;
 
 			int dstNote;
@@ -521,6 +519,14 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		return mapNoteEvent(track, ne, ne.note.id);
 	}
 	
+	public Note mapNoteEvent(int track, NoteEvent ne, int noteId) {
+		return mapNoteEvent(track, ne, noteId, false);
+	}
+	
+	public Note mapNoteEvent(int track, NoteEvent ne, boolean skipAudibleCheck) {
+		return mapNoteEvent(track, ne, ne.note.id, skipAudibleCheck);
+	}
+	
 	/**
 	 * Maps from a MIDI note to an ABC note. If no mapping is available, returns <code>null</code>.
 	 * 
@@ -531,15 +537,14 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	 * @param noteId use a custom note id
 	 * @return
 	 */
-	public Note mapNoteEvent(int track, NoteEvent ne, int noteId) {
-		if (!isTrackEnabled(track))
-			return ne.note;
+	public Note mapNoteEvent(int track, NoteEvent ne, int noteId, boolean skipAudibleCheck) {
 		long tickStart = ne.getStartTick();
-		if (!getAudible(track, tickStart)) {
+		if (!skipAudibleCheck && !getAudible(track, tickStart)) {
 			return null;
 		}
+		
 		if (isPercussionPart()) {
-			if (!isTrackEnabled(track) || !isDrumEnabled(track, noteId))
+			if (!isDrumEnabled(track, noteId))
 				return null;
 
 			int dstNote;
@@ -622,8 +627,6 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	}
 
 	public boolean shouldPlay(NoteEvent ne, int track) {
-		if (!isTrackEnabled(track))
-			return true;
 		if (ne.note == Note.REST) return true;
 		if (ne instanceof AbcNoteEvent) {
 			ne = ((AbcNoteEvent) ne).origNote;
@@ -662,16 +665,14 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			if (isTrackEnabled(t)) {
 				for (MidiNoteEvent ne : getTrackEvents(t)) {
 					if (mapNoteEvent(t, ne) != null && shouldPlay(ne, t)) {
-						if (ne.getStartTick() < startTick)
+						if (ne.getStartTick() < startTick) {
 							startTick = ne.getStartTick();
-						break;
+							break;
+						}						
 					}
 				}
 			}
 		}
-
-		if (startTick == Long.MAX_VALUE)
-			startTick = 0;
 
 		return startTick;
 	}
@@ -1189,14 +1190,25 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		retur[2] = factorTune;		
 		return retur;
 	}
-
+	
 	public boolean getAudible(int track, long tickStart) {
-		if (!isTrackEnabled(track))
-			return true;
+		return getAudible(track, tickStart, true);
+	}
+
+	/**
+	 * Check if a note at certain tick should not be silenced by tune or section editor.
+	 * 
+	 * @param track
+	 * @param tickStart
+	 * @param active if false then ignore section-editor silence and only consider tune-editor silence.
+	 * @return false if silenced
+	 */
+	public boolean getAudible(int track, long tickStart, boolean active) {
+		Integer firstBar = abcSong.getFirstBar();
+		Integer lastBar  = abcSong.getLastBar();
 		SequenceInfo se = getSequenceInfo();
 		TreeMap<Integer, PartSection> tree = sections.get(track);
-		boolean isSection = false;
-		if (se != null && tree != null) {
+		if (se != null) {
 			SequenceDataCache data = se.getDataCache();
 			long barLengthTicks = data.getBarLengthTicks();
 
@@ -1213,17 +1225,24 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				curBar += 1;
 			}
 			if (bar != -1) {
-				Entry<Integer, PartSection> entry = tree.floorEntry(bar);
-				if (entry != null) {
-					if (bar <= entry.getValue().endBar) {
-						isSection = true;
-						return !entry.getValue().silence;
+				if (firstBar != null && bar < firstBar) {
+					return false;
+				}
+				if (lastBar != null && bar > lastBar) {
+					return false;
+				}
+				if (tree != null && active) {
+					Entry<Integer, PartSection> entry = tree.floorEntry(bar);
+					if (entry != null) {
+						if (bar <= entry.getValue().endBar) {
+							return !entry.getValue().silence;
+						}
 					}
 				}
 			}
-		}
-		if (se != null && !isSection && nonSection.get(track) != null) {
-			return !nonSection.get(track).silence;
+			if (nonSection.get(track) != null && active) {
+				return !nonSection.get(track).silence;
+			}
 		}
 
 		return true;
