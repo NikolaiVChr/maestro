@@ -1586,7 +1586,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		transposeSpinner.setEnabled(midiLoaded);
 		tempoSpinner.setEnabled(midiLoaded);
 		tuneEditorButton.setEnabled(midiLoaded);
-		if (midiLoaded && abcSong.tuneBars != null) {
+		if (midiLoaded && (abcSong.tuneBars != null || abcSong.getFirstBar() != null || abcSong.getLastBar() != null)) {
 			tuneEditorButton.setForeground(new Color(0.2f, 0.8f, 0.2f));
 		} else {
 			Color c = UIManager.getColor("Button.foreground");
