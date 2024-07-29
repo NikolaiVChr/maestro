@@ -48,6 +48,7 @@ Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 
 Version 3.2.9
 - Merge Student and Student FX fiddles into one.
+- Fix drum/cowbell/studentFX notes sometimes were greyed out when active.
 
 Version 3.2.8
 - You can hold shift while clicking a solo/mute button to deselect all the other buttons of that type. Works in Maestro and AbcPlayer.

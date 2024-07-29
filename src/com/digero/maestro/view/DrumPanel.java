@@ -306,21 +306,23 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 		else if (noteEnabledOtherPart)
 			gutter.setBackground(ColorTable.PANEL_HIGHLIGHT_OTHER_PART.get());
 
-		noteGraph.setShowingAbcNotesOn(noteActive);
+		noteGraph.setShowingAbcNotesOn(noteEnabled);
 		checkBox.setEnabled(trackEnabled);
 		drumComboBox.setEnabled(trackEnabled);
 		drumComboBox.setVisible(abcPart.getInstrument() == LotroInstrument.BASIC_DRUM);
 		drumComboBoxFX.setEnabled(trackEnabled);
 		drumComboBoxFX.setVisible(abcPart.getInstrument() == LotroInstrument.STUDENT_FIDDLE);
 
-		if (!noteActive) {
+		if (!noteEnabled) {
+			// disabled
 			noteGraph.setNoteColor(ColorTable.NOTE_DRUM_OFF);
-			noteGraph.setBadNoteColor(ColorTable.NOTE_DRUM_OFF);
-
+			noteGraph.setBadNoteColor(ColorTable.NOTE_BAD_OFF);
+			
 			setBackground(ColorTable.GRAPH_BACKGROUND_OFF.get());
 			noteGraph.setBackground(ColorTable.GRAPH_BACKGROUND_OFF.get());
 			checkBox.setForeground(ColorTable.PANEL_TEXT_OFF.get());
-		} else if (trackEnabled && abcPart.isDrumEnabled(trackNumber, drumId)) {
+		} else if (trackEnabled && noteEnabled) {
+			// enabled
 			noteGraph.setNoteColor(ColorTable.NOTE_DRUM_ENABLED);
 			noteGraph.setBadNoteColor(ColorTable.NOTE_BAD_ENABLED);
 
@@ -328,6 +330,7 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 			noteGraph.setBackground(ColorTable.GRAPH_BACKGROUND_ENABLED.get());
 			checkBox.setForeground(ColorTable.PANEL_TEXT_ENABLED.get());
 		} else {
+			// should never get here
 			noteGraph.setNoteColor(ColorTable.NOTE_DRUM_OFF);
 			noteGraph.setBadNoteColor(ColorTable.NOTE_BAD_OFF);
 
