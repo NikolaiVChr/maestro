@@ -207,6 +207,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private PartPanel partPanel;
 
 	private JButton tuneEditorButton;
+	private JCheckBox hideEditsCheckbox;
 	static boolean abcPreviewMode = false;
 	private JToggleButton abcModeRadioButton;
 	private JToggleButton midiModeRadioButton;
@@ -799,6 +800,12 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				.setToolTipText("<html><b> Tune Editor </b><br> Edit the tempo or key in specific sections </html>");
 		tuneEditorButton.addActionListener(e -> TuneEditor.show(ProjectFrame.this, abcSong));
 
+		hideEditsCheckbox = new JCheckBox();
+		hideEditsCheckbox.setText("Hide Edits");
+		hideEditsCheckbox
+				.setToolTipText("<html>Hide edits on the tracks</html>");
+		hideEditsCheckbox.addActionListener(e -> abcSong.setHideEdits(hideEditsCheckbox.isSelected()));
+		
 		final Insets playControlButtonMargin = new Insets(5, 20, 5, 20);
 
 		playButton = new JButton(playIcon);
@@ -889,7 +896,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		
 		JPanel playControlPanel = new JPanel(new MigLayout("fillx, hidemode 3, wrap 9",
 				"[][][][][][][grow -1][grow -1]"));
-		playControlPanel.add(tuneEditorButton, "spany 2");
+		playControlPanel.add(tuneEditorButton);
 		playControlPanel.add(midiModeRadioButton);
 		playControlPanel.add(playButton, "spany 2, right");
 		playControlPanel.add(stopButton, "spany 2");
@@ -900,7 +907,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		playControlPanel.add(midiPositionLabel);
 		playControlPanel.add(abcPositionLabel, "wrap");
 		
-		
+		playControlPanel.add(hideEditsCheckbox);
 		playControlPanel.add(abcModeRadioButton);
 		playControlPanel.add(new JLabel("Stereo:"), "right");
 		playControlPanel.add(panSlider);
@@ -996,6 +1003,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	@Override
 	public void dispose() {
+		hideEditsCheckbox.setSelected(false);
 		if (abcSong != null) {
 			abcSong.getParts().getListModel().removeListDataListener(partsListListener);
 		}
@@ -1586,6 +1594,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		transposeSpinner.setEnabled(midiLoaded);
 		tempoSpinner.setEnabled(midiLoaded);
 		tuneEditorButton.setEnabled(midiLoaded);
+		hideEditsCheckbox.setEnabled(midiLoaded);
+		if (!midiLoaded) hideEditsCheckbox.setSelected(false);
 		if (midiLoaded && (abcSong.tuneBars != null || abcSong.getFirstBar() != null || abcSong.getLastBar() != null)) {
 			tuneEditorButton.setForeground(new Color(0.2f, 0.8f, 0.2f));
 		} else {
@@ -1944,6 +1954,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 					return false;
 			}
 		}
+		
+		hideEditsCheckbox.setSelected(false);//best to have this before song is set to null
 
 		if (abcSong != null) {
 			abcSong.getParts().getListModel().removeListDataListener(partsListListener);

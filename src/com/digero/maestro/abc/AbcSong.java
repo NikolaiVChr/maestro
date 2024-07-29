@@ -99,6 +99,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private File exportFile; // The ABC export file
 	private File saveFile; // The XML Maestro song file
 	private boolean usingOldVelocities = false;
+	private boolean hideEdits = false;
 
 	private final ListModelWrapper<AbcPart> parts = new ListModelWrapper<>(new DefaultListModel<>());
 
@@ -156,6 +157,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		tuneBars = null;
 		firstBar = null;
 		lastBar = null;
+		
+		hideEdits = false;
 
 		/*
 		 * if (sequenceInfo != null) { // Make life easier for Garbage Collector for (TrackInfo ti :
@@ -945,7 +948,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			fireChangeEvent(AbcSongProperty.PART_LIST_ORDER, e.getSource());
 		}
 	};
-	
 
 	@Override
 	public String getBadgerTitle() {
@@ -1081,5 +1083,14 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	
 	public QuantizedTimingInfo getQTM() {
 		return timingInfo;
+	}
+
+	public void setHideEdits(boolean selected) {
+		this.hideEdits = selected;
+		fireChangeEvent(AbcSongProperty.HIDE_EDITS_UPDATE);
+	}
+	
+	public boolean isHideEdits() {
+		return hideEdits; 
 	}
 }

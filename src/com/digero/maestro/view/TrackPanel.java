@@ -52,6 +52,9 @@ import com.digero.common.view.ColorTable;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcPartEvent;
 import com.digero.maestro.abc.AbcPartEvent.AbcPartProperty;
+import com.digero.maestro.abc.AbcSong;
+import com.digero.maestro.abc.AbcSongEvent;
+import com.digero.maestro.abc.AbcSongEvent.AbcSongProperty;
 import com.digero.maestro.abc.DrumNoteMap;
 import com.digero.maestro.midi.BentMidiNoteEvent;
 import com.digero.maestro.midi.MidiNoteEvent;
@@ -145,6 +148,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 	}
 
 	private Listener<AbcPartEvent> abcListener;
+	private Listener<AbcSongEvent> songListener;
 	private Listener<SequencerEvent> seqListener;
 
 	private boolean showDrumPanels;
@@ -379,6 +383,17 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 				updateColors();
 				updateBadTooltipText();
 				updateTitleText();
+			}
+		});
+		
+		abcPart.getAbcSong().addSongListener(songListener = e -> {
+			
+			if (e.getProperty() == AbcSongProperty.HIDE_EDITS_UPDATE || e.getProperty() == AbcSongProperty.TUNE_EDIT) {
+				updateState();
+				noteGraph.repaint();
+				updateBadTooltipText();
+				updateTitleText();
+				updateColors();
 			}
 		});
 
@@ -979,6 +994,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		}
 		drumPanels = null;
 		abcPart.removeAbcListener(abcListener);
+		abcPart.getAbcSong().removeSongListener(songListener);
 		seq.removeChangeListener(seqListener);
 		if (abcSequencer != null)
 			abcSequencer.removeChangeListener(seqListener);
@@ -1035,7 +1051,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 		@Override
 		protected int transposeNote(int noteId, long tickStart) {
-			if (!trackInfo.isDrumTrack()) {
+			if (!trackInfo.isDrumTrack() && !abcPart.getAbcSong().isHideEdits()) {
 				noteId += abcPart.getTranspose(trackInfo.getTrackNumber(), tickStart, isAbcPreviewMode);
 			}
 			return noteId;
@@ -1043,14 +1059,14 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 		@Override
 		protected boolean audibleNote(NoteEvent ne) {
-			if (!isAbcPreviewMode) return true;
+			if (abcPart.getAbcSong().isHideEdits()) return true;
 			return abcPart.getAudible(trackInfo.getTrackNumber(), ne.getStartTick(), isActiveTrack())
 					&& abcPart.shouldPlay(ne, trackInfo.getTrackNumber()) && abcPart.mapNoteEvent(trackInfo.getTrackNumber(), ne, true) != null;
 		}
 
 		@Override
 		protected boolean[] getSectionsModified() {
-			if (!isActiveTrack() || !isAbcPreviewMode) {
+			if (!isActiveTrack() || abcPart.getAbcSong().isHideEdits()) {
 				return null;
 			}
 			return abcPart.sectionsModified.get(trackInfo.getTrackNumber());
@@ -1063,31 +1079,31 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		
 		@Override
 		protected Integer getLastBar() {
-			if (!isAbcPreviewMode) return null;
+			if (abcPart.getAbcSong().isHideEdits()) return null;
 			return abcPart.getAbcSong().getLastBar();
 		}
 		
 		@Override
 		protected Integer getFirstBar() {
-			if (!isAbcPreviewMode) return null;
+			if (abcPart.getAbcSong().isHideEdits()) return null;
 			return abcPart.getAbcSong().getFirstBar();
 		}
 
 		@Override
 		protected int[] getSectionVelocity(NoteEvent note) {
-			if (!isAbcPreviewMode) return super.getSectionVelocity(note);
+			if (abcPart.getAbcSong().isHideEdits()) return super.getSectionVelocity(note);
 			return abcPart.getSectionVolumeAdjust(trackInfo.getTrackNumber(), note);
 		}
 
 		@Override
 		protected int getSourceNoteVelocity(NoteEvent note) {
-			if (!isAbcPreviewMode) return note.velocity;
+			if (abcPart.getAbcSong().isHideEdits()) return note.velocity;
 			return abcPart.getSectionNoteVelocity(trackInfo.getTrackNumber(), note);
 		}
 
 		@Override
 		protected Boolean[] getSectionDoubling(long tick) {
-			if (!isAbcPreviewMode) {
+			if (abcPart.getAbcSong().isHideEdits()) {
 				return super.getSectionDoubling(tick);
 			}
 			return abcPart.getSectionDoubling(tick, trackInfo.getTrackNumber());

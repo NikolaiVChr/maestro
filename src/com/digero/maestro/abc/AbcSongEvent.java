@@ -26,7 +26,7 @@ public class AbcSongEvent extends EventObject {
 		MOOD, //
 		MIX_TIMING_COMBINE_PRIORITIES,
 		// SHOW_PRUNED, //
-		TUNE_EDIT, SONG_CLOSING, DELETE_MINIMAL_NOTES
+		TUNE_EDIT, SONG_CLOSING, DELETE_MINIMAL_NOTES, HIDE_EDITS_UPDATE
 	}
 
 	private final AbcSongProperty property;

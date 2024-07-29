@@ -28,8 +28,10 @@ import com.digero.common.util.Util;
 import com.digero.common.view.ColorTable;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcPartEvent;
+import com.digero.maestro.abc.AbcSongEvent;
 import com.digero.maestro.abc.LotroDrumInfo;
 import com.digero.maestro.abc.LotroStudentFXInfo;
+import com.digero.maestro.abc.AbcSongEvent.AbcSongProperty;
 import com.digero.maestro.midi.NoteEvent;
 import com.digero.maestro.midi.TrackInfo;
 import com.digero.maestro.view.TrackPanel.TrackDimensions;
@@ -55,6 +57,8 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 	private AbcPart abcPart;
 	private int drumId;
 	private boolean isAbcPreviewMode;
+	
+	private Listener<AbcSongEvent> songListener;
 
 	private JPanel gutter;
 	private JCheckBox checkBox;
@@ -193,6 +197,14 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 		}
 
 		addPropertyChangeListener("enabled", evt -> updateState());
+		
+		abcPart.getAbcSong().addSongListener(songListener = e -> {
+			
+			if (e.getProperty() == AbcSongProperty.HIDE_EDITS_UPDATE || e.getProperty() == AbcSongProperty.TUNE_EDIT) {
+				updateState();
+				noteGraph.repaint();
+			}
+		});
 
 		add(gutter, "0, 0");
 		add(checkBox, "1, 0");
@@ -225,6 +237,7 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 			abcSequencer.removeChangeListener(sequencerListener);
 		if (trackVolumeBar != null)
 			trackVolumeBar.removeActionListener(trackVolumeBarListener);
+		abcPart.getAbcSong().removeSongListener(songListener);
 	}
 
 	private Listener<AbcPartEvent> abcPartListener = e -> {
@@ -390,20 +403,20 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 
 		@Override
 		protected boolean audibleNote(NoteEvent ne) {
-			if (!isAbcPreviewMode) return true;
+			if (abcPart.getAbcSong().isHideEdits()) return true;
 			return abcPart.getAudible(trackInfo.getTrackNumber(), ne.getStartTick(), isActiveTrack())
 					&& abcPart.shouldPlay(ne, trackInfo.getTrackNumber());
 		}
 
 		@Override
 		protected int getSourceNoteVelocity(NoteEvent note) {
-			if (!isAbcPreviewMode) return note.velocity;
+			if (abcPart.getAbcSong().isHideEdits()) return note.velocity;
 			return abcPart.getSectionNoteVelocity(trackInfo.getTrackNumber(), note);
 		}
 
 		@Override
 		protected boolean[] getSectionsModified() {
-			if (!isActiveTrack() || !isAbcPreviewMode) {
+			if (!isActiveTrack() || abcPart.getAbcSong().isHideEdits()) {
 				return null;
 			}
 			return abcPart.sectionsModified.get(trackInfo.getTrackNumber());
@@ -411,11 +424,23 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 
 		@Override
 		protected int[] getSectionVelocity(NoteEvent note) {
-			if (!isAbcPreviewMode) return super.getSectionVelocity(note);
+			if (abcPart.getAbcSong().isHideEdits()) return super.getSectionVelocity(note);
 			return abcPart.getSectionVolumeAdjust(trackInfo.getTrackNumber(), note);
 			/*
 			 * int[] empty = new int[2]; empty[0] = 0; empty[1] = 100; return empty;
 			 */
+		}
+		
+		@Override
+		protected Integer getLastBar() {
+			if (abcPart.getAbcSong().isHideEdits()) return null;
+			return abcPart.getAbcSong().getLastBar();
+		}
+		
+		@Override
+		protected Integer getFirstBar() {
+			if (abcPart.getAbcSong().isHideEdits()) return null;
+			return abcPart.getAbcSong().getFirstBar();
 		}
 	}
 }
