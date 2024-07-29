@@ -8,7 +8,7 @@ import com.digero.common.midi.MidiConstants;
 public class PassThroughFXNoteMap extends StudentFXNoteMap {
 	@Override
 	protected byte getDefaultMapping(byte noteId) {
-		if (LotroInstrument.STUDENT_FX_FIDDLE.isPlayable(noteId))
+		if (noteId >= LotroInstrument.STUDENT_FIDDLE.lowestPlayable.id && noteId <= LotroInstrument.STUDENT_FX_HIGHEST.id)
 			return noteId;
 		else
 			return DISABLED_NOTE_ID;

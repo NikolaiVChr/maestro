@@ -130,7 +130,6 @@ public class GenerateSoundFontInfo {
 						AbcConstants.STUDENT_FIDDLE_LAST_FLUB_NOTE_ID + 1, li.highestPlayable.id);
 
 				presets.add(new PresetInfo(flubs, basicFiddleSubrange));
-			} else if (li == LotroInstrument.STUDENT_FX_FIDDLE) {
 			} else {
 				StandardInstrumentInfo info = new StandardInstrumentInfo(li, getNotesPerSample(li), samples);
 				instruments.add(info);

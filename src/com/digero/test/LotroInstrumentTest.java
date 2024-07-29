@@ -21,7 +21,6 @@ import static com.digero.common.abc.LotroInstrument.MISTY_MOUNTAIN_HARP;
 import static com.digero.common.abc.LotroInstrument.MOOR_COWBELL;
 import static com.digero.common.abc.LotroInstrument.SPRIGHTLY_FIDDLE;
 import static com.digero.common.abc.LotroInstrument.STUDENT_FIDDLE;
-import static com.digero.common.abc.LotroInstrument.STUDENT_FX_FIDDLE;
 import static com.digero.common.abc.LotroInstrument.TRAVELLERS_TRUSTY_FIDDLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -98,12 +97,12 @@ public class LotroInstrumentTest {
 		test(STUDENT_FIDDLE, "Students Fiddle");
 		test(STUDENT_FIDDLE, "StudentFiddle");
 
-		test(STUDENT_FX_FIDDLE, "StudentFXFiddle");
-		test(STUDENT_FX_FIDDLE, "StudentFX");
-		test(STUDENT_FX_FIDDLE, "Student FX");
-		test(STUDENT_FX_FIDDLE, "StudentsFX");
-		test(STUDENT_FX_FIDDLE, "Student'sFX");
-		test(STUDENT_FX_FIDDLE, "StudentFX");
+		test(STUDENT_FIDDLE, "StudentFXFiddle");
+		test(STUDENT_FIDDLE, "StudentFX");
+		test(STUDENT_FIDDLE, "Student FX");
+		test(STUDENT_FIDDLE, "StudentsFX");
+		test(STUDENT_FIDDLE, "Student'sFX");
+		test(STUDENT_FIDDLE, "StudentFX");
 
 		test(TRAVELLERS_TRUSTY_FIDDLE, "Traveler's Trusty Fiddle 2");
 		test(TRAVELLERS_TRUSTY_FIDDLE, "Travellers Trusty Fiddle 3");

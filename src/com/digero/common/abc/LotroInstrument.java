@@ -46,7 +46,7 @@ public enum LotroInstrument
 	BASIC_FIDDLE             ( "Basic Fiddle",               true, MidiInstrument.VIOLA,                1,      false,     6.25f, "Bsc Fiddle", "Violon (de)? base", "standard-? fiedel", "st fiedel"),
 	LONELY_MOUNTAIN_FIDDLE   ( "Lonely Mountain Fiddle",     true, MidiInstrument.SYNTH_STRING_2,       1,      false,     5.5f, "Lonely Fiddle", "LM Fiddle", "LMF", "LM fidel", "LM geige", "Violon (du)? Mont solitaire", "violon ms", "geige (vom)? Einsamen ?Berg", "geige eb"),
 	SPRIGHTLY_FIDDLE         ( "Sprightly Fiddle",          false, MidiInstrument.FIDDLE,               1,      false,   -10.0f, "Muntere Geige", "Muntere G", "Violon alerte", "Violon A", "Sprightly", "SP Fiddle"),
-	STUDENT_FIDDLE           ( "Student's Fiddle",           true, MidiInstrument.GUITAR_FRET_NOISE,    1,      false,     0.0f, "Student'?s? Fiddle", "Violon d'études", "Violon DE", "Stud Fiddle", "schül(er)?fiedel", "schul(er)?fiedel"),
+	STUDENT_FIDDLE           ( "Student's Fiddle",           true, MidiInstrument.GUITAR_FRET_NOISE,    1,      false,     0.0f, "Student'?s? Fiddle", "Violon d'études", "Violon DE", "Stud Fiddle", "schül(er)?fiedel", "schul(er)?fiedel","Student'?s? FX Fiddle", "Student'?s? FX", "ST FX Fiddle"),
 
 	BASIC_BAGPIPE            ( "Basic Bagpipe",              true, MidiInstrument.BAG_PIPE,             1,      false,    -1.5f, "Bag pipes?", "Pipes?", "dudelsack", "sack", "cornemuse", "cornemuse (de)? base"),
 	BASIC_BASSOON            ( "Basic Bassoon",              true, MidiInstrument.BASSOON,              0,      false,     5.0f, "(Bsc)? Bassoon", "standard-? fagott", "st fagott", "basson (de)? base"),
@@ -59,8 +59,7 @@ public enum LotroInstrument
 
 	BASIC_COWBELL            ( "Basic Cowbell",             false, MidiInstrument.WOODBLOCK,            0,       true,     0.0f, "Cowbell", "glocke", "cloche (de)? (vache)?","kuhglocke"),
 	MOOR_COWBELL             ( "Moor Cowbell",              false, MidiInstrument.STEEL_DRUMS,          0,       true,     0.0f, "More Cowbell", "Moor", "moorkuh-? glocke", "Moor Bell"),
-	BASIC_DRUM               ( "Basic Drum",                false, MidiInstrument.SYNTH_DRUM,           0,       true,     4.5f, "Drums?", "trommel", "tambour"),
-	STUDENT_FX_FIDDLE        ( "Student's FX Fiddle",       false, MidiInstrument.GUITAR_FRET_NOISE,    0,       true,     0.0f, "Student'?s? FX Fiddle", "Student'?s? FX", "ST FX Fiddle");
+	BASIC_DRUM               ( "Basic Drum",                false, MidiInstrument.SYNTH_DRUM,           0,       true,     4.5f, "Drums?", "trommel", "tambour");
 // @formatter:on
 
 	private static final LotroInstrument[] values = values();
@@ -69,6 +68,8 @@ public enum LotroInstrument
 	public static final LotroInstrument DEFAULT_FIDDLE = BARDIC_FIDDLE;
 	public static final LotroInstrument DEFAULT_BASSOON = BASIC_BASSOON;
 	public static final LotroInstrument DEFAULT_INSTRUMENT = LUTE_OF_AGES;
+	public static final Note STUDENT_FX_HIGHEST = Note.D2;
+	public static final Note STUDENT_CHROMATIC_LOWEST = Note.G2;
 
 	public final Note lowestPlayable;
 	public final Note highestPlayable;
@@ -83,11 +84,7 @@ public enum LotroInstrument
 	LotroInstrument(String friendlyName, boolean sustainable, MidiInstrument midiInstrument, int octaveDelta,
 			boolean isPercussion, float dBVolumeAdjust, String... nicknameRegexes) {
 		this.lowestPlayable = Note.MIN_PLAYABLE;
-		if (!"Student's FX Fiddle".equals(friendlyName)) {
-			this.highestPlayable = Note.MAX_PLAYABLE;
-		} else {
-			this.highestPlayable = Note.D2;
-		}
+		this.highestPlayable = Note.MAX_PLAYABLE;
 		this.friendlyName = friendlyName;
 		this.sustainable = sustainable;
 		this.midi = midiInstrument;
@@ -98,9 +95,20 @@ public enum LotroInstrument
 	}
 
 	public boolean isSustainable(int noteId) {
-		return sustainable && isPlayable(noteId);
+		return sustainable && isPlayable(noteId, noteId >= STUDENT_CHROMATIC_LOWEST.id);
 	}
 
+	public boolean isPlayable(int noteId, boolean studentChromatic) {
+		if (this == STUDENT_FIDDLE) {
+			if (studentChromatic) {
+				return noteId >= STUDENT_CHROMATIC_LOWEST.id && noteId <= highestPlayable.id;
+			} else {
+				return noteId >= lowestPlayable.id && noteId <= STUDENT_FX_HIGHEST.id;
+			}
+		}
+		return isPlayable(noteId);
+	}
+	
 	public boolean isPlayable(int noteId) {
 		if (this == BASIC_DRUM) {
 			return noteId >= lowestPlayable.id && noteId <= LotroCombiDrumInfo.maxCombi.id;

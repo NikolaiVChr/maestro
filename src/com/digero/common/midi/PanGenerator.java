@@ -74,7 +74,6 @@ public class PanGenerator {
 			break;
 		case BASIC_FIDDLE:
 		case STUDENT_FIDDLE:
-		case STUDENT_FX_FIDDLE:
 		case LONELY_MOUNTAIN_FIDDLE:
 		case BARDIC_FIDDLE:
 			instrument = LotroInstrument.BASIC_FIDDLE;
@@ -114,8 +113,6 @@ public class PanGenerator {
 		case BASIC_FIDDLE:
 		case LONELY_MOUNTAIN_FIDDLE:
 		case STUDENT_FIDDLE:
-			return CENTER + sign * -50;
-		case STUDENT_FX_FIDDLE:
 			return CENTER + sign * -50;
 		case BASIC_HARP:
 		case MISTY_MOUNTAIN_HARP:

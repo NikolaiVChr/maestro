@@ -244,7 +244,7 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 		if (e.isNoteGraphRelated()) {
 			checkBox.setEnabled(abcPart.isTrackEnabled(trackInfo.getTrackNumber()));
 			checkBox.setSelected(abcPart.isDrumEnabled(trackInfo.getTrackNumber(), drumId));
-			if (abcPart.isFXPart()) {
+			if (abcPart.getInstrument() == LotroInstrument.STUDENT_FIDDLE) {
 				drumComboBoxFX.setSelectedItem(getSelectedFX());
 			} else {
 				drumComboBox.setSelectedItem(getSelectedDrum());
@@ -311,7 +311,7 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 		drumComboBox.setEnabled(trackEnabled);
 		drumComboBox.setVisible(abcPart.getInstrument() == LotroInstrument.BASIC_DRUM);
 		drumComboBoxFX.setEnabled(trackEnabled);
-		drumComboBoxFX.setVisible(abcPart.getInstrument() == LotroInstrument.STUDENT_FX_FIDDLE);
+		drumComboBoxFX.setVisible(abcPart.getInstrument() == LotroInstrument.STUDENT_FIDDLE);
 
 		if (!noteActive) {
 			noteGraph.setNoteColor(ColorTable.NOTE_DRUM_OFF);

@@ -24,9 +24,6 @@ public class LotroInstrumentSampleDuration {
 		if (db == null) {
 			parse();
 		}
-		if (friendlyName.equals("Student's FX Fiddle")) {
-			friendlyName = "Student's Fiddle";
-		}
 		Double dura = db.get(friendlyName).get(note);
 		return dura;
 	}

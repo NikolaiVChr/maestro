@@ -670,11 +670,11 @@ public class AbcExporter {
 
 						long startTick = Math.max(ne.getStartTick(), exportStartTick);
 						long endTick = Math.min(ne.getEndTick(), exportEndTick);
-						if (part.isFXPart()) {
+						if (part.isStudentPart() && mappedNote.id < LotroInstrument.STUDENT_CHROMATIC_LOWEST.id) {
 							long endTickMin = qtm.microsToTick(
 									qtm.tickToMicros(startTick) + (long) (AbcConstants.STUDENT_FX_MIN_SECONDS
 											* TimingInfo.ONE_SECOND_MICROS * qtm.getExportTempoFactor()));
-							endTick = Math.max(endTick, endTickMin);
+							endTick = Math.max(endTick, endTickMin);// TODO: what if similar note comes right after, then it should not be extended!!!
 						}
 
 						int[] sva = part.getSectionVolumeAdjust(t, ne);

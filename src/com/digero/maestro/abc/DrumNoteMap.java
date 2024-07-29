@@ -140,7 +140,7 @@ public class DrumNoteMap implements IDiscardable {
 			map = bytes;
 			byte[] failsafe = null;
 			for (int i = 0; i < map.length; i++) {
-				if (map[i] != DISABLED_NOTE_ID && !lotroInstrument.isPlayable(map[i])) {
+				if (map[i] != DISABLED_NOTE_ID && !lotroInstrument.isPlayable(map[i], false)) {
 					if (failsafe == null) {
 						failsafe = getFailsafeDefault();
 					}
@@ -296,7 +296,7 @@ public class DrumNoteMap implements IDiscardable {
 		for (Element noteEle : XmlUtil.selectElements(ele, "note")) {
 			int midiId = SaveUtil.parseValue(noteEle, "@id", DISABLED_NOTE_ID);
 			byte lotroId = SaveUtil.parseValue(noteEle, "@lotroId", DISABLED_NOTE_ID);
-			if (midiId >= 0 && midiId < map.length && lotroInstrument.isPlayable(lotroId)) {
+			if (midiId >= 0 && midiId < map.length && lotroInstrument.isPlayable(lotroId, false)) {
 				map[midiId] = lotroId;
 			}
 		}

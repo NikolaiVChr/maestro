@@ -89,7 +89,7 @@ public class StudentFXNoteMap extends DrumNoteMap {
 
 	@Override
 	public void load(Preferences prefs) {
-		setLoadedByteArray(prefs.getByteArray(MAP_PREFS_KEY, null), LotroInstrument.STUDENT_FX_FIDDLE);
+		setLoadedByteArray(prefs.getByteArray(MAP_PREFS_KEY, null), LotroInstrument.STUDENT_FIDDLE);
 	}
 
 	@Override
@@ -114,7 +114,7 @@ public class StudentFXNoteMap extends DrumNoteMap {
 		try {
 			boolean isPassthrough = SaveUtil.parseValue(ele, "@isPassthrough", false);
 			StudentFXNoteMap retVal = isPassthrough ? new PassThroughFXNoteMap() : new StudentFXNoteMap();
-			retVal.loadFromXmlInternal(ele, fileVersion, LotroInstrument.STUDENT_FX_FIDDLE);
+			retVal.loadFromXmlInternal(ele, fileVersion, LotroInstrument.STUDENT_FIDDLE);
 			return retVal;
 		} catch (XPathExpressionException e) {
 			throw new RuntimeException(e);

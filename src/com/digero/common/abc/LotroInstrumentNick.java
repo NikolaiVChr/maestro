@@ -40,7 +40,6 @@ public class LotroInstrumentNick {
 	static String[] COWB = { "Cowbell", "Glocke", "Cloche", "Kuhglocke" };
 	static String[] MOOR = { "Moor", "MoorBell" };
 	static String[] DRUM = { "Drums", "Trommel", "Tambour" };
-	static String[] FX = { "STFXFiddle" };
 
 	public static List<String> getNicks(LotroInstrument instr) {
 		String[] nicks = {};
@@ -107,9 +106,6 @@ public class LotroInstrumentNick {
 			break;
 		case STUDENT_FIDDLE:
 			nicks = STF;
-			break;
-		case STUDENT_FX_FIDDLE:
-			nicks = FX;
 			break;
 		case TRAVELLERS_TRUSTY_FIDDLE:
 			nicks = TTF;

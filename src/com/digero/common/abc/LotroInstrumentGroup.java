@@ -48,7 +48,6 @@ public enum LotroInstrumentGroup {
 		case BASIC_DRUM:
 		case BASIC_COWBELL:
 		case MOOR_COWBELL:
-		case STUDENT_FX_FIDDLE:
 			return LotroInstrumentGroup.PERCUSSION;
 		}
 	}
