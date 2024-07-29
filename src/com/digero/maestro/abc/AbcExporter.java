@@ -626,8 +626,7 @@ public class AbcExporter {
 					List<MidiNoteEvent> removeList = new ArrayList<>();
 					for (MidiNoteEvent ne : listOfNotes) {
 						Note possibleCombiNote = part.mapNote(t, ne.note.id, ne.getStartTick());
-						if (possibleCombiNote != null && possibleCombiNote.id > part.getInstrument().highestPlayable.id
-								&& possibleCombiNote.id <= LotroCombiDrumInfo.maxCombi.id) {
+						if (possibleCombiNote != null && LotroCombiDrumInfo.noteIdIsXtraNote(possibleCombiNote.id)) {
 							MidiNoteEvent extra1 = LotroCombiDrumInfo.getId1(ne, possibleCombiNote, ne.midiPan);
 							MidiNoteEvent extra2 = LotroCombiDrumInfo.getId2(ne, possibleCombiNote, ne.midiPan);
 							extraList.add(extra1);

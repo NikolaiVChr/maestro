@@ -495,7 +495,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			return null;
 		}
 		if (!isChromatic(track)) {
-			if (!isDrumEnabled(track, noteId))
+			if (!isPercussionNoteEnabled(track, noteId))
 				return null;
 
 			int dstNote;
@@ -566,7 +566,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		}
 		
 		if (!isChromatic(track)) {
-			if (!isDrumEnabled(track, noteId))
+			if (!isPercussionNoteEnabled(track, noteId))
 				return null;
 
 			int dstNote;
@@ -1502,7 +1502,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		return getDrumMap(track).get(drumId) != LotroDrumInfo.DISABLED.note.id;
 	}
 
-	public boolean isDrumEnabled(int track, int drumId) {
+	public boolean isPercussionNoteEnabled(int track, int drumId) {
 		BitSet[] enabledSet = isCowbellPart() ? cowbellsEnabled : (isStudentPart() && isStudentFX(track)) ? fxEnabled : drumsEnabled;
 
 		if (enabledSet == null || enabledSet[track] == null) {
@@ -1514,7 +1514,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	}
 
 	public void setDrumEnabled(int track, int drumId, boolean enabled) {
-		if (isDrumEnabled(track, drumId) != enabled) {
+		if (isPercussionNoteEnabled(track, drumId) != enabled) {
 			BitSet[] enabledSet;
 			if (isCowbellPart()) {
 				if (cowbellsEnabled == null)

@@ -101,7 +101,7 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 		gutter.setOpaque(false);
 
 		checkBox = new JCheckBox();
-		checkBox.setSelected(abcPart.isDrumEnabled(trackInfo.getTrackNumber(), drumId));
+		checkBox.setSelected(abcPart.isPercussionNoteEnabled(trackInfo.getTrackNumber(), drumId));
 		checkBox.addActionListener(
 				e -> abcPart.setDrumEnabled(trackInfo.getTrackNumber(), drumId, checkBox.isSelected()));
 
@@ -243,7 +243,7 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 	private Listener<AbcPartEvent> abcPartListener = e -> {
 		if (e.isNoteGraphRelated()) {
 			checkBox.setEnabled(abcPart.isTrackEnabled(trackInfo.getTrackNumber()));
-			checkBox.setSelected(abcPart.isDrumEnabled(trackInfo.getTrackNumber(), drumId));
+			checkBox.setSelected(abcPart.isPercussionNoteEnabled(trackInfo.getTrackNumber(), drumId));
 			if (abcPart.getInstrument() == LotroInstrument.STUDENT_FIDDLE) {
 				drumComboBoxFX.setSelectedItem(getSelectedFX());
 			} else {
@@ -267,7 +267,7 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 		boolean abcPreviewMode = isAbcPreviewMode();
 		int trackNumber = trackInfo.getTrackNumber();
 		boolean trackEnabled = abcPart.isTrackEnabled(trackNumber);
-		boolean noteEnabled = abcPart.isDrumEnabled(trackNumber, drumId);
+		boolean noteEnabled = abcPart.isPercussionNoteEnabled(trackNumber, drumId);
 		boolean noteEnabledOtherPart = false;
 
 		boolean noteActive;
@@ -287,7 +287,7 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 
 		for (AbcPart part : abcPart.getAbcSong().getParts()) {
 			if (part.isTrackEnabled(trackNumber)) {
-				if (part != this.abcPart && part.isDrumEnabled(trackNumber, drumId))
+				if (part != this.abcPart && part.isPercussionNoteEnabled(trackNumber, drumId))
 					noteEnabledOtherPart = true;
 
 				if (abcPreviewMode) {
