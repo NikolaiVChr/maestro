@@ -388,7 +388,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		initMenu();
 		onSaveAndExportSettingsChanged();
 		partPanel.showInfoMessage(welcomeMessage);
-		updateButtons(true);
+		updateButtons(false);//must be false since we are not in AWT thread now.
 
 		// Add support for using spacebar for pause/play.
 		ActionListener spaceBarListener = e -> {
