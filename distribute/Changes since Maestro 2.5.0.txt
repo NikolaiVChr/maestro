@@ -52,7 +52,6 @@ Version 3.2.8
 - Fixed a bug where Maestro would report incorrect song lengths for arrangements where the main tempo was changed.
 - Add options to tune-editor to start late or stop early at certain bar.
 - More reliable white color change for currently playing notes.
-- Edited sections will no longer show in the tracks in Original preview.
 - Added an option to hide edits in tracks.
 
 Version 3.2.6
