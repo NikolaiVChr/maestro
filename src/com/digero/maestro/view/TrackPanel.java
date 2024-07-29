@@ -833,7 +833,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 			add(fxBox, CONTROL_COLUMN + ", 1");
 			fxBox.setSelected(abcPart.isStudentFX(trackInfo.getTrackNumber()));
 			fxBox.setEnabled(!abcPart.isStudentOverride());
-			// disabling checkbox cannot really be seen in flatlaf :(
+			// TODO: disabling checkbox cannot really be seen in flatlaf :(
 		} else {
 			remove(fxBox);
 		}
