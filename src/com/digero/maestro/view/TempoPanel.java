@@ -232,7 +232,7 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
 			if (abcSong == null) {
 				return null;
 			}
-			if (!abcPreviewMode) {
+			if (abcSong.isHideEdits()) {
 				return super.getSectionsModified();
 			}
 			return abcSong.tuneBarsModified;

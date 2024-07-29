@@ -957,7 +957,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	}
 	
 	public int getTranspose(int track, long tickStart) {
-		return getTranspose(track, tickStart, false);
+		return getTranspose(track, tickStart, true);
 	}
 
 	public int getTranspose(int track, long tickStart, boolean includeEditorChanges) {
