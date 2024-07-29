@@ -37,7 +37,7 @@ public class TrackVolumeBar extends JPanel implements IDiscardable {
 
 	public static final int WIDTH = PTR_WIDTH * 5;
 
-	private List<ActionListener> actionListeners;
+	private volatile List<ActionListener> actionListeners;
 
 	private static final int VALUE_GUTTER = 16;
 	private static final int STEP_SIZE = 16;
@@ -47,8 +47,8 @@ public class TrackVolumeBar extends JPanel implements IDiscardable {
 	private int value;
 
 	// Visual properties
-	private boolean mouseWithin = false;
-	private boolean mouseDown = false;
+	private volatile boolean mouseWithin = false;
+	private volatile boolean mouseDown = false;
 
 	public TrackVolumeBar(int trackMinVelocity, int trackMaxVelocity) {
 		MIN_VALUE = Dynamics.MINIMUM.midiVol - trackMaxVelocity;
@@ -65,7 +65,7 @@ public class TrackVolumeBar extends JPanel implements IDiscardable {
 	}
 
 	@Override
-	public void discard() {
+	public synchronized void discard() {
 		if (actionListeners != null) {
 			actionListeners.clear();
 			actionListeners = null;
@@ -87,7 +87,11 @@ public class TrackVolumeBar extends JPanel implements IDiscardable {
 		return mouseDown;
 	}
 
-	public void addActionListener(ActionListener trackVolumeListener) {
+	public synchronized void addActionListener(ActionListener trackVolumeListener) {
+		// All actionlistener access is synchronized on 'this' object.
+		// reason is I had some:
+		// Exception in thread "AWT-EventQueue-0" java.util.ConcurrentModificationException
+		// The sources was handleDrag and endDrag
 		if (actionListeners == null)
 			actionListeners = new ArrayList<>();
 
@@ -95,14 +99,14 @@ public class TrackVolumeBar extends JPanel implements IDiscardable {
 			actionListeners.add(trackVolumeListener);
 	}
 
-	public void removeActionListener(ActionListener trackVolumeListener) {
+	public synchronized void removeActionListener(ActionListener trackVolumeListener) {
 		if (actionListeners != null)
 			actionListeners.remove(trackVolumeListener);
 	}
 
-	protected void fireActionEvent() {
+	protected synchronized void fireActionEvent() {
 		if (actionListeners != null) {
-			ActionEvent e = new ActionEvent(this, 0, null);
+			ActionEvent e = new ActionEvent(this, ActionEvent.ACTION_FIRST, null);
 			for (ActionListener l : actionListeners)
 				l.actionPerformed(e);
 		}
