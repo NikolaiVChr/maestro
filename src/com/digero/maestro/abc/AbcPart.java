@@ -68,7 +68,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	private BitSet[] drumsEnabled;
 	private BitSet[] cowbellsEnabled;
 	private BitSet[] fxEnabled;
-	private boolean[] studentFX;
+	private Boolean[] studentFX;
 	private boolean studentOverride = false;
 
 	private final AbcSong abcSong;
@@ -106,7 +106,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		this.playLeft = new boolean[t];
 		this.playCenter = new boolean[t];
 		this.playRight = new boolean[t];
-		this.studentFX = new boolean[t];
+		this.studentFX = new Boolean[t];
 
 		this.trackVolumeAdjust = new int[t];
 		this.drumNoteMap = new DrumNoteMap[t];
@@ -121,7 +121,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			this.playLeft[i] = true;
 			this.playCenter[i] = true;
 			this.playRight[i] = true;
-			this.studentFX[i] = true;
+			this.studentFX[i] = null;
 		}
 	}
 
@@ -393,10 +393,13 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 					// compat handling
 					handlePercussion(fileVersion, trackEle, t);
 					fx = fxNoteMap[t] != null;
+					setStudentFX(t, fx);
 				} else if (instrument == LotroInstrument.STUDENT_FIDDLE && fx) {
 					handlePercussion(fileVersion, trackEle, t);
+					setStudentFX(t, fx);
+				} else if (instrument == LotroInstrument.STUDENT_FIDDLE) {
+					setStudentFX(t, fx);
 				}
-				setStudentFX(t, fx);
 			}
 		} catch (XPathExpressionException e) {
 			throw new ParseException("XPath error: " + e.getMessage(), null);
@@ -1296,7 +1299,14 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			trackEnabled[track] = enabled;
 			enabledTrackCount += enabled ? 1 : -1;
 			abcSong.setMixDirty(true);
+			boolean fx_also = false;
+			if (studentFX[track] == null) {
+				studentFX[track] = isDrumTrack(track);
+				fx_also = true;
+			}
 			fireChangeEvent(AbcPartProperty.TRACK_ENABLED, track);
+			if (fx_also)
+				fireChangeEvent(AbcPartProperty.STUDENT_FX, track);
 		}
 	}
 
@@ -1395,6 +1405,9 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	
 	public boolean isChromatic(int track) {
 		if (instrument == LotroInstrument.STUDENT_FIDDLE) {
+			if (studentFX[track] == null) {
+				setStudentFX(track, isDrumTrack(track));
+			}
 			return !studentFX[track] || studentOverride;
 		}
 		return !isPercussionPart();
@@ -1402,11 +1415,16 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	
 	public boolean isStudentFX(int track) {
 		if (studentOverride) return false;
+		if (instrument == LotroInstrument.STUDENT_FIDDLE && studentFX[track] == null) {
+			setStudentFX(track, isDrumTrack(track));
+		} else if (instrument != LotroInstrument.STUDENT_FIDDLE) {
+			return false;//avoid setting studentFX to non-null unless we are sure it has been assigned a track
+		}
 		return studentFX[track];
 	}
 
 	public void setStudentFX(int track, boolean enabled) {
-		if (studentFX[track] != enabled) {
+		if (studentFX[track] == null || studentFX[track] != enabled) {
 			studentFX[track] = enabled;
 			abcSong.setMixDirty(true);
 			fireChangeEvent(AbcPartProperty.STUDENT_FX, track);
