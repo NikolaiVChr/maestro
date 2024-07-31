@@ -335,6 +335,10 @@ public final class Util {
 		StringBuilder s = new StringBuilder(5);
 
 		int t = (int) (micros / (1000 * 1000));
+		// Round up
+		if (micros % (1000 * 1000) != 0) {
+			t += 1;
+		}
 		int hr = t / (60 * 60);
 		t %= 60 * 60;
 		int min = t / 60;
