@@ -122,8 +122,10 @@ import com.digero.maestro.abc.ExportFilenameTemplate;
 import com.digero.maestro.abc.PartAutoNumberer;
 import com.digero.maestro.abc.PartNameTemplate;
 import com.digero.maestro.abc.PolyphonyHistogram;
+import com.digero.maestro.abc.QuantizedTimingInfo;
 import com.digero.maestro.midi.SequenceInfo;
 import com.digero.maestro.util.FileResolver;
+import com.digero.maestro.util.ListModelWrapper;
 import com.digero.maestro.util.RecentlyOpenedList;
 import com.digero.maestro.util.XmlUtil;
 
@@ -1795,6 +1797,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			updateButtons(false);
 			maxNoteCountTotal = 0;
 			maxNoteCount = 0;
+			compileStats();
 			break;
 
 		case TUNE_EDIT:
@@ -2323,6 +2326,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 			abcSequencer.setTickPosition(tick);
 			abcSequencer.setRunning(running);
+			compileStats();
 		} catch (InvalidMidiDataException | AbcConversionException e) {
 			sequencer.stop();
 			abcSequencer.stop();
@@ -2345,6 +2349,68 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		} catch (java.text.ParseException e) {
 			// Ignore
 		}
+	}
+	
+	public void compileStats() {
+		if (abcSong == null) {
+			//partPanel.setNote("No AbcSong");
+			return;
+		}
+		String tempNote = "";
+		tempNote += "Main export tempo is " + getTempo()+"\n\n";
+		//tempNote += getTimingStats();
+		tempNote += checkDuplicatePartTitles();
+		tempNote += getNumberOfExportNotes();
+		tempNote += getEmptyParts();
+		//partPanel.setNote(tempNote);
+		//partPanel.noteVisible(true);
+	}
+	
+	private String getTimingStats() {
+		String out = "";
+		QuantizedTimingInfo qtm = abcSong.getQTM();
+		if (qtm != null) {
+			out += qtm.getStats()+"\n";
+			out += qtm.getTempoStats()+"\n";
+		}		
+		return out;
+	}
+	
+	private String getNumberOfExportNotes() {
+		String out = "";
+		for (AbcPart part : abcSong.getParts()) {
+			out += "Part #"+part.getPartNumber()+" will export "+part.numberOfExportedNotes+" notes.\n";
+			if (part.numberOfRemovedNotesForSafety > 0) {
+				out += "  Removed "+part.numberOfRemovedNotesForSafety+" very short notes.\n";
+			}
+		}
+		out += "\n";
+		return out;
+	}
+	
+	private String getEmptyParts() {
+		String out = "";
+		for (AbcPart part : abcSong.getParts()) {
+			if (part.getEnabledTrackCount() == 0) {
+				out += "Part #"+part.getPartNumber()+" has no assigned tracks!\n\n";
+			}
+		}
+		return out;
+	}
+	
+	private String checkDuplicatePartTitles() {
+		String out = "";
+		ListModelWrapper<AbcPart> parts = abcSong.getParts();
+		for (int i = 0 ; i < parts.size(); i++) {
+			AbcPart part1 = parts.get(i);
+			for (int j = i+1 ; j < parts.size(); j++) {
+				AbcPart part2 = parts.get(j);
+				if (part1.getTitle().equals(part2.getTitle())) {
+					out += "Warning: Part #"+part1.getPartNumber()+" and part #"+part2.getPartNumber()+" has same title:\n "+part1.getTitle()+"\n\n";
+				}
+			}
+		}
+		return out;
 	}
 
 	private File doSaveDialog(File defaultFile, File allowOverwriteFile, String extension, FileFilter fileFilter) {

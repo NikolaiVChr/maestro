@@ -560,6 +560,11 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		public final int tempoMPQ;
 		public final long tick;
 		public long micros;
+		
+		@Override
+		public String toString() {
+			return "MPQ="+tempoMPQ+"  tick="+tick+"  micros="+micros;
+		}
 	}
 
 	public TempoEvent getATempoEvent(int tempoMPQ, long startTick, long startMicros) {

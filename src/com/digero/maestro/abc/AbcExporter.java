@@ -206,6 +206,7 @@ public class AbcExporter {
 
 	private Pair<Integer, Integer> exportPartToMidi(AbcPart part, Sequence out, List<Chord> chords, int pan,
 			boolean useLotroInstruments) {
+		part.numberOfExportedNotes = 0;
 		int trackNumber = out.getTracks().length;
 		part.setPreviewSequenceTrackNumber(trackNumber);
 
@@ -289,6 +290,7 @@ public class AbcExporter {
 				track.add(MidiFactory.createNoteOnEventEx(ne.note.id + noteDelta, channel,
 						dynamics.getVol(useLotroInstruments), qtm.microsToTick(qtm.tickToMicros(ne.getStartTick()) + delayMicros)));
 				notesOn.add(ne);
+				part.numberOfExportedNotes++;
 			}
 		}
 
@@ -812,9 +814,7 @@ public class AbcExporter {
 			}
 		}
 		
-		if (removedToAvoidDissonance > 0) {
-			System.out.println("Removed "+removedToAvoidDissonance+"/"+events.size()+" notes to avoid overlap and dissonance. Part: "+part.getTitle());
-		}
+		part.numberOfRemovedNotesForSafety = removedToAvoidDissonance;
 
 		events.addAll(extraEvents);// add all the pitchbend fractions to the main event list
 		events.removeAll(deleteEvents);
@@ -1118,6 +1118,7 @@ public class AbcExporter {
 			if (targetEndTick < minEnding) {
 				// Mix Timings can cause code to come here since its bar ends might not be quantized.
 				targetEndTick = minEnding;
+				assert qtm.quantize(minEnding, part) == minEnding; 
 			}
 			assert (targetEndTick >= minEnding);
 			assert (ne.getEndTick() >= minEnding) : "1="+(qtm.quantize(ne.getEndTick(), part) == ne.getEndTick())+" 2="+(qtm.quantize(ne.getStartTick(), part) == ne.getStartTick());
@@ -1130,6 +1131,7 @@ public class AbcExporter {
 				targetEndTick = nextTempoEvent.tick;
 				assert (targetEndTick - ne.getStartTick() >= tm.getMinNoteLengthTicks());
 				assert (ne.getEndTick() - targetEndTick >= nextTempoEvent.info.getMinNoteLengthTicks());
+				assert targetEndTick == qtm.quantize(targetEndTick, part);
 			}
 
 			// If remaining bar is larger than 5s, then split rests earlier (and yes, have
@@ -1172,7 +1174,8 @@ public class AbcExporter {
 			}
 
 			if (ne.getEndTick() > targetEndTick) {
-				assert (ne.getEndTick() - targetEndTick >= qtm.getTimingInfo(ne.getEndTick(), part).getMinNoteLengthTicks());
+				assert targetEndTick == qtm.quantize(targetEndTick, part) : "targetEndTick not on grid";
+				assert (ne.getEndTick() - targetEndTick >= qtm.getTimingInfo(targetEndTick, part).getMinNoteLengthTicks());
 				assert (targetEndTick - ne.getStartTick() >= tm.getMinNoteLengthTicks());
 				AbcNoteEvent next = ne.splitWithTieAtTick(targetEndTick);
 				int ins = Collections.binarySearch(events, next);

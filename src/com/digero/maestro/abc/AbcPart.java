@@ -88,6 +88,9 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	private boolean muted = false;
 	private boolean soloed = false;
 	
+	public int numberOfExportedNotes = 0;
+	public int numberOfRemovedNotesForSafety = 0;
+	
 	public boolean discarded = false;
 	
 	public static final Note minDefault = Note.C0;//limit

@@ -41,12 +41,14 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 	private final boolean tripletTiming;
 	private final boolean oddsAndEnds;
 	private final int oddsAndEndsVersion;
+	private String pctStr = "";
 	public static final int COMBINE_PRIORITY_MULTIPLIER = 4;// Do not change this number without exposing the int in UI.
 															// Since old projects will have 4 saved in msx.
 
 	public QuantizedTimingInfo(SequenceInfo source, float exportTempoFactor, TimeSignature meter,
 			boolean useTripletTiming, int abcSongBPM, AbcSong song, boolean oddsAndEnds, int mixVersion)
 			throws AbcConversionException {
+
 		double exportPrimaryTempoMPQ = TimingInfo.roundTempoMPQ(source.getPrimaryTempoMPQ() / exportTempoFactor);
 		this.primaryTempoMPQ = (int) Math.round(exportPrimaryTempoMPQ * exportTempoFactor);
 		this.exportTempoFactor = exportTempoFactor;
@@ -150,7 +152,6 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 			while (reverseIterator.hasNext()) {
 				TimingInfoEvent prev = reverseIterator.next();
 				assert prev.tick <= sourceEvent.tick;
-
 				long gridUnitTicks = prev.info.getMinNoteLengthTicks();
 
 				// Quantize the tick length to the floor multiple of gridUnitTicks
@@ -160,8 +161,10 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 				 * If the new event has a coarser timing grid than prev, then it's possible that the bar splits will not
 				 * align to the grid. To avoid this, adjust the length so that the new event starts at a time that will
 				 * allow the bar to land on the quantization grid.
+				 * 
+				 * Since Mix Timing do not depend on bars to be on the grid, Mix Timings happily skip this. 
 				 */
-				while (lengthTicks > 0) {
+				while (lengthTicks > 0 && !oddsAndEnds) {
 					double barNumberTmp = prev.barNumber + lengthTicks / ((double) prev.info.getBarLengthTicks());
 					double gridUnitsRemaining = ((Math.ceil(barNumberTmp) - barNumberTmp) * info.getBarLengthTicks())
 							/ info.getMinNoteLengthTicks();
@@ -186,14 +189,19 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 			}
 
 			TimingInfoEvent event = new TimingInfoEvent(tick, micros, barNumber, info, infoOdd);
-
 			timingInfoByTick.put(tick, event);
 		}
 		int parts = song.getParts().size();
 		this.oddsAndEnds = oddsAndEnds;
 		this.oddsAndEndsVersion = mixVersion;
-		if (!oddsAndEnds)
+		if (!oddsAndEnds) {
+			if (useTripletTiming) {
+				pctStr  = "Mix Timing is off:\n 100% of song is swing/triplet timing.\n";
+			} else {
+				pctStr  = "Mix Timing is off:\n 0% of song is swing/triplet timing.\n";
+			}
 			return;
+		}
 
 		int startWeight = 12;// Note starts get high weight.
 		int endingWeight = 4;// Note ends get medium weight. This must be divisable by endingSustainedWeightFactor
@@ -201,7 +209,7 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		int bendWeight = 1;// Pitch bends get the least weight.
 		boolean noDrumEndingScore = false;// If drums note's endings should not get any weight at all.
 
-		if (mixVersion == 1) {
+		if (mixVersion == 1) { // currently the version is hardcoded to 2
 			startWeight = 2;
 			endingWeight = 1;
 			endingSustainedWeightFactor = 1;
@@ -215,12 +223,23 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		// System.err.println(" Odds And Ends:");
 		int tracks = song.getSequenceInfo().getTrackCount();
 		TimingInfoEvent[] timings = timingInfoByTick.values().toArray(new TimingInfoEvent[0]);
-		// long totalSwing = 0;
-		// long totalEven = 0;
-
+		
+		// variables for collecting stats:
+		Long[] partSwing = new Long[parts];
+		Long[] partEven = new Long[parts];
+		Long[] partNeutral = new Long[parts];
+		Integer[] partSixgridsCount = new Integer[parts];
+		pctStr  = "Mix Timing:\n";
+				
 		for (int part = 0; part < parts; part++) {
 			// calculate for all parts
 			AbcPart abcPart = song.getParts().get(part);
+			
+			partEven[part] = 0L;
+			partSwing[part] = 0L;
+			partNeutral[part] = 0L;
+			partSixgridsCount[part] = 0;
+			
 			TreeMap<Long, TimingInfoEvent> partMap = new TreeMap<>();
 			oddTimingInfoByTick.put(abcPart, partMap);
 
@@ -255,7 +274,7 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 					nextTempoChange = timings[j + 1];
 				}
 				partMap.put(tempoChange.tick, tempoChange);
-
+				
 				// Now calculate duration of sixGrid sections. They will always end and start on
 				// quantized grid for both odd and even timing
 				// I call it sixGrid due to durations of 3 and 2 will always coincide each 6th
@@ -298,6 +317,7 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 						endingWeightFinal /= endingSustainedWeightFactor;
 					}
 
+					int sixGridStart = -1;
 					if (ne.getStartTick() > tempoChange.tick
 							&& (nextTempoChange == null || ne.getStartTick() < nextTempoChange.tick)) {
 
@@ -311,26 +331,26 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 						int odd = (int) (Math.abs(ne.getStartTick() - q) - Math.abs(ne.getStartTick() - qOdd));
 						// determine which sixGrid we are in
 
-						int sixGrid = (int) ((ne.getStartTick() - tempoChange.tick) / sixTicks);
+						sixGridStart = (int) ((ne.getStartTick() - tempoChange.tick) / sixTicks);
 
-						if (sixGrid >= maxSixths)
+						if (sixGridStart >= maxSixths)
 							continue;
-						if (sixGrid > highest)
-							highest = sixGrid;
+						if (sixGridStart > highest)
+							highest = sixGridStart;
 
 						// Add a point to this sixGrid odd vs. default list.
 						int oddScoreStarts = odd * startWeight * ne.combinePrioritiesScoreMultiplier;
-						if (sixGridsOdds.get(sixGrid) != null) {
-							sixGridsOdds.set(sixGrid, sixGridsOdds.get(sixGrid) + oddScoreStarts);
+						if (sixGridsOdds.get(sixGridStart) != null) {
+							sixGridsOdds.set(sixGridStart, sixGridsOdds.get(sixGridStart) + oddScoreStarts);
 						} else {
-							sixGridsOdds.set(sixGrid, oddScoreStarts);
+							sixGridsOdds.set(sixGridStart, oddScoreStarts);
 						}
 					}
 
 					if (ne instanceof BentMidiNoteEvent) {
 						// bent notes scores (the bent notes which range is less than 1 octave (or as the setting is set to)
 						BentMidiNoteEvent be = (BentMidiNoteEvent) ne;
-
+						
 						for (Entry<Long, Integer> bend : be.bends.entrySet()) {
 							long tick = bend.getKey();
 							if (tick == be.getStartTick())
@@ -382,28 +402,47 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 						if (sixGrid > highest)
 							highest = sixGrid;
 
-						// Add a point to this sixGrid odd vs. default list.
+						// Add points to this sixGrid odd vs. default list.
 						int oddScoreEnds = odd * endingWeightFinal * ne.combinePrioritiesScoreMultiplier;
 						if (sixGridsOdds.get(sixGrid) != null) {
 							sixGridsOdds.set(sixGrid, sixGridsOdds.get(sixGrid) + oddScoreEnds);
 						} else {
 							sixGridsOdds.set(sixGrid, oddScoreEnds);
 						}
+						/*
+						if (sixGridStart != -1) {
+							// We populate all sixGridsOdds inbetween start and end with non-null values
+							// this is needed for stats, so it does not count that duration as silence.
+							for (int w = sixGridStart+1; w < sixGrid; w++) {
+								if (sixGridsOdds.get(w) == null) {
+									sixGridsOdds.set(w, 0);
+								}
+							}
+						}
+						*/
 					}
 				}
 				boolean prevOdd = false;
 				for (int i = 0; i <= highest; i++) {
-					long tck = sixTicks * i;
-					long micros = tempoChange.micros
+					long tck = sixTicks * i; // how many ticks since last tempochange
+					long micros = tempoChange.micros // how many micros absolute
 							+ MidiUtils.ticks2microsec(tck, tempoChange.info.getTempoMPQ(), resolution);
-					tck += tempoChange.tick;
+					tck += tempoChange.tick;// absolute tick
 					assert (nextTempoChange == null || tck < nextTempoChange.tick);
+					
+					long sixGridMicro = MidiUtils.ticks2microsec( // micro of single sixGrid
+							sixTicks, tempoChange.info.getTempoMPQ(), tempoChange.info.getResolutionPPQ());
+
+					
 					if (sixGridsOdds.get(i) != null && sixGridsOdds.get(i) > 0
 							&& (nextTempoChange == null || tck <= nextTempoChange.tick - sixTicks)) {
-						// if (useTripletTiming) totalEven += MidiUtils.ticks2microsec(sixTicks,
-						// tempoChange.info.getTempoMPQ(), tempoChange.info.getResolutionPPQ());
-						// else if (!useTripletTiming) totalSwing += MidiUtils.ticks2microsec(sixTicks,
-						// tempoChange.info.getTempoMPQ(), tempoChange.info.getResolutionPPQ());
+						
+						if (useTripletTiming) {
+							partEven[part] += sixGridMicro;
+						} else if (!useTripletTiming) {
+							partSwing[part] += sixGridMicro;
+						}
+						
 						if (!prevOdd) {
 							TimingInfoEvent newTempoChange = new TimingInfoEvent(tck, micros, tempoChange.barNumber,
 									tempoChange.infoOdd, null);
@@ -412,12 +451,28 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 						}
 						prevOdd = true;
 					} else {
-						// if (!useTripletTiming && sixGridsOdds.get(i) != null && sixGridsOdds.get(i)
-						// != 0) totalEven += MidiUtils.ticks2microsec(sixTicks,
-						// tempoChange.info.getTempoMPQ(), tempoChange.info.getResolutionPPQ());
-						// else if (useTripletTiming && sixGridsOdds.get(i) != null &&
-						// sixGridsOdds.get(i) != 0) totalSwing += MidiUtils.ticks2microsec(sixTicks,
-						// tempoChange.info.getTempoMPQ(), tempoChange.info.getResolutionPPQ());
+						
+						
+						if (nextTempoChange != null && tck > nextTempoChange.tick - sixTicks && tck < nextTempoChange.tick) {
+							// There is not room for an entire sixGrid, so we find how many tick there is room for.
+							sixGridMicro = MidiUtils.ticks2microsec(
+									nextTempoChange.tick - tck, tempoChange.info.getTempoMPQ(), tempoChange.info.getResolutionPPQ());
+						} else if (nextTempoChange != null && tck >= nextTempoChange.tick) {
+							// should never come here
+							sixGridMicro = 0;
+						}
+						
+						if (sixGridsOdds.get(i) != null) {
+							// if it is null there is no note start/stops, so we do not count that
+							if (sixGridsOdds.get(i) == 0) {
+								partNeutral[part] += sixGridMicro;
+							} else if (!useTripletTiming) {
+								partEven[part] += sixGridMicro;
+							} else if (useTripletTiming) {
+								partSwing[part] += sixGridMicro;
+							}
+						}
+						
 						if (prevOdd) {
 							TimingInfoEvent newTempoChange = new TimingInfoEvent(tck, micros, tempoChange.barNumber,
 									tempoChange.info, null);
@@ -437,14 +492,64 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 						TimingInfoEvent newTempoChange = new TimingInfoEvent(tck, micros, tempoChange.barNumber,
 								tempoChange.info, null);
 						partMap.put(tck, newTempoChange);
+						
+						if (nextTempoChange != null) {
+							// highest might not be last before next tempochange, it might be last notestart or noteend
+							// so we use math.min
+							long sixGridMicro = Math.min(MidiUtils.ticks2microsec(sixTicks, tempoChange.info.getTempoMPQ(), resolution), nextTempoChange.micros - micros);
+							if (!useTripletTiming) {
+								partEven[part] += sixGridMicro;
+							} else if (useTripletTiming) {
+								partSwing[part] += sixGridMicro;
+							}
+						}
 					}
+				}
+				for (Integer score : sixGridsOdds) {
+					if (score != null) partSixgridsCount[part]++; 
 				}
 			}
 		}
-		// if (totalEven+totalSwing > 0) {
-		// int pct = (int)((1000*totalSwing/(float)(totalEven+totalSwing))/10.0f);
-		// System.err.println("Mix Timing: "+pct+"% of abc song is swing/triplet timing.");
-		// }
+		
+		for (int v = 0; v < parts; v++) {
+			pctStr  += "\nPart #"+song.getParts().get(v).getPartNumber()+" has "+partSixgridsCount[v]+" segments with note start/endings:\n";
+			if (partNeutral[v]+partEven[v]+partSwing[v] > 0) {
+				int pct = (int)((1000*partSwing[v]/(double)(partNeutral[v]+partEven[v]+partSwing[v]) )/10.0d );
+				pctStr += pct+"% of those is swing/triplet timing.\n";
+				pct = (int)((1000*partEven[v]/(double)(partNeutral[v]+partEven[v]+partSwing[v]) )/10.0d );
+				pctStr += pct+"% of those is regular timing.\n";
+				pct = (int)((1000*partNeutral[v]/(double)(partNeutral[v]+partEven[v]+partSwing[v]) )/10.0d );
+				pctStr += pct+"% of those it didn't matter either way, so choosing "+(useTripletTiming?"swing.\n":"regular.\n");
+			} else {
+				pctStr += "no further stats to show.\n";
+			}
+		}
+		pctStr += "\nNote that each segment is divided into smaller cells. A cell is minimum 60 ms\n";
+		long totalSwing = 0;
+		long totalEven = 0;
+		long totalNeutral = 0;
+		for (long swing : partSwing) {
+			totalSwing += swing;
+		}
+		for (long even : partEven) {
+			totalEven += even;
+		}
+		for (long neutral : partNeutral) {
+			totalNeutral += neutral;
+		}
+		if (totalNeutral+totalEven+totalSwing > 0) {
+			long totalNeutralSwing = useTripletTiming?totalNeutral:0L;
+			int pct = (int)((1000*(totalSwing+totalNeutralSwing)/(double)(totalNeutral+totalEven+totalSwing) )/10.0d );
+			pctStr  += "\n"+pct+"% in total is swing/triplet timing.\n";
+			pct = (int)((1000*totalSwing/(double)(totalNeutral+totalEven+totalSwing) )/10.0d );
+			if (pct > 50 && !useTripletTiming) {
+				pctStr += "\nNote: Recommended to enable swing timing also.\n";
+			} else if (pct < 40 && useTripletTiming) {
+				pctStr += "\nNote: Recommended to disable swing timing.\n";
+			}
+		} else {
+			pctStr += "No total stats to show.\n";
+		}
 	}
 
 	/**
@@ -754,5 +859,21 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 
 	public long getGridSizeTicks(long tick, AbcPart part) {
 		return getTimingInfo(tick, part).getMinNoteLengthTicks();
+	}
+
+	public String getStats() {
+		String out = "";
+		
+		out += pctStr+"\n";
+		
+		return out;
+	}
+
+	public String getTempoStats() {
+		String out = "";
+		
+		out += "Source contains "+getTimingInfoByTick().size()+" tempo sections.\n";
+		
+		return out;
 	}
 }
