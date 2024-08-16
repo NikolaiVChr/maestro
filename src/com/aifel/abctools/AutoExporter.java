@@ -63,6 +63,9 @@ public class AutoExporter {
 	private boolean projectModified = false;
 	private final AbcTools main;
 	private final Preferences autoPrefs;
+	private File newNestedMidi = null;
+	private File nestedProject = null;
+	private File oldMidi = null;
 	
 	AutoExporter (MultiMergerView frame, String myHome, AbcTools main, Preferences autoPrefs) {
 		this.frame = frame;
@@ -343,6 +346,9 @@ public class AutoExporter {
 		appendToField("<br>Exporting " + project.getName());
 
 		projectModified = false;
+		newNestedMidi = null;
+		oldMidi = null;
+		nestedProject = project;
 		AbcSong abcSong = new AbcSong(project, main.partAutoNumberer, main.partNameTemplate, main.exportFilenameTemplate,
 				main.instrNameSettings, openFileResolver, main.miscSettings);
 
@@ -420,7 +426,7 @@ public class AutoExporter {
 	 * @param sourceFolderAuto2
 	 * @param destFolderAuto
 	 * @param project
-	 * @return Project file but in a folder nested inside destFolderAuto in same manner as project is nested inside sourceFolderAuto2
+	 * @return folder nested inside destFolderAuto in same manner as project is nested inside sourceFolderAuto2
 	 * @throws IOException
 	 */
 	private File getTreeFolder(File sourceFolderAuto2, File destFolderAuto2, File project) throws IOException {
@@ -437,6 +443,35 @@ public class AutoExporter {
 		}
 		if (iterCheck == 100) throw new IOException("Something went wrong with path tree");
 		File future = new File(destFolderAuto2.getPath());
+		for (int i = theList.size()-1 ; i >= 0 ; i--) {
+			String branch = theList.get(i);
+			future = new File (future, branch);
+		}
+		return future;
+	}
+	
+	/**
+	 * 
+	 * @param sourceFolderAuto2
+	 * @param midiFolderAuto2
+	 * @param newFile
+	 * @return folder nested inside midiFolderAuto in same manner as projectFile is nested inside sourceFolderAuto
+	 * @throws IOException
+	 */
+	private File getTreeFolderMidi(File projectFile) throws IOException {
+		if (projectFile.getParentFile().equals(sourceFolderAuto)) {
+			return midiFolderAuto;
+		}
+		List<String> theList = new ArrayList<>();
+		File now = new File(projectFile.getParent());
+		int iterCheck = 0;
+		while (now != null && !now.equals(sourceFolderAuto) && iterCheck < 100) {
+			iterCheck++;
+			theList.add(now.getName());			
+			now = now.getParentFile();
+		}
+		if (iterCheck == 100 || now == null) return null;
+		File future = new File(midiFolderAuto.getPath());
 		for (int i = theList.size()-1 ; i >= 0 ; i--) {
 			String branch = theList.get(i);
 			future = new File (future, branch);
@@ -517,11 +552,39 @@ public class AutoExporter {
 
 		@Override
 		public File locateFile(File original, String message) {
+			//System.out.println("\nOriginal="+original.getPath());
+			if (oldMidi == null) oldMidi = original;// To ensure message on screen shows midi from project file.
 			newMidi = new File(midiFolderAuto, original.getName());
-			if (original.equals(newMidi)) {
-				message += "\n\nWould you like to try to locate the file?";
-				return resolveHelper(original, message);
+			if (newNestedMidi == null && frame.getRecursiveCheckBoxSelected()) {
+				try {
+					File finalFolder = getTreeFolderMidi(nestedProject);
+					if (finalFolder != null) {
+						newNestedMidi = new File(finalFolder, original.getName());
+						//System.out.println("New="+newNestedMidi.getPath());
+					} else {
+						//System.out.println("finalFolder == null");
+					}
+				} catch (IOException e) {
+					newNestedMidi = null;
+					//System.out.println("IO");
+				}
+			} else {
+				//System.out.println("New already="+newNestedMidi.getPath());
 			}
+			if (original.equals(newNestedMidi)) {
+				message += "\n\nWould you like to try to locate the file?";
+				return resolveHelper(oldMidi, message);
+			} else if (original.equals(newMidi)) {
+				if (newNestedMidi != null) {
+					//System.out.println("return newNestedMidi");
+					projectModified = true;
+					return newNestedMidi;
+				}
+				//System.out.println("newNestedMidi == null");
+				message += "\n\nWould you like to try to locate the file?";
+				return resolveHelper(oldMidi, message);
+			}
+			//System.out.println("return newMidi="+newMidi.getPath());
 			projectModified = true;
 			return newMidi;
 		}
