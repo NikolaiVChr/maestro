@@ -50,6 +50,8 @@ Version 3.2.10
 - Merge Student and Student FX fiddles into one.
 - Fix drum/cowbell/studentFX notes sometimes were grayed out when active.
 - Added two more Xtra drums.
+- Song duration display is now rounded up to nearest second.
+- Look also recursively in midi folder in ABC Auto export tool if recursive is checked.
 
 Version 3.2.8
 - You can hold shift while clicking a solo/mute button to deselect all the other buttons of that type. Works in Maestro and AbcPlayer.
