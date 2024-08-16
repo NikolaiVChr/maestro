@@ -43,6 +43,7 @@ public class MultiMergerView extends JFrame {
 	private JButton btnDestAuto;
 	private JButton btnSourceAuto;
 	private JButton btnStart;
+	private JButton btnCancel;
 	private JCheckBox forceMixTiming;
 	private JScrollPane scrollPaneAutoTxt;
 	private JEditorPane txtAutoExport;
@@ -219,6 +220,12 @@ public class MultiMergerView extends JFrame {
 		recursiveCheckBox.setToolTipText("Go through sub folders and create a similar output folder tree");
 		recursiveCheckBox.setAlignmentX(0.5f);
 		panelAuto.add(recursiveCheckBox);
+		
+		btnCancel = new JButton("Cancel");
+		btnCancel.setToolTipText("Cancel Exporting");
+		btnCancel.setEnabled(false);
+		btnCancel.setAlignmentX(Component.CENTER_ALIGNMENT);
+		panelAuto.add(btnCancel);
 
 		scrollPaneAutoTxt = new JScrollPane();
 		contentPaneAutoExport.add(scrollPaneAutoTxt, BorderLayout.CENTER);
@@ -306,6 +313,10 @@ public class MultiMergerView extends JFrame {
 
 	public JButton getBtnStartExport() {
 		return btnStart;
+	}
+	
+	public JButton getBtnCancelExport() {
+		return btnCancel;
 	}
 
 	public String getLblSourceAutoText() {

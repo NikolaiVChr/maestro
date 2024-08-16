@@ -1,6 +1,7 @@
 package com.aifel.abctools;
 
 import static java.nio.file.FileVisitResult.CONTINUE;
+import static java.nio.file.FileVisitResult.TERMINATE;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -66,6 +67,7 @@ public class AutoExporter {
 	private File newNestedMidi = null;
 	private File nestedProject = null;
 	private File oldMidi = null;
+	private volatile boolean cancel = false;
 	
 	AutoExporter (MultiMergerView frame, String myHome, AbcTools main, Preferences autoPrefs) {
 		this.frame = frame;
@@ -103,6 +105,7 @@ public class AutoExporter {
 			destFolderAuto = new File(myHome);
 		
 		frame.getBtnStartExport().addActionListener(getStartExportActionListener());
+		frame.getBtnCancelExport().addActionListener(getCancelExportActionListener());
 		frame.getBtnDestAuto().addActionListener(getDestAutoActionListener());
 		frame.getBtnMIDI().addActionListener(getMIDIAutoActionListener());
 		frame.getBtnSourceAuto().addActionListener(getSourceAutoActionListener());
@@ -121,6 +124,7 @@ public class AutoExporter {
 					appendToField("<br><font color='red'>"+ioe.toString()+"</font>");
 					SwingUtilities.invokeLater(() -> {
 						frame.getBtnStartExport().setEnabled(true);
+						frame.getBtnCancelExport().setEnabled(false);
 						frame.setForceMixTimingEnabled(true);
 						frame.setBtnDestAutoEnabled(true);
 						frame.setBtnMIDIEnabled(true);
@@ -131,6 +135,12 @@ public class AutoExporter {
 					});
 				}
 			})).start();
+		};
+	}
+	
+	private ActionListener getCancelExportActionListener() {
+		return e -> {
+			cancel = true;
 		};
 	}
 
@@ -145,6 +155,7 @@ public class AutoExporter {
 		SwingUtilities.invokeAndWait(() -> {
 			refreshAuto();
 			frame.getBtnStartExport().setEnabled(false);
+			frame.getBtnCancelExport().setEnabled(true);
 			frame.setForceMixTimingEnabled(false);
 			frame.setBtnDestAutoEnabled(false);
 			frame.setBtnMIDIEnabled(false);
@@ -163,6 +174,7 @@ public class AutoExporter {
 					+ "<br>Close Maestro while this app runs.");
 			SwingUtilities.invokeLater(() -> {
 				frame.getBtnStartExport().setEnabled(true);
+				frame.getBtnCancelExport().setEnabled(false);
 				frame.setForceMixTimingEnabled(true);
 				frame.setBtnDestAutoEnabled(true);
 				frame.setBtnMIDIEnabled(true);
@@ -185,6 +197,7 @@ public class AutoExporter {
 		main.miscSettings = new MiscSettings(prefs.node("miscSettings"), true);
 
 		setProgress(0);
+		cancel = false;
 		if (!frame.getRecursiveCheckBoxSelected()) {
 			File[] projects = sourceFolderAuto.listFiles(new MsxFileFilter());
 			
@@ -194,6 +207,7 @@ public class AutoExporter {
 			exportCount = 0;
 			
 			for (File project : projects) {
+				if (cancel) break;
 				exportProject(project);
 				exportCount++;
 				setProgress((int) (exportCount * progressFactor));
@@ -209,11 +223,16 @@ public class AutoExporter {
 			
 			Files.walkFileTree(sourceFolderAuto.toPath(), new ProcessFiles());
 		}
-		setProgress(1000);
-
-		appendToField("<br><br>Exports finished.");
+		if (!cancel) {
+			setProgress(1000);
+			appendToField("<br><br>Exports finished.");
+		} else {
+			appendToField("<br><br>Exports cancelled.");
+		}
+		
 		SwingUtilities.invokeLater(() -> {
 			frame.getBtnStartExport().setEnabled(true);
+			frame.getBtnCancelExport().setEnabled(false);
 			frame.setForceMixTimingEnabled(true);
 			frame.setBtnDestAutoEnabled(true);
 			frame.setBtnMIDIEnabled(true);
@@ -263,6 +282,7 @@ public class AutoExporter {
 		
 	    @Override
 	    public FileVisitResult visitFile(Path file, BasicFileAttributes attr) {
+	    	if (cancel) return TERMINATE;
 	    	if (f.accept(file.toFile())) {
 		        if (attr.isSymbolicLink()) {
 		            System.out.format("Ignoring symbolic link: %s ", file);
@@ -599,11 +619,11 @@ public class AutoExporter {
 			try {
 				SwingUtilities.invokeAndWait(() -> {
 					result = JOptionPane.showConfirmDialog(frame, message, "Failed to open file",
-							JOptionPane.OK_CANCEL_OPTION);
+							JOptionPane.YES_NO_CANCEL_OPTION);
 				});
 	
 				File alternateFile = null;
-				if (result == JOptionPane.OK_OPTION) {
+				if (result == JOptionPane.YES_OPTION) {
 					JFileChooser jfc = new JFileChooser();
 					jfc.setDialogTitle("Open missing MIDI");
 					if (original != null)
@@ -621,6 +641,8 @@ public class AutoExporter {
 						alternateFile = jfc.getSelectedFile();
 						projectModified = true;
 					}
+				} else if (result == JOptionPane.CANCEL_OPTION) {
+					cancel = true;
 				}
 		
 				return alternateFile;
