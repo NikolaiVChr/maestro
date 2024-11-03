@@ -94,7 +94,7 @@ public class SongPositionBar extends JPanel implements Listener<SequencerEvent> 
 		if (seq == null || seq.getLength() == 0) {
 			ptrPos = 0;
 		} else {
-			ptrPos = (int) (SIDE_PAD + (getWidth() - 2 * SIDE_PAD) * seq.getThumbPosition() / seq.getLength());
+			ptrPos = (int) (SIDE_PAD + (getWidth() - 2 * SIDE_PAD) * seq.getThumbPosition() / (seq.getLength()*2));
 		}
 
 		final int x = SIDE_PAD;
@@ -147,7 +147,7 @@ public class SongPositionBar extends JPanel implements Listener<SequencerEvent> 
 		if (seq == null || seq.getLength() == 0) {
 			ptrRect.x = 0;
 		} else {
-			ptrRect.x = (int) (getWidth() * seq.getThumbPosition() / seq.getLength() - PTR_WIDTH / 2);
+			ptrRect.x = (int) (getWidth() * seq.getThumbPosition() / (seq.getLength()*2) - PTR_WIDTH / 2);
 		}
 	}
 
@@ -158,8 +158,8 @@ public class SongPositionBar extends JPanel implements Listener<SequencerEvent> 
 			if (seq == null)
 				return 0;
 
-			long pos = (x + 1 - SIDE_PAD) * seq.getLength() / (getWidth() - 2 * SIDE_PAD);
-			return Util.clamp(pos, 0, seq.getLength() - 1);
+			long pos = (x + 1 - SIDE_PAD) * seq.getLength()*2 / (getWidth() - 2 * SIDE_PAD);
+			return Util.clamp(pos, 0, seq.getLength()*2 - 1);
 		}
 
 		private void setMouseHovering(MouseEvent e) {

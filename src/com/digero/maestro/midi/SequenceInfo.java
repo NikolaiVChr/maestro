@@ -58,7 +58,7 @@ public class SequenceInfo implements MidiConstants {
 	private ArrayList<TreeMap<Long, Boolean>> mmaDrumSwitches = null;// Which channel/tick GM2 switches to drums outside
 																		// of designated drum channels
 	private int primaryTempoMPQ;
-	private final List<TrackInfo> trackInfoList;
+	public List<TrackInfo> trackInfoList;
 	private TreeMap<Integer, Integer> portMap = new TreeMap<>();
 	public static List<ExportTrackInfo> lastTrackInfos = null;
 
@@ -166,7 +166,7 @@ public class SequenceInfo implements MidiConstants {
 			title = array[1].trim();
 		}
 
-		this.trackInfoList = Collections.unmodifiableList(trackInfoList);
+		this.trackInfoList = trackInfoList;
 		if (!getTimeSignature().equals(sequenceCache.getTimeSignature())) {
 			// If see this output then..
 			System.out.println("Time signature does not match between SequenceInfo (" + getTimeSignature()

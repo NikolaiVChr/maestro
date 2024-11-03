@@ -31,9 +31,12 @@ import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.DateFormat;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.prefs.Preferences;
 
 import javax.imageio.ImageIO;
@@ -177,6 +180,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private JCheckBox tripletCheckBox;
 	private JCheckBox mixCheckBox;
 	private JCheckBox prioCheckBox;
+	public static JTextField medleyTime = new JTextField("0:0.0");
+	private JButton medleyButton = new JButton("Set");
 	private JButton exportButton;
 	private JLabel exportSuccessfulLabel;
 	private Timer exportLabelHideTimer;
@@ -190,6 +195,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private JMenuItem exportMp3MenuItem;
 	private JMenuItem exportWavMenuItem;
 	private JMenuItem chooseMidiFileMenuItem;
+	private JMenuItem chooseMidiFileMenuItem2;
 	private JMenuItem reloadMidiFileMenuItem;
 	private JMenuItem closeProject;
 	
@@ -719,6 +725,21 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				refreshPreviewSequence(false);
 		});
 		
+		medleyButton.addActionListener(e -> {
+			if (abcSong != null) {
+				String text = medleyTime.getText();
+				String[] arr = text.split(":");
+		        Duration duration = Duration.ZERO;
+		        if (arr.length == 2) {
+		            String strDuration = "PT" + arr[0] + "M" + arr[1] + "S";
+		            duration = Duration.parse(strDuration);
+		        }
+				abcSong.setMedleyStart(duration.toMillis()*1000);
+				partPanel.setAbcPart(partsList.getSelectedPart(), true);
+				refreshPreviewSequence(false);
+			}
+		});
+		
 		exportSuccessfulLabel = new JLabel("Exported");
 		exportSuccessfulLabel.setIcon(IconLoader.getImageIcon("check_16.png"));
 		exportSuccessfulLabel.setBorder(BorderFactory.createEmptyBorder(0, 2, 0, 0));
@@ -780,6 +801,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		row++;
 		settingsLayout.insertRow(row, PREFERRED);
 		settingsPanel.add(prioCheckBox, "0, " + row + ", 2, " + row + ", C, C");
+		row++;
+		settingsLayout.insertRow(row, PREFERRED);
+		settingsPanel.add(medleyTime, "0, " + row + ", 1, " + row + ", C, C");
+		settingsPanel.add(medleyButton, "2, " + row + ", 2, " + row + ", C, C");
 		//row++;
 		//settingsLayout.insertRow(row, PREFERRED);
 		//settingsPanel.add(zeroDropdown, "0, " + row + ", 2, " + row + ", L, C");
@@ -1144,6 +1169,42 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			}
 			
 			reloadWithNewSource(openMidiChooser.getSelectedFile());
+		});
+		
+		chooseMidiFileMenuItem2 = fileMenu.add(new JMenuItem("Medley midi..."));
+		chooseMidiFileMenuItem2.addActionListener(e -> {
+			if (abcSong == null || abcSong.getSourceFile() == null) {
+				return; // should be an invalid state, item is disabled if no msx file
+			}
+			
+			int result = JOptionPane.showConfirmDialog(ProjectFrame.this, "If this doesn't work, your project will remain unaffected. For best results, pick a file similar to the current midi file of the project. Would you like to continue?", "Proceed?",
+					JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+			if (result != JOptionPane.YES_OPTION)
+				return;
+			
+			JFileChooser openMidiChooser = new JFileChooser(abcSong.getSourceFile().getAbsoluteFile().getParent());
+			openMidiChooser.setMultiSelectionEnabled(false);
+			openMidiChooser.setFileFilter(
+					new ExtensionFileFilter("MIDI and ABC files", "mid",
+							"midi", "kar", "abc", "txt"));
+
+			result = openMidiChooser.showOpenDialog(ProjectFrame.this);
+			if (result != JFileChooser.APPROVE_OPTION) {
+				return;
+			}
+			
+			try {
+				openMedley(openMidiChooser.getSelectedFile());
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} catch (InvalidMidiDataException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} catch (ParseException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 		});
 		
 		reloadMidiFileMenuItem = fileMenu.add(new JMenuItem("Reload MIDI file"));
@@ -1573,6 +1634,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		exportWavMenuItem.setEnabled(abcSong != null);
 		String errStr = "<html><p style='color:red;'>Must save as an MSX project first</p></html>";
 		chooseMidiFileMenuItem.setEnabled(abcSong != null && abcSong.getSaveFile() != null);
+		chooseMidiFileMenuItem2.setEnabled(abcSong != null);
 		chooseMidiFileMenuItem.setToolTipText(abcSong != null && abcSong.getSaveFile() == null ? errStr : "");
 		reloadMidiFileMenuItem.setEnabled(abcSong != null && abcSong.getSaveFile() != null);
 		reloadMidiFileMenuItem.setToolTipText(abcSong != null && abcSong.getSaveFile() == null ? errStr : "");
@@ -2013,6 +2075,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	
 	public void openFile(File file) {
 		openFile(file, true);
+	}
+	
+	public void openMedley(File file) throws IOException, InvalidMidiDataException, ParseException {
+		abcSong.openMedley(file, miscSettings);
 	}
 
 	public void openFile(File file, boolean updateLastOpenedList) {

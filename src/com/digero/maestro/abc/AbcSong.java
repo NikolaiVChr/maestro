@@ -8,6 +8,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -22,6 +23,7 @@ import java.util.Map.Entry;
 import java.util.NavigableMap;
 
 import javax.sound.midi.InvalidMidiDataException;
+import javax.sound.midi.Track;
 import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
 import javax.xml.xpath.XPathExpressionException;
@@ -47,6 +49,7 @@ import com.digero.maestro.MaestroMain;
 import com.digero.maestro.abc.AbcPartEvent.AbcPartProperty;
 import com.digero.maestro.abc.AbcSongEvent.AbcSongProperty;
 import com.digero.maestro.abc.QuantizedTimingInfo.TimingInfoEvent;
+import com.digero.maestro.midi.MidiNoteEvent;
 import com.digero.maestro.midi.SequenceDataCache;
 import com.digero.maestro.midi.SequenceInfo;
 import com.digero.maestro.midi.TrackInfo;
@@ -56,13 +59,14 @@ import com.digero.maestro.util.SaveUtil;
 import com.digero.maestro.util.XmlUtil;
 import com.digero.maestro.view.InstrNameSettings;
 import com.digero.maestro.view.MiscSettings;
+import com.digero.maestro.view.ProjectFrame;
 
 public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public static final String MSX_FILE_DESCRIPTION = MaestroMain.APP_NAME + " Song";
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = MaestroMain.APP_NAME + " Songs";
 	public static final String MSX_FILE_EXTENSION_NO_DOT = "msx";
 	public static final String MSX_FILE_EXTENSION = "." + MSX_FILE_EXTENSION_NO_DOT;
-	public static final Version SONG_FILE_VERSION = new Version(3, 3, 15, 300);// Keep build above 117 to make earlier
+	public static final Version SONG_FILE_VERSION = new Version(3, 3, 15, 900);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
 
@@ -95,6 +99,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private final boolean fromAbcFile;
 	private final boolean fromXmlFile;
 	private SequenceInfo sequenceInfo;// TODO: Refactor name to sourceSequenceInfo
+	private SequenceInfo sequenceInfo2;
 	private final PartAutoNumberer partAutoNumberer;
 	private final PartNameTemplate partNameTemplate;
 	private final ExportFilenameTemplate exportFilenameTemplate;
@@ -102,6 +107,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private QuantizedTimingInfo timingInfo;
 	private AbcExporter abcExporter;
 	private File sourceFile; // The MIDI or ABC file that this song was loaded from
+	private File sourceFile2; // The MIDI or ABC file that this song was loaded from
 	private File exportFile; // The ABC export file
 	private File saveFile; // The XML Maestro song file
 	private boolean usingOldVelocities = false;
@@ -112,6 +118,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private final ListenerList<AbcSongEvent> listeners = new ListenerList<>();
 	boolean mixDirty = true;
 	private Date firstExportTime = null;// UTC date and time for first time this project was exported to abc.
+	private long medleyStart = 0;
+	private int trackOffset;
 
 	public AbcSong(File file, PartAutoNumberer partAutoNumberer, PartNameTemplate partNameTemplate,
 			ExportFilenameTemplate exportFilenameTemplate, InstrNameSettings instrNameSettings,
@@ -182,6 +190,51 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		keySignature = (ICompileConstants.SHOW_KEY_FIELD) ? sequenceInfo.getKeySignature() : KeySignature.C_MAJOR;
 		timeSignature = sequenceInfo.getTimeSignature();
 		note = "";
+		System.out.println("1st key: "+keySignature);
+		System.out.println("1st time: "+timeSignature);
+	}
+	
+	public void openMedley(File file, MiscSettings miscSettings)
+			throws IOException, InvalidMidiDataException, ParseException {
+		usingOldVelocities = miscSettings.ignoreExpressionMessages;
+		sequenceInfo2 = SequenceInfo.fromMidi(file, miscSettings, usingOldVelocities);
+		KeySignature keySignature = (ICompileConstants.SHOW_KEY_FIELD) ? sequenceInfo.getKeySignature() : KeySignature.C_MAJOR;
+		
+		TimeSignature timeSignature = sequenceInfo.getTimeSignature();
+		
+		System.out.println("2nd key: "+keySignature);
+		System.out.println("2nd time: "+timeSignature);
+		
+		
+		trackOffset = sequenceInfo.getTrackCount();
+		fillMedley();
+		sourceFile2 = file;
+	}
+
+	private void fillMedley() {
+		
+		for (int track = 0;track < sequenceInfo2.getTrackCount();track++) {
+			TrackInfo info = sequenceInfo2.getTrackInfo(track);
+			//Track medleyTrack = sequenceInfo.getSequence().createTrack();
+			TrackInfo medleyInfo = new TrackInfo(sequenceInfo, trackOffset+track,info);
+			for (MidiNoteEvent event : info.getEvents()) {
+				long startMic = event.getStartMicros()+medleyStart;
+				long endMic = event.getEndMicros()+medleyStart;
+				MidiNoteEvent eventMedley = new MidiNoteEvent(event.note, event.velocity, sequenceInfo.getDataCache().microsToTick(startMic), sequenceInfo.getDataCache().microsToTick(endMic), sequenceInfo.getDataCache(), event.midiPan);
+				medleyInfo.getEvents().add(eventMedley);
+			}
+			sequenceInfo.trackInfoList.add(medleyInfo);
+		}
+	}
+	
+	public void setMedleyStart(long s) {
+		medleyStart = s;
+		for(int track = sequenceInfo2.getTrackCount()*2;track >= 0;track--) {
+			if (sequenceInfo.trackInfoList.size()-1 >= track+trackOffset) {
+				sequenceInfo.trackInfoList.remove(track+trackOffset);
+			}
+		}
+		fillMedley();
 	}
 
 	private void initFromAbc(File file, MiscSettings miscSettings)
@@ -293,6 +346,25 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			genre = SaveUtil.parseValue(songEle, "genre", genre);
 			mood = SaveUtil.parseValue(songEle, "mood", mood);
 			note = SaveUtil.parseValue(songEle, "note", "");
+			String medleyStartStr = SaveUtil.parseValue(songEle, "medleyStartMicros", "");
+			if (medleyStartStr != "") {
+				medleyStart = Long.parseLong(medleyStartStr);
+				Duration duration = Duration.ZERO;
+				duration = duration.plusNanos(medleyStart*1000L);
+				String str = duration.toString();
+				str = str.split("PT")[1];
+				String[] strBoth = str.split("M");
+				if (strBoth.length == 1) {
+					String strS = strBoth[0].split("S")[0];
+					ProjectFrame.medleyTime.setText(0 + ":" + strS);
+				} else {
+					String strS = strBoth[1].split("S")[0];
+					ProjectFrame.medleyTime.setText(strBoth[0] + ":" + strS);
+				}
+				
+			} else {
+				ProjectFrame.medleyTime.setText("0:0.0");
+			}
 			
 			String exportTimeStr = SaveUtil.parseValue(songEle, "firstExportTime", "");
 			if (exportTimeStr != "") {
@@ -347,7 +419,16 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			handleTuneSections(songEle, fileVersion);
 
 			addListenerToParts(songEle, fileVersion);
-		} catch (XPathExpressionException e) {
+			
+			sourceFile2 = SaveUtil.parseValue(songEle, "sourceFile2", (File) null);
+			
+			if (sourceFile2 != null) {
+				openMedley(sourceFile2, miscSettings);
+			}
+			
+			addListenerToParts2(songEle, fileVersion);
+						
+		} catch (XPathExpressionException | InvalidMidiDataException e) {
 			e.printStackTrace();
 			throw new ParseException("XPath error: " + e.getMessage(), null);
 		}
@@ -491,6 +572,14 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			if (ins < 0)
 				ins = -ins - 1;
 			parts.add(ins, part);
+			//part.convertSectionsToLongTrees();
+			//part.addAbcListener(abcPartListener);
+		}
+	}
+	
+	private void addListenerToParts2(Element songEle, Version fileVersion)
+			throws XPathExpressionException, ParseException {
+		for (AbcPart part : parts) {
 			part.convertSectionsToLongTrees();
 			part.addAbcListener(abcPartListener);
 		}
@@ -515,6 +604,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		songEle.setAttribute("maestroVersion", String.valueOf(MaestroMain.APP_VERSION));
 
 		SaveUtil.appendChildTextElement(songEle, "sourceFile", String.valueOf(sourceFile));
+		if (sourceFile2 != null) SaveUtil.appendChildTextElement(songEle, "sourceFile2", String.valueOf(sourceFile2));
 		if (exportFile != null)
 			SaveUtil.appendChildTextElement(songEle, "exportFile", String.valueOf(exportFile));
 
@@ -532,6 +622,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			df.setTimeZone(TimeZone.getTimeZone("GMT"));
 			SaveUtil.appendChildTextElement(songEle, "firstExportTime", df.format(firstExportTime));
 		}
+		
+		SaveUtil.appendChildTextElement(songEle, "medleyStartMicros", Long.toString(medleyStart));
 
 		appendImportSettings(doc, songEle);
 		appendExportSettings(doc, songEle);
@@ -1246,4 +1338,5 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		}
 		return timingInfo.getTimingInfoByTick().values();
 	}
+
 }

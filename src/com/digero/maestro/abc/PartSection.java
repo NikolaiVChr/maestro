@@ -10,6 +10,7 @@ public class PartSection implements Comparable<PartSection> {
 	public boolean silence = false;
 	public int dialogLine = -1;
 	public Boolean[] doubling = { false, false, false, false };
+	public String name = "noname";
 
 	// inclusive:
 	public float startBar = 0;

@@ -61,7 +61,7 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 	private static final double[] LAYOUT_ROWS = new double[] { PREFERRED };
 
 	private TrackInfo trackInfo;
-	private NoteFilterSequencerWrapper seq;
+	private SequencerWrapper seq;
 	private SequencerWrapper abcSequencer;
 	private AbcPart abcPart;
 	private int drumId;
@@ -80,7 +80,7 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 
 	private TrackDimensions dims = new TrackDimensions(TITLE_WIDTH, 0, COMBO_WIDTH, -1);
 
-	public DrumPanel(TrackInfo info, NoteFilterSequencerWrapper sequencer, AbcPart part, int drumNoteId,
+	public DrumPanel(TrackInfo info, SequencerWrapper sequencer, AbcPart part, int drumNoteId,
 			SequencerWrapper abcSequencer_, TrackVolumeBar trackVolumeBar_) {
 		super(new TableLayout(LAYOUT_COLS, LAYOUT_ROWS));
 
@@ -177,7 +177,7 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 					} else {
 						soloTrack = trackNumber;
 						soloDrumId = drumId;
-						seq.setNoteSolo(trackNumber, drumId, true);
+						//seq.setNoteSolo(trackNumber, drumId, true);
 					}
 				}
 			}
@@ -193,7 +193,7 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 					soloAbcDrumId = -1;
 
 					if (soloTrack >= 0 && soloDrumId >= 0) {
-						seq.setNoteSolo(soloTrack, soloDrumId, false);
+						//seq.setNoteSolo(soloTrack, soloDrumId, false);
 					}
 					soloTrack = -1;
 					soloDrumId = -1;

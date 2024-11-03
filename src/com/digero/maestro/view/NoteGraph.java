@@ -306,7 +306,7 @@ public class NoteGraph extends JPanel implements Listener<SequencerEvent>, IDisc
 
 			double noteX = 0;
 			double noteY = MAX_RENDERED; // The max note gets mapped to 0
-			double noteW = sequencer.getLength();
+			double noteW = sequencer.getLength()*2;
 			double noteH = MIN_RENDERED - MAX_RENDERED;
 
 			AffineTransform scrnXForm;
@@ -670,7 +670,7 @@ public class NoteGraph extends JPanel implements Listener<SequencerEvent>, IDisc
 			double lineHeight = Math.abs(1 / xform.getScaleY());
 			g2.setColor(ColorTable.OCTAVE_LINE.get());
 			for (int barOctave = minBarOctave; barOctave <= maxBarOctave; barOctave++) {
-				rectTmp.setRect(0, barOctave * 12, sequencer.getLength(), lineHeight);
+				rectTmp.setRect(0, barOctave * 12, sequencer.getLength()*2, lineHeight);
 				g2.fill(rectTmp);
 			}
 		} else if (histogramThresholdLinesVisible) {
@@ -683,9 +683,9 @@ public class NoteGraph extends JPanel implements Listener<SequencerEvent>, IDisc
 
 			double y1 = Util.clamp(HistogramPanel.ORANGE_NOTES, MIN_RENDERED, MAX_RENDERED);
 			double y2 = Util.clamp(HistogramPanel.RED_NOTES, MIN_RENDERED, MAX_RENDERED);
-			rectTmp.setRect(0, y1, sequencer.getLength(), lineHeight);
+			rectTmp.setRect(0, y1, sequencer.getLength()*2, lineHeight);
 			g2.fill(rectTmp);
-			rectTmp.setRect(0, y2, sequencer.getLength(), lineHeight);
+			rectTmp.setRect(0, y2, sequencer.getLength()*2, lineHeight);
 			g2.fill(rectTmp);
 		}
 
@@ -1015,8 +1015,8 @@ public class NoteGraph extends JPanel implements Listener<SequencerEvent>, IDisc
 				long ret = (long) pt.x;
 				if (ret < 0)
 					ret = 0;
-				if (ret >= sequencer.getLength())
-					ret = sequencer.getLength() - 1;
+				if (ret >= sequencer.getLength()*2)
+					ret = sequencer.getLength()*2 - 1;
 				return ret;
 			} catch (NoninvertibleTransformException e1) {
 				e1.printStackTrace();

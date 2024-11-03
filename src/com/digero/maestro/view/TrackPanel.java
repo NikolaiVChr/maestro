@@ -132,7 +132,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 	}
 
 	private final TrackInfo trackInfo;
-	private final NoteFilterSequencerWrapper seq;
+	private final SequencerWrapper seq;
 	private final SequencerWrapper abcSequencer;
 	private final AbcPart abcPart;
 
@@ -172,7 +172,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 	private ControlLayout controlLayout;
 
-	public TrackPanel(TrackInfo info, NoteFilterSequencerWrapper sequencer, AbcPart part,
+	public TrackPanel(TrackInfo info, SequencerWrapper sequencer, AbcPart part,
 			SequencerWrapper abcSequencer_, ControlLayout controlLayout) {
 		super(new TableLayout(LAYOUT_COLS, LAYOUT_ROWS));
 

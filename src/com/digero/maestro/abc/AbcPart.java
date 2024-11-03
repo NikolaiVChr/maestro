@@ -102,7 +102,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		this.instrNameSettings = abcSong.getInstrNameSettings();
 		this.title = instrNameSettings.getInstrNick(instrument);
 
-		int t = getTrackCount();
+		int t = getTrackCount()*3;
 		this.trackTranspose = new int[t];
 		this.trackEnabled = new boolean[t];
 		this.trackPriority = new boolean[t];
@@ -171,13 +171,12 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			TreeMap<Long, PartSection> longtree = new TreeMap<>();
 			for (Entry<Float, PartSection> entry : section.entrySet()) {
 				PartSection ps = entry.getValue();
+				System.out.println("Name: "+ps.name);
 				
-				assert ps.startTick == -1L;
-				assert ps.endTick == -1L;
-				
-				ps.startTick = (long)(barLengthTicks * ps.startBar);
-				ps.endTick   = (long)(barLengthTicks * ps.endBar);
-				
+				if (ps.startTick == -1L) {
+					ps.startTick = (long)(barLengthTicks * ps.startBar);
+					ps.endTick   = (long)(barLengthTicks * ps.endBar);
+				}
 				PartSection prev = longtree.put(ps.startTick, ps);
 				assert prev == null;
 			}
@@ -360,8 +359,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 						optionalName = " (" + optionalName + ")";
 					}
 
-					throw SaveUtil.invalidTrackException(trackEle,
-							"Could not find track number " + t + optionalName + " in original MIDI file");
+					//throw SaveUtil.invalidTrackException(trackEle,
+						//	"Could not find track number " + t + optionalName + " in original MIDI file");
 				}
 
 				TreeMap<Float, PartSection> tree = sections.get(t);
@@ -379,6 +378,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 						tree.put(ps.startBar, ps);
 						
 					}
+					ps.name = "XML: "+instrument+" on "+SaveUtil.parseValue(trackEle, "@name", "")+" "+t;
 				}
 				boolean[] booleanArray = new boolean[(int)(lastEnd) + 1];
 				if (tree != null) {

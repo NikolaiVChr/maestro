@@ -330,7 +330,7 @@ public class SectionEditor {
 					abcPart.playLeft[track] = left.isSelected();
 					abcPart.playCenter[track] = center.isSelected();
 					abcPart.playRight[track] = right.isSelected();
-					
+					System.out.println("SectionDialog.this.track:"+SectionDialog.this.track);
 					SectionDialog.this.abcPart.sectionEdited(SectionDialog.this.track);
 				});
 				okButton.setToolTipText(
@@ -367,6 +367,7 @@ public class SectionEditor {
 				for (int k = 0; k < numberOfSections; k++) {
 					if (SectionDialog.this.sectionInputs.get(k).enable[0].isSelected()) {
 						PartSection ps1 = new PartSection();
+						ps1.name = abcPart.getTitle() + abcPart.getInstrument().toString() + " on track " + track; 
 						try {
 							ps1.octaveStep = Integer.parseInt(sectionInputs.get(k).transpose.getText());
 							ps1.volumeStep = Integer.parseInt(sectionInputs.get(k).velo.getText());

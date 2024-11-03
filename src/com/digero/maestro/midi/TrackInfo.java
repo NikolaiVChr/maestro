@@ -39,13 +39,26 @@ public class TrackInfo implements MidiConstants {
 	private TimeSignature timeSignature = null;// The first one in this track
 	private KeySignature keySignature = null;
 	private Set<Integer> instruments;
-	private Set<String> instrumentExtensions;
+	public Set<String> instrumentExtensions;
 	private List<MidiNoteEvent> noteEvents;
 	private SortedSet<Integer> notesInUse;// Used for knowing which drum sounds to display in DrumPanel
 	private boolean isDrumTrack;
 	private final int minVelocity;
 	private final int maxVelocity;
 
+	public TrackInfo(SequenceInfo parent, int trackNumber, TrackInfo oldInfo) {
+		this.minVelocity = oldInfo.minVelocity;
+		this.maxVelocity = oldInfo.maxVelocity;
+		isDrumTrack = oldInfo.isDrumTrack;
+		instruments = oldInfo.getInstruments();
+		name = oldInfo.getName();
+		this.trackNumber = trackNumber;
+		instrumentExtensions = oldInfo.instrumentExtensions;
+		notesInUse=oldInfo.getNotesInUse();
+		noteEvents = new ArrayList<>();
+		this.sequenceInfo = parent;
+	}
+	
 	@SuppressWarnings("unchecked") //
 	TrackInfo(SequenceInfo parent, Track track, int trackNumber, SequenceDataCache sequenceCache, boolean isXGDrumTrack,
 			boolean isGSDrumTrack, boolean wasType0, boolean isDrumsTrack, boolean isGM2DrumTrack,

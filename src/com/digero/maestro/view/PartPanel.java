@@ -73,7 +73,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 
 	private AbcPart abcPart;// The currently selected abcPart in left part panel
 	private PartAutoNumberer partAutoNumberer;
-	private NoteFilterSequencerWrapper sequencer;
+	private SequencerWrapper sequencer;
 	private SequencerWrapper abcSequencer;
 	private boolean isAbcPreviewMode = false;
 	private boolean showMaxPolyphony = false;
@@ -125,7 +125,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		
 		this.showMaxPolyphony = showMaxPolyphony;
 
-		this.sequencer = sequencer;
+		this.sequencer = abcSequencer;
 		this.abcSequencer = abcSequencer;
 		this.partAutoNumberer = partAutoNumberer;
 
@@ -186,7 +186,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		hZoomSlider = new JSlider(0, 1000, 0);
 		hZoomSlider.setFocusable(false);
 		hZoomSlider.addChangeListener(e -> {
-			float secs = (sequencer.getLength() / (1000 * 1000.f));
+			float secs = (sequencer.getLength()*2 / (1000 * 1000.f));
 			float adjustedZoom = Math.max(maxHZoomBase, secs / zoomSecondDivider);
 			float oldHZoom = hZoom; 
 			hZoom = Util.map(hZoomSlider.getValue(), 0, 1000, 1.f, adjustedZoom);
@@ -361,7 +361,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 			if (noteGraphScrollPane.getHorizontalScrollBar().getValueIsAdjusting()) {
 				return;
 			}
-			sequenceProgress = sequencer.getThumbPosition() / (double)(sequencer.getLength());
+			sequenceProgress = sequencer.getThumbPosition() / (double)(sequencer.getLength()*2);
 			scrollToPosition(false);
 		});
 		
@@ -394,7 +394,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 	}
 	
 	private boolean calcZoomTarget() {
-		sequenceProgress = sequencer.getThumbPosition() / (double)(sequencer.getLength());
+		sequenceProgress = sequencer.getThumbPosition() / (double)(sequencer.getLength()*2);
 				
 		int trackHeadGraphPos = (int) (graphLayout.getTrackWidth() * sequenceProgress);
 		
