@@ -2,6 +2,7 @@ package com.digero.maestro.view;
 
 import static javax.swing.SwingConstants.CENTER;
 
+import java.awt.Dimension;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.Insets;
@@ -27,9 +28,11 @@ import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
 
 import com.digero.common.midi.Note;
@@ -47,7 +50,7 @@ public class SectionEditor {
 
 	private static Point lastLocation = null;
 	
-	public static final int numberOfSectionsMax = 20;
+	public static final int numberOfSectionsMax = 80;
 	static boolean clipboardArmed = false;
 	static String[] clipboardStart = null;
 	static String[] clipboardEnd = null;
@@ -62,6 +65,10 @@ public class SectionEditor {
 
 		@SuppressWarnings("serial")
 		class SectionDialog extends JDialog {
+			
+			private JTabbedPane tabPanel;
+
+			private JPanel panel;
 			
 			public int numberOfSections = 8;
 
@@ -81,6 +88,7 @@ public class SectionEditor {
 			private JPanel doublingPanel;
 			private JPanel miscPanel;
 			private JPanel rangePanel;
+			private boolean scrolled = false;
 
 			private final JButton add1 = new JButton("Add");
 			
@@ -133,7 +141,7 @@ public class SectionEditor {
 //					auxHeight = (int) (rowHeight * 1.5);
 //				}
 
-				JPanel panel = new JPanel();
+				panel = new JPanel();
 
 				// Set the index of the first row to 2. Rows 0 and 1 are titles and headers
 				final int firstRowIndex = 3;
@@ -154,7 +162,7 @@ public class SectionEditor {
 				titleLabel = new JLabel("<html><b> " + abcPart.getTitle() + ": </b> "
 						+ abcPart.getInstrument().toString() + " on track " + track + " </html>");
 				panel.add(titleLabel, "0, 0, 7, 0, C, C");
-				JTabbedPane tabPanel = new JTabbedPane();
+				tabPanel = new JTabbedPane();
 				tabPanel.setTabPlacement(JTabbedPane.TOP);
 				
 				doublingPanel = new JPanel();
@@ -623,6 +631,16 @@ public class SectionEditor {
 					miscPanel.add(sectionLine.tab1line, "0, "+(i+1)+", 7, "+(i+1)+", f, f");
 					doublingPanel.add(sectionLine.tab2line, "0, "+(i+1)+", 7, "+(i+1)+", f, f");
 					rangePanel.add(sectionLine.tab3line, "0, "+(i+1)+", 7, "+(i+1)+", f, f");
+					
+					if (rangePanel.getComponentCount() == 22 && !scrolled) {
+						scrolled = true;
+						Dimension dim = tabPanel.getPreferredSize();
+						panel.remove(tabPanel);
+						JScrollPane tabPanelScroll = new JScrollPane(tabPanel);
+						//tabPanelScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER );
+						tabPanelScroll.setPreferredSize(dim);
+						panel.add(tabPanelScroll, "0, 1, 7, 1, f, f");
+					}
 				}
 				miscPanel.remove(nonLine.tab1line);
 				doublingPanel.remove(nonLine.tab2line);
@@ -630,7 +648,9 @@ public class SectionEditor {
 								
 				miscPanel.add(nonLine.tab1line, "0, "+(numberOfSections+1)+", 7, "+(numberOfSections+1)+", f, f");
 				doublingPanel.add(nonLine.tab2line, "0, "+(numberOfSections+1)+", 7, "+(numberOfSections+1)+", f, f");
-				rangePanel.add(nonLine.tab3line, "0, "+(numberOfSections+1)+", 7, "+(numberOfSections+1)+", f, f");				
+				rangePanel.add(nonLine.tab3line, "0, "+(numberOfSections+1)+", 7, "+(numberOfSections+1)+", f, f");
+				
+				
 			}
 
 			private Listener<AbcPartEvent> abcPartListener = e -> {
@@ -683,6 +703,8 @@ public class SectionEditor {
 					break;
 				}
 			};
+
+			
 
 			
 		

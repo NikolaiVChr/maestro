@@ -48,7 +48,7 @@ Thanks to all who gave feedback of features and bugs plus suggestions.
 Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 ================
 
-Version 3.4.4
+Version 3.6.1
 - Solo/mute buttons will no longer reset when reloading MIDI file.
 - Changed the algorithm for removing duplicate notes (same pitch, playing at same time),
     when combining tracks with sustained instruments.
