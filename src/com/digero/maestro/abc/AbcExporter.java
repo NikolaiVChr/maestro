@@ -1086,7 +1086,7 @@ public class AbcExporter {
 			Iterator<AbcNoteEvent> onIter = notesOn.iterator();
 			while (onIter.hasNext()) {
 				AbcNoteEvent on = onIter.next();//first
-				if (on.getEndTick() < ne.getStartTick()) {
+				if (on.getEndTick() <= ne.getStartTick()) {
 					// First note has already been turned off
 					onIter.remove();
 				} else if (on.note.id == ne.note.id) {
