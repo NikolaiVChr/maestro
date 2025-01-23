@@ -1094,7 +1094,7 @@ public class AbcExporter {
 						// If they start at the same time, remove the second event.
 						
 						// Lengthen the first one if it's shorter than the second one.
-						if (on.getEndTick() < ne.getEndTick()) {
+						if (on.getEndTick() <= ne.getEndTick()) {
 							on.setEndTick(ne.getEndTick());
 							if (ne.velocity > on.velocity) {
 								on.velocity = ne.velocity;// due to this, NoteEvent.velocity is not final
