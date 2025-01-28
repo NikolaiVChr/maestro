@@ -59,6 +59,8 @@ Version 3.6.2
 - Added more column options to the ABC playlist. Setups min, Setups max, Genre, Mood, Export Date, Exported By.
     All are hidden by default, right-click on the header of the playlist table to show/hide them.
 - Section-editor now supports up to 80 sections.
+- Included all samples from basic fiddle, lm bassoon, basic bassoon, basic flute and sprightly fiddle. The soundfont is now no longer interpolating.
+    This means Maestro and Abc Player will use more RAM and more diskspace.
 
 Version 3.4.3
 - Fix max part notes window had title from delay part window.
