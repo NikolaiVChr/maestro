@@ -48,14 +48,14 @@ public class GenerateSoundFontInfo {
 
 		case BASIC_FLUTE:// differ medium
 		case SPRIGHTLY_FIDDLE:// short notes
-			return 2;
+			return 1;
 
 		case BASIC_FIDDLE:
 		case LONELY_MOUNTAIN_BASSOON:// does not differ alot
-			return 2;
+			return 1;
 
 		case BASIC_BASSOON:
-			return 6;
+			return 1;
 
 		case BASIC_CLARINET:// long notes but differ alot plus bad notes
 		case BASIC_PIBGORN:// long notes but differ alot plus bad notes
