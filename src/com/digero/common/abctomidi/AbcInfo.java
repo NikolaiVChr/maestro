@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
 import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.AbcField;
 import com.digero.common.abc.LotroInstrument;
+import com.digero.common.abc.VersionsWithIssues;
 import com.digero.common.midi.IBarNumberCache;
 import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.TimeSignature;
@@ -43,6 +44,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 	private boolean hasTriplets = false;
 	private boolean hasTripletsSet = false;
 	private boolean hasMixTimings = false;
+	private String issue = null;
 
 	private String songTitle = null;
 	private String songComposer = null;
@@ -389,6 +391,10 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 			break;
 		case ABC_CREATOR:
 			abcCreator = value.trim();
+			issue = VersionsWithIssues.check(abcCreator);
+			if (issue != null && songTitle != null) {
+				System.out.println(songTitle + ": " + issue);
+			}
 			break;
 		case ABC_VERSION:
 		case PART_NAME:
