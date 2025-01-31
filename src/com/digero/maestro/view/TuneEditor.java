@@ -91,6 +91,18 @@ public class TuneEditor {
 
 					@Override
 					public void windowClosing(WindowEvent we) {
+						freeWindow();
+					}
+					
+					@Override
+					public void windowClosed(WindowEvent we) {
+						freeWindow();
+					}
+					
+					private void freeWindow() {
+						if (openDialog == null) {
+							return;
+						}
 						TuneEditor.lastLocation = TuneDialog.this.getLocation();
 						abcSong.removeSongListener(songListener);
 						openDialog = null;
