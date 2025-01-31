@@ -119,6 +119,15 @@ public class SectionEditor {
 
 					@Override
 					public void windowClosing(WindowEvent we) {
+						freeWindow();
+					}
+					
+					@Override
+					public void windowClosed(WindowEvent we) {
+						freeWindow();
+					}
+					
+					private void freeWindow() {
 						SectionEditor.lastLocation = getLocation();
 						if (abcPart.getAbcSong() != null)
 							abcPart.getAbcSong().removeSongListener(songListener);
