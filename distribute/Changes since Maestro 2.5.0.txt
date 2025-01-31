@@ -61,6 +61,7 @@ Version 3.6.2
 - Section-editor now supports up to 80 sections.
 - Included all samples from basic fiddle, lm bassoon, basic bassoon, basic flute and sprightly fiddle. The soundfont is now no longer interpolating.
     This means Maestro and Abc Player will use more RAM and more diskspace.
+- Fixed a bug where the Section/Tune editors don't work if they are left open while a file is opened.
 
 Version 3.4.3
 - Fix max part notes window had title from delay part window.

@@ -100,6 +100,9 @@ public class TuneEditor {
 					}
 					
 					private void freeWindow() {
+						if (openDialog == null) {
+							return;
+						}
 						TuneEditor.lastLocation = TuneDialog.this.getLocation();
 						abcSong.removeSongListener(songListener);
 						openDialog = null;

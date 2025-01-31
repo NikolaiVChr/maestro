@@ -128,6 +128,9 @@ public class SectionEditor {
 					}
 					
 					private void freeWindow() {
+						if (openDialog == null) {
+							return;
+						}
 						SectionEditor.lastLocation = getLocation();
 						if (abcPart.getAbcSong() != null)
 							abcPart.getAbcSong().removeSongListener(songListener);
