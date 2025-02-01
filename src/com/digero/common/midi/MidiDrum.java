@@ -1,30 +1,36 @@
 package com.digero.common.midi;
 
 public enum MidiDrum {
-	SYNTH_ZAP("Synth Zap"), // 27
-	UNKNOWN_28("Unknown"), // 28
-	SCRATCH_1("Scratch 1"), // 29
-	SCRATCH_2("Scratch 2"), // 30
-	DRUM_STICKS("Drum Sticks"), // 31
-	UNKNOWN_32("Unknown"), // 32
-	METR_CLICK("Metr. Click"), // 33
-	METR_BELL("Metr. Bell"), // 34
-	ACOU_BASS("Acou. Bass"), // 35
+	/*
+	 * Standard Drum Kit
+	 * 35 to 81: MIDI 1.0 GM v96.1 third edition
+	 * 27 to 34 and 82 to 87: MIDI 1.0 GM2 1.2a
+	 * 
+	 */
+	SYNTH_ZAP("High Q"), // 27 
+	UNKNOWN_28("Slap"), // 28 
+	SCRATCH_1("Scratch Push"), // 29 
+	SCRATCH_2("Scratch Pull"), // 30 
+	DRUM_STICKS("Sticks"), // 31 
+	UNKNOWN_32("Square Click"), // 32 
+	METR_CLICK("Metronome Click"), // 33 
+	METR_BELL("Metronome Bell"), // 34 
+	ACOU_BASS("Acou. Bass Drum"), // 35 
 	BASS_DRUM("Bass Drum"), // 36
-	RIM_SHOT("Rim Shot"), // 37
+	RIM_SHOT("Side Stick"), // 37 
 	ACOU_SNARE("Acou. Snare"), // 38
 	HAND_CLAP("Hand Clap"), // 39
 	ELEC_SNARE("Elec. Snare"), // 40
-	LOW_TOM_A("Low Tom A"), // 41
+	LOW_TOM_A("Low Floor Tom"), // 41 
 	CLOSED_HI_HAT("Closed Hi-Hat"), // 42
-	LOW_TOM_B("Low Tom B"), // 43
+	LOW_TOM_B("High Floor Tom"), // 43
 	PEDAL_HI_HAT("Pedal Hi-Hat"), // 44
-	MID_TOM_A("Mid Tom A"), // 45
+	MID_TOM_A("Low Tom"), // 45
 	OPEN_HI_HAT("Open Hi-Hat"), // 46
-	MID_TOM_B("Mid Tom B"), // 47
-	HIGH_TOM_A("High Tom A"), // 48
+	MID_TOM_B("Low-Mid Tom"), // 47 
+	HIGH_TOM_A("Hi Mid Tom"), // 48 
 	CRASH_CYM_1("Crash Cym. 1"), // 49
-	HIGH_TOM_B("High Tom B"), // 50
+	HIGH_TOM_B("High Tom"), // 50 
 	RIDE_CYM_1("Ride Cym. 1"), // 51
 	CHINESE_CYM("Chinese Cym."), // 52
 	RIDE_BELL("Ride Bell"), // 53
@@ -50,18 +56,18 @@ public enum MidiDrum {
 	SHORT_GUIRO("Short Guiro"), // 73
 	LONG_GUIRO("Long Guiro"), // 74
 	CLAVES("Claves"), // 75
-	HIGH_BLOCK("High Block"), // 76
-	LOW_BLOCK("Low Block"), // 77
+	HIGH_BLOCK("High Wood Block"), // 76
+	LOW_BLOCK("Low Wood Block"), // 77 
 	MUTE_CUICA("Mute Cuica"), // 78
 	OPEN_CUICA("Open Cuica"), // 79
 	MUTE_TRIANGLE("Mute Triangle"), // 80
 	OPEN_TRIANGLE("Open Triangle"), // 81
-	CABASA_2("Cabasa 2"), // 82
-	BELLS("Bells"), // 83
-	CHIMES("Chimes"), // 84
-	CASTANET("Castanet"), // 85
-	MUTED_LARGE_DRUM("Muted Lg Drum"), // 86
-	LARGE_DRUM("Large Drum"), // 87
+	CABASA_2("Shaker"), // 82 
+	BELLS("Jingle Bell"), // 83 
+	CHIMES("Bell Tree"), // 84 
+	CASTANET("Castanet"), // 85 
+	MUTED_LARGE_DRUM("Mute Surdo"), // 86
+	LARGE_DRUM("Open Surdo"), // 87
 	INVALID("Unknown");
 
 	private static final MidiDrum[] values = values();
