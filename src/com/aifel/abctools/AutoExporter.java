@@ -130,6 +130,7 @@ public class AutoExporter {
 						frame.setBtnMIDIEnabled(true);
 						frame.setBtnSourceAutoEnabled(true);
 						frame.setSaveMSXEnabled(true);
+						frame.setSaveMSXabcEnabled(true);
 						frame.setTabsEnabled(true);
 						frame.setRecursiveCheckBoxEnabled(true);
 					});
@@ -161,6 +162,7 @@ public class AutoExporter {
 			frame.setBtnMIDIEnabled(false);
 			frame.setBtnSourceAutoEnabled(false);
 			frame.setSaveMSXEnabled(false);
+			frame.setSaveMSXabcEnabled(false);
 			frame.setTabsEnabled(false);
 			frame.setRecursiveCheckBoxEnabled(false);
 		});
@@ -180,6 +182,7 @@ public class AutoExporter {
 				frame.setBtnMIDIEnabled(true);
 				frame.setBtnSourceAutoEnabled(true);
 				frame.setSaveMSXEnabled(true);
+				frame.setSaveMSXabcEnabled(true);
 				frame.setTabsEnabled(true);
 				frame.setRecursiveCheckBoxEnabled(true);
 			});
@@ -238,6 +241,7 @@ public class AutoExporter {
 			frame.setBtnMIDIEnabled(true);
 			frame.setBtnSourceAutoEnabled(true);
 			frame.setSaveMSXEnabled(true);
+			frame.setSaveMSXabcEnabled(true);
 			frame.setTabsEnabled(true);
 			frame.setRecursiveCheckBoxEnabled(true);
 		});
@@ -424,7 +428,10 @@ public class AutoExporter {
 		}
 		finalFolder.mkdirs();// for recursive exporting we need the folders to exist.
 
-		if (projectModified && frame.getSaveMSXSelected()) {
+		if ((projectModified && frame.getSaveMSXSelected()) || frame.getSaveMSXabcSelected()) {
+			if (frame.getSaveMSXabcSelected()) {
+				abcSong.exportAbc(exportFile);
+			}
 			try {
 				XmlUtil.saveDocument(abcSong.saveToXml(), abcSong.getSaveFile());
 				appendToField("<br>&nbsp;&nbsp;msx saved.");
@@ -435,8 +442,10 @@ public class AutoExporter {
 			}				
 		}
 		
-		// Save abc file after saving msx file, so we don't change the msx abc save filename.
-		abcSong.exportAbc(exportFile);
+		if (!frame.getSaveMSXabcSelected()) {
+			// Save abc file after saving msx file, so we don't change the msx abc save filename.
+			abcSong.exportAbc(exportFile);
+		}
 
 		appendToField("<br>&nbsp;&nbsp;as " + exportFile.getName());
 	}

@@ -52,6 +52,7 @@ public class MultiMergerView extends JFrame {
 	private JPanel panel_2;
 	private JLabel lblNewLabel_2;
 	private JCheckBox saveMSX;
+	private JCheckBox saveMSXabc;
 	private JProgressBar progressBar;
 	private JCheckBox recursiveCheckBox;
 
@@ -212,9 +213,14 @@ public class MultiMergerView extends JFrame {
 		panelAuto.add(forceMixTiming);
 
 		saveMSX = new JCheckBox("Save msx if needed");
-		saveMSX.setToolTipText("Save MSX files when midi location has changes.");
+		saveMSX.setToolTipText("Save project files when midi location has changes.");
 		saveMSX.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(saveMSX);
+		
+		saveMSXabc = new JCheckBox("Force save msx (abc location)");
+		saveMSXabc.setToolTipText("Always save project files and include abc output location.");
+		saveMSXabc.setAlignmentX(Component.CENTER_ALIGNMENT);
+		panelAuto.add(saveMSXabc);
 		
 		recursiveCheckBox = new JCheckBox("Recursive");
 		recursiveCheckBox.setToolTipText("Go through sub folders and create a similar output folder tree");
@@ -405,6 +411,22 @@ public class MultiMergerView extends JFrame {
 
 	public void setSaveMSXEnabled(boolean enabled_6) {
 		saveMSX.setEnabled(enabled_6);
+	}
+	
+	public boolean getSaveMSXabcSelected() {
+		return saveMSXabc.isSelected();
+	}
+
+	public void setSaveMSXabcSelected(boolean selected_1) {
+		saveMSXabc.setSelected(selected_1);
+	}
+
+	public boolean getSaveMSXabcEnabled() {
+		return saveMSXabc.isEnabled();
+	}
+
+	public void setSaveMSXabcEnabled(boolean enabled_6) {
+		saveMSXabc.setEnabled(enabled_6);
 	}
 
 	public boolean getTabsEnabled() {
