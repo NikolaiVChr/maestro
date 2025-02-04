@@ -163,9 +163,16 @@ public class DrumNoteMap implements IDiscardable {
 		out.println("% Created using " + MaestroMain.APP_NAME + " v" + MaestroMain.APP_VERSION);
 		out.println("%");
 		out.println("% Format is: [MIDI Drum ID] => [LOTRO Drum ID]");
+		out.println("% MIDI GM Drum IDs are in the range 35 to 81");
+		out.println("% More MIDI Drum IDs is sometimes used though, like from 27 to 87");
+		out.println("% Only MIDI drum notes between 0 and 127 will be accepted");
 		out.format("%% LOTRO Drum IDs are in the range %d (%s) to %d (%s)", //
 				Note.MIN_PLAYABLE.id, Note.MIN_PLAYABLE.abc, //
 				Note.MAX_PLAYABLE.id, Note.MAX_PLAYABLE.abc);
+		out.println();
+		out.format("%% Xtra Drum IDs are in the range %d (%s) to %d (%s)", //
+				LotroCombiDrumInfo.minCombi.id, LotroCombiDrumInfo.minCombi.abc, //
+				LotroCombiDrumInfo.maxCombi.id, LotroCombiDrumInfo.maxCombi.abc);
 		out.println();
 		out.println("% A LOTRO Drum ID of -1 indicates that the drum is not mapped");
 		out.println("% Comments begin with %");
