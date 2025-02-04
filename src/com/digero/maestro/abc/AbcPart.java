@@ -676,6 +676,15 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				//System.out.println("\n"+noteId+": octaveFittingMax:"+ octaveFittingMax+" octaveFittingMin:"+octaveFittingMin+" minBend:"+be.getMinBend()+" maxBend:"+be.getMaxBend());
 				//System.out.println("final absolute: "+(be.getMinBend()+noteId)+" to "+(be.getMaxBend()+noteId)+"  instrument limits is "+lowest+" to "+instrument.highestPlayable.id);
 			}
+			
+			if (noteId < Note.MIN.id || noteId > Note.MAX.id) {
+				/*
+				 * 
+				 * TODO: Not ideal to drop the entire bent note. Sigh.
+				 * 
+				 */
+				return null;
+			}
 
 			return Note.fromId(noteId);
 		} else {

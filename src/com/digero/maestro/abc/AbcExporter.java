@@ -704,6 +704,10 @@ public class AbcExporter {
 						if (!(ne instanceof BentMidiNoteEvent)) {
 							assert mappedNote.id >= part.getInstrument().lowestPlayable.id : mappedNote;
 							assert mappedNote.id <= part.getInstrument().highestPlayable.id : mappedNote;
+						} else {
+							//AbcNoteEvent newNE = createNoteEvent(ne, mappedNote, 60, 0, 1000, qtm);
+							//assert ((BentAbcNoteEvent)newNE).getMinNote() >= part.getInstrument().lowestPlayable.id : ne.alreadyMapped+": "+newNE;
+							//assert ((BentAbcNoteEvent)newNE).getMaxNote() <= part.getInstrument().highestPlayable.id : ne.alreadyMapped+": "+newNE;
 						}
 						// if (mappedNote.id > part.getInstrument().highestPlayable.id) {
 						// part.mapNoteEvent2(t, ne);
@@ -826,7 +830,7 @@ public class AbcExporter {
 		int removedToAvoidDissonance = 0;
 		for (int cc = 0; cc < events.size() ; cc++) {
 			AbcNoteEvent ne = events.get(cc);
-			assert ne.note != Note.REST || ne instanceof BentAbcNoteEvent: "Rest detected!";
+			assert ne.note != Note.REST : "Rest detected!";
 			
 			long oldStart = ne.getStartTick();
 			long oldEnd = ne.getEndTick();
