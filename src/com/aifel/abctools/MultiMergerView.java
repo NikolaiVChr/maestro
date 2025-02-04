@@ -217,8 +217,8 @@ public class MultiMergerView extends JFrame {
 		saveMSX.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(saveMSX);
 		
-		saveMSXabc = new JCheckBox("Force save msx (abc location)");
-		saveMSXabc.setToolTipText("Always save project files and include abc output location.");
+		saveMSXabc = new JCheckBox("Force save msx (and abc loc.)");
+		saveMSXabc.setToolTipText("Always save project files and include exporter abc output location in it.");
 		saveMSXabc.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(saveMSXabc);
 		
