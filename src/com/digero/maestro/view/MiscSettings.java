@@ -43,6 +43,7 @@ public class MiscSettings {
 		theme = prefs.get("theme", theme);
 		fontSize = prefs.getInt("fontSize", fontSize);
 		maxRangeForNewBendMethod = prefs.getInt("maxRangeForNewBendMethod", maxRangeForNewBendMethod);
+		if (maxRangeForNewBendMethod == 24) maxRangeForNewBendMethod = 16;// Due to student fiddle we can't go to 24.
 		autoplayOnOpen = prefs.getBoolean("autoplayOnOpen", autoplayOnOpen);
 	}
 

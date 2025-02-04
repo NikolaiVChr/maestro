@@ -625,28 +625,23 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			return (dstNote == LotroDrumInfo.DISABLED.note.id) ? null : Note.fromId(dstNote);
 		} else if (ne instanceof BentMidiNoteEvent) {
 			BentMidiNoteEvent be = (BentMidiNoteEvent) ne;
+			
 			int minBend = be.getMinBend();
 			int maxBend = be.getMaxBend();
 			int transpose = getTranspose(track, tickStart);
 			Pair<Integer,Integer> limits = getSectionPitchLimits(track, tickStart);
 			noteId += transpose;
-			minBend += ne.note.id + transpose;
-			maxBend += ne.note.id + transpose;
+			minBend += noteId;
+			maxBend += noteId;
 			
 			if (minBend + getInstrument().octaveDelta * 12 > limits.second || minBend + getInstrument().octaveDelta * 12 < limits.first) {
+				// For testing bent notes against section-ediotr note limits, we consider only the lowest pitch (not remember why)
 				return null;
 			}
 			
 			int lowest = instrument.lowestPlayable.id;
 			if (instrument == LotroInstrument.STUDENT_FIDDLE && !isStudentOverride())
 				lowest = LotroInstrument.STUDENT_CHROMATIC_LOWEST.id;
-
-			while (noteId < lowest) {
-				noteId += 12;
-			}
-			while (noteId > instrument.highestPlayable.id) {
-				noteId -= 12;
-			}
 
 			int octaveFittingMin = 0;
 			while (minBend < lowest) {
@@ -670,13 +665,16 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 
 			// We transpose the entire bent note into
 			// the playable range as one coherent block of notes.
-
+			
 			if (octaveFittingMax < 0) {
-				noteId = ne.note.id + transpose;
 				noteId += octaveFittingMax;
 			} else if (octaveFittingMin > 0) {
-				noteId = ne.note.id + transpose;
 				noteId += octaveFittingMin;
+			}
+			
+			if (instrument == LotroInstrument.STUDENT_FIDDLE && octaveFittingMax != 0 && octaveFittingMin != 0) {
+				//System.out.println("\n"+noteId+": octaveFittingMax:"+ octaveFittingMax+" octaveFittingMin:"+octaveFittingMin+" minBend:"+be.getMinBend()+" maxBend:"+be.getMaxBend());
+				//System.out.println("final absolute: "+(be.getMinBend()+noteId)+" to "+(be.getMaxBend()+noteId)+"  instrument limits is "+lowest+" to "+instrument.highestPlayable.id);
 			}
 
 			return Note.fromId(noteId);

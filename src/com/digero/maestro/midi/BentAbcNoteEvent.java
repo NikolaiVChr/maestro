@@ -81,4 +81,9 @@ public class BentAbcNoteEvent extends AbcNoteEvent {
 	public int getMaxNote() {
 		return note.id + getMaxBend();
 	}
+	
+	@Override
+	public String toString() {
+		return getClass().getName()+": " + note.id + "("+getMinNote()+"-"+getMaxNote()+ ") duraTicks=" + getFullLengthTicks() + " tick:"+startTick+"-"+endTick+" vol="+velocity+" TiesIsNull: "+(tiesFrom==null)+" "+(tiesTo == null)+" time: "+(getStartMicros()/1000000.0)+" to "+(getEndMicros()/1000000.0);
+	}
 }

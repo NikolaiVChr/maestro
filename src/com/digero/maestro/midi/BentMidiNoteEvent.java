@@ -118,8 +118,12 @@ public class BentMidiNoteEvent extends MidiNoteEvent {
 			curr.setEndTick(tick);
 			splits.add(curr);
 			currNote = Note.fromId(note.id + bends.get(tick));
-			if (currNote == null)
+			if (currNote == null) {
+				// TODO: can happen with the midi WonderousStories.mid
+				// possible solution: allow negative note ids for bent midi notes
+				// but its really a midi issue, so maybe its best we drop this entire bent note..
 				return new ArrayList<>();// Too bad, lets cancel
+			}
 			curr = new MidiNoteEvent(currNote, velocity, tick, getEndTick(), getTempoCache(), midiPan);
 		}
 		splits.add(curr);

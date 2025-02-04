@@ -970,7 +970,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		bendBox.addItem(Integer.toString(-1));
 		bendBox.addItem(Integer.toString(6));
 		bendBox.addItem(Integer.toString(12));
-		bendBox.addItem(Integer.toString(24));
+		bendBox.addItem(Integer.toString(16));
 		bendBox.setEditable(false);
 		bendBox.addActionListener(e -> {
 			try {

@@ -699,7 +699,7 @@ public class AbcExporter {
 					if (!ne.alreadyMapped) {
 						mappedNote = part.mapNoteEvent(t, ne);
 					}
-
+					
 					if (mappedNote != null && part.shouldPlay(ne, t)) {
 						if (!(ne instanceof BentMidiNoteEvent)) {
 							assert mappedNote.id >= part.getInstrument().lowestPlayable.id : mappedNote;
@@ -826,7 +826,7 @@ public class AbcExporter {
 		int removedToAvoidDissonance = 0;
 		for (int cc = 0; cc < events.size() ; cc++) {
 			AbcNoteEvent ne = events.get(cc);
-			assert ne.note != Note.REST : "Rest detected!";
+			assert ne.note != Note.REST || ne instanceof BentAbcNoteEvent: "Rest detected!";
 			
 			long oldStart = ne.getStartTick();
 			long oldEnd = ne.getEndTick();
