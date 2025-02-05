@@ -430,7 +430,7 @@ public class AutoExporter {
 		finalFolder.mkdirs();// for recursive exporting we need the folders to exist.
 
 		abcSong.exportAbc(exportFile);
-		if (exportFile.compareTo(abcSong.getExportFile()) != 0 && frame.getSaveMSXabcSelected()) {
+		if ((abcSong.getExportFile() == null || exportFile.compareTo(abcSong.getExportFile()) != 0) && frame.getSaveMSXabcSelected()) {
 			projectModified = true;
 		}
 		abcSong.setExportFile(exportFile);
