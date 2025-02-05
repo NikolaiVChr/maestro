@@ -65,6 +65,7 @@ Version 3.6.3
 - Fix that Maestro could sometimes output invalid abc song, if a midi pitch bend would have a extremely big range.
 - Fix that having max range for pitch bend at 24 meant that it could put some student fiddle notes into the silent or special effect range. So 16 is now max possible.
 - Added option in Abc Tool auto exporter to Force save msx (abc location). It will always save project files and also include abc output location used by the tool.
+- Prevented cascading dialogs when double clicking from windows explorer and close project or find midi dialogs is already open.
 
 Version 3.4.3
 - Fix max part notes window had title from delay part window.

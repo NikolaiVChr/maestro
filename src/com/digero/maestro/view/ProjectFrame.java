@@ -2038,10 +2038,31 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	public void openFile(File file) {
 		openFile(file, true);
 	}
-
-	public void openFile(File file, boolean updateLastOpenedList) {
-		if (!closeSong())
+	
+	private File filetemp = null;
+	private File file = null;
+	private boolean inCloseFile = false;// In progress of asking user if wanting to save
+	private boolean inOpenFile = false;// In progress of either opening file or finding midi.
+	public void openFile(File openfile, boolean updateLastOpenedList) {
+		// begin system for preventing cascading dialogs
+		// As long as the dialog for asking to close open project is there,
+		// double clicking in explorer in windows will change which song eventually gets open.
+		// When dialog for finding midi is there, subsequent explorer double clicks are ignored
+		// until after midi found or cancelled.
+		// Not ideal, but works.
+		filetemp = openfile;
+		if (inCloseFile || inOpenFile) {
 			return;
+		}
+		inCloseFile = true;
+		if (!closeSong()) {
+			inCloseFile = false;
+			return;
+		}
+		inOpenFile = true;
+		inCloseFile = false;
+		file = filetemp;
+		// end system for preventing cascading dialogs
 
 		maxNoteCountTotal = 0;
 		maxNoteCount = 0;
@@ -2161,6 +2182,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			recentlyOpenedList.addOpenedFile(file);
 			updateOpenRecentMenu();
 		}
+		inOpenFile = false;
 	}
 	
 	private boolean reloadWithNewSource(File newSource) {
