@@ -1134,7 +1134,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		
 		chooseMidiFileMenuItem = fileMenu.add(new JMenuItem("Change MIDI file..."));
 		chooseMidiFileMenuItem.addActionListener(e -> {
-			if (abcSong == null || abcSong.getSourceFile() == null || abcSong.getSaveFile() == null) {
+			if (abcSong == null || abcSong.getSourceFile() == null || abcSong.getProjectFile() == null) {
 				return; // should be an invalid state, item is disabled if no msx file
 			}
 			
@@ -1161,7 +1161,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		reloadMidiFileMenuItem.setMnemonic(KeyEvent.VK_R);
 		reloadMidiFileMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, CTRL_DOWN_MASK));
 		reloadMidiFileMenuItem.addActionListener(e -> {
-			if (abcSong == null || abcSong.getSaveFile() == null) {
+			if (abcSong == null || abcSong.getProjectFile() == null) {
 				return; // should be an invalid state, item is disabled if no msx file
 			}
 			File sourceFile = abcSong.getSourceFile();
@@ -1583,10 +1583,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		exportMp3MenuItem.setEnabled(abcSong != null);
 		exportWavMenuItem.setEnabled(abcSong != null);
 		String errStr = "<html><p style='color:red;'>Must save as an MSX project first</p></html>";
-		chooseMidiFileMenuItem.setEnabled(abcSong != null && abcSong.getSaveFile() != null);
-		chooseMidiFileMenuItem.setToolTipText(abcSong != null && abcSong.getSaveFile() == null ? errStr : "");
-		reloadMidiFileMenuItem.setEnabled(abcSong != null && abcSong.getSaveFile() != null);
-		reloadMidiFileMenuItem.setToolTipText(abcSong != null && abcSong.getSaveFile() == null ? errStr : "");
+		chooseMidiFileMenuItem.setEnabled(abcSong != null && abcSong.getProjectFile() != null);
+		chooseMidiFileMenuItem.setToolTipText(abcSong != null && abcSong.getProjectFile() == null ? errStr : "");
+		reloadMidiFileMenuItem.setEnabled(abcSong != null && abcSong.getProjectFile() != null);
+		reloadMidiFileMenuItem.setToolTipText(abcSong != null && abcSong.getProjectFile() == null ? errStr : "");
 		
 		closeProject.setEnabled(midiLoaded);
 
@@ -1708,8 +1708,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				updateTitlePending = false;
 				String title = MaestroMain.APP_NAME;
 				if (abcSong != null) {
-					if (abcSong.getSaveFile() != null) {
-						title += " - " + abcSong.getSaveFile().getName();
+					if (abcSong.getProjectFile() != null) {
+						title += " - " + abcSong.getProjectFile().getName();
 						if (abcSong.getSourceFile() != null)
 							title += " [" + abcSong.getSourceFile().getName() + "]";
 					} else if (abcSong.getSourceFile() != null) {
@@ -1967,13 +1967,13 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		sequencer.stop();
 		abcSequencer.stop();
 
-		boolean promptSave = isAbcSongModified() && (saveSettings.promptSaveNewSong || abcSong.getSaveFile() != null);
+		boolean promptSave = isAbcSongModified() && (saveSettings.promptSaveNewSong || abcSong.getProjectFile() != null);
 		if (promptSave) {
 			String message;
-			if (abcSong.getSaveFile() == null)
+			if (abcSong.getProjectFile() == null)
 				message = "Do you want to save this new song?";
 			else
-				message = "Do you want to save changes to \"" + abcSong.getSaveFile().getName() + "\"?";
+				message = "Do you want to save changes to \"" + abcSong.getProjectFile().getName() + "\"?";
 
 			int result = JOptionPane.showConfirmDialog(this, message, "Save Changes", JOptionPane.YES_NO_CANCEL_OPTION,
 					JOptionPane.QUESTION_MESSAGE, IconLoader.getImageIcon("msxfile_32.png"));
@@ -2165,7 +2165,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	
 	private boolean reloadWithNewSource(File newSource) {
 		List<Pair<Boolean, Boolean>> soloMuteState = partsList.getSoloMuteStates();
-		File originalMsx = abcSong.getSaveFile();
+		File originalMsx = abcSong.getProjectFile();
 		File oldSource = abcSong.getSourceFile();
 		boolean modified = abcSongModified;
 		File tmpMsx;
@@ -2175,19 +2175,19 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			return false;
 		}
 		
-		abcSong.setSaveFile(tmpMsx);
+		abcSong.setProjectFile(tmpMsx);
 		abcSong.setSourceFile(newSource);
 		
 		if (!finishSave(false)) {
 			// failed to save tmp - restore
-			abcSong.setSaveFile(originalMsx);
+			abcSong.setProjectFile(originalMsx);
 			abcSong.setSourceFile(oldSource);
 			return false;
 		}
 		
 		openFile(tmpMsx, false);
 		if (abcSong != null) {
-			abcSong.setSaveFile(originalMsx);
+			abcSong.setProjectFile(originalMsx);
 			setAbcSongModified(newSource != oldSource || modified);	
 			updateTitle();
 		}
@@ -2499,9 +2499,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		} else if (exportFile != null) // else use abc filename if exists already
 		{
 			fileName = exportFile.getName();
-		} else if (abcSong.getSaveFile() != null) // else use msx filename if exists already
+		} else if (abcSong.getProjectFile() != null) // else use msx filename if exists already
 		{
-			fileName = abcSong.getSaveFile().getName();
+			fileName = abcSong.getProjectFile().getName();
 		} else if (exportFilenameTemplate.isEnabled()) // else use pattern if usage is enabled
 		{
 			fileName = exportFilenameTemplate.formatName();
@@ -2545,7 +2545,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		abcSong.setExportFile(exportFile);
 		allowOverwriteExportFile = true;
-		return finishExportAbc();
+		return finishExportAbc(exportFile);
 	}
 
 	private boolean shouldExportAbcAs() {
@@ -2568,16 +2568,16 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		if (shouldExportAbcAs())
 			return exportAbcAs();
 
-		return finishExportAbc();
+		return finishExportAbc(abcSong.getExportFile());
 	}
 
-	private boolean finishExportAbc() {
+	private boolean finishExportAbc(File exportFile) {
 		exportSuccessfulLabel.setVisible(false);
 		commitAllFields();
 
 		try {
 			StringCleaner.cleanABC = saveSettings.convertABCStringsToBasicAscii;
-			abcSong.exportAbc(abcSong.getExportFile());
+			abcSong.exportAbc(exportFile);
 
 			SwingUtilities.invokeLater(() -> {
 				exportSuccessfulLabel.setText(abcSong.getExportFile().getName());
@@ -2608,7 +2608,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			return false;
 		}
 
-		File saveFile = abcSong.getSaveFile();
+		File saveFile = abcSong.getProjectFile();
 		File allowOverwriteFile = allowOverwriteSaveFile ? saveFile : null;
 
 		String defaultFolder;
@@ -2657,7 +2657,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			return false;
 
 		prefs.put("saveDialogFolder", saveFile.getAbsoluteFile().getParent());
-		abcSong.setSaveFile(saveFile);
+		abcSong.setProjectFile(saveFile);
 		allowOverwriteSaveFile = true;
 		return finishSave();
 	}
@@ -2668,7 +2668,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			return false;
 		}
 
-		if (!allowOverwriteSaveFile || abcSong.getSaveFile() == null || !abcSong.getSaveFile().exists()) {
+		if (!allowOverwriteSaveFile || abcSong.getProjectFile() == null || !abcSong.getProjectFile().exists()) {
 			return saveAs();
 		}
 
@@ -2683,7 +2683,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		commitAllFields();
 
 		try {
-			XmlUtil.saveDocument(abcSong.saveToXml(), abcSong.getSaveFile());
+			XmlUtil.saveDocument(abcSong.saveToXml(), abcSong.getProjectFile());
 		} catch (FileNotFoundException e) {
 			JOptionPane.showMessageDialog(this, "Failed to create file!\n" + e.getMessage(), "Failed to create file",
 					JOptionPane.ERROR_MESSAGE);
@@ -2695,7 +2695,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 		
 		if (updateRecentlyOpenedFiles) {
-			recentlyOpenedList.addOpenedFile(abcSong.getSaveFile());
+			recentlyOpenedList.addOpenedFile(abcSong.getProjectFile());
 			updateOpenRecentMenu();
 		}
 

@@ -103,7 +103,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private AbcExporter abcExporter;
 	private File sourceFile; // The MIDI or ABC file that this song was loaded from
 	private File exportFile; // The ABC export file
-	private File saveFile; // The XML Maestro song file
+	private File projectFile; // The XML Maestro song file
 	private boolean usingOldVelocities = false;
 	private boolean hideEdits = false;
 
@@ -112,13 +112,23 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private final ListenerList<AbcSongEvent> listeners = new ListenerList<>();
 	boolean mixDirty = true;
 	private Date firstExportTime = null;// UTC date and time for first time this project was exported to abc.
+	public boolean storeNewSourceFile = true;
+	public boolean storeNewExportFile = true;
 
 	public AbcSong(File file, PartAutoNumberer partAutoNumberer, PartNameTemplate partNameTemplate,
 			ExportFilenameTemplate exportFilenameTemplate, InstrNameSettings instrNameSettings,
 			FileResolver fileResolver, MiscSettings miscSettings)
 			throws IOException, InvalidMidiDataException, ParseException, SAXException {
+		this(file, partAutoNumberer, partNameTemplate, exportFilenameTemplate, instrNameSettings,
+				fileResolver, miscSettings, true);
+	}
+	
+	public AbcSong(File file, PartAutoNumberer partAutoNumberer, PartNameTemplate partNameTemplate,
+			ExportFilenameTemplate exportFilenameTemplate, InstrNameSettings instrNameSettings,
+			FileResolver fileResolver, MiscSettings miscSettings, boolean saveMSXwhenSourceChange)
+			throws IOException, InvalidMidiDataException, ParseException, SAXException {
 		sourceFile = file;
-
+		storeNewSourceFile = saveMSXwhenSourceChange;
 		this.partAutoNumberer = partAutoNumberer;
 		this.partAutoNumberer.setParts(Collections.unmodifiableList(parts));
 
@@ -141,6 +151,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		else
 			initFromMidi(file, miscSettings);
 	}
+
+	
 
 	@Override
 	public void discard() {
@@ -246,7 +258,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private void initFromXml(File file, FileResolver fileResolver, MiscSettings miscSettings)
 			throws SAXException, IOException, ParseException {
 		try {
-			saveFile = file;
+			projectFile = file;
 			Document doc = XmlUtil.openDocument(sourceFile);
 			Element songEle = XmlUtil.selectSingleElement(doc, "song");
 			if (songEle == null) {
@@ -365,16 +377,17 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	}
 
 	private void tryToLoadFromFile(FileResolver fileResolver, boolean isAbc, MiscSettings miscSettings) {
+		File newSourceFile = sourceFile;
 		try {
-			File sourceInCurrentDir = new File(saveFile.getParentFile(), sourceFile.getName());
-			if (!sourceFile.exists() && sourceInCurrentDir.exists()) {
-				sourceFile = sourceInCurrentDir;
+			File sourceInCurrentDir = new File(projectFile.getParentFile(), newSourceFile.getName());
+			if (!newSourceFile.exists() && sourceInCurrentDir.exists()) {
+				newSourceFile = sourceInCurrentDir;
 			}
 			
 			if (isAbc) {
 				AbcInfo abcInfo = new AbcInfo();
 
-				AbcToMidi.Params params = new AbcToMidi.Params(sourceFile);
+				AbcToMidi.Params params = new AbcToMidi.Params(newSourceFile);
 				params.abcInfo = abcInfo;
 				params.useLotroInstruments = false;
 				// params.stereo = false;
@@ -386,7 +399,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				priorityActive = false;
 				transcriber = abcInfo.getTranscriber();
 			} else {
-				sequenceInfo = SequenceInfo.fromMidi(sourceFile, miscSettings, usingOldVelocities);
+				sequenceInfo = SequenceInfo.fromMidi(newSourceFile, miscSettings, usingOldVelocities);
 			}
 
 			title = sequenceInfo.getTitle();
@@ -394,11 +407,14 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			keySignature = (ICompileConstants.SHOW_KEY_FIELD) ? sequenceInfo.getKeySignature() : KeySignature.C_MAJOR;
 			timeSignature = sequenceInfo.getTimeSignature();
 		} catch (FileNotFoundException e) {
-			String msg = "Could not find the file used to create this song:\n" + sourceFile;
-			sourceFile = fileResolver.locateFile(sourceFile, msg);
+			String msg = "Could not find the file used to create this song:\n" + newSourceFile;
+			newSourceFile = fileResolver.locateFile(newSourceFile, msg);
 		} catch (InvalidMidiDataException | IOException | ParseException e) {
-			String msg = "Could not load the file used to create this song:\n" + sourceFile + "\n\n" + e.getMessage();
-			sourceFile = fileResolver.resolveFile(sourceFile, msg);
+			String msg = "Could not load the file used to create this song:\n" + newSourceFile + "\n\n" + e.getMessage();
+			newSourceFile = fileResolver.resolveFile(newSourceFile, msg);
+		}
+		if (storeNewSourceFile) {
+			sourceFile = newSourceFile;
 		}
 	}
 	
@@ -915,12 +931,12 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		return ret;
 	}
 
-	public File getSaveFile() {
-		return saveFile;
+	public File getProjectFile() {
+		return projectFile;
 	}
 
-	public void setSaveFile(File saveFile) {
-		this.saveFile = saveFile;
+	public void setProjectFile(File projectFile) {
+		this.projectFile = projectFile;
 	}
 
 	@Override
@@ -933,9 +949,10 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			return;
 		if (this.exportFile != null && this.exportFile.equals(exportFile))
 			return;
-
-		this.exportFile = exportFile;
-		fireChangeEvent(AbcSongProperty.EXPORT_FILE);
+		if (storeNewExportFile) {
+			this.exportFile = exportFile;
+			fireChangeEvent(AbcSongProperty.EXPORT_FILE);
+		}
 	}
 
 	@Override

@@ -374,12 +374,13 @@ public class AutoExporter {
 		oldMidi = null;
 		nestedProject = project;
 		AbcSong abcSong = new AbcSong(project, main.partAutoNumberer, main.partNameTemplate, main.exportFilenameTemplate,
-				main.instrNameSettings, openFileResolver, main.miscSettings);
+				main.instrNameSettings, openFileResolver, main.miscSettings, frame.getSaveMSXSelected());
 
 		if (frame.getForceMixTimingSelected()) {
 			abcSong.setMixTiming(true);
 		}
-
+		
+		abcSong.storeNewExportFile = frame.getSaveMSXabcSelected();
 		abcSong.setSkipSilenceAtStart(main.saveSettings.skipSilenceAtStart);
 		abcSong.setDeleteMinimalNotes(main.saveSettings.deleteMinimalNotes);
 		abcSong.setAllOut(main.miscSettings.showBadger && main.miscSettings.allBadger);
@@ -395,9 +396,9 @@ public class AutoExporter {
 		} else if (exportFile != null) // else use abc filename if exists already
 		{
 			fileName = exportFile.getName();
-		} else if (abcSong.getSaveFile() != null) // else use msx filename if exists already
+		} else if (abcSong.getProjectFile() != null) // else use msx filename if exists already
 		{
-			fileName = abcSong.getSaveFile().getName();
+			fileName = abcSong.getProjectFile().getName();
 		} else if (main.exportFilenameTemplate.isEnabled()) // else use pattern if usage is enabled
 		{
 			fileName = main.exportFilenameTemplate.formatName();
@@ -428,12 +429,15 @@ public class AutoExporter {
 		}
 		finalFolder.mkdirs();// for recursive exporting we need the folders to exist.
 
-		if ((projectModified && frame.getSaveMSXSelected()) || frame.getSaveMSXabcSelected()) {
-			if (frame.getSaveMSXabcSelected()) {
-				abcSong.exportAbc(exportFile);
-			}
+		abcSong.exportAbc(exportFile);
+		if (exportFile.compareTo(abcSong.getExportFile()) != 0 && frame.getSaveMSXabcSelected()) {
+			projectModified = true;
+		}
+		abcSong.setExportFile(exportFile);
+		
+		if (projectModified && (frame.getSaveMSXSelected() || frame.getSaveMSXabcSelected())) {
 			try {
-				XmlUtil.saveDocument(abcSong.saveToXml(), abcSong.getSaveFile());
+				XmlUtil.saveDocument(abcSong.saveToXml(), abcSong.getProjectFile());
 				appendToField("<br>&nbsp;&nbsp;msx saved.");
 			} catch (FileNotFoundException e) {
 				appendToField("<br><font color='red'>&nbsp;&nbsp;msx saving failed.</font>");
@@ -442,11 +446,6 @@ public class AutoExporter {
 			}				
 		}
 		
-		if (!frame.getSaveMSXabcSelected()) {
-			// Save abc file after saving msx file, so we don't change the msx abc save filename.
-			abcSong.exportAbc(exportFile);
-		}
-
 		appendToField("<br>&nbsp;&nbsp;as " + exportFile.getName());
 	}
 

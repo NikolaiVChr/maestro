@@ -51,6 +51,7 @@ public class MultiMergerView extends JFrame {
 	private JButton btnMIDI;
 	private JPanel panel_2;
 	private JLabel lblNewLabel_2;
+	private JLabel lblSaveMsx;
 	private JCheckBox saveMSX;
 	private JCheckBox saveMSXabc;
 	private JProgressBar progressBar;
@@ -212,16 +213,6 @@ public class MultiMergerView extends JFrame {
 		forceMixTiming.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(forceMixTiming);
 
-		saveMSX = new JCheckBox("Save msx if needed");
-		saveMSX.setToolTipText("Save project files when midi location has changes.");
-		saveMSX.setAlignmentX(Component.CENTER_ALIGNMENT);
-		panelAuto.add(saveMSX);
-		
-		saveMSXabc = new JCheckBox("Force save msx (and abc loc.)");
-		saveMSXabc.setToolTipText("Always save project files and include exporter abc output location in it.");
-		saveMSXabc.setAlignmentX(Component.CENTER_ALIGNMENT);
-		panelAuto.add(saveMSXabc);
-		
 		recursiveCheckBox = new JCheckBox("Recursive");
 		recursiveCheckBox.setToolTipText("Go through sub folders and create a similar output folder tree");
 		recursiveCheckBox.setAlignmentX(0.5f);
@@ -232,6 +223,22 @@ public class MultiMergerView extends JFrame {
 		btnCancel.setEnabled(false);
 		btnCancel.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(btnCancel);
+		
+		panelAuto.add(new JSeparator(JSeparator.HORIZONTAL));
+		lblSaveMsx = new JLabel("Save project if needed:");
+		lblSaveMsx.setAlignmentX(Component.CENTER_ALIGNMENT);
+		panelAuto.add(lblSaveMsx);
+		
+		saveMSX = new JCheckBox("At source path change");
+		saveMSX.setToolTipText("Save project files and include new midi path if changed.");
+		saveMSX.setAlignmentX(Component.CENTER_ALIGNMENT);
+		panelAuto.add(saveMSX);
+		
+		saveMSXabc = new JCheckBox("At abc path change");
+		saveMSXabc.setToolTipText("Save project files and include exporter abc path if changed.");
+		saveMSXabc.setAlignmentX(Component.CENTER_ALIGNMENT);
+		panelAuto.add(saveMSXabc);
+		panelAuto.add(new JSeparator(JSeparator.HORIZONTAL));
 
 		scrollPaneAutoTxt = new JScrollPane();
 		contentPaneAutoExport.add(scrollPaneAutoTxt, BorderLayout.CENTER);
