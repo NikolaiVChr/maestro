@@ -48,7 +48,7 @@ Thanks to all who gave feedback of features and bugs plus suggestions.
 Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 ================
 
-Version 3.6.3
+Version 3.6.4
 - Solo/mute buttons will no longer reset when reloading MIDI file.
 - Changed the algorithm for removing duplicate notes (same pitch, playing at same time),
     when combining tracks with sustained instruments.
@@ -66,6 +66,7 @@ Version 3.6.3
 - Fix that having max range for pitch bend at 24 meant that it could put some student fiddle notes into the silent or special effect range. So 16 is now max possible.
 - Added option in Abc Tool auto exporter to Force save msx (abc location). It will always save project files and also include abc output location used by the tool.
 - Prevented cascading dialogs when double clicking from windows explorer and close project or find midi dialogs is already open.
+- When scrolling in section-editor, tabs and title line no longer scroll along.
 
 Version 3.4.3
 - Fix max part notes window had title from delay part window.
