@@ -7,15 +7,28 @@ import com.digero.common.abc.LotroInstrument;
 
 public class PanGenerator {
 	public static final int CENTER = 64;
+	
+	public static final int MAX_NARROW = 15;
+	public static final int VERY_NARROW = 20;
+	public static final int NARROW = 25;
+	public static final int MID_NARROW = 30;
+	public static final int MID_WIDE = 35;
+	public static final int SOMEWHAT_WIDE = 40;
+	public static final int VERY_WIDE = 45;
+	public static final int MAX_WIDE = 50;
+	
 
 	private int[] count;
+	private int sum;
 
 	public PanGenerator() {
 		count = new int[LotroInstrument.values().length];
+		sum = 0;
 	}
 
 	public void reset() {
 		Arrays.fill(count, 0);
+		sum = 0;
 	}
 
 	static final Pattern leftRegex = Pattern.compile("\\b(left|links|gauche)\\b");
@@ -27,12 +40,13 @@ public class PanGenerator {
 
 		String titleLower = partTitle.toLowerCase();
 		if (leftRegex.matcher(titleLower).find())
-			pan = CENTER - 50;// Math.abs(pan - CENTER);
+			pan = CENTER - MAX_WIDE;// Math.abs(pan - CENTER);
 		else if (rightRegex.matcher(titleLower).find())
-			pan = CENTER + 50;// Math.abs(pan - CENTER);
+			pan = CENTER + MAX_WIDE;// Math.abs(pan - CENTER);
 		else if (centerRegex.matcher(titleLower).find())
 			pan = CENTER;
 
+		sum += pan - CENTER;
 		return pan;
 	}
 
@@ -47,9 +61,9 @@ public class PanGenerator {
 
 		String titleLower = partTitle.toLowerCase();
 		if (leftRegex.matcher(titleLower).find())
-			pan = CENTER - (int) (50 * (float) panModifier * 0.01f);// Math.abs(pan - CENTER);
+			pan = CENTER - (int) (MAX_WIDE * (float) panModifier * 0.01f);// Math.abs(pan - CENTER);
 		else if (rightRegex.matcher(titleLower).find())
-			pan = CENTER + (int) (50 * (float) panModifier * 0.01f);// Math.abs(pan - CENTER);
+			pan = CENTER + (int) (MAX_WIDE * (float) panModifier * 0.01f);// Math.abs(pan - CENTER);
 		else if (centerRegex.matcher(titleLower).find())
 			pan = CENTER;
 
@@ -97,54 +111,73 @@ public class PanGenerator {
 		int c = count[instrument.ordinal()]++;
 
 		switch (c % 3) {
-		case 0:
-			sign = 1;
-			break;
-		case 1:
-			sign = -1;
-			break;
-		default:
-			sign = 0;
-			break;
+			case 0:
+				sign = 1;
+				break;
+			case 1:
+				sign = -1;
+				break;
+			default:
+				sign = 0;
+				break;
 		}
-
+		
+		int result = 0;
 		switch (instrument) {
-		case BARDIC_FIDDLE:
-		case BASIC_FIDDLE:
-		case LONELY_MOUNTAIN_FIDDLE:
-		case STUDENT_FIDDLE:
-			return CENTER + sign * -50;
-		case BASIC_HARP:
-		case MISTY_MOUNTAIN_HARP:
-		case SPRIGHTLY_FIDDLE:
-			return CENTER + sign * -45;
-		case BASIC_FLUTE:
-			return CENTER + sign * -40;
-		case BASIC_BAGPIPE:
-			return CENTER + sign * -30;
-		case BASIC_THEORBO:
-			return CENTER + sign * -25;
-		case BASIC_COWBELL:
-		case MOOR_COWBELL:
-			return CENTER + sign * -15;
-		case BASIC_DRUM:
-			return CENTER + sign * 15;
-		case BASIC_PIBGORN:
-			return CENTER + sign * 20;
-		case BASIC_HORN:
-			return CENTER + sign * 25;
-		case BASIC_LUTE:
-		case LUTE_OF_AGES:
-		case TRAVELLERS_TRUSTY_FIDDLE:
-			return CENTER + sign * 35;
-		case BASIC_CLARINET:
-			return CENTER + sign * 45;
-		case BASIC_BASSOON:
-		case LONELY_MOUNTAIN_BASSOON:
-		case BRUSQUE_BASSOON:
-			return CENTER + sign * 50;
+			case BASIC_FIDDLE:
+				result = sign * -MAX_WIDE;
+				break;
+			case BASIC_HARP:
+				result = sign * -VERY_WIDE;
+				break;
+			case BASIC_FLUTE:
+				result = sign * -SOMEWHAT_WIDE;
+				break;
+			case BASIC_BAGPIPE:
+				result = sign * -MID_NARROW;
+				break;
+			case BASIC_HORN:
+				result = sign * -NARROW;
+				break;
+			case BASIC_COWBELL:
+				result = sign * -MAX_NARROW;
+				break;
+			case BASIC_DRUM:
+				result = sign * MAX_NARROW;
+				break;
+			case BASIC_PIBGORN:
+				result = sign * VERY_NARROW;
+				break;
+			case BASIC_THEORBO:
+				result = sign * NARROW;
+				break;
+			case LUTE_OF_AGES:
+				result = sign * MID_WIDE;
+				break;
+			case BASIC_CLARINET:
+				result = sign * VERY_WIDE;
+				break;
+			case BASIC_BASSOON:
+				result = sign * MAX_WIDE;
+				break;
+			default:
+				assert false : "Should not happen";
 		}
-
-		return CENTER;
+		
+		// The offset system prevent inbalance in stereo panning
+		int offset = 0;
+		if (result >= MID_NARROW || result <= -MID_NARROW) {
+			// Only the instruments that we normally pan a lot will be considered for this
+			if (sum < -MID_NARROW * 2) {
+				offset = -sum;
+			} else if (sum > MID_NARROW * 2) {
+				offset = -sum;
+			}
+		}
+		//result += offset; this needs more consideration
+		//result = Math.min(result, MAX_WIDE);
+		//result = Math.max(result, -MAX_WIDE);
+		
+		return CENTER + result;
 	}
 }
