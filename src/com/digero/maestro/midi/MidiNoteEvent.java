@@ -12,7 +12,7 @@ public class MidiNoteEvent extends NoteEvent {
 	public final int midiPan;
 	public boolean alreadyMapped = false;// Used by Xtra drum notes
 	public int combinePrioritiesScoreMultiplier = 1;// This is a temp variable used by QuantizedTimingInfo
-	private Map<AbcPart, Long> legatoEndTicks = new HashMap();
+	private Map<AbcPart, Long> legatoEndTicks = new HashMap<>();
 
 	public MidiNoteEvent(Note note, int velocity, long startTick, long endTick, ITempoCache tempoCache, int pan) {
 		super(note, velocity, startTick, endTick, tempoCache);
