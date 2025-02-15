@@ -585,8 +585,14 @@ public class SectionEditor {
 				if (numberOfSections < numberOfSectionsMax) {
 					numberOfSections += 1;
 					makeNewSectorLine(percussion);
+					boolean wasScrolled = scrolled;
 					layoutTabs();
 					addSectorLines(nonSectionInput);
+					if (scrolled && !wasScrolled) {
+						// to prevent double title line
+						layoutTabs();
+						addSectorLines(nonSectionInput);
+					}
 					invalidate();
 					pack();
 					repaint();
