@@ -62,6 +62,7 @@ Version 3.6.5
 - Included all samples from basic fiddle, lm bassoon, basic bassoon, basic flute and sprightly fiddle. The soundfont is now no longer interpolating.
     This means Maestro and Abc Player will use more RAM and more diskspace.
 - Fixed a bug where the Section/Tune editors don't work if they are left open while a file is opened.
+- Update sounds in Standard Drum Kit to follow official spec. names more closely.
 - Fix that Maestro could sometimes output invalid abc song, if a midi pitch bend would have a extremely big range.
 - Fix that having max range for pitch bend at 24 meant that it could put some student fiddle notes into the silent or special effect range. So 16 is now max possible.
 - Added option in Abc Tool auto exporter to Force save msx (abc location). It will always save project files and also include abc output location used by the tool.
