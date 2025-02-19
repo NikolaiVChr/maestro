@@ -134,7 +134,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 	private final TrackInfo trackInfo;
 	private final NoteFilterSequencerWrapper seq;
 	private final SequencerWrapper abcSequencer;
-	private final AbcPart abcPart;
+	private AbcPart abcPart;
 
 	private JPanel gutter;
 	private JCheckBox checkBox;
@@ -471,6 +471,14 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		addPropertyChangeListener("enabled", evt -> updateState());
 
 		updateState(true);
+	}
+	
+	public void setAbcPart(AbcPart part) {
+		abcPart.removeAbcListener(abcListener);
+		this.abcPart = part;
+		abcPart.addAbcListener(abcListener);
+		checkBox.setSelected(abcPart.isTrackEnabled(trackInfo.getTrackNumber()));
+		updateColors();
 	}
 	
 	@Override
