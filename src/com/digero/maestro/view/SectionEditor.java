@@ -37,6 +37,7 @@ import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.ScrollPaneConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.border.EmptyBorder;
 
 import com.digero.common.midi.Note;
 import com.digero.common.util.Listener;
@@ -48,6 +49,7 @@ import com.digero.maestro.abc.AbcSongEvent;
 import com.digero.maestro.abc.PartSection;
 
 import info.clearthought.layout.TableLayout;
+import info.clearthought.layout.TableLayoutConstraints;
 
 public class SectionEditor {
 
@@ -94,7 +96,6 @@ public class SectionEditor {
 			private JPanel doublingPanelM;
 			private JPanel miscPanelM;
 			private JPanel rangePanelM;
-			private boolean scrolled = false;
 			JScrollPane tabMiscScroll = new JScrollPane();
 			JScrollPane tabRangeScroll = new JScrollPane();
 			JScrollPane tabDoubleScroll = new JScrollPane();
@@ -183,8 +184,18 @@ public class SectionEditor {
 				titleLabel = new JLabel("<html><b> " + abcPart.getTitle() + ": </b> "
 						+ abcPart.getInstrument().toString() + " on track " + track + " </html>");
 				panel.add(titleLabel, "0, 0, 7, 0, C, C");
-				tabPanel = new JTabbedPane();
-				tabPanel.setTabPlacement(JTabbedPane.TOP);
+				tabPanel = new JTabbedPane() {
+					public Dimension getPreferredSize() {
+						GraphicsEnvironment env = GraphicsEnvironment.getLocalGraphicsEnvironment();
+						Rectangle bound = env.getMaximumWindowBounds();
+						Dimension dim = super.getPreferredSize();
+						if (dim != null) {
+							dim.height = Math.min(dim.height, (int)(bound.height * 0.5));
+						}
+						return dim;						
+					}
+				};
+				tabPanel.setTabPlacement(JTabbedPane.TOP);					
 				
 				doublingPanel = new JPanel();
 				miscPanel = new JPanel();
@@ -194,12 +205,37 @@ public class SectionEditor {
 				miscPanelM = new JPanel();
 				rangePanelM = new JPanel();
 				
+				tabMiscScroll.setViewportView(miscPanel);
+				tabDoubleScroll.setViewportView(doublingPanel);
+				tabRangeScroll.setViewportView(rangePanel);
 				
-				panel.add(tabPanel, "0, 1, 7, 1, f, f");
+				tabMiscScroll.setBorder(new EmptyBorder(0, 0, 0, 0));
+				tabDoubleScroll.setBorder(new EmptyBorder(0, 0, 0, 0));
+				tabRangeScroll.setBorder(new EmptyBorder(0, 0, 0, 0));
 				
-				tabPanel.addTab("Pitch & Vol", miscPanel);
-				tabPanel.addTab("Octave doubling", doublingPanel);
-				tabPanel.addTab("Notes", rangePanel);// Called notes due to planning to put custom note limit in it also
+				doublingPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
+				miscPanel.setBorder(new EmptyBorder(0, 0, 0, 0));
+				rangePanel.setBorder(new EmptyBorder(0, 0, 0, 0));
+				
+				SSynchronizer sync = new SSynchronizer(tabMiscScroll, tabDoubleScroll, tabRangeScroll);
+				tabMiscScroll.getVerticalScrollBar().addAdjustmentListener(sync);
+				tabDoubleScroll.getVerticalScrollBar().addAdjustmentListener(sync);
+				tabRangeScroll.getVerticalScrollBar().addAdjustmentListener(sync);
+				tabMiscScroll.getVerticalScrollBar().setUnitIncrement(30);
+				tabDoubleScroll.getVerticalScrollBar().setUnitIncrement(30);
+				tabRangeScroll.getVerticalScrollBar().setUnitIncrement(30);
+				
+				TableLayout LayoutM = new TableLayout(LAYOUT_COLS_TABS, new double[] {TableLayout.PREFERRED, TableLayout.FILL, TableLayout.PREFERRED});
+				miscPanelM.setLayout(LayoutM);
+				doublingPanelM.setLayout(LayoutM);
+				rangePanelM.setLayout(LayoutM);
+				
+				
+				panel.add(tabPanel, new TableLayoutConstraints(0, 1, 7, 1, TableLayout.FULL, TableLayout.TOP));
+				
+				tabPanel.addTab("Pitch & Vol", miscPanelM);
+				tabPanel.addTab("Octave doubling", doublingPanelM);
+				tabPanel.addTab("Notes", rangePanelM);
 				
 				// Last row
 				JLabel panLabel = new JLabel("<html> Only play panned:</html>");
@@ -239,11 +275,6 @@ public class SectionEditor {
 				layoutTabs();
 				enableDueToPercussion(abcPart);
 				addSectorLines(nonSectionInput);
-				if (scrolled) {
-					// we do again to remove the xtra title lines
-					layoutTabs();
-					addSectorLines(nonSectionInput);
-				}
 
 				copySections.getModel().addActionListener(e -> {
 					clipboardStart = new String[numberOfSections];
@@ -585,14 +616,8 @@ public class SectionEditor {
 				if (numberOfSections < numberOfSectionsMax) {
 					numberOfSections += 1;
 					makeNewSectorLine(percussion);
-					boolean wasScrolled = scrolled;
 					layoutTabs();
 					addSectorLines(nonSectionInput);
-					if (scrolled && !wasScrolled) {
-						// to prevent double title line
-						layoutTabs();
-						addSectorLines(nonSectionInput);
-					}
 					invalidate();
 					pack();
 					repaint();
@@ -620,17 +645,15 @@ public class SectionEditor {
 				miscPanel.removeAll();
 				rangePanel.removeAll();
 				
-				if(scrolled) {
-					doublingPanelM.removeAll();
-					miscPanelM.removeAll();
-					rangePanelM.removeAll();
-					addTitlesToTabPanels();
-					addScrollToTabs();
-				} else {
-					addTitlesToTabs();
-				}
+				doublingPanelM.removeAll();
+				miscPanelM.removeAll();
+				rangePanelM.removeAll();
+				
+				addTitlesToTabPanels();
+				addScrollToTabs();
 			}
 			
+			@Deprecated
 			private void addTitlesToTabs() {
 				miscPanel.add(new JLabel("Enable"), "0, 0, c, c");
 				miscPanel.add(new JLabel("From bar"), "1, 0, c, c");
@@ -688,7 +711,7 @@ public class SectionEditor {
 			}
 
 			private double[] tabsRows() {
-				int extra = scrolled?1:2;
+				int extra = 1;
 				double[] LAYOUT_ROWS_TAB = new double[extra + numberOfSections];
 				for (int i = 0; i < numberOfSections + extra; i++) {
 					LAYOUT_ROWS_TAB[i] = TableLayout.PREFERRED;
@@ -697,7 +720,7 @@ public class SectionEditor {
 			}
 
 			private void addSectorLines(SectionEditorLine nonLine) {
-				int extra = scrolled?0:1;
+				int extra = 0;
 				for (int i = 0; i < numberOfSections; i++) {
 					final SectionEditorLine sectionLine = sectionInputs.get(i);
 					
@@ -707,56 +730,15 @@ public class SectionEditor {
 									
 					miscPanel.add(sectionLine.tab1line, "0, "+(i+extra)+", 7, "+(i+extra)+", f, f");
 					doublingPanel.add(sectionLine.tab2line, "0, "+(i+extra)+", 7, "+(i+extra)+", f, f");
-					rangePanel.add(sectionLine.tab3line, "0, "+(i+extra)+", 7, "+(i+extra)+", f, f");
-					
-					if (rangePanel.getComponentCount() == 22 && !scrolled) {
-						scrolled = true;
-						Dimension dim = tabPanel.getPreferredSize();
-						tabPanel.setPreferredSize(dim);
-						//panel.remove(tabPanel);
-						//JScrollPane tabPanelScroll = new JScrollPane(tabPanel);
-						//tabPanelScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER );
-						//tabPanelScroll.setPreferredSize(dim);
-						//panel.add(tabPanelScroll, "0, 1, 7, 1, f, f");
-						
-						tabPanel.removeTabAt(0);
-						tabPanel.removeTabAt(0);
-						tabPanel.removeTabAt(0);
-						
-						tabMiscScroll.setViewportView(miscPanel);
-						tabDoubleScroll.setViewportView(doublingPanel);
-						tabRangeScroll.setViewportView(rangePanel);
-						
-						TableLayout LayoutM = new TableLayout(LAYOUT_COLS_TABS, new double[] {TableLayout.PREFERRED, TableLayout.FILL});
-						miscPanelM.setLayout(LayoutM);
-						doublingPanelM.setLayout(LayoutM);
-						rangePanelM.setLayout(LayoutM);
-						
-						addTitlesToTabPanels();
-						addScrollToTabs();
-						
-						tabPanel.addTab("Pitch & Vol", miscPanelM);
-						tabPanel.addTab("Octave doubling", doublingPanelM);
-						tabPanel.addTab("Notes", rangePanelM);
-						
-						SSynchronizer sync = new SSynchronizer(tabMiscScroll, tabDoubleScroll, tabRangeScroll);
-						tabMiscScroll.getVerticalScrollBar().addAdjustmentListener(sync);
-						tabDoubleScroll.getVerticalScrollBar().addAdjustmentListener(sync);
-						tabRangeScroll.getVerticalScrollBar().addAdjustmentListener(sync);
-						tabMiscScroll.getVerticalScrollBar().setUnitIncrement(30);
-						tabDoubleScroll.getVerticalScrollBar().setUnitIncrement(30);
-						tabRangeScroll.getVerticalScrollBar().setUnitIncrement(30);
-					}
+					rangePanel.add(sectionLine.tab3line, "0, "+(i+extra)+", 7, "+(i+extra)+", f, f");									
 				}
 				miscPanel.remove(nonLine.tab1line);
 				doublingPanel.remove(nonLine.tab2line);
 				rangePanel.remove(nonLine.tab3line);
 								
-				miscPanel.add(nonLine.tab1line, "0, "+(numberOfSections+extra)+", 7, "+(numberOfSections+extra)+", f, f");
-				doublingPanel.add(nonLine.tab2line, "0, "+(numberOfSections+extra)+", 7, "+(numberOfSections+extra)+", f, f");
-				rangePanel.add(nonLine.tab3line, "0, "+(numberOfSections+extra)+", 7, "+(numberOfSections+extra)+", f, f");
-				
-				
+				miscPanelM.add(nonLine.tab1line, "0, "+2+", 7, "+2+", f, f");
+				doublingPanelM.add(nonLine.tab2line, "0, "+2+", 7, "+2+", f, f");
+				rangePanelM.add(nonLine.tab3line, "0, "+2+", 7, "+2+", f, f");				
 			}
 
 			private Listener<AbcPartEvent> abcPartListener = e -> {
