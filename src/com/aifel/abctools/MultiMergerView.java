@@ -208,7 +208,7 @@ public class MultiMergerView extends JFrame {
 		panelAuto.add(btnStart);
 
 		forceMixTiming = new JCheckBox("Force Mix Timings");
-		forceMixTiming.setSelected(true);
+		forceMixTiming.setSelected(false);
 		forceMixTiming.setToolTipText("Force mix timings even if a project do not have it enabled.");
 		forceMixTiming.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(forceMixTiming);
