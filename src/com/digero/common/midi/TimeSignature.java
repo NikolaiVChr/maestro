@@ -14,6 +14,8 @@ public class TimeSignature implements MidiConstants {
 	public final int denominator;
 	private final byte metronome;
 	private final byte thirtySecondNotes;
+	
+	private final static boolean debug = false;
 
 	/**
 	 * Constructs a TimeSignature from a numerator and denominator.
@@ -42,22 +44,23 @@ public class TimeSignature implements MidiConstants {
 			this.denominator = 4;
 			this.metronome = 24;
 			this.thirtySecondNotes = 8;
-			/*
-			 * System.err.println("Orig MIDI time signature: "+data[0]+"/"+(1 << data[1])+" - "+(data[3] &
-			 * 0xFF)+" 32nd notes per "+data[2]+" MIDI clocks.");
-			 * System.err.println("New  MIDI time signature: 4/4 - 8 32nd notes per 24 MIDI clocks.");
-			 */
+			
+			if (debug) {
+				System.err.print("TH Orig MIDI time signature: "+data[0]+"/"+(1 << data[1])+" - ");
+				System.err.println((data[3] & 0xFF)+" 32nd notes per "+data[2]+" MIDI clocks.");
+				System.err.println("New  MIDI time signature: 4/4 - 8 32nd notes per 24 MIDI clocks.");
+			}
+			 
 		} else {
 			this.numerator = data[0];
 			this.denominator = 1 << data[1];
 			this.metronome = data[2];
 			this.thirtySecondNotes = data[3];
-
-			/*
-			 * int unsignedByte3 = data[3] & 0xFF;// convert the byte to unsigned since javas byte is signed but MIDIs
-			 * is unsigned. System.err.println("MIDI time signature: "+this.numerator+"/"+this.denominator+" - "
-			 * +unsignedByte3+" 32nd notes per "+this. metronome+" MIDI clocks.");
-			 */
+			
+			if (debug) {
+				int unsignedByte3 = data[3] & 0xFF;// convert the byte to unsigned since javas byte is signed but MIDIs is unsigned.
+				System.err.println("MIDI time signature: "+this.numerator+"/"+this.denominator+" - " +unsignedByte3+" 32nd notes per "+this.metronome+" MIDI clocks.");
+			}
 		}
 	}
 
@@ -72,11 +75,12 @@ public class TimeSignature implements MidiConstants {
 			this.denominator = 4;
 			this.metronome = 24;
 			this.thirtySecondNotes = 8;
-			/*
-			 * System.err.println("Orig MIDI time signature: "+data[0]+"/"+(1 << data[1])+" - "+(data[3] &
-			 * 0xFF)+" 32nd notes per "+data[2]+" MIDI clocks.");
-			 * System.err.println("New  MIDI time signature: 4/4 - 8 32nd notes per 24 MIDI clocks.");
-			 */
+			
+			if (debug) {
+				System.err.print("TH Orig MIDI time signature: "+data[0]+"/"+(1 << data[1])+" - ");
+				System.err.println((data[3] & 0xFF)+" 32nd notes per "+data[2]+" MIDI clocks.");
+				System.err.println("TH New  MIDI time signature: 4/4 - 8 32nd notes per 24 MIDI clocks.");
+			}
 		} else {
 			this.numerator = data[0];
 			this.denominator = 1 << data[1];
@@ -84,12 +88,10 @@ public class TimeSignature implements MidiConstants {
 			// we put the default values for the remaining 2 values.
 			this.metronome = 24;
 			this.thirtySecondNotes = 8;
-
-			/*
-			 * int unsignedByte3 = data[3] & 0xFF;// convert the byte to unsigned since javas byte is signed but MIDIs
-			 * is unsigned. System.err.println("MIDI time signature: "+this.numerator+"/"+this.denominator+" - "
-			 * +unsignedByte3+" 32nd notes per "+this. metronome+" MIDI clocks.");
-			 */
+			
+			if (debug) {
+				System.err.println("TH MIDI time signature: "+this.numerator+"/"+this.denominator+" - " +this.thirtySecondNotes+" 32nd notes per "+this.metronome+" MIDI clocks.");
+			}
 		}
 	}
 

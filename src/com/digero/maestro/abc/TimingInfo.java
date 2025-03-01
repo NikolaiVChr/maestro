@@ -36,12 +36,14 @@ public class TimingInfo {
 		String str = "  TimingInfo:\n";
 		str += "meter "+meter.toString() + "\n";
 		str += "resolutionPPQ "+resolutionPPQ + "\n";
-		str += "tempoMPQ "+tempoMPQ + "\n";
+		str += "tempoMPQ "+tempoMPQ + " (source)\n";
 		str += "exportTempoFactor "+exportTempoFactor + "\n";
 		str += "defaultDivisor "+defaultDivisor + "\n";
 		str += "minNoteDivisor "+minNoteDivisor + "\n";
 		str += "minNoteLengthTicks "+minNoteLengthTicks + "\n";
 		str += "swing "+useTripletTiming + "\n";
+		str += "tempo "+MidiUtils.convertTempo(roundTempoMPQ((double) tempoMPQ / exportTempoFactor)) + " BPM\n";
+		str += "minDuration "+ (0.001d * ((MidiUtils.ticks2microsec(minNoteLengthTicks, tempoMPQ, resolutionPPQ)))/ exportTempoFactor) + " ms\n";
 		return str;
 	}
 
