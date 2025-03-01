@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
@@ -1207,6 +1208,9 @@ public class AbcPlaylistPanel extends JPanel {
 						for (AbcInfo info : data) {
 							tableModel.addRow(info);
 						}
+						playlistTable.revalidate();
+						Rectangle rect = playlistTable.getCellRect(playlistTable.getRowCount() - 1, 0, true);
+						playlistTable.scrollRectToVisible(rect);
 					} else { // Drag and drop to a specific position
 						int idx = insertPos;
 						for (AbcInfo info : data) {
