@@ -7,7 +7,7 @@ import javax.sound.midi.Track;
 
 public class ConvertPPQ {
 
-	private static int halfRequirement = 4;
+	private static int halfRequirement = 6;
 
 	public static Sequence convert(Sequence orig) {
 		if (orig.getDivisionType() != Sequence.PPQ) {
