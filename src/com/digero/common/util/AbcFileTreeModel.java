@@ -2,7 +2,7 @@ package com.digero.common.util;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Comparator;
 import java.util.List;
 
@@ -51,6 +51,26 @@ public class AbcFileTreeModel implements TreeModel {
 		}
 	}
 	
+	public void sort(SortType sort) {
+		for (AbcSongFileNode node : rootNode.children) {
+			node.sort(getComparator(sort));
+		}
+		
+		for (TreeModelListener l : listeners) {
+			l.treeStructureChanged(new TreeModelEvent(this, new TreePath(rootNode)));
+		}
+	}
+	
+	public void filter(String filterStr) {
+		for (AbcSongFileNode node : rootNode.children) {
+			rootNode.filter(filterStr);
+		}
+		
+		for (TreeModelListener l : listeners) {
+			l.treeStructureChanged(new TreeModelEvent(this, new TreePath(rootNode)));
+		}
+	}
+	
 	public void setDirectories(List<File> directories) {
 		rootNode.children.clear();
 		for (File file : directories) {
@@ -70,7 +90,7 @@ public class AbcFileTreeModel implements TreeModel {
 
 	@Override
 	public int getChildCount(Object parentObj) {
-		return ((AbcSongFileNode) parentObj).children.size();
+		return ((AbcSongFileNode) parentObj).filteredChildren.size();
 	}
 
 	@Override
@@ -102,31 +122,51 @@ public class AbcFileTreeModel implements TreeModel {
 		
 	}
 	
-	private Comparator<File> getComparator(SortType type) {
+	private Comparator<AbcSongFileNode> getComparator(SortType type) {
+		Comparator<AbcSongFileNode> folderFirstComparator = (f1, f2) -> {
+			if (f1.getFile().isDirectory() == f2.getFile().isDirectory()) {
+				return 0;
+			} else {
+				return f1.getFile().isDirectory() ? -1 : 1;
+			}
+		};
+		
+		Comparator<AbcSongFileNode> sortComparator;
+		
 		switch (type) {
 		case NAME_ASC:
-			return (f1, f2) -> f1.getName().compareToIgnoreCase(f2.getName());
+			sortComparator = (f1, f2) -> f1.getFile().getName().compareToIgnoreCase(f2.getFile().getName());
+			break;
 		case NAME_DESC:
-			return (f1, f2) -> f2.getName().compareToIgnoreCase(f1.getName());
+			sortComparator = (f1, f2) -> f2.getFile().getName().compareToIgnoreCase(f1.getFile().getName());
+			break;
 		case LAST_MODIFIED_ASC:
-			return (f1, f2) -> Long.compare(f1.lastModified(), f2.lastModified());
+			sortComparator = (f1, f2) -> Long.compare(f1.getFile().lastModified(), f2.getFile().lastModified());
+			break;
 		case LAST_MODIFIED_DESC:
-			return (f1, f2) -> Long.compare(f2.lastModified(), f1.lastModified());
+			sortComparator = (f1, f2) -> Long.compare(f2.getFile().lastModified(), f1.getFile().lastModified());
+			break;
 		case SIZE_ASC:
-			return (f1, f2) -> Long.compare(f1.length(), f2.length());
+			sortComparator = (f1, f2) -> Long.compare(f1.getFile().length(), f2.getFile().length());
+			break;
 		case SIZE_DESC:
-			return (f1, f2) -> Long.compare(f2.length(), f1.length());
+			sortComparator = (f1, f2) -> Long.compare(f2.getFile().length(), f1.getFile().length());
+			break;
 		default:
-			return (f1, f2) -> f1.getName().compareToIgnoreCase(f2.getName());
+			sortComparator = (f1, f2) -> f1.getFile().getName().compareToIgnoreCase(f2.getFile().getName());
+			break;
 		}
+		
+		return folderFirstComparator.thenComparing(sortComparator);
 	}
 	
 	public class AbcSongFileNode {
 		private final File theFile;
-		private ArrayList<AbcSongFileNode> children;
+		private ArrayList<AbcSongFileNode> children = new ArrayList<AbcSongFileNode>();
+		private ArrayList<AbcSongFileNode> filteredChildren = new ArrayList<AbcSongFileNode>();
 		
-		public void refresh(Comparator<File> sorter) {
-			children = new ArrayList<AbcSongFileNode>();
+		public void refresh(Comparator<AbcSongFileNode> sorter) {
+			children.clear();
 			if (!theFile.isDirectory() || !theFile.exists()) {
 				return;
 			}
@@ -137,43 +177,57 @@ public class AbcFileTreeModel implements TreeModel {
 				return;
 			}
 			
-			File[] files = Arrays.stream(childFiles).filter(File::isFile).toArray(File[]::new);
-			File[] folders = Arrays.stream(childFiles).filter(File::isDirectory).toArray(File[]::new);
-			
-			Arrays.sort(files, sorter);
-			Arrays.sort(folders, sorter);
-			
-			for (File folder: folders) {
-				AbcSongFileNode node = new AbcSongFileNode(folder);
-				node.refresh(sorter);
-				children.add(node);
-			}
-			
-			for (File file : files) {
+			for (File file : childFiles) {
 				AbcSongFileNode node = new AbcSongFileNode(file);
 				node.refresh(sorter);
 				children.add(node);
 			}
+			
+			children.sort(sorter);
+			
+		}
+		
+		public void sort(Comparator<AbcSongFileNode> sorter) {
+			for (AbcSongFileNode child : children) {
+				child.sort(sorter);
+			}
+			
+			children.sort(sorter);
+		}
+		
+		public boolean filter(String filterStr) {
+			boolean hasMatchedChild = false;
+			
+			filteredChildren.clear();
+			
+			for (AbcSongFileNode child : children)
+			{
+				if (child.filter(filterStr)) {
+					hasMatchedChild = true;
+					filteredChildren.add(child);
+				}
+			}
+			
+			return hasMatchedChild || theFile.getName().toLowerCase().contains(filterStr);
 		}
 		
 		public AbcSongFileNode(final File theFile) {
 			this.theFile = theFile;
-			this.children = new ArrayList<AbcSongFileNode>();
 		}
 		
 		public boolean isLeaf() {
-			return theFile.isFile() || children.isEmpty();
+			return theFile.isFile() || filteredChildren.isEmpty();
 		}
 		
 		public AbcSongFileNode getChildAt(int i) {
-			if (i < 0 || children == null || i >= children.size()) {
+			if (i < 0 || i >= filteredChildren.size()) {
 				return null;
 			}
-			return children.get(i);
+			return filteredChildren.get(i);
 		}
 		
 		public int getIndexOf(AbcSongFileNode node) {
-			return children.indexOf(node);
+			return filteredChildren.indexOf(node);
 		}
 
 	    public File getFile() {

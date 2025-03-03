@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
+import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.datatransfer.DataFlavor;
@@ -19,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EventObject;
+import java.util.HashSet;
 import java.util.List;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
@@ -60,6 +62,8 @@ import javax.swing.event.PopupMenuEvent;
 import javax.swing.event.PopupMenuListener;
 import javax.swing.event.TableColumnModelEvent;
 import javax.swing.event.TableColumnModelListener;
+import javax.swing.event.TreeExpansionEvent;
+import javax.swing.event.TreeExpansionListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
@@ -79,6 +83,7 @@ import com.digero.common.util.Listener;
 import com.digero.common.util.ParseException;
 import com.digero.common.util.Util;
 import com.digero.common.view.AbcPlaylistTreeCellRenderer;
+import com.digero.common.view.HintTextField;
 import com.digero.maestro.util.XmlUtil;
 
 import net.miginfocom.swing.MigLayout;
@@ -126,8 +131,10 @@ public class AbcPlaylistPanel extends JPanel {
 	// for menu item action listeners
 	private int menuRowIdx = -1;
 	private AbcFileTreeModel abcFileTreeModel;
+	private HashSet<TreePath> expandedAbcTrees;
 	private JScrollPane fileTreeScrollPane;
 	private JButton addToPlaylistButton;
+	private HintTextField searchTextField;
 	
 	// Right
 	private JTable playlistTable;
@@ -202,6 +209,9 @@ public class AbcPlaylistPanel extends JPanel {
 		
 		abcFileTreeModel = new AbcFileTreeModel(topLevelDirs);
 		abcFileTreeModel.refresh(sortType);
+		abcFileTreeModel.filter("");
+		
+		expandedAbcTrees = new HashSet<TreePath>();
 		
 		abcFileTree = new JTree();
 		abcFileTree.setShowsRootHandles(true);
@@ -281,6 +291,17 @@ public class AbcPlaylistPanel extends JPanel {
 				}
 			}
 			addToPlaylistButton.setEnabled(noFoldersSelected);
+		});
+		abcFileTree.addTreeExpansionListener(new TreeExpansionListener() {
+			@Override
+			public void treeCollapsed(TreeExpansionEvent e) {
+				expandedAbcTrees.remove(e.getPath());
+			}
+
+			@Override
+			public void treeExpanded(TreeExpansionEvent e) {
+				expandedAbcTrees.add(e.getPath());	
+			}
 		});
 		JPopupMenu fileTreePopup = new JPopupMenu();
 		
@@ -583,6 +604,21 @@ public class AbcPlaylistPanel extends JPanel {
 			addFilesToPlaylist(treePathsToFileList(abcFileTree.getSelectionPaths()), -1);
 		});
 		
+		searchTextField = new HintTextField("Search...", 15);
+		searchTextField.getDocument().addDocumentListener(new DocumentListener() {
+			@Override
+			public void changedUpdate(DocumentEvent e) { update(e); }
+			@Override
+			public void insertUpdate(DocumentEvent e) { update(e); }
+			@Override
+			public void removeUpdate(DocumentEvent e) { update(e); }
+			
+			public void update(DocumentEvent e) {
+				abcFileTreeModel.filter(searchTextField.getText().toLowerCase());
+				reExpandPaths();
+			}
+		});
+		
 		JButton playPlaylistButton = new JButton("Play");
 		playPlaylistButton.setToolTipText("Play playlist starting from the first song.");
 		playPlaylistButton.setFocusable(false);
@@ -655,6 +691,7 @@ public class AbcPlaylistPanel extends JPanel {
 		
 		bottomControls = new JPanel(new MigLayout("fillx"));
 		bottomControls.add(addToPlaylistButton);
+		bottomControls.add(searchTextField);
 		
 		bottomControls.add(new JPanel(), "pushx 200");
 		
@@ -725,7 +762,8 @@ public class AbcPlaylistPanel extends JPanel {
 			item.addActionListener(e -> {
 				sortType = type;
 				prefs.put("sortType", sortType.name());
-				abcFileTreeModel.refresh(sortType);
+				abcFileTreeModel.sort(sortType);
+				reExpandPaths();
 			});
 			group.add(item);
 			sortBy.add(item);
@@ -751,6 +789,33 @@ public class AbcPlaylistPanel extends JPanel {
 		refreshMenuItem.addActionListener(e -> {
 			abcFileTreeModel.refresh(sortType);
 		});
+	}
+	
+	private void reExpandPaths() {
+		System.out.println(expandedAbcTrees.size() + " expanded trees");
+		for (TreePath path : expandedAbcTrees) {
+			Object[] nodes = path.getPath();
+			Object walk = abcFileTreeModel.getRoot();
+			System.out.println(walk);
+			System.out.println();
+			boolean found = true;
+			for (Object node : nodes) {
+				if (node == abcFileTreeModel.getRoot()) {
+					continue;
+				}
+				
+				System.out.println(node);
+				int idx = abcFileTreeModel.getIndexOfChild(walk, node);
+				if (idx < 0) {
+					found = false;
+				} else {
+					walk = abcFileTreeModel.getChild(walk, idx);
+				}
+			}
+			if (found) {
+				abcFileTree.expandPath(path);
+			}
+		}
 	}
 	
 	private void initTableHeaderColumns() {
