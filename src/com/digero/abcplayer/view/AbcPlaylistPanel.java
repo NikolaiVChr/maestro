@@ -763,6 +763,7 @@ public class AbcPlaylistPanel extends JPanel {
 				sortType = type;
 				prefs.put("sortType", sortType.name());
 				abcFileTreeModel.sort(sortType);
+				abcFileTreeModel.filter(searchTextField.getText());
 				reExpandPaths();
 			});
 			group.add(item);
