@@ -27,6 +27,10 @@ import javax.xml.transform.TransformerException;
 import com.aifel.abctools.AbcTools.MsxFileFilter;
 import com.aifel.abctools.AbcTools.FolderFileFilter;
 import com.digero.common.abc.StringCleaner;
+import com.digero.common.abctomidi.AbcInfo;
+import com.digero.common.abctomidi.AbcToMidi;
+import com.digero.common.abctomidi.FileAndData;
+import com.digero.common.util.LotroParseException;
 import com.digero.common.util.ParseException;
 import com.digero.maestro.MaestroMain;
 import com.digero.maestro.abc.AbcSong;
@@ -457,6 +461,29 @@ public class AutoExporter {
 				appendToField("<br><font color='red'>&nbsp;&nbsp;msx saving failed.</font>");
 			}				
 		}
+		
+		/*
+		try {
+			//
+			// Test if the file is valid
+			// Uncomment when making changes to abc exporter
+			//
+			List<FileAndData> data = new ArrayList<>();
+			data.add(new FileAndData(exportFile, AbcToMidi.readLines(exportFile)));
+			AbcInfo info = new AbcInfo();
+			AbcToMidi.Params params = new AbcToMidi.Params(data);
+			params.useLotroInstruments = true;
+			params.abcInfo = info;
+			params.enableLotroErrors = true;
+			params.stereo = false;
+			params.generateRegions = true;
+			AbcToMidi.convert(params);
+		} catch (LotroParseException e) {
+			JOptionPane.showMessageDialog(frame, e.getMessage(), exportFile.getName()+": Error parsing ABC", JOptionPane.ERROR_MESSAGE);
+		} catch (ParseException e) {
+			JOptionPane.showMessageDialog(frame, e.getMessage(), exportFile.getName()+": Error reading ABC", JOptionPane.ERROR_MESSAGE);
+		}
+		*/
 		
 		appendToField("<br>&nbsp;&nbsp;as " + exportFile.getName());
 	}
