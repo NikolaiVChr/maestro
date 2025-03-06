@@ -41,6 +41,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 	private NavigableSet<AbcRegion> regions;
 	private List<List<Integer>> partSetups;
 	private int primaryTempoBPM = 120;
+	private boolean isOrganic = false;
 	private boolean hasTriplets = false;
 	private boolean hasTripletsSet = false;
 	private boolean hasMixTimings = false;
@@ -67,6 +68,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		regions = null;
 		partSetups = null;
 		primaryTempoBPM = 120;
+		isOrganic = false;
 		hasTriplets = false;
 		hasTripletsSet = false;
 		hasMixTimings = false;
@@ -172,6 +174,10 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 
 	public boolean isEmpty() {
 		return empty;
+	}
+	
+	public boolean isOrganic() {
+		return isOrganic;
 	}
 
 	public boolean hasTriplets() {
@@ -382,6 +388,9 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 			break;
 		case MIX_TIMINGS:
 			hasMixTimings = Boolean.parseBoolean(value.trim());
+			break;
+		case ORGANIC:
+			isOrganic = Boolean.parseBoolean(value.trim());
 			break;
 		case SONG_DURATION:
 			songDuration = value.trim();

@@ -127,6 +127,7 @@ public class AutoExporter {
 						frame.getBtnStartExport().setEnabled(true);
 						frame.getBtnCancelExport().setEnabled(false);
 						frame.setForceMixTimingEnabled(true);
+						frame.setForceOrganicEnabled(true);
 						frame.setBtnDestAutoEnabled(true);
 						frame.setBtnMIDIEnabled(true);
 						frame.setBtnSourceAutoEnabled(true);
@@ -159,6 +160,7 @@ public class AutoExporter {
 			frame.getBtnStartExport().setEnabled(false);
 			frame.getBtnCancelExport().setEnabled(true);
 			frame.setForceMixTimingEnabled(false);
+			frame.setForceOrganicEnabled(false);
 			frame.setBtnDestAutoEnabled(false);
 			frame.setBtnMIDIEnabled(false);
 			frame.setBtnSourceAutoEnabled(false);
@@ -179,6 +181,7 @@ public class AutoExporter {
 				frame.getBtnStartExport().setEnabled(true);
 				frame.getBtnCancelExport().setEnabled(false);
 				frame.setForceMixTimingEnabled(true);
+				frame.setForceOrganicEnabled(true);
 				frame.setBtnDestAutoEnabled(true);
 				frame.setBtnMIDIEnabled(true);
 				frame.setBtnSourceAutoEnabled(true);
@@ -242,6 +245,7 @@ public class AutoExporter {
 			frame.getBtnStartExport().setEnabled(true);
 			frame.getBtnCancelExport().setEnabled(false);
 			frame.setForceMixTimingEnabled(true);
+			frame.setForceOrganicEnabled(true);
 			frame.setBtnDestAutoEnabled(true);
 			frame.setBtnMIDIEnabled(true);
 			frame.setBtnSourceAutoEnabled(true);
@@ -383,6 +387,9 @@ public class AutoExporter {
 
 		if (frame.getForceMixTimingSelected()) {
 			abcSong.setMixTiming(true);
+		}
+		if (frame.getForceOrganicSelected()) {
+			abcSong.setOrganic(true);
 		}
 		
 		abcSong.storeNewExportFile = frame.getSaveMSXabcSelected();

@@ -45,6 +45,7 @@ public class MultiMergerView extends JFrame {
 	private JButton btnStart;
 	private JButton btnCancel;
 	private JCheckBox forceMixTiming;
+	private JCheckBox forceOrganic;
 	private JScrollPane scrollPaneAutoTxt;
 	private JEditorPane txtAutoExport;
 	private JLabel lblMidiAuto;
@@ -206,6 +207,12 @@ public class MultiMergerView extends JFrame {
 		btnStart.setToolTipText("Export all project files in source folder to abc files in destination folder.");
 		btnStart.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(btnStart);
+		
+		forceOrganic = new JCheckBox("Force Organic");
+		forceOrganic.setSelected(false);
+		forceOrganic.setToolTipText("Force organic even if a project do not have it enabled.");
+		forceOrganic.setAlignmentX(Component.CENTER_ALIGNMENT);
+		panelAuto.add(forceOrganic);
 
 		forceMixTiming = new JCheckBox("Force Mix Timings");
 		forceMixTiming.setSelected(false);
@@ -323,6 +330,14 @@ public class MultiMergerView extends JFrame {
 	public void setForceMixTimingSelected(boolean selected) {
 		forceMixTiming.setSelected(selected);
 	}
+	
+	public boolean getForceOrganicSelected() {
+		return forceOrganic.isSelected();
+	}
+
+	public void setForceOrganicSelected(boolean selected) {
+		forceOrganic.setSelected(selected);
+	}
 
 	public JButton getBtnStartExport() {
 		return btnStart;
@@ -378,6 +393,14 @@ public class MultiMergerView extends JFrame {
 
 	public void setForceMixTimingEnabled(boolean enabled_2) {
 		forceMixTiming.setEnabled(enabled_2);
+	}
+	
+	public boolean getForceOrganicEnabled() {
+		return forceOrganic.isEnabled();
+	}
+
+	public void setForceOrganicEnabled(boolean enabled_2) {
+		forceOrganic.setEnabled(enabled_2);
 	}
 
 	public boolean getBtnSourceAutoEnabled() {

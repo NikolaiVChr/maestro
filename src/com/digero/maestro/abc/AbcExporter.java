@@ -39,7 +39,7 @@ import com.digero.maestro.midi.TrackInfo;
 import com.sun.media.sound.MidiUtils;
 
 public class AbcExporter {
-	static final boolean organic = true;
+	private boolean organic = true;
 	private static final int MAX_RAID = 24; // Max number of parts that in any case can be played in lotro
 
 	private final List<AbcPart> parts;
@@ -91,7 +91,7 @@ public class AbcExporter {
 				// tempo spinner while no parts are enabled, due to setting a abc sequence.
 				for (AbcPart part : parts) {
 					try {
-						PolyphonyHistogram.count(part, new ArrayList<>());
+						PolyphonyHistogram.count(part, new ArrayList<>(), organic);
 					} catch (IOException e) {
 						throw new AbcConversionException("Failed to read instrument sample durations.", e);
 					}
@@ -170,7 +170,7 @@ public class AbcExporter {
 				}
 			} else {
 				try {
-					PolyphonyHistogram.count(part, new ArrayList<>());
+					PolyphonyHistogram.count(part, new ArrayList<>(), organic);
 				} catch (IOException e) {
 					throw new AbcConversionException("Failed to read instrument sample durations.", e);
 				}
@@ -1070,7 +1070,7 @@ public class AbcExporter {
 		
 		if (events.isEmpty() && preview) {
 			try {
-				PolyphonyHistogram.count(part, new ArrayList<>());
+				PolyphonyHistogram.count(part, new ArrayList<>(), organic);
 			} catch (IOException e) {
 				throw new AbcConversionException("Failed to read instrument sample durations.", e);
 			}
@@ -1345,7 +1345,7 @@ public class AbcExporter {
 		
 		if (preview) {
 			try {
-				PolyphonyHistogram.count(part, chords);
+				PolyphonyHistogram.count(part, chords, organic);
 			} catch (IOException e) {
 				throw new AbcConversionException("Failed to read instrument sample durations.", e);
 			}
@@ -1536,7 +1536,7 @@ public class AbcExporter {
 		
 		if (events.isEmpty() && preview) {
 			try {
-				PolyphonyHistogram.count(part, new ArrayList<>());
+				PolyphonyHistogram.count(part, new ArrayList<>(), organic);
 			} catch (IOException e) {
 				throw new AbcConversionException("Failed to read instrument sample durations.", e);
 			}
@@ -1896,7 +1896,7 @@ public class AbcExporter {
 		
 		if (preview) {
 			try {
-				PolyphonyHistogram.count(part, chords);
+				PolyphonyHistogram.count(part, chords, organic);
 			} catch (IOException e) {
 				throw new AbcConversionException("Failed to read instrument sample durations.", e);
 			}
@@ -2633,5 +2633,13 @@ public class AbcExporter {
 			this.channel = channel;
 			this.patch = patch;
 		}
+	}
+
+	public void setOrganic(boolean org) {
+		organic = org;
+	}
+
+	public boolean isOrganic() {		
+		return organic;
 	}
 }

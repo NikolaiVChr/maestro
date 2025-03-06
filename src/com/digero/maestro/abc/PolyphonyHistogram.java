@@ -64,7 +64,7 @@ public class PolyphonyHistogram   {
 	 * @param chords
 	 * @throws IOException 
 	 */
-	public static void count(AbcPart part, List<Chord> chords) throws IOException {
+	public static void count(AbcPart part, List<Chord> chords, boolean organic) throws IOException {
 		if (!enabled) return;
 		
 		TreeMap<Long, Integer> partMap = new TreeMap<>();
@@ -89,7 +89,7 @@ public class PolyphonyHistogram   {
 				long endTick = check.getEndTick();
 				long start = qtm.tickToMicrosABC(event.getStartTick(), part);// delay is already in the start/end tick at this point 
 				long end   = qtm.tickToMicrosABC(endTick, part);
-				if (AbcExporter.organic) {
+				if (organic) {
 					start = qtm.tickToMicrosABC(event.getStartTick());// delay is already in the start/end tick at this point 
 					end   = qtm.tickToMicrosABC(endTick);
 				}

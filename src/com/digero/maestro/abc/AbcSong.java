@@ -62,7 +62,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = MaestroMain.APP_NAME + " Songs";
 	public static final String MSX_FILE_EXTENSION_NO_DOT = "msx";
 	public static final String MSX_FILE_EXTENSION = "." + MSX_FILE_EXTENSION_NO_DOT;
-	public static final Version SONG_FILE_VERSION = new Version(3, 6, 1, 300);// Keep build above 117 to make earlier
+	public static final Version SONG_FILE_VERSION = new Version(3, 6, 6, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
 
@@ -80,6 +80,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private TimeSignature timeSignature = TimeSignature.FOUR_FOUR;
 	private boolean tripletTiming = false;
 	private boolean mixTiming = true;
+	private boolean organic = true;
 	private int mixVersion = 2;// TODO: make UI?
 	private boolean priorityActive = false;
 	private boolean skipSilenceAtStart = true;
@@ -249,6 +250,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 		tripletTiming = abcInfo.hasTriplets();
 		mixTiming = abcInfo.hasMixTimings();
+		organic = abcInfo.isOrganic();
 		priorityActive = false;
 		transcriber = abcInfo.getTranscriber();
 		genre = abcInfo.getGenre();
@@ -338,6 +340,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			if (ICompileConstants.SHOW_KEY_FIELD)
 				keySignature = SaveUtil.parseValue(songEle, "exportSettings/@keySignature", keySignature);
 			timeSignature = SaveUtil.parseValue(songEle, "exportSettings/@timeSignature", timeSignature);
+			
+			organic = SaveUtil.parseValue(songEle, "exportSettings/@organic", false);			
 			tripletTiming = SaveUtil.parseValue(songEle, "exportSettings/@tripletTiming", tripletTiming);
 
 			mixTiming = SaveUtil.parseValue(songEle, "exportSettings/@mixTiming", false);// default false as old
@@ -394,6 +398,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				usingOldVelocities = true;// The abc volumes are tuned to old volume scheme
 				sequenceInfo = SequenceInfo.fromAbc(params, miscSettings, usingOldVelocities);
 
+				organic = abcInfo.isOrganic();
 				tripletTiming = abcInfo.hasTriplets();
 				mixTiming = abcInfo.hasMixTimings();
 				priorityActive = false;
@@ -584,6 +589,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		if (tripletTiming)
 			exportSettingsEle.setAttribute("tripletTiming", String.valueOf(tripletTiming));
 		exportSettingsEle.setAttribute("mixTiming", String.valueOf(mixTiming));
+		exportSettingsEle.setAttribute("organic", String.valueOf(organic));
 		if (mixTiming) {
 			exportSettingsEle.setAttribute("combinePriorities", String.valueOf(priorityActive));
 			// exportSettingsEle.setAttribute("mixVersion", String.valueOf(mixVersion));
@@ -1032,6 +1038,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		if (abcExporter.isDeleteMinimalNotes() != deleteMinimalNotes)
 			abcExporter.setDeleteMinimalNotes(deleteMinimalNotes);
 		
+		if (abcExporter.isOrganic() != organic)
+			abcExporter.setOrganic(organic);
+		
 		return abcExporter;
 	}
 
@@ -1059,6 +1068,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			fireChangeEvent(AbcSongProperty.PART_LIST_ORDER, e.getSource());
 		}
 	};
+	
 
 	@Override
 	public String getBadgerTitle() {
@@ -1101,6 +1111,17 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			this.priorityActive = priorityActive;
 			fireChangeEvent(AbcSongProperty.MIX_TIMING_COMBINE_PRIORITIES);
 		}
+	}
+	
+	public void setOrganic(boolean selected) {
+		if (organic != selected) {
+			organic = selected;
+			fireChangeEvent(AbcSongProperty.ORGANIC);
+		}
+	}
+	
+	public boolean isOrganic() {
+		return organic;		
 	}
 
 	public void tuneEdited() {
