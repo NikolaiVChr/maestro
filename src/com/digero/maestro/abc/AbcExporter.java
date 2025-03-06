@@ -1843,10 +1843,15 @@ public class AbcExporter {
 			removeNotes(events, deadnotes, part);// we need to set the pruned flag for last chord too.
 			curChord.recalcEndTick();
 			System.out.println(part.getTitle()+" final note ends at "+Util.formatDurationM(qtm.tickToMicrosABC(curChord.getEndTick()-exportStartTick)));
+			
+			if (qtm.tickToMicrosABC(curChord.getEndTick()) < qtm.tickToMicrosABC(curChord.getStartTick()) + AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())) {
+				curChord.setEndTickExpand(qtm.microsToTickABC(qtm.tickToMicrosABC(curChord.getStartTick()) + AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())));
+			}
+			
 			long targetEndTick = curChord.getEndTick();
 
 			reprocessCurrentNote = false;
-			/*
+			
 			Chord nextChord = null;
 
 			for (int j = 0; j < curChord.size(); j++) {
@@ -1868,7 +1873,6 @@ public class AbcExporter {
 				curChord = nextChord;
 				curChord.recalcEndTick();
 			}
-			*/
 		}
 		assert !curChord.hasRestAndNotes();
 		
