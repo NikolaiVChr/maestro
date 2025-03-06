@@ -36,8 +36,10 @@ import com.digero.maestro.midi.BentMidiNoteEvent;
 import com.digero.maestro.midi.Chord;
 import com.digero.maestro.midi.MidiNoteEvent;
 import com.digero.maestro.midi.TrackInfo;
+import com.sun.media.sound.MidiUtils;
 
 public class AbcExporter {
+	static final boolean organic = true;
 	private static final int MAX_RAID = 24; // Max number of parts that in any case can be played in lotro
 
 	private final List<AbcPart> parts;
@@ -159,8 +161,13 @@ public class AbcExporter {
 			throws AbcConversionException {
 		for (AbcPart part : parts) {
 			if (part.getEnabledTrackCount() > 0) {
-				List<Chord> chords = combineAndQuantize(part, true);
-				chordsMade.put(part, chords);
+				if (organic) {
+					List<Chord> chords = combineOrganic(part, true);
+					chordsMade.put(part, chords);
+				} else {
+					List<Chord> chords = combineAndQuantize(part, true);
+					chordsMade.put(part, chords);
+				}
 			} else {
 				try {
 					PolyphonyHistogram.count(part, new ArrayList<>());
@@ -302,6 +309,15 @@ public class AbcExporter {
 	}
 
 	public void exportToAbc(OutputStream os, boolean delayEnabled) throws AbcConversionException {
+		
+		
+		
+		
+		
+		
+		
+		
+		
 		// accountForSustain is true so that songbooks wont stop their timer before last note has finished sounding.
 		// lengthenToBar is false for opposite reason, so reporting the correct duration to songbooks.
 		Pair<Long, Long> startEnd = getSongStartEndTick(false, true, false);
@@ -321,10 +337,16 @@ public class AbcExporter {
 			}
 			out.println(AbcField.ABC_CREATOR + MaestroMain.APP_NAME + " v" + MaestroMain.APP_VERSION);
 			out.println(AbcField.EXPORT_TIMESTAMP + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
-			out.println(AbcField.SWING_RHYTHM + Boolean.toString(qtm.isTripletTiming()));
-			out.println(AbcField.MIX_TIMINGS + Boolean.toString(qtm.isMixTiming()));
+			if (!organic) {
+				out.println(AbcField.SWING_RHYTHM + Boolean.toString(qtm.isTripletTiming()));
+				out.println(AbcField.MIX_TIMINGS + Boolean.toString(qtm.isMixTiming()));
+			} else {
+				out.println(AbcField.SWING_RHYTHM + Boolean.toString(false));
+				out.println(AbcField.MIX_TIMINGS + Boolean.toString(false));
+			}
+			out.println(AbcField.ORGANIC + Boolean.toString(organic));
 			out.println(AbcField.SKIP_SILENCE_AT_START + Boolean.toString(skipSilenceAtStart));
-			out.println(AbcField.DELETE_MINIMAL_NOTES + Boolean.toString(deleteMinimalNotes));
+			out.println(AbcField.DELETE_MINIMAL_NOTES + Boolean.toString(deleteMinimalNotes && !organic));
 			out.println(AbcField.ABC_VERSION + "2.1");
 			String gnr = StringCleaner.cleanForABC(metadata.getGenre()).toLowerCase().trim();
 			String mood = StringCleaner.cleanForABC(metadata.getMood()).toLowerCase().trim();
@@ -349,15 +371,273 @@ public class AbcExporter {
 
 		for (AbcPart part : parts) {
 			if (part.getEnabledTrackCount() > 0) {
-				exportPartToAbc(part, out, delayEnabled);
+				if (organic) {
+					exportPartToAbcOrganic(part, out, delayEnabled);
+				} else {
+					exportPartToAbc(part, out, delayEnabled);
+				}
 			}
 		}
 	}
-
-	private void exportPartToAbc(AbcPart part, PrintStream out,
+	
+	private void exportPartToAbcOrganic(AbcPart part, PrintStream out,
 			boolean delayEnabled) throws AbcConversionException {
-		List<Chord> chords = combineAndQuantize(part, false);
+		
+		exportPartTitleToAbc(part, out);
+		
+		// Keep track of which notes have been sharped or flatted so
+		// we can naturalize them the next time they show up.
+		boolean[] sharps = new boolean[Note.MAX_PLAYABLE.id + 1];
+		boolean[] flats = new boolean[Note.MAX_PLAYABLE.id + 1];
 
+		// Write out ABC notation
+		long L = (qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? 16 : 8;
+		long Q = qtm.getPrimaryExportTempoBPM();
+		
+		// One whole abc note is this many microseconds:
+		int oneMicro = (int)(qtm.getMeter().denominator * TimingInfo.ONE_SECOND_MICROS * 60 / (Q * L));
+		
+		
+		
+		final int BAR_LENGTH = 120;
+		final long songStartMicros = qtm.tickToMicrosABC(exportStartTick);
+		int curExportTempoBPM = (int)Q;
+		Dynamics curDyn = null;
+		Dynamics initDyn = null;
+		
+		//System.out.println("Q: "+Q+" L: "+L+" one:"+oneMicro+" start: "+songStartMicros+" minimum: "+AbcConstants.getShortestNoteMicros((int)Q));
+		
+		final StringBuilder bar = new StringBuilder();
+		
+		Runnable addLineBreaks = () -> {
+			// Trim end
+			int length = bar.length();
+			if (length == 0)
+				return;
+
+			while (Character.isWhitespace(bar.charAt(length - 1)))
+				length--;
+			bar.setLength(length);
+
+			// Insert line breaks inside very long bars
+			for (int i = BAR_LENGTH; i < bar.length(); i += BAR_LENGTH) {
+				for (int j = 0; j < BAR_LENGTH - 1; j++, i--) {
+					if (bar.charAt(i) == ' ') {
+						bar.replace(i, i + 1, "\r\n\t");
+						i += "\r\n\t".length() - 1;
+						break;
+					}
+				}
+			}
+		};
+		
+		if (delayEnabled && Q >= 50) {
+			// oneNote is duration in secs of z1
+			double oneNote = (qtm.getMeter().denominator * 60) / (double) (Q * L);
+
+			// fractionFactor is number of z that the whole song is being start delayed
+			// with. It is always 1 or above. Above if oneNote is smaller than 60ms.
+			int fractionFactor = (int) Math.ceil(Math.max(1d, 0.06d / oneNote));
+			if (part.delay == 0) {
+				out.println("z" + fractionFactor + " | ");
+			} else {
+				int numer = 10000 * fractionFactor;
+				int denom = 10000;
+				
+				// divide by 1000 to convert delay ms to secs
+				// numer/factionFactor equals denom, but is done to avoid rounding errors
+				// delay/oneNote is how much we delay with per abc-whole-note (like G1/1)
+				numer += (int) (numer * part.delay / (fractionFactor * oneNote * 1000));
+				out.println("z" + numer + "/" + denom + " | ");
+				// System.err.println("M: " + qtm.getMeter()+" Q: " +
+				// Q+ " L: " + L +"\n oneNote is "+oneNote+"
+				// delay is "+part.delay+" ms   result: "+"z"+numer+"/"+denom);
+			}
+		}
+		
+		List<Chord> chords = combineOrganic(part, false);
+		int countChords = 0;
+		long currentMicro = 0L;
+		for (Chord c : chords) {
+			if (c.size() == 0) {
+				assert false : "Chord has no notes!";
+				continue;
+			}
+
+			assert !c.hasRestAndNotes();
+
+			/*
+			 * if (c.hasRestAndNotes()) { c.removeRests(); }
+			 */
+
+			c.sort();
+			
+			countChords++;
+
+			if (countChords % 8 == 0) {
+				// Print at every 8th chord
+				if (bar.length() > 0) {
+					addLineBreaks.run();
+					out.print(bar);
+					out.println(" |");
+					bar.setLength(0);
+				}
+				long micros = (long) ((qtm.tickToMicrosABC(c.getStartTick()) - songStartMicros));
+				out.println("%  (" + Util.formatDuration(micros) + ")");
+
+				Arrays.fill(sharps, false);
+				Arrays.fill(flats, false);
+			}
+
+			/*
+			 Outputting tempo messes up import of abc into abcPlayer and Maestro
+			 
+			// Is this the start of a new tempo?
+			TimingInfo tm = qtm.getTimingInfoOrganic(c.getStartTick());
+			if (curExportTempoBPM != tm.getExportTempoBPM()) {
+				curExportTempoBPM = tm.getExportTempoBPM();
+
+				// Print the partial bar
+				if (bar.length() > 0) {
+					addLineBreaks.run();
+					out.println(bar);
+					bar.setLength(0);
+					bar.append("\t");
+					out.print("\t");
+				}
+
+				out.println("%%Q: " + curExportTempoBPM);
+			}
+			*/
+
+			Dynamics newDyn = (initDyn != null) ? initDyn : c.calcDynamics();
+			initDyn = null;
+			if (newDyn != null && newDyn != curDyn) {
+				bar.append('+').append(newDyn).append("+ ");
+				curDyn = newDyn;
+			}
+
+			if (c.size() > 1) {
+				bar.append('[');
+			}
+
+			int chordMicro = (int)((qtm.tickToMicrosABC(c.getEndTick()) - qtm.tickToMicrosABC(c.getStartTick())));
+			
+			long cEndMicro = qtm.tickToMicrosABC(c.getEndTick()) - songStartMicros;
+			if (currentMicro + chordMicro != cEndMicro) {
+				long diff = (currentMicro + chordMicro) - cEndMicro;
+				chordMicro -= (int)(diff);
+			}
+			if (chordMicro < AbcConstants.getShortestNoteMicros((int)Q)) {
+				chordMicro = (int)AbcConstants.getShortestNoteMicros((int)Q);
+			}
+			if (chordMicro > AbcConstants.LONGEST_NOTE_MICROS) {
+				//chordMicro = (int)AbcConstants.LONGEST_NOTE_MICROS - 10;
+				//System.out.println(part.getTitle() +": chord reduced to "+chordMicro+" us  drone:"+(c.get(0).note.id <= AbcConstants.BAGPIPE_LAST_DRONE_NOTE_ID));
+			}
+			currentMicro += chordMicro;
+			
+			/*
+			long st = c.getStartTick();
+			long end = c.getEndTick();
+			for (int j = 0; j < c.size()-1; j++) {
+				AbcNoteEvent evt = c.get(j);
+				if (evt.getStartTick() != st && evt.note != Note.REST) {
+					System.out.println(st+" START "+evt.getStartTick());
+				}
+				if (evt.getEndTick() != end && evt.note != Note.REST) {
+					System.out.println(end+" END "+evt.getEndTick());
+				}
+			}
+			*/
+			
+			int notesWritten = 0;			
+			for (int j = 0; j < c.size(); j++) {
+				AbcNoteEvent evt = c.get(j);
+				if (evt.getLengthTicks() == 0) {
+					assert false : "Zero-length note";
+					continue;
+				}
+
+				String noteAbc = evt.note.abc;
+				if (evt.note != Note.REST) {
+					if (evt.note.isSharp()) {
+						if (sharps[evt.note.naturalId])
+							noteAbc = Note.fromId(evt.note.naturalId).abc;
+						else
+							sharps[evt.note.naturalId] = true;
+					} else if (evt.note.isFlat()) {
+						if (flats[evt.note.naturalId])
+							noteAbc = Note.fromId(evt.note.naturalId).abc;
+						else
+							flats[evt.note.naturalId] = true;
+					} else if (sharps[evt.note.id] || flats[evt.note.id]) {
+						sharps[evt.note.id] = false;
+						flats[evt.note.id] = false;
+						bar.append('=');
+					}
+				}
+
+				bar.append(noteAbc);
+
+				
+				
+				
+				int numerator = chordMicro;
+				int denominator = oneMicro;
+				
+
+				// Reduce the fraction
+				int gcd = Util.gcd(numerator, denominator);
+				numerator /= gcd;
+				denominator /= gcd;	
+				
+				
+				if (numerator == 1 && denominator == 2) {
+					bar.append('/');
+				} else if (numerator == 1 && denominator == 4) {
+					bar.append("//");
+				} else {
+					if (numerator == 0) {
+						System.err.println("Zero length Error: ticks=" + evt.getLengthTicks() + " micros="
+								+ evt.getLengthMicros() + " note=" + noteAbc);
+					}
+					if (numerator != 1)
+						bar.append(numerator);
+					if (denominator != 1)
+						bar.append('/').append(denominator);
+				}
+
+				if (evt.tiesTo != null)
+					bar.append('-');
+
+				notesWritten++;
+			}
+
+			if (c.size() > 1) {
+				if (notesWritten == 0) {
+					// Remove the [
+					bar.delete(bar.length() - 1, bar.length());
+				} else {
+					bar.append(']');
+				}
+			}
+			if (notesWritten == 0) {
+				System.out.println("ZERO");
+				currentMicro -= chordMicro;
+			}
+
+			bar.append(' ');
+		}
+		System.out.println(part.getTitle()+" EXPORT: ends at "+Util.formatDurationM(currentMicro)+" - micro:"+currentMicro);
+
+		addLineBreaks.run();
+		out.print(bar);
+		out.println(" |]");
+		out.println();
+	}
+
+	private void exportPartTitleToAbc(AbcPart part, PrintStream out) {
 		out.println();
 		out.println("X: " + part.getPartNumber());
 		if (metadata != null)
@@ -383,8 +663,15 @@ public class AbcExporter {
 		out.println("M: " + qtm.getMeter());
 		out.println("Q: " + qtm.getPrimaryExportTempoBPM());
 		out.println("K: " + keySignature);
-		out.println("L: " + ((qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75 ? "1/16" : "1/8"));
+		out.println("L: " + ((qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? "1/16" : "1/8"));
 		out.println();
+	}
+
+	private void exportPartToAbc(AbcPart part, PrintStream out,
+			boolean delayEnabled) throws AbcConversionException {
+		List<Chord> chords = combineAndQuantize(part, false);
+
+		exportPartTitleToAbc(part, out);
 
 		// Keep track of which notes have been sharped or flatted so
 		// we can naturalize them the next time they show up.
@@ -872,7 +1159,7 @@ public class AbcExporter {
 				}
 			}
 
-			List<AbcNoteEvent> bentNotes = quantizePitchBends(part, ne);
+			List<AbcNoteEvent> bentNotes = expandPitchBends(part, ne);
 			
 			if (bentNotes != null) {
 				assert !bentNotes.contains(ne);
@@ -1063,6 +1350,559 @@ public class AbcExporter {
 				throw new AbcConversionException("Failed to read instrument sample durations.", e);
 			}
 		}
+		
+		return chords;
+	}
+	
+	/**
+	 * Combine the tracks into one, quantize the note lengths, separate into chords.
+	 */
+	private List<Chord> combineOrganic(AbcPart part, boolean preview) throws AbcConversionException {
+		// Combine the events from the enabled tracks
+		List<AbcNoteEvent> events = new ArrayList<>();
+		for (int t = 0; t < part.getTrackCount(); t++) {
+			if (part.isTrackEnabled(t)) {
+				boolean specialDrumNotes = false;
+				if (part.getInstrument() == LotroInstrument.BASIC_DRUM) {
+					TrackInfo tInfo = part.getAbcSong().getSequenceInfo().getTrackInfo(t);
+					for (int inNo : tInfo.getNotesInUse()) {
+						byte outNo = part.getDrumMap(t).get(inNo);
+						if (outNo > part.getInstrument().highestPlayable.id) {
+							specialDrumNotes = true;
+							break;
+						}
+					}
+				}
+				List<MidiNoteEvent> listOfNotes = new ArrayList<>(part.getTrackEvents(t));
+
+				if (specialDrumNotes) {
+					List<MidiNoteEvent> extraList = new ArrayList<>();
+					List<MidiNoteEvent> removeList = new ArrayList<>();
+					for (MidiNoteEvent ne : listOfNotes) {
+						Note possibleCombiNote = part.mapNote(t, ne.note.id, ne.getStartTick());
+						if (possibleCombiNote != null && LotroCombiDrumInfo.noteIdIsXtraNote(possibleCombiNote.id)) {
+							MidiNoteEvent extra1 = LotroCombiDrumInfo.getId1(ne, possibleCombiNote, ne.midiPan);
+							MidiNoteEvent extra2 = LotroCombiDrumInfo.getId2(ne, possibleCombiNote, ne.midiPan);
+							extraList.add(extra1);
+							extraList.add(extra2);
+							removeList.add(ne);
+						} else if (possibleCombiNote != null && possibleCombiNote.id > LotroCombiDrumInfo.maxCombi.id) {
+							// Just for safety, should never land here.
+							System.err.println("// Just for safety, should never land here:+\n"+ne);
+							removeList.add(ne);
+						}
+					}
+					listOfNotes.removeAll(removeList);
+					listOfNotes.addAll(extraList);
+				}
+				
+				if (part.getInstrument().sustainable) {
+					long lastTick = 0L;
+					for (int curr = 0; curr < listOfNotes.size(); curr++) {
+						MidiNoteEvent currNe = listOfNotes.get(curr);
+						if (currNe.getEndTick() > lastTick) lastTick = currNe.getEndTick();
+						if (!part.getSectionLegato(t, currNe.getStartTick()) || lastTick > currNe.getEndTick()) {
+							currNe.setLegatoEndTick(part, null);
+							continue;
+						}
+						long currEnd = currNe.getEndTick();
+						long nextEnd = currEnd;
+						long currEndMicro = qtm.tickToMicros(currEnd);
+						// Now find where next note event starts
+						for (int next = curr+1; next < listOfNotes.size(); next++) {
+							MidiNoteEvent nextNe = listOfNotes.get(next);
+							if (nextNe.getStartTick() <= nextEnd && nextNe.getEndTick() > currEnd) {
+								break;
+							}
+							if (nextNe.getStartTick() > nextEnd) {
+								nextEnd = nextNe.getStartTick();
+								break;
+							}
+						}
+						if (nextEnd > currEnd) {
+							long nextEndMicro = qtm.tickToMicros(nextEnd);
+							if (nextEndMicro - currEndMicro < 1000000) {
+								currNe.setLegatoEndTick(part, nextEnd);
+							} else {
+								currNe.setLegatoEndTick(part, null);								
+							}
+						} else {
+							currNe.setLegatoEndTick(part, null);
+						}
+					}
+				} else {
+					for (MidiNoteEvent ne : listOfNotes) {
+						ne.setLegatoEndTick(part, null);
+					}
+				}
+
+				for (MidiNoteEvent ne : listOfNotes) {
+					// Skip notes that are outside of the play range.
+					if (ne.getEndTick() <= exportStartTick || ne.getStartTick() >= exportEndTick) {
+						//if (part.mapNoteEvent(t, ne) != null && part.shouldPlay(ne, t)) System.out.println(metadata.getSongTitle()+": Skipping note that are outside songs time range.\n"+ne);
+						continue;
+					}
+					
+					// reset pruned flag
+					// ne.resetPruned(part);
+
+					Note mappedNote = ne.note;
+
+					if (!ne.alreadyMapped) {
+						mappedNote = part.mapNoteEvent(t, ne);
+					}
+					
+					if (mappedNote != null && part.shouldPlay(ne, t)) {
+						if (!(ne instanceof BentMidiNoteEvent)) {
+							assert mappedNote.id >= part.getInstrument().lowestPlayable.id : mappedNote;
+							assert mappedNote.id <= part.getInstrument().highestPlayable.id : mappedNote;
+						} else {
+							//AbcNoteEvent newNE = createNoteEvent(ne, mappedNote, 60, 0, 1000, qtm);
+							//assert ((BentAbcNoteEvent)newNE).getMinNote() >= part.getInstrument().lowestPlayable.id : ne.alreadyMapped+": "+newNE;
+							//assert ((BentAbcNoteEvent)newNE).getMaxNote() <= part.getInstrument().highestPlayable.id : ne.alreadyMapped+": "+newNE;
+						}
+						// if (mappedNote.id > part.getInstrument().highestPlayable.id) {
+						// part.mapNoteEvent2(t, ne);
+						// }
+
+						long startTick = Math.max(ne.getStartTick(), exportStartTick);
+						long legatoEndTick = ne.getEndTick();
+						if (ne.getLegatoEndTick(part) != null) {
+							legatoEndTick = ne.getLegatoEndTick(part);
+						}
+						long endTick = legatoEndTick;//Math.min(legatoEndTick, exportEndTick);
+						//TODO: organic export ticks start/end
+						ne.setLegatoEndTick(part, null);// clean up, so if a part is removed there is not references to it in midinoteevents.
+						if (part.isStudentPart() && mappedNote.id < LotroInstrument.STUDENT_CHROMATIC_LOWEST.id) {
+							long endTickMin = qtm.microsToTick(
+									qtm.tickToMicros(startTick) + (long) (AbcConstants.STUDENT_FX_MIN_SECONDS
+											* TimingInfo.ONE_SECOND_MICROS * qtm.getExportTempoFactor()));
+							endTick = Math.max(endTick, endTickMin);// TODO: what if similar note comes right after, then it should not be extended!!!
+						}
+
+						int[] sva = part.getSectionVolumeAdjust(t, ne);
+						int velocity = part.getSectionNoteVelocity(t, ne);
+						velocity = (int) ((velocity + part.getTrackVolumeAdjust(t) + sva[0]) * 0.01f * (float) sva[1] * 0.01f * (float) sva[2]);
+
+						AbcNoteEvent newNE = createNoteEvent(ne, mappedNote, velocity, startTick, endTick, qtm);
+						
+						/*
+						 * if (preview) { // Only associate if doing preview newNE.origEvent = new
+						 * ArrayList<NoteEvent>(); newNE.origEvent.add(ne); }
+						 */
+						events.add(newNE);
+
+						Boolean[] doubling = part.getSectionDoubling(ne.getStartTick(), t);
+
+						if (doubling[0] && ne.note.id - 24 > Note.MIN.id) {
+							Note mappedNote2 = part.mapNoteEvent(t, ne, ne.note.id - 24);
+							if (mappedNote2 != null) {
+								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
+								//newNE2.doubledNote = true;// prune these first
+								events.add(newNE2);
+							}
+						}
+						if (doubling[1] && ne.note.id - 12 > Note.MIN.id) {
+							Note mappedNote2 = part.mapNoteEvent(t, ne, ne.note.id - 12);
+							if (mappedNote2 != null) {
+								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
+								//newNE2.doubledNote = true;
+								events.add(newNE2);
+							}
+						}
+						if (doubling[2] && ne.note.id + 12 < Note.MAX.id) {
+							Note mappedNote2 = part.mapNoteEvent(t, ne, ne.note.id + 12);
+							if (mappedNote2 != null) {
+								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
+								//newNE2.doubledNote = true;
+								events.add(newNE2);
+							}
+						}
+						if (doubling[3] && ne.note.id + 24 < Note.MAX.id) {
+							Note mappedNote2 = part.mapNoteEvent(t, ne, ne.note.id + 24);
+							if (mappedNote2 != null) {
+								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
+								//newNE2.doubledNote = true;
+								events.add(newNE2);
+							}
+						}
+					} else {
+						ne.setLegatoEndTick(part, null);// clean up, so if a part is removed there is not references to it in midinoteevents.
+						//System.out.println("Final skipping \n"+ne+"\n"+(mappedNote != null)+" "+(part.shouldPlay(ne, t)));
+					}
+				}
+			}
+		}
+		
+		if (events.isEmpty() && preview) {
+			try {
+				PolyphonyHistogram.count(part, new ArrayList<>());
+			} catch (IOException e) {
+				throw new AbcConversionException("Failed to read instrument sample durations.", e);
+			}
+			return Collections.emptyList();
+		}
+
+		Collections.sort(events);
+		
+		if (part.conclusionFermata != 0) {
+			long finalNoteTickEnd = 0L;
+			List<AbcNoteEvent> conclusion = new ArrayList<>();
+			for (int cc = 0; cc < events.size() ; cc++) {
+				AbcNoteEvent ne = events.get(cc);
+				if (ne.getEndTick() > finalNoteTickEnd) {
+					finalNoteTickEnd = ne.getEndTick();
+					conclusion.removeAll(conclusion);
+					conclusion.add(ne);
+				} else if (ne.getEndTick() == finalNoteTickEnd) {
+					conclusion.add(ne);
+				}
+			}
+			long fermataEndTick = qtm.microsToTickABC(part.conclusionFermata * 1000L + qtm.tickToMicrosABC(finalNoteTickEnd));
+			boolean sustain = false;
+			for (int cc = 0; cc < conclusion.size() ; cc++) {
+				AbcNoteEvent ne = conclusion.get(cc);
+				if (part.getInstrument().isSustainable(ne.note.id)) {
+					sustain = true;
+					ne.setEndTick(fermataEndTick);
+				}
+			}
+			if (fermataEndTick > exportEndTick && sustain) {
+				// This is a hack, as at the time this runs
+				// exportEndTick has already been used elsewhere.
+				exportEndTick = fermataEndTick;
+			}
+		}
+
+		// Quantize the events
+		long lastEnding = 0;
+		AbcNoteEvent lastEvent = null;
+		List<AbcNoteEvent> extraEvents = new ArrayList<>();
+		List<AbcNoteEvent> deleteEvents = new ArrayList<>();
+		
+		int removedToAvoidDissonance = 0;
+		for (int cc = 0; cc < events.size() ; cc++) {
+			AbcNoteEvent ne = events.get(cc);
+			assert ne.note != Note.REST : "Rest detected!";
+			if (cc == events.size()-1) {
+				//System.out.println(part.getTitle()+": pre ends at "+(ne.getEndMicros()));
+			}
+			long oldStart = ne.getStartTick();
+			long oldEnd = ne.getEndTick();
+			
+			if (oldStart == oldEnd) {
+				deleteEvents.add(ne);
+				continue;
+			}
+			
+			boolean deleted = false;
+
+			List<AbcNoteEvent> bentNotes = expandPitchBendsOrganic(part, ne);
+			
+			if (bentNotes != null) {
+				assert !bentNotes.contains(ne);
+				deleteEvents.add(ne);
+				for (AbcNoteEvent bent : bentNotes) {
+					assert bent.note != Note.REST;
+					if (bent.getEndTick() > lastEnding) {
+						lastEnding = bent.getEndTick();
+						lastEvent = bent;
+					}
+				}
+				extraEvents.addAll(bentNotes);
+			} else {
+				if (ne.getEndTick() > lastEnding) {
+					lastEnding = ne.getEndTick();
+					lastEvent = ne;
+				}
+			}
+		}
+		
+		part.numberOfRemovedNotesForSafety = removedToAvoidDissonance;
+
+		events.addAll(extraEvents);// add all the pitchbend fractions to the main event list
+		events.removeAll(deleteEvents);
+		//System.out.println("Something removed: "+deleteEvents.size());
+		//System.out.println("Something added: "+extraEvents.size());
+		
+		Collections.sort(events);
+		
+		if (events.size() == 0) {
+			System.err.println("Export to preview/abc: "+metadata.getSongTitle()+" has a part with no exported notes.");
+			return new ArrayList<>();
+		}
+		
+		// Add initial rest if necessary
+		
+		if (events.get(0).getStartTick() > exportStartTick) {
+			events.add(0, new AbcNoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, exportStartTick,
+					events.get(0).getStartTick(), qtm, null));
+		}
+
+		// Add a rest at the end if necessary
+		if (false && exportEndTick < Long.MAX_VALUE) {
+
+			if (lastEvent.getEndTick() < exportEndTick) {
+				if (lastEvent.note == Note.REST) {
+					lastEvent.setEndTick(exportEndTick);
+				} else {
+					events.add(new AbcNoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, lastEvent.getEndTick(),
+							exportEndTick, qtm, null));
+				}
+			}
+		}
+
+		// Remove duplicate notes
+		removeDuplicateNotes(events, part.getInstrument());
+		
+		Collections.sort(events);// needed due to duplicate adding thirds
+
+		breakLongNotesOrganic(part, events);
+
+		List<Chord> chords = new ArrayList<>(events.size() / 2);
+		List<AbcNoteEvent> tmpEvents = new ArrayList<>();
+		
+		// Combine notes that play at the same time into chords
+		Chord curChord = new Chord(events.get(0));
+		Chord lastGood = null;
+		chords.add(curChord);
+		MAIN:for (int i = 1; i < events.size(); i++) {
+			AbcNoteEvent ne = events.get(i);
+			
+			//System.out.println(i+": ne.start="+ne.getStartTick());
+			//System.out.println(i+": ne.end  ="+ne.getEndTick());
+
+			if (curChord.getStartTick() == ne.getStartTick()) {
+				// This note starts at the same time as the rest of the notes in the chord
+				assert !curChord.isRest();
+				curChord.add(ne);
+			} else {
+				List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
+						part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part);
+				removeNotes(events, deadnotes, part);
+				if (!deadnotes.isEmpty()) {
+					// One of the tiedTo notes that was pruned might be the events.get(i) note,
+					// so we go one step back and re-process events.get(i)
+					i--;
+					//System.out.println("LOOP: PRUNED");
+					continue;
+				}				
+				
+				// remove very fast appegio
+				for (int ii = i+1; ii < events.size(); ii++) {
+					AbcNoteEvent ne2 = events.get(ii);
+					if (ne2.getStartTick() > ne.getStartTick()) {
+						if (ne.getEndTick() > ne2.getStartTick()) {
+							long micros = qtm.tickToMicrosABC(ne2.getStartTick()) - qtm.tickToMicrosABC(ne.getStartTick());
+							if (micros < AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())) {
+								ne.setStartTick(ne2.getStartTick());// start it later
+								
+								//System.out.println(part.getTitle()+ ": Removed appegio");
+								//Collections.sort(events);
+								int j = i;
+								while(j < events.size() && events.get(j+1).getStartTick() < ne.getStartTick()) {
+									events.remove(ne);
+									events.add(j+1, ne);
+									j++;
+								}
+								
+								i--;// process it again, or if its now later, process whatever should come before it
+								continue MAIN;
+							}
+						}
+						break;
+					}
+				}
+				
+				
+				// Create a new chord
+				Chord nextChord = new Chord(ne);
+
+				// The curChord has all the notes it will get. But before continuing,
+				// normalize the chord so that all notes end at the same time and end
+				// before the next chord starts.
+				boolean reprocessCurrentNote = false;
+				long targetEndTick = Math.min(nextChord.getStartTick(), curChord.getEndTick());
+
+				for (int j = 0; j < curChord.size(); j++) {
+					AbcNoteEvent jne = curChord.get(j);
+					if (jne.getEndTick() > targetEndTick) {
+						/*
+						if (curChord.getEndTick() <= curChord.getStartTick()) {
+							System.out.println("OOPS 1");
+						} else if (curChord.getEndTick() <= jne.getStartTick()) {
+							System.out.println("OOPS 2");
+						} else if (nextChord.getStartTick() <= curChord.getStartTick()) {
+							System.out.println("OOPS 3 ");
+							System.out.println(" ne.start="+nextChord.getStartTick());
+							System.out.println(" cu.start="+curChord.getStartTick());
+							System.out.println(" cu.end  ="+curChord.getEndTick());
+						} else if (nextChord.getStartTick() <= jne.getStartTick()) {
+							System.out.println("OOPS 4 ");
+						}
+						*/
+						
+						// This note extends past the end of the chord; break it into two tied notes
+						AbcNoteEvent next = jne.splitWithTieAtTick(targetEndTick);
+
+						int ins = Collections.binarySearch(events, next);
+						if (ins < 0)
+							ins = -ins - 1;
+						assert (ins >= i);
+						// If we're inserting before the current note, back up and process the added
+						// note
+						if (ins == i)
+							reprocessCurrentNote = true;
+						assert next.note != Note.REST;
+						events.add(ins, next);
+					}
+				}
+
+				// The shorter notes will have changed the chord's duration
+				if (targetEndTick < curChord.getEndTick())
+					curChord.recalcEndTick();
+
+				if (reprocessCurrentNote) {
+					i--;
+					//System.out.println("LOOP: split");
+					continue MAIN;
+				}				
+				
+				// Expand into gap to next chord if the gap is smaller than 0.06s
+				if (curChord.getEndTick() < nextChord.getStartTick()) {
+					long restMicros = qtm.tickToMicrosABC(nextChord.getStartTick()) - qtm.tickToMicrosABC(curChord.getEndTick());
+					if (restMicros <= AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())) {
+						assert nextChord.getStartTick() > curChord.getEndTick(); 
+						curChord.setEndTickExpand(nextChord.getStartTick());
+						//System.out.println(part.getTitle()+ ": Bridged rest");
+					}
+				}
+				
+				if (curChord.early != null) {
+					curChord.setEarlyStartTick();
+				}
+				
+				//Remove the chord if its sustained (or non-sustained but no room for larger chord) and shorter than 0.06s
+				if (qtm.tickToMicrosABC(curChord.getEndTick()) < qtm.tickToMicrosABC(curChord.getStartTick()) + AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())) {
+					if (part.getInstrument().sustainable) {
+						curChord.setEndTickRetract(curChord.getStartTick());
+						if (lastGood != null) curChord = lastGood;
+					} else {
+						curChord.setEndTickExpand(qtm.microsToTickABC(qtm.tickToMicrosABC(curChord.getStartTick()) + AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())));
+						if (curChord.getEndTick() > nextChord.getStartTick()) {
+							curChord.setEndTickRetract(curChord.getStartTick());
+							if (lastGood != null) curChord = lastGood;
+						}
+					}
+				}
+				
+				// Insert a rest between the chords if needed
+				if (curChord.getEndTick() < nextChord.getStartTick()) {
+					long restMicros = qtm.tickToMicrosABC(nextChord.getStartTick()) - qtm.tickToMicrosABC(curChord.getEndTick());
+					if (restMicros > AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())) {
+						tmpEvents.clear();
+						tmpEvents.add(new AbcNoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, curChord.getEndTick(),
+								nextChord.getStartTick(), qtm, null));
+						breakLongNotesOrganic(part, tmpEvents);
+	
+						for (AbcNoteEvent restEvent : tmpEvents) {
+							chords.add(new Chord(restEvent));
+						}
+					} else {
+						nextChord.early = curChord.getEndTick();
+						//System.out.println(part.getTitle()+ ": Early start");
+						//curChord.setEndTickExpand(nextChord.getStartTick());
+						//System.out.println(part.getTitle()+ ": Bridged rest 2");
+					}
+				}
+
+				chords.add(nextChord);
+				assert !nextChord.hasRestAndNotes();
+				assert !curChord.hasRestAndNotes();
+				lastGood = curChord;
+				curChord = nextChord;
+			}
+		}
+
+		boolean reprocessCurrentNote = true;
+
+		while (reprocessCurrentNote) {
+			// The last Chord has all the notes it will get. But before continuing,
+			// normalize the chord so that all notes end at the same time and end
+			// before the next chord starts.
+			if (curChord.early != null) {
+				curChord.setEarlyStartTick();
+			}
+			if (curChord.getStartTick() == curChord.getEndTick()) {
+				chords.remove(curChord);
+				break;
+			}
+			// Last chord needs to be pruned as that hasn't happened yet.
+			List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
+					part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part);
+			removeNotes(events, deadnotes, part);// we need to set the pruned flag for last chord too.
+			curChord.recalcEndTick();
+			System.out.println(part.getTitle()+" final note ends at "+Util.formatDurationM(qtm.tickToMicrosABC(curChord.getEndTick()-exportStartTick)));
+			long targetEndTick = curChord.getEndTick();
+
+			reprocessCurrentNote = false;
+			/*
+			Chord nextChord = null;
+
+			for (int j = 0; j < curChord.size(); j++) {
+				AbcNoteEvent jne = curChord.get(j);
+				if (jne.getEndTick() > targetEndTick) {
+					// This note extends past the end of the chord; break it into two tied notes
+					AbcNoteEvent next = jne.splitWithTieAtTick(targetEndTick);
+					if (nextChord == null) {
+						nextChord = new Chord(next);
+						chords.add(nextChord);
+					} else {
+						nextChord.add(next);
+					}
+				}
+			}
+			curChord.recalcEndTick();
+			if (nextChord != null) {
+				reprocessCurrentNote = true;
+				curChord = nextChord;
+				curChord.recalcEndTick();
+			}
+			*/
+		}
+		assert !curChord.hasRestAndNotes();
+		
+		List<Chord> trash = new ArrayList<>();
+		for (int i = 0; i < chords.size(); i++) {
+			Chord chord = chords.get(i);
+			if (chord.getStartTick() == chord.getEndTick()) {
+				for (int j = 0; j < chord.size(); j++) {
+					AbcNoteEvent note = chord.get(j);
+					AbcNoteEvent tieIn = note.tiesFrom;
+					AbcNoteEvent tieOut = note.tiesTo;
+					if (tieIn != null && tieOut != null) {
+						tieIn.tiesTo = tieOut;
+						tieOut.tiesFrom = tieIn;
+					} else if (tieIn != null) {
+						tieIn.tiesTo = null;
+					} else if (tieOut != null) {
+						tieOut.tiesFrom = null;
+					}
+				}
+				trash.add(chord);
+			}
+		}
+		chords.removeAll(trash);
+		
+		if (preview) {
+			try {
+				PolyphonyHistogram.count(part, chords);
+			} catch (IOException e) {
+				throw new AbcConversionException("Failed to read instrument sample durations.", e);
+			}
+		}
+		
+		//Collections.sort(chords);
 		
 		return chords;
 	}
@@ -1331,6 +2171,84 @@ public class AbcExporter {
 			}
 		}
 	}
+	
+	private void breakLongNotesOrganic(AbcPart part, List<AbcNoteEvent> events) {
+		for (int i = 0; i < events.size(); i++) {
+			AbcNoteEvent ne = events.get(i);
+			
+			
+			TimingInfo tm = qtm.getTimingInfo(ne.getStartTick(), part);
+
+			long maxNoteEndTick = 
+					qtm.microsToTick(
+							ne.getStartMicros() + (long) (TimingInfo.LONGEST_NOTE_MICROS * qtm.getExportTempoFactor()));
+			
+			// quantize:            tunedit + mixtimings 
+			// microsToTick:        tunedit + mixtimings
+			// getStartMicros:      tunedit + mixtimings
+			// LONGEST_NOTE_MICROS: tunedit + mixtimings + tempoedit (hence why export tempo factor is applied onto it
+
+			// Make a hard break for notes that are longer than LotRO can play
+			// Bagpipe notes up to B2 can sustain indefinitely; don't break them
+			if (ne.getEndTick() > maxNoteEndTick && ne.note != Note.REST
+					&& !(part.getInstrument() == LotroInstrument.BASIC_BAGPIPE
+							&& ne.note.id <= AbcConstants.BAGPIPE_LAST_DRONE_NOTE_ID)) {
+
+				// If the note is a rest or sustainable, add another one after
+				// this ends to keep it going...
+				if (ne.note == Note.REST || part.getInstrument().isSustainable(ne.note.id)) {
+					// TODO: When making DP-CIT this assert kicks in at 51 BPM. But why..
+					//assert (ne.getEndTick() - maxNoteEndTick >= qtm.getTimingInfo(maxNoteEndTick, part)
+					//		.getMinNoteLengthTicks());
+					AbcNoteEvent next = new AbcNoteEvent(ne.note, ne.velocity, maxNoteEndTick, ne.getEndTick(), qtm, ne.origNote);
+					if (ne.note == Note.REST) {
+						maxNoteEndTick = (ne.getEndTick() - ne.getStartTick())/2;
+						next = new AbcNoteEvent(ne.note, ne.velocity, maxNoteEndTick, ne.getEndTick(), qtm, ne.origNote);
+						i--;
+					}
+					int ins = Collections.binarySearch(events, next);
+					if (ins < 0)
+						ins = -ins - 1;
+					assert (ins > i);
+					events.add(ins, next);
+
+					ne.continues = next.getLengthTicks();// needed for pruning
+				}
+				ne.setEndTick(maxNoteEndTick);
+			}
+
+			// Tie notes across bar boundaries
+			
+			long targetEndTick = ne.getEndTick();
+
+			// Tie notes across tempo boundaries
+			final QuantizedTimingInfo.TimingInfoEvent nextTempoEvent = qtm.getNextTimingEvent(ne.getStartTick(),
+					part);
+			if (nextTempoEvent != null && nextTempoEvent.tick < targetEndTick) {
+				//targetEndTick = nextTempoEvent.tick;
+			}
+
+			// If remaining bar is larger than 5s, then split rests earlier (and yes, have
+			// seen this happen for 8s+ -aifel)
+			if (ne.note == Note.REST && targetEndTick > qtm.microsToTick(qtm.tickToMicros(ne.getStartTick())
+					+ (long) (TimingInfo.LONGEST_NOTE_MICROS * qtm.getExportTempoFactor()))) {
+				// Rest longer than 5s, split it at 4s:
+				targetEndTick = 
+						qtm.microsToTick(qtm.tickToMicros(ne.getStartTick())
+								+ (long) (0.5f * AbcConstants.LONGEST_NOTE_MICROS * qtm.getExportTempoFactor()));
+			}
+
+			if (ne.getEndTick() > targetEndTick) {
+				
+				AbcNoteEvent next = ne.splitWithTieAtTick(targetEndTick);
+				int ins = Collections.binarySearch(events, next);
+				if (ins < 0)
+					ins = -ins - 1;
+				assert (ins > i);
+				events.add(ins, next);
+			}
+		}
+	}
 
 	private AbcNoteEvent createNoteEvent(MidiNoteEvent oldNe, Note mappednote, int velocity, long startTick, long endTick,
 			ITempoCache tempos) {
@@ -1364,7 +2282,7 @@ public class AbcExporter {
 	 * @param ne   The note event to be processed
 	 * @return List of multiple NoteEvents
 	 */
-	private List<AbcNoteEvent> quantizePitchBends(AbcPart part, AbcNoteEvent ne) {
+	private List<AbcNoteEvent> expandPitchBends(AbcPart part, AbcNoteEvent ne) {
 		// Handle pitch bend by subdividing tone into shorter quantized notes.
 		// By the time this method is ran, start and end tick of the bent tone is already quantized.
 		if (ne instanceof BentAbcNoteEvent) {
@@ -1423,6 +2341,73 @@ public class AbcExporter {
 							changeAtLastGrid = true;
 						}
 					}
+				}
+			}
+			//double dura = be.getLengthMicros() / 1000.0d;
+			//System.out.println(dura+" Note split into "+benders.size()+" bends");
+			//if (be.getStartTick() != benders.get(0).getStartTick() || be.getEndTick() != benders.get(benders.size()-1).getEndTick()) {
+			//	System.out.println("\nNote split wrongly "+be.getStartTick()+" to "+be.getEndTick());
+			//	System.out.println("        == "+benders.get(0).getStartTick()+" to "+benders.get(benders.size()-1).getEndTick());
+			//}
+			//if (benders.size() == 0) {
+			//	System.out.println(" empty benders");
+			//}
+			return benders;
+		} else {
+			return null;
+		}
+	}
+	
+	/**
+	 * Split all BentNoteEvents into multiple quantized NoteEvents
+	 * 
+	 * @param part Abc Part
+	 * @param ne   The note event to be processed
+	 * @return List of multiple NoteEvents
+	 */
+	private List<AbcNoteEvent> expandPitchBendsOrganic(AbcPart part, AbcNoteEvent ne) {
+		// Handle pitch bend by subdividing tone into shorter quantized notes.
+		// By the time this method is ran, start and end tick of the bent tone is already quantized.
+		if (ne instanceof BentAbcNoteEvent) {
+			BentAbcNoteEvent be = (BentAbcNoteEvent) ne;
+			int noteID = be.note.id;
+			assert be.note != Note.REST;
+			int startPitch = noteID;
+			List<AbcNoteEvent> benders = new ArrayList<>();
+			AbcNoteEvent current = null;
+			boolean changeAtLastGrid = true;
+			long lastGridTick = 0L;
+			long minimum = qtm.microsToTickABC((long)(qtm.getExportTempoFactor()*(double)AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())));
+			Integer entry = null;
+			for (long t = be.getStartTick(); t < be.getEndTick(); t = be.getNextBend(t+minimum, entry)) {
+				entry = be.getBend(t);
+				if (entry != null) {
+					noteID = startPitch + entry;
+				} else {
+					// Since all bent notes have a bend at start tick,
+					// and that start tick might have been quantized to lower tick.
+					// Make sure we grab that initial value here.
+					entry = be.bends.firstEntry().getValue();
+					noteID = startPitch + entry;
+				}
+				if (current == null) {
+					current = createBentSubNote(be, noteID, current, t, entry);
+					if (current == null)
+						return new ArrayList<>();
+					benders.add(current);
+					lastGridTick = t;
+					changeAtLastGrid = true;
+				} else {
+					if (current.note.id != noteID) {
+						current = createBentSubNote(be, noteID, current, t, entry);
+						if (current == null)
+							return new ArrayList<>();
+						benders.add(current);
+						changeAtLastGrid = true;
+					} else {
+						changeAtLastGrid = false;
+					}
+					lastGridTick = t;
 				}
 			}
 			//double dura = be.getLengthMicros() / 1000.0d;

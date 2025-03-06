@@ -323,6 +323,10 @@ public final class Util {
 	public static String formatDuration(long micros) {
 		return formatDuration(micros, 0);
 	}
+	
+	public static String formatDurationM(long micros) {
+		return formatDurationM(micros, 0, ':');
+	}
 
 	public static String formatDuration(long micros, long maxMicros) {
 		return formatDuration(micros, maxMicros, ':');
@@ -363,6 +367,50 @@ public final class Util {
 			s.append('0');
 		}
 		s.append(sec);
+
+		return s.toString();
+	}
+	
+	public static String formatDurationM(long micros, long maxMicros, char separator) {
+		if (maxMicros < micros)
+			maxMicros = micros;
+
+		StringBuilder s = new StringBuilder(5);
+
+		int t = (int) (micros / (1000));
+		
+		int hr = t / (60000 * 60000);
+		t %= 60000 * 60000;
+		int min = t / 60000;
+		t %= 60000;
+		int sec = t / 1000;
+		int ms = t - sec*1000;
+		
+		int tMax = (int) (maxMicros / (1000 * 1000));
+		int hrMax = tMax / (60 * 60);
+		tMax %= 60 * 60;
+		int minMax = tMax / 60;
+
+		if (hrMax > 0) {
+			s.append(hr).append(separator);
+			if (min < 10) {
+				s.append('0');
+			}
+		} else if (minMax >= 10 && min < 10) {
+			s.append('0');
+		}
+		s.append(min).append(separator);
+		if (sec < 10) {
+			s.append('0');
+		}
+		s.append(sec).append(separator);
+		if (ms < 100) {
+			s.append('0');
+		}
+		if (ms < 10) {
+			s.append('0');
+		}
+		s.append(ms);
 
 		return s.toString();
 	}

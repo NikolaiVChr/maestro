@@ -27,6 +27,7 @@ import javax.xml.transform.TransformerException;
 import com.aifel.abctools.AbcTools.MsxFileFilter;
 import com.aifel.abctools.AbcTools.FolderFileFilter;
 import com.digero.common.abc.StringCleaner;
+import com.digero.common.util.ParseException;
 import com.digero.maestro.MaestroMain;
 import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.abc.ExportFilenameTemplate;
@@ -211,7 +212,11 @@ public class AutoExporter {
 			
 			for (File project : projects) {
 				if (cancel) break;
-				exportProject(project);
+				try {
+					exportProject(project);
+				} catch (ParseException e) {
+					appendToField("<br><font color='red'>"+e.toString()+"</font>");
+				}
 				exportCount++;
 				setProgress((int) (exportCount * progressFactor));
 			}
@@ -597,7 +602,11 @@ public class AutoExporter {
 					//System.out.println("IO");
 				}
 			} else {
-				//System.out.println("New already="+newNestedMidi.getPath());
+				if (newNestedMidi != null) {
+					//System.out.println("New already="+String.valueOf(newNestedMidi.getPath()));
+				} else {
+					//System.out.println("NULL - New already=");
+				}
 			}
 			if (original.equals(newNestedMidi)) {
 				message += "\n\nWould you like to try to locate the file?";

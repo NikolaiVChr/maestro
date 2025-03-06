@@ -33,13 +33,14 @@ import com.digero.common.midi.ITempoCache;
 import com.digero.common.midi.Note;
 import com.digero.maestro.abc.AbcPart;
 
-public class Chord implements AbcConstants {
+public class Chord implements AbcConstants, Comparable<Chord> {
 	private ITempoCache tempoCache;
 	private long startTick;
 	private long endTick;
 	private List<AbcNoteEvent> notes = new ArrayList<>();
 	private int highest = 0;// source midi highest and lowest pitch in the chord
 	private int lowest = 200;
+	public Long early = null; // organic
 
 	public Chord(AbcNoteEvent firstNote) {
 		tempoCache = firstNote.getTempoCache();
@@ -117,6 +118,35 @@ public class Chord implements AbcConstants {
 			note.setEndTick(newEndTick);
 		}
 		endTick = newEndTick;
+	}
+	
+	public void setEndTickRetract(long newEndTick) {
+		// organic
+		for (AbcNoteEvent note : notes) {
+			if (note.getEndTick() > newEndTick) {
+				note.setEndTick(newEndTick);
+			}
+		}
+		endTick = newEndTick;
+	}
+	
+	public void setEndTickExpand(long newEndTick) {
+		// organic
+		for (AbcNoteEvent note : notes) {
+			if (note.getEndTick() < newEndTick) {
+				note.setEndTick(newEndTick);
+			}
+		}
+		endTick = newEndTick;
+	}
+	
+	public void setEarlyStartTick() {
+		// organic
+		for (AbcNoteEvent note : notes) {
+			note.setStartTick(early);
+		}
+		startTick = early;
+		early = null;
 	}
 
 	public void sort() {
@@ -469,4 +499,10 @@ public class Chord implements AbcConstants {
 	public List<AbcNoteEvent> getNotes() {
 		return notes;
 	}
+
+	@Override
+	public int compareTo(Chord o) {
+		return (int)(this.getStartTick() - o.getStartTick());
+	}
+
 }

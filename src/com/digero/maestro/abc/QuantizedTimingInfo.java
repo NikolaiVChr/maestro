@@ -670,6 +670,10 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 	public TimingInfo getTimingInfo(long tick, AbcPart part) {
 		return getTimingEventForTick(tick, part).info;
 	}
+	
+	public TimingInfo getTimingInfoOrganic(long tick) {
+		return getTimingEventForTick(tick).info;
+	}
 
 	public long quantize(long tick, AbcPart part) {
 		TimingInfoEvent e = getTimingEventForTick(tick, part);

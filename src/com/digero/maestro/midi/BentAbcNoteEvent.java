@@ -32,6 +32,18 @@ public class BentAbcNoteEvent extends AbcNoteEvent {
 		return entry.getValue();
 	}
 	
+	public Long getNextBend(long tick, int lastBend) {
+		Entry<Long, Integer> entry_c = bends.ceilingEntry(tick);
+		Entry<Long, Integer> entry_f = bends.floorEntry(tick);
+		
+		if (entry_f != null && entry_f.getValue() != lastBend) return entry_f.getKey(); 
+		
+		if (entry_c == null)
+			return tick;
+		
+		return entry_c.getKey();
+	}
+	
 	/**
 	 * 
 	 * @return max seminote relative bend
@@ -86,4 +98,6 @@ public class BentAbcNoteEvent extends AbcNoteEvent {
 	public String toString() {
 		return getClass().getName()+": " + note.id + "("+getMinNote()+"-"+getMaxNote()+ ") duraTicks=" + getFullLengthTicks() + " tick:"+startTick+"-"+endTick+" vol="+velocity+" TiesIsNull: "+(tiesFrom==null)+" "+(tiesTo == null)+" time: "+(getStartMicros()/1000000.0)+" to "+(getEndMicros()/1000000.0);
 	}
+
+	
 }

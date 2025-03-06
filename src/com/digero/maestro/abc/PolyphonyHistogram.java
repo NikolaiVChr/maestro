@@ -89,6 +89,10 @@ public class PolyphonyHistogram   {
 				long endTick = check.getEndTick();
 				long start = qtm.tickToMicrosABC(event.getStartTick(), part);// delay is already in the start/end tick at this point 
 				long end   = qtm.tickToMicrosABC(endTick, part);
+				if (AbcExporter.organic) {
+					start = qtm.tickToMicrosABC(event.getStartTick());// delay is already in the start/end tick at this point 
+					end   = qtm.tickToMicrosABC(endTick);
+				}
 				if (part.getInstrument().isSustainable(event.note.id)) {
 					end += 200000L;// 200ms
 					Double seconds = LotroInstrumentSampleDuration.getDura(part.getInstrument().friendlyName, event.note.id);

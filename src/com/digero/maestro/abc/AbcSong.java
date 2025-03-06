@@ -102,6 +102,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private QuantizedTimingInfo timingInfo;
 	private AbcExporter abcExporter;
 	private File sourceFile; // The MIDI or ABC file that this song was loaded from
+	private File newSourceFile = null;
 	private File exportFile; // The ABC export file
 	private File projectFile; // The XML Maestro song file
 	private boolean usingOldVelocities = false;
@@ -127,7 +128,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			ExportFilenameTemplate exportFilenameTemplate, InstrNameSettings instrNameSettings,
 			FileResolver fileResolver, MiscSettings miscSettings, boolean saveMSXwhenSourceChange)
 			throws IOException, InvalidMidiDataException, ParseException, SAXException {
-		sourceFile = file;
+		projectFile = file;
 		storeNewSourceFile = saveMSXwhenSourceChange;
 		this.partAutoNumberer = partAutoNumberer;
 		this.partAutoNumberer.setParts(Collections.unmodifiableList(parts));
@@ -259,11 +260,11 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			throws SAXException, IOException, ParseException {
 		try {
 			projectFile = file;
-			Document doc = XmlUtil.openDocument(sourceFile);
+			Document doc = XmlUtil.openDocument(projectFile);
 			Element songEle = XmlUtil.selectSingleElement(doc, "song");
 			if (songEle == null) {
 				throw new ParseException("Does not appear to be a valid Maestro file. Missing <song> root element.",
-						sourceFile.getName());
+						projectFile.getName());
 			}
 			Version fileVersion = SaveUtil.parseValue(songEle, "@fileVersion", SONG_FILE_VERSION);
 
@@ -286,13 +287,12 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			exportFile = SaveUtil.parseValue(songEle, "exportFile", exportFile);
 
 			sequenceInfo = null;
+			String name = sourceFile.getName().toLowerCase();
+			boolean isAbc = name.endsWith(".abc") || name.endsWith(".txt");
 			while (sequenceInfo == null) {
-				String name = sourceFile.getName().toLowerCase();
-				boolean isAbc = name.endsWith(".abc") || name.endsWith(".txt");
-
 				tryToLoadFromFile(fileResolver, isAbc, miscSettings);
 
-				if (sourceFile == null)
+				if (newSourceFile == null)
 					throw new ParseException("Failed to load file", name);
 			}
 
@@ -377,7 +377,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	}
 
 	private void tryToLoadFromFile(FileResolver fileResolver, boolean isAbc, MiscSettings miscSettings) {
-		File newSourceFile = sourceFile;
+		if (newSourceFile == null) newSourceFile = sourceFile;
 		try {
 			File sourceInCurrentDir = new File(projectFile.getParentFile(), newSourceFile.getName());
 			if (!newSourceFile.exists() && sourceInCurrentDir.exists()) {

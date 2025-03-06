@@ -54,7 +54,8 @@ public class AbcNoteEvent extends NoteEvent {
 	 * @return The new NoteEvent that was created starting at splitPointTick.
 	 */
 	public AbcNoteEvent splitWithTieAtTick(long splitPointTick) {
-		assert splitPointTick > startTick && splitPointTick < endTick;
+		assert splitPointTick > startTick:"split before beginning";
+		assert splitPointTick < endTick:"split after end";
 
 		AbcNoteEvent next = new AbcNoteEvent(note, velocity, splitPointTick, endTick, tempoCache, this.origNote);
 		setEndTick(splitPointTick);
