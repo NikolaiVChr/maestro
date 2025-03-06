@@ -1783,12 +1783,19 @@ public class AbcExporter {
 				}
 				
 				//Remove the chord if its sustained (or non-sustained but no room for larger chord) and shorter than 0.06s
-				if (qtm.tickToMicrosABC(curChord.getEndTick()) < qtm.tickToMicrosABC(curChord.getStartTick()) + AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())) {
+				long minEndMicro = qtm.tickToMicrosABC(curChord.getStartTick()) + AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM());
+				if (qtm.tickToMicrosABC(curChord.getEndTick()) < minEndMicro) {
 					if (part.getInstrument().sustainable) {
-						curChord.setEndTickRetract(curChord.getStartTick());
-						if (lastGood != null) curChord = lastGood;
+						long nextMicro = qtm.tickToMicrosABC(nextChord.getStartTick());
+						if (nextMicro < minEndMicro) {
+							// give up and schedule it for deletion
+							curChord.setEndTickRetract(curChord.getStartTick());
+							if (lastGood != null) curChord = lastGood;
+						} else {
+							curChord.setEndTickExpand(qtm.microsToTickABC(minEndMicro));
+						}
 					} else {
-						curChord.setEndTickExpand(qtm.microsToTickABC(qtm.tickToMicrosABC(curChord.getStartTick()) + AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())));
+						curChord.setEndTickExpand(qtm.microsToTickABC(minEndMicro));
 						if (curChord.getEndTick() > nextChord.getStartTick()) {
 							curChord.setEndTickRetract(curChord.getStartTick());
 							if (lastGood != null) curChord = lastGood;
