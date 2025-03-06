@@ -1782,31 +1782,22 @@ public class AbcExporter {
 					curChord.setEarlyStartTick();
 				}
 				
-				//Remove the chord if its sustained (or non-sustained but no room for larger chord) and shorter than 0.06s
+				// Handle chord if its shorter than 0.06s
 				long minEndMicro = qtm.tickToMicrosABC(curChord.getStartTick()) + AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM());
 				if (qtm.tickToMicrosABC(curChord.getEndTick()) < minEndMicro) {
-					if (part.getInstrument().sustainable) {
-						long nextMicro = qtm.tickToMicrosABC(nextChord.getStartTick());
-						if (nextMicro < minEndMicro) {
-							// give up and schedule it for deletion
-							curChord.setEndTickRetract(curChord.getStartTick());
-							if (lastGood != null) curChord = lastGood;
-						} else {
-							curChord.setEndTickExpand(qtm.microsToTickABC(minEndMicro));
-						}
-					} else {
-						curChord.setEndTickExpand(qtm.microsToTickABC(minEndMicro));
-						if (curChord.getEndTick() > nextChord.getStartTick()) {
-							curChord.setEndTickRetract(curChord.getStartTick());
-							if (lastGood != null) curChord = lastGood;
-						}
+					curChord.setEndTickExpand(qtm.microsToTickABC(minEndMicro));
+					if (curChord.getEndTick() > nextChord.getStartTick()) {
+						// give up and schedule it for deletion
+						curChord.setEndTickRetract(curChord.getStartTick());
+						if (lastGood != null) curChord = lastGood;
 					}
 				}
 				
 				// Insert a rest between the chords if needed
 				if (curChord.getEndTick() < nextChord.getStartTick()) {
 					long restMicros = qtm.tickToMicrosABC(nextChord.getStartTick()) - qtm.tickToMicrosABC(curChord.getEndTick());
-					if (restMicros > AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())) {
+					if (restMicros >= AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())) {
+						// there is space to make a rest
 						tmpEvents.clear();
 						tmpEvents.add(new AbcNoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, curChord.getEndTick(),
 								nextChord.getStartTick(), qtm, null));
