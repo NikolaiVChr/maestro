@@ -2,7 +2,6 @@ package com.digero.common.util;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.Comparator;
 import java.util.List;
 
@@ -62,9 +61,7 @@ public class AbcFileTreeModel implements TreeModel {
 	}
 	
 	public void filter(String filterStr) {
-		for (AbcSongFileNode node : rootNode.children) {
-			rootNode.filter(filterStr);
-		}
+		rootNode.filter(filterStr);
 		
 		for (TreeModelListener l : listeners) {
 			l.treeStructureChanged(new TreeModelEvent(this, new TreePath(rootNode)));
@@ -184,7 +181,6 @@ public class AbcFileTreeModel implements TreeModel {
 			}
 			
 			children.sort(sorter);
-			
 		}
 		
 		public void sort(Comparator<AbcSongFileNode> sorter) {

@@ -4,7 +4,6 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
-import java.awt.Graphics;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.datatransfer.DataFlavor;
@@ -71,6 +70,7 @@ import javax.swing.table.TableColumnModel;
 import javax.swing.tree.TreePath;
 
 import com.digero.abcplayer.AbcPlaylistXmlCoder;
+import com.digero.abcplayer.SetFilenameTemplate;
 import com.digero.abcplayer.view.AbcPlaylistPanel.PlaylistEvent.PlaylistEventType;
 import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.abctomidi.AbcToMidi;
@@ -156,6 +156,7 @@ public class AbcPlaylistPanel extends JPanel {
 	private JMenuItem saveMenuItem;
 	private JCheckBoxMenuItem autoplayMenuItem;
 	private JCheckBoxMenuItem playbackDelayMenuItem;
+	private JMenuItem exportSetMenuItem;
 	
 	private JFileChooser openPlaylistChooser = null;
 	private JFileChooser savePlaylistChooser = null;
@@ -279,23 +280,26 @@ public class AbcPlaylistPanel extends JPanel {
 		});
 		abcFileTree.addTreeSelectionListener(e -> {
 			// Only allow adding files if all the selected ones are abc files (no folders)
-			boolean noFoldersSelected = true;
+			boolean validSelection = true;
 			TreePath[] paths = abcFileTree.getSelectionPaths();
 			if (paths != null) {
 				for (TreePath path : paths) {
 					AbcSongFileNode f = (AbcSongFileNode)path.getLastPathComponent();
 					if (f.getFile().isDirectory()) {
-						noFoldersSelected = false;
+						validSelection = false;
 						break;
 					}
 				}
+			} else {
+				validSelection = false; // Nothing selected
 			}
-			addToPlaylistButton.setEnabled(noFoldersSelected);
+			addToPlaylistButton.setEnabled(validSelection);
 		});
 		abcFileTree.addTreeExpansionListener(new TreeExpansionListener() {
 			@Override
 			public void treeCollapsed(TreeExpansionEvent e) {
 				expandedAbcTrees.remove(e.getPath());
+				expandedAbcTrees.removeIf(path -> e.getPath().isDescendant(path));
 			}
 
 			@Override
@@ -601,6 +605,9 @@ public class AbcPlaylistPanel extends JPanel {
 		addToPlaylistButton.setEnabled(false);
 		addToPlaylistButton.addActionListener(e -> {
 //			addTreePathsToPlaylist(abcFileTree.getSelectionPaths());
+			if (abcFileTree.getSelectionPaths() == null) {
+				return;
+			}
 			addFilesToPlaylist(treePathsToFileList(abcFileTree.getSelectionPaths()), -1);
 		});
 		
@@ -742,6 +749,12 @@ public class AbcPlaylistPanel extends JPanel {
 				}
 			}
 		});
+		exportSetMenuItem = playlistMenu.add(new JMenuItem("Export Playlist as Set..."));
+		exportSetMenuItem.addActionListener(e -> {
+			SetFilenameTemplate template = new SetFilenameTemplate(prefs.node("setExportFilename"));
+			PlaylistSetExportWizard wiz = new PlaylistSetExportWizard((JFrame)SwingUtilities.getWindowAncestor(this), template);
+			wiz.setVisible(true);
+		});
 		playlistMenu.addSeparator();
 		autoplayMenuItem = (JCheckBoxMenuItem) playlistMenu.add(new JCheckBoxMenuItem("Enable Autoplay"));
 		autoplayMenuItem.setSelected(playlistPrefs.getBoolean("autoplay", true));
@@ -784,28 +797,27 @@ public class AbcPlaylistPanel extends JPanel {
 				topLevelDirs = dirs.stream().map(File::new).collect(Collectors.toList());
 				abcFileTreeModel.setDirectories(topLevelDirs);
 				abcFileTreeModel.refresh(sortType);
+				reExpandPaths();
 			}
 		});
 		JMenuItem refreshMenuItem = playlistMenu.add(new JMenuItem("Refresh Browser"));
 		refreshMenuItem.addActionListener(e -> {
 			abcFileTreeModel.refresh(sortType);
+			reExpandPaths();
 		});
 	}
 	
 	private void reExpandPaths() {
-		System.out.println(expandedAbcTrees.size() + " expanded trees");
+		HashSet<TreePath> validExpandedTrees = new HashSet<TreePath>();
 		for (TreePath path : expandedAbcTrees) {
 			Object[] nodes = path.getPath();
 			Object walk = abcFileTreeModel.getRoot();
-			System.out.println(walk);
-			System.out.println();
 			boolean found = true;
 			for (Object node : nodes) {
 				if (node == abcFileTreeModel.getRoot()) {
 					continue;
 				}
 				
-				System.out.println(node);
 				int idx = abcFileTreeModel.getIndexOfChild(walk, node);
 				if (idx < 0) {
 					found = false;
@@ -815,8 +827,10 @@ public class AbcPlaylistPanel extends JPanel {
 			}
 			if (found) {
 				abcFileTree.expandPath(path);
+				validExpandedTrees.add(path);
 			}
 		}
+		expandedAbcTrees = validExpandedTrees;
 	}
 	
 	private void initTableHeaderColumns() {
