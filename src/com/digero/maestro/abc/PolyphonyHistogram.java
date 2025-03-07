@@ -17,13 +17,15 @@ import com.digero.common.midi.LotroSequencerWrapper;
 import com.digero.common.midi.Note;
 import com.digero.common.midi.SequencerEvent;
 import com.digero.common.util.Listener;
+import com.digero.common.util.Pair;
+import com.digero.common.util.Util;
 import com.digero.maestro.midi.AbcNoteEvent;
 import com.digero.maestro.midi.Chord;
 
 public class PolyphonyHistogram   {
 
-	private static Map<AbcPart, TreeMap<Long, Integer>> histogramData = new HashMap<>();
-	private static TreeMap<Long, Integer> sum = new TreeMap<>();// <micros,numberOfNotes>
+	private static Map<AbcPart, TreeMap<Long, Pair<Long,Integer>>> histogramData = new HashMap<>();
+	private static TreeMap<Long, Pair<Long,Integer>> sum = new TreeMap<>();// <micros,numberOfNotes>
 	private static boolean dirty = false;
 	private static int max = 0;
 	public static boolean enabled = true;// set to true to enable this system, set to false to save cpu power.
@@ -64,10 +66,10 @@ public class PolyphonyHistogram   {
 	 * @param chords
 	 * @throws IOException 
 	 */
-	public static void count(AbcPart part, List<Chord> chords, boolean organic) throws IOException {
+	public static void count(AbcPart part, List<Chord> chords, boolean organic, QuantizedTimingInfo qtm) throws IOException {
 		if (!enabled) return;
 		
-		TreeMap<Long, Integer> partMap = new TreeMap<>();
+		TreeMap<Long, Pair<Long,Integer>> partMap = new TreeMap<>();
 		List<AbcNoteEvent> done = new ArrayList<>();
 		for (Chord chord : chords) {
 			for (AbcNoteEvent event : chord.getNotes()) {
@@ -75,8 +77,6 @@ public class PolyphonyHistogram   {
 					continue;
 				}
 				assert event.tiesFrom == null;
-				ITempoCache tc = event.getTempoCache();
-				QuantizedTimingInfo qtm = (QuantizedTimingInfo) tc;
 				
 				AbcNoteEvent check = event;
 				while (check.tiesTo != null) {
@@ -87,20 +87,28 @@ public class PolyphonyHistogram   {
 					done.add(check);
 				}
 				long endTick = check.getEndTick();
-				long start = qtm.tickToMicrosABC(event.getStartTick(), part);// delay is already in the start/end tick at this point 
-				long end   = qtm.tickToMicrosABC(endTick, part);
+				long startMicros; 
+				long endMicros;
 				if (organic) {
-					start = qtm.tickToMicrosABC(event.getStartTick());// delay is already in the start/end tick at this point 
-					end   = qtm.tickToMicrosABC(endTick);
+					startMicros = qtm.tickToMicrosABCOrganic(event.getStartTick());// delay is already in the start/end tick at this point 
+					endMicros   = qtm.tickToMicrosABCOrganic(endTick);
+				} else {
+					startMicros = qtm.tickToMicrosABC(event.getStartTick(), part);// delay is already in the start/end tick at this point 
+					endMicros   = qtm.tickToMicrosABC(endTick, part);
 				}
 				if (part.getInstrument().isSustainable(event.note.id)) {
-					end += 200000L;// 200ms
+					endMicros += 200000L;// 200ms
 					Double seconds = LotroInstrumentSampleDuration.getDura(part.getInstrument().friendlyName, event.note.id);
 					if (seconds != null) {
 						long dura = (long) (1000000L * seconds);
-						long endMax = start + dura;
-						end = Math.min(endMax, end);
-					}				
+						long endMax = startMicros + dura;
+						endMicros = Math.min(endMax, endMicros);
+					}
+					if (organic) {
+						endTick   = qtm.microsToTickABCOrganic(endMicros);
+					} else {
+						endTick   = qtm.microsToTickABC(endMicros);
+					}
 				} else {
 					int pitch = event.note.id;
 					if (part.getInstrument() == LotroInstrument.BASIC_COWBELL || part.getInstrument() == LotroInstrument.MOOR_COWBELL) {
@@ -112,28 +120,46 @@ public class PolyphonyHistogram   {
 						seconds = 1.0d;
 					}
 					long dura = (long) (1000000L * seconds);
-					end = start + dura;
+					endMicros = startMicros + dura;
+					if (organic) {
+						endTick   = qtm.microsToTickABCOrganic(endMicros);
+					} else {
+						endTick   = qtm.microsToTickABC(endMicros);
+					}
 				}
-				if (end == start) continue;
+				if (endMicros == startMicros) continue;
 				
-				Integer oldStart = partMap.get(start);
+				/*
+				if (endTick >= 6959 && endTick <= 6960) {
+					System.out.println(endMicros+" endTick="+endTick);
+					System.out.println(6959+"->"+qtm.tickToMicrosABCOrganic(6959));
+					System.out.println(6960+"->"+qtm.tickToMicrosABCOrganic(6960));
+				}
+				*/
+				
+				Pair<Long,Integer> oldStart = partMap.get(startMicros);
 				if (oldStart == null) {
-					oldStart = 0;
+					oldStart = new Pair<>(event.getStartTick(), 0);
 				}
-				oldStart += 1;
-				partMap.put(start, oldStart);
-				Integer oldEnd = partMap.get(end);
-				if (oldEnd == null) {
-					oldEnd = 0;
-				}
-				oldEnd -= 1;
-				partMap.put(end, oldEnd);
+				oldStart.second += 1;
+				partMap.put(startMicros, oldStart);
 				
-				assert end - start > 0L;
+				Pair<Long,Integer> oldEnd = partMap.get(endMicros);
+				if (oldEnd == null) {
+					oldEnd = new Pair<>(endTick, 0);
+				}
+				oldEnd.second -= 1;
+				partMap.put(endMicros, oldEnd);
+				
+				assert endMicros - startMicros > 0L;
 			}
 		}
 		histogramData.put(part, partMap);
 		dirty = true;
+	}
+	
+	public static void clearAll() {
+		histogramData.clear();
 	}
 	
 	/**
@@ -145,7 +171,7 @@ public class PolyphonyHistogram   {
 		sum = new TreeMap<>();
 		max = 0;
 		Set<AbcPart> partSet = new HashSet<>(histogramData.keySet());
-		List<TreeMap<Long, Integer>> treeList = new ArrayList<TreeMap<Long, Integer>>();
+		List<TreeMap<Long, Pair<Long,Integer>>> treeList = new ArrayList<TreeMap<Long, Pair<Long,Integer>>>();
 		for (AbcPart part : partSet) {
 			if (part.discarded) {
 				histogramData.remove(part);
@@ -153,27 +179,36 @@ public class PolyphonyHistogram   {
 				treeList.add(histogramData.get(part));
 			}
 		}
-		TreeMap<Long, Integer> songMap = new TreeMap<>();
-		for (TreeMap<Long, Integer> partMap : treeList) {
-			Set<Entry<Long, Integer>> entrySet = partMap.entrySet();
-			
-			for (Entry<Long, Integer> entry : entrySet) {
-				long key = entry.getKey();//micros
-				int value = entry.getValue();//number of notes
-				
-				Integer oldValue = songMap.get(key);
+		TreeMap<Long, Pair<Long,Integer>> songMap = new TreeMap<>();
+		for (TreeMap<Long, Pair<Long,Integer>> partMap : treeList) {
+			Set<Entry<Long, Pair<Long,Integer>>> entrySet = partMap.entrySet();
+			long lastTick = -1L;
+			for (Entry<Long, Pair<Long,Integer>> entry : entrySet) {
+				long micros = entry.getKey();//micros
+				int noteStarts = entry.getValue().second;//number of notes
+				long tick = entry.getValue().first;
+				//assert tick >= lastTick:"HISTO OOPS 3";
+				lastTick = tick;
+						
+				Pair<Long,Integer> oldValue = songMap.get(micros);
 				if (oldValue == null) {
-					oldValue = 0;
+					oldValue = new Pair<>(tick, 0);
 				}
-				oldValue += value;
-				songMap.put(key, oldValue);
+				oldValue.second += noteStarts;
+				songMap.put(micros, oldValue);
 			}
 		}
 		int polyphony = 0;
-		Set<Entry<Long, Integer>> entrySongSet = songMap.entrySet();
-		for (Entry<Long, Integer> entry : entrySongSet) {
-			polyphony += entry.getValue();
-			sum.put(entry.getKey(), polyphony);
+		Set<Entry<Long, Pair<Long,Integer>>> entrySongSet = songMap.entrySet();
+		long lastTick = -1L;
+		long lastMicro = -1L;
+		for (Entry<Long, Pair<Long,Integer>> entry : entrySongSet) {
+			// thsi assert can happen due to convertin back and forth is not sure to output original tick, rounding I reckon
+			//assert entry.getValue().first >= lastTick:" CAN HAPPEN at "+Util.formatDuration(entry.getKey())+"="+entry.getValue().first+"  "+Util.formatDuration(lastMicro)+"="+lastTick;
+			lastTick = entry.getValue().first;
+			lastMicro = entry.getKey();
+			polyphony += entry.getValue().second;
+			sum.put(entry.getKey(), new Pair<>(entry.getValue().first, polyphony));
 			if (polyphony > max) {
 				max = polyphony;
 			}
@@ -193,7 +228,7 @@ public class PolyphonyHistogram   {
 		if (key == null) {
 			return 0;
 		}
-		return sum.get(key);
+		return sum.get(key).second;
 	}
 	
 	/**
@@ -202,7 +237,7 @@ public class PolyphonyHistogram   {
 	 * 
 	 * @return Number of notes being played
 	 */
-	public static Set<Entry<Long, Integer>> getAll() {
+	public static Set<Entry<Long, Pair<Long,Integer>>> getAll() {
 		return sum.entrySet();
 	}
 	

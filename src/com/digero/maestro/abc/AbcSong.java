@@ -1009,10 +1009,11 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				|| timingInfo.isTripletTiming() != isTripletTiming() //
 				|| timingInfo.isMixTiming() != isMixTiming() //
 				|| timingInfo.getMixVersion() != getMixVersion() //
+				|| timingInfo.isOrganic() != isOrganic() //
 				|| isMixDirty()) {
 			setMixDirty(false);
 			timingInfo = new QuantizedTimingInfo(sequenceInfo, getTempoFactor(), getTimeSignature(), isTripletTiming(),
-					getTempoBPM(), this, isMixTiming(), getMixVersion());
+					getTempoBPM(), this, isMixTiming(), getMixVersion(), isOrganic());
 		}
 
 		return timingInfo;
@@ -1282,6 +1283,10 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			timingInfo = null;// To make sure at some point the user will see the exception.
 			return null;
 		}
-		return timingInfo.getTimingInfoByTick().values();
+		if (organic) {
+			return timingInfo.getTimingInfoByTickOrganic().values();
+		} else {
+			return timingInfo.getTimingInfoByTick().values();
+		}
 	}
 }

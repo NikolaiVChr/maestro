@@ -155,8 +155,8 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 	
 	public boolean add(AbcNoteEvent ne) {
 		if (ne.getLengthTicks() == 0) {
-			System.err.println("Attempted to add zero duration note to chord!");
-			return false;
+			//System.err.println("Attempted to add zero duration note to chord!");
+			//return false;
 		}
 		notes.add(ne);
 
@@ -393,7 +393,7 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 				if (abcNote1 == abcNote2) {
 					// The notes have same pitch and same volume. Return the longest.
 					// The code should not get in here.
-					assert false: "Comparing two notes in a chord that only has room for one of them.";
+					assert false: "Comparing two notes in a chord that only has room for one of them. equal="+(n1 == n2);
 					return (int) (n1.getFullLengthTicks() - n2.getFullLengthTicks());
 				}
 

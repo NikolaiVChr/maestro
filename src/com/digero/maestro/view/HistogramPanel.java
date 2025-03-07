@@ -20,6 +20,7 @@ import com.digero.common.midi.SequencerEvent;
 import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.util.IDiscardable;
 import com.digero.common.util.Listener;
+import com.digero.common.util.Pair;
 import com.digero.common.util.Util;
 import com.digero.common.view.ColorTable;
 import com.digero.maestro.abc.AbcSong;
@@ -190,24 +191,28 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 			events = new ArrayList<>();
 			if (abcSong.getQTM() == null) return;
 			
-			Entry<Long, Integer> prevEvent = null;
+			Entry<Long, Pair<Long,Integer>> prevEvent = null;
 			
 			PolyphonyHistogram.sumUp(abcSong);
 			PolyphonyHistogram.setClean();
 
 			SequenceDataCache dataCache = sequenceInfo.getDataCache();
-			for (Entry<Long, Integer> event : PolyphonyHistogram.getAll()) {
+			long prevTick = 0L;
+			for (Entry<Long, Pair<Long,Integer>> event : PolyphonyHistogram.getAll()) {
+				
 				if (prevEvent != null) {
-					int id = Math.min(CLIP_MAX_NOTES,prevEvent.getValue());
-					events.add(new FakeNoteEvent(Note.fromId(id), abcSong.getQTM().microsToTickABC(prevEvent.getKey()), abcSong.getQTM().microsToTickABC(event.getKey()), dataCache));
+					//assert prevTick >= event.getValue().first : "OOPS HISTO";
+					int id = Math.min(CLIP_MAX_NOTES,prevEvent.getValue().second);
+					events.add(new FakeNoteEvent(Note.fromId(id), prevEvent.getValue().first, event.getValue().first, dataCache));
 				}
 				prevEvent = event;
+				prevTick = event.getValue().first;
 			}
 
 			if (prevEvent != null) {
-				int id = Math.min(CLIP_MAX_NOTES,prevEvent.getValue());
+				int id = Math.min(CLIP_MAX_NOTES,prevEvent.getValue().second);
 				events.add(
-						new FakeNoteEvent(Note.fromId(id), abcSong.getQTM().microsToTickABC(prevEvent.getKey()), dataCache.getSongLengthTicks(), dataCache));
+						new FakeNoteEvent(Note.fromId(id), prevEvent.getValue().first, dataCache.getSongLengthTicks(), dataCache));
 			} else {
 				int id = 0;
 				events.add(new FakeNoteEvent(Note.fromId(id), 0, dataCache.getSongLengthTicks(), dataCache));

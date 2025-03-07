@@ -14,10 +14,10 @@ public class TimingInfo {
 																									// (In which case
 																									// 'beat' here is
 																									// 60ms)
-	public static final int MIN_TEMPO_BPM = (int) ((ONE_MINUTE_MICROS + (ONE_MINUTE_MICROS / 10) / 2)
+	public static final int MIN_TEMPO_BPM = 5;/*(int) ((ONE_MINUTE_MICROS + (ONE_MINUTE_MICROS / 10) / 2)
 			/ (ONE_MINUTE_MICROS / 10)); // Round up (1m
 											// 3s)/6s = 10.5
-											// -> 10
+											// -> 10  */
 
 	private final int tempoMPQ;
 	private final int resolutionPPQ;
@@ -30,6 +30,7 @@ public class TimingInfo {
 	private final long minNoteLengthTicks;
 	private final long maxNoteLengthTicks;
 	private boolean useTripletTiming;
+	private boolean organic = false;
 
 	@Override
 	public String toString() {
@@ -48,7 +49,7 @@ public class TimingInfo {
 	}
 
 	TimingInfo(int tempoMPQ, int resolutionPPQ, float exportTempoFactor, TimeSignature meter, boolean useTripletTiming,
-			int abcSongBPM) throws AbcConversionException {
+			int abcSongBPM, boolean organic) throws AbcConversionException {
 		// Compute the export tempo and round it to a whole-number BPM
 		double exportTempoMPQ = roundTempoMPQ((double) tempoMPQ / exportTempoFactor);
 
@@ -60,6 +61,7 @@ public class TimingInfo {
 		this.exportTempoFactor = exportTempoFactor;
 		this.meter = meter;
 		this.useTripletTiming = useTripletTiming;
+		this.organic = organic;
 
 		final long SHORTEST_NOTE_TICKS = (long) Math
 				.ceil((AbcConstants.getShortestNoteMicros(abcSongBPM) * resolutionPPQ) / exportTempoMPQ);
@@ -81,6 +83,13 @@ public class TimingInfo {
 		assert ((meter.numerator / (double) meter.denominator < 0.75) ? 16 : 8) * 4 % meter.denominator == 0;
 		this.defaultDivisor = ((meter.numerator / (double) meter.denominator < 0.75) ? 16 : 8) * 4 / meter.denominator;
 
+		if (organic) {
+			this.minNoteLengthTicks = 1;
+			this.minNoteDivisor = 1;
+			this.maxNoteLengthTicks = 1;
+			return;
+		}
+		
 		// Calculate min note length
 		{
 			int minNoteDivisor = defaultDivisor;
@@ -106,6 +115,7 @@ public class TimingInfo {
 			}
 
 			if (meter.denominator > minNoteDivisor) {
+				// TODO: We should ignore this if organic output is enabled
 				if (minNoteDivisor == 0) throw new AbcConversionException("The tempo is too high."); 
 				int maximumDenominator = (1 << TimeSignature.floorLog2(minNoteDivisor));
 				throw new AbcConversionException(
@@ -177,8 +187,12 @@ public class TimingInfo {
 	 * 
 	 */
 	public long getBarLengthTicks() {
-		// for some songs this gives wrong result, but for most it works:
-		return minNoteDivisor * minNoteLengthTicks * meter.numerator / meter.denominator;
+		if (!organic) {
+			// for some songs this gives wrong result, but for most it works:
+			return minNoteDivisor * minNoteLengthTicks * meter.numerator / meter.denominator;
+		} else {
+			return 4L * resolutionPPQ * meter.numerator / meter.denominator;
+		}
 	}
 
 	public boolean isUseTripletTiming() {
