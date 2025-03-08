@@ -5,7 +5,9 @@ import java.util.Map.Entry;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JDialog;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -19,6 +21,8 @@ import net.miginfocom.swing.MigLayout;
 
 public class PlaylistSetExportWizard extends JDialog {
 	
+	private static final long serialVersionUID = -946060522761562397L;
+
 	private JTabbedPane tabPanel;
 	
 	private SetFilenameTemplate filenameTemplate;
@@ -30,12 +34,19 @@ public class PlaylistSetExportWizard extends JDialog {
 		
 		tabPanel = new JTabbedPane();
 		tabPanel.addTab("Export Settings", createExportPanel());
-		tabPanel.addTab("File Naming", createFileNamingPanel());
+		tabPanel.addTab("ABC File Renaming", createFileNamingPanel());
 		tabPanel.addTab("CSV Part Sheet", createPartSheetPanel());
 		
 		JButton exportButton = new JButton("Export");
+		getRootPane().setDefaultButton(exportButton);
+		exportButton.addActionListener(e -> {
+			
+		});
 		
 		JButton cancelButton = new JButton("Cancel");
+		cancelButton.addActionListener(e -> {
+			this.setVisible(false);
+		});
 		
 		JPanel buttonsPanel = new JPanel(new MigLayout("fillx"));
 		buttonsPanel.add(new JLabel(), "growx 0");
@@ -53,9 +64,14 @@ public class PlaylistSetExportWizard extends JDialog {
 	}
 	
 	private JPanel createExportPanel() {
-		JPanel exportPanel = new JPanel(new MigLayout());
+		JPanel exportPanel = new JPanel(new MigLayout("fillx"));
 		
 		JButton chooseDirectoryButton = new JButton("Output Folder...");
+		chooseDirectoryButton.addActionListener(e -> {
+			JFileChooser chooser = new JFileChooser();
+			chooser.setDialogTitle("Open set destination folder");
+			chooser.showOpenDialog(this);
+		});
 		JLabel directoryLabel = new JLabel(Util.getLotroMusicPath(false).toString());
 		
 		JLabel setNameLabel = new JLabel("Set Name:");
@@ -81,7 +97,7 @@ public class PlaylistSetExportWizard extends JDialog {
 	private JPanel createFileNamingPanel() {
 		JPanel fileNamePanel = new JPanel(new MigLayout("fillx"));
 		
-		JLabel patternLabel = new JLabel("<html><b><u>Pattern for ABC File Name</b></u></html>");
+		JLabel patternLabel = new JLabel("<html><b><u>Pattern for new ABC filenames</b></u></html>");
 		
 		JTextField patternTextField = new JTextField();
 		
@@ -107,6 +123,14 @@ public class PlaylistSetExportWizard extends JDialog {
 	
 	private JPanel createPartSheetPanel() {
 		JPanel partSheetPanel = new JPanel(new MigLayout());
+		
+		JLabel partChoiceLabel = new JLabel("Part column content:");
+		
+		String[] partContentOptions = {"Use Part Names", "Use Instrument Names"};
+		JComboBox<String> partContentChoice = new JComboBox<String>(partContentOptions);
+		
+		partSheetPanel.add(partChoiceLabel);
+		partSheetPanel.add(partContentChoice, "wrap");
 		
 		return partSheetPanel;
 	}
