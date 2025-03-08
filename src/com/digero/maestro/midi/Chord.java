@@ -110,6 +110,8 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 					endTick = notes.get(k).getEndTick();
 				}
 			}
+		} else {
+			endTick = startTick;
 		}
 	}
 	
