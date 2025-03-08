@@ -1665,21 +1665,7 @@ public class AbcExporter {
 				// This note starts at the same time as the rest of the notes in the chord
 				assert !curChord.isRest();
 				curChord.add(ne);
-			} else {
-				List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
-						part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part);
-				removeNotes(events, deadnotes, part);
-				if (!deadnotes.isEmpty()) {
-					// One of the tiedTo notes that was pruned might be the events.get(i) note,
-					// so we go one step back and re-process events.get(i)
-					i--;
-					//System.out.println("LOOP: PRUNED");
-					continue MAIN;
-				}				
-								
-				// Create a new chord
-				Chord nextChord = new Chord(ne);
-
+			} else {								
 				// The curChord has all the notes it will get. But before continuing,
 				// normalize the chord so that all notes end at the same time and end
 				// before the next chord starts.
@@ -1692,13 +1678,37 @@ public class AbcExporter {
 						if (jne.getEndTick() == jne.getStartTick()) {
 							// this note is zero duration and others in the chord is not
 							curChord.remove(jne);
+							if (jne.tiesFrom != null) {
+								jne.tiesFrom.tiesTo = null;
+							}
+							if (jne.tiesTo != null) {
+								jne.tiesTo.tiesFrom = null;
+							}
 							j = -1;//should be careful when removing item from something we are iterating over..
 						}
 					}
 					// A removal will have changed the chord's duration
 					curChord.recalcEndTick();
 				}
-								
+				
+				// We prune after removed shorter zero notes, so they dont take up slot from
+				// 6 max notes.
+				List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
+						part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part);
+				removeNotes(events, deadnotes, part);
+				if (!deadnotes.isEmpty()) {
+					// One of the tiedTo notes that was pruned might be ne note,
+					// so we go one step back and re-process events.get(i)
+					i--;
+					//System.out.println("LOOP: PRUNED");
+					continue MAIN;
+				}
+				
+				
+				// Create a new chord
+				Chord nextChord = new Chord(ne);
+
+				
 				// handle fast glissando
 				AbcNoteEvent ne2 = null;
 				for (int ii = i+1; ii < events.size(); ii++) {
@@ -1724,6 +1734,13 @@ public class AbcExporter {
 					System.out.println(part.getTitle()+" Removed glissando note");
 					events.remove(ne);
 					i--;
+					// TODO: these ties should perhaps prevent it from being removed, TBD
+					if (ne.tiesFrom != null) {
+						ne.tiesFrom.tiesTo = null;
+					}
+					if (ne.tiesTo != null) {
+						ne.tiesTo.tiesFrom = null;
+					}
 					continue MAIN;
 				} else {
 					//System.out.println((curChord.getEndTick() > ne.getStartTick())+" microsTillNext="+microsTillNext+" microsTillNext2="+microsTillNext2+" neMicros="+neMicros);
@@ -1793,11 +1810,7 @@ public class AbcExporter {
 						int ins = Collections.binarySearch(events, next);
 						if (ins < 0)
 							ins = -ins - 1;
-						if (ins < i) {
-							for (AbcNoteEvent note : curChord.getNotes()) {
-								System.out.println(note.getStartTick());
-							}
-						}
+						
 						assert (ins >= i);
 						// If we're inserting before the current note, back up and process the added
 						// note
@@ -1881,15 +1894,6 @@ public class AbcExporter {
 			if (curChord.early != null) {
 				curChord.setEarlyStartTick();
 			}
-			if (curChord.getStartTick() == curChord.getEndTick()) {
-				chords.remove(curChord);
-				break;
-			}
-			// Last chord needs to be pruned as that hasn't happened yet.
-			List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
-					part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part);
-			removeNotes(events, deadnotes, part);// we need to set the pruned flag for last chord too.
-			curChord.recalcEndTick();
 			
 			// remove zero duration notes if longer notes start at same time
 			if (curChord.getLongestEndTick() > curChord.getStartTick()) {
@@ -1898,12 +1902,24 @@ public class AbcExporter {
 					if (jne.getEndTick() == jne.getStartTick()) {
 						// this note is zero duration and others in the chord is not
 						curChord.remove(jne);
+						if (jne.tiesFrom != null) {
+							jne.tiesFrom.tiesTo = null;
+						}
+						if (jne.tiesTo != null) {
+							jne.tiesTo.tiesFrom = null;
+						}
 						j=-1;
 					}
 				}
 				// The removal will have changed the chord's duration
 				curChord.recalcEndTick();
 			}
+			
+			// Last chord needs to be pruned as that hasn't happened yet.
+			List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
+					part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part);
+			removeNotes(events, deadnotes, part);// we need to set the pruned flag for last chord too.
+			curChord.recalcEndTick();
 			
 			//System.out.println(part.getTitle()+" final note ends at "+Util.formatDurationM(qtm.tickToMicrosABCOrganic(curChord.getEndTick()-exportStartTick)));
 			
@@ -1912,9 +1928,7 @@ public class AbcExporter {
 			}
 			
 			long targetEndTick = curChord.getEndTick();
-
 			reprocessCurrentNote = false;
-			
 			Chord nextChord = null;
 
 			for (int j = 0; j < curChord.size(); j++) {
