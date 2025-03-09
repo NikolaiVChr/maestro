@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.TreeSet;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.Sequence;
@@ -1471,6 +1472,8 @@ public class AbcExporter {
 							//       and shouldn't this only be done for preview?
 							//       why is it even done? lotro plays it fine when its shorter than sample.
 							//       histogram acounts for sample duration too, so thats not the reason.
+							//       Perhaps its for preview so midi playback dont cut the note short.
+							//       But then why not do it for all plucked?
 						}
 
 						int[] sva = part.getSectionVolumeAdjust(t, ne);
@@ -1588,7 +1591,6 @@ public class AbcExporter {
 				continue;
 			}
 			
-			boolean deleted = false;
 
 			List<AbcNoteEvent> bentNotes = expandPitchBendsOrganic(part, ne);
 			
@@ -1655,6 +1657,8 @@ public class AbcExporter {
 		List<Chord> chords = new ArrayList<>(events.size() / 2);
 		List<AbcNoteEvent> tmpEvents = new ArrayList<>();
 
+		long minimumMicros = AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM());
+		
 		// Combine notes that play at the same time into chords
 		Chord curChord = new Chord(events.get(0));
 		chords.add(curChord);
@@ -1670,7 +1674,7 @@ public class AbcExporter {
 				// normalize the chord so that all notes end at the same time and end
 				// before the next chord starts.
 				//System.out.println("Processing chord");
-								
+				
 				// remove zero duration notes if longer notes start at same time
 				if (curChord.getLongestEndTick() > curChord.getStartTick()) {
 					for (int j = 0; j < curChord.size(); j++) {
@@ -1711,7 +1715,7 @@ public class AbcExporter {
 
 				
 				// handle fast glissando
-				long minimumMicros = AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM());
+				
 				long microsTillNext = qtm.tickToMicrosABCOrganic(ne.getStartTick()) - qtm.tickToMicrosABCOrganic(curChord.getStartTick());
 				long neMicros = qtm.tickToMicrosABCOrganic(ne.getEndTick()) - qtm.tickToMicrosABCOrganic(ne.getStartTick());
 				AbcNoteEvent ne2 = null;
@@ -1794,7 +1798,7 @@ public class AbcExporter {
 				
 				long shortest = qtm.tickToMicrosABCOrganic(curChord.getEndTick()) - qtm.tickToMicrosABCOrganic(curChord.getStartTick());
 				long space = qtm.tickToMicrosABCOrganic(ne.getStartTick()) - qtm.tickToMicrosABCOrganic(curChord.getStartTick());
-				long minEndMicro = qtm.tickToMicrosABCOrganic(curChord.getStartTick()) + AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM());
+				long minEndMicro = qtm.tickToMicrosABCOrganic(curChord.getStartTick()) + minimumMicros;
 				long minEndTick = qtm.microsToTickABCOrganic(minEndMicro);
 				if (shortest < minimumMicros && space >= minimumMicros && ne.getStartTick() >= minEndTick) {
 					// one or more notes in curChord is to short, but they have room to expand
@@ -1837,7 +1841,7 @@ public class AbcExporter {
 				// Expand into gap to next chord if the gap is smaller than 0.06s
 				if (curChord.getEndTick() < nextChord.getStartTick()) {
 					long restMicros = qtm.tickToMicrosABCOrganic(nextChord.getStartTick()) - qtm.tickToMicrosABCOrganic(curChord.getEndTick());
-					if (restMicros <= AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())) {
+					if (restMicros <= minimumMicros) {
 						assert nextChord.getStartTick() > curChord.getEndTick(); 
 						curChord.setEndTickExpand(nextChord.getStartTick());
 						//System.out.println(part.getTitle()+ ": Bridged rest");
@@ -1888,7 +1892,7 @@ public class AbcExporter {
 				// Insert a rest between the chords if needed
 				if (curChord.getEndTick() < nextChord.getStartTick()) {
 					long restMicros = qtm.tickToMicrosABCOrganic(nextChord.getStartTick()) - qtm.tickToMicrosABCOrganic(curChord.getEndTick());
-					if (restMicros >= AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())) {
+					if (restMicros >= minimumMicros) {
 						// there is space to make a rest
 						tmpEvents.clear();
 						tmpEvents.add(new AbcNoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, curChord.getEndTick(),
@@ -1955,8 +1959,8 @@ public class AbcExporter {
 			
 			//System.out.println(part.getTitle()+" final note ends at "+Util.formatDurationM(qtm.tickToMicrosABCOrganic(curChord.getEndTick()-exportStartTick)));
 			
-			if (qtm.tickToMicrosABCOrganic(curChord.getEndTick()) < qtm.tickToMicrosABCOrganic(curChord.getStartTick()) + AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())) {
-				curChord.setEndTickExpand(qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(curChord.getStartTick()) + AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())));
+			if (qtm.tickToMicrosABCOrganic(curChord.getEndTick()) < qtm.tickToMicrosABCOrganic(curChord.getStartTick()) + minimumMicros) {
+				curChord.setEndTickExpand(qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(curChord.getStartTick()) + minimumMicros));
 			}
 			
 			long targetEndTick = curChord.getEndTick();
@@ -2286,6 +2290,12 @@ public class AbcExporter {
 	}
 	
 	private void breakLongNotesOrganic(AbcPart part, List<AbcNoteEvent> events) {
+		TreeSet<Long> points = new TreeSet<>();
+		for (int i = 0; i < events.size(); i++) {
+			AbcNoteEvent ne = events.get(i);
+			points.add(ne.getStartTick());
+			//points.add(ne.getEndTick()); // ends are more likely to be moved later, so we grab only starts
+		}
 		for (int i = 0; i < events.size(); i++) {
 			AbcNoteEvent ne = events.get(i);
 			
@@ -2366,9 +2376,17 @@ public class AbcExporter {
 			}
 
 			// drones should be tied instead of cut up:
+			// Where this is tied can matter for other notes, so
+			// find where other notes start or end and choose that place.
 			long maxForDrones = qtm.microsToTickOrganic(
-					qtm.tickToMicrosOrganic(ne.getStartTick()) + (long) ((TimingInfo.LONGEST_NOTE_MICROS-0.5*AbcConstants.ONE_SECOND_MICROS) * qtm.getExportTempoFactor())
+					qtm.tickToMicrosOrganic(ne.getStartTick()) + (long) ((TimingInfo.LONGEST_NOTE_MICROS-0.25*AbcConstants.ONE_SECOND_MICROS) * qtm.getExportTempoFactor())
 					);
+			long minForDrones = qtm.microsToTickOrganic(
+					qtm.tickToMicrosOrganic(ne.getStartTick()) + (long) ((TimingInfo.LONGEST_NOTE_MICROS-AbcConstants.ONE_SECOND_MICROS) * qtm.getExportTempoFactor())
+					);
+			Long bestForDrones = points.floor(maxForDrones);
+			if (bestForDrones != null && bestForDrones > minForDrones) maxForDrones = bestForDrones; 
+				
 			long targetEndTick = Math.min(ne.getEndTick(), maxForDrones);
 
 
@@ -2522,8 +2540,6 @@ public class AbcExporter {
 			int startPitch = noteID;
 			List<AbcNoteEvent> benders = new ArrayList<>();
 			AbcNoteEvent current = null;
-			boolean changeAtLastGrid = true;
-			long lastGridTick = 0L;
 			long minimum = qtm.microsToTickABCOrganic((long)(qtm.getExportTempoFactor()*(double)AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())));
 			Integer entry = null;
 			for (long t = be.getStartTick(); t < be.getEndTick(); t = be.getNextBend(t+minimum, entry)) {
@@ -2542,30 +2558,16 @@ public class AbcExporter {
 					if (current == null)
 						return new ArrayList<>();
 					benders.add(current);
-					lastGridTick = t;
-					changeAtLastGrid = true;
 				} else {
 					if (current.note.id != noteID) {
 						current = createBentSubNote(be, noteID, current, t, entry);
 						if (current == null)
 							return new ArrayList<>();
 						benders.add(current);
-						changeAtLastGrid = true;
-					} else {
-						changeAtLastGrid = false;
 					}
-					lastGridTick = t;
 				}
 			}
-			//double dura = be.getLengthMicros() / 1000.0d;
-			//System.out.println(dura+" Note split into "+benders.size()+" bends");
-			//if (be.getStartTick() != benders.get(0).getStartTick() || be.getEndTick() != benders.get(benders.size()-1).getEndTick()) {
-			//	System.out.println("\nNote split wrongly "+be.getStartTick()+" to "+be.getEndTick());
-			//	System.out.println("        == "+benders.get(0).getStartTick()+" to "+benders.get(benders.size()-1).getEndTick());
-			//}
-			//if (benders.size() == 0) {
-			//	System.out.println(" empty benders");
-			//}
+
 			return benders;
 		} else {
 			return null;
