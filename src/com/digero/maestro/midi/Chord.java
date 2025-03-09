@@ -42,6 +42,7 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 	private int lowest = 200;
 	public Long early = null; // organic
 	public boolean dontMove = false;
+	public boolean glissando = false;
 
 	public Chord(AbcNoteEvent firstNote) {
 		tempoCache = firstNote.getTempoCache();

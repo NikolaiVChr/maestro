@@ -1678,6 +1678,7 @@ public class AbcExporter {
 						if (jne.getEndTick() == jne.getStartTick()) {
 							// this note is zero duration and others in the chord is not
 							curChord.remove(jne);
+							//System.out.println(part.getTitle()+" Removed zero dura note");
 							if (jne.tiesFrom != null) {
 								jne.tiesFrom.tiesTo = null;
 							}
@@ -1710,6 +1711,9 @@ public class AbcExporter {
 
 				
 				// handle fast glissando
+				long minimumMicros = AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM());
+				long microsTillNext = qtm.tickToMicrosABCOrganic(ne.getStartTick()) - qtm.tickToMicrosABCOrganic(curChord.getStartTick());
+				long neMicros = qtm.tickToMicrosABCOrganic(ne.getEndTick()) - qtm.tickToMicrosABCOrganic(ne.getStartTick());
 				AbcNoteEvent ne2 = null;
 				for (int ii = i+1; ii < events.size(); ii++) {
 					AbcNoteEvent over = events.get(ii);
@@ -1717,22 +1721,23 @@ public class AbcExporter {
 						ne2 = over;
 						break;
 					}
-				}
-				long minimumMicros = AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM());
-				long microsTillNext = qtm.tickToMicrosABCOrganic(ne.getStartTick()) - qtm.tickToMicrosABCOrganic(curChord.getStartTick());
-				long neMicros = qtm.tickToMicrosABCOrganic(ne.getEndTick()) - qtm.tickToMicrosABCOrganic(ne.getStartTick());
+				}				
 				long microsTillNext2 = ne2 == null?0L:qtm.tickToMicrosABCOrganic(ne2.getStartTick()) - qtm.tickToMicrosABCOrganic(ne.getStartTick());
-				if (curChord.getEndTick() > ne.getStartTick()
+				long ne2Micros = ne2 == null?0L:qtm.tickToMicrosABCOrganic(ne2.getEndTick()) - qtm.tickToMicrosABCOrganic(ne2.getStartTick());
+				if ((curChord.getEndTick() > ne.getStartTick() || (neMicros < minimumMicros && ne2Micros < minimumMicros))
 						&& curChord.getEndTick() < ne.getEndTick()
 						&& microsTillNext < minimumMicros
 						&& neMicros < minimumMicros * 4L
-						&& microsTillNext2 < minimumMicros) {
+						&& microsTillNext2 < minimumMicros
+						&& curChord.getLongestEndTick() < qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(curChord.getStartTick()) + minimumMicros * 4L)) {
 				
 					long curMinEnd = qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(curChord.getStartTick()) + minimumMicros);
 					curChord.setEndTickRetract(curMinEnd);
+					curChord.setEndTickExpand(curMinEnd);
 					
-					System.out.println(part.getTitle()+" Removed glissando note");
+					System.out.println(part.getTitle()+" Removed glissando note 1");
 					events.remove(ne);
+					curChord.glissando = true;
 					i--;
 					// TODO: these ties should perhaps prevent it from being removed, TBD
 					if (ne.tiesFrom != null) {
@@ -1803,7 +1808,7 @@ public class AbcExporter {
 				long targetEndTick = Math.min(nextChord.getStartTick(), curChord.getEndTick());
 				for (int j = 0; j < curChord.size(); j++) {
 					AbcNoteEvent jne = curChord.get(j);
-					if (jne.getEndTick() > targetEndTick) {
+					if (!curChord.glissando && jne.getEndTick() > targetEndTick) {
 						// This note extends past the end of the chord; break it into two tied notes
 						AbcNoteEvent next = jne.splitWithTieAtTick(targetEndTick);
 
@@ -1848,8 +1853,35 @@ public class AbcExporter {
 					// First try to make it longer
 					curChord.setEndTickExpand(qtm.microsToTickABCOrganic(minEndMicro));
 					if (curChord.getEndTick() > nextChord.getStartTick()) {
-						// give up and schedule it for deletion
-						curChord.setEndTickRetract(curChord.getStartTick());
+						if (!curChord.glissando) {
+							// give up and schedule curr chord for deletion
+							curChord.setEndTickRetract(curChord.getStartTick());
+							System.out.println(part.getTitle()+" Removed short dura note");
+						} else {
+							// force room for curr chord
+							if (ne2 != null && ne2.getStartTick() >= minEndTick && ne.getEndTick() > ne2.getStartTick() && ne.tiesFrom == null) {
+								// delay start of next note, its likely not part of glissando
+								ne.setStartTick(ne2.getStartTick());
+								events.remove(ne);
+								events.add(events.indexOf(ne2), ne);
+								i--;
+								System.out.println(part.getTitle()+" Delayed staggered note");
+								continue MAIN;
+							} else {
+								// remove next note, it likely part of glissando
+								events.remove(ne);
+								i--;
+								// TODO: these ties should perhaps prevent it from being removed, TBD
+								if (ne.tiesFrom != null) {
+									ne.tiesFrom.tiesTo = null;
+								}
+								if (ne.tiesTo != null) {
+									ne.tiesTo.tiesFrom = null;
+								}
+								System.out.println(part.getTitle()+" Removed glissando note 2 ");
+								continue MAIN;
+							}
+						}
 					}
 				}
 				
