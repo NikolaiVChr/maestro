@@ -1872,12 +1872,13 @@ public class AbcExporter {
 							if ((ne2 == null || microsTillNext2 > minimumMicros*2) && ne.getEndTick() > curMinEndTick
 									&& (minEndMicro-neMicroStart < minimumMicros/3 || neMicros > minimumMicros*2)) {
 								// delay start of next chord
-								for (int ii = i+1; ii < events.size(); ii++) {
+								long oldStartTick = ne.getStartTick();
+								for (int ii = i; ii < events.size(); ii++) {
 									AbcNoteEvent over = events.get(ii);
-									if (over.getStartTick() > ne.getStartTick()) {
+									if (over.getStartTick() > oldStartTick) {
 										break;
 									}
-									if (over.getStartTick() == ne.getStartTick()) {
+									if (over.getStartTick() == oldStartTick) {
 										// should be ok to do this even if tiesFrom is non-null
 										// since the tiesFrom has been expanded to end here
 										over.setStartTick(curMinEndTick);
@@ -1904,12 +1905,13 @@ public class AbcExporter {
 							} else if ((ne2 == null || ne.getEndTick() <= ne2.getStartTick()) && ne.getEndTick() > curMinEndTick
 									&& (minEndMicro-neMicroStart < minimumMicros/3 || neMicros > minimumMicros*2)) {
 								// delay start of next chord, its likely not part of glissando
-								for (int ii = i+1; ii < events.size(); ii++) {
+								long oldStartTick = ne.getStartTick();
+								for (int ii = i; ii < events.size(); ii++) {
 									AbcNoteEvent over = events.get(ii);
-									if (over.getStartTick() > ne.getStartTick()) {
+									if (over.getStartTick() > oldStartTick) {
 										break;
 									}
-									if (over.getStartTick() == ne.getStartTick()) {
+									if (over.getStartTick() == oldStartTick) {
 										// should be ok to do this even if tiesFrom is non-null
 										// since the tiesFrom has been expanded to end here
 										over.setStartTick(curMinEndTick);
