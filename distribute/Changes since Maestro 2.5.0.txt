@@ -48,13 +48,14 @@ Thanks to all who gave feedback of features and bugs plus suggestions.
 Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 ================
 
-Version 3.6.6
+Version 4.0.5
 - Make section-editor 'Rest of Track' pin to bottom instead of being inside scrollable area.
 - The checkbox for force mix timings in autoexporter tool is now unchecked by default.
 - Increase minimum upscaled resolution of source midi before we work on it. This will help some midis where tempo drops very low.
 - Fix for auto-exporter would not show dialog for locating midis.
 - Add option for exporting organically. ABC files exported with this will be much less readable by humans.
 - Removed limitation of minimum 50 bpm to enable delay in organic output.
+- Duration in part names and metadata now includes conclusion fermata.
 
 Version 3.6.5
 - Solo/mute buttons will no longer reset when reloading MIDI file.
