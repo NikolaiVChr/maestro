@@ -80,7 +80,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private TimeSignature timeSignature = TimeSignature.FOUR_FOUR;
 	private boolean tripletTiming = false;
 	private boolean mixTiming = true;
-	private boolean organic = true;
+	private boolean organic = false;
 	private int mixVersion = 2;// TODO: make UI?
 	private boolean priorityActive = false;
 	private boolean skipSilenceAtStart = true;
