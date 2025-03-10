@@ -758,7 +758,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		return startTick;
 	}
 
-	public long lastNoteEndTick(boolean accountForSustain, float exportTempoFactor) {
+	public long lastNoteEndTick(boolean accountForSustain, QuantizedTimingInfo qtm, boolean organic) {
 		long endTick = Long.MIN_VALUE;
 
 		// The last note to start playing isn't necessarily the last note to end.
@@ -776,6 +776,14 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 						long noteEndTick;
 						if (!accountForSustain || instrument.isSustainable(tone.id)) {
 							noteEndTick = ne.getEndTick();
+							if (conclusionFermata != 0 && instrument.isSustainable(tone.id)) {
+								// we need to do this so duration in part names and metadata includes fermata
+								if (organic) {
+									noteEndTick = qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(noteEndTick)+1000L*conclusionFermata);
+								} else {
+									noteEndTick = qtm.microsToTickABC(qtm.tickToMicrosABC(noteEndTick)+1000L*conclusionFermata);
+								}
+							}
 						} else {
 							double dura = 1.0;
 							try {
@@ -789,7 +797,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 							}
 							ITempoCache tc = ne.getTempoCache();
 							noteEndTick = tc
-									.microsToTick(tc.tickToMicros(ne.getStartTick()) + (long)(TimingInfo.ONE_SECOND_MICROS*dura*exportTempoFactor));
+									.microsToTick(tc.tickToMicros(ne.getStartTick()) + (long)(TimingInfo.ONE_SECOND_MICROS*dura*qtm.getExportTempoFactor()));
 						}
 
 						if (noteEndTick > endTick)

@@ -1888,7 +1888,7 @@ public class AbcExporter {
 								if (debug > 1) System.out.println(part.getTitle()+" Delayed sequential chord by "+ ((minEndMicro-neMicroStart)/1000)+" ms 1");
 								continue MAIN;
 							}
-							// give up and schedule curr chord for deletion
+							// give up and schedule curr chord for deletion, it likely contains a grace note
 							curChord.setEndTickRetract(curChord.getStartTick());
 							if (debug > 1) System.out.println(part.getTitle()+" Removed short dura chord");
 						} else {
@@ -2712,7 +2712,7 @@ public class AbcExporter {
 				}
 			}
 
-			long lastNoteEnd = part.lastNoteEndTick(accountForSustain, qtm.getExportTempoFactor());
+			long lastNoteEnd = part.lastNoteEndTick(accountForSustain, qtm, organic);
 			if (lastNoteEnd > endTick) {
 				endTick = lastNoteEnd;
 			}
@@ -2827,6 +2827,12 @@ public class AbcExporter {
 		}
 	}
 	
+	/**
+	 * Returns the final song duration.
+	 * Used to export duration in part names, file name and metadata.
+	 * 
+	 * @return
+	 */
 	private long getSongLengthMicros() {
 		return (long) ((getExportEndMicros() - getExportStartMicros())
 				/ (double) qtm.getExportTempoFactor());
