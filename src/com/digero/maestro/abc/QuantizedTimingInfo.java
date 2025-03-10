@@ -34,8 +34,6 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 
 	private NavigableSet<Long> barStartTicks = null;
 	private Long[] barStartTickByBar = null;
-	private NavigableSet<Long> barStartTicksOrg = null;
-	private Long[] barStartTickByBarOrg = null;
 	private final long songLengthTicks;
 	private final int tickResolution;
 
@@ -147,7 +145,7 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		combinedTempos.sort(rator);
 		calcNewMicros(combinedTempos);
 		LinkedList<SequenceDataCache.TempoEvent> linker = new LinkedList<>(combinedTempos);
-		outer:for (int index = 0; index < linker.size(); index++) {
+		for (int index = 0; index < linker.size(); index++) {
 			TempoEvent currMidiTempoEvent = linker.get(index);
 			
 			TimingInfo infoOrganic = new TimingInfo(currMidiTempoEvent.tempoMPQ, resolution, exportTempoFactor, meter, false, abcSongBPM, true);
@@ -811,6 +809,7 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 	
 	@Override
 	public int tickToBarNumber(long tick) {
+		// zero based
 		if (organic) return tickToBarNumberOrganic(tick);
 		TimingInfoEvent e = getTimingEventForTick(tick);
 		return (int) Math.floor(e.barNumber + (tick - e.tick) / ((double) e.info.getBarLengthTicks()));
@@ -818,7 +817,7 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 	
 	public int tickToBarNumberOrganic(long tick) {
 		TimingInfoEvent e = getTimingEventForTickOrganic(tick);
-		return (int) Math.floor(e.barNumber + (tick - e.tick) / ((double) e.info.getBarLengthTicks()));
+		return (int) (tick / e.info.getBarLengthTicks());
 	}
 
 	@Override
@@ -849,24 +848,13 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 	}
 	
 	public long tickToBarStartTickOrganic(long tick) {
-		if (barStartTicksOrg == null)
-			calcBarStartsOrganic();
-
-		if (tick <= barStartTicksOrg.last())
-			return barStartTicksOrg.floor(tick);
-
-		return barNumberToBarStartTickOrganic(tickToBarNumberOrganic(tick));
+		TimingInfoEvent e = timingInfoByTickOrganic.lastEntry().getValue();
+		return (tick/e.info.getBarLengthTicks())*e.info.getBarLengthTicks();
 	}
 
 	public long tickToBarEndTickOrganic(long tick) {
-		if (barStartTicksOrg == null)
-			calcBarStartsOrganic();
-
-		Long endTick = barStartTicksOrg.higher(tick);
-		if (endTick != null)
-			return endTick;
-
-		return barNumberToBarEndTickOrganic(tickToBarNumberOrganic(tick));
+		TimingInfoEvent e = timingInfoByTickOrganic.lastEntry().getValue();
+		return (1 + tick/e.info.getBarLengthTicks())*e.info.getBarLengthTicks();
 	}
 
 	public long barNumberToBarStartTick(int barNumber) {
@@ -881,14 +869,8 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 	}
 	
 	public long barNumberToBarStartTickOrganic(int barNumber) {
-		if (barStartTickByBarOrg == null)
-			calcBarStartsOrganic();
-
-		if (barNumber < barStartTickByBarOrg.length)
-			return barStartTickByBarOrg[barNumber];
-
 		TimingInfoEvent e = timingInfoByTickOrganic.lastEntry().getValue();
-		return e.tick + Math.round((barNumber - e.barNumber) * e.info.getBarLengthTicks());
+		return barNumber * e.info.getBarLengthTicks();
 	}
 
 	public long barNumberToBarEndTick(int barNumber) {
@@ -936,35 +918,6 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		barStartTickByBar = barStartTicks.toArray(new Long[0]);
 	}
 	
-	private void calcBarStartsOrganic() {
-		barStartTicksOrg = new TreeSet<>();
-		barStartTicksOrg.add(0L);
-		TimingInfoEvent prev = null;
-		for (TimingInfoEvent event : timingInfoByTickOrganic.values()) {
-			if (prev != null) {
-				// Calculate the start time for all bars that start between prev and event
-				long barStart = prev.tick
-						+ Math.round((Math.ceil(prev.barNumber) - prev.barNumber) * prev.info.getBarLengthTicks());
-				while (barStart < event.tick) {
-					barStartTicksOrg.add(barStart);
-					barStart += prev.info.getBarLengthTicks();
-				}
-			}
-			prev = event;
-		}
-
-		// Calculate bar starts for all bars after the last tempo change
-		long barStart = prev.tick
-				+ Math.round((Math.ceil(prev.barNumber) - prev.barNumber) * prev.info.getBarLengthTicks());
-		while (barStart <= songLengthTicks) {
-			barStartTicksOrg.add(barStart);
-			barStart += prev.info.getBarLengthTicks();
-		}
-		barStartTicksOrg.add(barStart);
-
-		barStartTickByBarOrg = barStartTicksOrg.toArray(new Long[0]);
-	}
-
 	TimingInfoEvent getTimingEventForTick(long tick, AbcPart part) {
 		if (oddsAndEnds)
 			return oddTimingInfoByTick.get(part).floorEntry(tick).getValue();

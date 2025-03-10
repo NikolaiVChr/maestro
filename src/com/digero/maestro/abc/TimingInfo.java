@@ -187,11 +187,11 @@ public class TimingInfo {
 	 * 
 	 */
 	public long getBarLengthTicks() {
-		if (!organic) {
+		if (organic) {
+			return 4L * resolutionPPQ * meter.numerator / meter.denominator;
+		} else {
 			// for some songs this gives wrong result, but for most it works:
 			return minNoteDivisor * minNoteLengthTicks * meter.numerator / meter.denominator;
-		} else {
-			return 4L * resolutionPPQ * meter.numerator / meter.denominator;
 		}
 	}
 
