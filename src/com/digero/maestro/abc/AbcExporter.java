@@ -1714,8 +1714,7 @@ public class AbcExporter {
 				Chord nextChord = new Chord(ne);
 
 				
-				// handle fast glissando
-				
+				// handle fast glissando				
 				long microsTillNext = qtm.tickToMicrosABCOrganic(ne.getStartTick()) - qtm.tickToMicrosABCOrganic(curChord.getStartTick());
 				long neMicros = qtm.tickToMicrosABCOrganic(ne.getEndTick()) - qtm.tickToMicrosABCOrganic(ne.getStartTick());
 				AbcNoteEvent ne2 = null;
@@ -1756,7 +1755,7 @@ public class AbcExporter {
 				}
 								
 				// remove very fast arpeggio				
-				if (microsTillNext < minimumMicros && curChord.getEndTick() > ne.getStartTick() && !curChord.dontMove && curChord.early == null) {
+				if (microsTillNext < minimumMicros && curChord.getEndTick() > ne.getStartTick() && !curChord.dontMove && curChord.early == null && !curChord.glissando) {
 					// curr end before next start prevents handling grace notes, they will be deleted later if they too short
 					for (AbcNoteEvent small : curChord.getNotes()) {
 						if (small.tiesFrom != null || small.tiesTo != null) {
