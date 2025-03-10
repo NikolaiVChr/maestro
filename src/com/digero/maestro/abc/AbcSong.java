@@ -129,7 +129,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			ExportFilenameTemplate exportFilenameTemplate, InstrNameSettings instrNameSettings,
 			FileResolver fileResolver, MiscSettings miscSettings, boolean saveMSXwhenSourceChange)
 			throws IOException, InvalidMidiDataException, ParseException, SAXException {
-		projectFile = file;
+		
 		storeNewSourceFile = saveMSXwhenSourceChange;
 		this.partAutoNumberer = partAutoNumberer;
 		this.partAutoNumberer.setParts(Collections.unmodifiableList(parts));
@@ -189,6 +189,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 	private void initFromMidi(File file, MiscSettings miscSettings)
 			throws IOException, InvalidMidiDataException, ParseException {
+		sourceFile = file;
 		usingOldVelocities = miscSettings.ignoreExpressionMessages;
 		sequenceInfo = SequenceInfo.fromMidi(file, miscSettings, usingOldVelocities);
 		title = sequenceInfo.getTitle();
@@ -201,7 +202,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private void initFromAbc(File file, MiscSettings miscSettings)
 			throws IOException, InvalidMidiDataException, ParseException {
 		AbcInfo abcInfo = new AbcInfo();
-
+		sourceFile = file;
 		AbcToMidi.Params params = new AbcToMidi.Params(file);
 		params.abcInfo = abcInfo;
 		params.useLotroInstruments = false;
