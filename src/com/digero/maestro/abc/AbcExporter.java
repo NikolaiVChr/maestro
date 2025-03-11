@@ -2596,9 +2596,12 @@ public class AbcExporter {
 			int startPitch = noteID;
 			List<AbcNoteEvent> benders = new ArrayList<>();
 			AbcNoteEvent current = null;
-			long minimum = qtm.microsToTickABCOrganic(qtm.multiplyByExportTempoFactor(AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())));
+
 			Integer entry = null;
-			for (long t = be.getStartTick(); t < be.getEndTick(); t = be.getNextBend(t+minimum, entry)) {
+			for (long t = be.getStartTick(); t < be.getEndTick();
+					t = be.getNextBend(qtm.microsToTickABCOrganic(
+							qtm.tickToMicrosABCOrganic(t) + AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())
+							), entry)) {
 				entry = be.getBend(t);
 				if (entry != null) {
 					noteID = startPitch + entry;

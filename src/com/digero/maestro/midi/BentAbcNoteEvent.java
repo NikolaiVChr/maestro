@@ -36,10 +36,10 @@ public class BentAbcNoteEvent extends AbcNoteEvent {
 		Entry<Long, Integer> entry_c = bends.ceilingEntry(tick);
 		Entry<Long, Integer> entry_f = bends.floorEntry(tick);
 		
-		if (entry_f != null && entry_f.getValue() != lastBend) return entry_f.getKey(); 
+		if (entry_f != null && entry_f.getValue() != lastBend) return tick; 
 		
 		if (entry_c == null)
-			return tick;
+			return endTick;
 		
 		return entry_c.getKey();
 	}
