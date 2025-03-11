@@ -21,7 +21,9 @@ public class TimingInfo {
 
 	private final int tempoMPQ;
 	private final int resolutionPPQ;
-	private final float exportTempoFactor;
+	
+	private int newTempo;
+	private int origTempo;
 
 	private final TimeSignature meter;
 
@@ -38,27 +40,28 @@ public class TimingInfo {
 		str += "meter "+meter.toString() + "\n";
 		str += "resolutionPPQ "+resolutionPPQ + "\n";
 		str += "tempoMPQ "+tempoMPQ + " (source)\n";
-		str += "exportTempoFactor "+exportTempoFactor + "\n";
+		str += "exportTempoFactor "+(newTempo/(float)origTempo) + "\n";
 		str += "defaultDivisor "+defaultDivisor + "\n";
 		str += "minNoteDivisor "+minNoteDivisor + "\n";
 		str += "minNoteLengthTicks "+minNoteLengthTicks + "\n";
 		str += "swing "+useTripletTiming + "\n";
-		str += "tempo "+MidiUtils.convertTempo(roundTempoMPQ((double) tempoMPQ / exportTempoFactor)) + " BPM\n";
-		str += "minDuration "+ (0.001d * ((MidiUtils.ticks2microsec(minNoteLengthTicks, tempoMPQ, resolutionPPQ)))/ exportTempoFactor) + " ms\n";
+		str += "tempo "+MidiUtils.convertTempo(roundTempoMPQ((double) tempoMPQ *origTempo/newTempo)) + " BPM\n";
+		str += "minDuration "+ (MidiUtils.ticks2microsec(minNoteLengthTicks, tempoMPQ, resolutionPPQ)) *origTempo/(long)(newTempo*1000L) + " ms\n";
 		return str;
 	}
 
-	TimingInfo(int tempoMPQ, int resolutionPPQ, float exportTempoFactor, TimeSignature meter, boolean useTripletTiming,
+	TimingInfo(int tempoMPQ, int resolutionPPQ, int newTempo, int origTempo, TimeSignature meter, boolean useTripletTiming,
 			int abcSongBPM, boolean organic) throws AbcConversionException {
 		// Compute the export tempo and round it to a whole-number BPM
-		double exportTempoMPQ = roundTempoMPQ((double) tempoMPQ / exportTempoFactor);
+		double exportTempoMPQ = roundTempoMPQ((double) tempoMPQ *origTempo/newTempo);
 
 		// Now adjust the tempoMPQ by however much we just rounded the export tempo
-		tempoMPQ = (int) Math.round(exportTempoMPQ * exportTempoFactor);
+		tempoMPQ = (int) Math.round(exportTempoMPQ * newTempo/origTempo);
 
 		this.tempoMPQ = tempoMPQ;
 		this.resolutionPPQ = resolutionPPQ;
-		this.exportTempoFactor = exportTempoFactor;
+		this.newTempo = newTempo;
+		this.origTempo = origTempo;
 		this.meter = meter;
 		this.useTripletTiming = useTripletTiming;
 		this.organic = organic;
@@ -147,16 +150,12 @@ public class TimingInfo {
 		return resolutionPPQ;
 	}
 
-	public float getExportTempoFactor() {
-		return exportTempoFactor;
-	}
-
 	public int getExportTempoMPQ() {
-		return (int) Math.round(tempoMPQ / exportTempoFactor);
+		return (int) Math.round(tempoMPQ * origTempo/newTempo);
 	}
 
 	public int getExportTempoBPM() {
-		return (int) Math.round(MidiUtils.convertTempo((double) tempoMPQ / exportTempoFactor));
+		return (int) Math.round(MidiUtils.convertTempo((double) tempoMPQ * origTempo/newTempo));
 	}
 
 	public TimeSignature getMeter() {

@@ -75,6 +75,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private boolean badger = false;
 	private boolean allOut = false;
 	private float tempoFactor = 1.0f;
+	private int newTempo = 120;
+	private int origTempo = 120;
 	private int transpose = 0;
 	private KeySignature keySignature = KeySignature.C_MAJOR;
 	private TimeSignature timeSignature = TimeSignature.FOUR_FOUR;
@@ -336,7 +338,10 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				if (firstBar < 0.0f) firstBar = null;
 			}
 
-			tempoFactor = SaveUtil.parseValue(songEle, "exportSettings/@tempoFactor", tempoFactor);
+			float factor = SaveUtil.parseValue(songEle, "exportSettings/@tempoFactor", tempoFactor);
+			
+			setTempoFactor(Math.round(factor*sequenceInfo.getPrimaryTempoBPM()), sequenceInfo.getPrimaryTempoBPM());
+			
 			transpose = SaveUtil.parseValue(songEle, "exportSettings/@transpose", transpose);
 			if (ICompileConstants.SHOW_KEY_FIELD)
 				keySignature = SaveUtil.parseValue(songEle, "exportSettings/@keySignature", keySignature);
@@ -769,9 +774,12 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		return tempoFactor;
 	}
 
-	public void setTempoFactor(float tempoFactor) {
-		if (this.tempoFactor != tempoFactor) {
+	public void setTempoFactor(int newTempo, int origTempo) {
+		float tempoFactor = (float) newTempo/origTempo;
+		if (this.newTempo != newTempo || this.origTempo != origTempo) {
 			this.tempoFactor = tempoFactor;
+			this.newTempo = newTempo;
+			this.origTempo = origTempo;
 			fireChangeEvent(AbcSongProperty.TEMPO_FACTOR);
 		}
 	}
@@ -782,7 +790,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	 * @return bpm
 	 */
 	public int getTempoBPM() {
-		return Math.round(tempoFactor * sequenceInfo.getPrimaryTempoBPM());
+		return newTempo;
 	}
 
 	/**
@@ -792,7 +800,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	 * @param tempoBPM new tempo
 	 */
 	public void setTempoBPM(int tempoBPM) {
-		setTempoFactor((float) tempoBPM / sequenceInfo.getPrimaryTempoBPM());
+		setTempoFactor(tempoBPM, sequenceInfo.getPrimaryTempoBPM());
 	}
 
 	public int getTranspose() {
@@ -975,8 +983,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		try {
 			AbcExporter exporter = getAbcExporter();
 
-			return (long) ((exporter.getExportEndMicros() - exporter.getExportStartMicros())
-					/ (double) timingInfo.getExportTempoFactor());
+			return timingInfo.divideByExportTempoFactor(exporter.getExportEndMicros() - exporter.getExportStartMicros());
 		} catch (AbcConversionException e) {
 			return 0;
 		}
@@ -1005,7 +1012,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 	public QuantizedTimingInfo getAbcTimingInfo() throws AbcConversionException {
 		if (timingInfo == null //
-				|| timingInfo.getExportTempoFactor() != getTempoFactor() //
+				|| timingInfo.getExportTempoFactord() != getTempoFactor() //
 				|| timingInfo.getMeter() != getTimeSignature() //
 				|| timingInfo.isTripletTiming() != isTripletTiming() //
 				|| timingInfo.isMixTiming() != isMixTiming() //
@@ -1013,7 +1020,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				|| timingInfo.isOrganic() != isOrganic() //
 				|| isMixDirty()) {
 			setMixDirty(false);
-			timingInfo = new QuantizedTimingInfo(sequenceInfo, getTempoFactor(), getTimeSignature(), isTripletTiming(),
+			timingInfo = new QuantizedTimingInfo(sequenceInfo, newTempo, origTempo, getTimeSignature(), isTripletTiming(),
 					getTempoBPM(), this, isMixTiming(), getMixVersion(), isOrganic());
 		}
 

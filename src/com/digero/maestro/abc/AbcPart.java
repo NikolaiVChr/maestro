@@ -797,7 +797,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 							}
 							ITempoCache tc = ne.getTempoCache();
 							noteEndTick = tc
-									.microsToTick(tc.tickToMicros(ne.getStartTick()) + (long)(TimingInfo.ONE_SECOND_MICROS*dura*qtm.getExportTempoFactor()));
+									.microsToTick(tc.tickToMicros(ne.getStartTick()) + qtm.multiplyByExportTempoFactor((long)(TimingInfo.ONE_SECOND_MICROS*dura)));
 						}
 
 						if (noteEndTick > endTick)

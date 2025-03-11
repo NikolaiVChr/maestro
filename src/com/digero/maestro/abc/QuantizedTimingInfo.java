@@ -38,7 +38,9 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 	private final int tickResolution;
 
 	private final int primaryTempoMPQ;
-	private final float exportTempoFactor;
+	//private final float exportTempoFactor;
+	private int newTempo;
+	private int origTempo;
 	private final TimeSignature meter;
 	private final boolean tripletTiming;
 	private final boolean oddsAndEnds;
@@ -48,13 +50,14 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 	public static final int COMBINE_PRIORITY_MULTIPLIER = 4;// Do not change this number without exposing the int in UI.
 															// Since old projects will have 4 saved in msx.
 
-	public QuantizedTimingInfo(SequenceInfo source, float exportTempoFactor, TimeSignature meter,
+	public QuantizedTimingInfo(SequenceInfo source, int newTempo, int origTempo, TimeSignature meter,
 			boolean useTripletTiming, int abcSongBPM, AbcSong song, boolean oddsAndEnds, int mixVersion, boolean organic)
 			throws AbcConversionException {
 
-		double exportPrimaryTempoMPQ = TimingInfo.roundTempoMPQ(source.getPrimaryTempoMPQ() / exportTempoFactor);
-		this.primaryTempoMPQ = (int) Math.round(exportPrimaryTempoMPQ * exportTempoFactor);
-		this.exportTempoFactor = exportTempoFactor;
+		double exportPrimaryTempoMPQ = TimingInfo.roundTempoMPQ(source.getPrimaryTempoMPQ()*origTempo/newTempo);
+		this.primaryTempoMPQ = (int) Math.round(exportPrimaryTempoMPQ * newTempo/origTempo);
+		this.newTempo = newTempo;
+		this.origTempo = origTempo;
 		this.meter = meter;
 		this.organic = organic;
 		this.tripletTiming = useTripletTiming;
@@ -64,15 +67,15 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		final int resolution = source.getDataCache().getTickResolution();
 
 		if (!organic) {
-			TimingInfo defaultTiming = new TimingInfo(source.getPrimaryTempoMPQ(), resolution, exportTempoFactor, meter,
+			TimingInfo defaultTiming = new TimingInfo(source.getPrimaryTempoMPQ(), resolution, newTempo, origTempo, meter,
 					useTripletTiming, abcSongBPM, false);
-			TimingInfo defaultOddTiming = new TimingInfo(source.getPrimaryTempoMPQ(), resolution, exportTempoFactor, meter,
+			TimingInfo defaultOddTiming = new TimingInfo(source.getPrimaryTempoMPQ(), resolution, newTempo, origTempo, meter,
 					!useTripletTiming, abcSongBPM, false);
 			TimingInfoEvent defaultEvent = new TimingInfoEvent(0, 0, 0, defaultTiming, defaultOddTiming);
 			timingInfoByTick.put(0L, defaultEvent);
 		}
 		
-		TimingInfo defaultTimingOrg = new TimingInfo(source.getPrimaryTempoMPQ(), resolution, exportTempoFactor, meter,
+		TimingInfo defaultTimingOrg = new TimingInfo(source.getPrimaryTempoMPQ(), resolution, newTempo, origTempo, meter,
 				false, abcSongBPM, true);
 		TimingInfoEvent defaultEventOrg = new TimingInfoEvent(0, 0, 0, defaultTimingOrg, null);
 		timingInfoByTickOrganic.put(0L, defaultEventOrg);
@@ -97,9 +100,9 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 			long tick = midiTempo.tick;
 			Entry<Long, Integer> midiEntry = changeTree.floorEntry(tick);
 			if (midiEntry != null && midiEntry.getValue() != 0) {
-				int newTempo = (int) MidiUtils.convertTempo(
+				int newerTempo = (int) MidiUtils.convertTempo(
 						Math.max(1.0d, MidiUtils.convertTempo(midiTempo.tempoMPQ) + midiEntry.getValue()));
-				SequenceDataCache.TempoEvent te = source.getDataCache().getATempoEvent(newTempo, midiTempo.tick,
+				SequenceDataCache.TempoEvent te = source.getDataCache().getATempoEvent(newerTempo, midiTempo.tick,
 						midiTempo.micros);
 				combinedTempos.add(te);
 			} else {
@@ -148,16 +151,16 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		for (int index = 0; index < linker.size(); index++) {
 			TempoEvent currMidiTempoEvent = linker.get(index);
 			
-			TimingInfo infoOrganic = new TimingInfo(currMidiTempoEvent.tempoMPQ, resolution, exportTempoFactor, meter, false, abcSongBPM, true);
+			TimingInfo infoOrganic = new TimingInfo(currMidiTempoEvent.tempoMPQ, resolution, newTempo, origTempo, meter, false, abcSongBPM, true);
 			TimingInfoEvent abcTempoEventOrganic = new TimingInfoEvent(currMidiTempoEvent.tick, currMidiTempoEvent.micros, 0, infoOrganic, null);
 			timingInfoByTickOrganic.put(currMidiTempoEvent.tick, abcTempoEventOrganic);
 			if (!organic) {
 				long tick = currMidiTempoEvent.tick;
 				long micros = 0L;
 				double barNumber = 0;
-				TimingInfo info = new TimingInfo(currMidiTempoEvent.tempoMPQ, resolution, exportTempoFactor, meter,
+				TimingInfo info = new TimingInfo(currMidiTempoEvent.tempoMPQ, resolution, newTempo, origTempo, meter,
 						useTripletTiming, abcSongBPM, false);
-				TimingInfo infoOdd = new TimingInfo(currMidiTempoEvent.tempoMPQ, resolution, exportTempoFactor, meter,
+				TimingInfo infoOdd = new TimingInfo(currMidiTempoEvent.tempoMPQ, resolution, newTempo, origTempo, meter,
 						!useTripletTiming, abcSongBPM, false);
 				
 				//System.out.println("\nstarting "+info.getTempoBPM()+" tick="+sourceEvent.tick+"    min="+info.getMinNoteLengthTicks());
@@ -645,18 +648,26 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 
 	/**
 	 * 
-	 * @return source MIDI/ABC main tempo BPM
+	 * @return source main tempo MPQ
 	 */
 	public int getPrimaryTempoMPQ() {
 		return primaryTempoMPQ;
 	}
 
+	/**
+	 * 
+	 * @return source main tempo BPM
+	 */
 	public int getPrimaryTempoBPM() {
 		return (int) Math.round(MidiUtils.convertTempo(getPrimaryTempoMPQ()));
 	}
 
+	/**
+	 * 
+	 * @return ABC export main tempo MPQ
+	 */
 	public int getPrimaryExportTempoMPQ() {
-		return Math.round(primaryTempoMPQ / exportTempoFactor);
+		return Math.round(primaryTempoMPQ*origTempo/newTempo);
 	}
 
 	/**
@@ -664,11 +675,20 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 	 * @return export ABC main tempo BPM
 	 */
 	public int getPrimaryExportTempoBPM() {
-		return (int) Math.round(MidiUtils.convertTempo((double) primaryTempoMPQ / exportTempoFactor));
+		// TODO: should we not just return newTempo?
+		return (int) Math.round(MidiUtils.convertTempo((double) primaryTempoMPQ *origTempo/newTempo));
 	}
 
-	public float getExportTempoFactor() {
-		return exportTempoFactor;
+	public float getExportTempoFactord() {
+		return newTempo/(float)origTempo;
+	}
+	
+	public long divideByExportTempoFactor(long number) {
+		return number*origTempo/newTempo;
+	}
+	
+	public long multiplyByExportTempoFactor(long number) {
+		return number*newTempo/origTempo;
 	}
 
 	public TimeSignature getMeter() {
@@ -768,17 +788,25 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 	 * Microseconds to tick. Does take export tempo change into consideration. Returns micros in the ABC song.
 	 */
 	public long tickToMicrosABC(long tick) {
+		if (newTempo == origTempo) return tickToMicros(tick);
 		TimingInfoEvent e = getTimingEventForTick(tick);
 		return (long) ((e.micros
 				+ MidiUtils.ticks2microsec(tick - e.tick, e.info.getTempoMPQ(), e.info.getResolutionPPQ()))
-				/ getExportTempoFactor());
+				*origTempo/(long)newTempo);
 	}
 	
 	public long tickToMicrosABCOrganic(long tick) {
+		if (newTempo == origTempo) return tickToMicrosOrganic(tick); 
 		TimingInfoEvent e = getTimingEventForTickOrganic(tick);
 		return (long) ((e.micros
 				+ MidiUtils.ticks2microsec(tick - e.tick, e.info.getTempoMPQ(), e.info.getResolutionPPQ()))
-				/ getExportTempoFactor());
+				*origTempo/(long)newTempo);
+	}
+		
+	public long tickToMicros(long tick, AbcPart part) {
+		TimingInfoEvent e = getTimingEventForTick(tick, part);
+		return (long) ((e.micros
+				+ MidiUtils.ticks2microsec(tick - e.tick, e.info.getTempoMPQ(), e.info.getResolutionPPQ())));
 	}
 	
 	/**
@@ -786,23 +814,26 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 	 * Used only by PolyphonyHistogram
 	 */
 	public long tickToMicrosABC(long tick, AbcPart part) {
+		if (newTempo == origTempo) return tickToMicros(tick, part);
 		TimingInfoEvent e = getTimingEventForTick(tick, part);
 		return (long) ((e.micros
 				+ MidiUtils.ticks2microsec(tick - e.tick, e.info.getTempoMPQ(), e.info.getResolutionPPQ()))
-				/ getExportTempoFactor());
+				*origTempo/(long)newTempo);
 	}
 
 	/**
 	 * Tick to microseconds. Does take export tempo change into consideration. The micro is in the ABC song.
 	 */
 	public long microsToTickABC(long micros) {
-		micros = (long) (micros * getExportTempoFactor());
+		if (newTempo == origTempo) return microsToTick(micros); 
+		micros = micros * newTempo/(long)origTempo;
 		TimingInfoEvent e = getTimingEventForMicros(micros);
 		return e.tick + MidiUtils.microsec2ticks(micros - e.micros, e.info.getTempoMPQ(), e.info.getResolutionPPQ());
 	}
 	
 	public long microsToTickABCOrganic(long micros) {
-		micros = (long) (micros * getExportTempoFactor());
+		if (newTempo == origTempo) return microsToTickOrganic(micros);
+		micros = micros * newTempo/(long)origTempo;
 		TimingInfoEvent e = getTimingEventForMicrosOrganic(micros);
 		return e.tick + MidiUtils.microsec2ticks(micros - e.micros, e.info.getTempoMPQ(), e.info.getResolutionPPQ());
 	}

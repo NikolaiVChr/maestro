@@ -256,7 +256,7 @@ public class AbcExporter {
 		long delayMicros = 0;
 		if ((qtm.getPrimaryExportTempoBPM() >= 50 || organic) && part.delay != 0) {
 			// Make delay on instrument be audible in preview
-			delayMicros = (long) (part.delay * 1000 * qtm.getExportTempoFactor());
+			delayMicros = qtm.multiplyByExportTempoFactor(part.delay * 1000L);
 		}
 		
 		for (Chord chord : chords) {
@@ -299,10 +299,10 @@ public class AbcExporter {
 							: AbcConstants.NON_SUSTAINED_NOTE_HOLD_SECONDS;
 					if (organic) {
 						endTick = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(endTick)
-								+ (long) (extraSeconds * TimingInfo.ONE_SECOND_MICROS * qtm.getExportTempoFactor()));
+								+ qtm.multiplyByExportTempoFactor((long)(extraSeconds * TimingInfo.ONE_SECOND_MICROS)));
 					} else {
 						endTick = qtm.microsToTick(qtm.tickToMicros(endTick)
-							+ (long) (extraSeconds * TimingInfo.ONE_SECOND_MICROS * qtm.getExportTempoFactor()));
+							+ qtm.multiplyByExportTempoFactor((long)(extraSeconds * TimingInfo.ONE_SECOND_MICROS)));
 					}
 				}
 				
@@ -760,8 +760,7 @@ public class AbcExporter {
 
 				int exportBarNumber = curBarNumber - firstBarNumber;
 				if ((exportBarNumber + 1) % 10 == 0) {
-					long micros = (long) ((qtm.barNumberToMicrosecond(curBarNumber) - songStartMicros)
-							/ qtm.getExportTempoFactor());
+					long micros = qtm.divideByExportTempoFactor(qtm.barNumberToMicrosecond(curBarNumber) - songStartMicros);
 					out.println("% Bar " + (exportBarNumber + 1) + " (" + Util.formatDuration(micros) + ")");
 				}
 
@@ -999,8 +998,8 @@ public class AbcExporter {
 						ne.setLegatoEndTick(part, null);// clean up, so if a part is removed there is not references to it in midinoteevents.
 						if (part.isStudentPart() && mappedNote.id < LotroInstrument.STUDENT_CHROMATIC_LOWEST.id) {
 							long endTickMin = qtm.microsToTick(
-									qtm.tickToMicros(startTick) + (long) (AbcConstants.STUDENT_FX_MIN_SECONDS
-											* TimingInfo.ONE_SECOND_MICROS * qtm.getExportTempoFactor()));
+									qtm.tickToMicros(startTick) + qtm.multiplyByExportTempoFactor((long)(AbcConstants.STUDENT_FX_MIN_SECONDS
+											* TimingInfo.ONE_SECOND_MICROS)));
 							endTick = Math.max(endTick, endTickMin);// TODO: what if similar note comes right after, then it should not be extended!!!
 						}
 
@@ -1465,8 +1464,8 @@ public class AbcExporter {
 						ne.setLegatoEndTick(part, null);// clean up, so if a part is removed there is not references to it in midinoteevents.
 						if (part.isStudentPart() && mappedNote.id < LotroInstrument.STUDENT_CHROMATIC_LOWEST.id) {
 							long endTickMin = qtm.microsToTickOrganic(
-									qtm.tickToMicrosOrganic(startTick) + (long) (AbcConstants.STUDENT_FX_MIN_SECONDS
-											* TimingInfo.ONE_SECOND_MICROS * qtm.getExportTempoFactor()));
+									qtm.tickToMicrosOrganic(startTick) + qtm.multiplyByExportTempoFactor ((long)(AbcConstants.STUDENT_FX_MIN_SECONDS
+											* TimingInfo.ONE_SECOND_MICROS)));
 							endTick = Math.max(endTick, endTickMin);
 							// TODO: what if similar note comes right after, then it should not be extended!!!
 							//       and shouldn't this only be done for preview?
@@ -2216,7 +2215,7 @@ public class AbcExporter {
 
 			long maxNoteEndTick = qtm.quantize(
 					qtm.microsToTick(
-							ne.getStartMicros() + (long) (TimingInfo.LONGEST_NOTE_MICROS * qtm.getExportTempoFactor())),
+							ne.getStartMicros() + qtm.multiplyByExportTempoFactor(TimingInfo.LONGEST_NOTE_MICROS)),
 					part);
 			
 			// quantize:            tunedit + mixtimings 
@@ -2296,11 +2295,11 @@ public class AbcExporter {
 			// If remaining bar is larger than 5s, then split rests earlier (and yes, have
 			// seen this happen for 8s+ -aifel)
 			if (ne.note == Note.REST && targetEndTick > qtm.microsToTick(qtm.tickToMicros(ne.getStartTick())
-					+ (long) (TimingInfo.LONGEST_NOTE_MICROS * qtm.getExportTempoFactor()))) {
+					+ qtm.multiplyByExportTempoFactor(TimingInfo.LONGEST_NOTE_MICROS))) {
 				// Rest longer than 5s, split it at 4s:
 				targetEndTick = qtm.quantize(
 						qtm.microsToTick(qtm.tickToMicros(ne.getStartTick())
-								+ (long) (0.5f * AbcConstants.LONGEST_NOTE_MICROS * qtm.getExportTempoFactor())),
+								+ qtm.multiplyByExportTempoFactor (AbcConstants.LONGEST_NOTE_MICROS/2)),
 						part);
 			}
 
@@ -2358,7 +2357,7 @@ public class AbcExporter {
 			
 			long maxNoteEndTick = 
 					qtm.microsToTickOrganic(
-							qtm.tickToMicrosOrganic(ne.getStartTick()) + (long) (TimingInfo.LONGEST_NOTE_MICROS * qtm.getExportTempoFactor()));
+							qtm.tickToMicrosOrganic(ne.getStartTick()) + qtm.multiplyByExportTempoFactor(TimingInfo.LONGEST_NOTE_MICROS));
 			
 			boolean drone = part.getInstrument() == LotroInstrument.BASIC_BAGPIPE
 					&& ne.note.id <= AbcConstants.BAGPIPE_LAST_DRONE_NOTE_ID;
@@ -2436,10 +2435,10 @@ public class AbcExporter {
 			// Where this is tied can matter for other notes, so
 			// find where other notes start or end and choose that place.
 			long maxForDrones = qtm.microsToTickOrganic(
-					qtm.tickToMicrosOrganic(ne.getStartTick()) + (long) ((TimingInfo.LONGEST_NOTE_MICROS-0.25*AbcConstants.ONE_SECOND_MICROS) * qtm.getExportTempoFactor())
+					qtm.tickToMicrosOrganic(ne.getStartTick()) + qtm.multiplyByExportTempoFactor((TimingInfo.LONGEST_NOTE_MICROS-AbcConstants.ONE_SECOND_MICROS/4))
 					);
 			long minForDrones = qtm.microsToTickOrganic(
-					qtm.tickToMicrosOrganic(ne.getStartTick()) + (long) ((TimingInfo.LONGEST_NOTE_MICROS-AbcConstants.ONE_SECOND_MICROS) * qtm.getExportTempoFactor())
+					qtm.tickToMicrosOrganic(ne.getStartTick()) + qtm.multiplyByExportTempoFactor((TimingInfo.LONGEST_NOTE_MICROS-AbcConstants.ONE_SECOND_MICROS))
 					);
 			Long bestForDrones = points.floor(maxForDrones);
 			if (bestForDrones != null && bestForDrones > minForDrones) maxForDrones = bestForDrones; 
@@ -2450,11 +2449,11 @@ public class AbcExporter {
 			// If remaining bar is larger than 5s, then split rests earlier (and yes, have
 			// seen this happen for 8s+ -aifel)
 			if (ne.note == Note.REST && targetEndTick > qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(ne.getStartTick())
-					+ (long) (TimingInfo.LONGEST_NOTE_MICROS * qtm.getExportTempoFactor()))) {
+					+ qtm.multiplyByExportTempoFactor(TimingInfo.LONGEST_NOTE_MICROS))) {
 				// Rest longer than 5s, split it at 4s:
 				targetEndTick = 
 						qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(ne.getStartTick())
-								+ (long) (0.5f * AbcConstants.LONGEST_NOTE_MICROS * qtm.getExportTempoFactor()));
+								+ qtm.multiplyByExportTempoFactor(AbcConstants.LONGEST_NOTE_MICROS/2));
 			}
 
 			if (ne.getEndTick() > targetEndTick) {
@@ -2597,7 +2596,7 @@ public class AbcExporter {
 			int startPitch = noteID;
 			List<AbcNoteEvent> benders = new ArrayList<>();
 			AbcNoteEvent current = null;
-			long minimum = qtm.microsToTickABCOrganic((long)(qtm.getExportTempoFactor()*(double)AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())));
+			long minimum = qtm.microsToTickABCOrganic(qtm.multiplyByExportTempoFactor(AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())));
 			Integer entry = null;
 			for (long t = be.getStartTick(); t < be.getEndTick(); t = be.getNextBend(t+minimum, entry)) {
 				entry = be.getBend(t);
@@ -2836,8 +2835,7 @@ public class AbcExporter {
 	 * @return
 	 */
 	private long getSongLengthMicros() {
-		return (long) ((getExportEndMicros() - getExportStartMicros())
-				/ (double) qtm.getExportTempoFactor());
+		return qtm.divideByExportTempoFactor(getExportEndMicros() - getExportStartMicros());
 	}
 
 	/**
