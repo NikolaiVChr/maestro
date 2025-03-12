@@ -461,6 +461,13 @@ public class AbcExporter {
 		}
 		
 		List<Chord> chords = combineOrganic(part, false);
+		
+		for (Chord c : chords) {
+			initDyn = c.calcDynamics();
+			if (initDyn != null)
+				break;
+		}
+		
 		int countChords = 0;
 		long currentMicro = 0L;
 		for (Chord c : chords) {
