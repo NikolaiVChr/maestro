@@ -183,7 +183,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 	}
 
 	public String getSongDurationStr() {
-		return songDuration;
+		return Util.emptyIfNull(songDuration);
 	}
 
 	public int getPartNumber(int trackIndex) {
@@ -521,5 +521,19 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 			}
 		}
 		return a;
+	}
+	
+	// used for set exporter
+	public static AbcInfo getDummyAbcInfo() {
+		AbcInfo inf = new AbcInfo();
+		inf.setExtendedMetadata(AbcField.SONG_DURATION, "3:14");
+		inf.setExtendedMetadata(AbcField.SONG_TITLE, "Example Title");
+		inf.setExtendedMetadata(AbcField.SONG_COMPOSER, "Example Composer");
+		inf.setExtendedMetadata(AbcField.SONG_TRANSCRIBER, "Your Name Here");
+		for (int i = 0; i < 5; i++) {
+			inf.partInfoByIndex.put(i, new PartInfo());
+		}
+		
+		return inf;
 	}
 }

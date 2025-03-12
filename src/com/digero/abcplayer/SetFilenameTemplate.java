@@ -6,90 +6,14 @@ import java.util.Comparator;
 import java.util.ListIterator;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.prefs.BackingStoreException;
-import java.util.prefs.Preferences;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.digero.abcplayer.view.PlaylistSetExportWizard.SetExportSettings;
+import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.util.Pair;
-import com.digero.common.util.Util;
-import com.digero.maestro.abc.AbcMetadataSource;
-import com.digero.maestro.abc.ExportFilenameTemplate.Variable;
-import com.digero.maestro.view.SettingsDialog.MockMetadataSource;
-
 
 public class SetFilenameTemplate {
-	public static final String[] spaceReplaceChars = { " ", "", "_", "-" };
-	public static final String[] spaceReplaceLabels = { "Don't Replace", "Remove Spaces", "_ (Underscore)",
-			"- (Dash)" };
-
-	public static class Settings {
-		private String exportFilenamePattern;
-		private String whitespaceReplaceText;
-		private boolean partCountZeroPadded;
-
-		private final Preferences prefs;
-
-		private Settings(Preferences prefs) {
-			this.prefs = prefs;
-			exportFilenamePattern = prefs.get("exportFilenamePattern", "$PartCount - $SongTitle");
-			whitespaceReplaceText = prefs.get("whitespaceReplaceText", " ");
-			partCountZeroPadded = prefs.getBoolean("partCountZeroPadded", true);
-		}
-
-		public Settings(Settings source) {
-			this.prefs = source.prefs;
-			copyFrom(source);
-		}
-
-		private void save() {
-			prefs.put("exportFilenamePattern", exportFilenamePattern);
-			prefs.put("whitespaceReplaceText", whitespaceReplaceText);
-			prefs.putBoolean("partCountZeroPadded", partCountZeroPadded);
-		}
-
-		private void copyFrom(Settings source) {
-			this.exportFilenamePattern = source.exportFilenamePattern;
-			this.whitespaceReplaceText = source.whitespaceReplaceText;
-			this.partCountZeroPadded = source.partCountZeroPadded;
-		}
-
-		public String getExportFilenamePattern() {
-			return exportFilenamePattern;
-		}
-
-		public void setExportFilenamePattern(String exportFilenamePattern) {
-			this.exportFilenamePattern = exportFilenamePattern;
-		}
-
-		public String getWhitespaceReplaceText() {
-			return whitespaceReplaceText;
-		}
-
-		public void setWhitespaceReplaceText(String whitespaceReplaceText) {
-			this.whitespaceReplaceText = whitespaceReplaceText;
-		}
-
-		public boolean isPartCountZeroPadded() {
-			return partCountZeroPadded;
-		}
-
-		public void setPartCountZeroPadded(boolean zeroPadded) {
-			partCountZeroPadded = zeroPadded;
-		}
-
-		public void restoreDefaults() {
-			try {
-				prefs.clear();
-			} catch (BackingStoreException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-
-			Settings fresh = new Settings(prefs);
-			this.copyFrom(fresh);
-		}
-	}
 	
 	public abstract static class Variable {
 		private String description;
@@ -110,16 +34,14 @@ public class SetFilenameTemplate {
 		}
 	}
 	
-	private AbcMetadataSource metadata = new MockMetadataSource(null);
+	private AbcInfo info = AbcInfo.getDummyAbcInfo();
 	private String filename = "my abc file.abc";
 	private int index = 3;
 	private SortedMap<String, Variable> variables;
-	private Preferences prefsNode;
-	private Settings settings;
+	private SetExportSettings settings;
 	
-	public SetFilenameTemplate(Preferences prefs) {
-		this.prefsNode = prefs;
-		this.settings = new Settings(prefsNode);
+	public SetFilenameTemplate(SetExportSettings settings) {
+		this.settings = settings;
 		
 		Comparator<String> caseInsensitiveStringComparator = String::compareToIgnoreCase;
 		
@@ -128,11 +50,11 @@ public class SetFilenameTemplate {
 		variables.put("$FileName", new Variable("The song's original filename") {
 			@Override
 			public String getValue() {
-				return filename;
+				return filename.endsWith(".abc") ? filename.substring(0, filename.lastIndexOf('.')) : filename;
 			}
 		});
 		
-		variables.put("$SongNumber", new Variable("The number position of the song in the setlist") {
+		variables.put("$SongIndex", new Variable("The number position of the song in the setlist") {
 			@Override
 			public String getValue() {
 				return String.format("%03d", index + 1);
@@ -142,42 +64,41 @@ public class SetFilenameTemplate {
 		variables.put("$PartCount", new Variable("Number of parts in the ABC file") {
 			@Override
 			public String getValue() {
-				return String.format("%02d",
-						getMetadataSource().getActivePartCount());
+				return String.format("%02d", info.getPartCount());
 			}
 		});
 		
 		variables.put("$SongComposer", new Variable("The song composer/artist, as entered in the \"C:\" field") {
 			@Override
 			public String getValue() {
-				return getMetadataSource().getComposer().trim();
+				return info.getComposer();
 			}
 		});
 		
 		variables.put("$SongTranscriber", new Variable("The abc transcriber, as entered in the \"Z:\" field") {
 			@Override
 			public String getValue() {
-				return getMetadataSource().getTranscriber().trim();
+				return info.getTranscriber();
 			}
 		});
 		
 		variables.put("$SongLength", new Variable("The playing time of the song in mm_ss format") {
 			@Override
 			public String getValue() {
-				return Util.formatDuration(getMetadataSource().getSongLengthMicros(), 0, '-');
+				return info.getSongDurationStr().replace(":", "-");
 			}
 		});
 		
 		variables.put("$SongTitle", new Variable("The title of the song, as entered in the \"T:\" field") {
 			@Override
 			public String getValue() {
-				return getMetadataSource().getSongTitle().trim();
+				return info.getTitle();
 			}
 		});
 	}
 	
-	public void setMetadataSource(AbcMetadataSource metadata) {
-		this.metadata = metadata;
+	public void setAbcInfo(AbcInfo info) {
+		this.info = info;
 	}
 	
 	public void setIndex(int index) {
@@ -188,15 +109,15 @@ public class SetFilenameTemplate {
 		this.filename = filename;
 	}
 	
-	public AbcMetadataSource getMetadataSource() {
-		return metadata;
+	public AbcInfo getAbcInfo() {
+		return info;
 	}
 	
 	public String formatName() {
 		return formatName(settings);
 	}
 	
-	public String formatName(Settings settings) {
+	public String formatName(SetExportSettings settings) {
 		String name = settings.getExportFilenamePattern();
 
 		// Find all variables starting with $

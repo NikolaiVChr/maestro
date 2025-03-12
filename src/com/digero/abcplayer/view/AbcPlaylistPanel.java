@@ -70,7 +70,6 @@ import javax.swing.table.TableColumnModel;
 import javax.swing.tree.TreePath;
 
 import com.digero.abcplayer.AbcPlaylistXmlCoder;
-import com.digero.abcplayer.SetFilenameTemplate;
 import com.digero.abcplayer.view.AbcPlaylistPanel.PlaylistEvent.PlaylistEventType;
 import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.abctomidi.AbcToMidi;
@@ -751,8 +750,11 @@ public class AbcPlaylistPanel extends JPanel {
 		});
 		exportSetMenuItem = playlistMenu.add(new JMenuItem("Export Playlist as Set..."));
 		exportSetMenuItem.addActionListener(e -> {
-			SetFilenameTemplate template = new SetFilenameTemplate(prefs.node("setExportFilename"));
-			PlaylistSetExportWizard wiz = new PlaylistSetExportWizard((JFrame)SwingUtilities.getWindowAncestor(this), template);
+			PlaylistSetExportWizard wiz = new PlaylistSetExportWizard(
+					(JFrame)SwingUtilities.getWindowAncestor(this),
+					prefs.node("setExport"),
+					playlistFile,
+					tableModel.getTableData());
 			wiz.setVisible(true);
 		});
 		playlistMenu.addSeparator();
