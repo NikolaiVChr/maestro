@@ -41,7 +41,8 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 	private int highest = 0;// source midi highest and lowest pitch in the chord
 	private int lowest = 200;
 	public Long early = null; // organic
-	public boolean dontMove = false;
+	public boolean dontMove1 = false;
+	public boolean dontMove2 = false;
 	public boolean glissando = false;
 
 	public Chord(AbcNoteEvent firstNote) {
