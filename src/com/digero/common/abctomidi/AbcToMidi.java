@@ -938,6 +938,9 @@ public class AbcToMidi {
 						abcInfo.setExtendedMetadata(field, value);
 						if (field == AbcField.PART_NAME) {
 							abcInfo.setPartName(trackNumber, value, true);
+							LotroInstrument instrument = LotroInstrument.findInstrumentName(value, null);
+							if (instrument != null)
+								abcInfo.setPartInstrument(trackNumber, instrument);
 						}
 					}
 					continue;
