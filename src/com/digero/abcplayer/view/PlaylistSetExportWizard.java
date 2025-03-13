@@ -646,7 +646,7 @@ public class PlaylistSetExportWizard extends JDialog {
 			try {
 				Path zipPath = Files.createFile(zipFile.toPath());
 				try(ZipOutputStream zs = new ZipOutputStream(Files.newOutputStream(zipPath))) {
-					Path copyPath = copyToFolder.toPath();
+					Path copyPath = copyToFolder.getParentFile().toPath();
 					Files.walk(copyPath)
 						.filter(path -> !Files.isDirectory(path))
 						.forEach(path -> {
