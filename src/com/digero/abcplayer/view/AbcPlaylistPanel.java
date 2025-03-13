@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Font;
+import java.awt.KeyboardFocusManager;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.datatransfer.DataFlavor;
@@ -18,6 +19,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EventObject;
 import java.util.HashSet;
 import java.util.List;
@@ -46,6 +48,7 @@ import javax.swing.JSplitPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.JTree;
+import javax.swing.KeyStroke;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
@@ -95,7 +98,7 @@ public class AbcPlaylistPanel extends JPanel {
 		private boolean showSongView = false;
 		
 		public enum PlaylistEventType {
-			PLAY_FROM_ABCINFO, PLAY_FROM_FILE, CLOSE_SONG
+			PLAY_FROM_ABCINFO, PLAY_FROM_FILE, CLOSE_SONG, PLAYLIST_OPENED
 		}
 		
 		private final PlaylistEventType type;
@@ -222,6 +225,8 @@ public class AbcPlaylistPanel extends JPanel {
 		abcFileTree.collapseRow(0);
 		abcFileTree.setDragEnabled(true);
 		abcFileTree.setToggleClickCount(0);
+		abcFileTree.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, Collections.emptySet());
+		abcFileTree.setFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, Collections.emptySet());
 		abcFileTree.setTransferHandler(new TransferHandler() {
 			private static final long serialVersionUID = -3378747637795103415L;
 
@@ -370,6 +375,7 @@ public class AbcPlaylistPanel extends JPanel {
 		});
 		ToolTipManager.sharedInstance().registerComponent(abcFileTree);
 		fileTreeScrollPane = new JScrollPane(abcFileTree, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+		fileTreeScrollPane.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke(KeyEvent.VK_TAB, 0), "none");
 		
 		JLabel abcBrowserLabel = new JLabel("ABC Browser");
 		abcBrowserLabel.setToolTipText("<html>Browser for your ABC files.<br>Double-click a song to play it, or drag selected songs to the playlist panel.</html>");
@@ -459,6 +465,11 @@ public class AbcPlaylistPanel extends JPanel {
 		playlistTable.setFillsViewportHeight(true);
 		playlistTable.setDragEnabled(true);
 		playlistTable.setDropMode(DropMode.INSERT_ROWS);
+		playlistTable.getInputMap(JComponent.WHEN_FOCUSED).put(KeyStroke.getKeyStroke(KeyEvent.VK_TAB, 0), "none");
+		playlistTable.getInputMap(JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT).put(KeyStroke.getKeyStroke(KeyEvent.VK_TAB, 0), "none");
+		playlistTable.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(KeyEvent.VK_TAB, 0), "none");
+		playlistTable.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, Collections.emptySet());
+		playlistTable.setFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, Collections.emptySet());
 		playlistTable.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyPressed(KeyEvent e) {
@@ -1027,6 +1038,10 @@ public class AbcPlaylistPanel extends JPanel {
 		updatePlaylistLabel();
 	}
 	
+	public boolean isPlayingFromPlaylist() {
+		return nowPlayingInfo != null;
+	}
+	
 	public void promptOpenPlaylist() {
 		if (openPlaylistChooser == null) {
 			openPlaylistChooser = new JFileChooser();
@@ -1052,6 +1067,8 @@ public class AbcPlaylistPanel extends JPanel {
 		
 		loadPlaylist(file);
 		playlistPrefs.put("playlistDirectory", openPlaylistChooser.getCurrentDirectory().getAbsolutePath());
+		
+		firePlaylistEvent(this, PlaylistEventType.PLAYLIST_OPENED);
 	}
 	
 	public boolean promptSavePlaylist() {
