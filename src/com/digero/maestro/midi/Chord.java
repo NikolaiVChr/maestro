@@ -507,7 +507,14 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 
 	@Override
 	public int compareTo(Chord o) {
-		return (int)(this.getStartTick() - o.getStartTick());
+		long starting = this.getStartTick() - o.getStartTick();
+		if (starting == 0L) {
+			starting = this.getEndTick() - o.getEndTick();
+		}
+		// we do this as comparing two longs that are really large can result if int overflow if we just cast to int:
+		if (starting < 0L) return -1;
+		if (starting > 0L) return 1;
+		return 0;
 	}
 
 }
