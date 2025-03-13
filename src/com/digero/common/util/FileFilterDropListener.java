@@ -114,7 +114,7 @@ public class FileFilterDropListener implements DropTargetListener {
 				return null;
 			}
 
-			if (files.isEmpty() || !acceptMultiple && files.size() > 1)
+			if (files == null || files.isEmpty() || !acceptMultiple && files.size() > 1)
 				return null;
 
 			for (File file : files) {
