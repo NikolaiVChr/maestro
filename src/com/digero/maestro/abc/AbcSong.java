@@ -1032,7 +1032,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		KeySignature key = getKeySignature();
 
 		if (abcExporter == null) {
-			abcExporter = new AbcExporter(parts, qtm, key, this, skipSilenceAtStart);
+			abcExporter = new AbcExporter(parts, qtm, key, this, skipSilenceAtStart, organic);
 		}
 		if (abcExporter.getTimingInfo() != qtm) {
 			abcExporter.setTimingInfo(qtm);

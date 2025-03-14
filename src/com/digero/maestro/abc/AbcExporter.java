@@ -69,12 +69,12 @@ public class AbcExporter {
 	private int lastChannelUsedInPreview = -1;
 
 	public AbcExporter(List<AbcPart> parts, QuantizedTimingInfo timingInfo, KeySignature keySignature,
-			AbcMetadataSource metadata, boolean skipSilenceAtStart) throws AbcConversionException {
+			AbcMetadataSource metadata, boolean skipSilenceAtStart, boolean organic) throws AbcConversionException {
 		this.parts = parts;
 		this.qtm = timingInfo;
 		this.metadata = metadata;
 		setKeySignature(keySignature);
-		
+		this.organic = organic;// getSongStartEndTick needs this so we needed to pass it
 		this.skipSilenceAtStart = skipSilenceAtStart;// getSongStartEndTick needs this so we needed to pass it
 		// We use this from AbcSong when getting micros
 		Pair<Long, Long> startEndTick = getSongStartEndTick(false, true, false);
@@ -254,7 +254,7 @@ public class AbcExporter {
 			noteDelta = part.getInstrument().octaveDelta * 12;
 
 		long delayMicros = 0;
-		if ((qtm.getPrimaryExportTempoBPM() >= 50 || organic) && part.delay != 0) {
+		if (part.delay != 0) {
 			// Make delay on instrument be audible in preview
 			delayMicros = qtm.multiplyByExportTempoFactor(part.delay * 1000L);
 		}
@@ -279,7 +279,7 @@ public class AbcExporter {
 					if (on.note.id == ne.note.id && on.getEndTick() > ne.getStartTick())
 						endTick = ne.getStartTick();
 
-					if (endTick <= ne.getStartTick()) {//TODO: Review this closer, and check for compatibility with TrackInfo behavior of zero dura notes.
+					if (endTick <= ne.getStartTick()) {
 						// This note has been turned off
 						onIter.remove();
 						if (organic) {
@@ -334,15 +334,7 @@ public class AbcExporter {
 	}
 
 	public void exportToAbc(OutputStream os, boolean delayEnabled) throws AbcConversionException {
-		
-		
-		
-		
-		
-		
-		
-		
-		
+				
 		// accountForSustain is true so that songbooks wont stop their timer before last note has finished sounding.
 		// lengthenToBar is false for opposite reason, so reporting the correct duration to songbooks.
 		Pair<Long, Long> startEnd = getSongStartEndTick(false, true, false);
@@ -408,7 +400,7 @@ public class AbcExporter {
 	private void exportPartToAbcOrganic(AbcPart part, PrintStream out,
 			boolean delayEnabled) throws AbcConversionException {
 		
-		exportPartTitleToAbc(part, out);
+		exportPartHeaderToAbc(part, out);
 		
 		// Keep track of which notes have been sharped or flatted so
 		// we can naturalize them the next time they show up.
@@ -416,11 +408,11 @@ public class AbcExporter {
 		boolean[] flats = new boolean[Note.MAX_PLAYABLE.id + 1];
 
 		// Write out ABC notation
-		long L = (qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? 16 : 8;
+		long L = (qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? 16L : 8L;
 		long Q = qtm.getPrimaryExportTempoBPM();
 		
 		// One whole abc note is this many microseconds:
-		int oneMicro = (int)(qtm.getMeter().denominator * TimingInfo.ONE_SECOND_MICROS * 60 / (Q * L));
+		int oneMicro = (int)(qtm.getMeter().denominator * TimingInfo.ONE_SECOND_MICROS * 60L / (Q * L));
 		
 		
 		
@@ -457,7 +449,16 @@ public class AbcExporter {
 		};
 		
 		if (delayEnabled) {
-			out.println("z" + ((part.delay+100)*1000) + "/" + oneMicro + " | ");
+			// the 100 is so the delay is always larger than 60 ms, even if its 0 ms.
+			int delayMicro = (part.delay+100)*1000;
+			int oneMicro2 = oneMicro;
+			
+			// Reduce the fraction
+			int gcd = Util.gcd(delayMicro, oneMicro2);
+			delayMicro /= gcd;
+			oneMicro2 /= gcd;
+			
+			out.println("z" + delayMicro + "/" + oneMicro2 + " | ");
 		}
 		
 		List<Chord> chords = combineOrganic(part, false);
@@ -634,41 +635,11 @@ public class AbcExporter {
 		out.println();
 	}
 
-	private void exportPartTitleToAbc(AbcPart part, PrintStream out) {
-		out.println();
-		out.println("X: " + part.getPartNumber());
-		if (metadata != null)
-			out.println("T: " + StringCleaner.cleanForABC(metadata.getPartName(part)));
-		else
-			out.println("T: " + part.getTitle().trim());
-
-		out.println(AbcField.PART_NAME + StringCleaner.cleanForABC(part.getTitle()));
-
-		// Since people might not use the instrument-name when they name a part,
-		// we add this so can choose the right instrument in abcPlayer and maestro when
-		// loading abc.
-		out.println(AbcField.MADE_FOR + part.getInstrument().friendlyName.trim());
-
-		if (metadata != null) {
-			if (metadata.getComposer().length() > 0)
-				out.println("C: " + StringCleaner.cleanForABC(metadata.getComposer()));
-
-			if (metadata.getTranscriber().length() > 0)
-				out.println("Z: " + StringCleaner.cleanForABC(metadata.getTranscriber()));
-		}
-
-		out.println("M: " + qtm.getMeter());
-		out.println("Q: " + qtm.getPrimaryExportTempoBPM());
-		out.println("K: " + keySignature);
-		out.println("L: " + ((qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? "1/16" : "1/8"));
-		out.println();
-	}
-
 	private void exportPartToAbc(AbcPart part, PrintStream out,
 			boolean delayEnabled) throws AbcConversionException {
 		List<Chord> chords = combineAndQuantize(part, false);
 
-		exportPartTitleToAbc(part, out);
+		exportPartHeaderToAbc(part, out);
 
 		// Keep track of which notes have been sharped or flatted so
 		// we can naturalize them the next time they show up.
@@ -714,26 +685,21 @@ public class AbcExporter {
 				break;
 		}
 
-		if (delayEnabled && qtm.getPrimaryExportTempoBPM() >= 50) {
-			// oneNote is duration in secs of z1
-			double oneNote = 60 / (double) qtm.getPrimaryExportTempoBPM() * qtm.getMeter().denominator
-					/ ((qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75 ? 16d : 8d);
-			// fractionFactor is number of z that the whole song is being start delayed
-			// with.
-			// it is always 1 or above. Above if oneNote is smaller than 60ms.
-			int fractionFactor = (int) Math.ceil(Math.max(1d, 0.06d / oneNote));
-			if (part.delay == 0) {
-				out.println("z" + fractionFactor + " | ");
-			} else {
-				int numer = 10000 * fractionFactor;
-				int denom = 10000;
-				numer += (int) (numer * part.delay / (fractionFactor * oneNote * 1000));
-				out.println("z" + numer + "/" + denom + " | ");
-				// System.err.println("M: " + qtm.getMeter()+" Q: " +
-				// qtm.getPrimaryExportTempoBPM()+ " L: " + ((qtm.getMeter().numerator/ (double)
-				// qtm.getMeter().denominator)<0.75?"1/16":"1/8")+"\n oneNote is "+oneNote+"
-				// delay is "+part.delay+"ms : "+"z"+numer+"/"+denom);
-			}
+		if (delayEnabled) {
+			long L = (qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? 16L : 8L;
+			
+			// One whole abc note is this many microseconds:
+			int oneMicro = (int)(qtm.getMeter().denominator * TimingInfo.ONE_SECOND_MICROS * 60L / (qtm.getPrimaryExportTempoBPM() * L));
+
+			// the 100 is so the delay is always larger than 60 ms, even if its 0 ms.
+			int delayMicro = (part.delay+100)*1000;
+			
+			// Reduce the fraction
+			int gcd = Util.gcd(delayMicro, oneMicro);
+			delayMicro /= gcd;
+			oneMicro /= gcd;
+			
+			out.println("z" + delayMicro + "/" + oneMicro + " |");
 		}
 		
 		for (Chord c : chords) {
@@ -882,6 +848,36 @@ public class AbcExporter {
 		addLineBreaks.run();
 		out.print(bar);
 		out.println(" |]");
+		out.println();
+	}
+
+	private void exportPartHeaderToAbc(AbcPart part, PrintStream out) {
+		out.println();
+		out.println("X: " + part.getPartNumber());
+		if (metadata != null)
+			out.println("T: " + StringCleaner.cleanForABC(metadata.getPartName(part)));
+		else
+			out.println("T: " + part.getTitle().trim());
+
+		out.println(AbcField.PART_NAME + StringCleaner.cleanForABC(part.getTitle()));
+
+		// Since people might not use the instrument-name when they name a part,
+		// we add this so can choose the right instrument in abcPlayer and maestro when
+		// loading abc.
+		out.println(AbcField.MADE_FOR + part.getInstrument().friendlyName.trim());
+
+		if (metadata != null) {
+			if (metadata.getComposer().length() > 0)
+				out.println("C: " + StringCleaner.cleanForABC(metadata.getComposer()));
+
+			if (metadata.getTranscriber().length() > 0)
+				out.println("Z: " + StringCleaner.cleanForABC(metadata.getTranscriber()));
+		}
+
+		out.println("M: " + qtm.getMeter());
+		out.println("Q: " + qtm.getPrimaryExportTempoBPM());
+		out.println("K: " + keySignature);
+		out.println("L: " + ((qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? "1/16" : "1/8"));
 		out.println();
 	}
 
@@ -1621,8 +1617,6 @@ public class AbcExporter {
 				}
 			}
 		}
-		
-		part.numberOfRemovedNotesForSafety = 0;
 
 		events.addAll(extraEvents);// add all the pitchbend fractions to the main event list
 		events.removeAll(deleteEvents);
@@ -1643,23 +1637,10 @@ public class AbcExporter {
 					events.get(0).getStartTick(), qtm, null));
 		}
 
-		// Add a rest at the end if necessary
-		if (false && exportEndTick < Long.MAX_VALUE) {
-
-			if (lastEvent.getEndTick() < exportEndTick) {
-				if (lastEvent.note == Note.REST) {
-					lastEvent.setEndTick(exportEndTick);
-				} else {
-					events.add(new AbcNoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, lastEvent.getEndTick(),
-							exportEndTick, qtm, null));
-				}
-			}
-		}
-
 		// Remove duplicate notes
 		removeDuplicateNotes(events, part.getInstrument());
 		
-		Collections.sort(events);// needed due to duplicate adding thirds
+		Collections.sort(events);// needed due to removeDuplicateNotes adding thirds
 
 		breakLongNotesOrganic(part, events);
 
@@ -1816,7 +1797,7 @@ public class AbcExporter {
 				}
 								
 				// turn very fast arpeggio into block chord				
-				if (microsTillNext < minimumMicros && curChord.getEndTick() > ne.getStartTick() && !curChord.dontMove1 && curChord.early == null && !curChord.glissando) {
+				if (microsTillNext < minimumMicros && curChord.getEndTick() > ne.getStartTick() && !curChord.dontMove1 && !curChord.glissando) {
 					// curr end before next start prevents handling grace notes, they will be deleted later if they too short
 					for (AbcNoteEvent small : curChord.getNotes()) {
 						if (small.tiesFrom != null || small.tiesTo != null) {
@@ -1857,7 +1838,7 @@ public class AbcExporter {
 				} else {
 					if (debug > 2) System.out.println("microsTillNext < minimumMicros "+(microsTillNext < minimumMicros));
 					if (debug > 2) System.out.println("curChord.getEndTick() > ne.getStartTick() "+(curChord.getEndTick() > ne.getStartTick()));
-					if (debug > 2) System.out.println((!curChord.dontMove1) +" "+ (curChord.early == null) +" "+ (!curChord.glissando));
+					if (debug > 2) System.out.println((!curChord.dontMove1) +" "+ (!curChord.glissando));
 				}
 				
 				
@@ -2127,7 +2108,7 @@ public class AbcExporter {
 
 		while (reprocessCurrentNote) {
 			
-			if (debug > 1) System.out.println("Last chord processing..");
+			if (debug > 2) System.out.println("Last chord processing..");
 			
 			// The last Chord has all the notes it will get. But before continuing,
 			// normalize the chord so that all notes end at the same time
@@ -2178,7 +2159,7 @@ public class AbcExporter {
 				AbcNoteEvent jne = curChord.get(j);
 				if (jne.getEndTick() > targetEndTick) {
 					// This note extends past the end of the chord; break it into two tied notes
-					if (debug > 1) System.out.println("Last chord: cut up chord");
+					if (debug > 2) System.out.println("Last chord: cut up chord");
 					AbcNoteEvent next = jne.splitWithTieAtTick(targetEndTick);
 					if (nextChord == null) {
 						nextChord = new Chord(next);
@@ -2197,6 +2178,7 @@ public class AbcExporter {
 		}
 		assert !curChord.hasRestAndNotes();
 		
+		// delete all chords with zero duration, as there was no room for them
 		List<Chord> trash = new ArrayList<>();
 		for (int i = 0; i < chords.size(); i++) {
 			Chord chord = chords.get(i);
@@ -2880,6 +2862,8 @@ public class AbcExporter {
 			endTick = 0L;
 		
 		if (organic) {
+			// TODO: Why do we start 100 ms before first note? ..I forgot why I made this
+			//       Its not related to the 100 ms used in delay parts.
 			startTick = Math.max(0L, qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(startTick)-100000L));
 			return new Pair<>(startTick, endTick);
 		}

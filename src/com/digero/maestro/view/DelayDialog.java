@@ -85,7 +85,7 @@ public class DelayDialog {
 				panel.add(new JLabel("Seconds"), "2, 1, C, C");
 				panel.add(okButton, "1, 2, f, f");
 				panel.add(new JLabel("Put a delay from 0s to 1.00s on a part."), "0, 3, 3, 3, C, C");
-				panel.add(new JLabel("Use organic for tempo lower than 50."), "0, 4, 3, 4, C, C");
+				panel.add(new JLabel(""), "0, 4, 3, 4, C, C");
 				delayField.setToolTipText("Seconds of delay");
 				
 				

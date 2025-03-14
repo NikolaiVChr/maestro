@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.List;
 import java.util.TreeMap;
 
+import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.abc.LotroInstrumentSampleDuration;
 import com.digero.common.midi.ITempoCache;
@@ -119,8 +120,8 @@ public class PolyphonyHistogram   {
 						System.err.println("Error: LotroInstrumentSampleDuration has no "+part.getInstrument().friendlyName+" with note "+event.note.id);
 						seconds = 1.0d;
 					}
-					long dura = (long) (1000000L * seconds);
-					endMicros = startMicros + dura;
+					long duraMicros = (long) (AbcConstants.ONE_SECOND_MICROS * seconds);
+					endMicros = startMicros + duraMicros;
 					if (organic) {
 						endTick   = qtm.microsToTickABCOrganic(endMicros);
 					} else {
@@ -128,15 +129,7 @@ public class PolyphonyHistogram   {
 					}
 				}
 				if (endMicros == startMicros) continue;
-				
-				/*
-				if (endTick >= 6959 && endTick <= 6960) {
-					System.out.println(endMicros+" endTick="+endTick);
-					System.out.println(6959+"->"+qtm.tickToMicrosABCOrganic(6959));
-					System.out.println(6960+"->"+qtm.tickToMicrosABCOrganic(6960));
-				}
-				*/
-				
+								
 				Pair<Long,Integer> oldStart = partMap.get(startMicros);
 				if (oldStart == null) {
 					oldStart = new Pair<>(event.getStartTick(), 0);
@@ -261,7 +254,5 @@ public class PolyphonyHistogram   {
 
 	public static void setClean() {
 		dirty = false;
-	}
-
-	
+	}	
 }
