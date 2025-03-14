@@ -312,7 +312,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			note = SaveUtil.parseValue(songEle, "note", "");
 			
 			String exportTimeStr = SaveUtil.parseValue(songEle, "firstExportTime", "");
-			if (exportTimeStr != "") {
+			if (!exportTimeStr.isEmpty()) {
 				DateFormat df = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 				df.setTimeZone(TimeZone.getTimeZone("GMT"));
 				try {
