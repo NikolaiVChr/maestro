@@ -72,7 +72,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		brandDrumBanks = new int[song.getTracks().length];
 
 		tempo.put(0L, TempoEvent.DEFAULT_TEMPO);
-		TimeSignature timeSignature = null;
+		TimeSignature foundTimeSignature = null;
 
 		divisionType = song.getDivisionType();
 		tickResolution = song.getResolution();
@@ -277,12 +277,12 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 						}
 					} else if (msg instanceof MetaMessage) {
 						MetaMessage m = (MetaMessage) msg;
-						if (m.getType() == META_TIME_SIGNATURE && timeSignature == null) {
+						if (m.getType() == META_TIME_SIGNATURE && foundTimeSignature == null) {
 							// TimeSignature in this class is used to keep track of source MIDIs meter.
 							// The one in TrackInfo is used to initially populate the meter field and abcsong.
 							// The one in AbcSong is used for output to abc.
 							try {
-								timeSignature = new TimeSignature(m);
+								foundTimeSignature = new TimeSignature(m);
 							} catch (InvalidMidiDataException e) {
 								if (backupTimeSignature == null) {
 									try {
@@ -297,8 +297,8 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 				}
 			}
 			// We don't like this illegal meter, but if nothing better came long we use it.
-			if (timeSignature == null)
-				timeSignature = backupTimeSignature;
+			if (foundTimeSignature == null)
+				foundTimeSignature = backupTimeSignature;
 
 			// Setup default banks for extensions:
 			for (int i = 0; i < CHANNEL_COUNT_ABC; i++) {
@@ -376,7 +376,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		}
 		primaryTempoMPQ = (max == null) ? DEFAULT_TEMPO_MPQ : max.getKey();
 
-		this.timeSignature = (timeSignature == null) ? TimeSignature.FOUR_FOUR : timeSignature;
+		this.timeSignature = (foundTimeSignature == null) ? TimeSignature.FOUR_FOUR : foundTimeSignature;
 
 		songLengthTicks = lastTick;
 	}

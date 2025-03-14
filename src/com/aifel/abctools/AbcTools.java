@@ -302,21 +302,24 @@ public class AbcTools {
 					return;
 				}
 			}
-			newFile.createNewFile();
-			FileWriter writer = new FileWriter(newFile);
-
-			frame.setTextFieldText(
-					"Writing new file:\n " + newFile.getAbsolutePath() + "\n\n The song has " + (x - 1) + " parts.");
-			StringBuilder info = new StringBuilder("Writing new file:\n " + newFile.getAbsolutePath()
-					+ "\n\n The song has " + (x - 1) + " parts.\n\n");
-			for (String line : newContent) {
-				writer.write(line + System.lineSeparator());
-				info.append(System.lineSeparator()).append(line);
+			if (newFile.createNewFile()) {
+				FileWriter writer = new FileWriter(newFile);
+	
+				frame.setTextFieldText(
+						"Writing new file:\n " + newFile.getAbsolutePath() + "\n\n The song has " + (x - 1) + " parts.");
+				StringBuilder info = new StringBuilder("Writing new file:\n " + newFile.getAbsolutePath()
+						+ "\n\n The song has " + (x - 1) + " parts.\n\n");
+				for (String line : newContent) {
+					writer.write(line + System.lineSeparator());
+					info.append(System.lineSeparator()).append(line);
+				}
+				writer.close();
+				lastExport = newFile.getAbsolutePath();
+				refreshTest();
+				frame.setTextFieldText(info.toString());
+			} else {
+				frame.setTextFieldText("Failed to write file\n " + newFile.getAbsolutePath());
 			}
-			writer.close();
-			lastExport = newFile.getAbsolutePath();
-			refreshTest();
-			frame.setTextFieldText(info.toString());
 		} else {
 			frame.setTextFieldText("Please select at least 2 abc files..");
 			lastExport = null;

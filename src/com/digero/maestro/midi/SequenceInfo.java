@@ -142,9 +142,9 @@ public class SequenceInfo implements MidiConstants {
 		hasPorts = sequenceCache.hasPorts;
 		primaryTempoMPQ = sequenceCache.getPrimaryTempoMPQ();
 
-		List<TrackInfo> trackInfoList = new ArrayList<>(tracks.length);
+		List<TrackInfo> myTrackInfoList = new ArrayList<>(tracks.length);
 		for (int i = 0; i < tracks.length; i++) {
-			trackInfoList.add(new TrackInfo(this, tracks[i], i, sequenceCache, sequenceCache.isXGDrumsTrack(i),
+			myTrackInfoList.add(new TrackInfo(this, tracks[i], i, sequenceCache, sequenceCache.isXGDrumsTrack(i),
 					sequenceCache.isGSDrumsTrack(i), wasType0, sequenceCache.isDrumsTrack(i),
 					sequenceCache.isGM2DrumsTrack(i), portMap, miscSettings, oldVelocities));
 		}
@@ -166,7 +166,7 @@ public class SequenceInfo implements MidiConstants {
 			title = array[1].trim();
 		}
 
-		this.trackInfoList = Collections.unmodifiableList(trackInfoList);
+		this.trackInfoList = Collections.unmodifiableList(myTrackInfoList);
 		if (!getTimeSignature().equals(sequenceCache.getTimeSignature())) {
 			// If see this output then..
 			System.out.println("Time signature does not match between SequenceInfo (" + getTimeSignature()

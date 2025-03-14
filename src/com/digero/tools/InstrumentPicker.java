@@ -84,7 +84,7 @@ public class InstrumentPicker {
 					if (!targetDir.exists())
 						targetDir.mkdirs();
 					File destFile = new File(targetDir, file.getName());
-					file.renameTo(destFile);
+					file.renameTo(destFile);// TODO: this will return false if failed, its ignored. Remember to fix.
 					System.out.println(destFile);
 					break;
 				}

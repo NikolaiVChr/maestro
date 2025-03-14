@@ -185,6 +185,7 @@ public class SectionEditor {
 						+ abcPart.getInstrument().toString() + " on track " + track + " </html>");
 				panel.add(titleLabel, "0, 0, 7, 0, C, C");
 				tabPanel = new JTabbedPane() {
+					@Override
 					public Dimension getPreferredSize() {
 						GraphicsEnvironment env = GraphicsEnvironment.getLocalGraphicsEnvironment();
 						Rectangle bound = env.getMaximumWindowBounds();
@@ -811,6 +812,7 @@ public class SectionEditor {
 			        v3 = sp3.getVerticalScrollBar();
 			    }
 			  
+			    @Override
 			    public void adjustmentValueChanged(AdjustmentEvent e)
 			    {
 			        JScrollBar scrollBar = (JScrollBar)e.getSource();
