@@ -13,9 +13,9 @@ name: "CodeQL"
 
 on:
   push:
-    branches: [ "java8copy" ]
+    branches: [ "organic" ]
   pull_request:
-    branches: [ "java8copy" ]
+    branches: [ "organic" ]
   schedule:
     - cron: '43 12 * * 4'
 
