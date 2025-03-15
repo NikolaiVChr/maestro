@@ -74,6 +74,10 @@ public class AutoExporter {
 	private File oldMidi = null;
 	private volatile boolean cancel = false;
 	
+	// For testing:
+	private static final boolean neverLocateMidi = false;
+	private static final boolean testIfOutputIsValid = true;
+	
 	AutoExporter (MultiMergerView frame, String myHome, AbcTools main, Preferences autoPrefs) {
 		this.frame = frame;
 		this.main = main;
@@ -462,28 +466,28 @@ public class AutoExporter {
 			}				
 		}
 		
-		/*
-		try {
-			//
-			// Test if the file is valid
-			// Uncomment when making changes to abc exporter
-			//
-			List<FileAndData> data = new ArrayList<>();
-			data.add(new FileAndData(exportFile, AbcToMidi.readLines(exportFile)));
-			AbcInfo info = new AbcInfo();
-			AbcToMidi.Params params = new AbcToMidi.Params(data);
-			params.useLotroInstruments = true;
-			params.abcInfo = info;
-			params.enableLotroErrors = true;
-			params.stereo = false;
-			params.generateRegions = true;
-			AbcToMidi.convert(params);
-		} catch (LotroParseException e) {
-			JOptionPane.showMessageDialog(frame, e.getMessage(), exportFile.getName()+": Error parsing ABC", JOptionPane.ERROR_MESSAGE);
-		} catch (ParseException e) {
-			JOptionPane.showMessageDialog(frame, e.getMessage(), exportFile.getName()+": Error reading ABC", JOptionPane.ERROR_MESSAGE);
+		if (testIfOutputIsValid) {
+			try {
+				//
+				// Test if the file is valid
+				//
+				List<FileAndData> data = new ArrayList<>();
+				data.add(new FileAndData(exportFile, AbcToMidi.readLines(exportFile)));
+				AbcInfo info = new AbcInfo();
+				AbcToMidi.Params params = new AbcToMidi.Params(data);
+				params.useLotroInstruments = true;
+				params.abcInfo = info;
+				params.enableLotroErrors = true;
+				params.stereo = false;
+				params.generateRegions = true;
+				AbcToMidi.convert(params);
+			} catch (LotroParseException e) {
+				JOptionPane.showMessageDialog(frame, e.getMessage(), exportFile.getName()+": Error parsing ABC", JOptionPane.ERROR_MESSAGE);
+			} catch (ParseException e) {
+				JOptionPane.showMessageDialog(frame, e.getMessage(), exportFile.getName()+": Error reading ABC", JOptionPane.ERROR_MESSAGE);
+			}
 		}
-		*/
+		
 		
 		appendToField("<br>&nbsp;&nbsp;as " + exportFile.getName());
 	}
@@ -643,6 +647,7 @@ public class AutoExporter {
 				}
 			}
 			if (original.equals(newNestedMidi)) {
+				if (neverLocateMidi) return null;
 				message += "\n\nWould you like to try to locate the file?";
 				return resolveHelper(oldMidi, message);
 			} else if (original.equals(newMidi)) {
@@ -652,6 +657,7 @@ public class AutoExporter {
 					return newNestedMidi;
 				}
 				//System.out.println("newNestedMidi == null");
+				if (neverLocateMidi) return null;
 				message += "\n\nWould you like to try to locate the file?";
 				return resolveHelper(oldMidi, message);
 			}
