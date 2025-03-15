@@ -649,7 +649,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			if (abcSong == null) {
 				tempoSpinner.setValue(MidiConstants.DEFAULT_TEMPO_BPM);
 			} else {
-				float tempoFactor = abcSequencer.getTempoFactor();
+				float tempoFactor = abcSong.getTempoFactor();
 				tempoSpinner.setValue(abcSong.getSequenceInfo().getPrimaryTempoBPM());
 				if (tempoFactor != 1.0f)
 					refreshPreviewSequence(false);
@@ -1821,6 +1821,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				organicCheckBox.setSelected(abcSong.isOrganic());
 			maxNoteCountTotal = 0;
 			maxNoteCount = 0;
+			updateButtons(false);
 			break;
 		case TRIPLET_TIMING:
 			if (tripletCheckBox.isSelected() != abcSong.isTripletTiming())
@@ -1833,6 +1834,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				mixCheckBox.setSelected(abcSong.isMixTiming());
 			maxNoteCountTotal = 0;
 			maxNoteCount = 0;
+			updateButtons(false);
 			break;
 		case MIX_TIMING_COMBINE_PRIORITIES:
 			if (prioCheckBox.isSelected() != abcSong.isPriorityActive())
