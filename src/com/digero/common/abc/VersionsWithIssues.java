@@ -10,7 +10,7 @@ public class VersionsWithIssues {
 	static List<IssueVersion> versionsWithIssues = new ArrayList<>();
 	
 	static {
-		versionsWithIssues.add(new IssueVersion(new Version(3,4,4), "Unisons can be missing if they had no rest inbetween them."));//beta
+		versionsWithIssues.add(new IssueVersion(new Version(3,4,4), "Notes can be missing if they had no rest inbetween them and were same pitch."));//beta
 		versionsWithIssues.add(new IssueVersion(new Version(3,3,9), new Version(3,3,13), "Song might have wrong tempo until first tempochange."));//beta
 		versionsWithIssues.add(new IssueVersion(new Version(3,3,7), "Notes can be missing."));
 		versionsWithIssues.add(new IssueVersion(new Version(3,3,6), "Possible issue with delayed start or ending."));
