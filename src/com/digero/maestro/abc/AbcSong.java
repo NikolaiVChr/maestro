@@ -199,6 +199,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		keySignature = (ICompileConstants.SHOW_KEY_FIELD) ? sequenceInfo.getKeySignature() : KeySignature.C_MAJOR;
 		timeSignature = sequenceInfo.getTimeSignature();
 		note = "";
+		setTempoFactor(sequenceInfo.getPrimaryTempoBPM(), sequenceInfo.getPrimaryTempoBPM());
 	}
 
 	private void initFromAbc(File file, MiscSettings miscSettings)
@@ -258,6 +259,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		transcriber = abcInfo.getTranscriber();
 		genre = abcInfo.getGenre();
 		mood = abcInfo.getMood();
+		setTempoFactor(abcInfo.getPrimaryTempoBPM(), abcInfo.getPrimaryTempoBPM());
 		note = "";
 	}
 
