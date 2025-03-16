@@ -16,6 +16,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.prefs.Preferences;
@@ -276,6 +277,18 @@ public class AutoExporter {
 	        return CONTINUE;
 	    }
 	
+	    @Override
+	    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+	        throws IOException
+	    {
+	        Objects.requireNonNull(dir);
+	        Objects.requireNonNull(attrs);
+	        if (dir.getFileName().toString().startsWith(".")) {
+	        	return FileVisitResult.SKIP_SUBTREE;
+	        }
+	        return FileVisitResult.CONTINUE;
+	    }
+	    
 	    // Print each directory visited.
 	    @Override
 	    public FileVisitResult postVisitDirectory(Path dir,
@@ -321,6 +334,18 @@ public class AutoExporter {
 		        }
 	    	}
 	        return CONTINUE;
+	    }
+	    
+	    @Override
+	    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+	        throws IOException
+	    {
+	        Objects.requireNonNull(dir);
+	        Objects.requireNonNull(attrs);
+	        if (dir.getFileName().toString().startsWith(".")) {
+	        	return FileVisitResult.SKIP_SUBTREE;
+	        }
+	        return FileVisitResult.CONTINUE;
 	    }
 	
 	    // Print each directory visited.
