@@ -1866,12 +1866,21 @@ public class AbcExporter {
 				long curEndMicro = qtm.tickToMicrosABCOrganic(curChord.getEndTick());
 				long curStartMicro = qtm.tickToMicrosABCOrganic(curChord.getStartTick());
 				long targetEndTick = Math.min(nextChord.getStartTick(), curChord.getEndTick());
+				long curMinEndFitTick = Math.min(curMinEndTick, targetEndTick);
 				for (int j = 0; j < curChord.size(); j++) {
 					AbcNoteEvent jne = curChord.get(j);
 					if (!curChord.glissando && jne.getEndTick() > targetEndTick) {
 						
 						long noteEndMicro = qtm.tickToMicrosABCOrganic(jne.getEndTick());
-						if (curChord.getEndTick() == targetEndTick && noteEndMicro-curEndMicro < minimumMicros/2 && jne.tiesTo == null) {
+						if (!part.getInstrument().sustainable) {
+							// This might be a bit controversial
+							// But here we fix the duration on the chord to minimum or shorter,
+							// since instrument is not sustainable anyway.
+							// Controversial due to you can't later experiment by putting
+							// a sustained instrument on this part, it will be ruined for that purpose.
+							// But this will make fitting it all together easier.
+							jne.setEndTick(curMinEndFitTick);
+						} else if (curChord.getEndTick() == targetEndTick && noteEndMicro-curEndMicro < minimumMicros/2 && jne.tiesTo == null) {
 							// note ends approx same time as end of chord
 							// we make it end same time as shortest note in chord,
 							// chord might become slightly longer later.
@@ -1975,7 +1984,7 @@ public class AbcExporter {
 										}
 										over.setStartTick(curMinEndTick);
 										
-										// TODO: Delaying start
+										// TODO: Delaying start of next
 									}
 								}
 								
@@ -1989,6 +1998,9 @@ public class AbcExporter {
 									&& neMicros < minimumMicros * 2) {
 								// Both curr and ne does not have enough room.
 								// ne is fairly short and will have to go
+								// TODO: I have doubt about the ties. ne might even be tied to curr chord.
+								//       And if its tiesTo is also there, removing it should instead
+								//       tie curr chord to the one after ne, and expand curr chord to ne2.
 								events.remove(ne);
 								
 								// TODO: these ties should perhaps prevent it from being removed, TBD
@@ -2940,7 +2952,7 @@ public class AbcExporter {
 		if (organic) {
 			// TODO: Why do we start 100 ms before first note? ..I forgot why I made this
 			//       Its not related to the 100 ms used in delay parts.
-			startTick = Math.max(0L, qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(startTick)-100000L));
+			//startTick = Math.max(0L, qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(startTick)-100000L));
 			return new Pair<>(startTick, endTick);
 		}
 
