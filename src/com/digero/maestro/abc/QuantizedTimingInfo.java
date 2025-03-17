@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
@@ -146,7 +147,7 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 			return -1;
 		};
 		combinedTempos.sort(rator);
-		calcNewMicros(combinedTempos);
+		combinedTempos = calcNewMicros(combinedTempos);
 		LinkedList<SequenceDataCache.TempoEvent> linker = new LinkedList<>(combinedTempos);
 		for (int index = 0; index < linker.size(); index++) {
 			TempoEvent currMidiTempoEvent = linker.get(index);
@@ -236,6 +237,15 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 			lastTick = tempo.tick;
 			lastMin = tempo.info.getMinNoteLengthTicks();
 		}
+		/*
+		long lastM = 0;
+		for (long i=0;i<5000000;i++) {
+			TimingInfoEvent e = getTimingEventForTickOrganic(i);
+			assert (long) (e.micros + MidiUtils.ticks2microsec(i - e.tick, e.info.getTempoMPQ(), e.info.getResolutionPPQ())) >= lastM:i;
+			lastM=(long) (e.micros + MidiUtils.ticks2microsec(i - e.tick, e.info.getTempoMPQ(), e.info.getResolutionPPQ()));
+		}
+		System.out.println("PASS");
+		*/
 		
 		
 		int parts = song.getParts().size();
@@ -620,30 +630,57 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 	 * 
 	 * @param combinedTempos Sorted list of tempo events
 	 */
-	private void calcNewMicros(ArrayList<TempoEvent> combinedTempos) {
+	private ArrayList<SequenceDataCache.TempoEvent> calcNewMicros(ArrayList<TempoEvent> combinedTempos) {
+		ArrayList<SequenceDataCache.TempoEvent> combinedTemposNew = new ArrayList<>();
 		int lastTempo = MidiConstants.DEFAULT_TEMPO_MPQ;
 		long lastTick = 0L;
 		long lastMicros = 0L;
 		if (!combinedTempos.isEmpty()) {
 			TempoEvent first = combinedTempos.get(0);
+			assert first.tick == 0L;
 			if (first.tick < 0L) {
 				// since the first is going to have negative micros from start
 				// those micros should be calced from its own tempo
 				lastTempo = first.tempoMPQ;
+				assert false:"tempo tick before zero";
 			}
 		}
+		//NavigableMap<Long, TempoEvent> et = new TreeMap<>();
 		for (TempoEvent event : combinedTempos) {
-			if (event.tick == 0) {
-				event.micros = 0L;
+			if (event.tick == 0L) {
+				//event.micros = 0L;
+				lastTick = 0L;
+				lastMicros = 0L; 
 				lastTempo = event.tempoMPQ;
+				TempoEvent evt = new TempoEvent(event.tempoMPQ,event.tick,0L);
+				combinedTemposNew.add(evt);
+		//		et.put(0L, evt);
 				continue;
 			}
 			long newMicros = lastMicros + MidiUtils.ticks2microsec(event.tick - lastTick, lastTempo, tickResolution);
-			event.micros = newMicros;
+			assert newMicros > lastMicros;
+			TempoEvent evt = new TempoEvent(event.tempoMPQ,event.tick,newMicros);
+			//event.micros = newMicros;
+			assert event.tick > lastTick;
+			assert newMicros > lastMicros;
 			lastTick = event.tick;
-			lastMicros = event.micros;
+			lastMicros = newMicros;
 			lastTempo = event.tempoMPQ;
+			combinedTemposNew.add(evt);
+		//	et.put(event.tick, evt);
 		}
+		/*
+		long lastM = 0L;
+		for (long i=0L;i<5000000L;i++) {
+			TempoEvent e = et.floorEntry(i).getValue();
+			long plus = MidiUtils.ticks2microsec(i - e.tick, e.tempoMPQ, tickResolution);
+			//if ((i>118000 && i<119000) || i>138200) System.out.println(i+": "+e.micros+" ("+(e.tick)+" tick) -> "+((long) (e.micros + plus))+" plus="+plus);
+			assert (long) (e.micros + plus) >= lastM:i;
+			lastM=(long) (e.micros + MidiUtils.ticks2microsec(i - e.tick, e.tempoMPQ, tickResolution));
+		}
+		System.out.println("PASS calc");
+		*/
+		return combinedTemposNew;
 	}
 
 	/**
@@ -802,7 +839,30 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 				+ MidiUtils.ticks2microsec(tick - e.tick, e.info.getTempoMPQ(), e.info.getResolutionPPQ()))
 				*origTempo/(long)newTempo);
 	}
-		
+	
+	public void tickToMicrosABCOrganic2(long tick1, long tick2) {
+		long lastM = 0;
+		for (long i=0;i<5000000;i++) {
+			TimingInfoEvent e = getTimingEventForTickOrganic(i);
+			assert (long) (e.micros + MidiUtils.ticks2microsec(i - e.tick, e.info.getTempoMPQ(), e.info.getResolutionPPQ())) >= lastM:i;
+			lastM = (long) (e.micros + MidiUtils.ticks2microsec(i - e.tick, e.info.getTempoMPQ(), e.info.getResolutionPPQ()));
+		}
+		System.out.println("PASS2");
+		TimingInfoEvent e1 = getTimingEventForTickOrganic(tick1);
+		TimingInfoEvent e2 = getTimingEventForTickOrganic(tick2);
+		assert getTimingEventForTickOrganic(tick1).tick == getTimingEventForTickOrganic2(tick1).getKey();
+		assert getTimingEventForTickOrganic(tick2).tick == getTimingEventForTickOrganic2(tick2).getKey(); 
+		System.out.println("asking for tick "+tick1+" and "+tick2);
+		System.out.println(e1);
+		System.out.println(e2);
+		System.out.println("bpm: "+MidiUtils.convertTempo(e1.info.getTempoMPQ())+" "+MidiUtils.convertTempo(e2.info.getTempoMPQ()));
+		System.out.println("mpq="+e1.info.getTempoMPQ());
+		assert tick1 < tick2;
+		assert e1.tick < e2.tick;
+		long e2Micros = e1.micros + MidiUtils.ticks2microsec(e2.tick - e1.tick, e1.info.getTempoMPQ(), e1.info.getResolutionPPQ());
+		assert e2.micros == e2Micros:e2.micros +"!="+ e2Micros;
+	}
+	
 	public long tickToMicros(long tick, AbcPart part) {
 		TimingInfoEvent e = getTimingEventForTick(tick, part);
 		return (long) ((e.micros
@@ -968,6 +1028,13 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		}
 		return timingInfoByTickOrganic.floorEntry(tick).getValue();
 	}
+	
+	Entry<Long, TimingInfoEvent> getTimingEventForTickOrganic2(long tick) {
+		if (timingInfoByTickOrganic.floorEntry(tick) == null) {
+			System.err.println("ERROR: Asking for timing event at tick "+tick);
+		}
+		return timingInfoByTickOrganic.floorEntry(tick);
+	}
 
 	TimingInfoEvent getTimingEventForMicros(long micros) {
 		TimingInfoEvent retVal = timingInfoByTick.firstEntry().getValue();
@@ -1032,7 +1099,7 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		
 		@Override
 		public String toString() {
-			return "Tick="+tick+" micros="+micros+" bar="+barNumber+(info==null&&infoOdd!=null?" Info":(infoOdd==null&&info!=null?" InfoOdd":(info!=null?" Dual":" Faulty")));			
+			return "Tick="+tick+" micros="+micros+" bar="+barNumber+(info!=null&&infoOdd!=null?" Info":(infoOdd==null&&info!=null?" InfoOdd":(info!=null?" Dual":" Faulty")));			
 		}
 	}
 

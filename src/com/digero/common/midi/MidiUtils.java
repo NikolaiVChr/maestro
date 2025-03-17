@@ -140,6 +140,10 @@ public class MidiUtils {
 	public static long ticks2microsec(long tick, double tempoMPQ, int resolution) {
 		return (long) (((double) tick) * tempoMPQ / resolution);
 	}
+	
+	public static long ticks2microsec(long tick, int tempoMPQ, int resolution) {
+		return tick * tempoMPQ / resolution;
+	}
 
 	/**
 	 * convert tempo to microsecond with given tempo Does not take tempo changes into account. Does not work for SMPTE
@@ -148,6 +152,11 @@ public class MidiUtils {
 	public static long microsec2ticks(long us, double tempoMPQ, int resolution) {
 		// do not round to nearest tick
 		return (long) ((((double) us) * resolution) / tempoMPQ);
+	}
+	
+	public static long microsec2ticks(long us, int tempoMPQ, int resolution) {
+		// do not round to nearest tick
+		return us * resolution / tempoMPQ;
 	}
 
 	/**

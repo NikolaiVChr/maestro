@@ -1744,6 +1744,7 @@ public class AbcExporter {
 				}
 				// ne2 now represent the second chord
 				long ne1RoomMicros = ne2 == null?Long.MAX_VALUE:qtm.tickToMicrosABCOrganic(ne2.getStartTick()) - qtm.tickToMicrosABCOrganic(ne.getStartTick());
+				long neMicros = qtm.tickToMicrosABCOrganic(ne.getEndTick()) - qtm.tickToMicrosABCOrganic(ne.getStartTick());
 				long ne1Micros = qtm.tickToMicrosABCOrganic(ne1.getEndTick()) - qtm.tickToMicrosABCOrganic(ne1.getStartTick());
 				long ne2Micros = ne2 == null?0L:qtm.tickToMicrosABCOrganic(ne2.getEndTick()) - qtm.tickToMicrosABCOrganic(ne2.getStartTick());
 				
@@ -1821,6 +1822,13 @@ public class AbcExporter {
 				boolean reprocessCurrentNote = false;
 				long curEndMicro = qtm.tickToMicrosABCOrganic(curChord.getEndTick());
 				long curStartMicro = qtm.tickToMicrosABCOrganic(curChord.getStartTick());
+				
+				/*
+				if (curEndMicro < curStartMicro) {
+					qtm.tickToMicrosABCOrganic2(curChord.getStartTick(),curChord.getEndTick());
+				}
+				*/
+				
 				long targetEndTick = Math.min(nextChord.getStartTick(), curChord.getEndTick());
 				long curMinEndFitTick = Math.min(curMinEndTick, targetEndTick);
 				for (int j = 0; j < curChord.size(); j++) {
@@ -1889,6 +1897,8 @@ public class AbcExporter {
 				if (qtm.tickToMicrosABCOrganic(curChord.getEndTick()) < minEndMicro && !curChord.dontMove2) {
 					long earlyCurrMicro = qtm.tickToMicrosABCOrganic(curChord.getEndTick()) - minimumMicros;
 					long earlyCurrTick = qtm.microsToTickABCOrganic(earlyCurrMicro);
+					
+					// test if we should early start curr chord
 					if (ne2 != null && ne1RoomMicros < minimumMicros
 							&& curStartMicro - earlyCurrMicro < minimumMicros/2) {
 						// Both curr and ne does not have enough room.
@@ -1915,15 +1925,16 @@ public class AbcExporter {
 							continue MAIN;
 						}
 					}
-					// Else try to make it longer
-					long oldCurEnd = curChord.getEndTick();
 					
-					if (curMinEndTick > nextChord.getStartTick()) {
+					// Else try to make it longer					
+					if (nextChord.getStartTick() >= curMinEndTick) {
+						curChord.setEndTickExpand(curMinEndTick);
+					} else {
 						// there was not room for a larger chord
 						long neMicroStart = qtm.tickToMicrosABCOrganic(ne.getStartTick());
 						if (!curChord.glissando) {
 							if ((ne2 == null || ne1RoomMicros > minimumMicros*2) && ne1.getEndTick() > curMinEndTick
-									&& (minEndMicro-neMicroStart < minimumMicros/2 || ne1Micros > minimumMicros*2)) {
+									&& (minEndMicro-neMicroStart < minimumMicros/2)) {//  || ne1Micros > minimumMicros*2
 								// delay start of next chord up to 30 ms
 								long oldStartTick = ne.getStartTick();
 								for (int ii = i; ii < events.size(); ii++) {
@@ -2026,6 +2037,7 @@ public class AbcExporter {
 							}
 							// give up and schedule curr chord for deletion, it likely contains a grace note
 							curChord.setEndTickRetract(curChord.getStartTick());
+							curChord.delete = true;
 							if (debug > 1) System.out.println(part.getTitle()+": Removed short dura chord with "+curChord.size()+" notes");
 						} else {
 							// deprecated
@@ -2038,8 +2050,6 @@ public class AbcExporter {
 								continue MAIN;
 							}
 						}
-					} else {
-						curChord.setEndTickExpand(curMinEndTick);
 					}
 				}
 				
@@ -2059,7 +2069,7 @@ public class AbcExporter {
 							prevRestChord = restChord;//break long notes keep them sorted so this is last
 						}
 					} else {
-						if (curChord.getEndTick() == curChord.getStartTick()) {
+						if (curChord.delete) {
 							// If we reach this code, then curr has been scheduled for deletion.
 							// Here we can either make next chord start sooner
 							// or find the chord before curr and expand that.
@@ -2069,7 +2079,7 @@ public class AbcExporter {
 								// We make next start sooner
 								// this has the added benefit that if next chord is
 								// too short too, it will be longer.
-								nextChord.early = curChord.getEndTick();
+								nextChord.early = curChord.getStartTick();
 								if (debug > 1) System.out.println(part.getTitle()+ ": Early start");
 							} else {
 								chordToExpand.setEndTickExpand(ne.getStartTick());
@@ -2077,7 +2087,7 @@ public class AbcExporter {
 							}
 						} else {
 							curChord.setEndTickExpand(ne.getStartTick());
-							if (debug > 1) System.out.println(part.getTitle()+ ": Prev expanded a little");
+							if (debug > 1) System.out.println(part.getTitle()+ ": Chord expanded to fill gap");
 						}
 						prevRestChord = null;
 					}

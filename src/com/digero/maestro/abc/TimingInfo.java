@@ -56,7 +56,7 @@ public class TimingInfo {
 		double exportTempoMPQ = roundTempoMPQ((double) tempoMPQ *origTempo/newTempo);
 
 		// Now adjust the tempoMPQ by however much we just rounded the export tempo
-		tempoMPQ = (int) Math.round(exportTempoMPQ * newTempo/origTempo);
+		if (!organic) tempoMPQ = (int) Math.round(exportTempoMPQ * newTempo/origTempo);
 
 		this.tempoMPQ = tempoMPQ;
 		this.resolutionPPQ = resolutionPPQ;

@@ -557,7 +557,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	 * Tempo Handling
 	 */
 	public static class TempoEvent {
-		private TempoEvent(int tempoMPQ, long startTick, long startMicros) {
+		public TempoEvent(int tempoMPQ, long startTick, long startMicros) {
 			this.tempoMPQ = tempoMPQ;
 			this.tick = startTick;
 			this.micros = startMicros;
