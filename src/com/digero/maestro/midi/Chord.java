@@ -45,6 +45,7 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 	public boolean dontMove2 = false;
 	public boolean glissando = false;
 	public Long expandedMicros = null;
+	public int arp = 0; // arp notes added to this
 
 	public Chord(AbcNoteEvent firstNote) {
 		tempoCache = firstNote.getTempoCache();
@@ -166,6 +167,11 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 			//System.err.println("Attempted to add zero duration note to chord!");
 			//return false;
 		}
+		/*
+		for (AbcNoteEvent evt : notes) {
+			assert evt.note != ne.note;
+		}
+		*/
 		notes.add(ne);
 
 		if (ne.getEndTick() < endTick) {

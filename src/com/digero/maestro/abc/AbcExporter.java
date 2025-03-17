@@ -1641,7 +1641,12 @@ public class AbcExporter {
 		removeDuplicateNotes(events, part.getInstrument());
 		
 		Collections.sort(events);// needed due to removeDuplicateNotes adding thirds
-
+		
+		/*
+		// Verify duplicates does not exist
+		removeDuplicateNotesVerify(events, part.getInstrument());
+		*/
+		
 		breakLongNotesOrganic(part, events);
 
 		List<Chord> chords = new ArrayList<>(events.size() / 2);
@@ -1668,6 +1673,8 @@ public class AbcExporter {
 			} else {								
 				// The curChord has all the notes it will get.
 				
+				// Note that ne can be a rest from cut up initial rest
+				
 				if (debug > 1) System.out.println("\n"+part.getTitle()+ ": Processing note i="+i+" ticks:"+ne.getStartTick()+"-"+ne.getEndTick());
 				
 				// remove zero duration notes if longer notes start at same time in curr chord
@@ -1677,7 +1684,7 @@ public class AbcExporter {
 						if (jne.getEndTick() == jne.getStartTick()) {
 							// this note is zero duration and others in the chord is not
 							curChord.remove(jne);
-							if (debug > 1) System.out.println(part.getTitle()+" Removed zero dura note");
+							if (debug > 1) System.out.println(part.getTitle()+" Removed zero dura note ("+jne.note.abc+")");
 							if (jne.tiesFrom != null) {
 								jne.tiesFrom.tiesTo = null;
 							}
@@ -1804,8 +1811,11 @@ public class AbcExporter {
 					}
 				}
 				
-				// turn very fast arpeggio into block chord				
-				if (microsTillNext < minimumMicros && curChord.getEndTick() > ne.getStartTick() && !curChord.dontMove1 && !curChord.glissando) {
+				// turn very fast arpeggio into block chord
+				if (ne.tiesFrom == null && ne.note != Note.REST
+						&& microsTillNext < minimumMicros
+						&& (curChord.getEndTick() > ne.getStartTick() || part.getInstrument().isPercussion)
+						&& !curChord.dontMove1 && !curChord.glissando && !curChord.isRest()) {
 					// curr end before next start prevents handling grace notes, they will be deleted later if they too short
 					for (AbcNoteEvent small : curChord.getNotes()) {
 						if (small.tiesFrom != null || small.tiesTo != null) {
@@ -1828,6 +1838,7 @@ public class AbcExporter {
 							if (next.getStartTick() == ne.getStartTick()) {
 								if (next.note == small.note) {
 									// cancel
+									// TODO: serious think about what going on here and write detailed comments
 									i--;
 									curChord.dontMove1 = true;// to prevent infinite loop
 									if (debug > 2) System.out.println(part.getTitle()+" Keep arpeggio (next chord has same note)");
@@ -1841,6 +1852,7 @@ public class AbcExporter {
 					if (debug > 0) System.out.println(part.getTitle()+" Turned arpeggio into block chord (early start)");
 					ne.setStartTick(curChord.getStartTick());
 					curChord.add(ne);// we note that this will later be pruned (again)
+					curChord.arp += 1;
 					curChord.recalcEndTick();
 					continue MAIN;
 				} else {
@@ -1907,7 +1919,6 @@ public class AbcExporter {
 				}
 				// The shorter notes will have changed the chord's duration
 				curChord.recalcEndTick();
-
 				if (reprocessCurrentNote) {
 					i--;
 					if (debug > 1) System.out.println(part.getTitle()+ ": Chord was cut up, reprocessing..");
@@ -1962,8 +1973,8 @@ public class AbcExporter {
 					}
 					// Else try to make it longer
 					long oldCurEnd = curChord.getEndTick();
-					curChord.setEndTickExpand(curMinEndTick);
-					if (curChord.getEndTick() > nextChord.getStartTick()) {
+					
+					if (curMinEndTick > nextChord.getStartTick()) {
 						// there was not room for a larger chord
 						long neMicroStart = qtm.tickToMicrosABCOrganic(ne.getStartTick());
 						if (!curChord.glissando) {
@@ -1990,7 +2001,7 @@ public class AbcExporter {
 								
 								//going back and forth between micros and ticks is not always 1:1, so we stop infinite loops by setting this
 								curChord.dontMove2 = true;
-								
+								curChord.setEndTickExpand(curMinEndTick);
 								i--;
 								if (debug > 1) System.out.println(part.getTitle()+" Delayed sequential chord by "+ ((minEndMicro-neMicroStart)/1000)+" ms 1");
 								continue MAIN;
@@ -2022,14 +2033,59 @@ public class AbcExporter {
 								}
 								// we don't use dontMove2 here, as we might want to get back in here with other ne.
 								i--;
-								curChord.setEndTickRetract(oldCurEnd);
+								
 								if (debug > 1) System.out.println(part.getTitle()+" Deleted second of two trills/gliss notes, dura="+ neMicros+" ms");
 								continue MAIN;
+							} else if (curChord.arp > 1) {
+								boolean doable = true;
+								if (ne.note == Note.REST) doable = false;
+								if (ne.tiesFrom != null) {
+									doable = false;
+								}
+								for (AbcNoteEvent small : curChord.getNotes()) {									
+									if (small.note == ne.note) {
+										if (neMicros < minimumMicros*3L/2L || part.getInstrument().isPercussion) {
+											
+											if (ne.tiesTo != null) {
+												if (!part.getInstrument().sustainable) {
+													// If non-sustained then should remove ne.tiesTo
+													// we do this by a hack when setting from to itself
+													// then we just skip the notes from being added.
+													AbcNoteEvent tie = ne.tiesTo;
+													while (tie != null) {
+														tie.tiesFrom = tie;
+														tie = tie.tiesTo;
+													}
+												}
+												ne.tiesTo.tiesFrom = null;
+											}
+											if (ne.tiesFrom != null) {
+												ne.tiesFrom.tiesTo = null;
+											}
+											events.remove(ne);
+											i--;
+											if (debug > 0) System.out.println(part.getTitle()+": Removed short dura note just after arpeggio");
+											continue MAIN;
+										}
+										doable = false;
+										break;
+									}
+								}
+								if (doable) {
+									ne.setStartTick(curChord.getStartTick());
+									curChord.add(ne);// we note that this will later be pruned (again)
+									curChord.arp += 1;
+									curChord.recalcEndTick();
+									if (debug > 0) System.out.println(part.getTitle()+": Included late arpeggio to block chord");
+									continue MAIN;
+								}
 							}
 							// give up and schedule curr chord for deletion, it likely contains a grace note
 							curChord.setEndTickRetract(curChord.getStartTick());
-							if (debug > 1) System.out.println(part.getTitle()+" Removed short dura chord with "+curChord.size()+" notes");
+							if (debug > 1) System.out.println(part.getTitle()+": Removed short dura chord with "+curChord.size()+" notes");
 						} else {
+							// deprecated
+							
 							// curr chord was earlier detected as part of glissando
 							// force room for curr chord
 							
@@ -2129,6 +2185,8 @@ public class AbcExporter {
 								continue MAIN;
 							}
 						}
+					} else {
+						curChord.setEndTickExpand(curMinEndTick);
 					}
 				}
 				
@@ -2318,87 +2376,105 @@ public class AbcExporter {
 		
 		List<AbcNoteEvent> notesOn = new ArrayList<>();
 		List<AbcNoteEvent> thirds = new ArrayList<>();
+		List<AbcNoteEvent> trash = new ArrayList<>();
 		Iterator<AbcNoteEvent> neIter = events.iterator();
 		dupLoop: while (neIter.hasNext()) {
-			AbcNoteEvent ne = neIter.next();//second
+			AbcNoteEvent second = neIter.next();//second
 			List<AbcNoteEvent> thirdsOn = new ArrayList<>();
 			Iterator<AbcNoteEvent> onIter = notesOn.iterator();
 			while (onIter.hasNext()) {
-				AbcNoteEvent on = onIter.next();//first
-				if (on.getEndTick() <= ne.getStartTick() && (on.getLengthTicks() > 0 || on.getStartTick() < ne.getStartTick())) {
+				AbcNoteEvent first = onIter.next();//first
+				if (first.getEndTick() <= second.getStartTick() && (first.getLengthTicks() > 0 || first.getStartTick() < second.getStartTick())) {
 					// First note has already been turned off
 					onIter.remove();
-				} else if (on.note.id == ne.note.id) {
-					if (on.getStartTick() == ne.getStartTick()) {
+				} else if (first.note.id == second.note.id) {
+					if (first.getStartTick() == second.getStartTick()) {
 						// If they start at the same time, remove the second event.
 						
-						// Lengthen the first one if it's shorter than the second one.
-						if (on.getEndTick() <= ne.getEndTick()) {
-							on.setEndTick(ne.getEndTick());
-							if (ne.velocity > on.velocity) {
-								on.velocity = ne.velocity;// due to this, NoteEvent.velocity is not final
+						if (second.getLengthTicks() == 0) {
+							neIter.remove();
+							continue dupLoop;
+						} else if (first.getLengthTicks() == 0) {
+							onIter.remove();
+							trash.add(first);
+						} else {
+							
+							// Lengthen the first one if it's shorter than the second one.
+							if (first.getEndTick() <= second.getEndTick()) {
+								first.setEndTick(second.getEndTick());
+								if (second.velocity > first.velocity) {
+									first.velocity = second.velocity;// due to this, NoteEvent.velocity is not final
+								}
 							}
+							
+							if (!instrument.isSustainable(first.note.id) && second.velocity > first.velocity) {
+								first.velocity = second.velocity;// due to this, NoteEvent.velocity is not final
+							}
+							
+							// Remove the duplicate second note
+							neIter.remove();
+							continue dupLoop;
 						}
-						
-						if (!instrument.isSustainable(on.note.id) && ne.velocity > on.velocity) {
-							on.velocity = ne.velocity;// due to this, NoteEvent.velocity is not final
-						}
-						
-						// Remove the duplicate second note
-						neIter.remove();
-						continue dupLoop;
-					} else if (on.getStartTick() < ne.getStartTick()) {
+					} else if (first.getStartTick() < second.getStartTick()) {
 						// Otherwise, if they don't start at the same time, but first started first:
 
-						if (ne.getEndTick() <= on.getEndTick()) {
+						if (second.getEndTick() <= first.getEndTick()) {
 							// second is subset of first
-							
-							if (instrument.isSustainable(on.note.id)) {
+							if (second.getLengthTicks() == 0) {
+								neIter.remove();
+								continue dupLoop;
+							} else if (instrument.isSustainable(first.note.id)) {
 															
-								if (prioritizeUninteruptedLongNotes && Dynamics.fromMidiVelocity(ne.velocity).abcVol <= Dynamics.fromMidiVelocity(on.velocity).abcVol) {
+								if (prioritizeUninteruptedLongNotes && Dynamics.fromMidiVelocity(second.velocity).abcVol <= Dynamics.fromMidiVelocity(first.velocity).abcVol) {
 									// remove second
 									// we only do this if second has lower or equal volume
 									neIter.remove();
 									continue dupLoop;
 								}
 								// else we stop first, insert second, and add new third if needed (with firsts volume) after second to finish first.
-								long thirdEnd = on.getEndTick(); 
-								on.setEndTick(ne.getStartTick());
+								long thirdEnd = first.getEndTick(); 
+								first.setEndTick(second.getStartTick());
 								onIter.remove();
-								if (on.velocity > ne.velocity) {
-									ne.velocity = on.velocity;
+								if (first.velocity > second.velocity) {
+									second.velocity = first.velocity;
 								}
-								if (thirdEnd > ne.getEndTick()) {
-									AbcNoteEvent third = new AbcNoteEvent(on.note, on.velocity, ne.getEndTick(), thirdEnd, qtm, on.origNote);
+								if (thirdEnd > second.getEndTick()) {
+									AbcNoteEvent third = new AbcNoteEvent(first.note, first.velocity, second.getEndTick(), thirdEnd, qtm, first.origNote);
 									thirds.add(third);
 									thirdsOn.add(third);
 								}
 							} else {
 								// keep both, so end first where second start	
-								on.setEndTick(ne.getStartTick());
+								first.setEndTick(second.getStartTick());
 								onIter.remove();
 							}
-						} else if (ne.getEndTick() > on.getEndTick()) {
-							// ne extend beyond on
-							if (!instrument.isSustainable(on.note.id) || Dynamics.fromMidiVelocity(ne.velocity) != Dynamics.fromMidiVelocity(on.velocity)) {
+						} else if (second.getEndTick() > first.getEndTick()) {
+							// second extend beyond first
+							
+							if (!instrument.isSustainable(first.note.id) || Dynamics.fromMidiVelocity(second.velocity) != Dynamics.fromMidiVelocity(first.velocity)) {
 								// we break first, and start second
-								on.setEndTick(ne.getStartTick());
+								first.setEndTick(second.getStartTick());
 								onIter.remove();
 							} else {
 								// sustained and same abc volume
 								// we extend first to cover both, and discard second
-								on.setEndTick(ne.getEndTick());
+								first.setEndTick(second.getEndTick());
 								neIter.remove();
 								continue dupLoop;
 							}
 						}
 					} else {
-						if (on.getStartTick() < ne.getEndTick()) {
+						if (first.getStartTick() < second.getEndTick()) {
 							// Otherwise, if they don't start at the same time, but second started first, which means first was a third
 							
-							if (ne.getEndTick() > on.getEndTick()) {
+							if (second.getLengthTicks() == 0) {
+								neIter.remove();
+								continue dupLoop;
+							}
+							
+							if (second.getEndTick() > first.getEndTick()) {
 								// extend first to match seconds end
-								on.setEndTick(ne.getEndTick());
+								first.setEndTick(second.getEndTick());
 							}
 							
 							// since we know that there has been inserted a subset note where
@@ -2406,24 +2482,44 @@ public class AbcExporter {
 							// will process third before the subset, so we don't have to worry about subset being extended
 							// as long as second is removed here. And its safe
 							// to remove second as long as its sustained. If its not sustained we shorten it so it dont extend into the third.
-							if (instrument.isSustainable(on.note.id)) {
+							if (instrument.isSustainable(first.note.id)) {
 								neIter.remove();
 								continue dupLoop;
-							} else if (ne.getEndTick() > on.getStartTick()) {
+							} else if (second.getEndTick() > first.getStartTick()) {
 								// shorten second to end where first begin
 								// second will then be processed against the subset later in the loop
-								ne.setEndTick(on.getStartTick());
+								second.setEndTick(first.getStartTick());
 							}
 						}
 					}
 				}
 			}
 			notesOn.addAll(thirdsOn);//must be before adding ne
-			notesOn.add(ne);
+			notesOn.add(second);
 		}
 		events.addAll(thirds);
+		events.removeAll(trash);
 	}
-
+	
+	private void removeDuplicateNotesVerify(List<AbcNoteEvent> events, LotroInstrument instrument) {
+		List<AbcNoteEvent> notesOn = new ArrayList<>();
+		Iterator<AbcNoteEvent> neIter = events.iterator();
+		while (neIter.hasNext()) {
+			AbcNoteEvent ne = neIter.next();//second
+			Iterator<AbcNoteEvent> onIter = notesOn.iterator();
+			while (onIter.hasNext()) {
+				AbcNoteEvent on = onIter.next();//first
+				if (on.getEndTick() <= ne.getStartTick() && (on.getLengthTicks() > 0 || on.getStartTick() < ne.getStartTick())) {
+					// First note has already been turned off
+					onIter.remove();
+				} else if (on.note.id == ne.note.id) {
+					System.out.println("OOPSIE ");
+					System.exit(0);
+				}
+			}
+			notesOn.add(ne);
+		}
+	}
 
 	private void breakLongNotes(AbcPart part, List<AbcNoteEvent> events) {
 		for (int i = 0; i < events.size(); i++) {
