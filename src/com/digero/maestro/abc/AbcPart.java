@@ -2,6 +2,7 @@ package com.digero.maestro.abc;
 
 import static com.digero.maestro.abc.AbcHelper.map;
 import static com.digero.maestro.abc.AbcHelper.matchNick;
+import static java.awt.Frame.getFrames;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -17,6 +18,7 @@ import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.swing.JOptionPane;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.xml.xpath.XPathExpressionException;
@@ -367,6 +369,11 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 
 					throw SaveUtil.invalidTrackException(trackEle,
 							"Could not find track number " + t + optionalName + " in original MIDI file");
+				}
+				if (!abcSong.getSequenceInfo().getTrackInfo(t).hasEvents()) {
+					JOptionPane.showMessageDialog(getFrames()[0],
+							title+": has a midi track (Track "+t+") selected that has no notes. This project was made with a different midi.",
+							"Warning for "+abcSong.getTitle(), JOptionPane.WARNING_MESSAGE);
 				}
 
 				TreeMap<Float, PartSection> tree = sections.get(t);
