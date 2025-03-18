@@ -1,5 +1,6 @@
 package com.digero.abcplayer;
 
+import java.awt.AWTKeyStroke;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -8,6 +9,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Image;
 import java.awt.Insets;
+import java.awt.KeyboardFocusManager;
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
@@ -15,6 +17,7 @@ import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.dnd.DnDConstants;
 import java.awt.dnd.DropTarget;
 import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
@@ -34,11 +37,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Queue;
+import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.prefs.Preferences;
 
@@ -51,6 +56,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JCheckBoxMenuItem;
+import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -252,6 +258,8 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 	private AbcInfo abcInfo = new AbcInfo();
 
 	private Preferences prefs = Preferences.userNodeForPackage(AbcPlayer.class);
+	
+	private boolean playedFromFiletree = false;
 
 //	private boolean isExporting = false;
 
@@ -505,6 +513,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 				case PLAY_FROM_FILE:
 					playlistViewPanel.resetPlaylistPosition();
 					File f = (File)(e.getSource());
+					playedFromFiletree = true;
 					SwingUtilities.invokeLater(new OpenSongRunnable(false, f));
 					if (e.getShowSongView()) {
 						showPlaylistView = false;
@@ -513,6 +522,12 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 					break;
 				case CLOSE_SONG:
 					closeSong();
+					break;
+				case PLAYLIST_OPENED:
+					if (abcData == null || !sequencer.isRunning()) {
+						showPlaylistView = true;
+						updatePlaylistCardView();
+					}
 					break;
 				default: break;
 				}
@@ -535,6 +550,16 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 
 		setMinimumSize(new Dimension(320, 168));
 		Util.initWinBounds(this, prefs.node("window"), 450, 282);
+		
+		Set<AWTKeyStroke> emptyKeys = new HashSet<>();
+		setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, emptyKeys);
+		setFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, emptyKeys);
+		
+		ActionListener tabListener = e -> {
+			showPlaylistView = !showPlaylistView;
+			updatePlaylistCardView();
+		};
+		this.getRootPane().registerKeyboardAction(tabListener, KeyStroke.getKeyStroke(KeyEvent.VK_TAB, 0), JComponent.WHEN_IN_FOCUSED_WINDOW);
 	}
 	
 	private void updatePlaylistCardView() {
@@ -988,11 +1013,11 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 
 	private void recentActionPerformed(ActionEvent evt, String title) {
 		File[] files = { new File(title) };
+		playlistViewPanel.resetPlaylistPosition();
 		if (!openSong(files)) {
 			// The file could not be opened, removing it from the recent list.
 			recentRemove(title);
 		}
-		playlistViewPanel.resetPlaylistPosition();
 	}
 
 	private boolean getAbcDataFromClipboard(ArrayList<String> data, boolean checkContents) {
@@ -1099,8 +1124,8 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		if (result == JFileChooser.APPROVE_OPTION) {
 			prefs.put("openFileDialog.currentDirectory", openFileDialog.getCurrentDirectory().getAbsolutePath());
 
-			openSong(openFileDialog.getSelectedFiles());
 			playlistViewPanel.resetPlaylistPosition();
+			openSong(openFileDialog.getSelectedFiles());
 		}
 	}
 
@@ -1258,6 +1283,8 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 				}
 			}
 		}
+		
+		boolean wasPlaying = sequencer.isRunning();
 
 		sequencer.stop(); // pause
 		updateButtonStates();
@@ -1325,6 +1352,12 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			String fileName = fileAndData.file.getAbsolutePath();
 			recentAdd(fileName);
 		}
+		
+		if (!wasPlaying && showPlaylistView && !playlistViewPanel.isPlayingFromPlaylist() && !playedFromFiletree) {
+			showPlaylistView = false;
+			updatePlaylistCardView();
+		}
+		playedFromFiletree = false;
 
 		return true;
 	}
