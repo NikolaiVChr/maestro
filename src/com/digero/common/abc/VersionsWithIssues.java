@@ -17,6 +17,7 @@ public class VersionsWithIssues {
 		versionsWithIssues.add(new IssueVersion(new Version(3,2,0), "Song duration in part names can be longer than actual song length."));
 		versionsWithIssues.add(new IssueVersion(new Version(3,1,9), new Version(3,1,10), "Notes can be missing."));
 		versionsWithIssues.add(new IssueVersion(new Version(2,5,0,118), "Initial silence might not have been removed."));//beta of auto exporter
+		versionsWithIssues.add(new IssueVersion(new Version(3,6,6), new Version(4,0,11), "Notes can be missing or out of rhythm (if exported with organic)."));//beta of organic
 	}
 	
 	/**
