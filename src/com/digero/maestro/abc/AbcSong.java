@@ -109,6 +109,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private File exportFile; // The ABC export file
 	private File projectFile; // The XML Maestro song file
 	private boolean usingOldVelocities = false;
+	private boolean usingOldTempos = false;
 	private boolean hideEdits = false;
 
 	private final ListModelWrapper<AbcPart> parts = new ListModelWrapper<>(new DefaultListModel<>());
@@ -193,7 +194,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			throws IOException, InvalidMidiDataException, ParseException {
 		sourceFile = file;
 		usingOldVelocities = miscSettings.ignoreExpressionMessages;
-		sequenceInfo = SequenceInfo.fromMidi(file, miscSettings, usingOldVelocities);
+		sequenceInfo = SequenceInfo.fromMidi(file, miscSettings, usingOldVelocities, usingOldTempos);
 		title = sequenceInfo.getTitle();
 		composer = sequenceInfo.getComposer();
 		keySignature = (ICompileConstants.SHOW_KEY_FIELD) ? sequenceInfo.getKeySignature() : KeySignature.C_MAJOR;
@@ -211,6 +212,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		params.useLotroInstruments = false;
 		// params.stereo = false;
 		usingOldVelocities = true;// The abc volumes are tuned to old volume scheme
+		usingOldTempos = true;
 		sequenceInfo = SequenceInfo.fromAbc(params, miscSettings, usingOldVelocities);
 		exportFile = file;
 
@@ -282,7 +284,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			}
 
 			usingOldVelocities = SaveUtil.parseValue(songEle, "importSettings/@useOldVelocities", true);// must be
-																										// before
+			usingOldTempos     = SaveUtil.parseValue(songEle, "importSettings/@useOldTempos", true);    // before
 																										// tryToLoadFromFile
 
 			sourceFile = SaveUtil.parseValue(songEle, "sourceFile", (File) null);
@@ -404,6 +406,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				params.useLotroInstruments = false;
 				// params.stereo = false;
 				usingOldVelocities = true;// The abc volumes are tuned to old volume scheme
+				usingOldTempos = true;
 				sequenceInfo = SequenceInfo.fromAbc(params, miscSettings, usingOldVelocities);
 
 				organic = abcInfo.isOrganic();
@@ -412,7 +415,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				priorityActive = false;
 				transcriber = abcInfo.getTranscriber();
 			} else {
-				sequenceInfo = SequenceInfo.fromMidi(newSourceFile, miscSettings, usingOldVelocities);
+				sequenceInfo = SequenceInfo.fromMidi(newSourceFile, miscSettings, usingOldVelocities, usingOldTempos);
 			}
 
 			title = sequenceInfo.getTitle();
@@ -609,6 +612,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private void appendImportSettings(Document doc, Element songEle) {
 		Element importSettingsEle = doc.createElement("importSettings");
 		importSettingsEle.setAttribute("useOldVelocities", String.valueOf(usingOldVelocities));
+		importSettingsEle.setAttribute("useOldTempos", String.valueOf(usingOldTempos));
 		if (importSettingsEle.getAttributes().getLength() > 0 || importSettingsEle.getChildNodes().getLength() > 0)
 			songEle.appendChild(importSettingsEle);
 	}

@@ -61,7 +61,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 
 	public SequenceDataCache(Sequence song, MidiStandard standard, boolean[] rolandDrumChannels,
 			List<TreeMap<Long, Boolean>> yamahaDrumSwitches, boolean[] yamahaDrumChannels,
-			List<TreeMap<Long, Boolean>> mmaDrumSwitches, SortedMap<Integer, Integer> portMap) {
+			List<TreeMap<Long, Boolean>> mmaDrumSwitches, SortedMap<Integer, Integer> portMap, boolean onlyFirstTrackTempos) {
 		
 		Map<Integer, Long> tempoLengths = new HashMap<>();
 
@@ -258,7 +258,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 								}
 							}
 						}
-					} else if (iTrack == 0 && (divisionType == Sequence.PPQ) && MidiUtils.isMetaTempo(msg)) {
+					} else if ((!onlyFirstTrackTempos || iTrack == 0) && (divisionType == Sequence.PPQ) && MidiUtils.isMetaTempo(msg)) {
 						// TODO: Test midifiles to see how common it is to have tempo messages that are not in 1st track.
 						// If its used, then handle them instead of ignoring them, but think about backwards compat.
 						int tempoRaw = MidiUtils.getTempoMPQ(msg);
@@ -268,7 +268,6 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 							tempoLengths.put(te.tempoMPQ, elapsedMicros + Util.valueOf(tempoLengths.get(te.tempoMPQ), 0));
 						
 							tempo.put(tick, new TempoEvent(tempoRaw, tick, te.micros + elapsedMicros));
-	
 						} else {
 							System.out.println("Warning: MIDI has tempo message of zero MPQ! Ignoring it..");
 							track.remove(evt);
@@ -571,7 +570,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		
 		@Override
 		public String toString() {
-			return "MPQ="+tempoMPQ+"  tick="+tick+"  micros="+micros;
+			return "BPM="+MidiUtils.convertTempo(tempoMPQ)+" MPQ="+tempoMPQ+"  tick="+tick+"  micros="+micros;
 		}
 	}
 

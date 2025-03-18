@@ -1999,7 +1999,11 @@ public class AbcExporter {
 								}
 								for (AbcNoteEvent small : curChord.getNotes()) {									
 									if (small.note == ne.note) {
+										// next note cannot be added to block chord,
+										// as one with same pitch is there already
+										
 										if (ne1Micros < minimumMicros*3L/2L || part.getInstrument().isPercussion) {
+											// next chord will be short is short, we remove next note
 											
 											if (ne.tiesTo != null) {
 												if (!part.getInstrument().sustainable) {
