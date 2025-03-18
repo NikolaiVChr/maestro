@@ -25,6 +25,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 	private static class PartInfo {
 		private int number = 1;
 		private LotroInstrument instrument = LotroInstrument.DEFAULT_INSTRUMENT;
+		private boolean instrumentIsFromMadeFor = false;
 		private String name = null;
 		private String rawName = null;
 		private boolean nameIsFromExtendedInfo = false;
@@ -198,6 +199,13 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		if (info == null)
 			return LotroInstrument.DEFAULT_INSTRUMENT;
 		return info.instrument;
+	}
+	
+	public boolean getPartInstrumentFromMadeFor(int trackIndex) {
+		AbcInfo.PartInfo info = partInfoByIndex.get(trackIndex);
+		if (info == null)
+			return false;
+		return info.instrumentIsFromMadeFor;
 	}
 
 	public int getPartCount() {
@@ -421,6 +429,15 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 			partInfoByIndex.put(trackIndex, info = new PartInfo());
 
 		info.instrument = partInstrument;
+	}
+	
+	void setPartInstrument(int trackIndex, LotroInstrument partInstrument, boolean madeFor) {
+		AbcInfo.PartInfo info = partInfoByIndex.get(trackIndex);
+		if (info == null)
+			partInfoByIndex.put(trackIndex, info = new PartInfo());
+
+		info.instrument = partInstrument;
+		info.instrumentIsFromMadeFor = madeFor;
 	}
 
 	void setPartName(int trackIndex, String partName, boolean fromExtendedInfo) {
