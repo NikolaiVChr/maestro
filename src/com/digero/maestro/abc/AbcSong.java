@@ -519,10 +519,14 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			throws XPathExpressionException, ParseException {
 		for (Element ele : XmlUtil.selectElements(songEle, "part")) {
 			AbcPart part = AbcPart.loadFromXml(this, ele, fileVersion);
+			/* see https://discord.com/channels/1127545258729803797/1127660185297633280/1351686726674022491
+			 * for discussion about this sorting and why its been disabled for now
 			int ins = Collections.binarySearch(parts, part, partNumberComparator);
 			if (ins < 0)
 				ins = -ins - 1;
 			parts.add(ins, part);
+			*/
+			parts.add(part);
 			part.convertSectionsToLongTrees();
 			part.addAbcListener(abcPartListener);
 		}
