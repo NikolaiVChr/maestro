@@ -1633,8 +1633,8 @@ public class AbcExporter {
 		long minimumMicros = AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM());
 		
 		// Combine notes that play at the same time into chords
-		int debug = 0;// 0=no debug 1=minimal debug 2=more debug 3=most debug
-		boolean removeGliss = false;
+		final int debug = 0;// 0=no debug 1=minimal debug 2=more debug 3=most debug
+		final boolean removeGliss = false;
 		Chord curChord = new Chord(events.get(0));
 		Chord prevChord = null;
 		Chord prevRestChord = null;
