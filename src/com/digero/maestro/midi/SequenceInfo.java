@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.NavigableMap;
 import java.util.TreeMap;
 
 import javax.sound.midi.InvalidMidiDataException;
@@ -34,7 +33,6 @@ import com.digero.maestro.abc.AbcConversionException;
 import com.digero.maestro.abc.AbcExporter;
 import com.digero.maestro.abc.AbcExporter.ExportTrackInfo;
 import com.digero.maestro.abc.AbcMetadataSource;
-import com.digero.maestro.midi.SequenceDataCache.TempoEvent;
 import com.digero.maestro.view.MiscSettings;
 
 /**

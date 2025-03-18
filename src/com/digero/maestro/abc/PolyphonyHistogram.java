@@ -13,13 +13,11 @@ import java.util.TreeMap;
 import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.abc.LotroInstrumentSampleDuration;
-import com.digero.common.midi.ITempoCache;
 import com.digero.common.midi.LotroSequencerWrapper;
 import com.digero.common.midi.Note;
 import com.digero.common.midi.SequencerEvent;
 import com.digero.common.util.Listener;
 import com.digero.common.util.Pair;
-import com.digero.common.util.Util;
 import com.digero.maestro.midi.AbcNoteEvent;
 import com.digero.maestro.midi.Chord;
 

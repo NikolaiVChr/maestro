@@ -1,6 +1,5 @@
 package com.digero.common.util;
 
-import java.awt.Color;
 import java.awt.Font;
 import java.util.prefs.Preferences;
 

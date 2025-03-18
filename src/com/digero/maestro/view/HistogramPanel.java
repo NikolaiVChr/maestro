@@ -21,7 +21,6 @@ import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.util.IDiscardable;
 import com.digero.common.util.Listener;
 import com.digero.common.util.Pair;
-import com.digero.common.util.Util;
 import com.digero.common.view.ColorTable;
 import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.abc.PolyphonyHistogram;

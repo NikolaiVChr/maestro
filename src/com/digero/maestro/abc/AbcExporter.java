@@ -40,7 +40,6 @@ import com.digero.maestro.midi.BentMidiNoteEvent;
 import com.digero.maestro.midi.Chord;
 import com.digero.maestro.midi.MidiNoteEvent;
 import com.digero.maestro.midi.TrackInfo;
-import com.sun.media.sound.MidiUtils;
 
 public class AbcExporter {
 	private boolean organic = true;
