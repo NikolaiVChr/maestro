@@ -137,7 +137,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 	private AbcPart abcPart;
 
 	private JPanel gutter;
-	private JCheckBox checkBox;
+	private JCheckBox enableTrackCheckBox;
 	private TableLayoutConstraints checkBoxLayout_ControlsHidden;
 	private TableLayoutConstraints checkBoxLayout_ControlsVisible;
 	private TableLayoutConstraints checkBoxLayout_ControlsAndPriorityVisible;
@@ -153,16 +153,11 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 	private TrackNoteGraph noteGraph;
 	private ArrayList<DrumPanel> drumlinePanels;
 
-	public ArrayList<DrumPanel> getDrumPanels() {
-		return drumlinePanels;
-	}
-
 	private Listener<AbcPartEvent> abcListener;
 	private Listener<AbcSongEvent> songListener;
 	private Listener<SequencerEvent> seqListener;
 
-	private boolean showDrumPanels;
-	private boolean wasDrumPart;
+	private boolean showDrumPanels = false;
 	private boolean isAbcPreviewMode = false;
 
 	public TrackDimensions dims = new TrackDimensions(TITLE_WIDTH_DEFAULT, PRIORITY_WIDTH_DEFAULT,
@@ -198,7 +193,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		gutter = new JPanel((LayoutManager) null);
 		gutter.setOpaque(false);
 
-		checkBox = new JCheckBox() {
+		enableTrackCheckBox = new JCheckBox() {
 			@Override
 			public Dimension getPreferredSize() {
 				// This makes the title appear centered in the TrackPanel
@@ -211,13 +206,12 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 				return getPreferredSize();
 			}
 		};
-		checkBox.setOpaque(false);
-//		checkBox.setFocusable(false);
-		checkBox.setSelected(abcPart.isTrackEnabled(trackInfo.getTrackNumber()));
+		enableTrackCheckBox.setOpaque(false);
+		enableTrackCheckBox.setSelected(abcPart.isTrackEnabled(trackInfo.getTrackNumber()));
 
-		checkBox.addActionListener(e -> {
+		enableTrackCheckBox.addActionListener(e -> {
 			int track = trackInfo.getTrackNumber();
-			boolean enabled = checkBox.isSelected();
+			boolean enabled = enableTrackCheckBox.isSelected();
 			abcPart.setTrackEnabled(track, enabled);
 			if (MUTE_DISABLED_TRACKS)
 				seq.setTrackMute(track, !enabled);
@@ -421,7 +415,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		*/
 		
 		add(gutter, GUTTER_COLUMN + ", 0, " + GUTTER_COLUMN + ", 1, f, f");
-		add(checkBox, checkBoxLayout_ControlsHidden);
+		add(enableTrackCheckBox, checkBoxLayout_ControlsHidden);
 		add(priorityBox, PRIORITY_COLUMN + ", 0, f, c");
 		add(controlPanel, CONTROL_COLUMN + ", 0, f, c");
 		
@@ -470,15 +464,20 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 		addPropertyChangeListener("enabled", evt -> updateState());
 
-		updateState(true);
+		updateState();
 	}
 	
 	public void setAbcPart(AbcPart part) {
 		abcPart.removeAbcListener(abcListener);
 		this.abcPart = part;
 		abcPart.addAbcListener(abcListener);
-		checkBox.setSelected(abcPart.isTrackEnabled(trackInfo.getTrackNumber()));
-		updateColors();
+//		showDrumPanels = abcPart.isTrackEnabled(trackInfo.getTrackNumber()) && !abcPart.isChromatic(trackInfo.getTrackNumber());
+		if (drumlinePanels != null && !drumlinePanels.isEmpty()) {
+			for (DrumPanel panel : drumlinePanels) {
+				panel.setAbcPart(abcPart);
+			}
+		}
+		updateState();
 	}
 	
 	@Override
@@ -538,6 +537,10 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 	}
 
 	private void initDrumMenuBar() {
+		if (drumControlBar != null) {
+			return;
+		}
+		
 		// Match colors of the parts panel for selected items
 		// Restore defaults after these components are created
 		Color bg = (Color)UIManager.get("MenuBar.selectionBackground");
@@ -735,7 +738,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		String title = trackInfo.getTrackNumber() + ". " + trackInfo.getName();
 		String instr = trackInfo.getInstrumentNames();
 
-		checkBox.setToolTipText("<html><b>" + title + "</b><br>" + instr + badString + "</html>");
+		enableTrackCheckBox.setToolTipText("<html><b>" + title + "</b><br>" + instr + badString + "</html>");
 
 		int titleWidth = dims.titleWidth;
 		if (!trackVolumeBar.isVisible()) {
@@ -744,9 +747,9 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 			titleWidth += dims.priorityWidth;
 		}
 
-		title = Util.ellipsis(title, titleWidth - ELLIPSIS_OFFSET, checkBox.getFont().deriveFont(Font.BOLD));
-		instr = Util.ellipsis(instr, titleWidth - ELLIPSIS_OFFSET, checkBox.getFont());
-		checkBox.setText("<html><b>" + title + "</b><br>" + instr + "</html>");
+		title = Util.ellipsis(title, titleWidth - ELLIPSIS_OFFSET, enableTrackCheckBox.getFont().deriveFont(Font.BOLD));
+		instr = Util.ellipsis(instr, titleWidth - ELLIPSIS_OFFSET, enableTrackCheckBox.getFont());
+		enableTrackCheckBox.setText("<html><b>" + title + "</b><br>" + instr + "</html>");
 
 	}
 
@@ -840,7 +843,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		} else if (!trackActive) {
 			noteGraph.setNoteColor(ColorTable.NOTE_OFF);
 			noteGraph.setBadNoteColor(ColorTable.NOTE_BAD_OFF);
-		} else // disabled (lighter colored) notes for playing tracks not in the current part
+		} else // disabled (lighter colored) notes for playing tracks not in the current par
 		{
 			boolean pseudoOff = !abcPreviewMode && (abcPart.isPercussionPart() != trackInfo.isDrumTrack());
 			noteGraph.setNoteColor(pseudoOff ? ColorTable.NOTE_OFF : ColorTable.NOTE_DISABLED);
@@ -848,27 +851,41 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		}
 
 		if (trackEnabled) {
-			checkBox.setForeground(ColorTable.PANEL_TEXT_ENABLED.get());
+			enableTrackCheckBox.setForeground(ColorTable.PANEL_TEXT_ENABLED.get());
 		} else {
 			boolean inputEnabled = abcPart.isPercussionPart() == trackInfo.isDrumTrack();
-			checkBox.setForeground(
+			enableTrackCheckBox.setForeground(
 					inputEnabled ? ColorTable.PANEL_TEXT_DISABLED.get() : ColorTable.PANEL_TEXT_OFF.get());
 		}
 
 		noteGraph.setOctaveLinesVisible(!trackInfo.isDrumTrack()
 				&& !(abcPart.getInstrument().isPercussion && abcPart.isTrackEnabled(trackInfo.getTrackNumber())));
 	}
-
-	private void updateState() {
-		updateState(false);
+	
+	private void initDrumPanels() {
+		initDrumMenuBar();
+		
+		if (drumlinePanels != null && !drumlinePanels.isEmpty()) {
+			return;
+		}
+		
+		drumlinePanels = new ArrayList<DrumPanel>();
+		for (int noteId : trackInfo.getNotesInUse()) {
+			DrumPanel drumlinePanel = new DrumPanel(trackInfo, seq, abcPart, noteId, abcSequencer, trackVolumeBar);
+			drumlinePanel.setAbcPreviewMode(isAbcPreviewMode);
+			drumlinePanels.add(drumlinePanel);
+		}
+		
+		// this array ends up being in reverse order from what is displayed, since we add the top row each time
+//		Collections.reverse(drumlinePanels);
 	}
 
-	private void updateState(boolean initDrumPanels) {
+	private void updateState() {
 		updateColors();
 
 		boolean trackEnabled = abcPart.isTrackEnabled(trackInfo.getTrackNumber());
 		boolean priorityEnabled = isPriorityEnabled();
-		checkBox.setSelected(trackEnabled);
+		enableTrackCheckBox.setSelected(trackEnabled);
 
 		// Update the visibility of controls
 		trackVolumeBar.setVisible(trackEnabled);
@@ -892,8 +909,8 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 				? ((priorityEnabled || fxBox.isVisible()) ? checkBoxLayout_ControlsAndPriorityVisible : checkBoxLayout_ControlsVisible)
 				: checkBoxLayout_ControlsHidden;
 
-		if (layout.getConstraints(checkBox) != newCheckBoxLayout) {
-			layout.setConstraints(checkBox, newCheckBoxLayout);
+		if (layout.getConstraints(enableTrackCheckBox) != newCheckBoxLayout) {
+			layout.setConstraints(enableTrackCheckBox, newCheckBoxLayout);
 			updateTitleText();
 		}
 
@@ -907,67 +924,81 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		} else {
 			noteGraph.setDeltaVolume(abcPart.getTrackVolumeAdjust(trackInfo.getTrackNumber()));
 		}
-
-		boolean showDrumPanelsNew = !abcPart.isChromatic(trackInfo.getTrackNumber()) && trackEnabled;
-
-		if (initDrumPanels || showDrumPanels != showDrumPanelsNew || wasDrumPart != abcPart.isPercussionPart() || abcPart.getInstrument() == LotroInstrument.STUDENT_FIDDLE) {
-			if (showDrumPanels != showDrumPanelsNew) {
-				showDrumPanels = showDrumPanelsNew;
-			}
-			wasDrumPart = abcPart.isPercussionPart();
-
-			for (int i = getComponentCount() - 1; i >= 0; --i) {
-				Component child = getComponent(i);
-				if (child instanceof DrumPanel) {
-					((DrumPanel) child).discard();
-					remove(i);
-				}
-			}
-			
-			noteGraphPanel.removeAll();
-			noteGraph.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()));
-			noteGraphPanel.add(noteGraph, "grow");
-
-			drumlinePanels = new ArrayList<DrumPanel>();
-			if (drumControlBar != null) {
-				remove(drumControlBar);
-			}
-			
+		
+		boolean showDrumPanelsPrev = showDrumPanels;
+		showDrumPanels = !abcPart.isChromatic(trackInfo.getTrackNumber()) && trackEnabled;
+		
+//		System.out.println("show drum panels for track " + trackInfo.getTrackNumber() + ": " + showDrumPanels + "   (prev: " + showDrumPanelsPrev);
+		
+//		System.out.println("Does this even hit when we switch tracks? " + showDrumPanels);
+		
+//		boolean showDrumPanelsNew = !abcPart.isChromatic(trackInfo.getTrackNumber()) && trackEnabled;
+		
+		if (showDrumPanels != showDrumPanelsPrev) {
 			if (showDrumPanels) {
-				if (drumControlBar == null)
-					initDrumMenuBar();
+				System.out.println("Enabling drum panels on a track");
+				initDrumMenuBar();
+				
+				initDrumPanels();
 
 				add(drumControlBar, TITLE_COLUMN + ", 1," + (CONTROL_COLUMN -1) + ", 1");
 				
 				int row = LAYOUT_ROWS.length;
-				for (int noteId : trackInfo.getNotesInUse()) {
-					DrumPanel drumlinePanel = new DrumPanel(trackInfo, seq, abcPart, noteId, abcSequencer, trackVolumeBar);
+				
+				for (DrumPanel drumlinePanel : drumlinePanels) {
 					drumlinePanel.setAbcPreviewMode(isAbcPreviewMode);
 					if (row <= layout.getNumRow())
 						layout.insertRow(row, PREFERRED);
 					add(drumlinePanel, "0, " + row + ", " + NOTE_COLUMN + ", " + row);
-					if (drumlinePanels == null)
-						drumlinePanels = new ArrayList<>();
-					drumlinePanels.add(drumlinePanel);
 				}
 				
+//				for (int noteId : trackInfo.getNotesInUse()) {
+//					DrumPanel drumlinePanel = new DrumPanel(trackInfo, seq, abcPart, noteId, abcSequencer, trackVolumeBar);
+//					drumlinePanel.setAbcPreviewMode(isAbcPreviewMode);
+//					if (row <= layout.getNumRow())
+//						layout.insertRow(row, PREFERRED);
+//					add(drumlinePanel, "0, " + row + ", " + NOTE_COLUMN + ", " + row);
+//					if (drumlinePanels == null)
+//						drumlinePanels = new ArrayList<>();
+//					drumlinePanels.add(drumlinePanel);
+//				}
+				
 				// this array ends up being in reverse order from what is displayed, since we add the top row each time
-				Collections.reverse(drumlinePanels);
+//				Collections.reverse(drumlinePanels);
 				
 				// Rebuild note graph panel
 				noteGraph.setBorder(BorderFactory.createEmptyBorder());
 
 				DrumPanel last = null;
-				for (DrumPanel drumlinePanel : drumlinePanels) {
+				for (int i = drumlinePanels.size() - 1; i >= 0; i--) {
+					DrumPanel drumlinePanel = drumlinePanels.get(i);
 					noteGraphPanel.add(drumlinePanel.getNoteGraph(), "grow,shrink 0");
 					last = drumlinePanel;
 				}
 				last.getNoteGraph().setBorder(BorderFactory.createCompoundBorder(
 						BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()),
 						BorderFactory.createMatteBorder(1, 0, 0, 0, ColorTable.OCTAVE_LINE.get())));
-			} else if (abcPart.isTrackEnabled(trackInfo.getTrackNumber()) && abcPart.getInstrument() == LotroInstrument.STUDENT_FIDDLE) {
-				//int controlHeight = getPreferredSize().height;
-				//noteGraph.setPreferredSize(new Dimension(noteGraph.getPreferredSize().width, controlHeight));
+				
+				drumMapMenu.setVisible(showDrumPanels && abcPart.isDrumPart());
+			}
+			else { // Don't show drum panels
+				System.out.println("Disabling drum panels on a track");
+				for (int i = getComponentCount() - 1; i >= 0; --i) {
+					Component child = getComponent(i);
+					if (child instanceof DrumPanel) {
+//						((DrumPanel) child).discard();
+						remove(i);
+					}
+				}
+				
+				noteGraphPanel.removeAll();
+				noteGraph.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()));
+				noteGraphPanel.add(noteGraph, "grow");
+				
+//				drumlinePanels = new ArrayList<DrumPanel>();
+				if (drumControlBar != null) {
+					remove(drumControlBar);
+				}
 			}
 
 			updateTitleText();
@@ -975,14 +1006,6 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 			revalidate();
 			noteGraphPanel.revalidate();
 		}
-		
-		if (showDrumPanels) {
-			drumMapMenu.setVisible(abcPart.isDrumPart());
-		}
-	}
-	
-	public boolean hasDrumPanels() {
-		return drumlinePanels != null && !drumlinePanels.isEmpty();
 	}
 
 	private boolean saveDrumMapping() {
