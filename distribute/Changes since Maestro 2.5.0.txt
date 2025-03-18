@@ -60,6 +60,13 @@ Version 4.0.13
 - Change that tempos meta messages not in first track would be ignored. Some MIDI software like FL Studio can output them in other tracks.
     Old project will continue to only read them from first track for backwards compatibility.
 - Auto-exporter now skips recursive folders that start with . in their name.
+- Added a search feature to the ABC browser, it will search as you type for song files which match (case insensitive).
+- The ABC browser will keep folders expanded when you change the sort type or refresh files (or use search).
+- The ABC playlist table will scroll to the end when new songs are added which would appear off screen.
+- You can now press tab to switch between the song view and the browser/playlist view.
+- Opening an ABC song through dragging or the file->open menu will switch to the song view if nothing's playing.
+- Opening a playlist will switch to the playlist view if nothing's playing.
+- Added a set export wizard feature to the playlist.
 
 Version 3.6.5
 - Solo/mute buttons will no longer reset when reloading MIDI file.
