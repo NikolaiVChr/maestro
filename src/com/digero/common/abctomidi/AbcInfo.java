@@ -25,6 +25,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 	private static class PartInfo {
 		private int number = 1;
 		private LotroInstrument instrument = LotroInstrument.DEFAULT_INSTRUMENT;
+		private boolean instrumentIsFromMadeFor = false;
 		private String name = null;
 		private String rawName = null;
 		private boolean nameIsFromExtendedInfo = false;
@@ -183,7 +184,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 	}
 
 	public String getSongDurationStr() {
-		return songDuration;
+		return Util.emptyIfNull(songDuration);
 	}
 
 	public int getPartNumber(int trackIndex) {
@@ -198,6 +199,13 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		if (info == null)
 			return LotroInstrument.DEFAULT_INSTRUMENT;
 		return info.instrument;
+	}
+	
+	public boolean getPartInstrumentFromMadeFor(int trackIndex) {
+		AbcInfo.PartInfo info = partInfoByIndex.get(trackIndex);
+		if (info == null)
+			return false;
+		return info.instrumentIsFromMadeFor;
 	}
 
 	public int getPartCount() {
@@ -422,6 +430,15 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 
 		info.instrument = partInstrument;
 	}
+	
+	void setPartInstrument(int trackIndex, LotroInstrument partInstrument, boolean madeFor) {
+		AbcInfo.PartInfo info = partInfoByIndex.get(trackIndex);
+		if (info == null)
+			partInfoByIndex.put(trackIndex, info = new PartInfo());
+
+		info.instrument = partInstrument;
+		info.instrumentIsFromMadeFor = madeFor;
+	}
 
 	void setPartName(int trackIndex, String partName, boolean fromExtendedInfo) {
 		AbcInfo.PartInfo info = partInfoByIndex.get(trackIndex);
@@ -521,5 +538,19 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 			}
 		}
 		return a;
+	}
+	
+	// used for set exporter
+	public static AbcInfo getDummyAbcInfo() {
+		AbcInfo inf = new AbcInfo();
+		inf.setExtendedMetadata(AbcField.SONG_DURATION, "3:14");
+		inf.setExtendedMetadata(AbcField.SONG_TITLE, "Example Title");
+		inf.setExtendedMetadata(AbcField.SONG_COMPOSER, "Example Composer");
+		inf.setExtendedMetadata(AbcField.SONG_TRANSCRIBER, "Your Name Here");
+		for (int i = 0; i < 5; i++) {
+			inf.partInfoByIndex.put(i, new PartInfo());
+		}
+		
+		return inf;
 	}
 }
