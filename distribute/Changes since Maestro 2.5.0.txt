@@ -59,6 +59,7 @@ Version 4.0.13
 - Fix that if two student fiddle FX noises came right after each other, the second might have been muted.
 - Change that tempos meta messages not in first track would be ignored. Some MIDI software like FL Studio can output them in other tracks.
     Old project will continue to only read them from first track for backwards compatibility.
+- Auto-exporter now skips recursive folders that start with . in their name.
 
 Version 3.6.5
 - Solo/mute buttons will no longer reset when reloading MIDI file.
