@@ -515,8 +515,22 @@ public class AbcPlaylistPanel extends JPanel {
 			addFilesToPlaylist(f, i);
 		});
 		playlistTable.setTransferHandler(transferHandler);
+		playlistHeaderPopupMenu = new JPopupMenu();
+		playlistTable.getTableHeader().setComponentPopupMenu(playlistHeaderPopupMenu);
+		playlistTable.getTableHeader().setReorderingAllowed(false);
+		initTableHeaderColumns();
 		
 		Preferences colSizes = playlistPrefs.node("colSizes");
+		
+		TableColumnModel columnModel = playlistTable.getColumnModel();
+		for (int i = 0; i < columnModel.getColumnCount(); i++) {
+			TableColumn column = columnModel.getColumn(i);
+			int savedWidth = colSizes.getInt("column_" + i, -1);
+			if (savedWidth != -1) {
+				column.setPreferredWidth(savedWidth);	
+			}
+		}
+		
 		playlistTable.getColumnModel().addColumnModelListener(new TableColumnModelListener() {
 			@Override
 			public void columnSelectionChanged(ListSelectionEvent e) {
@@ -544,15 +558,6 @@ public class AbcPlaylistPanel extends JPanel {
 			public void columnAdded(TableColumnModelEvent e) {
 			}
 		});
-		
-		TableColumnModel columnModel = playlistTable.getColumnModel();
-		for (int i = 0; i < columnModel.getColumnCount(); i++) {
-			TableColumn column = columnModel.getColumn(i);
-			int savedWidth = colSizes.getInt("column_" + i, -1);
-			if (savedWidth != -1) {
-				column.setPreferredWidth(savedWidth);	
-			}
-		}
 		
 		playlistContentPopupMenu = new JPopupMenu();
 		JMenuItem playItem = new JMenuItem("Play");
@@ -594,11 +599,6 @@ public class AbcPlaylistPanel extends JPanel {
 			
 		});
 		playlistTable.setComponentPopupMenu(playlistContentPopupMenu);
-		
-		playlistHeaderPopupMenu = new JPopupMenu();
-		playlistTable.getTableHeader().setComponentPopupMenu(playlistHeaderPopupMenu);
-		initTableHeaderColumns();
-		playlistTable.getTableHeader().setReorderingAllowed(false);
 		
         DefaultTableCellRenderer centered = new DefaultTableCellRenderer();  
         centered.setHorizontalAlignment(SwingConstants.CENTER);
