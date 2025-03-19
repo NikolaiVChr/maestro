@@ -71,6 +71,7 @@ Version 4.0.14
     This also means if you change the auto part numbering and then load an old project,
     you will have to change a part number to trigger a sort with the new auto part numbering scheme.
 - Maestro now warns user if loading a project where the parts use tracks that has no notes.
+- Adjusted note ending hold and exponential release for preview and abc player playback, to better match lotro linear power release.
 
 Version 3.6.5
 - Solo/mute buttons will no longer reset when reloading MIDI file.
