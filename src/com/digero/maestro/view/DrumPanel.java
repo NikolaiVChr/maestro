@@ -505,8 +505,10 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 		}
 	}
 
-	public void setAbcPart(AbcPart abcPart) {
-		this.abcPart = abcPart;
+	public void setAbcPart(AbcPart part) {
+		part.removeAbcListener(abcPartListener);
+		this.abcPart = part;
+		abcPart.addAbcListener(abcPartListener);
 		checkBox.setSelected(abcPart.isPercussionNoteEnabled(trackInfo.getTrackNumber(), drumId));
 		updateState();
 	}
