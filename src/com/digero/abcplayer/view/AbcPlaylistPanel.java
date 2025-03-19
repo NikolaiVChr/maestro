@@ -810,6 +810,7 @@ public class AbcPlaylistPanel extends JPanel {
 				topLevelDirs = dirs.stream().map(File::new).collect(Collectors.toList());
 				abcFileTreeModel.setDirectories(topLevelDirs);
 				abcFileTreeModel.refresh(sortType);
+				abcFileTreeModel.filter(searchTextField.getText());
 				reExpandPaths();
 			}
 		});
