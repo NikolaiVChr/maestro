@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.EventObject;
 import java.util.HashSet;
@@ -462,6 +463,7 @@ public class AbcPlaylistPanel extends JPanel {
 		};
 		
 		playlistTable.setFocusable(true);
+		playlistTable.setAutoResizeMode(JTable.AUTO_RESIZE_NEXT_COLUMN);
 		playlistTable.setFillsViewportHeight(true);
 		playlistTable.setDragEnabled(true);
 		playlistTable.setDropMode(DropMode.INSERT_ROWS);
@@ -515,8 +517,108 @@ public class AbcPlaylistPanel extends JPanel {
 			addFilesToPlaylist(f, i);
 		});
 		playlistTable.setTransferHandler(transferHandler);
+		playlistHeaderPopupMenu = new JPopupMenu();
+		JMenuItem resizeToFitMenuItem = playlistHeaderPopupMenu.add(new JMenuItem("Resize columns to fit content"));
+		resizeToFitMenuItem.addActionListener(e -> {
+			TableColumnModel columns = playlistTable.getColumnModel();
+			int columnCount = columns.getColumnCount();
+			if (columnCount == 0) return;
+			
+			int availableWidth = playlistTable.getWidth() - columns.getColumnMargin() * (columnCount - 1);
+			int perColumnWidth = availableWidth / columnCount;
+			
+			int[] optimalWidths = new int[columnCount];
+			int totalOptimalWidth = 0;
+			
+			TableCellRenderer headerRenderer = playlistTable.getTableHeader().getDefaultRenderer();
+			
+			// Get max sizes needed for each column
+			for (int i = 0; i < columnCount; i++) {
+				int maxSize = -1;
+				TableColumn col = columns.getColumn(i);
+				Component headerComp = headerRenderer.getTableCellRendererComponent(playlistTable, col.getHeaderValue(), false, false, 0, i);
+				maxSize = Math.max(maxSize, headerComp.getPreferredSize().width);
+				
+				int rowCount = playlistTable.getRowCount();
+				TableCellRenderer cellRenderer = playlistTable.getCellRenderer(0, i);
+				for (int j = 0; j < rowCount; j++) {
+					Object value = playlistTable.getValueAt(j, i);
+					Component comp = cellRenderer.getTableCellRendererComponent(playlistTable, value, false, false, j, i);
+					maxSize = Math.max(maxSize, comp.getPreferredSize().width);
+				}
+				
+				optimalWidths[i] = maxSize;
+				totalOptimalWidth += maxSize;
+			}
+			
+			if (totalOptimalWidth > availableWidth) {
+				Integer[] columnIndexes = IntStream.range(0, columnCount).boxed().toArray(Integer[]::new);
+
+				Arrays.sort(columnIndexes, (i1, i2) -> Integer.compare(optimalWidths[i2], optimalWidths[i1]));
+				int excessWidth = totalOptimalWidth - availableWidth;
+				int remainingColumns = columnCount;
+				
+				// Shrink largest columns to size of equal-sized columns first
+				for (int i = 0; i < columnCount && excessWidth > 0; i++) {
+					int colIndex = columnIndexes[i];
+					int optimalWidth = optimalWidths[colIndex];
+					int minWidth = Math.min(optimalWidth, perColumnWidth); // min size = (#cols / total w)
+					
+					int reduce = Math.min(excessWidth / remainingColumns, optimalWidth - minWidth);
+					optimalWidths[colIndex] -= reduce;
+					excessWidth =- reduce;
+					remainingColumns--;
+				}
+				
+				// Distribute rest across all columns
+				if (excessWidth > 0) {
+					int reductionPerColumn = excessWidth / columnCount;
+					for (int i = 0; i < columnCount && excessWidth > 0; i++) {
+						int reduce = Math.min(reductionPerColumn, optimalWidths[i] - 10); // min size = 10
+						optimalWidths[i] -= reduce;
+						excessWidth -= reduce;
+					}
+				}
+			}
+			
+			for (int i = 0; i < columnCount; i++) {
+				TableColumn col = columns.getColumn(i);
+				col.setPreferredWidth(optimalWidths[i]);
+			}
+			
+			playlistTable.doLayout();
+		});
+		JMenuItem resizeToDefaultMenuItem = playlistHeaderPopupMenu.add(new JMenuItem("Resize columns to equal size"));
+		resizeToDefaultMenuItem.addActionListener(e -> {
+			TableColumnModel columns = playlistTable.getColumnModel();
+			int columnCount = columns.getColumnCount();
+			if (columnCount == 0) return;
+			
+			int availableWidth = playlistTable.getWidth() - columns.getColumnMargin() * (columnCount - 1);
+			int perColumnWidth = availableWidth / columnCount;
+			
+			for (int i = 0; i < columnCount; i++) {
+				TableColumn column = columns.getColumn(i);
+				column.setPreferredWidth(perColumnWidth);
+			}
+			playlistTable.doLayout();
+		});
+		playlistHeaderPopupMenu.addSeparator();
+		playlistTable.getTableHeader().setComponentPopupMenu(playlistHeaderPopupMenu);
+		playlistTable.getTableHeader().setReorderingAllowed(false);
+		initTableHeaderColumns();
 		
 		Preferences colSizes = playlistPrefs.node("colSizes");
+		
+		TableColumnModel columnModel = playlistTable.getColumnModel();
+		for (int i = 0; i < columnModel.getColumnCount(); i++) {
+			TableColumn column = columnModel.getColumn(i);
+			int savedWidth = colSizes.getInt("column_" + i, -1);
+			if (savedWidth != -1) {
+				column.setPreferredWidth(savedWidth);	
+			}
+		}
+		
 		playlistTable.getColumnModel().addColumnModelListener(new TableColumnModelListener() {
 			@Override
 			public void columnSelectionChanged(ListSelectionEvent e) {
@@ -544,15 +646,6 @@ public class AbcPlaylistPanel extends JPanel {
 			public void columnAdded(TableColumnModelEvent e) {
 			}
 		});
-		
-		TableColumnModel columnModel = playlistTable.getColumnModel();
-		for (int i = 0; i < columnModel.getColumnCount(); i++) {
-			TableColumn column = columnModel.getColumn(i);
-			int savedWidth = colSizes.getInt("column_" + i, -1);
-			if (savedWidth != -1) {
-				column.setPreferredWidth(savedWidth);	
-			}
-		}
 		
 		playlistContentPopupMenu = new JPopupMenu();
 		JMenuItem playItem = new JMenuItem("Play");
@@ -594,11 +687,6 @@ public class AbcPlaylistPanel extends JPanel {
 			
 		});
 		playlistTable.setComponentPopupMenu(playlistContentPopupMenu);
-		
-		playlistHeaderPopupMenu = new JPopupMenu();
-		playlistTable.getTableHeader().setComponentPopupMenu(playlistHeaderPopupMenu);
-		initTableHeaderColumns();
-		playlistTable.getTableHeader().setReorderingAllowed(false);
 		
         DefaultTableCellRenderer centered = new DefaultTableCellRenderer();  
         centered.setHorizontalAlignment(SwingConstants.CENTER);
@@ -810,6 +898,7 @@ public class AbcPlaylistPanel extends JPanel {
 				topLevelDirs = dirs.stream().map(File::new).collect(Collectors.toList());
 				abcFileTreeModel.setDirectories(topLevelDirs);
 				abcFileTreeModel.refresh(sortType);
+				abcFileTreeModel.filter(searchTextField.getText());
 				reExpandPaths();
 			}
 		});
