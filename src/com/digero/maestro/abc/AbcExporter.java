@@ -7,12 +7,16 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.NavigableMap;
+import java.util.NavigableSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import javax.sound.midi.InvalidMidiDataException;
@@ -1625,6 +1629,26 @@ public class AbcExporter {
 		removeDuplicateNotesVerify(events, part.getInstrument());
 		*/
 		
+		List<Chord> chords = processOrganic(part, events);
+		
+		if (preview) {
+			try {
+				PolyphonyHistogram.count(part, chords, organic, qtm);
+			} catch (IOException e) {
+				throw new AbcConversionException("Failed to read instrument sample durations.", e);
+			}
+		}
+		
+		//Collections.sort(chords);
+		
+		return chords;
+	}	
+
+	/**
+	 * process the notes using original organic principle
+	 */
+	private List<Chord> processOrganic(AbcPart part, List<AbcNoteEvent> events) {
+		
 		breakLongNotesOrganic(part, events);
 
 		List<Chord> chords = new ArrayList<>(events.size() / 2);
@@ -2212,18 +2236,507 @@ public class AbcExporter {
 			}
 		}
 		chords.removeAll(trash);
+		return chords;
+	}
+	
+	/**
+	 * process the notes using new and faster organic principle
+	 * 
+	 * This is disabled though as I think it sounds less good
+	 */
+	private List<Chord> processOrganic2(AbcPart part, List<AbcNoteEvent> events) {
+		// TODO: Last note if non-sustained will make song too long, both notes a reported time. Example: ABBA - Chiquita	
+	
+		final int debug = 0;// 0=no debug 1=minimal debug 2=more debug 3=most debug
 		
-		if (preview) {
-			try {
-				PolyphonyHistogram.count(part, chords, organic, qtm);
-			} catch (IOException e) {
-				throw new AbcConversionException("Failed to read instrument sample durations.", e);
-			}
-		}
+		final long minimumMicros = AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM());
 		
-		//Collections.sort(chords);
+				
+		NavigableSet<Long> grid = createGrid(events, minimumMicros);
+		
+		events = snapNotesToGrid(events, grid, minimumMicros);
+		
+		List<Chord> chords = chordifyOrganic2(events, grid, part);
 		
 		return chords;
+	}
+	
+	NavigableSet<Long> createGrid(List<AbcNoteEvent> events, long minimumMicros) {
+		// create a non-uniform organic grid
+		
+		final int startWeightLongNote = 3;
+		final int startWeightShortNote = 9;
+		final long thresholdShortNoteMicros = minimumMicros*2;
+		final int endWeight = 1;
+		
+		class GridLine {
+		    long micros;
+		    String type;   // "START", "END", "GENERAL"
+		    int weight;
+		    
+		    public GridLine(long time, String type, int weight) {
+		        this.micros = time;
+		        this.type = type;
+		        this.weight = weight;
+		    }
+		}
+		
+		NavigableMap<Long, List<GridLine>> microsWeights = new TreeMap<>();
+		
+		// create a weight map from all start and end micros
+		for (AbcNoteEvent note : events) {
+			note.origStartABCMicros = qtm.tickToMicrosABCOrganic(note.getStartTick());
+			note.origEndABCMicros = qtm.tickToMicrosABCOrganic(note.getEndTick());
+			note.origEndABCMicros = Math.max(note.origEndABCMicros, note.origStartABCMicros + minimumMicros);
+			note.origDurationMicros = note.origEndABCMicros - note.origStartABCMicros;
+			int startWeight = note.origDurationMicros <= thresholdShortNoteMicros?startWeightShortNote:startWeightLongNote;
+			GridLine start = new GridLine(note.origStartABCMicros, "START", startWeight);
+			GridLine end = new GridLine(note.origEndABCMicros, "END", endWeight);
+			microsWeights.computeIfAbsent(note.origStartABCMicros, k -> new ArrayList<>()).add(start);
+			microsWeights.computeIfAbsent(note.origEndABCMicros, k -> new ArrayList<>()).add(end);
+		}
+		
+		// Now do some adjustments to note start and ends
+		List[] typeList = new List[] {};
+		Long[] typeLong = {};
+		@SuppressWarnings("unchecked")
+		List<GridLine>[] vals = (List<GridLine>[]) microsWeights.values().toArray(typeList);
+		Long[] keys = microsWeights.keySet().toArray(typeLong);
+		GridLine prevStart = null;
+		GridLine prevEnd = null;
+		for (int i = 0; i < vals.length-2; i++) {
+			List<GridLine> curr = vals[i];
+			List<GridLine> next = vals[i+1];
+			List<GridLine> nextnext = vals[i+2];
+			GridLine currStart = null;
+			GridLine currEnd = null;
+			GridLine nextStart = null;
+			GridLine nextEnd = null;
+			for (GridLine test : curr) {
+				if (test.type.equals("START")) {
+					currStart = test;
+				}
+				if (test.type.equals("END")) {
+					currEnd = test;
+				}
+			}
+			for (GridLine test : next) {
+				if (test.type.equals("START")) {
+					nextStart = test;
+				}
+				if (test.type.equals("END")) {
+					nextEnd = test;
+				}
+			}
+			if (nextStart == null) {
+				for (GridLine test : nextnext) {
+					if (test.type.equals("START")) {
+						nextStart = test;
+					}
+				}
+			}
+			if (nextStart != null && currStart != null && nextEnd != null
+					&& currStart.micros + minimumMicros > nextStart.micros
+					&& ((prevStart != null && prevStart.micros + minimumMicros*2 < currStart.micros) || (prevEnd != null && prevEnd.micros + minimumMicros*2 < currStart.micros))
+					&& nextEnd.micros <= nextStart.micros) {
+				// there is not room for curr, it does not overlap with next, and prev gridline is not closeby
+				// we move it earlier, so there is room
+				List<GridLine> list = microsWeights.get(keys[i]);
+				microsWeights.remove(keys[i]);
+				microsWeights.put(nextStart.micros - minimumMicros, list);
+			}
+			if (nextStart != null && currEnd != null && currStart == null && prevStart != null
+					&& prevStart.micros + minimumMicros > currEnd.micros
+					&& nextStart.micros >= currEnd.micros + minimumMicros * 2
+					&& (nextEnd == null || nextEnd.micros >= currEnd.micros + minimumMicros * 2)) {
+				// we move it later, so there is room
+				List<GridLine> list = microsWeights.get(keys[i]);
+				microsWeights.remove(keys[i]);
+				microsWeights.put(prevStart.micros + minimumMicros, list);
+			}
+			
+			prevStart = currStart;
+			prevEnd = currEnd;
+		}
+		
+		List<GridLine> gridLines = new ArrayList<>();
+	    for (Map.Entry<Long, List<GridLine>> entry : microsWeights.entrySet()) {
+	        gridLines.addAll(entry.getValue());
+	    }
+		
+		// collect the weights into clusters
+	    List<List<GridLine>> clusters = new ArrayList<>();
+	    List<GridLine> currentCluster = new ArrayList<>();
+	    if (!gridLines.isEmpty()) {
+	        currentCluster.add(gridLines.get(0));
+	    }
+	    for (int i = 1; i < gridLines.size(); i++) {
+	        GridLine curr = gridLines.get(i);
+	        GridLine last = currentCluster.get(currentCluster.size() - 1);
+	        if (curr.type.equals(last.type) && (curr.micros - last.micros < minimumMicros)) {
+	            currentCluster.add(curr);
+	        } else {
+	            clusters.add(new ArrayList<>(currentCluster));
+	            currentCluster.clear();
+	            currentCluster.add(curr);
+	        }
+	    }
+	    if (!currentCluster.isEmpty()) {
+	        clusters.add(currentCluster);
+	    }
+	    
+	    Comparator<GridLine> gridLineComparator = new Comparator<GridLine>() {
+	        @Override
+	        public int compare(GridLine a, GridLine b) {
+	            int cmp = Long.compare(a.micros, b.micros);
+	            if (cmp == 0) {
+	                return a.type.compareTo(b.type);
+	            }
+	            return cmp;
+	        }
+	    };
+		
+	    NavigableSet<GridLine> grid = new TreeSet<GridLine>(gridLineComparator);
+	    
+	    
+	    // inside each cluster, calc a weighted average
+	    for (List<GridLine> cluster : clusters) {
+	        long weightedSum = 0;
+	        int totalWeight = 0;
+	        String type = cluster.get(0).type;
+	        for (GridLine line : cluster) {
+	            weightedSum += line.micros * line.weight;
+	            totalWeight += line.weight;
+	        }
+	        long micros = weightedSum / totalWeight;
+	        grid.add(new GridLine(micros, type, totalWeight));
+	    }
+	    
+	    if (grid.isEmpty()) return new TreeSet<Long>();
+	    
+	    
+	    Iterator<GridLine> gridIter = grid.iterator();
+	    GridLine prev = gridIter.next();
+	    
+	    NavigableSet<GridLine> refinedGrid = new TreeSet<>(gridLineComparator);
+	    refinedGrid.add(prev);
+	    while (gridIter.hasNext()) {
+	        GridLine curr = gridIter.next();
+	        
+	        // The grid segments might be larger than 5.5 seconds
+		    // Cut it up
+	        while (curr.micros - prev.micros > TimingInfo.LONGEST_NOTE_MICROS) {
+	            long candidateTime = prev.micros + TimingInfo.LONGEST_NOTE_MICROS;
+	            GridLine candidate = new GridLine(candidateTime, "GENERAL", 0);
+	            if (curr.micros - candidate.micros < minimumMicros) {
+	                candidate.micros = curr.micros;
+	                refinedGrid.add(candidate);
+	                prev = candidate;
+	                break;
+	            } else {
+	                refinedGrid.add(candidate);
+	                prev = candidate;
+	            }
+	        }
+	        
+	        // Merge two gridlines if they too close to each other
+	        if (curr.micros - prev.micros < minimumMicros) {
+	            //long mergedMicros = (prev.micros + curr.micros) / 2; // simpler average merging
+	            long mergedMicros = (prev.micros * prev.weight + curr.micros * curr.weight) / (prev.weight + curr.weight);
+	            refinedGrid.pollLast();// remove last added gridline
+	            GridLine merged = new GridLine(mergedMicros, curr.type, prev.weight + curr.weight);
+	            refinedGrid.add(merged);
+	            prev = merged;
+	        } else {
+	            refinedGrid.add(curr);
+	            prev = curr;
+	        }
+	    }
+	    
+	    NavigableSet<Long> gridTimes = new TreeSet<Long>();
+	    for (GridLine line : refinedGrid) {
+	        gridTimes.add(line.micros);
+	    }
+	    
+	    return gridTimes;
+	}
+	
+	private long getMaxStartShiftMicros(long noteDuration, long minimumMicros) {
+		long minimums = noteDuration/minimumMicros;
+		if (minimums < 1) return minimumMicros*2L/3L;
+		if (minimums < 2) return minimumMicros*3L/4L;
+		return minimumMicros;
+	}
+	
+	public List<AbcNoteEvent> snapNotesToGrid(List<AbcNoteEvent> notes, NavigableSet<Long> grid, long minimumMicros) {
+				
+		List<AbcNoteEvent> snappedNotes = new ArrayList<>(notes.size());
+		
+	    for (AbcNoteEvent note : notes) {
+	    	
+	        Long floor = grid.floor(note.origStartABCMicros);
+	        Long ceiling = grid.ceiling(note.origStartABCMicros);
+	        
+	        long candidateStart;
+	        if (floor == null && ceiling == null) {
+	            candidateStart = note.origStartABCMicros; // fallback: no grid available
+	        } else if (floor == null) {
+	            candidateStart = ceiling;
+	        } else if (ceiling == null) {
+	            candidateStart = floor;
+	        } else {
+	            if (Math.abs(note.origStartABCMicros - floor) <= Math.abs(note.origStartABCMicros - ceiling)) {
+	                candidateStart = floor;
+	            } else {
+	                candidateStart = ceiling;
+	            }
+	        }
+	        // Check that the shift does not exceed max relative to the original start.
+	        if (Math.abs(candidateStart - note.origStartABCMicros) > getMaxStartShiftMicros(note.origDurationMicros, minimumMicros)) {
+	            continue;
+	        }
+	        note.setStartTick(qtm.microsToTickABCOrganic(candidateStart));
+	        note.origStartABCMicros = candidateStart;
+	        
+	        // Snap note end
+	        // We want a grid line that is after start
+	        floor = grid.floor(note.origEndABCMicros);
+	        ceiling = grid.ceiling(note.origEndABCMicros);
+	        Long candidateEnd;
+	        if (floor == null || floor == candidateStart) {
+	        	candidateEnd = ceiling;
+	        } else if (ceiling == null) {
+	        	candidateEnd = floor;
+	        } else {
+	        	if (Math.abs(note.origEndABCMicros - floor) <= Math.abs(note.origEndABCMicros - ceiling)) {
+	        		candidateEnd = floor;
+	            } else {
+	            	candidateEnd = ceiling;
+	            }
+	        }
+	        
+	        if (candidateEnd == null) {
+	        	// ceiling == null and ( floor == null or taken by start )
+	        	continue;
+	        }
+
+	        note.setEndTick(qtm.microsToTickABCOrganic(candidateEnd));
+	        note.origEndABCMicros = candidateEnd;
+	        
+	        if (note.origEndABCMicros - note.origStartABCMicros <= 0L || note.getEndTick() - note.getStartTick() <= 0L) {
+	        	continue;
+	        }
+	        
+	        snappedNotes.add(note);
+	    }
+	    return snappedNotes;
+	}
+	
+	public List<Chord> chordifyOrganic2(List<AbcNoteEvent> events, NavigableSet<Long> grid, AbcPart part) {
+  
+	    List<Chord> chords = new ArrayList<>(events.size() / 2);
+	    
+	    if (events.size() == 0) return chords;
+	    
+	    TreeMap<Long,Long> gridTicks = new TreeMap<>();
+		for (long micros : grid) {
+			gridTicks.put(micros, qtm.microsToTickABCOrganic(micros));
+		}
+		
+		List<AbcNoteEvent> eventSegments = new ArrayList<>(events.size());
+		for (AbcNoteEvent ne : events) {
+	    	List<AbcNoteEvent> segments = splitToGrid(ne, gridTicks, part);
+	    	eventSegments.addAll(segments);
+		}
+		
+		Collections.sort(eventSegments);
+		
+		// Add rests between the notes
+		List<AbcNoteEvent> rests = new ArrayList<>(events.size());
+		long lastEndMicros = 0L;
+		long lastEndTick = 0L;
+		for (int i = 0; i < eventSegments.size(); i++) {
+	    	AbcNoteEvent noteSegment = eventSegments.get(i);
+	    	if (lastEndMicros > 0L) {
+	    		if (lastEndMicros < noteSegment.origStartABCMicros) {
+	    			AbcNoteEvent rest = new AbcNoteEvent(Note.REST,64,lastEndTick,noteSegment.getStartTick(),qtm,null);
+	    			rest.origStartABCMicros = lastEndMicros;
+	    			rest.origEndABCMicros = noteSegment.origStartABCMicros;
+	    			
+	    			List<AbcNoteEvent> segments = splitToGrid(rest, gridTicks, part);
+	    	    	rests.addAll(segments);
+	    	    	lastEndMicros = rest.origEndABCMicros;
+	    	    	lastEndTick = noteSegment.getStartTick();
+	    	    	/*
+	    	    	for (AbcNoteEvent evt : eventSegments) {
+	    	    		assert rest.origStartABCMicros >= evt.origEndABCMicros || rest.origEndABCMicros <= evt.origStartABCMicros;
+	    	    	}
+	    	    	*/
+	    		}
+	    	}
+	    	if (noteSegment.origEndABCMicros > lastEndMicros) {
+	    		lastEndMicros = noteSegment.origEndABCMicros;
+	    		lastEndTick = noteSegment.getEndTick();
+	    	}
+		}
+		eventSegments.addAll(rests);
+		
+		Collections.sort(eventSegments);
+		
+	    Chord curChord = null;
+	    for (int i = 0; i < eventSegments.size(); i++) {
+	    	AbcNoteEvent noteSegment = eventSegments.get(i);
+	    	if (curChord == null) {
+	    		curChord = new Chord(noteSegment);
+	    		chords.add(curChord);
+	    	} else if (curChord.getStartTick() != noteSegment.getStartTick()) {
+	    		assert curChord.getStartTick() < noteSegment.getStartTick();
+	    		
+	    		// make sure chord does not contain both rest and notes
+	    		// Also make sure there is not duplicates in it
+				List<AbcNoteEvent> tmp = new ArrayList<>(curChord.getNotes());
+				boolean both = curChord.hasRestAndNotes();
+				for (AbcNoteEvent note : tmp) {
+					if (both && note.note == Note.REST) {
+						curChord.remove(note);
+					}
+					for (AbcNoteEvent note2 : tmp) {
+						if (note != note2 && note.note == note2.note) {
+							if (!curChord.getNotes().contains(note) || !curChord.getNotes().contains(note2)) {
+								// one of them has already been removed
+								continue;
+							}
+							List<AbcNoteEvent> firstList = new ArrayList<>();
+							List<AbcNoteEvent> secondList = new ArrayList<>();
+							firstList.add(note);
+							secondList.add(note2);
+							if (note.tiesTo != null && note2.tiesTo != null) {
+								long first = note.getFullLengthTicks();
+								long second = note2.getFullLengthTicks();
+								if (first >= second) {
+									curChord.remove(note2);
+									removeNotes(eventSegments, secondList, part);
+								} else {
+									curChord.remove(note);
+									removeNotes(eventSegments, firstList, part);
+								}
+							} else if (note.tiesTo != null) {
+								curChord.remove(note2);
+								removeNotes(eventSegments, secondList, part);
+							} else if (note2.tiesTo != null) {
+								curChord.remove(note);
+								removeNotes(eventSegments, firstList, part);
+							} else {
+								curChord.remove(note2);
+								removeNotes(eventSegments, secondList, part);
+							}
+						}
+					}
+				}
+				
+				List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
+						part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part);
+				removeNotes(eventSegments, deadnotes, part);
+				if (!deadnotes.isEmpty()) {
+					// One of the tiedTo notes that was pruned might be noteSegment note,
+					// so we go one step back and re-process
+					i--;
+					continue;
+				}
+				
+	    		curChord = new Chord(noteSegment);
+	    		chords.add(curChord);
+	    	} else {
+	    		curChord.add(noteSegment);
+	    	}
+	    }
+	    if (curChord != null) {
+	    	List<AbcNoteEvent> tmp = new ArrayList<>(curChord.getNotes());
+			boolean both = curChord.hasRestAndNotes();
+			for (AbcNoteEvent note : tmp) {
+				if (both && note.note == Note.REST) {
+					curChord.remove(note);
+				}
+				for (AbcNoteEvent note2 : tmp) {
+					if (note != note2 && note.note == note2.note) {
+						if (!curChord.getNotes().contains(note) || !curChord.getNotes().contains(note2)) {
+							// one of them has already been removed
+							continue;
+						}
+						List<AbcNoteEvent> firstList = new ArrayList<>();
+						List<AbcNoteEvent> secondList = new ArrayList<>();
+						firstList.add(note);
+						secondList.add(note2);
+						if (note.tiesTo != null && note2.tiesTo != null) {
+							long first = note.getFullLengthTicks();
+							long second = note2.getFullLengthTicks();
+							if (first >= second) {
+								curChord.remove(note2);
+								removeNotes(eventSegments, secondList, part);
+							} else {
+								curChord.remove(note);
+								removeNotes(eventSegments, firstList, part);
+							}
+						} else if (note.tiesTo != null) {
+							curChord.remove(note2);
+							removeNotes(eventSegments, secondList, part);
+						} else if (note2.tiesTo != null) {
+							curChord.remove(note);
+							removeNotes(eventSegments, firstList, part);
+						} else {
+							curChord.remove(note2);
+							removeNotes(eventSegments, secondList, part);
+						}
+					}
+				}
+			}
+	    	List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
+					part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part);
+			removeNotes(eventSegments, deadnotes, part);
+		}
+	    
+	    return chords;
+	}
+
+	private List<AbcNoteEvent> splitToGrid(AbcNoteEvent ne, TreeMap<Long,Long> gridTicks, AbcPart part) {
+				
+		List<AbcNoteEvent> segments = new ArrayList<>();
+		segments.add(ne);
+		
+		Entry<Long, Long> ceil = gridTicks.ceilingEntry(ne.origStartABCMicros+1L);
+		Long restartMicros = ne.origStartABCMicros;
+		Long ceilMicros = ceil == null?null:ceil.getKey();
+		Long ceilTick   = ceil == null?null:ceil.getValue();
+		
+		long endMicros = ne.origEndABCMicros;
+		boolean drone = part.getInstrument() == LotroInstrument.BASIC_BAGPIPE
+				&& ne.note.id <= AbcConstants.BAGPIPE_LAST_DRONE_NOTE_ID;
+		boolean rest = ne.note == Note.REST;
+		
+		while (ceil != null && ceilMicros < endMicros) {
+			AbcNoteEvent ne2;
+			if (!rest && (drone || restartMicros + TimingInfo.LONGEST_NOTE_MICROS -1 < ceilMicros)) {
+				ne2 = ne.splitWithTieAtTick(ceilTick);
+				ne2.origStartABCMicros = ceilMicros;
+				ne2.origEndABCMicros = ne.origEndABCMicros;
+				ne.origEndABCMicros = ceilMicros;
+				segments.add(ne2);
+			} else {
+				ne2 = new AbcNoteEvent(ne.note, ne.velocity, ceilTick, ne.getEndTick(), qtm, ne.origNote);
+				ne2.origStartABCMicros = ceilMicros;
+				ne2.origEndABCMicros = ne.origEndABCMicros;
+				ne.origEndABCMicros = ceilMicros;
+				ne.setEndTick(ceilTick);
+				segments.add(ne2);
+				restartMicros = ceilMicros;
+			}
+			ne = ne2;
+						
+			ceil = gridTicks.ceilingEntry(ceilMicros+1L);
+			ceilMicros = ceil == null?null:ceil.getKey();
+			ceilTick   = ceil == null?null:ceil.getValue();
+		}
+		return segments;
 	}
 	
 	private boolean deprecated1(AbcPart part, List<AbcNoteEvent> events, long minimumMicros, int debug,

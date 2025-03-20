@@ -9,6 +9,11 @@ public class AbcNoteEvent extends NoteEvent {
 	public AbcNoteEvent tiesFrom = null;
 	public AbcNoteEvent tiesTo = null;
 	
+	// These 3 is used by organic v2:
+	public long origStartABCMicros;
+	public long origEndABCMicros;
+	public long origDurationMicros;
+	
 	// These fields are used by the pruning:
 	// Note that if several midi notes contributed to one abc note,
 	// then only one of the midi notes will be in origNote, as we do atm. not need to know about all of them.
@@ -18,6 +23,7 @@ public class AbcNoteEvent extends NoteEvent {
 	public long continues = 0;// Tick length that this continues as in seperate split note(s). Beyond ties.
 	private Integer origBend = null;// The bend that was in effect when this noteEvent was 'born'. Its used only by pruning algorithm.
 	//public float fromHowManyTracks = 1.0f;// Let pruning system know this note originate from multiple tracks, so it can be prioritized.
+	
 
 	public AbcNoteEvent(Note note, int velocity, long startTick, long endTick, ITempoCache tempoCache, MidiNoteEvent origNote) {
 		super(note, velocity, startTick, endTick, tempoCache);
