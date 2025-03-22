@@ -694,13 +694,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			});
 		}
 		
-		organicCheckBox = new JCheckBox("Organic output");
-		/*
-		organicCheckBox.setToolTipText("<html>Allow Maestro to detect which notes<br>"
-				+ "that differs from the above triplet/swing setting.<br><br>"
-				+ "It is done per part, so some notes in a parts might export as swing/tuplets<br>"
-				+ "while other parts at same time export even notes.</html>");
-		*/
+		organicCheckBox = new JCheckBox("Organic output (BETA)");
+		
+		organicCheckBox.setToolTipText("<html>Attempt to export more fluid timings.<br>"
+				+ "This is a new beta feature, use on own risk.</html>");
+		
 		organicCheckBox.addActionListener(e -> {
 			if (abcSong != null)
 				abcSong.setOrganic(organicCheckBox.isSelected());
