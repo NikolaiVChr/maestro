@@ -1984,12 +1984,16 @@ public class AbcExporter {
 								if (debug > 1) System.out.println(part.getTitle()+" Delayed sequential chord by "+ ((minEndMicro-neMicroStart)/1000)+" ms 1");
 								continue MAIN;
 							} else if (ne2 != null && ne1RoomMicros < minimumMicros
-									&& ne1Micros < minimumMicros * 2) {
-								// Both curr and ne does not have enough room.
+									&& neMicros < minimumMicros) {
+								// Both curr and next chord does not have enough room.
 								// ne is fairly short and will have to go
 								// TODO: I have doubt about the ties. ne might even be tied to curr chord.
 								//       And if its tiesTo is also there, removing it should instead
 								//       tie curr chord to the one after ne, and expand curr chord to ne2.
+								//       I also doubt if its smart at all. Maybe next chord has 4 notes
+								//       and current has 1 etc. etc.
+								//       Deleting a short note might not even allow curChord to exist anyway
+								//       As the ne after ne might be longer and should not be deleted.
 								events.remove(ne);
 								
 								// TODO: these ties should perhaps prevent it from being removed, TBD
@@ -2012,7 +2016,7 @@ public class AbcExporter {
 								// we don't use dontMove2 here, as we might want to get back in here with other ne.
 								i--;
 								
-								if (debug > 1) System.out.println(part.getTitle()+" Deleted second of two trills/gliss notes, dura="+ ne1Micros+" ms");
+								if (debug > 1) System.out.println(part.getTitle()+" Deleted second of two trills/gliss notes, dura="+ (ne1Micros/1000L)+" ms");
 								continue MAIN;
 							} else if (curChord.arp > 1) {
 								boolean doable = true;
