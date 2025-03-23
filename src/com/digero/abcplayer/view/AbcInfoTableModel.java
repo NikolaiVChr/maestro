@@ -56,7 +56,7 @@ public class AbcInfoTableModel extends AbstractTableModel {
 	}
 	
 	/// COLUMNS
-	public static final int COL_COUNT = 12;
+	public static final int COL_COUNT = 13;
 	
 	@Override
 	public int getColumnCount() {
@@ -68,58 +68,69 @@ public class AbcInfoTableModel extends AbstractTableModel {
 		return data.size();
 	}
 	
-	@Override
-	public String getColumnName(int colIndex) {
+	public static String getNameOfColumn(int colIndex) {
 		switch (colIndex) {
 		case 0:
 			return "File Name";
 		case 1:
-			return "Song Name";
+			return "Full File Path";
 		case 2:
-			return "Part Count";
+			return "Song Name";
 		case 3:
-			return "Setups Min";
+			return "Part Count";
 		case 4:
-			return "Setups Max";
+			return "Setups Min";
 		case 5:
-			return "Duration";
+			return "Setups Max";
 		case 6:
-			return "Artist";
+			return "Duration";
 		case 7:
-			return "Transcriber";
+			return "Artist";
 		case 8:
-			return "Mood";
+			return "Transcriber";
 		case 9:
-			return "Genre";
+			return "Mood";
 		case 10:
-			return "Export Date";
+			return "Genre";
 		case 11:
+			return "Export Date";
+		case 12:
 			return "Exported By";
 		}
 		return "ERR";
 	}
 	
 	@Override
-	public Object getValueAt(int rowIndex, int colIndex) {
-		AbcInfo inf = data.get(rowIndex);
+	public String getColumnName(int colIndex) {
+		return getNameOfColumn(colIndex);
+	}
+	
+	public static Object getColumnValueForAbcInfo(AbcInfo inf, int colIndex) {
 		switch(colIndex) {
 		case 0:  return inf.getSourceFiles().get(0).getName();
-		case 1:  return inf.getTitle();
-		case 2:  return inf.getPartCount();
-		case 3:  return inf.getPartSetupsMin();
-		case 4:  return inf.getPartSetupsMax();
-		case 5:  return inf.getSongDurationStr();
-		case 6:  return inf.getComposer();
-		case 7:  return inf.getTranscriber();
-		case 8:  return inf.getMood();
-		case 9:  return inf.getGenre();
-		case 10: return inf.getExportTimestamp();
-		case 11: return inf.getAbcCreator();
+		case 1:  return inf.getSourceFiles().get(0).getAbsolutePath();
+		case 2:  return inf.getTitle();
+		case 3:  return inf.getPartCount();
+		case 4:  return inf.getPartSetupsMin();
+		case 5:  return inf.getPartSetupsMax();
+		case 6:  return inf.getSongDurationStr();
+		case 7:  return inf.getComposer();
+		case 8:  return inf.getTranscriber();
+		case 9:  return inf.getMood();
+		case 10: return inf.getGenre();
+		case 11: return inf.getExportTimestamp();
+		case 12: return inf.getAbcCreator();
 		}
 		return null;
 	}
 	
-	public final String[] DEFAULT_ENABLED_COLS = {"Song Name", "Part Count", "Duration", "Artist", "Transcriber" };
+	@Override
+	public Object getValueAt(int rowIndex, int colIndex) {
+		AbcInfo inf = data.get(rowIndex);
+		return getColumnValueForAbcInfo(inf, colIndex);
+	}
+	
+	public static final String[] DEFAULT_ENABLED_COLS = {"Song Name", "Part Count", "Duration", "Artist", "Transcriber" };
 	
 	public boolean getColumnDefaultEnabled(String colName) {
 		if (Arrays.stream(DEFAULT_ENABLED_COLS).anyMatch(colName::equals)) {
@@ -132,6 +143,14 @@ public class AbcInfoTableModel extends AbstractTableModel {
 		List<String> cols = new ArrayList<String>(COL_COUNT);
 		for (int i = 0; i < COL_COUNT; i++) {
 			cols.add(getColumnName(i));
+		}
+		return cols;
+	}
+	
+	public static List<String> getColNames() {
+		List<String> cols = new ArrayList<String>(COL_COUNT);
+		for (int i = 0; i < COL_COUNT; i++) {
+			cols.add(getNameOfColumn(i));
 		}
 		return cols;
 	}

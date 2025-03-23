@@ -1,6 +1,7 @@
 package com.digero.abcplayer.view;
 
 import java.awt.BorderLayout;
+import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -8,6 +9,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.prefs.BackingStoreException;
@@ -15,6 +18,7 @@ import java.util.prefs.Preferences;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
@@ -25,6 +29,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
+import javax.swing.JRadioButton;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.SwingWorker;
@@ -47,6 +52,9 @@ public class PlaylistSetExportWizard extends JDialog {
 	public static final String[] spaceReplaceLabels = { "Don't Replace", "Remove Spaces", "_ (Underscore)",
 			"- (Dash)" };
 	
+	public static final String[] partColumnsSettings = { "part", "instrument", "none" };
+	public static final String[] partColumnsLabels = { "Use Part Names", "Use Instrument Names", "Don't Include" };
+	
 	public static class SetExportSettings {
 		// Main settings
 		private String outputDirectory;
@@ -60,10 +68,9 @@ public class PlaylistSetExportWizard extends JDialog {
 		private boolean partCountZeroPadded;
 		
 		// CSV part sheet
-		private boolean usePartNames;
-		private boolean columnDuration;
-		private boolean columnComposer;
-		private boolean columnTranscriber;
+		private String partColumns; // part, instrument, none
+		private boolean exportVisibleColumns;
+		private HashMap<String, Boolean> csvColumnsEnabled;
 
 		private final Preferences prefs;
 
@@ -81,10 +88,23 @@ public class PlaylistSetExportWizard extends JDialog {
 			partCountZeroPadded = prefs.getBoolean("partCountZeroPadded", true);
 			
 			// CSV part sheet settings
-			usePartNames = prefs.getBoolean("usePartNames", false);
-			columnDuration = prefs.getBoolean("columnDuration", true);
-			columnComposer = prefs.getBoolean("columnComposer", false);
-			columnTranscriber = prefs.getBoolean("columnTranscriber", false);
+			partColumns = prefs.get("partColumns", partColumnsSettings[0]);
+			exportVisibleColumns = prefs.getBoolean("exportVisibleColumns", true);
+			// CSV part sheet custom columns
+			csvColumnsEnabled = new HashMap<String, Boolean>();
+			List<String> columns = AbcInfoTableModel.getColNames();
+			for (String col : columns) {
+				boolean def = false;
+				if (Arrays.stream(AbcInfoTableModel.DEFAULT_ENABLED_COLS).anyMatch(col::equals)) {
+					def = true;
+				}
+				String prefName = columnNameToCsvPrefKey(col);
+				csvColumnsEnabled.put(prefName, prefs.getBoolean(prefName, def));
+			}
+		}
+		
+		public static String columnNameToCsvPrefKey(String columnName) {
+			return "csvCol" + columnName.replaceAll("\\s+", "");
 		}
 
 		public SetExportSettings(SetExportSettings source) {
@@ -102,10 +122,11 @@ public class PlaylistSetExportWizard extends JDialog {
 			prefs.put("whitespaceReplaceText", whitespaceReplaceText);
 			prefs.putBoolean("partCountZeroPadded", partCountZeroPadded);
 			
-			prefs.putBoolean("usePartNames", usePartNames);
-			prefs.putBoolean("columnDuration", columnDuration);
-			prefs.putBoolean("columnComposer", columnComposer);
-			prefs.putBoolean("columnTranscriber", columnTranscriber);
+			prefs.put("partColumns", partColumns);
+			prefs.putBoolean("exportVisibleColumns", exportVisibleColumns);
+			for (String key : csvColumnsEnabled.keySet()) {
+				prefs.putBoolean(key, csvColumnsEnabled.get(key));
+			}
 		}
 
 		private void copyFrom(SetExportSettings source) {
@@ -116,10 +137,9 @@ public class PlaylistSetExportWizard extends JDialog {
 			this.filenamePattern = source.filenamePattern;
 			this.whitespaceReplaceText = source.whitespaceReplaceText;
 			this.partCountZeroPadded = source.partCountZeroPadded;
-			this.usePartNames = source.usePartNames;
-			this.columnDuration = source.columnDuration;
-			this.columnComposer = source.columnComposer;
-			this.columnTranscriber = source.columnTranscriber;
+			this.partColumns = source.partColumns;
+			this.exportVisibleColumns = source.exportVisibleColumns;
+			this.csvColumnsEnabled = source.csvColumnsEnabled;
 		}
 		
 		public String getOutputDirectory() {
@@ -178,36 +198,33 @@ public class PlaylistSetExportWizard extends JDialog {
 			partCountZeroPadded = zeroPadded;
 		}
 		
-		public boolean isUsePartNames() {
-			return usePartNames;
+		public String getPartColumns() {
+			return partColumns;
 		}
 
-		public void setUsePartNames(boolean usePartNames) {
-			this.usePartNames = usePartNames;
+		public void setPartColumns(String partColumns) {
+			this.partColumns = partColumns;
 		}
 		
-		public boolean isColumnDuration() {
-			return columnDuration;
+		public boolean getExportVisibleColumns() {
+			return exportVisibleColumns;
 		}
-
-		public void setColumnDuration(boolean columnDuration) {
-			this.columnDuration = columnDuration;
+		
+		public void setExportVisibleColumns(boolean exportVisibleColumns) {
+			this.exportVisibleColumns = exportVisibleColumns;
 		}
-
-		public boolean isColumnComposer() {
-			return columnComposer;
+		
+		public boolean getCsvColumnEnabled(String columnName) {
+			String columnPrefName = columnNameToCsvPrefKey(columnName);
+			if (csvColumnsEnabled.containsKey(columnPrefName)) {
+				return csvColumnsEnabled.get(columnPrefName);
+			}
+			return false;
 		}
-
-		public void setColumnComposer(boolean columnComposer) {
-			this.columnComposer = columnComposer;
-		}
-
-		public boolean isColumnTranscriber() {
-			return columnTranscriber;
-		}
-
-		public void setColumnTranscriber(boolean columnTranscriber) {
-			this.columnTranscriber = columnTranscriber;
+		
+		public void setCsvColumnEnabled(String columnName, boolean enabled) {
+			String columnPrefName = columnNameToCsvPrefKey(columnName);
+			csvColumnsEnabled.put(columnPrefName, enabled);
 		}
 
 		public void restoreDefaults() {
@@ -236,8 +253,9 @@ public class PlaylistSetExportWizard extends JDialog {
 	
 	private File playlistFile;
 	private List<AbcInfo> setData;
+	private List<JCheckBox> colCheckBoxes;
 	
-	public PlaylistSetExportWizard(JFrame owner, Preferences prefNode, File playlistFile, List<AbcInfo> setData) {
+	public PlaylistSetExportWizard(JFrame owner, Preferences prefNode, File playlistFile, List<AbcInfo> setData, List<String> visibleColumns) {
 		super(owner, "Export Set Wizard", true);
 		
 		this.playlistFile = playlistFile;
@@ -254,7 +272,16 @@ public class PlaylistSetExportWizard extends JDialog {
 		JButton exportButton = new JButton("Export");
 		getRootPane().setDefaultButton(exportButton);
 		exportButton.addActionListener(e -> {
-			new SetExportWorker(setNameField.getText()).execute();
+			List<String> columns = visibleColumns;
+			if (!settings.exportVisibleColumns) {
+				columns = new ArrayList<>();
+				for (JCheckBox box : colCheckBoxes) {
+					if (box.isSelected()) {
+						columns.add(box.getText());
+					}
+				}
+			}
+			new SetExportWorker(setNameField.getText(), columns).execute();
 		});
 		
 		JButton cancelButton = new JButton("Cancel");
@@ -435,32 +462,63 @@ public class PlaylistSetExportWizard extends JDialog {
 		
 		JLabel partChoiceLabel = new JLabel("Part columns content:");
 		
-		String[] partContentOptions = {"Use Part Names", "Use Instrument Names"};
-		JComboBox<String> partContentChoice = new JComboBox<String>(partContentOptions);
-		
-		JLabel columnLabel = new JLabel("<html><u><b>Extra Columns</b></u></html");
-		JCheckBox durationColumn = new JCheckBox("Song Duration");
-		durationColumn.setSelected(settings.isColumnDuration());
-		durationColumn.addActionListener(e -> {
-			settings.setColumnDuration(durationColumn.isSelected());
-		});
-		JCheckBox composerColumn = new JCheckBox("Composer");
-		composerColumn.setSelected(settings.isColumnComposer());
-		composerColumn.addActionListener(e -> {
-			settings.setColumnComposer(composerColumn.isSelected());
-		});
-		JCheckBox transcriberColumn = new JCheckBox("Transcriber");
-		transcriberColumn.setSelected(settings.isColumnTranscriber());
-		transcriberColumn.addActionListener(e -> {
-			settings.setColumnTranscriber(transcriberColumn.isSelected());
+		JComboBox<String> partContentChoice = new JComboBox<String>(partColumnsLabels);
+		int selectedIndex = 0;
+		for (int i = 0; i < partColumnsSettings.length; i++) {
+			if (settings.getPartColumns().equals(partColumnsSettings[i])) {
+				selectedIndex = i;
+				break;
+			}
+		}
+		partContentChoice.setSelectedIndex(selectedIndex);
+		partContentChoice.addActionListener(e -> {
+			settings.setPartColumns(partColumnsSettings[partContentChoice.getSelectedIndex()]);
 		});
 		
-		partSheetPanel.add(partChoiceLabel);
+		List<String> colNames = AbcInfoTableModel.getColNames();
+		colCheckBoxes = new ArrayList<>(colNames.size());
+		
+		JRadioButton visibleColumns = new JRadioButton("Use visible table columns");
+		JRadioButton customColumns = new JRadioButton("Use custom columns");
+		ButtonGroup columnModeGroup = new ButtonGroup();
+		ActionListener columnListener = e -> {
+			boolean useVisibleColumns = visibleColumns.isSelected();
+			settings.setExportVisibleColumns(useVisibleColumns);
+			for (JCheckBox checkBox: colCheckBoxes) {
+				checkBox.setEnabled(!useVisibleColumns);
+			}
+		};
+		columnModeGroup.add(visibleColumns);
+		columnModeGroup.add(customColumns);
+		visibleColumns.addActionListener(columnListener);
+		customColumns.addActionListener(columnListener);
+		if (settings.exportVisibleColumns) {
+			visibleColumns.setSelected(true);
+		} else {
+			customColumns.setSelected(true);
+		}
+		
+		JLabel columnLabel = new JLabel("<html><u><b>Select Custom Columns</b></u></html");
+		
+		partSheetPanel.add(partChoiceLabel, "align right");
 		partSheetPanel.add(partContentChoice, "wrap");
+		partSheetPanel.add(visibleColumns);
+		partSheetPanel.add(customColumns, "wrap");
 		partSheetPanel.add(columnLabel, "span 2, wrap");
-		partSheetPanel.add(durationColumn, "span 2, wrap");
-		partSheetPanel.add(composerColumn, "span 2, wrap");
-		partSheetPanel.add(transcriberColumn, "span 2");
+		
+		int i = 0;
+		for (String col : colNames) {
+			JCheckBox colCheckBox = new JCheckBox(col);
+			boolean enabled = settings.getCsvColumnEnabled(col);
+			colCheckBox.setSelected(enabled);
+			colCheckBox.addActionListener(e -> {
+				settings.setCsvColumnEnabled(col, colCheckBox.isSelected());
+			});
+			colCheckBoxes.add(colCheckBox);
+			colCheckBox.setEnabled(!settings.exportVisibleColumns);
+			partSheetPanel.add(colCheckBox, i % 2 == 0 ? "" : "wrap");
+			i++;
+		}
 		
 		return partSheetPanel;
 	}
@@ -481,9 +539,11 @@ public class PlaylistSetExportWizard extends JDialog {
 		private File copyToFolder;
 		private String error = "";
 		private File zipFile;
+		private List<String> columns;
 		
-		public SetExportWorker(String setName) {
+		public SetExportWorker(String setName, List<String> columns) {
 			this.setName = setName;
+			this.columns = columns;
 			progressBar.setValue(0);
 		}
 		
@@ -493,7 +553,6 @@ public class PlaylistSetExportWizard extends JDialog {
 		// Create output folder or create temp folder to zip
 		private boolean initializeOutput() {
 			String outputFolder = settings.outputDirectory;
-			System.out.println("HERE");
 			
 			if (settings.exportAsZip) {
 				Path tempDir;
@@ -524,8 +583,6 @@ public class PlaylistSetExportWizard extends JDialog {
 				error = "Failed to create ABC export directory";
 				return false;
 			}
-			
-			System.out.println("Created copy to folder: " + copyToFolder.toString());
 			
 			publish(new SetExportProgress(10, "Created destination folder..."));
 			
@@ -569,26 +626,34 @@ public class PlaylistSetExportWizard extends JDialog {
 			}
 			
 			List<String> headerList = new ArrayList<>();
-			headerList.add("Filename");
 			
-			if (settings.columnDuration) headerList.add("Song Length");
-			if (settings.columnComposer) headerList.add("Composer");
-			if (settings.columnTranscriber) headerList.add("Transcriber");
-			
-			int maxPartCount = 0;
-			
-			for (AbcInfo inf : setData) {
-				if (maxPartCount < inf.getPartCount()) {
-					maxPartCount = inf.getPartCount();
-				}
+			for (String column : columns) {
+				headerList.add(column);
 			}
 			
-			for (int i = 0; i < maxPartCount; i++) {
-				headerList.add("Part " + (i + 1));
+			// Add part column headers if including part columns
+			if (!settings.partColumns.equals(partColumnsSettings[2])) {
+				int maxPartCount = 0;
+				
+				for (AbcInfo inf : setData) {
+					if (maxPartCount < inf.getPartCount()) {
+						maxPartCount = inf.getPartCount();
+					}
+				}
+				
+				for (int i = 0; i < maxPartCount; i++) {
+					headerList.add("Part " + (i + 1));
+				}
 			}
 			
 			String[] headers = headerList.toArray(new String[0]);
 			CSVFormat format = CSVFormat.DEFAULT.builder().setHeader(headers).get();
+			
+			int[] indices = new int[columns.size()];
+			List<String> allColumns = AbcInfoTableModel.getColNames();
+			for (int i = 0; i < indices.length; i++) {
+				indices[i] = allColumns.indexOf(columns.get(i));
+			}
 			
 			try {
 				Path csvPath = copyToFolder.toPath().resolve(setName + ".csv");
@@ -598,33 +663,34 @@ public class PlaylistSetExportWizard extends JDialog {
 						AbcInfo inf = setData.get(i);
 						List<Object> record = new ArrayList<Object>();
 						
-						// Song file name
+						File tmp = null;
 						if (settings.renameAbcFiles) {
-							record.add(getFormattedName(inf, i));
-						} else {
-							record.add(inf.getSourceFiles().get(0).getName());
+							tmp = inf.getSourceFiles().get(0);
+							inf.getSourceFiles().set(0, new File(tmp.getParent(), getFormattedName(inf, i)));
 						}
 						
-						// Conditional fields
-						if (settings.columnDuration) {
-							record.add(inf.getSongDurationStr());
-						}
-						if (settings.columnComposer) {
-							record.add(inf.getComposer());
-						}
-						if (settings.columnTranscriber) {
-							record.add(inf.getTranscriber());
+						for (int j = 0; j < indices.length; j++) {
+							Object col = AbcInfoTableModel.getColumnValueForAbcInfo(inf, indices[j]);
+							record.add(col);
 						}
 						
-						// Parts
-						for (int j = 0; j < inf.getPartCount(); j++ ) {
-							String name = inf.getPartInstrument(j + 1).friendlyName;
-							if (settings.usePartNames) {
-								name = inf.getPartFullName(j + 1);
+						// Parts - skip if set to not include
+						if (!settings.partColumns.equals(partColumnsSettings[2])) {
+							for (int j = 0; j < inf.getPartCount(); j++ ) {
+								String name = inf.getPartInstrument(j + 1).friendlyName;
+								// if part column setting is part and not instrument
+								if (settings.partColumns.equals(partColumnsSettings[0])) {
+									name = inf.getPartFullName(j + 1);
+								}
+								record.add(name);
 							}
-							record.add(name);
 						}
+
 						printer.printRecord(record);
+						
+						if (tmp != null) {
+							inf.getSourceFiles().set(0, tmp);
+						}
 					}
 				}
 			} catch (IOException e) {
