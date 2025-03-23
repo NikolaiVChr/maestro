@@ -65,9 +65,9 @@ public class MultiMergerView extends JFrame {
 	 */
 	public MultiMergerView() {
 		setTitle("ABC Tools");
-		setMinimumSize(new Dimension(800, 400));
+		setMinimumSize(new Dimension(800, 430));
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 500, 400);
+		setBounds(100, 100, 500, 430);
 		contentPane = new JPanel();
 
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
