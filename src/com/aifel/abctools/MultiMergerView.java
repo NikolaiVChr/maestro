@@ -46,6 +46,7 @@ public class MultiMergerView extends JFrame {
 	private JButton btnCancel;
 	private JCheckBox forceMixTiming;
 	private JCheckBox forceOrganic;
+	private JCheckBox forceOrganic2;
 	private JScrollPane scrollPaneAutoTxt;
 	private JEditorPane txtAutoExport;
 	private JLabel lblMidiAuto;
@@ -213,10 +214,16 @@ public class MultiMergerView extends JFrame {
 		forceOrganic.setToolTipText("Force organic even if a project do not have it enabled.");
 		forceOrganic.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(forceOrganic);
+		
+		forceOrganic2 = new JCheckBox("Multi-stage");
+		forceOrganic2.setSelected(false);
+		forceOrganic2.setToolTipText("<html>Force organic multi-stage even if a project do not have it enabled.<br>Only has effect if organic is enabled by force or in project.</html>");
+		forceOrganic2.setAlignmentX(Component.CENTER_ALIGNMENT);
+		panelAuto.add(forceOrganic2);
 
 		forceMixTiming = new JCheckBox("Force Mix Timings");
 		forceMixTiming.setSelected(false);
-		forceMixTiming.setToolTipText("Force mix timings even if a project do not have it enabled.");
+		forceMixTiming.setToolTipText("<html>Force mix timings even if a project do not have it enabled.<br>If the project already has organic enabled, this wont turn off organic.");
 		forceMixTiming.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(forceMixTiming);
 
@@ -338,6 +345,14 @@ public class MultiMergerView extends JFrame {
 	public void setForceOrganicSelected(boolean selected) {
 		forceOrganic.setSelected(selected);
 	}
+	
+	public boolean getForceOrganic2Selected() {
+		return forceOrganic2.isSelected();
+	}
+
+	public void setForceOrganic2Selected(boolean selected) {
+		forceOrganic2.setSelected(selected);
+	}
 
 	public JButton getBtnStartExport() {
 		return btnStart;
@@ -401,6 +416,14 @@ public class MultiMergerView extends JFrame {
 
 	public void setForceOrganicEnabled(boolean enabled_2) {
 		forceOrganic.setEnabled(enabled_2);
+	}
+	
+	public boolean getForceOrganic2Enabled() {
+		return forceOrganic2.isEnabled();
+	}
+
+	public void setForceOrganic2Enabled(boolean enabled_2) {
+		forceOrganic2.setEnabled(enabled_2);
 	}
 
 	public boolean getBtnSourceAutoEnabled() {

@@ -176,6 +176,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private JFormattedTextField keySignatureField;
 	private JFormattedTextField timeSignatureField;
 	private JCheckBox organicCheckBox;
+	private JCheckBox organic2CheckBox;
 	private JCheckBox tripletCheckBox;
 	private JCheckBox mixCheckBox;
 	private JCheckBox prioCheckBox;
@@ -706,6 +707,19 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			//if (abcSequencer.isRunning())
 				refreshPreviewSequence(false);
 		});
+		
+		organic2CheckBox = new JCheckBox("Multistage");
+		
+		organic2CheckBox.setToolTipText("<html>Multistage organic exporter<br>"
+				+ "This is a new beta feature, use on own risk.</html>");
+		
+		organic2CheckBox.addActionListener(e -> {
+			if (abcSong != null)
+				abcSong.setOrganic2(organic2CheckBox.isSelected());
+
+			//if (abcSequencer.isRunning())
+				refreshPreviewSequence(false);
+		});
 
 		tripletCheckBox = new JCheckBox("Triplets/swing rhythm");
 		tripletCheckBox.setToolTipText("<html>Tweak the timing to allow for triplets or a swing rhythm.<br><br>"
@@ -799,6 +813,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		row++;
 		settingsLayout.insertRow(row, PREFERRED);
 		settingsPanel.add(organicCheckBox, "0, " + row + ", 2, " + row + ", L, C");
+		settingsPanel.add(organic2CheckBox, "1, " + row + ", 2, " + row + ", R, C");
 		row++;
 		settingsLayout.insertRow(row, PREFERRED);
 		settingsPanel.add(tripletCheckBox, "0, " + row + ", 2, " + row + ", L, C");
@@ -1638,6 +1653,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		keySignatureField.setEnabled(midiLoaded);
 		timeSignatureField.setEnabled(midiLoaded);
 		organicCheckBox.setEnabled(midiLoaded);
+		organic2CheckBox.setEnabled(midiLoaded && organicCheckBox.isSelected());
 		tripletCheckBox.setEnabled(midiLoaded && !organicCheckBox.isSelected());
 		mixCheckBox.setEnabled(midiLoaded && !organicCheckBox.isSelected());
 		prioCheckBox.setEnabled(midiLoaded && mixCheckBox.isSelected() && !organicCheckBox.isSelected());
@@ -1817,6 +1833,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		case ORGANIC:
 			if (organicCheckBox.isSelected() != abcSong.isOrganic())
 				organicCheckBox.setSelected(abcSong.isOrganic());
+			if (organic2CheckBox.isSelected() != abcSong.isOrganic2())
+				organic2CheckBox.setSelected(abcSong.isOrganic2());
 			maxNoteCountTotal = 0;
 			maxNoteCount = 0;
 			updateButtons(false);
@@ -2045,7 +2063,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		tempoSpinner.setValue(MidiConstants.DEFAULT_TEMPO_BPM);
 		keySignatureField.setValue(KeySignature.C_MAJOR);
 		timeSignatureField.setValue(TimeSignature.FOUR_FOUR);
-		organicCheckBox.setSelected(true);
+		organicCheckBox.setSelected(false);
+		organic2CheckBox.setSelected(false);
 		tripletCheckBox.setSelected(false);
 		mixCheckBox.setSelected(true);
 		prioCheckBox.setSelected(false);
@@ -2144,6 +2163,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			keySignatureField.setValue(abcSong.getKeySignature());
 			timeSignatureField.setValue(abcSong.getTimeSignature());
 			organicCheckBox.setSelected(abcSong.isOrganic());
+			organic2CheckBox.setSelected(abcSong.isOrganic2());
 			tripletCheckBox.setSelected(abcSong.isTripletTiming());
 			mixCheckBox.setSelected(abcSong.isMixTiming());
 			prioCheckBox.setSelected(abcSong.isPriorityActive());
