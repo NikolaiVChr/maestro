@@ -539,9 +539,20 @@ public class AbcExporter {
 				bar.append('[');
 			}
 
-			int chordMicro = (int)((qtm.tickToMicrosABCOrganic(c.getEndTick()) - qtm.tickToMicrosABCOrganic(c.getStartTick())));
+			int chordMicro;
+			if (organic2) {
+				chordMicro = (int)(c.get(0).origEndABCMicros - c.get(0).origStartABCMicros);
+			} else {
+				chordMicro = (int)((qtm.tickToMicrosABCOrganic(c.getEndTick()) - qtm.tickToMicrosABCOrganic(c.getStartTick())));
+			}
 			
-			long cEndMicro = qtm.tickToMicrosABCOrganic(c.getEndTick()) - songStartMicros;
+			long cEndMicro;
+			if (organic2) {
+				cEndMicro = c.get(0).origEndABCMicros - songStartMicros;
+			} else {
+				cEndMicro = qtm.tickToMicrosABCOrganic(c.getEndTick()) - songStartMicros;
+			}
+			
 			if (currentMicro + chordMicro != cEndMicro) {
 				long diff = (currentMicro + chordMicro) - cEndMicro;
 				chordMicro -= (int)(diff);
