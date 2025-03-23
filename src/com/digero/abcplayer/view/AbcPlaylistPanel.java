@@ -518,7 +518,7 @@ public class AbcPlaylistPanel extends JPanel {
 		});
 		playlistTable.setTransferHandler(transferHandler);
 		playlistHeaderPopupMenu = new JPopupMenu();
-		JMenuItem resizeToFitMenuItem = playlistHeaderPopupMenu.add(new JMenuItem("Resize columns to fit content"));
+		JMenuItem resizeToFitMenuItem = playlistHeaderPopupMenu.add(new JMenuItem("Resize Columns to Fit Content"));
 		resizeToFitMenuItem.addActionListener(e -> {
 			TableColumnModel columns = playlistTable.getColumnModel();
 			int columnCount = columns.getColumnCount();
@@ -588,7 +588,7 @@ public class AbcPlaylistPanel extends JPanel {
 			
 			playlistTable.doLayout();
 		});
-		JMenuItem resizeToDefaultMenuItem = playlistHeaderPopupMenu.add(new JMenuItem("Resize columns to equal size"));
+		JMenuItem resizeToDefaultMenuItem = playlistHeaderPopupMenu.add(new JMenuItem("Resize Columns to Equal Size"));
 		resizeToDefaultMenuItem.addActionListener(e -> {
 			TableColumnModel columns = playlistTable.getColumnModel();
 			int columnCount = columns.getColumnCount();
@@ -849,11 +849,17 @@ public class AbcPlaylistPanel extends JPanel {
 		});
 		exportSetMenuItem = playlistMenu.add(new JMenuItem("Export Playlist as Set..."));
 		exportSetMenuItem.addActionListener(e -> {
+			TableColumnModel cm = playlistTable.getColumnModel();
+			ArrayList<String> visibleColumns = new ArrayList<>(cm.getColumnCount());
+			for (int i = 0; i < cm.getColumnCount(); i++) {
+				visibleColumns.add((String)cm.getColumn(i).getHeaderValue());
+			}
 			PlaylistSetExportWizard wiz = new PlaylistSetExportWizard(
 					(JFrame)SwingUtilities.getWindowAncestor(this),
 					prefs.node("setExport"),
 					playlistFile,
-					tableModel.getTableData());
+					tableModel.getTableData(),
+					visibleColumns);
 			wiz.setVisible(true);
 		});
 		playlistMenu.addSeparator();
