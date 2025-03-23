@@ -56,6 +56,7 @@ public class MultiMergerView extends JFrame {
 	private JLabel lblSaveMsx;
 	private JCheckBox saveMSX;
 	private JCheckBox saveMSXabc;
+	private JCheckBox saveMSXtiming;
 	private JProgressBar progressBar;
 	private JCheckBox recursiveCheckBox;
 
@@ -252,6 +253,11 @@ public class MultiMergerView extends JFrame {
 		saveMSXabc.setToolTipText("Save project files and include exporter abc path if changed.");
 		saveMSXabc.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(saveMSXabc);
+		
+		saveMSXtiming = new JCheckBox("At timing change");
+		saveMSXtiming.setToolTipText("Save project files if timing changed due to forcing.");
+		saveMSXtiming.setAlignmentX(Component.CENTER_ALIGNMENT);
+		panelAuto.add(saveMSXtiming);
 		panelAuto.add(new JSeparator(JSeparator.HORIZONTAL));
 
 		scrollPaneAutoTxt = new JScrollPane();
@@ -480,6 +486,22 @@ public class MultiMergerView extends JFrame {
 
 	public void setSaveMSXabcEnabled(boolean enabled_6) {
 		saveMSXabc.setEnabled(enabled_6);
+	}
+	
+	public boolean getSaveMSXtimingSelected() {
+		return saveMSXtiming.isSelected();
+	}
+
+	public void setSaveMSXtimingSelected(boolean selected_1) {
+		saveMSXtiming.setSelected(selected_1);
+	}
+
+	public boolean getSaveMSXtimingEnabled() {
+		return saveMSXtiming.isEnabled();
+	}
+
+	public void setSaveMSXtimingEnabled(boolean enabled_6) {
+		saveMSXtiming.setEnabled(enabled_6);
 	}
 
 	public boolean getTabsEnabled() {

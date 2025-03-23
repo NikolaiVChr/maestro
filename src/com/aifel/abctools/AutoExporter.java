@@ -137,10 +137,12 @@ public class AutoExporter {
 						frame.getBtnCancelExport().setEnabled(false);
 						frame.setForceMixTimingEnabled(true);
 						frame.setForceOrganicEnabled(true);
+						frame.setForceOrganic2Enabled(true);
 						frame.setBtnDestAutoEnabled(true);
 						frame.setBtnMIDIEnabled(true);
 						frame.setBtnSourceAutoEnabled(true);
 						frame.setSaveMSXEnabled(true);
+						frame.setSaveMSXtimingEnabled(true);
 						frame.setSaveMSXabcEnabled(true);
 						frame.setTabsEnabled(true);
 						frame.setRecursiveCheckBoxEnabled(true);
@@ -170,10 +172,12 @@ public class AutoExporter {
 			frame.getBtnCancelExport().setEnabled(true);
 			frame.setForceMixTimingEnabled(false);
 			frame.setForceOrganicEnabled(false);
+			frame.setForceOrganic2Enabled(false);
 			frame.setBtnDestAutoEnabled(false);
 			frame.setBtnMIDIEnabled(false);
 			frame.setBtnSourceAutoEnabled(false);
 			frame.setSaveMSXEnabled(false);
+			frame.setSaveMSXtimingEnabled(false);
 			frame.setSaveMSXabcEnabled(false);
 			frame.setTabsEnabled(false);
 			frame.setRecursiveCheckBoxEnabled(false);
@@ -191,11 +195,13 @@ public class AutoExporter {
 				frame.getBtnCancelExport().setEnabled(false);
 				frame.setForceMixTimingEnabled(true);
 				frame.setForceOrganicEnabled(true);
+				frame.setForceOrganic2Enabled(true);
 				frame.setBtnDestAutoEnabled(true);
 				frame.setBtnMIDIEnabled(true);
 				frame.setBtnSourceAutoEnabled(true);
 				frame.setSaveMSXEnabled(true);
 				frame.setSaveMSXabcEnabled(true);
+				frame.setSaveMSXtimingEnabled(true);
 				frame.setTabsEnabled(true);
 				frame.setRecursiveCheckBoxEnabled(true);
 			});
@@ -255,11 +261,13 @@ public class AutoExporter {
 			frame.getBtnCancelExport().setEnabled(false);
 			frame.setForceMixTimingEnabled(true);
 			frame.setForceOrganicEnabled(true);
+			frame.setForceOrganic2Enabled(true);
 			frame.setBtnDestAutoEnabled(true);
 			frame.setBtnMIDIEnabled(true);
 			frame.setBtnSourceAutoEnabled(true);
 			frame.setSaveMSXEnabled(true);
 			frame.setSaveMSXabcEnabled(true);
+			frame.setSaveMSXtimingEnabled(true);
 			frame.setTabsEnabled(true);
 			frame.setRecursiveCheckBoxEnabled(true);
 		});
@@ -418,11 +426,21 @@ public class AutoExporter {
 		AbcSong abcSong = new AbcSong(project, main.partAutoNumberer, main.partNameTemplate, main.exportFilenameTemplate,
 				main.instrNameSettings, openFileResolver, main.miscSettings, frame.getSaveMSXSelected());
 
+		boolean timingModified = false;
+		boolean oldMix = abcSong.isMixTiming();
+		boolean oldOrganic = abcSong.isOrganic();
+		boolean oldOrganic2 = abcSong.isOrganic2();
 		if (frame.getForceMixTimingSelected()) {
+			if (!oldMix) timingModified = frame.getSaveMSXtimingSelected(); 
 			abcSong.setMixTiming(true);
 		}
 		if (frame.getForceOrganicSelected()) {
+			if (!oldOrganic) timingModified = frame.getSaveMSXtimingSelected();
 			abcSong.setOrganic(true);
+		}
+		if (frame.getForceOrganic2Selected()) {
+			if (!oldOrganic2) timingModified = frame.getSaveMSXtimingSelected();
+			abcSong.setOrganic2(true);
 		}
 		
 		abcSong.storeNewExportFile = frame.getSaveMSXabcSelected();
@@ -480,7 +498,14 @@ public class AutoExporter {
 		}
 		abcSong.setExportFile(exportFile);
 		
-		if (projectModified && (frame.getSaveMSXSelected() || frame.getSaveMSXabcSelected())) {
+		if (projectModified && !frame.getSaveMSXtimingSelected()) {
+			// Don't save forced timing changes to project file
+			abcSong.setMixTiming(oldMix);
+			abcSong.setOrganic(oldOrganic);
+			abcSong.setOrganic2(oldOrganic2);
+		}
+		
+		if (timingModified || ( projectModified && (frame.getSaveMSXSelected() || frame.getSaveMSXabcSelected()) )) {
 			try {
 				XmlUtil.saveDocument(abcSong.saveToXml(), abcSong.getProjectFile());
 				appendToField("<br>&nbsp;&nbsp;msx saved.");
