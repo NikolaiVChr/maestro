@@ -2288,6 +2288,15 @@ public class AbcExporter {
 		return false;
 	}
 	
+	private boolean isDrone(AbcPart part, AbcNoteEvent ne) {
+		if (part.getInstrument() == LotroInstrument.BASIC_BAGPIPE) {
+			if (ne.note.id <= AbcConstants.BAGPIPE_LAST_DRONE_NOTE_ID) {
+				return true;
+			}
+		}
+		return false;
+	}	
+	
 	/**
 	 * process the notes using new multi-stage and faster organic principle
 	 * 
@@ -3647,8 +3656,14 @@ public class AbcExporter {
 				 */
 
 			// Remove the remainder of the notes that this is tied to (if any)
-			for (AbcNoteEvent neTie = ne.tiesTo; neTie != null; neTie = neTie.tiesTo) {
-				events.remove(neTie);
+			if (isDrone(part,ne)) {
+				if (ne.tiesTo != null) {
+					ne.tiesTo.tiesFrom = null;
+				}
+			} else {
+				for (AbcNoteEvent neTie = ne.tiesTo; neTie != null; neTie = neTie.tiesTo) {
+					events.remove(neTie);
+				}
 			}
 			ne.tiesTo = null;
 		}
