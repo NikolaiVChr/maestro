@@ -1976,6 +1976,13 @@ public class AbcExporter {
 						// there was not room for a larger chord
 						long neMicroStart = qtm.tickToMicrosABCOrganic(ne.getStartTick());
 						if (!curChord.glissando) {
+							boolean isRattle = true;
+							for (AbcNoteEvent n : curChord.getNotes()) {
+								if (!isRattle(part,n)) {
+									isRattle = false;
+									break;
+								}
+							}
 							if ((ne2 == null || ne1RoomMicros > minimumMicros*2) && ne1.getEndTick() > curMinEndTick
 									&& (minEndMicro-neMicroStart < minimumMicros/2)) {//  || ne1Micros > minimumMicros*2
 								// delay start of next chord up to 30 ms
@@ -2003,10 +2010,10 @@ public class AbcExporter {
 								i--;
 								debugOutput(2,part.getTitle()+" Delayed sequential chord by "+ ((minEndMicro-neMicroStart)/1000)+" ms 1");
 								continue MAIN;
-							} else if (ne2 != null && ne1RoomMicros < minimumMicros
-									&& neMicros < minimumMicros) {
-								// Both curr and next chord does not have enough room.
-								// ne is fairly short and will have to go
+							} else if (!isRattle && ne2 != null && (isRattle(part, ne) || (ne1RoomMicros < minimumMicros
+									&& neMicros < minimumMicros))) {
+								// Both curr and next chord does not have enough room or curChord is rattle(s)
+								// ne is fairly short (or rattle) and will have to go
 								// TODO: I have doubt about the ties. ne might even be tied to curr chord.
 								//       And if its tiesTo is also there, removing it should instead
 								//       tie curr chord to the one after ne, and expand curr chord to ne2.
@@ -2269,6 +2276,16 @@ public class AbcExporter {
 		if (debug >= lvl) {
 			System.out.println(text);
 		}
+	}
+	
+	private boolean isRattle(AbcPart part, AbcNoteEvent ne) {
+		if (part.getInstrument() == LotroInstrument.BASIC_DRUM) {
+			Note note = ne.note;
+			if (note == Note.G3 || note == Note.A3 || note ==  Note.B3 || note ==  Note.C4 || note ==  Note.Fs2 || note ==  Note.Gs2) {
+				return true;
+			}
+		}
+		return false;
 	}
 	
 	/**
