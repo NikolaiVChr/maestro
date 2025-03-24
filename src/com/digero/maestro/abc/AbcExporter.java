@@ -2817,8 +2817,7 @@ public class AbcExporter {
 		Long ceilTick   = ceil == null?null:ceil.getValue();
 		
 		long endMicros = ne.origEndABCMicros;
-		boolean drone = part.getInstrument() == LotroInstrument.BASIC_BAGPIPE
-				&& ne.note.id <= AbcConstants.BAGPIPE_LAST_DRONE_NOTE_ID;
+		boolean drone = isDrone(part,ne);
 		boolean rest = ne.note == Note.REST;
 		
 		while (ceil != null && ceilMicros < endMicros && ceilTick < ne.getEndTick()) {
@@ -3197,8 +3196,7 @@ public class AbcExporter {
 			// Make a hard break for notes that are longer than LotRO can play
 			// Bagpipe notes up to B2 can sustain indefinitely; don't break them
 			if (ne.getEndTick() > maxNoteEndTick && ne.note != Note.REST
-					&& !(part.getInstrument() == LotroInstrument.BASIC_BAGPIPE
-							&& ne.note.id <= AbcConstants.BAGPIPE_LAST_DRONE_NOTE_ID)) {
+					&& !isDrone(part,ne)) {
 
 				// Align with a bar boundary if it extends across 1 or more full bars.
 				long endBarTick = qtm.tickToBarStartTick(maxNoteEndTick);
@@ -3330,8 +3328,7 @@ public class AbcExporter {
 					qtm.microsToTickOrganic(
 							qtm.tickToMicrosOrganic(ne.getStartTick()) + qtm.multiplyByExportTempoFactor(TimingInfo.LONGEST_NOTE_MICROS));
 			
-			boolean drone = part.getInstrument() == LotroInstrument.BASIC_BAGPIPE
-					&& ne.note.id <= AbcConstants.BAGPIPE_LAST_DRONE_NOTE_ID;
+			boolean drone = isDrone(part,ne);
 			
 			// Make a hard break for notes that are longer than LotRO can play
 			// Bagpipe notes up to B2 can sustain indefinitely; don't break them
