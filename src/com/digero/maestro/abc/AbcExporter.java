@@ -2331,6 +2331,9 @@ public class AbcExporter {
 			note.origEndABCMicros = Math.max(note.origEndABCMicros, note.origStartABCMicros + minimumMicros);
 			note.origDurationMicros = note.origEndABCMicros - note.origStartABCMicros;
 			int startWeight = note.origDurationMicros <= thresholdShortNoteMicros?startWeightShortNote:startWeightLongNote;
+			if (!part.getInstrument().sustainable) {// must be after dura calc
+				note.origEndABCMicros = note.origStartABCMicros + minimumMicros;
+			}
 			GridLine start = new GridLine(note.origStartABCMicros, "START", startWeight);
 			GridLine end = new GridLine(note.origEndABCMicros, "END", endWeight);
 			microsWeights.computeIfAbsent(note.origStartABCMicros, k -> new ArrayList<>()).add(start);
@@ -2571,7 +2574,7 @@ public class AbcExporter {
 	        
 	        long candidateStart;
 	        if (floor == null && ceiling == null) {
-	            candidateStart = note.origStartABCMicros; // fallback: no grid available
+	        	continue; // fallback: no grid available
 	        } else if (floor == null) {
 	            candidateStart = ceiling;
 	        } else if (ceiling == null) {
@@ -3672,7 +3675,7 @@ public class AbcExporter {
 		if (organic) {
 			// TODO: Why do we start 100 ms before first note? ..I forgot why I made this
 			//       Its not related to the 100 ms used in delay parts.
-			//startTick = Math.max(0L, qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(startTick)-100000L));
+			startTick = Math.max(0L, qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(startTick)-80000L));
 			return new Pair<>(startTick, endTick);
 		}
 
