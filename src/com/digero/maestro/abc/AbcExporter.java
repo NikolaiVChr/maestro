@@ -2553,8 +2553,8 @@ public class AbcExporter {
 	 */
 	private long getMaxStartShiftMicros(long noteDuration, long minimumMicros) {
 		long minimums = noteDuration/minimumMicros;
-		if (minimums < 1) return minimumMicros*3L/5L;// Very short note we wont move the start more than 36 ms
-		if (minimums < 2) return minimumMicros*3L/4L;// Short note we also wont move the start more than 45 ms
+		if (minimums <= 1) return minimumMicros*3L/5L;// Very short note we wont move the start more than 36 ms
+		if (minimums <= 2) return minimumMicros*3L/4L;// Short note we also wont move the start more than 45 ms
 		return minimumMicros;// Longer note we wont move the start more than 60 ms
 	}
 	
