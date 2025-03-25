@@ -1333,6 +1333,7 @@ public class AbcPlaylistPanel extends JPanel {
 	}
 	
 	private void addFilesToPlaylist(List<File> files, int insertPos) {
+		String filterText = searchTextField.getText();
 		new SwingWorker<Boolean, Boolean>() {
 			boolean loadPlaylist = false;
 			List<AbcInfo> data = new ArrayList<>();
@@ -1360,6 +1361,8 @@ public class AbcPlaylistPanel extends JPanel {
 								.filter(File::exists)
 								.map(File::toPath) // Convert File to Path
 								.flatMap(path -> getAbcFilesInFolder(path)) // Process each directory
+								.filter(theFile -> theFile.getName().toLowerCase().contains(filterText)) // Filter based on search textbox
+								.sorted(AbcFileTreeModel.getFileComparator(sortType))
 								.collect(Collectors.toList());
 					} catch (Exception e) {
 						e.printStackTrace();
