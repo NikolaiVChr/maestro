@@ -1282,6 +1282,10 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		return usingOldVelocities;
 	}
 	
+	public boolean isUsingOldTempos() {
+		return usingOldTempos;
+	}
+	
 	public QuantizedTimingInfo getQTM() {
 		try {
 			if (getAbcTimingInfo() == null) return null;

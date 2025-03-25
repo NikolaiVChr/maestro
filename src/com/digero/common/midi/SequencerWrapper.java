@@ -33,7 +33,7 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 	private List<Transceiver> transceivers = new ArrayList<>();
 	private long dragTick;
 	private boolean isDragging;
-	private MidiUtils.TempoCache tempoCache = new MidiUtils.TempoCache();
+	private TempoCacheSlow tempoCache = new TempoCacheSlow();
 	private boolean[] trackActiveCache = null;
 
 	private Timer updateTimer = new Timer(UPDATE_FREQUENCY_MILLIS, new TimerActionListener());
@@ -42,6 +42,8 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 	private TempoCacheSlow cache = null;
 	private long hoursPlus = 0L;
 	private float tempoFactor = 1.f;
+	
+	public static boolean onlyFirstTrackTempos = true;
 	
 	// For AbcPlayer, we should send the tempo factor to the sequence.
 	// For Maestro, the tempo factor is factored into midi tempo messages
@@ -248,7 +250,7 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 			// which has the same effect and isn't so buggy.
 			setTickPosition(0);
 		} else if (position != getPosition()) {
-			sequencer.setMicrosecondPosition(position);
+			sequencer.setTickPosition(microsToTick(position));
 			lastUpdateTick = sequencer.getTickPosition();
 			fireChangeEvent(SequencerProperty.POSITION);
 		}
@@ -272,6 +274,10 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 		return tick2microsecondSlow(sequence, tick);
 	}
 
+	/**
+	 * 
+	 * @return sequence duration in microseconds
+	 */
 	public long getLength() {
 		// long l = sequencer.getMicrosecondLength();
 		// if (l < 0) {
@@ -316,15 +322,30 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 			ArrayList<MidiEvent> list = new ArrayList<>();
 			Track[] tracks = seq.getTracks();
 			if (tracks.length > 0) {
-				// tempo events only occur in track 0
-				Track track = tracks[0];
-				int c = track.size();
-				for (int i = 0; i < c; i++) {
-					MidiEvent ev = track.get(i);
-					MidiMessage msg = ev.getMessage();
-					if (MidiUtils.isMetaTempo(msg) && MidiUtils.getTempoMPQ(msg) != 0) {
-						// found a valid tempo event. Add it to the list
-						list.add(ev);
+				if (onlyFirstTrackTempos) {
+					// tempo events only occur in track 0
+					Track track = tracks[0];
+					int c = track.size();
+					for (int i = 0; i < c; i++) {
+						MidiEvent ev = track.get(i);
+						MidiMessage msg = ev.getMessage();
+						if (MidiUtils.isMetaTempo(msg) && MidiUtils.getTempoMPQ(msg) != 0) {
+							// found a valid tempo event. Add it to the list
+							list.add(ev);
+						}
+					}
+				} else {
+					// tempo events only occur in track 0
+					for(Track track : tracks) {
+						int c = track.size();
+						for (int i = 0; i < c; i++) {
+							MidiEvent ev = track.get(i);
+							MidiMessage msg = ev.getMessage();
+							if (MidiUtils.isMetaTempo(msg) && MidiUtils.getTempoMPQ(msg) != 0) {
+								// found a valid tempo event. Add it to the list
+								list.add(ev);
+							}
+						}
 					}
 				}
 			}
