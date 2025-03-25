@@ -368,7 +368,7 @@ public class AbcExporter {
 				out.println(AbcField.MIX_TIMINGS + Boolean.toString(false));
 			}
 			out.println(AbcField.ORGANIC + Boolean.toString(organic));
-			out.println(AbcField.ORGANIC_MULTI_STAGE + Boolean.toString(organic2));
+			out.println(AbcField.ORGANIC_MULTI_STAGE + Boolean.toString(organic && organic2));
 			out.println(AbcField.SKIP_SILENCE_AT_START + Boolean.toString(skipSilenceAtStart));
 			out.println(AbcField.DELETE_MINIMAL_NOTES + Boolean.toString(deleteMinimalNotes && !organic));
 			out.println(AbcField.ABC_VERSION + "2.1");
@@ -2473,12 +2473,18 @@ public class AbcExporter {
 	    for (List<GridLine> cluster : clusters) {
 	        long weightedSum = 0;
 	        int totalWeight = 0;
-	        String type = cluster.get(0).type;
+	        String type = "END";
 	        for (GridLine line : cluster) {
+	            if (line.type.equals("START")) type = "START";
+	        }
+	        for (GridLine line : cluster) {
+	        	// If there is start present, ignore weight of ends:
+	        	if (type.equals("START") && line.type.equals("END")) continue;
 	            weightedSum += line.micros * line.weight;
 	            totalWeight += line.weight;
 	        }
 	        long micros = weightedSum / totalWeight;
+	        
 	        GridLine curr = new GridLine(micros, type, totalWeight);
 	        curr.firstMicros = cluster.get(0).micros;
 	        curr.lastMicros =  cluster.get(cluster.size()-1).micros;
