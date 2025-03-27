@@ -2307,8 +2307,6 @@ public class AbcExporter {
 	private List<Chord> processOrganic2(AbcPart part, List<AbcNoteEvent> events) {
 		// TODO: Last note if non-sustained will make song too long, both notes a reported time. Example: ABBA - Chiquita	
 	
-		final int debug = 0;// 0=no debug 1=minimal debug 2=more debug 3=most debug
-		
 		final long minimumMicros = AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM());
 		
 				
@@ -2333,15 +2331,23 @@ public class AbcExporter {
 		final int startWeightShortNote = 9;
 		final long thresholdShortNoteMicros = minimumMicros*2;
 		final int endWeight = 1;
+		final boolean endsShouldHaveNoSwayOverStartOfCluster = false;//Fernando sounds better with this false :(
+		final boolean endsShouldHaveNoSwayOverStartWeights = true;
+		
+		// types
+		final int INITIAL = 0;
+		final int START = 1;
+		final int END = 2;
+		final int GENERAL = 3;
 		
 		class GridLine {
 		    long micros;
-		    String type;   // "START", "END", "GENERAL"
+		    int type;
 		    int weight;
 		    long firstMicros;
 		    long lastMicros;
 		    
-		    public GridLine(long time, String type, int weight) {
+		    public GridLine(long time, int type, int weight) {
 		        this.micros = time;
 		        this.type = type;
 		        this.weight = weight;
@@ -2360,8 +2366,8 @@ public class AbcExporter {
 			if (!part.getInstrument().sustainable) {// must be after dura calc
 				note.origEndABCMicros = note.origStartABCMicros + minimumMicros;
 			}
-			GridLine start = new GridLine(note.origStartABCMicros, "START", startWeight);
-			GridLine end = new GridLine(note.origEndABCMicros, "END", endWeight);
+			GridLine start = new GridLine(note.origStartABCMicros, START, startWeight);
+			GridLine end = new GridLine(note.origEndABCMicros, END, endWeight);
 			microsWeights.computeIfAbsent(note.origStartABCMicros, k -> new ArrayList<>()).add(start);
 			microsWeights.computeIfAbsent(note.origEndABCMicros, k -> new ArrayList<>()).add(end);
 		}
@@ -2383,24 +2389,24 @@ public class AbcExporter {
 			GridLine nextStart = null;
 			GridLine nextEnd = null;
 			for (GridLine test : curr) {
-				if (test.type.equals("START")) {
+				if (test.type==START) {
 					currStart = test;
 				}
-				if (test.type.equals("END")) {
+				if (test.type==END) {
 					currEnd = test;
 				}
 			}
 			for (GridLine test : next) {
-				if (test.type.equals("START")) {
+				if (test.type==START) {
 					nextStart = test;
 				}
-				if (test.type.equals("END")) {
+				if (test.type==END) {
 					nextEnd = test;
 				}
 			}
 			if (nextStart == null) {
 				for (GridLine test : nextnext) {
-					if (test.type.equals("START")) {
+					if (test.type==START) {
 						nextStart = test;
 					}
 				}
@@ -2460,7 +2466,7 @@ public class AbcExporter {
 	        public int compare(GridLine a, GridLine b) {
 	            int cmp = Long.compare(a.micros, b.micros);
 	            if (cmp == 0) {
-	                return a.type.compareTo(b.type);
+	                return Integer.compare(a.type, b.type);
 	            }
 	            return cmp;
 	        }
@@ -2473,13 +2479,18 @@ public class AbcExporter {
 	    for (List<GridLine> cluster : clusters) {
 	        long weightedSum = 0;
 	        int totalWeight = 0;
-	        String type = "END";
+	        int type = END;
+	        Long firstStartMicros = null;  
 	        for (GridLine line : cluster) {
-	            if (line.type.equals("START")) type = "START";
+	            if (line.type == START) {
+	            	type = START;
+	            	firstStartMicros = line.micros;
+	            	break;
+	            }
 	        }
 	        for (GridLine line : cluster) {
 	        	// If there is start present, ignore weight of ends:
-	        	if (type.equals("START") && line.type.equals("END")) continue;
+	        	if (endsShouldHaveNoSwayOverStartWeights && type == START && line.type == END) continue;
 	            weightedSum += line.micros * line.weight;
 	            totalWeight += line.weight;
 	        }
@@ -2487,6 +2498,7 @@ public class AbcExporter {
 	        
 	        GridLine curr = new GridLine(micros, type, totalWeight);
 	        curr.firstMicros = cluster.get(0).micros;
+	        if (endsShouldHaveNoSwayOverStartOfCluster && firstStartMicros != null) curr.firstMicros = firstStartMicros; 
 	        curr.lastMicros =  cluster.get(cluster.size()-1).micros;
 	        if (last != null) {
 	        	while(curr.micros - last.micros < minimumMicros) {
@@ -2525,7 +2537,7 @@ public class AbcExporter {
 		    // Cut it up
 	        while (curr.micros - prev.micros > TimingInfo.LONGEST_NOTE_MICROS) {
 	            long candidateTime = prev.micros + TimingInfo.LONGEST_NOTE_MICROS;
-	            GridLine candidate = new GridLine(candidateTime, "GENERAL", 0);
+	            GridLine candidate = new GridLine(candidateTime, GENERAL, 0);
 	            if (curr.micros - candidate.micros < minimumMicros) {
 	                break;
 	            } else {
@@ -2563,13 +2575,13 @@ public class AbcExporter {
 	    
 	    NavigableSet<Long> gridTimes = new TreeSet<Long>();
 	    Long lastLine = null;
-	    String lastType = "INITIAL"; 
+	    int lastType = INITIAL; 
 	    for (GridLine line : refinedGrid) {
 	        gridTimes.add(line.micros);
 	        if (lastLine != null) {
 	        	// TODO: comment out when system more solid
-	        	assert line.micros >= lastLine+minimumMicros:lastType+" "+(line.micros - lastLine)+" micros  "+line.type;
-	        	assert line.micros <= lastLine+TimingInfo.LONGEST_NOTE_MICROS+70000:part.getTitle()+": "+lastType+" "+((line.micros - lastLine)/1000)+"ms "+line.type;
+	        	// assert line.micros >= lastLine+minimumMicros:lastType+" "+(line.micros - lastLine)+" micros  "+line.type;
+	        	// assert line.micros <= lastLine+TimingInfo.LONGEST_NOTE_MICROS+70000:part.getTitle()+": "+lastType+" "+((line.micros - lastLine)/1000)+"ms "+line.type;
 	        }
 	        lastLine = line.micros;
 	        lastType = line.type;
@@ -2584,6 +2596,7 @@ public class AbcExporter {
 	 * 
 	 */
 	private long getMaxStartShiftMicros(long noteDuration, long minimumMicros) {
+		// If start is needed to be moved more than this return value then note will be deleted
 		long minimums = noteDuration/minimumMicros;
 		if (minimums <= 1) return minimumMicros*3L/5L;// Very short note we wont move the start more than 36 ms
 		if (minimums <= 2) return minimumMicros*3L/4L;// Short note we also wont move the start more than 45 ms
@@ -2831,8 +2844,8 @@ public class AbcExporter {
 				AbcNoteEvent ne2;
 				if (!rest && (drone || restartMicros + TimingInfo.LONGEST_NOTE_MICROS -1 > ceilMicros)) {
 					// TODO: comment out when system more solid
-					assert ne.origStartABCMicros < ceilMicros;
-					assert ne.getStartTick() < ceilTick:ne.getStartTick()+" < "+ceilTick;
+					//assert ne.origStartABCMicros < ceilMicros;
+					//assert ne.getStartTick() < ceilTick:ne.getStartTick()+" < "+ceilTick;
 					// assert ne.origEndABCMicros > ceilMicros:ne.origEndABCMicros+" > "+ceilMicros;
 					// assert ne.getEndTick() > ceilTick:ne.getEndTick()+" > "+ceilTick;
 					ne2 = ne.splitWithTieAtTick(ceilTick);
@@ -2850,11 +2863,13 @@ public class AbcExporter {
 					restartMicros = ceilMicros;
 				}
 				// TODO: comment out when system more solid
+				/*
 				assert ne.origStartABCMicros < ne.origEndABCMicros;
 				assert ne.origStartABCMicros + TimingInfo.LONGEST_NOTE_MICROS + 70000>= ne.origEndABCMicros;
 				assert ne2.origStartABCMicros < ne2.origEndABCMicros;
 				assert ne.getStartTick() < ne.getEndTick();
 				assert ne2.getStartTick() < ne2.getEndTick();
+				*/
 				ne = ne2;
 			} else {
 				//System.out.println((gridTicks.floorKey(ceilMicros-1)/1000)+" < "+(ceilMicros/1000));
