@@ -723,7 +723,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		tripletCheckBox = new JCheckBox("Triplets/swing rhythm");
 		tripletCheckBox.setToolTipText("<html>Tweak the timing to allow for triplets or a swing rhythm.<br><br>"
-				+ "This can cause short/fast notes to incorrectly be detected as triplets.<br>"
+				+ "This can cause short/fast notes to incorrectly be output as triplets.<br>"
 				+ "Leave it unchecked unless the song has triplets or a swing rhythm.</html>");
 		tripletCheckBox.addActionListener(e -> {
 			if (abcSong != null)
