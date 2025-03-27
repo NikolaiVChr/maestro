@@ -710,7 +710,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		
 		organic2CheckBox = new JCheckBox("Multistage");
 		
-		organic2CheckBox.setToolTipText("<html>Multistage organic exporter<br>"
+		organic2CheckBox.setToolTipText("<html>Different approach to exporting fluid timings.<br>"
 				+ "This is a new beta feature, use on own risk.</html>");
 		
 		organic2CheckBox.addActionListener(e -> {
