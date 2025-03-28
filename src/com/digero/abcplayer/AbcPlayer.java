@@ -1594,7 +1594,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 					String data = in.readLine();
 
 					if (data != null && data.length() >= 4
-							&& data.substring(data.length() - 4).equalsIgnoreCase(".abc")) {// &&
+							&& (data.substring(data.length() - 4).equalsIgnoreCase(".abc") || data.substring(data.length() - 5).equalsIgnoreCase(".abcp"))) {// &&
 																							// !data.substring(0,3).equalsIgnoreCase("GET")
 																							// &&
 						// System.out.println("Receiving file path ("+data.length()+" chars) from port
