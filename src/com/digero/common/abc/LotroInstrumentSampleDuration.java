@@ -10,7 +10,7 @@ import java.util.Map;
 public class LotroInstrumentSampleDuration {
 	
 	private static LotroInstrumentSampleDuration instance = null;
-	private static Map<String, Map<Integer, Double>> db = null;
+	private static Map<String, Map<Integer, Long>> db = null;
 	
 	/**
 	 * Get duration of particular lotro instrument sample.
@@ -20,11 +20,11 @@ public class LotroInstrumentSampleDuration {
 	 * @return duration in seconds
 	 * @throws IOException 
 	 */
-	public static Double getDura(String friendlyName, int note) throws IOException {
+	public static Long getDura(String friendlyName, int note) throws IOException {
 		if (db == null) {
 			parse();
 		}
-		Double dura = db.get(friendlyName).get(note);
+		Long dura = db.get(friendlyName).get(note);
 		return dura;
 	}
 	
@@ -69,8 +69,8 @@ public class LotroInstrumentSampleDuration {
 			
 			String instr = splits[0].trim();
 			int note = Integer.parseInt(splits[1].trim());
-			double dura = Double.parseDouble(splits[2].trim());
-			Map<Integer, Double> instrMap = db.get(instr);
+			long dura = Long.parseLong(splits[2].trim());
+			Map<Integer, Long> instrMap = db.get(instr);
 			if (instrMap == null) {
 				instrMap = new HashMap<>();
 				db.put(instr, instrMap);
@@ -78,7 +78,7 @@ public class LotroInstrumentSampleDuration {
 			instrMap.put(note, dura);
 			if (instr.equals(LotroInstrument.BASIC_FIDDLE.friendlyName) && note > 42) {
 				// Student fiddle need the basic fiddle notes also above 42.
-				Map<Integer, Double> instrMap2 = db.get(LotroInstrument.STUDENT_FIDDLE.friendlyName);
+				Map<Integer, Long> instrMap2 = db.get(LotroInstrument.STUDENT_FIDDLE.friendlyName);
 				if (instrMap2 == null) {
 					instrMap2 = new HashMap<>();
 					db.put(LotroInstrument.STUDENT_FIDDLE.friendlyName, instrMap2);

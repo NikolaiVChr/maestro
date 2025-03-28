@@ -792,11 +792,11 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 								}
 							}
 						} else {
-							double dura = 1.0;
+							long dura = AbcConstants.ONE_SECOND_MICROS;
 							try {
 								int pitch = tone.id;
 								if (getInstrument() == LotroInstrument.BASIC_COWBELL || getInstrument() == LotroInstrument.MOOR_COWBELL) {
-									pitch = 71;
+									pitch = AbcConstants.COWBELL_NOTE_ID;
 								}
 								dura = LotroInstrumentSampleDuration.getDura(getInstrument().friendlyName, pitch);								
 							} catch (IOException | NullPointerException e) {
@@ -804,7 +804,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 							}
 							ITempoCache tc = ne.getTempoCache();
 							noteEndTick = tc
-									.microsToTick(tc.tickToMicros(ne.getStartTick()) + qtm.multiplyByExportTempoFactor((long)(TimingInfo.ONE_SECOND_MICROS*dura)));
+									.microsToTick(tc.tickToMicros(ne.getStartTick()) + qtm.multiplyByExportTempoFactor(dura));
 						}
 
 						if (noteEndTick > endTick)

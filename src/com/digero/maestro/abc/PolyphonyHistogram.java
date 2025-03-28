@@ -97,10 +97,9 @@ public class PolyphonyHistogram   {
 				}
 				if (part.getInstrument().isSustainable(event.note.id)) {
 					endMicros += 200000L;// 200ms
-					Double seconds = LotroInstrumentSampleDuration.getDura(part.getInstrument().friendlyName, event.note.id);
-					if (seconds != null) {
-						long dura = (long) (1000000L * seconds);
-						long endMax = startMicros + dura;
+					Long duraMicros = LotroInstrumentSampleDuration.getDura(part.getInstrument().friendlyName, event.note.id);
+					if (duraMicros != null) {
+						long endMax = startMicros + duraMicros;
 						endMicros = Math.min(endMax, endMicros);
 					}
 					if (organic) {
@@ -111,14 +110,13 @@ public class PolyphonyHistogram   {
 				} else {
 					int pitch = event.note.id;
 					if (part.getInstrument() == LotroInstrument.BASIC_COWBELL || part.getInstrument() == LotroInstrument.MOOR_COWBELL) {
-						pitch = 71;
+						pitch = AbcConstants.COWBELL_NOTE_ID;
 					}
-					Double seconds = LotroInstrumentSampleDuration.getDura(part.getInstrument().friendlyName, pitch);
-					if (seconds == null) {
+					Long duraMicros = LotroInstrumentSampleDuration.getDura(part.getInstrument().friendlyName, pitch);
+					if (duraMicros == null) {
 						System.err.println("Error: LotroInstrumentSampleDuration has no "+part.getInstrument().friendlyName+" with note "+event.note.id);
-						seconds = 1.0d;
+						duraMicros = AbcConstants.ONE_SECOND_MICROS;
 					}
-					long duraMicros = (long) (AbcConstants.ONE_SECOND_MICROS * seconds);
 					endMicros = startMicros + duraMicros;
 					if (organic) {
 						endTick   = qtm.microsToTickABCOrganic(endMicros);

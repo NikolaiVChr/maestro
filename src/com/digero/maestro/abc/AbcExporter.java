@@ -301,8 +301,17 @@ public class AbcExporter {
 				// Lengthen to match the note lengths used in the game
 				if (useLotroInstruments) {
 					boolean sustainable = part.getInstrument().isSustainable(ne.note.id);
-					double extraSeconds = sustainable ? AbcConstants.SUSTAINED_NOTE_HOLD_SECONDS
-							:( part.getInstrument() == LotroInstrument.STUDENT_FIDDLE?AbcConstants.STUDENT_FX_MIN_SECONDS:AbcConstants.NON_SUSTAINED_NOTE_HOLD_SECONDS );
+					double extraSeconds = 0.0d;
+					if(sustainable) {
+						// This is better match lotro linear power decay, since our midi playback is linear dB decay instead.
+						extraSeconds = AbcConstants.SUSTAINED_NOTE_HOLD_SECONDS;
+					} else if (part.getInstrument() == LotroInstrument.STUDENT_FIDDLE) {
+						// This is to not stop fx noise before it has played out
+						extraSeconds = AbcConstants.STUDENT_FX_MIN_SECONDS;
+					} else {
+						// This is to not stop plucked/drum note before it has played out
+						extraSeconds = AbcConstants.NON_SUSTAINED_NOTE_HOLD_SECONDS;
+					}
 					if (organic) {
 						endTick = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(endTick)
 								+ qtm.multiplyByExportTempoFactor((long)(extraSeconds * TimingInfo.ONE_SECOND_MICROS)));
@@ -2373,9 +2382,9 @@ public class AbcExporter {
 		}
 		
 		// Now do some adjustments to note start and ends
-		List[] typeList = new List[] {};
-		Long[] typeLong = {};
 		@SuppressWarnings("unchecked")
+		List<GridLine>[] typeList = new List[] {};
+		Long[] typeLong = {};		
 		List<GridLine>[] vals = (List<GridLine>[]) microsWeights.values().toArray(typeList);
 		Long[] keys = microsWeights.keySet().toArray(typeLong);
 		GridLine prevStart = null;
@@ -2574,17 +2583,19 @@ public class AbcExporter {
 	    }
 	    
 	    NavigableSet<Long> gridTimes = new TreeSet<Long>();
-	    Long lastLine = null;
-	    int lastType = INITIAL; 
+	    //Long lastLine = null;
+	    //int lastType = INITIAL; 
 	    for (GridLine line : refinedGrid) {
 	        gridTimes.add(line.micros);
+	        /*
 	        if (lastLine != null) {
 	        	// TODO: comment out when system more solid
-	        	// assert line.micros >= lastLine+minimumMicros:lastType+" "+(line.micros - lastLine)+" micros  "+line.type;
-	        	// assert line.micros <= lastLine+TimingInfo.LONGEST_NOTE_MICROS+70000:part.getTitle()+": "+lastType+" "+((line.micros - lastLine)/1000)+"ms "+line.type;
+	        	assert line.micros >= lastLine+minimumMicros:lastType+" "+(line.micros - lastLine)+" micros  "+line.type;
+	        	assert line.micros <= lastLine+TimingInfo.LONGEST_NOTE_MICROS+70000:part.getTitle()+": "+lastType+" "+((line.micros - lastLine)/1000)+"ms "+line.type;
 	        }
-	        lastLine = line.micros;
 	        lastType = line.type;
+	        lastLine = line.micros;
+	        */
 	    }
 	    
 	    return gridTimes;
@@ -3042,7 +3053,7 @@ public class AbcExporter {
 	private void removeDuplicateNotes(List<AbcNoteEvent> events, LotroInstrument instrument) {
 		// If prioritizeLongNotes is true, then notes that are subset of the other but lower or equal value
 		// will just be deleted if sustained.
-		// If false, then the 2 notes will become 2 or 3 unisons,
+		// If false, then the 2 notes will become 2 or 3 notes,
 		// where the middle (subset) will have the volume of the loudest.
 		// Some listening tests convinced me that false is the way to go.
 		final boolean prioritizeUninteruptedLongNotes = false;
