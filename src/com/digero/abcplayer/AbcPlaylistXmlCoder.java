@@ -3,6 +3,7 @@ package com.digero.abcplayer;
 import static java.awt.Frame.getFrames;
 
 import java.io.File;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -68,7 +69,7 @@ public class AbcPlaylistXmlCoder {
 				List<File> songFiles = new ArrayList<File>();
 				for (Element locationEle : XmlUtil.selectElements(songEle, "location")) {
 					String loc = locationEle.getTextContent();
-					songFiles.add(new File(loc));
+					songFiles.add(Paths.get(loc).toFile());
 				}
 				if (!songFiles.isEmpty()) {
 					files.add(songFiles);

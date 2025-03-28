@@ -822,6 +822,10 @@ public class AbcPlaylistPanel extends JPanel {
 				promptOpenPlaylist();	
 			}
 		});
+		JMenuItem appendMenuItem = playlistMenu.add(new JMenuItem("Append Playlist..."));
+		appendMenuItem.addActionListener(e -> {
+			promptOpenPlaylist(true /* append */);
+		});
 		JMenuItem saveAsMenuItem = playlistMenu.add(new JMenuItem("Save Playlist As..."));
 		saveAsMenuItem.addActionListener(e -> {
 			savePlaylistAs();
@@ -1111,14 +1115,8 @@ public class AbcPlaylistPanel extends JPanel {
 			}
 		}
 		
-		// TODO: Add option to search in folder
 		if (!nonExistentFiles.isEmpty()) {
-			String err = "Failed to open songs:";
-			for (File f : nonExistentFiles) {
-				err = err + "\n" + f.getAbsolutePath();
-			}
-			JOptionPane.showMessageDialog(this, err, "Failed to open song(s)", JOptionPane.ERROR_MESSAGE);
-			markDirty = true;
+			handleMissingPlaylistFiles(nonExistentFiles);
 		}
 		
 		tableModel.clearRows();
@@ -1133,11 +1131,39 @@ public class AbcPlaylistPanel extends JPanel {
 		updatePlaylistLabel();
 	}
 	
+	public void handleMissingPlaylistFiles(List<File> missingFiles) {
+		String confirmDialogStr = "Some abc files couldn't be found:\n";
+		for (int i = 0; i < Math.max(5, missingFiles.size()); i++) {
+			confirmDialogStr += missingFiles.get(i).getParent() + "\n";
+		}
+		if (missingFiles.size() > 5) {
+			confirmDialogStr += (missingFiles.size() - 5) + " more...\n";
+		}
+		confirmDialogStr += "Would you like to recursively search for them?";
+		int result = JOptionPane.showConfirmDialog(
+				this,
+				confirmDialogStr,
+				"Missing Songs",
+				JOptionPane.YES_NO_OPTION);
+		
+		if (result == JOptionPane.NO_OPTION) {
+			return;
+		}
+		
+		JFileChooser folderChooser = new JFileChooser();
+		folderChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+		folderChooser.setDialogTitle("Choose Search Folder");
+	}
+	
 	public boolean isPlayingFromPlaylist() {
 		return nowPlayingInfo != null;
 	}
 	
 	public void promptOpenPlaylist() {
+		promptOpenPlaylist(false /* append */);
+	}
+	
+	public void promptOpenPlaylist(boolean append) {
 		if (openPlaylistChooser == null) {
 			openPlaylistChooser = new JFileChooser();
 			openPlaylistChooser.setDialogTitle("Open ABC Playlist");
@@ -1156,7 +1182,7 @@ public class AbcPlaylistPanel extends JPanel {
 		
 		file = openPlaylistChooser.getSelectedFile();
 		
-		if (nowPlayingInfo != null) {
+		if (nowPlayingInfo != null && !append) {
 			firePlaylistEvent(this, PlaylistEventType.CLOSE_SONG);
 		}
 		
@@ -1383,7 +1409,6 @@ public class AbcPlaylistPanel extends JPanel {
 				return true;
 			}
 
-			// TODO: Sort by sort type?
 			private Stream<File> getAbcFilesInFolder(Path directory) {
 				try {
 					return Files.walk(directory)
