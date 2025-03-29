@@ -16,12 +16,16 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EventObject;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.prefs.Preferences;
@@ -510,7 +514,7 @@ public class AbcPlaylistPanel extends JPanel {
 		PlaylistTransferHandler transferHandler = new PlaylistTransferHandler(playlistTable);
 		transferHandler.setPlaylistLoadCallback(f -> {
 			if (promptSavePlaylist()) {
-				loadPlaylist(f);
+				loadPlaylist(f, false);
 			}
 		});
 		transferHandler.setAbcFileLoadCallback((f, i) -> {
@@ -1079,7 +1083,7 @@ public class AbcPlaylistPanel extends JPanel {
 		return true;
 	}
 	
-	public void loadPlaylist(File file) {
+	public void loadPlaylist(File file, boolean append) {
 		boolean markDirty = false;
 		
 		List<List<File>> songs = null;
@@ -1095,13 +1099,17 @@ public class AbcPlaylistPanel extends JPanel {
 		}
 		
 		List<AbcInfo> data = new ArrayList<AbcInfo>();
-		List<File> nonExistentFiles = new ArrayList<File>();
+		List<Integer> nonExistentFiles = new ArrayList<Integer>();
 		
 		for (List<File> files : songs) {
 			List<FileAndData> fad = new ArrayList<FileAndData>();
 			for (File f : files) {
 				if (!f.exists()) {
-					nonExistentFiles.add(f);
+					
+					nonExistentFiles.add(data.size());
+					AbcInfo inf = new AbcInfo();
+					inf.addSourceFile(f);
+					data.add(inf);
 					continue;
 				}
 				try {
@@ -1116,28 +1124,42 @@ public class AbcPlaylistPanel extends JPanel {
 		}
 		
 		if (!nonExistentFiles.isEmpty()) {
-			handleMissingPlaylistFiles(nonExistentFiles);
+			handleMissingPlaylistFiles(nonExistentFiles, data);
+			markDirty = true;
 		}
 		
-		tableModel.clearRows();
+		if (data.size() == 0 && !nonExistentFiles.isEmpty() && !append) {
+			JOptionPane.showMessageDialog(this, "Failed to load any of the songs in this playlist!", "Failed to Load", JOptionPane.ERROR_MESSAGE);
+			return;
+		}
+		
+		if (!append) {
+			tableModel.clearRows();
+		} else if (playlistFile != null || tableModel.getRowCount() != 0) {
+			markDirty = true;
+		}
 		
 		for (AbcInfo inf : data) {
 			tableModel.addRow(inf);
 		}
 		
 		playlistDirtyFlag = markDirty;
-		playlistFile = file;
+		
+		if (!append || playlistFile == null) {
+			playlistFile = file;
+		}
 		saveMenuItem.setEnabled(true);
 		updatePlaylistLabel();
 	}
 	
-	public void handleMissingPlaylistFiles(List<File> missingFiles) {
+	public void handleMissingPlaylistFiles(List<Integer> missingSongs, List<AbcInfo> songs) {
 		String confirmDialogStr = "Some abc files couldn't be found:\n";
-		for (int i = 0; i < Math.max(5, missingFiles.size()); i++) {
-			confirmDialogStr += missingFiles.get(i).getParent() + "\n";
+		for (int i = 0; i < Math.max(5, missingSongs.size()); i++) {
+			AbcInfo inf = songs.get(missingSongs.get(i));
+			confirmDialogStr += inf.getSourceFiles().get(0).getName() + "\n";
 		}
-		if (missingFiles.size() > 5) {
-			confirmDialogStr += (missingFiles.size() - 5) + " more...\n";
+		if (missingSongs.size() > 5) {
+			confirmDialogStr += (missingSongs.size() - 5) + " more...\n";
 		}
 		confirmDialogStr += "Would you like to recursively search for them?";
 		int result = JOptionPane.showConfirmDialog(
@@ -1147,12 +1169,100 @@ public class AbcPlaylistPanel extends JPanel {
 				JOptionPane.YES_NO_OPTION);
 		
 		if (result == JOptionPane.NO_OPTION) {
+			for (int i = missingSongs.size() - 1; i >= 0; i--) {
+				int idx = missingSongs.get(i);
+				songs.remove(idx);
+			}
 			return;
 		}
 		
+		String folder = playlistPrefs.get("playlistDirectory", Util.getLotroMusicPath(false).getAbsolutePath());
+		
 		JFileChooser folderChooser = new JFileChooser();
 		folderChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+		folderChooser.setCurrentDirectory(new File(folder));
+		folderChooser.setMultiSelectionEnabled(false);
 		folderChooser.setDialogTitle("Choose Search Folder");
+		folderChooser.showOpenDialog(this);
+		if (result != JFileChooser.APPROVE_OPTION) {
+			for (int i = missingSongs.size() - 1; i >= 0; i--) {
+				int idx = missingSongs.get(i);
+				songs.remove(idx);
+			}
+			return;
+		}
+		
+		HashMap<String, Integer> nameToIdx = new HashMap<>();
+		List<String> foundFiles = new ArrayList<String>();
+		
+		for (Integer songIdx : missingSongs) {
+			String missingFile = songs.get((int)songIdx).getSourceFiles().get(0).getName();
+			nameToIdx.put(missingFile, songIdx);
+		}
+		
+		try {
+			Files.walkFileTree(folderChooser.getSelectedFile().toPath(), new SimpleFileVisitor<Path>() {
+				@Override
+				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs){
+					String filename = file.getFileName().toString();
+					
+					if (nameToIdx.containsKey(filename)) {
+						Integer idx = nameToIdx.get(filename);
+						
+						File f = file.toFile();
+						
+						List<FileAndData> fad = new ArrayList<FileAndData>();
+						AbcInfo inf = null;
+						try {
+							fad.add(new FileAndData(f, AbcToMidi.readLines(f)));
+							inf = AbcToMidi.parseAbcMetadata(fad);
+						} catch (IOException | ParseException e) {
+							e.printStackTrace();
+							return FileVisitResult.CONTINUE;
+						}
+						
+						if (inf != null) {
+							songs.set(idx, inf);
+							nameToIdx.remove(filename);
+							foundFiles.add(f.getAbsolutePath());
+						}
+						
+						if (nameToIdx.isEmpty()) {
+							return FileVisitResult.TERMINATE;
+						}
+					}
+					
+					return FileVisitResult.CONTINUE;
+				}
+				
+				@Override
+				public FileVisitResult visitFileFailed(Path file, IOException e) {
+					return FileVisitResult.CONTINUE;
+				}
+			});
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		if (nameToIdx.isEmpty()) {
+			JOptionPane.showMessageDialog(this, "Found all missing files!", "Search Complete", JOptionPane.INFORMATION_MESSAGE);
+		} else if (nameToIdx.size() == missingSongs.size()) {
+			JOptionPane.showMessageDialog(this, "No missing files were found in the selected folder.", "Search Complete", JOptionPane.INFORMATION_MESSAGE);
+		} else {
+			String fileReportStr = "Found files:\n";
+			for (int i = 0; i < foundFiles.size(); i++ ) {
+				fileReportStr += foundFiles.get(i) + "\n";
+			}
+			fileReportStr += "Still missing " + nameToIdx.size() + " files.";
+			JOptionPane.showMessageDialog(this, fileReportStr, "Search Complete", JOptionPane.INFORMATION_MESSAGE);
+		}
+		
+		for (int i = missingSongs.size() - 1; i >= 0; i--) {
+			int idx = missingSongs.get(i);
+			if (nameToIdx.containsValue((Integer)idx)) {
+				songs.remove(idx);
+			}
+		}
 	}
 	
 	public boolean isPlayingFromPlaylist() {
@@ -1186,7 +1296,7 @@ public class AbcPlaylistPanel extends JPanel {
 			firePlaylistEvent(this, PlaylistEventType.CLOSE_SONG);
 		}
 		
-		loadPlaylist(file);
+		loadPlaylist(file, append);
 		playlistPrefs.put("playlistDirectory", openPlaylistChooser.getCurrentDirectory().getAbsolutePath());
 		
 		firePlaylistEvent(this, PlaylistEventType.PLAYLIST_OPENED);
@@ -1424,7 +1534,7 @@ public class AbcPlaylistPanel extends JPanel {
 			@Override
 			protected void done() {
 				if (loadPlaylist && promptSavePlaylist()) {
-					loadPlaylist(files.get(0));
+					loadPlaylist(files.get(0), false);
 				} else {
 					if (insertPos == -1) { // Append to table
 						for (AbcInfo info : data) {

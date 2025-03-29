@@ -1215,7 +1215,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		
 		if (abcFiles.length == 1 && abcFiles[0].getName().toLowerCase().endsWith(".abcp")) {
 			if (playlistViewPanel.promptSavePlaylist()) {
-				playlistViewPanel.loadPlaylist(abcFiles[0]);
+				playlistViewPanel.loadPlaylist(abcFiles[0], false);
 				SwingUtilities.invokeLater(()-> {
 					showPlaylistView = true;
 					updatePlaylistCardView();
@@ -1241,13 +1241,11 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		
 		// TODO: support append playlist?
 		if (abcFiles.length == 1 && abcFiles[0].getName().toLowerCase().endsWith(".abcp")) {
-			if (playlistViewPanel.promptSavePlaylist()) {
-				playlistViewPanel.loadPlaylist(abcFiles[0]);
-				SwingUtilities.invokeLater(()-> {
-					showPlaylistView = true;
-					updatePlaylistCardView();
-				});
-			}
+			playlistViewPanel.loadPlaylist(abcFiles[0], true);
+			SwingUtilities.invokeLater(()-> {
+				showPlaylistView = true;
+				updatePlaylistCardView();
+			});
 			return true;
 		}
 
