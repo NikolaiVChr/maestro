@@ -119,42 +119,48 @@ public class AbcFileTreeModel implements TreeModel {
 		
 	}
 	
-	private Comparator<AbcSongFileNode> getComparator(SortType type) {
-		Comparator<AbcSongFileNode> folderFirstComparator = (f1, f2) -> {
-			if (f1.getFile().isDirectory() == f2.getFile().isDirectory()) {
+	public static Comparator<File> getFileComparator(SortType type) {
+		Comparator<File> folderFirstComparator = (f1, f2) -> {
+			if (f1.isDirectory() == f2.isDirectory()) {
 				return 0;
 			} else {
-				return f1.getFile().isDirectory() ? -1 : 1;
+				return f1.isDirectory() ? -1 : 1;
 			}
 		};
 		
-		Comparator<AbcSongFileNode> sortComparator;
+		Comparator<File> sortComparator;
 		
 		switch (type) {
 		case NAME_ASC:
-			sortComparator = (f1, f2) -> f1.getFile().getName().compareToIgnoreCase(f2.getFile().getName());
+			sortComparator = (f1, f2) -> f1.getName().compareToIgnoreCase(f2.getName());
 			break;
 		case NAME_DESC:
-			sortComparator = (f1, f2) -> f2.getFile().getName().compareToIgnoreCase(f1.getFile().getName());
+			sortComparator = (f1, f2) -> f2.getName().compareToIgnoreCase(f1.getName());
 			break;
 		case LAST_MODIFIED_ASC:
-			sortComparator = (f1, f2) -> Long.compare(f1.getFile().lastModified(), f2.getFile().lastModified());
+			sortComparator = (f1, f2) -> Long.compare(f1.lastModified(), f2.lastModified());
 			break;
 		case LAST_MODIFIED_DESC:
-			sortComparator = (f1, f2) -> Long.compare(f2.getFile().lastModified(), f1.getFile().lastModified());
+			sortComparator = (f1, f2) -> Long.compare(f2.lastModified(), f1.lastModified());
 			break;
 		case SIZE_ASC:
-			sortComparator = (f1, f2) -> Long.compare(f1.getFile().length(), f2.getFile().length());
+			sortComparator = (f1, f2) -> Long.compare(f1.length(), f2.length());
 			break;
 		case SIZE_DESC:
-			sortComparator = (f1, f2) -> Long.compare(f2.getFile().length(), f1.getFile().length());
+			sortComparator = (f1, f2) -> Long.compare(f2.length(), f1.length());
 			break;
 		default:
-			sortComparator = (f1, f2) -> f1.getFile().getName().compareToIgnoreCase(f2.getFile().getName());
+			sortComparator = (f1, f2) -> f1.getName().compareToIgnoreCase(f2.getName());
 			break;
 		}
 		
 		return folderFirstComparator.thenComparing(sortComparator);
+	}
+	
+	public static Comparator<AbcSongFileNode> getComparator(SortType type) {
+		Comparator<File> fileComparator = getFileComparator(type);
+		
+		return (f1, f2) -> fileComparator.compare(f1.getFile(), f2.getFile());
 	}
 	
 	public class AbcSongFileNode {
