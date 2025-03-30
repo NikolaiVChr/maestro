@@ -80,9 +80,19 @@ public class PartNumberingConfig {
 				}
 
 				if (instrument != null) {
-					map.put(instrument, Integer.parseInt(value));
+					try {
+						map.put(instrument, Integer.parseInt(value));
+					} catch (NumberFormatException nfe) {
+						throw new ParseException("Invalid value " + value + ". Should be a number", fn,
+								lineNo);
+					}
 				} else if (key.equals("INCREMENT")) {
-					increment = Integer.parseInt(value);
+					try {
+						increment = Integer.parseInt(value);
+					} catch (NumberFormatException nfe) {
+						throw new ParseException("Invalid value of INCREMENT " + value + ". Should be 1 or 10", fn,
+								lineNo);
+					}
 					if (increment != 10 && increment != 1) {
 						throw new ParseException("Invalid value of INCREMENT " + increment + ". Should be 1 or 10", fn,
 								lineNo);

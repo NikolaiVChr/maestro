@@ -47,14 +47,14 @@ public class ListenerList<E extends EventObject> implements IDiscardable {
 
 		try {
 			firing++;
-			List<Listener<E>> listeners = new ArrayList<Listener<E>>(this.listeners);
+			List<Listener<E>> listenersTmp = new ArrayList<Listener<E>>(this.listeners);
 
 			/*
 			 * Important: do not access this.listeners after this point. It may be copied and modified if a listener is
 			 * added or removed while firing this event. If that happens, this loop will finish on the old copy of the
 			 * list.
 			 */
-			for (Listener<E> l : listeners) {
+			for (Listener<E> l : listenersTmp) {
 				l.onEvent(e);
 			}
 		} finally {

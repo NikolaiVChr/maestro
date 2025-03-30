@@ -496,8 +496,11 @@ public class AbcToMidi {
 						int denominator;
 						int numerator_abc;
 						int denominator_abc;
-
-						numerator = (m.group(NOTE_LEN_NUMER) == null) ? 1 : Integer.parseInt(m.group(NOTE_LEN_NUMER));
+						try {
+							numerator = (m.group(NOTE_LEN_NUMER) == null) ? 1 : Integer.parseInt(m.group(NOTE_LEN_NUMER));
+						} catch (NumberFormatException nfe) {
+							numerator = 4;// should not happen
+						}
 						String denom = m.group(NOTE_LEN_DENOM);
 						if (denom == null)
 							denominator = 1;
@@ -505,8 +508,13 @@ public class AbcToMidi {
 							denominator = 2;
 						else if (denom.equals("//"))
 							denominator = 4;
-						else
-							denominator = Integer.parseInt(denom.substring(1));
+						else {
+							try {
+								denominator = Integer.parseInt(denom.substring(1));
+							} catch (NumberFormatException nfe) {
+								denominator = 4;// should not happen
+							}
+						}
 
 						String abcNoteL = "";
 						if (m.group(NOTE_LEN_NUMER) != null) {

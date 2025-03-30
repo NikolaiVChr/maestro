@@ -25,6 +25,8 @@ package com.digero.common.midi;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.digero.common.util.ParseException;
+
 public enum Note {
 	REST(-1), //
 	CX, CsX, DbX(CsX), DX, DsX, EbX(DsX), EX, FX, FsX, GbX(FsX), GX, GsX, AbX(GsX), AX, AsX, BbX(AsX), BX, //
@@ -142,10 +144,17 @@ public enum Note {
 		} else {
 			String s = toString();
 			String octaveString = s.substring(s.length() - 1);
-			if (octaveString.equals("X"))
+			if (octaveString.equals("X")) {
 				octave = -1;
-			else
-				octave = Integer.parseInt(octaveString);
+			} else {
+				int octaveResult = 3;
+				try {
+					octaveResult = Integer.parseInt(octaveString);
+				} catch (NumberFormatException nfe) {
+					// will never happen.
+				}
+				octave = octaveResult;
+			}
 			StringBuilder abc = new StringBuilder(2 + Math.abs(octave - 3));
 
 			if (s.indexOf('s') == 1) {
