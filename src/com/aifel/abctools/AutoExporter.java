@@ -76,8 +76,8 @@ public class AutoExporter {
 	private volatile boolean cancel = false;
 	
 	// For testing:
-	private static final boolean neverLocateMidi = false;
-	private static final boolean testIfOutputIsValid = true;
+	private static final boolean neverLocateMidi = false;// for testing
+	private static final boolean testIfOutputIsValid = false;// makes it slower
 	
 	AutoExporter (MultiMergerView frame, String myHome, AbcTools main, Preferences autoPrefs) {
 		this.frame = frame;
