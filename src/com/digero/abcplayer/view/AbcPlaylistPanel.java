@@ -1408,8 +1408,8 @@ public class AbcPlaylistPanel extends JPanel {
 			String[] split = dur.split(":");
 			int m = Integer.parseInt(split[0]);
 			int s = Integer.parseInt(split[1]);
-			totalTimeMicroSec += 60000000 * m;
-			totalTimeMicroSec += 1000000 * s;
+			totalTimeMicroSec += 60000000L * m;
+			totalTimeMicroSec += 1000000L * s;
 		}
 		
 		String labelStr = "";
