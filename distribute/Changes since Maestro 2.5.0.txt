@@ -48,6 +48,8 @@ Thanks to all who gave feedback of features and bugs plus suggestions.
 Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 ================
 
+Version 4.0.19
+- Make Abc Tools auto-exporter fast again, by disabling checks for abc validity.
 
 Version 4.0.18
 - Make section-editor 'Rest of Track' pin to bottom instead of being inside scrollable area.
@@ -62,19 +64,13 @@ Version 4.0.18
 - Change that tempos meta messages not in first track would be ignored. Some MIDI software like FL Studio can output them in other tracks.
     Old project will continue to only read them from first track for backwards compatibility.
 - Auto-exporter now skips recursive folders that start with . in their name.
-- Added a search feature to the ABC browser, it will search as you type for song files which match (case insensitive).
-- The ABC browser will keep folders expanded when you change the sort type or refresh files (or use search).
-- The ABC playlist table will scroll to the end when new songs are added which would appear off screen.
-- You can now press tab to switch between the song view and the browser/playlist view.
-- Opening an ABC song through dragging or the file->open menu will switch to the song view if nothing's playing.
-- Opening a playlist will switch to the playlist view if nothing's playing.
 - Fix that Maestro would force a sorting of parts when loading project or using AbcTools auto-exporter.
     This also means if you change the auto part numbering and then load an old project,
     you will have to change a part number to trigger a sort with the new auto part numbering scheme.
 - Maestro now warns user if loading a project where the parts use tracks that has no notes.
 - Adjusted note ending hold and exponential release for preview and abc player playback, to better match lotro linear power release.
 - Added a search feature to the ABC browser, it will search as you type for song files which match (case insensitive)
-  - If you add a folder to the playlist, it will only add files which match the search under that folder (recursively)
+    If you add a folder to the playlist, it will only add files which match the search under that folder (recursively)
 - Adding a folder to the playlist will now add the files using the same sort order as is set in the abc file tree
 - The ABC browser will keep folders expanded when you change the sort type or refresh files (or use search)
 - The ABC playlist table will scroll to the end when new songs are added which would appear off screen
@@ -85,14 +81,14 @@ Version 4.0.18
 - If song files are missing in a playlist, AbcPlayer can prompt you to search for them in another folder
 - Add a playlist menu option, "Append Playlist...", which will open and append a playlist to the existing playlist contents
 - Added a set export wizard feature to the playlist
-  - Accessible through the Playlist menu, "Export Playlist as Set..."
-  - Allows you to export the currently loaded playlist's songs into a new folder or zipped file
-  - File renaming pattern lets you reorder the songs to match the playlist using the $SongIndex variable
-  - Optionally export a CSV part sheet file (importable into Excel, Google Docs, etc.) which adds a row for each song:
-    - The song filename
-    - Optional columns for song fields such as composer, duration, etc.,
-      - Either using the columns that are visible in your playlist view, or using custom columns
-    - Optionally, one or more columns containing either the part names or the instrument names of each song
+    Accessible through the Playlist menu, "Export Playlist as Set..."
+    Allows you to export the currently loaded playlist's songs into a new folder or zipped file
+        File renaming pattern lets you reorder the songs to match the playlist using the $SongIndex variable
+        Optionally export a CSV part sheet file (importable into Excel, Google Docs, etc.) which adds a row for each song:
+         The song filename
+         Optional columns for song fields such as composer, duration, etc.,
+          Either using the columns that are visible in your playlist view, or using custom columns
+         Optionally, one or more columns containing either the part names or the instrument names of each song
 
 
 Version 3.6.5
