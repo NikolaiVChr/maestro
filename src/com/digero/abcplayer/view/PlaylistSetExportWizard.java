@@ -47,11 +47,7 @@ import com.digero.maestro.abc.ExportFilenameTemplate;
 import net.miginfocom.swing.MigLayout;
 
 public class PlaylistSetExportWizard extends JDialog {
-	
-	public static final String[] spaceReplaceChars = { " ", "", "_", "-" };
-	public static final String[] spaceReplaceLabels = { "Don't Replace", "Remove Spaces", "_ (Underscore)",
-			"- (Dash)" };
-	
+		
 	public static final String[] partColumnsSettings = { "part", "instrument", "none" };
 	public static final String[] partColumnsLabels = { "Use Part Names", "Use Instrument Names", "Don't Include" };
 	
@@ -387,7 +383,7 @@ public class PlaylistSetExportWizard extends JDialog {
 		JComboBox<String> replaceWhitespaceComboBox = new JComboBox<>(ExportFilenameTemplate.spaceReplaceLabels);
 		String replaceText = settings.getWhitespaceReplaceText();
 		int selectedIndex = 0;
-		settings.setWhitespaceReplaceText(spaceReplaceChars[0]);
+		settings.setWhitespaceReplaceText(ExportFilenameTemplate.spaceReplaceChars[0]);
 
 		for (int i = 0; i < ExportFilenameTemplate.spaceReplaceChars.length; i++) {
 			if (replaceText.equals(ExportFilenameTemplate.spaceReplaceChars[i])) {

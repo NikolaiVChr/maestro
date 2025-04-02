@@ -1,6 +1,7 @@
 package com.digero.maestro.abc;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.ListIterator;
@@ -10,15 +11,17 @@ import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import com.digero.common.util.Pair;
 import com.digero.common.util.Util;
 import com.digero.maestro.view.SettingsDialog.MockMetadataSource;
 
 public class ExportFilenameTemplate {
-	public static final String[] spaceReplaceChars = { " ", "", "_", "-" };
+	public static final String spaceReplaceChars4 = "RemoveAndCaps";
+	public static final String[] spaceReplaceChars = { " ", "", "_", "-", spaceReplaceChars4 };
 	public static final String[] spaceReplaceLabels = { "Don't Replace", "Remove Spaces", "_ (Underscore)",
-			"- (Dash)" };
+			"- (Dash)", "Remove Spaces and Capitalize first letter" };
 
 	public static class Settings {
 		private boolean exportFilenamePatternEnabled;
@@ -242,7 +245,13 @@ public class ExportFilenameTemplate {
 			Variable var = variables.get(name.substring(match.first, match.second));
 			if (var != null) {
 				String value = var.getValue();
-				value = value.replaceAll("\\s+", settings.getWhitespaceReplaceText());
+				if (ExportFilenameTemplate.spaceReplaceChars4.equals(settings.getWhitespaceReplaceText())) {
+					value = Arrays.stream(value.trim().split("\\s+"))
+			                .map(word -> Character.toUpperCase(word.charAt(0)) + word.substring(1))
+			                .collect(Collectors.joining(""));
+				} else {
+					value = value.replaceAll("\\s+", settings.getWhitespaceReplaceText());
+				}
 				name = name.substring(0, match.first) + value + name.substring(match.second);
 			}
 		}

@@ -494,6 +494,26 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 	}
 
 	private JPanel createNameTemplatePanel() {
+		JLabel whitespaceLabel = new JLabel("<html><b>Replace spaces in variables with:</b></html>");
+
+		JComboBox<String> replaceWhitespaceComboBox = new JComboBox<>(nameTemplateSettings.spaceReplaceLabels);
+		String replaceText = nameTemplateSettings.getWhitespaceReplaceText();
+		int selectedIndex = 0;
+		nameTemplateSettings.setWhitespaceReplaceText(nameTemplateSettings.spaceReplaceChars[0]);
+
+		for (int i = 0; i < nameTemplateSettings.spaceReplaceChars.length; i++) {
+			if (replaceText.equals(nameTemplateSettings.spaceReplaceChars[i])) {
+				nameTemplateSettings.setWhitespaceReplaceText(nameTemplateSettings.spaceReplaceChars[i]);
+				selectedIndex = i;
+			}
+		}
+		replaceWhitespaceComboBox.setSelectedIndex(selectedIndex);
+		replaceWhitespaceComboBox.addActionListener(e -> {
+			nameTemplateSettings.setWhitespaceReplaceText(
+					nameTemplateSettings.spaceReplaceChars[replaceWhitespaceComboBox.getSelectedIndex()]);
+			updateNameTemplateExample();
+		});
+		
 		final JTextField partNameTextField = new JTextField(nameTemplateSettings.getPartNamePattern(), 40);
 		partNameTextField.getDocument().addDocumentListener(new DocumentListener() {
 			@Override
@@ -538,8 +558,14 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		nameTemplatePanel.add(partNameTextField, "0, " + row + ", 1, " + row);
 
 		layout.insertRow(++row, PREFERRED);
-		nameTemplatePanel.add(examplePanel, "0, " + row + ", 1, " + row + ", F, F");
+		nameTemplatePanel.add(whitespaceLabel, "0, " + row + ", 1, " + row + ", F, F");
 
+		layout.insertRow(++row, PREFERRED);
+		nameTemplatePanel.add(replaceWhitespaceComboBox, "0, " + row + ", 1, " + row + ", F, F");
+		
+		layout.insertRow(++row, PREFERRED);
+		nameTemplatePanel.add(examplePanel, "0, " + row + ", 1, " + row + ", F, F");
+		
 		layout.insertRow(++row, PREFERRED);
 
 		JLabel nameLabel = new JLabel("<html><u><b>Variable Name</b></u></html>");
@@ -579,7 +605,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		MockMetadataSource mockMetadata = new MockMetadataSource(originalMetadataSource);
 		nameTemplate.setMetadataSource(mockMetadata);
 
-		String exampleText = nameTemplate.formatName(nameTemplateSettings.getPartNamePattern(), mockMetadata);
+		String exampleText = nameTemplate.formatName(nameTemplateSettings.getPartNamePattern(), mockMetadata, nameTemplateSettings.getWhitespaceReplaceText());
 		String exampleTextEllipsis = Util.ellipsis(exampleText, nameTemplateExampleLabel.getWidth(),
 				nameTemplateExampleLabel.getFont());
 

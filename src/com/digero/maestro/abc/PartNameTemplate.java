@@ -2,6 +2,7 @@ package com.digero.maestro.abc;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.ListIterator;
@@ -11,6 +12,7 @@ import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.util.Pair;
@@ -18,7 +20,16 @@ import com.digero.common.util.Util;
 import com.digero.maestro.view.SettingsDialog.MockMetadataSource;
 
 public class PartNameTemplate {
+
+	
 	public static class Settings {
+		public static final String spaceReplaceChars4 = "RemoveAndCaps";
+		public static final String[] spaceReplaceChars = { " ", "", "_", "-", spaceReplaceChars4 };
+		public static final String[] spaceReplaceLabels = { "Don't Replace", "Remove Spaces", "_ (Underscore)",
+				"- (Dash)", "Remove Spaces and Capitalize first letter" };
+		
+		private String whitespaceReplaceText;
+		
 		private String partNamePattern;
 
 		private final Preferences prefs;
@@ -26,6 +37,7 @@ public class PartNameTemplate {
 		private Settings(Preferences prefs) {
 			this.prefs = prefs;
 			partNamePattern = prefs.get("partNamePattern", "$SongTitle ($SongLength) - $PartName");
+			whitespaceReplaceText = prefs.get("whitespaceReplaceText", " ");
 		}
 
 		public Settings(Settings source) {
@@ -35,10 +47,12 @@ public class PartNameTemplate {
 
 		private void save(Preferences prefs) {
 			prefs.put("partNamePattern", partNamePattern);
+			prefs.put("whitespaceReplaceText", whitespaceReplaceText); 
 		}
 
 		private void copyFrom(Settings source) {
 			this.partNamePattern = source.partNamePattern;
+			this.whitespaceReplaceText = source.whitespaceReplaceText;
 		}
 
 		public String getPartNamePattern() {
@@ -59,6 +73,14 @@ public class PartNameTemplate {
 
 			Settings fresh = new Settings(prefs);
 			this.copyFrom(fresh);
+		}
+		
+		public String getWhitespaceReplaceText() {
+			return whitespaceReplaceText;
+		}
+
+		public void setWhitespaceReplaceText(String whitespaceReplaceText) {
+			this.whitespaceReplaceText = whitespaceReplaceText;
 		}
 	}
 
@@ -222,10 +244,10 @@ public class PartNameTemplate {
 	}
 
 	public String formatName(AbcPartMetadataSource currentAbcPart) {
-		return formatName(settings.getPartNamePattern(), currentAbcPart);
+		return formatName(settings.getPartNamePattern(), currentAbcPart, settings.getWhitespaceReplaceText());
 	}
 
-	public String formatName(String partNamePattern, AbcPartMetadataSource currentAbcPart) {
+	public String formatName(String partNamePattern, AbcPartMetadataSource currentAbcPart, String whiteSpaceReplaceChars) {
 		this.currentAbcPart = currentAbcPart;
 		String name = partNamePattern;
 
@@ -242,7 +264,15 @@ public class PartNameTemplate {
 			Pair<Integer, Integer> match = reverseIter.previous();
 			Variable var = variables.get(name.substring(match.first, match.second));
 			if (var != null) {
-				name = name.substring(0, match.first) + var.getValue() + name.substring(match.second);
+				if (settings.spaceReplaceChars4.equals(whiteSpaceReplaceChars)) {
+					name = name.substring(0, match.first) + 
+							Arrays.stream(var.getValue().split("\\s+"))
+			                .map(word -> Character.toUpperCase(word.charAt(0)) + word.substring(1))
+			                .collect(Collectors.joining(""))
+			                + name.substring(match.second);
+				} else {					
+					name = name.substring(0, match.first) + var.getValue().replaceAll("\\s+", whiteSpaceReplaceChars) + name.substring(match.second);
+				}
 			}
 		}
 
