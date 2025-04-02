@@ -31,6 +31,7 @@ import com.digero.common.abc.StringCleaner;
 import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.abctomidi.AbcToMidi;
 import com.digero.common.abctomidi.FileAndData;
+import com.digero.common.util.ExtensionFileFilter;
 import com.digero.common.util.LotroParseException;
 import com.digero.common.util.ParseException;
 import com.digero.maestro.MaestroMain;
@@ -732,7 +733,9 @@ public class AutoExporter {
 				File alternateFile = null;
 				if (result == JOptionPane.YES_OPTION) {
 					JFileChooser jfc = new JFileChooser();
-					jfc.setDialogTitle("Open missing MIDI");
+					jfc.setDialogTitle("Open missing MIDI/ABC");
+					jfc.setFileFilter(new ExtensionFileFilter("MIDI and ABC files", "mid",
+							"midi", "kar", "abc", "txt"));
 					if (original != null)
 						jfc.setSelectedFile(original);
 		
