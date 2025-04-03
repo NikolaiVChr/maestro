@@ -20,5 +20,6 @@
     <requires64Bit>true</requires64Bit>
     <minVersion>1.8.0</minVersion>
     <maxVersion></maxVersion>
+    <opt>-Dsun.java2d.opengl=True</opt>
   </jre>
 </launch4jConfig>
