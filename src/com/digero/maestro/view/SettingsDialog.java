@@ -1171,7 +1171,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 					return saveFile;
 			}
 
-			return new File(Util.getLotroMusicPath(false), "band/examplesong.abc");
+			return new File(Util.getLotroMusicPath(true), "band/examplesong.abc");
 		}
 
 		@Override

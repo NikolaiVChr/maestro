@@ -180,7 +180,7 @@ public class PartNameTemplate {
 						if (getMetadataSource().getExportFile() == null)
 							return "";
 
-						File root = Util.getLotroMusicPath(false);
+						File root = Util.getLotroMusicPath(true);
 						String saveFileName = Util.fileNameWithoutExtension(getMetadataSource().getExportFile());
 
 						StringBuilder path = new StringBuilder(saveFileName);

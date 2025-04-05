@@ -1110,7 +1110,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 	private void initOpenFileDialog() {
 		if (openFileDialog == null) {
 			openFileDialog = new JFileChooser(
-					prefs.get("openFileDialog.currentDirectory", Util.getLotroMusicPath(false).getAbsolutePath()));
+					prefs.get("openFileDialog.currentDirectory", Util.getLotroMusicPath(true).getAbsolutePath()));
 
 			openFileDialog.setMultiSelectionEnabled(true);
 			openFileDialog.setFileFilter(ABC_FILE_FILTER);
@@ -1152,7 +1152,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 
 		if (saveFileDialog == null) {
 			saveFileDialog = new JFileChooser(
-					prefs.get("saveFileDialog.currentDirectory", Util.getLotroMusicPath(false).getAbsolutePath()));
+					prefs.get("saveFileDialog.currentDirectory", Util.getLotroMusicPath(true).getAbsolutePath()));
 
 			saveFileDialog.setFileFilter(ABC_FILE_FILTER);
 		}

@@ -65,7 +65,7 @@ public class AbcBrowserDirectoryDialog extends JDialog {
 		
 		JButton add = new JButton("Add");
 		add.addActionListener(e -> {
-			JFileChooser chooseDir = new JFileChooser(Util.getLotroMusicPath(false));
+			JFileChooser chooseDir = new JFileChooser(Util.getLotroMusicPath(true));
 			chooseDir.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 			int res = chooseDir.showDialog(this, "Add");
 			if (res == JFileChooser.APPROVE_OPTION) {

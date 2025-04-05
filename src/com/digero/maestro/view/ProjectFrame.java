@@ -2555,7 +2555,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private File getAbcExportFile() {
 		File exportFile = abcSong.getExportFile();
 
-		String defaultFolder = Util.getLotroMusicPath(false).getAbsolutePath();
+		String defaultFolder = Util.getLotroMusicPath(true).getAbsolutePath();
 		String folder = prefs.get("exportDialogFolder", defaultFolder);
 		if (exportFile != null) // Use previously exported folder if it exists
 			folder = exportFile.getAbsoluteFile().getParent();

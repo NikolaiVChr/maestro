@@ -202,7 +202,7 @@ public class AbcPlaylistPanel extends JPanel {
 		add(browserSplitPane, BorderLayout.CENTER);
 		
 		{
-			String directoryStr = prefs.get("directories", Util.getLotroMusicPath(false).getAbsolutePath());
+			String directoryStr = prefs.get("directories", Util.getLotroMusicPath(true).getAbsolutePath());
 			String[] dirs = directoryStr.split(File.pathSeparator);
 			for (String dirStr : dirs) {
 				topLevelDirs.add(new File(dirStr));
@@ -1032,7 +1032,7 @@ public class AbcPlaylistPanel extends JPanel {
 		if (playlistFile != null) {
 			savePlaylistChooser.setSelectedFile(playlistFile);
 		} else {
-			String folder = playlistPrefs.get("playlistDirectory", Util.getLotroMusicPath(false).getAbsolutePath());
+			String folder = playlistPrefs.get("playlistDirectory", Util.getLotroMusicPath(true).getAbsolutePath());
 			savePlaylistChooser.setCurrentDirectory(new File(folder));
 		}
 		
@@ -1176,7 +1176,7 @@ public class AbcPlaylistPanel extends JPanel {
 			return;
 		}
 		
-		String folder = playlistPrefs.get("playlistDirectory", Util.getLotroMusicPath(false).getAbsolutePath());
+		String folder = playlistPrefs.get("playlistDirectory", Util.getLotroMusicPath(true).getAbsolutePath());
 		
 		JFileChooser folderChooser = new JFileChooser();
 		folderChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
@@ -1281,7 +1281,7 @@ public class AbcPlaylistPanel extends JPanel {
 			openPlaylistChooser.setFileFilter(new ExtensionFileFilter("ABC Playlist (.abcp)", "abcp"));
 		}
 		
-		String folder = playlistPrefs.get("playlistDirectory", Util.getLotroMusicPath(false).getAbsolutePath());
+		String folder = playlistPrefs.get("playlistDirectory", Util.getLotroMusicPath(true).getAbsolutePath());
 		openPlaylistChooser.setCurrentDirectory(new File(folder));
 		
 		int result = openPlaylistChooser.showOpenDialog(this);
