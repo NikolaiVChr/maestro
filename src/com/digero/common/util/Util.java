@@ -12,7 +12,10 @@ import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.prefs.Preferences;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -86,7 +89,66 @@ public final class Util {
 
 		return fit;
 	}
+	
+	/**
+	 * A more safe way to get the Windows Documents folder even if using OneDrive.
+	 * 
+	 * TODO: Not sure how to handle Linux.
+	 * 
+	 * @return
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
+	public static File getDocumentsFolder() throws IOException, InterruptedException {
+        Process process = Runtime.getRuntime().exec(
+            new String[]{"REG", "QUERY", "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders", "/v", "Personal"}
+        );
+        int exitCode = process.waitFor();
+        if (exitCode != 0) {
+            throw new IOException("Registry query failed with exit code: " + exitCode);
+        }
+        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        String line;
+        while ((line = reader.readLine()) != null) {
+            if (line.contains("Personal")) {
+            	// the limit of 3 ensures we get full value if the value contains spaces
+                String[] parts = line.trim().split("\\s+", 3);
+                if (parts.length == 3) {
+                    // The value is the last token.
+                    String path = parts[2];
+                    
+                    if (path != null && !path.isEmpty()) {
+                    	return new File(expandEnvironmentVariables(path));
+                    }
+                }
+            }
+        }
+        
+	    return getUserDocumentsPath();
+    }
+    
+    private static String expandEnvironmentVariables(String text) {
+        Pattern pattern = Pattern.compile("%(\\w+)%");
+        Matcher matcher = pattern.matcher(text);
+        StringBuffer sb = new StringBuffer();
+        while (matcher.find()) {
+            String varName = matcher.group(1);
+            String envValue = System.getenv(varName);
 
+            if (envValue == null) {
+                envValue = matcher.group(0);
+            }
+            matcher.appendReplacement(sb, Matcher.quoteReplacement(envValue));
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
+    }
+
+    /**
+     * TODO: getDocumentsFolder() is better than this, but probably not for Linux 
+     * 
+     * @return
+     */
 	public static File getUserDocumentsPath() {
 		String userHome = System.getProperty("user.home", "");
 	    File docs = new File(userHome, "Documents");
