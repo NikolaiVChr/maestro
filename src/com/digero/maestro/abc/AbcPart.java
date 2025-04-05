@@ -1198,49 +1198,44 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	}
 
 	public int[] getSectionVolumeAdjust(int track, NoteEvent ne) {
-		SequenceInfo se = getSequenceInfo();
 		int delta = 0;// volume offset
 		int factor = 100;// current fade-out volume factor
 		int factorTune = 100;// current fade-out volume factor (for tuneeditor)
-		NavigableMap<Float, TuneLine> tuneMap = abcSong.tuneBars;
+		long tick = ne.getStartTick();
+		
 		TreeMap<Long, PartSection> tree = null;
 		if (sectionsTicked != null) {
 			tree = sectionsTicked.get(track);
 		}
 		if (tree != null) {
-			Entry<Long, PartSection> entry = tree.floorEntry(ne.getStartTick());
+			Entry<Long, PartSection> entry = tree.floorEntry(tick);
 			if (entry != null) {
-				if (ne.getStartTick() < entry.getValue().endTick) {
+				if (tick < entry.getValue().endTick) {
 					delta = entry.getValue().volumeStep;
-					if (entry.getValue().fade > 0) {
-						factor = map(ne.getStartTick(), entry.getValue().startTick,
-								entry.getValue().endTick, 100, 100 - entry.getValue().fade);
-					} else if (entry.getValue().fade < 0) {
-						factor = map(ne.getStartTick(), entry.getValue().startTick,
-								entry.getValue().endTick, 100 + entry.getValue().fade, 100);
-					}
+					factor = computeFadeFactor(tick, entry.getValue().startTick, entry.getValue().endTick, entry.getValue().fade);
 				}
 			}
 		}
+		
+		NavigableMap<Float, TuneLine> tuneMap = abcSong.tuneBars;
 		if (tuneMap != null) {
 			for (TuneLine value : tuneMap.values()) {
-				if (ne.getStartTick() < value.endTick && ne.getStartTick() >= value.startTick) {
-					if (value.fade > 0) {
-						factorTune = map(ne.getStartTick(), value.startTick,
-								value.endTick, 100, 100 - value.fade);
-					} else if (value.fade < 0) {
-						factorTune = map(ne.getStartTick(), value.startTick,
-								value.endTick, 100 + value.fade, 100);
-					}
+				if (tick < value.endTick && tick >= value.startTick) {
+					factorTune = computeFadeFactor(tick, value.startTick, value.endTick, value.fade);
 					break;
 				}
 			}
 		}
-		int[] retur = new int[3];
-		retur[0] = delta;
-		retur[1] = factor;
-		retur[2] = factorTune;		
-		return retur;
+		return new int[] {delta, factor, factorTune};
+	}
+	
+	private int computeFadeFactor(long tick, long startTick, long endTick, int fade) {
+	    if (fade > 0) {
+	        return map(tick, startTick, endTick, 100, 100 - fade);
+	    } else if (fade < 0) {
+	        return map(tick, startTick, endTick, 100 + fade, 100);
+	    }
+	    return 100;
 	}
 	
 	public boolean getAudible(int track, long tickStart) {

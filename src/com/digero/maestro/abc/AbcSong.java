@@ -1140,16 +1140,21 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		}
 	}
 	
-	public void setOrganic(boolean selected) {
-		if (organic != selected) {
-			organic = selected;
+	public void setOrganic(boolean org) {
+		if (organic != org) {
+			organic = org;
 			fireChangeEvent(AbcSongProperty.ORGANIC);
 		}
 	}
 	
-	public void setOrganic2(boolean selected) {
-		if (organic2 != selected) {
-			organic2 = selected;
+	/**
+	 * Set if multistage should be used when organic is enabled
+	 * 
+	 * @param multistage boolean for multistage
+	 */
+	public void setOrganic2(boolean multistage) {
+		if (organic2 != multistage) {
+			organic2 = multistage;
 			fireChangeEvent(AbcSongProperty.ORGANIC);
 		}
 	}
@@ -1158,6 +1163,10 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		return organic;		
 	}
 	
+	/**
+	 * 
+	 * @return true if multistage enabled
+	 */
 	public boolean isOrganic2() {
 		return organic2;		
 	}
@@ -1169,18 +1178,17 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	}
 
 	public int getTuneTranspose(long tickStart) {
-		int tuneTrans = 0;
-		NavigableMap<Float, TuneLine> tree = tuneBars;
-		if (tree != null) {
-			for (TuneLine value : tuneBars.values()) {
-				if (tickStart < value.endTick && tickStart >= value.startTick) {
-					tuneTrans = value.seminoteStep;
-				}
+		if (tuneBars == null || tuneBars.isEmpty()) return 0;
+		
+		for (TuneLine value : tuneBars.values()) {
+			if (tickStart < value.endTick && tickStart >= value.startTick) {
+				return value.seminoteStep;
 			}
 		}
-		return tuneTrans;
-	}
 
+		return 0;
+	}
+	
 	public NavigableMap<Long, Integer> getTuneTempoChanges() {
 		SortedMap<Float, TuneLine> tree = tuneBars;
 		TreeMap<Long, Integer> treeChanges = new TreeMap<>();
