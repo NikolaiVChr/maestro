@@ -89,13 +89,27 @@ public final class Util {
 
 	public static File getUserDocumentsPath() {
 		String userHome = System.getProperty("user.home", "");
-		File docs = new File(userHome + "/Documents");
-		if (docs.isDirectory())
-			return docs;
-		docs = new File(userHome + "/My Documents");
-		if (docs.isDirectory())
-			return docs;
-		return new File(userHome);
+	    File docs = new File(userHome, "Documents");
+	    if (docs.isDirectory()) {
+	        return docs;
+	    }
+	    docs = new File(userHome, "My Documents");
+	    if (docs.isDirectory()) {
+	        return docs;
+	    }
+	    return new File(userHome);
+	}
+	
+	public static File getUserOneDriveDocumentsPath() {
+	    // Check if OneDrive is being used
+	    String oneDrivePath = System.getenv("OneDrive");
+	    if (oneDrivePath != null) {
+	        File oneDriveDocs = new File(oneDrivePath, "Documents");
+	        if (oneDriveDocs.isDirectory()) {
+	            return oneDriveDocs;
+	        }
+	    }
+	    return null;
 	}
 
 	public static File getUserMusicPath() {
@@ -111,15 +125,31 @@ public final class Util {
 	}
 
 	public static File getLotroMusicPath(boolean create) {
+		// TODO: handle Linux if Music folder is lower-case
+		final String lotroFolderName = "The Lord of the Rings Online";
+		final String abcFolderName = "Music";
 		File docs = getUserDocumentsPath();
-		File lotro = new File(docs.getAbsolutePath() + "/The Lord of the Rings Online");
+		File lotro = new File(docs, lotroFolderName);
 		if (lotro.isDirectory()) {
-			File music = new File(lotro.getAbsolutePath() + "/Music");
+			File music = new File(lotro, abcFolderName);
 			if (music.isDirectory() || create && music.mkdir())
 				return music;
 
 			return lotro;
 		}
+		
+		File onedriveDocs = getUserOneDriveDocumentsPath();
+		if (onedriveDocs != null) {
+			lotro = new File(onedriveDocs, lotroFolderName);
+			if (lotro.isDirectory()) {
+				File music = new File(lotro, abcFolderName);
+				if (music.isDirectory() || create && music.mkdir())
+					return music;
+	
+				return lotro;
+			}
+		}
+		
 		return docs;
 	}
 
