@@ -227,7 +227,7 @@ public class TrackInfo implements MidiConstants {
 							instruments.add(sequenceCache.getInstrument(portMap.get(trackNumber), c, tick));
 						}
 						noteEvents.add(ne);
-						notesInUse.add(ne.note.id);
+						//notesInUse.add(ne.note.id);
 						notesOn[c].add(ne);
 					}
 				}
@@ -274,6 +274,11 @@ public class TrackInfo implements MidiConstants {
 				// ("+Math.abs(be.getMaxBend() -
 				// be.getMinBend())+")");
 			}
+		}
+		
+		for (MidiNoteEvent ne : noteEvents) {
+			// We do it here due to the above split might have removed or added notes
+			notesInUse.add(ne.note.id);
 		}
 
 		// Turn off notes that are on at the end of the song. This shouldn't happen...
