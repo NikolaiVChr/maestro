@@ -48,6 +48,10 @@ Thanks to all who gave feedback of features and bugs plus suggestions.
 Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 ================
 
+Version 4.1.1
+- Default Music folder for abcplayer and maestro will now try to find lotro path in onedrive if thats used for documents folder.
+- Fix drum were not handling bent notes correctly when put on chromatic track.
+
 Version 4.1.0
 - Make Abc Tools auto-exporter fast again, by disabling checks for abc validity.
 - Use OpenGl instead of DirectX to render graphics.
