@@ -938,6 +938,7 @@ public class AbcExporter {
 							extraList.add(extra1);
 							extraList.add(extra2);
 							removeList.add(ne);
+							// Notice that bent notes on chromatic tracks are treated as only 1 note here
 						} else if (possibleCombiNote != null && possibleCombiNote.id > LotroCombiDrumInfo.maxCombi.id) {
 							// Just for safety, should never land here.
 							System.err.println("// Just for safety, should never land here:+\n"+ne);
@@ -1029,7 +1030,7 @@ public class AbcExporter {
 						int velocity = part.getSectionNoteVelocity(t, ne);
 						velocity = (int) ((velocity + part.getTrackVolumeAdjust(t) + sva[0]) * 0.01f * (float) sva[1] * 0.01f * (float) sva[2]);
 
-						AbcNoteEvent newNE = createNoteEvent(ne, mappedNote, velocity, startTick, endTick, qtm);
+						AbcNoteEvent newNE = createNoteEvent(ne, mappedNote, velocity, startTick, endTick, qtm, !part.isChromatic(t));
 						
 						/*
 						 * if (preview) { // Only associate if doing preview newNE.origEvent = new
@@ -1042,7 +1043,7 @@ public class AbcExporter {
 						if (doubling[0] && ne.note.id - 24 > Note.MIN.id) {
 							Note mappedNote2 = part.mapNoteEvent(t, ne, ne.note.id - 24);
 							if (mappedNote2 != null) {
-								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
+								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm, !part.isChromatic(t));
 								//newNE2.doubledNote = true;// prune these first
 								events.add(newNE2);
 							}
@@ -1050,7 +1051,7 @@ public class AbcExporter {
 						if (doubling[1] && ne.note.id - 12 > Note.MIN.id) {
 							Note mappedNote2 = part.mapNoteEvent(t, ne, ne.note.id - 12);
 							if (mappedNote2 != null) {
-								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
+								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm, !part.isChromatic(t));
 								//newNE2.doubledNote = true;
 								events.add(newNE2);
 							}
@@ -1058,7 +1059,7 @@ public class AbcExporter {
 						if (doubling[2] && ne.note.id + 12 < Note.MAX.id) {
 							Note mappedNote2 = part.mapNoteEvent(t, ne, ne.note.id + 12);
 							if (mappedNote2 != null) {
-								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
+								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm, !part.isChromatic(t));
 								//newNE2.doubledNote = true;
 								events.add(newNE2);
 							}
@@ -1066,7 +1067,7 @@ public class AbcExporter {
 						if (doubling[3] && ne.note.id + 24 < Note.MAX.id) {
 							Note mappedNote2 = part.mapNoteEvent(t, ne, ne.note.id + 24);
 							if (mappedNote2 != null) {
-								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
+								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm, !part.isChromatic(t));
 								//newNE2.doubledNote = true;
 								events.add(newNE2);
 							}
@@ -1397,6 +1398,7 @@ public class AbcExporter {
 							extraList.add(extra1);
 							extraList.add(extra2);
 							removeList.add(ne);
+							// Notice that bent notes on chromatic tracks are treated as only 1 note here
 						} else if (possibleCombiNote != null && possibleCombiNote.id > LotroCombiDrumInfo.maxCombi.id) {
 							// Just for safety, should never land here.
 							System.err.println("// Just for safety, should never land here:+\n"+ne);
@@ -1490,7 +1492,7 @@ public class AbcExporter {
 						int velocity = part.getSectionNoteVelocity(t, ne);
 						velocity = (int) ((velocity + part.getTrackVolumeAdjust(t) + sva[0]) * 0.01f * (float) sva[1] * 0.01f * (float) sva[2]);
 
-						AbcNoteEvent newNE = createNoteEvent(ne, mappedNote, velocity, startTick, endTick, qtm);
+						AbcNoteEvent newNE = createNoteEvent(ne, mappedNote, velocity, startTick, endTick, qtm, !part.isChromatic(t));
 						
 						/*
 						 * if (preview) { // Only associate if doing preview newNE.origEvent = new
@@ -1503,7 +1505,7 @@ public class AbcExporter {
 						if (doubling[0] && ne.note.id - 24 > Note.MIN.id) {
 							Note mappedNote2 = part.mapNoteEvent(t, ne, ne.note.id - 24);
 							if (mappedNote2 != null) {
-								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
+								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm, !part.isChromatic(t));
 								//newNE2.doubledNote = true;// prune these first
 								events.add(newNE2);
 							}
@@ -1511,7 +1513,7 @@ public class AbcExporter {
 						if (doubling[1] && ne.note.id - 12 > Note.MIN.id) {
 							Note mappedNote2 = part.mapNoteEvent(t, ne, ne.note.id - 12);
 							if (mappedNote2 != null) {
-								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
+								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm, !part.isChromatic(t));
 								//newNE2.doubledNote = true;
 								events.add(newNE2);
 							}
@@ -1519,7 +1521,7 @@ public class AbcExporter {
 						if (doubling[2] && ne.note.id + 12 < Note.MAX.id) {
 							Note mappedNote2 = part.mapNoteEvent(t, ne, ne.note.id + 12);
 							if (mappedNote2 != null) {
-								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
+								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm, !part.isChromatic(t));
 								//newNE2.doubledNote = true;
 								events.add(newNE2);
 							}
@@ -1527,7 +1529,7 @@ public class AbcExporter {
 						if (doubling[3] && ne.note.id + 24 < Note.MAX.id) {
 							Note mappedNote2 = part.mapNoteEvent(t, ne, ne.note.id + 24);
 							if (mappedNote2 != null) {
-								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm);
+								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm, !part.isChromatic(t));
 								//newNE2.doubledNote = true;
 								events.add(newNE2);
 							}
@@ -3467,8 +3469,8 @@ public class AbcExporter {
 	}
 
 	private AbcNoteEvent createNoteEvent(MidiNoteEvent oldNe, Note mappednote, int velocity, long startTick, long endTick,
-			ITempoCache tempos) {
-		if (oldNe instanceof BentMidiNoteEvent) {
+			ITempoCache tempos, boolean ignoreBentNotes) {
+		if (oldNe instanceof BentMidiNoteEvent && !ignoreBentNotes) {
 			BentAbcNoteEvent newNe = new BentAbcNoteEvent(mappednote, velocity, startTick, endTick, tempos, (BentMidiNoteEvent) oldNe);
 			return newNe;
 		} else {
