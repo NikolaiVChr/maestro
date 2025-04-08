@@ -914,80 +914,9 @@ public class AbcExporter {
 		List<AbcNoteEvent> events = new ArrayList<>();
 		for (int t = 0; t < part.getTrackCount(); t++) {
 			if (part.isTrackEnabled(t)) {
-				boolean specialDrumNotes = false;
-				if (part.getInstrument() == LotroInstrument.BASIC_DRUM) {
-					TrackInfo tInfo = part.getAbcSong().getSequenceInfo().getTrackInfo(t);
-					for (int inNo : tInfo.getNotesInUse()) {
-						byte outNo = part.getDrumMap(t).get(inNo);
-						if (outNo > part.getInstrument().highestPlayable.id) {
-							specialDrumNotes = true;
-							break;
-						}
-					}
-				}
-				List<MidiNoteEvent> listOfNotes = new ArrayList<>(part.getTrackEvents(t));
-
-				if (specialDrumNotes) {
-					List<MidiNoteEvent> extraList = new ArrayList<>();
-					List<MidiNoteEvent> removeList = new ArrayList<>();
-					for (MidiNoteEvent ne : listOfNotes) {
-						Note possibleCombiNote = part.mapNote(t, ne.note.id, ne.getStartTick());
-						if (possibleCombiNote != null && LotroCombiDrumInfo.noteIdIsXtraNote(possibleCombiNote.id)) {
-							MidiNoteEvent extra1 = LotroCombiDrumInfo.getId1(ne, possibleCombiNote, ne.midiPan);
-							MidiNoteEvent extra2 = LotroCombiDrumInfo.getId2(ne, possibleCombiNote, ne.midiPan);
-							extraList.add(extra1);
-							extraList.add(extra2);
-							removeList.add(ne);
-							// Notice that bent notes on chromatic tracks are treated as only 1 note here
-						} else if (possibleCombiNote != null && possibleCombiNote.id > LotroCombiDrumInfo.maxCombi.id) {
-							// Just for safety, should never land here.
-							System.err.println("// Just for safety, should never land here:+\n"+ne);
-							removeList.add(ne);
-						}
-					}
-					listOfNotes.removeAll(removeList);
-					listOfNotes.addAll(extraList);
-				}
+				List<MidiNoteEvent> listOfNotes = expandXtraDrumNotes(part, t);
 				
-				if (part.getInstrument().sustainable) {
-					long lastTick = 0L;
-					for (int curr = 0; curr < listOfNotes.size(); curr++) {
-						MidiNoteEvent currNe = listOfNotes.get(curr);
-						if (currNe.getEndTick() > lastTick) lastTick = currNe.getEndTick();
-						if (!part.getSectionLegato(t, currNe.getStartTick()) || lastTick > currNe.getEndTick()) {
-							currNe.setLegatoEndTick(part, null);
-							continue;
-						}
-						long currEnd = currNe.getEndTick();
-						long nextEnd = currEnd;
-						long currEndMicro = qtm.tickToMicros(currEnd);
-						// Now find where next note event starts
-						for (int next = curr+1; next < listOfNotes.size(); next++) {
-							MidiNoteEvent nextNe = listOfNotes.get(next);
-							if (nextNe.getStartTick() <= nextEnd && nextNe.getEndTick() > currEnd) {
-								break;
-							}
-							if (nextNe.getStartTick() > nextEnd) {
-								nextEnd = nextNe.getStartTick();
-								break;
-							}
-						}
-						if (nextEnd > currEnd) {
-							long nextEndMicro = qtm.tickToMicros(nextEnd);
-							if (nextEndMicro - currEndMicro < AbcConstants.ONE_SECOND_MICROS) {
-								currNe.setLegatoEndTick(part, nextEnd);
-							} else {
-								currNe.setLegatoEndTick(part, null);								
-							}
-						} else {
-							currNe.setLegatoEndTick(part, null);
-						}
-					}
-				} else {
-					for (MidiNoteEvent ne : listOfNotes) {
-						ne.setLegatoEndTick(part, null);
-					}
-				}
+				applyLegato(part, t, listOfNotes);
 
 				for (MidiNoteEvent ne : listOfNotes) {
 					// Skip notes that are outside of the play range.
@@ -1038,40 +967,7 @@ public class AbcExporter {
 						 */
 						events.add(newNE);
 
-						Boolean[] doubling = part.getSectionDoubling(ne.getStartTick(), t);
-
-						if (doubling[0] && ne.note.id - 24 > Note.MIN.id) {
-							Note mappedNote2 = part.mapNoteEvent(t, ne, ne.note.id - 24);
-							if (mappedNote2 != null) {
-								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm, !part.isChromatic(t));
-								//newNE2.doubledNote = true;// prune these first
-								events.add(newNE2);
-							}
-						}
-						if (doubling[1] && ne.note.id - 12 > Note.MIN.id) {
-							Note mappedNote2 = part.mapNoteEvent(t, ne, ne.note.id - 12);
-							if (mappedNote2 != null) {
-								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm, !part.isChromatic(t));
-								//newNE2.doubledNote = true;
-								events.add(newNE2);
-							}
-						}
-						if (doubling[2] && ne.note.id + 12 < Note.MAX.id) {
-							Note mappedNote2 = part.mapNoteEvent(t, ne, ne.note.id + 12);
-							if (mappedNote2 != null) {
-								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm, !part.isChromatic(t));
-								//newNE2.doubledNote = true;
-								events.add(newNE2);
-							}
-						}
-						if (doubling[3] && ne.note.id + 24 < Note.MAX.id) {
-							Note mappedNote2 = part.mapNoteEvent(t, ne, ne.note.id + 24);
-							if (mappedNote2 != null) {
-								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm, !part.isChromatic(t));
-								//newNE2.doubledNote = true;
-								events.add(newNE2);
-							}
-						}
+						createDoublingNoteEvents(part, events, t, ne, startTick, endTick, velocity);
 					} else {
 						ne.setLegatoEndTick(part, null);// clean up, so if a part is removed there is not references to it in midinoteevents.
 						//System.out.println("Final skipping \n"+ne+"\n"+(mappedNote != null)+" "+(part.shouldPlay(ne, t)));
@@ -1091,34 +987,7 @@ public class AbcExporter {
 
 		Collections.sort(events);
 		
-		if (part.conclusionFermata != 0) {
-			long finalNoteTickEnd = 0L;
-			List<AbcNoteEvent> conclusion = new ArrayList<>();
-			for (int cc = 0; cc < events.size() ; cc++) {
-				AbcNoteEvent ne = events.get(cc);
-				if (ne.getEndTick() > finalNoteTickEnd) {
-					finalNoteTickEnd = ne.getEndTick();
-					conclusion.removeAll(conclusion);
-					conclusion.add(ne);
-				} else if (ne.getEndTick() == finalNoteTickEnd) {
-					conclusion.add(ne);
-				}
-			}
-			long fermataEndTick = qtm.quantize(qtm.microsToTickABC(part.conclusionFermata * 1000L + qtm.tickToMicrosABC(finalNoteTickEnd)), part);
-			boolean sustain = false;
-			for (int cc = 0; cc < conclusion.size() ; cc++) {
-				AbcNoteEvent ne = conclusion.get(cc);
-				if (part.getInstrument().isSustainable(ne.note.id)) {
-					sustain = true;
-					ne.setEndTick(fermataEndTick);
-				}
-			}
-			if (fermataEndTick > exportEndTick && sustain) {
-				// This is a hack, as at the time this runs
-				// exportEndTick has already been used elsewhere.
-				exportEndTick = fermataEndTick;
-			}
-		}
+		applyFermata(part, events);
 
 		// Quantize the events
 		long lastEnding = 0;
@@ -1365,6 +1234,170 @@ public class AbcExporter {
 		
 		return chords;
 	}
+
+	private void applyFermata(AbcPart part, List<AbcNoteEvent> events) {
+		if (part.conclusionFermata != 0) {
+			long finalNoteTickEnd = 0L;
+			List<AbcNoteEvent> conclusion = new ArrayList<>();
+			for (int cc = 0; cc < events.size() ; cc++) {
+				AbcNoteEvent ne = events.get(cc);
+				if (ne.getEndTick() > finalNoteTickEnd) {
+					finalNoteTickEnd = ne.getEndTick();
+					conclusion.removeAll(conclusion);
+					conclusion.add(ne);
+				} else if (ne.getEndTick() == finalNoteTickEnd) {
+					conclusion.add(ne);
+				}
+			}
+			long fermataEndTick;
+			if (organic) {
+				fermataEndTick = qtm.microsToTickABCOrganic(part.conclusionFermata * 1000L + qtm.tickToMicrosABCOrganic(finalNoteTickEnd));
+			} else {
+				fermataEndTick = qtm.quantize(qtm.microsToTickABC(part.conclusionFermata * 1000L + qtm.tickToMicrosABC(finalNoteTickEnd)), part);
+			}
+			boolean sustain = false;
+			for (int cc = 0; cc < conclusion.size() ; cc++) {
+				AbcNoteEvent ne = conclusion.get(cc);
+				if (part.getInstrument().isSustainable(ne.note.id)) {
+					sustain = true;
+					ne.setEndTick(fermataEndTick);
+				}
+			}
+			if (fermataEndTick > exportEndTick && sustain) {
+				// This is a hack, as at the time this runs
+				// exportEndTick has already been used elsewhere.
+				exportEndTick = fermataEndTick;
+			}
+		}
+	}
+
+	private void createDoublingNoteEvents(AbcPart part, List<AbcNoteEvent> events, int trackNumber, MidiNoteEvent ne,
+			long startTick, long endTick, int velocity) {
+		Boolean[] doubling = part.getSectionDoubling(ne.getStartTick(), trackNumber);
+
+		if (doubling[0] && ne.note.id - 24 > Note.MIN.id) {
+			Note mappedNote2 = part.mapNoteEvent(trackNumber, ne, ne.note.id - 24);
+			if (mappedNote2 != null) {
+				AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm, !part.isChromatic(trackNumber));
+				//newNE2.doubledNote = true;// prune these first
+				events.add(newNE2);
+			}
+		}
+		if (doubling[1] && ne.note.id - 12 > Note.MIN.id) {
+			Note mappedNote2 = part.mapNoteEvent(trackNumber, ne, ne.note.id - 12);
+			if (mappedNote2 != null) {
+				AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm, !part.isChromatic(trackNumber));
+				//newNE2.doubledNote = true;
+				events.add(newNE2);
+			}
+		}
+		if (doubling[2] && ne.note.id + 12 < Note.MAX.id) {
+			Note mappedNote2 = part.mapNoteEvent(trackNumber, ne, ne.note.id + 12);
+			if (mappedNote2 != null) {
+				AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm, !part.isChromatic(trackNumber));
+				//newNE2.doubledNote = true;
+				events.add(newNE2);
+			}
+		}
+		if (doubling[3] && ne.note.id + 24 < Note.MAX.id) {
+			Note mappedNote2 = part.mapNoteEvent(trackNumber, ne, ne.note.id + 24);
+			if (mappedNote2 != null) {
+				AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm, !part.isChromatic(trackNumber));
+				//newNE2.doubledNote = true;
+				events.add(newNE2);
+			}
+		}
+	}
+
+	private void applyLegato(AbcPart part, int trackNumber, List<MidiNoteEvent> listOfNotes) {
+		if (part.getInstrument().sustainable) {
+			long lastTick = 0L;
+			for (int curr = 0; curr < listOfNotes.size(); curr++) {
+				MidiNoteEvent currNe = listOfNotes.get(curr);
+				if (currNe.getEndTick() > lastTick) lastTick = currNe.getEndTick();
+				if (!part.getSectionLegato(trackNumber, currNe.getStartTick()) || lastTick > currNe.getEndTick()) {
+					currNe.setLegatoEndTick(part, null);
+					continue;
+				}
+				long currEnd = currNe.getEndTick();
+				long nextEnd = currEnd;
+				long currEndMicro;
+				if (organic) {
+					currEndMicro = qtm.tickToMicrosOrganic(currEnd);
+				} else {
+					currEndMicro = qtm.tickToMicros(currEnd);
+				}
+				// Now find where next note event starts
+				for (int next = curr+1; next < listOfNotes.size(); next++) {
+					MidiNoteEvent nextNe = listOfNotes.get(next);
+					if (nextNe.getStartTick() <= nextEnd && nextNe.getEndTick() > currEnd) {
+						break;
+					}
+					if (nextNe.getStartTick() > nextEnd) {
+						nextEnd = nextNe.getStartTick();
+						break;
+					}
+				}
+				if (nextEnd > currEnd) {
+					long nextEndMicro;
+					if (organic) {
+						nextEndMicro = qtm.tickToMicrosOrganic(nextEnd);
+					} else {
+						nextEndMicro = qtm.tickToMicros(nextEnd);
+					}
+					if (nextEndMicro - currEndMicro < AbcConstants.ONE_SECOND_MICROS) {
+						currNe.setLegatoEndTick(part, nextEnd);
+					} else {
+						currNe.setLegatoEndTick(part, null);								
+					}
+				} else {
+					currNe.setLegatoEndTick(part, null);
+				}
+			}
+		} else {
+			for (MidiNoteEvent ne : listOfNotes) {
+				ne.setLegatoEndTick(part, null);
+			}
+		}
+	}
+
+	private List<MidiNoteEvent> expandXtraDrumNotes(AbcPart part, int trackNumber) {
+		boolean specialDrumNotes = false;
+		if (part.getInstrument() == LotroInstrument.BASIC_DRUM) {
+			TrackInfo tInfo = part.getAbcSong().getSequenceInfo().getTrackInfo(trackNumber);
+			for (int inNo : tInfo.getNotesInUse()) {
+				byte outNo = part.getDrumMap(trackNumber).get(inNo);
+				if (outNo > part.getInstrument().highestPlayable.id) {
+					specialDrumNotes = true;
+					break;
+				}
+			}
+		}
+		List<MidiNoteEvent> listOfNotes = new ArrayList<>(part.getTrackEvents(trackNumber));
+
+		if (specialDrumNotes) {
+			List<MidiNoteEvent> extraList = new ArrayList<>();
+			List<MidiNoteEvent> removeList = new ArrayList<>();
+			for (MidiNoteEvent ne : listOfNotes) {
+				Note possibleCombiNote = part.mapNote(trackNumber, ne.note.id, ne.getStartTick());
+				if (possibleCombiNote != null && LotroCombiDrumInfo.noteIdIsXtraNote(possibleCombiNote.id)) {
+					MidiNoteEvent extra1 = LotroCombiDrumInfo.getId1(ne, possibleCombiNote, ne.midiPan);
+					MidiNoteEvent extra2 = LotroCombiDrumInfo.getId2(ne, possibleCombiNote, ne.midiPan);
+					extraList.add(extra1);
+					extraList.add(extra2);
+					removeList.add(ne);
+					// Notice that bent notes on chromatic tracks are treated as only 1 note here
+				} else if (possibleCombiNote != null && possibleCombiNote.id > LotroCombiDrumInfo.maxCombi.id) {
+					// Just for safety, should never land here.
+					System.err.println("// Just for safety, should never land here:+\n"+ne);
+					removeList.add(ne);
+				}
+			}
+			listOfNotes.removeAll(removeList);
+			listOfNotes.addAll(extraList);
+		}
+		return listOfNotes;
+	}
 	
 	/**
 	 * Combine the tracks into one, quantize the note lengths, separate into chords.
@@ -1374,81 +1407,10 @@ public class AbcExporter {
 		List<AbcNoteEvent> events = new ArrayList<>();
 		for (int t = 0; t < part.getTrackCount(); t++) {
 			if (part.isTrackEnabled(t)) {
-				boolean specialDrumNotes = false;
-				if (part.getInstrument() == LotroInstrument.BASIC_DRUM) {
-					TrackInfo tInfo = part.getAbcSong().getSequenceInfo().getTrackInfo(t);
-					for (int inNo : tInfo.getNotesInUse()) {
-						byte outNo = part.getDrumMap(t).get(inNo);
-						if (outNo > part.getInstrument().highestPlayable.id) {
-							specialDrumNotes = true;
-							break;
-						}
-					}
-				}
-				List<MidiNoteEvent> listOfNotes = new ArrayList<>(part.getTrackEvents(t));
-
-				if (specialDrumNotes) {
-					List<MidiNoteEvent> extraList = new ArrayList<>();
-					List<MidiNoteEvent> removeList = new ArrayList<>();
-					for (MidiNoteEvent ne : listOfNotes) {
-						Note possibleCombiNote = part.mapNote(t, ne.note.id, ne.getStartTick());
-						if (possibleCombiNote != null && LotroCombiDrumInfo.noteIdIsXtraNote(possibleCombiNote.id)) {
-							MidiNoteEvent extra1 = LotroCombiDrumInfo.getId1(ne, possibleCombiNote, ne.midiPan);
-							MidiNoteEvent extra2 = LotroCombiDrumInfo.getId2(ne, possibleCombiNote, ne.midiPan);
-							extraList.add(extra1);
-							extraList.add(extra2);
-							removeList.add(ne);
-							// Notice that bent notes on chromatic tracks are treated as only 1 note here
-						} else if (possibleCombiNote != null && possibleCombiNote.id > LotroCombiDrumInfo.maxCombi.id) {
-							// Just for safety, should never land here.
-							System.err.println("// Just for safety, should never land here:+\n"+ne);
-							removeList.add(ne);
-						}
-					}
-					listOfNotes.removeAll(removeList);
-					listOfNotes.addAll(extraList);
-				}
+				List<MidiNoteEvent> listOfNotes = expandXtraDrumNotes(part, t);
 				
-				if (part.getInstrument().sustainable) {
-					long lastTick = 0L;
-					for (int curr = 0; curr < listOfNotes.size(); curr++) {
-						MidiNoteEvent currNe = listOfNotes.get(curr);
-						if (currNe.getEndTick() > lastTick) lastTick = currNe.getEndTick();
-						if (!part.getSectionLegato(t, currNe.getStartTick()) || lastTick > currNe.getEndTick()) {
-							currNe.setLegatoEndTick(part, null);
-							continue;
-						}
-						long currEnd = currNe.getEndTick();
-						long nextEnd = currEnd;
-						long currEndMicro = qtm.tickToMicrosOrganic(currEnd);
-						// Now find where next note event starts
-						for (int next = curr+1; next < listOfNotes.size(); next++) {
-							MidiNoteEvent nextNe = listOfNotes.get(next);
-							if (nextNe.getStartTick() <= nextEnd && nextNe.getEndTick() > currEnd) {
-								break;
-							}
-							if (nextNe.getStartTick() > nextEnd) {
-								nextEnd = nextNe.getStartTick();
-								break;
-							}
-						}
-						if (nextEnd > currEnd) {
-							long nextEndMicro = qtm.tickToMicrosOrganic(nextEnd);
-							if (nextEndMicro - currEndMicro < AbcConstants.ONE_SECOND_MICROS) {
-								currNe.setLegatoEndTick(part, nextEnd);
-							} else {
-								currNe.setLegatoEndTick(part, null);								
-							}
-						} else {
-							currNe.setLegatoEndTick(part, null);
-						}
-					}
-				} else {
-					for (MidiNoteEvent ne : listOfNotes) {
-						ne.setLegatoEndTick(part, null);
-					}
-				}
-
+				applyLegato(part, t, listOfNotes);
+				
 				for (MidiNoteEvent ne : listOfNotes) {
 					// Skip notes that are outside of the play range.
 					if (ne.getEndTick() <= exportStartTick) {//  || ne.getStartTick() >= exportEndTick
@@ -1500,40 +1462,7 @@ public class AbcExporter {
 						 */
 						events.add(newNE);
 
-						Boolean[] doubling = part.getSectionDoubling(ne.getStartTick(), t);
-
-						if (doubling[0] && ne.note.id - 24 > Note.MIN.id) {
-							Note mappedNote2 = part.mapNoteEvent(t, ne, ne.note.id - 24);
-							if (mappedNote2 != null) {
-								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm, !part.isChromatic(t));
-								//newNE2.doubledNote = true;// prune these first
-								events.add(newNE2);
-							}
-						}
-						if (doubling[1] && ne.note.id - 12 > Note.MIN.id) {
-							Note mappedNote2 = part.mapNoteEvent(t, ne, ne.note.id - 12);
-							if (mappedNote2 != null) {
-								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm, !part.isChromatic(t));
-								//newNE2.doubledNote = true;
-								events.add(newNE2);
-							}
-						}
-						if (doubling[2] && ne.note.id + 12 < Note.MAX.id) {
-							Note mappedNote2 = part.mapNoteEvent(t, ne, ne.note.id + 12);
-							if (mappedNote2 != null) {
-								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm, !part.isChromatic(t));
-								//newNE2.doubledNote = true;
-								events.add(newNE2);
-							}
-						}
-						if (doubling[3] && ne.note.id + 24 < Note.MAX.id) {
-							Note mappedNote2 = part.mapNoteEvent(t, ne, ne.note.id + 24);
-							if (mappedNote2 != null) {
-								AbcNoteEvent newNE2 = createNoteEvent(ne, mappedNote2, velocity, startTick, endTick, qtm, !part.isChromatic(t));
-								//newNE2.doubledNote = true;
-								events.add(newNE2);
-							}
-						}
+						createDoublingNoteEvents(part, events, t, ne, startTick, endTick, velocity);
 					} else {
 						ne.setLegatoEndTick(part, null);// clean up, so if a part is removed there is not references to it in midinoteevents.
 						//System.out.println("Final skipping \n"+ne+"\n"+(mappedNote != null)+" "+(part.shouldPlay(ne, t)));
@@ -1553,34 +1482,7 @@ public class AbcExporter {
 
 		Collections.sort(events);
 		
-		if (part.conclusionFermata != 0) {
-			long finalNoteTickEnd = 0L;
-			List<AbcNoteEvent> conclusion = new ArrayList<>();
-			for (int cc = 0; cc < events.size() ; cc++) {
-				AbcNoteEvent ne = events.get(cc);
-				if (ne.getEndTick() > finalNoteTickEnd) {
-					finalNoteTickEnd = ne.getEndTick();
-					conclusion.removeAll(conclusion);
-					conclusion.add(ne);
-				} else if (ne.getEndTick() == finalNoteTickEnd) {
-					conclusion.add(ne);
-				}
-			}
-			long fermataEndTick = qtm.microsToTickABCOrganic(part.conclusionFermata * 1000L + qtm.tickToMicrosABCOrganic(finalNoteTickEnd));
-			boolean sustain = false;
-			for (int cc = 0; cc < conclusion.size() ; cc++) {
-				AbcNoteEvent ne = conclusion.get(cc);
-				if (part.getInstrument().isSustainable(ne.note.id)) {
-					sustain = true;
-					ne.setEndTick(fermataEndTick);
-				}
-			}
-			if (fermataEndTick > exportEndTick && sustain) {
-				// This is a hack, as at the time this runs
-				// exportEndTick has already been used elsewhere.
-				exportEndTick = fermataEndTick;
-			}
-		}
+		applyFermata(part, events);
 
 		// subdivide bent notes
 		long lastEnding = 0;
