@@ -974,7 +974,7 @@ public class AbcExporter {
 						}
 						if (nextEnd > currEnd) {
 							long nextEndMicro = qtm.tickToMicros(nextEnd);
-							if (nextEndMicro - currEndMicro < 1000000) {
+							if (nextEndMicro - currEndMicro < AbcConstants.ONE_SECOND_MICROS) {
 								currNe.setLegatoEndTick(part, nextEnd);
 							} else {
 								currNe.setLegatoEndTick(part, null);								
