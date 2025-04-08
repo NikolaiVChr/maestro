@@ -71,6 +71,12 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	private BitSet[] fxEnabled;
 	private Boolean[] studentFX;
 	private boolean studentOverride = false;
+	
+	public static final int badgerPrioStep = 2;
+	public static final int badgerPrioMin = 1;
+	public static final int badgerPrioMax = 9;
+	private int badgerPrio = badgerPrioMax;
+	
 
 	private final AbcSong abcSong;
 	private int enabledTrackCount = 0;
@@ -191,6 +197,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		Document doc = ele.getOwnerDocument();
 
 		ele.setAttribute("id", String.valueOf(partNumber));
+		ele.setAttribute("badgerPrio", String.valueOf(badgerPrio));
 		SaveUtil.appendChildTextElement(ele, "title", String.valueOf(title));
 		SaveUtil.appendChildTextElement(ele, "instrument", String.valueOf(instrument));
 		if (delay != 0) {
@@ -345,6 +352,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	private void initFromXml(Element ele, Version fileVersion) throws ParseException {
 		try {
 			partNumber = SaveUtil.parseValue(ele, "@id", partNumber);
+			badgerPrio = SaveUtil.parseValue(ele, "@badgerPrio", badgerPrioMax);
 			title = SaveUtil.parseValue(ele, "title", title);
 			instrument = SaveUtil.parseValue(ele, "instrument", instrument);
 			typeNumber = getTypeNumberMatchingTitle();// must be after instr and title
@@ -1592,6 +1600,14 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	public void setNoteMax(int noteMax) {
 		if (noteMax <= AbcConstants.MAX_CHORD_NOTES && noteMax > 0)
 			this.noteMax = noteMax;
+	}
+
+	public int getBadgerPrio() {
+		return badgerPrio;
+	}
+
+	public void setBadgerPrio(int badgerPrio) {
+		this.badgerPrio = badgerPrio;
 	}
 
 	

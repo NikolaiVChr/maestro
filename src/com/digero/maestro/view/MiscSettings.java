@@ -8,7 +8,7 @@ public class MiscSettings {
 	public boolean showMaxPolyphony = true;
 	public boolean ignoreExpressionMessages = false;
 	public boolean showBadger = false;
-	public boolean allBadger = false;
+	//public boolean allBadger = false;
 	public String theme = "Flat Light";
 	public int fontSize = 12;
 	public int maxRangeForNewBendMethod = 12;
@@ -38,7 +38,7 @@ public class MiscSettings {
 	private void loadPrefs(Preferences prefs) {
 		showMaxPolyphony = prefs.getBoolean("showMaxPolyphony", showMaxPolyphony);
 		showBadger = prefs.getBoolean("showBadger", showBadger);
-		allBadger = prefs.getBoolean("allBadger", allBadger);
+		//allBadger = prefs.getBoolean("allBadger", allBadger);
 		ignoreExpressionMessages = prefs.getBoolean("ignoreExpressionMessages", ignoreExpressionMessages);
 		theme = prefs.get("theme", theme);
 		fontSize = prefs.getInt("fontSize", fontSize);
@@ -55,7 +55,7 @@ public class MiscSettings {
 	public void copyFrom(MiscSettings that) {
 		showMaxPolyphony = that.showMaxPolyphony;
 		showBadger = that.showBadger;
-		allBadger = that.allBadger;
+		//allBadger = that.allBadger;
 		theme = that.theme;
 		fontSize = that.fontSize;
 		ignoreExpressionMessages = that.ignoreExpressionMessages;
@@ -66,7 +66,7 @@ public class MiscSettings {
 	public void saveToPrefs() {
 		prefs.putBoolean("showMaxPolyphony", showMaxPolyphony);
 		prefs.putBoolean("showBadger", showBadger);
-		prefs.putBoolean("allBadger", allBadger);
+		//prefs.putBoolean("allBadger", allBadger);
 		prefs.putBoolean("ignoreExpressionMessages", ignoreExpressionMessages);
 		prefs.put("theme", theme);
 		prefs.putInt("fontSize", fontSize);

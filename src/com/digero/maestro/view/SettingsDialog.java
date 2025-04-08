@@ -889,13 +889,14 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		showMaxPolyphonyCheckBox.setSelected(miscSettings.showMaxPolyphony);
 		showMaxPolyphonyCheckBox
 				.addActionListener(e -> miscSettings.showMaxPolyphony = showMaxPolyphonyCheckBox.isSelected());
-
+		/*
 		final JCheckBox allBadgerCheckBox = new JCheckBox("Output all playable parts per default");
 		allBadgerCheckBox.setToolTipText("<html>Output max playable parts for extended songbooks.</html>");
 		allBadgerCheckBox.setSelected(miscSettings.allBadger);
 		allBadgerCheckBox.addActionListener(e -> miscSettings.allBadger = allBadgerCheckBox.isSelected());
 		allBadgerCheckBox.setEnabled(miscSettings.showBadger);
-
+		*/
+		
 		final JCheckBox showBadgerCheckBox = new JCheckBox("Support extended songbook");
 		showBadgerCheckBox.setToolTipText(
 				"<html>Output and show genre and mood fields<br>" + "that are used in extended songbooks:<br>"
@@ -903,7 +904,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		showBadgerCheckBox.setSelected(miscSettings.showBadger);
 		showBadgerCheckBox.addActionListener(e -> {
 			miscSettings.showBadger = showBadgerCheckBox.isSelected();
-			allBadgerCheckBox.setEnabled(miscSettings.showBadger);
+			//allBadgerCheckBox.setEnabled(miscSettings.showBadger);
 		});
 		
 		final JCheckBox ignoreExpressionMessagesCheckBox = new JCheckBox("Ignore expression messages");
@@ -1027,8 +1028,8 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		layout.insertRow(++row, PREFERRED);
 		panel.add(showBadgerCheckBox, "0, " + row);
 
-		layout.insertRow(++row, PREFERRED);
-		panel.add(allBadgerCheckBox, "0, " + row);
+		//layout.insertRow(++row, PREFERRED);
+		//panel.add(allBadgerCheckBox, "0, " + row);
 		
 		layout.insertRow(++row, PREFERRED);
 		panel.add(ignoreExpressionMessagesCheckBox, "0, " + row);
@@ -1190,7 +1191,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		}
 
 		@Override
-		public String getAllParts() {
+		public String getPartSetup() {
 			return "N: TS  1,   4";
 		}
 

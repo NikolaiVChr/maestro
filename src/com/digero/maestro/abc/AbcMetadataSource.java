@@ -19,7 +19,7 @@ public interface AbcMetadataSource {
 
 	String getMood();
 
-	String getAllParts();
+	String getPartSetup();
 
 	int getActivePartCount();
 

@@ -32,13 +32,15 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 	private List<PartsListItem> parts = new ArrayList<PartsListItem>();
 	private AbcPart selectedPart = null;
 	private int selectedIndex = -1;
+	private MiscSettings miscSettings;
 
 	private SequencerWrapper abcSequencer;
 
 	private final Dimension rowDimension;
 
-	public PartsList(SequencerWrapper abcSequencer) {
+	public PartsList(SequencerWrapper abcSequencer, MiscSettings miscSettings) {
 		this.abcSequencer = abcSequencer;
+		this.miscSettings = miscSettings;
 		layout = new BoxLayout(this, BoxLayout.Y_AXIS);
 		setLayout(layout);
 		setBackground(new JList<AbcPartMetadataSource>().getBackground());
@@ -75,7 +77,7 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 
 	private void addPart(int idx) {
 		AbcPart part = model.elementAt(idx);
-		PartsListItem item = new PartsListItem(part);
+		PartsListItem item = new PartsListItem(part, miscSettings.showBadger);
 
 		item.setItemListener(itemListener);
 

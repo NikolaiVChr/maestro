@@ -525,7 +525,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			}
 		});
 
-		partsList = new PartsList(abcSequencer);
+		partsList = new PartsList(abcSequencer, miscSettings);
 		partsList.addListSelectionListener(e -> {
 			AbcPart abcPart = partsList.getSelectedPart();
 			sequencer.getFilter().onAbcPartChanged(abcPart != null);
@@ -1366,7 +1366,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			maxNoteCountTotal = 0;
 		}
 		if (abcSong != null) {
-			abcSong.setAllOut(miscSettings.showBadger && miscSettings.allBadger);
 			abcSong.setBadger(miscSettings.showBadger);
 		}
 		updateButtons(false);
@@ -1868,7 +1867,15 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			maxNoteCount = 0;
 			compileStats();
 			break;
-
+		case BADGER:
+			AbcPart ap = partsList.getSelectedPart();
+			partsList.updateParts();
+			idx = abcSong.getParts().indexOf(ap);
+			partsList.selectPart(idx);
+			partsList.ensureIndexIsVisible(idx);
+			partsList.repaint();
+			updateButtons(false);
+			break;
 		case TUNE_EDIT:
 			updateButtons(false);
 			if (partsList.getSelectedPart() != null) {
@@ -2122,7 +2129,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			abcSong = new AbcSong(file, partAutoNumberer, partNameTemplate, exportFilenameTemplate, instrNameSettings,
 					openFileResolver, miscSettings);
 			sequencer.onlyFirstTrackTempos = abcSong.isUsingOldTempos();
-			abcSong.setAllOut(miscSettings.showBadger && miscSettings.allBadger);
 			abcSong.setBadger(miscSettings.showBadger);
 			abcSong.addSongListener(abcSongListener);
 			abcSong.addSongListener(partsList.songListener);

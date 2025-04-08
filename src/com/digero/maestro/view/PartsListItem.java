@@ -49,11 +49,13 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 	static final int MUTE_WIDTH = 8;
 
 	private static double[] LAYOUT_COLS = new double[] { FILL, PREFERRED, PREFERRED };
+	private static double[] LAYOUT_COLS_BADGER = new double[] { FILL, PREFERRED, PREFERRED, PREFERRED };
 	private static double[] LAYOUT_ROWS = new double[] { PREFERRED };
 
 	private JLabel title;
 	private JButton soloButton;
 	private JButton muteButton;
+	private JButton badgerButton;
 
 	private AbcPart part;
 
@@ -61,9 +63,12 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 
 	private Listener<PartsListItemEvent> itemListener = null;
 
-	public PartsListItem(AbcPart part) {
-		super(new TableLayout(LAYOUT_COLS, LAYOUT_ROWS));
+	private boolean showBadger;
 
+	public PartsListItem(AbcPart part, boolean showBadger) {
+		super(new TableLayout(showBadger?LAYOUT_COLS_BADGER:LAYOUT_COLS, LAYOUT_ROWS));
+
+		this.showBadger = showBadger;
 		this.setPart(part);
 
 		title = new JLabel(part.toString());
@@ -82,6 +87,23 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 
 		Dimension buttonSize = new Dimension(h, h);
 
+		String badgerText = "<html>"+part.getBadgerPrio()+"</html>";
+		Color badgerColor = new JButton().getBackground();
+		badgerButton = new JButton(badgerText);
+		badgerButton.setToolTipText("Songbook setup priority, 9 = must play, 1 = least important");
+		badgerButton.setBackground(badgerColor);
+		badgerButton.setPreferredSize(buttonSize);
+		badgerButton.setMargin(new Insets(0, 0, 0, 0));
+		badgerButton.setFocusable(false);
+		badgerButton.addActionListener(e -> {
+			int prio = part.getBadgerPrio();
+			prio -= AbcPart.badgerPrioStep;
+			if (prio < AbcPart.badgerPrioMin) prio = AbcPart.badgerPrioMax;
+			part.setBadgerPrio(prio);
+			String text = "<html>"+prio+"</html>";
+			badgerButton.setText(text);
+		});
+		
 		String soloText = part.isSoloed() ? "<html><b>S</b></html>" : "<html>S</html>";
 		Color soloColor = part.isSoloed() ? Color.decode("#7e7eff") : new JButton().getBackground();
 		soloButton = new JButton(soloText);
@@ -118,6 +140,7 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 
 		int col = -1;
 		add(title, ++col + ", 0");
+		if (showBadger) add(badgerButton, ++col + ", 0");
 		add(soloButton, ++col + ", 0");
 		add(muteButton, ++col + ", 0");
 

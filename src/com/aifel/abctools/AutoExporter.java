@@ -447,7 +447,6 @@ public class AutoExporter {
 		abcSong.storeNewExportFile = frame.getSaveMSXabcSelected();
 		abcSong.setSkipSilenceAtStart(main.saveSettings.skipSilenceAtStart);
 		abcSong.setDeleteMinimalNotes(main.saveSettings.deleteMinimalNotes);
-		abcSong.setAllOut(main.miscSettings.showBadger && main.miscSettings.allBadger);
 		abcSong.setBadger(main.miscSettings.showBadger);
 		StringCleaner.cleanABC = main.saveSettings.convertABCStringsToBasicAscii;
 

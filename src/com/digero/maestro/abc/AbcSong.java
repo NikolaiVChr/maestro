@@ -62,7 +62,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = MaestroMain.APP_NAME + " Songs";
 	public static final String MSX_FILE_EXTENSION_NO_DOT = "msx";
 	public static final String MSX_FILE_EXTENSION = "." + MSX_FILE_EXTENSION_NO_DOT;
-	public static final Version SONG_FILE_VERSION = new Version(4, 0, 16, 300);// Keep build above 117 to make earlier
+	public static final Version SONG_FILE_VERSION = new Version(4, 1, 3, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
 
@@ -73,7 +73,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private String mood = "";
 	private String note = "";// not continuously updated
 	private boolean badger = false;
-	private boolean allOut = false;
 	private float tempoFactor = 1.0f;
 	private int newTempo = 120;
 	private int origTempo = 120;
@@ -730,24 +729,29 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	}
 
 	@Override
-	public String getAllParts() {
-		if (!allOut) {
+	public String getPartSetup() {
+		if (!badger) {
 			return null;
 		}
-		String str = "N: TS  ";
-		StringBuilder str2 = new StringBuilder();
-		ListModelWrapper<AbcPart> prts = getParts();
-		int count = 0;
-		for (AbcPart prt : prts) {
-			if (prt.getEnabledTrackCount() > 0) {
-				count += 1;
-				str2.append("  ").append(prt.getPartNumber());
+		String str = "";
+		String start = "N: TS  ";
+		for (int i = AbcPart.badgerPrioMax; i >= AbcPart.badgerPrioMin; i--) {
+			StringBuilder str2 = new StringBuilder();
+			ListModelWrapper<AbcPart> prts = getParts();
+			int count = 0;
+			int onCount = 0;
+			for (AbcPart prt : prts) {
+				if (prt.getEnabledTrackCount() > 0 && prt.getBadgerPrio() >= i) {
+					count += 1;
+					if (prt.getBadgerPrio() == i) onCount++;
+					str2.append("  ").append(prt.getPartNumber());
+				}
 			}
+			if (count == 0 || onCount == 0)
+				continue;
+			str += start + count + ", " + str2 + "\n";
 		}
-		if (count == 0)
-			return null;
-		str += count + ", ";
-		return str + str2;
+		return str;
 	}
 
 	@Override
@@ -921,10 +925,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 	public void setBadger(boolean badger) {
 		this.badger = badger;
-	}
-
-	public void setAllOut(boolean allOut) {
-		this.allOut = allOut;
+		fireChangeEvent(AbcSongProperty.BADGER);
 	}
 
 	public SequenceInfo getSequenceInfo() {
