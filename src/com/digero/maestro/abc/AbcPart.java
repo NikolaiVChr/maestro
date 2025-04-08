@@ -72,8 +72,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	private Boolean[] studentFX;
 	private boolean studentOverride = false;
 	
-	public static final int badgerPrioStep = 2;
-	public static final int badgerPrioMin = 1;
+	public static final int badgerPrioStep = 1;
+	public static final int badgerPrioMin = 5;
 	public static final int badgerPrioMax = 9;
 	private int badgerPrio = badgerPrioMax;
 	

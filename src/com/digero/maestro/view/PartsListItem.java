@@ -90,7 +90,7 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 		String badgerText = "<html>"+part.getBadgerPrio()+"</html>";
 		Color badgerColor = new JButton().getBackground();
 		badgerButton = new JButton(badgerText);
-		badgerButton.setToolTipText("Songbook setup priority, 9 = must play, 1 = least important");
+		badgerButton.setToolTipText("Songbook setup priority, 9 = must play, 5 = least important");
 		badgerButton.setBackground(badgerColor);
 		badgerButton.setPreferredSize(buttonSize);
 		badgerButton.setMargin(new Insets(0, 0, 0, 0));
