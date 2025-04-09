@@ -73,9 +73,9 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	private boolean studentOverride = false;
 	
 	public static final int badgerPrioStep = 1;
-	public static final int badgerPrioMin = 5;
-	public static final int badgerPrioMax = 9;
-	private int badgerPrio = badgerPrioMax;
+	public static final int badgerPrioHighest = 1;
+	public static final int badgerPrioLowest = 6;
+	private int badgerPrio = badgerPrioHighest;
 	
 
 	private final AbcSong abcSong;
@@ -197,7 +197,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		Document doc = ele.getOwnerDocument();
 
 		ele.setAttribute("id", String.valueOf(partNumber));
-		ele.setAttribute("badgerPrio", String.valueOf(badgerPrio));
+		ele.setAttribute("badgerPriority", String.valueOf(badgerPrio));
 		SaveUtil.appendChildTextElement(ele, "title", String.valueOf(title));
 		SaveUtil.appendChildTextElement(ele, "instrument", String.valueOf(instrument));
 		if (delay != 0) {
@@ -352,7 +352,13 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	private void initFromXml(Element ele, Version fileVersion) throws ParseException {
 		try {
 			partNumber = SaveUtil.parseValue(ele, "@id", partNumber);
-			badgerPrio = SaveUtil.parseValue(ele, "@badgerPrio", badgerPrioMax);
+			badgerPrio = SaveUtil.parseValue(ele, "@badgerPrio", -1);// backward compat with 4.1.3
+			if (badgerPrio == -1) {
+				badgerPrio = SaveUtil.parseValue(ele, "@badgerPriority", badgerPrioHighest);
+			} else {
+				// backward compat with 4.1.3
+				badgerPrio = 10-badgerPrio;
+			}
 			title = SaveUtil.parseValue(ele, "title", title);
 			instrument = SaveUtil.parseValue(ele, "instrument", instrument);
 			typeNumber = getTypeNumberMatchingTitle();// must be after instr and title

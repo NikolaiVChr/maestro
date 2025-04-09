@@ -48,6 +48,9 @@ Thanks to all who gave feedback of features and bugs plus suggestions.
 Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 ================
 
+Version 4.1.4
+- Invert how priorites of setups work.
+
 Version 4.1.3
 - Support extended songbook part setup priorities.
 

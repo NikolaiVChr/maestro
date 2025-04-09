@@ -734,22 +734,22 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			return null;
 		}
 		String str = "";
-		String start = "N: TS  ";
-		for (int i = AbcPart.badgerPrioMax; i >= AbcPart.badgerPrioMin; i--) {
+		for (int i = AbcPart.badgerPrioHighest; i <= AbcPart.badgerPrioLowest; i++) {
 			StringBuilder str2 = new StringBuilder();
 			ListModelWrapper<AbcPart> prts = getParts();
 			int count = 0;
 			int onCount = 0;
 			for (AbcPart prt : prts) {
-				if (prt.getEnabledTrackCount() > 0 && prt.getBadgerPrio() >= i) {
+				if (prt.getEnabledTrackCount() > 0 && prt.getBadgerPrio() <= i) {
 					count += 1;
 					if (prt.getBadgerPrio() == i) onCount++;
-					str2.append("  ").append(prt.getPartNumber());
+					str2.append(String.format(" %2d", prt.getPartNumber()));
 				}
 			}
-			if (count == 0 || onCount == 0)
+			if (onCount == 0) {
 				continue;
-			str += start + count + ", " + str2 + "\n";
+			}
+			str += String.format("N: TS %2d, %s\n", count, str2);
 		}
 		return str;
 	}
