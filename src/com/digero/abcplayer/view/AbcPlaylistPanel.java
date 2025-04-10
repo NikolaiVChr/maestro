@@ -10,6 +10,7 @@ import java.awt.Rectangle;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
@@ -1003,8 +1004,13 @@ public class AbcPlaylistPanel extends JPanel {
 		playlistHeaderPopupMenu.add(sortMenu);
 		
 		for (String col : colNames) {
-			ascending.add(new JMenuItem(col));
-			descending.add(new JMenuItem(col));
+			JMenuItem asc = ascending.add(new JMenuItem(col));
+			JMenuItem desc = descending.add(new JMenuItem(col));
+			ActionListener listen = e -> {
+				tableModel.sortBy(col, e.getSource() == asc);
+			};
+			asc.addActionListener(listen);
+			desc.addActionListener(listen);
 		}
 	}
 	

@@ -2,6 +2,8 @@ package com.digero.abcplayer.view;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import javax.swing.table.AbstractTableModel;
@@ -66,6 +68,64 @@ public class AbcInfoTableModel extends AbstractTableModel {
 	@Override
 	public int getRowCount() {
 		return data.size();
+	}
+	
+	public void sortBy(String columnName, boolean ascending) {
+		int colIdx = getColumnNames().indexOf(columnName);
+		if (colIdx == -1) {
+			return;
+		}
+		
+		Comparator<AbcInfo> comp = (AbcInfo row1, AbcInfo row2) -> {
+			Object val1 = getColumnValueForAbcInfo(row1, colIdx);
+			Object val2 = getColumnValueForAbcInfo(row2, colIdx);
+			
+			if (val1 == null && val2 == null) return 0;
+			else if (val1 == null) return ascending ? -1 : 1;
+			else if (val2 == null) return ascending ? 1 : -1;
+			
+			if (columnName.equals("Duration")) {
+				return compareDurations((String)val1, (String)val2, ascending);
+			}
+			
+			if (val1 instanceof String && val2 instanceof String) {
+				return ascending ?
+						((String)val1).compareToIgnoreCase((String)val2) :
+						((String)val2).compareToIgnoreCase((String)val1);
+			} else if (val1 instanceof Integer && val2 instanceof Integer) {
+				return ascending ?
+						((Integer)val1).compareTo((Integer)val2) :
+						((Integer)val2).compareTo((Integer)val1);
+			} else { // default to string
+				return ascending ?
+						val1.toString().compareToIgnoreCase(val2.toString()) :
+						val2.toString().compareToIgnoreCase(val1.toString());
+			}
+		};
+		
+		Collections.sort(data, comp);
+		
+		fireTableDataChanged();
+	}
+	
+	public static int compareDurations(String ds1, String ds2, boolean ascending) {
+		try {
+			String[] duration1 = ds1.split(":");
+			String[] duration2 = ds2.split(":");
+			
+			int min1 = Integer.parseInt(duration1[0]);
+			int sec1 = Integer.parseInt(duration1[1]);
+			
+			int min2 = Integer.parseInt(duration2[0]);
+			int sec2 = Integer.parseInt(duration2[1]);
+			
+			int totalSec1 = (min1 * 60) + sec1;
+			int totalSec2 = (min2 * 60) + sec2;
+			
+			return ascending ? Integer.compare(totalSec1, totalSec2) : Integer.compare(totalSec2, totalSec1);
+		} catch (Exception e) {
+			return ascending ? ds1.compareToIgnoreCase(ds2) : ds2.compareToIgnoreCase(ds1);
+		}
 	}
 	
 	public static String getNameOfColumn(int colIndex) {
