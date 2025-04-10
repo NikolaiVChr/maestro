@@ -610,6 +610,11 @@ public class AbcPlaylistPanel extends JPanel {
 		playlistHeaderPopupMenu.addSeparator();
 		playlistTable.getTableHeader().setComponentPopupMenu(playlistHeaderPopupMenu);
 		playlistTable.getTableHeader().setReorderingAllowed(false);
+		
+		initTableHeaderSort();
+		
+		playlistHeaderPopupMenu.addSeparator();
+		
 		initTableHeaderColumns();
 		
 		Preferences colSizes = playlistPrefs.node("colSizes");
@@ -985,6 +990,21 @@ public class AbcPlaylistPanel extends JPanel {
 			}
 			playlistHeaderPopupMenu.add(item);
 			columnEnablers[i] = item;
+		}
+	}
+	
+	private void initTableHeaderSort() {
+		List<String> colNames = tableModel.getColumnNames();
+		JMenu sortMenu = new JMenu("Sort Playlist By...");
+		JMenu ascending = new JMenu("Ascending");
+		JMenu descending = new JMenu("Descending");
+		sortMenu.add(ascending);
+		sortMenu.add(descending);
+		playlistHeaderPopupMenu.add(sortMenu);
+		
+		for (String col : colNames) {
+			ascending.add(new JMenuItem(col));
+			descending.add(new JMenuItem(col));
 		}
 	}
 	
