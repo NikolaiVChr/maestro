@@ -729,7 +729,7 @@ public class AbcPlaylistPanel extends JPanel {
 			public void removeUpdate(DocumentEvent e) { update(e); }
 			
 			public void update(DocumentEvent e) {
-				abcFileTreeModel.filter(searchTextField.getText().toLowerCase());
+				abcFileTreeModel.filter(searchTextField.getText());
 				reExpandPaths();
 			}
 		});
@@ -925,6 +925,7 @@ public class AbcPlaylistPanel extends JPanel {
 		JMenuItem refreshMenuItem = playlistMenu.add(new JMenuItem("Refresh Browser"));
 		refreshMenuItem.addActionListener(e -> {
 			abcFileTreeModel.refresh(sortType);
+			abcFileTreeModel.filter(searchTextField.getText());
 			reExpandPaths();
 		});
 	}

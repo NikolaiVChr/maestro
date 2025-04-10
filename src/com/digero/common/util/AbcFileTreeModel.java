@@ -61,7 +61,7 @@ public class AbcFileTreeModel implements TreeModel {
 	}
 	
 	public void filter(String filterStr) {
-		rootNode.filter(filterStr);
+		rootNode.filter(filterStr.toLowerCase());
 		
 		for (TreeModelListener l : listeners) {
 			l.treeStructureChanged(new TreeModelEvent(this, new TreePath(rootNode)));
