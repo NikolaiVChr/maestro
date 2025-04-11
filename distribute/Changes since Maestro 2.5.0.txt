@@ -53,6 +53,7 @@ Version 4.1.5
 - Add a playlist menu toggle to auto-expand folders with matched songs when searching
 - Fix bug where the playlist "Refresh Browser" function wouldn't work until you searched
 - Fix bug where the set exporter wouldn't honor the option to not rename files
+- Fermata now applies to all last notes that ends within 5 ms of last ending.
 
 Version 4.1.4
 - Invert how priorites of setups work.

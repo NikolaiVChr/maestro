@@ -1249,7 +1249,23 @@ public class AbcExporter {
 				AbcNoteEvent ne = events.get(cc);
 				if (ne.getEndTick() > finalNoteTickEnd) {
 					finalNoteTickEnd = ne.getEndTick();
-					conclusion.removeAll(conclusion);
+					List<AbcNoteEvent> conclusionRemove = new ArrayList<>();
+					if (organic) {
+						long concludeMicros = qtm.tickToMicrosABCOrganic(finalNoteTickEnd);
+						for (AbcNoteEvent potential : conclusion) {
+							if (qtm.tickToMicrosABCOrganic(potential.getEndTick()) + 5000L < concludeMicros) {
+								conclusionRemove.add(potential);
+							}
+						}
+					} else {
+						long concludeMicros = qtm.tickToMicrosABC(finalNoteTickEnd, part);
+						for (AbcNoteEvent potential : conclusion) {
+							if (qtm.tickToMicrosABC(potential.getEndTick(), part) + 5000L < concludeMicros) {
+								conclusionRemove.add(potential);
+							}
+						}
+					}
+					conclusion.removeAll(conclusionRemove);
 					conclusion.add(ne);
 				} else if (ne.getEndTick() == finalNoteTickEnd) {
 					conclusion.add(ne);
