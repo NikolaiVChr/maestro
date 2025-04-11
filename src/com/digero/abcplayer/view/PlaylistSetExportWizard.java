@@ -598,7 +598,10 @@ public class PlaylistSetExportWizard extends JDialog {
 			float progress = 10;
 			for (int i = 0; i < count; i++) {
 				AbcInfo inf = setData.get(i);
-				String newName = getFormattedName(inf, i);
+				String newName = inf.getSourceFiles().get(0).getName();
+				if (settings.renameAbcFiles) {
+					newName = getFormattedName(inf, i);
+				}
 				Path source = inf.getSourceFiles().get(0).toPath();
 				Path dest = copyToFolder.toPath().resolve(newName);
 				try {

@@ -10,6 +10,7 @@ import java.awt.Rectangle;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
@@ -163,6 +164,7 @@ public class AbcPlaylistPanel extends JPanel {
 	private JMenuItem saveMenuItem;
 	private JCheckBoxMenuItem autoplayMenuItem;
 	private JCheckBoxMenuItem playbackDelayMenuItem;
+	private JCheckBoxMenuItem expandSearchMenuItem;
 	private JMenuItem exportSetMenuItem;
 	
 	private JFileChooser openPlaylistChooser = null;
@@ -313,7 +315,7 @@ public class AbcPlaylistPanel extends JPanel {
 
 			@Override
 			public void treeExpanded(TreeExpansionEvent e) {
-				expandedAbcTrees.add(e.getPath());	
+				expandedAbcTrees.add(e.getPath());
 			}
 		});
 		JPopupMenu fileTreePopup = new JPopupMenu();
@@ -610,6 +612,11 @@ public class AbcPlaylistPanel extends JPanel {
 		playlistHeaderPopupMenu.addSeparator();
 		playlistTable.getTableHeader().setComponentPopupMenu(playlistHeaderPopupMenu);
 		playlistTable.getTableHeader().setReorderingAllowed(false);
+		
+		initTableHeaderSort();
+		
+		playlistHeaderPopupMenu.addSeparator();
+		
 		initTableHeaderColumns();
 		
 		Preferences colSizes = playlistPrefs.node("colSizes");
@@ -723,7 +730,10 @@ public class AbcPlaylistPanel extends JPanel {
 			public void removeUpdate(DocumentEvent e) { update(e); }
 			
 			public void update(DocumentEvent e) {
-				abcFileTreeModel.filter(searchTextField.getText().toLowerCase());
+				abcFileTreeModel.filter(searchTextField.getText());
+				if (!searchTextField.getText().isEmpty() && expandSearchMenuItem.isSelected()) {
+					expandMatchedPaths();
+				}
 				reExpandPaths();
 			}
 		});
@@ -881,6 +891,11 @@ public class AbcPlaylistPanel extends JPanel {
 		playbackDelayMenuItem.addActionListener(e -> {
 			playlistPrefs.putBoolean("playbackDelay", playbackDelayMenuItem.isSelected());
 		});
+		expandSearchMenuItem = (JCheckBoxMenuItem) playlistMenu.add(new JCheckBoxMenuItem("Enable Auto-Expanding Searched Folders"));
+		expandSearchMenuItem.setSelected(playlistPrefs.getBoolean("autoExpandSearch", false));
+		expandSearchMenuItem.addActionListener(e -> {
+			playlistPrefs.putBoolean("autoExpandSearch", expandSearchMenuItem.isSelected());
+		});
 		playlistMenu.addSeparator();
 		JMenu sortBy = new JMenu("Sort browser by...");
 		playlistMenu.add(sortBy);
@@ -919,13 +934,40 @@ public class AbcPlaylistPanel extends JPanel {
 		JMenuItem refreshMenuItem = playlistMenu.add(new JMenuItem("Refresh Browser"));
 		refreshMenuItem.addActionListener(e -> {
 			abcFileTreeModel.refresh(sortType);
+			abcFileTreeModel.filter(searchTextField.getText());
 			reExpandPaths();
 		});
 	}
 	
+	private void expandMatchedPaths() {
+		HashSet<TreePath> validExpandedTrees = new HashSet<TreePath>();
+		AbcSongFileNode root = (AbcSongFileNode)abcFileTreeModel.getRoot();
+		traverseAndExpand(validExpandedTrees, root, new TreePath(root));
+		expandedAbcTrees = validExpandedTrees;
+	}
+	
+	private void traverseAndExpand(HashSet<TreePath> newExpanded, AbcSongFileNode node, TreePath nodePath) {
+		if (!node.isLeaf()) {
+			boolean hasChildFolder = false;
+			for (int i = 0; i < node.getChildrenCount(); i++) {
+				AbcSongFileNode child = node.getChildAt(i);
+				TreePath childPath = nodePath.pathByAddingChild(child);
+				if (child.getChildrenCount() != 0) {
+					traverseAndExpand(newExpanded, child, childPath);
+					hasChildFolder = true;
+				}
+			}
+			
+			if (!hasChildFolder) {
+				newExpanded.add(nodePath);
+			}
+		}
+	}
+	
 	private void reExpandPaths() {
 		HashSet<TreePath> validExpandedTrees = new HashSet<TreePath>();
-		for (TreePath path : expandedAbcTrees) {
+		HashSet<TreePath> snapshot = new HashSet<>(expandedAbcTrees);
+		for (TreePath path : snapshot) {
 			Object[] nodes = path.getPath();
 			Object walk = abcFileTreeModel.getRoot();
 			boolean found = true;
@@ -985,6 +1027,26 @@ public class AbcPlaylistPanel extends JPanel {
 			}
 			playlistHeaderPopupMenu.add(item);
 			columnEnablers[i] = item;
+		}
+	}
+	
+	private void initTableHeaderSort() {
+		List<String> colNames = tableModel.getColumnNames();
+		JMenu sortMenu = new JMenu("Sort Playlist By...");
+		JMenu ascending = new JMenu("Ascending");
+		JMenu descending = new JMenu("Descending");
+		sortMenu.add(ascending);
+		sortMenu.add(descending);
+		playlistHeaderPopupMenu.add(sortMenu);
+		
+		for (String col : colNames) {
+			JMenuItem asc = ascending.add(new JMenuItem(col));
+			JMenuItem desc = descending.add(new JMenuItem(col));
+			ActionListener listen = e -> {
+				tableModel.sortBy(col, e.getSource() == asc);
+			};
+			asc.addActionListener(listen);
+			desc.addActionListener(listen);
 		}
 	}
 	
