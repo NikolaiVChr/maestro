@@ -164,6 +164,7 @@ public class AbcPlaylistPanel extends JPanel {
 	private JMenuItem saveMenuItem;
 	private JCheckBoxMenuItem autoplayMenuItem;
 	private JCheckBoxMenuItem playbackDelayMenuItem;
+	private JCheckBoxMenuItem expandSearchMenuItem;
 	private JMenuItem exportSetMenuItem;
 	
 	private JFileChooser openPlaylistChooser = null;
@@ -314,7 +315,7 @@ public class AbcPlaylistPanel extends JPanel {
 
 			@Override
 			public void treeExpanded(TreeExpansionEvent e) {
-				expandedAbcTrees.add(e.getPath());	
+				expandedAbcTrees.add(e.getPath());
 			}
 		});
 		JPopupMenu fileTreePopup = new JPopupMenu();
@@ -730,6 +731,9 @@ public class AbcPlaylistPanel extends JPanel {
 			
 			public void update(DocumentEvent e) {
 				abcFileTreeModel.filter(searchTextField.getText());
+				if (!searchTextField.getText().isEmpty() && expandSearchMenuItem.isSelected()) {
+					expandMatchedPaths();
+				}
 				reExpandPaths();
 			}
 		});
@@ -887,6 +891,11 @@ public class AbcPlaylistPanel extends JPanel {
 		playbackDelayMenuItem.addActionListener(e -> {
 			playlistPrefs.putBoolean("playbackDelay", playbackDelayMenuItem.isSelected());
 		});
+		expandSearchMenuItem = (JCheckBoxMenuItem) playlistMenu.add(new JCheckBoxMenuItem("Enable Auto-Expanding Searched Folders"));
+		expandSearchMenuItem.setSelected(playlistPrefs.getBoolean("autoExpandSearch", false));
+		expandSearchMenuItem.addActionListener(e -> {
+			playlistPrefs.putBoolean("autoExpandSearch", expandSearchMenuItem.isSelected());
+		});
 		playlistMenu.addSeparator();
 		JMenu sortBy = new JMenu("Sort browser by...");
 		playlistMenu.add(sortBy);
@@ -930,9 +939,35 @@ public class AbcPlaylistPanel extends JPanel {
 		});
 	}
 	
+	private void expandMatchedPaths() {
+		HashSet<TreePath> validExpandedTrees = new HashSet<TreePath>();
+		AbcSongFileNode root = (AbcSongFileNode)abcFileTreeModel.getRoot();
+		traverseAndExpand(validExpandedTrees, root, new TreePath(root));
+		expandedAbcTrees = validExpandedTrees;
+	}
+	
+	private void traverseAndExpand(HashSet<TreePath> newExpanded, AbcSongFileNode node, TreePath nodePath) {
+		if (!node.isLeaf()) {
+			boolean hasChildFolder = false;
+			for (int i = 0; i < node.getChildrenCount(); i++) {
+				AbcSongFileNode child = node.getChildAt(i);
+				TreePath childPath = nodePath.pathByAddingChild(child);
+				if (child.getChildrenCount() != 0) {
+					traverseAndExpand(newExpanded, child, childPath);
+					hasChildFolder = true;
+				}
+			}
+			
+			if (!hasChildFolder) {
+				newExpanded.add(nodePath);
+			}
+		}
+	}
+	
 	private void reExpandPaths() {
 		HashSet<TreePath> validExpandedTrees = new HashSet<TreePath>();
-		for (TreePath path : expandedAbcTrees) {
+		HashSet<TreePath> snapshot = new HashSet<>(expandedAbcTrees);
+		for (TreePath path : snapshot) {
 			Object[] nodes = path.getPath();
 			Object walk = abcFileTreeModel.getRoot();
 			boolean found = true;

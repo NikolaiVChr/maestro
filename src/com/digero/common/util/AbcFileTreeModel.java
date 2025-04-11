@@ -228,6 +228,10 @@ public class AbcFileTreeModel implements TreeModel {
 			return filteredChildren.get(i);
 		}
 		
+		public int getChildrenCount() {
+			return filteredChildren.size();
+		}
+		
 		public int getIndexOf(AbcSongFileNode node) {
 			return filteredChildren.indexOf(node);
 		}
