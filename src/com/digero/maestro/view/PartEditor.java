@@ -39,6 +39,8 @@ public class PartEditor extends JDialog {
 
 	public void updateParts() {
 		partsList.updateParts();
+		// Since there is no scrollwindow we pack to be sure all parts can be seen
+		// with 24 parts, the windows is not too large for 1080 screen at 12 pt fonts.
 		pack();
 		repaint();
 	}

@@ -34,8 +34,9 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 	private JTextField conclusionFermataField;
 	private JTextField maxField;
 	
-	protected static double[] LAYOUT_COLS = new double[] { FILL, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED };
-	protected static double[] LAYOUT_COLS_BADGER = new double[] { FILL, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED };
+	protected static double horizGap = 15;
+	protected static double[] LAYOUT_COLS = new double[] { FILL, horizGap, PREFERRED, PREFERRED, horizGap, PREFERRED, PREFERRED, horizGap, PREFERRED, PREFERRED };
+	protected static double[] LAYOUT_COLS_BADGER = new double[] { FILL, PREFERRED, horizGap, PREFERRED, PREFERRED, horizGap, PREFERRED, PREFERRED, horizGap, PREFERRED, PREFERRED };
 
 	public PartEditorItem(AbcPart part, boolean showBadger) {
 		super(part, showBadger);
@@ -44,12 +45,15 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		title = new JLabel(part.toString());
 		title.setBorder(BorderFactory.createEmptyBorder(0, 3, 0, 0));
 
-		int h = title.getPreferredSize().height + 4;
+		int h = title.getPreferredSize().height + 6;
 
 		//Dimension buttonSize = new Dimension(h, h);
 
 		delayField = new JTextField(String.format("%.3f", part.delay * 0.001f));
 		delayField.setHorizontalAlignment(SwingConstants.CENTER);
+		Dimension fieldSize = delayField.getPreferredSize();
+		fieldSize.height = h;
+		delayField.setPreferredSize(fieldSize);
 		delayField.setToolTipText("Put a delay from 0s to 1.00s on a part.");
 		delayField.addActionListener(e -> {
 			validateDelayInput();
@@ -63,6 +67,9 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		
 		conclusionFermataField = new JTextField(String.format("%.3f", part.conclusionFermata * 0.001f));
 		conclusionFermataField.setHorizontalAlignment(SwingConstants.CENTER);
+		fieldSize = conclusionFermataField.getPreferredSize();
+		fieldSize.height = h;
+		conclusionFermataField.setPreferredSize(fieldSize);
 		conclusionFermataField.setToolTipText("Put a conclusion fermata from 0s to 5.00s on a part.\nDoes nothing if note not sustained by chosen instrument");
 		conclusionFermataField.addActionListener(e -> {
 			validateFermataInput();
@@ -76,11 +83,14 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		
 		maxField = new JTextField(String.format("%d", part.getNoteMax()));
 		maxField.setHorizontalAlignment(SwingConstants.CENTER);
+		fieldSize = maxField.getPreferredSize();
+		fieldSize.height = h;
+		maxField.setPreferredSize(fieldSize);
 		maxField.setToolTipText("Put a max concurrent notes from 1 to 6 on a part.\nThe effect wont be shown graphically");
-		delayField.addActionListener(e -> {
+		maxField.addActionListener(e -> {
 			validateMaxInput();
 		});
-		delayField.addFocusListener(new FocusAdapter() {
+		maxField.addFocusListener(new FocusAdapter() {
 			@Override
 			public void focusLost(FocusEvent e) {
 				validateMaxInput();
@@ -94,11 +104,14 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		if (showBadger) add(badgerButton, ++col + ", 0");
 		//add(soloButton, ++col + ", 0");
 		//add(muteButton, ++col + ", 0");
-		add(new JLabel(" Delay"), ++col + ", 0");
+		col++;
+		add(new JLabel("Delay"), ++col + ", 0");
 		add(delayField, ++col + ", 0");
-		add(new JLabel(" Fermata"), ++col + ", 0");
+		col++;
+		add(new JLabel("Fermata"), ++col + ", 0");
 		add(conclusionFermataField, ++col + ", 0");
-		add(new JLabel(" Max notes"), ++col + ", 0");
+		col++;
+		add(new JLabel("Max notes"), ++col + ", 0");
 		add(maxField, ++col + ", 0");
 	}
 
@@ -108,7 +121,7 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		title = new JLabel(titleTxt);
 		title.setBorder(BorderFactory.createEmptyBorder(0, 3, 0, 0));
 
-		int h = title.getPreferredSize().height + 4;
+		int h = title.getPreferredSize().height + 6;//added 2 due to using fields
 		Dimension buttonSize = new Dimension(h, h);
 		
 		badgerButton = new JButton("<html><b>1</b></html>");
@@ -139,11 +152,14 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		add(badgerButton, ++col + ", 0");
 		//add(soloButton, ++col + ", 0");
 		//add(muteButton, ++col + ", 0");
-		add(new JLabel(" Delay"), ++col + ", 0");
+		col++;
+		add(new JLabel("Delay"), ++col + ", 0");
 		add(delayField, ++col + ", 0");
-		add(new JLabel(" Fermata"), ++col + ", 0");
+		col++;
+		add(new JLabel("Fermata"), ++col + ", 0");
 		add(conclusionFermataField, ++col + ", 0");
-		add(new JLabel(" Max notes"), ++col + ", 0");
+		col++;
+		add(new JLabel("Max notes"), ++col + ", 0");
 		add(maxField, ++col + ", 0");	
 	}
 	
