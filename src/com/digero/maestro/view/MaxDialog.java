@@ -47,7 +47,7 @@ public class MaxDialog {
 					public void windowClosing(WindowEvent we) {
 						MaxDialog.lastLocation = MaxDialogWindow.this.getLocation();
 						maxDialog = null;
-						jf.updateDelayButton();
+						jf.updatePartEditorButton();
 						if (abcPart.getAbcSong() != null) {
 							abcPart.getAbcSong().removeSongListener(songListener);
 						}

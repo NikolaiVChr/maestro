@@ -202,10 +202,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private PartsList partsList;
 	private JButton newPartButton;
 	private JButton deletePartButton;
-	private JButton delayButton;
-	private JButton conclusionFermataButton;
+	private JButton partEditorButton;
 	private JButton numerateButton;
-	private JButton maxButton;
+	private PartEditor partEditor;
 
 	private JPanel settingsPanel;
 
@@ -534,13 +533,15 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			if (abcPart != null) {
 				updateButtons(false);
 			} else {
-				updateDelayButton();
+				updatePartEditorButton();
 				if (partsList.getModel().getSize() > 0) {
 					// If ctrl-clicking to deselect this will ensure something is selected
 					partsList.selectPart(0);
 				}
 			}
 		});
+		
+		partEditor = new PartEditor(this, sequencer, miscSettings);
 
 		/**
 		 * Wrap the part list in a panel that forces the list to the top. Fixes a swing bug where clicking after the end
@@ -563,13 +564,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		sz.width = PartsListItem.getProtoDimension().width;
 		partsListScrollPane.setPreferredSize(sz);
 
-		delayButton = new JButton("Delay Part");
-		delayButton.addActionListener(e -> {
-			if (partsList.getSelectedPart() != null) {
-				DelayDialog.show(ProjectFrame.this, partsList.getSelectedPart());
-			}
+		partEditorButton = new JButton("Part Editor");
+		partEditorButton.addActionListener(e -> {
+			partEditor.setVisible(true);
 		});
-		delayButton.setToolTipText("Open a small dialog to edit delay on part.");
+		partEditorButton.setToolTipText("Open a small window to edit parts.");
 
 		numerateButton = new JButton("Numerate");
 		numerateButton.addActionListener(e -> {
@@ -578,22 +577,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		});
 		numerateButton.setToolTipText("Auto assign numbers to identical instrument part titles.");
 
-		maxButton = new JButton("Max part notes");
-		maxButton.addActionListener(e -> {
-			if (partsList.getSelectedPart() != null) {
-				MaxDialog.show(ProjectFrame.this, partsList.getSelectedPart());
-			}
-		});
-		maxButton.setToolTipText("Open a small dialog to edit a parts max notes.");
-		
-		conclusionFermataButton = new JButton("Part Fermata");
-		conclusionFermataButton.addActionListener(e -> {
-			if (partsList.getSelectedPart() != null) {
-				FermataDialog.show(ProjectFrame.this, partsList.getSelectedPart());
-			}
-		});
-		conclusionFermataButton.setToolTipText("Open a small dialog to edit conclusion fermata on part.");
-		
 		JPanel partsButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, HGAP, VGAP));
 		partsButtonPanel.add(newPartButton);
 		partsButtonPanel.add(deletePartButton);
@@ -603,12 +586,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		partsListPanel.add(partsButtonPanel, BorderLayout.NORTH);
 		partsListPanel.add(partsListScrollPane, BorderLayout.CENTER);
 
-		GridLayout delayGrid = new GridLayout(2, 1);
+		GridLayout delayGrid = new GridLayout(1, 2);
 		JPanel delayPanel = new JPanel(delayGrid);
-		delayPanel.add(delayButton);
+		delayPanel.add(partEditorButton);
 		delayPanel.add(numerateButton);
-		delayPanel.add(maxButton);
-		delayPanel.add(conclusionFermataButton);
 		partsListPanel.add(delayPanel, BorderLayout.SOUTH);
 	}
 
@@ -1603,7 +1584,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		newPartButton.setEnabled(abcSong != null);
 		deletePartButton.setEnabled(partsList.getSelectedIndex() != -1);
 		numerateButton.setEnabled(midiLoaded);
-		updateDelayButton();
+		updatePartEditorButton();
 		exportButton.setEnabled(hasAbcNotes);
 		exportMenuItem.setEnabled(hasAbcNotes);
 		exportAsMenuItem.setEnabled(hasAbcNotes);
@@ -1682,48 +1663,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		updateButtonsPending = false;
 	};
 
-	public void updateDelayButton() {
-		if (partsList.getSelectedIndex() != -1 && partPanel != null && partPanel.getAbcPart() != null
-				&& partPanel.getAbcPart().delay != 0) {
-			delayButton.setForeground(new Color(0.2f, 0.8f, 0.2f));// green
-		} else if (partsList.getSelectedIndex() != -1) {
-			Color c = UIManager.getColor("TextField.foreground");
-			delayButton.setForeground(c);
-		} else {
-			// This is needed since when starting to set foreground color manually,
-			// it will no longer appear greyed out when disabled automatically.
-			delayButton.setForeground(new Color(0.6f, 0.6f, 0.6f));
-		}
-		delayButton.setEnabled(partsList.getSelectedIndex() != -1);
-		
-		if (partsList.getSelectedIndex() != -1 && partPanel != null && partPanel.getAbcPart() != null
-				&& partPanel.getAbcPart().getNoteMax() != AbcConstants.MAX_CHORD_NOTES) {
-			maxButton.setForeground(new Color(0.2f, 0.8f, 0.2f));// green
-		} else if (partsList.getSelectedIndex() != -1) {
-			Color c = UIManager.getColor("TextField.foreground");
-			maxButton.setForeground(c);
-		} else {
-			// This is needed since when starting to set foreground color manually,
-			// it will no longer appear greyed out when disabled automatically.
-			maxButton.setForeground(new Color(0.6f, 0.6f, 0.6f));
-		}
-		maxButton.setEnabled(partsList.getSelectedIndex() != -1);
-		
-		if (partsList.getSelectedIndex() != -1 && partPanel != null && partPanel.getAbcPart() != null
-				&& partPanel.getAbcPart().conclusionFermata != 0) {
-			conclusionFermataButton.setForeground(new Color(0.2f, 0.8f, 0.2f));// green
-		} else if (partsList.getSelectedIndex() != -1) {
-			Color c = UIManager.getColor("TextField.foreground");
-			conclusionFermataButton.setForeground(c);
-		} else {
-			// This is needed since when starting to set foreground color manually,
-			// it will no longer appear greyed out when disabled automatically.
-			conclusionFermataButton.setForeground(new Color(0.6f, 0.6f, 0.6f));
-		}
-		conclusionFermataButton.setEnabled(partsList.getSelectedIndex() != -1);
+	public void updatePartEditorButton() {
+		partEditorButton.setEnabled(partsList.getSelectedIndex() != -1);		
 	}
 	
-	private void updateButtons(boolean immediate) {
+	void updateButtons(boolean immediate) {
 		if (immediate) {
 			updateButtonsTask.run();
 		} else if (!updateButtonsPending) {
@@ -1765,6 +1709,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			partPanel.setNewTitle(e.getSource());
 
 		partsList.repaint();
+		partEditor.repaint();
 
 		setAbcSongModified(true);
 
@@ -1862,6 +1807,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			partsList.selectPart(idx);
 			partsList.ensureIndexIsVisible(idx);
 			partsList.repaint();
+			partEditor.repaint();
 			updateButtons(false);
 			maxNoteCountTotal = 0;
 			maxNoteCount = 0;
@@ -1874,6 +1820,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			partsList.selectPart(idx);
 			partsList.ensureIndexIsVisible(idx);
 			partsList.repaint();
+			partEditor.updateParts();
+			partEditor.repaint();
 			updateButtons(false);
 			break;
 		case TUNE_EDIT:
@@ -1918,6 +1866,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		case PART_LIST_ORDER:
 			partsList.selectPart(abcSong.getParts().indexOf(partPanel.getAbcPart()));
 			partsList.repaint();
+			partEditor.repaint();
 			updateButtons(false);
 			break;
 
@@ -1969,18 +1918,21 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		@Override
 		public void intervalAdded(ListDataEvent e) {
 			partsList.updateParts();
+			partEditor.updateParts();
 			updateButtons(false);
 		}
 
 		@Override
 		public void intervalRemoved(ListDataEvent e) {
 			partsList.updateParts();
+			partEditor.updateParts();
 			updateButtons(false);
 		}
 
 		@Override
 		public void contentsChanged(ListDataEvent e) {
 			partsList.updateParts();
+			partEditor.updateParts();
 			updateButtons(false);
 		}
 	};
@@ -2049,8 +2001,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		partPanel.setTextnote("");
 		partPanel.textnoteVisible(false);
 		partPanel.unZoom();
+		
+		partEditor.setVisible(false);
 
 		partsList.updateParts();
+		partEditor.updateParts();
 
 		allowOverwriteSaveFile = false;
 		allowOverwriteExportFile = false;
@@ -2132,9 +2087,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			abcSong.setBadger(miscSettings.showBadger);
 			abcSong.addSongListener(abcSongListener);
 			abcSong.addSongListener(partsList.songListener);
+			abcSong.addSongListener(partEditor.getSongListener());
 			for (AbcPart part : abcSong.getParts()) {
 				part.addAbcListener(abcPartListener);
 				part.addAbcListener(partsList.partListener);
+				part.addAbcListener(partEditor.getPartListener());
 			}
 
 			songTitleField.setText(abcSong.getTitle());
@@ -2277,6 +2234,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private void setPartsListModel() {
 		// Not really used as a model anymore since switching to PartsList rather than JList
 		partsList.setModel(abcSong.getParts().getListModel());
+		partEditor.setModel(abcSong.getParts().getListModel());
 	}
 
 	/** Used when the MIDI file in a Maestro song project can't be loaded. */

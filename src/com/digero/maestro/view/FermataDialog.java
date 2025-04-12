@@ -47,7 +47,7 @@ public class FermataDialog {
 					public void windowClosing(WindowEvent we) {
 						FermataDialog.lastLocation = ConclusionFermataDialogWindow.this.getLocation();
 						conclusionFermataDialog = null;
-						jf.updateDelayButton();
+						jf.updatePartEditorButton();
 						if (abcPart.getAbcSong() != null) {
 							abcPart.getAbcSong().removeSongListener(songListener);
 						}

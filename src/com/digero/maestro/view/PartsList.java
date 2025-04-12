@@ -26,17 +26,17 @@ import info.clearthought.layout.TableLayoutConstants;
 
 @SuppressWarnings("serial")
 public class PartsList extends JPanel implements IDiscardable, TableLayoutConstants {
-	private DefaultListModel<AbcPart> model;
+	protected DefaultListModel<AbcPart> model;
 	private BoxLayout layout;
 
-	private List<PartsListItem> parts = new ArrayList<PartsListItem>();
-	private AbcPart selectedPart = null;
-	private int selectedIndex = -1;
-	private MiscSettings miscSettings;
+	protected List<PartsListItem> parts = new ArrayList<PartsListItem>();
+	protected AbcPart selectedPart = null;
+	protected int selectedIndex = -1;
+	protected MiscSettings miscSettings;
 
 	private SequencerWrapper abcSequencer;
 
-	private final Dimension rowDimension;
+	protected final Dimension rowDimension;
 
 	public PartsList(SequencerWrapper abcSequencer, MiscSettings miscSettings) {
 		this.abcSequencer = abcSequencer;
@@ -75,9 +75,9 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 		this.repaint();
 	}
 
-	private void addPart(int idx) {
+	protected void addPart(int idx) {
 		AbcPart part = model.elementAt(idx);
-		PartsListItem item = new PartsListItem(part, miscSettings.showBadger);
+		PartsListItem item = new PartsListItem(part, false);
 
 		item.setItemListener(itemListener);
 

@@ -47,7 +47,7 @@ public class DelayDialog {
 					public void windowClosing(WindowEvent we) {
 						DelayDialog.lastLocation = DelayDialogWindow.this.getLocation();
 						delayDialog = null;
-						jf.updateDelayButton();
+						jf.updatePartEditorButton();
 						if (abcPart.getAbcSong() != null) {
 							abcPart.getAbcSong().removeSongListener(songListener);
 						}

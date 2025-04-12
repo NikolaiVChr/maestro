@@ -933,6 +933,9 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			}
 			// System.out.println(" "+"Setting: "+result.second.group()+typeString);
 			typeNumber = typeNumberNew;
+			assert result != null;// saw a null pointer here, hence the asserts
+			assert result.second != null;
+			assert result.second.group() != null;
 			setTitle(result.second.group() + typeString);// no need to check for null, as that is done in
 															// isTypeNumberMatchingTitle/getTypeNumberMatchingTitle
 		} else {

@@ -48,27 +48,24 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 	static final int SOLO_WIDTH = 8;
 	static final int MUTE_WIDTH = 8;
 
-	private static double[] LAYOUT_COLS = new double[] { FILL, PREFERRED, PREFERRED };
-	private static double[] LAYOUT_COLS_BADGER = new double[] { FILL, PREFERRED, PREFERRED, PREFERRED };
-	private static double[] LAYOUT_ROWS = new double[] { PREFERRED };
+	protected static double[] LAYOUT_COLS = new double[] { FILL, PREFERRED, PREFERRED };
+	protected static double[] LAYOUT_COLS_BADGER = new double[] { FILL, PREFERRED, PREFERRED, PREFERRED };
+	protected static double[] LAYOUT_ROWS = new double[] { PREFERRED };
 
-	private JLabel title;
-	private JButton soloButton;
-	private JButton muteButton;
-	private JButton badgerButton;
+	protected JLabel title;
+	protected JButton soloButton;
+	protected JButton muteButton;
+	protected JButton badgerButton;
 
-	private AbcPart part;
+	protected AbcPart part;
 
 	private Color selectedFg, selectedBg, unselectedFg, unselectedBg;
 
-	private Listener<PartsListItemEvent> itemListener = null;
-
-	private boolean showBadger;
+	protected Listener<PartsListItemEvent> itemListener = null;
 
 	public PartsListItem(AbcPart part, boolean showBadger) {
 		super(new TableLayout(showBadger?LAYOUT_COLS_BADGER:LAYOUT_COLS, LAYOUT_ROWS));
 
-		this.showBadger = showBadger;
 		this.setPart(part);
 
 		title = new JLabel(part.toString());
@@ -157,7 +154,7 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 		});
 	}
 
-	private PartsListItem(String titleTxt) {
+	protected PartsListItem(String titleTxt) {
 		title = new JLabel(titleTxt);
 		title.setBorder(BorderFactory.createEmptyBorder(0, 3, 0, 0));
 
