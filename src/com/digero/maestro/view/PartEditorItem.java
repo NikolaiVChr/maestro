@@ -54,7 +54,8 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		Dimension fieldSize = delayField.getPreferredSize();
 		fieldSize.height = h;
 		delayField.setPreferredSize(fieldSize);
-		delayField.setToolTipText("Put a delay from 0s to 1.00s on a part.");
+		delayField.setToolTipText("Put a delay from 0s to 1.00s on a part."
+				+ "\nThe effect wont be shown graphically");
 		delayField.addActionListener(e -> {
 			validateDelayInput();
 		});
@@ -70,7 +71,9 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		fieldSize = conclusionFermataField.getPreferredSize();
 		fieldSize.height = h;
 		conclusionFermataField.setPreferredSize(fieldSize);
-		conclusionFermataField.setToolTipText("Put a conclusion fermata from 0s to 5.00s on a part.\nDoes nothing if note not sustained by chosen instrument");
+		conclusionFermataField.setToolTipText("Put a conclusion fermata from 0s to 5.00s on a part."
+				+ "\nDoes nothing if note not sustained by chosen instrument."
+				+ "\nThe effect wont be shown graphically");
 		conclusionFermataField.addActionListener(e -> {
 			validateFermataInput();
 		});
@@ -86,7 +89,8 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		fieldSize = maxField.getPreferredSize();
 		fieldSize.height = h;
 		maxField.setPreferredSize(fieldSize);
-		maxField.setToolTipText("Put a max concurrent notes from 1 to 6 on a part.\nThe effect wont be shown graphically");
+		maxField.setToolTipText("Put a max concurrent notes from 1 to 6 on a part."
+				+ "\nThe effect wont be shown graphically");
 		maxField.addActionListener(e -> {
 			validateMaxInput();
 		});
