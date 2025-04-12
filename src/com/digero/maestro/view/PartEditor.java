@@ -29,6 +29,8 @@ public class PartEditor extends JDialog {
 		
 		pack();
 		repaint();
+		
+		this.setLocationRelativeTo(pFrame);
 	}
 
 	public void setModel(DefaultListModel<AbcPart> listModel) {

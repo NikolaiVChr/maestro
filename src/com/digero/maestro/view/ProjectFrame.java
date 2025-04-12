@@ -566,7 +566,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		partEditorButton = new JButton("Part Editor");
 		partEditorButton.addActionListener(e -> {
-			partEditor.setVisible(true);
+			partEditor.setVisible(!partEditor.isVisible());
 		});
 		partEditorButton.setToolTipText("Open a small window to edit parts.");
 
@@ -794,7 +794,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		row++;
 		settingsLayout.insertRow(row, PREFERRED);
 		settingsPanel.add(organicCheckBox, "0, " + row + ", 2, " + row + ", L, C");
-		settingsPanel.add(organic2CheckBox, "1, " + row + ", 2, " + row + ", R, C");
+		row++;
+		settingsLayout.insertRow(row, PREFERRED);
+		settingsPanel.add(organic2CheckBox, "0, " + row + ", 2, " + row + ", C, C");
 		row++;
 		settingsLayout.insertRow(row, PREFERRED);
 		settingsPanel.add(tripletCheckBox, "0, " + row + ", 2, " + row + ", L, C");
