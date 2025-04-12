@@ -2,6 +2,12 @@ package com.digero.maestro.view;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.GraphicsConfiguration;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
+import java.awt.Insets;
+import java.awt.Rectangle;
+import java.awt.Toolkit;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JDialog;
@@ -15,28 +21,34 @@ import com.digero.maestro.abc.AbcSongEvent;
 public class PartEditor extends JDialog {
 	private static final long serialVersionUID = 2872004091137636859L;
 	private PartsListEditor partsList;
+	private ProjectFrame pFrame;
 
 	PartEditor (ProjectFrame pFrame, SequencerWrapper abcSequencer, MiscSettings miscSettings) {
 		super(pFrame, "Part Editor");
+		this.pFrame = pFrame;
 		partsList = new PartsListEditor(abcSequencer, miscSettings);
 		
 		setLayout(new BorderLayout());
 		add(partsList, BorderLayout.NORTH);
-		setMinimumSize(new Dimension(300,100));
+		// set location should think it big to put it a bit up on screen
+		// hence the 800, so if open a song with 24 parts, there will be room.
+		setMinimumSize(new Dimension(300,800));
 		Dimension sz = this.getMinimumSize();
 		sz.width = PartEditorItem.getProtoDimension().width;
 		setMinimumSize(sz);
 		
-		pack();
-		repaint();
+		pack();		
 		
 		this.setLocationRelativeTo(pFrame);
+		
+		sz.height = 100;
+		setMinimumSize(sz);		
 	}
 
 	public void setModel(DefaultListModel<AbcPart> listModel) {
 		partsList.setModel(listModel);
 		pack();
-		repaint();
+		keepInScreen();
 	}
 
 	public void updateParts() {
@@ -44,7 +56,36 @@ public class PartEditor extends JDialog {
 		// Since there is no scrollwindow we pack to be sure all parts can be seen
 		// with 24 parts, the windows is not too large for 1080 screen at 12 pt fonts.
 		pack();
-		repaint();
+		keepInScreen();
+	}
+
+
+	private void keepInScreen() {
+		// Ensure that window is on screen fully if monitors or resolution changed
+		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+		GraphicsDevice devices[] = ge.getScreenDevices();
+		Rectangle bounds = this.getBounds();
+		int areaOnScreen = 0;
+		
+		for (GraphicsDevice d : devices) {
+			GraphicsConfiguration gc = d.getDefaultConfiguration();
+			Rectangle screenBounds = gc.getBounds();
+			
+			// Now subtract the windows taskbar:
+			Insets insets = Toolkit.getDefaultToolkit().getScreenInsets(gc);
+			screenBounds.x += insets.left;
+			screenBounds.y += insets.top;
+			screenBounds.width -= (insets.left + insets.right);
+			screenBounds.height -= (insets.top + insets.bottom);
+			
+			if (bounds.intersects(screenBounds)) {
+				Rectangle inter = bounds.intersection(screenBounds);
+				areaOnScreen += inter.width * inter.height;
+			}
+		}
+		if (areaOnScreen != bounds.width * bounds.height) {
+			this.setLocationRelativeTo(pFrame);
+		}
 	}
 
 	public void selectPart(int idx) {
@@ -53,12 +94,6 @@ public class PartEditor extends JDialog {
 
 	public void ensureIndexIsVisible(int idx) {
 		//partsList.ensureIndexIsVisible(idx);
-	}
-	
-	@Override
-	public void repaint() {
-		partsList.repaint();
-		super.repaint();
 	}
 
 	public Listener<AbcSongEvent> getSongListener() {
