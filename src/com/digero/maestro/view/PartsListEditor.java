@@ -11,10 +11,11 @@ import com.digero.maestro.abc.AbcSongEvent;
 
 public class PartsListEditor extends PartsList {
 	private static final long serialVersionUID = -3564677504833477636L;
-	Dimension rowDim = null;
+	private final Dimension rowDim;
 
 	public PartsListEditor(SequencerWrapper abcSequencer, MiscSettings miscSettings) {
 		super(abcSequencer, miscSettings);
+		
 		songListener = e -> {
 			AbcSong song = e.getSource();
 			if (song == null)
@@ -36,16 +37,16 @@ public class PartsListEditor extends PartsList {
 				break;
 			}
 		};
+		
 		itemListener = null;
+		
+		rowDim = PartEditorItem.getProtoDimension();
 	}
 	
 	@Override
 	public Dimension getPreferredSize() {
-		if (rowDim == null) {
-			rowDim = PartEditorItem.getProtoDimension();
-		}
-		rowDim.height = getComponentCount() * rowDim.height;
-		return rowDim;
+		int width = getComponentCount() * rowDim.height;
+		return new Dimension(rowDim.width, width);
 	}
 	
 	@Override
