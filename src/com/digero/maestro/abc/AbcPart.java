@@ -55,6 +55,7 @@ import com.digero.maestro.view.InstrNameSettings;
 
 public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscardable {
 	private int partNumber = 1;
+	public boolean suppressSpinnerUpdate = false;
 	private String title;
 	private LotroInstrument instrument;
 	private int[] trackTranspose;
@@ -1512,6 +1513,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			}
 		}
 	};
+	
 	
 
 	Preferences getDrumPrefs() {
