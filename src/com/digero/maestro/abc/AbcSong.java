@@ -244,7 +244,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			if (newPart.getInstrument() == LotroInstrument.STUDENT_FIDDLE) {
 				newPart.setStudentOverride(true);
 			}
-
+			populateFirstNumbers();
+			newPart.firstNumber = partAutoNumberer.getFirstNumber(newPart.getInstrument());
 			int ins = Collections.binarySearch(parts, newPart, partNumberComparator);
 			if (ins < 0)
 				ins = -ins - 1;
@@ -656,7 +657,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		AbcPart newPart = new AbcPart(this);
 		newPart.addAbcListener(abcPartListener);
 		partAutoNumberer.onPartAdded(newPart);
-
+		populateFirstNumbers();
+		newPart.firstNumber = partAutoNumberer.getFirstNumber(newPart.getInstrument());
 		int idx = Collections.binarySearch(parts, newPart, partNumberComparator);
 		if (idx < 0)
 			idx = (-idx - 1);
@@ -678,7 +680,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		partAutoNumberer.onPartDeleted(part);
 		suppressPartSort = false;
 		part.discard();
-		//since we supressed sorting we do it now:
+		//since we suppressed sorting we do it now:
+		populateFirstNumbers();
 		parts.sort(partNumberComparator);//timed this sort, and its slow as f., dont understand why
 		fireChangeEvent(AbcSongProperty.PART_LIST_ORDER, part);
 	}
@@ -1078,20 +1081,26 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		return abcExporter;
 	}
 
+	private void populateFirstNumbers() {
+		for (AbcPart part : parts) {
+			part.firstNumber = partAutoNumberer.getFirstNumber(part.getInstrument());
+		}
+	}
+	
 	/**
 	 * 
 	 * 1st sort according to instrument base number
 	 * 2nd sort according to part number
 	 * 
+	 * Dont use this with setting firstNumber on parts first
+	 * 
 	 */
 	private Comparator<AbcPart> partNumberComparator = new Comparator<AbcPart>() {
 		@Override
 		public int compare(AbcPart p1, AbcPart p2) {
-			int base1 = partAutoNumberer.getFirstNumber(p1.getInstrument());
-			int base2 = partAutoNumberer.getFirstNumber(p2.getInstrument());
-
-			if (base1 != base2)
-				return base1 - base2;
+			
+			if (p1.firstNumber != p2.firstNumber)
+				return p1.firstNumber - p2.firstNumber;
 			return p1.getPartNumber() - p2.getPartNumber();
 		}
 	};
@@ -1100,6 +1109,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 	private Listener<AbcPartEvent> abcPartListener = e -> {
 		if (e.getProperty() == AbcPartProperty.PART_NUMBER && !suppressPartSort ) {
+			populateFirstNumbers();
 			parts.sort(partNumberComparator);
 			fireChangeEvent(AbcSongProperty.PART_LIST_ORDER, e.getSource());
 		}

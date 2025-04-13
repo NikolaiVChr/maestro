@@ -78,7 +78,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	public static final int badgerPrioLowest = 6;
 	private int badgerPrio = badgerPrioHighest;
 	
-
+	protected int firstNumber;
 	private final AbcSong abcSong;
 	private int enabledTrackCount = 0;
 	private int previewSequenceTrackNumber = -1;
@@ -1513,6 +1513,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			}
 		}
 	};
+	
 	
 	
 
