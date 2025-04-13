@@ -670,11 +670,17 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public void deletePart(AbcPart part) {
 		if (part == null || !parts.contains(part))
 			return;
+		
 		setMixDirty(true);
 		fireChangeEvent(AbcSongProperty.BEFORE_PART_REMOVED, part);
 		parts.remove(part);
+		suppressPartSort = true;
 		partAutoNumberer.onPartDeleted(part);
+		suppressPartSort = false;
 		part.discard();
+		//since we supressed sorting we do it now:
+		parts.sort(partNumberComparator);//timed this sort, and its slow as f., dont understand why
+		fireChangeEvent(AbcSongProperty.PART_LIST_ORDER, part);
 	}
 
 	public String getTitle() {
@@ -1089,9 +1095,11 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			return p1.getPartNumber() - p2.getPartNumber();
 		}
 	};
+	
+	public boolean suppressPartSort = false;
 
 	private Listener<AbcPartEvent> abcPartListener = e -> {
-		if (e.getProperty() == AbcPartProperty.PART_NUMBER) {
+		if (e.getProperty() == AbcPartProperty.PART_NUMBER && !suppressPartSort ) {
 			parts.sort(partNumberComparator);
 			fireChangeEvent(AbcSongProperty.PART_LIST_ORDER, e.getSource());
 		}

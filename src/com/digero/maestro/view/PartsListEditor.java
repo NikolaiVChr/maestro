@@ -54,14 +54,6 @@ public class PartsListEditor extends PartsList {
 		AbcPart part = model.elementAt(idx);
 		PartEditorItem item = new PartEditorItem(part, miscSettings.showBadger);
 
-		//item.setItemListener(itemListener);
-		
-		/*
-		if (part == selectedPart) {
-			selectedIndex = idx;
-			item.setSelected(true);
-		}*/
-
 		parts.add(idx, item);
 		add(item);
 	}
