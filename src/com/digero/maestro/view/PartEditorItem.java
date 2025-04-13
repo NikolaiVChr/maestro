@@ -17,6 +17,7 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
+import javax.swing.JSeparator;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 
@@ -35,7 +36,7 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 	private JTextField conclusionFermataField;
 	private JTextField maxField;
 
-	protected double horizGap = 15;
+	protected static Dimension horizGapi = new Dimension(15,15);
 	
 
 	public PartEditorItem(AbcPart part, boolean showBadger) {
@@ -48,9 +49,14 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 	}
 	
 	@Override
+	protected LayoutManager getLayouts(boolean showBadger) {
+		return new TableLayout(getColumns(showBadger), LAYOUT_ROWS);
+	}
+	
+	@Override
 	protected double[] getColumns(boolean showBadger) {
-		double[] LAYOUT_COLS_EDITOR = new double[] { FILL, horizGap, PREFERRED, PREFERRED, horizGap, PREFERRED, PREFERRED, horizGap, PREFERRED, PREFERRED };
-		double[] LAYOUT_COLS_BADGER_EDITOR = new double[] { FILL, PREFERRED, horizGap, PREFERRED, PREFERRED, horizGap, PREFERRED, PREFERRED, horizGap, PREFERRED, PREFERRED };
+		double[] LAYOUT_COLS_EDITOR = new double[] { FILL, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED };
+		double[] LAYOUT_COLS_BADGER_EDITOR = new double[] { FILL, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED };
 		
 		return showBadger?LAYOUT_COLS_BADGER_EDITOR:LAYOUT_COLS_EDITOR;
 	}
@@ -151,13 +157,22 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		if (showBadger) add(badgerButton, ++col + ", 0");
 		//add(soloButton, ++col + ", 0");
 		//add(muteButton, ++col + ", 0");
-		col++;
+		JPanel a = new JPanel();
+		a.setVisible(false);
+		a.setPreferredSize(horizGapi);
+		add(a, ++col + ", 0");
 		add(new JLabel("Delay"), ++col + ", 0");
 		add(delayField, ++col + ", 0");
-		col++;
+		JPanel b = new JPanel();
+		b.setVisible(false);
+		b.setPreferredSize(horizGapi);
+		add(b, ++col + ", 0");
 		add(new JLabel("Fermata"), ++col + ", 0");
 		add(conclusionFermataField, ++col + ", 0");
-		col++;
+		JPanel c = new JPanel();
+		c.setVisible(false);
+		c.setPreferredSize(horizGapi);
+		add(c, ++col + ", 0");
 		add(new JLabel("Max notes"), ++col + ", 0");
 		add(maxField, ++col + ", 0");
 	}
@@ -205,13 +220,19 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		add(badgerButton, ++col + ", 0");
 		//add(soloButton, ++col + ", 0");
 		//add(muteButton, ++col + ", 0");
-		col++;
+		JPanel a = new JPanel();
+		a.setPreferredSize(horizGapi);
+		add(a, ++col + ", 0");
 		add(new JLabel("Delay"), ++col + ", 0");
 		add(delayField, ++col + ", 0");
-		col++;
+		JPanel b = new JPanel();
+		b.setPreferredSize(horizGapi);
+		add(b, ++col + ", 0");
 		add(new JLabel("Fermata"), ++col + ", 0");
 		add(conclusionFermataField, ++col + ", 0");
-		col++;
+		JPanel c = new JPanel();
+		c.setPreferredSize(horizGapi);
+		add(c, ++col + ", 0");
 		add(new JLabel("Max notes"), ++col + ", 0");
 		add(maxField, ++col + ", 0");	
 	}
@@ -226,8 +247,11 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		try {
 			float delay = Float.parseFloat(delayField.getText().replace(',', '.'));
 			if (delay >= 0.000f && delay <= 1.00f) {
-				part.delay = (int) (delay * 1000);
-				part.delayEdited();
+				int val = (int) (delay * 1000);
+				if (part.delay != val) {
+					part.delay = val;
+					part.delayEdited();
+				}
 			}
 		} catch (NumberFormatException nfe) {
 
@@ -239,8 +263,11 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		try {
 			float conclusionFermata = Float.parseFloat(conclusionFermataField.getText().replace(',', '.'));
 			if (conclusionFermata >= 0.000f && conclusionFermata <= 5.00f) {
-				part.conclusionFermata = (int) (conclusionFermata * 1000);
-				part.conclusionFermataEdited();
+				int val = (int) (conclusionFermata * 1000);
+				if (part.conclusionFermata != val) {
+					part.conclusionFermata = val;
+					part.conclusionFermataEdited();
+				}
 			}
 		} catch (NumberFormatException nfe) {
 	
@@ -252,8 +279,10 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		try {
 			int max = Integer.parseInt(maxField.getText());
 			if (max >= 1 && max <= 6) {
-				part.setNoteMax(max);
-				part.maxEdited();
+				if (part.getNoteMax() != max) {
+					part.setNoteMax(max);
+					part.maxEdited();
+				}
 			}
 		} catch (NumberFormatException nfe) {
 

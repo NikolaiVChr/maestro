@@ -24,8 +24,12 @@ import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
 
 public class PartsListItem extends JPanel implements IDiscardable, TableLayoutConstants {
-	@SuppressWarnings("serial")
+	
+	private static final long serialVersionUID = -1794798972919435415L;
+	
 	public static class PartsListItemEvent extends EventObject {
+		private static final long serialVersionUID = 8572619183993666151L;
+
 		public enum EventType {
 			SELECTION, SOLO, MUTE, UNSOLO_ALL, UNMUTE_ALL;
 		}
@@ -40,11 +44,7 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 		public EventType getType() {
 			return type;
 		}
-	}
-
-	private static final long serialVersionUID = -1794798972919435415L;
-
-	private int buffer = 4;
+	}	
 	
 	static final int GUTTER_WIDTH = 4;
 	static final int TITLE_WIDTH = 100;
@@ -85,16 +85,11 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 	}
 	
 	protected double[] getColumns(boolean showBadger) {
-		double[] notNull = showBadger?LAYOUT_COLS_BADGER:LAYOUT_COLS;
-		assert notNull != null;
-		return notNull;
+		return showBadger?LAYOUT_COLS_BADGER:LAYOUT_COLS;
 	}
 	
 	protected LayoutManager getLayouts(boolean showBadger) {
-		double[] notNull = getColumns(showBadger);
-		assert notNull != null;
-		
-		return new TableLayout(notNull, LAYOUT_ROWS);
+		return new TableLayout(getColumns(showBadger), LAYOUT_ROWS);
 	}
 	
 	protected int getBuffer() {

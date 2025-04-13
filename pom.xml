@@ -173,6 +173,7 @@
 			<artifactId>flatlaf</artifactId>
 			<version>3.2.5</version>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/info.clearthought/table-layout/4.3.0 -->
 		<dependency>
 			<groupId>info.clearthought</groupId>
 			<artifactId>table-layout</artifactId>
