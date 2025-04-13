@@ -3,6 +3,7 @@ package com.digero.maestro.view;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Insets;
+import java.awt.LayoutManager;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -43,14 +44,16 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 
 	private static final long serialVersionUID = -1794798972919435415L;
 
+	private int buffer = 4;
+	
 	static final int GUTTER_WIDTH = 4;
 	static final int TITLE_WIDTH = 100;
 	static final int SOLO_WIDTH = 8;
 	static final int MUTE_WIDTH = 8;
 
-	protected static double[] LAYOUT_COLS = new double[] { FILL, PREFERRED, PREFERRED };
-	protected static double[] LAYOUT_COLS_BADGER = new double[] { FILL, PREFERRED, PREFERRED, PREFERRED };
-	protected static double[] LAYOUT_ROWS = new double[] { PREFERRED };
+	protected double[] LAYOUT_COLS = new double[] { FILL, PREFERRED, PREFERRED };
+	protected double[] LAYOUT_COLS_BADGER = new double[] { FILL, PREFERRED, PREFERRED, PREFERRED };
+	protected double[] LAYOUT_ROWS = new double[] { PREFERRED };
 
 	protected JLabel title;
 	protected JButton soloButton;
@@ -59,19 +62,50 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 
 	protected AbcPart part;
 
-	private Color selectedFg, selectedBg, unselectedFg, unselectedBg;
+	protected Color selectedFg;
+
+	protected Color selectedBg;
+
+	protected Color unselectedFg;
+
+	protected Color unselectedBg;
 
 	protected Listener<PartsListItemEvent> itemListener = null;
 
 	public PartsListItem(AbcPart part, boolean showBadger) {
-		super(new TableLayout(showBadger?LAYOUT_COLS_BADGER:LAYOUT_COLS, LAYOUT_ROWS));
+		super();
 
 		this.setPart(part);
 
+		initStart(part);
+
+		initFinish(showBadger);
+
+		initPost();
+	}
+	
+	protected double[] getColumns(boolean showBadger) {
+		double[] notNull = showBadger?LAYOUT_COLS_BADGER:LAYOUT_COLS;
+		assert notNull != null;
+		return notNull;
+	}
+	
+	protected LayoutManager getLayouts(boolean showBadger) {
+		double[] notNull = getColumns(showBadger);
+		assert notNull != null;
+		
+		return new TableLayout(notNull, LAYOUT_ROWS);
+	}
+	
+	protected int getBuffer() {
+		return 4;
+	}
+
+	protected void initStart(AbcPart part) {
 		title = new JLabel(part.toString());
 		title.setBorder(BorderFactory.createEmptyBorder(0, 3, 0, 0));
 
-		int h = title.getPreferredSize().height + 4;
+		int h = title.getPreferredSize().height + getBuffer();
 
 		JList<AbcPartMetadataSource> dummy = new JList<AbcPartMetadataSource>();
 		selectedFg = dummy.getSelectionForeground();
@@ -134,13 +168,18 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 			setMute(isMute);
 			itemListener.onEvent(new PartsListItemEvent(PartsListItem.this, PartsListItemEvent.EventType.MUTE));
 		});
+	}
 
+	protected void initFinish(boolean showBadger) {
+		setLayout(getLayouts(showBadger));
 		int col = -1;
 		add(title, ++col + ", 0");
 		if (showBadger) add(badgerButton, ++col + ", 0");
 		add(soloButton, ++col + ", 0");
 		add(muteButton, ++col + ", 0");
+	}
 
+	protected void initPost() {
 		title.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
@@ -155,10 +194,11 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 	}
 
 	protected PartsListItem(String titleTxt) {
+		setLayout(getLayouts(false));
 		title = new JLabel(titleTxt);
 		title.setBorder(BorderFactory.createEmptyBorder(0, 3, 0, 0));
 
-		int h = title.getPreferredSize().height + 4;
+		int h = title.getPreferredSize().height + getBuffer();
 		Dimension buttonSize = new Dimension(h, h);
 		soloButton = new JButton("<html><b>S</b></html>");
 		soloButton.setPreferredSize(buttonSize);

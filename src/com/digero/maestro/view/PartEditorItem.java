@@ -3,6 +3,7 @@ package com.digero.maestro.view;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Insets;
+import java.awt.LayoutManager;
 import java.awt.event.ActionEvent;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
@@ -33,21 +34,61 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 	private JTextField delayField;
 	private JTextField conclusionFermataField;
 	private JTextField maxField;
+
+	protected double horizGap = 15;
 	
-	protected static double horizGap = 15;
-	protected static double[] LAYOUT_COLS = new double[] { FILL, horizGap, PREFERRED, PREFERRED, horizGap, PREFERRED, PREFERRED, horizGap, PREFERRED, PREFERRED };
-	protected static double[] LAYOUT_COLS_BADGER = new double[] { FILL, PREFERRED, horizGap, PREFERRED, PREFERRED, horizGap, PREFERRED, PREFERRED, horizGap, PREFERRED, PREFERRED };
 
 	public PartEditorItem(AbcPart part, boolean showBadger) {
 		super(part, showBadger);
-		this.setLayout(new TableLayout(showBadger?LAYOUT_COLS_BADGER:LAYOUT_COLS, LAYOUT_ROWS));
+	}
 		
+	@Override
+	protected int getBuffer() {
+		return 6;
+	}
+	
+	@Override
+	protected double[] getColumns(boolean showBadger) {
+		double[] LAYOUT_COLS_EDITOR = new double[] { FILL, horizGap, PREFERRED, PREFERRED, horizGap, PREFERRED, PREFERRED, horizGap, PREFERRED, PREFERRED };
+		double[] LAYOUT_COLS_BADGER_EDITOR = new double[] { FILL, PREFERRED, horizGap, PREFERRED, PREFERRED, horizGap, PREFERRED, PREFERRED, horizGap, PREFERRED, PREFERRED };
+		
+		return showBadger?LAYOUT_COLS_BADGER_EDITOR:LAYOUT_COLS_EDITOR;
+	}
+
+	@Override
+	protected void initStart(AbcPart part) {
 		title = new JLabel(part.toString());
 		title.setBorder(BorderFactory.createEmptyBorder(0, 3, 0, 0));
 
-		int h = title.getPreferredSize().height + 6;
+		JList<AbcPartMetadataSource> dummy = new JList<AbcPartMetadataSource>();
+		selectedFg = dummy.getSelectionForeground();
+		selectedBg = dummy.getSelectionBackground();
+		unselectedFg = dummy.getForeground();
+		unselectedBg = dummy.getBackground();
 
-		//Dimension buttonSize = new Dimension(h, h);
+		setBackground(unselectedBg);
+		setForeground(unselectedFg);
+		
+		int h = title.getPreferredSize().height + getBuffer();
+
+		Dimension buttonSize = new Dimension(h, h);
+		
+		String badgerText = "<html>"+part.getBadgerPrio()+"</html>";
+		Color badgerColor = new JButton().getBackground();
+		badgerButton = new JButton(badgerText);
+		badgerButton.setToolTipText("Songbook setup priority, 1 = must play, 6 = least important");
+		badgerButton.setBackground(badgerColor);
+		badgerButton.setPreferredSize(buttonSize);
+		badgerButton.setMargin(new Insets(0, 0, 0, 0));
+		badgerButton.setFocusable(false);
+		badgerButton.addActionListener(e -> {
+			int prio = part.getBadgerPrio();
+			prio += AbcPart.badgerPrioStep;
+			if (prio > AbcPart.badgerPrioLowest) prio = AbcPart.badgerPrioHighest;
+			part.setBadgerPrio(prio);
+			String text = "<html>"+prio+"</html>";
+			badgerButton.setText(text);
+		});
 
 		delayField = new JTextField(String.format("%.3f", part.delay * 0.001f));
 		delayField.setHorizontalAlignment(SwingConstants.CENTER);
@@ -100,9 +141,11 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 				validateMaxInput();
 			}
 		});
+	}
 
-		removeAll();
-		
+	@Override
+	protected void initFinish(boolean showBadger) {
+		setLayout(getLayouts(showBadger));
 		int col = -1;
 		add(title, ++col + ", 0");
 		if (showBadger) add(badgerButton, ++col + ", 0");
@@ -118,14 +161,20 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		add(new JLabel("Max notes"), ++col + ", 0");
 		add(maxField, ++col + ", 0");
 	}
+	
+	@Override
+	protected void initPost() {
+		
+	}
 
 	protected PartEditorItem(String titleTxt) {
 		super(titleTxt);
 		removeAll();
+		setLayout(getLayouts(true));
 		title = new JLabel(titleTxt);
 		title.setBorder(BorderFactory.createEmptyBorder(0, 3, 0, 0));
 
-		int h = title.getPreferredSize().height + 6;//added 2 due to using fields
+		int h = title.getPreferredSize().height + getBuffer();//added 2 due to using fields
 		Dimension buttonSize = new Dimension(h, h);
 		
 		badgerButton = new JButton("<html><b>1</b></html>");
