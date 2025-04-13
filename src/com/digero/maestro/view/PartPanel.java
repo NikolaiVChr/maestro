@@ -132,8 +132,9 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		numberSpinnerModel = new SpinnerNumberModel(0, 0, 999, partAutoNumberer.getIncrement());
 		numberSpinner = new JSpinner(numberSpinnerModel);
 		numberSpinner.addChangeListener(e -> {
-			if (abcPart != null)
+			if (abcPart != null && !abcPart.suppressSpinnerUpdate) {
 				PartPanel.this.partAutoNumberer.setPartNumber(abcPart, (Integer) numberSpinner.getValue());
+			}
 		});
 
 		numberSettingsButton = new JButton(IconLoader.getImageIcon("gear_16.png"));
@@ -468,7 +469,9 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 
 	private Listener<AbcPartEvent> abcPartListener = e -> {
 		if (e.getProperty() == AbcPartProperty.PART_NUMBER) {
+			abcPart.suppressSpinnerUpdate = true;
 			numberSpinner.setValue(abcPart.getPartNumber());
+			abcPart.suppressSpinnerUpdate = false;
 		}
 	};
 
