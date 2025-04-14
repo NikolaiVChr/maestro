@@ -785,6 +785,7 @@ public class AbcPlaylistPanel extends JPanel {
 		delayField = new JTextField(playlistPrefs.get("delayInSecs", ""));
 		delayField.setToolTipText(delayToolTipText);
 		delayField.addKeyListener(new KeyAdapter() {
+			@Override
 			public void keyTyped(KeyEvent e) {
 				char c = e.getKeyChar();
 				if ((c < '0' || c > '9') && c != KeyEvent.VK_BACK_SPACE && c != KeyEvent.VK_DELETE) {
