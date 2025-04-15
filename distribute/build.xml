@@ -117,9 +117,9 @@
 	</target>
 
 	<target name="LotroInstruments" depends="GenerateSoundFontInfo,-LotroInstruments.CheckUpToDate" unless="LotroInstruments.uptodate" description="Make SF2 file">
-		<exec executable="${tools}/sf2comp.exe" failonerror="true">
-			<arg value="c" />
-			<arg value="-m" />
+		<exec executable="${tools}/sf2comp.exe" failonerror="true"><!--  error="sf2comp_err.txt" output="sf2comp_out.txt" -->
+			<arg value="c" /><!-- compile -->
+			<arg value="-m" /><!-- mute (suppress output) -->
 			<arg value="-i" />
 			<arg value="${audio_backslash}\LotroInstruments\LotroInstruments.txt" />
 			<arg value="${build}\LotroInstruments.sf2" />
@@ -147,6 +147,7 @@
 		    </exec>
 		</target>
 
+		
 		<target name="Installer" depends="Build,jdk" description="Make MSI file">
 			<mkdir dir="${output}" />
 			<property name="msipath" location="${output}/${basename.Maestro}_v${version.Maestro}.msi" />
@@ -166,7 +167,7 @@
 			</exec>
 			<exec executable="${tools}/wix/light.exe" failonerror="true">
 				<arg value="-nologo" />
-				<arg value="-sval" /><!-- suppress ICE validation, needed to not need to run light as admin -->
+				<!--arg value="-sval" /--><!-- suppress ICE validation, needed to not need to run light as admin -->
 				<arg value="-sw1076" />
 				<!-- Installer removes version numbers equal to itself -->
 				<arg value="-ext" />
