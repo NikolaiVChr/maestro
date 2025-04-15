@@ -18,6 +18,7 @@
 	<condition property="isWindows">
 		<os family="windows" />
 	</condition>
+	<property environment="env"/>
 
 	<condition property="isUnix">
 		<os family="unix" />
@@ -126,11 +127,11 @@
 	</target>
 
 	<target name="Build" depends="-CopyThings,LotroInstruments,-GenerateExeFiles" description="Make all except ZIP and MSI files"/>
-
+	
 	<target name="jdk">
 		    <exec executable="${tools}/wix/heat.exe" failonerror="true">  <!-- Runs WiX Heat to harvest directory files -->
 		        <arg value="dir"/>  <!-- Specifies that a directory will be harvested -->
-		        <arg value="${java.home}"/>  <!-- Uses the JAVA_HOME environment variable to locate the JDK 24 folder -->
+		        <arg value="${env.JAVA_HOME}"/>  <!-- Uses the JAVA_HOME environment variable to locate the JDK 24 folder -->
 		        <arg value="-cg"/>  <!-- Defines a component group to group harvested files -->
 		        <arg value="jdkComponentGroup"/>  <!-- Names the component group  -->
 		        <arg value="-dr"/>  <!-- Specifies the directory reference ID -->
@@ -157,7 +158,7 @@
 				<arg value="-dMaestroVersion=${version.Maestro}" />
 				<arg value="-dAbcPlayerVersion=${version.AbcPlayer}" />
 				<arg value="-dAbcToolsVersion=${version.AbcTools}" />
-				<arg value="-djdk=${java.home}" />
+				<arg value="-djdk=${env.JAVA_HOME}" />
 				<arg value="-out" />
 				<arg value="${build}/" />
 				<arg value="MaestroInstaller.wix" />
@@ -196,7 +197,7 @@
 			<include name="AbcPlayer.exe" />
 			<include name="AbcTools.exe" />
 			<include name="Changes since Maestro 2.5.0.txt" />
-			<zipfileset dir="${java.home}" prefix="Java24"/>
+			<zipfileset dir="${env.JAVA_HOME}" prefix="Java24"/>
 		</zip>
 	</target>
 
