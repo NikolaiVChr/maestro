@@ -17,7 +17,7 @@
   <jre>
     <path>Java24</path>
     <requiresJdk>false</requiresJdk>
-    <requires64Bit>true</requires64Bit>
+    <requires64Bit>false</requires64Bit>
     <!--minVersion>24</minVersion>
     <maxVersion></maxVersion-->
     <opt>--enable-native-access=ALL-UNNAMED</opt> 
