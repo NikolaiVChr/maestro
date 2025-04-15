@@ -127,36 +127,59 @@
 
 	<target name="Build" depends="-CopyThings,LotroInstruments,-GenerateExeFiles" description="Make all except ZIP and MSI files"/>
 
-	<target name="Installer" depends="Build" description="Make MSI file">
-		<mkdir dir="${output}" />
-		<property name="msipath" location="${output}/${basename.Maestro}_v${version.Maestro}.msi" />
-		<echo>Building msi: ${msipath}</echo>
-		<exec executable="${tools}/wix/candle.exe" failonerror="true">
-			<arg value="-nologo" />
-			<arg value="-arch" />
-			<arg value="x64" />
-			<arg value="-dMaestroVersion=${version.Maestro}" />
-			<arg value="-dAbcPlayerVersion=${version.AbcPlayer}" />
-			<arg value="-dAbcToolsVersion=${version.AbcTools}" />
-			<arg value="-o" />
-			<arg value="${build}/MaestroInstaller.wixobj" />
-			<arg value="MaestroInstaller.wix" />
-		</exec>
-		<exec executable="${tools}/wix/light.exe" failonerror="true">
-			<arg value="-nologo" />
-			<arg value="-sw1076" />
-			<!-- Installer removes version numbers equal to itself -->
-			<arg value="-ext" />
-			<arg value="WixUIExtension" />
-			<arg value="-loc" />
-			<arg value="MaestroInstallerStrings.wxl" />
-			<arg value="-pdbout" />
-			<arg value="${build}/MaestroInstaller.wixobj" />
-			<arg value="-o" />
-			<arg value="${output}/${basename.Maestro}_v${version.Maestro}.msi" />
-			<arg value="${build}/MaestroInstaller.wixobj" />
-		</exec>
-	</target>
+	<target name="jdk">
+		    <exec executable="${tools}/wix/heat.exe" failonerror="true">  <!-- Runs WiX Heat to harvest directory files -->
+		        <arg value="dir"/>  <!-- Specifies that a directory will be harvested -->
+		        <arg value="${java.home}"/>  <!-- Uses the JAVA_HOME environment variable to locate the JDK 24 folder -->
+		        <arg value="-cg"/>  <!-- Defines a component group to group harvested files -->
+		        <arg value="jdkComponentGroup"/>  <!-- Names the component group  -->
+		        <arg value="-dr"/>  <!-- Specifies the directory reference ID -->
+		        <arg value="jdkDirectoryRef"/>  <!-- Names the directory reference -->
+		        <arg value="-srd"/>  <!-- Suppresses the harvesting of the root directory itself, keeping only its contents -->
+		        <arg value="-var"/>  <!-- Allows the directory to be referenced using a variable instead of an absolute path -->
+		        <arg value="var.jdk"/>  <!-- Defines the variable name for referencing the harvested directory -->
+		    	<arg value="-gg"/> <!-- generate GUIDs -->
+		    	<arg value="-template:fragment"/> <!-- dont harvest metadata -->
+		    	<arg value="-sreg"/> <!-- don't register dlls -->
+		    	<arg value="-out"/>  <!-- Specifies the output file where harvested WiX XML will be stored -->
+		        <arg value="jdk.wxs"/>  <!-- Saves the harvested files as "jdk.wxs" -->
+		    </exec>
+		</target>
+
+		<target name="Installer" depends="Build,jdk" description="Make MSI file">
+			<mkdir dir="${output}" />
+			<property name="msipath" location="${output}/${basename.Maestro}_v${version.Maestro}.msi" />
+			<echo>Building msi: ${msipath}</echo>
+			<exec executable="${tools}/wix/candle.exe" failonerror="true">
+				<arg value="-nologo" />
+				<arg value="-arch" />
+				<arg value="x64" />
+				<arg value="-dMaestroVersion=${version.Maestro}" />
+				<arg value="-dAbcPlayerVersion=${version.AbcPlayer}" />
+				<arg value="-dAbcToolsVersion=${version.AbcTools}" />
+				<arg value="-djdk=${java.home}" />
+				<arg value="-out" />
+				<arg value="${build}/" />
+				<arg value="MaestroInstaller.wix" />
+				<arg value="jdk.wxs" />
+			</exec>
+			<exec executable="${tools}/wix/light.exe" failonerror="true">
+				<arg value="-nologo" />
+				<arg value="-sval" /><!-- suppress ICE validation, needed to not need to run light as admin -->
+				<arg value="-sw1076" />
+				<!-- Installer removes version numbers equal to itself -->
+				<arg value="-ext" />
+				<arg value="WixUIExtension" />
+				<arg value="-loc" />
+				<arg value="MaestroInstallerStrings.wxl" />			
+				<arg value="-o" />
+				<arg value="${output}/${basename.Maestro}_v${version.Maestro}.msi" />
+				<arg value="-pdbout" />
+				<arg value="${build}/MaestroInstaller.wixpdb" />
+				<arg value="${build}/jdk.wixobj" />
+				<arg value="${build}/MaestroInstaller.wixobj" />
+			</exec>
+		</target>
 
 	<target name="ZipFile" depends="Build" description="Make ZIP file">
 		<mkdir dir="${output}" />
@@ -173,6 +196,7 @@
 			<include name="AbcPlayer.exe" />
 			<include name="AbcTools.exe" />
 			<include name="Changes since Maestro 2.5.0.txt" />
+			<zipfileset dir="${java.home}" prefix="Java24"/>
 		</zip>
 	</target>
 

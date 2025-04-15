@@ -15,13 +15,13 @@
   <manifest></manifest>
   <icon>abctools.ico</icon>
   <jre>
-    <path>/Java24;%JAVA_HOME%;%PATH%</path>
+    <path>Java24</path>
     <requiresJdk>false</requiresJdk>
     <requires64Bit>true</requires64Bit>
-    <minVersion>24</minVersion>
-    <maxVersion></maxVersion>
-    <opt>-Dsun.java2d.opengl=True</opt>
+    <!--minVersion>24</minVersion>
+    <maxVersion></maxVersion-->
     <opt>--enable-native-access=ALL-UNNAMED</opt> 
     <opt>--add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED</opt>
+    <opt>-Dsun.java2d.opengl=True</opt>
   </jre>
 </launch4jConfig>
