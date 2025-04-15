@@ -128,60 +128,161 @@
 
 	<target name="Build" depends="-CopyThings,LotroInstruments,-GenerateExeFiles" description="Make all except ZIP and MSI files"/>
 	
-	<target name="jdk">
-		    <exec executable="${tools}/wix/heat.exe" failonerror="true">  <!-- Runs WiX Heat to harvest directory files -->
-		        <arg value="dir"/>  <!-- Specifies that a directory will be harvested -->
-		        <arg value="${env.JAVA_HOME}"/>  <!-- Uses the JAVA_HOME environment variable to locate the JDK 24 folder -->
-		        <arg value="-cg"/>  <!-- Defines a component group to group harvested files -->
-		        <arg value="jdkComponentGroup"/>  <!-- Names the component group  -->
-		        <arg value="-dr"/>  <!-- Specifies the directory reference ID -->
-		        <arg value="jdkDirectoryRef"/>  <!-- Names the directory reference -->
-		        <arg value="-srd"/>  <!-- Suppresses the harvesting of the root directory itself, keeping only its contents -->
-		        <arg value="-var"/>  <!-- Allows the directory to be referenced using a variable instead of an absolute path -->
-		        <arg value="var.jdk"/>  <!-- Defines the variable name for referencing the harvested directory -->
-		    	<arg value="-gg"/> <!-- generate GUIDs -->
-		    	<arg value="-template:fragment"/> <!-- dont harvest metadata -->
-		    	<arg value="-sreg"/> <!-- don't register dlls -->
-		    	<arg value="-out"/>  <!-- Specifies the output file where harvested WiX XML will be stored -->
-		        <arg value="jdk.wxs"/>  <!-- Saves the harvested files as "jdk.wxs" -->
-		    </exec>
-		</target>
-
-		
-		<target name="Installer" depends="Build,jdk" description="Make MSI file">
-			<mkdir dir="${output}" />
-			<property name="msipath" location="${output}/${basename.Maestro}_v${version.Maestro}.msi" />
-			<echo>Building msi: ${msipath}</echo>
-			<exec executable="${tools}/wix/candle.exe" failonerror="true">
-				<arg value="-nologo" />
-				<arg value="-arch" />
-				<arg value="x64" />
-				<arg value="-dMaestroVersion=${version.Maestro}" />
-				<arg value="-dAbcPlayerVersion=${version.AbcPlayer}" />
-				<arg value="-dAbcToolsVersion=${version.AbcTools}" />
-				<arg value="-djdk=${env.JAVA_HOME}" />
-				<arg value="-out" />
-				<arg value="${build}/" />
-				<arg value="MaestroInstaller.wix" />
-				<arg value="jdk.wxs" />
-			</exec>
-			<exec executable="${tools}/wix/light.exe" failonerror="true">
-				<arg value="-nologo" />
-				<!--arg value="-sval" /--><!-- suppress ICE validation, needed to not need to run light as admin -->
-				<arg value="-sw1076" />
-				<!-- Installer removes version numbers equal to itself -->
-				<arg value="-ext" />
-				<arg value="WixUIExtension" />
-				<arg value="-loc" />
-				<arg value="MaestroInstallerStrings.wxl" />			
-				<arg value="-o" />
-				<arg value="${output}/${basename.Maestro}_v${version.Maestro}.msi" />
-				<arg value="-pdbout" />
-				<arg value="${build}/MaestroInstaller.wixpdb" />
-				<arg value="${build}/jdk.wixobj" />
-				<arg value="${build}/MaestroInstaller.wixobj" />
-			</exec>
-		</target>
+	<target name="JPackageTools">
+		<mkdir dir="${build}/jpackageTools" />
+		<copy file="Changes since Maestro 2.5.0.txt" todir="${build}/jpackageTools" />
+		<copy file="${build}/AbcTools.jar" todir="${build}/jpackageTools" />
+	    <exec executable="${env.JAVA_HOME}/bin/jpackage.exe" failonerror="true">
+	    	<env key="PATH" path="${tools}/wix"/>
+	    	<arg value="--type"/>
+	    	<arg value="exe"/>
+	    	<arg value="--app-version"/>
+	    	<arg value="${version.AbcTools}"/>
+	    	<arg value="--description"/>
+    		<arg value="Abc Tools for lotro abc music"/>
+    		<arg value="--icon"/>
+    		<arg value="abctools.ico"/>
+	    	<arg value="--java-options"/>
+	    	<arg value="--enable-native-access=ALL-UNNAMED"/>
+	    	<arg value="--java-options"/>
+	    	<arg value="--add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED"/>
+	    	<arg value="--java-options"/>
+	    	<arg value="-Dsun.java2d.opengl=True"/>
+    		<arg value="--dest"/>
+	    	<arg value="${output}"/>
+	    	<arg value="--input"/>
+	    	<arg value="${build}/jpackageTools"/>
+	    	<arg value="--name"/>
+	    	<arg value="AbcTools BETA"/>
+	    	<arg value="--main-class"/>
+	    	<arg value="com.aifel.abctools.AbcTools"/>
+	    	<arg value="--main-jar"/>
+	    	<arg value="AbcTools.jar"/>
+	    </exec>
+	</target>
+	
+	<target name="JPackagePlayer">
+		<mkdir dir="${build}/jpackagePlayer" />
+		<copy file="Changes since Maestro 2.5.0.txt" todir="${build}/jpackagePlayer" />
+		<copy file="${build}/AbcPlayer.jar" todir="${build}/jpackagePlayer" />
+		<copy file="${build}/LotroInstruments.sf2" todir="${build}/jpackagePlayer" />
+	    <exec executable="${env.JAVA_HOME}/bin/jpackage.exe" failonerror="true">
+	    	<env key="PATH" path="${tools}/wix"/>
+	    	<arg value="--type"/>
+	    	<arg value="exe"/>
+	    	<arg value="--app-version"/>
+	    	<arg value="${version.AbcPlayer}"/>
+	    	<arg value="--description"/>
+    		<arg value="Abc Player for lotro abc music"/>
+    		<arg value="--icon"/>
+    		<arg value="abcfile.ico"/>
+	    	<arg value="--java-options"/>
+	    	<arg value="--enable-native-access=ALL-UNNAMED"/>
+	    	<arg value="--java-options"/>
+	    	<arg value="--add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED"/>
+	    	<arg value="--java-options"/>
+	    	<arg value="-Dsun.java2d.opengl=True"/>
+    		<arg value="--dest"/>
+	    	<arg value="${output}"/>
+	    	<arg value="--input"/>
+	    	<arg value="${build}/jpackagePlayer"/>
+	    	<arg value="--name"/>
+	    	<arg value="AbcPlayer BETA"/>
+	    	<arg value="--main-class"/>
+	    	<arg value="com.digero.abcplayer.AbcPlayer"/>
+	    	<arg value="--main-jar"/>
+	    	<arg value="AbcPlayer.jar"/>
+	    </exec>
+	</target>
+	
+	<target name="JPackageMaestro">
+		<mkdir dir="${build}/jpackageMaestro" />
+		<copy file="Changes since Maestro 2.5.0.txt" todir="${build}/jpackageMaestro" />
+		<copy file="${build}/Maestro.jar" todir="${build}/jpackageMaestro" />
+		<copy file="${build}/LotroInstruments.sf2" todir="${build}/jpackageMaestro" />
+	    <exec executable="${env.JAVA_HOME}/bin/jpackage.exe" failonerror="true">
+	    	<env key="PATH" path="${tools}/wix"/>
+	    	<arg value="--type"/>
+	    	<arg value="exe"/>
+	    	<arg value="--app-version"/>
+	    	<arg value="${version.Maestro}"/>
+	    	<arg value="--description"/>
+    		<arg value="Maestro for lotro abc music"/>
+    		<arg value="--icon"/>
+    		<arg value="maestro.ico"/>
+	    	<arg value="--java-options"/>
+	    	<arg value="--enable-native-access=ALL-UNNAMED"/>
+	    	<arg value="--java-options"/>
+	    	<arg value="--add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED"/>
+	    	<arg value="--java-options"/>
+	    	<arg value="-Dsun.java2d.opengl=True"/>
+    		<arg value="--dest"/>
+	    	<arg value="${output}"/>
+	    	<arg value="--input"/>
+	    	<arg value="${build}/jpackageMaestro"/>
+	    	<arg value="--name"/>
+	    	<arg value="Maestro BETA"/>
+	    	<arg value="--main-class"/>
+	    	<arg value="com.digero.maestro.Maestro"/>
+	    	<arg value="--main-jar"/>
+	    	<arg value="Maestro.jar"/>
+	    	<arg value="--verbose"/>
+	    </exec>
+	</target>
+	
+	<target name="wix-jdk">
+	    <exec executable="${tools}/wix/heat.exe" failonerror="true">  <!-- Runs WiX Heat to harvest directory files -->
+	        <arg value="dir"/>  <!-- Specifies that a directory will be harvested -->
+	        <arg value="${env.JAVA_HOME}"/>  <!-- Uses the JAVA_HOME environment variable to locate the JDK 24 folder -->
+	        <arg value="-cg"/>  <!-- Defines a component group to group harvested files -->
+	        <arg value="jdkComponentGroup"/>  <!-- Names the component group  -->
+	        <arg value="-dr"/>  <!-- Specifies the directory reference ID -->
+	        <arg value="jdkDirectoryRef"/>  <!-- Names the directory reference -->
+	        <arg value="-srd"/>  <!-- Suppresses the harvesting of the root directory itself, keeping only its contents -->
+	        <arg value="-var"/>  <!-- Allows the directory to be referenced using a variable instead of an absolute path -->
+	        <arg value="var.jdk"/>  <!-- Defines the variable name for referencing the harvested directory -->
+	    	<arg value="-gg"/> <!-- generate GUIDs -->
+	    	<!--arg value="-template:fragment"/--> <!-- dont harvest metadata -->
+	    	<arg value="-sreg"/> <!-- don't register dlls -->
+	    	<arg value="-out"/>  <!-- Specifies the output file where harvested WiX XML will be stored -->
+	        <arg value="jdk.wxs"/>  <!-- Saves the harvested files as "jdk.wxs" -->
+	    </exec>
+	</target>
+	
+	<target name="Installer" depends="Build,wix-jdk" description="Make MSI file">
+		<mkdir dir="${output}" />
+		<property name="msipath" location="${output}/${basename.Maestro}_v${version.Maestro}.msi" />
+		<echo>Building msi: ${msipath}</echo>
+		<exec executable="${tools}/wix/candle.exe" failonerror="true">
+			<arg value="-nologo" />
+			<arg value="-arch" />
+			<arg value="x64" />
+			<arg value="-dMaestroVersion=${version.Maestro}" />
+			<arg value="-dAbcPlayerVersion=${version.AbcPlayer}" />
+			<arg value="-dAbcToolsVersion=${version.AbcTools}" />
+			<arg value="-djdk=${env.JAVA_HOME}" />
+			<arg value="-out" />
+			<arg value="${build}/" />
+			<arg value="MaestroInstaller.wix" />
+			<arg value="jdk.wxs" />
+		</exec>
+		<exec executable="${tools}/wix/light.exe" failonerror="true">
+			<arg value="-nologo" />
+			<!--arg value="-sval" /--><!-- suppress ICE validation, needed to not need to run light as admin -->
+			<arg value="-sw1076" />
+			<!-- Installer removes version numbers equal to itself -->
+			<arg value="-ext" />
+			<arg value="WixUIExtension" />
+			<arg value="-loc" />
+			<arg value="MaestroInstallerStrings.wxl" />			
+			<arg value="-o" />
+			<arg value="${output}/${basename.Maestro}_v${version.Maestro}.msi" />
+			<arg value="-pdbout" />
+			<arg value="${build}/MaestroInstaller.wixpdb" />
+			<arg value="${build}/jdk.wixobj" />
+			<arg value="${build}/MaestroInstaller.wixobj" />
+		</exec>
+	</target>
 
 	<target name="ZipFile" depends="Build" description="Make ZIP file">
 		<mkdir dir="${output}" />
@@ -202,6 +303,7 @@
 		</zip>
 	</target>
 
+	<target name="DistributeBETA" depends="Build,JPackageTools,JPackagePlayer,JPackageMaestro" description="Makes individual beta installers using JPackage"/>
 	<target name="Distribute" depends="Installer,ZipFile" description="Make final ZIP and MSI files"/>
 	<extension-point name="AntTest" description="Run any targets that are labeled as extensionOf='AntTest'" />
 </project>
