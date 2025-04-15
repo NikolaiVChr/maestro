@@ -16,7 +16,6 @@
 	<?define AbcToolsAppUserModelId=Aifel.AbcTools?>
 	<?define ApplicationFolderName=Maestro?>
 
-
 	<Product Id="*"
 		UpgradeCode="{CCA9F6BF-F1FB-4D8E-8892-3AFE3CE6F4B7}"
 		Name="$(var.MaestroAppName)"
@@ -40,7 +39,10 @@
 		<Property Id="AbcPlayerVersion">$(var.AbcPlayerVersion)</Property>
 		<Property Id="AbcToolsAppName">$(var.AbcToolsAppName)</Property>
 		<Property Id="AbcToolsVersion">$(var.AbcToolsVersion)</Property>
+		
+		
 
+		
 		<!-- Installer UI -->
 		<UI>
 			<UIRef Id="WixUI_FeatureTree" />
@@ -105,6 +107,7 @@
 			<!-- Program Files -->
 			<Directory Id="ProgramFiles64Folder">
 				<Directory Id="APPLICATIONFOLDER" Name="$(var.ApplicationFolderName)">
+					<Directory Id="jdkDirectoryRef" Name="Java24"/>
 					<Component Id="Maestro.jar" Guid="{5A924B19-8646-497C-9745-9C42267D5C91}">
 						<File Id="Maestro.jar" Source="Maestro.jar" KeyPath="yes" />
 					</Component>
@@ -302,6 +305,7 @@
 				Description="Files required by both $(var.MaestroAppName) and $(var.AbcPlayerAppName).">
 			<ComponentRef Id="LotroInstruments.sf2" />
 			<ComponentRef Id="aifel_changelog.txt" />
+			<ComponentGroupRef Id="jdkComponentGroup"/>
 		</Feature>
 
 		<Feature Id="Maestro"

@@ -15,11 +15,13 @@
   <manifest></manifest>
   <icon>maestro.ico</icon>
   <jre>
-    <path>%JAVA_HOME%;%PATH%</path>
+    <path>/Java24;%JAVA_HOME%;%PATH%</path>
     <requiresJdk>false</requiresJdk>
     <requires64Bit>true</requires64Bit>
-    <minVersion>1.8.0</minVersion>
+    <minVersion>24</minVersion>
     <maxVersion></maxVersion>
     <opt>-Dsun.java2d.opengl=True</opt>
+    <opt>--enable-native-access=ALL-UNNAMED</opt> 
+    <opt>--add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED</opt>
   </jre>
 </launch4jConfig>
