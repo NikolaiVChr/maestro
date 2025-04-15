@@ -108,6 +108,13 @@
 			<arg value="${basedir}/${audio}/LotroInstruments/LotroInstruments.txt" />
 		</java>
 	</target>
+	
+	<target name="GenerateSFZ" description="Make SFZ">
+		<java classname="com.digero.tools.soundfont.GenerateSFZ" classpath="${target}/classes" fork="yes" failonerror="yes">
+			<arg value="${basedir}/${audio}/LotroInstruments" />
+			<arg value="${basedir}/${audio}/SFZ" />
+		</java>
+	</target>
 
 	<target name="-LotroInstruments.CheckUpToDate" description="Test if SF2 needs making">
 		<uptodate property="LotroInstruments.uptodate" value="true" targetfile="${build}/LotroInstruments.sf2">

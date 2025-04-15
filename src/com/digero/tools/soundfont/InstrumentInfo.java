@@ -1,6 +1,7 @@
 package com.digero.tools.soundfont;
 
 import java.io.PrintStream;
+import java.util.SortedSet;
 
 import com.digero.common.abc.LotroInstrument;
 
@@ -9,6 +10,7 @@ public abstract class InstrumentInfo implements Comparable<InstrumentInfo> {
 	public final String name;
 	public final int lowestNoteId;
 	public final int highestNoteId;
+	public SortedSet<SampleInfo> samplesZ;
 
 	protected InstrumentInfo(LotroInstrument lotroInstrument) {
 		this(lotroInstrument, lotroInstrument.toString(), lotroInstrument.lowestPlayable.id,
