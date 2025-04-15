@@ -139,7 +139,7 @@
 	    	<arg value="--app-version"/>
 	    	<arg value="${version.AbcTools}"/>
 	    	<arg value="--description"/>
-    		<arg value="Abc Tools for lotro abc music"/>
+    		<arg value="ABC tools to merge abc files or auto export abc"/>
     		<arg value="--icon"/>
     		<arg value="abctools.ico"/>
 	    	<arg value="--java-options"/>
@@ -173,9 +173,9 @@
 	    	<arg value="--app-version"/>
 	    	<arg value="${version.AbcPlayer}"/>
 	    	<arg value="--description"/>
-    		<arg value="Abc Player for lotro abc music"/>
+    		<arg value="ABC Player for the Lord of the Rings Online"/>
     		<arg value="--icon"/>
-    		<arg value="abcfile.ico"/>
+    		<arg value="abcplayer.ico"/>
 	    	<arg value="--java-options"/>
 	    	<arg value="--enable-native-access=ALL-UNNAMED"/>
 	    	<arg value="--java-options"/>
@@ -207,7 +207,7 @@
 	    	<arg value="--app-version"/>
 	    	<arg value="${version.Maestro}"/>
 	    	<arg value="--description"/>
-    		<arg value="Maestro for lotro abc music"/>
+    		<arg value="Maestro MIDI to ABC converter"/>
     		<arg value="--icon"/>
     		<arg value="maestro.ico"/>
 	    	<arg value="--java-options"/>
@@ -226,7 +226,6 @@
 	    	<arg value="com.digero.maestro.Maestro"/>
 	    	<arg value="--main-jar"/>
 	    	<arg value="Maestro.jar"/>
-	    	<arg value="--verbose"/>
 	    </exec>
 	</target>
 	
