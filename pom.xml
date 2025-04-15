@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>LotroMaestro</groupId>
 	<artifactId>LotroMaestro</artifactId>
-	<version>0.0.2-SNAPSHOT</version>
+	<version>0.0.2</version>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	    <!--maven.compiler.source>1.8</maven.compiler.source>
@@ -68,6 +68,9 @@
 									<addClasspath>true</addClasspath>
 									<mainClass>com.digero.maestro.MaestroMain</mainClass>
 								</manifest>
+								<manifestEntries>
+									<Add-Exports>java.desktop/com.sun.media.sound=ALL-UNNAMED java.desktop/sun.awt.shell=ALL-UNNAMED</Add-Exports>
+								</manifestEntries>
 							</archive>
 							<finalName>Maestro</finalName>
 							<appendAssemblyId>false</appendAssemblyId>
@@ -117,6 +120,79 @@
 					<execution>
 						<id>default-jar</id>
 						<phase>none</phase>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.panteleyev</groupId>
+				<artifactId>jpackage-maven-plugin</artifactId>
+				<version>1.6.6</version>
+				<executions>
+					<execution>
+						<id>maestro-package</id>
+						<phase>package</phase>
+						<goals>
+							<goal>jpackage</goal>
+						</goals>
+						<configuration>
+							<name>Maestro</name>
+							<mainClass>com.digero.maestro.MaestroMain</mainClass>
+							<mainJar>Maestro.jar</mainJar>
+							<input>${project.build.directory}</input>
+							<destination>${project.build.directory}/release</destination>
+							<javaOptions>
+								<option>--add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED</option>
+								<option>--add-exports=java.desktop/sun.awt.shell=ALL-UNNAMED</option>
+								<option>-Dsun.java2d.opengl=True</option>
+							</javaOptions>
+							<icon>distribute/maestro.ico</icon>
+							<type>APP_IMAGE</type>
+							<runtimeImage>${java.home}</runtimeImage>
+						</configuration>
+					</execution>
+					<execution>
+						<id>abcplayer-package</id>
+						<phase>package</phase>
+						<goals>
+							<goal>jpackage</goal>
+						</goals>
+						<configuration>
+							<name>AbcPlayer</name>
+							<mainClass>com.digero.abcplayer.AbcPlayer</mainClass>
+							<mainJar>AbcPlayer.jar</mainJar>
+							<input>${project.build.directory}</input>
+							<destination>${project.build.directory}/release</destination>
+							<javaOptions>
+								<option>--add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED</option>
+								<option>--add-exports=java.desktop/sun.awt.shell=ALL-UNNAMED</option>
+								<option>-Dsun.java2d.opengl=True</option>
+							</javaOptions>
+							<icon>distribute/abcplayer.ico</icon>
+							<type>APP_IMAGE</type>
+							<runtimeImage>${java.home}</runtimeImage>
+						</configuration>
+					</execution>
+					<execution>
+						<id>abctools-package</id>
+						<phase>package</phase>
+						<goals>
+							<goal>jpackage</goal>
+						</goals>
+						<configuration>
+							<name>AbcTools</name>
+							<mainClass>com.aifel.abctools.AbcTools</mainClass>
+							<mainJar>AbcTools.jar</mainJar>
+							<input>${project.build.directory}</input>
+							<destination>${project.build.directory}/release</destination>
+							<javaOptions>
+								<option>--add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED</option>
+								<option>--add-exports=java.desktop/sun.awt.shell=ALL-UNNAMED</option>
+								<option>-Dsun.java2d.opengl=True</option>
+							</javaOptions>
+							<icon>distribute/abctools.ico</icon>
+							<type>APP_IMAGE</type>
+							<runtimeImage>${java.home}</runtimeImage>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>
