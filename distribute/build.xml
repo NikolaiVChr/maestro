@@ -135,7 +135,7 @@
 	    <exec executable="${env.JAVA_HOME}/bin/jpackage.exe" failonerror="true">
 	    	<env key="PATH" path="${tools}/wix"/>
 	    	<arg value="--type"/>
-	    	<arg value="exe"/>
+	    	<arg value="msi"/>
 	    	<arg value="--app-version"/>
 	    	<arg value="${version.AbcTools}"/>
 	    	<arg value="--description"/>
@@ -153,7 +153,7 @@
 	    	<arg value="--input"/>
 	    	<arg value="${build}/jpackageTools"/>
 	    	<arg value="--name"/>
-	    	<arg value="AbcTools BETA"/>
+	    	<arg value="AbcTools-BETA"/>
 	    	<arg value="--main-class"/>
 	    	<arg value="com.aifel.abctools.AbcTools"/>
 	    	<arg value="--main-jar"/>
@@ -169,7 +169,7 @@
 	    <exec executable="${env.JAVA_HOME}/bin/jpackage.exe" failonerror="true">
 	    	<env key="PATH" path="${tools}/wix"/>
 	    	<arg value="--type"/>
-	    	<arg value="exe"/>
+	    	<arg value="msi"/>
 	    	<arg value="--app-version"/>
 	    	<arg value="${version.AbcPlayer}"/>
 	    	<arg value="--description"/>
@@ -187,7 +187,7 @@
 	    	<arg value="--input"/>
 	    	<arg value="${build}/jpackagePlayer"/>
 	    	<arg value="--name"/>
-	    	<arg value="AbcPlayer BETA"/>
+	    	<arg value="AbcPlayer-BETA"/>
 	    	<arg value="--main-class"/>
 	    	<arg value="com.digero.abcplayer.AbcPlayer"/>
 	    	<arg value="--main-jar"/>
@@ -203,7 +203,8 @@
 	    <exec executable="${env.JAVA_HOME}/bin/jpackage.exe" failonerror="true">
 	    	<env key="PATH" path="${tools}/wix"/>
 	    	<arg value="--type"/>
-	    	<arg value="exe"/>
+	    	<arg value="msi"/> <!-- "app-image" for just making a folder with the exe -->
+	    	<arg value="--win-console"/><!-- with this, it outputs to console if started from that -->
 	    	<arg value="--app-version"/>
 	    	<arg value="${version.Maestro}"/>
 	    	<arg value="--description"/>
@@ -221,9 +222,9 @@
 	    	<arg value="--input"/>
 	    	<arg value="${build}/jpackageMaestro"/>
 	    	<arg value="--name"/>
-	    	<arg value="Maestro BETA"/>
+	    	<arg value="Maestro-BETA"/>
 	    	<arg value="--main-class"/>
-	    	<arg value="com.digero.maestro.Maestro"/>
+	    	<arg value="com.digero.maestro.MaestroMain"/>
 	    	<arg value="--main-jar"/>
 	    	<arg value="Maestro.jar"/>
 	    </exec>
