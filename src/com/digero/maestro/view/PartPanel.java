@@ -177,12 +177,12 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		
 		JPanel partSettingsPanel = new JPanel(new WrapLayout(FlowLayout.LEFT, HGAP, 0));
 
-		// We never support a zoom max of less than 4x
+		// We never support a zoom max of less than 6x
 		final float maxHZoomBase = 6.f;
 		// For songs longer than 1 minute, we divide song length in seconds
 		// by 10 to get adjusted zoom
-		// so that approx. 10 seconds of music is on screen for max zoom
-		final float zoomSecondDivider = 10f;
+		// so that approx. 8 seconds of music is on screen for max zoom
+		final float zoomSecondDivider = 8f;
 		JLabel hZoomLabel = new JLabel("HZoom:");
 		hZoomSlider = new JSlider(0, 1000, 0);
 		hZoomSlider.setFocusable(false);
@@ -190,7 +190,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 			float secs = (sequencer.getLength() / (1000 * 1000.f));
 			float adjustedZoom = Math.max(maxHZoomBase, secs / zoomSecondDivider);
 			float oldHZoom = hZoom; 
-			hZoom = Util.map(hZoomSlider.getValue(), 0, 1000, 1.f, adjustedZoom);
+			hZoom = Util.map((float)Math.pow(hZoomSlider.getValue(),4d), 0.0f, (float)Math.pow(1000.0d,4d), 1.f, adjustedZoom);
 			if (hZoom != oldHZoom) {
 				calcZoomTarget();
 				updateZoom();
