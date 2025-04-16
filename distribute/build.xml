@@ -18,7 +18,7 @@
 	<condition property="isWindows">
 		<os family="windows" />
 	</condition>
-	<property environment="env"/>
+	<property environment="env"/><!-- will fetch all the system environment variables and prefix them with env. -->
 
 	<condition property="isUnix">
 		<os family="unix" />
@@ -230,8 +230,8 @@
 	    </exec>
 	</target>
 	
-	<target name="wix-jdk">
-	    <exec executable="${tools}/wix/heat.exe" failonerror="true">  <!-- Runs WiX Heat to harvest directory files -->
+	<target name="Wix-jdk" description="Runs WiX Heat to harvest all JDK files">
+	    <exec executable="${tools}/wix/heat.exe" failonerror="true">
 	        <arg value="dir"/>  <!-- Specifies that a directory will be harvested -->
 	        <arg value="${env.JAVA_HOME}"/>  <!-- Uses the JAVA_HOME environment variable to locate the JDK 24 folder -->
 	        <arg value="-cg"/>  <!-- Defines a component group to group harvested files -->
@@ -249,7 +249,7 @@
 	    </exec>
 	</target>
 	
-	<target name="Installer" depends="Build,wix-jdk" description="Make MSI file">
+	<target name="Installer" depends="Build,Wix-jdk" if="isWindows" description="Make MSI file">
 		<mkdir dir="${output}" />
 		<property name="msipath" location="${output}/${basename.Maestro}_v${version.Maestro}.msi" />
 		<echo>Building msi: ${msipath}</echo>
@@ -303,7 +303,6 @@
 		</zip>
 	</target>
 
-	<target name="DistributeBETA" depends="Build,JPackageTools,JPackagePlayer,JPackageMaestro" description="Makes individual beta installers using JPackage"/>
+	<target name="DistributeBETA" depends="Build,JPackageTools,JPackagePlayer,JPackageMaestro" if="isWindows" description="Makes individual beta installers using JPackage"/>
 	<target name="Distribute" depends="Installer,ZipFile" description="Make final ZIP and MSI files"/>
-	<extension-point name="AntTest" description="Run any targets that are labeled as extensionOf='AntTest'" />
 </project>

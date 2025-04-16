@@ -3,7 +3,6 @@ Previous versions differ a bit due to being 32 bit per default or having bat fil
 
 Install instruction (.msi)
 ===================
-0: Install Java (64 bit) from https://java.com
 1: Run the .msi file
 2: Enjoy.
 3: Notice this will uninstall any older version of Maestro you have installed.
@@ -12,24 +11,17 @@ Install instruction (.msi)
 
 Install instruction (.zip)
 ===================
-0: Install Java (64 bit) from https://java.com
-1: Copy the content of this ZIP into a random new folder.
-2: Double click on Maestro.jar or AbcPlayer.jar to start. Or use the executable files.
+1: Copy the content of this ZIP into a any new folder.
+2: Use the executable files to start.
 (3): Make Windows shortcuts to start Maestro, AbcTools or AbcPlayer in the unzipped folder.
 
-
-Getting 32/64 bit Java
-======================
-You can have both 32 and 64 bit Java installed at same time, as long as you don't install them same place.
-When you click the download link in java.com it will give you the version that match your browser.
-This is usually the 64 bit version unless you use a very old browser.
-To get the other version you might have to search a bit on java.com.
 
 
 Starting from command prompt
 ============================
-- Use command-line prompt: java -jar -d64 Maestro.jar
-    If only 32 bit Java is installed, then it will complain.
+- Use command-line prompt from the install folder:
+.\Java24\bin\java --enable-native-access=ALL-UNNAMED --add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED -Dsun.java2d.opengl=true -jar Maestro.jar
+
 
 
 How-to videos about Maestro:
@@ -48,12 +40,14 @@ Thanks to all who gave feedback of features and bugs plus suggestions.
 Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 ================
 
-Version 4.1.5
+Version 4.2.0
 - Add ability to sort playlist based on columns, in right-click playlist header menu
 - Add a playlist menu toggle to auto-expand folders with matched songs when searching
 - Fix bug where the playlist "Refresh Browser" function wouldn't work until you searched
 - Fix bug where the set exporter wouldn't honor the option to not rename files
 - Fermata now applies to all last notes that ends within 5 ms of last ending.
+- Merged part buttons into one that opens a window with fields for all parts, it also have the setup priorities.
+- Switched to Java 24, which is now distributed with the app. Java is no longer needed to be installed.
 
 Version 4.1.4
 - Invert how priorites of setups work.
