@@ -33,6 +33,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.Border;
 
 import com.digero.common.abc.LotroInstrument;
+import com.digero.common.util.Util;
 import com.digero.maestro.MaestroMain;
 import com.digero.maestro.abc.ExportFilenameTemplate;
 import com.digero.maestro.abc.PartAutoNumberer;
@@ -99,7 +100,7 @@ public class AbcTools {
 
 	AbcTools() {
 		// Setup folders from stored prefs if available:
-		String myHome = System.getProperty("user.home");
+		String myHome = Util.getLotroMusicPath(false).getAbsolutePath();
 		mergePrefs = toolsPrefs.node("mergeTool");
 		sourceFolder = new File(mergePrefs.get(DIR_MERGE_SOURCE, myHome));
 		destFolder = new File(mergePrefs.get(DIR_MERGE_DEST, myHome));
