@@ -36,6 +36,14 @@ public final class Util {
 
 	public static final String ELLIPSIS = "...";
 
+	/**
+	 * Truncate string and append an ellipsis "..." if exceed a certain pixel width
+	 * 
+	 * @param text
+	 * @param maxWidth
+	 * @param font
+	 * @return
+	 */
 	@SuppressWarnings("deprecation") //
 	public static String ellipsis(String text, float maxWidth, Font font) {
 		FontMetrics metrics = Toolkit.getDefaultToolkit().getFontMetrics(font);
