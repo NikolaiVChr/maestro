@@ -230,12 +230,12 @@
 	    </exec>
 	</target>
 	
-	<target name="Wix-Cop" description="Runs WiX cop">
-		    <exec executable="${tools}/wix/WixCop.exe" failonerror="false">
-		    	<arg value="-f"/> <!-- fix errors -->
-		        <arg value="MaestroInstaller.wix"/>
-		    </exec>
-		</target>
+	<target name="Wix-Cop" description="Runs WiX cop to fix errors in wix project">
+	    <exec executable="${tools}/wix/WixCop.exe" failonerror="false">
+	    	<arg value="-f"/> <!-- fix errors -->
+	        <arg value="MaestroInstaller.wix"/>
+	    </exec>
+	</target>
 	
 	<target name="Wix-jdk" description="Runs WiX Heat to harvest all JDK files">
 	    <exec executable="${tools}/wix/heat.exe" failonerror="true">
