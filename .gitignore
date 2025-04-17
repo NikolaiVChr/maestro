@@ -5,3 +5,5 @@
 /target/
 /LotroInstruments.sf2
 /distribute/jdk.wxs
+/distribute/app.wxs
+/distribute/runtime.wxs
