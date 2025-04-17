@@ -41,13 +41,18 @@ Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 ================
 
 Version 4.2.0
+- Switched to Java 24, which is now distributed with the app. Java is no longer needed to be installed.
+
+Version 4.1.5
 - Add ability to sort playlist based on columns, in right-click playlist header menu
 - Add a playlist menu toggle to auto-expand folders with matched songs when searching
 - Fix bug where the playlist "Refresh Browser" function wouldn't work until you searched
 - Fix bug where the set exporter wouldn't honor the option to not rename files
 - Fermata now applies to all last notes that ends within 5 ms of last ending.
 - Merged part buttons into one that opens a window with fields for all parts, it also have the setup priorities.
-- Switched to Java 24, which is now distributed with the app. Java is no longer needed to be installed.
+- Note graph horizontal zoom now uses a quartic curve, for more natural adjusting
+- The default folder in AbcTools is now the lotro music folder, if it exists
+- Fix bug where the "remove spaces and capitalize first letter" option in File Naming or Set Export settings would cause a crash
 
 Version 4.1.4
 - Invert how priorites of setups work.

@@ -138,12 +138,17 @@ public class SetFilenameTemplate {
 			Variable var = variables.get(name.substring(match.first, match.second));
 			if (var != null) {
 				String value = var.getValue();
-				if (ExportFilenameTemplate.spaceReplaceChars4.equals(settings.getWhitespaceReplaceText())) {
-					value = Arrays.stream(value.trim().split("\\s+"))
-			                .map(word -> Character.toUpperCase(word.charAt(0)) + word.substring(1))
-			                .collect(Collectors.joining(""));
+				if (value != null) {
+					if (ExportFilenameTemplate.spaceReplaceChars4.equals(settings.getWhitespaceReplaceText())) {
+						value = Arrays.stream(value.trim().split("\\s+"))
+								.filter(word -> !word.isEmpty())
+								.map(word -> word.length() == 1? word.toUpperCase() : Character.toUpperCase(word.charAt(0)) + word.substring(1))
+				                .collect(Collectors.joining(""));
+					} else {
+						value = value.replaceAll("\\s+", settings.getWhitespaceReplaceText());
+					}
 				} else {
-					value = value.replaceAll("\\s+", settings.getWhitespaceReplaceText());
+					value = "";
 				}
 				name = name.substring(0, match.first) + value + name.substring(match.second);
 			}
