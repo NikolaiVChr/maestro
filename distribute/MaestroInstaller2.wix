@@ -80,16 +80,8 @@
             <!-- Program Files -->
             <Directory Id="ProgramFiles64Folder">
                 <Directory Id="APPLICATIONFOLDER" Name="$(var.ApplicationFolderName)">
-                    <Directory Id="jdkDirectoryRef" Name="Java24" />
-                    <Component Id="Maestro.jar" Guid="{5A924B19-8646-497C-9745-9C42267D5C91}">
-                        <File Source="Maestro.jar" KeyPath="yes" />
-                    </Component>
-                    <Component Id="AbcPlayer.jar" Guid="{F4B5B9AE-3934-4CE6-8128-9B92A14A477F}">
-                        <File Source="AbcPlayer.jar" KeyPath="yes" />
-                    </Component>
-                    <Component Id="AbcTools.jar" Guid="{A358C9C3-9C8A-42D3-B0BC-DC1F7C37FE30}">
-                        <File Source="AbcTools.jar" KeyPath="yes" />
-                    </Component>
+                    <Directory Id="AppDir" Name="app" />
+                    <Directory Id="RuntimeDir" Name="runtime" />
                     <Component Id="LotroInstruments.sf2" Guid="{F81F2BC4-906C-46B1-B3B4-14B69EF256E1}">
                         <File Source="LotroInstruments.sf2" KeyPath="yes" />
                     </Component>
@@ -97,7 +89,7 @@
                         <File Id="aifel_changelog.txt" Source="Changes since Maestro 2.5.0.txt" KeyPath="yes" />
                     </Component>
                     <Component Id="MaestroExecutable" Guid="{A20EBF40-4857-46C3-8B6C-CF3CBF64A824}">
-                        <File Source="Maestro.exe" KeyPath="yes">
+                        <File Source="build/jpackage/Maestro/Maestro.exe" KeyPath="yes">
                             <Shortcut Id="Maestro.lnk" Name="$(var.MaestroAppName)" Description="$(var.MaestroDescription)" WorkingDirectory="APPLICATIONFOLDER" Directory="MaestroStartMenuFolder" Icon="maestro.ico" IconIndex="0" Advertise="yes">
                                 <!-- App user model ID guid (https://learn.microsoft.com/en-us/windows/win32/properties/props-system-appusermodel-id) -->
                                 <!-- Allows for taskbar pinning -->
@@ -178,7 +170,7 @@
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.midi\Shell\Maestro.Edit\command" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" Type="string" />
                     </Component>
                     <Component Id="AbcPlayerExecutable" Guid="{0C212398-7A1E-40D8-BEDD-2F341AC20FEB}">
-                        <File Source="AbcPlayer.exe" KeyPath="yes">
+                        <File Source="build/jpackage/AbcPlayer/AbcPlayer.exe" KeyPath="yes">
                             <Shortcut Id="AbcPlayer64.lnk" Name="$(var.AbcPlayerAppName)" Description="$(var.AbcPlayerDescription)" WorkingDirectory="APPLICATIONFOLDER" Directory="MaestroStartMenuFolder" Icon="abcplayer.ico" IconIndex="0" Advertise="yes">
                                 <!-- App user model ID guid (https://learn.microsoft.com/en-us/windows/win32/properties/props-system-appusermodel-id) -->
                                 <ShortcutProperty Key="{9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3}, 5" Value="$(var.AbcPlayerAppUserModelId)" />
@@ -226,7 +218,7 @@
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\Applications\AbcPlayer.exe\shell\open\command" Type="string" Value="&quot;[#AbcPlayer.exe]&quot; &quot;%1&quot;" />
                     </Component>
                     <Component Id="AbcToolsExecutable" Guid="{D6F78C2D-DE65-4BD0-92F6-64E46779F449}">
-                        <File Source="AbcTools.exe" KeyPath="yes">
+                        <File Source="build/jpackage/AbcTools/AbcTools.exe" KeyPath="yes">
                             <Shortcut Id="AbcTools.lnk" Name="$(var.AbcToolsAppName)" Description="$(var.AbcToolsDescription)" WorkingDirectory="APPLICATIONFOLDER" Directory="MaestroStartMenuFolder" Icon="abctools.ico" IconIndex="0" Advertise="yes">
                                 <!-- App user model ID guid (https://learn.microsoft.com/en-us/windows/win32/properties/props-system-appusermodel-id) -->
                                 <ShortcutProperty Key="{9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3}, 5" Value="$(var.AbcToolsAppUserModelId)" />
@@ -251,24 +243,22 @@
         <Feature Id="Common" Level="1" ConfigurableDirectory="APPLICATIONFOLDER" Absent="disallow" AllowAdvertise="no" Title="Common files" Description="Files required by both $(var.MaestroAppName) and $(var.AbcPlayerAppName).">
             <ComponentRef Id="LotroInstruments.sf2" />
             <ComponentRef Id="aifel_changelog.txt" />
-            <ComponentGroupRef Id="jdkComponentGroup" />
+            <ComponentGroupRef Id="j24AppComponentGroup" />
+            <ComponentGroupRef Id="j24RuntimeComponentGroup" />
         </Feature>
 
         <Feature Id="Maestro" Level="1" ConfigurableDirectory="APPLICATIONFOLDER" AllowAdvertise="no" Title="$(var.MaestroAppName)" Description="$(var.MaestroAppName) is a MIDI to ABC converter. Arrange multipart ABC files from MIDI source files.">
             <ComponentRef Id="MaestroStartMenuFolder" />
-            <ComponentRef Id="Maestro.jar" />
             <ComponentRef Id="MaestroExecutable" />
         </Feature>
 
         <Feature Id="AbcPlayer" Level="1" ConfigurableDirectory="APPLICATIONFOLDER" AllowAdvertise="no" Title="$(var.AbcPlayerAppName)" Description="$(var.AbcPlayerAppName) lets you preview ABC files as they would sound in The Lord of the Rings Online.">
             <ComponentRef Id="MaestroStartMenuFolder" />
-            <ComponentRef Id="AbcPlayer.jar" />
             <ComponentRef Id="AbcPlayerExecutable" />
         </Feature>
 
         <Feature Id="AbcTools" Level="1" ConfigurableDirectory="APPLICATIONFOLDER" AllowAdvertise="no" Title="$(var.AbcToolsAppName)" Description="$(var.AbcToolsAppName) lets you merge old single-part abc files into multi-part abc songs. Or auto export abc.">
             <ComponentRef Id="MaestroStartMenuFolder" />
-            <ComponentRef Id="AbcTools.jar" />
             <ComponentRef Id="AbcToolsExecutable" />
         </Feature>
     </Product>

@@ -1,0 +1,1237 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+    <Fragment>
+        <DirectoryRef Id="RuntimeDir">
+            <Directory Id="dirEEE6F69496BD4E23C8581B6694D446A8" Name="bin" />
+            <Directory Id="dir2C7BC4C3D1CC4B48DE25966EBE59C16F" Name="conf" />
+            <Directory Id="dir6138BE145612B9374E707F8455BA3978" Name="legal" />
+            <Directory Id="dirAF2D76D4EFD6482BDD85823CB816C92C" Name="lib" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <ComponentGroup Id="j24RuntimeComponentGroup">
+            <Component Id="cmp6F18288524EF7DF64D8154404C72B55D" Directory="RuntimeDir" Guid="{23CB8F06-D3E2-4EA4-8C23-1443349CB376}">
+                <File Id="filFD98D4E221C44B4C6F602B097F7B0DE2" KeyPath="yes" Source="$(var.j24runtime)\release" />
+            </Component>
+            <Component Id="cmp63C7CF9EF3F5DE680634C0DD224CA734" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{150E6A09-55DA-480F-8562-3703AA08E6AF}">
+                <File Id="filC4E501CE49640E38D70B520FF498BBD0" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-console-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmpD6826064868ECA04A012AD8F5985F49D" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{14E16555-1325-41AA-B658-C623BD82492C}">
+                <File Id="filE23B8F9BBE9D4745C6772375DC452A1A" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-console-l1-2-0.dll" />
+            </Component>
+            <Component Id="cmp77E6C1EDB14E64C2392038B7F412DC47" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{EE78D252-8301-482C-8BAA-6B877D3CBB26}">
+                <File Id="filE9DE7019ACE251CF73C9685A1069D818" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-datetime-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmp83129411794883A619001A57864EEE0B" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{82E1CD3A-0DF3-4B0C-B0CF-83106A9BB004}">
+                <File Id="fil2194A9677C473C45311273B3ADC47021" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-debug-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmpC9C927E3E7D1D789949CA697685BFA0B" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{C9C7872A-98BA-4E3D-ABC2-339BF3512A1E}">
+                <File Id="fil955C69E447E8F525CA6CCC2B2D7286AD" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-errorhandling-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmp0126962BA6D56D18E6DB26341FEF8541" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{0546D80D-DF3F-4AED-A877-A88FA6E52897}">
+                <File Id="filFFFDE81DB8D89D6CE9AEB9BBC945CAAC" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-fibers-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmp63E4C22D2789F477AB13CBD4C2391DD8" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{8FF94D3A-972C-4FDB-8CC5-1D26ADA49971}">
+                <File Id="fil8C0FB2E228F16245529DD6CC2BE61D10" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-file-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmpEECE728D48F5583A6FC2F00D82918DD1" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{90EA56D7-E3A9-4D3A-818A-5782659E42F1}">
+                <File Id="fil3859D88205B17AC74CC71730B6AFA32C" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-file-l1-2-0.dll" />
+            </Component>
+            <Component Id="cmp8576931C259DA71A1A4323BFB88AD779" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{292C973C-17F8-4B55-9455-29B3B7750996}">
+                <File Id="fil1C448E3BA5E4A7538D56746253555F9B" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-file-l2-1-0.dll" />
+            </Component>
+            <Component Id="cmp272277B20E2323A3BE95879983897514" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{1373C7FE-7E66-49EB-87CB-C9E178AFBCEC}">
+                <File Id="filDA04B9CD9B01819C38831F39EC0C96F6" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-handle-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmpB9243F0B1B9454D73704E2EBF0CFDB61" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{34864165-CBC4-4DF5-8416-B45CFD8662D4}">
+                <File Id="filDF53FD06CE6079808144A3031FA58291" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-heap-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmp84626244E9A92310CA3D9E72BC18746B" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{2B13F98B-E0B7-4203-9472-8B89A94E6352}">
+                <File Id="fil98DD2ECFEB880E1D7F564B4552B5363C" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-interlocked-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmp4284A118F1540A41E8FEEE6E11A2906A" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{38BB89D5-2EFD-40F4-8064-E31C642B6B92}">
+                <File Id="fil78348F83F33096160103A91E459F74D7" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-libraryloader-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmp2B07A8549F05C446106D4AEE17BCDDA0" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{8DD19F70-1BD6-4708-8904-ED2E6EF8B89D}">
+                <File Id="fil7349B48455E49E32B584B1AC5AFA44F4" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-localization-l1-2-0.dll" />
+            </Component>
+            <Component Id="cmp5E3E91BBDD6A3D183F7198BE49028BEA" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{22D8CC00-2B50-49A7-84B0-D4160B6BA8CD}">
+                <File Id="fil3C2D41DCBDBA637021FA963CA80CB748" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-memory-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmp6578055D0D047FFC1F83BA6238F305E9" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{B494CA45-4CAB-4205-9108-491DB4708993}">
+                <File Id="filA3FF9ABA6D1275B4240F3E2BECEDA9F6" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-namedpipe-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmp90ECDA4D1BB0AFF512D97C003B7E95F0" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{AB6E99E6-0234-41FC-A246-A3DD4727FBDE}">
+                <File Id="filADD76F346BD0E5F6E6068FE4B14B4C0F" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-processenvironment-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmpA2E9EEF0A9193066BF493421B8D79FD3" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{24EF0686-41CE-439A-BDB0-F1D4D909BE1D}">
+                <File Id="filA7C6E28285DE86A12FAEEA63D0538F11" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-processthreads-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmp1CAE7DBA93DE833B610EA5643894AAD8" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{E59B5303-D9F2-4D85-B7E8-480CB6085196}">
+                <File Id="filE72ACF89746E6A726576DEEECE288FE4" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-processthreads-l1-1-1.dll" />
+            </Component>
+            <Component Id="cmpC5CD743B3E8F3C6F7859672D37632162" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{0F145ACD-11FC-4E44-8288-2601728C21A9}">
+                <File Id="filC514E5F6BBB7D24387FBFC833793122F" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-profile-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmpC225F01032C318903CD87696D5E14E29" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{D06B45C2-9185-4072-A069-A9B3EDEE3A12}">
+                <File Id="filC7AD05568D3F99041F80D525B7CCF0D9" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-rtlsupport-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmpB1E694A1BD92AB4F328969D006247BDD" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{6B104D84-8D26-4C77-947F-7E1D14BB8B58}">
+                <File Id="fil0CFFED80D2A731CF5EC5A1709C45ABFF" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-string-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmpABB14320630A41CD5BFD88931E884EE7" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{A3B572B9-DF56-4D86-B00D-1BC285D69F1E}">
+                <File Id="fil66C4F4471939FF855291B79114B717B6" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-synch-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmpB4E49966F9834F65315C1DF727F45EA3" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{3C2D7B0B-0E88-4CE3-ABE0-78F5FB29F50D}">
+                <File Id="fil041227BE1C3E825487CD0F5061224D37" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-synch-l1-2-0.dll" />
+            </Component>
+            <Component Id="cmp93F3DDA9BDE3DF47D35EF6F6274E8AF9" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{82DF4539-ACAF-4B60-9DFF-1556AB807E5A}">
+                <File Id="filAEFEB730B8388EE8353453C2719C266B" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-sysinfo-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmp05CB8F7FA34B6F15034B3F94AC489C97" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{CFCD6CEF-76E2-4C68-8DDD-551B4E62E36B}">
+                <File Id="fil2645382C3EAB0B877536A18BC3D93AD6" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-timezone-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmp67A083B61E7B98701502C86725087EF7" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{3E6AFC70-1FD6-4AF2-9086-6AD65C7F7628}">
+                <File Id="filC763A64AA87907E1DD7CA6CCD21E2E2D" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-core-util-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmpD80C9AA0AA9831283DB1D26053AE532F" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{435E29CB-9B2F-467B-A889-50E32480B353}">
+                <File Id="fil03FA02A5B60B9C0D343737771E613F4C" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-crt-conio-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmpEC6A42937C9C4731384419930A89724E" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{6C311BBB-707B-4C6A-97DA-A3A692DA0525}">
+                <File Id="filEA8059B513E82C5E70A3E6F29FAA4CD2" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-crt-convert-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmpF60C8A59512B1DCC0CBA296A72DEA322" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{4FE109A5-7146-46EE-AC0D-F3F163EC5FD9}">
+                <File Id="filD6A9E4CA6CB43B245070B93C0D4BCB11" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-crt-environment-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmpD4087706906FC13F437C8DFD7B4C5EC7" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{9638D8B3-F237-4675-9392-50BA74BD1C59}">
+                <File Id="fil8081D556161400FBAFFBAA85E6815F6A" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-crt-filesystem-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmpEFB59511255D03D9E4D712207341AE73" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{5F1A1CAB-A527-470C-93C7-9B7754674572}">
+                <File Id="filE35619BC8F8B4EDA84D8D79FFE80F2EB" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-crt-heap-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmp04E1BDE80C0D88C79F722696D1C5223C" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{5F2F4FB8-E1F9-475B-A4D5-C1E3D8B322BD}">
+                <File Id="filD0887F5EAD6DB70CA0B062C4327BFE52" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-crt-locale-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmpEEF22C7A230E66CD1E3E1BD629A27193" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{8A421910-A503-4CF0-B98D-FBCDBE56099E}">
+                <File Id="fil4822714D1948B9E9E5A043778022D989" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-crt-math-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmp8812BE7FAAF64E9E29F879813801B872" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{301F882B-3AB8-4648-BB99-53690DAAA9F0}">
+                <File Id="filB0136DC4947D2540B82D6431B9F4BA90" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-crt-multibyte-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmp378663BC2BD1638B199BF5A57A00E137" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{AB1B650B-F447-48D8-8690-1CA5B40225EC}">
+                <File Id="filCFA263E88F26C0886D4B2693785F9903" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-crt-private-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmp25BD81D30C5C0B25212A13B979854C03" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{B1B1535E-36C1-40DE-AE74-5ECB90109215}">
+                <File Id="fil559294676038D49F8307F0596492A646" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-crt-process-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmpA3C4F872F041CA831621CEBA28C13447" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{9C095031-D8B3-4169-9413-A9C180FF4804}">
+                <File Id="filA5799D40A4F5A4A6948023182B2BD8D9" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-crt-runtime-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmp36018BCFF2BA3CA75C566216A93A613C" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{3EEC4BFB-F9F7-424C-B664-35E20B16070A}">
+                <File Id="fil30C6D0FFDF114D66710D22CB1BDBD844" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-crt-stdio-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmp1CCDFC20740A20C4A6000C928DA1C288" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{5FE6D5C7-5E58-4FF3-AABA-3BF012F5997B}">
+                <File Id="fil44D2CB26E3CA9C32B76C4A9446FFC44B" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-crt-string-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmp76E22BA84A29CA634B89B62351402B44" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{83A3A25A-3840-47FF-86F1-CF9ACB78713D}">
+                <File Id="fil95CE6B872DB2BE3F592BD0325FA88018" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-crt-time-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmp8B2018409E1F80FF93472B0ACB3853AC" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{4C1D9F58-E65D-41D0-B78E-4CF9F4A5B33D}">
+                <File Id="filAF12437E6EFAE95D404627664F52B8A1" KeyPath="yes" Source="$(var.j24runtime)\bin\api-ms-win-crt-utility-l1-1-0.dll" />
+            </Component>
+            <Component Id="cmp9D652B36B7D53658F3267B7A1BF10A9C" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{80B571CE-106E-4235-93E7-81516B6CECAD}">
+                <File Id="filBCA2D7F58B5757675C0145A39765F7E3" KeyPath="yes" Source="$(var.j24runtime)\bin\attach.dll" />
+            </Component>
+            <Component Id="cmpA54D67206AA24557BEC06CF8DAE0667F" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{C296C4AA-DFBB-45AD-A40E-63CB3D88FF21}">
+                <File Id="filA650892A4F4EFD907EF569B7B879B9C8" KeyPath="yes" Source="$(var.j24runtime)\bin\awt.dll" />
+            </Component>
+            <Component Id="cmp01603E76C8D254B26AFB110D456C736C" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{BEACAAC8-A21A-4505-89F6-72FCB2632948}">
+                <File Id="fil9CE17EE4A238F229B93343F48E1E5E35" KeyPath="yes" Source="$(var.j24runtime)\bin\dt_shmem.dll" />
+            </Component>
+            <Component Id="cmp8199A6E83165606198C30F138D83EBFB" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{92F21580-47C0-46E4-8DAA-3F8AD9CBFCB7}">
+                <File Id="filCB342EDD13E408AA85BB0BE4B446C842" KeyPath="yes" Source="$(var.j24runtime)\bin\dt_socket.dll" />
+            </Component>
+            <Component Id="cmpD1B830A0DF61DB1B7DADACFE20C4FFBC" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{2C741BAF-FC95-44AD-87F4-A0D88295AB0B}">
+                <File Id="filD61C59DE93385C0228B284D2344B91EE" KeyPath="yes" Source="$(var.j24runtime)\bin\extnet.dll" />
+            </Component>
+            <Component Id="cmp74835FE67D8BCE74E9357F5F58F461CF" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{94388C0F-2015-4DFD-AA5F-A5C97AC83DA2}">
+                <File Id="fil3A53880D9AEB79FA6A1FC1347581B1A4" KeyPath="yes" Source="$(var.j24runtime)\bin\fontmanager.dll" />
+            </Component>
+            <Component Id="cmp973F0056E21BCD6F7E2F134937A3BD91" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{2A18AB12-CC03-4A2B-A7BD-37DF45927628}">
+                <File Id="filDA7FD71390C9F0FC31755424F5C95128" KeyPath="yes" Source="$(var.j24runtime)\bin\freetype.dll" />
+            </Component>
+            <Component Id="cmp864DD6B8A25F7B62F1AE9C2C20DD7A4F" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{D0C727E2-8FFF-401E-A926-5FCA2EFE2209}">
+                <File Id="fil475E954942300CA71955A6D562721AB1" KeyPath="yes" Source="$(var.j24runtime)\bin\instrument.dll" />
+            </Component>
+            <Component Id="cmp77D3E982D49240E1304103035877F5E5" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{EAC94841-664D-427A-9749-6CDFA55FB559}">
+                <File Id="filD5E451368078098E890A7002E5F2DDBE" KeyPath="yes" Source="$(var.j24runtime)\bin\j2gss.dll" />
+            </Component>
+            <Component Id="cmp1B1DDDDED83E579DF2D77579DA35A17B" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{04C3F600-E766-4B7E-8BFE-940648EB7352}">
+                <File Id="filC60A6C406263B452FDB6D8390B9705CB" KeyPath="yes" Source="$(var.j24runtime)\bin\j2pcsc.dll" />
+            </Component>
+            <Component Id="cmp32FA9F86C7A33B6977774FFC7CDA377E" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{BC13B6AA-9253-45D9-A403-68BC9F4DBCE0}">
+                <File Id="fil8CCB53D51A7DCD8E8887B80F522276C6" KeyPath="yes" Source="$(var.j24runtime)\bin\j2pkcs11.dll" />
+            </Component>
+            <Component Id="cmpE95DE3EC1878E79E671A55B3AFD98EFD" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{048F5D7E-2CE5-4CE6-9468-EED96B010C5D}">
+                <File Id="fil07D26C154C3361973A83DAB21DDA748C" KeyPath="yes" Source="$(var.j24runtime)\bin\jaas.dll" />
+            </Component>
+            <Component Id="cmp9BC8A62F9DC8DF4FC19CD0D3C690CA41" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{A3600104-DFDD-43ED-9DC1-4FE31A59D5E5}">
+                <File Id="fil1180E26641DB4A051C4ACAB336D9BE68" KeyPath="yes" Source="$(var.j24runtime)\bin\java.dll" />
+            </Component>
+            <Component Id="cmp800CA40D49B5A23EE0ADC462F4EC65E3" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{BCFE5E2D-2D94-410F-BBF7-B54E8B260CBB}">
+                <File Id="fil7755E569EB1890D120790FFCF42FD103" KeyPath="yes" Source="$(var.j24runtime)\bin\javaaccessbridge.dll" />
+            </Component>
+            <Component Id="cmpCF04AA6DE6A81F9CAEFCF5510A251658" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{950B3A4D-3794-44E4-9205-14F9D05B68F4}">
+                <File Id="fil0CA48B8D655F51142EBE56AEC4444B70" KeyPath="yes" Source="$(var.j24runtime)\bin\javajpeg.dll" />
+            </Component>
+            <Component Id="cmp499C127EF77F499FE7DB2BF07B0AF16B" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{5D9DA9EA-91BC-4DDB-8B08-172090CEB025}">
+                <File Id="filEFA73C74AC5F34858430D612E052A325" KeyPath="yes" Source="$(var.j24runtime)\bin\jawt.dll" />
+            </Component>
+            <Component Id="cmp17A33EE8B33FCBA78248F4E6675D0B51" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{7DC1DDF9-9AC3-42CF-83F6-69CBCC7548CD}">
+                <File Id="fil7D32BB34E01D73E1D1B340C3B1ADC429" KeyPath="yes" Source="$(var.j24runtime)\bin\jdwp.dll" />
+            </Component>
+            <Component Id="cmp483FA3AE96AF26A01845D682FEF33C2E" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{D785FF56-D467-408A-A2C9-DA5AB1CBEFF7}">
+                <File Id="filAAF2A0A7CD7B67FF4D4F59948E25604D" KeyPath="yes" Source="$(var.j24runtime)\bin\jimage.dll" />
+            </Component>
+            <Component Id="cmp87978CD4AFB0EDD0D7D6FA140281B90F" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{CD904BB9-6CB4-40D7-8DCF-19B5415300B1}">
+                <File Id="fil03F244CA9F9AE5A3E92172D42ADB0831" KeyPath="yes" Source="$(var.j24runtime)\bin\jli.dll" />
+            </Component>
+            <Component Id="cmp234BAC9A02A856DEF39BB9A4181B5862" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{2DD07EFE-5551-441A-8EA6-A1D8B0EB1B3D}">
+                <File Id="fil21A0107B4380D472F880DB7CAD64C122" KeyPath="yes" Source="$(var.j24runtime)\bin\jpackage.dll" />
+            </Component>
+            <Component Id="cmpD9D3008A43B6A478AC6F2D4987E23AD4" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{1D4F3840-C7EA-4095-954A-B7138A69A53B}">
+                <File Id="filB71C1C9FFBF15F4AD20A195FFFB9B914" KeyPath="yes" Source="$(var.j24runtime)\bin\jsound.dll" />
+            </Component>
+            <Component Id="cmp761658D02062287162DBECB0A6027054" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{0A935C17-9204-4E40-A63D-1482354154B1}">
+                <File Id="filA369EFF2A60B7AB83BEF5C92D509D88D" KeyPath="yes" Source="$(var.j24runtime)\bin\jsvml.dll" />
+            </Component>
+            <Component Id="cmp1442BCC81B90C170E2A70E2FCEE419C4" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{589A2189-205F-422C-96F4-95D8148C6438}">
+                <File Id="fil29EAA857CCBC545EDC5F2C31E121FFE9" KeyPath="yes" Source="$(var.j24runtime)\bin\lcms.dll" />
+            </Component>
+            <Component Id="cmpF5CA0BE20CE89C267B7B6159A6A20A92" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{BDDD0CAB-F1BD-4882-AD43-2174A2CBC714}">
+                <File Id="filE09FA88FCE1EBE316BD9ED549084F6A0" KeyPath="yes" Source="$(var.j24runtime)\bin\management.dll" />
+            </Component>
+            <Component Id="cmp99B10B4E08F025B38083C7565637AA37" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{0428CE04-3BF2-4D71-99E6-FC3CF7CA5DE9}">
+                <File Id="fil8C660711652C06AD8564986C91829B1A" KeyPath="yes" Source="$(var.j24runtime)\bin\management_agent.dll" />
+            </Component>
+            <Component Id="cmp0297411E685AFC41CD9AEF562A12FE98" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{A6EA9E3C-5957-420A-9F43-7B0D31418880}">
+                <File Id="filC6EA545F89717C5240C11EC512873677" KeyPath="yes" Source="$(var.j24runtime)\bin\management_ext.dll" />
+            </Component>
+            <Component Id="cmpC3BBC1D7E0ED1FAF3EF460A8C59D1FC6" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{718C7F7C-026B-4DEA-99D3-14E927E55925}">
+                <File Id="filB68E85A9C69CB506EF02139375B6E71F" KeyPath="yes" Source="$(var.j24runtime)\bin\mlib_image.dll" />
+            </Component>
+            <Component Id="cmpD400239AFC222D4A8EA9712548BF062E" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{1A9F36EC-D24E-42D1-951C-460349438822}">
+                <File Id="filC0B213FDE096A33D1A47147539D2592C" KeyPath="yes" Source="$(var.j24runtime)\bin\msvcp140.dll" />
+            </Component>
+            <Component Id="cmpEA2DFA60F800C3FA91546F0D95BE93DC" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{7ECE3241-AE3D-4AB4-9C88-B4C7E0AD9511}">
+                <File Id="filAFDDDD2E138C7057EF115B9B590393FB" KeyPath="yes" Source="$(var.j24runtime)\bin\net.dll" />
+            </Component>
+            <Component Id="cmpED70B9946497180884DEC5BA98B8F9AE" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{E581CB48-1200-4A4B-A4F7-E4DB08DECAF7}">
+                <File Id="filD12DFF890DF8632D08F8C92E7D71F6CD" KeyPath="yes" Source="$(var.j24runtime)\bin\nio.dll" />
+            </Component>
+            <Component Id="cmp833EF7DEB59B3AE9AD233101DAF2D6E1" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{07D08A1C-656B-4CB1-AF3B-8EF7228D2449}">
+                <File Id="filCE9FF33E34E6BB422D01B273683C42A3" KeyPath="yes" Source="$(var.j24runtime)\bin\prefs.dll" />
+            </Component>
+            <Component Id="cmp6A7946E664F393359C4776BA6690D374" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{487CDEC5-4342-462B-8D48-7A98CAACC67F}">
+                <File Id="fil97A294E939A7F35B3AFCBFB003EE25A8" KeyPath="yes" Source="$(var.j24runtime)\bin\rmi.dll" />
+            </Component>
+            <Component Id="cmp50FE1BAA495A488431496622866DDD91" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{15BD1C6D-1BA0-47C0-ABCD-F5A21C196758}">
+                <File Id="filC9CF0CB592E2801B4826AC2E8710C9D5" KeyPath="yes" Source="$(var.j24runtime)\bin\splashscreen.dll" />
+            </Component>
+            <Component Id="cmpF07100A4EB8132576D218B9BBD4BC45F" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{3B6EF05C-1629-4465-811C-689B91F97AC0}">
+                <File Id="fil5F74291333F586458419E6CAEFC6741D" KeyPath="yes" Source="$(var.j24runtime)\bin\sspi_bridge.dll" />
+            </Component>
+            <Component Id="cmpDE705EEC873505C1E8B0127A4363C593" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{639345F5-E128-459C-BF79-511B33AEF3A6}">
+                <File Id="fil5BE4E2A31EC3AF961206FD13C9394F19" KeyPath="yes" Source="$(var.j24runtime)\bin\sunmscapi.dll" />
+            </Component>
+            <Component Id="cmp919C87578A93D3770F09B393C1B594FF" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{EA82069C-E530-459E-893A-80D46F1567C1}">
+                <File Id="filB33667C3061320C82137E40CF10A08BF" KeyPath="yes" Source="$(var.j24runtime)\bin\syslookup.dll" />
+            </Component>
+            <Component Id="cmp853FC71B92391E802BC19E228296FA06" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{FB41F2E5-F1CA-4F29-A0B4-9D0E0E80C6A9}">
+                <File Id="filA20E8FC12D45F590F122375536CA914A" KeyPath="yes" Source="$(var.j24runtime)\bin\ucrtbase.dll" />
+            </Component>
+            <Component Id="cmp1E58D815C5F2D1386A728BBBF333D913" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{B0409D74-9BB0-473A-B714-EE23C35C26CA}">
+                <File Id="fil1373E155ED80673F872A4FF6F3AD0B4D" KeyPath="yes" Source="$(var.j24runtime)\bin\vcruntime140.dll" />
+            </Component>
+            <Component Id="cmpCA434DC247EB82EA94CFB863DC673389" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{21B7E494-1DD0-4E8B-8998-F2B8C1358165}">
+                <File Id="fil1F58FD26BABC7403BDDA8C2798435A0F" KeyPath="yes" Source="$(var.j24runtime)\bin\vcruntime140_1.dll" />
+            </Component>
+            <Component Id="cmp0147867278CFC08927E1A5C92D6F16CC" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{55D7328D-046B-4A2D-8075-7370035CBF6F}">
+                <File Id="filD9A711B1FB9D7491C0E9BA22DB9908D7" KeyPath="yes" Source="$(var.j24runtime)\bin\verify.dll" />
+            </Component>
+            <Component Id="cmp551BA5DDD943C4B3506542B263C6E666" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{B21DD2B9-CCD7-40FC-B028-08F43CBE4298}">
+                <File Id="fil64AC8878C2701FF3FCE8E55ABDA768FF" KeyPath="yes" Source="$(var.j24runtime)\bin\w2k_lsa_auth.dll" />
+            </Component>
+            <Component Id="cmpD7102F59A1E9E05DA6B00857AFAC8D53" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{AD694CDE-6034-4929-8A24-918FECD3BB41}">
+                <File Id="filF6EFE0195FC25623E272B45EA5D0A4E4" KeyPath="yes" Source="$(var.j24runtime)\bin\windowsaccessbridge-64.dll" />
+            </Component>
+            <Component Id="cmp205887C6BA3992A07DDA3DB242B59B7E" Directory="dirEEE6F69496BD4E23C8581B6694D446A8" Guid="{8E972AF9-D179-498C-B292-348B788E5E02}">
+                <File Id="filD1CBE90AFF3EDE38F3F5A4469D052859" KeyPath="yes" Source="$(var.j24runtime)\bin\zip.dll" />
+            </Component>
+            <Component Id="cmpA69276FA90305BC042E3B96A5DD95E14" Directory="dirCADD15DFBA2D91E5DD56DC76AEDB1EF9" Guid="{87D395EE-BD86-402A-AECD-D0FA4EF33590}">
+                <File Id="fil7A9812C0E0726C8BB743FBBE490CEA9D" KeyPath="yes" Source="$(var.j24runtime)\bin\server\jvm.dll" />
+            </Component>
+            <Component Id="cmp3988EE2062FBB814130FB86FBF11691F" Directory="dir2C7BC4C3D1CC4B48DE25966EBE59C16F" Guid="{15E5B7EE-B9CC-485E-A018-E4797BB7D782}">
+                <File Id="fil87DB129A5F9E70DFC6CFE9820BD2DC9E" KeyPath="yes" Source="$(var.j24runtime)\conf\jaxp-strict.properties.template" />
+            </Component>
+            <Component Id="cmpB9230A955A44CFADC4563469BEEC2349" Directory="dir2C7BC4C3D1CC4B48DE25966EBE59C16F" Guid="{4BDDF2B5-72FF-47D6-A17D-C04C6DD57F04}">
+                <File Id="fil7B9361653E8C4551CAB239060A8F1452" KeyPath="yes" Source="$(var.j24runtime)\conf\jaxp.properties" />
+            </Component>
+            <Component Id="cmp34D85E9C02DE95BCE7BAF74F81794DDE" Directory="dir2C7BC4C3D1CC4B48DE25966EBE59C16F" Guid="{06867AFC-33C3-478F-855A-36C0EDB1D5F1}">
+                <File Id="fil2FEAB906F33900BE38B95856A6AC750C" KeyPath="yes" Source="$(var.j24runtime)\conf\logging.properties" />
+            </Component>
+            <Component Id="cmp1DE922222F6622FDCCCFFD05D9AE7CBB" Directory="dir2C7BC4C3D1CC4B48DE25966EBE59C16F" Guid="{BACFDBC9-86D7-414D-9D4D-BAE74B5FF414}">
+                <File Id="fil3A51136E5102696257EEB8D41F1E051F" KeyPath="yes" Source="$(var.j24runtime)\conf\net.properties" />
+            </Component>
+            <Component Id="cmp50072F2E9E47E50B55C27200A2230F1C" Directory="dir2C7BC4C3D1CC4B48DE25966EBE59C16F" Guid="{4302EB3F-839E-4AC9-97CE-24B398215199}">
+                <File Id="fil2FA4BAF53615FDE8F1528B45CCE12B33" KeyPath="yes" Source="$(var.j24runtime)\conf\sound.properties" />
+            </Component>
+            <Component Id="cmpA12E9C15919D8B39C8552FA13CB74DC1" Directory="dir356C6D90AE0D6C431E11CE49EFFF0E9D" Guid="{1ED15A1D-A0D3-4823-944B-552F31F9260B}">
+                <File Id="fil5A42290063D88C5A641497F6CE817E5E" KeyPath="yes" Source="$(var.j24runtime)\conf\management\jmxremote.access" />
+            </Component>
+            <Component Id="cmp982C674230DC64E9A964C71AFFEB51E8" Directory="dir356C6D90AE0D6C431E11CE49EFFF0E9D" Guid="{4F5AC6DA-CB32-4F14-B637-FAA8A4BD467D}">
+                <File Id="fil4880DCF50DEDC2714A64F1A06EFF410B" KeyPath="yes" Source="$(var.j24runtime)\conf\management\jmxremote.password.template" />
+            </Component>
+            <Component Id="cmp4D10514FE606A3548C7F94C90FD5FAF4" Directory="dir356C6D90AE0D6C431E11CE49EFFF0E9D" Guid="{7A070324-08DF-4EE0-81D8-24B693157D17}">
+                <File Id="filB3C79D61F2CF9B6647905503D043B5E5" KeyPath="yes" Source="$(var.j24runtime)\conf\management\management.properties" />
+            </Component>
+            <Component Id="cmpE6E5A08120AAE0F567378D34E1E18701" Directory="dir4EFA48F1778DB8B5D7398EDC190C73AA" Guid="{37758D62-EA9A-4FC0-85BB-930CD97C8718}">
+                <File Id="fil2AF850E055D091E142438301D43C83FF" KeyPath="yes" Source="$(var.j24runtime)\conf\security\java.security" />
+            </Component>
+            <Component Id="cmp87C74C4978FAEDD551818A9ABB7730D8" Directory="dirE23CE611E39AF119BCFBCC6968387316" Guid="{433BAE2D-4470-49A4-A78A-24ACDD5BF442}">
+                <File Id="fil2114327D814BB815563CF4EBE58971F3" KeyPath="yes" Source="$(var.j24runtime)\conf\security\policy\README.txt" />
+            </Component>
+            <Component Id="cmpEBD97D7628F76D527E2C2332F781802D" Directory="dirECE4ADBAE7F976394D5D1152253427DC" Guid="{E74C4776-5F8E-4B37-BB8D-31F0A23F12C7}">
+                <File Id="fil59C1BCBDA2BB4769A6FD551D364659EF" KeyPath="yes" Source="$(var.j24runtime)\conf\security\policy\limited\default_local.policy" />
+            </Component>
+            <Component Id="cmp6240A522F7B717B3C1DC1B8124E9CBFE" Directory="dirECE4ADBAE7F976394D5D1152253427DC" Guid="{59B3A4A8-578F-4E23-8408-6EC04EEBC6B6}">
+                <File Id="fil465729D45AD0C430465BEF874D60A93C" KeyPath="yes" Source="$(var.j24runtime)\conf\security\policy\limited\default_US_export.policy" />
+            </Component>
+            <Component Id="cmp64D596F8167747A1AD9F959D6417446D" Directory="dirECE4ADBAE7F976394D5D1152253427DC" Guid="{320EE39D-15D6-426D-945E-689DABAE4A0C}">
+                <File Id="fil4BB0421934BEF21D28863549AAA1C1BB" KeyPath="yes" Source="$(var.j24runtime)\conf\security\policy\limited\exempt_local.policy" />
+            </Component>
+            <Component Id="cmp6D441250EDCAA3DED532BC0F7564957E" Directory="dirF72B0DF9D0C636D883BAEEB4C231D60F" Guid="{A1294E73-B69B-496D-B11B-27F752F6A9C3}">
+                <File Id="filE4700BA255CD22D743E087AF709D151F" KeyPath="yes" Source="$(var.j24runtime)\conf\security\policy\unlimited\default_local.policy" />
+            </Component>
+            <Component Id="cmp91A3F6675088D9D5A8AE2A68284754FF" Directory="dirF72B0DF9D0C636D883BAEEB4C231D60F" Guid="{4B3D95A0-87D0-4527-BE62-2DD99F9E5084}">
+                <File Id="fil9BDEA2819AF09E4328EE8A4E65487A65" KeyPath="yes" Source="$(var.j24runtime)\conf\security\policy\unlimited\default_US_export.policy" />
+            </Component>
+            <Component Id="cmpBAF56894D3EC76FE86D9A61D6B0240B4" Directory="dir92378988CD1EEFEF01B141881DFD22D9" Guid="{548A063D-109F-4555-B407-E047B857C085}">
+                <File Id="filE4218BCC496AB87BB4BBD9A54C8960C0" KeyPath="yes" Source="$(var.j24runtime)\legal\java.base\aes.md" />
+            </Component>
+            <Component Id="cmp7524E7E4A36FD04F2BFED52B27F074BE" Directory="dir92378988CD1EEFEF01B141881DFD22D9" Guid="{DFEF719B-19FF-438B-A516-B27A9A5B109F}">
+                <File Id="fil704A18EDF70C2D750FD5DE110443C47F" KeyPath="yes" Source="$(var.j24runtime)\legal\java.base\asm.md" />
+            </Component>
+            <Component Id="cmp3B3A8BE17A98829067D2C91A3BF88B5F" Directory="dir92378988CD1EEFEF01B141881DFD22D9" Guid="{A606AEC4-63A9-43FD-B701-19CED47A5C64}">
+                <File Id="fil63E939623377E37929D7C189C59A2E26" KeyPath="yes" Source="$(var.j24runtime)\legal\java.base\c-libutl.md" />
+            </Component>
+            <Component Id="cmpA834E1A4D1EB3E4CA7233A5CE3EF54B2" Directory="dir92378988CD1EEFEF01B141881DFD22D9" Guid="{4555531F-C060-44F4-9E2B-056937A60230}">
+                <File Id="filCA8B446CADA2A24A5CB975E2671FA073" KeyPath="yes" Source="$(var.j24runtime)\legal\java.base\cldr.md" />
+            </Component>
+            <Component Id="cmpDAF1FA253E061D1CE784F3C5214C7651" Directory="dir92378988CD1EEFEF01B141881DFD22D9" Guid="{6FBB86F0-E81D-4748-B538-E364BE5EFDA0}">
+                <File Id="filA00674BAD2A3E75B3737ACD5534CE258" KeyPath="yes" Source="$(var.j24runtime)\legal\java.base\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp0642193128294B558CAD506A779F11E3" Directory="dir92378988CD1EEFEF01B141881DFD22D9" Guid="{64FF8D2B-52B9-4880-AE90-00C8FEB7DF7A}">
+                <File Id="fil4F9234255FEAFB0F4FD3707FC566DF30" KeyPath="yes" Source="$(var.j24runtime)\legal\java.base\icu.md" />
+            </Component>
+            <Component Id="cmp59BCAE04F2551CD75A118D0FAF731E94" Directory="dir92378988CD1EEFEF01B141881DFD22D9" Guid="{82690A7E-2460-4C9D-8FEC-F15E62633D59}">
+                <File Id="fil15442680C6E017D1E9B981CA7B18B123" KeyPath="yes" Source="$(var.j24runtime)\legal\java.base\LICENSE" />
+            </Component>
+            <Component Id="cmpECFBE5A792C85BD4C749B253416D11A6" Directory="dir92378988CD1EEFEF01B141881DFD22D9" Guid="{1F9317CA-92AE-48EA-B2F5-B0540CC25B61}">
+                <File Id="filBFA401612175834ED2C52DE4A39AF154" KeyPath="yes" Source="$(var.j24runtime)\legal\java.base\public_suffix.md" />
+            </Component>
+            <Component Id="cmp71A87A6F433CBBD2B7F86CA417899CC5" Directory="dir92378988CD1EEFEF01B141881DFD22D9" Guid="{3B6A09AF-1366-400F-8851-6635C0D35E48}">
+                <File Id="fil15BABC13268B0E7C7BF4CCBE50C17276" KeyPath="yes" Source="$(var.j24runtime)\legal\java.base\siphash.md" />
+            </Component>
+            <Component Id="cmp5800E67B472E89FC2BA3B2EB1C62E91A" Directory="dir92378988CD1EEFEF01B141881DFD22D9" Guid="{414C7BCE-195E-4EAF-AF40-5C756F839B82}">
+                <File Id="filF2F89D9380D641A55C853BE354A816EC" KeyPath="yes" Source="$(var.j24runtime)\legal\java.base\unicode.md" />
+            </Component>
+            <Component Id="cmp41004BCF3BE25949290DA67CD2B07E78" Directory="dir92378988CD1EEFEF01B141881DFD22D9" Guid="{F305AF60-C54B-4404-B665-5E8CC915FFB2}">
+                <File Id="filCB0B8A76E998F8FDC1D8E52323758721" KeyPath="yes" Source="$(var.j24runtime)\legal\java.base\wepoll.md" />
+            </Component>
+            <Component Id="cmpA6A98A8B7423CC0686A4A57DB3D16BA6" Directory="dir92378988CD1EEFEF01B141881DFD22D9" Guid="{4034EBB7-0346-48F5-BA2B-C70BEAEC246E}">
+                <File Id="filB18C443E3AB941078C3E2B334203DD7A" KeyPath="yes" Source="$(var.j24runtime)\legal\java.base\zlib.md" />
+            </Component>
+            <Component Id="cmpBF4D3EB436D2C10803E6B21207F77003" Directory="dirCDF480B2F20B45BDC052CE3259B60608" Guid="{4155CEDB-C92B-4E3E-84B1-4654091EEF38}">
+                <File Id="fil6B6351F404C0CC890E2F5F3E175F7155" KeyPath="yes" Source="$(var.j24runtime)\legal\java.compiler\COPYRIGHT" />
+            </Component>
+            <Component Id="cmpB2F8A8F8CD5201BC90CF707217EA3DD0" Directory="dirCDF480B2F20B45BDC052CE3259B60608" Guid="{F3ADE8BF-A56A-4067-A493-C8BC0023CC18}">
+                <File Id="filE9E3B90A77D2FF0B61A9889B265F94A2" KeyPath="yes" Source="$(var.j24runtime)\legal\java.compiler\LICENSE" />
+            </Component>
+            <Component Id="cmp64683E6AAC66A12C9216F5E0063933A5" Directory="dir7EBFB642EF9C9182396C3D4011D11CED" Guid="{C881BA9E-CE20-40DF-B350-BAB6C5376CBE}">
+                <File Id="fil997B9DFA2DF836B88F6FC35A5ECA11DF" KeyPath="yes" Source="$(var.j24runtime)\legal\java.datatransfer\COPYRIGHT" />
+            </Component>
+            <Component Id="cmpE13185999FFB6A4E74BE2533508316E6" Directory="dir7EBFB642EF9C9182396C3D4011D11CED" Guid="{FC66C1C2-1EE7-478F-A633-B845B763EFE1}">
+                <File Id="filC63D68B41E1B730F9EFC03A6C937B30B" KeyPath="yes" Source="$(var.j24runtime)\legal\java.datatransfer\LICENSE" />
+            </Component>
+            <Component Id="cmpFB7B670393E0181FF48E06E3A990B9AC" Directory="dirCD2E0670C2EA240F6194AF98969098A5" Guid="{DCE157E3-5B7D-4532-88B1-0815042508EE}">
+                <File Id="fil22C07FDE48522BBFDAC9A3FDEDABA576" KeyPath="yes" Source="$(var.j24runtime)\legal\java.desktop\colorimaging.md" />
+            </Component>
+            <Component Id="cmp41BCA52D4925EC01120FD94B4E64BC78" Directory="dirCD2E0670C2EA240F6194AF98969098A5" Guid="{43498D81-CAEC-47D4-A715-25E4451FEDF9}">
+                <File Id="fil66E949C2DABF08E1FC457DCC3187A464" KeyPath="yes" Source="$(var.j24runtime)\legal\java.desktop\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp3559430AA941B8E6868DC9E8C269DAAA" Directory="dirCD2E0670C2EA240F6194AF98969098A5" Guid="{00A272CE-49D3-4D8F-B448-0DADD2EC6F92}">
+                <File Id="filDCBBC6639DE48E60B91B14BE5E0724A8" KeyPath="yes" Source="$(var.j24runtime)\legal\java.desktop\freetype.md" />
+            </Component>
+            <Component Id="cmpF8F730FADDD6CBDD8BD16C5D4018E9BE" Directory="dirCD2E0670C2EA240F6194AF98969098A5" Guid="{97B86CDC-7FA9-452D-A341-AC45BFD0B115}">
+                <File Id="fil1B50A8B924A1BFDE2BBED8214ADA9386" KeyPath="yes" Source="$(var.j24runtime)\legal\java.desktop\giflib.md" />
+            </Component>
+            <Component Id="cmp82A8E897D3D393995C1432708B11F5B9" Directory="dirCD2E0670C2EA240F6194AF98969098A5" Guid="{2A019AB1-CCD6-4756-ADFF-85E45D5BA996}">
+                <File Id="filD72110C04A957D8F9FC2B112C8FB2768" KeyPath="yes" Source="$(var.j24runtime)\legal\java.desktop\harfbuzz.md" />
+            </Component>
+            <Component Id="cmpE17828BAC330D6543F7A83FC1EBAFA73" Directory="dirCD2E0670C2EA240F6194AF98969098A5" Guid="{88F1E106-5200-4E6F-948B-1F0BCC56E126}">
+                <File Id="fil1190B57BE2AADA4FDD2D3E1BD9E04509" KeyPath="yes" Source="$(var.j24runtime)\legal\java.desktop\jpeg.md" />
+            </Component>
+            <Component Id="cmpBE72265ED499915F9919799517674A2E" Directory="dirCD2E0670C2EA240F6194AF98969098A5" Guid="{ADF15CAD-920E-4AE9-8FD4-5939023A2DFA}">
+                <File Id="fil0E41C73AFECE49A0F47FAAD67E3F4C0F" KeyPath="yes" Source="$(var.j24runtime)\legal\java.desktop\lcms.md" />
+            </Component>
+            <Component Id="cmpB208089BF60D6A32EA84DE63DF7601B6" Directory="dirCD2E0670C2EA240F6194AF98969098A5" Guid="{6BCFFDEA-C0C9-4D05-9C2F-8E6C18AAB5E5}">
+                <File Id="fil5622FAD48584545B8E86F98B380FE6AA" KeyPath="yes" Source="$(var.j24runtime)\legal\java.desktop\libpng.md" />
+            </Component>
+            <Component Id="cmp33B4B0DA14B144949E908B569EFCC8FB" Directory="dirCD2E0670C2EA240F6194AF98969098A5" Guid="{FCA4DE29-B6C9-4237-B922-FE39275B97E1}">
+                <File Id="filE14FE6894BAB7F6A9B5BC77BE01C0ED0" KeyPath="yes" Source="$(var.j24runtime)\legal\java.desktop\LICENSE" />
+            </Component>
+            <Component Id="cmpA8D8E0109C8D442614424C7499DF2C2E" Directory="dirCD2E0670C2EA240F6194AF98969098A5" Guid="{AFAEDFAA-E039-4A69-9A16-AEAFAC4A2D3B}">
+                <File Id="fil305CCE066B0D502A5425943F6BBF76D2" KeyPath="yes" Source="$(var.j24runtime)\legal\java.desktop\mesa3d.md" />
+            </Component>
+            <Component Id="cmp05E3DF7A83B67FD6FF557AF7C1FB7A7C" Directory="dir041587DE065B650B27D61E33FF22DBBC" Guid="{011CBD17-535C-4017-915B-D266DE9D92B7}">
+                <File Id="fil74505D72D73DA8B297F29478CF625627" KeyPath="yes" Source="$(var.j24runtime)\legal\java.instrument\COPYRIGHT" />
+            </Component>
+            <Component Id="cmpDC81F4CCFDF90A962BFDEFDD0CB088F0" Directory="dir041587DE065B650B27D61E33FF22DBBC" Guid="{714EF306-FB87-4A8C-B2BB-FA6F83EEFAC2}">
+                <File Id="fil0D047BE08A3F5055AE72CEEB99912AF6" KeyPath="yes" Source="$(var.j24runtime)\legal\java.instrument\LICENSE" />
+            </Component>
+            <Component Id="cmp9120216589A2FBCCD6769BB9DC4E047B" Directory="dir07B32E73B356D6DE104E0C49B423E160" Guid="{97C2C01E-12FA-4FCE-9E03-EA7A88F6C23D}">
+                <File Id="filCBFE3F33AF66B9002B05D2ED270C1740" KeyPath="yes" Source="$(var.j24runtime)\legal\java.logging\COPYRIGHT" />
+            </Component>
+            <Component Id="cmpD8D490B60B0A4C1CC82CAC6EB186A4BA" Directory="dir07B32E73B356D6DE104E0C49B423E160" Guid="{937F3CF2-3AB5-43D1-B8AC-808CAEFC7134}">
+                <File Id="fil44CA768721E2385175CE91E8214C00A8" KeyPath="yes" Source="$(var.j24runtime)\legal\java.logging\LICENSE" />
+            </Component>
+            <Component Id="cmp73D02FC9916324CB152AA48D9FAB7D65" Directory="dir9FE36962CF5473A35EF64C628E93EF0A" Guid="{DBF25546-07F9-47C9-9463-16DAC0F0B513}">
+                <File Id="fil9C1A0E5502976F146ECD82CDFDFC911B" KeyPath="yes" Source="$(var.j24runtime)\legal\java.management\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp01C63685D82C47DA205DC93298CCE965" Directory="dir9FE36962CF5473A35EF64C628E93EF0A" Guid="{BDA2A3D6-FEB7-4A1E-8835-D1A643867724}">
+                <File Id="filA3FCBB1E92D8AFE021E8FA216FC2C35C" KeyPath="yes" Source="$(var.j24runtime)\legal\java.management\LICENSE" />
+            </Component>
+            <Component Id="cmp01F8116010C475B27C1C41A5AB5031DD" Directory="dirFC2925BDB8D93DBA26B6C3761C20DB89" Guid="{4CDBCAD8-3A18-4C82-A334-2B7F8FD4C132}">
+                <File Id="fil89509B20957B9D651D168F40AF0BFA60" KeyPath="yes" Source="$(var.j24runtime)\legal\java.management.rmi\COPYRIGHT" />
+            </Component>
+            <Component Id="cmpFE195C471D8B1FCE2B116755BB99C042" Directory="dirFC2925BDB8D93DBA26B6C3761C20DB89" Guid="{DB55CAC7-773A-4943-A545-E5CAFB5EBAFA}">
+                <File Id="filE16548F4EA2B44AEA09E2DA27A789248" KeyPath="yes" Source="$(var.j24runtime)\legal\java.management.rmi\LICENSE" />
+            </Component>
+            <Component Id="cmpCBB4E5CD0BFFF7E908C40794F66B54AE" Directory="dir178A9E8F18F9645B125437A88D0C381A" Guid="{F8839EDF-81F4-4B59-B77D-0B49361AD580}">
+                <File Id="filF286D46C719924CE7B338751B687E184" KeyPath="yes" Source="$(var.j24runtime)\legal\java.naming\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp7C8CD1B59D3D002A4FD63FAE90CA3D79" Directory="dir178A9E8F18F9645B125437A88D0C381A" Guid="{09749BAE-AD0B-471A-B822-ADEA273DC9BB}">
+                <File Id="fil8C0CB712CD818308A802571218623136" KeyPath="yes" Source="$(var.j24runtime)\legal\java.naming\LICENSE" />
+            </Component>
+            <Component Id="cmp28C323DFDF4E1A5D9248631BAE4E92DC" Directory="dir96AD00DB803FF5E071900AE3139AFBB7" Guid="{0D90E883-AFC1-4A34-9356-8CC593684058}">
+                <File Id="fil0C222542167275791FC63A6FFF22E932" KeyPath="yes" Source="$(var.j24runtime)\legal\java.net.http\COPYRIGHT" />
+            </Component>
+            <Component Id="cmpC77B53E1350C1BC258BA2CADF3AA2FC9" Directory="dir96AD00DB803FF5E071900AE3139AFBB7" Guid="{5B26140F-86DE-4C0F-846F-FDDDA49FE275}">
+                <File Id="filD75B986F58F8E3A145BD726899C8694F" KeyPath="yes" Source="$(var.j24runtime)\legal\java.net.http\LICENSE" />
+            </Component>
+            <Component Id="cmpEF8F86E6FD62A219BFF90CAEC42330A2" Directory="dir20AD5DE12BBA74E0C54B3BFB78AC57A7" Guid="{F52C1FEB-CEF2-4B26-8852-684693C15BA7}">
+                <File Id="filCC4DDFA946A0372FA9611860ECD66332" KeyPath="yes" Source="$(var.j24runtime)\legal\java.prefs\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp6AF2EFA4A6913388FA744548CC1449A7" Directory="dir20AD5DE12BBA74E0C54B3BFB78AC57A7" Guid="{6E411E85-E291-4603-A3E2-78312508332D}">
+                <File Id="filDFB01946C206484CF619C0336404659E" KeyPath="yes" Source="$(var.j24runtime)\legal\java.prefs\LICENSE" />
+            </Component>
+            <Component Id="cmpE336A5A26C07338D5BC2E8E29FBD208C" Directory="dir0EAD9D1BA1DA8E4047212FF017025F1E" Guid="{D675ECEF-146D-44CB-85B5-FC083407CB43}">
+                <File Id="filA0E8B2D8C564189267551C311FA9157C" KeyPath="yes" Source="$(var.j24runtime)\legal\java.rmi\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp08815A0332C7EC8D11421BFAA52BC3D6" Directory="dir0EAD9D1BA1DA8E4047212FF017025F1E" Guid="{D6C956CD-6D95-4031-92DE-D1827EBC5A66}">
+                <File Id="fil5C544D19EC8C53643A963FA94FDD3CED" KeyPath="yes" Source="$(var.j24runtime)\legal\java.rmi\LICENSE" />
+            </Component>
+            <Component Id="cmp5844FEC566E869C5B26F2A812E8C390C" Directory="dirC156C06BD23C968F343EA83CF7BD6120" Guid="{A8CD7F09-E78B-4B4B-85C2-9DD6C8084380}">
+                <File Id="fil19E2604E55A8C4B1EDD58CC6097B9E2B" KeyPath="yes" Source="$(var.j24runtime)\legal\java.scripting\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp2403E67FD9AFF4594030DE6CAD167B28" Directory="dirC156C06BD23C968F343EA83CF7BD6120" Guid="{4546CB95-DDC1-46FD-A55E-F62C487092DA}">
+                <File Id="fil6C51E072D16C6E5A62E29DFB8019F2FE" KeyPath="yes" Source="$(var.j24runtime)\legal\java.scripting\LICENSE" />
+            </Component>
+            <Component Id="cmpE9C73553F4E79D95FF17039C801448FF" Directory="dirD710A0F88506937AB01B18029A3C4A02" Guid="{84DF0582-94B3-4AA1-B763-A96F3CEC679D}">
+                <File Id="fil0611E49115591304484F6C278321E247" KeyPath="yes" Source="$(var.j24runtime)\legal\java.security.jgss\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp340F7C1823986A0B13346EB49DEF389A" Directory="dirD710A0F88506937AB01B18029A3C4A02" Guid="{03DE956A-6239-4E89-AC57-0468149A9F05}">
+                <File Id="filCC30797F465D79DA27BAE276E738300D" KeyPath="yes" Source="$(var.j24runtime)\legal\java.security.jgss\LICENSE" />
+            </Component>
+            <Component Id="cmp7C5B85B849A75457AF5E00EF438ADAFB" Directory="dir8F5EDEFD92A12FA1BA5067CE9E72D1FB" Guid="{992A994A-89B9-4F71-A01C-DD81D3DE2967}">
+                <File Id="filDF72C772B0A75246C448D97C0AF0F06B" KeyPath="yes" Source="$(var.j24runtime)\legal\java.security.sasl\COPYRIGHT" />
+            </Component>
+            <Component Id="cmpD047555618F1D3001A00BA40EB076F93" Directory="dir8F5EDEFD92A12FA1BA5067CE9E72D1FB" Guid="{9529A5DA-0097-42D7-BF97-63AA924C3E1C}">
+                <File Id="filC548F4FD80D67BDCB7D67B456ACBB5D1" KeyPath="yes" Source="$(var.j24runtime)\legal\java.security.sasl\LICENSE" />
+            </Component>
+            <Component Id="cmp04D7C7955A9B0BC344417F91A91DF7D9" Directory="dirF058527584460A5F09B7D5D8E368A85C" Guid="{55D8EC8A-2607-44B9-ABDA-CC8913A41A00}">
+                <File Id="filEF28FD7EB429DD2193F0988BE18B356A" KeyPath="yes" Source="$(var.j24runtime)\legal\java.smartcardio\COPYRIGHT" />
+            </Component>
+            <Component Id="cmpD64E2FA270E198599D43F8B5C16BA6EA" Directory="dirF058527584460A5F09B7D5D8E368A85C" Guid="{2B5483E0-5096-4763-A0AA-0B2F6FB389FE}">
+                <File Id="fil2F65CE164642ADD6D4E691090B776EF9" KeyPath="yes" Source="$(var.j24runtime)\legal\java.smartcardio\LICENSE" />
+            </Component>
+            <Component Id="cmpFED6D7D4676C5F9999E80078C84D1542" Directory="dirF1DC11B5C6578A6327FBC3A3C8F1CD5D" Guid="{B2C537E7-185F-4CF9-B643-E479F01B5673}">
+                <File Id="fil921DAB1890008EC037F038F061AF485C" KeyPath="yes" Source="$(var.j24runtime)\legal\java.sql\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp8C5174222D42F17B6ABC5382EC97A0F2" Directory="dirF1DC11B5C6578A6327FBC3A3C8F1CD5D" Guid="{C2418D8B-91A5-46A4-AF12-8B1AAC34AE2A}">
+                <File Id="filAFC484F7FFBD9183F09858DA6DEA384A" KeyPath="yes" Source="$(var.j24runtime)\legal\java.sql\LICENSE" />
+            </Component>
+            <Component Id="cmpB6392C18A3C8C3A7F84EB08DCAEE2045" Directory="dir011C12E584B356BD50EA0312BDF39C7B" Guid="{681E0E67-59C0-4F0B-863B-AB584F945295}">
+                <File Id="fil8948F37F734F6FB5D1E46CC91C03C868" KeyPath="yes" Source="$(var.j24runtime)\legal\java.sql.rowset\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp53ADC05F7FB606A79FCB14A8A6193063" Directory="dir011C12E584B356BD50EA0312BDF39C7B" Guid="{14D3A37F-EEBC-4BC3-8BCC-98BC5D9E437C}">
+                <File Id="fil4DA144A768A8E76E162F0D21C0258318" KeyPath="yes" Source="$(var.j24runtime)\legal\java.sql.rowset\LICENSE" />
+            </Component>
+            <Component Id="cmp285B84282DEA3A712D8A9B2FE57B0FA2" Directory="dir4F22CA735ADCF6A8DB817920C1B12D70" Guid="{C664DAC1-120A-4B0A-8A1E-89D5999E9467}">
+                <File Id="filC9AF1551D5C6B84D2771B373340CA522" KeyPath="yes" Source="$(var.j24runtime)\legal\java.transaction.xa\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp09154DFAE5F16E1107A3F017058BBA2F" Directory="dir4F22CA735ADCF6A8DB817920C1B12D70" Guid="{ACD8C68A-5E0D-40D0-99DB-E1EDA29349E1}">
+                <File Id="fil01FE019AE8F0AFBEC2E3D6C9150B844E" KeyPath="yes" Source="$(var.j24runtime)\legal\java.transaction.xa\LICENSE" />
+            </Component>
+            <Component Id="cmpA75ADE1B5F878A25B2F7D7CB02CA7B01" Directory="dirD995DBC10682E0DB211E6EEBFC65EE2D" Guid="{E317EB2A-8EB4-4FC1-8055-6742140464C2}">
+                <File Id="fil37D6A58D35B963E01A7FF0C55AA47124" KeyPath="yes" Source="$(var.j24runtime)\legal\java.xml\bcel.md" />
+            </Component>
+            <Component Id="cmp121F112F241958F0CE012309B2CF3B56" Directory="dirD995DBC10682E0DB211E6EEBFC65EE2D" Guid="{1813759F-F473-4E0D-83FB-85708EE9E38F}">
+                <File Id="filE778DC566CA17A1157B8FFD0AFC2F1BF" KeyPath="yes" Source="$(var.j24runtime)\legal\java.xml\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp7E90C8012E019BC43A8136E6CEB528A6" Directory="dirD995DBC10682E0DB211E6EEBFC65EE2D" Guid="{7492520D-B938-4499-A845-A8E22E1077D6}">
+                <File Id="filDDEE4F5A8CC50431B04E505BC69999E1" KeyPath="yes" Source="$(var.j24runtime)\legal\java.xml\dom.md" />
+            </Component>
+            <Component Id="cmp3CEF1E7710282E0C2402A85EF803BF23" Directory="dirD995DBC10682E0DB211E6EEBFC65EE2D" Guid="{39A876A7-8ADB-4257-9FFF-93DA714BA452}">
+                <File Id="fil9C35BAF17DE432E6A3FC5E997485093E" KeyPath="yes" Source="$(var.j24runtime)\legal\java.xml\jcup.md" />
+            </Component>
+            <Component Id="cmpF4DA72EE658600CC26D174DB25E178C7" Directory="dirD995DBC10682E0DB211E6EEBFC65EE2D" Guid="{1469FDD4-E81B-414C-A744-86CF59D61FEC}">
+                <File Id="fil1B0D8656CE17062211E352BBBFB7E316" KeyPath="yes" Source="$(var.j24runtime)\legal\java.xml\LICENSE" />
+            </Component>
+            <Component Id="cmp09C4673621B5D138199437E163968407" Directory="dirD995DBC10682E0DB211E6EEBFC65EE2D" Guid="{ADA34D97-E084-4872-8D17-B6E03CC2D381}">
+                <File Id="fil84969EA41B0280B489A185CDFDA8C937" KeyPath="yes" Source="$(var.j24runtime)\legal\java.xml\schema10part1.md" />
+            </Component>
+            <Component Id="cmp6A620CCC698AA075F645FB3486EB929C" Directory="dirD995DBC10682E0DB211E6EEBFC65EE2D" Guid="{4CFC82CA-3648-4AA1-B491-B98E06AD9E3F}">
+                <File Id="fil7D312E267F6CC44288D53B6EB764F79E" KeyPath="yes" Source="$(var.j24runtime)\legal\java.xml\schema10part2.md" />
+            </Component>
+            <Component Id="cmp9B8234E697C7E2A8FC02272C00F6DFF8" Directory="dirD995DBC10682E0DB211E6EEBFC65EE2D" Guid="{75426FFD-EF84-41FB-8392-674E431FD281}">
+                <File Id="filC8DDEC188FB9BA0DDA37726BB6DD26FC" KeyPath="yes" Source="$(var.j24runtime)\legal\java.xml\xalan.md" />
+            </Component>
+            <Component Id="cmpA067D52B1EB21ABD672507C62B2A5F05" Directory="dirD995DBC10682E0DB211E6EEBFC65EE2D" Guid="{80720190-CEA2-4F24-9675-DE54FF49F016}">
+                <File Id="fil0559A47F051FF59FC870F39892E4A42A" KeyPath="yes" Source="$(var.j24runtime)\legal\java.xml\xerces.md" />
+            </Component>
+            <Component Id="cmpF37B72FEEBE874FEFEEADE2C95ADBFEB" Directory="dirD995DBC10682E0DB211E6EEBFC65EE2D" Guid="{612CE1EC-C99C-4401-9510-736963F8F4ED}">
+                <File Id="filD9EA99E2FA61CE32421A588D6D5FEE12" KeyPath="yes" Source="$(var.j24runtime)\legal\java.xml\xhtml10.md" />
+            </Component>
+            <Component Id="cmp61DD5CB991ADD7C5A6FA02B3C87B96AF" Directory="dirD995DBC10682E0DB211E6EEBFC65EE2D" Guid="{DFC43329-8E33-4279-B434-2E7B2BFDC2FE}">
+                <File Id="filCFA2CA1BB5AF5E1900D8F55F6DDC6F75" KeyPath="yes" Source="$(var.j24runtime)\legal\java.xml\xhtml10schema.md" />
+            </Component>
+            <Component Id="cmp0405DB68C8BFEA864C807384AE79101C" Directory="dirD995DBC10682E0DB211E6EEBFC65EE2D" Guid="{5C37C152-ACE3-4631-AAC8-3ECCFDA91AA4}">
+                <File Id="fil21BB590F77035593ABB8B09F12BE70B7" KeyPath="yes" Source="$(var.j24runtime)\legal\java.xml\xhtml11.md" />
+            </Component>
+            <Component Id="cmp1A5EC4D11FD50A801ABC3F8F16B8BD5B" Directory="dirD995DBC10682E0DB211E6EEBFC65EE2D" Guid="{967E2310-72CA-457A-9B7F-D025A9C379D9}">
+                <File Id="fil0EB443AE854366E74BC92171F643F997" KeyPath="yes" Source="$(var.j24runtime)\legal\java.xml\xhtml11schema.md" />
+            </Component>
+            <Component Id="cmp339FCD4C38BBEEC0CEC4646A927A022C" Directory="dirD995DBC10682E0DB211E6EEBFC65EE2D" Guid="{1A78AC6F-8EA9-457C-A018-CCFE6EFAF1EF}">
+                <File Id="fil39D2314E2973CCD19B15FF70537291CD" KeyPath="yes" Source="$(var.j24runtime)\legal\java.xml\xmlspec.md" />
+            </Component>
+            <Component Id="cmp8B62105B0775A73C899E76300E78E20F" Directory="dirD995DBC10682E0DB211E6EEBFC65EE2D" Guid="{42730DAF-F48E-4D19-9E41-144E2B08FBF8}">
+                <File Id="fil1DDD3B557FEAAF7E50DC0B127C600764" KeyPath="yes" Source="$(var.j24runtime)\legal\java.xml\xmlxsd.md" />
+            </Component>
+            <Component Id="cmpE1B3297C4A7CA0EE4733AFFB780BFBD8" Directory="dirA013CD98CFAAA01D2DA7F7199EB0B690" Guid="{DFE0EB9D-B381-4C3F-967C-D092D3D98CB8}">
+                <File Id="filB3BFF33B85181C48FD589DC1323F4380" KeyPath="yes" Source="$(var.j24runtime)\legal\java.xml.crypto\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp69351EC536CD8B549AC22C310E377B73" Directory="dirA013CD98CFAAA01D2DA7F7199EB0B690" Guid="{D47B92F2-647F-4545-8A59-C482395CF31E}">
+                <File Id="fil1DB6CED9B17FB1D6C1179A5CE0C21BB1" KeyPath="yes" Source="$(var.j24runtime)\legal\java.xml.crypto\LICENSE" />
+            </Component>
+            <Component Id="cmp4F453F9E6F1C51E2601D4C6506CCD850" Directory="dirA013CD98CFAAA01D2DA7F7199EB0B690" Guid="{D97740E3-52A2-4D31-BB81-7197953126E4}">
+                <File Id="filF00A9CB43266ABB6AF2FB3A85CBE43C6" KeyPath="yes" Source="$(var.j24runtime)\legal\java.xml.crypto\santuario.md" />
+            </Component>
+            <Component Id="cmp924985F64E62FE099A6681FE6912F9BD" Directory="dir66888C42B2609380ECA5424D7EA3BD6A" Guid="{2BFD5A48-B067-423E-B77F-79B88B217FF8}">
+                <File Id="fil5B511F12000A608F9B090635D22A0844" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.accessibility\COPYRIGHT" />
+            </Component>
+            <Component Id="cmpE1327BD007D28986747EACCAA1532BC4" Directory="dir66888C42B2609380ECA5424D7EA3BD6A" Guid="{13F78BC6-EA5C-4880-A888-DF67AF5C6131}">
+                <File Id="fil3B4479B4AD4CC4062D0BEB24ACB6EA51" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.accessibility\LICENSE" />
+            </Component>
+            <Component Id="cmpC6EEEBCD50733FDF6160C16A15B556DE" Directory="dir71580E99E60E176F1B450AAA07FCFCC7" Guid="{84417CF6-7E5D-45C7-8937-866E78673DF5}">
+                <File Id="fil94BD7B0294553BEA3D7DE1E83BD4488B" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.attach\COPYRIGHT" />
+            </Component>
+            <Component Id="cmpC811922729482D8443973CAA02CD29B4" Directory="dir71580E99E60E176F1B450AAA07FCFCC7" Guid="{AB99AB8B-4013-411C-BBFB-8387A67930ED}">
+                <File Id="filD33F1EC661160805081421971A94731D" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.attach\LICENSE" />
+            </Component>
+            <Component Id="cmp919095DAA4340E8FEF702B32D48407A0" Directory="dirB5BD422ECA015111FD5A94688B03780B" Guid="{3204865B-1A89-49CF-8D6F-D81664198A47}">
+                <File Id="fil4876836285CC7DB639CDE2A1E9726E93" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.charsets\COPYRIGHT" />
+            </Component>
+            <Component Id="cmpCDF983916FE99CCE4677BBC3DBB36023" Directory="dirB5BD422ECA015111FD5A94688B03780B" Guid="{D91B9C90-D2F2-4BFB-9CE1-EE419DF25FA5}">
+                <File Id="filEEA3ED8D20307F72EF5BB9F6533A9A44" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.charsets\LICENSE" />
+            </Component>
+            <Component Id="cmp62606A2F55EFD1A2D88057729BB9AFB8" Directory="dir58EA057A52E65C09130928E5F7527619" Guid="{BF1220E0-1658-4866-AEB6-C9C1F94B89B9}">
+                <File Id="fil26CC2C0EDBB6032DC0D61A64E1255AEB" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.compiler\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp8E5082C19080A704CE9E284AA6FB3681" Directory="dir58EA057A52E65C09130928E5F7527619" Guid="{0D4A15D6-8A81-4F34-BE4E-E5F3FD98C16D}">
+                <File Id="fil48DD1F7A8E2BDA8936D5E4C5DE0C3A11" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.compiler\LICENSE" />
+            </Component>
+            <Component Id="cmpE4D805A564EE7D1D52D8397BFF4D7847" Directory="dir2692D96EDCA856DDC0DAFDF7BC666569" Guid="{9FC77EA2-DC50-4B4A-882E-19BBA7AFB0AE}">
+                <File Id="fil92D91419FAA9D59FBB53DA878A0F4917" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.crypto.cryptoki\COPYRIGHT" />
+            </Component>
+            <Component Id="cmpA4B83F9F227C1566C99DA1261BF909AE" Directory="dir2692D96EDCA856DDC0DAFDF7BC666569" Guid="{E8C60160-BFC1-4DEF-88F7-5E2E26323090}">
+                <File Id="fil08066A00169EEDDC0B0D075777DDC65D" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.crypto.cryptoki\LICENSE" />
+            </Component>
+            <Component Id="cmpB3BE68ABF2B621ECD967710B5866DC32" Directory="dir2692D96EDCA856DDC0DAFDF7BC666569" Guid="{5374FEF0-E391-4376-9C2F-B579E92C9D64}">
+                <File Id="filCD72C53C5564ADFB7DBF74366FE0DA7D" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.crypto.cryptoki\pkcs11cryptotoken.md" />
+            </Component>
+            <Component Id="cmp25D2F3D48FD22F22F9D1FF678E2499CF" Directory="dir2692D96EDCA856DDC0DAFDF7BC666569" Guid="{EF553032-D982-4634-BC85-BC805D51C83C}">
+                <File Id="fil94339C4E041AB0F4270F05060125671F" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.crypto.cryptoki\pkcs11wrapper.md" />
+            </Component>
+            <Component Id="cmp6C3A6F24F9A90D160216AA0D24C4244D" Directory="dir9C71DE229F46636A9527CDEF672E69CF" Guid="{59A007F4-2680-4D3F-8F0F-41A2DDB31FEB}">
+                <File Id="fil258CE94C504D115FB88BD0482565007C" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.crypto.mscapi\COPYRIGHT" />
+            </Component>
+            <Component Id="cmpD72FE520E39BD7C566B33CF30F532281" Directory="dir9C71DE229F46636A9527CDEF672E69CF" Guid="{49A5F6F8-72E3-46F0-93EA-3258BDA64F1C}">
+                <File Id="filB202998FB520CBD916CF8F695DE1E925" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.crypto.mscapi\LICENSE" />
+            </Component>
+            <Component Id="cmp8E707D4A216C142E2B291E638B2B618A" Directory="dir284F419FF1012B7A1CC2B69DD32B0E34" Guid="{C0B413A7-D0D2-4C2D-9163-6C7CD898D5BD}">
+                <File Id="fil06F8534F454F2D8AB8DA65CE6708BAED" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.dynalink\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp2269C8EF5A936E900E12CA23CE30F49C" Directory="dir284F419FF1012B7A1CC2B69DD32B0E34" Guid="{6E045C2D-9B27-42C4-A826-7BD4356463BE}">
+                <File Id="fil18C263F9E1BE04933CDD6C8850AA2B00" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.dynalink\dynalink.md" />
+            </Component>
+            <Component Id="cmp65235C9DEED0212373D56D050E423308" Directory="dir284F419FF1012B7A1CC2B69DD32B0E34" Guid="{766944AD-9860-4E36-88CB-FB610FAA09DF}">
+                <File Id="fil136D289F48F5D912155359091F9EC27F" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.dynalink\LICENSE" />
+            </Component>
+            <Component Id="cmp25A37A18A20E991A6B6EE55308223F90" Directory="dir06280F6250C2A910C9C338D0DFEC9254" Guid="{AB6500C4-E28F-4547-934F-B2A73D0AB214}">
+                <File Id="fil6D57998DC55E347BA71EF1898C9B98B1" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.editpad\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp8F0290647EDD81A80D42008BD3CBEDEE" Directory="dir06280F6250C2A910C9C338D0DFEC9254" Guid="{F0FD959C-FE12-45E3-A1C7-F43EB7EED09B}">
+                <File Id="filA815ACFFA4602AF1CFCC299017232C1F" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.editpad\LICENSE" />
+            </Component>
+            <Component Id="cmp15F0DAC835232DBBCA98902290A58BC4" Directory="dir5169742A0EAD1172C6D842550997150C" Guid="{95E4B20C-786F-4391-8A13-32BD5C007226}">
+                <File Id="fil6215E859220989CC6F021892A499F305" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.httpserver\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp944965181D9CAD6C6F62D6A2B51BA327" Directory="dir5169742A0EAD1172C6D842550997150C" Guid="{873797CE-62CB-4AB5-8A5B-FB4C228E190D}">
+                <File Id="fil7DC379982A22D2367F2B7020628CC53C" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.httpserver\LICENSE" />
+            </Component>
+            <Component Id="cmpC536F8BEE4EACD313E029D4E053D81B9" Directory="dir328A0DB8797100FD86871081808BB725" Guid="{3AA39876-A082-4B87-B5A5-88AA5432E8D9}">
+                <File Id="fil8EEA004DA0A991A833B615483DF49618" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.incubator.vector\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp41C6427501A7D3C7FB4627828D129451" Directory="dir328A0DB8797100FD86871081808BB725" Guid="{27477843-485E-4ED6-AC8E-E4D59B20B9D6}">
+                <File Id="fil2D00BFDA601B179C08C47C5D8C24A33A" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.incubator.vector\LICENSE" />
+            </Component>
+            <Component Id="cmpA0AA3652A7B949DB178472631361D2DB" Directory="dir8017BC2B40AEACE9BA990ACE41804D0F" Guid="{43612B4C-E83F-432F-BD8B-F2F48775FF19}">
+                <File Id="fil6042652B02356C370DBE6266F730C8A8" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.internal.ed\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp8EF4748F22C232CA8602E0A85F656AE5" Directory="dir8017BC2B40AEACE9BA990ACE41804D0F" Guid="{60A9B75B-1DD2-46C5-B74A-526F06097CB2}">
+                <File Id="fil4855B408868B04E8B4CD2E013DC6292F" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.internal.ed\LICENSE" />
+            </Component>
+            <Component Id="cmpB2803BF96AAF2C10BC51F06FBC792701" Directory="dir462A022517FCB321E7A19478E0B419B4" Guid="{E6A539E9-8F94-40D0-8A2E-8BE833B3BA52}">
+                <File Id="fil3C9D8AD5C9308D426DB62659BF63B092" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.internal.jvmstat\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp46FF6DED916CD18963753FFCF3D20B11" Directory="dir462A022517FCB321E7A19478E0B419B4" Guid="{FE24A2C5-1E96-4565-A954-A1836A2E2CE1}">
+                <File Id="fil7202CE07E3B210FA6DEEC7144AF43404" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.internal.jvmstat\LICENSE" />
+            </Component>
+            <Component Id="cmpAAF88BEBC8523F3D27D477E4F16936EA" Directory="dirE3B2A6ADB50397ED70BE87FC02329685" Guid="{442589EB-292E-46B4-8CED-26E9208D2207}">
+                <File Id="filCBE15E05F2BB3B16724E4305F146B265" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.internal.le\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp6D705D2A75FDC44A1962A805742313BE" Directory="dirE3B2A6ADB50397ED70BE87FC02329685" Guid="{B67CD0C6-F89C-4D6F-B6B5-74DD110EAE4C}">
+                <File Id="filE16CA70C9ED025848D84081F037BBF35" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.internal.le\jline.md" />
+            </Component>
+            <Component Id="cmpB5ECF8D009C5476EE7CB3B757A00484D" Directory="dirE3B2A6ADB50397ED70BE87FC02329685" Guid="{4B81AFBF-F54D-4F90-906E-8D2D9197778E}">
+                <File Id="fil166D1E89BF6736312118F2435325CB35" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.internal.le\LICENSE" />
+            </Component>
+            <Component Id="cmpAFFAC37DCC6EE0C1BAF9077CD3115A36" Directory="dir08D7B41EFF697A532C72E4C25CF504D4" Guid="{EA6FE0EC-F54A-4AA2-A58C-CF5FD1F6A2D2}">
+                <File Id="fil1A4A580E211B1C81613415FC308E76A6" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.internal.md\commonmark.md" />
+            </Component>
+            <Component Id="cmp18F30E637BA526ABB3454B79B280C4ED" Directory="dir08D7B41EFF697A532C72E4C25CF504D4" Guid="{1B7078BF-C7E2-4C0A-A912-83C120F1ED1B}">
+                <File Id="filAE34E69B6AC1E66DABF45BC705227355" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.internal.md\COPYRIGHT" />
+            </Component>
+            <Component Id="cmpB00337C681834273D44931EA8185D45B" Directory="dir08D7B41EFF697A532C72E4C25CF504D4" Guid="{1F75A712-0169-463D-9A60-D3A18E58890F}">
+                <File Id="filCB80C6A7686064306356CAB5672E0A16" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.internal.md\LICENSE" />
+            </Component>
+            <Component Id="cmpD0968D8E30A424A539EA4865A59DAEE7" Directory="dir94F1A6C8EE7AA024AD9FF78C12028D59" Guid="{CA0B2255-FEB7-4863-B43F-3899203B7B6B}">
+                <File Id="fil35F117B2CD0A39240FD89472C0D52870" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.internal.opt\COPYRIGHT" />
+            </Component>
+            <Component Id="cmpB1E213FD60555F8F5BF9286198C579B0" Directory="dir94F1A6C8EE7AA024AD9FF78C12028D59" Guid="{BE864260-8B33-4BF1-875C-396AA48746FB}">
+                <File Id="fil717B4B758CE150AF0D3C09621D612DAA" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.internal.opt\jopt-simple.md" />
+            </Component>
+            <Component Id="cmp57DD05B8CE343FCA631CCA0E12668BE8" Directory="dir94F1A6C8EE7AA024AD9FF78C12028D59" Guid="{28FC1C5D-D30F-4033-B9CF-AB170E5608FC}">
+                <File Id="fil3EFF733E2BE81C3A1A54B312A3DC7EDF" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.internal.opt\LICENSE" />
+            </Component>
+            <Component Id="cmp4183D6863A0137948B43407C7A4E2CDE" Directory="dirD31084F41857365AF5DA825D6AF716C0" Guid="{B0506F9E-7CB9-4C17-B7FB-58B4F80B8615}">
+                <File Id="fil119C081F2A8134B59AAC3ECEFCF60EEE" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.jartool\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp0613D3F7A7E70A75ABA5F5B746362BD6" Directory="dirD31084F41857365AF5DA825D6AF716C0" Guid="{E32722FD-2E83-4451-AB4A-A4BE84C6C231}">
+                <File Id="filD15CAB9A212F0F08133936007F5265AF" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.jartool\LICENSE" />
+            </Component>
+            <Component Id="cmp94E9FC0D2D30751DA73A028473FCB918" Directory="dirA07B2E0257C9136425D61DD8D1C597D6" Guid="{1E9354FE-EC62-451F-8551-64384A0021F3}">
+                <File Id="fil2C50FB8DE7A8D30A51BA9305D57AB077" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.javadoc\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp7A95326B8029ED9D3F11AE9BB48D271E" Directory="dirA07B2E0257C9136425D61DD8D1C597D6" Guid="{F7D4FE2A-66E3-4767-959D-93C57D03DD42}">
+                <File Id="fil9FFAA0EEA7C0D04C318A1C56160512F4" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.javadoc\dejavufonts.md" />
+            </Component>
+            <Component Id="cmpADC8A8AE6509EB92D52E4AA837BC528B" Directory="dirA07B2E0257C9136425D61DD8D1C597D6" Guid="{BF5E4A09-9EC7-48B6-82E5-E3A6D1DA5778}">
+                <File Id="filB487AC739E51060E477CFE912130955A" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.javadoc\jquery.md" />
+            </Component>
+            <Component Id="cmp9326EF80E2CB6B77A05A50340700F517" Directory="dirA07B2E0257C9136425D61DD8D1C597D6" Guid="{6F278CBD-07DD-48B0-A239-605330282ADC}">
+                <File Id="fil5F74C54D97DC5BA143FCA1F6DA4B3547" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.javadoc\jqueryUI.md" />
+            </Component>
+            <Component Id="cmp11546707DB9DBB68C5DB67DA9A91C817" Directory="dirA07B2E0257C9136425D61DD8D1C597D6" Guid="{08306DA1-84D0-4735-920D-E6E154102FE8}">
+                <File Id="fil11C654567D39FF111812E61E7A1F8B87" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.javadoc\LICENSE" />
+            </Component>
+            <Component Id="cmpF62988F8804C8CDC34EF1846EE11FC66" Directory="dir8A942163D455927C8F7AD14358E93F0F" Guid="{E01313A5-66AB-483B-ABDE-3819BF38F467}">
+                <File Id="filFDEE3F5CACAE709883E41C5CF7E7A798" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.jconsole\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp58F802DC3010752DF0D63A0FFA02039E" Directory="dir8A942163D455927C8F7AD14358E93F0F" Guid="{52772C62-7190-43F9-BD8F-9DE782C9DD2C}">
+                <File Id="filF34299CE4B782BCA29663517CE5CA2CA" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.jconsole\LICENSE" />
+            </Component>
+            <Component Id="cmp8644CF8C77D21F31460E795486875409" Directory="dir9AE13A28D63BF47DC9B64AF2BBB22331" Guid="{B5490AEF-11FC-4CA3-8F10-6B1C765A7538}">
+                <File Id="fil14C4556B4B28DDE19DCB4AE7E4F0F2FC" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.jdeps\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp0983C2BAC55F6E1EB51444F81DF0321C" Directory="dir9AE13A28D63BF47DC9B64AF2BBB22331" Guid="{96FD1074-81F5-40E5-BBA2-905BA3553BCE}">
+                <File Id="filD2BE7E349C6859DB713BB2F3598C5EB2" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.jdeps\LICENSE" />
+            </Component>
+            <Component Id="cmpDB9B69654A2EB42A1D49E2167BF4D430" Directory="dirEE8DFB6C3B4C957604228D940DDFED3D" Guid="{EE210CAA-0F36-4CD9-8D4F-7AC3694134E3}">
+                <File Id="filF48837CD7E8B9BFDBBB95DC0DE9B06BD" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.jdi\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp78D37368F76203FB761496E72E53B5FA" Directory="dirEE8DFB6C3B4C957604228D940DDFED3D" Guid="{77128611-7649-4580-9BAD-BDDCAE2A14F0}">
+                <File Id="fil1E610780640A421F1FF4C3B20E36EBA1" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.jdi\LICENSE" />
+            </Component>
+            <Component Id="cmp851E640192ECD520D1EE72E8F6D01BE4" Directory="dir87A37C603EE09E530EB7B6D1418AC53D" Guid="{24E4F2F7-3AAC-4727-8BB2-2919B29EEFB5}">
+                <File Id="fil36DB407B6CE01F300F7D00231E631DCD" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.jdwp.agent\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp5FA6699565B4DDA6C4C82B93339EF901" Directory="dir87A37C603EE09E530EB7B6D1418AC53D" Guid="{C5970AF3-3D8C-4E17-B294-DB5FCF0B287B}">
+                <File Id="fil34298F25FF8D6D27D578101D7F34BF1B" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.jdwp.agent\LICENSE" />
+            </Component>
+            <Component Id="cmp4164049EAD1026A99A74D15130DEBE62" Directory="dir88B1C0831DF94F5B76452FDBBED2BB40" Guid="{FA397E38-3E2B-4F44-B7B2-3FBE444405CC}">
+                <File Id="filB76F5D50D65D1012D2BAE7430EFAD5B8" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.jfr\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp7C3C767D5CE8E631018088DBD8E26447" Directory="dir88B1C0831DF94F5B76452FDBBED2BB40" Guid="{FE2B02C7-69DF-41C0-85DD-F3E574AA4549}">
+                <File Id="fil0CA44FA073B295827DAD8823FA0C13E4" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.jfr\LICENSE" />
+            </Component>
+            <Component Id="cmpF728C4DFE439F7957CABB20B86BA5DE4" Directory="dir9593A0F041E4C2415E1A1149A907C0B5" Guid="{46546F79-2F07-436F-B4A8-2E21372D52B2}">
+                <File Id="filE2FC4FCE6232D042D497EE90985F6957" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.jlink\COPYRIGHT" />
+            </Component>
+            <Component Id="cmpC80DFFE17BEACC7A3E7FDF224645358A" Directory="dir9593A0F041E4C2415E1A1149A907C0B5" Guid="{646E615E-A144-4687-ACE1-BB186292B001}">
+                <File Id="fil0A244D294738E990E43CCBB5068C42DF" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.jlink\LICENSE" />
+            </Component>
+            <Component Id="cmpE74AABEE3A2B7BF1B80A86C3B5C3B1F7" Directory="dir355304D71534DB94662446AE4C08EA5A" Guid="{6BA3CF74-AA04-4D58-B370-ED1EF786F7D8}">
+                <File Id="fil3CFDCF059F183CEB77C0E9150081D3C5" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.jpackage\COPYRIGHT" />
+            </Component>
+            <Component Id="cmpBB3DAD3EFCC69F57845FE121A13BE8A9" Directory="dir355304D71534DB94662446AE4C08EA5A" Guid="{C8E51377-9CD2-46F1-B37D-94C9E579A790}">
+                <File Id="fil79821650B5B46923467EEA368876639A" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.jpackage\LICENSE" />
+            </Component>
+            <Component Id="cmp67836376B434D47402594A5A6B3B1DA2" Directory="dirCAE8382B4831CD47EFB45E60537E7190" Guid="{8A762B6A-C511-4051-A3D5-3C4710D252F7}">
+                <File Id="fil1D5B24395A93B9DA130DA267BFB92C5D" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.jshell\COPYRIGHT" />
+            </Component>
+            <Component Id="cmpD894B1736480F249299FF86A18736A16" Directory="dirCAE8382B4831CD47EFB45E60537E7190" Guid="{0AA66410-D775-41CE-BD15-2CB1A3B7F131}">
+                <File Id="filD4FEF2B2E8AA325227DD3B95EE9FE024" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.jshell\LICENSE" />
+            </Component>
+            <Component Id="cmpF1B02902E790280072BE026A72B32B01" Directory="dirC9B0E218ABCCB5DC3CF4DAA4680A983B" Guid="{C219E2FC-F418-4CE5-A45C-6EEDC1472050}">
+                <File Id="fil3E9B9F800D038EEE62A3891C15677DF8" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.jsobject\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp5315E96F18A62D0516AD96F8B1E76042" Directory="dirC9B0E218ABCCB5DC3CF4DAA4680A983B" Guid="{88FBBBC7-EDA2-4935-93CE-E33D61039B04}">
+                <File Id="fil47DF64499301B7EED0760046ED5BA37A" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.jsobject\LICENSE" />
+            </Component>
+            <Component Id="cmp4BC1E9D236AAE4FB65C84971D1977239" Directory="dir41BC286451F61B994A2DA69A6018A2CB" Guid="{817B982B-3B11-430E-9451-3967E0B6AA83}">
+                <File Id="fil60F9C5936980D60BF96583A9A2B560C7" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.jstatd\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp6A29148F47EA1E1BD2AB6B63EFB070EB" Directory="dir41BC286451F61B994A2DA69A6018A2CB" Guid="{B575F965-2306-4527-B7A9-6FA9F20BD475}">
+                <File Id="fil4C52435DE76A91A51124A2A35ACC1697" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.jstatd\LICENSE" />
+            </Component>
+            <Component Id="cmp9B3F9BAD6FFE79F29293278613285141" Directory="dir806CADEB5B256767CD55091FB5894293" Guid="{7FA4383A-42C4-43B8-B61C-FC93CFBDCD4A}">
+                <File Id="fil188AA71AE2F0AAD2B81F2E842C386FB2" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.localedata\cldr.md" />
+            </Component>
+            <Component Id="cmpC03C9D3F8904D3E01ECEEC7D23E6A3CE" Directory="dir806CADEB5B256767CD55091FB5894293" Guid="{73CF865E-23BC-41B7-AF4C-E99FEBC88C1A}">
+                <File Id="fil272B451A700E452F39B1FA8ECCF49B65" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.localedata\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp312733CC6469ECFD8CCD3AC9371376F3" Directory="dir806CADEB5B256767CD55091FB5894293" Guid="{52587B28-C7A6-45F6-B468-EAF8B9166C56}">
+                <File Id="fil50DCFB4DF7EC6FE112DB874BB3732FC7" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.localedata\LICENSE" />
+            </Component>
+            <Component Id="cmp20ADB76A72DB15BA170C5682F6806D64" Directory="dir806CADEB5B256767CD55091FB5894293" Guid="{E6703C02-8B07-4C89-81AA-10FCE12BBFC7}">
+                <File Id="filF80B14D6C3FA77D3346D9555ED95AF35" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.localedata\thaidict.md" />
+            </Component>
+            <Component Id="cmpCACC28E001EEF9469043071172D249F6" Directory="dir2E509595EC3171DA950F068598B3413A" Guid="{AA7C9231-30B1-4566-A019-02E0657FAA12}">
+                <File Id="fil5216A4A38A0A8209F4676314978C8D11" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.management\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp5C535BFDFA3B2FFB914072508FB79618" Directory="dir2E509595EC3171DA950F068598B3413A" Guid="{B90B14E4-0040-4EB3-922C-470B71B97335}">
+                <File Id="filEF00501BC3209F7D5C2B7F10D863DDF5" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.management\LICENSE" />
+            </Component>
+            <Component Id="cmpEE70FD15E936569C1242DA238C1497B7" Directory="dirAA284742740197046461764C1E762F87" Guid="{A3B91814-8841-485F-B8BB-ED356AE8B91F}">
+                <File Id="filDB10C5C6622D24B6480A1D638D874AD2" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.management.agent\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp952AC786D77C79B32BB8414808A3314F" Directory="dirAA284742740197046461764C1E762F87" Guid="{072EC3D2-43E9-4579-BDE2-155001601F72}">
+                <File Id="fil81C5B5B5198004F28DFA4C8023132876" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.management.agent\LICENSE" />
+            </Component>
+            <Component Id="cmpF14F36D6C75643CEB1F70F41CB1B5F9C" Directory="dir7F0A7BEA6B89B7003CFBC4E26F4BD62E" Guid="{458FA337-A064-472B-A52B-38FB92EB043A}">
+                <File Id="filF2FDA15BF208DE9A01DB62461F563C00" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.management.jfr\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp934FE0B3C00448859A9D7672D1FE1A13" Directory="dir7F0A7BEA6B89B7003CFBC4E26F4BD62E" Guid="{58464F7E-1CF4-4A3F-A4C5-D43CF12FC180}">
+                <File Id="filCDCFD654481D9E1DE4AD1351E183430C" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.management.jfr\LICENSE" />
+            </Component>
+            <Component Id="cmpC25444EC356A22F5E71A2722F69E358E" Directory="dirDF7477DE472D0DDB664009E31A9E05A2" Guid="{3B0E6B37-017D-4CCB-BC4C-0ECF6488B554}">
+                <File Id="filF302111C805FC44E1D299707F5BB8FA9" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.naming.dns\COPYRIGHT" />
+            </Component>
+            <Component Id="cmpBA8825B62D0739F46FA378B56DBF26A8" Directory="dirDF7477DE472D0DDB664009E31A9E05A2" Guid="{7453C548-122A-4407-B82B-36C6524C77F2}">
+                <File Id="filDBC1D1033E284BE60D4B5C722C2C5C1C" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.naming.dns\LICENSE" />
+            </Component>
+            <Component Id="cmpF466ABDA6FEB8189105F12324FF8CCFC" Directory="dirD5CDBC2727420A0692ACC564505D37C7" Guid="{0E833E84-ED81-49A3-B9A9-5700975AC823}">
+                <File Id="fil06B4827379D33834ED7EBE055DE989CB" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.naming.rmi\COPYRIGHT" />
+            </Component>
+            <Component Id="cmpC3CB95E23B0DF416AC96907D45A3959F" Directory="dirD5CDBC2727420A0692ACC564505D37C7" Guid="{18D892CF-C89A-46EA-BED1-F774C6C442C1}">
+                <File Id="fil68E3CB7BEAD2376EE0CD12245DE4E865" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.naming.rmi\LICENSE" />
+            </Component>
+            <Component Id="cmpC641C6716A71773DC75659CA7DEFCC89" Directory="dirCA802CE582C67AE1AFBE303DFABC81B6" Guid="{829D3064-38C0-4538-96B0-3AC667726FA0}">
+                <File Id="filE4F3CF838C0BD08D0B5AC9E01EDA6C30" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.net\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp1040C273E1D56B247E38F83D0D472902" Directory="dirCA802CE582C67AE1AFBE303DFABC81B6" Guid="{C0C087DC-2BDE-41C6-91F2-EDFD5FE19A20}">
+                <File Id="filF978F7662006449E0668BFAAC7C80603" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.net\LICENSE" />
+            </Component>
+            <Component Id="cmp25D39469E4B6BA98D7D753D6323F9499" Directory="dir4F78B437D2F6A2A3E9B0201C26000C2C" Guid="{0C68661C-651D-47FB-8F8B-92B8CF4383C2}">
+                <File Id="filA1C5768DD434E41A474A5C6459411226" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.nio.mapmode\COPYRIGHT" />
+            </Component>
+            <Component Id="cmpF97282F8D034CACBF790EFCF9FBE68B3" Directory="dir4F78B437D2F6A2A3E9B0201C26000C2C" Guid="{89662AD6-0128-4F82-BF77-3FBA770D293D}">
+                <File Id="fil1CD0F2653B7DC7CE7BA81578EB2E1115" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.nio.mapmode\LICENSE" />
+            </Component>
+            <Component Id="cmpB32463B2F84730D6A83F0425BCDE49CA" Directory="dir95F3F6A00A702ACA25219D9FD968CFCB" Guid="{00F21C3E-2C77-4A7B-9427-05ECBE31D0AB}">
+                <File Id="filADDFF124DA972B23FF2D7B380EDCDB84" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.sctp\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp3B88F129F19820F5163672501D198B52" Directory="dir95F3F6A00A702ACA25219D9FD968CFCB" Guid="{AF64CAB3-AAE8-4260-B188-A0DBCB15594B}">
+                <File Id="fil5B2E87BF8D404B922F51FE76DE6E0B74" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.sctp\LICENSE" />
+            </Component>
+            <Component Id="cmp0CAA3B0E40FDF9333BC1245E5EA0487D" Directory="dirCFB6E437B6B7BD53A57C34D8A2F9A6A5" Guid="{5AB093ED-D004-42D6-BAA9-FBD7C85140C4}">
+                <File Id="fil7F38CCF7D3D0BFC19C19141F3903FBEB" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.security.auth\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp4FB59E7908BDC7AED5428286E0BE001A" Directory="dirCFB6E437B6B7BD53A57C34D8A2F9A6A5" Guid="{97C6D7E2-9ADE-4782-B462-36BC0F8C8F9B}">
+                <File Id="filDB3D3698CFA494B2605B37C5DD0D1E89" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.security.auth\LICENSE" />
+            </Component>
+            <Component Id="cmpEABE90760B932005938BB50C45774BE4" Directory="dirD70C5BE589FB0F515DCD1A30353612FC" Guid="{1E2C04BA-64C0-426A-8DAE-55CC5F9AC025}">
+                <File Id="filB61A953687A5747D28E8B02FD201A572" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.security.jgss\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp30D992CE91A8368F8D4269D6F1B011F3" Directory="dirD70C5BE589FB0F515DCD1A30353612FC" Guid="{DB233A28-B4AF-42F4-91A3-D0E3CEAFDA8D}">
+                <File Id="fil68D5653F46705261CD29CF89EF526129" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.security.jgss\LICENSE" />
+            </Component>
+            <Component Id="cmpC4F4A206BC505977DFD4256E8A38191A" Directory="dir5041D4B180F41FF70F8D337BFC7AC7CD" Guid="{14148DCE-4236-4CC2-8677-CAAB7157D190}">
+                <File Id="fil979823A0C19A5596E877C11875C52B66" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.unsupported\COPYRIGHT" />
+            </Component>
+            <Component Id="cmpA48C93B9480E40A90F38A3D1F5597629" Directory="dir5041D4B180F41FF70F8D337BFC7AC7CD" Guid="{B797DEB9-9646-44FB-B85C-417FB4D73810}">
+                <File Id="fil59465AE651AA23A89758E9C6B59C28BD" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.unsupported\LICENSE" />
+            </Component>
+            <Component Id="cmpB5B5161B367A194FAB5C27F53E7C0B18" Directory="dir3E2B92F277636B79BEEDFE35375244D0" Guid="{5EC7F587-20B1-4D4A-8A0C-9D0FB7A2AF71}">
+                <File Id="fil1FD8D769DF23867B13A5FF33A2CC0DDE" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.unsupported.desktop\COPYRIGHT" />
+            </Component>
+            <Component Id="cmpDAA7C6C48921A20A1514B341347A5995" Directory="dir3E2B92F277636B79BEEDFE35375244D0" Guid="{ADD10B22-B798-4D49-8A1A-DBA292F8DC2F}">
+                <File Id="filD81C9DCAF13E5143EF5EAD4B01F95FC7" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.unsupported.desktop\LICENSE" />
+            </Component>
+            <Component Id="cmp0EAD9B597CDCA4790991EF8295C7D8E5" Directory="dir269ACF3C4415B80BE11EB839D8798962" Guid="{CB4154E1-10AB-448E-B6B7-86B17C1B345F}">
+                <File Id="fil6BFC77D6C2C016CA02F7E69E1F5D397B" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.xml.dom\COPYRIGHT" />
+            </Component>
+            <Component Id="cmp545C8252D9EA9CD33393426F459B1F2D" Directory="dir269ACF3C4415B80BE11EB839D8798962" Guid="{38EBC3B4-DE2B-4A1B-98C0-6ADF7609BFF1}">
+                <File Id="filE2FD6D3F630927EB3BD4660AE1BDA196" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.xml.dom\LICENSE" />
+            </Component>
+            <Component Id="cmpD861CE98D7D9615A357317A6E1A9EED2" Directory="dir537D647A70FA3E3BE0177C60FE81CDEA" Guid="{AF4EA7DA-DF05-47DC-8D09-F8AD3D96C80D}">
+                <File Id="fil6984FCA2D45BCB6A52AB34BCF8DED3FE" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.zipfs\COPYRIGHT" />
+            </Component>
+            <Component Id="cmpD207E4E39C4306C271F86DFA5D82218E" Directory="dir537D647A70FA3E3BE0177C60FE81CDEA" Guid="{4E7C5352-0FD1-4100-83A3-4A3989746F81}">
+                <File Id="fil6CCB33D13CA225C5E08255C9E724C8B8" KeyPath="yes" Source="$(var.j24runtime)\legal\jdk.zipfs\LICENSE" />
+            </Component>
+            <Component Id="cmp26E9D995D7F6F93DBCFD0804AD58E3D7" Directory="dirAF2D76D4EFD6482BDD85823CB816C92C" Guid="{92EF437B-6B32-41EB-8922-A0102046F040}">
+                <File Id="fil96CB4456FA4FDCF231BF2A46C1DDD772" KeyPath="yes" Source="$(var.j24runtime)\lib\classlist" />
+            </Component>
+            <Component Id="cmpEC80AEF9CA33F379B96B216F7D49FA67" Directory="dirAF2D76D4EFD6482BDD85823CB816C92C" Guid="{79A65732-B506-4E8B-8D5D-5F5D35C48971}">
+                <File Id="fil592E633FD7685FA945CFB62D38A2286E" KeyPath="yes" Source="$(var.j24runtime)\lib\ct.sym" />
+            </Component>
+            <Component Id="cmpFD9E6D7A5A241B68AC38F538F2EEEDA6" Directory="dirAF2D76D4EFD6482BDD85823CB816C92C" Guid="{00D7F597-C3D6-4446-9801-8BB01D7E55E8}">
+                <File Id="fil89C85BBFF997D25BCDF07C405B69F0A1" KeyPath="yes" Source="$(var.j24runtime)\lib\fontconfig.bfc" />
+            </Component>
+            <Component Id="cmp9C540285FFA18431DCA48B7B5B15AB2D" Directory="dirAF2D76D4EFD6482BDD85823CB816C92C" Guid="{D009B1C0-39EB-44A2-A184-15CB44AACE11}">
+                <File Id="filF344D9CBED371E1F37189113CD43C99D" KeyPath="yes" Source="$(var.j24runtime)\lib\fontconfig.properties.src" />
+            </Component>
+            <Component Id="cmpD04A220ABE208DC28718F9E8C9BDF29E" Directory="dirAF2D76D4EFD6482BDD85823CB816C92C" Guid="{5DC0CBD2-D401-497B-9323-5784A17FDBF3}">
+                <File Id="filE1BC14FDE480F2422EDDCDBD90200A1F" KeyPath="yes" Source="$(var.j24runtime)\lib\jawt.lib" />
+            </Component>
+            <Component Id="cmpC30BA121927633D49AF392AF4623E32E" Directory="dirAF2D76D4EFD6482BDD85823CB816C92C" Guid="{12A70C32-0AE3-4108-B05F-9C8EC6F542AA}">
+                <File Id="filB0CFE085AE37E75511F01C530F4D90D6" KeyPath="yes" Source="$(var.j24runtime)\lib\jrt-fs.jar" />
+            </Component>
+            <Component Id="cmp283E3D6E7E95CA085A206B40C65939AB" Directory="dirAF2D76D4EFD6482BDD85823CB816C92C" Guid="{EA564979-6AC5-4F71-93EF-F04A35E9A40B}">
+                <File Id="filD1F438B96D0DB4CF71C4F69770021233" KeyPath="yes" Source="$(var.j24runtime)\lib\jvm.cfg" />
+            </Component>
+            <Component Id="cmp1C9A658D9F0C2C8F84D06ADB66402554" Directory="dirAF2D76D4EFD6482BDD85823CB816C92C" Guid="{CAAB4E0A-A8C5-4517-8D55-90338B990625}">
+                <File Id="filBF2E6E6DB6CB01CE9F786EB9B6E9C9DB" KeyPath="yes" Source="$(var.j24runtime)\lib\jvm.lib" />
+            </Component>
+            <Component Id="cmp059D00E801934CE15A6190D48142D634" Directory="dirAF2D76D4EFD6482BDD85823CB816C92C" Guid="{D1601DCF-056C-43AC-886F-E12EBAFB16B6}">
+                <File Id="fil0E29BCD9B2F4D342F32AD5FA5628EC38" KeyPath="yes" Source="$(var.j24runtime)\lib\modules" />
+            </Component>
+            <Component Id="cmp55995EBA3597F6A48C7B82DA295F7B60" Directory="dirAF2D76D4EFD6482BDD85823CB816C92C" Guid="{EBE907EF-BDBE-47CC-AC45-BB53F7193DE6}">
+                <File Id="filEB6C99FD31CB40EA8BA440F0F88448D6" KeyPath="yes" Source="$(var.j24runtime)\lib\psfont.properties.ja" />
+            </Component>
+            <Component Id="cmpD9210615FB3525647135754F78C679A4" Directory="dirAF2D76D4EFD6482BDD85823CB816C92C" Guid="{53B19C52-B571-4E64-A50F-E7DE824019B8}">
+                <File Id="fil8EF842B04B64B5D477880A19BDF399F4" KeyPath="yes" Source="$(var.j24runtime)\lib\psfontj2d.properties" />
+            </Component>
+            <Component Id="cmpD5EA267D600462F56AD540C23CE33C09" Directory="dirAF2D76D4EFD6482BDD85823CB816C92C" Guid="{45BAA487-D4E9-4B59-B6B3-535C09DB99AA}">
+                <File Id="fil5B5935DB545469D3FB2D2EE36B08DCD2" KeyPath="yes" Source="$(var.j24runtime)\lib\tzdb.dat" />
+            </Component>
+            <Component Id="cmp6A9380CE77D01EBEC186CBCD4384CCCF" Directory="dirAF2D76D4EFD6482BDD85823CB816C92C" Guid="{05F2445D-3CC0-40A1-8A24-A650879F6EAE}">
+                <File Id="filC3E4E0CC2FFE9F8CE009F1406C1CAB31" KeyPath="yes" Source="$(var.j24runtime)\lib\tzmappings" />
+            </Component>
+            <Component Id="cmp90D355C0BF326BF3185A1AC71A2D6F23" Directory="dir8B1E8AF19A618B5D1E172789E2E5BDA5" Guid="{7D701B7C-9251-48EA-881A-3EB0CC2D382E}">
+                <File Id="filE7EB0FE732A9C265410A13857F345BBA" KeyPath="yes" Source="$(var.j24runtime)\lib\jfr\default.jfc" />
+            </Component>
+            <Component Id="cmp869F0FE9DCB7D96F7746E93491D67354" Directory="dir8B1E8AF19A618B5D1E172789E2E5BDA5" Guid="{A4F39055-685B-4E98-8878-ECF434E4D504}">
+                <File Id="fil6728FFFE17E592D779345D402FBC27AB" KeyPath="yes" Source="$(var.j24runtime)\lib\jfr\profile.jfc" />
+            </Component>
+            <Component Id="cmp8B199324F41B4FAC7728654B52197316" Directory="dirC263243709448821E75BB2A303938424" Guid="{0352FC61-2C33-45F3-BC97-670E3DCAF2E1}">
+                <File Id="fil7D32930C9348D900C22195177603F7E8" KeyPath="yes" Source="$(var.j24runtime)\lib\security\blocked.certs" />
+            </Component>
+            <Component Id="cmp62A33BE4789EC76533784BA402065C48" Directory="dirC263243709448821E75BB2A303938424" Guid="{B90C24C6-D821-4A9B-B47D-4555DB7F0BF3}">
+                <File Id="fil350ACD07AADD1AD2188C48C226F6F0FB" KeyPath="yes" Source="$(var.j24runtime)\lib\security\cacerts" />
+            </Component>
+            <Component Id="cmpDCB49F26ACEF3ED3CC759D431B9AC265" Directory="dirC263243709448821E75BB2A303938424" Guid="{E71E2F92-6CCD-4EA9-BCB1-CD74F06FFFDE}">
+                <File Id="filD026CD00B4DDC5D88E09DD17EB005081" KeyPath="yes" Source="$(var.j24runtime)\lib\security\public_suffix_list.dat" />
+            </Component>
+        </ComponentGroup>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir011C12E584B356BD50EA0312BDF39C7B" Name="java.sql.rowset" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir041587DE065B650B27D61E33FF22DBBC" Name="java.instrument" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir06280F6250C2A910C9C338D0DFEC9254" Name="jdk.editpad" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir07B32E73B356D6DE104E0C49B423E160" Name="java.logging" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir08D7B41EFF697A532C72E4C25CF504D4" Name="jdk.internal.md" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir0EAD9D1BA1DA8E4047212FF017025F1E" Name="java.rmi" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir178A9E8F18F9645B125437A88D0C381A" Name="java.naming" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir20AD5DE12BBA74E0C54B3BFB78AC57A7" Name="java.prefs" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir2692D96EDCA856DDC0DAFDF7BC666569" Name="jdk.crypto.cryptoki" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir269ACF3C4415B80BE11EB839D8798962" Name="jdk.xml.dom" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir284F419FF1012B7A1CC2B69DD32B0E34" Name="jdk.dynalink" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir2E509595EC3171DA950F068598B3413A" Name="jdk.management" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir328A0DB8797100FD86871081808BB725" Name="jdk.incubator.vector" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir355304D71534DB94662446AE4C08EA5A" Name="jdk.jpackage" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir2C7BC4C3D1CC4B48DE25966EBE59C16F">
+            <Directory Id="dir356C6D90AE0D6C431E11CE49EFFF0E9D" Name="management" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir3E2B92F277636B79BEEDFE35375244D0" Name="jdk.unsupported.desktop" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir41BC286451F61B994A2DA69A6018A2CB" Name="jdk.jstatd" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir462A022517FCB321E7A19478E0B419B4" Name="jdk.internal.jvmstat" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir2C7BC4C3D1CC4B48DE25966EBE59C16F">
+            <Directory Id="dir4EFA48F1778DB8B5D7398EDC190C73AA" Name="security" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir4F22CA735ADCF6A8DB817920C1B12D70" Name="java.transaction.xa" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir4F78B437D2F6A2A3E9B0201C26000C2C" Name="jdk.nio.mapmode" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir5041D4B180F41FF70F8D337BFC7AC7CD" Name="jdk.unsupported" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir5169742A0EAD1172C6D842550997150C" Name="jdk.httpserver" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir537D647A70FA3E3BE0177C60FE81CDEA" Name="jdk.zipfs" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir58EA057A52E65C09130928E5F7527619" Name="jdk.compiler" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir66888C42B2609380ECA5424D7EA3BD6A" Name="jdk.accessibility" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir71580E99E60E176F1B450AAA07FCFCC7" Name="jdk.attach" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir7EBFB642EF9C9182396C3D4011D11CED" Name="java.datatransfer" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir7F0A7BEA6B89B7003CFBC4E26F4BD62E" Name="jdk.management.jfr" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir8017BC2B40AEACE9BA990ACE41804D0F" Name="jdk.internal.ed" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir806CADEB5B256767CD55091FB5894293" Name="jdk.localedata" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir87A37C603EE09E530EB7B6D1418AC53D" Name="jdk.jdwp.agent" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir88B1C0831DF94F5B76452FDBBED2BB40" Name="jdk.jfr" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir8A942163D455927C8F7AD14358E93F0F" Name="jdk.jconsole" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dirAF2D76D4EFD6482BDD85823CB816C92C">
+            <Directory Id="dir8B1E8AF19A618B5D1E172789E2E5BDA5" Name="jfr" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir8F5EDEFD92A12FA1BA5067CE9E72D1FB" Name="java.security.sasl" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir92378988CD1EEFEF01B141881DFD22D9" Name="java.base" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir94F1A6C8EE7AA024AD9FF78C12028D59" Name="jdk.internal.opt" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir9593A0F041E4C2415E1A1149A907C0B5" Name="jdk.jlink" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir95F3F6A00A702ACA25219D9FD968CFCB" Name="jdk.sctp" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir96AD00DB803FF5E071900AE3139AFBB7" Name="java.net.http" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir9AE13A28D63BF47DC9B64AF2BBB22331" Name="jdk.jdeps" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir9C71DE229F46636A9527CDEF672E69CF" Name="jdk.crypto.mscapi" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dir9FE36962CF5473A35EF64C628E93EF0A" Name="java.management" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dirA013CD98CFAAA01D2DA7F7199EB0B690" Name="java.xml.crypto" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dirA07B2E0257C9136425D61DD8D1C597D6" Name="jdk.javadoc" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dirAA284742740197046461764C1E762F87" Name="jdk.management.agent" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dirB5BD422ECA015111FD5A94688B03780B" Name="jdk.charsets" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dirC156C06BD23C968F343EA83CF7BD6120" Name="java.scripting" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dirAF2D76D4EFD6482BDD85823CB816C92C">
+            <Directory Id="dirC263243709448821E75BB2A303938424" Name="security" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dirC9B0E218ABCCB5DC3CF4DAA4680A983B" Name="jdk.jsobject" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dirCA802CE582C67AE1AFBE303DFABC81B6" Name="jdk.net" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dirEEE6F69496BD4E23C8581B6694D446A8">
+            <Directory Id="dirCADD15DFBA2D91E5DD56DC76AEDB1EF9" Name="server" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dirCAE8382B4831CD47EFB45E60537E7190" Name="jdk.jshell" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dirCD2E0670C2EA240F6194AF98969098A5" Name="java.desktop" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dirCDF480B2F20B45BDC052CE3259B60608" Name="java.compiler" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dirCFB6E437B6B7BD53A57C34D8A2F9A6A5" Name="jdk.security.auth" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dirD31084F41857365AF5DA825D6AF716C0" Name="jdk.jartool" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dirD5CDBC2727420A0692ACC564505D37C7" Name="jdk.naming.rmi" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dirD70C5BE589FB0F515DCD1A30353612FC" Name="jdk.security.jgss" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dirD710A0F88506937AB01B18029A3C4A02" Name="java.security.jgss" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dirD995DBC10682E0DB211E6EEBFC65EE2D" Name="java.xml" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dirDF7477DE472D0DDB664009E31A9E05A2" Name="jdk.naming.dns" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir4EFA48F1778DB8B5D7398EDC190C73AA">
+            <Directory Id="dirE23CE611E39AF119BCFBCC6968387316" Name="policy" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dirE3B2A6ADB50397ED70BE87FC02329685" Name="jdk.internal.le" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dirE23CE611E39AF119BCFBCC6968387316">
+            <Directory Id="dirECE4ADBAE7F976394D5D1152253427DC" Name="limited" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dirEE8DFB6C3B4C957604228D940DDFED3D" Name="jdk.jdi" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dirF058527584460A5F09B7D5D8E368A85C" Name="java.smartcardio" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dirF1DC11B5C6578A6327FBC3A3C8F1CD5D" Name="java.sql" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dirE23CE611E39AF119BCFBCC6968387316">
+            <Directory Id="dirF72B0DF9D0C636D883BAEEB4C231D60F" Name="unlimited" />
+        </DirectoryRef>
+    </Fragment>
+    <Fragment>
+        <DirectoryRef Id="dir6138BE145612B9374E707F8455BA3978">
+            <Directory Id="dirFC2925BDB8D93DBA26B6C3761C20DB89" Name="java.management.rmi" />
+        </DirectoryRef>
+    </Fragment>
+</Wix>
