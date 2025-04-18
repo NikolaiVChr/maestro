@@ -111,6 +111,17 @@ public class SynthesizerFactory {
 				}
 			}
 		}
+		/*		
+		try {
+			Synthesizer synth2 = MidiSystem.getSynthesizer();
+			Soundbank sf3Bank = MidiSystem.getSoundbank(new File("test.sf3"));
+			boolean supported = synth2.isSoundbankSupported(sf3Bank);
+			System.out.println("SF3 Supported: " + supported);
+		} catch (MidiUnavailableException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		*/
 		return lotroSoundbank;
 	}
 
