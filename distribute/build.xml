@@ -134,6 +134,11 @@
 		<!--		<copy file="${build}/Maestro.jar" todir="${build}/jpackage" />-->
 		<!--		<copy file="${build}/LotroInstruments.sf2" todir="${build}/jpackageMaestro" />-->
 		<delete dir="${build}/jpackage" />
+		<delete dir="${target}/staging" />
+		<mkdir dir="${target}/staging" />
+		<copy file="${target}/Maestro.jar" todir="${target}/staging" />
+		<copy file="${target}/AbcPlayer.jar" todir="${target}/staging" />
+		<copy file="${target}/AbcTools.jar" todir="${target}/staging" />
 		<exec executable="${env.JAVA_HOME}/bin/jpackage.exe" failonerror="true">
 			<env key="PATH" path="${tools}/wix"/>
 			<arg value="--type"/>
@@ -155,7 +160,7 @@
 			<arg value="--dest"/>
 			<arg value="${build}/jpackage/"/>
 			<arg value="--input"/>
-			<arg value="${target}"/>
+			<arg value="${target}/staging"/>
 			<arg value="--name"/>
 			<arg value="Maestro"/>
 			<arg value="--main-class"/>
@@ -184,7 +189,7 @@
 			<arg value="--dest"/>
 			<arg value="${build}/jpackage/"/>
 			<arg value="--input"/>
-			<arg value="${target}"/>
+			<arg value="${target}/staging"/>
 			<arg value="--name"/>
 			<arg value="AbcPlayer"/>
 			<arg value="--main-class"/>
@@ -213,7 +218,7 @@
 			<arg value="--dest"/>
 			<arg value="${build}/jpackage/"/>
 			<arg value="--input"/>
-			<arg value="${target}"/>
+			<arg value="${target}/staging"/>
 			<arg value="--name"/>
 			<arg value="AbcTools"/>
 			<arg value="--main-class"/>
