@@ -54,7 +54,19 @@ public class MaestroMain {
 				APP_VERSION = Version.parseVersion(versionString);
 		} catch (IOException ex) {
 		}
-
+		
+		if (args != null) {
+			for (String arg : args) {
+				if (arg.equals("-jre-version")) {
+					outputJRE();
+				} else if (arg.equals("-app-version")) {
+					System.out.println("App name: "+APP_NAME);
+					System.out.println("App version: "+APP_VERSION);
+					System.out.println("App authors: Digero, Aifel, Elamond and Karloman");
+				}
+			}
+		}
+		
 		if (!openPort() && args != null && args.length > 0 && args[0].length() > 3) {
 			sendArgsToPort(args);
 			return;
@@ -78,6 +90,12 @@ public class MaestroMain {
 			mainWindow.getRootPane().requestFocus();
 			openSongFromCommandLine(args);
 		});
+	}
+
+	public static void outputJRE() {
+		System.err.println("Java Runtime Name: " + System.getProperty("java.runtime.name"));
+		System.err.println("Java Runtime Version: " + System.getProperty("java.runtime.version"));
+		System.err.println("Java Vendor: " + System.getProperty("java.vendor"));
 	}
 
 	public static void setMIDIFileResolved() {
