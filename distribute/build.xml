@@ -53,9 +53,12 @@
 		<copy file="Start AbcPlayer.bat" todir="${build}" />
 		<copy file="Start ABC Tools.bat" todir="${build}" />-->
 		<copy file="Changes since Maestro 2.5.0.txt" todir="${build}" />
-		<copy todir="${build}">
+		<copy file="${target}/Maestro.jar" todir="${build}" />
+		<copy file="${target}/AbcPlayer.jar" todir="${build}" />
+		<copy file="${target}/AbcTools.jar" todir="${build}" />
+		<!--copy todir="${build}">
 			<fileset dir="${target}" includes="*.jar" />
-		</copy>
+		</copy-->
 		<!--		<copy todir="${target}/com/digero/maestro">
 			<fileset dir="${src}/com/digero/maestro" includes="*.txt" />
 		</copy>
@@ -258,6 +261,7 @@
 	    	<arg value="--main-jar"/>
 	    	<arg value="AbcTools.jar"/>
 	    </exec>
+		<delete dir="${build}/jpackageTools" />
 	</target>
 	
 	<target name="JPackagePlayerMSI">
@@ -294,6 +298,7 @@
 	    	<arg value="--main-jar"/>
 	    	<arg value="AbcPlayer.jar"/>
 	    </exec>
+		<delete dir="${build}/jpackagePlayer" />
 	</target>
 	
 	<target name="JPackageMaestroMSI">
@@ -331,6 +336,7 @@
 	    	<arg value="--main-jar"/>
 	    	<arg value="Maestro.jar"/>
 	    </exec>
+		<delete dir="${build}/jpackageMaestro" />
 	</target>
 	
 	<target name="Wix-Cop" description="Runs WiX cop to fix errors in wix project">
@@ -353,7 +359,8 @@
 	        <arg value="var.jdk"/>  <!-- Defines the variable name for referencing the harvested directory -->
 	    	<arg value="-gg"/> <!-- generate GUIDs -->
 	    	<!--arg value="-template:fragment"/--> <!-- dont harvest metadata -->
-	    	<arg value="-sreg"/> <!-- don't register dlls -->
+	    	<arg value="-sreg"/> <!-- don't harvest DLL info from registry -->
+	    	<arg value="-scom"/> <!-- don't harvest COM info from registry -->
 	    	<arg value="-out"/>  <!-- Specifies the output file where harvested WiX XML will be stored -->
 	        <arg value="jdk.wxs"/>  <!-- Saves the harvested files as "jdk.wxs" -->
 	    </exec>
