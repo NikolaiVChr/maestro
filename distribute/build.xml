@@ -119,7 +119,7 @@
 		<echo message="LotroInstruments.uptodate is now ${LotroInstruments.uptodate}."/>
 	</target>
 
-	<target name="LotroInstruments" depends="GenerateSoundFontInfo,-LotroInstruments.CheckUpToDate" unless="LotroInstruments.uptodate" description="Make SF2 file">
+	<target name="-LotroInstrumentsOld" depends="GenerateSoundFontInfo,-LotroInstruments.CheckUpToDate" unless="LotroInstruments.uptodate" description="Make SF2 file">
 		<exec executable="${tools}/sf2comp.exe" failonerror="true"><!--  error="sf2comp_err.txt" output="sf2comp_out.txt" -->
 			<arg value="c" /><!-- compile -->
 			<arg value="-m" /><!-- mute (suppress output) -->
@@ -127,6 +127,10 @@
 			<arg value="${audio_backslash}\LotroInstruments\LotroInstruments.txt" />
 			<arg value="${build}\LotroInstruments.sf2" />
 		</exec>
+	</target>
+	
+	<target name="LotroInstruments" depends="GenerateSoundFontInfo,-LotroInstruments.CheckUpToDate" unless="LotroInstruments.uptodate" description="Copy SF2 file">
+		<copy file="LotroInstruments.sf2" todir="${build}" />
 	</target>
 
 	<target name="Build" depends="-CopyThings,LotroInstruments,-GenerateExeFiles" description="Make all except ZIP and MSI files"/>
