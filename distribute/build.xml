@@ -105,7 +105,7 @@
 		<echo message="GenerateSoundFontInfo.uptodate is now ${GenerateSoundFontInfo.uptodate}."/>
 	</target>
 	
-	<target name="GenerateSoundFontInfo" depends="-GenerateSoundFontInfo.CheckUpToDate" unless="GenerateSoundFontInfo.uptodate" description="Make LotroInstruments.txt">
+	<target name="-GenerateSoundFontInfo" depends="-GenerateSoundFontInfo.CheckUpToDate" unless="GenerateSoundFontInfo.uptodate" description="Make LotroInstruments.txt">
 		<java classname="com.digero.tools.soundfont.GenerateSoundFontInfo" classpath="${target}/classes" fork="yes" failonerror="yes">
 			<arg value="${basedir}/${audio}/LotroInstruments" />
 			<arg value="${basedir}/${audio}/LotroInstruments/LotroInstruments.txt" />
@@ -119,7 +119,7 @@
 		<echo message="LotroInstruments.uptodate is now ${LotroInstruments.uptodate}."/>
 	</target>
 
-	<target name="-LotroInstrumentsOld" depends="GenerateSoundFontInfo,-LotroInstruments.CheckUpToDate" unless="LotroInstruments.uptodate" description="Make SF2 file">
+	<target name="-LotroInstrumentsOld" depends="-GenerateSoundFontInfo,-LotroInstruments.CheckUpToDate" unless="LotroInstruments.uptodate" description="Make SF2 file">
 		<exec executable="${tools}/sf2comp.exe" failonerror="true"><!--  error="sf2comp_err.txt" output="sf2comp_out.txt" -->
 			<arg value="c" /><!-- compile -->
 			<arg value="-m" /><!-- mute (suppress output) -->
@@ -129,17 +129,14 @@
 		</exec>
 	</target>
 	
-	<target name="LotroInstruments" depends="GenerateSoundFontInfo,-LotroInstruments.CheckUpToDate" unless="LotroInstruments.uptodate" description="Copy SF2 file">
+	<target name="LotroInstruments" description="Copy SF2 file">
 		<copy file="LotroInstruments.sf2" todir="${build}" />
 	</target>
 
 	<target name="Build" depends="-CopyThings,LotroInstruments,-GenerateExeFiles" description="Make all except ZIP and MSI files"/>
 
-	<target name="JPackageAppImages" depends="Build">
-		<!--		<mkdir dir="${build}/jpackage" />-->
-		<!--		<copy file="Changes since Maestro 2.5.0.txt" todir="${build}/jpackageMaestro" />-->
-		<!--		<copy file="${build}/Maestro.jar" todir="${build}/jpackage" />-->
-		<!--		<copy file="${build}/LotroInstruments.sf2" todir="${build}/jpackageMaestro" />-->
+	<target name="-JPackageAppImages" depends="Build" description="Make folders with exe and runtimes for all 3 apps">
+		<echo>JAVA_HOME=${env.JAVA_HOME}</echo>
 		<delete dir="${build}/jpackage" />
 		<delete dir="${target}/staging" />
 		<mkdir dir="${target}/staging" />
@@ -237,7 +234,7 @@
 		<copy file="${build}/jpackage/AbcTools/app/AbcTools.cfg" tofile="${build}/jpackage/Maestro/app/AbcTools.cfg" />
 	</target>
 	
-	<target name="JPackageToolsMSI">
+	<target name="-JPackageToolsMSI" description="Make Beta MSI for AbcTools">
 		<mkdir dir="${build}/jpackageTools" />
 		<copy file="Changes since Maestro 2.5.0.txt" todir="${build}/jpackageTools" />
 		<copy file="${build}/AbcTools.jar" todir="${build}/jpackageTools" />
@@ -273,7 +270,7 @@
 		<delete dir="${build}/jpackageTools" />
 	</target>
 	
-	<target name="JPackagePlayerMSI">
+	<target name="-JPackagePlayerMSI" description="Make Beta MSI for Abc Player">
 		<mkdir dir="${build}/jpackagePlayer" />
 		<copy file="Changes since Maestro 2.5.0.txt" todir="${build}/jpackagePlayer" />
 		<copy file="${build}/AbcPlayer.jar" todir="${build}/jpackagePlayer" />
@@ -310,7 +307,7 @@
 		<delete dir="${build}/jpackagePlayer" />
 	</target>
 	
-	<target name="JPackageMaestroMSI">
+	<target name="-JPackageMaestroMSI" description="Make Beta MSI for Maestro">
 		<mkdir dir="${build}/jpackageMaestro" />
 		<copy file="Changes since Maestro 2.5.0.txt" todir="${build}/jpackageMaestro" />
 		<copy file="${build}/Maestro.jar" todir="${build}/jpackageMaestro" />
@@ -348,34 +345,14 @@
 		<delete dir="${build}/jpackageMaestro" />
 	</target>
 	
-	<target name="Wix-Cop" description="Runs WiX cop to fix errors in wix project">
+	<target name="-Wix-Cop" description="Runs WiX cop to fix errors in wix project">
 	    <exec executable="${tools}/wix/WixCop.exe" failonerror="false">
 	    	<arg value="-f"/> <!-- fix errors -->
-	        <arg value="MaestroInstaller.wix"/>
+	        <arg value="MaestroInstaller2.wix"/>
 	    </exec>
 	</target>
 	
-	<target name="Wix-jdk" description="Runs WiX Heat to harvest all JDK files">
-	    <exec executable="${tools}/wix/heat.exe" failonerror="true">
-	        <arg value="dir"/>  <!-- Specifies that a directory will be harvested -->
-	        <arg value="${env.JAVA_HOME}"/>  <!-- Uses the JAVA_HOME environment variable to locate the JDK 24 folder -->
-	        <arg value="-cg"/>  <!-- Defines a component group to group harvested files -->
-	        <arg value="jdkComponentGroup"/>  <!-- Names the component group  -->
-	        <arg value="-dr"/>  <!-- Specifies the directory reference ID -->
-	        <arg value="jdkDirectoryRef"/>  <!-- Names the directory reference -->
-	        <arg value="-srd"/>  <!-- Suppresses the harvesting of the root directory itself, keeping only its contents -->
-	        <arg value="-var"/>  <!-- Allows the directory to be referenced using a variable instead of an absolute path -->
-	        <arg value="var.jdk"/>  <!-- Defines the variable name for referencing the harvested directory -->
-	    	<arg value="-gg"/> <!-- generate GUIDs -->
-	    	<!--arg value="-template:fragment"/--> <!-- dont harvest metadata -->
-	    	<arg value="-sreg"/> <!-- don't harvest DLL info from registry -->
-	    	<arg value="-scom"/> <!-- don't harvest COM info from registry -->
-	    	<arg value="-out"/>  <!-- Specifies the output file where harvested WiX XML will be stored -->
-	        <arg value="jdk.wxs"/>  <!-- Saves the harvested files as "jdk.wxs" -->
-	    </exec>
-	</target>
-
-	<target name="Wix-Runtime" description="Runs WiX Heat to harvest all runtime files">
+	<target name="-Wix-Runtime" description="Runs WiX Heat to harvest all runtime files">
 		<!-- First run heat on app directory -->
 		<exec executable="${tools}/wix/heat.exe" failonerror="true">
 			<arg value="dir"/>  <!-- Specifies that a directory will be harvested -->
@@ -389,7 +366,8 @@
 			<arg value="var.j24app"/>  <!-- Defines the variable name for referencing the harvested directory -->
 			<arg value="-gg"/> <!-- generate GUIDs -->
 			<!--arg value="-template:fragment"/--> <!-- dont harvest metadata -->
-			<!--<arg value="-sreg/"--> <!-- dont register dlls -->
+			<arg value="-sreg"/> <!-- don't harvest DLL info from registry -->
+			<arg value="-scom"/> <!-- don't harvest COM info from registry -->
 			<arg value="-out"/>  <!-- Specifies the output file where harvested WiX XML will be stored -->
 			<arg value="app.wxs"/>  <!-- Saves the harvested files as "jdk.wxs" -->
 		</exec>
@@ -405,49 +383,14 @@
 			<arg value="-var"/>  <!-- Allows the directory to be referenced using a variable instead of an absolute path -->
 			<arg value="var.j24runtime"/>  <!-- Defines the variable name for referencing the harvested directory -->
 			<arg value="-gg"/> <!-- generate GUIDs -->
-			<!--arg value="-template:fragment"/--> <!-- dont harvest metadata -->
-			<!--<arg value="-sreg/"--> <!-- dont register dlls -->
+			<arg value="-sreg"/> <!-- don't harvest DLL info from registry -->
+			<arg value="-scom"/> <!-- don't harvest COM info from registry -->
 			<arg value="-out"/>  <!-- Specifies the output file where harvested WiX XML will be stored -->
 			<arg value="runtime.wxs"/>  <!-- Saves the harvested files as "jdk.wxs" -->
 		</exec>
 	</target>
 	
-	<target name="Installer" depends="Build,Wix-jdk" if="isWindows" description="Make MSI file">
-		<mkdir dir="${output}" />
-		<property name="msipath" location="${output}/${basename.Maestro}_v${version.Maestro}.msi" />
-		<echo>Building msi: ${msipath}</echo>
-		<exec executable="${tools}/wix/candle.exe" failonerror="true">
-			<arg value="-nologo" />
-			<arg value="-arch" />
-			<arg value="x64" />
-			<arg value="-dMaestroVersion=${version.Maestro}" />
-			<arg value="-dAbcPlayerVersion=${version.AbcPlayer}" />
-			<arg value="-dAbcToolsVersion=${version.AbcTools}" />
-			<arg value="-djdk=${env.JAVA_HOME}" />
-			<arg value="-out" />
-			<arg value="${build}/" />
-			<arg value="MaestroInstaller.wix" />
-			<arg value="jdk.wxs" />
-		</exec>
-		<exec executable="${tools}/wix/light.exe" failonerror="true">
-			<arg value="-nologo" />
-			<!--arg value="-sval" /--><!-- suppress ICE validation, needed to not need to run light as admin -->
-			<arg value="-sw1076" />
-			<!-- Installer removes version numbers equal to itself -->
-			<arg value="-ext" />
-			<arg value="WixUIExtension" />
-			<arg value="-loc" />
-			<arg value="MaestroInstallerStrings.wxl" />			
-			<arg value="-o" />
-			<arg value="${output}/${basename.Maestro}_v${version.Maestro}.msi" />
-			<arg value="-pdbout" />
-			<arg value="${build}/MaestroInstaller.wixpdb" />
-			<arg value="${build}/jdk.wixobj" />
-			<arg value="${build}/MaestroInstaller.wixobj" />
-		</exec>
-	</target>
-
-	<target name="Installer2" depends="Build,JPackageAppImages,Wix-Runtime" if="isWindows" description="Make MSI file">
+	<target name="Installer" depends="Build,-JPackageAppImages,-Wix-Runtime" if="isWindows" description="Make MSI file">
 		<mkdir dir="${output}" />
 		<property name="msipath" location="${output}/${basename.Maestro}_v${version.Maestro}.msi" />
 		<echo>Building msi: ${msipath}</echo>
@@ -485,26 +428,7 @@
 		</exec>
 	</target>
 
-	<target name="ZipFile" depends="Build" description="Make ZIP file">
-		<mkdir dir="${output}" />
-		<zip destfile="${output}/${basename.Maestro}_v${version.Maestro}.zip" basedir="${build}">
-			<include name="${basename.Maestro}.jar" />
-			<include name="${basename.AbcPlayer}.jar" />
-			<include name="${basename.AbcTools}.jar" />
-			<include name="LotroInstruments.sf2" />
-			<include name="midifile.ico" />
-			<include name="abcfile.ico" />
-			<include name="abcplaylist.ico" />
-			<include name="msxfile.ico" />
-			<include name="Maestro.exe" />
-			<include name="AbcPlayer.exe" />
-			<include name="AbcTools.exe" />
-			<include name="Changes since Maestro 2.5.0.txt" />
-			<zipfileset dir="${env.JAVA_HOME}" prefix="Java24"/>
-		</zip>
-	</target>
-
-	<target name="ZipFile2" depends="Build,JPackageAppImages" description="Make ZIP file">
+	<target name="ZipFile" depends="Build,-JPackageAppImages" description="Make ZIP file">
 		<mkdir dir="${output}" />
 		<zip destfile="${output}/${basename.Maestro}_v${version.Maestro}.zip" basedir="${build}">
 			<zipfileset file="${build}/jpackage/Maestro/Maestro.exe" fullpath="Maestro.exe" />
@@ -521,7 +445,6 @@
 		</zip>
 	</target>
 
-	<target name="DistributeBETA" depends="Build,JPackageToolsMSI,JPackagePlayerMSI,JPackageMaestroMSI" if="isWindows" description="Makes individual beta installers using JPackage"/>
+	<target name="Distribute Beta" depends="Build,-JPackageToolsMSI,-JPackagePlayerMSI,-JPackageMaestroMSI" if="isWindows" description="Makes individual beta installers using JPackage"/>
 	<target name="Distribute" depends="Installer,ZipFile" description="Make final ZIP and MSI files"/>
-	<target name="Distribute2" depends="Installer2,ZipFile2" description="Make final ZIP and MSI files"/>
 </project>
