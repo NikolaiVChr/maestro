@@ -24,8 +24,9 @@ Linux/Mac instruction (.zip)
 
 Starting from command prompt
 ============================
-- Use command-line prompt from the install folder:
-.\Java24\bin\java --enable-native-access=ALL-UNNAMED --add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED -Dsun.java2d.opengl=true -jar Maestro.jar
+- Install java jdk 24
+- Then use command-line prompt from the install folder:
+java --enable-native-access=ALL-UNNAMED --add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED -Dsun.java2d.opengl=true -jar app/Maestro.jar
 
 
 
