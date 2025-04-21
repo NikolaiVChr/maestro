@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Wix xmlns="http://schemas.microsoft.com/wix/2006/wi" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://schemas.microsoft.com/wix/2006/wi tools/wix/doc/wix.xsd">
-
     <?define MaestroAppName=Maestro?>
     <?define MaestroDescription=Maestro MIDI to ABC converter?>
     <?define MaestroDescriptionLong=Maestro is a MIDI to ABC converter for The Lord of the Rings Online. Use it to arrange multi-part ABC files to play in the game with your friends, or create solo pieces to play yourself.?>
@@ -13,13 +12,9 @@
     <?define AbcToolsDescription=ABC tools to merge abc files or auto export abc?>
     <?define AbcToolsAppUserModelId=Aifel.AbcTools?>
     <?define ApplicationFolderName=Maestro?>
-
     <Product Id="*" UpgradeCode="{CCA9F6BF-F1FB-4D8E-8892-3AFE3CE6F4B7}" Name="$(var.MaestroAppName)" Manufacturer="Digero And Aifel" Version="$(var.MaestroVersion)" Language="1033">
-
         <Package Id="*" Description="Maestro MIDI to ABC converter and ABC Player for The Lord of the Rings Online" Languages="1033" Compressed="yes" SummaryCodepage="1252" />
-
         <Media Id="1" Cabinet="Maestro.cab" EmbedCab="yes" />
-
         <!-- Expose defines as properties for the MaestroInstallerStrings.wxl -->
         <Property Id="MaestroAppName">$(var.MaestroAppName)</Property>
         <Property Id="MaestroVersion">$(var.MaestroVersion)</Property>
@@ -27,10 +22,6 @@
         <Property Id="AbcPlayerVersion">$(var.AbcPlayerVersion)</Property>
         <Property Id="AbcToolsAppName">$(var.AbcToolsAppName)</Property>
         <Property Id="AbcToolsVersion">$(var.AbcToolsVersion)</Property>
-
-
-
-
         <!-- Installer UI -->
         <UI>
             <UIRef Id="WixUI_FeatureTree" />
@@ -44,21 +35,18 @@
         <Property Id="WIXUI_INSTALLDIR" Value="APPLICATIONFOLDER" />
         <Property Id="WixAppFolder" Value="WixPerMachineFolder" />
         <WixVariable Id="WixUISupportPerUser" Value="0" />
-
         <!-- Uninstall old versions of Maestro -->
         <Upgrade Id="{CCA9F6BF-F1FB-4D8E-8892-3AFE3CE6F4B7}">
             <UpgradeVersion Property="NEWERFOUND" OnlyDetect="no" Minimum="$(var.MaestroVersion)" IncludeMinimum="no" />
             <UpgradeVersion Property="SELFFOUND" OnlyDetect="no" Minimum="$(var.MaestroVersion)" IncludeMinimum="yes" Maximum="$(var.MaestroVersion)" IncludeMaximum="yes" />
             <UpgradeVersion Property="PREVIOUSFOUND" OnlyDetect="no" Maximum="$(var.MaestroVersion)" IncludeMaximum="no" />
         </Upgrade>
-
         <!-- Uninstall old versions of ABC Player -->
         <Upgrade Id="{D19BF8C3-D40A-482B-9252-063991A80A64}">
             <UpgradeVersion Property="OLDABCPLAYERFOUND" OnlyDetect="no" Maximum="$(var.AbcPlayerVersion)" IncludeMaximum="yes" />
             <!-- For now, we don't do anything if we detect a newer version of ABC Player -->
             <UpgradeVersion Property="NEWABCPLAYERFOUND" OnlyDetect="yes" Minimum="$(var.AbcPlayerVersion)" IncludeMinimum="no" />
         </Upgrade>
-
         <!-- Warn user if a newer version is installed. -->
         <!--CustomAction Id="NoDowngrade" Error="A newer version of [ProductName] is already installed." /-->
         <!-- <CustomAction Id="AlreadyInstalled" Error="[ProductName] v$(var.MaestroVersion) is already installed." /> -->
@@ -67,39 +55,53 @@
             <!-- <Custom Action="AlreadyInstalled" After="FindRelatedProducts">SELFFOUND</Custom> -->
             <RemoveExistingProducts Before="InstallInitialize" />
         </InstallExecuteSequence>
-
         <!-- Icons -->
         <Icon Id="maestro.ico" SourceFile="maestro.ico" />
         <Icon Id="abcplayer.ico" SourceFile="abcplayer.ico" />
         <Icon Id="abctools.ico" SourceFile="abctools.ico" />
         <Property Id="ARPPRODUCTICON" Value="maestro.ico" />
         <!-- Add/Remove Programs icon -->
-
         <!-- File System -->
         <Directory Id="TARGETDIR" Name="SourceDir">
             <!-- Program Files -->
             <Directory Id="ProgramFiles64Folder">
                 <Directory Id="APPLICATIONFOLDER" Name="$(var.ApplicationFolderName)">
-                    <Directory Id="AppDir" Name="app" />
+                    <Directory Id="AppDir" Name="app">
+                        <Component Id="Assets" Guid="{F81F2BC4-906C-46B1-B3B4-14B69EF256E1}">
+                            <File Source="LotroInstruments.sf2" KeyPath="yes" />
+                            <File Id="file.maestro.ico" Source="maestro.ico" />
+                            <File Id="file.midifile.ico" Source="midifile.ico" />
+                            <File Id="file.msxfile.ico" Source="msxfile.ico" />
+                            <File Id="file.abcplayer.ico" Source="abcplayer.ico" />
+                            <File Id="file.abcfile.ico" Source="abcfile.ico" />
+                            <File Id="file.abcplaylist.ico" Source="abcplaylist.ico" />
+                            <File Id="file.abctools.ico" Source="abctools.ico" />
+                        </Component>
+                        <Component Id="MaestroJar" Guid="{1DE9C474-25AF-42E3-BEB3-5513E2FC9A49}">
+                            <File Source="$(var.build)/app/Maestro.jar" />
+                            <File Source="$(var.build)/app/Maestro.cfg" />
+                        </Component>
+                        <Component Id="AbcPlayerJar" Guid="{7FFC7B30-4EA1-4D64-9551-938488C2BC2C}">
+                            <File Source="$(var.build)/app/AbcPlayer.jar" />
+                            <File Source="$(var.build)/app/AbcPlayer.cfg" />
+                        </Component>
+                        <Component Id="AbcToolsJar" Guid="{8A77AE10-DB66-44DA-AA44-C96FAEA3E227}">
+                            <File Source="$(var.build)/app/AbcTools.jar" />
+                            <File Source="$(var.build)/app/AbcTools.cfg" />
+                        </Component>
+                    </Directory>
                     <Directory Id="RuntimeDir" Name="runtime" />
-                    <Component Id="LotroInstruments.sf2" Guid="{F81F2BC4-906C-46B1-B3B4-14B69EF256E1}">
-                        <File Source="LotroInstruments.sf2" KeyPath="yes" />
-                    </Component>
                     <Component Id="aifel_changelog.txt" Guid="{46B882CB-E9A8-4A1E-A92C-C5717FDECECB}">
                         <File Id="aifel_changelog.txt" Source="Changes since Maestro 2.5.0.txt" KeyPath="yes" />
                     </Component>
                     <Component Id="MaestroExecutable" Guid="{A20EBF40-4857-46C3-8B6C-CF3CBF64A824}">
-                        <File Source="build/jpackage/Maestro/Maestro.exe" KeyPath="yes">
+                        <File Source="$(var.build)/Maestro.exe" KeyPath="yes">
                             <Shortcut Id="Maestro.lnk" Name="$(var.MaestroAppName)" Description="$(var.MaestroDescription)" WorkingDirectory="APPLICATIONFOLDER" Directory="MaestroStartMenuFolder" Icon="maestro.ico" IconIndex="0" Advertise="yes">
                                 <!-- App user model ID guid (https://learn.microsoft.com/en-us/windows/win32/properties/props-system-appusermodel-id) -->
                                 <!-- Allows for taskbar pinning -->
                                 <ShortcutProperty Key="{9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3}, 5" Value="$(var.MaestroAppUserModelId)" />
                             </Shortcut>
                         </File>
-                        <File Id="file.maestro.ico" Source="maestro.ico" />
-                        <File Id="file.midifile.ico" Source="midifile.ico" />
-                        <File Id="file.msxfile.ico" Source="msxfile.ico" />
-
                         <!-- Define ProgIds for file types -->
                         <ProgId Id="Maestro.AssocFile.ABC" Description="ABC Song">
                             <Extension Id="abc" ContentType="text/plain">
@@ -118,7 +120,6 @@
                                 <Verb Id="edit" Command="&amp;Edit with $(var.MaestroAppName)" TargetFile="Maestro.exe" Argument="&quot;%1&quot;" />
                             </Extension>
                         </ProgId>
-
                         <!-- Support Set Program Access and Defaults -->
                         <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities" Type="string" Name="ApplicationName" Value="$(var.MaestroAppName)" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities" Type="string" Name="ApplicationDescription" Value="$(var.MaestroDescriptionLong)" />
@@ -137,11 +138,9 @@
                         <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\shell\edit" Type="string" Value="&amp;Edit with $(var.MaestroAppName)" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\shell\edit\command" Type="string" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\RegisteredApplications" Type="string" Name="Digero.Maestro.exe" Value="SOFTWARE\[Manufacturer]\Maestro\Capabilities" />
-
                         <!-- Support Start/Run "Start Maestro.bat" -->
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Maestro.exe" Type="string" Value="[#Maestro.exe]" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Maestro.exe" Type="string" Name="Path" Value="[APPLICATIONFOLDER]" />
-
                         <!-- Add to "Open With" menu -->
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\Applications\Maestro.exe" Type="string" Name="FriendlyAppName" Value="$(var.MaestroAppName)" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\Applications\Maestro.exe\SupportedTypes" Type="string" Name=".abc" Value="" />
@@ -151,49 +150,39 @@
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\Applications\Maestro.exe\SupportedTypes" Type="string" Name=".msx" Value="" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\Applications\Maestro.exe\shell\edit" Type="string" Value="&amp;Edit with $(var.MaestroAppName)" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\Applications\Maestro.exe\shell\edit\command" Type="string" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" />
-
                         <!-- Add entry to right-click context menu regardless of if Maestro is the default editor -->
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.abc\Shell\Maestro.Edit" Value="&amp;Edit with Maestro" Type="string" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.abc\Shell\Maestro.Edit" Name="Icon" Value="[APPLICATIONFOLDER]maestro.ico,0" Type="string" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.abc\Shell\Maestro.Edit\command" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" Type="string" />
-
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.mid\Shell\Maestro.Edit" Value="&amp;Edit with Maestro" Type="string" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.mid\Shell\Maestro.Edit" Name="Icon" Value="[APPLICATIONFOLDER]maestro.ico,0" Type="string" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.mid\Shell\Maestro.Edit\command" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" Type="string" />
-
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.kar\Shell\Maestro.Edit" Value="&amp;Edit with Maestro" Type="string" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.kar\Shell\Maestro.Edit" Name="Icon" Value="[APPLICATIONFOLDER]maestro.ico,0" Type="string" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.kar\Shell\Maestro.Edit\command" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" Type="string" />
-
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.midi\Shell\Maestro.Edit" Value="&amp;Edit with Maestro" Type="string" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.midi\Shell\Maestro.Edit" Name="Icon" Value="[APPLICATIONFOLDER]maestro.ico,0" Type="string" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.midi\Shell\Maestro.Edit\command" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" Type="string" />
                     </Component>
                     <Component Id="AbcPlayerExecutable" Guid="{0C212398-7A1E-40D8-BEDD-2F341AC20FEB}">
-                        <File Source="build/jpackage/AbcPlayer/AbcPlayer.exe" KeyPath="yes">
+                        <File Source="$(var.build)/AbcPlayer.exe" KeyPath="yes">
                             <Shortcut Id="AbcPlayer64.lnk" Name="$(var.AbcPlayerAppName)" Description="$(var.AbcPlayerDescription)" WorkingDirectory="APPLICATIONFOLDER" Directory="MaestroStartMenuFolder" Icon="abcplayer.ico" IconIndex="0" Advertise="yes">
                                 <!-- App user model ID guid (https://learn.microsoft.com/en-us/windows/win32/properties/props-system-appusermodel-id) -->
                                 <ShortcutProperty Key="{9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3}, 5" Value="$(var.AbcPlayerAppUserModelId)" />
                             </Shortcut>
                         </File>
-                        <File Id="file.abcplayer.ico" Source="abcplayer.ico" />
-                        <File Id="file.abcfile.ico" Source="abcfile.ico" />
-                        <File Id="file.abcplaylist.ico" Source="abcplaylist.ico" />
-
                         <!-- Define ProgID for ABC file type -->
                         <ProgId Id="AbcPlayer.AssocFile.ABC" Description="ABC Song" Icon="file.abcfile.ico" IconIndex="0">
                             <Extension Id="abc" ContentType="text/plain">
                                 <Verb Id="play" TargetFile="AbcPlayer.exe" Argument="&quot;%1&quot;" />
                             </Extension>
                         </ProgId>
-
                         <!-- Define ProgID for ABCP file type -->
                         <ProgId Id="AbcPlayer.AssocFile.ABCP" Description="ABC Playlist" Icon="file.abcplaylist.ico" IconIndex="0">
                             <Extension Id="abcp" ContentType="text/plain">
                                 <Verb Id="play" TargetFile="AbcPlayer.exe" Argument="&quot;%1&quot;" />
                             </Extension>
                         </ProgId>
-
                         <!-- Support Set Program Access and Defaults -->
                         <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities" Type="string" Name="ApplicationName" Value="$(var.AbcPlayerAppName)" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities" Type="string" Name="ApplicationDescription" Value="$(var.AbcPlayerDescriptionLong)" />
@@ -205,11 +194,9 @@
                         <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities\shell" Type="string" Value="open" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities\shell\open\command" Type="string" Value="&quot;[#AbcPlayer.exe]&quot; &quot;%1&quot;" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\RegisteredApplications" Type="string" Name="Digero.AbcPlayer64.exe" Value="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities" />
-
                         <!-- Support Start/Run "AbcPlayer.exe" -->
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\AbcPlayer64.exe" Type="string" Value="[#AbcPlayer.exe]" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\AbcPlayer64.exe" Type="string" Name="Path" Value="[APPLICATIONFOLDER]" />
-
                         <!-- Add to "Open With" menu -->
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\Applications\AbcPlayer.exe" Type="string" Name="FriendlyAppName" Value="$(var.AbcPlayerAppName)" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\Applications\AbcPlayer.exe\SupportedTypes" Type="string" Name=".abc" Value="" />
@@ -218,7 +205,7 @@
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\Applications\AbcPlayer.exe\shell\open\command" Type="string" Value="&quot;[#AbcPlayer.exe]&quot; &quot;%1&quot;" />
                     </Component>
                     <Component Id="AbcToolsExecutable" Guid="{D6F78C2D-DE65-4BD0-92F6-64E46779F449}">
-                        <File Source="build/jpackage/AbcTools/AbcTools.exe" KeyPath="yes">
+                        <File Source="$(var.build)/AbcTools.exe" KeyPath="yes">
                             <Shortcut Id="AbcTools.lnk" Name="$(var.AbcToolsAppName)" Description="$(var.AbcToolsDescription)" WorkingDirectory="APPLICATIONFOLDER" Directory="MaestroStartMenuFolder" Icon="abctools.ico" IconIndex="0" Advertise="yes">
                                 <!-- App user model ID guid (https://learn.microsoft.com/en-us/windows/win32/properties/props-system-appusermodel-id) -->
                                 <ShortcutProperty Key="{9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3}, 5" Value="$(var.AbcToolsAppUserModelId)" />
@@ -227,7 +214,6 @@
                     </Component>
                 </Directory>
             </Directory>
-
             <!-- Start Menu -->
             <Directory Id="ProgramMenuFolder">
                 <Directory Id="MaestroStartMenuFolder" Name="$(var.MaestroAppName)">
@@ -238,28 +224,29 @@
                 </Directory>
             </Directory>
         </Directory>
-
         <!-- Features -->
         <Feature Id="Common" Level="1" ConfigurableDirectory="APPLICATIONFOLDER" Absent="disallow" AllowAdvertise="no" Title="Common files" Description="Files required by both $(var.MaestroAppName) and $(var.AbcPlayerAppName).">
-            <ComponentRef Id="LotroInstruments.sf2" />
+            <ComponentRef Id="Assets" />
             <ComponentRef Id="aifel_changelog.txt" />
-            <ComponentGroupRef Id="j24AppComponentGroup" />
             <ComponentGroupRef Id="j24RuntimeComponentGroup" />
         </Feature>
-
         <Feature Id="Maestro" Level="1" ConfigurableDirectory="APPLICATIONFOLDER" AllowAdvertise="no" Title="$(var.MaestroAppName)" Description="$(var.MaestroAppName) is a MIDI to ABC converter. Arrange multipart ABC files from MIDI source files.">
+            <ComponentRef Id="Assets" />
             <ComponentRef Id="MaestroStartMenuFolder" />
             <ComponentRef Id="MaestroExecutable" />
+            <ComponentRef Id="MaestroJar" />
         </Feature>
-
         <Feature Id="AbcPlayer" Level="1" ConfigurableDirectory="APPLICATIONFOLDER" AllowAdvertise="no" Title="$(var.AbcPlayerAppName)" Description="$(var.AbcPlayerAppName) lets you preview ABC files as they would sound in The Lord of the Rings Online.">
+            <ComponentRef Id="Assets" />
             <ComponentRef Id="MaestroStartMenuFolder" />
             <ComponentRef Id="AbcPlayerExecutable" />
+            <ComponentRef Id="AbcPlayerJar" />
         </Feature>
-
         <Feature Id="AbcTools" Level="1" ConfigurableDirectory="APPLICATIONFOLDER" AllowAdvertise="no" Title="$(var.AbcToolsAppName)" Description="$(var.AbcToolsAppName) lets you merge old single-part abc files into multi-part abc songs. Or auto export abc.">
+            <ComponentRef Id="Assets" />
             <ComponentRef Id="MaestroStartMenuFolder" />
             <ComponentRef Id="AbcToolsExecutable" />
+            <ComponentRef Id="AbcToolsJar" />
         </Feature>
     </Product>
 </Wix>

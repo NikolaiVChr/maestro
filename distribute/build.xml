@@ -53,9 +53,6 @@
 		<copy file="Start AbcPlayer.bat" todir="${build}" />
 		<copy file="Start ABC Tools.bat" todir="${build}" />-->
 		<copy file="Changes since Maestro 2.5.0.txt" todir="${build}" />
-		<copy file="${target}/Maestro.jar" todir="${build}" />
-		<copy file="${target}/AbcPlayer.jar" todir="${build}" />
-		<copy file="${target}/AbcTools.jar" todir="${build}" />
 		<!--copy todir="${build}">
 			<fileset dir="${target}" includes="*.jar" />
 		</copy-->
@@ -71,29 +68,6 @@
 		<copy todir="${target}/com/digero/common/icons">
 			<fileset dir="${src}/com/digero/common/icons" includes="*.png" />
 		</copy>-->
-	</target>
-	
-	<target name="-GenerateExeFiles.CheckUpToDate" description="Test if exe files needs making">
-		<condition property="Exe.Exists">
-			<and>
-				<available file="${build}/Maestro.exe"/>
-				<available file="${build}/AbcPlayer.exe"/>
-				<available file="${build}/AbcTools.exe"/>
-			</and>
-		</condition>
-	</target>
-	
-	<target name="-GenerateExeFiles" depends="-GenerateExeFiles.CheckUpToDate" unless="Exe.Exists" description="Make exe files">
-		<echo>Generating EXE files</echo>
-		<exec executable="${tools}/launch4j/launch4jc.exe" failonerror="true">
-			<arg value="launch4j_maestro.xml" />
-		</exec>
-		<exec executable="${tools}/launch4j/launch4jc.exe" failonerror="true">
-			<arg value="launch4j_abcplayer.xml" />
-		</exec>
-		<exec executable="${tools}/launch4j/launch4jc.exe" failonerror="true">
-			<arg value="launch4j_abctools.xml" />
-		</exec>
 	</target>
 
 	<target name="-GenerateSoundFontInfo.CheckUpToDate" description="Test if LotroInstruments.txt needs making">
@@ -133,45 +107,17 @@
 		<copy file="LotroInstruments.sf2" todir="${build}" />
 	</target>
 
-	<target name="Build" depends="-CopyThings,LotroInstruments,-GenerateExeFiles" description="Make all except ZIP and MSI files"/>
+	<target name="Build" depends="-CopyThings,LotroInstruments" description="Make all except ZIP and MSI files"/>
 
 	<target name="-JPackageAppImages" depends="Build" description="Make folders with exe and runtimes for all 3 apps">
 		<echo>JAVA_HOME=${env.JAVA_HOME}</echo>
 		<delete dir="${build}/jpackage" />
-		<delete dir="${target}/staging" />
-		<mkdir dir="${target}/staging" />
-		<copy file="${target}/Maestro.jar" todir="${target}/staging" />
-		<copy file="${target}/AbcPlayer.jar" todir="${target}/staging" />
-		<copy file="${target}/AbcTools.jar" todir="${target}/staging" />
-		<exec executable="${env.JAVA_HOME}/bin/jpackage.exe" failonerror="true">
-			<env key="PATH" path="${tools}/wix"/>
-			<arg value="--type"/>
-			<arg value="app-image"/> <!-- "app-image" for just making a folder with the exe -->
-			<arg value="--app-version"/>
-			<arg value="${version.Maestro}"/>
-			<arg value="--description"/>
-			<arg value="Maestro MIDI to ABC converter"/>
-			<arg value="--vendor"/>
-			<arg value="Aifel and Elamond"/>
-			<arg value="--icon"/>
-			<arg value="maestro.ico"/>
-			<arg value="--java-options"/>
-			<arg value="--enable-native-access=ALL-UNNAMED"/>
-			<arg value="--java-options"/>
-			<arg value="--add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED"/>
-			<arg value="--java-options"/>
-			<arg value="-Dsun.java2d.opengl=True"/>
-			<arg value="--dest"/>
-			<arg value="${build}/jpackage/"/>
-			<arg value="--input"/>
-			<arg value="${target}/staging"/>
-			<arg value="--name"/>
-			<arg value="Maestro"/>
-			<arg value="--main-class"/>
-			<arg value="com.digero.maestro.MaestroMain"/>
-			<arg value="--main-jar"/>
-			<arg value="Maestro.jar"/>
-		</exec>
+		<delete dir="${build}/staging" />
+		<mkdir dir="${build}/staging" />
+		<copy file="${target}/Maestro.jar" todir="${build}/staging" />
+		<copy file="${target}/AbcPlayer.jar" todir="${build}/staging" />
+		<copy file="${target}/AbcTools.jar" todir="${build}/staging" />
+		<!-- Abc Player -->
 		<exec executable="${env.JAVA_HOME}/bin/jpackage.exe" failonerror="true">
 			<env key="PATH" path="${tools}/wix"/>
 			<arg value="--type"/>
@@ -188,12 +134,12 @@
 			<arg value="--enable-native-access=ALL-UNNAMED"/>
 			<arg value="--java-options"/>
 			<arg value="--add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED"/>
-			<arg value="--java-options"/>
-			<arg value="-Dsun.java2d.opengl=True"/>
+<!--			<arg value="&#45;&#45;java-options"/>-->
+<!--			<arg value="-Dsun.java2d.opengl=True"/>-->
 			<arg value="--dest"/>
 			<arg value="${build}/jpackage/"/>
 			<arg value="--input"/>
-			<arg value="${target}/staging"/>
+			<arg value="${build}/staging"/>
 			<arg value="--name"/>
 			<arg value="AbcPlayer"/>
 			<arg value="--main-class"/>
@@ -201,6 +147,7 @@
 			<arg value="--main-jar"/>
 			<arg value="AbcPlayer.jar"/>
 		</exec>
+		<!-- Abc Tools -->
 		<exec executable="${env.JAVA_HOME}/bin/jpackage.exe" failonerror="true">
 			<env key="PATH" path="${tools}/wix"/>
 			<arg value="--type"/>
@@ -217,12 +164,12 @@
 			<arg value="--enable-native-access=ALL-UNNAMED"/>
 			<arg value="--java-options"/>
 			<arg value="--add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED"/>
-			<arg value="--java-options"/>
-			<arg value="-Dsun.java2d.opengl=True"/>
+<!--			<arg value="&#45;&#45;java-options"/>-->
+<!--			<arg value="-Dsun.java2d.opengl=True"/>-->
 			<arg value="--dest"/>
 			<arg value="${build}/jpackage/"/>
 			<arg value="--input"/>
-			<arg value="${target}/staging"/>
+			<arg value="${build}/staging"/>
 			<arg value="--name"/>
 			<arg value="AbcTools"/>
 			<arg value="--main-class"/>
@@ -230,8 +177,54 @@
 			<arg value="--main-jar"/>
 			<arg value="AbcTools.jar"/>
 		</exec>
+		<!-- Copy assets for final app/ folder -->
+		<copy file="${build}/LotroInstruments.sf2" todir="${build}/staging" />
+		<copy file="${build}/abcfile.ico" todir="${build}/staging" />
+		<copy file="${build}/abcplaylist.ico" todir="${build}/staging" />
+		<copy file="${build}/midifile.ico" todir="${build}/staging" />
+		<copy file="${build}/msxfile.ico" todir="${build}/staging" />
+		<!-- Maestro -->
+		<exec executable="${env.JAVA_HOME}/bin/jpackage.exe" failonerror="true">
+			<env key="PATH" path="${tools}/wix"/>
+			<arg value="--type"/>
+			<arg value="app-image"/> <!-- "app-image" for just making a folder with the exe -->
+			<arg value="--app-version"/>
+			<arg value="${version.Maestro}"/>
+			<arg value="--description"/>
+			<arg value="Maestro MIDI to ABC converter"/>
+			<arg value="--vendor"/>
+			<arg value="Aifel and Elamond"/>
+			<arg value="--icon"/>
+			<arg value="maestro.ico"/>
+			<arg value="--java-options"/>
+			<arg value="--enable-native-access=ALL-UNNAMED"/>
+			<arg value="--java-options"/>
+			<arg value="--add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED"/>
+<!--			<arg value="&#45;&#45;java-options"/>-->
+<!--			<arg value="-Dsun.java2d.opengl=True"/>-->
+			<arg value="--dest"/>
+			<arg value="${build}/jpackage/"/>
+			<arg value="--input"/>
+			<arg value="${build}/staging"/>
+			<arg value="--name"/>
+			<arg value="Maestro"/>
+			<arg value="--main-class"/>
+			<arg value="com.digero.maestro.MaestroMain"/>
+			<arg value="--main-jar"/>
+			<arg value="Maestro.jar"/>
+		</exec>
 		<copy file="${build}/jpackage/AbcPlayer/app/AbcPlayer.cfg" tofile="${build}/jpackage/Maestro/app/AbcPlayer.cfg" />
 		<copy file="${build}/jpackage/AbcTools/app/AbcTools.cfg" tofile="${build}/jpackage/Maestro/app/AbcTools.cfg" />
+		<copy file="${build}/jpackage/AbcPlayer/AbcPlayer.exe" tofile="${build}/AbcPlayer.exe" />
+		<copy file="${build}/jpackage/AbcTools/AbcTools.exe" tofile="${build}/AbcTools.exe" />
+		<copy file="${build}/jpackage/Maestro/Maestro.exe" tofile="${build}/Maestro.exe" />
+		<copy todir="${build}/app">
+			<fileset dir="${build}/jpackage/Maestro/app" />
+		</copy>
+		<copy todir="${build}/runtime">
+			<fileset dir="${build}/jpackage/Maestro/runtime" />
+		</copy>
+<!--		<delete dir="${build}/jpackage" />-->
 	</target>
 	
 	<target name="-JPackageToolsMSI" description="Make Beta MSI for AbcTools">
@@ -348,33 +341,15 @@
 	<target name="-Wix-Cop" description="Runs WiX cop to fix errors in wix project">
 	    <exec executable="${tools}/wix/WixCop.exe" failonerror="false">
 	    	<arg value="-f"/> <!-- fix errors -->
-	        <arg value="MaestroInstaller2.wix"/>
+	        <arg value="MaestroInstaller.wix"/>
 	    </exec>
 	</target>
 	
 	<target name="-Wix-Runtime" description="Runs WiX Heat to harvest all runtime files">
-		<!-- First run heat on app directory -->
+		<!-- Run heat on runtime directory -->
 		<exec executable="${tools}/wix/heat.exe" failonerror="true">
 			<arg value="dir"/>  <!-- Specifies that a directory will be harvested -->
-			<arg value="${build}/jpackage/Maestro/app"/>  <!-- Copies files in the Maestro subfolder -->
-			<arg value="-cg"/>  <!-- Defines a component group to group harvested files -->
-			<arg value="j24AppComponentGroup"/>  <!-- Names the component group  -->
-			<arg value="-dr"/>  <!-- Specifies the directory reference ID -->
-			<arg value="AppDir"/>  <!-- Names the directory reference -->
-			<arg value="-srd"/>  <!-- Suppresses the harvesting of the root directory itself, keeping only its contents -->
-			<arg value="-var"/>  <!-- Allows the directory to be referenced using a variable instead of an absolute path -->
-			<arg value="var.j24app"/>  <!-- Defines the variable name for referencing the harvested directory -->
-			<arg value="-gg"/> <!-- generate GUIDs -->
-			<!--arg value="-template:fragment"/--> <!-- dont harvest metadata -->
-			<arg value="-sreg"/> <!-- don't harvest DLL info from registry -->
-			<arg value="-scom"/> <!-- don't harvest COM info from registry -->
-			<arg value="-out"/>  <!-- Specifies the output file where harvested WiX XML will be stored -->
-			<arg value="app.wxs"/>  <!-- Saves the harvested files as "jdk.wxs" -->
-		</exec>
-		<!-- Then run heat on runtime directory -->
-		<exec executable="${tools}/wix/heat.exe" failonerror="true">
-			<arg value="dir"/>  <!-- Specifies that a directory will be harvested -->
-			<arg value="${build}/jpackage/Maestro/runtime"/>  <!-- Copies files in the Maestro subfolder -->
+			<arg value="${build}/runtime"/>  <!-- Copies files in the Maestro subfolder -->
 			<arg value="-cg"/>  <!-- Defines a component group to group harvested files -->
 			<arg value="j24RuntimeComponentGroup"/>  <!-- Names the component group  -->
 			<arg value="-dr"/>  <!-- Specifies the directory reference ID -->
@@ -386,7 +361,7 @@
 			<arg value="-sreg"/> <!-- don't harvest DLL info from registry -->
 			<arg value="-scom"/> <!-- don't harvest COM info from registry -->
 			<arg value="-out"/>  <!-- Specifies the output file where harvested WiX XML will be stored -->
-			<arg value="runtime.wxs"/>  <!-- Saves the harvested files as "jdk.wxs" -->
+			<arg value="runtime.wxs"/>  <!-- Saves the harvested files as "runtime.wxs" -->
 		</exec>
 	</target>
 	
@@ -401,12 +376,11 @@
 			<arg value="-dMaestroVersion=${version.Maestro}" />
 			<arg value="-dAbcPlayerVersion=${version.AbcPlayer}" />
 			<arg value="-dAbcToolsVersion=${version.AbcTools}" />
-			<arg value="-dj24app=${build}/jpackage/Maestro/app" />
-			<arg value="-dj24runtime=${build}/jpackage/Maestro/runtime" />
+			<arg value="-dbuild=${build}" />
+			<arg value="-dj24runtime=${build}/runtime" />
 			<arg value="-out" />
 			<arg value="${build}/" />
-			<arg value="MaestroInstaller2.wix" />
-			<arg value="app.wxs" />
+			<arg value="MaestroInstaller.wix" />
 			<arg value="runtime.wxs" />
 		</exec>
 		<exec executable="${tools}/wix/light.exe" failonerror="true">
@@ -421,27 +395,27 @@
 			<arg value="-o" />
 			<arg value="${output}/${basename.Maestro}_v${version.Maestro}.msi" />
 			<arg value="-pdbout" />
-			<arg value="${build}/MaestroInstaller2.wixpdb" />
-			<arg value="${build}/app.wixobj" />
+			<arg value="${build}/MaestroInstaller.wixpdb" />
 			<arg value="${build}/runtime.wixobj" />
-			<arg value="${build}/MaestroInstaller2.wixobj" />
+			<arg value="${build}/MaestroInstaller.wixobj" />
 		</exec>
 	</target>
 
 	<target name="ZipFile" depends="Build,-JPackageAppImages" description="Make ZIP file">
 		<mkdir dir="${output}" />
 		<zip destfile="${output}/${basename.Maestro}_v${version.Maestro}.zip" basedir="${build}">
-			<zipfileset file="${build}/jpackage/Maestro/Maestro.exe" fullpath="Maestro.exe" />
-			<zipfileset file="${build}/jpackage/AbcPlayer/AbcPlayer.exe" fullpath="AbcPlayer.exe" />
-			<zipfileset file="${build}/jpackage/AbcTools/AbcTools.exe" fullpath="AbcTools.exe"/>
-			<include name="LotroInstruments.sf2" />
-			<include name="midifile.ico" />
-			<include name="abcfile.ico" />
-			<include name="abcplaylist.ico" />
-			<include name="msxfile.ico" />
+			<zipfileset file="${build}/Maestro.exe" fullpath="Maestro.exe" />
+			<zipfileset file="${build}/AbcPlayer.exe" fullpath="AbcPlayer.exe" />
+			<zipfileset file="${build}/AbcTools.exe" fullpath="AbcTools.exe"/>
 			<include name="Changes since Maestro 2.5.0.txt" />
-			<zipfileset dir="${build}/jpackage/Maestro/app" prefix="app"/>
-			<zipfileset dir="${build}/jpackage/Maestro/runtime" prefix="runtime"/>
+			<zipfileset dir="${build}/app" prefix="app"/>
+			<zipfileset dir="${build}/runtime" prefix="runtime"/>
+			<zipfileset file="launch_maestro.sh" fullpath="linux_or_mac/linux_maestro.sh" filemode="755" />
+			<zipfileset file="launch_abcplayer.sh" fullpath="linux_or_mac/linux_abcplayer.sh" filemode="755" />
+			<zipfileset file="launch_abctools.sh" fullpath="linux_or_mac/linux_abctools.sh" filemode="755" />
+			<zipfileset file="launch_maestro.sh" fullpath="linux_or_mac/mac_maestro.command" filemode="755" />
+			<zipfileset file="launch_abcplayer.sh" fullpath="linux_or_mac/mac_abcplayer.command" filemode="755" />
+			<zipfileset file="launch_abctools.sh" fullpath="linux_or_mac/mac_abctools.command" filemode="755" />
 		</zip>
 	</target>
 
