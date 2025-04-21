@@ -16,6 +16,11 @@ Install instruction (.zip)
 (3): Make Windows shortcuts to start Maestro, AbcTools or AbcPlayer in the unzipped folder.
 
 
+Linux/Mac instruction (.zip)
+===================
+1: Install a java 24 jdk (From https://www.oracle.com/java/technologies/downloads/ or your distro's package manager)
+2: Use the scripts (sh for linux, command for mac) in the linux_or_mac folder to launch Maestro, AbcTools, or AbcPlayer
+
 
 Starting from command prompt
 ============================
