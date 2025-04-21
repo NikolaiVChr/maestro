@@ -24,13 +24,13 @@
 		<os family="unix" />
 	</condition>
 
-	<target name="-mvn_windows" if="isWindows" description="Maven clean and compile (Windows)">
+	<target name="mvn_windows" if="isWindows" description="Maven clean and compile (Windows)">
 		<exec dir=".." executable="cmd" failonerror="true">
 			<arg line="/c mvn clean install" />
 		</exec>
 	</target>
 
-	<target name="-mvn_unix" if="isUnix" description="Maven clean and compile (Linux)">
+	<target name="mvn_unix" if="isUnix" description="Maven clean and compile (Linux)">
 		<exec dir=".." executable="sh" failonerror="true">
 			<arg line="-c 'mvn clean install'" />
 		</exec>
@@ -40,7 +40,7 @@
 		<delete dir="${build}" />
 	</target>
 
-	<target name="-CopyThings" depends="-mvn_windows, -mvn_unix" description="Copy icons,jars and txt files to build folder">
+	<target name="CopyThings" depends="mvn_windows, mvn_unix" description="Copy icons,jars and txt files to build folder">
 		<mkdir dir="${build}" />
 		<delete>
 			<fileset dir="${build}" includes="*.log" />
@@ -70,7 +70,7 @@
 		</copy>-->
 	</target>
 
-	<target name="-GenerateSoundFontInfo.CheckUpToDate" description="Test if LotroInstruments.txt needs making">
+	<target name="GenerateSoundFontInfo.CheckUpToDate" description="Test if LotroInstruments.txt needs making">
 		<uptodate property="GenerateSoundFontInfo.uptodate" value="true" targetfile="${basedir}/${audio}/LotroInstruments/LotroInstruments.txt">
 			<srcfiles dir="${src}/com/digero/tools/soundfont/" />
 			<srcfiles file="${src}/com/digero/common/abc/LotroInstrument.java" />
@@ -79,21 +79,21 @@
 		<echo message="GenerateSoundFontInfo.uptodate is now ${GenerateSoundFontInfo.uptodate}."/>
 	</target>
 	
-	<target name="-GenerateSoundFontInfo" depends="-GenerateSoundFontInfo.CheckUpToDate" unless="GenerateSoundFontInfo.uptodate" description="Make LotroInstruments.txt">
+	<target name="GenerateSoundFontInfo" depends="GenerateSoundFontInfo.CheckUpToDate" unless="GenerateSoundFontInfo.uptodate" description="Make LotroInstruments.txt">
 		<java classname="com.digero.tools.soundfont.GenerateSoundFontInfo" classpath="${target}/classes" fork="yes" failonerror="yes">
 			<arg value="${basedir}/${audio}/LotroInstruments" />
 			<arg value="${basedir}/${audio}/LotroInstruments/LotroInstruments.txt" />
 		</java>
 	</target>
 
-	<target name="-LotroInstruments.CheckUpToDate" description="Test if SF2 needs making">
+	<target name="LotroInstruments.CheckUpToDate" description="Test if SF2 needs making">
 		<uptodate property="LotroInstruments.uptodate" value="true" targetfile="${build}/LotroInstruments.sf2">
 			<srcfiles dir="${basedir}/${audio}/LotroInstruments" />
 		</uptodate>
 		<echo message="LotroInstruments.uptodate is now ${LotroInstruments.uptodate}."/>
 	</target>
 
-	<target name="-LotroInstrumentsOld" depends="-GenerateSoundFontInfo,-LotroInstruments.CheckUpToDate" unless="LotroInstruments.uptodate" description="Make SF2 file">
+	<target name="LotroInstrumentsOld" depends="GenerateSoundFontInfo,LotroInstruments.CheckUpToDate" unless="LotroInstruments.uptodate" description="Make SF2 file">
 		<exec executable="${tools}/sf2comp.exe" failonerror="true"><!--  error="sf2comp_err.txt" output="sf2comp_out.txt" -->
 			<arg value="c" /><!-- compile -->
 			<arg value="-m" /><!-- mute (suppress output) -->
@@ -107,9 +107,9 @@
 		<copy file="LotroInstruments.sf2" todir="${build}" />
 	</target>
 
-	<target name="Build" depends="-CopyThings,LotroInstruments" description="Make all except ZIP and MSI files"/>
+	<target name="Build" depends="CopyThings,LotroInstruments" description="Make all except ZIP and MSI files"/>
 
-	<target name="-JPackageAppImages" depends="Build" description="Make folders with exe and runtimes for all 3 apps">
+	<target name="JPackageAppImages" depends="Build" description="Make folders with exe and runtimes for all 3 apps">
 		<echo>JAVA_HOME=${env.JAVA_HOME}</echo>
 		<delete dir="${build}/jpackage" />
 		<delete dir="${build}/staging" />
@@ -227,7 +227,7 @@
 <!--		<delete dir="${build}/jpackage" />-->
 	</target>
 	
-	<target name="-JPackageToolsMSI" description="Make Beta MSI for AbcTools">
+	<target name="JPackageToolsMSI" description="Make Beta MSI for AbcTools">
 		<mkdir dir="${build}/jpackageTools" />
 		<copy file="Changes since Maestro 2.5.0.txt" todir="${build}/jpackageTools" />
 		<copy file="${build}/AbcTools.jar" todir="${build}/jpackageTools" />
@@ -263,7 +263,7 @@
 		<delete dir="${build}/jpackageTools" />
 	</target>
 	
-	<target name="-JPackagePlayerMSI" description="Make Beta MSI for Abc Player">
+	<target name="JPackagePlayerMSI" description="Make Beta MSI for Abc Player">
 		<mkdir dir="${build}/jpackagePlayer" />
 		<copy file="Changes since Maestro 2.5.0.txt" todir="${build}/jpackagePlayer" />
 		<copy file="${build}/AbcPlayer.jar" todir="${build}/jpackagePlayer" />
@@ -300,7 +300,7 @@
 		<delete dir="${build}/jpackagePlayer" />
 	</target>
 	
-	<target name="-JPackageMaestroMSI" description="Make Beta MSI for Maestro">
+	<target name="JPackageMaestroMSI" description="Make Beta MSI for Maestro">
 		<mkdir dir="${build}/jpackageMaestro" />
 		<copy file="Changes since Maestro 2.5.0.txt" todir="${build}/jpackageMaestro" />
 		<copy file="${build}/Maestro.jar" todir="${build}/jpackageMaestro" />
@@ -338,14 +338,14 @@
 		<delete dir="${build}/jpackageMaestro" />
 	</target>
 	
-	<target name="-Wix-Cop" description="Runs WiX cop to fix errors in wix project">
+	<target name="Wix-Cop" description="Runs WiX cop to fix errors in wix project">
 	    <exec executable="${tools}/wix/WixCop.exe" failonerror="false">
 	    	<arg value="-f"/> <!-- fix errors -->
 	        <arg value="MaestroInstaller.wix"/>
 	    </exec>
 	</target>
 	
-	<target name="-Wix-Runtime" description="Runs WiX Heat to harvest all runtime files">
+	<target name="Wix-Runtime" description="Runs WiX Heat to harvest all runtime files">
 		<!-- Run heat on runtime directory -->
 		<exec executable="${tools}/wix/heat.exe" failonerror="true">
 			<arg value="dir"/>  <!-- Specifies that a directory will be harvested -->
@@ -365,7 +365,7 @@
 		</exec>
 	</target>
 	
-	<target name="Installer" depends="Build,-JPackageAppImages,-Wix-Runtime" if="isWindows" description="Make MSI file">
+	<target name="Installer" depends="Build,JPackageAppImages,Wix-Runtime" if="isWindows" description="Make MSI file">
 		<mkdir dir="${output}" />
 		<property name="msipath" location="${output}/${basename.Maestro}_v${version.Maestro}.msi" />
 		<echo>Building msi: ${msipath}</echo>
@@ -401,7 +401,7 @@
 		</exec>
 	</target>
 
-	<target name="ZipFile" depends="Build,-JPackageAppImages" description="Make ZIP file">
+	<target name="ZipFile" depends="Build,JPackageAppImages" description="Make ZIP file">
 		<mkdir dir="${output}" />
 		<zip destfile="${output}/${basename.Maestro}_v${version.Maestro}.zip" basedir="${build}">
 			<zipfileset file="${build}/Maestro.exe" fullpath="Maestro.exe" />
@@ -419,6 +419,6 @@
 		</zip>
 	</target>
 
-	<target name="Distribute Beta" depends="Build,-JPackageToolsMSI,-JPackagePlayerMSI,-JPackageMaestroMSI" if="isWindows" description="Makes individual beta installers using JPackage"/>
+	<target name="Distribute Beta" depends="Build,JPackageToolsMSI,JPackagePlayerMSI,JPackageMaestroMSI" if="isWindows" description="Makes individual beta installers using JPackage"/>
 	<target name="Distribute" depends="Installer,ZipFile" description="Make final ZIP and MSI files"/>
 </project>
