@@ -58,6 +58,9 @@
 		<copy file="Start AbcPlayer.bat" todir="${build}" />
 		<copy file="Start ABC Tools.bat" todir="${build}" />-->
 		<copy file="Changes since Maestro 2.5.0.txt" todir="${build}" />
+		<copy file="${target}/Maestro.jar" todir="${build}" />
+		<copy file="${target}/AbcPlayer.jar" todir="${build}" />
+		<copy file="${target}/AbcTools.jar" todir="${build}" />
 		<!--copy todir="${build}">
 			<fileset dir="${target}" includes="*.jar" />
 		</copy-->
