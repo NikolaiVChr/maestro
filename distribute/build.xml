@@ -236,7 +236,7 @@
 	
 	
 	
-	<target name="JPackageToolsMSI" description="Make Beta MSI for AbcTools">
+	<target name="BetaToolsMSI" depends="Build" description="Make Beta MSI for AbcTools">
 		<mkdir dir="${jpackageBetaTools}" />
 		<copy file="Changes since Maestro 2.5.0.txt" todir="${jpackageBetaTools}" />
 		<copy file="${build}/AbcTools.jar" todir="${jpackageBetaTools}" />
@@ -270,7 +270,7 @@
 		<delete dir="${jpackageBetaTools}" />
 	</target>
 	
-	<target name="JPackagePlayerMSI" description="Make Beta MSI for Abc Player">
+	<target name="BetaPlayerMSI" depends="Build" description="Make Beta MSI for Abc Player">
 		<mkdir dir="${jpackageBetaPlayer}" />
 		<copy file="Changes since Maestro 2.5.0.txt" todir="${jpackageBetaPlayer}" />
 		<copy file="${build}/AbcPlayer.jar" todir="${jpackageBetaPlayer}" />
@@ -305,7 +305,7 @@
 		<delete dir="${jpackageBetaPlayer}" />
 	</target>
 	
-	<target name="JPackageMaestroMSI" description="Make Beta MSI for Maestro">
+	<target name="BetaMaestroMSI" depends="Build" description="Make Beta MSI for Maestro">
 		<mkdir dir="${jpackageBetaMaestro}" />
 		<copy file="Changes since Maestro 2.5.0.txt" todir="${jpackageBetaMaestro}" />
 		<copy file="${build}/Maestro.jar" todir="${jpackageBetaMaestro}" />
@@ -422,7 +422,6 @@
 		</zip>
 	</target>
 
-	<target name="Distribute Beta" depends="Build,JPackageToolsMSI,JPackagePlayerMSI,JPackageMaestroMSI" if="isWindows" description="Makes individual beta installers using JPackage"/>
 	<target name="Distribute" depends="Installer,ZipFile" description="Make final ZIP and MSI files">
 		<delete dir="${build}/runtime" />
 		<delete dir="${build}/app" />
