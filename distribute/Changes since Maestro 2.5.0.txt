@@ -1,5 +1,4 @@
-These instructions only apply to version 3.0.0 or later.
-Previous versions differ a bit due to being 32 bit per default or having bat files instead of exe.
+These instructions only apply to version 4.2.0 or later.
 
 Install instruction (.msi)
 ===================
@@ -18,15 +17,15 @@ Install instruction (.zip)
 
 Linux/Mac instruction (.zip)
 ===================
-1: Install a java 24 jdk (From https://www.oracle.com/java/technologies/downloads/ or your distro's package manager)
+1: Install a java 21 jdk (From https://www.oracle.com/java/technologies/downloads/ or your distro's package manager)
 2: Use the scripts (sh for linux, command for mac) in the linux_or_mac folder to launch Maestro, AbcTools, or AbcPlayer
 
 
 Starting from command prompt
 ============================
-- Install java jdk 24
+- Install java jdk 21
 - Then use command-line prompt from the install folder:
-java --enable-native-access=ALL-UNNAMED --add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED -Dsun.java2d.opengl=true -jar app/Maestro.jar
+java --enable-native-access=ALL-UNNAMED --add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED -jar app/Maestro.jar
 
 
 
@@ -47,7 +46,7 @@ Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 ================
 
 Version 4.2.0
-- Switched to Java 24, which is now distributed with the app. Java is no longer needed to be installed.
+- Switched to Java 21, which is now distributed with the app. Java is no longer needed to be installed.
 
 Version 4.1.5
 - Add ability to sort playlist based on columns, in right-click playlist header menu
