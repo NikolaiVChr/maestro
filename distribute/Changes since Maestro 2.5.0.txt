@@ -840,7 +840,7 @@ Will the upgraded Maestro .msx files load into old 2.5.0 Maestro?
 
 I get a crash, how can I find out what caused it?
 
-- Start Maestro from commandline with: java -d64 -jar Maestro.jar
+- Start Maestro from commandline
   It should then output a stacktrace when crashing. If unsure on how to read it, just send to Aifel (Laurelin) or Elamond (Landroval).
 
 
