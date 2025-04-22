@@ -247,8 +247,6 @@
 	    	<arg value="--enable-native-access=ALL-UNNAMED"/>
 	    	<arg value="--java-options"/>
 	    	<arg value="--add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED"/>
-	    	<arg value="--java-options"/>
-	    	<arg value="-Dsun.java2d.opengl=True"/>
     		<arg value="--dest"/>
 	    	<arg value="${output}"/>
 	    	<arg value="--input"/>
@@ -284,8 +282,6 @@
 	    	<arg value="--enable-native-access=ALL-UNNAMED"/>
 	    	<arg value="--java-options"/>
 	    	<arg value="--add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED"/>
-	    	<arg value="--java-options"/>
-	    	<arg value="-Dsun.java2d.opengl=True"/>
     		<arg value="--dest"/>
 	    	<arg value="${output}"/>
 	    	<arg value="--input"/>
@@ -322,8 +318,6 @@
 	    	<arg value="--enable-native-access=ALL-UNNAMED"/>
 	    	<arg value="--java-options"/>
 	    	<arg value="--add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED"/>
-	    	<arg value="--java-options"/>
-	    	<arg value="-Dsun.java2d.opengl=True"/>
     		<arg value="--dest"/>
 	    	<arg value="${output}"/>
 	    	<arg value="--input"/>
