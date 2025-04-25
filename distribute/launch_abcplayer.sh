@@ -8,4 +8,4 @@ cd "$SCRIPT_DIR" || exit 1
 cd ..
 
 # Launch AbcPlayer
-java --enable-native-access=ALL-UNNAMED --add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED -ea -jar app/AbcPlayer.jar
+java --enable-native-access=ALL-UNNAMED --add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED -jar app/AbcPlayer.jar
