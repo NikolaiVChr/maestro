@@ -1011,13 +1011,16 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		});
 		bendBox.setSelectedItem(Integer.toString(miscSettings.maxRangeForNewBendMethod));
 
+		final String ending = "msbk";
+		ExtensionFileFilter filter = new ExtensionFileFilter("Maestro settings files (*."+ending+")", ending);
+		
 		final JButton exportPrefs = new JButton("Export all settings to a file");
 		exportPrefs.addActionListener(a -> {
 			try {
 				JFileChooser jfc = new JFileChooser();
 				jfc.setDialogTitle("Export all settings to a file");
-				jfc.setFileFilter(new ExtensionFileFilter("Maestro settings files (*.msf)", "msf"));
-				jfc.setSelectedFile(new File("maestro-settings-backup.msf"));
+				jfc.setFileFilter(filter);
+				jfc.setSelectedFile(new File("maestro-settings-backup."+ending));
 				int returnVal = jfc.showSaveDialog(this);
 				if(returnVal == JFileChooser.APPROVE_OPTION) {
 					if (jfc.getSelectedFile().exists()) {
@@ -1044,7 +1047,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 				if(((ProjectFrame)(own)).closeSong()) {
 					JFileChooser jfc = new JFileChooser();
 					jfc.setDialogTitle("Import all settings and exit Maestro");
-					jfc.setFileFilter(new ExtensionFileFilter("Maestro settings files (*.msf)", "msf"));
+					jfc.setFileFilter(filter);
 					int returnVal = jfc.showOpenDialog(this);
 					if(returnVal == JFileChooser.APPROVE_OPTION) {
 						FileInputStream fis = new FileInputStream(jfc.getSelectedFile());
