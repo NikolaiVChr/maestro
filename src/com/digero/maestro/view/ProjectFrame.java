@@ -1253,7 +1253,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private void doSettingsDialog() {
 		doSettingsDialog(currentSettingsDialogTab);
 	}
-
+	
 	private void doSettingsDialog(int tab) {
 		boolean showSettingsAgain = false;
 		int x = -1;
@@ -1966,7 +1966,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		return (Integer) tempoSpinner.getValue();
 	}
 
-	private boolean closeSong() {
+	public boolean closeSong() {
 		SectionEditor.clearClipboard();
 		TrackPanel.clearDrumClipboard();
 		sequencer.stop();

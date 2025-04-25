@@ -7,6 +7,8 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.awt.event.KeyEvent;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -93,11 +95,13 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 
 	private List<InstrumentSpinner> instrumentSpinners = new ArrayList<>();
 	private JComboBox<Integer> incrementComboBox = new JComboBox<>(new Integer[] { 1, 10 });
+	private JFrame own;
 
 	public SettingsDialog(JFrame owner, Preferences maestroPrefs, PartAutoNumberer partNumberer,
 			PartNameTemplate nameTemplate, ExportFilenameTemplate exportTemplate, SaveAndExportSettings saveSettings,
 			MiscSettings miscSettings, InstrNameSettings instrNameSettings) {
 		super(owner, "Options", true);
+		this.own = owner;
 		setDefaultCloseOperation(HIDE_ON_CLOSE);
 
 		this.maestroPrefs = maestroPrefs;
@@ -1007,6 +1011,57 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		});
 		bendBox.setSelectedItem(Integer.toString(miscSettings.maxRangeForNewBendMethod));
 
+		final JButton exportPrefs = new JButton("Export all settings to a file");
+		exportPrefs.addActionListener(a -> {
+			try {
+				JFileChooser jfc = new JFileChooser();
+				jfc.setDialogTitle("Export all settings to a file");
+				jfc.setFileFilter(new ExtensionFileFilter("Maestro settings files (*.msf)", "msf"));
+				jfc.setSelectedFile(new File("maestro-settings-backup.msf"));
+				int returnVal = jfc.showSaveDialog(this);
+				if(returnVal == JFileChooser.APPROVE_OPTION) {
+					if (jfc.getSelectedFile().exists()) {
+						JOptionPane.showMessageDialog(this, "File already exist. Settings not saved.");
+					} else {
+						FileOutputStream fos = new FileOutputStream(jfc.getSelectedFile());
+						Preferences prefsMain = Preferences.userRoot().node("/com/digero");
+						//Preferences prefsTools = Preferences.userRoot().node("/com/aifel");
+						prefsMain.exportSubtree(fos);
+						//prefsTools.exportSubtree(fos);
+						fos.close();
+						System.out.println("Backup saved successfully as "+jfc.getSelectedFile());
+					}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				JOptionPane.showMessageDialog(this, "Settings failed saving. "+e.toString());
+			}
+		});
+		
+		final JButton importPrefs = new JButton("Import all settings and exit Maestro");
+		importPrefs.addActionListener(a -> {
+			try {
+				if(((ProjectFrame)(own)).closeSong()) {
+					JFileChooser jfc = new JFileChooser();
+					jfc.setDialogTitle("Import all settings and exit Maestro");
+					jfc.setFileFilter(new ExtensionFileFilter("Maestro settings files (*.msf)", "msf"));
+					int returnVal = jfc.showOpenDialog(this);
+					if(returnVal == JFileChooser.APPROVE_OPTION) {
+						FileInputStream fis = new FileInputStream(jfc.getSelectedFile());
+						Preferences.importPreferences(fis);
+						fis.close();
+						//((ProjectFrame)(own)).sync();
+						System.out.println("Backup loaded successfully from "+jfc.getSelectedFile());
+						this.setVisible(false);
+						System.exit(0);
+				    }
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				JOptionPane.showMessageDialog(this, "Settings failed opening. "+e.toString());
+			}
+		});
+		
 		TableLayout layout = new TableLayout();
 		layout.insertColumn(0, FILL);
 		layout.setVGap(PAD);
@@ -1056,6 +1111,12 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		panel.add(bendLabel, "0, " + row);
 		layout.insertRow(++row, PREFERRED);
 		panel.add(bendBox, "0, " + row);
+
+		layout.insertRow(++row, PREFERRED);
+		panel.add(exportPrefs, "0, " + row);
+		
+		layout.insertRow(++row, PREFERRED);
+		panel.add(importPrefs, "0, " + row);		
 
 		return panel;
 	}
