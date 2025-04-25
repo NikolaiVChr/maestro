@@ -264,14 +264,17 @@ public class PartNameTemplate {
 			Pair<Integer, Integer> match = reverseIter.previous();
 			Variable var = variables.get(name.substring(match.first, match.second));
 			if (var != null) {
-				if (settings.spaceReplaceChars4.equals(whiteSpaceReplaceChars)) {
-					name = name.substring(0, match.first) + 
-							Arrays.stream(var.getValue().split("\\s+"))
-			                .map(word -> Character.toUpperCase(word.charAt(0)) + word.substring(1))
-			                .collect(Collectors.joining(""))
-			                + name.substring(match.second);
-				} else {					
-					name = name.substring(0, match.first) + var.getValue().replaceAll("\\s+", whiteSpaceReplaceChars) + name.substring(match.second);
+				if (var.getValue() != null) {
+					if (Settings.spaceReplaceChars4.equals(whiteSpaceReplaceChars)) {
+						name = name.substring(0, match.first) + 
+								Arrays.stream(var.getValue().split("\\s+"))
+								.filter(word -> !word.isEmpty())
+				                .map(word -> Character.toUpperCase(word.charAt(0)) + word.substring(1))
+				                .collect(Collectors.joining(""))
+				                + name.substring(match.second);
+					} else {
+						name = name.substring(0, match.first) + var.getValue().replaceAll("\\s+", whiteSpaceReplaceChars) + name.substring(match.second);
+					}
 				}
 			}
 		}
