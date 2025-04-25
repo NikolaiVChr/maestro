@@ -45,6 +45,9 @@ Thanks to all who gave feedback of features and bugs plus suggestions.
 Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 ================
 
+Version 4.2.1
+- Fix bug where the "remove spaces and capitalize first letter" option in Part Naming would cause an internal crash
+
 Version 4.2.0
 - Switched to Java 21, which is now distributed with the app. Java is no longer needed to be installed.
 - Increased max allowed tempo to 10000, useful for removing pauses with tune editor.
