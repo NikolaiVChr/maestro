@@ -2,12 +2,13 @@ package com.digero.abcplayer.view;
 
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
 import java.io.File;
 import java.util.List;
 import java.util.function.Consumer;
 
-import javax.activation.ActivationDataFlavor;
-import javax.activation.DataHandler;
+import jakarta.activation.ActivationDataFlavor;
+import jakarta.activation.DataHandler;
 import javax.swing.JComponent;
 import javax.swing.JTable;
 import javax.swing.TransferHandler;
@@ -22,7 +23,7 @@ public class PlaylistTransferHandler extends TransferHandler {
 	private Consumer<File> playlistLoader;
 	private AbcLoaderCallback abcFileLoader;
 	private final DataFlavor indexDataFlavor =
-		new ActivationDataFlavor(Integer.class, "application/x-java-Integer;class=java.lang.Integer", "Integer Row Index");
+		new DataFlavor(Integer.class,"Integer Row Index");
 	
 	
 	public PlaylistTransferHandler(JTable playlistTable) {
@@ -102,7 +103,29 @@ public class PlaylistTransferHandler extends TransferHandler {
 		if (rows == null) {
 			return null;
 		}
-		return new DataHandler(new Integer(rows[0]), indexDataFlavor.getMimeType());
+
+		return new Transferable() {
+			private final Integer rowIndex = rows[0];
+
+			@Override
+			public DataFlavor[] getTransferDataFlavors() {
+				return new DataFlavor[] {indexDataFlavor};
+			}
+
+			@Override
+			public boolean isDataFlavorSupported(DataFlavor flavor) {
+				return indexDataFlavor.equals(flavor);
+			}
+
+			@Override
+			public Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException {
+				if (!isDataFlavorSupported(flavor)) {
+					throw new UnsupportedFlavorException(flavor);
+				}
+
+				return rowIndex;
+			}
+		};
 	}
 
 	@Override
