@@ -47,6 +47,7 @@ Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 
 Version 4.2.1
 - Fix bug where the "remove spaces and capitalize first letter" option in Part Naming would cause an internal crash
+- Fix bug where reordering tracks in the playlist with drag/drop wouldn't work in 4.2.0
 
 Version 4.2.0
 - Switched to Java 21, which is now distributed with the app. Java is no longer needed to be installed.
