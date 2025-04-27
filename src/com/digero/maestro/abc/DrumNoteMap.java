@@ -48,7 +48,7 @@ public class DrumNoteMap implements IDiscardable {
 	}
 
 	public byte get(int midiNoteId) {
-		if (midiNoteId < Byte.MIN_VALUE || midiNoteId > Byte.MAX_VALUE) {
+		if (midiNoteId < 0 || midiNoteId > Byte.MAX_VALUE) {
 			throw new IllegalArgumentException();
 		}
 		return get((byte) midiNoteId);
