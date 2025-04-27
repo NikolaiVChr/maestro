@@ -8,6 +8,7 @@ import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
@@ -29,6 +30,7 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -1210,6 +1212,20 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		settingsItem.addActionListener(e -> doSettingsDialog());
 
 		toolsMenu.addSeparator();
+		
+		JMenuItem helpItem = toolsMenu.add(new JMenuItem("Help (Opens in browser)"));
+		helpItem.setMnemonic('H');
+		helpItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0));
+		helpItem.addActionListener(e -> {
+			try {
+				URI uri = new URI("https://maestro.miraheze.org/wiki/Main_Page");
+				if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+					Desktop.getDesktop().browse(uri);
+				}
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
+		});
 
 		JMenuItem aboutItem = toolsMenu.add(new JMenuItem("About " + MaestroMain.APP_NAME + "..."));
 		aboutItem.setMnemonic('A');
