@@ -29,11 +29,6 @@ java --enable-native-access=ALL-UNNAMED --add-exports=java.desktop/com.sun.media
 
 
 
-How-to videos about Maestro:
-============================
-https://www.youtube.com/playlist?list=PL3lucMIJ7RQOGmenI7_Stpj8JPXjCGR_Q
-
-
 Special Thanks
 ==============
 Thanks to Digero for an amazing original Maestro and ABC Player.
@@ -48,6 +43,7 @@ Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 Version 4.2.1
 - Fix bug where the "remove spaces and capitalize first letter" option in Part Naming would cause an internal crash
 - Fix bug where reordering tracks in the playlist with drag/drop wouldn't work in 4.2.0
+- Fix pitch bends going deeper than lowest midi note would make Maestro act erratic.
 
 Version 4.2.0
 - Switched to Java 21, which is now distributed with the app. Java is no longer needed to be installed.
