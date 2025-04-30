@@ -887,6 +887,12 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		 * @Override public void actionPerformed(ActionEvent e) { saveSettings.showPruned =
 		 * showPrunedCheckBox.isSelected(); } });
 		 */
+		
+		final JCheckBox checkForUpdatesCheckBox = new JCheckBox("Check for updates");
+		checkForUpdatesCheckBox.setToolTipText("<html>When starting Maestro, check if there is newer version available.");
+		checkForUpdatesCheckBox.setSelected(miscSettings.checkForUpdates);
+		checkForUpdatesCheckBox.addActionListener(e -> miscSettings.checkForUpdates = checkForUpdatesCheckBox.isSelected());
+		
 		final JCheckBox showMaxPolyphonyCheckBox = new JCheckBox("Show polyphony");
 		showMaxPolyphonyCheckBox.setToolTipText(
 				"<html>Show number of simultanious notes<br>" + "that is playing as histogram.</html>");
@@ -1080,6 +1086,9 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		// layout.insertRow(++row, PREFERRED);
 		// panel.add(showPrunedCheckBox, "0, " + row);
 
+		layout.insertRow(++row, PREFERRED);
+		panel.add(checkForUpdatesCheckBox, "0, " + row);
+		
 		layout.insertRow(++row, PREFERRED);
 		panel.add(showMaxPolyphonyCheckBox, "0, " + row);
 

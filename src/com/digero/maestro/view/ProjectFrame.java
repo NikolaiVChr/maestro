@@ -24,13 +24,17 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
+import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -107,6 +111,7 @@ import com.digero.common.util.Listener;
 import com.digero.common.util.Pair;
 import com.digero.common.util.ParseException;
 import com.digero.common.util.Util;
+import com.digero.common.util.Version;
 import com.digero.common.view.AboutDialog;
 import com.digero.common.view.AudioExportManager;
 import com.digero.common.view.BarNumberLabel;
@@ -274,6 +279,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			// System.exit(1);
 			// return;
 		}
+		
 		setMinimumSize(new Dimension(512, 384));
 		Util.initWinBounds(this, prefs.node("window"), 800, 600);
 
@@ -295,6 +301,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 						 * saveAndExportSettings
 						 */);
 
+		if (miscSettings.checkForUpdates) checkVersionCompare();
+		
 		checkVolumeTransceiver();
 
 		try {
@@ -2884,5 +2892,37 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			threadDump.append(threadInfo.toString());
 		}
 		return threadDump.toString();
+	}
+	
+	private void checkVersionCompare() {
+		try {
+			String fileUrl = "https://raw.githubusercontent.com/NikolaiVChr/mver/refs/heads/main/main";
+			URI uri = new URI(fileUrl);
+			URL url = uri.toURL();
+			HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+			connection.setConnectTimeout(2000);
+			connection.setReadTimeout(3000);
+			connection.setRequestMethod("GET");
+			BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+			String line;
+			while ((line = reader.readLine()) != null) {
+				Version latestVer = Version.parseVersion(line);
+				Version myVersion = MaestroMain.APP_VERSION;
+				if (latestVer != null && myVersion.compareTo(latestVer) < 0) {
+					int result = JOptionPane.showConfirmDialog(ProjectFrame.this, "Version "+latestVer+" is available, do you want to download it?", "Version check",
+							JOptionPane.YES_NO_OPTION);
+					if (result == JOptionPane.YES_OPTION) {
+						URI uriDownload = new URI("https://drive.google.com/drive/folders/1CigT_AloFP34lZbIEvb4CsqGmBL8vodu");
+						if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+							Desktop.getDesktop().browse(uriDownload);
+							System.exit(0);
+						}
+					}
+				}
+			}
+			reader.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
 	}
 }

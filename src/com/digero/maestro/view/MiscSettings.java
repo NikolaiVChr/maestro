@@ -15,6 +15,7 @@ public class MiscSettings {
 	public boolean autoplayOnOpen = true;
 
 	private final Preferences prefs;
+	public boolean checkForUpdates = true;
 	
 
 	public MiscSettings(Preferences prefs, boolean checkFallback) {
@@ -45,6 +46,7 @@ public class MiscSettings {
 		maxRangeForNewBendMethod = prefs.getInt("maxRangeForNewBendMethod", maxRangeForNewBendMethod);
 		if (maxRangeForNewBendMethod == 24) maxRangeForNewBendMethod = 16;// Due to student fiddle we can't go to 24.
 		autoplayOnOpen = prefs.getBoolean("autoplayOnOpen", autoplayOnOpen);
+		checkForUpdates = prefs.getBoolean("checkForUpdates", checkForUpdates);
 	}
 
 	public MiscSettings(MiscSettings that) {
@@ -61,6 +63,7 @@ public class MiscSettings {
 		ignoreExpressionMessages = that.ignoreExpressionMessages;
 		maxRangeForNewBendMethod = that.maxRangeForNewBendMethod;
 		autoplayOnOpen = that.autoplayOnOpen;
+		checkForUpdates = that.checkForUpdates;
 	}
 
 	public void saveToPrefs() {
@@ -72,6 +75,7 @@ public class MiscSettings {
 		prefs.putInt("fontSize", fontSize);
 		prefs.putInt("maxRangeForNewBendMethod", maxRangeForNewBendMethod);
 		prefs.putBoolean("autoplayOnOpen", autoplayOnOpen);
+		prefs.putBoolean("checkForUpdates", checkForUpdates);
 	}
 
 	public void restoreDefaults() {
