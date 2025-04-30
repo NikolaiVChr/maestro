@@ -475,6 +475,8 @@ public class AbcTools {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				frame.getBtnSource().setEnabled(false);
+				frame.getBtnDest().setEnabled(false);
 				if (openFileChooser == null) {
 					openFileChooser = new JFileChooser(sourceFolder);
 					openFileChooser.setMultiSelectionEnabled(false);
@@ -488,6 +490,8 @@ public class AbcTools {
 					sourceFolder = openFileChooser.getSelectedFile();
 					refreshMerge();
 				}
+				frame.getBtnSource().setEnabled(true);
+				frame.getBtnDest().setEnabled(true);
 			}
 		};
 	}

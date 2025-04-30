@@ -216,7 +216,7 @@ public class MultiMergerView extends JFrame {
 		forceOrganic.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(forceOrganic);
 		
-		forceOrganic2 = new JCheckBox("Multi-stage");
+		forceOrganic2 = new JCheckBox("Force Multi-stage");
 		forceOrganic2.setSelected(false);
 		forceOrganic2.setToolTipText("<html>Force organic multi-stage even if a project do not have it enabled.<br>Only has effect if organic is enabled by force or in project.</html>");
 		forceOrganic2.setAlignmentX(Component.CENTER_ALIGNMENT);
