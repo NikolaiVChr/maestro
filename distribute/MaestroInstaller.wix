@@ -123,8 +123,8 @@
                         <!-- Support Set Program Access and Defaults -->
                         <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities" Type="string" Name="ApplicationName" Value="$(var.MaestroAppName)" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities" Type="string" Name="ApplicationDescription" Value="$(var.MaestroDescriptionLong)" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities" Type="string" Name="ApplicationIcon" Value="[APPLICATIONFOLDER]maestro.ico,0" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\DefaultIcon" Type="string" Value="[APPLICATIONFOLDER]maestro.ico,0" />
+                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities" Type="string" Name="ApplicationIcon" Value="[APPLICATIONFOLDER]app\maestro.ico,0" />
+                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\DefaultIcon" Type="string" Value="[APPLICATIONFOLDER]app\maestro.ico,0" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\FileAssociations" Type="string" Name=".abc" Value="Maestro.AssocFile.ABC" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\FileAssociations" Type="string" Name=".mid" Value="Maestro.AssocFile.MIDI" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\FileAssociations" Type="string" Name=".kar" Value="Maestro.AssocFile.MIDI" />
@@ -152,16 +152,16 @@
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\Applications\Maestro.exe\shell\edit\command" Type="string" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" />
                         <!-- Add entry to right-click context menu regardless of if Maestro is the default editor -->
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.abc\Shell\Maestro.Edit" Value="&amp;Edit with Maestro" Type="string" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.abc\Shell\Maestro.Edit" Name="Icon" Value="[APPLICATIONFOLDER]maestro.ico,0" Type="string" />
+                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.abc\Shell\Maestro.Edit" Name="Icon" Value="[APPLICATIONFOLDER]app\maestro.ico,0" Type="string" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.abc\Shell\Maestro.Edit\command" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" Type="string" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.mid\Shell\Maestro.Edit" Value="&amp;Edit with Maestro" Type="string" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.mid\Shell\Maestro.Edit" Name="Icon" Value="[APPLICATIONFOLDER]maestro.ico,0" Type="string" />
+                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.mid\Shell\Maestro.Edit" Name="Icon" Value="[APPLICATIONFOLDER]app\maestro.ico,0" Type="string" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.mid\Shell\Maestro.Edit\command" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" Type="string" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.kar\Shell\Maestro.Edit" Value="&amp;Edit with Maestro" Type="string" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.kar\Shell\Maestro.Edit" Name="Icon" Value="[APPLICATIONFOLDER]maestro.ico,0" Type="string" />
+                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.kar\Shell\Maestro.Edit" Name="Icon" Value="[APPLICATIONFOLDER]app\maestro.ico,0" Type="string" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.kar\Shell\Maestro.Edit\command" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" Type="string" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.midi\Shell\Maestro.Edit" Value="&amp;Edit with Maestro" Type="string" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.midi\Shell\Maestro.Edit" Name="Icon" Value="[APPLICATIONFOLDER]maestro.ico,0" Type="string" />
+                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.midi\Shell\Maestro.Edit" Name="Icon" Value="[APPLICATIONFOLDER]app\maestro.ico,0" Type="string" />
                         <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.midi\Shell\Maestro.Edit\command" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" Type="string" />
                     </Component>
                     <Component Id="AbcPlayerExecutable" Guid="{0C212398-7A1E-40D8-BEDD-2F341AC20FEB}">
