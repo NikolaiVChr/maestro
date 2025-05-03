@@ -1229,7 +1229,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		helpItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0));
 		helpItem.addActionListener(e -> {
 			try {
-				URI uri = new URI("https://maestro.miraheze.org/wiki/Main_Page");
+				URI uri = new URI(MaestroMain.APP_URL);
 				if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
 					Desktop.getDesktop().browse(uri);
 				}
@@ -1237,6 +1237,15 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				ex.printStackTrace();
 			}
 		});
+		
+		JMenuItem versionItem = toolsMenu.add(new JMenuItem("Check for Updates"));
+		versionItem.setMnemonic('V');
+		versionItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F6, 0));
+		versionItem.addActionListener(e -> {
+			checkVersionCompare();
+		});
+		
+		toolsMenu.addSeparator();
 
 		JMenuItem aboutItem = toolsMenu.add(new JMenuItem("About " + MaestroMain.APP_NAME + "..."));
 		aboutItem.setMnemonic('A');
@@ -2924,8 +2933,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 										if (result == JOptionPane.YES_OPTION) {
 											URI uriDownload;
 											try {
-												uriDownload = new URI("https://drive.google.com/drive/folders/1CigT_AloFP34lZbIEvb4CsqGmBL8vodu");
-											
+												uriDownload = new URI(MaestroMain.DOWNLOAD_URL);											
 												if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
 													if (closeSong()) {
 														Desktop.getDesktop().browse(uriDownload);
