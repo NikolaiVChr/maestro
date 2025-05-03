@@ -47,7 +47,7 @@ public final class AboutDialog {
 				+ "Copyright &copy; 2015 Ben Howell<br>" //
 				+ "Upgraded by Aifel of Laurelin,<br>" //
 				+ "Elamond of Landroval and Karloman<br>" //
-				+ "<a href='" + appUrl + "'>" + appUrl + "</a><br>" //
+				+ "<br>" //
 				+ "Heap in use is " + heapInUse + "</html>");
 		aboutMessage.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 		aboutMessage.addMouseListener(new MouseAdapter() {
