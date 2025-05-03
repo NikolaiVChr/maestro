@@ -40,14 +40,14 @@ Thanks to all who gave feedback of features and bugs plus suggestions.
 Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 ================
 
+Version 4.2.2
+- Version check can no longer delay the start of Maestro.
+
 Version 4.2.1
 - Fix bug where the "remove spaces and capitalize first letter" option in Part Naming would cause an internal crash
-- Fix bug where reordering tracks in the playlist with drag/drop wouldn't work in 4.2.0
 - Fix pitch bends going deeper than lowest midi note would make Maestro act erratic.
 - Added menu item for opening help in browser.
 - Added option to disable version check at startup.
-
-Version 4.2.0
 - Switched to Java 21, which is now distributed with the app. Java is no longer needed to be installed.
 - Increased max allowed tempo to 10000, useful for removing pauses with tune editor.
 
