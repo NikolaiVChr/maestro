@@ -33,6 +33,7 @@ public class AbcHelper {
 		BigDecimal rightSpan = BigDecimal.valueOf(rightMax-rightMin);
 
 		// Convert the left range into a 0-1 range (float)
+		// The result will have 10 decimal places of precision
 		BigDecimal valueScaled = BigDecimal.valueOf(value-leftMin).divide(leftSpan, 10, RoundingMode.HALF_UP);
 
 		// Convert the 0-1 range into a value in the right range.

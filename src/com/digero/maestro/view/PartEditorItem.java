@@ -96,7 +96,7 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 			badgerButton.setText(text);
 		});
 
-		delayField = new JTextField(String.format("%.3f", part.delay * 0.001f));
+		delayField = new JTextField(String.format("%.3f", part.delay * 0.001f).replace(',', '.'));
 		delayField.setHorizontalAlignment(SwingConstants.CENTER);
 		Dimension fieldSize = delayField.getPreferredSize();
 		fieldSize.height = h;
@@ -113,7 +113,7 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 			}
 		});
 		
-		conclusionFermataField = new JTextField(String.format("%.3f", part.conclusionFermata * 0.001f));
+		conclusionFermataField = new JTextField(String.format("%.3f", part.conclusionFermata * 0.001f).replace(',', '.'));
 		conclusionFermataField.setHorizontalAlignment(SwingConstants.CENTER);
 		fieldSize = conclusionFermataField.getPreferredSize();
 		fieldSize.height = h;
@@ -256,7 +256,7 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		} catch (NumberFormatException nfe) {
 
 		}
-		delayField.setText(String.format("%.3f", part.delay * 0.001f));
+		delayField.setText(String.format("%.3f", part.delay * 0.001f).replace(',', '.'));
 	}
 	
 	private void validateFermataInput() {
@@ -272,7 +272,7 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		} catch (NumberFormatException nfe) {
 	
 		}
-		conclusionFermataField.setText(String.format("%.3f", part.conclusionFermata * 0.001f));
+		conclusionFermataField.setText(String.format("%.3f", part.conclusionFermata * 0.001f).replace(',', '.'));
 	}
 	
 	private void validateMaxInput() {
