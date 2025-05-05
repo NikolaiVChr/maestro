@@ -1,5 +1,7 @@
 package com.digero.maestro.abc;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 import javax.xml.xpath.XPathExpressionException;
@@ -24,15 +26,17 @@ public class AbcHelper {
 	}
 
 	static int map(long value, long leftMin, long leftMax, int rightMin, int rightMax) {
+		// since left range can span a rather big number we use big decimal to make sure its division is done proper
+		
 		// Figure out how 'wide' each range is
-		long leftSpan = leftMax - leftMin;
-		int rightSpan = rightMax - rightMin;
+		BigDecimal leftSpan = BigDecimal.valueOf(leftMax-leftMin);
+		BigDecimal rightSpan = BigDecimal.valueOf(rightMax-rightMin);
 
 		// Convert the left range into a 0-1 range (float)
-		double valueScaled = (value - leftMin) / (double) leftSpan;
+		BigDecimal valueScaled = BigDecimal.valueOf(value-leftMin).divide(leftSpan, 10, RoundingMode.HALF_UP);
 
 		// Convert the 0-1 range into a value in the right range.
-		return (int) (rightMin + (valueScaled * rightSpan));
+		return rightMin + valueScaled.multiply(rightSpan).intValue();
 	}
 
 	static PartSection generatePartSection(Element sectionEle, Version fileVersion) throws ParseException, XPathExpressionException {

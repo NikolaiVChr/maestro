@@ -43,10 +43,10 @@ public final class AboutDialog {
 		JLabel aboutMessage = new JLabel("<html>" //
 				+ appName + "<br>" //
 				+ "Version " + appVersion + "<br>" //
-				+ "Created by Digero of Landroval<br>" //
-				+ "Copyright &copy; 2015 Ben Howell<br>" //
+				+ "Created by Digero of Landroval.<br>" //
+				+ "Copyright &copy; 2015 Ben Howell.<br>" //
 				+ "Upgraded by Aifel of Laurelin,<br>" //
-				+ "Elamond of Landroval and Karloman<br>" //
+				+ "Elamond of Landroval and Karloman.<br>" //
 				+ "<br>" //
 				+ "Heap in use is " + heapInUse + "</html>");
 		aboutMessage.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
