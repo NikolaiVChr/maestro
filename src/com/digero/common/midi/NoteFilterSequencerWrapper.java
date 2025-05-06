@@ -21,6 +21,7 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 	private Preferences prefsNode = null;
 	private NoteFilterTransceiver filter;
 	private MidiDevice device = null;
+	
 
 	public NoteFilterSequencerWrapper() throws MidiUnavailableException {
 		super();
@@ -131,5 +132,9 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 		str += "\nDescription: " + info.getDescription();
 		str += "\nVersion: " + info.getVersion();
 		return str;
+	}
+
+	public void setRealDura(long realDuraTicks) {
+		this.realDuraTicks = realDuraTicks; 	
 	}
 }

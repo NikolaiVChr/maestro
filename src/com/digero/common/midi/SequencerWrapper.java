@@ -42,6 +42,7 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 	private TempoCacheSlow cache = null;
 	private long hoursPlus = 0L;
 	private float tempoFactor = 1.f;
+	protected long realDuraTicks = Long.MAX_VALUE;
 	
 	public static boolean onlyFirstTrackTempos = true;
 	
@@ -450,7 +451,7 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 	private long checkForSuperLongDuration(long l) {
 		Sequence sequ = sequencer.getSequence();
 		if (sequ != null) {
-			l = tick2microsecondSlow(sequ, sequencer.getTickLength());
+			l = tick2microsecondSlow(sequ, Math.min(realDuraTicks, sequencer.getTickLength()));
 			long hours = l / 3600000000L;
 			if (hoursPlus == 0L && hours > 0) {
 				hoursPlus = hours;
@@ -469,7 +470,7 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 	}
 
 	public long getTickLength() {
-		return sequencer.getTickLength();
+		return Math.min(realDuraTicks, sequencer.getTickLength());
 	}
 
 	public float getTempoFactor() {
@@ -672,6 +673,7 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 		hoursPlus = 0L;
 		try {
 			setSequence(null);
+			realDuraTicks = Long.MAX_VALUE;
 		} catch (InvalidMidiDataException e) {
 			// This shouldn't happen
 			throw new RuntimeException(e);

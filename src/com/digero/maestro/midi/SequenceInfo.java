@@ -4,8 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.TreeMap;
+import java.util.TreeSet;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MetaMessage;
@@ -26,9 +28,11 @@ import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.MidiFactory;
 import com.digero.common.midi.MidiStandard;
 import com.digero.common.midi.MidiUtils;
+import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.midi.TimeSignature;
 import com.digero.common.util.Pair;
 import com.digero.common.util.ParseException;
+import com.digero.common.util.Util;
 import com.digero.maestro.abc.AbcConversionException;
 import com.digero.maestro.abc.AbcExporter;
 import com.digero.maestro.abc.AbcExporter.ExportTrackInfo;
@@ -59,6 +63,7 @@ public class SequenceInfo implements MidiConstants {
 	private final List<TrackInfo> trackInfoList;
 	private TreeMap<Integer, Integer> portMap = new TreeMap<>();
 	public static List<ExportTrackInfo> lastTrackInfos = null;
+	public long realDuraTicks;
 
 	/**
 	 * Create instance of this class while creating MIDI sequence from abc file.
@@ -128,7 +133,7 @@ public class SequenceInfo implements MidiConstants {
 
 		separateDrumTracks(sequence);
 
-		fixupTrackLength(sequence);
+		realDuraTicks = fixupTrackLength(sequence);
 
 		Track[] tracks = sequence.getTracks();
 		if (tracks.length == 0) {
@@ -942,13 +947,37 @@ public class SequenceInfo implements MidiConstants {
 	 * @param song
 	 */
 	@SuppressWarnings("unchecked") //
-	public static void fixupTrackLength(Sequence song) {
-//		System.out.println("Before: " + Util.formatDuration(song.getMicrosecondLength()));
-//		TempoCache tempoCache = new TempoCache(song);
+	public static long fixupTrackLength(Sequence song) {
+		//System.out.println("Before: " + Util.formatDuration(song.getMicrosecondLength()));
+		//SequencerWrapper.TempoCacheSlow tempoCache = new SequencerWrapper.TempoCacheSlow(song);
 		Track[] tracks = song.getTracks();
 		List<MidiEvent>[] suspectEvents = new List[tracks.length];
+		TreeSet<MidiEvent> allEvents = new TreeSet<>(new Comparator<MidiEvent>() {
+			@Override
+			public int compare(MidiEvent o1, MidiEvent o2) {
+				return Long.compare(o1.getTick(), o2.getTick());
+			}});
 		long endTick = 0;
 
+		for (int i = 0; i < tracks.length; i++) {
+			Track track = tracks[i];
+			for (int j = track.size() - 1; j >= 0; --j) {
+				MidiEvent evt = track.get(j);
+				allEvents.add(evt);
+			}
+		}
+		
+		long last = 0L;
+		long maxEmpty = song.getTickLength()/2L;
+		
+		for(MidiEvent evt : allEvents) {
+			if (evt.getTick() > last && evt.getTick() < last + maxEmpty) {
+				last = evt.getTick();
+			} else if (evt.getTick() >= last + maxEmpty) {
+				//System.out.println(" Half song is empty, will delete all after the empty starts.. ");
+			}
+		}
+		
 		for (int i = 0; i < tracks.length; i++) {
 			Track track = tracks[i];
 			for (int j = track.size() - 1; j >= 0; --j) {
@@ -963,7 +992,7 @@ public class SequenceInfo implements MidiConstants {
 						if (suspectEvents[i] == null)
 							suspectEvents[i] = new ArrayList<>();
 						suspectEvents[i].add(0, evt);
-					} else {
+					} else {//if (evt.getMessage() instanceof ShortMessage && ((ShortMessage)evt.getMessage()).getCommand() == ShortMessage.NOTE_OFF) {
 						endTick = evt.getTick();
 						break;
 					}
@@ -987,7 +1016,7 @@ public class SequenceInfo implements MidiConstants {
 			boolean okay = false;
 			for (int e = tracks[i].size() - 1; e >= 0; e--) {
 				MidiEvent evt = tracks[i].get(e);
-				if (MidiUtils.isMetaEndOfTrack(evt.getMessage())) {
+				if (MidiUtils.isMetaEndOfTrack(evt.getMessage()) && evt.getTick() <= last + 1) {
 					okay = true;
 					break;
 				}
@@ -995,16 +1024,28 @@ public class SequenceInfo implements MidiConstants {
 			if (!okay) {
 				long trackEndTick = 0L;
 				if (tracks[i].size() > 0)
-					trackEndTick = tracks[i].get(tracks[i].size() - 1).getTick();
+					trackEndTick = Math.min(last, tracks[i].get(tracks[i].size() - 1).getTick());
 				MidiEvent end = MidiFactory.createEndOfTrackEvent(trackEndTick + 1);
 				tracks[i].add(end);
 				System.out.println("Track " + i + " was missing an EndOfTrack. It was now inserted.");
 			}
 		}
-
-//		System.out.println("Real song duration: "
-//				+ Util.formatDuration(MidiUtils.tick2microsecond(song, endTick, tempoCache)));
-//		System.out.println("After: " + Util.formatDuration(song.getMicrosecondLength()));
+		
+		for (int i = 0; i < tracks.length; i++) {
+			Track track = tracks[i];
+			for (int j = 0; j < track.size(); j++) {
+				MidiEvent evt = track.get(j);
+				if (evt.getTick() > last + 1L) {
+					track.remove(evt);
+				}
+			}
+		}
+		//System.out.println("last="+last+" endTick="+endTick);
+		
+		//System.out.println("Real song duration: "
+		//		+ Util.formatDuration(MidiUtils.tick2microsecond(song, last, tempoCache)));
+		//System.out.println("After: " + Util.formatDuration(song.getMicrosecondLength()));
+		return last + 1L;
 	}
 
 	/**

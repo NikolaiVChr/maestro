@@ -135,7 +135,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 					MidiEvent evt = track.get(j);
 					MidiMessage msg = evt.getMessage();
 					long tick = evt.getTick();
-					if (tick > lastTick)
+					if (tick > lastTick)// && msg instanceof ShortMessage
 						lastTick = tick;
 
 					if (msg instanceof ShortMessage) {

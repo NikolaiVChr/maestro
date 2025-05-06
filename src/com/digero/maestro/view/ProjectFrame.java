@@ -2176,6 +2176,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 			SequenceInfo sequenceInfo = abcSong.getSequenceInfo();
 			sequencer.setSequence(sequenceInfo.getSequence());
+			sequencer.setRealDura(sequenceInfo.realDuraTicks);
 
 			sequencer.setTickPosition(sequenceInfo.calcFirstNoteTick());
 			midiBarLabel.setBarNumberCache(sequenceInfo.getDataCache());
