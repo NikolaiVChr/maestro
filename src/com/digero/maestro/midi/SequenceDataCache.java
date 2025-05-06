@@ -293,6 +293,8 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 									}
 								}
 							}
+						} else if (m.getType() == META_MARKER) {
+							//System.out.println("Detected marker in MIDI");
 						}
 					}
 				}

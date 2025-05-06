@@ -545,6 +545,7 @@ public class NoteGraph extends JPanel implements Listener<SequencerEvent>, IDisc
 	@Override
 	protected void paintComponent(Graphics g) {
 		super.paintComponent(g);
+		
 		Graphics2D g2 = (Graphics2D) g;
 
 		Object hintAntialiasSav = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
@@ -560,7 +561,7 @@ public class NoteGraph extends JPanel implements Listener<SequencerEvent>, IDisc
 		Rectangle clipRect = g2.getClipBounds();
 		if (clipRect != null) {
 			// Add +/- 2 to account for antialiasing (1 would probably be enough)
-			Point2D.Double leftPoint = new Point2D.Double(clipRect.getMinX() - 2, clipRect.getMinY());
+			Point2D.Double leftPoint = new Point2D.Double(Math.max(0, clipRect.getMinX() - 2), clipRect.getMinY());
 			Point2D.Double rightPoint = new Point2D.Double(clipRect.getMaxX() + 2, clipRect.getMaxY());
 			try {
 				xform.inverseTransform(leftPoint, leftPoint);
@@ -572,7 +573,8 @@ public class NoteGraph extends JPanel implements Listener<SequencerEvent>, IDisc
 				e.printStackTrace();
 			}
 		}
-
+		//System.out.println(" clipPosStart="+Util.formatDuration(clipPosStart)+" clipPosEnd="+Util.formatDuration(clipPosEnd));
+		
 		g2.transform(xform);
 
 		if (sequenceInfo != null) {
@@ -591,7 +593,9 @@ public class NoteGraph extends JPanel implements Listener<SequencerEvent>, IDisc
 			long barMicros = clipPosStart;
 			boolean barEdited = false;
 			boolean barBothEdited = false;
-			for (long barTick = firstBarTick; barTick <= lastBarTick + barLengthTicks; barTick += barLengthTicks) {
+			long loopcounter = 0;//max 2500 bars
+			for (long barTick = firstBarTick; barTick <= lastBarTick + barLengthTicks && loopcounter < 2500; barTick += barLengthTicks) {
+				loopcounter++;
 				barEdited = false;
 				long barTempMicros = data.tickToMicros(barTick);
 				boolean barTouched = sectionArray != null && barCount < sectionArray.length && barCount > -1 && sectionArray[(int) barCount];
