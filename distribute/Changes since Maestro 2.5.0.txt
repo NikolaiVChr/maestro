@@ -43,6 +43,7 @@ Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 Version 4.2.2
 - Version check can no longer delay the start of Maestro.
 - Part editor will no longer use comma as decimal point despite any locale settings. It will still accept comma as input though.
+- Fix handling of midis with extremely long pauses between messages. They are now truncated.
 
 Version 4.2.1
 - Fix bug where the "remove spaces and capitalize first letter" option in Part Naming would cause an internal crash
