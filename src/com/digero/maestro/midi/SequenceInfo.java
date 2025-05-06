@@ -968,13 +968,13 @@ public class SequenceInfo implements MidiConstants {
 		}
 		
 		long last = 0L;
-		long maxEmpty = song.getTickLength()/2L;
+		long maxEmpty = song.getTickLength()/4L;
 		
 		for(MidiEvent evt : allEvents) {
 			if (evt.getTick() > last && evt.getTick() < last + maxEmpty) {
 				last = evt.getTick();
 			} else if (evt.getTick() >= last + maxEmpty) {
-				//System.out.println(" Half song is empty, will delete all after the empty starts.. ");
+				//System.out.println(" Quarter song is empty, will delete all after the empty starts.. ");
 			}
 		}
 		
