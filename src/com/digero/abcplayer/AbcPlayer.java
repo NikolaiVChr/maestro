@@ -119,6 +119,8 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 	static Version APP_VERSION = new Version(0, 0, 0);
 
 	private static AbcPlayer mainWindow = null;
+	
+	private static final boolean defaultTimerCountdown = false;
 
 	private JMenu recentItems;
 	private Queue<String> recentQueue;
@@ -414,7 +416,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		
 		songPositionBar = new SongPositionBar(sequencer);
 		songPositionLabel = new SongPositionLabel(sequencer);
-		songPositionLabel.countdown = prefs.getBoolean("countdownMenuItem", false);
+		songPositionLabel.countdown = prefs.getBoolean("countdownMenuItem", defaultTimerCountdown);
 		barNumberLabel = new BarNumberLabel(sequencer, null, false);
 		barNumberLabel.setToolTipText("Bar number");
 
@@ -859,7 +861,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		
 		toolsMenu.add(countdownMenuItem = new JCheckBoxMenuItem("Countdown instead of up"));
 		countdownMenuItem.setToolTipText("<html>The time position indicator will countdown instead of up.</html>");
-		countdownMenuItem.setSelected(prefs.getBoolean("countdownMenuItem", true));
+		countdownMenuItem.setSelected(prefs.getBoolean("countdownMenuItem", defaultTimerCountdown));
 		countdownMenuItem.addActionListener(e -> {
 			prefs.putBoolean("countdownMenuItem", countdownMenuItem.isSelected());
 			songPositionLabel.countdown = countdownMenuItem.isSelected();
