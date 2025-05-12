@@ -85,13 +85,15 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 
 		Collection<TimingInfoEvent> reversedEvents = timingInfoByTick.descendingMap().values();
 
-		/*
-		 * Go through the tempo events from the MIDI file and quantize them so each event starts at an integral multiple
-		 * of the previous event's MinNoteLengthTicks. This ensures that we can split notes at each tempo change without
-		 * creating a note that is shorter than MinNoteLengthTicks.
-		 */
+		
 		Collection<SequenceDataCache.TempoEvent> origTempos = source.getDataCache().getTempoEvents().values();
 
+		/*
+		 * Merge the tune editor tempo changes with midi tempos.
+		 * Note that changes to tempo spinner is not applied at this stage, so the offsets and accelerandos
+		 * from tune editor will also be subject to tempo spinner.
+		 * This was an oversight, but for backward compat we keep it so for now. 
+		 */
 		NavigableMap<Long, Integer> changeTree = song.getTuneTempoChanges();
 		ArrayList<SequenceDataCache.TempoEvent> combinedTempos = new ArrayList<>();
 
@@ -147,6 +149,12 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		};
 		combinedTempos.sort(rator);
 		combinedTempos = calcNewMicros(combinedTempos);
+		
+		/*
+		 * Go through the tempo events from the MIDI file and quantize them so each event starts at an integral multiple
+		 * of the previous event's MinNoteLengthTicks. This ensures that we can split notes at each tempo change without
+		 * creating a note that is shorter than MinNoteLengthTicks.
+		 */
 		LinkedList<SequenceDataCache.TempoEvent> linker = new LinkedList<>(combinedTempos);
 		for (int index = 0; index < linker.size(); index++) {
 			TempoEvent currMidiTempoEvent = linker.get(index);

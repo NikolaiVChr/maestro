@@ -354,42 +354,43 @@ public class AbcExporter {
 		exportStartTick = startEnd.first;
 		exportEndTick = startEnd.second;
 
-		PrintStream out = new PrintStream(os);
-		if (!parts.isEmpty()) {
-			out.println("%abc-2.1");
-			out.println(AbcField.SONG_TITLE + StringCleaner.cleanForABC(metadata.getSongTitle()));
-			if (metadata.getComposer().length() > 0) {
-				out.println(AbcField.SONG_COMPOSER + StringCleaner.cleanForABC(metadata.getComposer()));
-			}
-			out.println(AbcField.SONG_DURATION + Util.formatDuration(getSongLengthMicros()));
-			if (metadata.getTranscriber().length() > 0) {
-				out.println(AbcField.SONG_TRANSCRIBER + StringCleaner.cleanForABC(metadata.getTranscriber()));
-			}
-			out.println(AbcField.ABC_CREATOR + MaestroMain.APP_NAME + " v" + MaestroMain.APP_VERSION);
-			out.println(AbcField.EXPORT_TIMESTAMP + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
-			if (!organic) {
-				out.println(AbcField.SWING_RHYTHM + Boolean.toString(qtm.isTripletTiming()));
-				out.println(AbcField.MIX_TIMINGS + Boolean.toString(qtm.isMixTiming()));
-			} else {
-				out.println(AbcField.SWING_RHYTHM + Boolean.toString(false));
-				out.println(AbcField.MIX_TIMINGS + Boolean.toString(false));
-			}
-			out.println(AbcField.ORGANIC + Boolean.toString(organic));
-			out.println(AbcField.ORGANIC_MULTI_STAGE + Boolean.toString(organic && organic2));
-			out.println(AbcField.SKIP_SILENCE_AT_START + Boolean.toString(skipSilenceAtStart));
-			out.println(AbcField.DELETE_MINIMAL_NOTES + Boolean.toString(deleteMinimalNotes && !organic));
-			out.println(AbcField.ABC_VERSION + "2.1");
-			
-			
-			outputBadger(out);
-		}
-
-		for (AbcPart part : parts) {
-			if (part.getEnabledTrackCount() > 0) {
-				if (organic) {
-					exportPartToAbcOrganic(part, out, delayEnabled);
+		try (PrintStream out = new PrintStream(os)) {
+			if (!parts.isEmpty()) {
+				out.println("%abc-2.1");
+				out.println(AbcField.SONG_TITLE + StringCleaner.cleanForABC(metadata.getSongTitle()));
+				if (metadata.getComposer().length() > 0) {
+					out.println(AbcField.SONG_COMPOSER + StringCleaner.cleanForABC(metadata.getComposer()));
+				}
+				out.println(AbcField.SONG_DURATION + Util.formatDuration(getSongLengthMicros()));
+				if (metadata.getTranscriber().length() > 0) {
+					out.println(AbcField.SONG_TRANSCRIBER + StringCleaner.cleanForABC(metadata.getTranscriber()));
+				}
+				out.println(AbcField.ABC_CREATOR + MaestroMain.APP_NAME + " v" + MaestroMain.APP_VERSION);
+				out.println(AbcField.EXPORT_TIMESTAMP + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+				if (!organic) {
+					out.println(AbcField.SWING_RHYTHM + Boolean.toString(qtm.isTripletTiming()));
+					out.println(AbcField.MIX_TIMINGS + Boolean.toString(qtm.isMixTiming()));
 				} else {
-					exportPartToAbc(part, out, delayEnabled);
+					out.println(AbcField.SWING_RHYTHM + Boolean.toString(false));
+					out.println(AbcField.MIX_TIMINGS + Boolean.toString(false));
+				}
+				out.println(AbcField.ORGANIC + Boolean.toString(organic));
+				out.println(AbcField.ORGANIC_MULTI_STAGE + Boolean.toString(organic && organic2));
+				out.println(AbcField.SKIP_SILENCE_AT_START + Boolean.toString(skipSilenceAtStart));
+				out.println(AbcField.DELETE_MINIMAL_NOTES + Boolean.toString(deleteMinimalNotes && !organic));
+				out.println(AbcField.ABC_VERSION + "2.1");
+				
+				
+				outputBadger(out);
+			}
+	
+			for (AbcPart part : parts) {
+				if (part.getEnabledTrackCount() > 0) {
+					if (organic) {
+						exportPartToAbcOrganic(part, out, delayEnabled);
+					} else {
+						exportPartToAbc(part, out, delayEnabled);
+					}
 				}
 			}
 		}
@@ -2287,11 +2288,10 @@ public class AbcExporter {
 		    }
 		}
 		
-		NavigableMap<Long, List<GridLine>> microsWeights = new TreeMap<>();
-		
 		// create a weight map from all start and end micros
-		for (AbcNoteEvent note : events) {
-			note.origStartABCMicros = qtm.tickToMicrosABCOrganic(note.getStartTick());
+		NavigableMap<Long, List<GridLine>> microsWeights = new TreeMap<>();
+		for (AbcNoteEvent note : events) {			
+			note.origStartABCMicros = qtm.tickToMicrosABCOrganic(note.getStartTick());			
 			note.origEndABCMicros = qtm.tickToMicrosABCOrganic(note.getEndTick());
 			note.origEndABCMicros = Math.max(note.origEndABCMicros, note.origStartABCMicros + minimumMicros);
 			note.origDurationMicros = note.origEndABCMicros - note.origStartABCMicros;
@@ -2317,10 +2317,10 @@ public class AbcExporter {
 			List<GridLine> curr = vals[i];
 			List<GridLine> next = vals[i+1];
 			List<GridLine> nextnext = vals[i+2];
-			GridLine currStart = null;
-			GridLine currEnd = null;
-			GridLine nextStart = null;
-			GridLine nextEnd = null;
+			GridLine currStart = null;// one (of maybe more) start gridline at curr pos
+			GridLine currEnd = null;// one (of maybe more) end gridline at curr pos
+			GridLine nextStart = null;// one (of maybe more) start gridline at next or nextnext pos
+			GridLine nextEnd = null;// one (of maybe more) end gridline at curr pos
 			for (GridLine test : curr) {
 				if (test.type==START) {
 					currStart = test;
@@ -2344,24 +2344,36 @@ public class AbcExporter {
 					}
 				}
 			}
-			if (nextStart != null && currStart != null && nextEnd != null
+			if (nextStart != null && currStart != null// && nextEnd != null
 					&& currStart.micros + minimumMicros > nextStart.micros
 					&& ((prevStart != null && prevStart.micros + minimumMicros*2 < currStart.micros) || (prevEnd != null && prevEnd.micros + minimumMicros*2 < currStart.micros))
-					&& nextEnd.micros <= nextStart.micros) {
-				// there is not room for curr, it does not overlap with next, and prev gridline is not closeby
-				// we move it earlier, so there is room
+					//&& nextEnd.micros <= nextStart.micros // TODO: wont this always be true?
+				) {
+				// there is not room for curr to next, it does not overlap with next start, and prev gridlines is not closeby
+				// we move curr earlier, so there is room
 				List<GridLine> list = microsWeights.get(keys[i]);
 				microsWeights.remove(keys[i]);
-				microsWeights.put(nextStart.micros - minimumMicros, list);
+				long newMicros = nextStart.micros - minimumMicros;
+				for (GridLine line : list) {
+					line.micros = newMicros;
+				}
+				microsWeights.put(newMicros, list);
 			}
 			if (nextStart != null && currEnd != null && currStart == null && prevStart != null
 					&& prevStart.micros + minimumMicros > currEnd.micros
 					&& nextStart.micros >= currEnd.micros + minimumMicros * 2
 					&& (nextEnd == null || nextEnd.micros >= currEnd.micros + minimumMicros * 2)) {
-				// we move it later, so there is room
+				// The reason we also check for nextStart not null is that nextnextnext might have a start closeby,
+				// and since we dont check that we make sure next or nextnext has a start.
+				// there is not room for prev to curr. There is no start at curr. Next is not close to curr.
+				// we move curr later, so there is room
 				List<GridLine> list = microsWeights.get(keys[i]);
 				microsWeights.remove(keys[i]);
-				microsWeights.put(prevStart.micros + minimumMicros, list);
+				long newMicros = prevStart.micros + minimumMicros;
+				for (GridLine line : list) {
+					line.micros = newMicros;
+				}
+				microsWeights.put(newMicros, list);
 			}
 			
 			prevStart = currStart;
@@ -2407,8 +2419,9 @@ public class AbcExporter {
 		
 	    NavigableSet<GridLine> grid = new TreeSet<GridLine>(gridLineComparator);
 	    
-	    GridLine last = null;
+	    GridLine lastAverage = null;
 	    // inside each cluster, calc a weighted average
+	    boolean firstCluster = true;
 	    for (List<GridLine> cluster : clusters) {
 	        long weightedSum = 0;
 	        int totalWeight = 0;
@@ -2427,30 +2440,49 @@ public class AbcExporter {
 	            weightedSum += line.micros * line.weight;
 	            totalWeight += line.weight;
 	        }
-	        long micros = weightedSum / totalWeight;
-	        
-	        GridLine curr = new GridLine(micros, type, totalWeight);
-	        curr.firstMicros = cluster.get(0).micros;
-	        if (endsShouldHaveNoSwayOverStartOfCluster && firstStartMicros != null) curr.firstMicros = firstStartMicros; 
-	        curr.lastMicros =  cluster.get(cluster.size()-1).micros;
-	        if (last != null) {
-	        	while(curr.micros - last.micros < minimumMicros) {
-	        		long needed = minimumMicros - (curr.micros - last.micros);
-		        	if (curr.weight > last.weight && last.firstMicros < last.micros) {
-		        		last.micros = Math.max(last.firstMicros, last.micros - needed);
-		        	} else if (curr.weight <= last.weight && curr.lastMicros > curr.micros) {
-		        		curr.micros = Math.min(curr.lastMicros, curr.micros + needed);
-		        	} else if (last.firstMicros < last.micros) {
-		        		last.micros = Math.max(last.firstMicros, last.micros - needed);
-		        	} else if (curr.lastMicros > curr.micros) {
-		        		curr.micros = Math.min(curr.lastMicros, curr.micros + needed);
+	        long micros = weightedSum / totalWeight;// average weighted micros
+	        if (firstCluster && cluster.get(0).micros == 0L) {
+	        	/*
+	        	 * When first note start is close to zero so a rest was inserted (which might be too short),
+	        	 * or a note starts at zero, we here make sure the weights don't move the zero gridline.
+	        	 * This is mostly relevant for not removing initial silence.
+	        	 */
+	        	micros = 0L;
+	        }
+	        firstCluster = false;
+	        GridLine currAverage = new GridLine(micros, type, totalWeight);
+	        currAverage.firstMicros = cluster.get(0).micros;// micros of the first line in the cluster
+	        if (endsShouldHaveNoSwayOverStartOfCluster && firstStartMicros != null) currAverage.firstMicros = firstStartMicros; 
+	        currAverage.lastMicros =  cluster.get(cluster.size()-1).micros;// micros of the last line in the cluster
+	        if (lastAverage != null) {
+	        	// TODO: weakness of this is that last might be adjusted to later position when it was curr,
+	        	//       and then adjusted earlier afterwards. But due to removing by weight later on,
+	        	//       it is sorta okay.
+	        	while (currAverage.micros - lastAverage.micros < minimumMicros) {
+	        		// the averages of the two clusters are still too close to each other
+	        		long needed = minimumMicros - (currAverage.micros - lastAverage.micros);
+		        	if (currAverage.weight > lastAverage.weight && lastAverage.firstMicros < lastAverage.micros) {
+		        		// curr more heavy than last and last is later than last first line
+		        		// we move the last earlier as much we can without moving it earlier than its first line
+		        		lastAverage.micros = Math.max(lastAverage.firstMicros, lastAverage.micros - needed);
+		        	} else if (currAverage.weight <= lastAverage.weight && currAverage.lastMicros > currAverage.micros) {
+		        		// curr is not heavier than last and curr is earlier than its last line
+		        		// we move the curr later, but not later than its last line
+		        		currAverage.micros = Math.min(currAverage.lastMicros, currAverage.micros + needed);
+		        	} else if (lastAverage.firstMicros < lastAverage.micros) {
+		        		// we move the last earlier as much we can without moving it earlier than its first line
+		        		lastAverage.micros = Math.max(lastAverage.firstMicros, lastAverage.micros - needed);
+		        	} else if (currAverage.lastMicros > currAverage.micros) {
+		        		// we move the curr later, but not later than its last line
+		        		currAverage.micros = Math.min(currAverage.lastMicros, currAverage.micros + needed);
 		        	} else {
+		        		// we exhausted all 4 options and give up on adjusting, the loop will never be infinite
 		        		break;
 		        	}
 	        	}
 	        }
-	        grid.add(curr);
-	        last = curr;
+	        grid.add(currAverage);
+	        lastAverage = currAverage;
 	    }
 	    
 	    if (grid.isEmpty()) return new TreeSet<Long>();
@@ -2480,7 +2512,7 @@ public class AbcExporter {
 	        }
 	        
 	        if (curr.micros - prev.micros < minimumMicros) {
-	        	if (curr.weight > prev.weight) {
+	        	if (curr.weight > prev.weight && prev.micros != 0L) {
 	        		refinedGrid.remove(prev);
 	        		refinedGrid.add(curr);
 	        		prev = curr;
@@ -2508,13 +2540,13 @@ public class AbcExporter {
 	    
 	    NavigableSet<Long> gridTimes = new TreeSet<Long>();
 	    //Long lastLine = null;
-	    //int lastType = INITIAL; 
+	    //int lastType = INITIAL;
 	    for (GridLine line : refinedGrid) {
 	        gridTimes.add(line.micros);
 	        /*
 	        if (lastLine != null) {
 	        	// TODO: comment out when system more solid
-	        	assert line.micros >= lastLine+minimumMicros:lastType+" "+(line.micros - lastLine)+" micros  "+line.type;
+	        	assert line.micros >= lastLine+minimumMicros:part.getTitle()+": "+lastType+" "+(line.micros - lastLine)+" micros  "+line.type;
 	        	assert line.micros <= lastLine+TimingInfo.LONGEST_NOTE_MICROS+70000:part.getTitle()+": "+lastType+" "+((line.micros - lastLine)/1000)+"ms "+line.type;
 	        }
 	        lastType = line.type;
@@ -2533,8 +2565,8 @@ public class AbcExporter {
 	private long getMaxStartShiftMicros(long noteDuration, long minimumMicros) {
 		// If start is needed to be moved more than this return value then note will be deleted
 		long minimums = noteDuration/minimumMicros;
-		if (minimums <= 1) return minimumMicros*3L/5L;// Very short note we wont move the start more than 36 ms
-		if (minimums <= 2) return minimumMicros*3L/4L;// Short note we also wont move the start more than 45 ms
+		if (minimums < 1L) return minimumMicros*3L/5L;// Very short note we wont move the start more than 36 ms
+		if (minimums <= 2L) return minimumMicros*3L/4L;// Short note we also wont move the start more than 45 ms
 		return minimumMicros;// Longer note we wont move the start more than 60 ms
 	}
 	
@@ -2599,6 +2631,12 @@ public class AbcExporter {
 	        if (candidateEnd == null) {
 	        	// ceiling == null and ( floor == null or taken by start )
 	        	continue;
+	        }
+	        
+	        //	Check that the shift does not exceed max relative to the original end.
+	        if (Math.abs(candidateEnd - note.origEndABCMicros) > minimumMicros * 3L/2L) {//90 ms
+	        	//System.out.println(parts.get(0).getAbcSong().getTitle()+": End grid was too far from note end:"+(Math.abs(candidateEnd - note.origEndABCMicros)/(double)minimumMicros));
+	            continue;
 	        }
 
 	        note.setEndTick(qtm.microsToTickABCOrganic(candidateEnd));
