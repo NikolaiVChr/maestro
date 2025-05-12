@@ -1,5 +1,6 @@
 package com.digero.maestro.midi;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -58,6 +59,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	private boolean[] rolandDrumChannels = null;
 	private boolean[] yamahaDrumChannels = null;
 	public boolean hasPorts = false;
+	private String copyright = "";
 
 	public SequenceDataCache(Sequence song, MidiStandard standard, boolean[] rolandDrumChannels,
 			List<TreeMap<Long, Boolean>> yamahaDrumSwitches, boolean[] yamahaDrumChannels,
@@ -295,6 +297,18 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 							}
 						} else if (m.getType() == META_MARKER) {
 							//System.out.println("Detected marker in MIDI");
+						} else if (m.getType() == META_COPYRIGHT && tick == 0L && iTrack == 0) {	
+							byte[] data = m.getData();// Text that starts with any of these indicate charset: "@LATIN", "@JP",
+							// "@UTF-16LE", or "@UTF-16BE"
+							char[] unsignedData = new char[data.length];
+							for (int i = 0; i < data.length; i++) {
+							    unsignedData[i] = (char)(data[i] & 0xFF); // Convert signed byte to unsigned int
+							}
+							String tmp = new String(unsignedData).trim();
+							//String tmp = new String(properBytes, 0, data.length, StandardCharsets.ISO_8859_1).trim();// "UTF_8"
+							if (tmp.length() > 0) {
+								copyright = tmp;
+							}
 						}
 					}
 				}
@@ -607,6 +621,14 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 
 	public MapByChannel getPanMap() {
 		return panMap;
+	}
+
+	public String getCopyright() {
+		return copyright;
+	}
+
+	public void setCopyright(String copyright) {
+		this.copyright = copyright;
 	}
 
 	/**

@@ -238,7 +238,12 @@ public class TrackInfo implements MidiConstants {
 				if (type == META_TRACK_NAME && name == null) {
 					byte[] data = m.getData();// Text that starts with any of these indicate charset: "@LATIN", "@JP",
 												// "@UTF-16LE", or "@UTF-16BE"
-					String tmp = new String(data, 0, data.length, StandardCharsets.US_ASCII).trim();// "UTF-8"
+					char[] unsignedData = new char[data.length];
+					for (int i = 0; i < data.length; i++) {
+					    unsignedData[i] = (char)(data[i] & 0xFF); // Convert signed byte to unsigned int
+					}
+					String tmp = new String(unsignedData).trim();
+					//String tmp = new String(data, 0, data.length, StandardCharsets.US_ASCII).trim();// "UTF-8"
 					if (tmp.length() > 0 && !tmp.equalsIgnoreCase("untitled")
 							&& !tmp.equalsIgnoreCase("WinJammer Demo")) {
 						// System.out.println("Starts with @ "+data[0]+" "+(data[0] & 0xFF));

@@ -42,7 +42,8 @@ Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 
 Version 4.2.3
 - Fixed countdown instead of count up timer in ABC Player would show enabled even if disabled if user had never toggled the option.
-- Some improvements to organic multistage. 
+- Some improvements to organic multistage.
+- Better decoding of midi track titles when its ISO-8859-1 charset.
 
 Version 4.2.2
 - Version check can no longer delay the start of Maestro.

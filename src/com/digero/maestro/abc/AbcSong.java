@@ -119,6 +119,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private Date firstExportTime = null;// UTC date and time for first time this project was exported to abc.
 	public boolean storeNewSourceFile = true;
 	public boolean storeNewExportFile = true;
+	private String copyright = "";
 
 	public AbcSong(File file, PartAutoNumberer partAutoNumberer, PartNameTemplate partNameTemplate,
 			ExportFilenameTemplate exportFilenameTemplate, InstrNameSettings instrNameSettings,
@@ -197,6 +198,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		sequenceInfo = SequenceInfo.fromMidi(file, miscSettings, usingOldVelocities, usingOldTempos);
 		title = sequenceInfo.getTitle();
 		composer = sequenceInfo.getComposer();
+		if (sequenceInfo.getDataCache() != null) copyright = sequenceInfo.getDataCache().getCopyright();
 		keySignature = (ICompileConstants.SHOW_KEY_FIELD) ? sequenceInfo.getKeySignature() : KeySignature.C_MAJOR;
 		timeSignature = sequenceInfo.getTimeSignature();
 		note = "";
@@ -424,6 +426,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 			title = sequenceInfo.getTitle();
 			composer = sequenceInfo.getComposer();
+			if (sequenceInfo.getDataCache() != null) copyright = sequenceInfo.getDataCache().getCopyright();
 			keySignature = (ICompileConstants.SHOW_KEY_FIELD) ? sequenceInfo.getKeySignature() : KeySignature.C_MAJOR;
 			timeSignature = sequenceInfo.getTimeSignature();
 		} catch (FileNotFoundException e) {
@@ -555,6 +558,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		songEle.setAttribute("maestroVersion", String.valueOf(MaestroMain.APP_VERSION));
 
 		SaveUtil.appendChildTextElement(songEle, "sourceFile", String.valueOf(sourceFile));
+		//if (!copyright.isEmpty()) SaveUtil.appendChildTextElement(songEle, "midi-copyright", copyright);
 		if (exportFile != null)
 			SaveUtil.appendChildTextElement(songEle, "exportFile", String.valueOf(exportFile));
 
