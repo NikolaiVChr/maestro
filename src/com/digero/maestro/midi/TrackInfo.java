@@ -113,8 +113,8 @@ public class TrackInfo implements MidiConstants {
 										allBentNotes.add(be);
 										be.addBend(ne.getStartTick(), 0);// we need this initial bend in NoteGraph class
 										noteEvents.remove(ne);
+										noteEvents.add(be);
 										ne = be;
-										noteEvents.add(ne);
 									}
 									if (ne instanceof BentMidiNoteEvent && ((BentMidiNoteEvent) ne).getBend(bendTick) != bend) {
 										// The if statement prevents double bend commands,
@@ -235,7 +235,7 @@ public class TrackInfo implements MidiConstants {
 				MetaMessage m = (MetaMessage) msg;
 				int type = m.getType();
 
-				if (type == META_TRACK_NAME && name == null) {
+				if (type == META_TRACK_NAME && name == null && m.getData() != null) {
 					byte[] data = m.getData();// Text that starts with any of these indicate charset: "@LATIN", "@JP",
 												// "@UTF-16LE", or "@UTF-16BE"
 					char[] unsignedData = new char[data.length];

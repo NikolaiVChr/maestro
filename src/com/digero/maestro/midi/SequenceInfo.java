@@ -597,7 +597,7 @@ public class SequenceInfo implements MidiConstants {
 					// we already know that this sysex is a XG bank/patch change, so no need for if statement.
 					String bank = message[6] == 1 ? "MSB"
 							: (message[6] == 2 ? "LSB" : (message[6] == 3 ? "Patch" : ""));
-					if (!"".equals(bank) && message[5] < 16 && message[5] > -1 && message[7] < 128 && message[7] > -1) {
+					if (!"".equals(bank) && message[5] < 16 && message[5] >= 0 && message[7] < 128 && message[7] >= 0) {
 						// System.err.println(fileName+": Yamaha XG Sysex "+bank+" set to "+message[7]+" for channel
 						// "+message[5]);
 						int ch = message[5];
