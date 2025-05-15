@@ -47,6 +47,25 @@ public class MaestroMain {
 	}
 
 	public static void main(final String[] args) throws Exception {
+		Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+		    throwable.printStackTrace();
+		    ProjectFrame.feed("ERROR: exception in thread " + thread.getName() + ": " + throwable+". Please notify the devs.");
+		    if (mainWindow != null) {		    	
+		    	SwingUtilities.invokeLater(() -> {
+		    		mainWindow.showFeed();
+		    	});
+		    }
+		});
+		SwingUtilities.invokeLater(() -> {
+			Thread.currentThread().setUncaughtExceptionHandler((thread, throwable) -> {
+			    System.err.println();
+			    throwable.printStackTrace();
+			    ProjectFrame.feed("ERROR: exception in thread " + thread.getName() + ": " + throwable+". Please notify the devs.");
+			    if (mainWindow != null) {		    	
+			    	mainWindow.showFeed();
+			    }
+			});
+		});
 		try {
 			Properties props = new Properties();
 			props.load(MaestroMain.class.getResourceAsStream("version.txt"));
@@ -83,7 +102,7 @@ public class MaestroMain {
 			Preferences preferences = Preferences.userNodeForPackage(MaestroMain.class);
 			preferences.node("saveAndExportSettings").put("theme", "Default");
 		}
-
+		
 		mainWindow = new ProjectFrame();
 
 		SwingUtilities.invokeAndWait(() -> {

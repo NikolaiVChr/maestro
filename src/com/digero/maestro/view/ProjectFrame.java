@@ -266,6 +266,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private volatile Version latestVer;
 	private CompletableFuture<Void> future = null;
 	
+	private JLabel feedLabel;
+	private static volatile String feed = "";
+	
 	/*
 	 * private static Color BRIGHT_RED = new Color(255, 0, 0); private static Color ORANGE = new Color(235, 150, 64);
 	 * private static Color BLACK = new Color(0, 0, 0);
@@ -935,7 +938,16 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				+ "guide to estimate how much of lotro max<br>" + "polyphony the song will consume.<br>"
 				+ "Stopped notes that are in release phase also counts.</html>");
 		
-		JPanel playControlPanel = new JPanel(new MigLayout("fillx, hidemode 3, wrap 9",
+		feedLabel = new JLabel();
+		feedLabel.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				feed("");
+				showFeed();
+			}
+		});
+		
+		playControlPanel = new JPanel(new MigLayout("fillx, hidemode 3, wrap 9",
 				"[][][][][][][grow -1][grow -1]"));
 		playControlPanel.add(tuneEditorButton);
 		playControlPanel.add(midiModeRadioButton);
@@ -956,11 +968,24 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		playControlPanel.add(noteButton, "span 2, center");
 		playControlPanel.add(midiBarLabel);
 		playControlPanel.add(abcBarLabel);
+		
+		playControlPanel.add(feedLabel, "span 9, center");
 
 		midiPartsAndControls = new JPanel(new BorderLayout(HGAP, VGAP));
 		midiPartsAndControls.add(partPanel, BorderLayout.CENTER);
 		midiPartsAndControls.add(playControlPanel, BorderLayout.SOUTH);
 		midiPartsAndControls.setBorder(BorderFactory.createTitledBorder("Part Settings"));
+	}
+	
+	public static synchronized void feed(String str) {
+		feed = str;
+	}
+	
+	public void showFeed() {
+		synchronized(ProjectFrame.class) {
+			feedLabel.setText(feed);
+			playControlPanel.validate();
+		}
 	}
 
 	private void updateSequencer() {
@@ -1708,6 +1733,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		partsListPanel.setBorder(BorderFactory.createTitledBorder(partListTitle));
 
+		showFeed();
+		
 		updateButtonsPending = false;
 	};
 
@@ -2378,6 +2405,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
 	private boolean refreshPreviewPending = false;
+	private JPanel playControlPanel;
 
 	private class RefreshPreviewTask implements Runnable {
 		@Override

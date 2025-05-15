@@ -48,6 +48,7 @@ Version 4.2.3
 - MIDI out device now take effect immediately when clicking Okay in options.
 - Will now autodetect if preferred MIDI device is turned on and switch to it. And opposite.
 - When reseting misc options, midi device list will be cleared and re-populated.
+- Added error handling that show a clickable message to user.
 
 Version 4.2.2
 - Version check can no longer delay the start of Maestro.

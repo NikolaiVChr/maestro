@@ -44,6 +44,7 @@ import com.digero.maestro.midi.BentMidiNoteEvent;
 import com.digero.maestro.midi.Chord;
 import com.digero.maestro.midi.MidiNoteEvent;
 import com.digero.maestro.midi.TrackInfo;
+import com.digero.maestro.view.ProjectFrame;
 
 public class AbcExporter {
 	private boolean organic = false;
@@ -1079,6 +1080,7 @@ public class AbcExporter {
 		
 		if (events.size() == 0) {
 			System.err.println("Export to preview/abc: "+metadata.getSongTitle()+" has a part with no exported notes.");
+			if (!preview) ProjectFrame.feed("Note: Song has a part with no exported notes ("+part.getTitle()+")");
 			return new ArrayList<>();
 		}
 		
@@ -1558,6 +1560,7 @@ public class AbcExporter {
 		
 		if (events.size() == 0) {
 			System.err.println("Export to preview/abc: "+metadata.getSongTitle()+" has a part with no exported notes.");
+			if (!preview) ProjectFrame.feed("Note: Song has a part with no exported notes ("+part.getTitle()+")");
 			return new ArrayList<>();
 		}
 		
