@@ -977,10 +977,17 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		midiPartsAndControls.setBorder(BorderFactory.createTitledBorder("Part Settings"));
 	}
 	
+	/**
+	 * Call this from any thread
+	 * @param str info to be shown
+	 */
 	public static synchronized void feed(String str) {
 		feed = str;
 	}
 	
+	/**
+	 * Call this from AWT thread only
+	 */
 	public void showFeed() {
 		synchronized(ProjectFrame.class) {
 			feedLabel.setText(feed);

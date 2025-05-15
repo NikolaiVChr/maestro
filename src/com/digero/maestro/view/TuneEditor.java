@@ -254,6 +254,7 @@ public class TuneEditor {
 				
 				JButton okButton = new JButton("APPLY");
 				okButton.addActionListener(e -> {
+					ProjectFrame.feed("");
 					TreeMap<Float, TuneLine> tm = new TreeMap<>();
 
 					float lastEnd = 0;
@@ -439,11 +440,13 @@ public class TuneEditor {
 							ps.fade = Integer.parseInt(tuneInputs.get(k).fade.getText());
 							lastEnd = checkForNewLastEnd(tm, lastEnd, k, ps, soFarSoGood(tm, ps));
 						} catch (NumberFormatException nfe) {
+							ProjectFrame.feed("Section(s) disabled, bad number input.");
 							TuneDialog.this.tuneInputs.get(k).enable[0].setSelected(false);
 							TuneDialog.this.tuneInputs.get(k).enable[1].setSelected(false);
 						}
 					}
 				}
+				((ProjectFrame)jf).showFeed();
 				return lastEnd;
 			}
 
@@ -455,6 +458,7 @@ public class TuneEditor {
 						lastEnd = ps.endBar;
 					ps.dialogLine = k;
 				} else {
+					ProjectFrame.feed("Section(s) disabled, bad bar input.");
 					TuneDialog.this.tuneInputs.get(k).enable[0].setSelected(false);
 					TuneDialog.this.tuneInputs.get(k).enable[1].setSelected(false);
 				}

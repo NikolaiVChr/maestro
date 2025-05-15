@@ -379,6 +379,7 @@ public class SectionEditor {
 				
 				JButton okButton = new JButton("APPLY");
 				okButton.addActionListener(e -> {
+					ProjectFrame.feed("");
 					TreeMap<Float, PartSection> tm = new TreeMap<>();
 
 					float lastEnd = 0.0f;
@@ -499,6 +500,7 @@ public class SectionEditor {
 									lastEnd = ps1.endBar;
 								ps1.dialogLine = k;
 							} else {
+								ProjectFrame.feed("Section(s) disabled, bad bar input.");
 								SectionDialog.this.sectionInputs.get(k).enable[0].setSelected(false);
 								SectionDialog.this.sectionInputs.get(k).enable[1].setSelected(false);
 								SectionDialog.this.sectionInputs.get(k).enable[2].setSelected(false);
@@ -507,6 +509,7 @@ public class SectionEditor {
 							SectionDialog.this.sectionInputs.get(k).enable[0].setSelected(false);
 							SectionDialog.this.sectionInputs.get(k).enable[1].setSelected(false);
 							SectionDialog.this.sectionInputs.get(k).enable[2].setSelected(false);
+							ProjectFrame.feed("Section(s) disabled, bad number input.");
 						}
 					}
 				}
@@ -550,6 +553,7 @@ public class SectionEditor {
 					}
 				} catch (NumberFormatException nfe) {
 				}
+				((ProjectFrame)jf).showFeed();
 				return lastEnd;
 			}
 
