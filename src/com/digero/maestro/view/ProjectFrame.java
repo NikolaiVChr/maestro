@@ -1346,6 +1346,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 					break;
 				case 5: // misc
 					miscSettings.restoreDefaults();
+					if (sequencer != null) sequencer.reset(true);// To repopulate the devices
 					break;
 				}
 				showSettingsAgain = true;
@@ -1386,6 +1387,15 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 		if (abcSong != null) {
 			abcSong.setBadger(miscSettings.showBadger);
+		}
+
+		String wantedDevice = NoteFilterSequencerWrapper.prefs.get(NoteFilterSequencerWrapper.prefMIDISelect, null);
+		if ((NoteFilterSequencerWrapper.deviceInUse != null && !NoteFilterSequencerWrapper.deviceInUse.equals(wantedDevice)) || (NoteFilterSequencerWrapper.deviceInUse == null && wantedDevice != null)) {
+			long tick = sequencer.getTickPosition();
+			boolean running = sequencer.isRunning();
+			sequencer.reset(true);
+			sequencer.setTickPosition(tick);
+			if (running) sequencer.setRunning(true); 
 		}
 		updateButtons(false);
 	}

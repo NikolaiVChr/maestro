@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
+import com.digero.common.midi.NoteFilterSequencerWrapper;
+
 public class MiscSettings {
 	public boolean showMaxPolyphony = true;
 	public boolean ignoreExpressionMessages = false;
@@ -81,6 +83,10 @@ public class MiscSettings {
 	public void restoreDefaults() {
 		try {
 			prefs.clear();
+			NoteFilterSequencerWrapper.prefs.clear();
+			Preferences node = NoteFilterSequencerWrapper.prefs.node(NoteFilterSequencerWrapper.prefMIDIHeader);
+			if (node != null) node.clear();
+			NoteFilterSequencerWrapper.prefs.flush();
 		} catch (BackingStoreException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

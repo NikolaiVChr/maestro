@@ -108,11 +108,17 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 
 		transceivers.add(transceiver);
 	}
+	
+	protected void resetHardIfGone() {
+		
+	}
 
 	private class TimerActionListener implements ActionListener {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			if (sequencer != null && sequencer.isOpen()) {
+				resetHardIfGone();
+		
 				long songTick = sequencer.getTickPosition();
 				if (songTick >= getTickLength()) {
 					// There's a bug in Sun's RealTimeSequencer, where there is a possible

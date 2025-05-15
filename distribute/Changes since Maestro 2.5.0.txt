@@ -44,6 +44,10 @@ Version 4.2.3
 - Fixed countdown instead of count up timer in ABC Player would show enabled even if disabled if user had never toggled the option.
 - Some improvements to organic multistage.
 - Better decoding of midi track titles when its ISO-8859-1 charset.
+- Selecting MIDI out device should now also work when midi out is indexed before its midi in.
+- MIDI out device now take effect immediately when clicking Okay in options.
+- Will now autodetect if preferred MIDI device is turned on and switch to it. And opposite.
+- When reseting misc options, midi device list will be cleared and re-populated.
 
 Version 4.2.2
 - Version check can no longer delay the start of Maestro.

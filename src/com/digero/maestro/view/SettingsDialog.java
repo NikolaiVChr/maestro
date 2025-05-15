@@ -96,6 +96,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 	private List<InstrumentSpinner> instrumentSpinners = new ArrayList<>();
 	private JComboBox<Integer> incrementComboBox = new JComboBox<>(new Integer[] { 1, 10 });
 	private JFrame own;
+	private JComboBox<String> deviceBox;
 
 	public SettingsDialog(JFrame owner, Preferences maestroPrefs, PartAutoNumberer partNumberer,
 			PartNameTemplate nameTemplate, ExportFilenameTemplate exportTemplate, SaveAndExportSettings saveSettings,
@@ -928,32 +929,18 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		autoplayOnOpenCheckBox.addActionListener(e -> miscSettings.autoplayOnOpen = autoplayOnOpenCheckBox.isSelected());
 
 		final String defaultStr = "Default";
-		String preferredDevice = NoteFilterSequencerWrapper.prefs.get(NoteFilterSequencerWrapper.prefMIDISelect, null);
+		
 		final JLabel deviceText = new JLabel("Preferred MIDI out device:");
-		final JComboBox<String> deviceBox = new JComboBox<>();
+		deviceBox = new JComboBox<>();
 		deviceBox.setToolTipText("<html>Select preferred MIDI Device<br>"
 				+ "Will take effect next time a midi is loaded as source.</html>");
-		deviceBox.addItem(defaultStr);
-		Preferences prefsNode = NoteFilterSequencerWrapper.prefs.node(NoteFilterSequencerWrapper.prefMIDIHeader);
-		String[] keys = {};
-		try {
-			keys = prefsNode.keys();
-		} catch (BackingStoreException e1) {
-			// e1.printStackTrace();
-		}
-		for (String key : keys) {
-			deviceBox.addItem(key);
-		}
-		if (preferredDevice != null) {
-			deviceBox.setSelectedItem(preferredDevice);
-		} else {
-			deviceBox.setSelectedItem(defaultStr);
-		}
+		refreshDeviceBox();
 		deviceBox.setEditable(false);
 		deviceBox.addActionListener(e -> {
 			String s = (String) deviceBox.getSelectedItem();
 			if ("Default".equals(s)) {
 				NoteFilterSequencerWrapper.prefs.remove(NoteFilterSequencerWrapper.prefMIDISelect);
+			} else if (s == null) {
 			} else {
 				NoteFilterSequencerWrapper.prefs.put(NoteFilterSequencerWrapper.prefMIDISelect, s);
 			}
@@ -1131,6 +1118,30 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		panel.add(importPrefs, "0, " + row);		
 
 		return panel;
+	}
+	
+	private void refreshDeviceBox() {
+		
+		final String defaultStr = "Default";
+		String preferredDevice = NoteFilterSequencerWrapper.prefs.get(NoteFilterSequencerWrapper.prefMIDISelect, null);
+		deviceBox.removeAllItems();
+		deviceBox.addItem(defaultStr);
+		Preferences prefsNode = NoteFilterSequencerWrapper.prefs.node(NoteFilterSequencerWrapper.prefMIDIHeader);
+		String[] keys = {};
+		
+		try {
+			keys = prefsNode.keys();
+		} catch (BackingStoreException e1) {
+			// e1.printStackTrace();
+		}
+		for (String key : keys) {
+			deviceBox.addItem(key);
+		}
+		if (preferredDevice != null) {
+			deviceBox.setSelectedItem(preferredDevice);
+		} else {
+			deviceBox.setSelectedItem(defaultStr);
+		}
 	}
 
 	public void setActiveTab(int tab) {

@@ -3199,6 +3199,7 @@ public class AbcExporter {
 
 				if (qtm.tickToBarEndTick(ne.getStartTick()) < endBarTick
 						&& slipMicros < AbcConstants.ONE_SECOND_MICROS) {
+					// endBarTick is at least 2 barlines away from note start 
 					maxNoteEndTick = qtm.quantize(endBarTick, part);
 					assert ne.getEndTick() > maxNoteEndTick;
 				}
@@ -3363,7 +3364,7 @@ public class AbcExporter {
 
 							if (qtm.tickToBarEndTickOrganic(ne.getStartTick()) < bar3
 									&& slipMicros < AbcConstants.ONE_SECOND_MICROS) {
-								// minimum 1nd bar from start and maximum 1 sec from 5 secs
+								// minimum 2nd bar from start and maximum 1 sec from 5 secs
 								maxNoteEndTick = bar3;
 								//System.out.println(part.getTitle()+" bar3");
 							} else {

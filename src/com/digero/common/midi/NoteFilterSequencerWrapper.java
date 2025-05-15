@@ -21,6 +21,8 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 	private Preferences prefsNode = null;
 	private NoteFilterTransceiver filter;
 	private MidiDevice device = null;
+	private int listNumber = 0;
+	public static String deviceInUse = null;
 	
 
 	public NoteFilterSequencerWrapper() throws MidiUnavailableException {
@@ -49,6 +51,35 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 	public boolean isNoteActive(int noteId) {
 		return filter.isNoteActive(noteId);
 	}
+	
+	@Override
+	protected void resetHardIfGone() {
+		Info[] infos = MidiSystem.getMidiDeviceInfo();
+		if (listNumber != infos.length) {
+			listNumber = infos.length;
+			String wanted = prefs.get(prefMIDISelect, null);
+			boolean foundInUse = false;
+			boolean foundWanted = false;
+			boolean needWanted = wanted != deviceInUse;
+			for (Info d : infos) {
+				if (d != null && d.getName() != null) {
+					if(d.getName().equals(deviceInUse)) {
+						foundInUse = true;
+					}
+					if(needWanted && d.getName().equals(wanted)) {
+						foundWanted = true;
+					}
+				}
+			}
+			if (!foundInUse || (needWanted && foundWanted)) {
+				long tick = getTickPosition();
+				boolean running = isRunning();
+				reset(true);
+				setTickPosition(tick);
+				if (running) start();
+			}
+		}
+	}
 
 	@Override
 	public Receiver createReceiver() throws MidiUnavailableException {
@@ -57,12 +88,25 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 		}
 		String preferred = prefs.get(prefMIDISelect, null);
 		Info[] infos = MidiSystem.getMidiDeviceInfo();
+		listNumber = infos.length;
 		Info myInfo = null;
+		String description = "No description";
+		String vendor = "";
 		for (Info info : infos) {
-			prefsNode.putLong(info.getName(), new Date().getTime());
-			// System.out.println(infoToString(info));
-			if (info.getName() != null && info.getName().length() > 0 && info.getName().equals(preferred)) {
-				myInfo = info;
+			boolean midiOut = false;
+			try {
+				MidiDevice dv = MidiSystem.getMidiDevice(info);
+				midiOut = dv.getMaxReceivers() != 0;
+			} catch (MidiUnavailableException e) {
+			}
+			if (midiOut) {
+				prefsNode.putLong(info.getName(), new Date().getTime());
+				//System.out.println(infoToString(info));
+				if (info.getName() != null && info.getName().length() > 0 && info.getName().equals(preferred)) {
+					myInfo = info;
+					if (info.getDescription() != null) description = info.getDescription();
+					if (!"Unknown vendor".equals(info.getVendor())) vendor = info.getVendor();
+				}
 			}
 		}
 		try {
@@ -75,10 +119,12 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 
 		if (preferred == null) {
 			// System.out.println("Default MIDI out selected");
+			deviceInUse = null;
 			return MidiSystem.getReceiver();
 		}
 		if (myInfo == null) {
 			System.out.println("Default MIDI out selected (" + preferred + " not available)");
+			deviceInUse = null;
 			return MidiSystem.getReceiver();
 		}
 
@@ -100,14 +146,17 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 			closeDevice();
 		}
 		if (!okay || myReciever == null) {
-			System.out.println("Default MIDI out selected (" + preferred + " not available)");
+			System.out.println("Default MIDI out selected (" + preferred + " not connected)");
+			deviceInUse = null;
 			return MidiSystem.getReceiver();
 		}
 
 		// System.out.println("\nmaxTransmitters="+myDevice.getMaxTransmitters());
 		// System.out.println("maxReceivers="+myDevice.getMaxReceivers());
 
-		System.out.println("Non-default MIDI out selected: " + myInfo.getName());
+		deviceInUse = preferred;
+		
+		System.out.println("Non-default MIDI out selected: " + myInfo.getName()+" ("+description+") "+vendor);
 		return myReciever;
 	}
 
@@ -131,6 +180,12 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 		str += "\nVendor: " + info.getVendor();
 		str += "\nDescription: " + info.getDescription();
 		str += "\nVersion: " + info.getVersion();
+		try {
+			MidiDevice dv = MidiSystem.getMidiDevice(info);
+			str += "\nMax Transmitters: " + dv.getMaxTransmitters();
+			str += "\nMax Receivers: " + dv.getMaxReceivers();
+		} catch (MidiUnavailableException e) {
+		}
 		return str;
 	}
 
