@@ -501,21 +501,21 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 	private JPanel createNameTemplatePanel() {
 		JLabel whitespaceLabel = new JLabel("<html><b>Replace spaces in variables with:</b></html>");
 
-		JComboBox<String> replaceWhitespaceComboBox = new JComboBox<>(nameTemplateSettings.spaceReplaceLabels);
+		JComboBox<String> replaceWhitespaceComboBox = new JComboBox<>(PartNameTemplate.Settings.spaceReplaceLabels);
 		String replaceText = nameTemplateSettings.getWhitespaceReplaceText();
 		int selectedIndex = 0;
-		nameTemplateSettings.setWhitespaceReplaceText(nameTemplateSettings.spaceReplaceChars[0]);
+		nameTemplateSettings.setWhitespaceReplaceText(PartNameTemplate.Settings.spaceReplaceChars[0]);
 
-		for (int i = 0; i < nameTemplateSettings.spaceReplaceChars.length; i++) {
-			if (replaceText.equals(nameTemplateSettings.spaceReplaceChars[i])) {
-				nameTemplateSettings.setWhitespaceReplaceText(nameTemplateSettings.spaceReplaceChars[i]);
+		for (int i = 0; i < PartNameTemplate.Settings.spaceReplaceChars.length; i++) {
+			if (replaceText.equals(PartNameTemplate.Settings.spaceReplaceChars[i])) {
+				nameTemplateSettings.setWhitespaceReplaceText(PartNameTemplate.Settings.spaceReplaceChars[i]);
 				selectedIndex = i;
 			}
 		}
 		replaceWhitespaceComboBox.setSelectedIndex(selectedIndex);
 		replaceWhitespaceComboBox.addActionListener(e -> {
 			nameTemplateSettings.setWhitespaceReplaceText(
-					nameTemplateSettings.spaceReplaceChars[replaceWhitespaceComboBox.getSelectedIndex()]);
+					PartNameTemplate.Settings.spaceReplaceChars[replaceWhitespaceComboBox.getSelectedIndex()]);
 			updateNameTemplateExample();
 		});
 		

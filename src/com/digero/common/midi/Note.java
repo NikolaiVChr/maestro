@@ -25,8 +25,6 @@ package com.digero.common.midi;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.digero.common.util.ParseException;
-
 public enum Note {
 	REST(-1), //
 	CX, CsX, DbX(CsX), DX, DsX, EbX(DsX), EX, FX, FsX, GbX(FsX), GX, GsX, AbX(GsX), AX, AsX, BbX(AsX), BX, //

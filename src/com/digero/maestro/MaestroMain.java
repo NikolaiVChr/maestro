@@ -7,6 +7,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -49,7 +51,7 @@ public class MaestroMain {
 	public static void main(final String[] args) throws Exception {
 		Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
 		    throwable.printStackTrace();
-		    ProjectFrame.feed("ERROR: exception in thread " + thread.getName() + ": " + throwable+". Please notify the devs.");
+		    ProjectFrame.feed("ERROR: exception in thread " + thread.getName() + ": " + throwable+". Please notify the devs.", getFirstLines(throwable));
 		    if (mainWindow != null) {		    	
 		    	SwingUtilities.invokeLater(() -> {
 		    		mainWindow.showFeed();
@@ -60,7 +62,7 @@ public class MaestroMain {
 			Thread.currentThread().setUncaughtExceptionHandler((thread, throwable) -> {
 			    System.err.println();
 			    throwable.printStackTrace();
-			    ProjectFrame.feed("ERROR: exception in thread " + thread.getName() + ": " + throwable+". Please notify the devs.");
+			    ProjectFrame.feed("ERROR: exception in thread " + thread.getName() + ": " + throwable+". Please notify the devs.", getFirstLines(throwable));
 			    if (mainWindow != null) {		    	
 			    	mainWindow.showFeed();
 			    }
@@ -110,6 +112,21 @@ public class MaestroMain {
 			mainWindow.getRootPane().requestFocus();
 			openSongFromCommandLine(args);
 		});
+	}
+
+	public static String getFirstLines(Throwable throwable) {
+		StringWriter sw = new StringWriter();
+		PrintWriter pw = new PrintWriter(sw);
+		throwable.printStackTrace(pw);
+		
+		String[] lines = sw.toString().split("\n");
+		StringBuilder sb = new StringBuilder();
+		
+		int limit = Math.min(lines.length, 20);
+		for (int i = 0; i < limit; i++) {
+			sb.append(lines[i]).append("\n");
+		}
+		return sb.toString();
 	}
 
 	public static void outputJRE() {

@@ -1,13 +1,9 @@
 package com.digero.maestro.view;
 
 import java.awt.Dimension;
-import java.util.ArrayList;
-
 import com.digero.common.midi.SequencerWrapper;
-import com.digero.common.util.Listener;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcSong;
-import com.digero.maestro.abc.AbcSongEvent;
 
 public class PartsListEditor extends PartsList {
 	private static final long serialVersionUID = -3564677504833477636L;

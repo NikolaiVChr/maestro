@@ -64,6 +64,7 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 			boolean foundInUse = false;
 			boolean foundWanted = false;
 			boolean needWanted = wanted != deviceInUse;
+
 			for (Info d : infos) {
 				if (d != null && d.getName() != null) {
 					if(d.getName().equals(deviceInUse)) {
@@ -74,7 +75,7 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 					}
 				}
 			}
-			if (!foundInUse || (needWanted && foundWanted)) {
+			if ((!foundInUse && deviceInUse != null) || (needWanted && foundWanted)) {
 				long tick = getTickPosition();
 				boolean running = isRunning();
 				reset(true);
@@ -124,13 +125,13 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 		if (preferred == null) {
 			// System.out.println("Default MIDI out selected");
 			deviceInUse = null;
-			if (nonDefault && feedActive) ProjectFrame.feed("Default MIDI out");
+			if (nonDefault && feedActive) ProjectFrame.feed("Default MIDI out", null);
 			return MidiSystem.getReceiver();
 		}
 		if (myInfo == null) {
 			System.out.println("Default MIDI out selected (" + preferred + " not available)");
 			deviceInUse = null;
-			if (nonDefault) ProjectFrame.feed("Default MIDI out (" + preferred + " not available)");
+			if (nonDefault) ProjectFrame.feed("Default MIDI out (" + preferred + " not available)", null);
 			return MidiSystem.getReceiver();
 		}
 
@@ -154,7 +155,7 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 		if (!okay || myReciever == null) {
 			System.out.println("Default MIDI out selected (" + preferred + " not connected)");
 			deviceInUse = null;
-			if (nonDefault) ProjectFrame.feed("Default MIDI out (" + preferred + " not connected)");
+			if (nonDefault) ProjectFrame.feed("Default MIDI out (" + preferred + " not connected)", null);
 			return MidiSystem.getReceiver();
 		}
 
@@ -162,7 +163,7 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 		// System.out.println("maxReceivers="+myDevice.getMaxReceivers());
 
 		
-		if (feedActive && (deviceInUse == null || !deviceInUse.equals(preferred))) ProjectFrame.feed("MIDI out on "+myInfo.getName());
+		if (feedActive && (deviceInUse == null || !deviceInUse.equals(preferred))) ProjectFrame.feed("MIDI out on "+myInfo.getName(), null);
 		deviceInUse = preferred;
 		
 		System.out.println("Non-default MIDI out selected: " + myInfo.getName()+" ("+description+") "+vendor);

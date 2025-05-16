@@ -7,8 +7,6 @@ import java.io.File;
 import java.util.List;
 import java.util.function.Consumer;
 
-import jakarta.activation.ActivationDataFlavor;
-import jakarta.activation.DataHandler;
 import javax.swing.JComponent;
 import javax.swing.JTable;
 import javax.swing.TransferHandler;

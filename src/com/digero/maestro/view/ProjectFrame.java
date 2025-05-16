@@ -92,7 +92,6 @@ import javax.xml.transform.TransformerException;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
-import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.StringCleaner;
 import com.digero.common.icons.IconLoader;
 import com.digero.common.midi.KeySignature;
@@ -268,6 +267,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	
 	private JLabel feedLabel;
 	private static volatile String feed = "";
+	private static volatile String feedFull = "";
 	
 	/*
 	 * private static Color BRIGHT_RED = new Color(255, 0, 0); private static Color ORANGE = new Color(235, 150, 64);
@@ -942,7 +942,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		feedLabel.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				feed("");
+				feed("", null);
 				showFeed();
 			}
 		});
@@ -980,9 +980,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	/**
 	 * Call this from any thread
 	 * @param str info to be shown
+	 * @param str2 tooltip
 	 */
-	public static synchronized void feed(String str) {
+	public static synchronized void feed(String str, String str2) {
 		feed = str;
+		feedFull = str2;
 	}
 	
 	/**
@@ -990,7 +992,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	 */
 	public void showFeed() {
 		synchronized(ProjectFrame.class) {
-			feedLabel.setText(feed);
+			feedLabel.setText(feed + "  [click to dismiss]");
+			feedLabel.setToolTipText(feedFull);
 			playControlPanel.validate();
 		}
 	}
