@@ -13,9 +13,11 @@ import javax.sound.midi.MidiSystem;
 import javax.sound.midi.MidiUnavailableException;
 import javax.sound.midi.Soundbank;
 import javax.sound.midi.Synthesizer;
+import javax.sound.sampled.AudioFormat;
 
 //import com.digero.common.midi.synth.LotroSoftSynthesizer;
 import com.sun.media.sound.AudioSynthesizer;
+import com.sun.media.sound.AudioSynthesizerPropertyInfo;
 
 public class SynthesizerFactory {
 	private static Soundbank lotroSoundbank = null;
@@ -44,42 +46,71 @@ public class SynthesizerFactory {
 			initAudioSynthesizer(synth);
 		return synth;
 	}
-
-	@SuppressWarnings("restriction")
-	public static void initLotroSynthesizer(Synthesizer synth)
-			throws MidiUnavailableException, InvalidMidiDataException, IOException {
+	
+	private static Map<String, Object> setupSynthesizerPropertyInfo() {
 		Map<String, Object> synthInfo = new HashMap<>();
 		synthInfo.put("midi channels", MidiConstants.CHANNEL_COUNT_ABC);// default is 16
 		synthInfo.put("reverb", false);// default is true
 		synthInfo.put("chorus", false);// default is true
+		synthInfo.put("light reverb", false);// default is true
+		synthInfo.put("device id", 0);// default is 0
+		synthInfo.put("load default soundbank", false);// default is true
 		synthInfo.put("max polyphony", 128);// default is 64
+		synthInfo.put("control rate", 147f); // default is 147f
+		synthInfo.put("interpolation", "linear");// default is linear."linear", "linear1", "linear2", "cubic", "lanczos", "sinc", "point".
 		synthInfo.put("auto gain control", true);// default is true. Set to false it can give pops when skipping in
 													// song, especially for abc player.
 		synthInfo.put("latency", 250000L);// 12000 microseconds is default. But that low with 24 parts will give pops
-											// and clicks in playback in abc
-											// player.
-		// synthInfo.put("jitter correction", true);//Not sure what this does or what the default value is.
-		synthInfo.put("large mode", false);// Default false. Not sure what it does. If enabled it seems to use lazy
+										  // and clicks in playback in abc player.
+		synthInfo.put("jitter correction", true);//default is true. Not sure what this does
+		synthInfo.put("large mode", false);// Default false. If enabled it seems to use lazy
 											// loading of soundfont samples.
-		((com.sun.media.sound.SoftSynthesizer) synth).open(null, synthInfo);
-		// ((LotroSoftSynthesizer)synth).open(null, synthInfo);
-		synth.unloadAllInstruments(getLotroSoundbank());
-		synth.loadAllInstruments(getLotroSoundbank());
+		synthInfo.put("format", new AudioFormat(44100, 16, 1, true, false));// use mono samples in memory
+		return synthInfo;
 	}
 
+	/**
+	 * This is used for ABC preview in both Maestro and AbcPlayer
+	 * 
+	 * @param synth
+	 * @throws MidiUnavailableException
+	 * @throws InvalidMidiDataException
+	 * @throws IOException
+	 */
+	@SuppressWarnings("restriction")
+	public static void initLotroSynthesizer(Synthesizer synth)
+			throws MidiUnavailableException, InvalidMidiDataException, IOException {
+				((com.sun.media.sound.SoftSynthesizer) synth).open(null, setupSynthesizerPropertyInfo());
+		// ((LotroSoftSynthesizer)synth).open(null, synthInfo);
+		//synth.unloadAllInstruments(getLotroSoundbank()); // not needed, as we only make it once
+		synth.loadAllInstruments(getLotroSoundbank());
+		
+		//uncomment this to check default values
+		//outputProperties(synth);
+	}
+
+	private static void outputProperties(Synthesizer synth) {
+		Map<String, Object> synthInfo = new HashMap<>();
+		AudioSynthesizerPropertyInfo[] infos = ((com.sun.media.sound.SoftSynthesizer) synth).getPropertyInfo(synthInfo);
+		for (AudioSynthesizerPropertyInfo inf : infos) {
+			System.out.println("\n"+inf.name);
+			System.out.println(inf.description);
+			System.out.println(inf.value);
+		}
+	}
+
+	/**
+	 * This is used for exporting wav and mp3 audio files.
+	 * 
+	 * @param synth
+	 * @throws MidiUnavailableException
+	 * @throws InvalidMidiDataException
+	 * @throws IOException
+	 */
 	@SuppressWarnings("restriction")
 	public static void initAudioSynthesizer(Synthesizer synth)
 			throws MidiUnavailableException, InvalidMidiDataException, IOException {
-		Map<String, Object> synthInfo = new HashMap<>();
-		synthInfo.put("midi channels", MidiConstants.CHANNEL_COUNT_ABC);// default is 16
-		synthInfo.put("reverb", false);// default is true
-		synthInfo.put("chorus", false);// default is true
-		synthInfo.put("max polyphony", 128);// default is 64
-		synthInfo.put("latency", 200000L);// 120000 microseconds is default, notice factor 10 from SoftSynth.
-		// synthInfo.put("jitter correction", true);//Not sure what this does.
-		synthInfo.put("large mode", false);// Default false. Not sure what it does.
-		// ((com.sun.media.sound.SoftSynthesizer)synth).open(null, synthInfo);
-		((AudioSynthesizer) synth).open(null, synthInfo);
+		((AudioSynthesizer) synth).open(null, setupSynthesizerPropertyInfo());
 		synth.unloadAllInstruments(getLotroSoundbank());
 		synth.loadAllInstruments(getLotroSoundbank());
 	}

@@ -49,6 +49,8 @@ Version 4.2.3
 - Will now autodetect if preferred MIDI device is turned on and switch to it. And opposite.
 - When reseting misc options, midi device list will be cleared and re-populated.
 - Added error handling that show a clickable message to user.
+- Use mono soundfont samples internally.
+- Disable light reverb in preview.
 
 Version 4.2.2
 - Version check can no longer delay the start of Maestro.
