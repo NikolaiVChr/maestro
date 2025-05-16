@@ -979,8 +979,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	
 	/**
 	 * Call this from any thread
-	 * @param str info to be shown
-	 * @param str2 tooltip
+	 * @param str info to be shown, can be null.
+	 * @param str2 tooltip, can be null.
 	 */
 	public static synchronized void feed(String str, String str2) {
 		feed = str;
@@ -992,7 +992,12 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	 */
 	public void showFeed() {
 		synchronized(ProjectFrame.class) {
-			feedLabel.setText(feed + "  [click to dismiss]");
+			if (feed == null) {
+				feedLabel.setText(null);
+			} else {
+				String dismiss = feed.isEmpty()?"":"  [click to dismiss]";
+				feedLabel.setText(feed + dismiss);
+			}
 			feedLabel.setToolTipText(feedFull);
 			playControlPanel.validate();
 		}

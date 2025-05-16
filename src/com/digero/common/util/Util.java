@@ -549,4 +549,10 @@ public final class Util {
 	public static float map(float value, float fromLow, float fromHigh, float toLow, float toHigh) {
 		return toLow + (value - fromLow) * (toHigh - toLow) / (fromHigh - fromLow);
 	}
+	
+	public boolean stringEquals(String str1, String str2) {
+		if (str1 == null && str2 == null) return true;
+		if (str1 == null || str2 == null) return false;
+		return str1.equals(str2);
+	}
 }

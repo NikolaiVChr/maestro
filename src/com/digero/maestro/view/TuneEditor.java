@@ -254,7 +254,7 @@ public class TuneEditor {
 				
 				JButton okButton = new JButton("APPLY");
 				okButton.addActionListener(e -> {
-					ProjectFrame.feed("", null);
+					ProjectFrame.feed(null, null);
 					TreeMap<Float, TuneLine> tm = new TreeMap<>();
 
 					float lastEnd = 0;
