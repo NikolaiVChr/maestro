@@ -52,6 +52,7 @@ Version 4.2.3
 - Use mono soundfont samples internally.
 - Disable light reverb in preview.
 - Add option for how to export the volume of notes starting at same time in a part. Its applied to whole song, perhaps in future can put in overrides in part-editor or section-editor.
+- Fix that preview sequence could be longer than End-early, it played, but song muted.
 
 Version 4.2.2
 - Version check can no longer delay the start of Maestro.
