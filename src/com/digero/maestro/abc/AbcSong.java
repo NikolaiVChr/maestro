@@ -47,6 +47,8 @@ import com.digero.maestro.MaestroMain;
 import com.digero.maestro.abc.AbcPartEvent.AbcPartProperty;
 import com.digero.maestro.abc.AbcSongEvent.AbcSongProperty;
 import com.digero.maestro.abc.QuantizedTimingInfo.TimingInfoEvent;
+import com.digero.maestro.midi.Chord;
+import com.digero.maestro.midi.Chord.CalcDynamics;
 import com.digero.maestro.midi.SequenceDataCache;
 import com.digero.maestro.midi.SequenceInfo;
 import com.digero.maestro.midi.TrackInfo;
@@ -62,7 +64,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = MaestroMain.APP_NAME + " Projects";
 	public static final String MSX_FILE_EXTENSION_NO_DOT = "msx";
 	public static final String MSX_FILE_EXTENSION = "." + MSX_FILE_EXTENSION_NO_DOT;
-	public static final Version SONG_FILE_VERSION = new Version(4, 1, 4, 300);// Keep build above 117 to make earlier
+	public static final Version SONG_FILE_VERSION = new Version(4, 2, 3, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
 
@@ -111,6 +113,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private boolean usingOldVelocities = false;
 	private boolean usingOldTempos = false;
 	private boolean hideEdits = false;
+	public final static Chord.CalcDynamics dynamicsMethodDefault = CalcDynamics.LOUDEST;
+	public Chord.CalcDynamics dynamicsMethod = dynamicsMethodDefault;
+	
 
 	private final ListModelWrapper<AbcPart> parts = new ListModelWrapper<>(new DefaultListModel<>());
 
@@ -265,6 +270,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		transcriber = abcInfo.getTranscriber();
 		genre = abcInfo.getGenre();
 		mood = abcInfo.getMood();
+		dynamicsMethod = Chord.CalcDynamics.LOUDEST;
 		setTempoFactor(abcInfo.getPrimaryTempoBPM(), abcInfo.getPrimaryTempoBPM());
 		note = "";
 	}
@@ -287,6 +293,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 						"Warning", JOptionPane.WARNING_MESSAGE);
 			}
 
+			dynamicsMethod = Chord.CalcDynamics.fromString(SaveUtil.parseValue(songEle, "exportSettings/@calcDynamics", Chord.CalcDynamics.LOUDEST.name()));
 			usingOldVelocities = SaveUtil.parseValue(songEle, "importSettings/@useOldVelocities", true);// must be
 			usingOldTempos     = SaveUtil.parseValue(songEle, "importSettings/@useOldTempos", true);    // before
 																										// tryToLoadFromFile
@@ -618,6 +625,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			exportSettingsEle.setAttribute("combinePriorities", String.valueOf(priorityActive));
 			// exportSettingsEle.setAttribute("mixVersion", String.valueOf(mixVersion));
 		}
+		exportSettingsEle.setAttribute("calcDynamics", dynamicsMethod.name());
+
 		if (exportSettingsEle.getAttributes().getLength() > 0 || exportSettingsEle.getChildNodes().getLength() > 0)
 			songEle.appendChild(exportSettingsEle);
 	}

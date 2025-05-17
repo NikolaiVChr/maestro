@@ -55,6 +55,7 @@ import javax.swing.Icon;
 import javax.swing.InputMap;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JComponent;
 import javax.swing.JFileChooser;
 import javax.swing.JFormattedTextField;
@@ -131,6 +132,7 @@ import com.digero.maestro.abc.PartAutoNumberer;
 import com.digero.maestro.abc.PartNameTemplate;
 import com.digero.maestro.abc.PolyphonyHistogram;
 import com.digero.maestro.abc.QuantizedTimingInfo;
+import com.digero.maestro.midi.Chord;
 import com.digero.maestro.midi.SequenceInfo;
 import com.digero.maestro.util.FileResolver;
 import com.digero.maestro.util.ListModelWrapper;
@@ -188,6 +190,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private JCheckBox tripletCheckBox;
 	private JCheckBox mixCheckBox;
 	private JCheckBox prioCheckBox;
+	private JComboBox<Chord.CalcDynamics> dynaCombo;
 	private JButton exportButton;
 	private JLabel exportSuccessfulLabel;
 	private Timer exportLabelHideTimer;
@@ -755,6 +758,20 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				refreshPreviewSequence(false);
 		});
 		
+		dynaCombo = new JComboBox<Chord.CalcDynamics>(Chord.CalcDynamics.values());
+		dynaCombo.setSelectedItem(AbcSong.dynamicsMethodDefault);
+		dynaCombo.addItemListener(i -> {
+			if (abcSong != null) {
+				abcSong.dynamicsMethod = (Chord.CalcDynamics) dynaCombo.getSelectedItem();
+				refreshPreviewSequence(false);
+			}
+		});
+		dynaCombo.setToolTipText("Volume calculation method for when multiple notes start at same time in a part.\n"
+				+ Chord.CalcDynamics.LOUDEST+": Volume of the loudest note.\n"
+				+ Chord.CalcDynamics.POWER_RMS_DB+": decibel mean.\n"
+				+ Chord.CalcDynamics.POWER_MID_DB+": A bit softer than RMS.\n"
+				+ Chord.CalcDynamics.WEIGHTED+": Generally the softest.");
+		
 		exportSuccessfulLabel = new JLabel("Exported");
 		exportSuccessfulLabel.setIcon(IconLoader.getImageIcon("check_16.png"));
 		exportSuccessfulLabel.setBorder(BorderFactory.createEmptyBorder(0, 2, 0, 0));
@@ -822,6 +839,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		row++;
 		settingsLayout.insertRow(row, PREFERRED);
 		settingsPanel.add(prioCheckBox, "0, " + row + ", 2, " + row + ", C, C");
+		row++;
+		settingsLayout.insertRow(row, PREFERRED);
+		settingsPanel.add(dynaCombo, "0, " + row + ", 2, " + row + ", L, C");
 		//row++;
 		//settingsLayout.insertRow(row, PREFERRED);
 		//settingsPanel.add(zeroDropdown, "0, " + row + ", 2, " + row + ", L, C");
@@ -1725,6 +1745,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		tripletCheckBox.setEnabled(midiLoaded && !organicCheckBox.isSelected());
 		mixCheckBox.setEnabled(midiLoaded && !organicCheckBox.isSelected());
 		prioCheckBox.setEnabled(midiLoaded && mixCheckBox.isSelected() && !organicCheckBox.isSelected());
+		dynaCombo.setEnabled(midiLoaded);
 		zoomButton.setEnabled(midiLoaded);
 		noteButton.setEnabled(midiLoaded);
 		if (midiLoaded) {
@@ -1889,6 +1910,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		case MIX_TIMING_COMBINE_PRIORITIES:
 			if (prioCheckBox.isSelected() != abcSong.isPriorityActive())
 				prioCheckBox.setSelected(abcSong.isPriorityActive());
+			break;
+		case CALC_DYNAMICS:
+			dynaCombo.setSelectedItem(abcSong.dynamicsMethod);
 			break;
 		case PART_ADDED:
 			e.getPart().addAbcListener(abcPartListener);
@@ -2124,7 +2148,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		tripletCheckBox.setSelected(false);
 		mixCheckBox.setSelected(true);
 		prioCheckBox.setSelected(false);
-
+		dynaCombo.setSelectedItem(AbcSong.dynamicsMethodDefault);
 		midiBarLabel.setBarNumberCache(null);
 		abcBarLabel.setBarNumberCache(null);
 		abcBarLabel.setInitialOffsetTick(abcPreviewStartTick);
@@ -2196,6 +2220,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			genreField.select(0, 0);
 			moodField.setText(abcSong.getMood());
 			moodField.select(0, 0);
+			dynaCombo.setSelectedItem(abcSong.dynamicsMethod);
 
 			if (abcSong.isFromAbcFile() || abcSong.isFromXmlFile()) {
 				transcriberFieldListener.setIgnoreChanges(true);

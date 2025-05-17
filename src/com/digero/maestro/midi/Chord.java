@@ -95,8 +95,22 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 	public boolean remove(AbcNoteEvent ne) {
 		return notes.remove(ne);
 	}
+	
+	public Dynamics calcDynamics(CalcDynamics method) {
+		switch (method) {
+			case LOUDEST:
+				return calcDynamicsLoudest();
+			case POWER_RMS_DB:
+				return calcDynamicsDbBlending(2.0d);
+			case POWER_MID_DB:
+				return calcDynamicsDbBlending(1.5d);
+			case WEIGHTED:
+				return calcDynamicsWeightBlending();
+		}
+		return calcDynamicsLoudest();
+	}
 
-	public Dynamics calcDynamics() {
+	public Dynamics calcDynamicsLoudest() {
 		int velocity = Integer.MIN_VALUE;
 		for (AbcNoteEvent ne : notes) {
 			if (ne.note != Note.REST && ne.tiesFrom == null && ne.velocity > velocity)
@@ -108,7 +122,58 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 
 		return Dynamics.fromMidiVelocity(velocity);
 	}
+	
+	public Dynamics calcDynamicsWeightBlending() {
+		int minVolume = Integer.MAX_VALUE;
+		int maxVolume = Integer.MIN_VALUE;
+		int total = 0;
+		int number = 0;
+		
+		for (AbcNoteEvent ne : notes) {
+			if (ne.note != Note.REST && ne.tiesFrom == null) {
+				total += ne.velocity;
+				minVolume = Math.min(minVolume, ne.velocity);
+				maxVolume = Math.max(maxVolume, ne.velocity);
+				number++;
+			}
+		}
+		
+		if (number == 0) return null;
+		
+		int averageVolume = total / number;
+		int blendedVolume = (averageVolume * 2 + minVolume + maxVolume) / 4;
+		
+		return Dynamics.fromMidiVelocity(blendedVolume);
+	}
+	
+	// Gamma must be between 1 and 2. 1.0 = 6 dB for adding two with same vol together. 1.5 = 4.5 dB. 2.0 = 3 dB (RMS).
+    public Dynamics calcDynamicsDbBlending(double gamma) {
+    	assert gamma >= 1.0d && gamma <= 2.0d;
+    	int numberOfVelocities = 0;
+    	double totalDB = 0;
+        for (AbcNoteEvent ne : notes) {
+			if (ne.note != Note.REST && ne.tiesFrom == null) {
+				numberOfVelocities++;
+				totalDB += Math.pow(10d, (midiToDb(ne.velocity) / 20) * gamma);
+			}
+        }
+        if (numberOfVelocities == 0) return null;
+        double mean = totalDB / numberOfVelocities;
+        double targetAmp = Math.pow(mean, 1.0d / gamma);
+        int target = (int) Math.round(127.0 * targetAmp);
+        target = Math.max(0, Math.min(127, target));
+        return Dynamics.fromMidiVelocity(target);
+    }
+	
+	public double midiToDb(int midiVelocity) {
+		if (midiVelocity == 0) return -100d;
+        return 20 * Math.log10(midiVelocity / 127.0d);
+    }
 
+    public int dbToMidi(double db) {
+        return Math.min(127, (int) (127d * Math.pow(10d, db / 20d)));
+    }
+    
 	public void recalcEndTick() {
 		if (!notes.isEmpty()) {
 			endTick = notes.get(0).getEndTick();
@@ -530,5 +595,34 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		if (starting > 0L) return 1;
 		return 0;
 	}
-
+	
+	public static enum CalcDynamics {
+		// name() is saved in project files
+		// label is shown in UI
+		
+		LOUDEST("Loudest"),
+		POWER_RMS_DB("Power RMS dB"),
+		POWER_MID_DB("Power mid dB"),
+		WEIGHTED("Weighted");
+		
+		private final String label;
+		
+		CalcDynamics(String label) {
+	        this.label = label;
+	    }
+		
+		@Override
+	    public String toString() {
+	        return label;
+	    }
+		
+		public static CalcDynamics fromString(String name) {
+	        for (CalcDynamics c : values()) {
+	            if (c.label.equalsIgnoreCase(name) || c.name().equalsIgnoreCase(name)) {
+	                return c;
+	            }
+	        }
+	        throw new IllegalArgumentException("Unknown CalcDynamics: " + name);
+	    }
+	}
 }

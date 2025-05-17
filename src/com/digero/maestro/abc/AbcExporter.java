@@ -265,7 +265,7 @@ public class AbcExporter {
 		}
 		
 		for (Chord chord : chords) {
-			Dynamics dynamics = chord.calcDynamics();
+			Dynamics dynamics = chord.calcDynamics(part.getAbcSong().dynamicsMethod);
 			if (dynamics == null)
 				dynamics = Dynamics.DEFAULT;
 			for (int j = 0; j < chord.size(); j++) {
@@ -486,7 +486,7 @@ public class AbcExporter {
 		List<Chord> chords = combineOrganic(part, false);
 		
 		for (Chord c : chords) {
-			initDyn = c.calcDynamics();
+			initDyn = c.calcDynamics(part.getAbcSong().dynamicsMethod);
 			if (initDyn != null)
 				break;
 		}
@@ -543,7 +543,7 @@ public class AbcExporter {
 			}
 			
 
-			Dynamics newDyn = (initDyn != null) ? initDyn : c.calcDynamics();
+			Dynamics newDyn = (initDyn != null) ? initDyn : c.calcDynamics(part.getAbcSong().dynamicsMethod);
 			initDyn = null;
 			if (newDyn != null && newDyn != curDyn) {
 				bar.append('+').append(newDyn).append("+ ");
@@ -713,7 +713,7 @@ public class AbcExporter {
 		};
 
 		for (Chord c : chords) {
-			initDyn = c.calcDynamics();
+			initDyn = c.calcDynamics(part.getAbcSong().dynamicsMethod);
 			if (initDyn != null)
 				break;
 		}
@@ -791,7 +791,7 @@ public class AbcExporter {
 				out.println("%%Q: " + curExportTempoBPM);
 			}
 
-			Dynamics newDyn = (initDyn != null) ? initDyn : c.calcDynamics();
+			Dynamics newDyn = (initDyn != null) ? initDyn : c.calcDynamics(part.getAbcSong().dynamicsMethod);
 			initDyn = null;
 			if (newDyn != null && newDyn != curDyn) {
 				bar.append('+').append(newDyn).append("+ ");
