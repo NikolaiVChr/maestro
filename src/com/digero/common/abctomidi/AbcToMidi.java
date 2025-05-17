@@ -307,7 +307,7 @@ public class AbcToMidi {
 						track = seq.createTrack();
 						track.add(MidiFactory.createLotroChangeEvent(info.getInstrument().midi.id(), channel, 0));
 						SequenceInfo.lastTrackInfos
-								.add(new ExportTrackInfo(0, null, null, channel, info.getInstrument().midi.id()));
+								.add(new ExportTrackInfo(0, null, null, channel, info.getInstrument().midi.id(),Long.MAX_VALUE));
 						if (useLotroInstruments) {
 							track.add(MidiFactory.createChannelVolumeEvent(MidiConstants.MAX_VOLUME, channel, 1));
 							track.add(MidiFactory.createReverbControlEvent(AbcConstants.MIDI_REVERB, channel, 1));

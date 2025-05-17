@@ -127,12 +127,12 @@ public class AbcExporter {
 			// Track 0: Title and meta info
 			Track track0 = sequence.createTrack();
 			track0.add(MidiFactory.createTrackNameEvent(metadata.getSongTitle()));
-			addMidiTempoEvents(track0);
+			
 
 			PanGenerator panner = new PanGenerator();
 			
 			lastChannelUsedInPreview = -1;			
-			
+			long lastEnd = 0L;
 			for (AbcPart part : parts) {
 				
 				if (part.getEnabledTrackCount() > 0) {
@@ -142,10 +142,14 @@ public class AbcExporter {
 					ExportTrackInfo inf = exportPartToPreview(part, sequence, pan,
 							useLotroInstruments, chordsMade);
 					infoList.add(inf);
+					lastEnd = Math.max(lastEnd, inf.endOfTrack);
 					// System.out.println(part.getTitle()+" assigned to channel "+inf.channel+" on track
 					// "+inf.trackNumber);
 				}
 			}
+			addMidiTempoEvents(track0, lastEnd);
+			track0.add(MidiFactory.createEndOfTrackEvent(lastEnd));
+			
 			// System.out.println("Preview done");
 			/*
 			 * if (exportStartTick > 0) { track0.add(MidiFactory.createNoteOnEventEx(40,9,100,0L));
@@ -200,9 +204,11 @@ public class AbcExporter {
 		Pair<Integer, Integer> trackNumber = exportPartToMidi(part, sequence, chords, pan, useLotroInstruments);
 
 		List<AbcNoteEvent> noteEvents = new ArrayList<>(chords.size());
+		long lastEnd = 0L;
 		for (Chord chord : chords) {
 			for (int i = 0; i < chord.size(); i++) {
 				AbcNoteEvent ne = chord.get(i);
+				lastEnd = Math.max(lastEnd, ne.getEndTick());
 				// Skip rests and notes that are the continuation of a tied note
 				if (ne.note == Note.REST || ne.tiesFrom != null)
 					continue;
@@ -221,7 +227,7 @@ public class AbcExporter {
 		}
 
 		return new ExportTrackInfo(trackNumber.first, part, noteEvents, trackNumber.second,
-				part.getInstrument().midi.id());
+				part.getInstrument().midi.id(), lastEnd);
 	}
 
 	private Pair<Integer, Integer> exportPartToMidi(AbcPart part, Sequence out, List<Chord> chords, int pan,
@@ -263,7 +269,7 @@ public class AbcExporter {
 			// Make delay on instrument be audible in preview
 			delayMicros = qtm.multiplyByExportTempoFactor(part.delay * 1000L);
 		}
-		
+		long lastEnd = 0L;
 		for (Chord chord : chords) {
 			Dynamics dynamics = chord.calcDynamics(part.getAbcSong().dynamicsMethod);
 			if (dynamics == null)
@@ -288,9 +294,13 @@ public class AbcExporter {
 						// This note has been turned off
 						onIter.remove();
 						if (organic) {
-							track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(endTick) + delayMicros)));
+							long off = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(endTick) + delayMicros);
+							lastEnd = Math.max(off, lastEnd);
+							track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off));
 						} else {
-							track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, qtm.microsToTick(qtm.tickToMicros(endTick) + delayMicros)));
+							long off = qtm.microsToTick(qtm.tickToMicros(endTick) + delayMicros);
+							lastEnd = Math.max(off, lastEnd);
+							track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off));
 						}
 					}
 				}
@@ -338,11 +348,17 @@ public class AbcExporter {
 
 		for (AbcNoteEvent on : notesOn) {
 			if (organic) {
-				track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(on.getEndTick()) + delayMicros)));
+				long off = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(on.getEndTick()) + delayMicros);
+				lastEnd = Math.max(off, lastEnd);
+				track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off));
 			} else {
-				track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, qtm.microsToTick(qtm.tickToMicros(on.getEndTick()) + delayMicros)));
+				long off = qtm.microsToTick(qtm.tickToMicros(on.getEndTick()) + delayMicros);
+				lastEnd = Math.max(off, lastEnd);
+				track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off));
 			}
 		}
+		
+		track.add(MidiFactory.createEndOfTrackEvent(lastEnd));
 
 		return new Pair<>(trackNumber, channel);
 	}
@@ -3444,14 +3460,14 @@ public class AbcExporter {
 		}
 	}
 
-	private void addMidiTempoEvents(Track track0) {
+	private void addMidiTempoEvents(Track track0, long end) {
 		NavigableMap<Long, TimingInfoEvent> timings = qtm.getTimingInfoByTick();
 		if (organic) {
 			timings = qtm.getTimingInfoByTickOrganic();
 		}
 		for (QuantizedTimingInfo.TimingInfoEvent event : timings.values()) {
-			//if (event.tick > exportEndTick)
-			//	break;
+			if (event.tick > end+100L)
+				continue;
 
 			track0.add(MidiFactory.createTempoEvent(event.info.getExportTempoMPQ(), event.tick));
 
@@ -3833,13 +3849,15 @@ public class AbcExporter {
 		public final List<AbcNoteEvent> noteEvents;
 		public final Integer channel;
 		public final Integer patch;
+		public final long endOfTrack;
 
-		public ExportTrackInfo(int trackNumber, AbcPart part, List<AbcNoteEvent> noteEvents, Integer channel, int patch) {
+		public ExportTrackInfo(int trackNumber, AbcPart part, List<AbcNoteEvent> noteEvents, Integer channel, int patch, long endOfTrack) {
 			this.trackNumber = trackNumber;
 			this.part = part;
 			this.noteEvents = noteEvents;
 			this.channel = channel;
 			this.patch = patch;
+			this.endOfTrack = endOfTrack;
 		}
 	}
 
