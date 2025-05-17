@@ -54,18 +54,25 @@ public class MaestroMain {
 		    ProjectFrame.feed("ERROR: exception in thread " + thread.getName() + ": " + throwable+". Please notify the devs.", getFirstLines(throwable));
 		    if (mainWindow != null) {		    	
 		    	SwingUtilities.invokeLater(() -> {
-		    		mainWindow.showFeed();
+		    		try {
+		    			mainWindow.showFeed();
+		    		} catch (Exception e) {
+						e.printStackTrace();
+					}
 		    	});
 		    }
 		});
 		SwingUtilities.invokeLater(() -> {
 			Thread.currentThread().setUncaughtExceptionHandler((thread, throwable) -> {
-			    System.err.println();
 			    throwable.printStackTrace();
-			    ProjectFrame.feed("ERROR: exception in thread " + thread.getName() + ": " + throwable+". Please notify the devs.", getFirstLines(throwable));
-			    if (mainWindow != null) {		    	
-			    	mainWindow.showFeed();
-			    }
+			    try {
+				    ProjectFrame.feed("ERROR: exception in thread " + thread.getName() + ": " + throwable+". Please notify the devs..", getFirstLines(throwable));
+				    if (mainWindow != null) {
+				    	mainWindow.showFeed();
+				    }
+			    } catch (Exception e) {
+					e.printStackTrace();
+				}
 			});
 		});
 		try {
