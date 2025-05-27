@@ -1905,7 +1905,12 @@ public class AbcExporter {
 				}
 				
 				// Insert a rest into current chord if need to shorten chord
-				if (curChord.getLongestEndTick() > targetEndTick && curChord.getEndTick() > targetEndTick) {
+				if (!curChord.hadRestAndNotes() && curChord.getLongestEndTick() > targetEndTick) {// && curChord.getEndTick() > targetEndTick
+					// As long as there is any notes longer than our target we add a rest
+					// This is due to pruning might result in longer chord later,
+					// So we force a short chord by putting in a rest.
+					// If there is notes same dura or shorter as the rest we insert,
+					// and they don't get pruned, the rest itself will get pruned, to not bloat.
 					tmpEvents.clear();
 					tmpEvents.add(new AbcNoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, curChord.getStartTick(),
 							targetEndTick, qtm, null));

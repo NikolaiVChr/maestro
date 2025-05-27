@@ -48,12 +48,14 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 	public Long expandedMicros = null;
 	public int arp = 0; // arp notes added to this
 	public boolean delete = false;
+	private boolean hadRest = false;
 
 	public Chord(AbcNoteEvent firstNote) {
 		tempoCache = firstNote.getTempoCache();
 		startTick = firstNote.getStartTick();
 		endTick = firstNote.getEndTick();
 		notes.add(firstNote);
+		if (firstNote.note == Note.REST) hadRest = true;
 	}
 
 	public long getStartTick() {
@@ -258,6 +260,7 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		}
 		*/
 		notes.add(ne);
+		if (ne.note == Note.REST) hadRest = true;
 
 		if (ne.getEndTick() < endTick) {
 			endTick = ne.getEndTick();
@@ -348,6 +351,17 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		 * System.out.println(evt.note.getDisplayName()+" "+evt.getStartTick()+" to "+evt.getEndTick()); } }
 		 */
 		return hasRests && hasNotes;
+	}
+	
+	public boolean hadRestAndNotes() {
+		boolean hasNotes = false;
+		for (AbcNoteEvent evt : notes) {
+			if (Note.REST != evt.note) {
+				hasNotes = true;
+				break;
+			}
+		}
+		return hadRest && hasNotes;
 	}
 
 	public void printIfUneven() {
