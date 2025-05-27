@@ -127,14 +127,17 @@ public class NoteEvent implements Comparable<NoteEvent> {
 		if (that == null)
 			return 1;
 
+		// many methods rely on this:
 		if (this.startTick != that.startTick)
 			return (this.startTick > that.startTick) ? 1 : -1;
 
-		if (this.note.id != that.note.id)
-			return this.note.id - that.note.id;
-
+		// chordifyOrganic() rely on this:
 		if (this.endTick != that.endTick)
 			return (this.endTick > that.endTick) ? 1 : -1;
+		
+		// nothing rely on this (I hope)
+		if (this.note.id != that.note.id)
+			return this.note.id - that.note.id;		
 
 		return 0;
 	}
