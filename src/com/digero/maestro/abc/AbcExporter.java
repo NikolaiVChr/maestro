@@ -515,7 +515,7 @@ public class AbcExporter {
 				continue;
 			}
 
-			assert !c.hasRestAndNotes() || organic2;
+			//assert !c.hasRestAndNotes() || organic2;
 
 			/*
 			 * if (c.hasRestAndNotes()) { c.removeRests(); }
@@ -1874,10 +1874,10 @@ public class AbcExporter {
 							// note ends approx same time as end of chord
 							// we make it end same time as shortest note in chord,
 							// chord might become slightly longer later.
-							jne.setEndTick(curChord.getEndTick());
+							//jne.setEndTick(curChord.getEndTick());
 							debugOutput(2,part.getTitle()+ ": Fit note ending to chord ending");
 						} else {
-							
+							/*
 							// This note extends past the end of the chord; break it into two tied notes
 							AbcNoteEvent next = jne.splitWithTieAtTick(targetEndTick);
 	
@@ -1892,6 +1892,7 @@ public class AbcExporter {
 								reprocessCurrentNote = true;
 							assert next.note != Note.REST;
 							events.add(ins, next);
+							*/
 						}
 					}
 				}
@@ -1900,6 +1901,32 @@ public class AbcExporter {
 				if (reprocessCurrentNote) {
 					i--;
 					debugOutput(2,part.getTitle()+ ": Chord was cut up, reprocessing..");
+					continue MAIN;
+				}
+				
+				// Insert a rest into current chord if need to shorten chord
+				if (curChord.getLongestEndTick() > targetEndTick && curChord.getEndTick() > targetEndTick) {
+					tmpEvents.clear();
+					tmpEvents.add(new AbcNoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, curChord.getStartTick(),
+							targetEndTick, qtm, null));
+					breakLongNotesOrganic(part, tmpEvents);
+					if (tmpEvents.size() == 1) {
+						int ins = Collections.binarySearch(events, tmpEvents.get(0));
+						if (ins < 0)
+							ins = -ins - 1;
+						
+						assert (ins <= i);
+						
+						// back up and process again
+						reprocessCurrentNote = true;
+						curChord.add(tmpEvents.get(0));
+						events.add(ins, tmpEvents.get(0));
+					}
+				}
+				curChord.recalcEndTick();
+				if (reprocessCurrentNote) {
+					//i--;
+					debugOutput(2,part.getTitle()+ ": Chord was shortened using rests, reprocessing..");
 					continue MAIN;
 				}
 				
@@ -2094,6 +2121,8 @@ public class AbcExporter {
 					}
 				}
 				
+				
+				
 				// Insert a rest between the chords if needed
 				if (curChord.getEndTick() < nextChord.getStartTick()) {
 					long restMicros = qtm.tickToMicrosABCOrganic(nextChord.getStartTick()) - qtm.tickToMicrosABCOrganic(curChord.getEndTick());
@@ -2138,15 +2167,15 @@ public class AbcExporter {
 
 				chords.add(nextChord);
 				assert !nextChord.hasRestAndNotes();
-				assert !curChord.hasRestAndNotes();
+				//assert !curChord.hasRestAndNotes();
 				prevChord = curChord;
 				curChord = nextChord;
 			}
 		}
 
-		boolean reprocessCurrentNote = true;
+		boolean reprocessLastChord = true;
 
-		while (reprocessCurrentNote) {
+		while (reprocessLastChord) {
 			
 			debugOutput(3,"Last chord processing..");
 			
@@ -2192,9 +2221,11 @@ public class AbcExporter {
 			}
 			
 			long targetEndTick = curChord.getEndTick();
-			reprocessCurrentNote = false;
+			reprocessLastChord = false;
+			
+			/*
 			Chord nextChord = null;
-
+			
 			long curEndMicro = qtm.tickToMicrosABCOrganic(curChord.getEndTick());
 			for (int j = 0; j < curChord.size(); j++) {
 				AbcNoteEvent jne = curChord.get(j);
@@ -2208,6 +2239,7 @@ public class AbcExporter {
 						debugOutput(2,part.getTitle()+ ": Fit note ending to last chord ending");
 					} else {
 						// This note extends past the end of the chord; break it into two tied notes
+						
 						debugOutput(3,"Last chord: cut up chord");
 						AbcNoteEvent next = jne.splitWithTieAtTick(targetEndTick);
 						if (nextChord == null) {
@@ -2219,14 +2251,17 @@ public class AbcExporter {
 					}
 				}
 			}
+			*/
 			curChord.recalcEndTick();
+			/*
 			if (nextChord != null) {
-				reprocessCurrentNote = true;
+				reprocessLastChord = true;
 				curChord = nextChord;
 				curChord.recalcEndTick();
 			}
+			*/
 		}
-		assert !curChord.hasRestAndNotes();
+		//assert !curChord.hasRestAndNotes();
 		
 		// delete all chords with zero duration, as there was no room for them
 		List<Chord> trash = new ArrayList<>();
