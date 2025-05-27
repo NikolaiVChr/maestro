@@ -1,5 +1,10 @@
 package com.digero.common.midi;
 
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
+import java.nio.charset.StandardCharsets;
+
 import javax.sound.midi.MetaMessage;
 import javax.sound.midi.MidiMessage;
 import javax.sound.midi.Sequence;
@@ -181,4 +186,46 @@ public class MidiUtils {
 		byte[] msg = midiMsg.getMessage();
 		return ((msg[1] & 0xFF) == META_END_OF_TRACK_TYPE) && (msg[2] == 0);
 	}
+	
+	public static boolean isValidUTF8(byte[] data) {
+        try {
+            CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
+            decoder.decode(java.nio.ByteBuffer.wrap(data));
+            return true;
+        } catch (CharacterCodingException e) {
+            return false;
+        }
+    }
+
+    public static boolean isValidWindows1252(byte[] data) {
+        try {
+            CharsetDecoder decoder = Charset.forName("windows-1252").newDecoder();
+            decoder.decode(java.nio.ByteBuffer.wrap(data));
+            return true;
+        } catch (CharacterCodingException e) {
+            return false;
+        }
+    }
+
+    public static boolean isValidISO88591(byte[] data) {
+        try {
+            CharsetDecoder decoder = Charset.forName("ISO-8859-1").newDecoder();
+            decoder.decode(java.nio.ByteBuffer.wrap(data));
+            return true;
+        } catch (CharacterCodingException e) {
+            return false;
+        }
+    }
+    
+    public static boolean containsWindows1252OnlyChars(byte[] data) {
+        for (byte b : data) {
+            int unsignedByte = b & 0xFF; // Convert signed byte to unsigned
+            
+            // Check if the byte falls within the Windows-1252-only range (0x80 to 0x9F)
+            if (unsignedByte >= 0x80 && unsignedByte <= 0x9F) {
+                return true; // Found a Windows-1252-specific character
+            }
+        }
+        return false;
+    }
 }

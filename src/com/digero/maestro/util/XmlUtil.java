@@ -1,10 +1,13 @@
 package com.digero.maestro.util;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.util.AbstractList;
 import java.util.ArrayDeque;
@@ -67,11 +70,53 @@ public class XmlUtil {
 			return doc;
 		}
 	}
+	
+	public static String sanitizeXmlString(String input) {
+	    if (input == null) return "";
+	    
+	    input = input.replaceAll("[\\u0099]", "\\u2122")  // ™ Trademark
+                .replaceAll("[\\u00A9]", "\\u00A9")  // © Copyright
+                .replaceAll("[\\u00AE]", "\\u00AE")  // ® Registered Trademark
+                .replaceAll("[\\u20AC]", "\\u20AC")  // € Euro
+                .replaceAll("[\\u201C\\u201D]", "\"") // “ ” Smart Quotes → "
+                .replaceAll("[\\u2018\\u2019]", "'")  // ‘ ’ Smart Quotes → '
+                .replaceAll("[\\u2013]", "-")        // – En Dash → -
+                .replaceAll("[\\u2014]", "--");      // — Em Dash → --
+	    
+	    StringBuilder result = new StringBuilder();
+	    for (char c : input.toCharArray()) {
+	        if (isValidXmlCharacter(c)) {
+	            result.append(c);
+	        } else {
+	            result.append('?'); // Replace invalid characters (or use a different symbol)
+	        }
+	    }
+	    return result.toString();
+	}
+
+	private static boolean isValidXmlCharacter(char c) {
+	    return (c == 0x09 || c == 0x0A || c == 0x0D) || 
+	           (c >= 0x20 && c <= 0xD7FF) ||
+	           (c >= 0xE000 && c <= 0xFFFD) ||
+	           (c >= 0x10000 && c <= 0x10FFFF);
+	}
 
 	public static Document openDocument(InputStream stream) throws SAXException, IOException {
 		try {
+			BufferedReader reader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
+	        StringBuilder xmlBuilder = new StringBuilder();
+	        String line;
+	        
+	        while ((line = reader.readLine()) != null) {
+	            xmlBuilder.append(sanitizeXmlString(line)).append("\n"); // Sanitize each line
+	        }
+
+	        String sanitizedXml = xmlBuilder.toString(); // Final sanitized XML string
+
+	        // Convert sanitized XML string back to an InputStream
+	        InputStream sanitizedStream = new ByteArrayInputStream(sanitizedXml.getBytes("UTF-8"));
 			LineNumberHandler handler = new LineNumberHandler();
-			SAXParserFactory.newInstance().newSAXParser().parse(stream, handler);
+			SAXParserFactory.newInstance().newSAXParser().parse(sanitizedStream, handler);
 			return handler.getDocument();
 		} catch (ParserConfigurationException e) {
 			// How can a vanilla instance throw a configuration exception?

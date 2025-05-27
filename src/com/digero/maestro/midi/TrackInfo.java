@@ -1,5 +1,7 @@
 package com.digero.maestro.midi;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -23,6 +25,7 @@ import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.MidiConstants;
 import com.digero.common.midi.MidiInstrument;
 import com.digero.common.midi.MidiStandard;
+import com.digero.common.midi.MidiUtils;
 import com.digero.common.midi.Note;
 import com.digero.common.midi.TimeSignature;
 import com.digero.maestro.view.MiscSettings;
@@ -237,12 +240,24 @@ public class TrackInfo implements MidiConstants {
 				if (type == META_TRACK_NAME && name == null && m.getData() != null) {
 					byte[] data = m.getData();// Text that starts with any of these indicate charset: "@LATIN", "@JP",
 												// "@UTF-16LE", or "@UTF-16BE"
-					char[] unsignedData = new char[data.length];
-					for (int i = 0; i < data.length; i++) {
-					    unsignedData[i] = (char)(data[i] & 0xFF); // Convert signed byte to unsigned int
+					String tmp;
+					if (MidiUtils.isValidUTF8(data)) {
+						tmp = new String(data, StandardCharsets.UTF_8).trim();
+					} else if (MidiUtils.isValidISO88591(data) && !MidiUtils.containsWindows1252OnlyChars(data)) {
+						tmp = new String(data, StandardCharsets.ISO_8859_1).trim();
+					} else if (MidiUtils.isValidWindows1252(data)) {
+						tmp = new String(data, Charset.forName("windows-1252")).trim();					
+					} else {
+						// fall back to extended ascii
+						tmp = new String(data, StandardCharsets.ISO_8859_1).trim();
+						/*
+						char[] unsignedData = new char[data.length];
+						for (int i = 0; i < data.length; i++) {
+						    unsignedData[i] = (char)(data[i] & 0xFF); // Convert signed byte to unsigned int
+						}
+						tmp = new String(unsignedData).trim();
+						*/
 					}
-					String tmp = new String(unsignedData).trim();
-					//String tmp = new String(data, 0, data.length, StandardCharsets.US_ASCII).trim();// "UTF-8"
 					if (tmp.length() > 0 && !tmp.equalsIgnoreCase("untitled")
 							&& !tmp.equalsIgnoreCase("WinJammer Demo")) {
 						// System.out.println("Starts with @ "+data[0]+" "+(data[0] & 0xFF));

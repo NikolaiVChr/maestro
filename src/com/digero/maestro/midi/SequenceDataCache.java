@@ -1,5 +1,7 @@
 package com.digero.maestro.midi;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -299,12 +301,24 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 						} else if (m.getType() == META_COPYRIGHT && tick == 0L && iTrack == 0) {	
 							byte[] data = m.getData();// Text that starts with any of these indicate charset: "@LATIN", "@JP",
 							// "@UTF-16LE", or "@UTF-16BE"
-							char[] unsignedData = new char[data.length];
-							for (int i = 0; i < data.length; i++) {
-							    unsignedData[i] = (char)(data[i] & 0xFF); // Convert signed byte to unsigned int
+							String tmp;
+							if (MidiUtils.isValidUTF8(data)) {
+								tmp = new String(data, StandardCharsets.UTF_8).trim();
+							} else if (MidiUtils.isValidISO88591(data) && !MidiUtils.containsWindows1252OnlyChars(data)) {
+								tmp = new String(data, StandardCharsets.ISO_8859_1).trim();
+							} else if (MidiUtils.isValidWindows1252(data)) {
+								tmp = new String(data, Charset.forName("windows-1252")).trim();					
+							} else {
+								// fall back to extended ascii
+								tmp = new String(data, StandardCharsets.ISO_8859_1).trim();
+								/*
+								char[] unsignedData = new char[data.length];
+								for (int i = 0; i < data.length; i++) {
+								    unsignedData[i] = (char)(data[i] & 0xFF); // Convert signed byte to unsigned int
+								}
+								tmp = new String(unsignedData).trim();
+								*/
 							}
-							String tmp = new String(unsignedData).trim();
-							//String tmp = new String(properBytes, 0, data.length, StandardCharsets.ISO_8859_1).trim();// "UTF_8"
 							if (tmp.length() > 0) {
 								copyright = tmp;
 							}

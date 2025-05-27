@@ -219,7 +219,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			Element trackEle = (Element) ele.appendChild(doc.createElement("track"));
 			trackEle.setAttribute("id", String.valueOf(t));
 			if (trackInfo.hasName())
-				trackEle.setAttribute("name", trackInfo.getName());
+				trackEle.setAttribute("name", sanitizeXmlString(trackInfo.getName()));
 
 			if (trackTranspose[t] != 0)
 				SaveUtil.appendChildTextElement(trackEle, "transpose", String.valueOf(trackTranspose[t]));
@@ -295,7 +295,32 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			}
 		}
 	}
+	
+	public static String sanitizeXmlString(String input) {
+		if (input == null) return null;
 
+		StringBuilder result = new StringBuilder();
+		for (char c : input.toCharArray()) {
+			if (isValidXmlCharacter(c)) {
+				switch (c) {
+					case '&': result.append("&amp;"); break;
+					case '<': result.append("&lt;"); break;
+					case '>': result.append("&gt;"); break;
+					case '"': result.append("&quot;"); break;
+					case '\'': result.append("&apos;"); break;
+					default: result.append(c);
+				}
+			}
+		}
+		return result.toString();
+	}
+
+	private static boolean isValidXmlCharacter(char c) {
+		return (c == 0x09 || c == 0x0A || c == 0x0D) || 
+			(c >= 0x20 && c <= 0xD7FF) ||
+			(c >= 0xE000 && c <= 0xFFFD);
+	}
+	    
 	private void calculateEnabledSet(Element ele, Document doc, int t, Element trackEle) {
 		BitSet[] enabledSetByTrack = isCowbellPart() ? cowbellsEnabled : isStudentPart() ? fxEnabled : drumsEnabled;
 		BitSet enabledSet = (enabledSetByTrack == null) ? null : enabledSetByTrack[t];
