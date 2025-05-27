@@ -515,7 +515,7 @@ public class AbcExporter {
 				continue;
 			}
 
-			assert !c.hasRestAndNotes();
+			assert !c.hasRestAndNotes() || organic2;
 
 			/*
 			 * if (c.hasRestAndNotes()) { c.removeRests(); }
@@ -572,14 +572,14 @@ public class AbcExporter {
 
 			int chordMicro;
 			if (organic2) {
-				chordMicro = (int)(c.get(0).origEndABCMicros - c.get(0).origStartABCMicros);
+				chordMicro = (int)(c.getShortest().origEndABCMicros - c.getShortest().origStartABCMicros);
 			} else {
 				chordMicro = (int)((qtm.tickToMicrosABCOrganic(c.getEndTick()) - qtm.tickToMicrosABCOrganic(c.getStartTick())));
 			}
 			
 			long cEndMicro;
 			if (organic2) {
-				cEndMicro = c.get(0).origEndABCMicros - songStartMicros;
+				cEndMicro = c.getShortest().origEndABCMicros - songStartMicros;
 			} else {
 				cEndMicro = qtm.tickToMicrosABCOrganic(c.getEndTick()) - songStartMicros;
 			}
@@ -595,22 +595,8 @@ public class AbcExporter {
 				//chordMicro = (int)AbcConstants.LONGEST_NOTE_MICROS - 10;
 				//System.out.println(part.getTitle() +": chord reduced to "+chordMicro+" us  drone:"+(c.get(0).note.id <= AbcConstants.BAGPIPE_LAST_DRONE_NOTE_ID));
 			}
-			currentMicro += chordMicro;
 			
-			int numerator = chordMicro;
-			int denominator = oneMicro;
 			
-			// Apply tempo
-			if (exportTempos && curExportTempoBPM != Q) {
-				numerator *= Q;
-				denominator *= curExportTempoBPM;
-			}
-
-			// Reduce the fraction
-			int gcd = Util.gcd(numerator, denominator);
-			numerator /= gcd;
-			denominator /= gcd;
-						
 			int notesWritten = 0;			
 			for (int j = 0; j < c.size(); j++) {
 				AbcNoteEvent evt = c.get(j);
@@ -639,6 +625,48 @@ public class AbcExporter {
 				}
 
 				bar.append(noteAbc);
+				
+				// now we do the micro calc again in case the timing algorithm
+				// has put notes/tests with uneven durations into the chord:
+				int noteMicro;
+				if (organic2) {
+					noteMicro = (int)(evt.origEndABCMicros - evt.origStartABCMicros);
+				} else {
+					noteMicro = (int)((qtm.tickToMicrosABCOrganic(evt.getEndTick()) - qtm.tickToMicrosABCOrganic(evt.getStartTick())));
+				}
+				
+				long nEndMicro;
+				if (organic2) {
+					nEndMicro = evt.origEndABCMicros - songStartMicros;
+				} else {
+					nEndMicro = qtm.tickToMicrosABCOrganic(evt.getEndTick()) - songStartMicros;
+				}
+				
+				if (currentMicro + noteMicro != nEndMicro) {
+					long diff = (currentMicro + noteMicro) - nEndMicro;
+					noteMicro -= (int)(diff);
+				}
+				if (noteMicro < AbcConstants.getShortestNoteMicros((int)Q)) {
+					noteMicro = (int)AbcConstants.getShortestNoteMicros((int)Q);
+				}
+				if (noteMicro > AbcConstants.LONGEST_NOTE_MICROS) {
+					//noteMicro = (int)AbcConstants.LONGEST_NOTE_MICROS - 10;
+					//System.out.println(part.getTitle() +": chord reduced to "+noteMicro+" us  drone:"+(c.get(0).note.id <= AbcConstants.BAGPIPE_LAST_DRONE_NOTE_ID));
+				}
+				
+				int numerator = noteMicro;
+				int denominator = oneMicro;
+				
+				// Apply tempo
+				if (exportTempos && curExportTempoBPM != Q) {
+					numerator *= Q;
+					denominator *= curExportTempoBPM;
+				}
+
+				// Reduce the fraction
+				int gcdNote = Util.gcd(numerator, denominator);
+				numerator /= gcdNote;
+				denominator /= gcdNote;
 
 				if (numerator == 1 && denominator == 2) {
 					bar.append('/');
@@ -669,9 +697,11 @@ public class AbcExporter {
 					bar.append(']');
 				}
 			}
-			if (notesWritten == 0) {
+			
+			if (notesWritten > 0) {
+				currentMicro += chordMicro;
+			} else {
 				System.out.println("ZERO");
-				currentMicro -= chordMicro;
 			}
 
 			bar.append(' ');
@@ -2772,7 +2802,7 @@ public class AbcExporter {
 		// make sure chord does not contain both rest and notes
 		// Also make sure there is not duplicates in it
 		List<AbcNoteEvent> tmp = new ArrayList<>(curChord.getNotes());
-		boolean both = curChord.hasRestAndNotes();
+		boolean both = false;//curChord.hasRestAndNotes();
 		for (AbcNoteEvent note : tmp) {
 			if (both && note.note == Note.REST) {
 				curChord.remove(note);
@@ -2830,7 +2860,8 @@ public class AbcExporter {
 		long endMicros = ne.origEndABCMicros;
 		boolean drone = isDrone(part,ne);
 		boolean rest = ne.note == Note.REST;
-		
+		long lastSplitTick = ne.getStartTick();
+		long lastSplitMicros = ne.origStartABCMicros;
 		while (ceil != null && ceilMicros < endMicros && ceilTick < ne.getEndTick()) {
 			if (ne.getStartTick() < ceilTick) {//rounding error guard
 				AbcNoteEvent ne2;
@@ -2840,11 +2871,18 @@ public class AbcExporter {
 					//assert ne.getStartTick() < ceilTick:ne.getStartTick()+" < "+ceilTick;
 					// assert ne.origEndABCMicros > ceilMicros:ne.origEndABCMicros+" > "+ceilMicros;
 					// assert ne.getEndTick() > ceilTick:ne.getEndTick()+" > "+ceilTick;
+					/*
 					ne2 = ne.splitWithTieAtTick(ceilTick);
 					ne2.origStartABCMicros = ceilMicros;
 					ne2.origEndABCMicros = ne.origEndABCMicros;
 					ne.origEndABCMicros = ceilMicros;
 					segments.add(ne2);
+					*/
+					AbcNoteEvent restShorter = new AbcNoteEvent(Note.REST, 0, lastSplitTick, ceilTick, qtm, null);
+					restShorter.origStartABCMicros = lastSplitMicros;
+					restShorter.origEndABCMicros = ceilMicros;
+					segments.add(restShorter);
+					ne2 = ne;
 				} else {
 					ne2 = new AbcNoteEvent(ne.note, ne.velocity, ceilTick, ne.getEndTick(), qtm, ne.origNote);
 					ne2.origStartABCMicros = ceilMicros;
@@ -2863,6 +2901,8 @@ public class AbcExporter {
 				assert ne2.getStartTick() < ne2.getEndTick();
 				*/
 				ne = ne2;
+				lastSplitTick = ceilTick;
+				lastSplitMicros = ceilMicros;
 			} else {
 				//System.out.println((gridTicks.floorKey(ceilMicros-1)/1000)+" < "+(ceilMicros/1000));
 			}

@@ -37,6 +37,7 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 	private ITempoCache tempoCache;
 	private long startTick;
 	private long endTick;
+	private long endTickNotes;
 	private List<AbcNoteEvent> notes = new ArrayList<>();
 	private int highest = 0;// source midi highest and lowest pitch in the chord
 	private int lowest = 200;
@@ -177,13 +178,27 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 	public void recalcEndTick() {
 		if (!notes.isEmpty()) {
 			endTick = notes.get(0).getEndTick();
+			if (notes.get(0).note == Note.REST) {
+				if (notes.size() > 1) {
+					endTickNotes = notes.get(1).getEndTick();
+				} else {
+					endTickNotes = getStartTick();
+					return;
+				}
+			}
 			for (int k = 1; k < notes.size(); k++) {
 				if (notes.get(k).getEndTick() < endTick) {
 					endTick = notes.get(k).getEndTick();
 				}
+				if (notes.get(k).note != Note.REST) {
+					if (notes.get(k).getEndTick() < endTickNotes) {
+						endTickNotes = notes.get(k).getEndTick();
+					}
+				}
 			}
 		} else {
 			endTick = startTick;
+			endTickNotes = startTick;
 		}
 	}
 	
@@ -283,6 +298,20 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		}
 		return endNoteTick;
 	}
+	
+	public AbcNoteEvent getShortest() {
+		long endNoteMicros = Long.MAX_VALUE;
+		AbcNoteEvent shortest = null;
+		if (!notes.isEmpty()) {
+			for (AbcNoteEvent note : notes) {
+				if (note.origEndABCMicros < endNoteMicros) {
+					shortest = note;
+					endNoteMicros = note.origEndABCMicros;
+				}
+			}
+		}
+		return shortest;
+	}
 
 	public void removeRests() {
 		List<AbcNoteEvent> rests = new ArrayList<>();
@@ -338,15 +367,26 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 
 		int noteMax = abcPart.getNoteMax();
 		
-		if (sizeReal() > noteMax) {
+		boolean removeRests = false;
+		if (endTickNotes <= endTick) {
+			// there is notes that are at least as short as the shortest rest,
+			// so lets down-prioritize rests as they not needed.
+			// ..unless, shortest note gets pruned, which we must prevent
+			removeRests = true;
+		}
+		long oldEndTick = endTick;
+		boolean both = hasRestAndNotes();
+		if (size() > noteMax) {
 			recalcEdges();
 
 			List<AbcNoteEvent> newNotes = new ArrayList<>();
 
-			PruneComparator keepMe = new PruneComparator(sustained, drum, percussion);
+			PruneComparator keepMe = new PruneComparator(sustained, drum, percussion, removeRests);
 
 			notes.sort(keepMe);
 			
+			// commented due to we assume only 1 rest present max
+			/*
 			List<AbcNoteEvent> rests = new ArrayList<>();
 			AbcNoteEvent shortestRest = null;
 			long restDura = Long.MAX_VALUE;
@@ -364,6 +404,7 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 			notes.removeAll(rests);// no need to add the rests to deadnotes
 			
 			
+			*/
 			
 			for (int i = notes.size() - 1; i >= 0; i--) {
 				if (newNotes.size() < noteMax) {
@@ -374,10 +415,34 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 			}
 			notes = newNotes;
 			
-			if (shortestRest != null) notes.add(shortestRest);
+			//if (shortestRest != null) notes.add(shortestRest);
 			
-			recalcEndTick();
+			
 		}
+		recalcEndTick();
+		if (endTickNotes == endTick && endTickNotes > startTick) {
+			// remove any rests since they not needed
+			List<AbcNoteEvent> rests = new ArrayList<>();
+			for (AbcNoteEvent ne : notes) {
+				if (ne.note == Note.REST) {
+					rests.add(ne);
+				}
+			}
+			notes.removeAll(rests);// no need to add the rests to deadnotes
+		}
+		assert oldEndTick == endTick || !both;
+		/*
+		if (hasRestAndNotes()) {
+			System.out.println();
+			for (AbcNoteEvent ne : notes) {
+				if (ne.note == Note.REST) {
+					System.out.println(" rest="+ne.getLengthTicks());
+				} else {
+					System.out.println(" note="+ne.getLengthTicks());
+				}
+			}
+		}
+		*/
 		return deadNotes;
 	}
 	
@@ -385,21 +450,37 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		final boolean sustained;
 		final boolean drum;
 		final boolean percussion;
+		final boolean removeRests;
 
-		PruneComparator (boolean sustained, boolean drum, boolean percussion) {
+		PruneComparator (boolean sustained, boolean drum, boolean percussion, boolean removeRests) {
 			this.drum = drum;
 			this.sustained = sustained;
 			this.percussion = percussion;
+			this.removeRests = removeRests;
 		}
 
 		@Override
 		public int compare(AbcNoteEvent n1, AbcNoteEvent n2) {
+			
+			if (n1.note == Note.REST && n2.note == Note.REST) {
+				if (n1.getLengthTicks() < n2.getLengthTicks()) {
+					return 1; //keep n1
+				}
+			}
 
 			if (n1.note == Note.REST) {
-				return 1;
+				if (n2.getLengthTicks() > n1.getLengthTicks()) {
+					return 1;
+				} else {
+					return -1;
+				}
 			}
 			if (n2.note == Note.REST) {
-				return -1;
+				if (n1.getLengthTicks() > n2.getLengthTicks()) {
+					return -1;
+				} else {
+					return 1;
+				}
 			}
 			
 			int abcNote1 = n1.note.id;
