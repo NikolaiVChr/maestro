@@ -364,7 +364,7 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 	public List<AbcNoteEvent> prune(boolean sustained, boolean drum, boolean percussion, AbcPart abcPart) {
 		// Determine which notes to prune to remain with a max of 6
 		List<AbcNoteEvent> deadNotes = new ArrayList<>();
-
+		//System.out.println("Starting prune");
 		int noteMax = abcPart.getNoteMax();
 		
 		boolean removeRests = false;
@@ -377,11 +377,12 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		long oldEndTick = endTick;
 		boolean both = hasRestAndNotes();
 		if (size() > noteMax) {
+			//System.out.println(" prune needed");
 			recalcEdges();
 
 			List<AbcNoteEvent> newNotes = new ArrayList<>();
 
-			PruneComparator keepMe = new PruneComparator(sustained, drum, percussion, removeRests);
+			PruneComparator keepMe = new PruneComparator(sustained, drum, percussion, both, getShortest().getLengthTicks());
 
 			notes.sort(keepMe);
 			
@@ -426,11 +427,12 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 			for (AbcNoteEvent ne : notes) {
 				if (ne.note == Note.REST) {
 					rests.add(ne);
+					//System.out.println(" removing rest due to note bing same dura");
 				}
 			}
 			notes.removeAll(rests);// no need to add the rests to deadnotes
 		}
-		assert oldEndTick == endTick || !both;
+		assert oldEndTick == endTick || !both:"Old="+oldEndTick+" new="+endTick+" start="+startTick+" both="+hasRestAndNotes();
 		/*
 		if (hasRestAndNotes()) {
 			System.out.println();
@@ -450,13 +452,15 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		final boolean sustained;
 		final boolean drum;
 		final boolean percussion;
-		final boolean removeRests;
+		final boolean restPresent;
+		final long restDura;
 
-		PruneComparator (boolean sustained, boolean drum, boolean percussion, boolean removeRests) {
+		PruneComparator (boolean sustained, boolean drum, boolean percussion, boolean restPresent, long restDura) {
 			this.drum = drum;
 			this.sustained = sustained;
 			this.percussion = percussion;
-			this.removeRests = removeRests;
+			this.restPresent = restPresent;
+			this.restDura = restDura;
 		}
 
 		@Override
@@ -465,6 +469,8 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 			if (n1.note == Note.REST && n2.note == Note.REST) {
 				if (n1.getLengthTicks() < n2.getLengthTicks()) {
 					return 1; //keep n1
+				} else {
+					return -1;
 				}
 			}
 
@@ -472,6 +478,7 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 				if (n2.getLengthTicks() > n1.getLengthTicks()) {
 					return 1;
 				} else {
+					//System.out.println("  keep n2 over rest");
 					return -1;
 				}
 			}
@@ -479,7 +486,18 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 				if (n1.getLengthTicks() > n2.getLengthTicks()) {
 					return -1;
 				} else {
+					//System.out.println("  keep n1 over rest. rest="+n2.getLengthTicks()+" note="+n1.getLengthTicks());
 					return 1;
+				}
+			}
+			if (restPresent && n1.note != Note.REST && n2.note != Note.REST) {
+				if (n1.getLengthTicks() != n2.getLengthTicks()) {
+					// we might be pruning the rest, so lets make sure we keep a note with same short dura
+					if (n1.getLengthTicks() == restDura) {
+						return 1;
+					} else if (n2.getLengthTicks() == restDura) {
+						return -1;
+					}
 				}
 			}
 			
