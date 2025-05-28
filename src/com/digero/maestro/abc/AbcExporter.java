@@ -1905,7 +1905,9 @@ public class AbcExporter {
 				}
 				
 				// Insert a rest into current chord if need to shorten chord
-				if (!curChord.hadRestAndNotes() && curChord.getLongestEndTick() > targetEndTick) {// && curChord.getEndTick() > targetEndTick
+				if (part.getInstrument().sustainable && !curChord.hadRestAndNotes() && curChord.getLongestEndTick() > targetEndTick) {// && curChord.getEndTick() > targetEndTick
+					// The reason we only do this for sustainable is they benfit from this only,
+					// and adding a rest do limit the same time starting notes to 5.
 					// As long as there is any notes longer than our target we add a rest
 					// This is due to pruning might result in longer chord later,
 					// So we force a short chord by putting in a rest.
@@ -2929,10 +2931,13 @@ public class AbcExporter {
 			if (ne.getStartTick() < ceilTick) {//rounding error guard
 				AbcNoteEvent ne2;
 				long microsDuraAcrosTies = ne.origEndABCMicros-ne.origStartABCMicros;
-				boolean falsk = true;
-				if (falsk && !rest && !drone && microsDuraAcrosTies < TimingInfo.LONGEST_NOTE_MICROS) {
+				boolean sustained = part.getInstrument().sustainable;
+				if (sustained && !rest && !drone && microsDuraAcrosTies < TimingInfo.LONGEST_NOTE_MICROS) {
 					
 					// insert rest to shorten chord and keep long note
+					//
+					// Note that this will potentially insert many rests into chords.
+					// But prune will get rid of all but the shortest.
 					
 					AbcNoteEvent restShorter = new AbcNoteEvent(Note.REST, 4, ne.getStartTick(), ceilTick, qtm, null);
 					restShorter.origStartABCMicros = ne.origStartABCMicros;
