@@ -75,6 +75,11 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 	public long getEndMicros() {
 		return tempoCache.tickToMicros(endTick);
 	}
+	
+	@Deprecated
+	public long getLongestEndMicros() {
+		return tempoCache.tickToMicros(getLongestEndTick());
+	}
 
 	public int size() {
 		return notes.size();
@@ -302,6 +307,11 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		return endNoteTick;
 	}
 	
+	/**
+	 * Only call this from organic multi-stage please.
+	 * 
+	 * @return
+	 */
 	public AbcNoteEvent getShortest() {
 		long endNoteMicros = Long.MAX_VALUE;
 		AbcNoteEvent shortest = null;
@@ -316,6 +326,9 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		return shortest;
 	}
 
+	/**
+	 * Remove all rests from chord and reset hadRest boolean.
+	 */	
 	public void removeRests() {
 		List<AbcNoteEvent> rests = new ArrayList<>();
 		for (AbcNoteEvent evt : notes) {
@@ -325,8 +338,13 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		}
 		notes.removeAll(rests);
 		recalcEndTick();
+		hadRest = false;
 	}
 	
+	/**
+	 * 
+	 * @return false if contains notes
+	 */
 	public boolean isRest() {
 		for (AbcNoteEvent evt : notes) {
 			if (Note.REST != evt.note) {

@@ -1651,7 +1651,7 @@ public class AbcExporter {
 	 * process the notes using original organic principle
 	 */
 	private List<Chord> processOrganic(AbcPart part, List<AbcNoteEvent> events) {
-		
+		final boolean useRestToShortenChords = true;
 		breakLongNotesOrganic(part, events);
 
 		List<Chord> chords = new ArrayList<>(events.size() / 2);
@@ -1735,6 +1735,7 @@ public class AbcExporter {
 				AbcNoteEvent ne2 = null;
 				long ne2End = Long.MAX_VALUE;
 				long ne2Start = Long.MAX_VALUE;
+				Chord nextChordTmp = new Chord(ne);
 				for (int ii = i+1; ii < events.size(); ii++) {
 					// find the shortest non-zero dura notes coming next
 					// remember events are sorted not only by start tick, but also end tick
@@ -1749,11 +1750,15 @@ public class AbcExporter {
 							ne2End = ne1.getEndTick();
 						}
 						ne1 = over;
+						nextChordTmp.add(over);
 					} else if (over.getStartTick() == ne.getStartTick() && over.getLengthTicks() != 0L && ne1.getLengthTicks() != 0L && over.getLengthTicks() > ne1.getLengthTicks()) {
 						// over is longer than ne1 and neither is zero. over starts at same time as ne.
 						// this means over is going to be cut up, so ne2 will become ending of over.
 						ne2Start = ne1.getEndTick();
 						ne2End = over.getEndTick();
+						nextChordTmp.add(over);
+					} else if (over.getStartTick() == ne.getStartTick()) {
+						nextChordTmp.add(over);
 					}
 					if (over.getStartTick() > ne.getStartTick() && (ne2 == null || ne2.getLengthTicks() == 0L)) {
 						// over starts after ne.
@@ -1764,6 +1769,7 @@ public class AbcExporter {
 						}
 					}
 				}
+				int nextValue = calcValue(nextChordTmp, part.getInstrument().sustainable);
 				// ne1 now represent the first chord, it might be longer than ne if ne is zero dura.
 				if ((ne2 != null && ne2.getStartTick() > ne2Start) || (ne2 == null && ne2Start < Long.MAX_VALUE)) {
 					ne2 = new AbcNoteEvent(Note.A0, 64, ne2Start, ne2End, qtm, ne1.origNote);
@@ -1870,14 +1876,13 @@ public class AbcExporter {
 							// a sustained instrument on this part, it will be ruined for that purpose.
 							// But this will make fitting it all together easier.
 							jne.setEndTick(curMinEndFitTick);
-						} else if (curChord.getEndTick() == targetEndTick && noteEndMicro-curEndMicro < minimumMicros/2 && jne.tiesTo == null) {
+						} else if (!useRestToShortenChords && curChord.getEndTick() == targetEndTick && noteEndMicro-curEndMicro < minimumMicros/2 && jne.tiesTo == null) {
 							// note ends approx same time as end of chord
 							// we make it end same time as shortest note in chord,
 							// chord might become slightly longer later.
 							//jne.setEndTick(curChord.getEndTick());
 							debugOutput(2,part.getTitle()+ ": Fit note ending to chord ending");
-						} else {
-							/*
+						} else if (!useRestToShortenChords) {
 							// This note extends past the end of the chord; break it into two tied notes
 							AbcNoteEvent next = jne.splitWithTieAtTick(targetEndTick);
 	
@@ -1892,7 +1897,6 @@ public class AbcExporter {
 								reprocessCurrentNote = true;
 							assert next.note != Note.REST;
 							events.add(ins, next);
-							*/
 						}
 					}
 				}
@@ -1905,19 +1909,21 @@ public class AbcExporter {
 				}
 				
 				// Insert a rest into current chord if need to shorten chord
-				if (part.getInstrument().sustainable && !curChord.hadRestAndNotes() && curChord.getLongestEndTick() > targetEndTick) {// && curChord.getEndTick() > targetEndTick
-					// The reason we only do this for sustainable is they benfit from this only,
+				if (part.getInstrument().sustainable && !curChord.hadRestAndNotes()
+						&& curChord.getEndTick() > nextChord.getStartTick()
+						&& useRestToShortenChords) {// && curChord.getEndTick() > targetEndTick
+					// The reason we only do this for sustainable is they benefit from this only,
 					// and adding a rest do limit the same time starting notes to 5.
-					// As long as there is any notes longer than our target we add a rest
+					// As long as the shortest is longer than next start we add a rest
 					// This is due to pruning might result in longer chord later,
 					// So we force a short chord by putting in a rest.
 					// If there is notes same dura or shorter as the rest we insert,
 					// and they don't get pruned, the rest itself will get pruned, to not bloat.
 					tmpEvents.clear();
 					tmpEvents.add(new AbcNoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, curChord.getStartTick(),
-							targetEndTick, qtm, null));
+							Math.max(curMinEndTick, nextChord.getStartTick()), qtm, null));
 					breakLongNotesOrganic(part, tmpEvents);
-					if (tmpEvents.size() == 1) {
+					if (tmpEvents.size() > 0) {
 						int ins = Collections.binarySearch(events, tmpEvents.get(0));
 						if (ins < 0)
 							ins = -ins - 1;
@@ -1928,8 +1934,14 @@ public class AbcExporter {
 						reprocessCurrentNote = true;
 						curChord.add(tmpEvents.get(0));
 						events.add(ins, tmpEvents.get(0));
-					} else {
-						System.out.println("Rest needed to be broken up, STRANGE");
+						
+						if (tmpEvents.size() > 1) {
+							System.out.println(part.getAbcSong().getSongTitle()+": Rest needed to be broken up !!!!!!!!!!");
+						}
+						if (curChord.size() > 6) {
+							// uncommon, less than 10 songs out of 1000 had this happen 
+							//System.out.println(part.getAbcSong().getSongTitle()+": 6 note chord had rest added !!!!!!!!!!");
+						}
 					}
 				}
 				curChord.recalcEndTick();
@@ -1993,6 +2005,7 @@ public class AbcExporter {
 						curChord.setEndTickExpand(curMinEndTick);
 					} else {
 						// there was not room for a larger chord
+						int curValue = calcValue(curChord, part.getInstrument().sustainable);
 						long neMicroStart = qtm.tickToMicrosABCOrganic(ne.getStartTick());
 						if (!curChord.glissando) {
 							boolean isRattle = true;
@@ -2111,6 +2124,33 @@ public class AbcExporter {
 									debugOutput(1,part.getTitle()+": Included late arpeggio to block chord");
 									continue MAIN;
 								}
+							} else if (useRestToShortenChords && curValue > nextValue) {
+								// Curr chord has higher value than next chord
+								// so its more than just a gracenote, we remove next instead.
+								// TODO: Could investigate if could delay start of next.
+								if (ne.tiesTo != null) {
+									if (!part.getInstrument().sustainable) {
+										// If non-sustained then should remove ne.tiesTo
+										// we do this by a hack when setting from to itself
+										// then we just skip the notes from being added.
+										AbcNoteEvent tie = ne.tiesTo;
+										while (tie != null) {
+											tie.tiesFrom = tie;
+											tie = tie.tiesTo;
+										}
+									}
+									ne.tiesTo.tiesFrom = null;
+								}
+								if (ne.tiesFrom != null) {
+									ne.tiesFrom.tiesTo = null;
+								}
+								events.remove(ne);
+								i--;
+								curChord.removeRests();// It might not need the rest anymore so we remove it. Might get re-added.
+								debugOutput(1,part.getTitle()+": Removed low value next chord");
+								//note that this will make next chord even lower value,
+								//so rest of next chords notes will also be removed.
+								continue MAIN;
 							}
 							// give up and schedule curr chord for deletion, it likely contains a grace note
 							curChord.setEndTickRetract(curChord.getStartTick());
@@ -2281,6 +2321,7 @@ public class AbcExporter {
 		
 		// delete all chords with zero duration, as there was no room for them
 		List<Chord> trash = new ArrayList<>();
+		int count = 0;
 		for (int i = 0; i < chords.size(); i++) {
 			Chord chord = chords.get(i);
 			if (chord.getStartTick() == chord.getEndTick()) {
@@ -2298,10 +2339,30 @@ public class AbcExporter {
 					}
 				}
 				trash.add(chord);
+				if (chord.hasRestAndNotes()) count++;
 			}
 		}
 		chords.removeAll(trash);
+		/*
+		if (count > 0) {
+			System.out.println(part.getAbcSong().getSongTitle()+": deleting "+count+ " resting chords due to rest being too short !!!!!!");
+		}
+		*/
 		return chords;
+	}
+	
+	private int calcValue(Chord c, boolean sustained) {
+		// weakness: this favors curChord if starting tick of next
+		//           chord is not exact aligned.
+		int value = -1;
+		value += c.sizeReal();
+		if (sustained) {
+			long start = qtm.tickToMicrosABCOrganic(c.getStartTick());
+			long end = qtm.tickToMicrosABCOrganic(c.getLongestEndTick());
+			long dura = end - start;
+			value += dura/(AbcConstants.ONE_SECOND_MICROS/4L);
+		}
+		return value;
 	}
 	
 	final int debug = 0;// 0=no debug 1=minimal debug 2=more debug 3=most debug
