@@ -60,7 +60,7 @@ public class PolyphonyHistogram   {
 	
 	/**
 	 * Called from AbcExporter.java
-	 * 
+	 *  
 	 * @param part
 	 * @param chords
 	 * @throws IOException 
@@ -149,6 +149,135 @@ public class PolyphonyHistogram   {
 	
 	public static void clearAll() {
 		histogramData.clear();
+	}
+	
+	/**
+	 * 
+	 * Debug method to check whether inserting rests in chord to make them shorter and allow
+	 * for more part polyphony actually has an effect. Will print to sysout if more than 6 notes
+	 * playing in part.
+	 * 
+	 * This method does NOT take decay in consideration.
+	 *  
+	 */
+	public static void maxPolyInPart(AbcPart part, List<Chord> chords, boolean organic, QuantizedTimingInfo qtm) throws IOException {
+		if (!enabled) return;
+		
+		TreeMap<Long, Pair<Long,Integer>> partMap = new TreeMap<>();
+		List<AbcNoteEvent> done = new ArrayList<>();
+		for (Chord chord : chords) {
+			for (AbcNoteEvent event : chord.getNotes()) {
+				if (event.note.id == Note.REST.id || done.contains(event)) {
+					continue;
+				}
+				assert event.tiesFrom == null;
+				
+				AbcNoteEvent check = event;
+				while (check.tiesTo != null) {
+					// The reason we do this is that non-sustained instr.
+					// might have ties-to which often should not count for anything
+					// as the sample is short.
+					check = check.tiesTo;
+					done.add(check);
+				}
+				long endTick = check.getEndTick();
+				long startMicros; 
+				long endMicros;
+				if (organic) {
+					startMicros = qtm.tickToMicrosABCOrganic(event.getStartTick());// delay is already in the start/end tick at this point 
+					endMicros   = qtm.tickToMicrosABCOrganic(endTick);
+				} else {
+					startMicros = qtm.tickToMicrosABC(event.getStartTick(), part);// delay is already in the start/end tick at this point 
+					endMicros   = qtm.tickToMicrosABC(endTick, part);
+				}
+				if (part.getInstrument().isSustainable(event.note.id)) {
+					endMicros += 0;//200000L;// 200ms
+					Long duraMicros = LotroInstrumentSampleDuration.getDura(part.getInstrument().friendlyName, event.note.id);
+					if (duraMicros != null) {
+						long endMax = startMicros + duraMicros;
+						endMicros = Math.min(endMax, endMicros);
+					}
+					if (organic) {
+						endTick   = qtm.microsToTickABCOrganic(endMicros);
+					} else {
+						endTick   = qtm.microsToTickABC(endMicros);
+					}
+				} else {
+					int pitch = event.note.id;
+					if (part.getInstrument() == LotroInstrument.BASIC_COWBELL || part.getInstrument() == LotroInstrument.MOOR_COWBELL) {
+						pitch = AbcConstants.COWBELL_NOTE_ID;
+					}
+					Long duraMicros = LotroInstrumentSampleDuration.getDura(part.getInstrument().friendlyName, pitch);
+					if (duraMicros == null) {
+						System.err.println("Error: LotroInstrumentSampleDuration has no "+part.getInstrument().friendlyName+" with note "+event.note.id);
+						duraMicros = AbcConstants.ONE_SECOND_MICROS;
+					}
+					long endMax = startMicros + duraMicros;
+					endMicros = Math.min(endMax, endMicros);
+					if (organic) {
+						endTick   = qtm.microsToTickABCOrganic(endMicros);
+					} else {
+						endTick   = qtm.microsToTickABC(endMicros);
+					}
+				}
+				if (endMicros == startMicros) continue;
+								
+				Pair<Long,Integer> oldStart = partMap.get(startMicros);
+				if (oldStart == null) {
+					oldStart = new Pair<>(event.getStartTick(), 0);
+				}
+				oldStart.second += 1;
+				partMap.put(startMicros, oldStart);
+				
+				Pair<Long,Integer> oldEnd = partMap.get(endMicros);
+				if (oldEnd == null) {
+					oldEnd = new Pair<>(endTick, 0);
+				}
+				oldEnd.second -= 1;
+				partMap.put(endMicros, oldEnd);
+				
+				assert endMicros - startMicros > 0L;
+			}
+		}
+			
+		TreeMap<Long, Pair<Long,Integer>> songMap = new TreeMap<>();
+
+		Set<Entry<Long, Pair<Long,Integer>>> entrySet = partMap.entrySet();
+		long lastTick = -1L;
+		for (Entry<Long, Pair<Long,Integer>> entry : entrySet) {
+			long micros = entry.getKey();//micros
+			int noteStarts = entry.getValue().second;//number of notes
+			long tick = entry.getValue().first;
+			//assert tick >= lastTick:"HISTO OOPS 3";
+			lastTick = tick;
+					
+			Pair<Long,Integer> oldValue = songMap.get(micros);
+			if (oldValue == null) {
+				oldValue = new Pair<>(tick, 0);
+			}
+			oldValue.second += noteStarts;
+			songMap.put(micros, oldValue);
+		}
+			
+		int polyphony = 0;
+		Set<Entry<Long, Pair<Long,Integer>>> entrySongSet = songMap.entrySet();
+		lastTick = -1L;
+		long lastMicro = -1L;
+		int maximum = 0;
+		for (Entry<Long, Pair<Long,Integer>> entry : entrySongSet) {
+			// this assert can happen due to convertin back and forth is not sure to output original tick, rounding I reckon
+			//assert entry.getValue().first >= lastTick:" CAN HAPPEN at "+Util.formatDuration(entry.getKey())+"="+entry.getValue().first+"  "+Util.formatDuration(lastMicro)+"="+lastTick;
+			lastTick = entry.getValue().first;
+			lastMicro = entry.getKey();
+			polyphony += entry.getValue().second;
+			if (polyphony > maximum) {
+				maximum = polyphony;
+			}
+		}
+		assert polyphony == 0;
+		if (maximum > 6) {
+			System.out.println(" ++++ "+part.getAbcSong().getTitle()+" ("+part.getTitle()+"): "+maximum+" poly");
+		}
 	}
 	
 	/**

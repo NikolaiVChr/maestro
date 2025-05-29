@@ -68,7 +68,7 @@ public class AbcExporter {
 	// Some midis have zero duration notes that should played (this is for organic only)
 	private boolean deleteEmptyNotes = false;
 	
-	private final boolean useRestToShortenChords = true;
+	private final boolean useRestToShortenChords = true;// Only organic timings use this
 
 	public int stereoPan = 100;// zero is mono, 100 is very wide.
 	private int firstBarNumber;
@@ -1642,6 +1642,15 @@ public class AbcExporter {
 			} catch (IOException e) {
 				throw new AbcConversionException("Failed to read instrument sample durations.", e);
 			}
+		} else {
+			// debug code
+			/*
+			try {
+				PolyphonyHistogram.maxPolyInPart(part, chords, organic, qtm);
+			} catch (IOException e) {
+				throw new AbcConversionException("Failed to read instrument sample durations.", e);
+			}
+			*/
 		}
 		
 		//Collections.sort(chords);
