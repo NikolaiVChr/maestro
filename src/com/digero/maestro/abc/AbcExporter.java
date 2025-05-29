@@ -67,6 +67,8 @@ public class AbcExporter {
 	
 	// Some midis have zero duration notes that should played (this is for organic only)
 	private boolean deleteEmptyNotes = false;
+	
+	private final boolean useRestToShortenChords = true;
 
 	public int stereoPan = 100;// zero is mono, 100 is very wide.
 	private int firstBarNumber;
@@ -1651,7 +1653,7 @@ public class AbcExporter {
 	 * process the notes using original organic principle
 	 */
 	private List<Chord> processOrganic(AbcPart part, List<AbcNoteEvent> events) {
-		final boolean useRestToShortenChords = true;
+		
 		breakLongNotesOrganic(part, events);
 
 		List<Chord> chords = new ArrayList<>(events.size() / 2);
@@ -2926,9 +2928,9 @@ public class AbcExporter {
 		// make sure chord does not contain both rest and notes
 		// Also make sure there is not duplicates in it
 		List<AbcNoteEvent> tmp = new ArrayList<>(curChord.getNotes());
-		boolean both = false;//curChord.hasRestAndNotes();
+
 		for (AbcNoteEvent note : tmp) {
-			if (both && note.note == Note.REST) {
+			if (!useRestToShortenChords && note.note == Note.REST) {
 				curChord.remove(note);
 			}
 			for (AbcNoteEvent note2 : tmp) {
@@ -2993,7 +2995,7 @@ public class AbcExporter {
 				AbcNoteEvent ne2;
 				long microsDuraAcrosTies = ne.origEndABCMicros-ne.origStartABCMicros;
 				boolean sustained = part.getInstrument().sustainable;
-				if (sustained && !rest && !drone && microsDuraAcrosTies < TimingInfo.LONGEST_NOTE_MICROS) {
+				if (useRestToShortenChords && sustained && !rest && !drone && microsDuraAcrosTies < TimingInfo.LONGEST_NOTE_MICROS) {
 					
 					// insert rest to shorten chord and keep long note
 					//
