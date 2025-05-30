@@ -35,6 +35,7 @@ import com.digero.common.midi.MidiFactory;
 import com.digero.common.midi.Note;
 import com.digero.common.midi.PanGenerator;
 import com.digero.common.util.Pair;
+import com.digero.common.util.Triple;
 import com.digero.common.util.Util;
 import com.digero.maestro.MaestroMain;
 import com.digero.maestro.abc.QuantizedTimingInfo.TimingInfoEvent;
@@ -203,14 +204,14 @@ public class AbcExporter {
 			Map<AbcPart, List<Chord>> chordsMade) throws AbcConversionException {
 		List<Chord> chords = chordsMade.get(part);
 
-		Pair<Integer, Integer> trackNumber = exportPartToMidi(part, sequence, chords, pan, useLotroInstruments);
-
+		Triple<Integer, Integer, Long> trackNumber = exportPartToMidi(part, sequence, chords, pan, useLotroInstruments);
+		/*
 		List<AbcNoteEvent> noteEvents = new ArrayList<>(chords.size());
-		long lastEnd = 0L;
+		
 		for (Chord chord : chords) {
 			for (int i = 0; i < chord.size(); i++) {
 				AbcNoteEvent ne = chord.get(i);
-				lastEnd = Math.max(lastEnd, ne.getEndTick());
+				
 				// Skip rests and notes that are the continuation of a tied note
 				if (ne.note == Note.REST || ne.tiesFrom != null)
 					continue;
@@ -227,12 +228,13 @@ public class AbcExporter {
 				noteEvents.add(ne);
 			}
 		}
+		*/
 
-		return new ExportTrackInfo(trackNumber.first, part, noteEvents, trackNumber.second,
-				part.getInstrument().midi.id(), lastEnd);
+		return new ExportTrackInfo(trackNumber.first, part, null /* noteEvents */, trackNumber.second,
+				part.getInstrument().midi.id(), trackNumber.third);
 	}
 
-	private Pair<Integer, Integer> exportPartToMidi(AbcPart part, Sequence out, List<Chord> chords, int pan,
+	private Triple<Integer, Integer, Long> exportPartToMidi(AbcPart part, Sequence out, List<Chord> chords, int pan,
 			boolean useLotroInstruments) {
 		part.numberOfExportedNotes = 0;
 		int trackNumber = out.getTracks().length;
@@ -359,10 +361,10 @@ public class AbcExporter {
 				track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off));
 			}
 		}
-		
+
 		track.add(MidiFactory.createEndOfTrackEvent(lastEnd));
 
-		return new Pair<>(trackNumber, channel);
+		return new Triple<>(trackNumber, channel, lastEnd);
 	}
 
 	public void exportToAbc(OutputStream os, boolean delayEnabled) throws AbcConversionException {
@@ -372,7 +374,7 @@ public class AbcExporter {
 		Pair<Long, Long> startEnd = getSongStartEndTick(false, true, false);
 		exportStartTick = startEnd.first;
 		exportEndTick = startEnd.second;
-
+		
 		try (PrintStream out = new PrintStream(os)) {
 			if (!parts.isEmpty()) {
 				out.println("%abc-2.1");
@@ -3739,13 +3741,14 @@ public class AbcExporter {
 		if (organic) {
 			timings = qtm.getTimingInfoByTickOrganic();
 		}
+		QuantizedTimingInfo.TimingInfoEvent event1L = timings.get(1L);
 		for (QuantizedTimingInfo.TimingInfoEvent event : timings.values()) {
-			if (event.tick > end+100L)
+			if (event.tick > end)
 				continue;
 
 			track0.add(MidiFactory.createTempoEvent(event.info.getExportTempoMPQ(), event.tick));
 
-			if (event.tick == 0) {
+			if (event.tick == 0L && event1L == null) {
 				// The Java MIDI sequencer can sometimes miss a tempo event at tick 0
 				// Add another tempo event at tick 1 to work around the bug
 				track0.add(MidiFactory.createTempoEvent(event.info.getExportTempoMPQ(), 1));
@@ -4120,7 +4123,10 @@ public class AbcExporter {
 	public static class ExportTrackInfo {
 		public final int trackNumber;
 		public final AbcPart part;
-		public final List<AbcNoteEvent> noteEvents;
+		
+		//not sure what this used to be used for
+		//public final List<AbcNoteEvent> noteEvents;
+		
 		public final Integer channel;
 		public final Integer patch;
 		public final long endOfTrack;
@@ -4128,7 +4134,7 @@ public class AbcExporter {
 		public ExportTrackInfo(int trackNumber, AbcPart part, List<AbcNoteEvent> noteEvents, Integer channel, int patch, long endOfTrack) {
 			this.trackNumber = trackNumber;
 			this.part = part;
-			this.noteEvents = noteEvents;
+			//this.noteEvents = noteEvents;
 			this.channel = channel;
 			this.patch = patch;
 			this.endOfTrack = endOfTrack;
