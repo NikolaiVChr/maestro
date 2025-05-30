@@ -2847,10 +2847,27 @@ public class AbcExporter {
 		
 		Collections.sort(eventSegments);
 		
+		boolean assertionsEnabled = false;
+		assert assertionsEnabled = true;
+		if (assertionsEnabled) {
+			AbcNoteEvent last = null;
+			for (AbcNoteEvent ne : eventSegments) {
+				if (last != null) {
+					assert ne.getStartTick() >= last.getStartTick();
+					assert ne.getEndTick() >= last.getEndTick() || ne.getStartTick() > last.getStartTick();
+				}
+				last = ne;
+			}
+		}
+		
 		// Add rests between the notes
 		List<AbcNoteEvent> rests = new ArrayList<>(events.size());
+		List<AbcNoteEvent> restTrash = new ArrayList<>();
+		List<AbcNoteEvent> potentialTrash = new ArrayList<>();
 		long lastEndMicros = 0L;
-		long lastEndTick = 0L;
+		long lastEndTick = 0L;// prevChordsShortest ending
+		AbcNoteEvent lastEndNote = null;
+		AbcNoteEvent prevChordsShortest = null;
 		long lastStartMicros = -1L;
 		boolean firstLoop = true;
 		for (int i = 0; i < eventSegments.size(); i++) {
@@ -2860,34 +2877,77 @@ public class AbcExporter {
 	    		if (noteSegment.origStartABCMicros > lastStartMicros) {
 	    			// new chord
 	    			// here we rely on the sorting to be shortest notes first. (beside sorting by start tick)
-		    		if (noteSegment.origStartABCMicros > lastEndMicros) {
-		    			// insert rest
+	    			boolean F = false;
+	    			if (lastEndNote != null && noteSegment.origStartABCMicros > lastEndNote.origEndABCMicros) {
+	    				// we dont need the short rest
+	    				restTrash.addAll(potentialTrash);
+	    				// insert rest from last note/bridge to current segment
+		    			AbcNoteEvent rest = new AbcNoteEvent(Note.REST,64,lastEndNote.getEndTick(),noteSegment.getStartTick(),qtm,null);
+		    			rest.origStartABCMicros = lastEndNote.origEndABCMicros;
+		    			rest.origEndABCMicros = noteSegment.origStartABCMicros;
+		    			
+		    			List<AbcNoteEvent> segments = splitToGrid(rest, gridTicks, part);
+		    	    	rests.addAll(segments);
+	    			} else if (prevChordsShortest != lastEndNote && lastEndNote != null && noteSegment.origStartABCMicros == lastEndNote.origEndABCMicros) {
+	    				// we don't need the short rest
+	    				assert prevChordsShortest.getLengthTicks() <= lastEndNote.getLengthTicks();
+	    				assert prevChordsShortest.origStartABCMicros == lastEndNote.origStartABCMicros;
+	    				restTrash.addAll(potentialTrash);
+	    			} else if (noteSegment.origStartABCMicros > lastEndMicros) {
+	    				// insert rest from last rest to current segment
 		    			AbcNoteEvent rest = new AbcNoteEvent(Note.REST,64,lastEndTick,noteSegment.getStartTick(),qtm,null);
 		    			rest.origStartABCMicros = lastEndMicros;
 		    			rest.origEndABCMicros = noteSegment.origStartABCMicros;
 		    			
 		    			List<AbcNoteEvent> segments = splitToGrid(rest, gridTicks, part);
 		    	    	rests.addAll(segments);
-		    	    	lastEndMicros = noteSegment.origStartABCMicros;
-		    	    	lastEndTick = noteSegment.getStartTick();//careful, dont use rest.getendtick() here as it might have been shortened in splittogrid()
-		    	    	lastStartMicros = noteSegment.origStartABCMicros;
+		    	    	
 		    	    	/*
 		    	    	for (AbcNoteEvent evt : eventSegments) {
 		    	    		assert rest.origStartABCMicros >= evt.origEndABCMicros || rest.origEndABCMicros <= evt.origStartABCMicros;
 		    	    	}
 		    	    	*/
+		    		} else {
+		    			assert noteSegment.origStartABCMicros == lastEndMicros;
 		    		}
+	    			prevChordsShortest = noteSegment;//The shortest note/rest in the new chord
+	    			
+	    			if (noteSegment.note != Note.REST) lastEndNote = noteSegment;
+	    	    	else lastEndNote = null;
+	    			
+	    			potentialTrash = new ArrayList<>();
+	    			if (prevChordsShortest.note == Note.REST) potentialTrash.add(prevChordsShortest);
+	    			
 	    	    	progressing = true;
+	    		} else if (noteSegment.note != Note.REST && lastEndNote == null) {
+	    			// second or later in this chord
+	    			assert prevChordsShortest.getLengthTicks() <= noteSegment.getLengthTicks();
+	    			lastEndNote = noteSegment;
+	    		} else if (noteSegment.note == Note.REST) {
+	    			// There might be more than 1 rest that starts at same time,
+	    			// we will either remove all of them or let pruning do its work.
+	    			potentialTrash.add(noteSegment);
 	    		}
 	    	}
 	    	if (firstLoop || (progressing && noteSegment.origEndABCMicros > lastEndMicros)) {
 	    		lastEndMicros = noteSegment.origEndABCMicros;
 	    		lastEndTick = noteSegment.getEndTick();
+	    		if (firstLoop) {
+	    			prevChordsShortest = noteSegment;
+	    			if (noteSegment.note != Note.REST) {
+	    				lastEndNote = prevChordsShortest;
+	    			} else {
+	    				lastEndNote = null;
+	    				potentialTrash.add(prevChordsShortest);
+	    			}
+	    		}
 	    	}
 	    	lastStartMicros = noteSegment.origStartABCMicros;
 	    	firstLoop = false;
 		}
 		eventSegments.addAll(rests);
+		eventSegments.removeAll(restTrash);
+		//if (restTrash.size() > 0) System.out.println("Trashing rests:"+restTrash.size());
 		
 		Collections.sort(eventSegments);
 		
@@ -3002,9 +3062,13 @@ public class AbcExporter {
 			// As long as there is another ceiling within the note duration
 			if (ne.getStartTick() < ceilTick) {//rounding error guard
 				AbcNoteEvent ne2;
-				long microsDuraAcrosTies = ne.origEndABCMicros-ne.origStartABCMicros;
+				long microsFullDura = ne.origEndABCMicros-ne.origStartABCMicros;
 				boolean sustained = part.getInstrument().sustainable;
-				if (useRestToShortenChords && sustained && !rest && !drone && microsDuraAcrosTies < TimingInfo.LONGEST_NOTE_MICROS) {
+				//Entry<Long, Long> ceilNext = gridTicks.ceilingEntry(ceilMicros+1L);
+				//Long ceilNextMicros = ceilNext == null?null:ceilNext.getKey();
+				if (useRestToShortenChords && sustained
+						&& !rest && microsFullDura < TimingInfo.LONGEST_NOTE_MICROS
+						) {//&& ceilNextMicros != null && ceilNextMicros+60000 < ne.origEndABCMicros
 					
 					// insert rest to shorten chord and keep long note
 					//
@@ -3061,6 +3125,7 @@ public class AbcExporter {
 				assert ne.getStartTick() < ne.getEndTick();
 				assert ne2.getStartTick() < ne2.getEndTick();
 				*/
+				
 				ne = ne2;
 				lastSplitTick = ceilTick;
 				lastSplitMicros = ceilMicros;

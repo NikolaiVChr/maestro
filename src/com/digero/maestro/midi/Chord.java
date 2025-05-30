@@ -37,7 +37,6 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 	private ITempoCache tempoCache;
 	private long startTick;
 	private long endTick;
-	private long endTickNotes;
 	private List<AbcNoteEvent> notes = new ArrayList<>();
 	private int highest = 0;// source midi highest and lowest pitch in the chord
 	private int lowest = 200;
@@ -55,7 +54,9 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		startTick = firstNote.getStartTick();
 		endTick = firstNote.getEndTick();
 		notes.add(firstNote);
-		if (firstNote.note == Note.REST) hadRest = true;
+		if (firstNote.note == Note.REST) {
+			hadRest = true;
+		}
 	}
 
 	public long getStartTick() {
@@ -185,30 +186,21 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 	public void recalcEndTick() {
 		if (!notes.isEmpty()) {
 			endTick = notes.get(0).getEndTick();
-			if (notes.get(0).note == Note.REST) {
-				if (notes.size() > 1) {
-					endTickNotes = notes.get(1).getEndTick();
-				} else {
-					endTickNotes = getStartTick();
-					return;
-				}
-			}
 			for (int k = 1; k < notes.size(); k++) {
 				if (notes.get(k).getEndTick() < endTick) {
 					endTick = notes.get(k).getEndTick();
 				}
-				if (notes.get(k).note != Note.REST) {
-					if (notes.get(k).getEndTick() < endTickNotes) {
-						endTickNotes = notes.get(k).getEndTick();
-					}
-				}
 			}
 		} else {
 			endTick = startTick;
-			endTickNotes = startTick;
 		}
 	}
 	
+	/**
+	 * Wont change anything if the chord is a rest with no notes
+	 * 
+	 * @param newEndTick
+	 */
 	public void setEndTick(long newEndTick) {
 		if (isRest()) return;
 		for (AbcNoteEvent note : notes) {
@@ -295,6 +287,10 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		}
 	}
 
+	/**
+	 * 
+	 * @return tick of longest note ending. Rests ignored.
+	 */
 	public Long getLongestEndTick() {
 		long endNoteTick = getStartTick();
 		if (!notes.isEmpty()) {
@@ -371,6 +367,11 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		return hasRests && hasNotes;
 	}
 	
+	/**
+	 * Used only by organic1
+	 * 
+	 * @return
+	 */
 	public boolean hadRestAndNotes() {
 		boolean hasNotes = false;
 		for (AbcNoteEvent evt : notes) {
@@ -399,13 +400,6 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		//System.out.println("Starting prune");
 		int noteMax = abcPart.getNoteMax();
 		
-		boolean removeRests = false;
-		if (endTickNotes <= endTick) {
-			// there is notes that are at least as short as the shortest rest,
-			// so lets down-prioritize rests as they not needed.
-			// ..unless, shortest note gets pruned, which we must prevent
-			removeRests = true;
-		}
 		long oldEndTick = endTick;
 		boolean both = hasRestAndNotes();
 		if (size() > noteMax) {
@@ -418,26 +412,7 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 
 			notes.sort(keepMe);
 			
-			// commented due to we assume only 1 rest present max
-			/*
-			List<AbcNoteEvent> rests = new ArrayList<>();
-			AbcNoteEvent shortestRest = null;
-			long restDura = Long.MAX_VALUE;
-			for (AbcNoteEvent ne : notes) {
-				if (ne.note == Note.REST) {
-					if (ne.getLengthTicks() < restDura) {
-						// we only keep the shortest rest
-						restDura = ne.getLengthTicks();
-						shortestRest = ne;
-					}
-					rests.add(ne);
-				}
-			}
-			
-			notes.removeAll(rests);// no need to add the rests to deadnotes
-			
-			
-			*/
+			keepOnlyRestIfShortest();
 			
 			for (int i = notes.size() - 1; i >= 0; i--) {
 				if (newNotes.size() < noteMax) {
@@ -448,22 +423,11 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 			}
 			notes = newNotes;
 			
-			//if (shortestRest != null) notes.add(shortestRest);
-			
-			
+		} else {
+			keepOnlyRestIfShortest();
 		}
 		recalcEndTick();
-		if (endTickNotes == endTick && endTickNotes > startTick) {
-			// remove any rests since they not needed
-			List<AbcNoteEvent> rests = new ArrayList<>();
-			for (AbcNoteEvent ne : notes) {
-				if (ne.note == Note.REST) {
-					rests.add(ne);
-					//System.out.println(" removing rest due to note bing same dura");
-				}
-			}
-			notes.removeAll(rests);// no need to add the rests to deadnotes
-		}
+
 		assert oldEndTick == endTick || !both:"Old="+oldEndTick+" new="+endTick+" start="+startTick+" both="+hasRestAndNotes();
 		/*
 		if (hasRestAndNotes()) {
@@ -478,6 +442,26 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		}
 		*/
 		return deadNotes;
+	}
+
+	private void keepOnlyRestIfShortest() {
+		List<AbcNoteEvent> rests = new ArrayList<>();
+		AbcNoteEvent shortestRest = null;
+		long restDura = Long.MAX_VALUE;
+		for (AbcNoteEvent ne : notes) {
+			if (ne.getLengthTicks() < restDura) {
+				// we only keep the shortest
+				restDura = ne.getLengthTicks();
+				if (ne.note == Note.REST) {
+					shortestRest = ne;
+				}
+			}
+			if (ne.note == Note.REST) rests.add(ne);
+		}
+		
+		notes.removeAll(rests);// no need to add the rests to deadnotes
+		
+		if (shortestRest != null && shortestRest.getLengthTicks() == restDura) notes.add(shortestRest);
 	}
 	
 	class PruneComparator implements Comparator<AbcNoteEvent> {

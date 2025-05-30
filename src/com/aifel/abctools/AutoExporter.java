@@ -252,7 +252,7 @@ public class AutoExporter {
 		}
 		if (!cancel) {
 			setProgress(1000);
-			appendToField("<br><br>Exports finished.");
+			appendToField("<br><br>Exports finished. ");//+PolyphonyHistogram.successes
 		} else {
 			appendToField("<br><br>Exports cancelled.");
 		}

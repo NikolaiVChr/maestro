@@ -30,6 +30,8 @@ public class PolyphonyHistogram   {
 	public static boolean enabled = true;// set to true to enable this system, set to false to save cpu power.
 	private static Listener<SequencerEvent> listener = new MyListener();
 	private static LotroSequencerWrapper abcSeq = null;
+	
+	public static volatile int successes = 0;//debug for abctools (organic1=118 organic2=44) approx factor 3
 
 	public static void setSequencer(LotroSequencerWrapper abcSequencer) {
 		if (abcSeq != null) abcSeq.removeChangeListener(listener);
@@ -277,6 +279,7 @@ public class PolyphonyHistogram   {
 		assert polyphony == 0;
 		if (maximum > 6) {
 			System.out.println(" ++++ "+part.getAbcSong().getTitle()+" ("+part.getTitle()+"): "+maximum+" poly");
+			successes++;
 		}
 	}
 	
