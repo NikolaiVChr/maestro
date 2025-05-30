@@ -2200,7 +2200,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		try {
 			abcSong = new AbcSong(file, partAutoNumberer, partNameTemplate, exportFilenameTemplate, instrNameSettings,
-					openFileResolver, miscSettings);
+					openFileResolver, miscSettings, saveSettings);
 			sequencer.onlyFirstTrackTempos = abcSong.isUsingOldTempos();
 			abcSong.setBadger(miscSettings.showBadger);
 			abcSong.addSongListener(abcSongListener);

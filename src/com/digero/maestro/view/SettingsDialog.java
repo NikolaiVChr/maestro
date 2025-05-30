@@ -842,6 +842,22 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		convertABCStringsToBasicAsciiCheckBox.setSelected(saveSettings.convertABCStringsToBasicAscii);
 		convertABCStringsToBasicAsciiCheckBox.addActionListener(
 				e -> saveSettings.convertABCStringsToBasicAscii = convertABCStringsToBasicAsciiCheckBox.isSelected());
+		
+		final JLabel defaultTimingText = new JLabel("Default timing:");
+		final JComboBox<String> defaultTimingComboBox = new JComboBox<>();
+		defaultTimingComboBox.setToolTipText(
+				"<html>Select default timing for new projects from midi.</html>");
+		for (String choice : SaveAndExportSettings.TIMING_CHOICES) {
+			defaultTimingComboBox.addItem(choice);
+		}
+		defaultTimingComboBox.setEditable(false);
+		defaultTimingComboBox.addActionListener(e -> {
+			try {
+				saveSettings.defaultTiming = (String) defaultTimingComboBox.getSelectedItem();
+			} catch (Exception ex) {
+			}
+		});
+		defaultTimingComboBox.setSelectedItem(saveSettings.defaultTiming);
 
 		TableLayout layout = new TableLayout();
 		layout.insertColumn(0, PREFERRED);
@@ -871,6 +887,12 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		
 		layout.insertRow(++row, PREFERRED);
 		panel.add(convertABCStringsToBasicAsciiCheckBox, "0, " + row);
+		
+		layout.insertRow(++row, PREFERRED);
+		panel.add(defaultTimingText, "0, " + row);
+		layout.insertRow(++row, PREFERRED);
+		panel.add(defaultTimingComboBox, "0, " + row);
+		
 
 		return panel;
 	}

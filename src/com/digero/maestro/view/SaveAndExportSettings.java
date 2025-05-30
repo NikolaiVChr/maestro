@@ -4,10 +4,13 @@ import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 public class SaveAndExportSettings {
+	public static final String[] TIMING_CHOICES = {"Legacy","Legacy Swing/Triplet","Mix Timings","Mix Timings Swing/Triplet","Organic Singlestage","Organic Multistage"};
+	
 	public boolean promptSaveNewSong = true;
 	public boolean showExportFileChooser = false;
 	public boolean skipSilenceAtStart = true;
 	public boolean deleteMinimalNotes = false;
+	public String defaultTiming = TIMING_CHOICES[2];
 	// public boolean showPruned = false;
 	public boolean convertABCStringsToBasicAscii = true;
 
@@ -18,7 +21,8 @@ public class SaveAndExportSettings {
 		promptSaveNewSong = prefs.getBoolean("promptSaveNewSong", promptSaveNewSong);
 		showExportFileChooser = prefs.getBoolean("showExportFileChooser", showExportFileChooser);
 		skipSilenceAtStart = prefs.getBoolean("skipSilenceAtStart", skipSilenceAtStart);
-		deleteMinimalNotes = prefs.getBoolean("deleteMinimalNotes", deleteMinimalNotes);		
+		deleteMinimalNotes = prefs.getBoolean("deleteMinimalNotes", deleteMinimalNotes);
+		defaultTiming = prefs.get("defaultTiming", defaultTiming);
 		// showPruned = prefs.getBoolean("showPruned", showPruned);
 		convertABCStringsToBasicAscii = prefs.getBoolean("convertABCStringsToBasicAscii",
 				convertABCStringsToBasicAscii);
@@ -34,6 +38,7 @@ public class SaveAndExportSettings {
 		showExportFileChooser = that.showExportFileChooser;
 		skipSilenceAtStart = that.skipSilenceAtStart;
 		deleteMinimalNotes = that.deleteMinimalNotes;
+		defaultTiming = that.defaultTiming;
 		// showPruned = that.showPruned;
 		convertABCStringsToBasicAscii = that.convertABCStringsToBasicAscii;
 	}
@@ -43,6 +48,7 @@ public class SaveAndExportSettings {
 		prefs.putBoolean("showExportFileChooser", showExportFileChooser);
 		prefs.putBoolean("skipSilenceAtStart", skipSilenceAtStart);
 		prefs.putBoolean("deleteMinimalNotes", deleteMinimalNotes);
+		prefs.put("defaultTiming", defaultTiming);
 		// prefs.putBoolean("showPruned", showPruned);
 		prefs.putBoolean("convertABCStringsToBasicAscii", convertABCStringsToBasicAscii);
 	}

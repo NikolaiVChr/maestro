@@ -58,6 +58,7 @@ import com.digero.maestro.util.SaveUtil;
 import com.digero.maestro.util.XmlUtil;
 import com.digero.maestro.view.InstrNameSettings;
 import com.digero.maestro.view.MiscSettings;
+import com.digero.maestro.view.SaveAndExportSettings;
 
 public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public static final String MSX_FILE_DESCRIPTION = MaestroMain.APP_NAME + " Project";
@@ -128,15 +129,16 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 	public AbcSong(File file, PartAutoNumberer partAutoNumberer, PartNameTemplate partNameTemplate,
 			ExportFilenameTemplate exportFilenameTemplate, InstrNameSettings instrNameSettings,
-			FileResolver fileResolver, MiscSettings miscSettings)
+			FileResolver fileResolver, MiscSettings miscSettings, SaveAndExportSettings saveAndExportSettings)
 			throws IOException, InvalidMidiDataException, ParseException, SAXException {
 		this(file, partAutoNumberer, partNameTemplate, exportFilenameTemplate, instrNameSettings,
-				fileResolver, miscSettings, true);
+				fileResolver, miscSettings, true, saveAndExportSettings);
 	}
 	
 	public AbcSong(File file, PartAutoNumberer partAutoNumberer, PartNameTemplate partNameTemplate,
 			ExportFilenameTemplate exportFilenameTemplate, InstrNameSettings instrNameSettings,
-			FileResolver fileResolver, MiscSettings miscSettings, boolean saveMSXwhenSourceChange)
+			FileResolver fileResolver, MiscSettings miscSettings, boolean saveMSXwhenSourceChange,
+			SaveAndExportSettings saveAndExportSettings)
 			throws IOException, InvalidMidiDataException, ParseException, SAXException {
 		
 		storeNewSourceFile = saveMSXwhenSourceChange;
@@ -160,7 +162,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		else if (fromAbcFile)
 			initFromAbc(file, miscSettings);
 		else
-			initFromMidi(file, miscSettings);
+			initFromMidi(file, miscSettings, saveAndExportSettings);
 	}
 
 	
@@ -196,10 +198,11 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		 */
 	}
 
-	private void initFromMidi(File file, MiscSettings miscSettings)
+	private void initFromMidi(File file, MiscSettings miscSettings, SaveAndExportSettings saveSettings)
 			throws IOException, InvalidMidiDataException, ParseException {
 		sourceFile = file;
 		usingOldVelocities = miscSettings.ignoreExpressionMessages;
+		setDefaultTiming (saveSettings.defaultTiming);
 		sequenceInfo = SequenceInfo.fromMidi(file, miscSettings, usingOldVelocities, usingOldTempos);
 		title = sequenceInfo.getTitle();
 		composer = sequenceInfo.getComposer();
@@ -208,6 +211,54 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		timeSignature = sequenceInfo.getTimeSignature();
 		note = "";
 		setTempoFactor(sequenceInfo.getPrimaryTempoBPM(), sequenceInfo.getPrimaryTempoBPM());
+	}
+	
+	public void setDefaultTiming (String str) {
+		switch (str) {
+		case "Legacy":
+			mixTiming = false;
+			tripletTiming = false;
+			organic = false;
+			organic2 = false;
+			break;
+		case "Legacy Swing/Triplet":
+			mixTiming = false;
+			tripletTiming = true;
+			organic = false;
+			organic2 = false;
+			break;
+		case "Mix Timings":
+			mixTiming = true;
+			tripletTiming = false;
+			organic = false;
+			organic2 = false;
+			break;
+		case "Mix Timings Swing/Triplet":
+			mixTiming = true;
+			tripletTiming = true;
+			organic2 = false;
+			break;
+		case "Organic Singlestage":
+			mixTiming = true;
+			tripletTiming = false;
+			organic = true;
+			organic2 = false;
+			break;
+		case "Organic Multistage":
+			mixTiming = true;
+			tripletTiming = false;
+			organic = true;
+			organic2 = true;
+			break;
+		default:
+			mixTiming = true;
+			tripletTiming = false;
+			organic = false;
+			organic2 = false;
+		}
+		fireChangeEvent(AbcSongProperty.TRIPLET_TIMING);
+		fireChangeEvent(AbcSongProperty.MIX_TIMING);
+		fireChangeEvent(AbcSongProperty.ORGANIC);
 	}
 
 	private void initFromAbc(File file, MiscSettings miscSettings)
