@@ -58,8 +58,8 @@ public class SongPositionLabel extends JLabel implements Listener<SequencerEvent
 	private long lastPrintedLength = -1;
 
 	private void update() {
-		long tickLength = Math.max(0, sequencer.getTickLength() - initialOffsetTick);
-		long tick = Math.max(0, Math.min(tickLength, sequencer.getThumbTick() - initialOffsetTick));
+		long tickLength = Math.max(0L, sequencer.getTickLength() - initialOffsetTick);
+		long tick = Math.max(0L, Math.min(tickLength, sequencer.getThumbTick() - initialOffsetTick));
 
 		long micros = sequencer.tickToMicros(tick);
 		long length = sequencer.tickToMicros(tickLength);

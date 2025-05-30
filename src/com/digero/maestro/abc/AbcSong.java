@@ -1016,14 +1016,14 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	@Override
 	public long getSongLengthMicros() {
 		if (parts.isEmpty() || sequenceInfo == null)
-			return 0;
+			return 0L;
 
 		try {
 			AbcExporter exporter = getAbcExporter();
 
 			return timingInfo.divideByExportTempoFactor(exporter.getExportEndMicros() - exporter.getExportStartMicros());
 		} catch (AbcConversionException e) {
-			return 0;
+			return 0L;
 		}
 	}
 
