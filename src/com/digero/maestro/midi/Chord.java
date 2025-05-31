@@ -197,6 +197,24 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 	}
 	
 	/**
+	 * Debug code
+	 */
+	public void testEndTick() {
+		long endTick2;
+		if (!notes.isEmpty()) {
+			endTick2 = notes.get(0).getEndTick();
+			for (int k = 1; k < notes.size(); k++) {
+				if (notes.get(k).getEndTick() < endTick2) {
+					endTick2 = notes.get(k).getEndTick();
+				}
+			}
+		} else {
+			endTick2 = startTick;
+		}
+		assert endTick2 == endTick;
+	}
+	
+	/**
 	 * Wont change anything if the chord is a rest with no notes
 	 * 
 	 * @param newEndTick

@@ -1652,7 +1652,7 @@ public class AbcExporter {
 			} catch (IOException e) {
 				throw new AbcConversionException("Failed to read instrument sample durations.", e);
 			}
-			*/
+			*/			
 		}
 		
 		//Collections.sort(chords);
@@ -1720,6 +1720,7 @@ public class AbcExporter {
 					//must be AFTER 'remove zero among longer'
 					//is BEFORE pruning to save pruning twice
 					curChord.setEarlyStartTick();
+					
 					i--;
 					continue MAIN;
 				}
@@ -1729,6 +1730,7 @@ public class AbcExporter {
 				List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
 						part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part);
 				removeNotes(events, deadnotes, part);
+				curChord.recalcEndTick();
 				if (!deadnotes.isEmpty()) {
 					// One of the tiedTo notes that was pruned might be ne note,
 					// so we go one step back and re-process events.get(i)
@@ -1796,6 +1798,7 @@ public class AbcExporter {
 				// handle fast glissando
 				boolean glissRemoved = deprecated1(part, events, minimumMicros, debug, removeGliss, curChord, ne,
 						curChordRoomMicros, ne1RoomMicros, ne1Micros, ne2Micros);
+				
 				if (glissRemoved) {
 					i--;
 					continue MAIN; 
@@ -1893,12 +1896,12 @@ public class AbcExporter {
 							// note ends approx same time as end of chord
 							// we make it end same time as shortest note in chord,
 							// chord might become slightly longer later.
-							//jne.setEndTick(curChord.getEndTick());
+							jne.setEndTick(curChord.getEndTick());
 							debugOutput(2,part.getTitle()+ ": Fit note ending to chord ending");
 						} else if (!useRestToShortenChords) {
 							// This note extends past the end of the chord; break it into two tied notes
 							AbcNoteEvent next = jne.splitWithTieAtTick(targetEndTick);
-	
+							
 							int ins = Collections.binarySearch(events, next);
 							if (ins < 0)
 								ins = -ins - 1;
@@ -1947,7 +1950,6 @@ public class AbcExporter {
 						reprocessCurrentNote = true;
 						curChord.add(tmpEvents.get(0));
 						events.add(ins, tmpEvents.get(0));
-						
 						if (tmpEvents.size() > 1) {
 							System.out.println(part.getAbcSong().getSongTitle()+": Rest needed to be broken up !!!!!!!!!!");
 						}
@@ -1996,6 +1998,7 @@ public class AbcExporter {
 							curChord.early = earlyCurrTick;//TODO: breakup elongated notes
 							curChord.dontMove2 = true;
 							prevRestChord.setEndTickRetract(earlyCurrTick);
+							
 							i--;
 							debugOutput(2,part.getTitle()+" Early start of 1st of two trills/gliss notes (rest)");
 							continue MAIN;
@@ -2007,6 +2010,7 @@ public class AbcExporter {
 							// any ties will still hold as there will be no gap
 							prevChord.setEndTickRetract(earlyCurrTick);
 							prevChord.expandedMicros = null;
+							
 							i--;
 							debugOutput(2,part.getTitle()+" Early start of 1st of two trills/gliss notes (chord)");
 							continue MAIN;
@@ -2016,6 +2020,7 @@ public class AbcExporter {
 					// Else try to make it longer					
 					if (nextChord.getStartTick() >= curMinEndTick) {
 						curChord.setEndTickExpand(curMinEndTick);
+						
 					} else {
 						// there was not room for a larger chord
 						int curValue = calcValue(curChord, part.getInstrument().sustainable);
@@ -2052,6 +2057,7 @@ public class AbcExporter {
 								//going back and forth between micros and ticks is not always 1:1, so we stop infinite loops by setting this
 								curChord.dontMove2 = true;
 								curChord.setEndTickExpand(curMinEndTick);
+								
 								i--;
 								debugOutput(2,part.getTitle()+" Delayed sequential chord by "+ ((minEndMicro-neMicroStart)/1000)+" ms 1");
 								continue MAIN;
@@ -2128,6 +2134,7 @@ public class AbcExporter {
 										doable = false;
 										break;
 									}
+									
 								}
 								if (doable) {
 									ne.setStartTick(curChord.getStartTick());
@@ -2160,6 +2167,7 @@ public class AbcExporter {
 								events.remove(ne);
 								i--;
 								curChord.removeRests();// It might not need the rest anymore so we remove it. Might get re-added.
+								curChord.recalcEndTick();
 								debugOutput(1,part.getTitle()+": Removed low value next chord");
 								//note that this will make next chord even lower value,
 								//so rest of next chords notes will also be removed.
@@ -2169,6 +2177,7 @@ public class AbcExporter {
 							curChord.setEndTickRetract(curChord.getStartTick());
 							curChord.delete = true;
 							debugOutput(2,part.getTitle()+": Removed short dura chord with "+curChord.size()+" notes");
+							
 						} else {
 							// deprecated
 							
@@ -2176,6 +2185,7 @@ public class AbcExporter {
 							
 							boolean reRun = deprecated2(part, events, minimumMicros, debug, curChord, i, ne, ne1, ne2,
 									ne1RoomMicros, ne1Micros, minEndMicro, curMinEndTick, neMicroStart);
+							
 							if (reRun == true) {
 								continue MAIN;
 							}
@@ -2200,6 +2210,7 @@ public class AbcExporter {
 							chords.add(restChord);
 							prevRestChord = restChord;//break long notes keep them sorted so this is last
 						}
+						
 					} else {
 						if (curChord.delete) {
 							// If we reach this code, then curr has been scheduled for deletion.
@@ -2222,10 +2233,12 @@ public class AbcExporter {
 							debugOutput(2,part.getTitle()+ ": Chord expanded to fill gap");
 						}
 						prevRestChord = null;
+						
 					}
 				} else {
 					prevRestChord = null;
 				}
+				
 				boolean assertionsEnabled = false;
 				assert assertionsEnabled = true;
 				if (assertionsEnabled) {
@@ -2234,6 +2247,7 @@ public class AbcExporter {
 						assert mics <= TimingInfo.LONGEST_NOTE_MICROS : evt.note+" micros="+mics;
 					}
 				}
+				
 				chords.add(nextChord);
 				assert !nextChord.hasRestAndNotes();
 				//assert !curChord.hasRestAndNotes();
@@ -2255,6 +2269,7 @@ public class AbcExporter {
 				System.out.println("Last chord: early start");
 			}
 			
+			
 			// remove zero duration notes if longer notes start at same time
 			if (curChord.getLongestEndTick() > curChord.getStartTick()) {
 				for (int j = 0; j < curChord.size(); j++) {
@@ -2275,6 +2290,7 @@ public class AbcExporter {
 				// The removal will have changed the chord's duration
 				curChord.recalcEndTick();
 			}
+			
 			
 			// Last chord needs to be pruned as that hasn't happened yet.
 			List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
@@ -2329,6 +2345,7 @@ public class AbcExporter {
 				curChord.recalcEndTick();
 			}
 			*/
+			
 		}
 		//assert !curChord.hasRestAndNotes();
 		
@@ -2361,6 +2378,40 @@ public class AbcExporter {
 			System.out.println(part.getAbcSong().getSongTitle()+": deleting "+count+ " resting chords due to rest being too short !!!!!!");
 		}
 		*/
+		if (useRestToShortenChords) {
+			/*
+			 * It can happen that a note that is longer than the chord
+			 * is also present in next chord. And if there is a
+			 * volume difference between the chord, lotro will
+			 * silence entire part. So to prevent that, we shorten
+			 * some notes to be same dura as the chord.
+			 */
+			List<AbcNoteEvent> prevNotes = new ArrayList<>();
+			long prevShortest = -1L;
+			Chord preChord = null;
+			for (Chord chord : chords) {
+				if (preChord != null) {
+					for (AbcNoteEvent curr : chord.getNotes()) {
+						for (AbcNoteEvent pre : prevNotes) {
+							if (pre.note == curr.note) {
+								pre.setEndTick(prevShortest);
+								assert curr.getEndTick() > pre.getEndTick();
+								System.out.println(part.getAbcSong().getTitle()+ ": normalizing note!!!");
+							}
+						}
+					}
+				}
+				prevNotes = new ArrayList<>();
+				prevShortest = chord.getEndTick();
+				for (AbcNoteEvent ne : chord.getNotes()) {
+					if (ne.getEndTick() > prevShortest) {
+						prevNotes.add(ne);
+					}
+				}
+				preChord = chord;
+			}
+		}
+		
 		return chords;
 	}
 	
@@ -2985,6 +3036,40 @@ public class AbcExporter {
 	    	List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
 					part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part);
 			removeNotes(eventSegments, deadnotes, part);
+		}
+	    
+	    if (useRestToShortenChords) {
+			/*
+			 * It can happen that a note that is longer than the chord
+			 * is also present in next chord. And if there is a
+			 * volume difference between the chord, lotro will
+			 * silence entire part. So to prevent that, we shorten
+			 * some notes to be same dura as the chord.
+			 */
+			List<AbcNoteEvent> prevNotes = new ArrayList<>();
+			long prevShortest = -1L;
+			Chord preChord = null;
+			for (Chord chord : chords) {
+				if (preChord != null) {
+					for (AbcNoteEvent curr : chord.getNotes()) {
+						for (AbcNoteEvent pre : prevNotes) {
+							if (pre.note == curr.note) {
+								pre.origEndABCMicros = prevShortest;
+								assert curr.origEndABCMicros > pre.origEndABCMicros;
+								//System.out.println(part.getAbcSong().getTitle()+ ": normalizing note!!!");
+							}
+						}
+					}
+				}
+				prevNotes = new ArrayList<>();
+				prevShortest = chord.getShortest().origEndABCMicros;
+				for (AbcNoteEvent ne : chord.getNotes()) {
+					if (ne.origEndABCMicros > prevShortest) {
+						prevNotes.add(ne);
+					}
+				}
+				preChord = chord;
+			}
 		}
 	    
 	    return chords;
