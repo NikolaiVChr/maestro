@@ -2396,7 +2396,7 @@ public class AbcExporter {
 							if (pre.note == curr.note) {
 								pre.setEndTick(prevShortest);
 								assert curr.getEndTick() > pre.getEndTick();
-								System.out.println(part.getAbcSong().getTitle()+ ": normalizing note!!!");
+								//System.out.println(part.getAbcSong().getTitle()+ ": normalizing note!!!");
 							}
 						}
 					}
