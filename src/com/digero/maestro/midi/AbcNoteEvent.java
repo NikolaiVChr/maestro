@@ -114,4 +114,24 @@ public class AbcNoteEvent extends NoteEvent {
 	final public Integer getOrigBend() {
 		return origBend;
 	}
+	
+	public AbcNoteEvent copy() {
+		if (this instanceof BentAbcNoteEvent) {
+			BentAbcNoteEvent c = new BentAbcNoteEvent(note, velocity, startTick, endTick, tempoCache, (BentMidiNoteEvent)(this.origNote));
+			if (origBend != null) c.setOrigBend(origBend);
+			c.continues = this.continues;
+			c.origStartABCMicros = this.origStartABCMicros;
+			c.origEndABCMicros = this.origEndABCMicros;
+			c.origDurationMicros = this.origDurationMicros;
+			return c;
+		} else {
+			AbcNoteEvent c = new AbcNoteEvent(note, velocity, startTick, endTick, tempoCache, origNote);
+			if (origBend != null) c.setOrigBend(origBend);
+			c.continues = this.continues;
+			c.origStartABCMicros = this.origStartABCMicros;
+			c.origEndABCMicros = this.origEndABCMicros;
+			c.origDurationMicros = this.origDurationMicros;
+			return c;
+		}
+	}
 }

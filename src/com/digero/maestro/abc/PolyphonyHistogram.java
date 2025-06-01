@@ -160,11 +160,11 @@ public class PolyphonyHistogram   {
 	 * playing in part.
 	 * 
 	 * This method does NOT take decay in consideration.
+	 * @return 
 	 *  
 	 */
-	public static void maxPolyInPart(AbcPart part, List<Chord> chords, boolean organic, QuantizedTimingInfo qtm) throws IOException {
-		if (!enabled) return;
-		
+	public static int maxPolyInPart(AbcPart part, List<Chord> chords, boolean organic, QuantizedTimingInfo qtm) throws IOException {
+	
 		TreeMap<Long, Pair<Long,Integer>> partMap = new TreeMap<>();
 		List<AbcNoteEvent> done = new ArrayList<>();
 		for (Chord chord : chords) {
@@ -209,6 +209,7 @@ public class PolyphonyHistogram   {
 					if (part.getInstrument() == LotroInstrument.BASIC_COWBELL || part.getInstrument() == LotroInstrument.MOOR_COWBELL) {
 						pitch = AbcConstants.COWBELL_NOTE_ID;
 					}
+					/*
 					Long duraMicros = LotroInstrumentSampleDuration.getDura(part.getInstrument().friendlyName, pitch);
 					if (duraMicros == null) {
 						System.err.println("Error: LotroInstrumentSampleDuration has no "+part.getInstrument().friendlyName+" with note "+event.note.id);
@@ -216,6 +217,7 @@ public class PolyphonyHistogram   {
 					}
 					long endMax = startMicros + duraMicros;
 					endMicros = Math.min(endMax, endMicros);
+					*/
 					if (organic) {
 						endTick   = qtm.microsToTickABCOrganic(endMicros);
 					} else {
@@ -278,9 +280,10 @@ public class PolyphonyHistogram   {
 		}
 		assert polyphony == 0;
 		if (maximum > 6) {
-			System.out.println(" ++++ "+part.getAbcSong().getTitle()+" ("+part.getTitle()+"): "+maximum+" poly");
+			//System.out.println(" ++++ "+part.getAbcSong().getTitle()+" ("+part.getTitle()+"): "+maximum+" poly");
 			successes++;
 		}
+		return maximum;
 	}
 	
 	/**

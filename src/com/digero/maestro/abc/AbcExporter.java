@@ -69,7 +69,7 @@ public class AbcExporter {
 	// Some midis have zero duration notes that should played (this is for organic only)
 	private boolean deleteEmptyNotes = false;
 	
-	private final boolean useRestToShortenChords = true;// Only organic timings use this
+	private boolean useRestToShortenChords = true;// Only organic timings use this
 
 	public int stereoPan = 100;// zero is mono, 100 is very wide.
 	private int firstBarNumber;
@@ -515,7 +515,7 @@ public class AbcExporter {
 		long currentMicro = 0L;
 		for (Chord c : chords) {
 			if (c.size() == 0) {
-				assert false : "Chord has no notes!";
+				assert false : part.getAbcSong().getTitle()+" "+part.getTitle()+ ": Chord has no notes!";
 				continue;
 			}
 
@@ -1631,11 +1631,33 @@ public class AbcExporter {
 		removeDuplicateNotesVerify(events, part.getInstrument());
 		*/
 		
+		useRestToShortenChords = part.getInstrument().sustainable;
+		
 		List<Chord> chords = null;
-		if (organic2) {
-			chords = processOrganic2(part, events);
+
+		List<AbcNoteEvent> eventsCopy = new ArrayList<>();
+		for (AbcNoteEvent n : events) {
+			eventsCopy.add(n.copy());
+		}
+		if (organic2) chords = processOrganic2(part, events);
+		else chords = processOrganic(part, events);
+		if (useRestToShortenChords) {
+			int max = 0;
+			try {
+				max = PolyphonyHistogram.maxPolyInPart(part, chords, organic, qtm);
+			} catch (IOException e) {
+				throw new AbcConversionException("Failed to read instrument sample durations.", e);
+			}
+			if (max == 6) {
+				//System.out.println(" ---- "+part.getAbcSong().getTitle()+" ("+part.getTitle()+"): poly restore");
+				useRestToShortenChords = false;
+				if (organic2) chords = processOrganic2(part, eventsCopy);
+				else  chords = processOrganic(part, eventsCopy);
+			} else {
+				//System.out.println(" pass "+part.getAbcSong().getTitle()+" ("+part.getTitle()+"): poly okay");
+			}
 		} else {
-			chords = processOrganic(part, events);
+			//System.out.println(" pass "+part.getAbcSong().getTitle()+" ("+part.getTitle()+"): poly off");
 		}
 		
 		if (preview) {
@@ -1644,15 +1666,6 @@ public class AbcExporter {
 			} catch (IOException e) {
 				throw new AbcConversionException("Failed to read instrument sample durations.", e);
 			}
-		} else {
-			// debug code
-			/*
-			try {
-				PolyphonyHistogram.maxPolyInPart(part, chords, organic, qtm);
-			} catch (IOException e) {
-				throw new AbcConversionException("Failed to read instrument sample durations.", e);
-			}
-			*/			
 		}
 		
 		//Collections.sort(chords);
@@ -2250,7 +2263,7 @@ public class AbcExporter {
 				
 				chords.add(nextChord);
 				assert !nextChord.hasRestAndNotes();
-				//assert !curChord.hasRestAndNotes();
+				assert !curChord.hasRestAndNotes() || useRestToShortenChords;
 				prevChord = curChord;
 				curChord = nextChord;
 			}
@@ -2347,7 +2360,7 @@ public class AbcExporter {
 			*/
 			
 		}
-		//assert !curChord.hasRestAndNotes();
+		assert !curChord.hasRestAndNotes() || useRestToShortenChords;
 		
 		// delete all chords with zero duration, as there was no room for them
 		List<Chord> trash = new ArrayList<>();
@@ -3014,10 +3027,11 @@ public class AbcExporter {
 	    		assert curChord.getStartTick() < noteSegment.getStartTick();
 	    		
 	    		unmixRestAndNotes(part, eventSegments, curChord);
-				
+	    		
 				List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
 						part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part);
 				removeNotes(eventSegments, deadnotes, part);
+				
 				if (!deadnotes.isEmpty()) {
 					// One of the tiedTo notes that was pruned might be noteSegment note,
 					// so we go one step back and re-process
@@ -3056,7 +3070,7 @@ public class AbcExporter {
 							if (pre.note == curr.note) {
 								pre.origEndABCMicros = prevShortest;
 								assert curr.origEndABCMicros > pre.origEndABCMicros;
-								//System.out.println(part.getAbcSong().getTitle()+ ": normalizing note!!!");
+								System.out.println(part.getAbcSong().getTitle()+ ": normalizing note!!!");
 							}
 						}
 					}
@@ -3084,9 +3098,9 @@ public class AbcExporter {
 		// make sure chord does not contain both rest and notes
 		// Also make sure there is not duplicates in it
 		List<AbcNoteEvent> tmp = new ArrayList<>(curChord.getNotes());
-
+		boolean both = curChord.hasRestAndNotes();
 		for (AbcNoteEvent note : tmp) {
-			if (!useRestToShortenChords && note.note == Note.REST) {
+			if (!useRestToShortenChords && both && note.note == Note.REST) {
 				curChord.remove(note);
 			}
 			for (AbcNoteEvent note2 : tmp) {
