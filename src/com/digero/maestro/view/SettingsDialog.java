@@ -858,6 +858,14 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 			}
 		});
 		defaultTimingComboBox.setSelectedItem(saveSettings.defaultTiming);
+		
+		final JCheckBox exceed6CheckBox = new JCheckBox(
+				"Allow more than 6 note polyphony in parts");
+		exceed6CheckBox.setToolTipText("This can make old projects in need of volume adjustments,\n"
+				+ "therefore not enabled per default.");
+		exceed6CheckBox.setSelected(saveSettings.useRestsInChords);
+		exceed6CheckBox.addActionListener(
+				e -> saveSettings.useRestsInChords = exceed6CheckBox.isSelected());
 
 		TableLayout layout = new TableLayout();
 		layout.insertColumn(0, PREFERRED);
@@ -893,6 +901,8 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		layout.insertRow(++row, PREFERRED);
 		panel.add(defaultTimingComboBox, "0, " + row);
 		
+		layout.insertRow(++row, PREFERRED);
+		panel.add(exceed6CheckBox, "0, " + row);
 
 		return panel;
 	}

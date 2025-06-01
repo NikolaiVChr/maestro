@@ -59,6 +59,7 @@ public class AbcExporter {
 
 	private boolean skipSilenceAtStart;
 	private boolean deleteMinimalNotes;
+	private boolean useRestsInChords;
 	// private boolean showPruned;
 	private long exportStartTick;
 	private long exportEndTick;
@@ -1631,7 +1632,7 @@ public class AbcExporter {
 		removeDuplicateNotesVerify(events, part.getInstrument());
 		*/
 		
-		useRestToShortenChords = part.getInstrument().sustainable;
+		useRestToShortenChords = part.getInstrument().sustainable && useRestsInChords;
 		
 		List<Chord> chords = null;
 
@@ -4254,5 +4255,13 @@ public class AbcExporter {
 
 	public boolean isOrganic2() {		
 		return organic2;
+	}
+
+	public boolean isUseRestsInChords() {
+		return useRestsInChords;
+	}
+
+	public void setUseRestsInChords(boolean useRestsInChords) {
+		this.useRestsInChords = useRestsInChords;
 	}
 }

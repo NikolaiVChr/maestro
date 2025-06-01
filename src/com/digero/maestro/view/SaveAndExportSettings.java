@@ -10,11 +10,14 @@ public class SaveAndExportSettings {
 	public boolean showExportFileChooser = false;
 	public boolean skipSilenceAtStart = true;
 	public boolean deleteMinimalNotes = false;
+	public boolean useRestsInChords = false;
 	public String defaultTiming = TIMING_CHOICES[2];
 	// public boolean showPruned = false;
 	public boolean convertABCStringsToBasicAscii = true;
 
 	private final Preferences prefs;
+
+	
 
 	public SaveAndExportSettings(Preferences prefs) {
 		this.prefs = prefs;
@@ -23,6 +26,7 @@ public class SaveAndExportSettings {
 		skipSilenceAtStart = prefs.getBoolean("skipSilenceAtStart", skipSilenceAtStart);
 		deleteMinimalNotes = prefs.getBoolean("deleteMinimalNotes", deleteMinimalNotes);
 		defaultTiming = prefs.get("defaultTiming", defaultTiming);
+		useRestsInChords = prefs.getBoolean("useRestsInChords", useRestsInChords);
 		// showPruned = prefs.getBoolean("showPruned", showPruned);
 		convertABCStringsToBasicAscii = prefs.getBoolean("convertABCStringsToBasicAscii",
 				convertABCStringsToBasicAscii);
@@ -39,6 +43,7 @@ public class SaveAndExportSettings {
 		skipSilenceAtStart = that.skipSilenceAtStart;
 		deleteMinimalNotes = that.deleteMinimalNotes;
 		defaultTiming = that.defaultTiming;
+		useRestsInChords = that.useRestsInChords;
 		// showPruned = that.showPruned;
 		convertABCStringsToBasicAscii = that.convertABCStringsToBasicAscii;
 	}
@@ -49,6 +54,7 @@ public class SaveAndExportSettings {
 		prefs.putBoolean("skipSilenceAtStart", skipSilenceAtStart);
 		prefs.putBoolean("deleteMinimalNotes", deleteMinimalNotes);
 		prefs.put("defaultTiming", defaultTiming);
+		prefs.putBoolean("useRestsInChords", useRestsInChords);
 		// prefs.putBoolean("showPruned", showPruned);
 		prefs.putBoolean("convertABCStringsToBasicAscii", convertABCStringsToBasicAscii);
 	}

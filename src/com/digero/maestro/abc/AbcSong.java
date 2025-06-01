@@ -126,6 +126,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public boolean storeNewSourceFile = true;
 	public boolean storeNewExportFile = true;
 	private String copyright = "";
+	private SaveAndExportSettings saveAndExportSettings;
 
 	public AbcSong(File file, PartAutoNumberer partAutoNumberer, PartNameTemplate partNameTemplate,
 			ExportFilenameTemplate exportFilenameTemplate, InstrNameSettings instrNameSettings,
@@ -152,6 +153,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		this.exportFilenameTemplate.setMetadataSource(this);
 
 		this.instrNameSettings = instrNameSettings;
+		
+		this.saveAndExportSettings = saveAndExportSettings;
 
 		String fileName = file.getName().toLowerCase();
 		fromXmlFile = fileName.endsWith(MSX_FILE_EXTENSION);
@@ -1141,6 +1144,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		
 		if (abcExporter.isOrganic2() != organic2)
 			abcExporter.setOrganic2(organic2);
+		
+		if (abcExporter.isUseRestsInChords() != saveAndExportSettings.useRestsInChords)
+			abcExporter.setUseRestsInChords(saveAndExportSettings.useRestsInChords);
 		
 		return abcExporter;
 	}
