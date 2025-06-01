@@ -1654,11 +1654,16 @@ public class AbcExporter {
 				useRestToShortenChords = false;
 				if (organic2) chords = processOrganic2(part, eventsCopy);
 				else  chords = processOrganic(part, eventsCopy);
+				part.setMaxPoly(6);
+			} else if (max > 6) {
+				part.setMaxPoly(max);
 			} else {
 				//System.out.println(" pass "+part.getAbcSong().getTitle()+" ("+part.getTitle()+"): poly okay");
+				part.setMaxPoly(6);
 			}
 		} else {
 			//System.out.println(" pass "+part.getAbcSong().getTitle()+" ("+part.getTitle()+"): poly off");
+			part.setMaxPoly(6);
 		}
 		
 		if (preview) {

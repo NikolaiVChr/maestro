@@ -1427,4 +1427,14 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			return timingInfo.getTimingInfoByTick().values();
 		}
 	}
+
+	public int getMaxPartPoly() {
+		int poly = 6;
+		for (AbcPart part : parts) {
+			if (part.getMaxPoly() > poly) {
+				poly = part.getMaxPoly();
+			}
+		}
+		return poly;
+	}
 }

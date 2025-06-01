@@ -40,8 +40,10 @@ Thanks to all who gave feedback of features and bugs plus suggestions.
 Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 ================
 
-Version 4.2.6
+Version 4.2.7
 - Organic now place rests in chords when its advantagious to allow for more than 6 notes to be playing at once in a part.
+- Added option to enable using more than 6 polyphony in parts, default is off.
+- Autoexport will now notify which songs make use of the 6+ polyphony feature.
 - Better handling of charsets in tracknames and semi-fix for what previous handling might have broken.
 - Added option to set default timing for new projects.
 

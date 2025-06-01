@@ -100,6 +100,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	
 	public int numberOfExportedNotes = 0;
 	public int numberOfRemovedNotesForSafety = 0;
+	private int maxPoly = 0;
 	
 	public boolean discarded = false;
 	
@@ -1541,6 +1542,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	
 	
 	
+	
 
 	Preferences getDrumPrefs() {
 		return drumPrefs;
@@ -1647,5 +1649,11 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		this.badgerPrio = badgerPrio;
 	}
 
+	public void setMaxPoly(int i) {
+		maxPoly = i;		
+	}
 	
+	public int getMaxPoly() {
+		return maxPoly;		
+	}
 }
