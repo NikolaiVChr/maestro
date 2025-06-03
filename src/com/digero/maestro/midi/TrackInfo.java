@@ -458,6 +458,10 @@ public class TrackInfo implements MidiConstants {
 	public int getInstrumentCount() {
 		return instruments.size();
 	}
+	
+	public int getInstrumentExCount() {
+		return instrumentExtensions.size();
+	}
 
 	public Set<Integer> getInstruments() {
 		return instruments;

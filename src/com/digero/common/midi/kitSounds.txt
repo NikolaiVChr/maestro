@@ -1,0 +1,219 @@
+#
+# patches start with = then standard, then =, then patch name
+#
+=GS=Standard Drum Kit
+#
+# Roland SC-8850, 1999
+#
+0 Std.1 Kick 1
+1 Std.1 Kick 2
+2 Std.2 Kick 1
+3 Std.2 Kick 2
+4 Kick Drum 1
+5 Kick Drum 2
+6 Jazz Kick 1
+7 Jazz Kick 2
+8 Room Kick 1
+9 Room Kick 2
+10 Power Kick 1
+11 Power Kick 2
+12 Electric Kick 1
+13 Electric Kick 2
+14 TR-808 Kick
+15 TR-909 Kick
+16 Dance Kick
+17 Voice One
+18 Voice Two
+19 Voice Three
+20 Room Kick 2
+21 Room Kick 1
+22 MC-500 Beep 1
+23 MC-500 Beep 2
+24 Concert SD
+25 Snare Roll
+26 Finger Snap 2
+# these same as GM
+35 Standard 1 Kick 2
+36 Standard 1 Kick 1
+37 Side Stick
+38 Standard 1 Snare 1
+39 TR-909 Hand Clap
+40 Standard 1 Snare 2
+41 Low Tom 2
+42 Closed Hi-Hat 1
+43 Low Tom 1
+44 Pedal Hi-Hat
+45 Mid Tom 2
+46 Open Hi-Hat 1
+47 Mid Tom 1
+48 High Tom 2
+49 Crash Cym. 1
+50 High Tom 1
+# these same as GM
+71 Short High Whistle
+72 Long Low Whistle
+# these same as GM
+88 Applause 2
+# 89 to 94 not used in classic GS
+95 Room Snare 1
+96 Room Snare 2
+97 Std.1 Snare 1
+98 Std.1 Snare 2
+99 Std.2 Snare 1
+100 Std.2 Snare 2
+101 Snare Drum 2
+102 Std.1 Snare 1
+103 Std.1 Snare 2
+104 Std.1 Snare 3
+105 Jazz Snare 1
+106 Jazz Snare 2
+107 Room Snare 1
+108 Room Snare 2
+109 Power Snare 1
+110 Power Snare 2
+111 Gated Snare
+112 Dance Snare 1
+113 Dance Snare 2
+114 Disco Snare
+115 Electric Snare 2
+116 Electric Snare
+117 Electric Snare 3
+118 TR-707 Snare 1
+119 TR-808 Snare 1
+120 TR-808 Snare 2
+121 TR-909 Snare 1
+122 TR-909 Snare 2
+123 Rap Snare
+124 Jungle Snare 1
+125 House Snare 1
+126 House Snare
+127 House Snare 2
+
+=XG=Standard Drum Kit
+#
+# Yamaha XG spec V 1.32 October 19, 1998
+#
+13 Surdo Mute
+14 Surdo Open
+15 Hi Q
+16 Whip Lash
+17 Scratch H
+18 Scratch L
+19 Finger Snap
+20 Click Noise
+21 Mtrnm Click
+22 Mtrnm Bell
+23 Seq Click L
+24 Seq Click H
+25 Brush Tap
+26 Brush Swirl
+27 Brush Slap
+28 BrushTapSwrl
+29 Snare Roll
+30 Castanet
+31 Snare Soft
+32 Sticks
+33 Kick Soft
+34 OpenRimShot
+35 Kick Tight
+36 Kick
+37 Side Stick
+38 Snare
+39 Hand Clap
+40 Snare Tight
+41 Floor Tom L
+42 Hi-HatClosed
+43 Floor Tom H
+44 Hi-Hat Pedal
+45 Low Tom
+46 Hi-Hat Open
+47 Mid Tom L
+48 Mid Tom H
+49 CrashCymbal1
+50 High Tom
+51 RideCymbal 1
+52 Chinese Cym
+53 Ride Cym Cup
+54 Tambourine
+55 SplashCymbal
+56 Cowbell
+57 CrashCymbal2
+58 Vibraslap
+59 RideCymbal 2
+60 Bongo H
+61 Bongo L
+62 Conga H Mute
+63 Conga H Open
+64 Conga L
+65 Timbale H
+66 Timbale L
+67 Agogo H
+68 Agogo L
+69 Cabasa
+70 Maracas
+71 SambaWhistlH
+72 SamabWhistlL
+73 Guiro Short
+74 Guiro Long
+75 Claves
+76 Wood Block H
+77 Wood Block L
+78 Cuica Mute
+79 Cuica Open
+80 TriangleMute
+81 TriangleOpen
+82 Shaker
+83 Jingle Bells
+84 Bell Tree
+
+=XG=Rock Drum Kit
+#
+# Yamaha XG spec V 1.32 October 19, 1998
+#
+31 Snare Noisy
+33 Kick Tight
+35 Kick 2
+36 Kick Gate
+38 Snare Rock
+40 Snare Rock Rim
+41 Tom Rock 1
+43 Tom Rock 2
+45 Tom Rock 3
+47 Tom Rock 4
+48 Tom Rock 5
+50 Tom Rock 6
+
+=XG=Electro Drum Kit
+#
+# Yamaha XG spec V 1.32 October 19, 1998
+#
+28 Reverse Cymbal
+30 Hi Q 2
+31 Snare Snappy Electro
+33 Kick 3
+35 Kick Gate
+36 Kick Gate Heavy
+38 Snare Noisy 2
+40 Snare Noisy 3
+41 Tom Electro 1
+43 Tom Electro 2
+45 Tom Electro 3
+47 Tom Electro 4
+48 Tom Electro 5
+50 Tom Electro 6
+
+
+
+# I most often see these in midi files, so they should be made next if ever get around to it:
+
+=XG=Dance Drum Kit
+=XG=Jazz Drum Kit
+=GS=Room Drum Kit
+=GS=Power Drum Kit
+=GS=Electronic Drum Kit
+=GS=Dance Drum Kit
+=GS=TR-606 Drum Kit
+=GS=TR-707 Drum Kit
+=GS=TR-808 Drum Kit
+=GS=TR-909 Drum Kit
+=GS=Jazz Drum Kit

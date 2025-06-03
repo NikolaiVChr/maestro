@@ -6,6 +6,8 @@ public enum MidiDrum {
 	 * 35 to 81: MIDI 1.0 GM v96.1 third edition
 	 * 27 to 34 and 82 to 87: MIDI 1.0 GM2 1.2a
 	 * 
+	 * See also kitSounds.txt
+	 * 
 	 */
 	SYNTH_ZAP("High Q"), // 27 
 	UNKNOWN_28("Slap"), // 28 

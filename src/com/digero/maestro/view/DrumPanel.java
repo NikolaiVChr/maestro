@@ -22,6 +22,9 @@ import javax.swing.JPanel;
 
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.midi.MidiDrum;
+import com.digero.common.midi.MidiDrumExtended;
+import com.digero.common.midi.MidiInstrument;
+import com.digero.common.midi.MidiStandard;
 import com.digero.common.midi.Note;
 import com.digero.common.midi.NoteFilterSequencerWrapper;
 import com.digero.common.midi.SequencerEvent;
@@ -118,9 +121,14 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 
 		String title = trackInfo.getTrackNumber() + ". " + trackInfo.getName();
 		String instr;
-		if (info.isDrumTrack())
-			instr = MidiDrum.fromId(drumId).name;
-		else {
+		if (info.isDrumTrack()) {
+			if (trackInfo.getInstrumentExCount() == 1) {
+				String kit = trackInfo.getInstrumentNames();
+				instr = MidiDrumExtended.getInstance().fromId(drumId, kit, info.getSequenceInfo().standard);
+			} else {
+				instr = MidiDrum.fromId(drumId).name;
+			}
+		} else {
 			instr = Note.fromId(drumNoteId).abc;
 			checkBox.setFont(checkBox.getFont().deriveFont(Font.BOLD));
 		}
