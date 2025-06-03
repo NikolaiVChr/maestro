@@ -27,9 +27,11 @@ public class MidiDrumExtended {
 		
 		parse("kitSounds.txt");
 		
+		/*
 		for (int i =27;i< 87;i++) {
 			System.out.println(i+" "+MidiDrum.fromId(i).toString());
 		}
+		*/
 		
 
 		return instance;
@@ -42,13 +44,9 @@ public class MidiDrumExtended {
 			key = String.format("%s:%s%03d", standard, MidiInstrument.STANDARD_DRUM_KIT.toString(), drumId);
 			hit = map.get(key);
 			if (hit != null) {
-				System.out.println(hit);
 				return hit;
-			} else {
-				System.out.println(standard+" inner hit == null for "+MidiInstrument.STANDARD_DRUM_KIT+" id="+drumId+" key = "+key);
 			}
 		} else {
-			System.out.println(hit);
 			return hit;
 		}
 		return MidiDrum.fromId(drumId).toString();
@@ -129,7 +127,6 @@ public class MidiDrumExtended {
 
 	private static void addHit(MidiStandard std, String patch, int first, String second) {
 		String key = String.format("%s:%s%03d", std, patch, first);
-		System.out.println("add "+key+" -> "+second);
 		map.put(key, second);
 	}	
 }
