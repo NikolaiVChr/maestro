@@ -262,6 +262,8 @@
 50 Room High Tom 1
 51 Room Ride Cymbal
 53 Room Ride Bell
+95 Standard 1 Snare 1
+96 Standard 1 Snare 2
 
 =GS=Power Drum Kit
 35 Power Kick 2
@@ -295,6 +297,7 @@
 48 Electric High Tom 2
 50 Electric High Tom 1
 52 Reverse Cymbal
+88 Small Club 1
 
 =GS=Dance Drum Kit
 26 Finger Snap 2
@@ -321,6 +324,20 @@
 53 Ride Bell
 54 Shake Tambourine
 56 TR-808 Cowbell
+78 High Hoo
+79 Low Hoo
+80 Electric Mute Triangle
+81 Electric Open Triangle
+82 TR-626 Shaker
+88 Small Club 1
+89 TR-606 Snare 2
+90 Techno Snare
+91 House Snare
+92 Jungle Snare
+93 LoFi Snare 1
+94 LoFi Snare 2
+95 HipHop Snare 1
+96 Hip-Hop Snare 2
 
 =GS=Jazz Drum Kit
 26 Finger Snap 2
@@ -342,7 +359,7 @@
 51 Jazz Ride Cymbal
 53 Jazz Ride Bell
 59 Ride Cymbal Edge
-
+88 Applause
 
 
 
