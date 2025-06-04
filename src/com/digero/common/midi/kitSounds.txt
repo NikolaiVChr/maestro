@@ -1,6 +1,13 @@
 #
-# patches start with = then standard, then =, then patch name
+# Patches start with = then standard, then =, then patch name.
+# Drum hits start with note id, then space, then name.
 #
+# Hits missing from a patch will fall back to 'Standard Drum Kit'
+# for that extension. If its also missing there, it will fall back to
+# GM Standard Drum Kit.
+#
+#
+
 =GS=Standard Drum Kit
 #
 # Roland SC-8850, 1999
@@ -101,20 +108,20 @@
 18 Scratch L
 19 Finger Snap
 20 Click Noise
-21 Mtrnm Click
-22 Mtrnm Bell
+21 Metronome Click
+22 Metronome Bell
 23 Seq Click L
 24 Seq Click H
 25 Brush Tap
 26 Brush Swirl
 27 Brush Slap
-28 BrushTapSwrl
+28 Brush Tap Swirl
 29 Snare Roll
 30 Castanet
 31 Snare Soft
 32 Sticks
 33 Kick Soft
-34 OpenRimShot
+34 Open Rim Shot
 35 Kick Tight
 36 Kick
 37 Side Stick
@@ -122,24 +129,24 @@
 39 Hand Clap
 40 Snare Tight
 41 Floor Tom L
-42 Hi-HatClosed
+42 Hi-Hat Closed
 43 Floor Tom H
 44 Hi-Hat Pedal
 45 Low Tom
 46 Hi-Hat Open
 47 Mid Tom L
 48 Mid Tom H
-49 CrashCymbal1
+49 Crash Cymbal 1
 50 High Tom
-51 RideCymbal 1
-52 Chinese Cym
+51 Ride Cymbal 1
+52 Chinese Cymbal
 53 Ride Cym Cup
 54 Tambourine
-55 SplashCymbal
+55 Splash Cymbal
 56 Cowbell
-57 CrashCymbal2
+57 Crash Cymbal 2
 58 Vibraslap
-59 RideCymbal 2
+59 Ride Cymbal 2
 60 Bongo H
 61 Bongo L
 62 Conga H Mute
@@ -151,8 +158,8 @@
 68 Agogo L
 69 Cabasa
 70 Maracas
-71 SambaWhistlH
-72 SamabWhistlL
+71 Samba Whistle H
+72 Samba Whistle L
 73 Guiro Short
 74 Guiro Long
 75 Claves
@@ -160,8 +167,8 @@
 77 Wood Block L
 78 Cuica Mute
 79 Cuica Open
-80 TriangleMute
-81 TriangleOpen
+80 Triangle Mute
+81 Triangle Open
 82 Shaker
 83 Jingle Bells
 84 Bell Tree
@@ -203,6 +210,9 @@
 50 Tom Electro 6
 
 =XG=Room Drum Kit
+#
+# Yamaha XG spec V 1.32 October 19, 1998
+#
 36 Kick Room
 38 Snare Snappy
 40 Snare Tight Snappy
@@ -214,6 +224,9 @@
 50 Tom Room 6
 
 =XG=Dance Drum Kit
+#
+# Yamaha XG spec V 1.32 October 19, 1998
+#
 28 Reverse Cymbal
 30 Hi Q 2
 31 Snare Techno 3
@@ -236,6 +249,9 @@
 50 Tom Analog 6
 
 =XG=Jazz Drum Kit
+#
+# Yamaha XG spec V 1.32 October 19, 1998
+#
 36 Kick Jazz
 41 Tom Jazz 1
 43 Tom Jazz 2
@@ -245,6 +261,9 @@
 50 Tom Jazz 6
 
 =GS=Room Drum Kit
+#
+# Roland SC-8850, 1999
+#
 35 Room Kick 2
 36 Room Kick 1
 38 Room Snare 1
@@ -266,6 +285,9 @@
 96 Standard 1 Snare 2
 
 =GS=Power Drum Kit
+#
+# Roland SC-8850, 1999
+#
 35 Power Kick 2
 36 Power Kick 1
 38 Power Snare 1
@@ -279,6 +301,9 @@
 50 Power High Tom 1
 
 =GS=Electronic Drum Kit
+#
+# Roland SC-8850, 1999
+#
 26 Finger Snap 2
 29 Scratch Push 2
 30 Scratch Pull 2
@@ -300,6 +325,9 @@
 88 Small Club 1
 
 =GS=Dance Drum Kit
+#
+# Roland SC-8850, 1999
+#
 26 Finger Snap 2
 29 Scratch Push 2
 30 Scratch Pull 2
@@ -340,6 +368,9 @@
 96 Hip-Hop Snare 2
 
 =GS=Jazz Drum Kit
+#
+# Roland SC-8850, 1999
+#
 26 Finger Snap 2
 35 Jazz Kick 2
 36 Jazz Kick 1
