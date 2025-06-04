@@ -202,18 +202,152 @@
 48 Tom Electro 5
 50 Tom Electro 6
 
+=XG=Room Drum Kit
+36 Kick Room
+38 Snare Snappy
+40 Snare Tight Snappy
+41 Tom Room 1
+43 Tom Room 2
+45 Tom Room 3
+47 Tom Room 4
+48 Tom Room 5
+50 Tom Room 6
+
+=XG=Dance Drum Kit
+28 Reverse Cymbal
+30 Hi Q 2
+31 Snare Techno 3
+33 Kick Techno Q
+34 Rim Gate
+35 Kick Techno L
+36 Kick Techno 2
+37 Side Stick Analog
+38 Snare Clap
+40 Snare Dry 2
+41 Tom Analog 1
+42 Hi-Hat Closed 3
+43 Tom Analog 2
+44 Hi-Hat Closed Analog 2
+45 Tom Analog 3
+46 Hi-Hat Open 3
+47 Tom Analog 4
+48 Tom Analog 5
+49 Crash Analog
+50 Tom Analog 6
+
+=XG=Jazz Drum Kit
+36 Kick Jazz
+41 Tom Jazz 1
+43 Tom Jazz 2
+45 Tom Jazz 3
+47 Tom Jazz 4
+48 Tom Jazz 5
+50 Tom Jazz 6
+
+=GS=Room Drum Kit
+35 Room Kick 2
+36 Room Kick 1
+38 Room Snare 1
+39 Hand Clap
+40 Room Snare 2
+41 Room Low Tom 2
+42 Room Closed Hi-hat 3
+43 Room Low Tom 1
+44 Pedal Hi-hat
+45 Room Mid Tom 2
+46 Room Open Hi-hat 3
+47 Room Mid Tom 1
+48 Room High Tom 2
+49 Room Crash Cymbal
+50 Room High Tom 1
+51 Room Ride Cymbal
+53 Room Ride Bell
+
+=GS=Power Drum Kit
+35 Power Kick 2
+36 Power Kick 1
+38 Power Snare 1
+39 Hand Clap
+40 Power Snare 2
+41 Power Low Tom 2
+43 Power Low Tom 1
+45 Power Mid Tom 2
+47 Power Mid Tom 1
+48 Power High Tom 2
+50 Power High Tom 1
+
+=GS=Electronic Drum Kit
+26 Finger Snap 2
+29 Scratch Push 2
+30 Scratch Pull 2
+35 Electric Kick 2
+36 Electric Kick 1
+38 Electric Snare 1
+39 Hand Clap
+40 Electric Snare 2
+41 Electric Low Tom 2
+42 Closed Hi-hat 2
+43 Electric Low Tom 1
+44 Pedal Hi-Hat
+45 Electric Mid Tom 2
+46 Open Hi-Hat 2
+47 Electric Mid Tom 1
+48 Electric High Tom 2
+50 Electric High Tom 1
+52 Reverse Cymbal
+
+=GS=Dance Drum Kit
+26 Finger Snap 2
+29 Scratch Push 2
+30 Scratch Pull 2
+35 Fat Kick
+36 Dance Kick
+37 Dance Rim Shot
+38 Dance Snare
+39 Comp Claps 2
+40 Rock BD Dry
+41 Electric Low Tom 2
+42 CR-78 Closed Hi-Hat
+43 Electric Low Tom 1
+44 TR-808 Closed Hi-Hat 2
+45 Electric Mid Tom 2
+46 CR-78 Open Hi-Hat
+47 Electric Mid Tom 1
+48 Electric High Tom 2
+49 TR-808 Crash Cymbal
+50 Electric High Tom 1
+51 TR-606 Ride Cymbal
+52 Reverse Cymbal
+53 Ride Bell
+54 Shake Tambourine
+56 TR-808 Cowbell
+
+=GS=Jazz Drum Kit
+26 Finger Snap 2
+35 Jazz Kick 2
+36 Jazz Kick 1
+38 Jazz Snare 1
+39 Hand Clap 2
+40 Jazz Snare 2
+41 Jazz Low Tom 2
+42 Jazz Closed hi-Hat
+43 Jazz Low Tom 1
+44 Pedal Hi-Hat
+45 Jazz Mid Tom 2
+46 Jazz Open Hi-Hat
+47 Jazz Mid Tom 1
+48 Jazz High Tom 2
+49 Jazz Crash Cymbal
+50 Jazz High Tom 1
+51 Jazz Ride Cymbal
+53 Jazz Ride Bell
+59 Ride Cymbal Edge
+
+
+
 
 
 # I most often see these in midi files, so they should be made next if ever get around to it:
 
-=XG=Dance Drum Kit
-=XG=Jazz Drum Kit
-=GS=Room Drum Kit
-=GS=Power Drum Kit
-=GS=Electronic Drum Kit
-=GS=Dance Drum Kit
-=GS=TR-606 Drum Kit
-=GS=TR-707 Drum Kit
 =GS=TR-808 Drum Kit
 =GS=TR-909 Drum Kit
-=GS=Jazz Drum Kit
