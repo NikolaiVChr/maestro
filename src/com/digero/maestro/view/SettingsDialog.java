@@ -826,6 +826,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 				+ "<br>" //
 				+ "Enabling this can prevent fast notes overlapping in the abc export<br>" //
 				+ "which they would not do in the MIDI. Enabling this can fix severe dissonance in some songs.<br>" //
+				+ "Has no effect when exporting with organic.<br>" //
 				+ "Beware, this is an advanced option, if in doubt, keep it off.</html>");
 		deleteMinimalNotesCheckBox.setSelected(saveSettings.deleteMinimalNotes);
 		deleteMinimalNotesCheckBox
@@ -860,9 +861,9 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		defaultTimingComboBox.setSelectedItem(saveSettings.defaultTiming);
 		
 		final JCheckBox exceed6CheckBox = new JCheckBox(
-				"Allow more than 6 note polyphony in parts");
+				"Allow more than 6 note polyphony in parts (organic only)");
 		exceed6CheckBox.setToolTipText("This can make old projects in need of volume adjustments,\n"
-				+ "therefore not enabled per default.");
+				+ "therefore not enabled per default.\nHas no effect on mix or legacy timing.");
 		exceed6CheckBox.setSelected(saveSettings.useRestsInChords);
 		exceed6CheckBox.addActionListener(
 				e -> saveSettings.useRestsInChords = exceed6CheckBox.isSelected());
