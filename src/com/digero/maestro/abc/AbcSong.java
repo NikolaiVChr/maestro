@@ -117,6 +117,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public final static Chord.CalcDynamics dynamicsMethodDefault = CalcDynamics.LOUDEST;
 	public Chord.CalcDynamics dynamicsMethod = dynamicsMethodDefault;
 	
+	private boolean ignoreZeroChannelVolume = false;
 
 	private final ListModelWrapper<AbcPart> parts = new ListModelWrapper<>(new DefaultListModel<>());
 
@@ -206,7 +207,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		sourceFile = file;
 		usingOldVelocities = miscSettings.ignoreExpressionMessages;
 		setDefaultTiming (saveSettings.defaultTiming);
-		sequenceInfo = SequenceInfo.fromMidi(file, miscSettings, usingOldVelocities, usingOldTempos);
+		sequenceInfo = SequenceInfo.fromMidi(file, miscSettings, usingOldVelocities, usingOldTempos, false);
 		title = sequenceInfo.getTitle();
 		composer = sequenceInfo.getComposer();
 		if (sequenceInfo.getDataCache() != null) copyright = sequenceInfo.getDataCache().getCopyright();
@@ -351,7 +352,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			usingOldVelocities = SaveUtil.parseValue(songEle, "importSettings/@useOldVelocities", true);// must be
 			usingOldTempos     = SaveUtil.parseValue(songEle, "importSettings/@useOldTempos", true);    // before
 																										// tryToLoadFromFile
-
+			ignoreZeroChannelVolume = SaveUtil.parseValue(songEle, "importSettings/@ignoreZeroChannelVolume", false);
+			
 			sourceFile = SaveUtil.parseValue(songEle, "sourceFile", (File) null);
 			if (sourceFile == null) {
 				throw SaveUtil.missingValueException(songEle, "<sourceFile>");
@@ -482,7 +484,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				priorityActive = false;
 				transcriber = abcInfo.getTranscriber();
 			} else {
-				sequenceInfo = SequenceInfo.fromMidi(newSourceFile, miscSettings, usingOldVelocities, usingOldTempos);
+				sequenceInfo = SequenceInfo.fromMidi(newSourceFile, miscSettings, usingOldVelocities, usingOldTempos, ignoreZeroChannelVolume);
 			}
 
 			title = sequenceInfo.getTitle();
@@ -689,6 +691,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		Element importSettingsEle = doc.createElement("importSettings");
 		importSettingsEle.setAttribute("useOldVelocities", String.valueOf(usingOldVelocities));
 		importSettingsEle.setAttribute("useOldTempos", String.valueOf(usingOldTempos));
+		if (ignoreZeroChannelVolume) importSettingsEle.setAttribute("ignoreZeroChannelVolume", String.valueOf(ignoreZeroChannelVolume)); 
 		if (importSettingsEle.getAttributes().getLength() > 0 || importSettingsEle.getChildNodes().getLength() > 0)
 			songEle.appendChild(importSettingsEle);
 	}

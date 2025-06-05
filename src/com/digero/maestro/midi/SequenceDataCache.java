@@ -61,16 +61,19 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	private boolean[] yamahaDrumChannels = null;
 	public boolean hasPorts = false;
 	private String copyright = "";
+	private boolean ignoreZeroChannelVolume;
 
 	public SequenceDataCache(Sequence song, MidiStandard standard, boolean[] rolandDrumChannels,
 			List<TreeMap<Long, Boolean>> yamahaDrumSwitches, boolean[] yamahaDrumChannels,
-			List<TreeMap<Long, Boolean>> mmaDrumSwitches, SortedMap<Integer, Integer> portMap, boolean onlyFirstTrackTempos) {
+			List<TreeMap<Long, Boolean>> mmaDrumSwitches, SortedMap<Integer, Integer> portMap, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume) {
 		
 		Map<Integer, Long> tempoLengths = new HashMap<>();
 
 		this.standard = standard;
 		this.rolandDrumChannels = rolandDrumChannels;
 		this.yamahaDrumChannels = yamahaDrumChannels;
+		
+		this.ignoreZeroChannelVolume = ignoreZeroChannelVolume;
 
 		brandDrumBanks = new DrumBankType[song.getTracks().length];
 
@@ -179,7 +182,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 						} else if (cmd == ShortMessage.CONTROL_CHANGE) {
 							switch (shortMsg.getData1()) {
 							case CHANNEL_VOLUME_CONTROLLER_COARSE:
-								// if (m.getData2() != 0) TODO: uncomment this to see hidden notes in MIDIs. :)
+								if (shortMsg.getData2() != 0 || !ignoreZeroChannelVolume)
 								channelVolume.put(ch, tick, shortMsg.getData2());
 								break;
 							case CHANNEL_EXPRESSION_CONTROLLER:

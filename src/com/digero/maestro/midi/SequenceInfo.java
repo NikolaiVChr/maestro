@@ -77,7 +77,7 @@ public class SequenceInfo implements MidiConstants {
 		if (params.abcInfo == null)
 			params.abcInfo = new AbcInfo();
 		SequenceInfo sequenceInfo = new SequenceInfo(params.filesData.get(0).file.getName(), AbcToMidi.convert(params),
-				-1, miscSettings, oldVelocities, true);
+				-1, miscSettings, oldVelocities, true, false);
 		sequenceInfo.title = params.abcInfo.getTitle();
 		sequenceInfo.composer = params.abcInfo.getComposer();
 		sequenceInfo.primaryTempoMPQ = (int) Math.round(MidiUtils.convertTempo(params.abcInfo.getPrimaryTempoBPM()));
@@ -94,11 +94,11 @@ public class SequenceInfo implements MidiConstants {
 	 * @throws IOException
 	 * @throws ParseException
 	 */
-	public static SequenceInfo fromMidi(File midiFile, MiscSettings miscSettings, boolean oldVelocities, boolean onlyFirstTrackTempos)
+	public static SequenceInfo fromMidi(File midiFile, MiscSettings miscSettings, boolean oldVelocities, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume)
 			throws InvalidMidiDataException, IOException, ParseException {
 		MidiFileFormat midiFileFormat = MidiSystem.getMidiFileFormat(midiFile);
 		return new SequenceInfo(midiFile.getName(), ConvertPPQ.convert(MidiSystem.getSequence(midiFile)),
-				midiFileFormat.getType(), miscSettings, oldVelocities, onlyFirstTrackTempos);
+				midiFileFormat.getType(), miscSettings, oldVelocities, onlyFirstTrackTempos, ignoreZeroChannelVolume);
 	}
 
 	/**
@@ -115,7 +115,7 @@ public class SequenceInfo implements MidiConstants {
 		return new SequenceInfo(abcExporter, useLotroInstruments);
 	}
 
-	private SequenceInfo(String fileName, Sequence sequence, int type, MiscSettings miscSettings, boolean oldVelocities, boolean onlyFirstTrackTempos)
+	private SequenceInfo(String fileName, Sequence sequence, int type, MiscSettings miscSettings, boolean oldVelocities, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume)
 			throws InvalidMidiDataException, ParseException {
 		this.fileName = fileName;
 		this.sequence = sequence;
@@ -139,7 +139,7 @@ public class SequenceInfo implements MidiConstants {
 		}
 
 		sequenceCache = new SequenceDataCache(sequence, standard, rolandDrumChannels, yamahaDrumSwitches,
-				yamahaDrumChannels, mmaDrumSwitches, portMap, onlyFirstTrackTempos);
+				yamahaDrumChannels, mmaDrumSwitches, portMap, onlyFirstTrackTempos, ignoreZeroChannelVolume);
 		hasPorts = sequenceCache.hasPorts;
 		primaryTempoMPQ = sequenceCache.getPrimaryTempoMPQ();
 
@@ -195,7 +195,7 @@ public class SequenceInfo implements MidiConstants {
 		sequence = result.second;
 		lastTrackInfos = result.first;
 		standard = MidiStandard.PREVIEW;
-		sequenceCache = new SequenceDataCache(sequence, standard, null, null, null, null, portMap, true);
+		sequenceCache = new SequenceDataCache(sequence, standard, null, null, null, null, portMap, true, false);
 		primaryTempoMPQ = sequenceCache.getPrimaryTempoMPQ();
 
 		this.trackInfoList = null;
