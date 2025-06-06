@@ -758,4 +758,23 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 	        throw new IllegalArgumentException("Unknown CalcDynamics: " + name);
 	    }
 	}
+
+	/*
+	 * Check if all notes in chord start and end at same time
+	 */
+	public boolean isConform() {
+		for (AbcNoteEvent ne : notes) {
+			if (ne.getStartTick() != startTick || ne.getEndTick() != endTick) {
+				System.out.println("Chord "+startTick+"-"+endTick);
+				System.out.println("Note  "+ne.getStartTick()+"-"+ne.getEndTick()+" "+ne.note);
+				return false;
+			}
+		}
+		return true;
+	}
+
+	public String toStringDura() {
+		String post = delete?"(delete)":"";
+		return ""+startTick+"->"+endTick+" "+post;
+	}
 }
