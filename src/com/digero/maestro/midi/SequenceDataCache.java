@@ -621,8 +621,13 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	}
 
 	public TempoEvent getTempoEventForMicros(long micros) {
-		Entry<Long, TempoEvent> entry = tempo.floorEntry(micros);
-		return entry != null ? entry.getValue() : TempoEvent.DEFAULT_TEMPO;
+		TempoEvent prev = TempoEvent.DEFAULT_TEMPO;
+		for (Entry<Long, TempoEvent> entry : tempo.entrySet()) {
+			if (entry.getValue().micros == micros) return entry.getValue();
+			if (entry.getValue().micros > micros) return prev;
+			prev = entry.getValue();
+		}
+		return TempoEvent.DEFAULT_TEMPO;
 	}
 
 	public MapByChannel getBendMap() {
