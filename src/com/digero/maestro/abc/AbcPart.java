@@ -843,9 +843,11 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 							} catch (IOException | NullPointerException e) {
 								// will give null pointer if tone is not contained in the map, in conversion from Double to double.
 							}
-							ITempoCache tc = ne.getTempoCache();
-							noteEndTick = tc
-									.microsToTick(tc.tickToMicros(ne.getStartTick()) + qtm.multiplyByExportTempoFactor(dura));
+							if (organic) {
+								noteEndTick = qtm.microsToTickABCOrganic( qtm.tickToMicrosABCOrganic(ne.getStartTick()) + dura );
+							} else {
+								noteEndTick = qtm.microsToTickABC( qtm.tickToMicrosABC(ne.getStartTick()) + dura );
+							}
 						}
 
 						if (noteEndTick > endTick)
