@@ -248,11 +248,15 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		endTick = newEndTick;
 	}
 	
-	public void setEarlyStartTick() {
+	public void setEarlyStartTick(boolean useRestsInChords) {
 		//assert early <= endTick;
 		// organic
 		for (AbcNoteEvent note : notes) {
 			note.setStartTick(early);
+			if (useRestsInChords && note.tiesFrom != null) {
+				note.tiesFrom.setEndTick(early);//require recalcEndTick()
+				//System.out.println("note.tiesFrom.setEndTick(early);");
+			}
 		}
 		startTick = early;
 		early = null;
@@ -765,7 +769,7 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 	public boolean isConform() {
 		for (AbcNoteEvent ne : notes) {
 			if (ne.getStartTick() != startTick || ne.getEndTick() != endTick) {
-				System.out.println("Chord "+startTick+"-"+endTick);
+				System.out.println("Chord "+startTick+"-"+endTick+" noteCount="+notes.size()+" restMix="+hasRestAndNotes());
 				System.out.println("Note  "+ne.getStartTick()+"-"+ne.getEndTick()+" "+ne.note);
 				return false;
 			}

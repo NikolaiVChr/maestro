@@ -1740,7 +1740,8 @@ public class AbcExporter {
 				if (curChord.early != null) {
 					//must be AFTER 'remove zero among longer'
 					//is BEFORE pruning to save pruning twice
-					curChord.setEarlyStartTick();
+					curChord.setEarlyStartTick(useRestToShortenChords);
+					if (prevChord != null) prevChord.recalcEndTick();
 					debugOutput(3,part.getTitle()+ ": applying early start. curChord now start at "+curChord.getStartTick());
 					i--;
 					continue MAIN;
@@ -2012,7 +2013,7 @@ public class AbcExporter {
 					long earlyCurrTick = qtm.microsToTickABCOrganic(earlyCurrMicro);
 					debugOutput(1,part.getTitle()+": curChord too short. ends at "+curChord.getEndTick()+", ideal end at "+curMinEndTick);
 					// test if we should early start curr chord
-					if (ne2 != null && ne1RoomMicros < minimumMicros
+					if (!useRestToShortenChords && ne2 != null && ne1RoomMicros < minimumMicros
 							&& curStartMicro - earlyCurrMicro < minimumMicros/2) {
 						// Both curr and ne does not have enough room.
 						// We need less than half of minimum though
@@ -2260,14 +2261,14 @@ public class AbcExporter {
 								// We make next start sooner, since curChord is first chord or prev is longer than 7.5s
 								// this has the added benefit that if next chord is
 								// too short too, it will be longer.
-								nextChord.early = curChord.getStartTick();//TODO: breakup elongated notes
+								nextChord.early = curChord.getEndTick();//TODO: breakup elongated notes
 								debugOutput(2,part.getTitle()+ ": Early start A");
 							} else if (found) {
 								chordToExpand.setEndTickExpand(ne.getStartTick());//TODO: breakup elongated notes
 								debugOutput(2,part.getTitle()+ ": Prev ("+chordToExpand.getStartTick()+") expanded to "+ne.getStartTick()+" isRest="+chordToExpand.isRest()+" isDeleted="+chordToExpand.delete);
 								//curChord = chordToExpand;
 							} else {
-								nextChord.early = curChord.getStartTick();//TODO: breakup elongated notes
+								nextChord.early = curChord.getEndTick();//TODO: breakup elongated notes
 								debugOutput(2,part.getTitle()+ ": Early start B");
 							}
 							curChord = chordToExpand;
@@ -2303,6 +2304,9 @@ public class AbcExporter {
 								}
 								same.tiesFrom = null;
 								same.tiesTo = null;
+							} else if (ne.tiesFrom != null) {
+								ne.tiesFrom.setEndTick(ne.getStartTick());
+								debugOutput(2,part.getTitle()+": Adjusting tiesFrom endTick while shuffling ne into curr");
 							}
 							debugOutput(1,part.getTitle()+": Shuffle ne into curr");
 							i--;
@@ -2313,6 +2317,11 @@ public class AbcExporter {
 				
 				
 				if (assertionsEnabled && curChord != null) {
+					/*
+					 * 
+					 * DEBUG STUFF
+					 * 
+					 */
 					for (AbcNoteEvent evt : curChord.getNotes()) {
 						long mics = qtm.tickToMicrosABCOrganic(evt.getEndTick()) - qtm.tickToMicrosABCOrganic(evt.getStartTick());
 						assert mics <= TimingInfo.LONGEST_NOTE_MICROS + 500L: evt.note+" micros="+mics;
@@ -2359,6 +2368,9 @@ public class AbcExporter {
 					*/
 				}
 				
+				assert curChord == null || useRestToShortenChords || curChord.isConform():part.getAbcSong().getTitle()+"( "+part.getTitle()+"): not conform 1.";
+				assert prevChord == null || useRestToShortenChords || prevChord.isConform():part.getAbcSong().getTitle()+"( "+part.getTitle()+"): not conform 2.";
+				
 				chords.add(nextChord);
 				assert !nextChord.hasRestAndNotes();
 				assert curChord == null || !curChord.hasRestAndNotes() || useRestToShortenChords;
@@ -2376,7 +2388,8 @@ public class AbcExporter {
 			// The last Chord has all the notes it will get. But before continuing,
 			// normalize the chord so that all notes end at the same time
 			if (curChord.early != null) {
-				curChord.setEarlyStartTick();
+				curChord.setEarlyStartTick(useRestToShortenChords);
+				if (prevChord != null) prevChord.recalcEndTick();
 				debugOutput(1,"Last chord: early start");
 			}
 			
@@ -2493,35 +2506,42 @@ public class AbcExporter {
 			 * silence entire part. So to prevent that, we shorten
 			 * some notes to be same dura as the chord.
 			 */
-			List<AbcNoteEvent> prevNotes = new ArrayList<>();
-			long prevShortest = -1L;
-			Chord preChord = null;
+			List<AbcNoteEvent> notesOn = new ArrayList<>();
+			Long lastEnd = null;
 			for (Chord chord : chords) {
-				if (preChord != null) {
-					assert chord.getStartTick() == preChord.getEndTick():"Gap between chords1. Start tick (second):"+chord.getStartTick();
-					for (AbcNoteEvent curr : chord.getNotes()) {
-						for (AbcNoteEvent pre : prevNotes) {
-							if (pre.note == curr.note) {
-								pre.setEndTick(prevShortest);
-								assert curr.getEndTick() > pre.getEndTick();
-								//System.out.println(part.getAbcSong().getTitle()+"( "+part.getTitle()+"): normalizing note!!! tied="+(pre.tiesTo != null));
-							}
+				
+				if (lastEnd != null) assert chord.getStartTick() == lastEnd:"Gap between chords1. Start tick (second):"+chord.getStartTick();
+				
+				for (AbcNoteEvent curr : chord.getNotes()) {
+					for (AbcNoteEvent pre : notesOn) {
+						if (pre.note == curr.note) {
+							assert curr.getEndTick() > pre.getEndTick();
+							pre.setEndTick(curr.getStartTick());
+							debugOutput(1,part.getTitle()+": normalizing note!1! tied="+(pre.tiesTo != null));
 						}
 					}
 				}
-				prevNotes = new ArrayList<>();
-				prevShortest = chord.getEndTick();
+				List longerNotes = new ArrayList<>();				
 				for (AbcNoteEvent ne : chord.getNotes()) {
-					if (ne.getEndTick() > prevShortest) {
-						prevNotes.add(ne);
+					if (ne.getEndTick() > chord.getEndTick()) {
+						longerNotes.add(ne);
 					}
 				}
-				preChord = chord;
+				List notesOff = new ArrayList();
+				for (AbcNoteEvent ne : notesOn) {
+					if (ne.getEndTick() <= chord.getEndTick()) {
+						notesOff.add(ne);
+					}
+				}
+				notesOn.removeAll(notesOff);
+				notesOn.addAll(longerNotes);
+				
+				lastEnd = chord.getEndTick();
 			}
 		} else if (assertionsEnabled) {
 			Chord preChord = null;
 			for (Chord chord : chords) {
-				assert chord.isConform():part.getAbcSong().getTitle()+"( "+part.getTitle()+"): not conform";
+				assert chord.isConform():part.getAbcSong().getTitle()+"( "+part.getTitle()+"): not conform 3.";
 				assert preChord==null || preChord.getEndTick() == chord.getStartTick():"Gap between chords2. Start tick (second):"+chord.getStartTick();
 				preChord = chord;
 			}
@@ -2544,7 +2564,7 @@ public class AbcExporter {
 		return value;
 	}
 	
-	final int debug = 0;// 0=no debug 1=minimal debug 2=more debug 3=most debug
+	final int debug = 0;// 0=no debug 1=minimal debug 2=more debug 3=most debug 4=more than most
 	
 	private void debugOutput (int lvl, String text) {
 		if (debug >= lvl) {
