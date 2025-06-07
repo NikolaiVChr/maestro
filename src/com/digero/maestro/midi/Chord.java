@@ -781,4 +781,22 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		String post = delete?"(delete)":"";
 		return ""+startTick+"->"+endTick+" "+post;
 	}
+
+	public boolean isLinked() {
+		for (AbcNoteEvent ne : notes) {
+			if (ne.tiesFrom == null) {
+				AbcNoteEvent tie = ne;
+				while (tie.tiesTo != null) {
+					if (tie.tiesTo.getStartTick() != tie.getEndTick()) {
+						System.out.println("Chord "+startTick+"-"+endTick+" noteCount="+notes.size()+" restMix="+hasRestAndNotes()+" delete="+delete);
+						System.out.println("Note to   "+tie.tiesTo.getStartTick()+"-"+tie.tiesTo.getEndTick()+" "+tie.tiesTo.note);
+						System.out.println("Note from "+tie.getStartTick()+"-"+tie.getEndTick()+" "+ne.note);
+						return false; 
+					}
+					tie = tie.tiesTo;
+				}
+			}
+		}
+		return true;
+	}
 }

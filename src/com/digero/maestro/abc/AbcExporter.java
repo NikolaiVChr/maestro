@@ -1913,7 +1913,19 @@ public class AbcExporter {
 							// a sustained instrument on this part, it will be ruined for that purpose.
 							// But this will make fitting it all together easier.
 							jne.setEndTick(curMinEndFitTick);
-							//System.out.println(jne.note+" curMinEndFitTick="+curMinEndFitTick);
+							//System.out.println(jne.note+" curMinEndFitTick="+curMinEndFitTick+" tiesTo="+(jne.tiesTo!=null));
+							if (jne.tiesTo != null) {
+								AbcNoteEvent tie = jne;
+								while(tie.tiesTo != null) {
+									events.remove(tie.tiesTo);
+									if (tie.tiesTo == ne) {
+										reprocessCurrentNote = true;
+									}
+									AbcNoteEvent old = tie;
+									tie = tie.tiesTo;
+									old.tiesTo = null;
+								}
+							}
 						} else if (!useRestToShortenChords && jne.getEndTick() > targetEndTick) {						
 							long noteEndMicro = qtm.tickToMicrosABCOrganic(jne.getEndTick());
 							if (curChord.getEndTick() == targetEndTick && noteEndMicro-curEndMicro < minimumMicros/2 && jne.tiesTo == null) {
@@ -1921,7 +1933,7 @@ public class AbcExporter {
 								// we make it end same time as shortest note in chord,
 								// chord might become slightly longer later.
 								jne.setEndTick(curChord.getEndTick());
-								debugOutput(2,part.getTitle()+ ": Fit note ending to chord ending");
+								debugOutput(2,part.getTitle()+ ": Fit note ending to chord ending. tiesTo="+(jne.tiesTo!=null));
 							} else {
 								// This note extends past the end of the chord; break it into two tied notes
 								AbcNoteEvent next = jne.splitWithTieAtTick(targetEndTick);
@@ -2343,20 +2355,21 @@ public class AbcExporter {
 					endCur = found?realCurChord.getEndTick():nextChord.getStartTick();
 					assert endCur == nextChord.getStartTick() || (nextChord.early != null && endCur == nextChord.early):endCur+" != "+nextChord.getStartTick()+" next_early="+nextChord.early;
 					
-					/*// debug code to investigate specific chord gaps
-					if (!useRestToShortenChords && curChord.getStartTick() == 19952) {
-						System.out.println("\nCh: "+curChord.toStringDura()+" useRest="+useRestToShortenChords);
+					/*
+					// debug code to investigate specific chord gaps
+					if (!useRestToShortenChords && curChord.getEndTick() == 92927) {
+						System.out.println("\nCh: "+curChord.toStringDura()+" useRest="+useRestToShortenChords+" delete="+curChord.delete);
 						
 						for (AbcNoteEvent n : curChord.getNotes()) {
-							System.out.println(n.note+": "+n.getStartTick()+" - "+n.getEndTick());
+							System.out.println(n.note+": "+n.getStartTick()+" - "+n.getEndTick()+" tiesFrom="+(n.tiesFrom != null));
 						}
 						if (chords.size()>1) {
-							System.out.println("\npre: "+chords.get(chords.size()-2).toStringDura());
+							System.out.println("\npre: "+chords.get(chords.size()-2).toStringDura()+" delete="+curChord.delete);
 							for (AbcNoteEvent n : chords.get(chords.size()-2).getNotes()) {
-								System.out.println(n.note+": "+n.getStartTick()+" - "+n.getEndTick());
+								System.out.println(n.note+": "+n.getStartTick()+" - "+n.getEndTick()+" tiesTo="+(n.tiesTo != null));
 							}
 							if (chords.size()>2) {
-								System.out.println("\npre-: "+chords.get(chords.size()-3).toStringDura());
+								System.out.println("\npre-: "+chords.get(chords.size()-3).toStringDura()+" delete="+curChord.delete);
 								for (AbcNoteEvent n : chords.get(chords.size()-3).getNotes()) {
 									System.out.println(n.note+": "+n.getStartTick()+" - "+n.getEndTick());
 								}
@@ -2461,6 +2474,46 @@ public class AbcExporter {
 			}
 			curChord.recalcEndTick();
 			
+			if (assertionsEnabled && curChord != null) {
+				/*
+				 * 
+				 * DEBUG STUFF
+				 * 
+				 */
+				for (AbcNoteEvent evt : curChord.getNotes()) {
+					long mics = qtm.tickToMicrosABCOrganic(evt.getEndTick()) - qtm.tickToMicrosABCOrganic(evt.getStartTick());
+					assert mics <= TimingInfo.LONGEST_NOTE_MICROS + 500L: evt.note+" micros="+mics;
+				}					
+				long endCur = curChord.getEndTick();
+				curChord.recalcEndTick();
+				assert endCur == curChord.getEndTick();
+				
+				/*
+				// debug code to investigate specific chord gaps
+				if (!useRestToShortenChords && curChord.getStartTick() == 92859) {
+					System.out.println("\nCh: "+curChord.toStringDura()+" useRest="+useRestToShortenChords+" delete="+curChord.delete);
+					
+					for (AbcNoteEvent n : curChord.getNotes()) {
+						System.out.println(n.note+": "+n.getStartTick()+" - "+n.getEndTick()+" tiesFrom="+(n.tiesFrom != null));
+					}
+					if (chords.size()>1) {
+						System.out.println("\npre: "+chords.get(chords.size()-2).toStringDura()+" delete="+curChord.delete);
+						for (AbcNoteEvent n : chords.get(chords.size()-2).getNotes()) {
+							System.out.println(n.note+": "+n.getStartTick()+" - "+n.getEndTick()+" tiesTo="+(n.tiesTo != null));
+						}
+						if (chords.size()>2) {
+							System.out.println("\npre-: "+chords.get(chords.size()-3).toStringDura()+" delete="+curChord.delete);
+							for (AbcNoteEvent n : chords.get(chords.size()-3).getNotes()) {
+								System.out.println(n.note+": "+n.getStartTick()+" - "+n.getEndTick());
+							}
+						}
+					}
+					//assert chords.get(chords.size()-2).getEndTick() == curChord.getStartTick();
+					//assert false:"stopped";
+				}
+				*/
+			}
+			
 			if (nextChord != null) {
 				reprocessLastChord = true;
 				curChord = nextChord;
@@ -2542,6 +2595,7 @@ public class AbcExporter {
 			Chord preChord = null;
 			for (Chord chord : chords) {
 				assert chord.isConform():part.getAbcSong().getTitle()+"( "+part.getTitle()+"): not conform 3.";
+				assert chord.isLinked():part.getAbcSong().getTitle()+"( "+part.getTitle()+"): not linked. "+part.getTitle();
 				assert preChord==null || preChord.getEndTick() == chord.getStartTick():"Gap between chords2. Start tick (second):"+chord.getStartTick();
 				preChord = chord;
 			}
