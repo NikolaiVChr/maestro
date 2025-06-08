@@ -627,7 +627,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 			if (entry.getValue().micros > micros) return prev;
 			prev = entry.getValue();
 		}
-		return TempoEvent.DEFAULT_TEMPO;
+		return prev;
 	}
 
 	public MapByChannel getBendMap() {
