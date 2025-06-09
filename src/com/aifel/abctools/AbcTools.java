@@ -35,7 +35,6 @@ import javax.swing.border.Border;
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.util.Util;
 import com.digero.maestro.MaestroMain;
-import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.abc.ExportFilenameTemplate;
 import com.digero.maestro.abc.PartAutoNumberer;
 import com.digero.maestro.abc.PartNameTemplate;
@@ -282,7 +281,7 @@ public class AbcTools {
 			String newName = trimNonAbc(getLongestCommonSubstring(n1, n2));
 			if (newName.length() == 0)
 				newName = "mySong";
-			newName += AbcSong.ABC_FILE_EXTENSION;
+			newName += Util.ABC_FILE_EXTENSION;
 			File newFile = new File(destFolder, newName);
 			if (newFile.exists()) {
 				int result = JOptionPane.showConfirmDialog(frame,
@@ -387,7 +386,7 @@ public class AbcTools {
 		@Override
 		public boolean accept(File file) {
 			String name = file.getName().toLowerCase();
-			return name.endsWith(AbcSong.ABC_FILE_EXTENSION) || name.endsWith(AbcSong.TXT_FILE_EXTENSION);
+			return name.endsWith(Util.ABC_FILE_EXTENSION) || name.endsWith(Util.TXT_FILE_EXTENSION);
 		}
 	}
 
@@ -396,7 +395,7 @@ public class AbcTools {
 		@Override
 		public boolean accept(File file) {
 			String name = file.getName().toLowerCase();
-			return name.endsWith(AbcSong.MSX_FILE_EXTENSION);
+			return name.endsWith(Util.MSX_FILE_EXTENSION);
 		}
 	}
 	

@@ -25,6 +25,22 @@ import javax.swing.JFrame;
 import sun.awt.shell.ShellFolder;
 
 public final class Util {
+	public static final String MSX_FILE_EXTENSION_NO_DOT = "msx";
+	public static final String ABC_FILE_EXTENSION_NO_DOT = "abc";
+	public static final String ABCP_FILE_EXTENSION_NO_DOT = "abcp";
+	public static final String TXT_FILE_EXTENSION_NO_DOT = "txt";
+	public static final String MID_FILE_EXTENSION_NO_DOT = "mid";
+	public static final String KAR_FILE_EXTENSION_NO_DOT = "kar";
+	public static final String MIDI_FILE_EXTENSION_NO_DOT = "midi";
+	public static final String MSX_FILE_EXTENSION = "." + MSX_FILE_EXTENSION_NO_DOT;
+	public static final String ABC_FILE_EXTENSION = "." + ABC_FILE_EXTENSION_NO_DOT;
+	public static final String ABCP_FILE_EXTENSION = "." + ABCP_FILE_EXTENSION_NO_DOT;
+	public static final String TXT_FILE_EXTENSION = "." + TXT_FILE_EXTENSION_NO_DOT;
+	public static final String MID_FILE_EXTENSION = "." + MID_FILE_EXTENSION_NO_DOT;
+	public static final String MIDI_FILE_EXTENSION = "." + MIDI_FILE_EXTENSION_NO_DOT;
+	public static final String KAR_FILE_EXTENSION = "." + KAR_FILE_EXTENSION_NO_DOT;
+	
+
 	private Util() {
 		// Can't instantiate class
 	}

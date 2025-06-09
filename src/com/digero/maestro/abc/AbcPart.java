@@ -30,7 +30,6 @@ import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.Dynamics;
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.abc.LotroInstrumentSampleDuration;
-import com.digero.common.midi.ITempoCache;
 import com.digero.common.midi.MidiConstants;
 import com.digero.common.midi.MidiDrum;
 import com.digero.common.midi.Note;

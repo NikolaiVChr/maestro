@@ -263,7 +263,7 @@ public class ExportFilenameTemplate {
 
 		this.settings.partCountZeroPadded = zeroPad;
 
-		name += AbcSong.ABC_FILE_EXTENSION;
+		name += Util.ABC_FILE_EXTENSION;
 
 		return name;
 	}

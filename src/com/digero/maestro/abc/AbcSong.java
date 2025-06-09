@@ -63,21 +63,6 @@ import com.digero.maestro.view.SaveAndExportSettings;
 public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public static final String MSX_FILE_DESCRIPTION = MaestroMain.APP_NAME + " Project";
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = MaestroMain.APP_NAME + " Projects";
-	public static final String MSX_FILE_EXTENSION_NO_DOT = "msx";
-	public static final String ABC_FILE_EXTENSION_NO_DOT = "abc";
-	public static final String ABCP_FILE_EXTENSION_NO_DOT = "abcp";
-	public static final String TXT_FILE_EXTENSION_NO_DOT = "txt";
-	public static final String MID_FILE_EXTENSION_NO_DOT = "mid";
-	public static final String MIDI_FILE_EXTENSION_NO_DOT = "midi";
-	public static final String KAR_FILE_EXTENSION_NO_DOT = "kar";
-	public static final String MSX_FILE_EXTENSION = "." + MSX_FILE_EXTENSION_NO_DOT;
-	public static final String ABC_FILE_EXTENSION = "." + ABC_FILE_EXTENSION_NO_DOT;
-	public static final String ABCP_FILE_EXTENSION = "." + ABCP_FILE_EXTENSION_NO_DOT;
-	public static final String TXT_FILE_EXTENSION = "." + TXT_FILE_EXTENSION_NO_DOT;
-	public static final String MID_FILE_EXTENSION = "." + MID_FILE_EXTENSION_NO_DOT;
-	public static final String MIDI_FILE_EXTENSION = "." + MIDI_FILE_EXTENSION_NO_DOT;
-	public static final String KAR_FILE_EXTENSION = "." + KAR_FILE_EXTENSION_NO_DOT;
-	
 	public static final Version SONG_FILE_VERSION = new Version(4, 2, 3, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
@@ -172,8 +157,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		this.saveAndExportSettings = saveAndExportSettings;
 
 		String fileName = file.getName().toLowerCase();
-		fromXmlFile = fileName.endsWith(MSX_FILE_EXTENSION);
-		fromAbcFile = fileName.endsWith(ABC_FILE_EXTENSION) || fileName.endsWith(TXT_FILE_EXTENSION);
+		fromXmlFile = fileName.endsWith(Util.MSX_FILE_EXTENSION);
+		fromAbcFile = fileName.endsWith(Util.ABC_FILE_EXTENSION) || fileName.endsWith(Util.TXT_FILE_EXTENSION);
 
 		if (fromXmlFile)
 			initFromXml(file, fileResolver, miscSettings);
@@ -378,7 +363,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 			sequenceInfo = null;
 			String name = sourceFile.getName().toLowerCase();
-			boolean isAbc = name.endsWith(ABC_FILE_EXTENSION) || name.endsWith(TXT_FILE_EXTENSION);
+			boolean isAbc = name.endsWith(Util.ABC_FILE_EXTENSION) || name.endsWith(Util.TXT_FILE_EXTENSION);
 			while (sequenceInfo == null) {
 				tryToLoadFromFile(fileResolver, isAbc, miscSettings);
 

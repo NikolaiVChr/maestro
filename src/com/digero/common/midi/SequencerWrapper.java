@@ -22,7 +22,6 @@ import com.digero.common.midi.SequencerEvent.SequencerProperty;
 import com.digero.common.util.IDiscardable;
 import com.digero.common.util.Listener;
 import com.digero.common.util.ListenerList;
-import com.digero.common.util.Util;
 
 public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardable {
 	public static final int UPDATE_FREQUENCY_MILLIS = 50;

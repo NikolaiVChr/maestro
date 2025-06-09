@@ -8,7 +8,7 @@ import javax.swing.tree.DefaultTreeCellRenderer;
 
 import com.digero.common.icons.IconLoader;
 import com.digero.common.util.AbcFileTreeModel;
-import com.digero.maestro.abc.AbcSong;
+import com.digero.common.util.Util;
 
 public class AbcPlaylistTreeCellRenderer extends DefaultTreeCellRenderer {
 	
@@ -28,9 +28,9 @@ public class AbcPlaylistTreeCellRenderer extends DefaultTreeCellRenderer {
 		AbcFileTreeModel.AbcSongFileNode df = (AbcFileTreeModel.AbcSongFileNode)value;
 		File file = df.getFile();
 		
-		if (file.getName().endsWith(AbcSong.ABC_FILE_EXTENSION)) {
+		if (file.getName().endsWith(Util.ABC_FILE_EXTENSION)) {
 			setIcon(IconLoader.getImageIcon("abcfile_16.png"));
-		} else if (file.getName().endsWith(AbcSong.ABCP_FILE_EXTENSION)) {
+		} else if (file.getName().endsWith(Util.ABCP_FILE_EXTENSION)) {
 			setIcon(IconLoader.getImageIcon("abcplaylist_16.png"));
 		}
 		

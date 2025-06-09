@@ -392,9 +392,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		add(generateTopLevelSplitPane(), "0, 0, 1, 0");
 
-		final FileFilterDropListener dropListener = new FileFilterDropListener(false, AbcSong.MID_FILE_EXTENSION_NO_DOT,
-				AbcSong.MIDI_FILE_EXTENSION_NO_DOT, AbcSong.KAR_FILE_EXTENSION_NO_DOT, AbcSong.ABC_FILE_EXTENSION_NO_DOT,
-				AbcSong.TXT_FILE_EXTENSION_NO_DOT, AbcSong.MSX_FILE_EXTENSION_NO_DOT);
+		final FileFilterDropListener dropListener = new FileFilterDropListener(false, Util.MID_FILE_EXTENSION_NO_DOT,
+				Util.MIDI_FILE_EXTENSION_NO_DOT, Util.KAR_FILE_EXTENSION_NO_DOT, Util.ABC_FILE_EXTENSION_NO_DOT,
+				Util.TXT_FILE_EXTENSION_NO_DOT, Util.MSX_FILE_EXTENSION_NO_DOT);
 		dropListener.addActionListener(e -> {
 			final File file = dropListener.getDroppedFile();
 			SwingUtilities.invokeLater(() -> openFile(file));
@@ -1144,10 +1144,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 					openFileChooser.setMultiSelectionEnabled(false);
 					openFileChooser.setFileFilter(
 							new ExtensionFileFilter("MIDI, ABC, and " + AbcSong.MSX_FILE_DESCRIPTION_PLURAL,
-									AbcSong.MID_FILE_EXTENSION_NO_DOT,
-									AbcSong.MIDI_FILE_EXTENSION_NO_DOT, AbcSong.KAR_FILE_EXTENSION_NO_DOT,
-									AbcSong.ABC_FILE_EXTENSION_NO_DOT,
-									AbcSong.TXT_FILE_EXTENSION_NO_DOT, AbcSong.MSX_FILE_EXTENSION_NO_DOT));
+									Util.MID_FILE_EXTENSION_NO_DOT,
+									Util.MIDI_FILE_EXTENSION_NO_DOT, Util.KAR_FILE_EXTENSION_NO_DOT,
+									Util.ABC_FILE_EXTENSION_NO_DOT,
+									Util.TXT_FILE_EXTENSION_NO_DOT, Util.MSX_FILE_EXTENSION_NO_DOT));
 				}
 
 				int result = openFileChooser.showOpenDialog(ProjectFrame.this);
@@ -1238,9 +1238,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			JFileChooser openMidiChooser = new JFileChooser(abcSong.getSourceFile().getAbsoluteFile().getParent());
 			openMidiChooser.setMultiSelectionEnabled(false);
 			openMidiChooser.setFileFilter(
-					new ExtensionFileFilter("MIDI and ABC files", AbcSong.MID_FILE_EXTENSION_NO_DOT,
-							AbcSong.MIDI_FILE_EXTENSION_NO_DOT, AbcSong.KAR_FILE_EXTENSION_NO_DOT, AbcSong.ABC_FILE_EXTENSION_NO_DOT,
-							AbcSong.TXT_FILE_EXTENSION_NO_DOT));
+					new ExtensionFileFilter("MIDI and ABC files", Util.MID_FILE_EXTENSION_NO_DOT,
+							Util.MIDI_FILE_EXTENSION_NO_DOT, Util.KAR_FILE_EXTENSION_NO_DOT, Util.ABC_FILE_EXTENSION_NO_DOT,
+							Util.TXT_FILE_EXTENSION_NO_DOT));
 
 			result = openMidiChooser.showOpenDialog(ProjectFrame.this);
 			if (result != JFileChooser.APPROVE_OPTION) {
@@ -2315,7 +2315,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 		
 		// Don't update last opened list when reading tmp msx file for midi reloading
-		if (updateLastOpenedList && file.getAbsolutePath().endsWith(AbcSong.MSX_FILE_EXTENSION)) {
+		if (updateLastOpenedList && file.getAbsolutePath().endsWith(Util.MSX_FILE_EXTENSION)) {
 			recentlyOpenedList.addOpenedFile(file);
 			updateOpenRecentMenu();
 		}
@@ -2329,7 +2329,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		boolean modified = abcSongModified;
 		File tmpMsx;
 		try {
-			tmpMsx = File.createTempFile("tmpproj", AbcSong.MSX_FILE_EXTENSION);
+			tmpMsx = File.createTempFile("tmpproj", Util.MSX_FILE_EXTENSION);
 		} catch (IOException e) {
 			return false;
 		}
@@ -2383,9 +2383,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			File alternateFile = null;
 			if (result == JOptionPane.OK_OPTION) {
 				JFileChooser jfc = new JFileChooser();
-				jfc.setFileFilter(new ExtensionFileFilter("MIDI and ABC files", AbcSong.MID_FILE_EXTENSION_NO_DOT,
-						AbcSong.MIDI_FILE_EXTENSION_NO_DOT, AbcSong.KAR_FILE_EXTENSION_NO_DOT, AbcSong.ABC_FILE_EXTENSION_NO_DOT,
-						AbcSong.TXT_FILE_EXTENSION_NO_DOT));
+				jfc.setFileFilter(new ExtensionFileFilter("MIDI and ABC files", Util.MID_FILE_EXTENSION_NO_DOT,
+						Util.MIDI_FILE_EXTENSION_NO_DOT, Util.KAR_FILE_EXTENSION_NO_DOT, Util.ABC_FILE_EXTENSION_NO_DOT,
+						Util.TXT_FILE_EXTENSION_NO_DOT));
 				jfc.setDialogTitle("Open missing MIDI/ABC");
 				if (original != null)
 					jfc.setSelectedFile(original);
@@ -2653,7 +2653,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		if (!new File(folder).exists())
 			folder = defaultFolder;
 
-		String fileName = "mySong"+AbcSong.ABC_FILE_EXTENSION;
+		String fileName = "mySong"+Util.ABC_FILE_EXTENSION;
 
 		// Always regenerate setting from pattern export is highest precedent
 		if (exportFilenameTemplate.shouldRegenerateFilename()) {
@@ -2678,7 +2678,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		else if (dot == 0)
 			fileName = "";
 		fileName = StringCleaner.cleanForFileName(fileName);
-		fileName += AbcSong.ABC_FILE_EXTENSION;
+		fileName += Util.ABC_FILE_EXTENSION;
 
 		exportFile = new File(folder, fileName);
 		
@@ -2696,8 +2696,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		File exportFile = getAbcExportFile();
 		File allowOverwriteFile = allowOverwriteExportFile ? abcSong.getExportFile() : null;
 
-		exportFile = doSaveDialog(exportFile, allowOverwriteFile, AbcSong.ABC_FILE_EXTENSION,
-				new ExtensionFileFilter("ABC files (*.abc, *.txt)", AbcSong.ABC_FILE_EXTENSION_NO_DOT, AbcSong.TXT_FILE_EXTENSION_NO_DOT));
+		exportFile = doSaveDialog(exportFile, allowOverwriteFile, Util.ABC_FILE_EXTENSION,
+				new ExtensionFileFilter("ABC files (*.abc, *.txt)", Util.ABC_FILE_EXTENSION_NO_DOT, Util.TXT_FILE_EXTENSION_NO_DOT));
 
 		if (exportFile == null) {
 			return false;
@@ -2785,7 +2785,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		if (!new File(folder).exists())
 			folder = defaultFolder;
 
-		String fileName = "mySong"+AbcSong.MSX_FILE_EXTENSION;
+		String fileName = "mySong"+Util.MSX_FILE_EXTENSION;
 
 		// Always regenerate setting from pattern export is highest precedent
 		if (exportFilenameTemplate.shouldRegenerateFilename()) {
@@ -2807,13 +2807,13 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		int dot = fileName.lastIndexOf('.');
 		if (dot > 0)
 			fileName = fileName.substring(0, dot);
-		fileName += AbcSong.MSX_FILE_EXTENSION;
+		fileName += Util.MSX_FILE_EXTENSION;
 
 		saveFile = new File(folder, fileName);
 
-		saveFile = doSaveDialog(saveFile, allowOverwriteFile, AbcSong.MSX_FILE_EXTENSION,
-				new ExtensionFileFilter(AbcSong.MSX_FILE_DESCRIPTION_PLURAL + " (*" + AbcSong.MSX_FILE_EXTENSION + ")",
-						AbcSong.MSX_FILE_EXTENSION_NO_DOT));
+		saveFile = doSaveDialog(saveFile, allowOverwriteFile, Util.MSX_FILE_EXTENSION,
+				new ExtensionFileFilter(AbcSong.MSX_FILE_DESCRIPTION_PLURAL + " (*" + Util.MSX_FILE_EXTENSION + ")",
+						Util.MSX_FILE_EXTENSION_NO_DOT));
 
 		if (saveFile == null)
 			return false;
@@ -2901,12 +2901,12 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			int dot = fileName.lastIndexOf('.');
 			if (dot > 0)
 				fileName = fileName.substring(0, dot);
-			fileName += AbcSong.MID_FILE_EXTENSION;
+			fileName += Util.MID_FILE_EXTENSION;
 
 			saveFile = new File(directory, fileName);
 		}
 
-		saveFile = doSaveDialog(saveFile, saveFile, AbcSong.MID_FILE_EXTENSION, new ExtensionFileFilter("MIDI songs (*.mid)", AbcSong.MID_FILE_EXTENSION_NO_DOT));
+		saveFile = doSaveDialog(saveFile, saveFile, Util.MID_FILE_EXTENSION, new ExtensionFileFilter("MIDI songs (*.mid)", Util.MID_FILE_EXTENSION_NO_DOT));
 
 		if (saveFile == null)
 			return false;

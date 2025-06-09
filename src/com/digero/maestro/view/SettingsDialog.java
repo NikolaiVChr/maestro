@@ -706,7 +706,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 			alwaysRegenerateCheckBox.setEnabled(selected);
 		});
 
-		exportTemplateExampleLabel = new JLabel(AbcSong.ABC_FILE_EXTENSION);
+		exportTemplateExampleLabel = new JLabel(Util.ABC_FILE_EXTENSION);
 		JPanel examplePanel = new JPanel(new BorderLayout());
 		examplePanel.setBorder(BorderFactory.createEmptyBorder(0, 3, 0, 0));
 		examplePanel.add(exportTemplateExampleLabel, BorderLayout.CENTER);
@@ -781,7 +781,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		MockMetadataSource mockMetadata = new MockMetadataSource(originalMetadataSource);
 		exportTemplate.setMetadataSource(mockMetadata);
 
-		String exampleText = StringCleaner.cleanForFileName(Util.fileNameWithoutExtension(exportTemplate.formatName(exportTemplateSettings)))+AbcSong.ABC_FILE_EXTENSION;
+		String exampleText = StringCleaner.cleanForFileName(Util.fileNameWithoutExtension(exportTemplate.formatName(exportTemplateSettings)))+Util.ABC_FILE_EXTENSION;
 		exampleText = "Example filename:  " + exampleText;
 		String exampleTextEllipsis = Util.ellipsis(exampleText, exportTemplateExampleLabel.getWidth(),
 				exportTemplateExampleLabel.getFont());
@@ -1293,7 +1293,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 					return saveFile;
 			}
 
-			return new File(Util.getLotroMusicPath(true), "band/examplesong"+AbcSong.ABC_FILE_EXTENSION);
+			return new File(Util.getLotroMusicPath(true), "band/examplesong"+Util.ABC_FILE_EXTENSION);
 		}
 
 		@Override
@@ -1334,7 +1334,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		public String getSourceFilename() {
 			if (originalSource != null && !Util.emptyIfNull(originalSource.getSourceFilename()).isEmpty() && !AbcSong.errorString.equals(originalSource.getSourceFilename()))
 				return originalSource.getSourceFilename();
-			return "Example Midi"+AbcSong.MID_FILE_EXTENSION;
+			return "Example Midi"+Util.MID_FILE_EXTENSION;
 		}
 	}
 }

@@ -15,7 +15,6 @@ import com.digero.abcplayer.view.PlaylistSetExportWizard.SetExportSettings;
 import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.util.Pair;
 import com.digero.common.util.Util;
-import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.abc.ExportFilenameTemplate;
 
 public class SetFilenameTemplate {
@@ -40,7 +39,7 @@ public class SetFilenameTemplate {
 	}
 	
 	private AbcInfo info = AbcInfo.getDummyAbcInfo();
-	private String filename = "my abc file"+AbcSong.ABC_FILE_EXTENSION;
+	private String filename = "my abc file"+Util.ABC_FILE_EXTENSION;
 	private int index = 3;
 	private SortedMap<String, Variable> variables;
 	private SetExportSettings settings;
@@ -55,7 +54,7 @@ public class SetFilenameTemplate {
 		variables.put("$FileName", new Variable("The song's original filename") {
 			@Override
 			public String getValue() {
-				return filename.endsWith(AbcSong.ABC_FILE_EXTENSION) ? Util.fileNameWithoutExtension(filename) : filename;
+				return filename.endsWith(Util.ABC_FILE_EXTENSION) ? Util.fileNameWithoutExtension(filename) : filename;
 			}
 		});
 		
@@ -156,7 +155,7 @@ public class SetFilenameTemplate {
 			}
 		}
 
-		name += AbcSong.ABC_FILE_EXTENSION;
+		name += Util.ABC_FILE_EXTENSION;
 
 		return name;
 	}

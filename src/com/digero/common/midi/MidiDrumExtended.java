@@ -1,7 +1,5 @@
 package com.digero.common.midi;
 
-import static java.lang.Integer.parseInt;
-
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;

@@ -92,7 +92,6 @@ import com.digero.common.util.ParseException;
 import com.digero.common.util.Util;
 import com.digero.common.view.AbcPlaylistTreeCellRenderer;
 import com.digero.common.view.HintTextField;
-import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.util.XmlUtil;
 
 import net.miginfocom.swing.MigLayout;
@@ -1587,7 +1586,7 @@ public class AbcPlaylistPanel extends JPanel {
 				try {
 					return Files.walk(directory)
 							.filter(Files::isRegularFile)
-							.filter(path -> path.toString().endsWith(AbcSong.ABC_FILE_EXTENSION) || path.toString().endsWith(AbcSong.TXT_FILE_EXTENSION))
+							.filter(path -> path.toString().endsWith(Util.ABC_FILE_EXTENSION) || path.toString().endsWith(Util.TXT_FILE_EXTENSION))
 							.map(Path::toFile);
 				} catch (IOException e) {
 					e.printStackTrace();

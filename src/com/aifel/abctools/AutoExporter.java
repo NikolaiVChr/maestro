@@ -34,6 +34,7 @@ import com.digero.common.abctomidi.FileAndData;
 import com.digero.common.util.ExtensionFileFilter;
 import com.digero.common.util.LotroParseException;
 import com.digero.common.util.ParseException;
+import com.digero.common.util.Util;
 import com.digero.maestro.MaestroMain;
 import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.abc.ExportFilenameTemplate;
@@ -451,7 +452,7 @@ public class AutoExporter {
 		StringCleaner.cleanABC = main.saveSettings.convertABCStringsToBasicAscii;
 
 		File exportFile = abcSong.getExportFile();
-		String fileName = "mySong"+AbcSong.ABC_FILE_EXTENSION;
+		String fileName = "mySong"+Util.ABC_FILE_EXTENSION;
 
 		// Always regenerate setting from pattern export is highest precedent
 		if (main.exportFilenameTemplate.shouldRegenerateFilename()) {
@@ -476,7 +477,7 @@ public class AutoExporter {
 		else if (dot == 0)
 			fileName = "";
 		fileName = StringCleaner.cleanForFileName(fileName);
-		fileName += AbcSong.ABC_FILE_EXTENSION;
+		fileName += Util.ABC_FILE_EXTENSION;
 		
 		File finalFolder = getTreeFolder(sourceFolderAuto, destFolderAuto, project);
 
@@ -488,7 +489,7 @@ public class AutoExporter {
 		int n = 1;
 		while (exportFile.exists()) {
 			n++;
-			exportFile = new File(exportFile.getParentFile(), finalName + " (" + n + ")"+AbcSong.ABC_FILE_EXTENSION);
+			exportFile = new File(exportFile.getParentFile(), finalName + " (" + n + ")"+Util.ABC_FILE_EXTENSION);
 		}
 		finalFolder.mkdirs();// for recursive exporting we need the folders to exist.
 
@@ -736,9 +737,9 @@ public class AutoExporter {
 					JFileChooser jfc = new JFileChooser();
 					jfc.setDialogTitle("Open missing MIDI/ABC");
 					jfc.setFileFilter(new ExtensionFileFilter("MIDI and ABC files",
-							AbcSong.ABC_FILE_EXTENSION_NO_DOT,AbcSong.TXT_FILE_EXTENSION_NO_DOT,
-							AbcSong.MID_FILE_EXTENSION_NO_DOT,AbcSong.MIDI_FILE_EXTENSION_NO_DOT,
-							AbcSong.KAR_FILE_EXTENSION_NO_DOT));
+							Util.ABC_FILE_EXTENSION_NO_DOT,Util.TXT_FILE_EXTENSION_NO_DOT,
+							Util.MID_FILE_EXTENSION_NO_DOT,Util.MIDI_FILE_EXTENSION_NO_DOT,
+							Util.KAR_FILE_EXTENSION_NO_DOT));
 					if (original != null)
 						jfc.setSelectedFile(original);
 		

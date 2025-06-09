@@ -19,8 +19,8 @@ import java.util.prefs.Preferences;
 import javax.swing.SwingUtilities;
 
 import com.digero.common.util.Themer;
+import com.digero.common.util.Util;
 import com.digero.common.util.Version;
-import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.view.MiscSettings;
 import com.digero.maestro.view.ProjectFrame;
 
@@ -213,12 +213,12 @@ public class MaestroMain {
 					String data = in.readLine();
 
 					if (data != null && data.length() >= 5
-							&& (data.substring(data.length() - 4).equalsIgnoreCase(AbcSong.MID_FILE_EXTENSION)
-									|| data.substring(data.length() - 5).equalsIgnoreCase(AbcSong.MIDI_FILE_EXTENSION)
-									|| data.substring(data.length() - 4).equalsIgnoreCase(AbcSong.ABC_FILE_EXTENSION)
-									|| data.substring(data.length() - 4).equalsIgnoreCase(AbcSong.TXT_FILE_EXTENSION)
-									|| data.substring(data.length() - 4).equalsIgnoreCase(AbcSong.MSX_FILE_EXTENSION)
-									|| data.substring(data.length() - 4).equalsIgnoreCase(AbcSong.KAR_FILE_EXTENSION))) {
+							&& (data.substring(data.length() - 4).equalsIgnoreCase(Util.MID_FILE_EXTENSION)
+									|| data.substring(data.length() - 5).equalsIgnoreCase(Util.MIDI_FILE_EXTENSION)
+									|| data.substring(data.length() - 4).equalsIgnoreCase(Util.ABC_FILE_EXTENSION)
+									|| data.substring(data.length() - 4).equalsIgnoreCase(Util.TXT_FILE_EXTENSION)
+									|| data.substring(data.length() - 4).equalsIgnoreCase(Util.MSX_FILE_EXTENSION)
+									|| data.substring(data.length() - 4).equalsIgnoreCase(Util.KAR_FILE_EXTENSION))) {
 						// System.out.println("Received "+data);
 						String[] datas = { data };
 						activate(datas);

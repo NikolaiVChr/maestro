@@ -32,7 +32,6 @@ import javax.swing.border.Border;
 
 import com.digero.abcplayer.AbcPlayer;
 import com.digero.common.util.Util;
-import com.digero.maestro.abc.AbcSong;
 
 @SuppressWarnings("serial")
 public class ExportMp3Dialog extends JDialog implements TableLayoutConstants {
@@ -75,7 +74,7 @@ public class ExportMp3Dialog extends JDialog implements TableLayoutConstants {
 
 		String saveDir = prefs.get("saveDirectory", abcFile.getParentFile().getAbsolutePath());
 		String saveName = abcFile.getName();
-		if (saveName.toLowerCase().endsWith(AbcSong.ABC_FILE_EXTENSION)) {
+		if (saveName.toLowerCase().endsWith(Util.ABC_FILE_EXTENSION)) {
 			saveName = saveName.substring(0, saveName.length() - 4) + ".mp3";
 		}
 		File saveFile = new File(saveDir, saveName);

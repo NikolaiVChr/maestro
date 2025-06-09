@@ -31,11 +31,11 @@ import com.digero.common.midi.MidiUtils;
 import com.digero.common.midi.TimeSignature;
 import com.digero.common.util.Pair;
 import com.digero.common.util.ParseException;
+import com.digero.common.util.Util;
 import com.digero.maestro.abc.AbcConversionException;
 import com.digero.maestro.abc.AbcExporter;
 import com.digero.maestro.abc.AbcExporter.ExportTrackInfo;
 import com.digero.maestro.abc.AbcMetadataSource;
-import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.view.MiscSettings;
 
 /**
@@ -187,7 +187,7 @@ public class SequenceInfo implements MidiConstants {
 	private SequenceInfo(AbcExporter abcExporter, boolean useLotroInstruments)
 			throws InvalidMidiDataException, AbcConversionException {
 		AbcMetadataSource metadata = abcExporter.getMetadataSource();
-		this.fileName = metadata.getSongTitle() + AbcSong.ABC_FILE_EXTENSION;
+		this.fileName = metadata.getSongTitle() + Util.ABC_FILE_EXTENSION;
 		this.composer = metadata.getComposer();
 		this.title = metadata.getSongTitle();
 
@@ -321,7 +321,7 @@ public class SequenceInfo implements MidiConstants {
 	 */
 	private void determineStandard(Sequence seq, String fileName) {
 
-		if (fileName.toLowerCase().endsWith(AbcSong.ABC_FILE_EXTENSION) || fileName.toLowerCase().endsWith(AbcSong.TXT_FILE_EXTENSION)) {
+		if (fileName.toLowerCase().endsWith(Util.ABC_FILE_EXTENSION) || fileName.toLowerCase().endsWith(Util.TXT_FILE_EXTENSION)) {
 			standard = MidiStandard.ABC;
 			return;
 		}
