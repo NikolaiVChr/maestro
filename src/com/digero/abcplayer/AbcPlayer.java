@@ -105,6 +105,7 @@ import com.digero.common.view.NativeVolumeBar;
 import com.digero.common.view.SongPositionBar;
 import com.digero.common.view.SongPositionLabel;
 import com.digero.common.view.TempoBar;
+import com.digero.maestro.abc.AbcSong;
 
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
@@ -112,7 +113,7 @@ import net.miginfocom.swing.MigLayout;
 
 @SuppressWarnings("serial")
 public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConstants, TrackListPanelCallback {
-	private static final ExtensionFileFilter ABC_FILE_FILTER = new ExtensionFileFilter("ABC Files and Playlists", "abc", "txt", "abcp");
+	private static final ExtensionFileFilter ABC_FILE_FILTER = new ExtensionFileFilter("ABC Files and Playlists", AbcSong.ABC_FILE_EXTENSION_NO_DOT, AbcSong.TXT_FILE_EXTENSION_NO_DOT, AbcSong.ABCP_FILE_EXTENSION_NO_DOT);
 	public static final String APP_NAME = "ABC Player";
 	private static final String APP_NAME_LONG = APP_NAME + " for The Lord of the Rings Online";
 	private static final String APP_URL = "https://github.com/digero/maestro/";
@@ -285,7 +286,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			// Ignore
 		}
 
-		dropListener = new FileFilterDropListener(true, "abc", "txt", "abcp");
+		dropListener = new FileFilterDropListener(true, AbcSong.ABC_FILE_EXTENSION_NO_DOT, AbcSong.TXT_FILE_EXTENSION_NO_DOT, AbcSong.ABCP_FILE_EXTENSION_NO_DOT);
 		dropListener.addActionListener(e -> {
 			FileFilterDropListener l = (FileFilterDropListener) e.getSource();
 			boolean append = (l.getDropEvent().getDropAction() == DnDConstants.ACTION_COPY);
@@ -1165,8 +1166,8 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 
 			String fileName = saveFileDialog.getSelectedFile().getName();
 			int dot = fileName.lastIndexOf('.');
-			if (dot <= 0 || !fileName.substring(dot).equalsIgnoreCase(".abc"))
-				fileName += ".abc";
+			if (dot <= 0 || !fileName.substring(dot).equalsIgnoreCase(AbcSong.ABC_FILE_EXTENSION))
+				fileName += AbcSong.ABC_FILE_EXTENSION;
 
 			File saveFileTmp = new File(saveFileDialog.getSelectedFile().getParent(), fileName);
 			if (saveFileTmp.exists()) {
@@ -1594,7 +1595,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 					String data = in.readLine();
 
 					if (data != null && data.length() >= 4
-							&& (data.substring(data.length() - 4).equalsIgnoreCase(".abc") || data.substring(data.length() - 5).equalsIgnoreCase(".abcp"))) {// &&
+							&& (data.substring(data.length() - 4).equalsIgnoreCase(AbcSong.ABC_FILE_EXTENSION) || data.substring(data.length() - 5).equalsIgnoreCase(AbcSong.ABCP_FILE_EXTENSION))) {// &&
 																							// !data.substring(0,3).equalsIgnoreCase("GET")
 																							// &&
 						// System.out.println("Receiving file path ("+data.length()+" chars) from port

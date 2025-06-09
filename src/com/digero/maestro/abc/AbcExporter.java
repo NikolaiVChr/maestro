@@ -938,10 +938,11 @@ public class AbcExporter {
 	private void exportPartHeaderToAbc(AbcPart part, PrintStream out) {
 		out.println();
 		out.println("X: " + part.getPartNumber());
-		if (metadata != null)
+		if (metadata != null) {
 			out.println("T: " + StringCleaner.cleanForABC(metadata.getPartName(part)));
-		else
-			out.println("T: " + part.getTitle().trim());
+		} else {
+			out.println("T: " + StringCleaner.cleanForABC(part.getTitle()));
+		}
 
 		out.println(AbcField.PART_NAME + StringCleaner.cleanForABC(part.getTitle()));
 

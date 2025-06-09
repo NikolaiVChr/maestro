@@ -42,6 +42,7 @@ import javax.swing.event.DocumentListener;
 
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.abc.LotroInstrumentNick;
+import com.digero.common.abc.StringCleaner;
 import com.digero.common.midi.NoteFilterSequencerWrapper;
 import com.digero.common.util.ExtensionFileFilter;
 import com.digero.common.util.Themer;
@@ -586,13 +587,14 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		MockMetadataSource mockMetadata = new MockMetadataSource(originalMetadataSource);
 		nameTemplate.setMetadataSource(mockMetadata);
 		nameTemplate.setCurrentAbcPart(mockMetadata);
+		StringCleaner.cleanABC = saveSettings.convertABCStringsToBasicAscii;
 		for (Entry<String, PartNameTemplate.Variable> entry : nameTemplate.getVariables().entrySet()) {
 			String tooltipText = "<html><b>" + entry.getKey() + "</b><br>"
 					+ entry.getValue().getDescription().replace("\n", "<br>") + "</html>";
 
 			JLabel keyLabel = new JLabel(entry.getKey());
 			keyLabel.setToolTipText(tooltipText);
-			JLabel descriptionLabel = new JLabel(entry.getValue().getValue());
+			JLabel descriptionLabel = new JLabel(StringCleaner.cleanForABC(entry.getValue().getValue()));
 			descriptionLabel.setToolTipText(tooltipText);
 
 			layout.insertRow(++row, PREFERRED);
@@ -611,6 +613,8 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		nameTemplate.setMetadataSource(mockMetadata);
 
 		String exampleText = nameTemplate.formatName(nameTemplateSettings.getPartNamePattern(), mockMetadata, nameTemplateSettings.getWhitespaceReplaceText());
+		StringCleaner.cleanABC = saveSettings.convertABCStringsToBasicAscii;
+		exampleText = StringCleaner.cleanForABC(exampleText);
 		String exampleTextEllipsis = Util.ellipsis(exampleText, nameTemplateExampleLabel.getWidth(),
 				nameTemplateExampleLabel.getFont());
 
@@ -702,7 +706,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 			alwaysRegenerateCheckBox.setEnabled(selected);
 		});
 
-		exportTemplateExampleLabel = new JLabel(".abc");
+		exportTemplateExampleLabel = new JLabel(AbcSong.ABC_FILE_EXTENSION);
 		JPanel examplePanel = new JPanel(new BorderLayout());
 		examplePanel.setBorder(BorderFactory.createEmptyBorder(0, 3, 0, 0));
 		examplePanel.add(exportTemplateExampleLabel, BorderLayout.CENTER);
@@ -760,7 +764,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 
 			JLabel keyLabel = new JLabel(entry.getKey());
 			keyLabel.setToolTipText(tooltipText);
-			JLabel descriptionLabel = new JLabel(entry.getValue().getValue());
+			JLabel descriptionLabel = new JLabel(StringCleaner.cleanForFileName(entry.getValue().getValue()));
 			descriptionLabel.setToolTipText(tooltipText);
 
 			layout.insertRow(++row, PREFERRED);
@@ -777,7 +781,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		MockMetadataSource mockMetadata = new MockMetadataSource(originalMetadataSource);
 		exportTemplate.setMetadataSource(mockMetadata);
 
-		String exampleText = exportTemplate.formatName(exportTemplateSettings);
+		String exampleText = StringCleaner.cleanForFileName(Util.fileNameWithoutExtension(exportTemplate.formatName(exportTemplateSettings)))+AbcSong.ABC_FILE_EXTENSION;
 		exampleText = "Example filename:  " + exampleText;
 		String exampleTextEllipsis = Util.ellipsis(exampleText, exportTemplateExampleLabel.getWidth(),
 				exportTemplateExampleLabel.getFont());
@@ -1289,7 +1293,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 					return saveFile;
 			}
 
-			return new File(Util.getLotroMusicPath(true), "band/examplesong.abc");
+			return new File(Util.getLotroMusicPath(true), "band/examplesong"+AbcSong.ABC_FILE_EXTENSION);
 		}
 
 		@Override
@@ -1299,12 +1303,12 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 
 		@Override
 		public String getGenre() {
-			return "folk";
+			return "folk,rock";
 		}
 
 		@Override
 		public String getMood() {
-			return "sad";
+			return "sad,groovy";
 		}
 
 		@Override
@@ -1314,6 +1318,10 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 
 		@Override
 		public int getActivePartCount() {
+			if (originalSource != null && originalSource.getActivePartCount() > 0 && originalSource.getActivePartCount() < 10) {
+				// Less than 10 only, so users can see effect of zero-padding
+				return originalSource.getActivePartCount();
+			}
 			return 5;
 		}
 
@@ -1324,7 +1332,9 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 
 		@Override
 		public String getSourceFilename() {
-			return "Example Midi.mid";
+			if (originalSource != null && !Util.emptyIfNull(originalSource.getSourceFilename()).isEmpty() && !AbcSong.errorString.equals(originalSource.getSourceFilename()))
+				return originalSource.getSourceFilename();
+			return "Example Midi"+AbcSong.MID_FILE_EXTENSION;
 		}
 	}
 }

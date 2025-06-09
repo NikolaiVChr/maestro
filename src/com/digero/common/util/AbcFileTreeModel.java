@@ -10,6 +10,8 @@ import javax.swing.event.TreeModelListener;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
 
+import com.digero.maestro.abc.AbcSong;
+
 // Implements a file tree for JTree, but the nodes directly
 // under the dummy root node are a list of directories.
 // Used for abcplayer playlist
@@ -33,7 +35,8 @@ public class AbcFileTreeModel implements TreeModel {
 
 	private ArrayList<TreeModelListener> listeners = new ArrayList<TreeModelListener>();
 	private AbcSongFileNode rootNode;
-	private static ExtensionFileFilter abcFilter = new ExtensionFileFilter("ABC Files and Playlists", "abc", "txt", "abcp"); 
+	private static ExtensionFileFilter abcFilter = new ExtensionFileFilter("ABC Files and Playlists",
+			AbcSong.ABC_FILE_EXTENSION_NO_DOT, AbcSong.TXT_FILE_EXTENSION_NO_DOT, AbcSong.ABCP_FILE_EXTENSION_NO_DOT); 
 	
 	public AbcFileTreeModel(List<File> directories) {
 		this.rootNode = new AbcSongFileNode(new File("a_d7mmy_file-name_thatwillnever-9eused"));

@@ -42,6 +42,7 @@ import org.apache.commons.csv.CSVPrinter;
 import com.digero.abcplayer.SetFilenameTemplate;
 import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.util.Util;
+import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.abc.ExportFilenameTemplate;
 
 import net.miginfocom.swing.MigLayout;
@@ -420,7 +421,7 @@ public class PlaylistSetExportWizard extends JDialog {
 			}
 		});
 		
-		exampleAbcFileLabel = new JLabel(".abc");
+		exampleAbcFileLabel = new JLabel(AbcSong.ABC_FILE_EXTENSION);
 		
 		JLabel nameLabel = new JLabel("<html><u><b>Variable Name</b></u></html");
 		JLabel exampleLabel = new JLabel("<html><u><b>Example</b></u></html>");

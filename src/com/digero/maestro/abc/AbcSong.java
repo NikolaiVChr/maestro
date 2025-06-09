@@ -64,7 +64,20 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public static final String MSX_FILE_DESCRIPTION = MaestroMain.APP_NAME + " Project";
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = MaestroMain.APP_NAME + " Projects";
 	public static final String MSX_FILE_EXTENSION_NO_DOT = "msx";
+	public static final String ABC_FILE_EXTENSION_NO_DOT = "abc";
+	public static final String ABCP_FILE_EXTENSION_NO_DOT = "abcp";
+	public static final String TXT_FILE_EXTENSION_NO_DOT = "txt";
+	public static final String MID_FILE_EXTENSION_NO_DOT = "mid";
+	public static final String MIDI_FILE_EXTENSION_NO_DOT = "midi";
+	public static final String KAR_FILE_EXTENSION_NO_DOT = "kar";
 	public static final String MSX_FILE_EXTENSION = "." + MSX_FILE_EXTENSION_NO_DOT;
+	public static final String ABC_FILE_EXTENSION = "." + ABC_FILE_EXTENSION_NO_DOT;
+	public static final String ABCP_FILE_EXTENSION = "." + ABCP_FILE_EXTENSION_NO_DOT;
+	public static final String TXT_FILE_EXTENSION = "." + TXT_FILE_EXTENSION_NO_DOT;
+	public static final String MID_FILE_EXTENSION = "." + MID_FILE_EXTENSION_NO_DOT;
+	public static final String MIDI_FILE_EXTENSION = "." + MIDI_FILE_EXTENSION_NO_DOT;
+	public static final String KAR_FILE_EXTENSION = "." + KAR_FILE_EXTENSION_NO_DOT;
+	
 	public static final Version SONG_FILE_VERSION = new Version(4, 2, 3, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
@@ -109,6 +122,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private AbcExporter abcExporter;
 	private File sourceFile; // The MIDI or ABC file that this song was loaded from
 	private File newSourceFile = null;
+	public static String errorString = "ERROR";
 	private File exportFile; // The ABC export file
 	private File projectFile; // The XML Maestro song file
 	private boolean usingOldVelocities = false;
@@ -159,7 +173,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 		String fileName = file.getName().toLowerCase();
 		fromXmlFile = fileName.endsWith(MSX_FILE_EXTENSION);
-		fromAbcFile = fileName.endsWith(".abc") || fileName.endsWith(".txt");
+		fromAbcFile = fileName.endsWith(ABC_FILE_EXTENSION) || fileName.endsWith(TXT_FILE_EXTENSION);
 
 		if (fromXmlFile)
 			initFromXml(file, fileResolver, miscSettings);
@@ -364,7 +378,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 			sequenceInfo = null;
 			String name = sourceFile.getName().toLowerCase();
-			boolean isAbc = name.endsWith(".abc") || name.endsWith(".txt");
+			boolean isAbc = name.endsWith(ABC_FILE_EXTENSION) || name.endsWith(TXT_FILE_EXTENSION);
 			while (sequenceInfo == null) {
 				tryToLoadFromFile(fileResolver, isAbc, miscSettings);
 
@@ -1034,7 +1048,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 	@Override
 	public String getSourceFilename() {
-		String ret = "ERROR";
+		String ret = errorString;
 		if (sourceFile != null) {
 			ret = sourceFile.getName();
 		}

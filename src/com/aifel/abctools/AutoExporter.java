@@ -451,7 +451,7 @@ public class AutoExporter {
 		StringCleaner.cleanABC = main.saveSettings.convertABCStringsToBasicAscii;
 
 		File exportFile = abcSong.getExportFile();
-		String fileName = "mySong.abc";
+		String fileName = "mySong"+AbcSong.ABC_FILE_EXTENSION;
 
 		// Always regenerate setting from pattern export is highest precedent
 		if (main.exportFilenameTemplate.shouldRegenerateFilename()) {
@@ -476,7 +476,7 @@ public class AutoExporter {
 		else if (dot == 0)
 			fileName = "";
 		fileName = StringCleaner.cleanForFileName(fileName);
-		fileName += ".abc";
+		fileName += AbcSong.ABC_FILE_EXTENSION;
 		
 		File finalFolder = getTreeFolder(sourceFolderAuto, destFolderAuto, project);
 
@@ -488,7 +488,7 @@ public class AutoExporter {
 		int n = 1;
 		while (exportFile.exists()) {
 			n++;
-			exportFile = new File(exportFile.getParentFile(), finalName + " (" + n + ").abc");
+			exportFile = new File(exportFile.getParentFile(), finalName + " (" + n + ")"+AbcSong.ABC_FILE_EXTENSION);
 		}
 		finalFolder.mkdirs();// for recursive exporting we need the folders to exist.
 
@@ -735,8 +735,10 @@ public class AutoExporter {
 				if (result == JOptionPane.YES_OPTION) {
 					JFileChooser jfc = new JFileChooser();
 					jfc.setDialogTitle("Open missing MIDI/ABC");
-					jfc.setFileFilter(new ExtensionFileFilter("MIDI and ABC files", "mid",
-							"midi", "kar", "abc", "txt"));
+					jfc.setFileFilter(new ExtensionFileFilter("MIDI and ABC files",
+							AbcSong.ABC_FILE_EXTENSION_NO_DOT,AbcSong.TXT_FILE_EXTENSION_NO_DOT,
+							AbcSong.MID_FILE_EXTENSION_NO_DOT,AbcSong.MIDI_FILE_EXTENSION_NO_DOT,
+							AbcSong.KAR_FILE_EXTENSION_NO_DOT));
 					if (original != null)
 						jfc.setSelectedFile(original);
 		
