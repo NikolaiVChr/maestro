@@ -26,6 +26,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.UnsupportedLookAndFeelException;
 import javax.swing.filechooser.FileSystemView;
@@ -33,6 +34,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.Border;
 
 import com.digero.common.abc.LotroInstrument;
+import com.digero.common.util.Themer;
 import com.digero.common.util.Util;
 import com.digero.maestro.MaestroMain;
 import com.digero.maestro.abc.ExportFilenameTemplate;
@@ -77,13 +79,23 @@ public class AbcTools {
 	public static void main(String[] args) {
 		
 		try {
-			EventQueue.invokeAndWait(() -> {
+			SwingUtilities.invokeAndWait(() -> {
+				try {
+					MiscSettings misc = new MiscSettings(Preferences.userNodeForPackage(MaestroMain.class).node("miscSettings"), true);
+					Themer.setLookAndFeel(misc.theme, misc.fontSize);
+				} catch (Exception e) {
+					// Reset theme to default if an error occurred setting look and feel
+					//Preferences preferences = Preferences.userNodeForPackage(MaestroMain.class);
+					//preferences.node("saveAndExportSettings").put("theme", "Default");
+				}
+				/*
 				try {
 					UIManager.setLookAndFeel("com.sun.java.swing.plaf.windows.WindowsLookAndFeel");
 				} catch (ClassNotFoundException | InstantiationException | IllegalAccessException
 						| UnsupportedLookAndFeelException e) {
 					e.printStackTrace();
 				}
+				*/
 				try {
 					frame = new MultiMergerView();
 					frame.setVisible(true);
