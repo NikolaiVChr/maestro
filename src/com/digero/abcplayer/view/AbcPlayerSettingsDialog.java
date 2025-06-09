@@ -84,7 +84,7 @@ public class AbcPlayerSettingsDialog extends JDialog implements TableLayoutConst
 		final JLabel themeLabel = new JLabel("Theme (Requires restart):");
 		
 		themeBox.setToolTipText(
-				"<html>Select the theme for Maestro. Must restart Maestro for it to take effect.</html>");
+				"<html>Select the theme for ABC Player. Must restart ABC Player for it to take effect.</html>");
 		for (String theme : Themer.themes) {
 			themeBox.addItem(theme);
 		}
@@ -94,7 +94,7 @@ public class AbcPlayerSettingsDialog extends JDialog implements TableLayoutConst
 		final JLabel fontSizeLabel = new JLabel("Font size (requires restart)");
 		
 		fontBox.setToolTipText(
-				"<html>Select a font size. Must restart Maestro for it to take effect.</html>");
+				"<html>Select a font size. Must restart ABC Player for it to take effect.</html>");
 		fontBox.setEditable(false);
 		for (int i : Themer.fontSizes) {
 			fontBox.addItem(Integer.toString(i));
