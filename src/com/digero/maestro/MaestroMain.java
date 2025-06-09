@@ -2,6 +2,7 @@ package com.digero.maestro;
 
 import static java.awt.Frame.ICONIFIED;
 
+import java.awt.EventQueue;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -103,15 +104,17 @@ public class MaestroMain {
 		}
 
 		System.setProperty("sun.sound.useNewAudioEngine", "true");
-
-		try {
-			MiscSettings misc = new MiscSettings(Preferences.userNodeForPackage(MaestroMain.class).node("miscSettings"), true);
-			Themer.setLookAndFeel(misc.theme, misc.fontSize);
-		} catch (Exception e) {
-			// Reset theme to default if an error occurred setting look and feel
-			Preferences preferences = Preferences.userNodeForPackage(MaestroMain.class);
-			preferences.node("saveAndExportSettings").put("theme", "Default");
-		}
+		
+		SwingUtilities.invokeAndWait(() -> {
+			try {
+				MiscSettings misc = new MiscSettings(Preferences.userNodeForPackage(MaestroMain.class).node("miscSettings"), true);
+				Themer.setLookAndFeel(misc.theme, misc.fontSize);
+			} catch (Exception e) {
+				// Reset theme to default if an error occurred setting look and feel
+				Preferences preferences = Preferences.userNodeForPackage(MaestroMain.class);
+				preferences.node("saveAndExportSettings").put("theme", "Default");
+			}
+		});
 		
 		mainWindow = new ProjectFrame();
 

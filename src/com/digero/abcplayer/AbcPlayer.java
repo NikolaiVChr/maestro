@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
+import java.lang.reflect.InvocationTargetException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -145,17 +146,30 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		}
 
 		System.setProperty("sun.sound.useNewAudioEngine", "true");
-
+		
 		try {
-			Preferences prefs = Preferences.userNodeForPackage(AbcPlayer.class).node("miscSettings");
-			Themer.setLookAndFeel(prefs.get("theme", Themer.FLAT_LIGHT_THEME), prefs.getInt("fontSize", Themer.DEFAULT_FONT_SIZE));
-		} catch (Exception e) {
-		}
+			SwingUtilities.invokeAndWait(() -> {
+				try {
+					Preferences prefs = Preferences.userNodeForPackage(AbcPlayer.class).node("miscSettings");
+					Themer.setLookAndFeel(prefs.get("theme", Themer.FLAT_LIGHT_THEME), prefs.getInt("fontSize", Themer.DEFAULT_FONT_SIZE));
+				} catch (Exception e) {
+				}
+			});
 
-		mainWindow = new AbcPlayer();
-//		mainWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		mainWindow.setVisible(true);
-		mainWindow.openSongFromCommandLine(args);
+			mainWindow = new AbcPlayer();
+			//mainWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		
+			SwingUtilities.invokeAndWait(() -> {
+				try {
+					mainWindow.setVisible(true);
+					mainWindow.openSongFromCommandLine(args);
+				} catch (Exception e) {
+				}
+			});
+		} catch (InvocationTargetException | InterruptedException e) {
+			e.printStackTrace();
+		}		
+		
 		try {
 			ready();
 		} catch (UnsatisfiedLinkError err) {
