@@ -771,7 +771,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				+ Chord.CalcDynamics.LOUDEST+": Volume of the loudest note.\n"
 				+ Chord.CalcDynamics.POWER_RMS_DB+": decibel mean.\n"
 				+ Chord.CalcDynamics.POWER_MID_DB+": A bit softer than RMS.\n"
-				+ Chord.CalcDynamics.WEIGHTED+": Generally the softest.");
+				+ Chord.CalcDynamics.WEIGHTED+": Generally softer than "+Chord.CalcDynamics.POWER_MID_DB+".\n"
+				+ Chord.CalcDynamics.SOFTEST+": Volume of the softest note.");
 		
 		exportSuccessfulLabel = new JLabel("Exported");
 		exportSuccessfulLabel.setIcon(IconLoader.getImageIcon("check_16.png"));

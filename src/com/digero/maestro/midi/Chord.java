@@ -115,6 +115,8 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 				return calcDynamicsDbBlending(1.5d);
 			case WEIGHTED:
 				return calcDynamicsWeightBlending();
+			case SOFTEST:
+				return calcDynamicsSoftest();
 		}
 		return calcDynamicsLoudest();
 	}
@@ -127,6 +129,19 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		}
 
 		if (velocity == Integer.MIN_VALUE)
+			return null;
+
+		return Dynamics.fromMidiVelocity(velocity);
+	}
+	
+	public Dynamics calcDynamicsSoftest() {
+		int velocity = Integer.MAX_VALUE;
+		for (AbcNoteEvent ne : notes) {
+			if (ne.note != Note.REST && ne.tiesFrom == null && ne.velocity < velocity)
+				velocity = ne.velocity;
+		}
+
+		if (velocity == Integer.MAX_VALUE)
 			return null;
 
 		return Dynamics.fromMidiVelocity(velocity);
@@ -740,7 +755,8 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		LOUDEST("Loudest"),
 		POWER_RMS_DB("Power RMS dB"),
 		POWER_MID_DB("Power mid dB"),
-		WEIGHTED("Weighted");
+		WEIGHTED("Weighted"),
+		SOFTEST("Softest");
 		
 		private final String label;
 		
