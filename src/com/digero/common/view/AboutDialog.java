@@ -58,8 +58,8 @@ public final class AboutDialog {
 				}
 			}
 		});
-
-		JLabel javaMessage = new JLabel("Java version " + System.getProperty("java.version"));
+		
+		JLabel javaMessage = new JLabel(System.getProperty("java.vendor")+" Java v" + System.getProperty("java.version"));
 
 		JPanel aboutPanel = new JPanel(new BorderLayout(0, 8));
 		aboutPanel.add(aboutMessage, BorderLayout.CENTER);
