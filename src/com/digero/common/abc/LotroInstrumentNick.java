@@ -32,14 +32,14 @@ public class LotroInstrumentNick {
 	static String[] PIPES = { "Bagpipe", "Pipes", "Dudelsack", "Sack", "Cornemuse" };
 	static String[] BAS_B = { "StFagott", "BassonBase", "BscBassoon" };
 	static String[] BRU_B = { "Schroffes", "Brusque" };
-	static String[] LMB = { "LonelyBassoon", "LM Bassoon", "FagottEB", "BassonMS", "LMB" };
+	static String[] LMB = { "LonelyBassoon", "LMBassoon", "FagottEB", "BassonMS", "LMB" };
 	static String[] CLA = { "Clarinet", "Clari", "Klarinette", "Clarinette" };
 	static String[] FLUT = { "Flute", "Floete", "Flut" };
 	static String[] HORN = { "Horn", "Cor" };
 	static String[] PIB = { "Pibgorn", "Pib" };
 	static String[] COWB = { "Cowbell", "Glocke", "Cloche", "Kuhglocke" };
 	static String[] MOOR = { "Moor", "MoorBell" };
-	static String[] DRUM = { "Drums", "Trommel", "Tambour" };
+	static String[] DRUM = { "Drum", "Trommel", "Tambour" };
 
 	public static List<String> getNicks(LotroInstrument instr) {
 		String[] nicks = {};
