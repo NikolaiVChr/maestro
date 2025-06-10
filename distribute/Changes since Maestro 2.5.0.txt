@@ -43,7 +43,9 @@ Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 Version 4.2.12
 - Settings template examples now more accurate reflect final results.
 - Add option for softest note to chord volume choices.
-- ABC Tools now uses Maestro's setting for light or dark theme. 
+- ABC Tools now uses Maestro's setting for light or dark theme.
+- About window now show Java vendor.
+- In Abc Tools Auto-exporter, disable force mix/multistage check-boxes, depending on if force organic is enabled.
 
 Version 4.2.11
 - Some code improvement to organic single-stage.

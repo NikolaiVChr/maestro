@@ -116,13 +116,16 @@ public class AutoExporter {
 		if (!destFolderAuto.exists())
 			destFolderAuto = new File(myHome);
 		
-		frame.getBtnStartExport().addActionListener(getStartExportActionListener());
-		frame.getBtnCancelExport().addActionListener(getCancelExportActionListener());
-		frame.getBtnDestAuto().addActionListener(getDestAutoActionListener());
-		frame.getBtnMIDI().addActionListener(getMIDIAutoActionListener());
-		frame.getBtnSourceAuto().addActionListener(getSourceAutoActionListener());
-		
-		refreshAuto();
+		SwingUtilities.invokeLater(() -> {
+			frame.getBtnStartExport().addActionListener(getStartExportActionListener());
+			frame.getBtnCancelExport().addActionListener(getCancelExportActionListener());
+			frame.getBtnDestAuto().addActionListener(getDestAutoActionListener());
+			frame.getBtnMIDI().addActionListener(getMIDIAutoActionListener());
+			frame.getBtnSourceAuto().addActionListener(getSourceAutoActionListener());
+			frame.addForceOrganicActionListener(getOrganicActionListener());
+			
+			refreshAuto();
+		});		
 	}
 	
 	private ActionListener getStartExportActionListener() {
@@ -137,9 +140,9 @@ public class AutoExporter {
 					SwingUtilities.invokeLater(() -> {
 						frame.getBtnStartExport().setEnabled(true);
 						frame.getBtnCancelExport().setEnabled(false);
-						frame.setForceMixTimingEnabled(true);
+						frame.setForceMixTimingEnabled(!frame.getForceOrganicSelected());
 						frame.setForceOrganicEnabled(true);
-						frame.setForceOrganic2Enabled(true);
+						frame.setForceOrganic2Enabled(frame.getForceOrganicSelected());
 						frame.setBtnDestAutoEnabled(true);
 						frame.setBtnMIDIEnabled(true);
 						frame.setBtnSourceAutoEnabled(true);
@@ -195,9 +198,9 @@ public class AutoExporter {
 			SwingUtilities.invokeLater(() -> {
 				frame.getBtnStartExport().setEnabled(true);
 				frame.getBtnCancelExport().setEnabled(false);
-				frame.setForceMixTimingEnabled(true);
+				frame.setForceMixTimingEnabled(!frame.getForceOrganicSelected());
 				frame.setForceOrganicEnabled(true);
-				frame.setForceOrganic2Enabled(true);
+				frame.setForceOrganic2Enabled(frame.getForceOrganicSelected());
 				frame.setBtnDestAutoEnabled(true);
 				frame.setBtnMIDIEnabled(true);
 				frame.setBtnSourceAutoEnabled(true);
@@ -261,9 +264,9 @@ public class AutoExporter {
 		SwingUtilities.invokeLater(() -> {
 			frame.getBtnStartExport().setEnabled(true);
 			frame.getBtnCancelExport().setEnabled(false);
-			frame.setForceMixTimingEnabled(true);
+			frame.setForceMixTimingEnabled(!frame.getForceOrganicSelected());
 			frame.setForceOrganicEnabled(true);
-			frame.setForceOrganic2Enabled(true);
+			frame.setForceOrganic2Enabled(frame.getForceOrganicSelected());
 			frame.setBtnDestAutoEnabled(true);
 			frame.setBtnMIDIEnabled(true);
 			frame.setBtnSourceAutoEnabled(true);
@@ -432,7 +435,7 @@ public class AutoExporter {
 		boolean oldMix = abcSong.isMixTiming();
 		boolean oldOrganic = abcSong.isOrganic();
 		boolean oldOrganic2 = abcSong.isOrganic2();
-		if (frame.getForceMixTimingSelected()) {
+		if (frame.getForceMixTimingSelected() && !frame.getForceOrganicSelected()) {
 			if (!oldMix) timingModified = frame.getSaveMSXtimingSelected(); 
 			abcSong.setMixTiming(true);
 		}
@@ -440,7 +443,7 @@ public class AutoExporter {
 			if (!oldOrganic) timingModified = frame.getSaveMSXtimingSelected();
 			abcSong.setOrganic(true);
 		}
-		if (frame.getForceOrganic2Selected()) {
+		if (frame.getForceOrganic2Selected() && frame.getForceOrganicSelected()) {
 			if (!oldOrganic2) timingModified = frame.getSaveMSXtimingSelected();
 			abcSong.setOrganic2(true);
 		}
@@ -645,6 +648,17 @@ public class AutoExporter {
 					refreshAuto();
 				}
 			}
+		};
+	}
+	
+	private ActionListener getOrganicActionListener() {
+		return new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				if (!frame.getForceOrganicEnabled()) return;
+				frame.setForceMixTimingEnabled(!frame.getForceOrganicSelected());
+				frame.setForceOrganic2Enabled(frame.getForceOrganicSelected());
+			}			
 		};
 	}
 

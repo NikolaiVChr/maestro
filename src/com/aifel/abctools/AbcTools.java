@@ -124,32 +124,35 @@ public class AbcTools {
 			destFolder = new File(myHome);
 		
 
-		frame.addWindowListener(new WindowAdapter() {
-			@Override
-			public void windowClosing(WindowEvent e) {
-				writePrefs();
-			}
+		new MaestroMain();//used for version number
+		
+		SwingUtilities.invokeLater(() -> {
+			frame.addWindowListener(new WindowAdapter() {
+				@Override
+				public void windowClosing(WindowEvent e) {
+					writePrefs();
+				}
+			});
+			
+			// Setup Maestro version number:	
+			frame.setTitle("ABC Tools v"+MaestroMain.APP_VERSION.toString());
+	
+			// Setup action listeners
+			frame.getBtnDest().addActionListener(actionDest);
+			frame.getBtnSource().addActionListener(actionSource);
+			frame.getBtnJoin().addActionListener(actionJoin);
+			frame.getBtnTest().addActionListener(actionTest);
+			frame.getScrollPane().getVerticalScrollBar().setUnitIncrement(22);
+			
+	
+			
+			/*
+			 * try { List<Image> icons = new ArrayList<>(); icons.add(ImageIO.read(new
+			 * FileInputStream("abcmergetool.ico"))); frame.setIconImages(icons); } catch (Exception ex) { // Ignore
+			 * ex.printStackTrace(); }
+			 */
+			refreshMerge();
 		});
-
-		// Setup Maestro version number:
-		new MaestroMain();
-		frame.setTitle("ABC Tools v"+MaestroMain.APP_VERSION.toString());
-
-		// Setup action listeners
-		frame.getBtnDest().addActionListener(actionDest);
-		frame.getBtnSource().addActionListener(actionSource);
-		frame.getBtnJoin().addActionListener(actionJoin);
-		frame.getBtnTest().addActionListener(actionTest);
-		frame.getScrollPane().getVerticalScrollBar().setUnitIncrement(22);
-		
-
-		
-		/*
-		 * try { List<Image> icons = new ArrayList<>(); icons.add(ImageIO.read(new
-		 * FileInputStream("abcmergetool.ico"))); frame.setIconImages(icons); } catch (Exception ex) { // Ignore
-		 * ex.printStackTrace(); }
-		 */
-		refreshMerge();
 		autoInstance = new AutoExporter(frame, myHome, this, autoPrefs);
 	}
 

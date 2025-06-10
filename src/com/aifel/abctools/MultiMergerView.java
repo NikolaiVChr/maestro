@@ -13,6 +13,8 @@ import javax.swing.JCheckBox;
 import javax.swing.JEditorPane;
 import javax.swing.JTextArea;
 import java.awt.Dimension;
+import java.awt.event.ActionListener;
+
 import javax.swing.BoxLayout;
 import java.awt.Component;
 import javax.swing.JSeparator;
@@ -534,5 +536,8 @@ public class MultiMergerView extends JFrame {
 	}
 	public void setRecursiveCheckBoxEnabled(boolean enabled_8) {
 		recursiveCheckBox.setEnabled(enabled_8);
+	}
+	public void addForceOrganicActionListener(ActionListener l) {
+		forceOrganic.addActionListener(l);
 	}
 }
