@@ -1,16 +1,6 @@
 package com.digero.abcplayer;
 
-import java.awt.AWTKeyStroke;
-import java.awt.BorderLayout;
-import java.awt.CardLayout;
-import java.awt.Color;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.Image;
-import java.awt.Insets;
-import java.awt.KeyboardFocusManager;
-import java.awt.Toolkit;
+import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
@@ -52,26 +42,7 @@ import javax.imageio.ImageIO;
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MidiUnavailableException;
 import javax.sound.midi.Sequence;
-import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JCheckBoxMenuItem;
-import javax.swing.JComponent;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.KeyStroke;
-import javax.swing.ScrollPaneConstants;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
+import javax.swing.*;
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
 
@@ -227,6 +198,10 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 	private JPanel content;
 
 	private JLabel titleLabel;
+	private JLabel composerLabel;
+	private JLabel transcriberLabel;
+	private JLabel moodLabel;
+	private JLabel genreLabel;
 
 	private TrackListPanel trackListPanel;
 	
@@ -415,6 +390,23 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		titleLabel.setFont(f.deriveFont(Font.BOLD, f.getSize2D() * 1.3f));
 		titleLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
 
+		composerLabel = new JLabel("");
+		composerLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 0, 4));
+		composerLabel.setVisible(false);
+
+		transcriberLabel = new JLabel("");
+		transcriberLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 0, 4));
+		transcriberLabel.setVisible(false);
+
+		moodLabel = new JLabel("");
+		moodLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 0, 4));
+		moodLabel.setVisible(false);
+
+		genreLabel = new JLabel("");
+		genreLabel.setBorder(BorderFactory.createEmptyBorder(4, 4, 0, 4));
+		genreLabel.setVisible(false);
+
+
 		trackListPanel = new TrackListPanel(sequencer, this);
 		JScrollPane trackListScroller = new JScrollPane(trackListPanel, ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS,
 				ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -510,11 +502,18 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			}
 		});
 
+		JPanel titlePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+		titlePanel.add(titleLabel);
+		titlePanel.add(composerLabel);
+		titlePanel.add(transcriberLabel);
+		titlePanel.add(genreLabel);
+		titlePanel.add(moodLabel);
+
 		songViewPanel = new JPanel(new TableLayout(//
 				new double[] { 4, FILL, 4 }, //
 				new double[] { PREFERRED, 0, FILL }));
 		songViewPanel.setBorder(BorderFactory.createEmptyBorder());
-		songViewPanel.add(titleLabel, "1, 0");
+		songViewPanel.add(titlePanel, "1, 0");
 		songViewPanel.add(trackListScroller, "1, 2");
 		
 		playlistViewPanel = new AbcPlaylistPanel(prefs.node("playlist"));
@@ -660,25 +659,52 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		if (abcInfo == null) {
 			titleLabel.setText(" ");
 			titleLabel.setToolTipText("");
+
+			composerLabel.setVisible(false);
+			transcriberLabel.setVisible(false);
+			moodLabel.setVisible(false);
+			genreLabel.setVisible(false);
 			return;
 		}
 		
 		String title = abcInfo.getTitle();
 		String artist = abcInfo.getComposer_MaybeNull();
+		String transcriber = abcInfo.getTranscriber_MaybeNull();
+
+		titleLabel.setText(title);
+		titleLabel.setToolTipText("Song Title: " + title);
 
 		if (artist != null) {
-			titleLabel.setText("<html>" + title + "&ensp;<span style='font-size:"
-					+ UIManager.getFont("defaultFont").getSize()
-					+ "pt; font-weight:normal'>" + artist
-					+ "</span></html>");
+			composerLabel.setText(artist);
+			composerLabel.setToolTipText("Artist: " + artist);
+			composerLabel.setVisible(true);
 		} else {
-			titleLabel.setText(title);
+			composerLabel.setVisible(false);
 		}
 
-		String tooltip = title;
-		if (artist != null)
-			tooltip += " - " + artist;
-		titleLabel.setToolTipText(tooltip);
+		if (transcriber != null) {
+			transcriberLabel.setText(transcriber);
+			transcriberLabel.setToolTipText("Transcriber: " + transcriber);
+			transcriberLabel.setVisible(true);
+		} else {
+			transcriberLabel.setVisible(false);
+		}
+
+		if (abcInfo.getMood() != null && !abcInfo.getMood().isEmpty()) {
+			moodLabel.setText(abcInfo.getMood());
+			moodLabel.setToolTipText("Mood: " + abcInfo.getMood());
+			moodLabel.setVisible(true);
+		} else {
+			moodLabel.setVisible(false);
+		}
+
+		if (abcInfo.getGenre() != null && !abcInfo.getGenre().isEmpty()) {
+			genreLabel.setText(abcInfo.getGenre());
+			genreLabel.setToolTipText("Genre: " + abcInfo.getGenre());
+			genreLabel.setVisible(true);
+		} else {
+			genreLabel.setVisible(false);
+		}
 	}
 
 	private void updateTempoLabel() {
