@@ -19,6 +19,7 @@ import javax.swing.JPanel;
 import com.digero.common.icons.IconLoader;
 import com.digero.common.util.Util;
 import com.digero.common.util.Version;
+import com.digero.maestro.view.ProjectFrame;
 
 public final class AboutDialog {
 	public static void show(JFrame parent, final String appName, final Version appVersion, final String appUrl,
@@ -48,13 +49,15 @@ public final class AboutDialog {
 				+ "Upgraded by Aifel of Laurelin,<br>" //
 				+ "Elamond of Landroval and Karloman.<br>" //
 				+ "<br>" //
+				+ "<a href='" + appUrl + "'>" + "wiki link" + "</a><br>" //
+				+ "<br>" //
 				+ "Heap in use is " + heapInUse + "</html>");
 		aboutMessage.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 		aboutMessage.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				if (e.getButton() == MouseEvent.BUTTON1) {
-					Util.openURL(appUrl);
+					Util.openURL(appUrl, null);
 				}
 			}
 		});

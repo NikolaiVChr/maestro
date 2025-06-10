@@ -118,7 +118,7 @@ public class AudioExportManager {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				if (e.getClickCount() == 1 && e.getButton() == MouseEvent.BUTTON1) {
-					Util.openURL(LAME_URL);
+					Util.openURL(LAME_URL, null);
 				}
 			}
 		});
@@ -219,7 +219,7 @@ public class AudioExportManager {
 				@Override
 				public void mouseClicked(MouseEvent e) {
 					if (e.getClickCount() == 1 && e.getButton() == MouseEvent.BUTTON1) {
-						Util.openURL(FF_URL);
+						Util.openURL(FF_URL, null);
 					}
 				}
 			});

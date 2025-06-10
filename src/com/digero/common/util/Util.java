@@ -3,6 +3,7 @@ package com.digero.common.util;
 import static java.awt.Frame.MAXIMIZED_BOTH;
 
 import java.awt.Color;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.FontMetrics;
@@ -16,11 +17,17 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.prefs.Preferences;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.swing.JFrame;
+import javax.swing.SwingUtilities;
+
+import com.digero.maestro.MaestroMain;
+import com.digero.maestro.view.ProjectFrame;
 
 import sun.awt.shell.ShellFolder;
 
@@ -337,13 +344,25 @@ public final class Util {
 		return (value / grid) * grid;
 	}
 
-	public static boolean openURL(String url) {
+	public static boolean openURL(String url, ProjectFrame mainWindow) {
 		try {
-			if (System.getProperty("os.name").startsWith("Windows")) {
-				Runtime.getRuntime().exec(new String[] { "rundll32 url.dll,FileProtocolHandler ", url });
+			URI uriDownload = new URI(url);											
+			if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+				Desktop.getDesktop().browse(uriDownload);
 				return true;
-			}
+			}			
 		} catch (Exception e) {
+			ProjectFrame.feed(e.getMessage(), MaestroMain.getFirstLines(e));
+		    if (mainWindow != null) {
+		    	SwingUtilities.invokeLater(() -> {
+		    		try {
+		    			mainWindow.showFeed();
+		    		} catch (Exception e2) {
+						e.printStackTrace();
+					}
+		    	});
+		    }
+			e.printStackTrace();
 		}
 		return false;
 	}

@@ -359,7 +359,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 							@Override
 							public void mouseClicked(MouseEvent e) {
 								if (e.getButton() == MouseEvent.BUTTON1) {
-									Util.openURL(JAVA_URL);
+									Util.openURL(JAVA_URL, null);
 								}
 							}
 						});
