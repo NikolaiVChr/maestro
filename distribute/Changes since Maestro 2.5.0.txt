@@ -46,6 +46,9 @@ Version 4.2.12
 - ABC Tools now uses Maestro's setting for light or dark theme.
 - About window now show Java vendor and link to wiki.
 - In Abc Tools Auto-exporter, disable force mix/multistage check-boxes, depending on if force organic is enabled.
+- Added $PartCount variable to part name template, to help Songbook know which songs to pick for songs with identical names but different #s of parts.
+- Added extra info, composer, mood, genre, to AbcPlayer song title in the main view
+- Added up/down arrow buttons to the AbcPlayer playlist as an alternate way to move songs up and down in the playlist besides dragging
 
 Version 4.2.11
 - Some code improvement to organic single-stage.
