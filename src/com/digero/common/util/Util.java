@@ -350,7 +350,7 @@ public final class Util {
 			if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
 				Desktop.getDesktop().browse(uriDownload);
 				return true;
-			}			
+			}
 		} catch (Exception e) {
 			ProjectFrame.feed(e.getMessage(), MaestroMain.getFirstLines(e));
 		    if (mainWindow != null) {

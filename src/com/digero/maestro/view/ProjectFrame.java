@@ -1294,14 +1294,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		helpItem.setMnemonic('H');
 		helpItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0));
 		helpItem.addActionListener(e -> {
-			try {
-				URI uri = new URI(MaestroMain.WIKI_URL);
-				if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-					Desktop.getDesktop().browse(uri);
-				}
-			} catch (Exception ex) {
-				ex.printStackTrace();
-			}
+			Util.openURL(MaestroMain.WIKI_URL, this);
 		});
 		
 		JMenuItem versionItem = toolsMenu.add(new JMenuItem("Check for Updates"));
