@@ -1295,7 +1295,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		helpItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0));
 		helpItem.addActionListener(e -> {
 			try {
-				URI uri = new URI(MaestroMain.APP_URL);
+				URI uri = new URI(MaestroMain.WIKI_URL);
 				if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
 					Desktop.getDesktop().browse(uri);
 				}
@@ -1317,7 +1317,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		aboutItem.setMnemonic('A');
 		aboutItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0));
 		aboutItem.addActionListener(e -> AboutDialog.show(ProjectFrame.this, MaestroMain.APP_NAME,
-				MaestroMain.APP_VERSION, MaestroMain.APP_URL, "maestro_64.png"));
+				MaestroMain.APP_VERSION, MaestroMain.WIKI_URL, "maestro_64.png"));
 	}
 	
 	private void updateOpenRecentMenu() {

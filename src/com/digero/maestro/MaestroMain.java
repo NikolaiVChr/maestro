@@ -29,7 +29,7 @@ import com.digero.maestro.view.ProjectFrame;
 
 public class MaestroMain {
 	public static final String APP_NAME = "Maestro";
-	public static final String APP_URL = "https://maestro.miraheze.org/wiki/Main_Page";
+	public static final String WIKI_URL = "https://maestro.miraheze.org/wiki/Main_Page";
 	public static final String DOWNLOAD_URL = "https://drive.google.com/drive/folders/1CigT_AloFP34lZbIEvb4CsqGmBL8vodu";
 	public static Version APP_VERSION = new Version(0, 0, 0);
 
