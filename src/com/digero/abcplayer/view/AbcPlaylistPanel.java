@@ -62,16 +62,7 @@ import javax.swing.ToolTipManager;
 import javax.swing.TransferHandler;
 import javax.swing.UIManager;
 import javax.swing.border.Border;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.PopupMenuEvent;
-import javax.swing.event.PopupMenuListener;
-import javax.swing.event.TableColumnModelEvent;
-import javax.swing.event.TableColumnModelListener;
-import javax.swing.event.TreeExpansionEvent;
-import javax.swing.event.TreeExpansionListener;
+import javax.swing.event.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
@@ -158,7 +149,9 @@ public class AbcPlaylistPanel extends JPanel {
 	private JButton nextSongButton;
 	private JButton prevSongButton;
 	private JTextField delayField;
-	
+	private JButton moveUpButton;
+	private JButton moveDownButton;
+
 	// Playlist menu
 	private JMenu playlistMenu;
 	private JMenuItem saveMenuItem;
@@ -512,6 +505,14 @@ public class AbcPlaylistPanel extends JPanel {
 				}
 			}
 		});
+		playlistTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+			@Override
+			public void valueChanged(ListSelectionEvent e) {
+				int[] rows = playlistTable.getSelectedRows();
+				moveDownButton.setEnabled(rows.length == 1 && rows[0] != playlistTable.getRowCount() - 1);
+				moveUpButton.setEnabled(rows.length == 1 && rows[0] != 0);
+			}
+		});
 		
 		PlaylistTransferHandler transferHandler = new PlaylistTransferHandler(playlistTable);
 		transferHandler.setPlaylistLoadCallback(f -> {
@@ -737,6 +738,35 @@ public class AbcPlaylistPanel extends JPanel {
 				reExpandPaths();
 			}
 		});
+		searchTextField.setToolTipText("<html>Search for songs in the ABC browser.<br>"+
+				"Folders with matched search results will expand in the browser automatically<br>" +
+				"if the auto-expand setting is enabled in the playlist menu.</html>");
+
+		moveUpButton = new JButton("↑");
+		moveUpButton.setToolTipText("Move up the selected playlist track");
+		moveUpButton.setFocusable(false);
+		moveUpButton.setEnabled(false);
+		moveUpButton.addActionListener(e -> {
+			if (playlistTable.getSelectedRowCount() != 1 || playlistTable.getSelectedRow() <= 0) {
+				return;
+			}
+			int oldIdx = playlistTable.getSelectedRow();
+			tableModel.moveRows(new int[]{oldIdx}, oldIdx - 1);
+			playlistTable.setRowSelectionInterval(oldIdx - 1, oldIdx - 1);
+		});
+
+		moveDownButton = new JButton("↓");
+		moveDownButton.setToolTipText("Move down the selected playlist track");
+		moveDownButton.setFocusable(false);
+		moveDownButton.setEnabled(false);
+		moveDownButton.addActionListener(e -> {
+			if (playlistTable.getSelectedRowCount() != 1 || playlistTable.getSelectedRow() >= playlistTable.getRowCount() - 1) {
+				return;
+			}
+			int oldIdx = playlistTable.getSelectedRow();
+			tableModel.moveRows(new int[]{oldIdx}, oldIdx + 2);
+			playlistTable.setRowSelectionInterval(oldIdx + 1, oldIdx + 1);
+		});
 		
 		JButton playPlaylistButton = new JButton("Play");
 		playPlaylistButton.setToolTipText("Play playlist starting from the first song.");
@@ -751,6 +781,7 @@ public class AbcPlaylistPanel extends JPanel {
 		});
 		
 		nextSongButton = new JButton("Next Song");
+		nextSongButton.setToolTipText("<html>Move to the next song in the playlist</html>");
 		nextSongButton.setEnabled(false);
 		nextSongButton.addActionListener(e -> {
 			int newIdx = tableModel.getIdxForAbcInfo(nowPlayingInfo) + 1;
@@ -764,6 +795,7 @@ public class AbcPlaylistPanel extends JPanel {
 		});
 		
 		prevSongButton = new JButton("Prev Song");
+		prevSongButton.setToolTipText("<html>Move backwards to the previous song in the playlist</html>");
 		prevSongButton.setEnabled(false);
 		prevSongButton.addActionListener(e -> {
 			int newIdx = tableModel.getIdxForAbcInfo(nowPlayingInfo) - 1;
@@ -814,7 +846,9 @@ public class AbcPlaylistPanel extends JPanel {
 		bottomControls.add(searchTextField);
 		
 		bottomControls.add(new JPanel(), "pushx 200");
-		
+
+		bottomControls.add(moveUpButton);
+		bottomControls.add(moveDownButton);
 		bottomControls.add(delayLabel, "align right");
 		bottomControls.add(delayField, "align center");
 		bottomControls.add(prevSongButton);

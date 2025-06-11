@@ -161,6 +161,13 @@ public class PartNameTemplate {
 				return String.valueOf(currentAbcPart.getPartNumber());
 			}
 		});
+		variables.put("$PartCount", new Variable("Number of parts in the ABC file") {
+			@Override
+			public String getValue() {
+				return String.format("%d",
+						getMetadataSource().getActivePartCount());
+			}
+		});
 		variables.put("$PartInstrument", new Variable("The instrument for the individual ABC part") {
 			@Override
 			public String getValue() {
