@@ -119,6 +119,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private boolean ignoreZeroChannelVolume = false;
 
 	private final ListModelWrapper<AbcPart> parts = new ListModelWrapper<>(new DefaultListModel<>());
+	public boolean sorted = true;
 
 	private final ListenerList<AbcSongEvent> listeners = new ListenerList<>();
 	boolean mixDirty = true;
@@ -380,6 +381,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			genre = SaveUtil.parseValue(songEle, "genre", genre);
 			mood = SaveUtil.parseValue(songEle, "mood", mood);
 			note = SaveUtil.parseValue(songEle, "note", "");
+			sorted = SaveUtil.parseValue(songEle, "autoSortedParts", true);
 			
 			String exportTimeStr = SaveUtil.parseValue(songEle, "firstExportTime", "");
 			if (!exportTimeStr.isEmpty()) {
@@ -638,6 +640,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			df.setTimeZone(TimeZone.getTimeZone("GMT"));
 			SaveUtil.appendChildTextElement(songEle, "firstExportTime", df.format(firstExportTime));
 		}
+		SaveUtil.appendChildTextElement(songEle, "autoSortedParts", String.valueOf(sorted));
 
 		appendImportSettings(doc, songEle);
 		appendExportSettings(doc, songEle);
@@ -751,7 +754,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		part.discard();
 		//since we suppressed sorting we do it now:
 		populateFirstNumbers();
-		parts.sort(partNumberComparator);//timed this sort, and its slow as f., dont understand why
+		if (sorted) parts.sort(partNumberComparator);//timed this sort, and its slow as f., dont understand why
 		fireChangeEvent(AbcSongProperty.PART_LIST_ORDER, part);
 	}
 
@@ -1180,7 +1183,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public boolean suppressPartSort = false;
 
 	private Listener<AbcPartEvent> abcPartListener = e -> {
-		if (e.getProperty() == AbcPartProperty.PART_NUMBER && !suppressPartSort ) {
+		if (e.getProperty() == AbcPartProperty.PART_NUMBER && !suppressPartSort && sorted) {
 			populateFirstNumbers();
 			parts.sort(partNumberComparator);
 			fireChangeEvent(AbcSongProperty.PART_LIST_ORDER, e.getSource());
@@ -1438,5 +1441,17 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			}
 		}
 		return poly;
+	}
+
+	public void rearrangedParts() {
+		sorted = false;
+		fireChangeEvent(AbcSongProperty.PART_LIST_ORDER);		
+	}
+
+	public void autoSortParts() {
+		sorted = true;
+		populateFirstNumbers();
+		parts.sort(partNumberComparator);
+		fireChangeEvent(AbcSongProperty.PART_LIST_ORDER);	
 	}
 }

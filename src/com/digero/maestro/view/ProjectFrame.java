@@ -213,6 +213,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private PartsList partsList;
 	private JButton newPartButton;
 	private JButton deletePartButton;
+	private JButton sortPartsButton;
 	private JButton partEditorButton;
 	private JButton numerateButton;
 	private PartEditor partEditor;
@@ -543,6 +544,18 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				}
 			}
 		});
+		
+		sortPartsButton = new JButton("Sort") {
+			public Dimension getMaximumSize() {
+				return getPreferredSize();
+			}
+		};
+		sortPartsButton.setToolTipText("Enable auto-sort of the parts. To disable just drag and drop them.");
+		sortPartsButton.addActionListener(e -> {
+			if (abcSong != null) {
+				abcSong.autoSortParts();
+			}
+		});
 
 		partsList = new PartsList(abcSequencer, miscSettings);
 		partsList.addListSelectionListener(e -> {
@@ -567,6 +580,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		 * Wrap the part list in a panel that forces the list to the top. Fixes a swing bug where clicking after the end
 		 * of the list will select the last element.
 		 */
+		/*
 		JPanel partListWrapperPanel = new JPanel(new BorderLayout());
 		partListWrapperPanel.add(partsList, BorderLayout.NORTH);
 		partListWrapperPanel.setBackground(partsList.getBackground());
@@ -580,6 +594,18 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		});
 		JScrollPane partsListScrollPane = new JScrollPane(partListWrapperPanel, VERTICAL_SCROLLBAR_ALWAYS,
 				HORIZONTAL_SCROLLBAR_AS_NEEDED);
+		*/
+		JScrollPane partsListScrollPane = new JScrollPane(partsList, VERTICAL_SCROLLBAR_ALWAYS,
+				HORIZONTAL_SCROLLBAR_AS_NEEDED);
+		partsList.setScroll(partsListScrollPane);
+		// Remove focus from text boxes if area under parts is clicked
+		partsList.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				getRootPane().requestFocus();
+			}
+		});
+		
 		Dimension sz = partsListScrollPane.getMinimumSize();
 		sz.width = PartsListItem.getProtoDimension().width;
 		partsListScrollPane.setPreferredSize(sz);
@@ -600,6 +626,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		JPanel partsButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, HGAP, VGAP));
 		partsButtonPanel.add(newPartButton);
 		partsButtonPanel.add(deletePartButton);
+		partsButtonPanel.add(sortPartsButton);
 
 		partsListPanel = new JPanel(new BorderLayout(HGAP, VGAP));
 		partsListPanel.setBorder(BorderFactory.createTitledBorder("Song Parts"));
@@ -1690,6 +1717,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		newPartButton.setEnabled(abcSong != null);
 		deletePartButton.setEnabled(partsList.getSelectedIndex() != -1);
+		sortPartsButton.setEnabled(abcSong != null);
 		numerateButton.setEnabled(midiLoaded);
 		updatePartEditorButton();
 		exportButton.setEnabled(hasAbcNotes);

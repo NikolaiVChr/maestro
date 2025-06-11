@@ -1,13 +1,30 @@
 package com.digero.maestro.view;
 
+import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.Dimension;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.dnd.DnDConstants;
+import java.awt.dnd.DropTarget;
+import java.awt.dnd.DropTargetDragEvent;
+import java.awt.dnd.DropTargetDropEvent;
+import java.awt.dnd.DropTargetEvent;
+import java.awt.dnd.DropTargetListener;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
+import javax.swing.JComponent;
 import javax.swing.JList;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.SwingUtilities;
+import javax.swing.TransferHandler;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
@@ -21,7 +38,6 @@ import com.digero.maestro.abc.AbcPartEvent;
 import com.digero.maestro.abc.AbcPartMetadataSource;
 import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.abc.AbcSongEvent;
-
 import info.clearthought.layout.TableLayoutConstants;
 
 @SuppressWarnings("serial")
@@ -54,8 +70,14 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 				updateTrackNumbers();
 			}
 		});
-
+		
 		model = new DefaultListModel<AbcPart>();
+				
+		DropTarget dt = new DropTarget(PartsList.this, DnDConstants.ACTION_MOVE, new PartsListDropHandler(), true);
+		setTransferHandler(new PanelTransferHandler(this));
+		setDropTarget(dt);
+		
+		setPreferredSize(new Dimension(250,24*20));
 	}
 
 	public void updateParts() {
@@ -80,7 +102,9 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 		PartsListItem item = new PartsListItem(part, false);
 
 		item.setItemListener(itemListener);
-
+		item.setTransferHandler(new PanelTransferHandler(this));
+		item.setDropTarget(new DropTarget(item, DnDConstants.ACTION_MOVE, new PartsListDropHandler(), true));
+		
 		if (part == selectedPart) {
 			selectedIndex = idx;
 			item.setSelected(true);
@@ -282,4 +306,183 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 			break;
 		}
 	};
+	
+	public class PanelTransferHandler extends TransferHandler {
+		
+		PartsList main;
+		
+		PanelTransferHandler(PartsList main) {
+			this.main = main;
+		}
+			
+		protected Transferable createTransferable(JComponent c) {
+		    //System.out.println("Starting drag for: " + c);
+		    if (!(c instanceof PartsListItem)) return null;
+
+		    int panelIndex = model.indexOf(((PartsListItem) c).getPart()); 
+		    if (panelIndex == -1) {
+		        System.out.println("Warning: Item not found in model!");
+		        return null;
+		    }
+
+		    //System.out.println("Panel Index: " + panelIndex);
+		    return new CustomTransferable(String.valueOf(panelIndex)); 
+		}
+
+        public int getSourceActions(JComponent c) {
+            return MOVE;
+        }
+              
+        public void handleDrop(JComponent target, String partId, Point dropPoint) {
+            //System.out.println("Processing drop inside PanelTransferHandler...");
+            
+            int originalIndex = Integer.parseInt(partId);
+        	DefaultListModel<AbcPart> modl = main.model; 
+        	if (originalIndex != -1 && originalIndex < modl.getSize()) {
+	        	
+	        	AbcPart part = modl.getElementAt(originalIndex);
+	        	int newIndex = getDropIndex(target, dropPoint);
+	        	
+	            //System.out.println("\n"+part.getTitle()+": originalIndex="+originalIndex);
+	            //System.out.println("newIndex1="+newIndex);
+	            
+	            if (newIndex < originalIndex || newIndex > originalIndex+1) {
+		            modl.removeElement(part);
+		            if (newIndex > originalIndex) newIndex--;
+		            if (newIndex > modl.size()-1) {
+		            	modl.addElement(part);
+		            } else {
+		            	modl.insertElementAt(part, newIndex);
+		            }
+		            //System.out.println("newIndex2="+modl.indexOf(part)+" model size="+modl.size());
+		            
+		            //main.updateParts(); done by listener instead
+		            part.getAbcSong().rearrangedParts();
+	            }
+            } else {
+                System.out.println("Item not found in model!");
+            }
+        }
+        
+        private int getDropIndex(Component target, Point dropPoint) {
+            int index = 0;
+            for (Component comp : main.getComponents()) {
+            	Point relativeDropPoint = SwingUtilities.convertPoint(target, dropPoint.getLocation(), main);
+                Rectangle bounds = comp.getBounds();
+                if (relativeDropPoint.y < bounds.y + bounds.height / 2) {
+                    return index;
+                }
+                index++;
+            }
+            return main.getComponentCount(); // Drop at the end
+        }
+
+        public boolean canImport(TransferSupport support) {
+        	boolean result = support.isDataFlavorSupported(PANEL_FLAVOR);
+            return result;
+        }
+    }
+	
+	static final DataFlavor PANEL_FLAVOR = new DataFlavor("application/x-custom-string", "Part index");
+	
+	public class CustomTransferable implements Transferable {
+	    private final String data;
+
+	    public CustomTransferable(String data) {
+	        this.data = data;
+	    }
+
+	    @Override
+	    public DataFlavor[] getTransferDataFlavors() {
+	        return new DataFlavor[]{PANEL_FLAVOR}; // Only custom flavor
+	    }
+
+	    @Override
+	    public boolean isDataFlavorSupported(DataFlavor flavor) {
+	        return flavor.equals(PANEL_FLAVOR);
+	    }
+
+	    @Override
+	    public Object getTransferData(DataFlavor flavor) throws UnsupportedFlavorException {
+	        if (!flavor.equals(PANEL_FLAVOR)) throw new UnsupportedFlavorException(flavor);
+	        return data;
+	    }
+	}
+	
+	public class PartsListDropHandler implements DropTargetListener {
+		Component previousTarget = null;
+		
+		@Override
+		public void dragEnter(DropTargetDragEvent dtde) {
+		    dtde.acceptDrag(DnDConstants.ACTION_MOVE);
+		    
+		    // Manually set a stable cursor
+		    dtde.getDropTargetContext().getComponent().setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		}
+
+		@Override
+		public void dragExit(DropTargetEvent dte) {
+		    // Reset cursor when drag exits
+		    dte.getDropTargetContext().getComponent().setCursor(Cursor.getDefaultCursor());
+		}
+
+		@Override
+		public void dragOver(DropTargetDragEvent dtde) {
+		}
+
+	    @Override
+	    public void dropActionChanged(DropTargetDragEvent dtde) {
+	        //System.out.println("Drop action changed to: " + dtde.getDropAction());
+	    }
+
+	    @Override
+	    public void drop(DropTargetDropEvent dtde) {
+	    	Component target = dtde.getDropTargetContext().getComponent();
+	    	//System.out.println("Drop event triggered! "+target);
+	    	
+	        try {
+	            Transferable transferable = dtde.getTransferable();
+	            if (transferable.isDataFlavorSupported(PANEL_FLAVOR)) {
+	            	dtde.acceptDrop(DnDConstants.ACTION_MOVE);
+	                String partId = (String) transferable.getTransferData(PANEL_FLAVOR);
+	                //System.out.println("Dropped item ID: " + partId);
+
+	                TransferHandler transferHandler = ((JComponent) dtde.getDropTargetContext().getComponent()).getTransferHandler();
+	                if (transferHandler instanceof PanelTransferHandler) {
+	                    ((PanelTransferHandler) transferHandler).handleDrop(((JComponent) dtde.getDropTargetContext().getComponent()), partId, dtde.getLocation());
+	                } else {
+	                    System.out.println("TransferHandler is not correctly assigned to PartsList!");
+	                }
+	            } else {
+	                System.out.println("Unsupported DataFlavor!");
+	            }
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	        }
+
+	        dtde.dropComplete(true);
+	    }
+	}
+
+	JScrollPane scrollPane = null;
+	public void setScroll(JScrollPane partsListScrollPane) {
+		scrollPane = partsListScrollPane;
+	}
+	
+	@Override
+	public Dimension getPreferredSize() {
+		if (scrollPane == null) {
+			return super.getPreferredSize();
+		}
+		int h = 0;
+		int w = 0;
+		revalidate();
+		for (Component c : getComponents()) {
+			h += c.getPreferredSize().height;
+			//w = Math.max(w, c.getPreferredSize().width);
+		}
+		//System.out.println("Viewport size: " + scrollPane.getViewport().getSize());
+		//System.out.println("Inner component size: " + getSize());
+		return new Dimension(Math.max(w, scrollPane.getViewport().getWidth()), Math.max(h, scrollPane.getViewport().getHeight()));
+	}
 }

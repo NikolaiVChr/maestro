@@ -7,13 +7,17 @@ import java.awt.LayoutManager;
 import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
 import java.util.EventObject;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+import javax.swing.TransferHandler;
 
 import com.digero.common.util.IDiscardable;
 import com.digero.common.util.Listener;
@@ -184,7 +188,25 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 					itemListener.onEvent(ev);
 				}
 			}
-
+		});
+		title.addMouseMotionListener(new MouseMotionAdapter() {
+			@Override
+			public void mouseDragged(MouseEvent e) {
+				if (SwingUtilities.isLeftMouseButton(e)) {
+					JComponent jc = (JComponent) e.getSource();
+                    JPanel parentPanel = (JPanel) jc.getParent(); // Get enclosing panel
+                    parentPanel.getTransferHandler().exportAsDrag(parentPanel, e, TransferHandler.MOVE);
+				}
+			}
+		});
+		this.addMouseMotionListener(new MouseMotionAdapter() {
+			@Override
+			public void mouseDragged(MouseEvent e) {
+				if (SwingUtilities.isLeftMouseButton(e)) {
+                	JComponent jc = (JComponent) e.getSource();
+                    jc.getTransferHandler().exportAsDrag(jc, e, TransferHandler.MOVE);
+				}
+			}
 		});
 	}
 
@@ -235,6 +257,11 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 		final PartsListItem item = new PartsListItem("000. Lonely Mountain Bassoon*");
 		return item.getPreferredSize();
 	}
+	
+	@Override
+	public Dimension getMaximumSize() {
+		return new Dimension(super.getMaximumSize().width, getPreferredSize().height);
+	}
 
 	public void setItemListener(Listener<PartsListItemEvent> l) {
 		itemListener = l;
@@ -262,5 +289,4 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 	public void setPart(AbcPart part) {
 		this.part = part;
 	}
-
 }
