@@ -1,5 +1,6 @@
 package com.digero.common.util;
 
+import java.awt.Component;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.dnd.DnDConstants;
@@ -14,12 +15,16 @@ import java.io.FileFilter;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.JComponent;
+import javax.swing.SwingUtilities;
+
 public class FileFilterDropListener implements DropTargetListener {
 	private FileFilter filter;
 	private boolean acceptMultiple;
 	private List<File> draggingFiles = null;
 	private List<ActionListener> listeners = null;
 	private DropTargetDropEvent dropEvent = null;
+	public Component exclude = null;
 
 	public FileFilterDropListener(boolean acceptMultiple, String... fileTypes) {
 		this(acceptMultiple, new ExtensionFileFilter("", fileTypes));
@@ -73,7 +78,7 @@ public class FileFilterDropListener implements DropTargetListener {
 
 	@Override
 	public void drop(DropTargetDropEvent dtde) {
-		if (draggingFiles != null) {
+		if (draggingFiles != null && (exclude == null || !(dtde.getSource() instanceof Component) || !SwingUtilities.isDescendingFrom((Component)dtde.getSource(), exclude))) {
 			dtde.acceptDrop(DnDConstants.ACTION_COPY_OR_MOVE);
 			fireActionPerformed(dtde);
 			draggingFiles = null;

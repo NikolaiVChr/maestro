@@ -209,6 +209,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	
 	private RecentlyOpenedList recentlyOpenedList;
 
+	private FileFilterDropListener dropListener = null;
+	
 	private JPanel partsListPanel;
 	private PartsList partsList;
 	private JButton newPartButton;
@@ -393,7 +395,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		add(generateTopLevelSplitPane(), "0, 0, 1, 0");
 
-		final FileFilterDropListener dropListener = new FileFilterDropListener(false, Util.MID_FILE_EXTENSION_NO_DOT,
+		dropListener = new FileFilterDropListener(false, Util.MID_FILE_EXTENSION_NO_DOT,
 				Util.MIDI_FILE_EXTENSION_NO_DOT, Util.KAR_FILE_EXTENSION_NO_DOT, Util.ABC_FILE_EXTENSION_NO_DOT,
 				Util.TXT_FILE_EXTENSION_NO_DOT, Util.MSX_FILE_EXTENSION_NO_DOT);
 		dropListener.addActionListener(e -> {
@@ -401,6 +403,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			SwingUtilities.invokeLater(() -> openFile(file));
 		});
 		new DropTarget(this, dropListener);
+		//dropListener.exclude = partsList; // not the cause of the partsList d'n'd flicker
 
 		mainSequencerListener = new MainSequencerListener();
 		sequencer.addChangeListener(mainSequencerListener);
@@ -573,6 +576,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				}
 			}
 		});
+		
 		
 		partEditor = new PartEditor(this, sequencer, miscSettings);
 
