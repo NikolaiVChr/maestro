@@ -49,6 +49,7 @@ Version 4.2.12
 - Added $PartCount variable to part name template, to help Songbook know which songs to pick for songs with identical names but different #s of parts.
 - Added extra info, composer, mood, genre, to AbcPlayer song title in the main view
 - Added up/down arrow buttons to the AbcPlayer playlist as an alternate way to move songs up and down in the playlist besides dragging
+- Part list can now be reordered by using drag'n'drop, or resorted by clicking sort button.
 
 Version 4.2.11
 - Some code improvement to organic single-stage.
