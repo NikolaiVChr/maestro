@@ -1,7 +1,6 @@
 package com.digero.maestro.view;
 
 import java.awt.Component;
-import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -330,7 +329,7 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 		}
 
         public int getSourceActions(JComponent c) {
-            return MOVE;
+            return DnDConstants.ACTION_MOVE;
         }
               
         public void handleDrop(JComponent target, String partId, Point dropPoint) {
@@ -416,14 +415,12 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 		public void dragEnter(DropTargetDragEvent dtde) {
 		    dtde.acceptDrag(DnDConstants.ACTION_MOVE);
 		    
-		    // Manually set a stable cursor
-		    dtde.getDropTargetContext().getComponent().setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+		    //dtde.getDropTargetContext().getComponent().setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 		}
 
 		@Override
 		public void dragExit(DropTargetEvent dte) {
-		    // Reset cursor when drag exits
-		    dte.getDropTargetContext().getComponent().setCursor(Cursor.getDefaultCursor());
+		    //dte.getDropTargetContext().getComponent().setCursor(Cursor.getDefaultCursor());
 		}
 
 		@Override
@@ -476,7 +473,7 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 		}
 		int h = 0;
 		int w = 0;
-		revalidate();
+		//revalidate();
 		for (Component c : getComponents()) {
 			h += c.getPreferredSize().height;
 			//w = Math.max(w, c.getPreferredSize().width);
