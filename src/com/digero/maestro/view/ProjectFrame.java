@@ -258,12 +258,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private MainSequencerListener mainSequencerListener;
 	private AbcSequencerListener abcSequencerListener;
 	private boolean failedToLoadLotroInstruments = false;
-	private JButton zoomButton;
 	private JButton noteButton;
-	private JLabel noteCountLabel;
-	private JLabel peakLabel;
-	private int maxNoteCount = 0;
-	private int maxNoteCountTotal = 0;
 	private boolean midiResolved = false;
 	
 	private AudioExportManager audioExporter;
@@ -394,7 +389,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			keySignatureField.setEnabled(false);
 
 		add(generateTopLevelSplitPane(), "0, 0, 1, 0");
-
+		
 		dropListener = new FileFilterDropListener(false, Util.MID_FILE_EXTENSION_NO_DOT,
 				Util.MIDI_FILE_EXTENSION_NO_DOT, Util.KAR_FILE_EXTENSION_NO_DOT, Util.ABC_FILE_EXTENSION_NO_DOT,
 				Util.TXT_FILE_EXTENSION_NO_DOT, Util.MSX_FILE_EXTENSION_NO_DOT);
@@ -403,6 +398,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			SwingUtilities.invokeLater(() -> openFile(file));
 		});
 		new DropTarget(this, dropListener);
+		
 		//dropListener.exclude = partsList; // not the cause of the partsList d'n'd flicker
 
 		mainSequencerListener = new MainSequencerListener();
@@ -576,6 +572,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				}
 			}
 		});
+		
 		
 		
 		partEditor = new PartEditor(this, sequencer, miscSettings);
@@ -918,9 +915,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			sequencer.stop();
 			abcSequencer.reset(false);
 			sequencer.reset(false);
-			maxNoteCountTotal = 0;
-			maxNoteCount = 0;
-			updateNoteCountLabel();
 		});
 
 		ActionListener modeButtonListener = e -> {
@@ -973,24 +967,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		noteButton.addActionListener(e -> partPanel.textnoteToggle());
 		noteButton.setToolTipText("<html>Show notepad where custom notes can be entered.<br>"
 				+ "Will be saved in msx project file.</html>");
-
-		zoomButton = new JButton("Zoom");
-//		zoomButton.setVisible(false);
-//		zoomButton.addActionListener(e -> partPanel.toggleZoom());
-		
-		noteCountLabel = new JLabel();
-//		noteCountLabel.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
-//		noteCountLabel.setBorder(new EmptyBorder(0, 0, 0, 20));// top,left,bottom,right
-		noteCountLabel.setToolTipText("<html>Number of simultanious notes<br>" + "that is playing.<br>"
-				+ "Use as rough (as it for tech reasons typically overestimates)<br>"
-				+ "guide to estimate how much of lotro max<br>" + "polyphony the song will consume.<br>"
-				+ "Stopped notes that are in release phase also counts.</html>");
-		peakLabel = new JLabel();
-		peakLabel.setToolTipText("<html>Number of simultanious notes<br>" + "that is playing.<br>"
-				+ "Use as rough (as it for tech reasons typically overestimates)<br>"
-				+ "guide to estimate how much of lotro max<br>" + "polyphony the song will consume.<br>"
-				+ "Stopped notes that are in release phase also counts.</html>");
-		
+				
 		feedLabel = new JLabel();
 		feedLabel.addMouseListener(new MouseAdapter() {
 			@Override
@@ -1000,29 +977,30 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			}
 		});
 		
-		playControlPanel = new JPanel(new MigLayout("fillx, hidemode 3, wrap 9",
+		playControlPanel = new JPanel(new MigLayout("fillx, hidemode 3, wrap 8, gap 8 4",
 				"[][][][][][][grow -1][grow -1]"));
+		//playControlPanel.setDoubleBuffered(false);
 		playControlPanel.add(tuneEditorButton);
 		playControlPanel.add(midiModeRadioButton);
-		playControlPanel.add(playButton, "spany 2, right");
+		playControlPanel.add(playButton, "spany 2, alignx right");
 		playControlPanel.add(stopButton, "spany 2");
-		playControlPanel.add(new JLabel("Volume:"), "right");
+		playControlPanel.add(new JLabel("Volume:"), "alignx right");
 		playControlPanel.add(volumeSlider);
-		playControlPanel.add(noteCountLabel, "right, hidemode 0");
-		playControlPanel.add(peakLabel, "left, hidemode 0");
+		playControlPanel.add(noteButton, "spany 2, center");
 		playControlPanel.add(midiPositionLabel);
 		playControlPanel.add(abcPositionLabel, "wrap");
 		
 		playControlPanel.add(hideEditsCheckbox);
 		playControlPanel.add(abcModeRadioButton);
-		playControlPanel.add(new JLabel("Stereo:"), "right");
+		//play
+		//stop
+		playControlPanel.add(new JLabel("Stereo:"), "alignx right");
 		playControlPanel.add(panSlider);
-//		playControlPanel.add(zoomButton, "right");
-		playControlPanel.add(noteButton, "span 2, center");
+		//note
 		playControlPanel.add(midiBarLabel);
 		playControlPanel.add(abcBarLabel);
-		
-		playControlPanel.add(feedLabel, "span 9, center");
+
+		playControlPanel.add(feedLabel, "span 8, center");
 
 		midiPartsAndControls = new JPanel(new BorderLayout(HGAP, VGAP));
 		midiPartsAndControls.add(partPanel, BorderLayout.CENTER);
@@ -1468,13 +1446,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		// if (abcSong != null)
 		// abcSong.setShowPruned(saveSettings.showPruned);
 
-		noteCountLabel.setVisible(miscSettings.showMaxPolyphony && false);
-		peakLabel.setVisible(miscSettings.showMaxPolyphony && false);
 		partPanel.setPolyphony(miscSettings.showMaxPolyphony);
-		if (!miscSettings.showMaxPolyphony) {
-			maxNoteCount = 0;
-			maxNoteCountTotal = 0;
-		}
 		if (abcSong != null) {
 			abcSong.setBadger(miscSettings.showBadger);
 		}
@@ -1557,8 +1529,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 					} else if (evt.getProperty() == SequencerProperty.IS_DRAGGING) {
 						abcSequencer.setDragging(sequencer.isDragging());
 					}
-					maxNoteCountTotal = 0;// Not fool proof for preventing it counts too many notes when skipping
-					maxNoteCount = 0;// But better than nothing
 				} finally {
 					echoingPosition = false;
 				}
@@ -1566,29 +1536,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 	}
 
-	private void updateNoteCountLabel() {
-		String totalColor = "<font>";
-		if (maxNoteCountTotal > 63) {
-			totalColor = "<font color=RED>";
-		} else if (maxNoteCountTotal > 53) {
-			totalColor = "<font color=ORANGE>";
-		}
-		String maxColor = "<font>";
-		if (maxNoteCount > 63) {
-			maxColor = "<font color=RED>";
-		} else if (maxNoteCount > 53) {
-			maxColor = "<font color=ORANGE>";
-		}
-		
-		noteCountLabel.setText("<html><nobr>Notes: " + maxColor + String.format("%03d", maxNoteCount) + "</font></nobr></html>");
-		peakLabel.setText("<html><nobr>(Peak: " + totalColor + String.format("%03d", maxNoteCountTotal) + "</font>)</nobr></html>");
-	}
-
 	private class AbcSequencerListener implements Listener<SequencerEvent> {
 		@Override
 		public void onEvent(SequencerEvent evt) {
 			updateButtons(false);
-			//updateNoteCount();
 			if (evt.getProperty() == SequencerProperty.IS_RUNNING) {
 				if (abcSequencer.isRunning())
 					sequencer.stop();
@@ -1607,23 +1558,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 					echoingPosition = false;
 				}
 			}
-		}
-
-		@Deprecated
-		private void updateNoteCount() {
-			noteCountLabel.setVisible(miscSettings.showMaxPolyphony && false);
-			peakLabel.setVisible(miscSettings.showMaxPolyphony && false);
-			if (!miscSettings.showMaxPolyphony) {
-				return;
-			}
-			if (midiModeRadioButton.isSelected()) {
-				maxNoteCount = 0;
-				maxNoteCountTotal = 0;
-			} else {
-				maxNoteCount = LotroSequencerWrapper.getNoteCount();
-				maxNoteCountTotal = Math.max(maxNoteCountTotal, maxNoteCount);
-			}
-			updateNoteCountLabel();
 		}
 	}
 
@@ -1705,9 +1639,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		playButton.setDisabledIcon(curSequencer.isRunning() ? curPauseIconDisabled : curPlayIconDisabled);
 
 		if (!hasAbcNotes) {
-			maxNoteCountTotal = 0;
-			maxNoteCount = 0;
-			updateNoteCountLabel();
 			midiModeRadioButton.setSelected(true);
 			abcSequencer.setRunning(false);
 			updatePreviewMode(false);
@@ -1777,7 +1708,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		mixCheckBox.setEnabled(midiLoaded && !organicCheckBox.isSelected());
 		prioCheckBox.setEnabled(midiLoaded && mixCheckBox.isSelected() && !organicCheckBox.isSelected());
 		dynaCombo.setEnabled(midiLoaded);
-		zoomButton.setEnabled(midiLoaded);
 		noteButton.setEnabled(midiLoaded);
 		if (midiLoaded) {
 			midiModeRadioButton.setText("Original ("
@@ -1921,21 +1851,15 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				organicCheckBox.setSelected(abcSong.isOrganic());
 			if (organic2CheckBox.isSelected() != abcSong.isOrganic2())
 				organic2CheckBox.setSelected(abcSong.isOrganic2());
-			maxNoteCountTotal = 0;
-			maxNoteCount = 0;
 			updateButtons(false);
 			break;
 		case TRIPLET_TIMING:
 			if (tripletCheckBox.isSelected() != abcSong.isTripletTiming())
 				tripletCheckBox.setSelected(abcSong.isTripletTiming());
-			maxNoteCountTotal = 0;
-			maxNoteCount = 0;
 			break;
 		case MIX_TIMING:
 			if (mixCheckBox.isSelected() != abcSong.isMixTiming())
 				mixCheckBox.setSelected(abcSong.isMixTiming());
-			maxNoteCountTotal = 0;
-			maxNoteCount = 0;
 			updateButtons(false);
 			break;
 		case MIX_TIMING_COMBINE_PRIORITIES:
@@ -1954,8 +1878,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			partsList.repaint();
 			partEditor.repaint();
 			updateButtons(false);
-			maxNoteCountTotal = 0;
-			maxNoteCount = 0;
 			compileStats();
 			break;
 		case BADGER:
@@ -2004,8 +1926,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 			partsList.repaint();
 			updateButtons(false);
-			maxNoteCountTotal = 0;
-			maxNoteCount = 0;
 			break;
 
 		case PART_LIST_ORDER:
@@ -2086,10 +2006,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		if (this.abcSongModified != abcSongModified) {
 			this.abcSongModified = abcSongModified;
 			updateTitle();
-		}
-		if (abcSongModified) {
-			maxNoteCount = 0;
-			maxNoteCountTotal = 0;
 		}
 	}
 
@@ -2221,8 +2137,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		file = filetemp;
 		// end system for preventing cascading dialogs
 
-		maxNoteCountTotal = 0;
-		maxNoteCount = 0;
 
 		file = Util.resolveShortcut(file);
 		allowOverwriteSaveFile = false;
@@ -2466,10 +2380,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			newSequencer.setRunning(running);
 
 			abcPreviewMode = newAbcPreviewMode;
-
-			maxNoteCountTotal = 0;
-			maxNoteCount = 0;
-			updateNoteCountLabel();
 
 			partPanel.setAbcPreviewMode(abcPreviewMode);
 			updateButtons(false);
