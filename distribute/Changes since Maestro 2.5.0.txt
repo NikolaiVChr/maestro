@@ -50,6 +50,7 @@ Version 4.2.12
 - Added extra info, composer, mood, genre, to AbcPlayer song title in the main view
 - Added up/down arrow buttons to the AbcPlayer playlist as an alternate way to move songs up and down in the playlist besides dragging
 - Part list can now be reordered by using drag'n'drop, or resorted by clicking sort button.
+- Fix for organic multistage dropping notes it should not when poly 6+ is enabled.
 
 Version 4.2.11
 - Some code improvement to organic single-stage.

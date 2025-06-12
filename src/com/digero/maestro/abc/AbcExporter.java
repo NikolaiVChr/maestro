@@ -1651,7 +1651,7 @@ public class AbcExporter {
 				throw new AbcConversionException("Failed to read instrument sample durations.", e);
 			}
 			if (max == 6) {
-				//System.out.println(" ---- "+part.getAbcSong().getTitle()+" ("+part.getTitle()+"): poly restore");
+				debugOutput(1," ---- "+part.getAbcSong().getTitle()+" ("+part.getTitle()+"): poly restore");
 				useRestToShortenChords = false;
 				if (organic2) chords = processOrganic2(part, eventsCopy);
 				else  chords = processOrganic(part, eventsCopy);
@@ -2676,6 +2676,9 @@ public class AbcExporter {
 	NavigableSet<Long> createGrid(List<AbcNoteEvent> events, long minimumMicros, AbcPart part) {
 		// create a non-uniform organic grid
 		
+		long debugStart = 0;//71950000;
+		long debugEnd   = 0;//72100000;
+		
 		final int startWeightLongNote = 3;
 		final int startWeightShortNote = 9;
 		final long thresholdShortNoteMicros = minimumMicros*2;
@@ -2705,7 +2708,7 @@ public class AbcExporter {
 		
 		// create a weight map from all start and end micros
 		NavigableMap<Long, List<GridLine>> microsWeights = new TreeMap<>();
-		for (AbcNoteEvent note : events) {			
+		for (AbcNoteEvent note : events) {	
 			note.origStartABCMicros = qtm.tickToMicrosABCOrganic(note.getStartTick());			
 			note.origEndABCMicros = qtm.tickToMicrosABCOrganic(note.getEndTick());
 			note.origEndABCMicros = Math.max(note.origEndABCMicros, note.origStartABCMicros + minimumMicros);
@@ -2721,78 +2724,82 @@ public class AbcExporter {
 		}
 		
 		// Now do some adjustments to note start and ends
-		@SuppressWarnings("unchecked")
-		List<GridLine>[] typeList = new List[] {};
-		Long[] typeLong = {};		
-		List<GridLine>[] vals = (List<GridLine>[]) microsWeights.values().toArray(typeList);
-		Long[] keys = microsWeights.keySet().toArray(typeLong);
-		GridLine prevStart = null;
-		GridLine prevEnd = null;
-		for (int i = 0; i < vals.length-2; i++) {
-			List<GridLine> curr = vals[i];
-			List<GridLine> next = vals[i+1];
-			List<GridLine> nextnext = vals[i+2];
-			GridLine currStart = null;// one (of maybe more) start gridline at curr pos
-			GridLine currEnd = null;// one (of maybe more) end gridline at curr pos
-			GridLine nextStart = null;// one (of maybe more) start gridline at next or nextnext pos
-			GridLine nextEnd = null;// one (of maybe more) end gridline at curr pos
-			for (GridLine test : curr) {
-				if (test.type==START) {
-					currStart = test;
+		if (!useRestToShortenChords) {
+			@SuppressWarnings("unchecked")
+			List<GridLine>[] typeList = new List[] {};
+			Long[] typeLong = {};		
+			List<GridLine>[] vals = (List<GridLine>[]) microsWeights.values().toArray(typeList);
+			Long[] keys = microsWeights.keySet().toArray(typeLong);
+			GridLine prevStart = null;
+			GridLine prevEnd = null;
+			for (int i = 0; i < vals.length-2; i++) {
+				List<GridLine> curr = vals[i];
+				List<GridLine> next = vals[i+1];
+				List<GridLine> nextnext = vals[i+2];
+				GridLine currStart = null;// one (of maybe more) start gridline at curr pos
+				GridLine currEnd = null;// one (of maybe more) end gridline at curr pos
+				GridLine nextStart = null;// one (of maybe more) start gridline at next or nextnext pos
+				GridLine nextEnd = null;// one (of maybe more) end gridline at curr pos
+				for (GridLine test : curr) {
+					if (test.type==START) {
+						currStart = test;
+					}
+					if (test.type==END) {
+						currEnd = test;
+					}
 				}
-				if (test.type==END) {
-					currEnd = test;
-				}
-			}
-			for (GridLine test : next) {
-				if (test.type==START) {
-					nextStart = test;
-				}
-				if (test.type==END) {
-					nextEnd = test;
-				}
-			}
-			if (nextStart == null) {
-				for (GridLine test : nextnext) {
+				for (GridLine test : next) {
 					if (test.type==START) {
 						nextStart = test;
 					}
+					if (test.type==END) {
+						nextEnd = test;
+					}
 				}
-			}
-			if (nextStart != null && currStart != null// && nextEnd != null
-					&& currStart.micros + minimumMicros > nextStart.micros
-					&& ((prevStart != null && prevStart.micros + minimumMicros*2 < currStart.micros) || (prevEnd != null && prevEnd.micros + minimumMicros*2 < currStart.micros))
-					//&& nextEnd.micros <= nextStart.micros // TODO: wont this always be true?
-				) {
-				// there is not room for curr to next, it does not overlap with next start, and prev gridlines is not closeby
-				// we move curr earlier, so there is room
-				List<GridLine> list = microsWeights.get(keys[i]);
-				microsWeights.remove(keys[i]);
-				long newMicros = nextStart.micros - minimumMicros;
-				for (GridLine line : list) {
-					line.micros = newMicros;
+				if (nextStart == null) {
+					for (GridLine test : nextnext) {
+						if (test.type==START) {
+							nextStart = test;
+						}
+					}
 				}
-				microsWeights.put(newMicros, list);
-			}
-			if (nextStart != null && currEnd != null && currStart == null && prevStart != null
-					&& prevStart.micros + minimumMicros > currEnd.micros
-					&& nextStart.micros >= currEnd.micros + minimumMicros * 2
-					&& (nextEnd == null || nextEnd.micros >= currEnd.micros + minimumMicros * 2)) {
-				// The reason we also check for nextStart not null is that nextnextnext might have a start closeby,
-				// and since we dont check that we make sure next or nextnext has a start.
-				// there is not room for prev to curr. There is no start at curr. Next is not close to curr.
-				// we move curr later, so there is room
-				List<GridLine> list = microsWeights.get(keys[i]);
-				microsWeights.remove(keys[i]);
-				long newMicros = prevStart.micros + minimumMicros;
-				for (GridLine line : list) {
-					line.micros = newMicros;
+				if (nextStart != null && currStart != null// && nextEnd != null
+						&& currStart.micros + minimumMicros > nextStart.micros
+						&& ((prevStart != null && prevStart.micros + minimumMicros*2 < currStart.micros) || (prevEnd != null && prevEnd.micros + minimumMicros*2 < currStart.micros))
+						//&& nextEnd.micros <= nextStart.micros // TODO: wont this always be true?
+					) {
+					// there is not room for curr to next, it does not overlap with next start, and prev gridlines is not closeby
+					// we move curr earlier, so there is room
+					List<GridLine> list = microsWeights.get(keys[i]);
+					microsWeights.remove(keys[i]);
+					long newMicros = nextStart.micros - minimumMicros;
+					if (list.get(0).micros > debugStart && list.get(0).micros < debugEnd) debugOutput(4, "Moving lines earlier "+Util.formatDurationM(list.get(0).micros)+" to "+Util.formatDurationM(newMicros));
+					for (GridLine line : list) {
+						line.micros = newMicros;
+					}
+					microsWeights.put(newMicros, list);
 				}
-				microsWeights.put(newMicros, list);
+				if (nextStart != null && currEnd != null && currStart == null && prevStart != null
+						&& prevStart.micros + minimumMicros > currEnd.micros
+						&& nextStart.micros >= currEnd.micros + minimumMicros * 2
+						&& (nextEnd == null || nextEnd.micros >= currEnd.micros + minimumMicros * 2)) {
+					// The reason we also check for nextStart not null is that nextnextnext might have a start closeby,
+					// and since we dont check that we make sure next or nextnext has a start.
+					// there is not room for prev to curr. There is no start at curr. Next is not close to curr.
+					// we move curr later, so there is room
+					List<GridLine> list = microsWeights.get(keys[i]);
+					microsWeights.remove(keys[i]);
+					long newMicros = prevStart.micros + minimumMicros;
+					if (list.get(0).micros > debugStart && list.get(0).micros < debugEnd) debugOutput(4, "Moving lines later "+Util.formatDurationM(list.get(0).micros)+" to "+Util.formatDurationM(newMicros));
+					for (GridLine line : list) {
+						line.micros = newMicros;
+					}
+					microsWeights.put(newMicros, list);
+				}
+				
+				prevStart = currStart;
+				prevEnd = currEnd;
 			}
-			
-			prevStart = currStart;
-			prevEnd = currEnd;
 		}
 		
 		List<GridLine> gridLines = new ArrayList<>();
@@ -2846,12 +2853,14 @@ public class AbcExporter {
 	            if (line.type == START) {
 	            	type = START;
 	            	firstStartMicros = line.micros;
+	            	if (firstStartMicros > debugStart && firstStartMicros < debugEnd) debugOutput(4, "Starts weighs only "+Util.formatDurationM(firstStartMicros));
 	            	break;
 	            }
 	        }
 	        for (GridLine line : cluster) {
 	        	// If there is start present, ignore weight of ends:
 	        	if (endsShouldHaveNoSwayOverStartWeights && type == START && line.type == END) continue;
+	        	if (line.micros > debugStart && line.micros < debugEnd) debugOutput(4, "Weight of "+Util.formatDurationM(line.micros)+" is "+line.weight);
 	            weightedSum += line.micros * line.weight;
 	            totalWeight += line.weight;
 	        }
@@ -2928,6 +2937,7 @@ public class AbcExporter {
 	        
 	        if (curr.micros - prev.micros < minimumMicros) {
 	        	if (curr.weight > prev.weight && prev.micros != 0L) {
+	        		if (prev.micros > debugStart && prev.micros < debugEnd) debugOutput(4, "Too close gridlines, removing "+Util.formatDurationM(prev.micros)+", adding "+Util.formatDurationM(curr.micros));
 	        		refinedGrid.remove(prev);
 	        		refinedGrid.add(curr);
 	        		prev = curr;
@@ -2994,6 +3004,15 @@ public class AbcExporter {
 				
 		List<AbcNoteEvent> snappedNotes = new ArrayList<>(notes.size());
 		
+		if (debug > 3) {
+			for (Long microGridLine : grid) {
+				if (microGridLine > 70000000L && microGridLine < 74000000) {
+					System.out.print(Util.formatDurationM(microGridLine)+", ");
+				}
+			}
+			System.out.println();
+		}
+		
 	    for (AbcNoteEvent note : notes) {
 	    	
 	        Long floor = grid.floor(note.origStartABCMicros);
@@ -3003,18 +3022,23 @@ public class AbcExporter {
 	        if (floor == null && ceiling == null) {
 	        	continue; // fallback: no grid available
 	        } else if (floor == null) {
+	        	debugOutput(2, "Start at ceiling (floor null) "+Util.formatDurationM(ceiling)+" for "+Util.formatDurationM(note.origStartABCMicros));
 	            candidateStart = ceiling;
 	        } else if (ceiling == null) {
+	        	debugOutput(2, "Start at floor (ceil null) "+Util.formatDurationM(floor)+" for "+Util.formatDurationM(note.origStartABCMicros));
 	            candidateStart = floor;
 	        } else {
 	            if (Math.abs(note.origStartABCMicros - floor) <= Math.abs(note.origStartABCMicros - ceiling)) {
+	            	debugOutput(2, "Start at floor "+Util.formatDurationM(floor)+" for ("+Util.formatDurationM(note.origStartABCMicros)+" - "+Util.formatDurationM(note.origEndABCMicros)+") ceiling="+Util.formatDurationM(ceiling));
 	                candidateStart = floor;
 	            } else {
+	            	debugOutput(2, "Start at ceiling "+Util.formatDurationM(ceiling)+" for ("+Util.formatDurationM(note.origStartABCMicros)+" - "+Util.formatDurationM(note.origEndABCMicros)+") floor="+Util.formatDurationM(floor));
 	                candidateStart = ceiling;
 	            }
 	        }
 	        // Check that the shift does not exceed max relative to the original start.
 	        if (Math.abs(candidateStart - note.origStartABCMicros) > getMaxStartShiftMicros(note.origDurationMicros, minimumMicros)) {
+	        	debugOutput(2, "dropping1 "+Util.formatDurationM(note.origStartABCMicros)+" - "+Util.formatDurationM(note.origEndABCMicros));
 	            continue;
 	        }
 	        note.setStartTick(qtm.microsToTickABCOrganic(candidateStart));
@@ -3026,6 +3050,7 @@ public class AbcExporter {
 	        ceiling = grid.ceiling(note.origEndABCMicros);
 	        Long candidateEnd;
 	        if (ceiling != null && candidateStart == ceiling) {
+	        	debugOutput(2, "dropping2 "+Util.formatDurationM(note.origStartABCMicros)+" - "+Util.formatDurationM(note.origEndABCMicros));
 	        	continue;
 	        } else if (floor == null || floor == candidateStart) {
 	        	candidateEnd = ceiling;
@@ -3045,12 +3070,14 @@ public class AbcExporter {
 	        
 	        if (candidateEnd == null) {
 	        	// ceiling == null and ( floor == null or taken by start )
+	        	debugOutput(2, "dropping3 "+Util.formatDurationM(note.origStartABCMicros)+" - "+Util.formatDurationM(note.origEndABCMicros));
 	        	continue;
 	        }
 	        
 	        //	Check that the shift does not exceed max relative to the original end.
 	        if (Math.abs(candidateEnd - note.origEndABCMicros) > minimumMicros * 3L/2L) {//90 ms
 	        	//System.out.println(parts.get(0).getAbcSong().getTitle()+": End grid was too far from note end:"+(Math.abs(candidateEnd - note.origEndABCMicros)/(double)minimumMicros));
+	        	debugOutput(2, "dropping4 "+Util.formatDurationM(note.origStartABCMicros)+" - "+Util.formatDurationM(note.origEndABCMicros));
 	            continue;
 	        }
 
@@ -3058,6 +3085,7 @@ public class AbcExporter {
 	        note.origEndABCMicros = candidateEnd;
 	        
 	        if (note.origEndABCMicros - note.origStartABCMicros <= 0L || note.getEndTick() - note.getStartTick() <= 0L) {
+	        	debugOutput(2, "dropping5 "+Util.formatDurationM(note.origStartABCMicros)+" - "+Util.formatDurationM(note.origEndABCMicros));
 	        	continue;
 	        }
 	        
@@ -3237,29 +3265,34 @@ public class AbcExporter {
 			 * silence entire part. So to prevent that, we shorten
 			 * some notes to be same dura as the chord.
 			 */
-			List<AbcNoteEvent> prevNotes = new ArrayList<>();
-			long prevShortest = -1L;
+	    	List<AbcNoteEvent> notesOn = new ArrayList<>();
 			Chord preChord = null;
 			for (Chord chord : chords) {
 				if (preChord != null) {
 					for (AbcNoteEvent curr : chord.getNotes()) {
-						for (AbcNoteEvent pre : prevNotes) {
+						for (AbcNoteEvent pre : notesOn) {
 							if (pre.note == curr.note) {
-								pre.origEndABCMicros = prevShortest;
+								pre.origEndABCMicros = curr.origStartABCMicros;
 								assert curr.origEndABCMicros > pre.origEndABCMicros;
-								//System.out.println(part.getAbcSong().getTitle()+ ": normalizing note!!!");
+								debugOutput(2, part.getAbcSong().getTitle()+ ": normalizing note!!!");
 							}
 						}
 					}
 				}
-				prevNotes = new ArrayList<>();
-				prevShortest = chord.getShortest().origEndABCMicros;
+				List longerNotes = new ArrayList<>();
 				for (AbcNoteEvent ne : chord.getNotes()) {
-					if (ne.origEndABCMicros > prevShortest) {
-						prevNotes.add(ne);
+					if (ne.origEndABCMicros > chord.getShortest().origEndABCMicros) {
+						longerNotes.add(ne);
 					}
 				}
-				preChord = chord;
+				List notesOff = new ArrayList();
+				for (AbcNoteEvent ne : notesOn) {
+					if (ne.origEndABCMicros <= chord.getShortest().origEndABCMicros) {
+						notesOff.add(ne);
+					}
+				}
+				notesOn.removeAll(notesOff);
+				notesOn.addAll(longerNotes);
 			}
 		}
 	    
@@ -3278,10 +3311,12 @@ public class AbcExporter {
 		boolean both = curChord.hasRestAndNotes();
 		for (AbcNoteEvent note : tmp) {
 			if (!useRestToShortenChords && both && note.note == Note.REST) {
+				debugOutput(2, "Removing rest");
 				curChord.remove(note);
 			}
 			for (AbcNoteEvent note2 : tmp) {
 				if (note != note2 && note.note == note2.note) {
+					// chord contains 2 notes with same pitch
 					if (!curChord.getNotes().contains(note) || !curChord.getNotes().contains(note2)) {
 						// one of them has already been removed
 						continue;
@@ -3290,25 +3325,17 @@ public class AbcExporter {
 					List<AbcNoteEvent> secondList = new ArrayList<>();
 					firstList.add(note);
 					secondList.add(note2);
-					if (note.tiesTo != null && note2.tiesTo != null) {
-						long first = note.getFullLengthTicks();
-						long second = note2.getFullLengthTicks();
-						if (first >= second) {
-							curChord.remove(note2);
-							removeNotes(eventSegments, secondList, part);
-						} else {
-							curChord.remove(note);
-							removeNotes(eventSegments, firstList, part);
-						}
-					} else if (note.tiesTo != null) {
+
+					long first = note.getTieEnd().getEndTick();
+					long second = note2.getTieEnd().getEndTick();
+					if (first >= second) {
+						debugOutput(2, "Remove dupli-a "+Util.formatDurationM(note2.origStartABCMicros)+" - "+Util.formatDurationM(note2.origEndABCMicros));
 						curChord.remove(note2);
 						removeNotes(eventSegments, secondList, part);
-					} else if (note2.tiesTo != null) {
+					} else {
+						debugOutput(2, "Remove dupli-b "+Util.formatDurationM(note.origStartABCMicros)+" - "+Util.formatDurationM(note.origEndABCMicros));
 						curChord.remove(note);
 						removeNotes(eventSegments, firstList, part);
-					} else {
-						curChord.remove(note2);
-						removeNotes(eventSegments, secondList, part);
 					}
 				}
 			}
@@ -3358,6 +3385,7 @@ public class AbcExporter {
 					restShorter.origEndABCMicros = ceilMicros;
 					assert restShorter.origEndABCMicros - restShorter.origStartABCMicros < TimingInfo.LONGEST_NOTE_MICROS + 70000 : ((ne.origEndABCMicros - ne.origStartABCMicros)/1000) +" ms";
 					segments.add(restShorter);
+					debugOutput(2, "Add rest into chord starting at "+Util.formatDurationM(restShorter.origStartABCMicros));
 					break;
 				} else if (!rest && (drone || (restartMicros + TimingInfo.LONGEST_NOTE_MICROS -1 > ceilMicros))) {
 					
