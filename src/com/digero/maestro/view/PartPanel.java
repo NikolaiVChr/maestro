@@ -536,17 +536,21 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 						abcPart.getAbcSong());
 			histogramPanel.setAbcPreviewMode(isAbcPreviewMode, showMaxPolyphony);
 			histogramPanel.revalidate();
+			
 			controlPanel.add(histogramPanel,"x");
 			noteGraphPanel.add(histogramPanel.getNoteGraph(),"x");
+			
 
 			// Add the tracks and note graphs
 			for (TrackInfo track : abcPart.getSequenceInfo().getTrackList()) {
 				int trackNumber = track.getTrackNumber();
 				if (track.hasEvents()) {
+					
 					TrackPanel trackPanel = new TrackPanel(track, sequencer, abcPart, abcSequencer, controlLayout);
 					trackPanel.setAbcPreviewMode(isAbcPreviewMode);
 					controlPanel.add(trackPanel,"x");
 					noteGraphPanel.add(trackPanel.getNoteGraph(),"x");
+					
 					
 //					if (trackPanel.hasDrumPanels()) {
 //						ArrayList<DrumPanel> drums = trackPanel.getDrumPanels();

@@ -6,6 +6,7 @@ import info.clearthought.layout.TableLayoutConstants;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Insets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -22,6 +23,7 @@ import com.digero.common.util.IDiscardable;
 import com.digero.common.util.Listener;
 import com.digero.common.util.Pair;
 import com.digero.common.view.ColorTable;
+import com.digero.common.view.LeanJLabel;
 import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.abc.PolyphonyHistogram;
 import com.digero.maestro.midi.FakeNoteEvent;
@@ -63,7 +65,7 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 	private boolean abcPreviewMode = false;
 
 	private HistogramNoteGraph histoGraph;
-	private JLabel currentCountLabel;
+	private LeanJLabel currentCountLabel;
 
 	private AbcSong abcSong;
 
@@ -102,9 +104,11 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 		titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD));
 		titleLabel.setForeground(ColorTable.PANEL_TEXT_DISABLED.get());
 
-		currentCountLabel = new JLabel();
+		currentCountLabel = new LeanJLabel("128 notes (Peak: 128)");
 		currentCountLabel.setForeground(ColorTable.PANEL_TEXT_DISABLED.get());
 		currentCountLabel.setToolTipText("Number of concurrent playing notes.\nThis is useful due to lotro's limitation of 64 sounds, including dance footsteps and emotes.\nGreen sections have under 45 notes at once, and shouldn't have note loss.\nYellow sections have 45+ notes, and red sections have 64+ notes.");
+		currentCountLabel.setHorizontalAlignment(JLabel.RIGHT);
+		
 		updateCountLabel();
 
 		add(gutter, GUTTER_COLUMN + ", 0");
@@ -133,6 +137,7 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 		if (this.abcPreviewMode != abcPreviewMode) {
 			this.abcPreviewMode = abcPreviewMode;
 			updateCountLabel();
+			currentCountLabel.revalidate();
 		}
 		setVisible(abcPreviewMode && showMaxPolyphony);
 		histoGraph.setVisible(abcPreviewMode && showMaxPolyphony);
@@ -155,7 +160,7 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 			PolyphonyHistogram.sumUp(abcSong);
 		}
 		int notes = PolyphonyHistogram.get(abcSequencer.getThumbPosition());// Must be abcSeq, due to tuneeditor can change micros from this call
-		currentCountLabel.setText(notes + " notes (Peak: " + PolyphonyHistogram.max() + ")");
+		currentCountLabel.setText(notes + " notes (Peak: " + PolyphonyHistogram.max()+")");
 	}
 
 	private Listener<SequencerEvent> sequencerListener = e -> {

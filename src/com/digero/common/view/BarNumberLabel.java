@@ -1,6 +1,14 @@
 package com.digero.common.view;
 
-import javax.swing.JLabel;
+import java.awt.Dimension;
+import java.awt.FontMetrics;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.Insets;
+import java.awt.RenderingHints;
+
+import javax.swing.JComponent;
+import javax.swing.UIManager;
 
 import com.digero.common.midi.IBarNumberCache;
 import com.digero.common.midi.SequencerEvent;
@@ -10,17 +18,18 @@ import com.digero.common.util.IDiscardable;
 import com.digero.common.util.Listener;
 
 @SuppressWarnings("serial")
-public class BarNumberLabel extends JLabel implements Listener<SequencerEvent>, IDiscardable {
+public class BarNumberLabel extends JComponent implements Listener<SequencerEvent>, IDiscardable {
 	private IBarNumberCache barNumberCache;
 	private SequencerWrapper sequencer;
 	private long initialOffsetTick = 0L;
 	private boolean floatingPoint = false;
+	
 
 	public BarNumberLabel(SequencerWrapper sequencer, IBarNumberCache barNumberCache, boolean floatingPoint) {
 		this.sequencer = sequencer;
 		this.barNumberCache = barNumberCache;
 		this.floatingPoint  = floatingPoint;
-
+		
 		sequencer.addChangeListener(this);
 	}
 
@@ -126,9 +135,55 @@ public class BarNumberLabel extends JLabel implements Listener<SequencerEvent>, 
 			bars = getBarString(sequencer, barNumberCache, initialOffsetTick);
 		}
 
-		if (!bars.equals("-/-")) {
-			lastPrintedBars = bars;
+		if (!bars.equals("-/-") && !lastPrintedBars.equals(bars)) {
 			setText(bars);
+			if (lastPrintedBars.length() < bars.length()) revalidate();
+			lastPrintedBars = bars;
 		}
 	}
+	
+	// BEGIN custom jlabel to avoid revalidate all the time:
+	
+	private String text = "";
+	private final Insets insets = new Insets(0, 4, 0, 4);
+	
+	public void setText(String t) {
+        if (!t.equals(text)) {
+            text = t;
+            repaint();
+        }
+    }
+
+    @Override
+    public Dimension getPreferredSize() {
+        FontMetrics fm = getFontMetrics(getFont());
+        int w = fm.stringWidth(text) + insets.left + insets.right;
+        int h = fm.getHeight()   + insets.top  + insets.bottom;
+        return new Dimension(w, h);
+    }
+
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        
+        Graphics2D g2 = (Graphics2D) g.create();
+        
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
+		g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS,RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+		g2.setFont(UIManager.getFont("Label.font"));
+		g2.setColor(isEnabled()
+                ? UIManager.getColor("Label.foreground")
+                : UIManager.getColor("Label.disabledForeground"));
+		
+        // draw background:
+        // g.setColor(getBackground());
+        // g.fillRect(0, 0, getWidth(), getHeight());
+
+        FontMetrics fm = g2.getFontMetrics(getFont());
+        int x = insets.left;
+        int y = insets.top + fm.getAscent(); 
+        g2.drawString(text, x, y);
+        g2.dispose();
+    }
 }

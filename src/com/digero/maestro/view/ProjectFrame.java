@@ -952,15 +952,19 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		});
 
 		midiPositionLabel = new SongPositionLabel(sequencer);
+		midiPositionLabel.setText("000:00/000:00");
 
 		abcPositionLabel = new SongPositionLabel(abcSequencer, true /* adjustForTempo */);
+		abcPositionLabel.setText("000:00/000:00");
 		abcPositionLabel.setVisible(!midiPositionLabel.isVisible());
 
 		midiBarLabel = new BarNumberLabel(sequencer, null, true);
 		midiBarLabel.setToolTipText("Original Bar number");
+		midiBarLabel.setText("000,00/000");
 
 		abcBarLabel = new BarNumberLabel(abcSequencer, null, false);
 		abcBarLabel.setToolTipText("ABC Preview Bar number");
+		abcBarLabel.setText("000/000");
 		abcBarLabel.setVisible(!midiBarLabel.isVisible());
 
 		noteButton = new JButton("Note");
