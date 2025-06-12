@@ -7,12 +7,6 @@ import java.awt.Rectangle;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
-import java.awt.dnd.DnDConstants;
-import java.awt.dnd.DropTarget;
-import java.awt.dnd.DropTargetDragEvent;
-import java.awt.dnd.DropTargetDropEvent;
-import java.awt.dnd.DropTargetEvent;
-import java.awt.dnd.DropTargetListener;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -71,14 +65,16 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 		});
 		
 		model = new DefaultListModel<AbcPart>();
-				
-		DropTarget dt = new DropTarget(PartsList.this, DnDConstants.ACTION_MOVE, new PartsListDropHandler(), true);
-		setTransferHandler(new PanelTransferHandler(this));
-		setDropTarget(dt);
+			
+		setTransferHandler(new PanelTransferHandler(this, true, false));
+		//DropTarget dt = new DropTarget(PartsList.this, DnDConstants.ACTION_MOVE, new PartsListDropHandler(), true);
+		
+		//setDropTarget(dt);
+		
 		
 		setPreferredSize(new Dimension(250,24*20));
 	}
-
+	
 	public void updateParts() {
 		parts = new ArrayList<PartsListItem>();
 		removeAll();
@@ -98,12 +94,10 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 
 	protected void addPart(int idx) {
 		AbcPart part = model.elementAt(idx);
-		PartsListItem item = new PartsListItem(part, false);
+		PartsListItem item = new PartsListItem(part, false, this);
 
 		item.setItemListener(itemListener);
-		item.setTransferHandler(new PanelTransferHandler(this));
-		item.setDropTarget(new DropTarget(item, DnDConstants.ACTION_MOVE, new PartsListDropHandler(), true));
-		
+				
 		if (part == selectedPart) {
 			selectedIndex = idx;
 			item.setSelected(true);
@@ -306,19 +300,26 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 		}
 	};
 	
-	public class PanelTransferHandler extends TransferHandler {
+	public static class PanelTransferHandler extends TransferHandler {
 		
 		PartsList main;
+		private boolean canImport;
+		private boolean export;
 		
-		PanelTransferHandler(PartsList main) {
+		PanelTransferHandler(PartsList main, boolean canImport, boolean export) {
+			super();
+			this.canImport = canImport;
+			this.export = export;
 			this.main = main;
 		}
-			
+		
+		@Override
 		protected Transferable createTransferable(JComponent c) {
 		    //System.out.println("Starting drag for: " + c);
-		    if (!(c instanceof PartsListItem)) return null;
+			
+		    if (!export) return null;
 
-		    int panelIndex = model.indexOf(((PartsListItem) c).getPart()); 
+		    int panelIndex = main.model.indexOf(((PartsListItem) c.getParent()).getPart()); 
 		    if (panelIndex == -1) {
 		        System.out.println("Warning: Item not found in model!");
 		        return null;
@@ -327,10 +328,31 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 		    //System.out.println("Panel Index: " + panelIndex);
 		    return new CustomTransferable(String.valueOf(panelIndex)); 
 		}
-
+		
+		@Override
         public int getSourceActions(JComponent c) {
-            return DnDConstants.ACTION_MOVE;
+			if (!export) return TransferHandler.NONE;
+            return TransferHandler.MOVE;
         }
+		
+		@Override
+	    public boolean importData(TransferSupport support) {
+	        if (!canImport(support)) return false;
+	        try {
+	            String partId = (String)
+	                support.getTransferable()
+	                       .getTransferData(PANEL_FLAVOR);
+	            JComponent target = (JComponent) support.getComponent();
+	            Point dropPt =
+	                support.getDropLocation()
+	                       .getDropPoint();
+	            handleDrop(target, partId, dropPt);
+	            return true;
+	        } catch (Exception e) {
+	            e.printStackTrace();
+	            return false;
+	        }
+	    }
               
         public void handleDrop(JComponent target, String partId, Point dropPoint) {
             //System.out.println("Processing drop inside PanelTransferHandler...");
@@ -376,15 +398,23 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
             return main.getComponentCount(); // Drop at the end
         }
 
+        @Override
         public boolean canImport(TransferSupport support) {
-        	boolean result = support.isDataFlavorSupported(PANEL_FLAVOR);
+        	boolean result = canImport && support.isDataFlavorSupported(PANEL_FLAVOR);
             return result;
+        }
+        
+        @Override
+        public void exportDone(JComponent c, Transferable t, int action) {
+            if (action == TransferHandler.MOVE) {
+                //cleanup
+            }
         }
     }
 	
 	static final DataFlavor PANEL_FLAVOR = new DataFlavor("application/x-custom-string", "Part index");
 	
-	public class CustomTransferable implements Transferable {
+	public static class CustomTransferable implements Transferable {
 	    private final String data;
 
 	    public CustomTransferable(String data) {
@@ -408,59 +438,6 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 	    }
 	}
 	
-	public class PartsListDropHandler implements DropTargetListener {
-		Component previousTarget = null;
-		
-		@Override
-		public void dragEnter(DropTargetDragEvent dtde) {
-		    dtde.acceptDrag(DnDConstants.ACTION_MOVE);
-		    
-		    //dtde.getDropTargetContext().getComponent().setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-		}
-
-		@Override
-		public void dragExit(DropTargetEvent dte) {
-		    //dte.getDropTargetContext().getComponent().setCursor(Cursor.getDefaultCursor());
-		}
-
-		@Override
-		public void dragOver(DropTargetDragEvent dtde) {
-		}
-
-	    @Override
-	    public void dropActionChanged(DropTargetDragEvent dtde) {
-	        //System.out.println("Drop action changed to: " + dtde.getDropAction());
-	    }
-
-	    @Override
-	    public void drop(DropTargetDropEvent dtde) {
-	    	Component target = dtde.getDropTargetContext().getComponent();
-	    	//System.out.println("Drop event triggered! "+target);
-	    	
-	        try {
-	            Transferable transferable = dtde.getTransferable();
-	            if (transferable.isDataFlavorSupported(PANEL_FLAVOR)) {
-	            	dtde.acceptDrop(DnDConstants.ACTION_MOVE);
-	                String partId = (String) transferable.getTransferData(PANEL_FLAVOR);
-	                //System.out.println("Dropped item ID: " + partId);
-
-	                TransferHandler transferHandler = ((JComponent) dtde.getDropTargetContext().getComponent()).getTransferHandler();
-	                if (transferHandler instanceof PanelTransferHandler) {
-	                    ((PanelTransferHandler) transferHandler).handleDrop(((JComponent) dtde.getDropTargetContext().getComponent()), partId, dtde.getLocation());
-	                } else {
-	                    System.out.println("TransferHandler is not correctly assigned to PartsList!");
-	                }
-	            } else {
-	                System.out.println("Unsupported DataFlavor!");
-	            }
-	        } catch (Exception e) {
-	            e.printStackTrace();
-	        }
-
-	        dtde.dropComplete(true);
-	    }
-	}
-
 	JScrollPane scrollPane = null;
 	public void setScroll(JScrollPane partsListScrollPane) {
 		scrollPane = partsListScrollPane;

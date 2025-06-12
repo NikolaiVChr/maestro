@@ -75,9 +75,13 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 	protected Color unselectedBg;
 
 	protected Listener<PartsListItemEvent> itemListener = null;
+	
+	private PartsList parent = null;
 
-	public PartsListItem(AbcPart part, boolean showBadger) {
+	public PartsListItem(AbcPart part, boolean showBadger, PartsList parent) {
 		super();
+		
+		this.parent = parent;
 
 		this.setPart(part);
 
@@ -179,6 +183,7 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 	}
 
 	protected void initPost() {
+		
 		title.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mousePressed(MouseEvent e) {
@@ -189,25 +194,34 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 				}
 			}
 		});
+		
 		title.addMouseMotionListener(new MouseMotionAdapter() {
+			
 			@Override
 			public void mouseDragged(MouseEvent e) {
 				if (SwingUtilities.isLeftMouseButton(e)) {
-					JComponent jc = (JComponent) e.getSource();
-                    JPanel parentPanel = (JPanel) jc.getParent(); // Get enclosing panel
-                    parentPanel.getTransferHandler().exportAsDrag(parentPanel, e, TransferHandler.MOVE);
+					JComponent source = (JComponent) e.getSource();
+					source.getTransferHandler().exportAsDrag(source, e, TransferHandler.MOVE);
 				}
+			}
+			
+			@Override
+			public void mouseMoved(MouseEvent e) {
 			}
 		});
 		this.addMouseMotionListener(new MouseMotionAdapter() {
 			@Override
 			public void mouseDragged(MouseEvent e) {
 				if (SwingUtilities.isLeftMouseButton(e)) {
-                	JComponent jc = (JComponent) e.getSource();
-                    jc.getTransferHandler().exportAsDrag(jc, e, TransferHandler.MOVE);
+                	title.getTransferHandler().exportAsDrag(title, e, TransferHandler.MOVE);
 				}
 			}
 		});
+		if (parent != null) {
+			title.setTransferHandler(new PartsList.PanelTransferHandler(parent, false, true));
+			title.setDropTarget(null);
+			setDropTarget(null);
+		}
 	}
 
 	protected PartsListItem(String titleTxt) {

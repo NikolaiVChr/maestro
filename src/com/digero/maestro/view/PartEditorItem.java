@@ -32,7 +32,7 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 	
 
 	public PartEditorItem(AbcPart part, boolean showBadger) {
-		super(part, showBadger);
+		super(part, showBadger, null);
 	}
 		
 	@Override
