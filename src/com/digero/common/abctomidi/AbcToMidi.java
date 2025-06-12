@@ -749,7 +749,6 @@ public class AbcToMidi {
 			}
 		}
 		if (noteOffEvents.size() > 0 && track != null) {
-			System.out.println(noteOffEvents.getLast().getTick());
 			track.add(MidiFactory.createEndOfTrackEvent(noteOffEvents.getLast().getTick()));
 		}
 
