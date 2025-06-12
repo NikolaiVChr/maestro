@@ -206,6 +206,9 @@ public class AbcToMidi {
 							}
 
 							accidentals.clear();
+							if (noteOffEvents.size() > 0 && track != null) {
+								track.add(MidiFactory.createEndOfTrackEvent(noteOffEvents.getLast().getTick()));
+							}
 							noteOffEvents.clear();
 
 							if (trackNumber > 0)
@@ -735,7 +738,7 @@ public class AbcToMidi {
 					if (brokenRhythmDenominator != 1 || brokenRhythmNumerator != 1)
 						throw new ParseException("Broken rhythm unfinished at end of line", fileName, lineNumber, i);
 				}
-			}
+			}			
 
 			if (seq == null)
 				throw new ParseException("The file contains no notes", fileName, lineNumber);
@@ -744,6 +747,10 @@ public class AbcToMidi {
 				throw new ParseException("Tied note does not connect to another note", fileName, lineAndColumn >>> 16,
 						lineAndColumn & 0xFFFF);
 			}
+		}
+		if (noteOffEvents.size() > 0 && track != null) {
+			System.out.println(noteOffEvents.getLast().getTick());
+			track.add(MidiFactory.createEndOfTrackEvent(noteOffEvents.getLast().getTick()));
 		}
 
 		abcInfo.setPartEndLine(trackNumber, lineNumberForRegions);
@@ -755,10 +762,16 @@ public class AbcToMidi {
 		Track[] tracks = seq.getTracks();
 
 		// Add tempo events
+		Long tick = null;
 		for (Map.Entry<Long, Integer> tempoEvent : info.getAllPartsTempoMap().entrySet()) {
-			long tick = tempoEvent.getKey();
+			tick = tempoEvent.getKey();
 			int mpq = (int) MidiUtils.convertTempo(tempoEvent.getValue());
 			tracks[0].add(MidiFactory.createTempoEvent(mpq, tick));
+		}
+		if (tick == null) {
+			tracks[0].add(MidiFactory.createEndOfTrackEvent(1L));
+		} else {
+			tracks[0].add(MidiFactory.createEndOfTrackEvent(tick));
 		}
 
 		// Add name and pan events
@@ -777,6 +790,8 @@ public class AbcToMidi {
 		if (MidiFactory.isSupportedMidiKeyMode(abcInfo.getKeySignature().mode))
 			tracks[0].add(MidiFactory.createKeySignatureEvent(abcInfo.getKeySignature(), 0));
 
+		
+		
 		return seq;
 	}
 
