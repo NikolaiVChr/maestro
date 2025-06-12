@@ -20,6 +20,7 @@ import javax.sound.midi.ShortMessage;
 import javax.sound.midi.SysexMessage;
 import javax.sound.midi.Track;
 
+import com.digero.common.abc.AbcConstants;
 import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.abctomidi.AbcToMidi;
 import com.digero.common.midi.MidiConstants;
@@ -28,6 +29,7 @@ import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.MidiFactory;
 import com.digero.common.midi.MidiStandard;
 import com.digero.common.midi.MidiUtils;
+import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.midi.TimeSignature;
 import com.digero.common.util.Pair;
 import com.digero.common.util.ParseException;
@@ -947,8 +949,8 @@ public class SequenceInfo implements MidiConstants {
 	 */
 	@SuppressWarnings("unchecked") //
 	public static long fixupTrackLength(Sequence song) {
-		//System.out.println("Before: " + Util.formatDuration(song.getMicrosecondLength()));
-		//SequencerWrapper.TempoCacheSlow tempoCache = new SequencerWrapper.TempoCacheSlow(song);
+		//System.out.println("Before: " + Util.formatDurationM(song.getMicrosecondLength()));
+		SequencerWrapper.TempoCacheSlow tempoCache = new SequencerWrapper.TempoCacheSlow(song);
 		Track[] tracks = song.getTracks();
 		List<MidiEvent>[] suspectEvents = new List[tracks.length];
 		TreeSet<MidiEvent> allEvents = new TreeSet<>(new Comparator<MidiEvent>() {
@@ -967,7 +969,7 @@ public class SequenceInfo implements MidiConstants {
 		}
 		
 		long last = 0L;
-		long maxEmpty = song.getTickLength()/4L;
+		long maxEmpty = Math.max(song.getTickLength()/4L, MidiUtils.microsecond2tick(song, 20L*AbcConstants.ONE_SECOND_MICROS, tempoCache));
 		
 		for(MidiEvent evt : allEvents) {
 			if (evt.getTick() > last && evt.getTick() < last + maxEmpty) {
@@ -1003,9 +1005,11 @@ public class SequenceInfo implements MidiConstants {
 			for (MidiEvent evt : suspectEvents[i]) {
 				if (evt.getTick() > endTick) {
 					tracks[i].remove(evt);
-//					System.out.println("Moving event from "
-//							+ Util.formatDuration(MidiUtils.tick2microsecond(song, evt.getTick(), tempoCache)) + " to "
-//							+ Util.formatDuration(MidiUtils.tick2microsecond(song, endTick, tempoCache)));
+					/*
+					System.out.println("Moving event from "
+							+ Util.formatDurationM(MidiUtils.tick2microsecond(song, evt.getTick(), tempoCache)) + " to "
+							+ Util.formatDurationM(MidiUtils.tick2microsecond(song, endTick, tempoCache)));
+					*/
 					evt.setTick(endTick);
 					tracks[i].add(evt);
 				}
@@ -1042,8 +1046,8 @@ public class SequenceInfo implements MidiConstants {
 		//System.out.println("last="+last+" endTick="+endTick);
 		
 		//System.out.println("Real song duration: "
-		//		+ Util.formatDuration(MidiUtils.tick2microsecond(song, last, tempoCache)));
-		//System.out.println("After: " + Util.formatDuration(song.getMicrosecondLength()));
+		//		+ Util.formatDurationM(MidiUtils.tick2microsecond(song, last, tempoCache)));
+		//System.out.println("After: " + Util.formatDurationM(song.getMicrosecondLength()));
 		return last + 1L;
 	}
 
