@@ -1,12 +1,22 @@
 package com.digero.maestro.view;
 
+import java.awt.BasicStroke;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.dnd.DnDConstants;
+import java.awt.dnd.DropTarget;
+import java.awt.dnd.DropTargetAdapter;
+import java.awt.dnd.DropTargetDragEvent;
+import java.awt.dnd.DropTargetDropEvent;
+import java.awt.dnd.DropTargetEvent;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,6 +56,8 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 	private SequencerWrapper abcSequencer;
 
 	protected final Dimension rowDimension;
+	private int dropInsertIndex = -1;
+	private PanelTransferHandler handler;
 
 	public PartsList(SequencerWrapper abcSequencer, MiscSettings miscSettings) {
 		this.abcSequencer = abcSequencer;
@@ -66,10 +78,60 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 		
 		model = new DefaultListModel<AbcPart>();
 			
-		setTransferHandler(new PanelTransferHandler(this, true, false));
-		//DropTarget dt = new DropTarget(PartsList.this, DnDConstants.ACTION_MOVE, new PartsListDropHandler(), true);
-		
-		//setDropTarget(dt);
+		handler = new PanelTransferHandler(this, true, false);
+		setTransferHandler(handler);		
+		new DropTarget(this, DnDConstants.ACTION_MOVE, new DropTargetAdapter() {
+					    
+		    @Override
+		    public void dragEnter(DropTargetDragEvent dtde) {
+		        if (dtde.isDataFlavorSupported(PANEL_FLAVOR)) {
+		            dtde.acceptDrag(DnDConstants.ACTION_MOVE);
+		        }
+		        else {
+		            dtde.rejectDrag();
+		        }
+		    }
+
+		    @Override
+		    public void dragOver(DropTargetDragEvent dtde) {
+		        if (dtde.isDataFlavorSupported(PANEL_FLAVOR)) {
+		            dtde.acceptDrag(DnDConstants.ACTION_MOVE);
+
+		            Point p = dtde.getLocation();
+		            dropInsertIndex = handler.getDropIndex(dtde.getDropTargetContext().getComponent(), p);
+		            repaint();
+		        }
+		        else {
+		            dtde.rejectDrag();
+		        }
+		    }
+
+		    @Override
+		    public void dragExit(DropTargetEvent dte) {
+		        dropInsertIndex = -1;
+		        repaint();
+		    }
+
+		    @Override
+		    public void drop(DropTargetDropEvent dtde) {
+		        dropInsertIndex = -1;
+		        repaint();
+		        try {
+		        	if (handler != null && dtde.getTransferable().getTransferData(PANEL_FLAVOR) instanceof String) {
+		        	dtde.acceptDrop(DnDConstants.ACTION_MOVE);
+		        			                
+		                handler.handleDrop(PartsList.this, (String)dtde.getTransferable().getTransferData(PANEL_FLAVOR),dtde.getLocation());
+		                dtde.dropComplete(true);
+		        	} else {
+		        		dtde.dropComplete(false);
+		        		return;
+		        	}
+		        } catch (Exception ex) {
+	                dtde.dropComplete(false);
+	                ex.printStackTrace();
+	            }
+		    }
+		}, true);
 		
 		
 		setPreferredSize(new Dimension(250,24*20));
@@ -385,7 +447,7 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
             }
         }
         
-        private int getDropIndex(Component target, Point dropPoint) {
+        public int getDropIndex(Component target, Point dropPoint) {
             int index = 0;
             for (Component comp : main.getComponents()) {
             	Point relativeDropPoint = SwingUtilities.convertPoint(target, dropPoint.getLocation(), main);
@@ -458,5 +520,32 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 		//System.out.println("Viewport size: " + scrollPane.getViewport().getSize());
 		//System.out.println("Inner component size: " + getSize());
 		return new Dimension(Math.max(w, scrollPane.getViewport().getWidth()), Math.max(h, scrollPane.getViewport().getHeight()));
+	}
+	
+	@Override
+	protected void paintChildren(Graphics g) {
+	    super.paintChildren(g);
+	    paintLine(g);
+	}
+	
+	protected void paintLine(Graphics g) {
+	    if (dropInsertIndex >= 0) {
+	        Graphics2D g2 = (Graphics2D) g.create();
+
+	        float[] dash = {4f, 4f};
+	        g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 1f, dash, 0f));
+	        g2.setColor(Color.LIGHT_GRAY);
+
+	        int y = 0;
+	        if (dropInsertIndex < getComponentCount()) {
+	            Component c = getComponent(dropInsertIndex);
+	            y = c.getY();
+	        } else if (getComponentCount() > 0) {
+	        	Component comp = getComponents()[getComponentCount()-1];
+	            y = comp.getY()+comp.getHeight();
+	        }
+	        g2.drawLine(0, y, getWidth(), y);
+	        g2.dispose();
+	    }
 	}
 }
