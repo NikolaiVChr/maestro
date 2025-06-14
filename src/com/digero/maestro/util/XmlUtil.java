@@ -84,7 +84,7 @@ public class XmlUtil {
 	            case 0x0099:       // “™” in C1 block
 	                cp = 0x2122;   // → ™
 	                break;
-	            case 0x00A9:       // © (okay in XML 1.1)
+	            case 0x00A9:       // © (okay in XML 1.1)
 	            case 0x00AE:       // ®
 	            case 0x20AC:       // €
 	                // leave as-is
@@ -107,7 +107,7 @@ public class XmlUtil {
 	            default:
 	        }
 
-	        // 2) filter against XML 1.1 literal Char production (disallow raw C1 controls)
+	        // 2) filter against XML 1.1 literal Char production (disallow raw C1 controls)
 	        if (isValidXml11Literal(cp)) {
 	            out.append(Character.toChars(cp));
 	        } else {
@@ -143,13 +143,12 @@ public class XmlUtil {
 	          || (codePoint >= 0xE000 && codePoint <= 0xFFFD)
 	          || (codePoint >= 0x10000&& codePoint <= 0x10FFFF))
 
-	            // minus RestrictedChar: [#x7F–#x84] and [#x86–#x9F]
+	            // minus RestrictedChar: [#x7F-#x84] and [#x86-#x9F]
 	            && !( (codePoint >= 0x7F  && codePoint <= 0x84)
 	                || (codePoint >= 0x86 && codePoint <= 0x9F) )
 	        ) {
 	            out.append(Character.toChars(codePoint));
 	        }
-	        // else: drop it
 
 	        i += Character.charCount(codePoint);
 	    }
@@ -164,7 +163,7 @@ public class XmlUtil {
 	    }
 	    // BMP range
 	    if (cp >= 0x20 && cp <= 0xD7FF) {
-	        // exclude C1 raw controls: 0x7F–0x84 and 0x86–0x9F
+	        // exclude C1 raw controls: 0x7F-0x84 and 0x86-0x9F
 	        if ((cp >= 0x7F && cp <= 0x84) || (cp >= 0x86 && cp <= 0x9F)) {
 	            return false;
 	        }

@@ -214,7 +214,7 @@ public class MidiUtils {
             return utf8;
         }
         
-        // Mix of acsii and Shift_JIS will trigger this
+        // Mix of ascii and Shift_JIS will trigger this
         String sjis = tryStrictShiftJis(data);
         if (sjis != null) {
             return sjis;
@@ -284,8 +284,8 @@ public class MidiUtils {
         for (int i = 0; i < data.length - 1; i++) {
             int b1 = data[i]   & 0xFF;
             int b2 = data[i+1] & 0xFF;
-            // Shift_JIS lead bytes: 0x81–0x9F, 0xE0–0xEF
-            // trail bytes:        0x40–0x7E, 0x80–0xFC
+            // Shift_JIS lead bytes: 0x81-0x9F, 0xE0-0xEF
+            // trail bytes:        0x40-0x7E, 0x80-0xFC
             if (((b1 >= 0x81 && b1 <= 0x9F) || (b1 >= 0xE0 && b1 <= 0xEF))
              && ((b2 >= 0x40 && b2 <= 0x7E) || (b2 >= 0x80 && b2 <= 0xFC))) {
                 return true;
