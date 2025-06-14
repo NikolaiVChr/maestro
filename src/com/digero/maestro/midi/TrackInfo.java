@@ -239,7 +239,7 @@ public class TrackInfo implements MidiConstants {
 
 				if (type == META_TRACK_NAME && name == null && m.getData() != null) {
 					byte[] data = m.getData();
-					System.out.println(MidiUtils.formatBytes(data));				
+					//System.out.println(MidiUtils.formatBytes(data));				
 					String tmp = MidiUtils.decodeMidiText(data);
 					
 					if (tmp.length() > 0 && !tmp.equalsIgnoreCase("untitled")
