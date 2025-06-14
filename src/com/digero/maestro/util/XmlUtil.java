@@ -191,6 +191,10 @@ public class XmlUtil {
 		try {
 			Transformer transformer = TransformerFactory.newInstance().newTransformer();
 			transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+			transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "no");
+			transformer.setOutputProperty(OutputKeys.METHOD,               "xml");
+			transformer.setOutputProperty(OutputKeys.VERSION,              "1.1");
+			transformer.setOutputProperty(OutputKeys.ENCODING,             "UTF-8");
 			transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
 			transformer.transform(new DOMSource(document), new StreamResult(stream));
 		} catch (TransformerConfigurationException | TransformerFactoryConfigurationError e) {
