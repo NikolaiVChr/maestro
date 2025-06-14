@@ -71,7 +71,7 @@ public class XmlUtil {
 		}
 	}
 	
-	public static String sanitizeXmlString(String input) {
+	public static String sanitizeXmlStringForLoading(String input) {
 	    if (input == null) return "";
 
 	    StringBuilder out = new StringBuilder(input.length());
@@ -119,6 +119,42 @@ public class XmlUtil {
 
 	    return out.toString();
 	}
+	
+	public static String sanitizeStringForXMLSaving(String input) {
+	    if (input == null || input.isEmpty()) {
+	        return "";
+	    }
+	    StringBuilder out = new StringBuilder(input.length());
+	    int codePoint, i = 0, len = input.length();
+	    while (i < len) {
+	        codePoint = input.codePointAt(i);
+
+	        // Always allow whitespace
+	        if (codePoint == 0x9   // tab
+	         || codePoint == 0xA   // line feed
+	         || codePoint == 0xD)  // carriage return
+	        {
+	            out.append((char) codePoint);
+
+	        // Char production minus RestrictedChar
+	        } else if (
+	            // XML 1.1 Char ranges
+	            ((codePoint >= 0x20   && codePoint <= 0xD7FF)
+	          || (codePoint >= 0xE000 && codePoint <= 0xFFFD)
+	          || (codePoint >= 0x10000&& codePoint <= 0x10FFFF))
+
+	            // minus RestrictedChar: [#x7F–#x84] and [#x86–#x9F]
+	            && !( (codePoint >= 0x7F  && codePoint <= 0x84)
+	                || (codePoint >= 0x86 && codePoint <= 0x9F) )
+	        ) {
+	            out.append(Character.toChars(codePoint));
+	        }
+	        // else: drop it
+
+	        i += Character.charCount(codePoint);
+	    }
+	    return out.toString();
+	}
 
 	/** True if cp is a literal Char in XML 1.1 (i.e. including whitespace but excluding raw C1 controls). */
 	private static boolean isValidXml11Literal(int cp) {
@@ -159,7 +195,10 @@ public class XmlUtil {
 	        String line;
 	        
 	        while ((line = reader.readLine()) != null) {
-	            xmlBuilder.append(sanitizeXmlString(line)).append("\n"); // Sanitize each line
+	        	// Sanitize each line
+	        	// This is done due to previous Maestro versions might have saved illegal XML 1.1 chars
+	        	// And we need to be able to open the broken projects.
+	            xmlBuilder.append(sanitizeXmlStringForLoading(line)).append("\n"); 
 	        }
 
 	        String sanitizedXml = xmlBuilder.toString(); // Final sanitized XML string

@@ -219,7 +219,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			Element trackEle = (Element) ele.appendChild(doc.createElement("track"));
 			trackEle.setAttribute("id", String.valueOf(t));
 			if (trackInfo.hasName())
-				trackEle.setAttribute("name", stripNonValidXML11Chars(trackInfo.getName()));
+				trackEle.setAttribute("name", XmlUtil.sanitizeStringForXMLSaving(trackInfo.getName()));
 
 			if (trackTranspose[t] != 0)
 				SaveUtil.appendChildTextElement(trackEle, "transpose", String.valueOf(trackTranspose[t]));
@@ -294,42 +294,6 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				calculateEnabledSet(ele, doc, t, trackEle);
 			}
 		}
-	}
-	
-	public static String stripNonValidXML11Chars(String input) {
-	    if (input == null || input.isEmpty()) {
-	        return "";
-	    }
-	    StringBuilder out = new StringBuilder(input.length());
-	    int codePoint, i = 0, len = input.length();
-	    while (i < len) {
-	        codePoint = input.codePointAt(i);
-
-	        // Always allow whitespace
-	        if (codePoint == 0x9   // tab
-	         || codePoint == 0xA   // line feed
-	         || codePoint == 0xD)  // carriage return
-	        {
-	            out.append((char) codePoint);
-
-	        // Char production minus RestrictedChar
-	        } else if (
-	            // XML 1.1 Char ranges
-	            ((codePoint >= 0x20   && codePoint <= 0xD7FF)
-	          || (codePoint >= 0xE000 && codePoint <= 0xFFFD)
-	          || (codePoint >= 0x10000&& codePoint <= 0x10FFFF))
-
-	            // minus RestrictedChar: [#x7F–#x84] and [#x86–#x9F]
-	            && !( (codePoint >= 0x7F  && codePoint <= 0x84)
-	                || (codePoint >= 0x86 && codePoint <= 0x9F) )
-	        ) {
-	            out.append(Character.toChars(codePoint));
-	        }
-	        // else: drop it
-
-	        i += Character.charCount(codePoint);
-	    }
-	    return out.toString();
 	}
 	    
 	private void calculateEnabledSet(Element ele, Document doc, int t, Element trackEle) {
