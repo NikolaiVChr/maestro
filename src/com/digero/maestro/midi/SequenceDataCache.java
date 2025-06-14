@@ -302,26 +302,10 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 						} else if (m.getType() == META_MARKER) {
 							//System.out.println("Detected marker in MIDI");
 						} else if (m.getType() == META_COPYRIGHT && tick == 0L && iTrack == 0) {	
-							byte[] data = m.getData();// Text that starts with any of these indicate charset: "@LATIN", "@JP",
-							// "@UTF-16LE", or "@UTF-16BE"
-							String tmp;
-							if (MidiUtils.isValidUTF8(data)) {
-								tmp = new String(data, StandardCharsets.UTF_8).trim();
-							} else if (MidiUtils.isValidISO88591(data) && !MidiUtils.containsWindows1252OnlyChars(data)) {
-								tmp = new String(data, StandardCharsets.ISO_8859_1).trim();
-							} else if (MidiUtils.isValidWindows1252(data)) {
-								tmp = new String(data, Charset.forName("windows-1252")).trim();					
-							} else {
-								// fall back to extended ascii
-								tmp = new String(data, StandardCharsets.ISO_8859_1).trim();
-								/*
-								char[] unsignedData = new char[data.length];
-								for (int i = 0; i < data.length; i++) {
-								    unsignedData[i] = (char)(data[i] & 0xFF); // Convert signed byte to unsigned int
-								}
-								tmp = new String(unsignedData).trim();
-								*/
-							}
+							byte[] data = m.getData();
+							
+							String tmp = MidiUtils.decodeMidiText(data);
+							
 							if (tmp.length() > 0) {
 								copyright = tmp;
 							}
@@ -412,20 +396,6 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		this.timeSignature = (foundTimeSignature == null) ? TimeSignature.FOUR_FOUR : foundTimeSignature;
 
 		songLengthTicks = lastTick;
-	}
-
-	@SuppressWarnings("unused")
-	private String formatBytes(byte[] portChange) {
-		StringBuilder str = new StringBuilder();
-		for (byte by : portChange) {
-			str.append((int) by).append(" ");
-		}
-		StringBuilder sb = new StringBuilder();
-		for (byte b : portChange) {
-			sb.append(String.format("%02X ", b));
-		}
-		str.append("[ ").append(sb).append("]");
-		return str.toString();
 	}
 
 	public boolean isXGDrumsTrack(int track) {

@@ -238,26 +238,10 @@ public class TrackInfo implements MidiConstants {
 				int type = m.getType();
 
 				if (type == META_TRACK_NAME && name == null && m.getData() != null) {
-					byte[] data = m.getData();// Text that starts with any of these indicate charset: "@LATIN", "@JP",
-												// "@UTF-16LE", or "@UTF-16BE"
-					String tmp;
-					if (MidiUtils.isValidUTF8(data)) {
-						tmp = new String(data, StandardCharsets.UTF_8).trim();
-					} else if (MidiUtils.isValidISO88591(data) && !MidiUtils.containsWindows1252OnlyChars(data)) {
-						tmp = new String(data, StandardCharsets.ISO_8859_1).trim();
-					} else if (MidiUtils.isValidWindows1252(data)) {
-						tmp = new String(data, Charset.forName("windows-1252")).trim();					
-					} else {
-						// fall back to extended ascii
-						tmp = new String(data, StandardCharsets.ISO_8859_1).trim();
-						/*
-						char[] unsignedData = new char[data.length];
-						for (int i = 0; i < data.length; i++) {
-						    unsignedData[i] = (char)(data[i] & 0xFF); // Convert signed byte to unsigned int
-						}
-						tmp = new String(unsignedData).trim();
-						*/
-					}
+					byte[] data = m.getData();
+					System.out.println(MidiUtils.formatBytes(data));				
+					String tmp = MidiUtils.decodeMidiText(data);
+					
 					if (tmp.length() > 0 && !tmp.equalsIgnoreCase("untitled")
 							&& !tmp.equalsIgnoreCase("WinJammer Demo")) {
 						// System.out.println("Starts with @ "+data[0]+" "+(data[0] & 0xFF));

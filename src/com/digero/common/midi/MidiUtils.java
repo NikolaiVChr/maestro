@@ -1,9 +1,13 @@
 package com.digero.common.midi;
 
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
+import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import javax.sound.midi.MetaMessage;
 import javax.sound.midi.MidiMessage;
@@ -187,45 +191,220 @@ public class MidiUtils {
 		return ((msg[1] & 0xFF) == META_END_OF_TRACK_TYPE) && (msg[2] == 0);
 	}
 	
-	public static boolean isValidUTF8(byte[] data) {
-        try {
-            CharsetDecoder decoder = StandardCharsets.UTF_8.newDecoder();
-            decoder.decode(java.nio.ByteBuffer.wrap(data));
-            return true;
-        } catch (CharacterCodingException e) {
-            return false;
+	public static String decodeMidiText(byte[] data) {
+        if (data == null || data.length == 0) {
+            return "";
         }
+
+        // Marker sniff
+        String marker = sniffAsciiMarker(data);
+        if (marker != null) {
+            return decodeWithMarker(data, marker);
+        }
+
+        // BOM sniff for UTF-8, UTF-16BE, UTF-16LE
+        String fromBom = tryBomDecode(data);
+        if (fromBom != null) {
+            return fromBom;
+        }
+
+        // Strict UTF-8 trial
+        String utf8 = tryStrictUtf8(data);
+        if (utf8 != null) {
+            return utf8;
+        }
+        
+        // Mix of acsii and Shift_JIS will trigger this
+        String sjis = tryStrictShiftJis(data);
+        if (sjis != null) {
+            return sjis;
+        }
+
+        // Best-fit among legacy charsets
+        return bestFitLegacyDecode(data);
     }
 
-    public static boolean isValidWindows1252(byte[] data) {
-        try {
-            CharsetDecoder decoder = Charset.forName("windows-1252").newDecoder();
-            decoder.decode(java.nio.ByteBuffer.wrap(data));
-            return true;
-        } catch (CharacterCodingException e) {
-            return false;
+	/*
+	 * Text that starts with any of these indicate charset:
+	 * "@LATIN", "@JP", "@UTF-16LE" or "@UTF-16BE"
+	 * According to MIDI specs.
+	 * Although I have never seen any midi file actually use them.
+	 */
+    private static String sniffAsciiMarker(byte[] data) {
+        String[] markers = { "@LATIN", "@JP", "@UTF-16LE", "@UTF-16BE" };
+        int maxLen = Arrays.stream(markers).mapToInt(String::length).max().orElse(0);
+        int len = Math.min(data.length, maxLen);
+        String head = new String(data, 0, len, StandardCharsets.US_ASCII);
+        for (String m : markers) {
+            if (head.startsWith(m)) {
+                return m;
+            }
         }
+        return null;
     }
 
-    public static boolean isValidISO88591(byte[] data) {
-        try {
-            CharsetDecoder decoder = Charset.forName("ISO-8859-1").newDecoder();
-            decoder.decode(java.nio.ByteBuffer.wrap(data));
-            return true;
-        } catch (CharacterCodingException e) {
-            return false;
+    private static String decodeWithMarker(byte[] data, String marker) {
+        int offset = marker.length();
+        if (data.length <= offset) return "";
+        byte[] tail = Arrays.copyOfRange(data, offset, data.length);
+        Charset cs;
+        switch (marker) {
+            case "@LATIN":     cs = StandardCharsets.ISO_8859_1; break;
+            case "@JP":        cs = Charset.forName("windows-31j"); break;
+            case "@UTF-16LE":  cs = StandardCharsets.UTF_16LE; break;
+            case "@UTF-16BE":  cs = StandardCharsets.UTF_16BE; break;
+            default:           cs = StandardCharsets.ISO_8859_1;
         }
+        return new String(tail, cs);
+    }
+
+    private static String tryBomDecode(byte[] data) {
+        // UTF-8 BOM
+        if (data.length >= 3
+         && (data[0]&0xFF)==0xEF && (data[1]&0xFF)==0xBB && (data[2]&0xFF)==0xBF) {
+            String s = new String(data, 3, data.length-3, StandardCharsets.UTF_8);
+            if (isPrintableAndNoSurrogates(s)) return s;
+        }
+        // UTF-16BE BOM
+        if (data.length >= 2
+         && (data[0]&0xFF)==0xFE && (data[1]&0xFF)==0xFF) {
+            String s = new String(data, 2, data.length-2, StandardCharsets.UTF_16BE);
+            if (isPrintableAndNoSurrogates(s)) return s;
+        }
+        // UTF-16LE BOM
+        if (data.length >= 2
+         && (data[0]&0xFF)==0xFF && (data[1]&0xFF)==0xFE) {
+            String s = new String(data, 2, data.length-2, StandardCharsets.UTF_16LE);
+            if (isPrintableAndNoSurrogates(s)) return s;
+        }
+        return null;
     }
     
-    public static boolean containsWindows1252OnlyChars(byte[] data) {
-        for (byte b : data) {
-            int unsignedByte = b & 0xFF; // Convert signed byte to unsigned
-            
-            // Check if the byte falls within the Windows-1252-only range (0x80 to 0x9F)
-            if (unsignedByte >= 0x80 && unsignedByte <= 0x9F) {
-                return true; // Found a Windows-1252-specific character
+    private static boolean seemsShiftJis(byte[] data) {
+        for (int i = 0; i < data.length - 1; i++) {
+            int b1 = data[i]   & 0xFF;
+            int b2 = data[i+1] & 0xFF;
+            // Shift_JIS lead bytes: 0x81–0x9F, 0xE0–0xEF
+            // trail bytes:        0x40–0x7E, 0x80–0xFC
+            if (((b1 >= 0x81 && b1 <= 0x9F) || (b1 >= 0xE0 && b1 <= 0xEF))
+             && ((b2 >= 0x40 && b2 <= 0x7E) || (b2 >= 0x80 && b2 <= 0xFC))) {
+                return true;
             }
         }
         return false;
     }
+    
+    private static String tryStrictShiftJis(byte[] data) {
+        if (!seemsShiftJis(data)) {
+            return null;
+        }
+
+        CharsetDecoder dec = Charset.forName("Shift_JIS")
+            .newDecoder()
+            .onMalformedInput(CodingErrorAction.REPORT)
+            .onUnmappableCharacter(CodingErrorAction.REPORT);
+
+        try {
+            CharBuffer cb = dec.decode(ByteBuffer.wrap(data));
+            String s = cb.toString();
+            // ensure no stray controls/unpaired surrogates
+            if (isPrintableAndNoSurrogates(s)) {
+                return s;
+            }
+        } catch (CharacterCodingException e) {
+            // decoding failed under REPORT mode
+        }
+
+        return null;
+    }
+
+    private static String tryStrictUtf8(byte[] data) {
+        CharsetDecoder dec = StandardCharsets.UTF_8.newDecoder()
+            .onMalformedInput(CodingErrorAction.REPORT)
+            .onUnmappableCharacter(CodingErrorAction.REPORT);
+        try {
+            CharBuffer cb = dec.decode(ByteBuffer.wrap(data));
+            String s = cb.toString();
+            if (isPrintableAndNoSurrogates(s)) {
+                return s;
+            }
+        } catch (CharacterCodingException ignored){}
+        return null;
+    }
+
+    private static String bestFitLegacyDecode(byte[] data) {
+        Charset[] candidates = new Charset[]{
+            Charset.forName("windows-1252"),
+            StandardCharsets.ISO_8859_1,
+            Charset.forName("x-MacRoman"),
+            Charset.forName("CP437"),
+            Charset.forName("CP850"),
+            Charset.forName("windows-1250"),
+            Charset.forName("windows-1251"),
+            Charset.forName("Shift_JIS"),
+            Charset.forName("EUC-JP"),
+            Charset.forName("GB18030"),
+            Charset.forName("Big5")
+        };
+
+        String best = "";
+        int bestScore = Integer.MAX_VALUE;
+
+        for (Charset cs : candidates) {
+            CharsetDecoder dec = cs.newDecoder()
+                .onMalformedInput(CodingErrorAction.REPLACE)
+                .onUnmappableCharacter(CodingErrorAction.REPLACE);
+            try {
+                CharBuffer cb = dec.decode(ByteBuffer.wrap(data));
+                String s = cb.toString();
+                int score = scoreString(s);
+                if (score < bestScore) {
+                    bestScore = score;
+                    best = s;
+                    if (score == 0) break;
+                }
+            } catch (CharacterCodingException ignore) {}
+        }
+        return best;
+    }
+
+    private static boolean isPrintableAndNoSurrogates(String s) {
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            // C0 controls other than \r\n\t?
+            if (c < 0x20 && c!='\n' && c!='\r' && c!='\t') return false;
+            // Unpaired surrogates
+            if (Character.isSurrogate(c)) return false;
+        }
+        return true;
+    }
+
+    private static int scoreString(String s) {
+        int score = 0;
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == '\uFFFD' || c == '?') {
+                score += 10;
+            } else if (c < 0x20 && c!='\n' && c!='\r' && c!='\t') {
+                score += 5;
+            } else if (Character.isSurrogate(c)) {
+                score += 5;
+            }
+        }
+        return score;
+    }
+    
+    @SuppressWarnings("unused")
+	public static String formatBytes(byte[] portChange) {
+		StringBuilder str = new StringBuilder();
+		for (byte by : portChange) {
+			str.append((int) by).append(" ");
+		}
+		StringBuilder sb = new StringBuilder();
+		for (byte b : portChange) {
+			sb.append(String.format("%02X ", b));
+		}
+		str.append("[ ").append(sb).append("]");
+		return str.toString();
+	}
 }
