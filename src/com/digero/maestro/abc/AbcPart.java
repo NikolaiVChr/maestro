@@ -219,7 +219,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			Element trackEle = (Element) ele.appendChild(doc.createElement("track"));
 			trackEle.setAttribute("id", String.valueOf(t));
 			if (trackInfo.hasName())
-				trackEle.setAttribute("name", sanitizeXmlString(trackInfo.getName()));
+				trackEle.setAttribute("name", stripNonValidXML11Chars(trackInfo.getName()));
 
 			if (trackTranspose[t] != 0)
 				SaveUtil.appendChildTextElement(trackEle, "transpose", String.valueOf(trackTranspose[t]));
@@ -296,29 +296,40 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		}
 	}
 	
-	public static String sanitizeXmlString(String input) {
-		if (input == null) return null;
+	public static String stripNonValidXML11Chars(String input) {
+	    if (input == null || input.isEmpty()) {
+	        return "";
+	    }
+	    StringBuilder out = new StringBuilder(input.length());
+	    int codePoint, i = 0, len = input.length();
+	    while (i < len) {
+	        codePoint = input.codePointAt(i);
 
-		StringBuilder result = new StringBuilder();
-		for (char c : input.toCharArray()) {
-			if (isValidXmlCharacter(c)) {
-				switch (c) {
-					case '&': result.append("&amp;"); break;
-					case '<': result.append("&lt;"); break;
-					case '>': result.append("&gt;"); break;
-					case '"': result.append("&quot;"); break;
-					case '\'': result.append("&apos;"); break;
-					default: result.append(c);
-				}
-			}
-		}
-		return result.toString();
-	}
+	        // Always allow whitespace
+	        if (codePoint == 0x9   // tab
+	         || codePoint == 0xA   // line feed
+	         || codePoint == 0xD)  // carriage return
+	        {
+	            out.append((char) codePoint);
 
-	private static boolean isValidXmlCharacter(char c) {
-		return (c == 0x09 || c == 0x0A || c == 0x0D) || 
-			(c >= 0x20 && c <= 0xD7FF) ||
-			(c >= 0xE000 && c <= 0xFFFD);
+	        // Char production minus RestrictedChar
+	        } else if (
+	            // XML 1.1 Char ranges
+	            ((codePoint >= 0x20   && codePoint <= 0xD7FF)
+	          || (codePoint >= 0xE000 && codePoint <= 0xFFFD)
+	          || (codePoint >= 0x10000&& codePoint <= 0x10FFFF))
+
+	            // minus RestrictedChar: [#x7F–#x84] and [#x86–#x9F]
+	            && !( (codePoint >= 0x7F  && codePoint <= 0x84)
+	                || (codePoint >= 0x86 && codePoint <= 0x9F) )
+	        ) {
+	            out.append(Character.toChars(codePoint));
+	        }
+	        // else: drop it
+
+	        i += Character.charCount(codePoint);
+	    }
+	    return out.toString();
 	}
 	    
 	private void calculateEnabledSet(Element ele, Document doc, int t, Element trackEle) {
