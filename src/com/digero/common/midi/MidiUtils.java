@@ -14,6 +14,8 @@ import javax.sound.midi.MetaMessage;
 import javax.sound.midi.MidiMessage;
 import javax.sound.midi.Sequence;
 import com.digero.common.midi.SequencerWrapper.TempoCacheSlow;
+import com.ibm.icu.text.CharsetDetector;
+import com.ibm.icu.text.CharsetMatch;
 
 /**
  * A minimal copy of all used MidiUtils features.
@@ -246,6 +248,10 @@ public class MidiUtils {
             }
         }
 
+        String result = detectAndDecode(data, 30);
+        if (result != null) {
+        	return result;
+        }
         return bestFitLegacyDecode(data);
     }
 
@@ -304,67 +310,7 @@ public class MidiUtils {
         }
         return null;
     }
-    
-    private static boolean seemsLikelyShiftJis(byte[] data) {
-        // 1) Reject pure ASCII early
-        boolean allAscii = true;
-        for (byte b : data) {
-            int ub = b & 0xFF;
-            if (ub < 0x20 || ub > 0x7E) {
-            	allAscii = false;
-            	break;
-            }
-        }
-        if (allAscii) return false;
-
-        // 2) Invalid-byte check & detect multi-byte sequences
-        int validMulti = 0, invalid = 0;
-        int i = 0, len = data.length;
-        while (i < len) {
-            int b = data[i] & 0xFF;
-            if ((0x81 <= b && b <= 0x9F) || (0xE0 <= b && b <= 0xEF)) {
-                if (i+1 < len) {
-                    int b2 = data[i+1] & 0xFF;
-                    if ((0x40 <= b2 && b2 <= 0x7E) || (0x80 <= b2 && b2 <= 0xFC)) {
-                        validMulti++;
-                        i += 2;
-                        continue;
-                    }
-                }
-                invalid++;
-                i++;
-            } else {
-                if ((0x00 <= b && b <= 0x7F) || (0xA1 <= b && b <= 0xDF)) {
-                    // valid single-byte
-                } else {
-                    invalid++;
-                }
-                i++;
-            }
-        }
-        if (invalid > 0) return false;              // no invalid bytes allowed
-        if (validMulti < 1) return false;           // need at least one multi-byte pair
-
-        // 3) Post-decode check
-        try {
-            CharsetDecoder dec = Charset.forName("Shift_JIS")
-                .newDecoder()
-                .onMalformedInput(CodingErrorAction.REPORT)
-                .onUnmappableCharacter(CodingErrorAction.REPORT);
-            CharBuffer cb = dec.decode(ByteBuffer.wrap(data));
-            String s = cb.toString();
-            if (!isPrintableAndNoSurrogates(s)) return false;
-            // Check for Japanese characters
-            long jpCount = s.codePoints().filter(cp ->
-                (cp >= 0x3040 && cp <= 0x30FF) || // hiragana/katakana
-                (cp >= 0x4E00 && cp <= 0x9FFF)    // common kanji
-            ).count();
-            return jpCount >= 1;
-        } catch (CharacterCodingException e) {
-            return false;
-        }
-    }
-    
+ 
     private static String tryStrictUtf8(byte[] data) {
     	int end = data.length;
     	while (end > 0 && data[end-1] == 0) end--;
@@ -381,6 +327,29 @@ public class MidiUtils {
             }
         } catch (CharacterCodingException ignored){}
         return null;
+    }
+    
+    public static String detectAndDecode(byte[] data, int minConfidence) {
+        CharsetDetector detector = new CharsetDetector();
+        detector.setText(data);
+        CharsetMatch[] match;
+        try {
+            match = detector.detectAll(); 
+        } catch (Exception e) {
+            return null;
+        }
+        if (match == null || match.length == 0) {
+            return null;
+        }
+        int confidence = match[0].getConfidence();  // 0-100
+        if (confidence < minConfidence) {
+            return null;
+        }
+        try {
+            return match[0].getString();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public static String bestFitLegacyDecode(byte[] data) {
