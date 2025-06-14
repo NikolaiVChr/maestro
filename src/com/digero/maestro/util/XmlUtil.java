@@ -73,26 +73,77 @@ public class XmlUtil {
 	
 	public static String sanitizeXmlString(String input) {
 	    if (input == null) return "";
-	    
-	    input = input.replaceAll("[\\u0099]", "\\u2122")  // ™ Trademark
-                .replaceAll("[\\u00A9]", "\\u00A9")  // © Copyright
-                .replaceAll("[\\u00AE]", "\\u00AE")  // ® Registered Trademark
-                .replaceAll("[\\u20AC]", "\\u20AC")  // € Euro
-                .replaceAll("[\\u201C\\u201D]", "\"") // “ ” Smart Quotes → "
-                .replaceAll("[\\u2018\\u2019]", "'")  // ‘ ’ Smart Quotes → '
-                .replaceAll("[\\u2013]", "-")        // – En Dash → -
-                .replaceAll("[\\u2014]", "--");      // — Em Dash → --
-	    
-	    StringBuilder result = new StringBuilder();
-	    for (char c : input.toCharArray()) {
-	        if (isValidXmlCharacter(c)) {
-	            result.append(c);
-	        } else {
-	            result.append('?'); // Replace invalid characters (or use a different symbol)
+
+	    StringBuilder out = new StringBuilder(input.length());
+	    int i = 0, len = input.length();
+
+	    while (i < len) {
+	        int cp = input.codePointAt(i);
+
+	        switch (cp) {
+	            case 0x0099:       // “™” in C1 block
+	                cp = 0x2122;   // → ™
+	                break;
+	            case 0x00A9:       // © (okay in XML 1.1)
+	            case 0x00AE:       // ®
+	            case 0x20AC:       // €
+	                // leave as-is
+	                break;
+	            case 0x201C:      // “
+	            case 0x201D:      // ”
+	                cp = '"';
+	                break;
+	            case 0x2018:      // ‘
+	            case 0x2019:      // ’
+	                cp = '\'';
+	                break;
+	            case 0x2013:      // en-dash
+	                cp = '-';
+	                break;
+	            case 0x2014:      // em-dash
+	                out.append("--");
+	                i += Character.charCount(cp);
+	                continue;
+	            default:
 	        }
+
+	        // 2) filter against XML 1.1 literal Char production (disallow raw C1 controls)
+	        if (isValidXml11Literal(cp)) {
+	            out.append(Character.toChars(cp));
+	        } else {
+	            out.append('?');
+	        }
+
+	        i += Character.charCount(cp);
 	    }
-	    return result.toString();
+
+	    return out.toString();
 	}
+
+	/** True if cp is a literal Char in XML 1.1 (i.e. including whitespace but excluding raw C1 controls). */
+	private static boolean isValidXml11Literal(int cp) {
+	    // mandatory whitespace
+	    if (cp == 0x9 || cp == 0xA || cp == 0xD) {
+	        return true;
+	    }
+	    // BMP range
+	    if (cp >= 0x20 && cp <= 0xD7FF) {
+	        // exclude C1 raw controls: 0x7F–0x84 and 0x86–0x9F
+	        if ((cp >= 0x7F && cp <= 0x84) || (cp >= 0x86 && cp <= 0x9F)) {
+	            return false;
+	        }
+	        return true;
+	    }
+	    // supplementary BMP and above
+	    if (cp >= 0xE000 && cp <= 0xFFFD) {
+	        return true;
+	    }
+	    if (cp >= 0x10000 && cp <= 0x10FFFF) {
+	        return true;
+	    }
+	    return false;
+	}
+
 
 	private static boolean isValidXmlCharacter(char c) {
 	    return (c == 0x09 || c == 0x0A || c == 0x0D) || 
