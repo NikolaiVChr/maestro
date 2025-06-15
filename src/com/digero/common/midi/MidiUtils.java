@@ -8,7 +8,9 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.sound.midi.MetaMessage;
 import javax.sound.midi.MidiMessage;
@@ -248,7 +250,7 @@ public class MidiUtils {
             }
         }
 
-        String result = detectAndDecode(data, 30);
+        String result = detectAndDecode(data, 25);
         if (result != null) {
         	return result;
         }
@@ -329,12 +331,57 @@ public class MidiUtils {
         return null;
     }
     
+    static List<Charset> candidates = Arrays.asList(
+        // order matters only if tie in scoring
+		Charset.forName("x-MacRoman"),     // Classic Mac OS Roman (legacy Mac text)
+		Charset.forName("CP437"),          // OEM US (IBM PC DOS US)
+		Charset.forName("CP850"),          // OEM Multilingual Latin I (DOS Western Europe)
+		Charset.forName("CP866"),          // OEM Cyrillic (DOS Russian)
+		Charset.forName("windows-1251"),   // Windows Cyrillic (Eastern Europe, Russian)
+		Charset.forName("KOI8-R"),         // Unix Russian (KOI8-R Cyrillic)
+		Charset.forName("windows-1252"),   // Windows Western European (Latin-1 superset)
+		StandardCharsets.ISO_8859_1,       // ISO Latin-1 (Western Europe)
+		Charset.forName("windows-1250"),   // Windows Central/Eastern European
+		Charset.forName("Shift_JIS"),      // Legacy Japanese Shift_JIS
+		Charset.forName("windows-31j"),    // Windows-31J (Microsoft's superset of Shift_JIS with extensions)
+		Charset.forName("EUC-JP"),         // Unix Japanese (EUC-JP)
+		Charset.forName("GB18030"),        // Chinese Simplified (PRC standard, superset of GBK)
+		Charset.forName("Big5")            // Chinese Traditional (Taiwan/HK)
+    );
+    
+    static Set<String> ignored = new HashSet<>();
+    
+    static {
+    	CharsetDetector detector = new CharsetDetector();
+    	
+    	for (String detect : CharsetDetector.getAllDetectableCharsets()) {
+    		boolean on = false;
+	    	for (Charset cs : candidates) {
+	    		if (cs.name().equalsIgnoreCase(detect)) {
+	    			on = true;
+	    		} else {
+		    		for (String alias : cs.aliases()) {
+		    			if (alias.equalsIgnoreCase(detect)) {
+			    			on = true;
+		    			}
+		    	    }
+	    		}	    		
+	    	}
+	    	if (!on) {
+	    		ignored.add(detect);
+	    	}
+    	}
+    }
+    
     public static String detectAndDecode(byte[] data, int minConfidence) {
         CharsetDetector detector = new CharsetDetector();
         detector.setText(data);
+        for (String detectNot : ignored) {
+        	detector.setDetectableCharset(detectNot, false);
+        }
         CharsetMatch[] match;
         try {
-            match = detector.detectAll(); 
+            match = detector.detectAll();
         } catch (Exception e) {
             return null;
         }
@@ -353,23 +400,7 @@ public class MidiUtils {
     }
 
     public static String bestFitLegacyDecode(byte[] data) {
-        List<Charset> candidates = Arrays.asList(
-            // order matters only if tie in scoring
-			Charset.forName("x-MacRoman"),     // Classic Mac OS Roman (legacy Mac text)
-			Charset.forName("CP437"),          // OEM US (IBM PC DOS US)
-			Charset.forName("CP850"),          // OEM Multilingual Latin I (DOS Western Europe)
-			Charset.forName("CP866"),          // OEM Cyrillic (DOS Russian)
-			Charset.forName("windows-1251"),   // Windows Cyrillic (Eastern Europe, Russian)
-			Charset.forName("KOI8-R"),         // Unix Russian (KOI8-R Cyrillic)
-			Charset.forName("windows-1252"),   // Windows Western European (Latin-1 superset)
-			StandardCharsets.ISO_8859_1,       // ISO Latin-1 (Western Europe)
-			Charset.forName("windows-1250"),   // Windows Central/Eastern European
-			Charset.forName("Shift_JIS"),      // Legacy Japanese Shift_JIS
-			Charset.forName("windows-31j"),    // Windows-31J (Microsoft's superset of Shift_JIS with extensions)
-			Charset.forName("EUC-JP"),         // Unix Japanese (EUC-JP)
-			Charset.forName("GB18030"),        // Chinese Simplified (PRC standard, superset of GBK)
-			Charset.forName("Big5")            // Chinese Traditional (Taiwan/HK)
-        );
+        
 
         CandidateResult bestDecoded = null;
         int bestScore = Integer.MAX_VALUE;
