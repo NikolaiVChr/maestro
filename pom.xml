@@ -30,6 +30,9 @@
 				        <arg>--add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED</arg>
 				        <arg>--add-exports=java.desktop/sun.awt.shell=ALL-UNNAMED</arg>
 				    </compilerArgs>
+				    <excludes>
+          				<exclude>com/digero/test/**</exclude>
+        			</excludes>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -188,13 +191,13 @@
 		    <groupId>org.junit.jupiter</groupId>
 		    <artifactId>junit-jupiter-api</artifactId>
 		    <version>5.10.2</version>
-		    <scope>provided</scope>
+		    <scope>test</scope>
 		</dependency>
 		<dependency>
         	<groupId>org.junit.jupiter</groupId>
         	<artifactId>junit-jupiter-params</artifactId>
         	<version>5.10.2</version>
-        	<scope>provided</scope>
+        	<scope>test</scope>
     	</dependency>
 		<dependency>
 		    <groupId>com.miglayout</groupId>
@@ -204,7 +207,7 @@
 		<!-- https://mvnrepository.com/artifact/de.sciss/jump3r -->
 		<dependency>
 		    <groupId>de.sciss</groupId>
-		    <artifactId>jump3r</artifactId>
+		    <artifactId>jump3r</artifactId><!-- used for LAME audio generation -->
 		    <version>1.0.5</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/jakarta.activation/jakarta.activation-api -->
@@ -216,7 +219,7 @@
 		<!-- https://mvnrepository.com/artifact/com.ibm.icu/icu4j -->
 		<dependency>
 	   		<groupId>com.ibm.icu</groupId>
-	   		<artifactId>icu4j</artifactId>
+	   		<artifactId>icu4j</artifactId><!-- used for charset decoding -->
 	   		<version>77.1</version>
 	 	</dependency>
 	</dependencies>
