@@ -470,8 +470,8 @@ public class CharsetDetectAndDecode {
                 score += 300;                       // looks western; deprioritise
             } else {
                 double ratio = cjk / (double) len;
-                if (ratio == 1.0)      score -= 80; // all Chinese – strong evidence
-                else if (ratio >= .7)  score -= 40; // mostly Chinese
+                if (ratio == 1.0)      score -= 40; // all Chinese – strong evidence
+                else if (ratio >= .7)  score -= 20; // mostly Chinese
             }
 
             if (hasASCII && hasCJK) score += 40;    // mixed Latin & Chinese
@@ -518,13 +518,13 @@ public class CharsetDetectAndDecode {
                     score += 300;                    // no Chinese at all → almost certainly wrong
                 } else {
                     double ratio = cjk / (double) len;
-                    if (ratio == 1.0)      score -= 80;   // 100 % Chinese – strong evidence
-                    else if (ratio >= .7)  score -= 40;   // majority Chinese – good evidence
+                    if (ratio == 1.0)      score -= 40;   // 100 % Chinese – strong evidence
+                    else if (ratio >= .7)  score -= 20;   // majority Chinese – good evidence
                 }
 
                 if (hasASCII && hasCJK)  score += 40;     // mixed Latin + Chinese
 
-                if (len < 3)             score += 15;     // very short → add a bit of doubt
+                if (len < 3)             score += 30;     // very short → add a bit of doubt
             }
         } else if (csName.contains("big5") /* deprecated */) {
             // 1) Byte-level validity: reject if invalid patterns

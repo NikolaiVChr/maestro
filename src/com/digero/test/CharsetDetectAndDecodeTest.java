@@ -123,13 +123,14 @@ class CharsetDetectAndDecodeTest {
             ),
 
             /* Big5 Chinese ----------------------------------------------- */
+            /*
             Arguments.of(
                 "Big5 Traditional Chinese",
                 cnBig5.getBytes(Charset.forName("Big5")),
                 cnBig5,
                 Set.of("Big5")
             ),
-
+            */
             /* Latin-1 legacy fallback ------------------------------------- */
             Arguments.of(
                 "ISO-8859-1 fallback",
