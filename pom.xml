@@ -191,6 +191,12 @@
 		    <scope>provided</scope>
 		</dependency>
 		<dependency>
+        	<groupId>org.junit.jupiter</groupId>
+        	<artifactId>junit-jupiter-params</artifactId>
+        	<version>5.10.2</version>
+        	<scope>provided</scope>
+    	</dependency>
+		<dependency>
 		    <groupId>com.miglayout</groupId>
 		    <artifactId>miglayout</artifactId>
 		    <version>3.7.4</version>

@@ -53,7 +53,7 @@ Version 4.2.12
 - Fix for organic multistage dropping notes it should not when poly 6+ is enabled.
 - Fix not being able to load project saved with track names that have unicode escape chars not allowed in xml 1.1.
 - Fix when saving xml, that chars that are not legal in xml 1.1. could still sneak in.
-- Better detection of midi charset in track titles.
+- Better detection of charset in midi track titles.
 
 Version 4.2.11
 - Some code improvement to organic single-stage.
