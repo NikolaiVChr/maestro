@@ -63,7 +63,7 @@ import com.digero.maestro.view.SaveAndExportSettings;
 public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public static final String MSX_FILE_DESCRIPTION = MaestroMain.APP_NAME + " Project";
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = MaestroMain.APP_NAME + " Projects";
-	public static final Version SONG_FILE_VERSION = new Version(4, 2, 3, 300);// Keep build above 117 to make earlier
+	public static final Version SONG_FILE_VERSION = new Version(4, 2, 12, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
 
