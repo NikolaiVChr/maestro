@@ -5,6 +5,8 @@ import javax.sound.midi.Receiver;
 import javax.sound.midi.ShortMessage;
 import javax.sound.midi.SysexMessage;
 
+import com.digero.maestro.midi.SequenceInfo;
+
 /**
  * This class has only 2 functions:
  * 1: Intercept any sysex device master volume messages from midi files and don't pass them on to the Synthesizer.
@@ -79,20 +81,21 @@ public class VolumeTransceiver implements Transceiver, MidiConstants
 			
 			byte[] sysex = m.getMessage();
 					    
-			if (sysex.length > 4 && (sysex[1] & 0xFF) == SYSEX_UNIVERSAL_REALTIME && (sysex[3] & 0xFF) == 0x04 && (sysex[4] & 0xFF) == 0x01) {
-				//System.out.println("Ignored SysEx device volume command.");
+			if (sysex.length > 4 && sysex[1] == SYSEX_UNIVERSAL_REALTIME && (sysex[3] & 0xFF) == 0x04 && (sysex[4] & 0xFF) == 0x01) {
+				//System.out.println("Ignored SysEx device volume command:\n"+MidiUtils.formatBytes(sysex));
 				return;
-			} else if (sysex.length ==11 && (sysex[0] & 0xFF) == 0xF0 && (sysex[1] & 0xFF) == 0x41 && (sysex[2] & 0xFF) == 0x10 && (sysex[3] & 0xFF) == 0x42 && (sysex[4] & 0xFF) == 0x12 && (sysex[5] & 0xFF) == 0x40 && (sysex[6] & 0xFF) == 0x00 && (sysex[7] & 0xFF) == 0x7F && (sysex[8] & 0xFF) == 0x00 && (sysex[9] & 0xFF) == 0x41 && (sysex[10] & 0xFF) == 0xF7) {
-				//System.out.println("GS reset ignored (as it will mess with MIDI playback volume)");
+			} else if (SequenceInfo.isResetGS(sysex)) {
+				//System.out.println("GS reset (will mess with MIDI playback volume, so we set also volume again)");
+				systemReset = true;
 				//return;
+			} else if (SequenceInfo.isResetXG(sysex)) {
+				//System.out.println("XG reset (will mess with MIDI playback volume, so we set also volume again)");
+				systemReset = true;
+			} else if (SequenceInfo.isResetGM2(sysex)) {
+				//System.out.println("GM2 reset (will mess with MIDI playback volume, so we set also volume again)");
+				systemReset = true;
 			} else {
-				/*StringBuilder sb = new StringBuilder();
-				for (byte b : sysex) {
-					sb.append(String.format("%02X ", b));
-				}
-				
-				System.out.println("SysEx command: "+sb.toString());
-				*/				
+				//System.out.println("SysEx command: "+MidiUtils.formatBytes(sysex));			
 			}
 		}
 
