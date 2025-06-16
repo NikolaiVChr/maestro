@@ -233,4 +233,47 @@ class CharsetDetectAndDecodeTest {
         assertEquals("", p.first);
         assertEquals(null, p.second);
     }
+    
+    @Test @DisplayName("Half width Shift JIS")
+    void halfJis() {
+    	byte[] seq = new byte[] {
+		    (byte)0xA5, (byte)0x44, (byte)0xB1, (byte)0xDB,
+		    (byte)0xAB, (byte)0xDF, (byte)0x28, (byte)0xB1,
+		    (byte)0xC6, (byte)0xB2, (byte)0xC3, (byte)0x29
+		};
+        Pair<String, Charset> res = CharsetDetectAndDecode.decodeMidiData(seq);
+        assertTrue(
+                Set.of("Shift_JIS", "windows-31j")
+                   .contains(res.second.name()),
+                () -> "unexpected charset: " + res.second.name()
+            );
+    }
+    
+    @Test @DisplayName("Western with copyright")
+    void western() {
+    	// 	"Harmony © 1997 by Hosam Adeeb Nashed"
+    	byte[] data = new byte[] {
+	        72, 97, 114, 109, 111, 110, 121, 32,
+	        (byte)0xA9, 32,
+	        49, 57, 57, 55, 32,
+	        98, 121, 32,
+	        72, 111, 115, 97, 109, 32,
+	        65, 100, 101, 101, 98, 32,
+	        78, 97, 115, 104, 101, 100
+	    };
+	    Pair<String, Charset> res = CharsetDetectAndDecode.decodeMidiData(data);
+	    assertTrue(
+            Set.of("windows-1252")
+               .contains(res.second.name()),
+            () -> "unexpected charset: " + res.second.name()
+        );
+    }
+    
+    @Test @DisplayName("UTF-8")
+    void u8() {
+	    // "Flute" + NUL terminator
+	    byte[] data = new byte[] { 70, 108, 117, 116, 101, 0 };
+	    Pair<String, Charset> res = CharsetDetectAndDecode.decodeMidiData(data);
+	    assertEquals(StandardCharsets.UTF_8, res.second, "Result was "+res.second.name());
+	}
 }

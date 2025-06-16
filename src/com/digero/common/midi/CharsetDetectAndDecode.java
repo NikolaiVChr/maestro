@@ -78,8 +78,25 @@ public class CharsetDetectAndDecode {
 
         Pair<String, Charset> result = detectAndDecode(data, 25);
         if (result != null) {
+        	//System.out.println("icu4j: "+result.second.name());
         	return result;
         }
+        
+        if (looksLikeWesternText(data)) {
+            // decode as Windows-1252 directly
+            String s = decodeWithReplace(data, Charset.forName("windows-1252"));
+            return new Pair<>(s, Charset.forName("windows-1252"));
+        }
+        
+        // Pure half width Shift_JIS will trigger this, with at least half of bytes being japanese
+        if (looksLikeAsciiOrHalfwidthKatakana(data)) {
+            Charset sj = Charset.forName("windows-31j");
+            String decoded = decodeWithReplace(data, sj);
+            if (decodedHasMajorityHalfwidthKatakana(decoded)) {
+                return new Pair<>(decoded, sj);
+            }
+        }
+        
         return bestFitLegacyDecode(data);
     }
 
@@ -159,8 +176,10 @@ public class CharsetDetectAndDecode {
         double oddRatio  = oddZero  / (double) pairs;
 
         // Require at least 25 % zeros on one side and at most 5 % on the other
-        boolean looks16BE = evenRatio > 0.25 && oddRatio < 0.05;
-        boolean looks16LE = oddRatio  > 0.25 && evenRatio < 0.05;
+        // require BOTH a relative and an absolute minimum of zeros
+        int MIN_ZERO_COUNT = 2;
+        boolean looks16BE = evenZero >= MIN_ZERO_COUNT && ((double)evenZero/pairs) > 0.25 && ((double)oddZero/pairs) < 0.05;
+        boolean looks16LE = oddZero  >= MIN_ZERO_COUNT && ((double)oddZero/pairs)  > 0.25 && ((double)evenZero/pairs) < 0.05;
         if (!looks16BE && !looks16LE) {
             return null;
         }
@@ -204,7 +223,7 @@ public class CharsetDetectAndDecode {
 		Charset.forName("windows-1252"),   // Windows Western European (Latin-1 superset)
 		StandardCharsets.ISO_8859_1,       // ISO Latin-1 (Western Europe)
 		Charset.forName("windows-1250"),   // Windows Central/Eastern European
-		Charset.forName("Shift_JIS"),      // Legacy Japanese Shift_JIS
+		//Charset.forName("Shift_JIS"),      // Legacy Japanese Shift_JIS
 		Charset.forName("windows-31j"),    // Windows-31J (Microsoft's superset of Shift_JIS with extensions)
 		Charset.forName("EUC-JP"),         // Unix Japanese (EUC-JP)
 		Charset.forName("GB18030"),        // Chinese Simplified (PRC standard, superset of GBK)
@@ -233,6 +252,57 @@ public class CharsetDetectAndDecode {
 	    		ignored.add(detect);
 	    	}
     	}
+    }
+    
+    /**
+     * True iff the data is composed *only* of:
+     *   – Printable ASCII (0x20…0x7E), or
+     *   – Half-width Katakana byte values (0xA1…0xDF),
+     * and it contains at least one half-width Katakana byte.
+     */
+    private static boolean looksLikeAsciiOrHalfwidthKatakana(byte[] data) {
+        boolean sawKatakana = false;
+        for (byte bb : data) {
+            int b = bb & 0xFF;
+            if (b >= 0x20 && b <= 0x7E) {
+                // ASCII printable
+                continue;
+            }
+            if (b >= 0xA1 && b <= 0xDF) {
+                // half-width katakana
+                sawKatakana = true;
+                continue;
+            }
+            return false;
+        }
+        return sawKatakana;
+    }
+
+    /**
+     * Returns true if at least half of the code points in the string
+     * are half-width Katakana (U+FF61…U+FF9F).
+     */
+    private static boolean decodedHasMajorityHalfwidthKatakana(String s) {
+        long total = s.codePoints().count();
+        if (total == 0) return false;
+        long kata = s.codePoints()
+                     .filter(cp -> (cp >= 0xFF61 && cp <= 0xFF9F))
+                     .count();
+        // require at least half of all code points to be Katakana
+        return kata * 2 >= total;
+    }
+    
+    private static boolean looksLikeWesternText(byte[] data) {
+        int western = 0, total = data.length;
+        for (byte bb : data) {
+            int b = bb & 0xFF;
+            // printable ASCII + common Latin-1 punctuation (including ©)
+            if ((b >= 0x20 && b <= 0x7E) || b == 0xA9) {
+                western++;
+            }
+        }
+        // if 95%+ of bytes are Western, treat as Western text
+        return total > 0 && western * 100 >= 95 * total;
     }
     
     public static Pair<String, Charset> detectAndDecode(byte[] data, int minConfidence) {
@@ -504,7 +574,7 @@ public class CharsetDetectAndDecode {
                  *  • Mild penalty when ASCII and CJK are heavily mixed.
                  *  • Tiny uncertainty penalty for strings shorter than 3 code points.
                  */
-                score += 40;                         // baseline (was 200)
+                score += 60;                         // baseline (was 200)
 
                 long cjk = decoded.codePoints()
                                   .filter(cp -> 0x4E00 <= cp && cp <= 0x9FFF)
@@ -518,8 +588,8 @@ public class CharsetDetectAndDecode {
                     score += 300;                    // no Chinese at all → almost certainly wrong
                 } else {
                     double ratio = cjk / (double) len;
-                    if (ratio == 1.0)      score -= 40;   // 100 % Chinese – strong evidence
-                    else if (ratio >= .7)  score -= 20;   // majority Chinese – good evidence
+                    if (ratio == 1.0)      score -= 80;   // 100 % Chinese – strong evidence
+                    else if (ratio >= .7)  score -= 70;   // majority Chinese – good evidence
                 }
 
                 if (hasASCII && hasCJK)  score += 40;     // mixed Latin + Chinese
@@ -572,6 +642,8 @@ public class CharsetDetectAndDecode {
         }
 
         res.score = score;
+        
+        //System.out.println("\n "+res);
         return res;
     }
     
