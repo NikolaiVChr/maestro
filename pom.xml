@@ -15,7 +15,7 @@
 				<directory>src</directory>
 				<excludes>
 					<exclude>**/*.java</exclude>
-					<exclude>src/assembly</exclude>
+					<exclude>assembly/**</exclude>
 				</excludes>
 			</resource>
 		</resources>
