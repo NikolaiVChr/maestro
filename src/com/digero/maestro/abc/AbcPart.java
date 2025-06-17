@@ -59,6 +59,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	private LotroInstrument instrument;
 	private int[] trackTranspose;
 	private boolean[] trackEnabled;
+	private List<String> trackNames;//used only by autoexporter
 	private boolean[] trackPriority;
 	public boolean[] playLeft;
 	public boolean[] playCenter;
@@ -218,9 +219,13 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 
 			Element trackEle = (Element) ele.appendChild(doc.createElement("track"));
 			trackEle.setAttribute("id", String.valueOf(t));
-			if (trackInfo.hasName())
+			if (trackInfo.hasName()) {
 				trackEle.setAttribute("name", XmlUtil.sanitizeStringForXMLSaving(trackInfo.getName()));
-
+			} else if (abcSong.ignoreMidiText && trackNames != null && trackNames.size() > t && trackNames.get(t) != null) {
+				//used by autoexporter
+				trackEle.setAttribute("name", XmlUtil.sanitizeStringForXMLSaving(trackNames.get(t)));
+			}
+				
 			if (trackTranspose[t] != 0)
 				SaveUtil.appendChildTextElement(trackEle, "transpose", String.valueOf(trackTranspose[t]));
 			if (trackVolumeAdjust[t] != 0)
@@ -370,13 +375,15 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 
 				// Try to find the specified track in the midi sequence by name, in case it
 				// moved
-				int t = findTrackNumberByName(SaveUtil.parseValue(trackEle, "@name", ""));
+				String xmlTrackName = SaveUtil.parseValue(trackEle, "@name", "");
+				
+				int t = findTrackNumberByName(xmlTrackName);
 				// Fall back to the track ID if that didn't work
 				if (t == -1)
 					t = SaveUtil.parseValue(trackEle, "@id", -1);
 
 				if (t < 0 || t >= getTrackCount()) {
-					String optionalName = SaveUtil.parseValue(trackEle, "@name", "");
+					String optionalName = xmlTrackName;
 
 					if (optionalName.length() > 0) {
 						optionalName = " (" + optionalName + ")";
@@ -385,6 +392,13 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 					throw SaveUtil.invalidTrackException(trackEle,
 							"Could not find track number " + t + optionalName + " in original MIDI file");
 				}
+				if (trackNames == null) {
+					trackNames = new ArrayList<>();
+				}
+				while(trackNames.size() <= t) {
+					trackNames.add(null);
+				}
+				trackNames.set(t, xmlTrackName);
 				if (!abcSong.getSequenceInfo().getTrackInfo(t).hasEvents()) {
 					JOptionPane.showMessageDialog(getFrames()[0],
 							title+": has a midi track (Track "+t+") selected that has no notes. This project was made with a different midi.",

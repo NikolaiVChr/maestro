@@ -120,6 +120,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 	private final ListModelWrapper<AbcPart> parts = new ListModelWrapper<>(new DefaultListModel<>());
 	public boolean sorted = true;
+	public boolean ignoreMidiText = false;
 
 	private final ListenerList<AbcSongEvent> listeners = new ListenerList<>();
 	boolean mixDirty = true;
@@ -134,13 +135,13 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			FileResolver fileResolver, MiscSettings miscSettings, SaveAndExportSettings saveAndExportSettings)
 			throws IOException, InvalidMidiDataException, ParseException, SAXException {
 		this(file, partAutoNumberer, partNameTemplate, exportFilenameTemplate, instrNameSettings,
-				fileResolver, miscSettings, true, saveAndExportSettings);
+				fileResolver, miscSettings, true, saveAndExportSettings, false);
 	}
 	
 	public AbcSong(File file, PartAutoNumberer partAutoNumberer, PartNameTemplate partNameTemplate,
 			ExportFilenameTemplate exportFilenameTemplate, InstrNameSettings instrNameSettings,
 			FileResolver fileResolver, MiscSettings miscSettings, boolean saveMSXwhenSourceChange,
-			SaveAndExportSettings saveAndExportSettings)
+			SaveAndExportSettings saveAndExportSettings, boolean ignoreMidiText)
 			throws IOException, InvalidMidiDataException, ParseException, SAXException {
 		
 		storeNewSourceFile = saveMSXwhenSourceChange;
@@ -156,6 +157,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		this.instrNameSettings = instrNameSettings;
 		
 		this.saveAndExportSettings = saveAndExportSettings;
+		
+		this.ignoreMidiText = ignoreMidiText;
 
 		String fileName = file.getName().toLowerCase();
 		fromXmlFile = fileName.endsWith(Util.MSX_FILE_EXTENSION);
@@ -195,6 +198,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		lastBar = null;
 		
 		hideEdits = false;
+		ignoreMidiText = false;
 
 		/*
 		 * if (sequenceInfo != null) { // Make life easier for Garbage Collector for (TrackInfo ti :
@@ -207,7 +211,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		sourceFile = file;
 		usingOldVelocities = miscSettings.ignoreExpressionMessages;
 		setDefaultTiming (saveSettings.defaultTiming);
-		sequenceInfo = SequenceInfo.fromMidi(file, miscSettings, usingOldVelocities, usingOldTempos, false);
+		sequenceInfo = SequenceInfo.fromMidi(file, miscSettings, usingOldVelocities, usingOldTempos, false, false);
 		title = sequenceInfo.getTitle();
 		composer = sequenceInfo.getComposer();
 		if (sequenceInfo.getDataCache() != null) copyright = sequenceInfo.getDataCache().getCopyright();
@@ -275,7 +279,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		// params.stereo = false;
 		usingOldVelocities = true;// The abc volumes are tuned to old volume scheme
 		usingOldTempos = true;
-		sequenceInfo = SequenceInfo.fromAbc(params, miscSettings, usingOldVelocities);
+		sequenceInfo = SequenceInfo.fromAbc(params, miscSettings, usingOldVelocities, ignoreMidiText);
 		exportFile = file;
 
 		title = sequenceInfo.getTitle();
@@ -476,7 +480,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				// params.stereo = false;
 				usingOldVelocities = true;// The abc volumes are tuned to old volume scheme
 				usingOldTempos = true;
-				sequenceInfo = SequenceInfo.fromAbc(params, miscSettings, usingOldVelocities);
+				sequenceInfo = SequenceInfo.fromAbc(params, miscSettings, usingOldVelocities, ignoreMidiText);
 
 				organic = abcInfo.isOrganic();
 				organic2 = abcInfo.isOrganic2();
@@ -485,7 +489,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				priorityActive = false;
 				transcriber = abcInfo.getTranscriber();
 			} else {
-				sequenceInfo = SequenceInfo.fromMidi(newSourceFile, miscSettings, usingOldVelocities, usingOldTempos, ignoreZeroChannelVolume);
+				sequenceInfo = SequenceInfo.fromMidi(newSourceFile, miscSettings, usingOldVelocities, usingOldTempos, ignoreZeroChannelVolume, ignoreMidiText);
 			}
 
 			title = sequenceInfo.getTitle();

@@ -75,12 +75,12 @@ public class SequenceInfo implements MidiConstants {
 	 * @throws InvalidMidiDataException
 	 * @throws ParseException
 	 */
-	public static SequenceInfo fromAbc(AbcToMidi.Params params, MiscSettings miscSettings, boolean oldVelocities)
+	public static SequenceInfo fromAbc(AbcToMidi.Params params, MiscSettings miscSettings, boolean oldVelocities, boolean ignoreMidiText)
 			throws InvalidMidiDataException, ParseException {
 		if (params.abcInfo == null)
 			params.abcInfo = new AbcInfo();
 		SequenceInfo sequenceInfo = new SequenceInfo(params.filesData.get(0).file.getName(), AbcToMidi.convert(params),
-				-1, miscSettings, oldVelocities, true, false);
+				-1, miscSettings, oldVelocities, true, false, ignoreMidiText);
 		sequenceInfo.title = params.abcInfo.getTitle();
 		sequenceInfo.composer = params.abcInfo.getComposer();
 		sequenceInfo.primaryTempoMPQ = (int) Math.round(MidiUtils.convertTempo(params.abcInfo.getPrimaryTempoBPM()));
@@ -97,11 +97,12 @@ public class SequenceInfo implements MidiConstants {
 	 * @throws IOException
 	 * @throws ParseException
 	 */
-	public static SequenceInfo fromMidi(File midiFile, MiscSettings miscSettings, boolean oldVelocities, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume)
+	public static SequenceInfo fromMidi(File midiFile, MiscSettings miscSettings, boolean oldVelocities, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume, boolean ignoreMidiText)
 			throws InvalidMidiDataException, IOException, ParseException {
 		MidiFileFormat midiFileFormat = MidiSystem.getMidiFileFormat(midiFile);
 		return new SequenceInfo(midiFile.getName(), ConvertPPQ.convert(MidiSystem.getSequence(midiFile)),
-				midiFileFormat.getType(), miscSettings, oldVelocities, onlyFirstTrackTempos, ignoreZeroChannelVolume);
+				midiFileFormat.getType(), miscSettings, oldVelocities, onlyFirstTrackTempos, ignoreZeroChannelVolume,
+				ignoreMidiText);
 	}
 
 	/**
@@ -118,7 +119,7 @@ public class SequenceInfo implements MidiConstants {
 		return new SequenceInfo(abcExporter, useLotroInstruments);
 	}
 
-	private SequenceInfo(String fileName, Sequence sequence, int type, MiscSettings miscSettings, boolean oldVelocities, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume)
+	private SequenceInfo(String fileName, Sequence sequence, int type, MiscSettings miscSettings, boolean oldVelocities, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume, boolean ignoreMidiText)
 			throws InvalidMidiDataException, ParseException {
 		this.fileName = fileName;
 		this.sequence = sequence;
@@ -142,7 +143,7 @@ public class SequenceInfo implements MidiConstants {
 		}
 
 		sequenceCache = new SequenceDataCache(sequence, standard, rolandDrumChannels, yamahaDrumSwitches,
-				yamahaDrumChannels, mmaDrumSwitches, portMap, onlyFirstTrackTempos, ignoreZeroChannelVolume);
+				yamahaDrumChannels, mmaDrumSwitches, portMap, onlyFirstTrackTempos, ignoreZeroChannelVolume, ignoreMidiText);
 		hasPorts = sequenceCache.hasPorts;
 		primaryTempoMPQ = sequenceCache.getPrimaryTempoMPQ();
 
@@ -150,7 +151,7 @@ public class SequenceInfo implements MidiConstants {
 		for (int i = 0; i < tracks.length; i++) {
 			myTrackInfoList.add(new TrackInfo(this, tracks[i], i, sequenceCache, sequenceCache.isXGDrumsTrack(i),
 					sequenceCache.isGSDrumsTrack(i), wasType0, sequenceCache.isDrumsTrack(i),
-					sequenceCache.isGM2DrumsTrack(i), portMap, miscSettings, oldVelocities));
+					sequenceCache.isGM2DrumsTrack(i), portMap, miscSettings, oldVelocities, ignoreMidiText));
 		}
 
 		composer = "";
@@ -198,7 +199,7 @@ public class SequenceInfo implements MidiConstants {
 		sequence = result.second;
 		lastTrackInfos = result.first;
 		standard = MidiStandard.PREVIEW;
-		sequenceCache = new SequenceDataCache(sequence, standard, null, null, null, null, portMap, true, false);
+		sequenceCache = new SequenceDataCache(sequence, standard, null, null, null, null, portMap, true, false, true);
 		primaryTempoMPQ = sequenceCache.getPrimaryTempoMPQ();
 
 		this.trackInfoList = null;

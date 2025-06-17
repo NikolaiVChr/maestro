@@ -429,7 +429,7 @@ public class AutoExporter {
 		oldMidi = null;
 		nestedProject = project;
 		AbcSong abcSong = new AbcSong(project, main.partAutoNumberer, main.partNameTemplate, main.exportFilenameTemplate,
-				main.instrNameSettings, openFileResolver, main.miscSettings, frame.getSaveMSXSelected(), main.saveSettings);
+				main.instrNameSettings, openFileResolver, main.miscSettings, frame.getSaveMSXSelected(), main.saveSettings, true);
 
 		boolean timingModified = false;
 		boolean oldMix = abcSong.isMixTiming();

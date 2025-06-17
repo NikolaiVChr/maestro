@@ -51,7 +51,7 @@ public class TrackInfo implements MidiConstants {
 	@SuppressWarnings("unchecked") //
 	TrackInfo(SequenceInfo parent, Track track, int trackNumber, SequenceDataCache sequenceCache, boolean isXGDrumTrack,
 			boolean isGSDrumTrack, boolean wasType0, boolean isDrumsTrack, boolean isGM2DrumTrack,
-			TreeMap<Integer, Integer> portMap, MiscSettings miscSettings, boolean oldVelocities)
+			TreeMap<Integer, Integer> portMap, MiscSettings miscSettings, boolean oldVelocities, boolean ignoreMidiText)
 			throws InvalidMidiDataException {
 		this.sequenceInfo = parent;
 		// TempoCache tempoCache = new TempoCache(parent.getSequence());
@@ -240,7 +240,8 @@ public class TrackInfo implements MidiConstants {
 				if (type == META_TRACK_NAME && name == null && m.getData() != null) {
 					byte[] data = m.getData();
 					//System.out.println("\n "+MidiUtils.formatBytes(data));				
-					String tmp = MidiUtils.decodeMidiText(data);
+					String tmp = "";
+					if (!ignoreMidiText) tmp = MidiUtils.decodeMidiText(data);
 					
 					if (tmp.length() > 0 && !tmp.equalsIgnoreCase("untitled")
 							&& !tmp.equalsIgnoreCase("WinJammer Demo")) {

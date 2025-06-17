@@ -65,7 +65,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 
 	public SequenceDataCache(Sequence song, MidiStandard standard, boolean[] rolandDrumChannels,
 			List<TreeMap<Long, Boolean>> yamahaDrumSwitches, boolean[] yamahaDrumChannels,
-			List<TreeMap<Long, Boolean>> mmaDrumSwitches, SortedMap<Integer, Integer> portMap, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume) {
+			List<TreeMap<Long, Boolean>> mmaDrumSwitches, SortedMap<Integer, Integer> portMap, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume, boolean ignoreMidiText) {
 		
 		Map<Integer, Long> tempoLengths = new HashMap<>();
 
@@ -304,7 +304,8 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 						} else if (m.getType() == META_COPYRIGHT && tick == 0L && iTrack == 0) {	
 							byte[] data = m.getData();
 							//System.out.println("\n(c): "+MidiUtils.formatBytes(data));
-							String tmp = MidiUtils.decodeMidiText(data);
+							String tmp = "";
+							if (!ignoreMidiText) tmp = MidiUtils.decodeMidiText(data);
 							
 							if (tmp.length() > 0) {
 								copyright = tmp;
