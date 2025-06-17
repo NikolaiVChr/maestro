@@ -27,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -115,25 +116,37 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			sendArgsToPort(args);
 			return;
 		}
+		
+		boolean tools;
+		String[] songArgs;
+		if (args != null && args.length > 1 && args[args.length-1].equals("--tools")) {
+			tools = true;
+			songArgs = Arrays.copyOf(args, args.length - 1);
+		} else {
+			tools = false;
+			songArgs = Arrays.copyOf(args, args.length);
+		}
 
 		System.setProperty("sun.sound.useNewAudioEngine", "true");
 		
 		try {
-			SwingUtilities.invokeAndWait(() -> {
-				try {
-					Preferences prefs = Preferences.userNodeForPackage(AbcPlayer.class).node("miscSettings");
-					Themer.setLookAndFeel(prefs.get("theme", Themer.FLAT_LIGHT_THEME), prefs.getInt("fontSize", Themer.DEFAULT_FONT_SIZE));
-				} catch (Exception e) {
-				}
-			});
+			if (!tools) {
+				SwingUtilities.invokeAndWait(() -> {
+					try {
+						Preferences prefs = Preferences.userNodeForPackage(AbcPlayer.class).node("miscSettings");
+						Themer.setLookAndFeel(prefs.get("theme", Themer.FLAT_LIGHT_THEME), prefs.getInt("fontSize", Themer.DEFAULT_FONT_SIZE));
+					} catch (Exception e) {
+					}
+				});
+			}
 
-			mainWindow = new AbcPlayer();
+			mainWindow = new AbcPlayer(tools);
 			//mainWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		
 			SwingUtilities.invokeAndWait(() -> {
 				try {
-					mainWindow.setVisible(true);
-					mainWindow.openSongFromCommandLine(args);
+					if (!tools) mainWindow.setVisible(true);
+					mainWindow.openSongFromCommandLine(songArgs);
 				} catch (Exception e) {
 				}
 			});
@@ -251,12 +264,13 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 	private Preferences prefs = Preferences.userNodeForPackage(AbcPlayer.class);
 	
 	private boolean playedFromFiletree = false;
+	private boolean tools;
 
 //	private boolean isExporting = false;
 
-	public AbcPlayer() {
+	public AbcPlayer(boolean tools) {
 		super(APP_NAME);
-
+		this.tools = tools;
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run() {
@@ -375,7 +389,14 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 				if (playlistViewPanel.promptSavePlaylist()) {
 					setVisible(false);
 					dispose();
-					System.exit(0);
+					if (!tools) System.exit(0);
+					try {
+			            if (sequencer != null && sequencer.isRunning()) {
+			                sequencer.stop();
+			            }
+			        } catch (Exception ex) {
+			            ex.printStackTrace();
+			        }
 				}
 			}
 		});
@@ -838,7 +859,14 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			if (playlistViewPanel.promptSavePlaylist()) {
 				setVisible(false);
 				dispose();
-				System.exit(0);
+				if (!tools) System.exit(0);
+				try {
+		            if (sequencer != null && sequencer.isRunning()) {
+		                sequencer.stop();
+		            }
+		        } catch (Exception ex) {
+		            ex.printStackTrace();
+		        }
 			}
 		});
 

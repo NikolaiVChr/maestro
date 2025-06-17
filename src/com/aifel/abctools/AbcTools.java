@@ -11,6 +11,11 @@ import java.io.FileFilter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -34,6 +39,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.border.Border;
 
 import com.digero.common.abc.LotroInstrument;
+import com.digero.common.midi.SynthesizerFactory;
 import com.digero.common.util.Themer;
 import com.digero.common.util.Util;
 import com.digero.maestro.MaestroMain;
@@ -75,6 +81,7 @@ public class AbcTools {
 	SaveAndExportSettings saveSettings;
 	MiscSettings miscSettings;
 	private AutoExporter autoInstance;
+	private Thread playerThread;
 
 	public static void main(String[] args) {
 		
@@ -298,6 +305,7 @@ public class AbcTools {
 				newName = "mySong";
 			newName += Util.ABC_FILE_EXTENSION;
 			File newFile = new File(destFolder, newName);
+			boolean success = false;
 			if (newFile.exists()) {
 				int result = JOptionPane.showConfirmDialog(frame,
 						"The file " + newFile.getAbsolutePath() + " exist already. Do you want to overwrite it?",
@@ -305,6 +313,7 @@ public class AbcTools {
 
 				switch (result) {
 				case JOptionPane.YES_OPTION:
+					success = true;
 					break;
 				case JOptionPane.NO_OPTION:
 					frame.setTextFieldText("Cancelled save.");
@@ -318,7 +327,11 @@ public class AbcTools {
 					return;
 				}
 			}
-			if (newFile.createNewFile()) {
+			
+			if (!success)
+				success = newFile.createNewFile();
+			
+			if (success) {
 				FileWriter writer = new FileWriter(newFile);
 	
 				frame.setTextFieldText(
@@ -344,11 +357,39 @@ public class AbcTools {
 	}
 
 	private void test() throws IOException {
-		if (lastExport == null)
+		if (lastExport == null || (playerThread != null && playerThread.isAlive()))
 			return;
-		String cmd = "javaw.exe -d64 -classpath . -jar AbcPlayer.jar " + lastExport.replace('\\', '/');
-		System.out.println(cmd);
-		Runtime.getRuntime().exec(cmd);
+		
+		playerThread = new Thread(() -> {
+			String folder = ".";
+			try {
+				// Find the path to the jar file we are executing in
+				folder = new File(
+						SynthesizerFactory.class.getProtectionDomain().getCodeSource().getLocation().toURI())
+						.getParent();
+			} catch (URISyntaxException e) {
+				e.printStackTrace();
+			}
+			File jarFile = new File(folder, "AbcPlayer.jar");
+	        URL jarUrl;
+			try {
+				jarUrl = jarFile.toURI().toURL();
+				ClassLoader parent = Thread.currentThread().getContextClassLoader();
+				try (URLClassLoader cl = new URLClassLoader(new URL[]{jarUrl}, parent)) {
+		            String mainClassName = "com.digero.abcplayer.AbcPlayer";
+		            Class<?> mainClass = Class.forName(mainClassName, true, cl);
+		
+		            Method m = mainClass.getMethod("main", String[].class);
+		            String[] childArgs = new String[]{lastExport.replace('\\', '/'), "--tools"};
+		            m.invoke(null, (Object) childArgs);
+		        } catch (Exception e) {
+					e.printStackTrace();
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		});
+		playerThread.start();
 	}
 
 	private static String trimNonAbc(String text) {
