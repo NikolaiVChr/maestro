@@ -40,6 +40,10 @@ Thanks to all who gave feedback of features and bugs plus suggestions.
 Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 ================
 
+Version 4.2.13
+- Fix that some songs could still change midi playback volume, overriding user's volume slider setting.
+- Reduced msi and zip filesize by only including icu in Maestro.jar
+
 Version 4.2.12
 - Settings template examples now more accurate reflect final results.
 - Add option for softest note to chord volume choices.

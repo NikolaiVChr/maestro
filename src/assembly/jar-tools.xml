@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assembly xmlns="http://maven.apache.org/ASSEMBLY/2.2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/ASSEMBLY/2.2.0 https://maven.apache.org/xsd/assembly-2.2.0.xsd">
+  <id>jar-for-tools</id>
+  <formats><format>jar</format></formats>
+  <dependencySets>
+    <dependencySet>
+      <scope>runtime</scope>
+      <useProjectArtifact>false</useProjectArtifact>
+      <unpack>true</unpack>
+      <outputDirectory>/</outputDirectory>
+      <excludes>
+        <exclude>com.ibm.icu:icu4j</exclude>
+        <exclude>de.sciss:jump3r</exclude>
+        <exclude>org.apache.commons:commons-math3</exclude>
+      </excludes>
+    </dependencySet>
+  </dependencySets>
+  <includeBaseDirectory>false</includeBaseDirectory>
+  <fileSets>
+    <fileSet>
+      <directory>${project.build.outputDirectory}</directory>
+      <outputDirectory>/</outputDirectory>
+      <includes>
+        <include>**/*.class</include>
+        <include>**/*.txt</include>
+        <include>**/*.png</include>
+      </includes>
+    </fileSet>
+  </fileSets>
+</assembly>
