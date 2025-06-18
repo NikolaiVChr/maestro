@@ -18,6 +18,8 @@ import com.ibm.icu.text.CharsetMatch;
 
 public class CharsetDetectAndDecode {
 	
+	static int debug = 0;
+	
 	public static Pair<String, Charset> decodeMidiData(byte[] data) {
 		
 		if (data == null || data.length == 0) return new Pair<String, Charset>("", null);
@@ -76,12 +78,6 @@ public class CharsetDetectAndDecode {
             }
         }
 
-        Pair<String, Charset> result = detectAndDecode(data, 25);
-        if (result != null) {
-        	//System.out.println("icu4j: "+result.second.name());
-        	return result;
-        }
-        
         if (looksLikeWesternText(data)) {
             // decode as Windows-1252 directly
             String s = decodeWithReplace(data, Charset.forName("windows-1252"));
@@ -95,6 +91,11 @@ public class CharsetDetectAndDecode {
             if (decodedHasMajorityHalfwidthKatakana(decoded)) {
                 return new Pair<>(decoded, sj);
             }
+        }
+        
+        Pair<String, Charset> result = detectAndDecode(data, 25);
+        if (result != null) {
+        	return result;
         }
         
         return bestFitLegacyDecode(data);
@@ -283,13 +284,17 @@ public class CharsetDetectAndDecode {
      * are half-width Katakana (U+FF61…U+FF9F).
      */
     private static boolean decodedHasMajorityHalfwidthKatakana(String s) {
-        long total = s.codePoints().count();
-        if (total == 0) return false;
+        // Count only the non-ASCII code points
+        long nonAscii = s.codePoints()
+                         .filter(cp -> cp > 0x7F)
+                         .count();
+        if (nonAscii == 0) return false;   // no non-ASCII means no katakana
+        
         long kata = s.codePoints()
                      .filter(cp -> (cp >= 0xFF61 && cp <= 0xFF9F))
                      .count();
-        // require at least half of all code points to be Katakana
-        return kata * 2 >= total;
+        // Now require >=50% of the non-ASCII be half-width Katakana
+        return kata * 2 >= nonAscii;
     }
     
     private static boolean looksLikeWesternText(byte[] data) {
@@ -325,6 +330,7 @@ public class CharsetDetectAndDecode {
             return null;
         }
         try {
+        	if (debug > 0) System.out.println("icu4j: "+match[0].getName()+" "+confidence+"%");
             return new Pair<String, Charset>(match[0].getString(), Charset.forName(match[0].getName()));
         } catch (Exception e) {
             return null;

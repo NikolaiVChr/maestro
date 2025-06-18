@@ -276,4 +276,35 @@ class CharsetDetectAndDecodeTest {
 	    Pair<String, Charset> res = CharsetDetectAndDecode.decodeMidiData(data);
 	    assertEquals(StandardCharsets.UTF_8, res.second, "Result was "+res.second.name());
 	}
+    
+    @Test
+    public void testAsciiKatakanaSlapBass_SniffAndDecode() {
+        // bytes: C1 AC B6 CE DF BA 2D 31 28 53 6C 61 70 42 61 73 73 31 29 + padding
+        byte[] data = new byte[] {
+            (byte)0xC1, (byte)0xAC, (byte)0xB6, (byte)0xCE,
+            (byte)0xDF, (byte)0xBA, (byte)0x2D, (byte)0x31,
+            (byte)0x28, (byte)0x53, (byte)0x6C, (byte)0x61,
+            (byte)0x70, (byte)0x42, (byte)0x61, (byte)0x73,
+            (byte)0x73, (byte)0x31, (byte)0x29,
+            // padding spaces
+            32, 32, 32, 32, 32, 32, 32, 32, 32, 32,
+            32, 32, 32, 32, 32, 32, 32
+        };
+
+        // Should match ASCII+halfwidth Katakana
+        //assertTrue(CharsetDetectAndDecode.looksLikeAsciiOrHalfwidthKatakana(data),
+        //           "Expected ASCII-or-HW-Katakana sniff");
+
+        // Decode through the full pipeline
+        Pair<String, Charset> result = CharsetDetectAndDecode.decodeMidiData(data);
+
+        // Should choose Windows-31J (CP932)
+        assertEquals(Charset.forName("windows-31j"), result.second,
+                     "Expected windows-31j for half-width Katakana");
+
+        // And the decoded text
+        String expected = "ﾁｬｶﾎﾟｺ-1(SlapBass1)";
+        assertEquals(expected, result.first.trim(),
+                     "Decoded string did not match expected Katakana + ASCII");
+    }
 }
