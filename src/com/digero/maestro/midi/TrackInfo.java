@@ -94,6 +94,11 @@ public class TrackInfo implements MidiConstants {
 		for (int j = 0, sz = track.size(); j < sz; j++) {
 			MidiEvent evt = track.get(j);
 			MidiMessage msg = evt.getMessage();
+			
+			if (evt.getTick() < 0) {
+				System.err.println("Negative tick: "+evt.getTick());
+				continue;
+			}
 
 			if (evt.getTick() != tick && !isDrumTrack) {
 				// Moving to new tick, lets process bends since the last tick
@@ -239,7 +244,7 @@ public class TrackInfo implements MidiConstants {
 
 				if (type == META_TRACK_NAME && name == null && m.getData() != null) {
 					byte[] data = m.getData();
-					//System.out.println("\n "+MidiUtils.formatBytes(data));				
+					//System.out.println("Track "+trackNumber+":\n "+MidiUtils.formatBytes(data));				
 					String tmp = "";
 					if (!ignoreMidiText) tmp = MidiUtils.decodeMidiText(data);
 					
