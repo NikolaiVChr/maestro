@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.logging.Logger;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.SortedMap;
@@ -36,6 +37,7 @@ import com.digero.common.util.Util;
 import com.digero.maestro.abc.TimingInfo;
 
 public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumberCache {
+	private static final Logger log = Logger.getLogger("import.midi");
 	private final int tickResolution;
 	private final float divisionType;
 	private final int primaryTempoMPQ;

@@ -3,6 +3,7 @@ package com.digero.common.midi;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
@@ -16,6 +17,7 @@ import com.digero.common.midi.SequencerEvent.SequencerProperty;
 import com.digero.maestro.view.ProjectFrame;
 
 public class NoteFilterSequencerWrapper extends SequencerWrapper {
+	private static final Logger log = Logger.getLogger("playback.midi");
 	public static final String prefMIDIHeader = "MIDI out devices";
 	public static final String prefMIDISelect = "Preferred MIDI out device";
 	public static Preferences prefs = Preferences.userNodeForPackage(NoteFilterSequencerWrapper.class);
@@ -123,13 +125,13 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 		closeDevice();
 
 		if (preferred == null) {
-			// System.out.println("Default MIDI out selected");
+			log.fine("Default MIDI out selected");
 			deviceInUse = null;
 			if (nonDefault && feedActive) ProjectFrame.feed("Default MIDI out", null);
 			return MidiSystem.getReceiver();
 		}
 		if (myInfo == null) {
-			System.out.println("Default MIDI out selected (" + preferred + " not available)");
+			log.info("Default MIDI out selected (" + preferred + " not available)");
 			deviceInUse = null;
 			if (nonDefault) ProjectFrame.feed("Default MIDI out (" + preferred + " not available)", null);
 			return MidiSystem.getReceiver();
@@ -153,7 +155,7 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 			closeDevice();
 		}
 		if (!okay || myReciever == null) {
-			System.out.println("Default MIDI out selected (" + preferred + " not connected)");
+			log.info("Default MIDI out selected (" + preferred + " not connected)");
 			deviceInUse = null;
 			if (nonDefault) ProjectFrame.feed("Default MIDI out (" + preferred + " not connected)", null);
 			return MidiSystem.getReceiver();
@@ -166,7 +168,7 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 		if (feedActive && (deviceInUse == null || !deviceInUse.equals(preferred))) ProjectFrame.feed("MIDI out on "+myInfo.getName(), null);
 		deviceInUse = preferred;
 		
-		System.out.println("Non-default MIDI out selected: " + myInfo.getName()+" ("+description+") "+vendor);
+		log.info("Non-default MIDI out selected: " + myInfo.getName()+" ("+description+") "+vendor);
 		return myReciever;
 	}
 

@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.logging.Logger;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MetaMessage;
@@ -44,6 +45,7 @@ import com.digero.maestro.view.MiscSettings;
  * Container for a MIDI sequence. If necessary, converts type 0 MIDI files to type 1.
  */
 public class SequenceInfo implements MidiConstants {
+	private static final Logger log = Logger.getLogger("import.midi");
 	private final Sequence sequence;
 	private final SequenceDataCache sequenceCache;
 	private final String fileName;
@@ -400,17 +402,16 @@ public class SequenceInfo implements MidiConstants {
 					// the "& 0xFF" is to convert to unsigned int from signed byte.
 					if (isResetXG(message)) {
 						if (MidiStandard.GM != standard && MidiStandard.XG != standard) {
-							System.err
-									.println(fileName + ": MIDI XG Reset in a " + standard + " file. This is unusual!");
+							log.info(fileName + ": MIDI XG Reset in a " + standard + " file. This is unusual!");
 						}
 						if (evt.getTick() > lastResetTick) {
 							lastResetTick = evt.getTick();
 							standard = MidiStandard.XG;
 						} else if (MidiStandard.GS == standard && evt.getTick() == lastResetTick) {
-							System.err.println(
+							log.info(
 									"They are at same tick. Statistically bigger chance its a GS, so not switching to XG.");
 						} else if (MidiStandard.GM2 == standard && evt.getTick() == lastResetTick) {
-							System.err.println(
+							log.info(
 									"They are at same tick. Statistically bigger chance its a XG, so switching to that.");
 							lastResetTick = evt.getTick();
 							standard = MidiStandard.XG;
@@ -419,8 +420,7 @@ public class SequenceInfo implements MidiConstants {
 						// System.err.println("Yamaha XG Reset, tick "+evt.getTick());
 					} else if (isResetGS(message)) {
 						if (MidiStandard.GM != standard && MidiStandard.GS != standard) {
-							System.err
-									.println(fileName + ": MIDI GS Reset in a " + standard + " file. This is unusual!");
+							log.info(fileName + ": MIDI GS Reset in a " + standard + " file. This is unusual!");
 						}
 						if (evt.getTick() >= lastResetTick) {
 							lastResetTick = evt.getTick();
@@ -430,14 +430,14 @@ public class SequenceInfo implements MidiConstants {
 						// System.err.println("Roland GS Reset, tick "+evt.getTick());
 					} else if (isResetGM2(message)) {
 						if (MidiStandard.GM != standard && MidiStandard.GM2 != standard) {
-							System.err.println(
+							log.info(
 									fileName + ": MIDI GM2 Reset in a " + standard + " file. This is unusual!");
 						}
 						if (evt.getTick() > lastResetTick) {
 							lastResetTick = evt.getTick();
 							standard = MidiStandard.GM2;
 						} else if (evt.getTick() == lastResetTick && MidiStandard.GM != standard) {
-							System.err.println(
+							log.info(
 									"They are at same tick. Statistically bigger chance its not a GM2, so not switching standard.");
 						}
 						ExtensionMidiInstrument.getInstance();
@@ -488,7 +488,7 @@ public class SequenceInfo implements MidiConstants {
 							&& (message[4] & 0xFF) == 0x00 && (message[5] & 0xFF) == 0x00 && (message[6] & 0xFF) == 0x07
 							&& (message[8] & 0xFF) == 0xF7) {
 
-						System.err.println(
+						log.fine(
 								fileName + ": Yamaha XG Drum Part Protect mode " + (message[7] == 0 ? "OFF" : "ON"));
 					} else if (message.length == 9 && (message[0] & 0xFF) == 0xF0 && (message[1] & 0xFF) == 0x43
 							&& (message[4] & 0xFF) == 0x08 && (message[8] & 0xFF) == 0xF7) {
@@ -943,7 +943,7 @@ public class SequenceInfo implements MidiConstants {
 	 */
 	@SuppressWarnings("unchecked") //
 	public static long fixupTrackLength(Sequence song) {
-		//System.out.println("Before: " + Util.formatDurationM(song.getMicrosecondLength()));
+		log.fine("Before: " + Util.formatDurationM(song.getMicrosecondLength()));
 		SequencerWrapper.TempoCacheSlow tempoCache = new SequencerWrapper.TempoCacheSlow(song);
 		Track[] tracks = song.getTracks();
 		List<MidiEvent>[] suspectEvents = new List[tracks.length];
@@ -1041,7 +1041,7 @@ public class SequenceInfo implements MidiConstants {
 		
 		//System.out.println("Real song duration: "
 		//		+ Util.formatDurationM(MidiUtils.tick2microsecond(song, last, tempoCache)));
-		//System.out.println("After: " + Util.formatDurationM(song.getMicrosecondLength()));
+		log.fine("After: " + Util.formatDurationM(song.getMicrosecondLength()));
 		return last + 1L;
 	}
 	

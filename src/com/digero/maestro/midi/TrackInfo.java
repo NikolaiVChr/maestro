@@ -12,6 +12,7 @@ import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.Map.Entry;
+import java.util.logging.Logger;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MetaMessage;
@@ -34,6 +35,8 @@ import com.digero.maestro.view.MiscSettings;
  * Create NoteEvents from MIDI note ON/OFF messages
  */
 public class TrackInfo implements MidiConstants {
+	private static final Logger log = Logger.getLogger("import.midi.track");
+	
 	private SequenceInfo sequenceInfo;
 
 	private int trackNumber;
@@ -297,7 +300,7 @@ public class TrackInfo implements MidiConstants {
 				ctNotesOn += notesOnChannel.size();
 		}
 		if (ctNotesOn > 0) {
-			System.err.println((ctNotesOn) + " note(s) not turned off at the end of the track.");
+			log.info((ctNotesOn) + " note(s) not turned off at the end of the track.");
 
 			for (List<MidiNoteEvent> notesOnChannel : notesOn) {
 				if (notesOnChannel != null)
