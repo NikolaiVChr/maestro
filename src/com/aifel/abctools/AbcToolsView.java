@@ -21,7 +21,7 @@ import javax.swing.JSeparator;
 import javax.swing.JProgressBar;
 
 @SuppressWarnings("serial")
-public class MultiMergerView extends JFrame {
+public class AbcToolsView extends JFrame {
 
 	private JPanel contentPane;
 	private JScrollPane txtAreaScroll;
@@ -65,7 +65,7 @@ public class MultiMergerView extends JFrame {
 	/**
 	 * Create the frame.
 	 */
-	public MultiMergerView() {
+	public AbcToolsView() {
 		setTitle("ABC Tools");
 		setMinimumSize(new Dimension(800, 430));
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);

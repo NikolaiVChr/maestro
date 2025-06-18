@@ -56,7 +56,7 @@ public class AutoExporter {
 	private final String DIR_AUTO_MIDI    = "dir_midi";
 	private final String DIR_AUTO_DEST    = "dir_destination";
 
-	private final MultiMergerView frame;
+	private final AbcToolsView frame;
 	private final Timer swingUpdateTimer;
 
 	private double progressFactor = 1;
@@ -77,11 +77,18 @@ public class AutoExporter {
 	private File oldMidi = null;
 	private volatile boolean cancel = false;
 	
+	PartAutoNumberer partAutoNumberer;
+	PartNameTemplate partNameTemplate;
+	ExportFilenameTemplate exportFilenameTemplate;
+	InstrNameSettings instrNameSettings;
+	SaveAndExportSettings saveSettings;
+	MiscSettings miscSettings;
+	
 	// For testing:
 	private static final boolean neverLocateMidi = false;// for testing
 	private static final boolean testIfOutputIsValid = false;// makes it slower
 	
-	AutoExporter (MultiMergerView frame, String myHome, AbcTools main, Preferences autoPrefs) {
+	AutoExporter (AbcToolsView frame, String myHome, AbcTools main, Preferences autoPrefs) {
 		this.frame = frame;
 		this.main = main;
 		this.autoPrefs = autoPrefs;
@@ -216,12 +223,12 @@ public class AutoExporter {
 		
 		setToField("Keep Maestro closed while this app runs.<br><br>Exporting in progress");
 
-		main.partAutoNumberer = new PartAutoNumberer(prefs.node("partAutoNumberer"));
-		main.partNameTemplate = new PartNameTemplate(prefs.node("partNameTemplate"));
-		main.exportFilenameTemplate = new ExportFilenameTemplate(prefs.node("exportFilenameTemplate"));
-		main.instrNameSettings = new InstrNameSettings(prefs.node("instrNameSettings"));
-		main.saveSettings = new SaveAndExportSettings(prefs.node("saveAndExportSettings"));
-		main.miscSettings = new MiscSettings(prefs.node("miscSettings"), true);
+		partAutoNumberer = new PartAutoNumberer(prefs.node("partAutoNumberer"));
+		partNameTemplate = new PartNameTemplate(prefs.node("partNameTemplate"));
+		exportFilenameTemplate = new ExportFilenameTemplate(prefs.node("exportFilenameTemplate"));
+		instrNameSettings = new InstrNameSettings(prefs.node("instrNameSettings"));
+		saveSettings = new SaveAndExportSettings(prefs.node("saveAndExportSettings"));
+		miscSettings = new MiscSettings(prefs.node("miscSettings"), true);
 
 		setProgress(0);
 		cancel = false;
@@ -428,8 +435,8 @@ public class AutoExporter {
 		newNestedMidi = null;
 		oldMidi = null;
 		nestedProject = project;
-		AbcSong abcSong = new AbcSong(project, main.partAutoNumberer, main.partNameTemplate, main.exportFilenameTemplate,
-				main.instrNameSettings, openFileResolver, main.miscSettings, frame.getSaveMSXSelected(), main.saveSettings, true);
+		AbcSong abcSong = new AbcSong(project, partAutoNumberer, partNameTemplate, exportFilenameTemplate,
+				instrNameSettings, openFileResolver, miscSettings, frame.getSaveMSXSelected(), saveSettings, true);
 
 		boolean timingModified = false;
 		boolean oldMix = abcSong.isMixTiming();
@@ -449,26 +456,26 @@ public class AutoExporter {
 		}
 		
 		abcSong.storeNewExportFile = frame.getSaveMSXabcSelected();
-		abcSong.setSkipSilenceAtStart(main.saveSettings.skipSilenceAtStart);
-		abcSong.setDeleteMinimalNotes(main.saveSettings.deleteMinimalNotes);
-		abcSong.setBadger(main.miscSettings.showBadger);
-		StringCleaner.cleanABC = main.saveSettings.convertABCStringsToBasicAscii;
+		abcSong.setSkipSilenceAtStart(saveSettings.skipSilenceAtStart);
+		abcSong.setDeleteMinimalNotes(saveSettings.deleteMinimalNotes);
+		abcSong.setBadger(miscSettings.showBadger);
+		StringCleaner.cleanABC = saveSettings.convertABCStringsToBasicAscii;
 
 		File exportFile = abcSong.getExportFile();
 		String fileName = "mySong"+Util.ABC_FILE_EXTENSION;
 
 		// Always regenerate setting from pattern export is highest precedent
-		if (main.exportFilenameTemplate.shouldRegenerateFilename()) {
-			fileName = main.exportFilenameTemplate.formatName();
+		if (exportFilenameTemplate.shouldRegenerateFilename()) {
+			fileName = exportFilenameTemplate.formatName();
 		} else if (exportFile != null) // else use abc filename if exists already
 		{
 			fileName = exportFile.getName();
 		} else if (abcSong.getProjectFile() != null) // else use msx filename if exists already
 		{
 			fileName = abcSong.getProjectFile().getName();
-		} else if (main.exportFilenameTemplate.isEnabled()) // else use pattern if usage is enabled
+		} else if (exportFilenameTemplate.isEnabled()) // else use pattern if usage is enabled
 		{
-			fileName = main.exportFilenameTemplate.formatName();
+			fileName = exportFilenameTemplate.formatName();
 		} else if (abcSong.getSourceFile() != null) // else default to source file (midi/abc)
 		{
 			fileName = abcSong.getSourceFilename();
