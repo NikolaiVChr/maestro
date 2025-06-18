@@ -23,16 +23,17 @@ public class Logging {
 		root.addHandler(console);
 		
 		File home = Util.getDocumentsDir();
-		if (home != null && new File(home, "Maestro-logs").exists() && new File(home, "Maestro-logs").isDirectory()) {
-			String pattern = new File(home, "Maestro-logs/"+app+".log").toString();
+		String logFolder = "Maestro-logs";
+		if (home != null && new File(home, logFolder).exists() && new File(home, logFolder).isDirectory()) {
+			String pattern = new File(home, logFolder+"/"+app+".log").toString();
 			// rotate at 1 MB, keep 5 files
 			FileHandler fileHandler = new FileHandler(pattern, 1024*1024, 5, true);
 			fileHandler.setLevel(Level.INFO);
 			fileHandler.setFormatter(new SimpleFormatter());
 			root.addHandler(fileHandler);
 			root.config("Starting logging to files. "+pattern);
-		} else {
-			root.severe("Loggin to file disabled as folder dont exist: "+(new File(home, "Maestro-logs").toString()));
+		} else if (home != null) {
+			root.severe("Loggin to file disabled as folder dont exist: "+(new File(home, logFolder).toString()));
 		}
 		
 		Logger.getLogger("import.midi").setLevel(Level.WARNING);
