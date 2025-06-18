@@ -928,12 +928,6 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		boolean showDrumPanelsPrev = showDrumPanels;
 		showDrumPanels = !abcPart.isChromatic(trackInfo.getTrackNumber()) && trackEnabled;
 		
-//		System.out.println("show drum panels for track " + trackInfo.getTrackNumber() + ": " + showDrumPanels + "   (prev: " + showDrumPanelsPrev);
-		
-//		System.out.println("Does this even hit when we switch tracks? " + showDrumPanels);
-		
-//		boolean showDrumPanelsNew = !abcPart.isChromatic(trackInfo.getTrackNumber()) && trackEnabled;
-		
 		if (showDrumPanels != showDrumPanelsPrev) {
 			if (showDrumPanels) {
 				System.out.println("Enabling drum panels on a track");
@@ -951,20 +945,6 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 						layout.insertRow(row, PREFERRED);
 					add(drumlinePanel, "0, " + row + ", " + NOTE_COLUMN + ", " + row);
 				}
-				
-//				for (int noteId : trackInfo.getNotesInUse()) {
-//					DrumPanel drumlinePanel = new DrumPanel(trackInfo, seq, abcPart, noteId, abcSequencer, trackVolumeBar);
-//					drumlinePanel.setAbcPreviewMode(isAbcPreviewMode);
-//					if (row <= layout.getNumRow())
-//						layout.insertRow(row, PREFERRED);
-//					add(drumlinePanel, "0, " + row + ", " + NOTE_COLUMN + ", " + row);
-//					if (drumlinePanels == null)
-//						drumlinePanels = new ArrayList<>();
-//					drumlinePanels.add(drumlinePanel);
-//				}
-				
-				// this array ends up being in reverse order from what is displayed, since we add the top row each time
-//				Collections.reverse(drumlinePanels);
 				
 				// Rebuild note graph panel
 				noteGraph.setBorder(BorderFactory.createEmptyBorder());
@@ -986,7 +966,6 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 				for (int i = getComponentCount() - 1; i >= 0; --i) {
 					Component child = getComponent(i);
 					if (child instanceof DrumPanel) {
-//						((DrumPanel) child).discard();
 						remove(i);
 					}
 				}
@@ -994,8 +973,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 				noteGraphPanel.removeAll();
 				noteGraph.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()));
 				noteGraphPanel.add(noteGraph, "grow");
-				
-//				drumlinePanels = new ArrayList<DrumPanel>();
+
 				if (drumControlBar != null) {
 					remove(drumControlBar);
 				}

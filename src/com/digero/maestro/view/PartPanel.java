@@ -99,7 +99,6 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 	// Note graphs
 	HistogramPanel histogramPanel;
 	TempoPanel tempoPanel;
-	
 	HashMap<Integer, TrackPanel> trackPanels = new HashMap<Integer, TrackPanel>();
 	
 	private ControlLayout controlLayout;
@@ -317,10 +316,8 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		JScrollBar noteGraphBar = noteGraphScrollPane.getVerticalScrollBar();		
 		noteGraphBar.setUnitIncrement(TrackPanel.calculateTrackDims().rowHeight / 2);
 
-		
 		splitPanel.add(controlPanel, "0, 0");
 		splitPanel.add(noteGraphScrollPane, "1, 0, f, f");
-		
 		
 		messageLabel = new JLabel();
 		messageLabel.setHorizontalAlignment(SwingConstants.CENTER);
@@ -474,8 +471,12 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		numberSpinnerModel.setStepSize(partAutoNumberer.getIncrement());
 	}
 	
-	public void changeAbcSong() {
-		
+	public void closeAbcSong() {
+		clearTrackListPanel(true);
+		histogramPanel = null;
+		tempoPanel = null;
+		trackPanels.clear();
+		abcPart = null;
 	}
 
 	public void setAbcPart(AbcPart abcPart, boolean force) {
@@ -580,7 +581,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 				@Override
 				public boolean isVerticalZoomForbidden() {
 					return true;
-				}				
+				}
 			}			
 			Dummy dummy1 = new Dummy();
 			dummy1.setPreferredSize(new Dimension(100, scrollbarHeight * 2));
