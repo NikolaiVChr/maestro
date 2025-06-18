@@ -180,7 +180,7 @@ public final class Util {
      * 
      * @return
      */
-	public static File getUserDocumentsPath() {
+	private static File getUserDocumentsPath() {
 		String userHome = System.getProperty("user.home", "");
 	    File docs = new File(userHome, "Documents");
 	    if (docs.isDirectory()) {
@@ -205,6 +205,7 @@ public final class Util {
 	    return null;
 	}
 
+	@Deprecated
 	public static File getUserMusicPath() {
 		String userHome = System.getProperty("user.home", "");
 		File music = new File(userHome + "/Music");
@@ -215,6 +216,19 @@ public final class Util {
 			return music;
 
 		return getUserDocumentsPath();
+	}
+	
+	public static File getDocumentsDir() {
+		File docs = getUserDocumentsPath();
+		
+		File onedriveDocs = getUserOneDriveDocumentsPath();
+		if (onedriveDocs != null) {
+			return onedriveDocs;
+		}
+		if (docs.isDirectory()) {
+			return docs;
+		}
+		return null;
 	}
 
 	public static File getLotroMusicPath(boolean create) {

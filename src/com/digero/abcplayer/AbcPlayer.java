@@ -66,6 +66,7 @@ import com.digero.common.midi.VolumeTransceiver;
 import com.digero.common.util.ExtensionFileFilter;
 import com.digero.common.util.FileFilterDropListener;
 import com.digero.common.util.Listener;
+import com.digero.common.util.Logging;
 import com.digero.common.util.LotroParseException;
 import com.digero.common.util.ParseException;
 import com.digero.common.util.Themer;
@@ -101,8 +102,8 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 
 	private static ServerSocket serverSocket;
 
-	public static void main(String[] args) {
-
+	public static void main(String[] args) throws IOException {
+		Logging.configure(APP_NAME);
 		try {
 			Properties props = new Properties();
 			props.load(AbcPlayer.class.getResourceAsStream("version.txt"));

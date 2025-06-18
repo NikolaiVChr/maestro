@@ -4,10 +4,13 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 import javax.swing.SwingUtilities;
+
+import com.digero.common.util.Logging;
 import com.digero.common.util.Themer;
 import com.digero.common.util.Util;
 import com.digero.maestro.MaestroMain;
@@ -26,8 +29,8 @@ public class AbcTools {
 	private AutoExporter autoInstance;
 	private MergeTool mergeInstance;
 	
-	public static void main(String[] args) {
-		
+	public static void main(String[] args) throws IOException {
+		Logging.configure("ABC Tools");
 		try {
 			SwingUtilities.invokeAndWait(() -> {
 				try {

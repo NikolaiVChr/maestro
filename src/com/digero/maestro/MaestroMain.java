@@ -14,11 +14,13 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
+import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
 import javax.swing.SwingUtilities;
 
+import com.digero.common.util.Logging;
 import com.digero.common.util.Themer;
 import com.digero.common.util.Util;
 import com.digero.common.util.Version;
@@ -77,6 +79,7 @@ public class MaestroMain {
 				}
 			});
 		});
+		Logging.configure(APP_NAME);
 		try {
 			Properties props = new Properties();
 			props.load(MaestroMain.class.getResourceAsStream("version.txt"));
