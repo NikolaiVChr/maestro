@@ -25,7 +25,7 @@ public class Logging {
 		File home = Util.getDocumentsDir();
 		String logFolder = "Maestro-logs";
 		if (home != null && new File(home, logFolder).exists() && new File(home, logFolder).isDirectory()) {
-			String pattern = new File(home, logFolder+"/"+app+".log").toString();
+			String pattern = new File(home, logFolder+"/"+app+"-%g-%u.log").toString();
 			// rotate at 1 MB, keep 5 files
 			FileHandler fileHandler = new FileHandler(pattern, 1024*1024, 5, true);
 			fileHandler.setLevel(Level.INFO);
