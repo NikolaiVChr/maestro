@@ -1576,7 +1576,7 @@ public class AbcExporter {
 			AbcNoteEvent ne = events.get(cc);
 			assert ne.note != Note.REST : "Rest detected!";
 			if (cc == events.size()-1) {
-				logNotes.finer(part.getTitle()+": ends at micro "+(ne.getEndMicros())+" (before)");
+				logNotes.finer(part.getTitle()+": ends at micro "+qtm.tickToMicrosABCOrganic(ne.getEndTick())+" (before subdiving bends)");
 			}
 			long oldStart = ne.getStartTick();
 			long oldEnd = ne.getEndTick();
