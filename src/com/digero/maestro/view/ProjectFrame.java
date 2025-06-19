@@ -2066,6 +2066,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		partPanel.setTextnote("");
 		partPanel.textnoteVisible(false);
 		partPanel.unZoom();
+		partPanel.closeAbcSong();
 		
 		partEditor.setVisible(false);
 

@@ -17,6 +17,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.text.ParseException;
+import java.util.HashMap;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -94,6 +95,11 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 	
 	private PatchedJScrollPane noteGraphScrollPane;
 	private JPanel noteGraphPanel;
+	
+	// Note graphs
+	HistogramPanel histogramPanel;
+	TempoPanel tempoPanel;
+	HashMap<Integer, TrackPanel> trackPanels = new HashMap<Integer, TrackPanel>();
 	
 	private ControlLayout controlLayout;
 	private GraphLayout graphLayout;
@@ -242,15 +248,11 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		zoomPanel.add(followCheckBox);
 		partSettingsPanel.add(zoomPanel);
 
-//		boolean dbg = false;
-//		dbg = true;
-//		splitPanel = new JPanel(new MigLayout((dbg? "debug, " : "") + "wrap 2, gap 0, ins 0, novisualpadding, filly", "[]0[grow]"));
 		splitPanel = new JPanel(new TableLayout(new double[] { PREFERRED, FILL }, //
 				new double[] { FILL }));
 		splitPanel.setBorder(BorderFactory.createEmptyBorder());
 		splitPanel.setBackground(ColorTable.PANEL_BACKGROUND_DISABLED.get());
 		
-		//controlPanel = new JPanel(new MigLayout((dbg? "debug, " : "") + "wrap 1, gap 0, novisualpadding, ins 0"));
 		noteGraphPanel = new JPanel() {
 			@Override
 			public Dimension getPreferredSize() {
@@ -314,15 +316,8 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		JScrollBar noteGraphBar = noteGraphScrollPane.getVerticalScrollBar();		
 		noteGraphBar.setUnitIncrement(TrackPanel.calculateTrackDims().rowHeight / 2);
 
-		
 		splitPanel.add(controlPanel, "0, 0");
-		splitPanel.add(noteGraphScrollPane, "1, 0, f, f");//noteGraphScrollPane
-		
-//		splitPanel.add(controlScrollPane, "top");
-//		splitPanel.add(noteGraphScrollPane, "top");
-		
-//		horizInnerScrollPane.add()
-		
+		splitPanel.add(noteGraphScrollPane, "1, 0, f, f");
 		
 		messageLabel = new JLabel();
 		messageLabel.setHorizontalAlignment(SwingConstants.CENTER);
@@ -338,9 +333,6 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		noteContent.setTabSize(4);
 
 		add(partSettingsPanel, "0, 0");
-//		add(partSettingsPanel, "0, 0");
-//		add(zoomSettingsPanel, "0, 1");
-//		add(dataPanel, "0, 0");
 		add(messageLabel, "0, 2, C, C");
 		add(splitPanel, "0, 2");
 		
@@ -478,6 +470,14 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 	public void settingsChanged() {
 		numberSpinnerModel.setStepSize(partAutoNumberer.getIncrement());
 	}
+	
+	public void closeAbcSong() {
+		clearTrackListPanel(true);
+		histogramPanel = null;
+		tempoPanel = null;
+		trackPanels.clear();
+		abcPart = null;
+	}
 
 	public void setAbcPart(AbcPart abcPart, boolean force) {
 		messageLabel.setVisible(false);
@@ -506,7 +506,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 			nameTextField.setText("");
 			instrumentComboBox.setSelectedItem(LotroInstrument.DEFAULT_INSTRUMENT);
 
-			clearTrackListPanel();
+			clearTrackListPanel(true);
 		} else {
 			numberSpinner.setEnabled(true);
 			nameTextField.setEnabled(true);
@@ -519,12 +519,14 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 			nameTextField.setText(abcPart.getTitle());
 			instrumentComboBox.setSelectedItem(abcPart.getInstrument());
 
-			clearTrackListPanel();
+			clearTrackListPanel(false);
 
 			// Add the tempo panel if this song contains tempo changes
 			if (abcPart.getSequenceInfo().hasTempoChanges() || abcPart.getAbcSong().tuneBarsModified != null) {
-				TempoPanel tempoPanel = new TempoPanel(abcPart.getSequenceInfo(), sequencer, abcSequencer,
-						abcPart.getAbcSong());
+				if (tempoPanel == null) {
+					tempoPanel = new TempoPanel(abcPart.getSequenceInfo(), sequencer, abcSequencer,
+							abcPart.getAbcSong());
+				}
 				tempoPanel.setAbcPreviewMode(isAbcPreviewMode);
 				tempoPanel.revalidate();
 				controlPanel.add(tempoPanel,"x");
@@ -532,8 +534,10 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 			}
 			
 			// Add the histogram panel
-			HistogramPanel histogramPanel = new HistogramPanel(abcPart.getSequenceInfo(), sequencer, abcSequencer,
+			if (histogramPanel == null) {
+				histogramPanel = new HistogramPanel(abcPart.getSequenceInfo(), sequencer, abcSequencer,
 						abcPart.getAbcSong());
+			}
 			histogramPanel.setAbcPreviewMode(isAbcPreviewMode, showMaxPolyphony);
 			histogramPanel.revalidate();
 			
@@ -545,19 +549,14 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 			for (TrackInfo track : abcPart.getSequenceInfo().getTrackList()) {
 				int trackNumber = track.getTrackNumber();
 				if (track.hasEvents()) {
-					
-					TrackPanel trackPanel = new TrackPanel(track, sequencer, abcPart, abcSequencer, controlLayout);
+					if (!trackPanels.containsKey(trackNumber)) {
+						trackPanels.put(trackNumber, new TrackPanel(track, sequencer, abcPart, abcSequencer, controlLayout));
+					}
+					TrackPanel trackPanel = trackPanels.get(trackNumber);
+					trackPanel.setAbcPart(abcPart);
 					trackPanel.setAbcPreviewMode(isAbcPreviewMode);
 					controlPanel.add(trackPanel,"x");
 					noteGraphPanel.add(trackPanel.getNoteGraph(),"x");
-					
-					
-//					if (trackPanel.hasDrumPanels()) {
-//						ArrayList<DrumPanel> drums = trackPanel.getDrumPanels();
-//						for (DrumPanel dp : drums) {
-//							noteGraphPanel.add(dp.getNoteGraph(), "growx");
-//						}
-//					}
 
 					if (MUTE_DISABLED_TRACKS)
 						sequencer.setTrackMute(trackNumber, !abcPart.isTrackEnabled(trackNumber));
@@ -582,7 +581,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 				@Override
 				public boolean isVerticalZoomForbidden() {
 					return true;
-				}				
+				}
 			}			
 			Dummy dummy1 = new Dummy();
 			dummy1.setPreferredSize(new Dimension(100, scrollbarHeight * 2));
@@ -639,27 +638,21 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		messageLabel.setVisible(true);
 	}
 
-	private void clearTrackListPanel() {
-		for (Component child : controlPanel.getComponents()) {
-			if (child instanceof IDiscardable) {
-				((IDiscardable) child).discard();
+	private void clearTrackListPanel(boolean discard) {
+		if (discard) {
+			for (Component child : controlPanel.getComponents()) {
+				if (child instanceof IDiscardable) {
+					((IDiscardable) child).discard();
+				}
 			}
-		}
-		for (Component child : noteGraphPanel.getComponents()) {
-			if (child instanceof IDiscardable) {
-				((IDiscardable) child).discard();
+			for (Component child : noteGraphPanel.getComponents()) {
+				if (child instanceof IDiscardable) {
+					((IDiscardable) child).discard();
+				}
 			}
 		}
 		controlPanel.removeAll();
 		noteGraphPanel.removeAll();
-	}
-
-	@Deprecated
-	private void setSequencer(NoteFilterSequencerWrapper sequencer) {
-		AbcPart abcPartTmp = this.abcPart;
-		setAbcPart(null, false);
-		this.sequencer = sequencer;
-		setAbcPart(abcPartTmp, false);
 	}
 
 	public void commitAllFields() {
@@ -671,10 +664,8 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 	}
 
 	public void updateZoom() {
-		
 		graphLayout.setZoomHorizontal(hZoom);
-		controlLayout.setZoomVertical(vZoom);		
-		
+		controlLayout.setZoomVertical(vZoom);
 	}
 
 	private void repaintAfterZoom() {
@@ -688,16 +679,8 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 	
 	public void unZoom() {
 		// Called from ProjectFrame when song closes
-		
-//		hZoom = 1.0f;
-//		vZoom = 1.0f;
-//		
-//		graphLayout.setZoomHorizontal(hZoom);
-//		controlLayout.setZoomVertical(vZoom);
-		
 		hZoomSlider.setValue(0);
 		vZoomSlider.setValue(0);
-		
 		repaintAfterZoom();
 	}
 
