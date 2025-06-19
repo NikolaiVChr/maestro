@@ -2057,6 +2057,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			}
 		}
 		
+		log.fine("Closing project");
+		
 		hideEditsCheckbox.setSelected(false);//best to have this before song is set to null
 
 		if (abcSong != null) {
@@ -2147,6 +2149,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		allowOverwriteExportFile = false;
 		setAbcSongModified(false);
 
+		log.info("Attempting to open "+file.getName());//dont reveal full path in log files
 		try {
 			abcSong = new AbcSong(file, partAutoNumberer, partNameTemplate, exportFilenameTemplate, instrNameSettings,
 					openFileResolver, miscSettings, saveSettings);
