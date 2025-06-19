@@ -103,7 +103,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 	private static ServerSocket serverSocket;
 
 	public static void main(String[] args) throws IOException {
-		Logging.configure(APP_NAME);
+		
 		try {
 			Properties props = new Properties();
 			props.load(AbcPlayer.class.getResourceAsStream("version.txt"));
@@ -127,6 +127,8 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			tools = false;
 			songArgs = Arrays.copyOf(args, args.length);
 		}
+		
+		if (!tools) Logging.configure(APP_NAME);
 
 		System.setProperty("sun.sound.useNewAudioEngine", "true");
 		
