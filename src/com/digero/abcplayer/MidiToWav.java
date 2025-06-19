@@ -36,13 +36,8 @@ public class MidiToWav {
 			if (opened)
 				synth.close();
 
-			Map<String, Object> synthInfo = new HashMap<>();
-			synthInfo.put("midi channels", MidiConstants.CHANNEL_COUNT_ABC);// default is 16
-			synthInfo.put("reverb", false);// default is true
-			synthInfo.put("chorus", false);// default is true
-			synthInfo.put("max polyphony", 128);// default is 64
-			synthInfo.put("latency", 200000L);// 120000 microseconds is default.
-			// TODO: Verify that Java's implementation of this actually can handle 25 channels. Else switch to Gervill.
+			Map<String, Object> synthInfo = SynthesizerFactory.setupSynthesizerPropertyInfo();
+			
 			AudioInputStream stream = synth.openStream(null, synthInfo);
 			SynthesizerFactory.initAudioSynthesizer(synth);
 

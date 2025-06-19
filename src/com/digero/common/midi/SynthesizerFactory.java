@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MidiDevice;
@@ -20,6 +21,7 @@ import com.sun.media.sound.AudioSynthesizer;
 import com.sun.media.sound.AudioSynthesizerPropertyInfo;
 
 public class SynthesizerFactory {
+	private static final Logger log = Logger.getLogger("playback.abc");
 	private static Soundbank lotroSoundbank = null;
 	private static File soundFontFile = new File("LotroInstruments.sf2");
 
@@ -36,6 +38,8 @@ public class SynthesizerFactory {
 		// Synthesizer synth = new LotroSoftSynthesizer();
 		if (synth != null)
 			initLotroSynthesizer(synth);
+		else
+			log.severe("Failed to make lotro synth");
 		return synth;
 	}
 
@@ -44,10 +48,12 @@ public class SynthesizerFactory {
 		AudioSynthesizer synth = findAudioSynthesizer();
 		if (synth != null)
 			initAudioSynthesizer(synth);
+		else
+			log.severe("Failed to make wav synth");
 		return synth;
 	}
 	
-	private static Map<String, Object> setupSynthesizerPropertyInfo() {
+	public static Map<String, Object> setupSynthesizerPropertyInfo() {
 		Map<String, Object> synthInfo = new HashMap<>();
 		synthInfo.put("midi channels", MidiConstants.CHANNEL_COUNT_ABC);// default is 16
 		synthInfo.put("reverb", false);// default is true
@@ -136,6 +142,7 @@ public class SynthesizerFactory {
 				StackTraceElement trace = npe.getStackTrace()[0];
 				if (trace.getClassName().equals("com.sun.media.sound.JARSoundbankReader")
 						&& trace.getMethodName().equals("isZIP")) {
+					log.severe("Failed to find soundfont");
 					throw new IOException("Soundbank file not found");
 				} else {
 					throw npe;
@@ -165,7 +172,7 @@ public class SynthesizerFactory {
 		if (synth instanceof AudioSynthesizer)
 			return (AudioSynthesizer) synth;
 
-		// If default synhtesizer is not AudioSynthesizer, check others.
+		// If default synthesizer is not AudioSynthesizer, check others.
 		for (Info info : MidiSystem.getMidiDeviceInfo()) {
 			MidiDevice dev = MidiSystem.getMidiDevice(info);
 			if (dev instanceof AudioSynthesizer)
@@ -173,6 +180,7 @@ public class SynthesizerFactory {
 		}
 
 		// No AudioSynthesizer was found, return null.
+		log.severe("No audio synth found");
 		return null;
 	}
 }

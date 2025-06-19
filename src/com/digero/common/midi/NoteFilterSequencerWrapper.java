@@ -119,7 +119,7 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 		try {
 			prefsNode.flush();
 		} catch (BackingStoreException e) {
-			// e.printStackTrace();
+			log.warning(e.getMessage());
 		}
 
 		closeDevice();
