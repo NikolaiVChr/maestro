@@ -27,13 +27,13 @@ public class Logging {
 		if (home != null && new File(home, logFolder).exists() && new File(home, logFolder).isDirectory()) {
 			String pattern = new File(home, logFolder+"/"+app+"-%u-%g.log").toString();
 			// rotate at 1 MB, keep 5 files
-			FileHandler fileHandler = new FileHandler(pattern, 1024*1024, 5, true);
+			FileHandler fileHandler = new FileHandler(pattern, 1024*1024, 5, false);
 			fileHandler.setLevel(Level.CONFIG);
 			fileHandler.setFormatter(new SimpleFormatter());// XMLFormatter
 			root.addHandler(fileHandler);
 			root.config("Starting logging to files. "+pattern);
 		} else if (home != null) {
-			root.severe("Loggin to file disabled as folder dont exist: "+(new File(home, logFolder).toString()));
+			root.severe("Logging to file disabled as folder dont exist:\n "+(new File(home, logFolder).toString()));
 		}
 		
 		Logger.getLogger("import.midi").setLevel(Level.INFO);
@@ -43,6 +43,7 @@ public class Logging {
 		Logger.getLogger("export.timing").setLevel(Level.OFF);
 		Logger.getLogger("export.audio").setLevel(Level.INFO);
 		Logger.getLogger("export.notes").setLevel(Level.SEVERE);
+		Logger.getLogger("export.midi").setLevel(Level.WARNING);
 		Logger.getLogger("view").setLevel(Level.INFO);
 		Logger.getLogger("playback").setLevel(Level.WARNING);
 		Logger.getLogger("util").setLevel(Level.WARNING);

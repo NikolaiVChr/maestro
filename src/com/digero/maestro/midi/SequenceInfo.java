@@ -176,7 +176,7 @@ public class SequenceInfo implements MidiConstants {
 		this.trackInfoList = Collections.unmodifiableList(myTrackInfoList);
 		if (!getTimeSignature().equals(sequenceCache.getTimeSignature())) {
 			// If see this output then..
-			System.out.println("Time signature does not match between SequenceInfo (" + getTimeSignature()
+			log.severe("Time signature does not match between SequenceInfo (" + getTimeSignature()
 					+ ") and SequenceDataCache (" + sequenceCache.getTimeSignature() + ").");
 		}
 	}
@@ -408,11 +408,9 @@ public class SequenceInfo implements MidiConstants {
 							lastResetTick = evt.getTick();
 							standard = MidiStandard.XG;
 						} else if (MidiStandard.GS == standard && evt.getTick() == lastResetTick) {
-							log.info(
-									"They are at same tick. Statistically bigger chance its a GS, so not switching to XG.");
+							log.info("They are at same tick. Statistically bigger chance its a GS, so not switching to XG.");
 						} else if (MidiStandard.GM2 == standard && evt.getTick() == lastResetTick) {
-							log.info(
-									"They are at same tick. Statistically bigger chance its a XG, so switching to that.");
+							log.info("They are at same tick. Statistically bigger chance its a XG, so switching to that.");
 							lastResetTick = evt.getTick();
 							standard = MidiStandard.XG;
 						}
@@ -430,15 +428,13 @@ public class SequenceInfo implements MidiConstants {
 						// System.err.println("Roland GS Reset, tick "+evt.getTick());
 					} else if (isResetGM2(message)) {
 						if (MidiStandard.GM != standard && MidiStandard.GM2 != standard) {
-							log.info(
-									fileName + ": MIDI GM2 Reset in a " + standard + " file. This is unusual!");
+							log.info(fileName + ": MIDI GM2 Reset in a " + standard + " file. This is unusual!");
 						}
 						if (evt.getTick() > lastResetTick) {
 							lastResetTick = evt.getTick();
 							standard = MidiStandard.GM2;
 						} else if (evt.getTick() == lastResetTick && MidiStandard.GM != standard) {
-							log.info(
-									"They are at same tick. Statistically bigger chance its not a GM2, so not switching standard.");
+							log.info("They are at same tick. Statistically bigger chance its not a GM2, so not switching standard.");
 						}
 						ExtensionMidiInstrument.getInstance();
 						// System.err.println("MIDI GM2 Reset, tick "+evt.getTick());
@@ -482,7 +478,7 @@ public class SequenceInfo implements MidiConstants {
 							} else {
 								type = "Invalid setup: " + message[7];
 							}
-							// System.err.println("Yamaha XG setting channel #"+message[5]+" to "+type);
+							log.fine("Yamaha XG setting channel #"+message[5]+" to "+type);
 						}
 					} else if (message.length == 9 && (message[0] & 0xFF) == 0xF0 && (message[1] & 0xFF) == 0x43
 							&& (message[4] & 0xFF) == 0x00 && (message[5] & 0xFF) == 0x00 && (message[6] & 0xFF) == 0x07

@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.logging.Logger;
 
 import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.Dynamics;
@@ -34,6 +35,8 @@ import com.digero.common.midi.Note;
 import com.digero.maestro.abc.AbcPart;
 
 public class Chord implements AbcConstants, Comparable<Chord> {
+	private static final Logger log = Logger.getLogger("export.notes");
+	
 	private ITempoCache tempoCache;
 	private long startTick;
 	private long endTick;

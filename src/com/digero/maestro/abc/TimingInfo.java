@@ -1,10 +1,14 @@
 package com.digero.maestro.abc;
 
+import java.util.logging.Logger;
+
 import com.digero.common.abc.AbcConstants;
 import com.digero.common.midi.MidiUtils;
 import com.digero.common.midi.TimeSignature;
 
 public class TimingInfo {
+	private static final Logger log = Logger.getLogger("export.timing");
+	
 	public static final long ONE_SECOND_MICROS = 1000000;
 	public static final long ONE_MINUTE_MICROS = 60 * ONE_SECOND_MICROS;
 	// public static final long SHORTEST_NOTE_MICROS = 60001;

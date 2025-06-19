@@ -249,7 +249,7 @@ public class TrackInfo implements MidiConstants {
 					byte[] data = m.getData();
 					//System.out.println("Track "+trackNumber+":\n "+MidiUtils.formatBytes(data));				
 					String tmp = "";
-					if (!ignoreMidiText) tmp = MidiUtils.decodeMidiText(data);
+					if (!ignoreMidiText) tmp = MidiUtils.decodeMidiText(data).trim();
 					
 					if (tmp.length() > 0 && !tmp.equalsIgnoreCase("untitled")
 							&& !tmp.equalsIgnoreCase("WinJammer Demo")) {

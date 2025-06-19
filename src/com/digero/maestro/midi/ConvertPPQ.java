@@ -7,6 +7,11 @@ import javax.sound.midi.MidiEvent;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Track;
 
+import com.digero.common.midi.MidiUtils;
+
+/**
+ * Organic don't need this done, but we don't know what timing the user will select, so we still do it.
+ */
 public class ConvertPPQ {
 	
 	private static final Logger log = Logger.getLogger("import.midi");
@@ -77,10 +82,10 @@ public class ConvertPPQ {
 						origEvent.setTick(newTick);
 						editTrack.add(origEvent);
 					} else {
-						log.fine("Ignored negative tick ");
+						log.fine("Ignored negative tick "+MidiUtils.midiEventToShortString(origEvent));
 					}
 				} else {
-					log.fine("Prevented tick overflow");
+					log.fine("Prevented tick overflow "+MidiUtils.midiEventToShortString(origEvent));
 				}
 			}
 		}

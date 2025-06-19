@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.logging.Logger;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.TreeMap;
@@ -27,6 +28,7 @@ import com.digero.common.midi.MidiConstants;
 import com.digero.common.midi.MidiUtils;
 
 public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
+	private static final Logger log = Logger.getLogger("export.timing");
 	// Tick => TimingInfoEvent
 	private final NavigableMap<Long, TimingInfoEvent> timingInfoByTick = new TreeMap<>();
 	private final NavigableMap<Long, TimingInfoEvent> timingInfoByTickOrganic = new TreeMap<>();
@@ -848,6 +850,7 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 	}
 	
 	public void tickToMicrosABCOrganic2(long tick1, long tick2) {
+		// debug method
 		long lastM = 0;
 		for (long i=0;i<5000000;i++) {
 			TimingInfoEvent e = getTimingEventForTickOrganic(i);

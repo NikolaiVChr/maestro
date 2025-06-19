@@ -4,10 +4,16 @@ import java.nio.charset.Charset;
 import java.util.logging.Logger;
 
 import javax.sound.midi.MetaMessage;
+import javax.sound.midi.MidiEvent;
 import javax.sound.midi.MidiMessage;
 import javax.sound.midi.Sequence;
+import javax.sound.midi.ShortMessage;
+import javax.sound.midi.SysexMessage;
+
 import com.digero.common.midi.SequencerWrapper.TempoCacheSlow;
 import com.digero.common.util.Pair;
+import com.digero.maestro.midi.SequenceInfo;
+import com.digero.common.midi.MidiConstants;
 
 /**
  * A minimal copy of all used MidiUtils features.
@@ -212,6 +218,14 @@ public class MidiUtils {
 		return str.toString();
 	}
     
+	public static String formatBytesHexOnly(byte[] portChange) {
+		StringBuilder sb = new StringBuilder();
+		for (byte b : portChange) {
+			sb.append(String.format("%02X ", b));
+		}
+		return sb.toString();
+	}
+    
     @SuppressWarnings("unused")
     public static String formatCodePoints(String text) {
         StringBuilder dec = new StringBuilder();
@@ -223,5 +237,83 @@ public class MidiUtils {
         });
 
         return dec.append("[ ").append(hex).append(']').toString();
+    }
+    
+    /**
+     * Convenient method for outputting basic info about a midi event for logging.
+     * 
+     * @param evt the midi event
+     * @return short string outlining what kind of midi event it is
+     */
+    public static String midiEventToShortString(MidiEvent evt) {
+    	String str = "";
+    	MidiMessage m = evt.getMessage();
+    	if (m instanceof ShortMessage) {
+    		ShortMessage shorty = (ShortMessage)m;
+    		int command = shorty.getCommand();
+    		switch (command) {
+    			case ShortMessage.NOTE_ON:
+    				str += ", Note ON"; break;
+    			case ShortMessage.NOTE_OFF:
+    				str += ", Note ON"; break;
+    			case ShortMessage.CHANNEL_PRESSURE:
+    				str += ", Aftertouch"; break;
+    			case ShortMessage.POLY_PRESSURE:
+    				str += ", Aftertouch (poly)"; break;
+    			case ShortMessage.CONTROL_CHANGE:
+    				str += ", Control Change"; break;
+    			case ShortMessage.PITCH_BEND:
+    				str += ", Pitch Bend"; break;
+    		}
+        	str += ", Channel="+shorty.getChannel();
+    	} else if (m instanceof SysexMessage) {
+    		SysexMessage sysex = (SysexMessage)m;
+    		str += "Sysex";
+    		if (sysex.getMessage()[1] == MidiConstants.SYSEX_UNIVERSAL_REALTIME) {
+    			str += ", Realtime";
+    		} else if (sysex.getMessage()[1] == MidiConstants.SYSEX_UNIVERSAL_NON_REALTIME) {
+    			str += ", Non-Realtime";
+    		}
+    		if (SequenceInfo.isResetGM(sysex.getMessage())) {
+    			str += ", GM Reset";
+    		} else if (SequenceInfo.isResetGS(sysex.getMessage())) {
+    			str += ", GS Reset";
+    		} else if (SequenceInfo.isResetXG(sysex.getMessage())) {
+    			str += ", XG Reset";
+    		} else if (SequenceInfo.isResetGM2(sysex.getMessage())) {
+    			str += ", GM2 Reset";
+    		} else {
+    			// take note of difference of midi (7 bit unsigned) vs. java (8 bit signed):
+    			str += ", "+formatBytesHexOnly(sysex.getMessage());
+    		}
+    	} else if (m instanceof MetaMessage) {
+    		MetaMessage meta = (MetaMessage)m;
+    		str += "Meta";
+    		if (isMetaTempo(m)) {
+    			str += ", Tempo";
+    		} else if (isMetaEndOfTrack(m)) {
+    			str += ", EndOfTrack";
+    		} else if (meta.getType() == MidiConstants.META_TIME_SIGNATURE) {
+    			str += ", Time Signature";
+    		} else if (meta.getType() == MidiConstants.META_PORT_CHANGE) {
+    			str += ", Port change";
+    		} else if (meta.getType() == MidiConstants.META_COPYRIGHT) {
+    			str += ", Copyright";
+    		} else if (meta.getType() == MidiConstants.META_TRACK_NAME) {
+    			str += ", Track Name";
+    		} else if (meta.getType() == MidiConstants.META_TEXT) {
+    			str += ", Text";
+    		} else if (meta.getType() == MidiConstants.META_PROGRAM_NAME) {
+    			str += ", Program Change";
+    		} else if (meta.getType() == MidiConstants.META_KEY_SIGNATURE) {
+    			str += ", Key Signature";
+    		} else if (meta.getType() == MidiConstants.META_INSTRUMENT) {
+    			str += ", Instrument";
+    		} else if (meta.getType() == MidiConstants.META_MARKER) {
+    			str += ", Marker";
+    		}
+    	}
+    	str += ", Tick="+evt.getTick();
+    	return str;
     }
 }

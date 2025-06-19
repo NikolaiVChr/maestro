@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.logging.Logger;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MetaMessage;
@@ -19,12 +20,15 @@ import com.digero.common.midi.MidiConstants;
 import com.digero.common.midi.MidiFactory;
 import com.digero.common.midi.MidiInstrument;
 import com.digero.common.midi.MidiStandard;
+import com.digero.common.midi.MidiUtils;
 
 /**
  * Takes a midi input and expands each instrument to its own track. Works with GM2, XG, GS, GM and GM+
  * 
  */
 public class TrackSplitter {
+	private static final Logger log = Logger.getLogger("export.midi");
+	
 	private SequenceDataCache sequenceCache = null;
 	private boolean isGM = true;
 
@@ -59,9 +63,8 @@ public class TrackSplitter {
 					MetaMessage meta = (MetaMessage) msg;
 					int type = meta.getType();
 					if (type == MidiConstants.META_TRACK_NAME) {
-						byte[] data = meta.getData();// Text that starts with any of these indicate charset: "@LATIN",
-														// "@JP", "@UTF-16LE", or "@UTF-16BE"
-						String tmp = new String(data, 0, data.length, StandardCharsets.US_ASCII).trim();
+						byte[] data = meta.getData();
+						String tmp = MidiUtils.decodeMidiText(data).trim();
 						if (tmp.length() > 0) {
 							oldTrackName = tmp;
 							break;
@@ -142,7 +145,7 @@ public class TrackSplitter {
 								if (evtPort != null) {
 									newTrack.add(evtPort);
 								} else {
-									System.out.println("Failed to create GM+ port event when expanding midi");
+									log.warning("Failed to create GM+ port event when expanding midi");
 									return null;
 								}
 							}

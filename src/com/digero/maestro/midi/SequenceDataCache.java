@@ -1,7 +1,5 @@
 package com.digero.maestro.midi;
 
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -207,13 +205,13 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 							case DATA_BUTTON_INCREMENT:
 								if (rpn[ch] == REGISTERED_PARAM_PITCH_BEND_RANGE) {
 									pitchBendRangeFine.put(ch, tick, pitchBendRangeFine.get(ch, tick) + 1);
-									System.out.println("DATA_BUTTON_INCREMENT for pitch bend detected.");
+									log.fine("DATA_BUTTON_INCREMENT for pitch bend detected.");
 								}
 								break;
 							case DATA_BUTTON_DECREMENT:
 								if (rpn[ch] == REGISTERED_PARAM_PITCH_BEND_RANGE) {
 									pitchBendRangeFine.put(ch, tick, pitchBendRangeFine.get(ch, tick) - 1);
-									System.out.println("DATA_BUTTON_DECREMENT for pitch bend detected.");
+									log.fine("DATA_BUTTON_DECREMENT for pitch bend detected.");
 								}
 								break;
 							case PAN_CONTROL:
@@ -227,7 +225,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 									mapMSB.put(ch, tick, shortMsg.getData2());
 								} else if (ch == DRUM_CHANNEL && MidiStandard.XG == standard && shortMsg.getData2() != 126
 										&& shortMsg.getData2() != 127) {
-									//System.err.println("XG Drum Part Protect Mode prevented bank select MSB.");
+									log.finer("XG Drum Part Protect Mode prevented bank select MSB.");
 								}
 								// if(ch==DRUM_CHANNEL) System.err.println("Bank select MSB "+m.getData2()+" "+tick);
 								break;
@@ -307,7 +305,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 							byte[] data = m.getData();
 							log.finer("\n(c): "+MidiUtils.formatBytes(data));
 							String tmp = "";
-							if (!ignoreMidiText) tmp = MidiUtils.decodeMidiText(data);
+							if (!ignoreMidiText) tmp = MidiUtils.decodeMidiText(data).trim();
 							
 							if (tmp.length() > 0) {
 								copyright = tmp;
