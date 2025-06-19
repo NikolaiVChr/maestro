@@ -73,6 +73,8 @@ public class ConvertPPQ {
 					if (newTick > 0L && origEvent.getTick() > 0L) {
 						origEvent.setTick(newTick);
 						editTrack.add(origEvent);
+					} else {
+						log.fine("Ignored negative tick");
 					}
 				} else {
 					log.fine("Prevented tick overflow");

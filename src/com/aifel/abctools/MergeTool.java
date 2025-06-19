@@ -40,8 +40,8 @@ public class MergeTool {
 	private static final Logger log = Logger.getLogger("util");
 	
 	private static final Pattern INFO_PATTERN = Pattern.compile("^([A-Z]):\\s*(.*)\\s*$");
-	private static final int INFO_TYPE = 1;
-	private static final int INFO_VALUE = 2;
+	private static final int INFO_TYPE = 1;// regex group
+	private static final int INFO_VALUE = 2;// regex group
 
 	private volatile AbcToolsView frame = null;
 	
@@ -270,9 +270,9 @@ public class MergeTool {
 				lastExport = newFile.getAbsolutePath();
 				refreshTest();
 				frame.setTextFieldText(info.toString());
-				log.info("Created "+lastExport);
+				log.info("Created merged "+lastExport);
 			} else {
-				frame.setTextFieldText("Failed to write file\n " + newFile.getAbsolutePath());
+				frame.setTextFieldText("Failed to write merged file " + newFile.getAbsolutePath());
 			}
 		} else {
 			frame.setTextFieldText("Please select at least 2 abc files..");
@@ -307,8 +307,10 @@ public class MergeTool {
 		            Method m = mainClass.getMethod("main", String[].class);
 		            String[] childArgs = new String[]{lastExport.replace('\\', '/'), "--tools"};
 		            m.invoke(null, (Object) childArgs);
+		            log.info("Started playback of merged "+lastExport);
 		        } catch (Exception e) {
 					e.printStackTrace();
+					log.warning("Failed to start abc player to test merged abc");
 				}
 			} catch (Exception e) {
 				e.printStackTrace();

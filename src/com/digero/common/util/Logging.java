@@ -28,7 +28,7 @@ public class Logging {
 			String pattern = new File(home, logFolder+"/"+app+"-%u-%g.log").toString();
 			// rotate at 1 MB, keep 5 files
 			FileHandler fileHandler = new FileHandler(pattern, 1024*1024, 5, true);
-			fileHandler.setLevel(Level.INFO);
+			fileHandler.setLevel(Level.CONFIG);
 			fileHandler.setFormatter(new SimpleFormatter());// XMLFormatter
 			root.addHandler(fileHandler);
 			root.config("Starting logging to files. "+pattern);
@@ -36,14 +36,14 @@ public class Logging {
 			root.severe("Loggin to file disabled as folder dont exist: "+(new File(home, logFolder).toString()));
 		}
 		
-		Logger.getLogger("import.midi").setLevel(Level.WARNING);
+		Logger.getLogger("import.midi").setLevel(Level.INFO);
 		Logger.getLogger("import.abc").setLevel(Level.INFO);
 		Logger.getLogger("export.preview").setLevel(Level.WARNING);
 		Logger.getLogger("export.abc").setLevel(Level.WARNING);
 		Logger.getLogger("export.timing").setLevel(Level.OFF);
 		Logger.getLogger("export.audio").setLevel(Level.INFO);
 		Logger.getLogger("export.notes").setLevel(Level.SEVERE);
-		Logger.getLogger("view").setLevel(Level.OFF);
+		Logger.getLogger("view").setLevel(Level.INFO);
 		Logger.getLogger("playback").setLevel(Level.WARNING);
 		Logger.getLogger("util").setLevel(Level.WARNING);
 		
@@ -54,6 +54,7 @@ public class Logging {
 	 * SEVERE
 	 * WARNING
 	 * INFO
+	 * CONFIG
 	 * FINE
 	 * FINER
 	 * FINEST
