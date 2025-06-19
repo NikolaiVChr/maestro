@@ -2,7 +2,6 @@ package com.digero.maestro;
 
 import static java.awt.Frame.ICONIFIED;
 
-import java.awt.EventQueue;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +13,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
-import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
@@ -30,18 +28,19 @@ import com.digero.maestro.view.ProjectFrame;
 //import org.boris.winrun4j.DDE;
 
 public class MaestroMain {
+	private static Logger log;
 	public static final String APP_NAME = "Maestro";
 	public static final String WIKI_URL = "https://maestro.miraheze.org/wiki/Main_Page";
 	public static final String DOWNLOAD_URL = "https://drive.google.com/drive/folders/1CigT_AloFP34lZbIEvb4CsqGmBL8vodu";
 	public static Version APP_VERSION = new Version(0, 0, 0);
 
 	private static ProjectFrame mainWindow = null;
-	public static Logger logger = Logger.getLogger("com.digero.maestro");
 
 	private static ServerSocket serverSocket;
 
 	public MaestroMain() {
 		// ABC Tool calls this to initialize the version.
+		// note that 'log' is not initialized in this method
 		try {
 			Properties props = new Properties();
 			props.load(MaestroMain.class.getResourceAsStream("version.txt"));
@@ -54,7 +53,8 @@ public class MaestroMain {
 
 	public static void main(final String[] args) throws Exception {
 		Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
-		    throwable.printStackTrace();
+			throwable.printStackTrace();
+			log.severe(throwable.toString());
 		    ProjectFrame.feed("ERROR: exception in thread " + thread.getName() + ": " + throwable+". Please notify the devs.", getFirstLines(throwable));
 		    if (mainWindow != null) {		    	
 		    	SwingUtilities.invokeLater(() -> {
@@ -69,6 +69,7 @@ public class MaestroMain {
 		SwingUtilities.invokeLater(() -> {
 			Thread.currentThread().setUncaughtExceptionHandler((thread, throwable) -> {
 			    throwable.printStackTrace();
+			    log.severe(throwable.toString());
 			    try {
 				    ProjectFrame.feed("ERROR: exception in thread " + thread.getName() + ": " + throwable+". Please notify the devs..", getFirstLines(throwable));
 				    if (mainWindow != null) {
@@ -80,6 +81,7 @@ public class MaestroMain {
 			});
 		});
 		Logging.configure(APP_NAME);
+		log = Logger.getLogger("");//must be after configure
 		try {
 			Properties props = new Properties();
 			props.load(MaestroMain.class.getResourceAsStream("version.txt"));
@@ -196,23 +198,23 @@ public class MaestroMain {
 		try {
 			serverSocket = new ServerSocket(8000 + APP_VERSION.getBuild());
 			if (serverSocket == null) {
-				// System.out.println("Port is null");
+				log.fine("Port is null");
 				return false;
 			}
 			if (serverSocket.getLocalPort() != 8000 + APP_VERSION.getBuild()) {
-				// System.out.println("Port is "+serverSocket.getLocalPort());
+				log.fine("Port is "+serverSocket.getLocalPort());
 				return false;
 			}
 		} catch (IOException e) {
 			// e.printStackTrace();
 			return false;
 		}
-		// System.out.println("Made port");
+		log.finer("Made port");
 		(new Thread(() -> {
 			try {
 				while (true) {
 					Socket socket = serverSocket.accept();
-					// System.out.println("Accepted");
+					log.finer("Accepted");
 					BufferedReader in = new BufferedReader(
 							new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_16));
 					// while (socket.isConnected()) {
@@ -225,11 +227,11 @@ public class MaestroMain {
 									|| data.substring(data.length() - 4).equalsIgnoreCase(Util.TXT_FILE_EXTENSION)
 									|| data.substring(data.length() - 4).equalsIgnoreCase(Util.MSX_FILE_EXTENSION)
 									|| data.substring(data.length() - 4).equalsIgnoreCase(Util.KAR_FILE_EXTENSION))) {
-						// System.out.println("Received "+data);
+						log.finer("Received "+data);
 						String[] datas = { data };
 						activate(datas);
 					} else {
-						// System.out.println("Received nothing: "+data);
+						log.fine("Received nothing: "+data);
 					}
 					// }
 					socket.close();

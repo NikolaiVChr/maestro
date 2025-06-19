@@ -1,6 +1,7 @@
 package com.digero.common.midi;
 
 import java.nio.charset.Charset;
+import java.util.logging.Logger;
 
 import javax.sound.midi.MetaMessage;
 import javax.sound.midi.MidiMessage;
@@ -12,6 +13,8 @@ import com.digero.common.util.Pair;
  * A minimal copy of all used MidiUtils features.
  */
 public class MidiUtils {
+	private static final Logger log = Logger.getLogger("import.midi");
+	
 	public static final int DEFAULT_TEMPO_MPQ = 500000; // 120bpm
 	public static final int META_END_OF_TRACK_TYPE = 0x2F;
 	public static final int META_TEMPO_TYPE = 0x51;
@@ -189,7 +192,9 @@ public class MidiUtils {
         if (data == null || data.length == 0) {
             return "";
         }
+        log.fine("Decoding bytes: "+formatBytes(data));
         Pair<String, Charset> result = CharsetDetectAndDecode.decodeMidiData(data);
+        log.info("Decoder detected "+result.second.name()+", result: "+result.first);
         return result.first;
 	}
     

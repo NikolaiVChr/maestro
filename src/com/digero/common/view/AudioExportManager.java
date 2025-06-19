@@ -9,6 +9,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
 import javax.sound.midi.Sequence;
@@ -30,6 +31,7 @@ import com.digero.common.util.ExtensionFileFilter;
 import com.digero.common.util.Util;
 
 public class AudioExportManager {
+	private static final Logger log = Logger.getLogger("export.audio");
 	
 	private static final String LAME_URL = "http://lame.sourceforge.net/";
 	private static final String FF_URL = "https://ffmpeg.org/";
@@ -378,7 +380,7 @@ public class AudioExportManager {
 					String line;
 
 					while ((line = in.readLine()) != null) {
-						System.out.println(line);
+						log.fine(line);
 					}
 					if (p.waitFor() != 0) {
 						throw new Exception("FFmpeg failed");
@@ -425,7 +427,7 @@ public class AudioExportManager {
 					// Invoke LAME library from https://mvnrepository.com/artifact/de.sciss/jump3r/1.0.5
 					de.sciss.jump3r.Main.main(args);
 				    
-				    System.out.println("Encoding done");
+				    log.info("MP3 Encoding done");
 				} finally {
 					wavFile.delete();
 				}
@@ -480,9 +482,11 @@ public class AudioExportManager {
 				}
 			} catch (Exception e) {
 				error = e;
+				log.warning(e.getMessage());
 			} finally {
 				isExporting = false;
 				SwingUtilities.invokeLater(new ExportWavFinishedTask(error, waitFrame));
+				log.info("Wav generation fnished");
 			}
 		}
 	}

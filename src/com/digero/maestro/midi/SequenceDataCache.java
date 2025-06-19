@@ -305,12 +305,13 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 							//System.out.println("Detected marker in MIDI");
 						} else if (m.getType() == META_COPYRIGHT && tick == 0L && iTrack == 0) {	
 							byte[] data = m.getData();
-							//System.out.println("\n(c): "+MidiUtils.formatBytes(data));
+							log.finer("\n(c): "+MidiUtils.formatBytes(data));
 							String tmp = "";
 							if (!ignoreMidiText) tmp = MidiUtils.decodeMidiText(data);
 							
 							if (tmp.length() > 0) {
 								copyright = tmp;
+								log.info("MIDI copyright: "+tmp);
 							}
 						}
 					}

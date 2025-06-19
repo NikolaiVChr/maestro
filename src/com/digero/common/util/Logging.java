@@ -42,6 +42,7 @@ public class Logging {
 		Logger.getLogger("export.abc").setLevel(Level.WARNING);
 		Logger.getLogger("export.timing").setLevel(Level.OFF);
 		Logger.getLogger("export.audio").setLevel(Level.INFO);
+		Logger.getLogger("export.notes").setLevel(Level.SEVERE);
 		Logger.getLogger("view.track.notes").setLevel(Level.OFF);
 		Logger.getLogger("playback").setLevel(Level.WARNING);
 		
