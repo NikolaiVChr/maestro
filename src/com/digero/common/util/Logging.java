@@ -33,7 +33,7 @@ public class Logging {
 			root.addHandler(fileHandler);
 			root.config("Starting logging to files. "+pattern);
 		} else if (home != null) {
-			root.severe("Logging to file disabled as folder dont exist:\n "+(new File(home, logFolder).toString()));
+			root.severe("Logging to file disabled as folder dont exist: "+(new File(home, logFolder).toString()));
 		}
 		
 		Logger.getLogger("import.midi").setLevel(Level.INFO);
@@ -47,6 +47,7 @@ public class Logging {
 		Logger.getLogger("view").setLevel(Level.INFO);
 		Logger.getLogger("playback").setLevel(Level.WARNING);
 		Logger.getLogger("util").setLevel(Level.WARNING);
+		Logger.getLogger("file").setLevel(Level.WARNING);
 		
 		// disable java internal loggings
 		Logger.getLogger("sun").setLevel(Level.OFF);

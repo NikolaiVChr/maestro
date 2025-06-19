@@ -42,6 +42,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
 import javax.imageio.ImageIO;
@@ -145,6 +146,8 @@ import net.miginfocom.swing.MigLayout;
 
 @SuppressWarnings("serial")
 public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompileConstants {
+	private static final Logger log = Logger.getLogger("file");
+	
 	private static final int HGAP = 4;
 	private static final int VGAP = 4;
 	private static final double[] LAYOUT_COLS = new double[] { 180, FILL };
@@ -2861,9 +2864,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			}
 			int[] types = MidiSystem.getMidiFileTypes(sequence2);
 			if (types.length != 0) {
-				// expandedFile.delete();
-				// expandedFile.createNewFile();
-				System.out.println("Writing type " + types[types.length - 1] + " expanded midi as '"
+				log.info("Writing type " + types[types.length - 1] + " expanded midi as '"
 						+ saveFile.getAbsolutePath() + "'");
 				MidiSystem.write(sequence2, types[types.length - 1], saveFile);
 			} else {
@@ -2872,11 +2873,13 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				return false;
 			}
 		} catch (FileNotFoundException e) {
+			log.warning(e.getMessage());
 			JOptionPane.showMessageDialog(this, "Failed to create file!\n" + e.getMessage(), "Failed to create file",
 					JOptionPane.ERROR_MESSAGE);
 
 			return false;
-		} catch (IOException e) {
+		} catch (InvalidMidiDataException | IOException e) {
+			log.severe(e.getMessage());
 			JOptionPane.showMessageDialog(this, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
 			return false;
 		}

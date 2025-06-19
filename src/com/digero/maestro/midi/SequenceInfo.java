@@ -1085,16 +1085,14 @@ public class SequenceInfo implements MidiConstants {
 	/**
 	 * 
 	 * @return the result from splitting tracks with multiple instruments into 1 track per instrument.
+	 * @throws InvalidMidiDataException 
 	 */
-	public Sequence split() {
+	public Sequence split() throws InvalidMidiDataException {
 		TrackSplitter splitter = new TrackSplitter();
 		Sequence sequence2 = null;
-		try {
-			sequence2 = splitter.split(sequence, sequenceCache, standard, rolandDrumChannels, yamahaDrumSwitches,
+		sequence2 = splitter.split(sequence, sequenceCache, standard, rolandDrumChannels, yamahaDrumSwitches,
 					yamahaDrumChannels, mmaDrumSwitches, portMap);
-		} catch (InvalidMidiDataException e) {
-			e.printStackTrace();
-		}
+		
 		return sequence2;
 	}
 

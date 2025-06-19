@@ -1,6 +1,5 @@
 package com.digero.maestro.midi;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -89,7 +88,7 @@ public class TrackSplitter {
 			// instrument, so that the Midi OFF event gets put on same track as its midi ON
 			// event.
 			List<HashMap<Integer, String>> notesOn = new ArrayList<>();
-			for (int i = 0; i < 16; i++) {
+			for (int i = 0; i < MidiConstants.CHANNEL_COUNT; i++) {
 				notesOn.add(new HashMap<>());
 			}
 
@@ -145,7 +144,7 @@ public class TrackSplitter {
 								if (evtPort != null) {
 									newTrack.add(evtPort);
 								} else {
-									log.warning("Failed to create GM+ port event when expanding midi");
+									log.severe("Failed to create GM+ port event when expanding midi");
 									return null;
 								}
 							}
@@ -160,9 +159,15 @@ public class TrackSplitter {
 					newMetaTrack.add(evt);
 				}
 			}
+			
 			addPortChangesToTrack(newMetaTrack, portPrograms, firstTrackUsingPorts);
+			
+			for (Track track : newTracks.values()) {
+				long last = track.get(track.size()-1).getTick();
+				track.add(MidiFactory.createEndOfTrackEvent(last+1L));
+			}
 		}
-
+		
 		if (lastEOTTick > 0L) {
 			newMetaTrack.add(MidiFactory.createEndOfTrackEvent(lastEOTTick));
 		}
@@ -226,7 +231,8 @@ public class TrackSplitter {
 				firstTrackUsingPorts.add(event);
 			}
 		} else {
-			// This should not be needed, something went wrong if this is executed.
+			// This should not be needed, something went wrong if this is executed with actual port programs.
+			if (portPrograms.size() > 0) log.severe("No events added to new tracks. portPrograms="+portPrograms.size());
 			for (MidiEvent event : portPrograms) {
 				newMetaTrack.add(event);
 			}

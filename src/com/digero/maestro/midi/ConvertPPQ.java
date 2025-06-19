@@ -53,8 +53,6 @@ public class ConvertPPQ {
 
 		if (newPPQ == origPPQ) return orig;
 
-		log.info("Old PPQ="+origPPQ+", New PPQ="+newPPQ);
-
 		Sequence edit = null;
 		try {
 			edit = new Sequence(Sequence.PPQ, newPPQ);
@@ -68,7 +66,8 @@ public class ConvertPPQ {
 		long overflowGuard = Long.MAX_VALUE / (newPPQ/origPPQ);
 
 		long scaler = (long)(newPPQ/origPPQ);
-		log.info("Resolution upscaled by "+scaler);
+		
+		log.info("Resolution upscaled by "+scaler+". Old PPQ="+origPPQ+", New PPQ="+newPPQ);
 		
 		for (Track origTrack : origTracks) {
 			Track editTrack = edit.createTrack();
