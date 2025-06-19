@@ -5,10 +5,13 @@ public interface MidiConstants {
 	int META_COPYRIGHT = 0x02;
 	int META_TRACK_NAME = 0x03;
 	int META_INSTRUMENT = 0x04;
+	int META_LYRIC = 0x05;
 	int META_MARKER = 0x06;
+	int META_CUE_POINT = 0x07;
 	int META_PROGRAM_NAME = 0x08;
 	int META_END_OF_TRACK = 0x2F;
 	int META_TEMPO = 0x51;
+	int META_SMPTE_OFFSET = 0x54;
 	int META_TIME_SIGNATURE = 0x58;
 	int META_KEY_SIGNATURE = 0x59;
 	int META_PORT_CHANGE = 0x21;

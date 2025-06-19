@@ -303,6 +303,12 @@ public class MidiUtils {
     			str += ", Track Name";
     		} else if (meta.getType() == MidiConstants.META_TEXT) {
     			str += ", Text";
+    		} else if (meta.getType() == MidiConstants.META_LYRIC) {
+    			str += ", Lyric";
+    		} else if (meta.getType() == MidiConstants.META_CUE_POINT) {
+    			str += ", Cue Point";
+    		} else if (meta.getType() == MidiConstants.META_SMPTE_OFFSET) {
+    			str += ", SMPTE Offset";
     		} else if (meta.getType() == MidiConstants.META_PROGRAM_NAME) {
     			str += ", Program Change";
     		} else if (meta.getType() == MidiConstants.META_KEY_SIGNATURE) {
