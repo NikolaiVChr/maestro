@@ -25,11 +25,11 @@ public class Logging {
 		File home = Util.getDocumentsDir();
 		String logFolder = "Maestro-logs";
 		if (home != null && new File(home, logFolder).exists() && new File(home, logFolder).isDirectory()) {
-			String pattern = new File(home, logFolder+"/"+app+"-%g-%u.log").toString();
+			String pattern = new File(home, logFolder+"/"+app+"-%u-%g.log").toString();
 			// rotate at 1 MB, keep 5 files
 			FileHandler fileHandler = new FileHandler(pattern, 1024*1024, 5, true);
 			fileHandler.setLevel(Level.INFO);
-			fileHandler.setFormatter(new SimpleFormatter());
+			fileHandler.setFormatter(new SimpleFormatter());// XMLFormatter
 			root.addHandler(fileHandler);
 			root.config("Starting logging to files. "+pattern);
 		} else if (home != null) {
@@ -43,8 +43,9 @@ public class Logging {
 		Logger.getLogger("export.timing").setLevel(Level.OFF);
 		Logger.getLogger("export.audio").setLevel(Level.INFO);
 		Logger.getLogger("export.notes").setLevel(Level.SEVERE);
-		Logger.getLogger("view.track.notes").setLevel(Level.OFF);
+		Logger.getLogger("view").setLevel(Level.OFF);
 		Logger.getLogger("playback").setLevel(Level.WARNING);
+		Logger.getLogger("util").setLevel(Level.WARNING);
 		
 		root.config("Logging initialized");
 	}

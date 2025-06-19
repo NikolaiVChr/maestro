@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
@@ -47,6 +48,8 @@ import com.digero.maestro.view.MiscSettings;
 import com.digero.maestro.view.SaveAndExportSettings;
 
 public class AutoExporter {
+	private static final Logger log = Logger.getLogger("util");
+	
 	volatile File sourceFolderAuto;
 	volatile File destFolderAuto;
 	volatile File midiFolderAuto;
@@ -241,7 +244,9 @@ public class AutoExporter {
 			exportCount = 0;
 			
 			for (File project : projects) {
-				if (cancel) break;
+				if (cancel) {
+					break;
+				}
 				try {
 					exportProject(project);
 				} catch (ParseException e) {
@@ -264,8 +269,10 @@ public class AutoExporter {
 		if (!cancel) {
 			setProgress(1000);
 			appendToField("<br><br>Exports finished. ");//+com.digero.maestro.abc.PolyphonyHistogram.successes
+			log.info("Auto exports finished outputting "+totalExportCount+" files");
 		} else {
 			appendToField("<br><br>Exports cancelled.");
+			log.info("Auto exports cancelled");
 		}
 		
 		SwingUtilities.invokeLater(() -> {

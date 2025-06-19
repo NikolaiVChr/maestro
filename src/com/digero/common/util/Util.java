@@ -130,7 +130,7 @@ public final class Util {
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	public static File getDocumentsFolder() throws IOException, InterruptedException {
+	private static File getDocumentsFolder() throws IOException, InterruptedException {
         Process process = Runtime.getRuntime().exec(
             new String[]{"REG", "QUERY", "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders", "/v", "Personal"}
         );
@@ -193,7 +193,7 @@ public final class Util {
 	    return new File(userHome);
 	}
 	
-	public static File getUserOneDriveDocumentsPath() {
+	private static File getUserOneDriveDocumentsPath() {
 	    // Check if OneDrive is being used
 	    String oneDrivePath = System.getenv("OneDrive");
 	    if (oneDrivePath != null) {

@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -36,6 +37,7 @@ import com.digero.common.midi.SynthesizerFactory;
 import com.digero.common.util.Util;
 
 public class MergeTool {
+	private static final Logger log = Logger.getLogger("util");
 	
 	private static final Pattern INFO_PATTERN = Pattern.compile("^([A-Z]):\\s*(.*)\\s*$");
 	private static final int INFO_TYPE = 1;
@@ -268,6 +270,7 @@ public class MergeTool {
 				lastExport = newFile.getAbsolutePath();
 				refreshTest();
 				frame.setTextFieldText(info.toString());
+				log.info("Created "+lastExport);
 			} else {
 				frame.setTextFieldText("Failed to write file\n " + newFile.getAbsolutePath());
 			}
