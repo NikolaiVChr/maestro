@@ -15,7 +15,7 @@ public class Logging {
 		LogManager.getLogManager().reset();
 		
 		Logger root = Logger.getLogger("");
-		root.setLevel(Level.INFO);
+		root.setLevel(Level.CONFIG);
 		
 		ConsoleHandler console = new ConsoleHandler();
 		console.setLevel(Level.WARNING);
@@ -46,6 +46,11 @@ public class Logging {
 		Logger.getLogger("view").setLevel(Level.INFO);
 		Logger.getLogger("playback").setLevel(Level.WARNING);
 		Logger.getLogger("util").setLevel(Level.WARNING);
+		
+		// disable java internal loggings
+		Logger.getLogger("sun").setLevel(Level.OFF);
+		Logger.getLogger("jdk").setLevel(Level.OFF);
+		Logger.getLogger("java").setLevel(Level.OFF);
 		
 		root.config("Logging initialized");
 	}

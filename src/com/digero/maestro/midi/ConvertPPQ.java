@@ -15,7 +15,7 @@ public class ConvertPPQ {
 
 	public static Sequence convert(Sequence orig) {
 		if (orig.getDivisionType() != Sequence.PPQ) {
-			log.info("Midi not using PPQ resolution");
+			log.warning("Midi not using PPQ resolution");
 			return orig;
 		}
 
@@ -62,6 +62,9 @@ public class ConvertPPQ {
 		
 		long overflowGuard = Long.MAX_VALUE / (newPPQ/origPPQ);
 
+		long scaler = (long)(newPPQ/origPPQ);
+		log.info("Resolution upscaled by "+scaler);
+		
 		for (Track origTrack : origTracks) {
 			Track editTrack = edit.createTrack();
 			int eventSize = origTrack.size();
@@ -69,12 +72,12 @@ public class ConvertPPQ {
 				MidiEvent origEvent = origTrack.get(j);
 				if (origEvent.getTick() < overflowGuard) {
 					// we disgard events at ticks that will make long overflow, they will represent months of duration anyway, no song is that long.
-					long newTick = origEvent.getTick() * ((long)(newPPQ/origPPQ));
-					if (newTick > 0L && origEvent.getTick() > 0L) {
+					long newTick = origEvent.getTick() * scaler;
+					if (newTick >= 0L && origEvent.getTick() >= 0L) {
 						origEvent.setTick(newTick);
 						editTrack.add(origEvent);
 					} else {
-						log.fine("Ignored negative tick");
+						log.fine("Ignored negative tick ");
 					}
 				} else {
 					log.fine("Prevented tick overflow");
