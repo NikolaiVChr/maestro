@@ -11,16 +11,20 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import com.digero.common.util.Pair;
 import com.ibm.icu.text.CharsetDetector;
 import com.ibm.icu.text.CharsetMatch;
 
 public class CharsetDetectAndDecode {
-	
-	static int debug = 0;
+	private static final Logger log = Logger.getLogger("import.midi.text");
 	
 	public static Pair<String, Charset> decodeMidiData(byte[] data) {
+		return decodeMidiData(data, false);
+	}
+	
+	public static Pair<String, Charset> decodeMidiData(byte[] data, boolean western) {
 		
 		if (data == null || data.length == 0) return new Pair<String, Charset>("", null);
 
@@ -49,7 +53,7 @@ public class CharsetDetectAndDecode {
         
         // Mix of ascii and Shift_JIS will trigger this
         // Strict
-        if (isValidShiftJis(data)) {
+        if (isValidShiftJis(data) && !western) {
             // decode strictly (REPORT) or with REPLACE if REPORT passes validity
             try {
                 CharsetDecoder dec = Charset.forName("Shift_JIS")
@@ -64,7 +68,7 @@ public class CharsetDetectAndDecode {
             }
         }
 
-        if (isValidEucJp(data)) {
+        if (isValidEucJp(data) && !western) {
             try {
                 CharsetDecoder dec = Charset.forName("EUC-JP")
                     .newDecoder()
@@ -78,14 +82,17 @@ public class CharsetDetectAndDecode {
             }
         }
 
-        if (looksLikeWesternText(data)) {
+        if (looksLikeWindows1252(data)) {
+        	log.finer("loooks like windows-1252");
             // decode as Windows-1252 directly
-            String s = decodeWithReplace(data, Charset.forName("windows-1252"));
-            return new Pair<>(s, Charset.forName("windows-1252"));
+        	Charset cs = Charset.forName("windows-1252");
+            String s = decodeWithReplace(data, cs);
+            log.fine("shorted win-1252");
+            return new Pair<>(s, cs);
         }
         
         // Pure half width Shift_JIS will trigger this, with at least half of bytes being japanese
-        if (looksLikeAsciiOrHalfwidthKatakana(data)) {
+        if (looksLikeAsciiOrHalfwidthKatakana(data) && !western) {
             Charset sj = Charset.forName("windows-31j");
             String decoded = decodeWithReplace(data, sj);
             if (decodedHasMajorityHalfwidthKatakana(decoded)) {
@@ -93,12 +100,14 @@ public class CharsetDetectAndDecode {
             }
         }
         
-        Pair<String, Charset> result = detectAndDecode(data, 25);
-        if (result != null) {
+        Pair<String, Charset> result = detectAndDecode(data, 65);//25
+        if (result != null && result.first.length() > 2) {
+        	// TODO: consider moving this after legacy when legacy gets low confidence.
+        	//       icu4j not very good with short data.
         	return result;
         }
         
-        return bestFitLegacyDecode(data);
+        return bestFitLegacyDecode(data, western);
     }
 
 	/*
@@ -218,18 +227,67 @@ public class CharsetDetectAndDecode {
 		Charset.forName("x-MacRoman"),     // Classic Mac OS Roman (legacy Mac text)
 		Charset.forName("CP437"),          // OEM US (IBM PC DOS US)
 		Charset.forName("CP850"),          // OEM Multilingual Latin I (DOS Western Europe)
+		StandardCharsets.ISO_8859_1,       // ISO Latin-1 (Western Europe)
 		Charset.forName("CP866"),          // OEM Cyrillic (DOS Russian)
 		Charset.forName("windows-1251"),   // Windows Cyrillic (Eastern Europe, Russian)
 		Charset.forName("KOI8-R"),         // Unix Russian (KOI8-R Cyrillic)
 		Charset.forName("windows-1252"),   // Windows Western European (Latin-1 superset)
-		StandardCharsets.ISO_8859_1,       // ISO Latin-1 (Western Europe)
+		Charset.forName("ISO-8859-15"),    // western which has french æ and €
 		Charset.forName("windows-1250"),   // Windows Central/Eastern European
 		//Charset.forName("Shift_JIS"),      // Legacy Japanese Shift_JIS
 		Charset.forName("windows-31j"),    // Windows-31J (Microsoft's superset of Shift_JIS with extensions)
 		Charset.forName("EUC-JP"),         // Unix Japanese (EUC-JP)
 		Charset.forName("GB18030"),        // Chinese Simplified (PRC standard, superset of GBK)
 		Charset.forName("Big5")            // Chinese Traditional (Taiwan/HK)
+		
+		//List of their name():
+		/*
+		x-MacRoman
+		IBM437
+		IBM850
+		ISO-8859-1
+		IBM866
+		windows-1251
+		KOI8-R
+		windows-1252
+		ISO-8859-15
+		windows-1250
+		windows-31j
+		EUC-JP
+		GB18030
+		Big5
+		*/
     );
+    /*
+    // output their name() as its different from string used to fetch them
+    static {
+    	for (Charset c : candidates) {
+    		System.out.println(c.name()+" "+getScript(c.name()));
+    	}
+    }
+    */
+    
+    private static boolean isAsian(Charset cs) {
+		String n = cs.name().toUpperCase();
+		return n.contains("SHIFT_JIS")
+			|| n.contains("WINDOWS-31J")
+			|| n.equals("EUC-JP")
+			|| n.equals("GB18030")
+			|| n.equals("BIG5");
+    }
+    
+    public static Script getScript(String csName) {
+    	csName = csName.toLowerCase();
+      if (csName.contains("shift_jis") 
+       || csName.contains("windows-31j")
+       || csName.contains("euc-jp"))     return Script.JAPANESE;
+      if (csName.contains("gb18030") 
+       || csName.contains("big5"))       return Script.CHINESE;
+      if (csName.equals("windows-1251") 
+       || csName.equals("ibm866") 
+       || csName.equals("koi8-r"))       return Script.CYRILLIC;
+      return Script.WESTERN;
+    }
     
     static Set<String> ignored = new HashSet<>();
     
@@ -261,7 +319,7 @@ public class CharsetDetectAndDecode {
      *   – Half-width Katakana byte values (0xA1…0xDF),
      * and it contains at least one half-width Katakana byte.
      */
-    private static boolean looksLikeAsciiOrHalfwidthKatakana(byte[] data) {
+    private static boolean looksLikeAsciiOrHalfwidthKatakanaOld(byte[] data) {
         boolean sawKatakana = false;
         for (byte bb : data) {
             int b = bb & 0xFF;
@@ -278,6 +336,26 @@ public class CharsetDetectAndDecode {
         }
         return sawKatakana;
     }
+    
+    private static boolean looksLikeAsciiOrHalfwidthKatakana(byte[] data) {
+        int hwkCount = 0;
+        for (byte bb : data) {
+            int b = bb & 0xFF;
+            if (b >= 0x20 && b <= 0x7E) {
+                // printable ASCII
+                continue;
+            } else if (b >= 0xA1 && b <= 0xDF) {
+                // half-width Katakana
+                hwkCount++;
+                continue;
+            } else {
+                // contains something outside ASCII/half-width Katakana
+                return false;
+            }
+        }
+        // require at least two half-width Katakana bytes to trigger Shift-JIS path
+        return hwkCount >= 2;
+    }
 
     /**
      * Returns true if at least half of the code points in the string
@@ -293,11 +371,12 @@ public class CharsetDetectAndDecode {
         long kata = s.codePoints()
                      .filter(cp -> (cp >= 0xFF61 && cp <= 0xFF9F))
                      .count();
-        // Now require >=50% of the non-ASCII be half-width Katakana
-        return kata * 2 >= nonAscii;
+        log.finer("JIS: "+kata+" nonAscii: "+nonAscii);
+        // Now require >=60% of the non-ASCII be half-width Katakana
+        return kata * 10 >= nonAscii*6;
     }
     
-    private static boolean looksLikeWesternText(byte[] data) {
+    private static boolean looksLikeWesternTextOld(byte[] data) {
         int western = 0, total = data.length;
         for (byte bb : data) {
             int b = bb & 0xFF;
@@ -308,6 +387,76 @@ public class CharsetDetectAndDecode {
         }
         // if 95%+ of bytes are Western, treat as Western text
         return total > 0 && western * 100 >= 95 * total;
+    }
+    
+    private static boolean looksLikeWindows1252Old(byte[] data) {
+        for (byte bb : data) {
+            int b = bb & 0xFF;
+            if (b >= 0x80 && b <= 0x9F) {
+                // In CP-1252 these map to things like “€” (0x80), ‘‚’ (0x82), “smart quotes”, etc.
+                // In Latin-1 they'd be ISO controls, so seeing one here is a strong Win-1252 signal.
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * True iff every byte maps to a printable CP-1252 character (no controls or undefined),
+     * and at least one byte is a CP-1252-only extension (0x80–0x9F printable slot).
+     */
+    private static boolean looksLikeWindows1252(byte[] data) {
+        int sawWinExt = 0;
+        for (byte bb : data) {
+            int b = bb & 0xFF;
+            if (b >= 0x20 && b <= 0x7E) {
+                // ASCII printable
+                continue;
+            } else if (b == 0x81 || b == 0x8D || b == 0x8F || b == 0x90 || b == 0x9D) {
+            	//unused slots
+            	return false;
+            } else if (b >= 0xA0 && b <= 0xFF) {
+                // Latin-1 printable (also CP-1252)
+                continue;
+            } else {
+                // b is in 0x80–0x9F: only some of these are printable in CP-1252
+                switch (b) {
+                    case 0x80: // €
+                    case 0x82: // ‚
+                    case 0x83: // ƒ
+                    case 0x84: // „
+                    case 0x85: // …
+                    //case 0x86: // †
+                    //case 0x87: // ‡
+                    case 0x88: // ˆ
+                    //case 0x89: // ‰
+                    case 0x8A: // Š
+                    case 0x8B: // ‹
+                    case 0x8C: // Œ
+                    case 0x8E: // Ž
+                    case 0x91: // ‘
+                    case 0x92: // ’
+                    case 0x93: // “
+                    case 0x94: // ”
+                    //case 0x95: // •
+                    case 0x96: // –
+                    case 0x97: // —
+                    case 0x99: // ™
+                    case 0x9A: // š
+                    case 0x9B: // ›
+                    case 0x9C: // œ
+                    case 0x9E: // ž
+                    case 0x9F: // Ÿ
+                        sawWinExt++;
+                        break;
+                    default:
+                        // either an ISO control or an undefined slot in CP-1252
+                        return false;
+                }
+            }
+        }
+        // only true if we actually saw at least one CP-1252-specific printable
+        return sawWinExt > 0;
     }
     
     public static Pair<String, Charset> detectAndDecode(byte[] data, int minConfidence) {
@@ -330,22 +479,28 @@ public class CharsetDetectAndDecode {
             return null;
         }
         try {
-        	if (debug > 0) System.out.println("icu4j: "+match[0].getName()+" "+confidence+"%");
+        	log.fine("icu4j: "+match[0].getName()+" "+confidence+"% for "+match[0].getString());
             return new Pair<String, Charset>(match[0].getString(), Charset.forName(match[0].getName()));
         } catch (Exception e) {
             return null;
         }
     }
 
-    public static Pair<String, Charset> bestFitLegacyDecode(byte[] data) {
-        
+    public static Pair<String, Charset> bestFitLegacyDecode(byte[] data, boolean western) {
+        log.finer("best fit");
 
         CandidateResult bestDecoded = null;
         int bestScore = Integer.MAX_VALUE;
         boolean tie = false;
 
         for (Charset cs : candidates) {
-            CandidateResult cr = evaluateCandidate(data, cs);
+            CandidateResult cr = evaluateCandidate(data, cs, western);
+            // if western preferred, penalize non-Western codepages
+    		if (western && getScript(cs.name()) != Script.WESTERN) {
+    			// choose a penalty large enough to swing ties, but not so large
+    			// that a really bad asian decode beats a mediocre Western decode.
+    			cr.score += 25;
+    		}
             if (cr.score < bestScore) {
                 bestScore = cr.score;
                 bestDecoded = cr;
@@ -354,12 +509,14 @@ public class CharsetDetectAndDecode {
                 tie = true;
             }
         }
+        
         if (tie) {
         	//System.out.println("Decoding tie between charsets");
         	//System.out.println(" Winner is "+bestDecoded.cs.name());
         }        
         if (bestDecoded == null) return new Pair<String, Charset> ("", null);
-        //System.out.println(" Winner is "+bestDecoded.cs.name()+"\n "+bestDecoded.decoded);
+        log.fine("Legacy winner is "+bestDecoded);
+        
         return new Pair<String, Charset> (bestDecoded.decoded, bestDecoded.cs);
     }
 
@@ -371,21 +528,22 @@ public class CharsetDetectAndDecode {
         int ctrlCount;
         int cyrCount;
         int jpCount;
-        int printableLatinCount;
+        int asciiCount;
+        int extLatinCount;
         boolean byteLevelValid;
         int score;
         
         @Override
         public String toString() {
-        	return cs.name()+" replCount="+replCount+" ctrlCount="+ctrlCount+" cyrCount="+cyrCount+" jpCount="+jpCount+" printableLatinCount="+printableLatinCount+" score="+score;
+        	return cs.name()+" replCount="+replCount+" ctrlCount="+ctrlCount+" cyrCount="+cyrCount+" jpCount="+jpCount+" asciiCount="+asciiCount+" extLatinCount="+extLatinCount+" score="+score;
         }
     }
-
+    
     /**
      * Evaluate one Charset candidate: byte-level validity, decode in REPLACE mode,
      * count script-specific codepoints, and compute a score.
      */
-    private static CandidateResult evaluateCandidate(byte[] data, Charset cs) {
+    private static CandidateResult evaluateCandidateOld(byte[] data, Charset cs) {
         CandidateResult res = new CandidateResult();
         res.cs = cs;
         String csName = cs.name().toLowerCase();
@@ -465,7 +623,7 @@ public class CharsetDetectAndDecode {
         res.ctrlCount = ctrl;
         res.cyrCount = cyr;
         res.jpCount = jp;
-        res.printableLatinCount = latin;
+        //res.printableLatinCount = latin;
 
         // 4. Base score:
         int baseScore = 0;
@@ -484,7 +642,7 @@ public class CharsetDetectAndDecode {
         int score = baseScore;
 
         // 5. Script-specific adjustments
-        if (csName.contains("1251") || csName.equals("ibm866") || csName.equals("koi8-r")) {
+        if (csName.equals("windows-1251") || csName.equals("ibm866") || csName.equals("koi8-r")) {
         	int junkWeight = 5;
         	int letterBonus = 2;
         	int noLetterPenalty = 50;
@@ -653,6 +811,185 @@ public class CharsetDetectAndDecode {
         return res;
     }
     
+    private static CandidateResult evaluateCandidate(byte[] data, Charset cs, boolean preferWestern) {
+        CandidateResult res = new CandidateResult();
+        res.cs = cs;
+        String csName = cs.name().toLowerCase();
+
+        // 1. Byte‐level validity for Shift_JIS / EUC‐JP
+        if (csName.contains("shift_jis") || csName.contains("windows-31j")) {
+            res.byteLevelValid = isValidShiftJis(data);
+        } else if (csName.contains("euc-jp")) {
+            res.byteLevelValid = isValidEucJp(data);
+        } else {
+            res.byteLevelValid = true;
+        }
+
+        // 2. Decode in REPLACE mode
+        String decoded = res.byteLevelValid
+                       ? decodeWithReplace(data, cs)
+                       : "";
+        res.decoded = decoded;
+
+        // 3. Analyze decoded string
+        int replCount      = 0;
+        int ctrlCount      = 0;
+        int asciiCount     = 0;
+        int supplementCount= 0;
+        int cyrillicCount  = 0;
+        int japaneseCount  = 0;
+
+        String replChar = "\uFFFD";
+        for (int i = 0; i < decoded.length(); ) {
+            int cp = decoded.codePointAt(i);
+            i += Character.charCount(cp);
+
+            // replacement char
+            if (decoded.startsWith(replChar, i - replChar.length())) {
+                replCount++;
+                continue;
+            }
+            // control (except newline/tab)
+            if (cp < 0x20 && cp!='\n' && cp!='\r' && cp!='\t') {
+                ctrlCount++;
+                continue;
+            }
+            // Cyrillic letters
+            if (isCyrillicLetter(cp)) {
+                cyrillicCount++;
+                continue;
+            }
+            // Japanese blocks
+            if ((cp >= 0x3040 && cp <= 0x30FF) ||
+                (cp >= 0x4E00 && cp <= 0x9FFF) ||
+                (cp >= 0xFF61 && cp <= 0xFF9F)) {
+                japaneseCount++;
+                continue;
+            }
+         // ASCII
+            if (cp >= 0x20 && cp <= 0x7E) {
+                asciiCount++;
+                continue;
+            }
+            // Latin-1 Supplement
+            if (cp >= 0xA0 && cp <= 0xFF) {
+                supplementCount++;
+                continue;
+            }
+            // everything else we treat as “other” (counts below)
+        }
+
+        res.replCount           = replCount;
+        res.jpCount = japaneseCount;
+        res.cyrCount = cyrillicCount;
+        res.ctrlCount           = ctrlCount;
+        res.asciiCount = asciiCount;
+        res.extLatinCount = supplementCount;
+        // (you can also store cyrillicCount/japaneseCount in res if you prefer)
+
+        // 4. Unified “junk vs. script‐match” scoring
+        Script script;
+        if (csName.contains("shift_jis") || csName.contains("windows-31j") || csName.contains("euc-jp")) {
+            script = Script.JAPANESE;
+        } else if (csName.contains("gb18030") || csName.contains("big5")) {
+            script = Script.CHINESE;
+        } else if (csName.equals("windows-1251") || csName.equals("ibm866") || csName.equals("koi8-r")) {
+            script = Script.CYRILLIC;
+        } else {
+            script = Script.WESTERN;
+        }
+
+        int matchCount;
+        switch (script) {
+            case CYRILLIC:
+                matchCount = cyrillicCount; break;
+            case JAPANESE:
+                matchCount = japaneseCount; break;
+            case CHINESE:
+                matchCount = (int) decoded.codePoints()
+                                          .filter(cp -> cp >= 0x4E00 && cp <= 0x9FFF)
+                                          .count();
+                break;
+            default:
+                matchCount = asciiCount;    break;
+        }
+
+        int totalCp  = decoded.codePointCount(0, decoded.length());
+        int nonMatch = totalCp - matchCount - (script==Script.WESTERN?res.extLatinCount:0) - (script==Script.CYRILLIC?res.asciiCount:0);
+
+        // weights
+        int replWeight     = 200;  // per “�”
+        int ctrlWeight     = 20;  // per stray control
+        int nonMatchWeight = 40;   // per code‐point not in our target script
+        int matchBonus     = -5;   // per in‐script code‐point
+        int tieBreaker     = script == Script.WESTERN  ? 0
+                           : script == Script.CYRILLIC  ? (totalCp == 1?25:1)
+                           : script == Script.JAPANESE  ? (totalCp == 1?26:2)
+                           :                                (totalCp == 1?27:3);
+        
+        // --- new bit: charset‐specific priority ---
+        int scriptPriority = getScriptPriority(csName, script);
+        
+        /*
+        System.out.println(
+        		csName+" score:"
+        		+"\nreplace: "+(replCount * replWeight)
+        		+"\ncontrol: "+(ctrlCount * ctrlWeight)
+        		+"\nnonMatch:"+(nonMatch * nonMatchWeight)
+        		+"\ntie:     "+tieBreaker
+        		+"\nprio:    "+scriptPriority
+        		+"\nmatch:   "+(matchCount * matchBonus));
+        */
+        int junkPenalty = replCount * replWeight
+                        + ctrlCount * ctrlWeight
+                        + nonMatch * nonMatchWeight;
+
+        res.score = junkPenalty
+                  + matchCount * matchBonus
+                  + tieBreaker
+                  + scriptPriority;
+        //log.info(res.toString());
+        return res;
+    }
+
+    // Place this helper somewhere in the same class:
+    private static int getWesternPriority(String csName) {
+        // lower is better; 0 means “top Western choice”
+        if (csName.equals("iso-8859-1"))  return 0;
+        if (csName.equals("iso-8859-15")) return 1;
+        if (csName.equals("windows-1250")) return 2;
+        if (csName.equals("x-MacRoman"))  return 3;
+        if (csName.equals("windows-1252")) return 4;
+        return 10;  // all others
+    }
+    
+    public enum Script { WESTERN, CYRILLIC, JAPANESE, CHINESE }
+
+    private static int getScriptPriority(String csName, Script script) {
+        switch(script) {
+          case WESTERN:
+            return getWesternPriority(csName);
+          case CYRILLIC:
+            // 0 = windows-1251, 1 = koi8-r, 2 = ibm866, 10 = everyone else
+            if (csName.equals("windows-1251")) return 0;
+            if (csName.equals("koi8-r"))    return 1;
+            if (csName.equals("ibm866"))    return 2;
+            return 10;
+          case JAPANESE:
+            // 0 = windows-31j/shift_jis, 1 = euc-jp, else 10
+            if (csName.contains("shift_jis") || csName.contains("windows-31j")) return 0;
+            if (csName.contains("euc-jp"))    return 1;
+            return 10;
+          case CHINESE:
+            // 0 = gb18030, 1 = big5, else 10
+            if (csName.contains("gb18030")) return 0;
+            if (csName.contains("big5"))    return 1;
+            return 10;
+          default:
+            return 10;
+        }
+    }
+    
     private static int countInvalidBig5Bytes(byte[] data) {
         int invalid = 0, i = 0;
         while (i < data.length) {
@@ -713,7 +1050,8 @@ public class CharsetDetectAndDecode {
         try {
             CharsetDecoder dec = cs.newDecoder()
                 .onMalformedInput(CodingErrorAction.REPLACE)
-                .onUnmappableCharacter(CodingErrorAction.REPLACE);
+                .onUnmappableCharacter(CodingErrorAction.REPLACE)
+                .replaceWith("\uFFFD");              // <-- force the standard REPLACEMENT CHARACTER
             CharBuffer cb = dec.decode(ByteBuffer.wrap(data));
             return cb.toString();
         } catch (Exception e) {

@@ -10,6 +10,8 @@ import javax.sound.midi.Sequence;
 import javax.sound.midi.ShortMessage;
 import javax.sound.midi.SysexMessage;
 
+import org.apache.commons.codec.Charsets;
+
 import com.digero.common.midi.SequencerWrapper.TempoCacheSlow;
 import com.digero.common.util.Pair;
 import com.digero.maestro.midi.SequenceInfo;
@@ -198,9 +200,22 @@ public class MidiUtils {
         if (data == null || data.length == 0) {
             return "";
         }
-        log.fine("Decoding bytes: "+formatBytes(data));
-        Pair<String, Charset> result = CharsetDetectAndDecode.decodeMidiData(data);
-        log.info("Decoder detected "+result.second.name()+", result: "+result.first);
+        log.finer("Decoding bytes: "+formatBytes(data));
+        Pair<String, Charset> result = CharsetDetectAndDecode.decodeMidiData(data, false);
+        log.fine("Decoder detected "+result.second.name()+", result: "+result.first);
+        return result.first;
+	}
+	
+	public static String decodeMidiText(byte[] data, boolean preferWestern) {
+        if (data == null || data.length == 0) {
+            return "";
+        }
+        Pair<String, Charset> result = CharsetDetectAndDecode.decodeMidiData(data, preferWestern);
+        if (preferWestern && CharsetDetectAndDecode.getScript(result.second.name()) != CharsetDetectAndDecode.Script.WESTERN) {
+        	log.warning("Decoding lyrics bytes: "+formatBytes(data));
+        	log.warning("Decoder detected "+result.second.name()+", result: "+result.first+"  "
+        			+CharsetDetectAndDecode.getScript(result.second.name())+", had preferred: "+CharsetDetectAndDecode.Script.WESTERN);
+        }
         return result.first;
 	}
     

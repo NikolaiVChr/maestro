@@ -705,6 +705,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 
 	public void setTextnote(String note) {
 		noteContent.setText(note);
+		noteContent.setCaretPosition(0);
 	}
 
 	public void setPolyphony(boolean showMaxPolyphony) {

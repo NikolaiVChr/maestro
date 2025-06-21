@@ -43,6 +43,7 @@ Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 Version 4.2.14
 - Fixed Abc Merge Tool button for testing was no longer working.
 - Fixed Abc Merge Tool refused to overwrite.
+- New import lyrics option in settings that can help to determine song-title/artist when filename is short and insufficient.
 
 Version 4.2.13
 - Fix that some songs could still change midi playback volume, overriding user's volume slider setting.

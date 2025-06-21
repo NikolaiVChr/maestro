@@ -2183,7 +2183,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				abcSong.setTranscriber(transcriberField.getText());
 			}
 
-			if (abcSong.isFromXmlFile()) {
+			if (abcSong.isFromXmlFile() || miscSettings.importLyrics) {
 				String note = abcSong.getNote();
 				if (note != null) {
 					partPanel.setTextnote(note);

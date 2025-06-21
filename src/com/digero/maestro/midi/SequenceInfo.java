@@ -126,7 +126,7 @@ public class SequenceInfo implements MidiConstants {
 		this.fileName = fileName;
 		this.sequence = sequence;
 		this.midiType = type;
-		// System.err.println("MIDI Type = "+type);
+		log.info("Importing (Type "+type+"): "+fileName);
 
 		determineStandard(sequence, fileName);
 
@@ -1020,7 +1020,7 @@ public class SequenceInfo implements MidiConstants {
 					trackEndTick = Math.min(last, tracks[i].get(tracks[i].size() - 1).getTick());
 				MidiEvent end = MidiFactory.createEndOfTrackEvent(trackEndTick + 1);
 				tracks[i].add(end);
-				System.out.println("Track " + i + " was missing an EndOfTrack. It was now inserted.");
+				log.finest("Track " + i + " was missing an EndOfTrack. It was now inserted.");
 			}
 		}
 		

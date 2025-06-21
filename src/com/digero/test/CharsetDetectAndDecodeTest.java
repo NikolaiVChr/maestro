@@ -263,7 +263,7 @@ class CharsetDetectAndDecodeTest {
 	    };
 	    Pair<String, Charset> res = CharsetDetectAndDecode.decodeMidiData(data);
 	    assertTrue(
-            Set.of("windows-1252")
+            Set.of("windows-1252", "ISO-8859-1")
                .contains(res.second.name()),
             () -> "unexpected charset: " + res.second.name()
         );
@@ -306,5 +306,64 @@ class CharsetDetectAndDecodeTest {
         String expected = "ﾁｬｶﾎﾟｺ-1(SlapBass1)";
         assertEquals(expected, result.first.trim(),
                      "Decoded string did not match expected Katakana + ASCII");
+    }
+    
+    @Test
+    void testDecodeMidiData() {
+        // Case 1: "Åh "
+        byte[] bytes1 = new byte[]{ (byte)0xC5, (byte)0x68, (byte)0x20 };
+        Pair<String, Charset> result1 = CharsetDetectAndDecode.decodeMidiData(bytes1);
+        Charset cs1 = result1.second;
+        assertEquals("Åh ", result1.first,
+            () -> "Expected 'åh ' but got '" + result1.first +
+                  "'. Winning charset was " + cs1.name()+" data (hex): "+MidiUtils.formatBytesHexOnly(bytes1));
+
+        // Case 2: "får "
+        byte[] bytes2 = new byte[]{ (byte)0x66, (byte)0xE5, (byte)0x72, (byte)0x20 };
+        Pair<String, Charset> result2 = CharsetDetectAndDecode.decodeMidiData(bytes2);
+        Charset cs2 = result2.second;
+        assertEquals("får ", result2.first,
+            () -> "Expected 'får ' but got '" + result2.first +
+            "'. Winning charset was " + cs2.name()+" data (hex): "+MidiUtils.formatBytesHexOnly(bytes1));
+
+        // Case 3: "tænke"
+        byte[] bytes3 = new byte[]{ (byte)0x74, (byte)0xE6, (byte)0x6E, (byte)0x6B, (byte)0x65 };
+        Pair<String, Charset> result3 = CharsetDetectAndDecode.decodeMidiData(bytes3);
+        Charset cs3 = result3.second;
+        assertEquals("tænke", result3.first,
+            () -> "Expected 'tænke' but got '" + result3.first +
+            "'. Winning charset was " + cs3.name()+" data (hex): "+MidiUtils.formatBytesHexOnly(bytes1));
+        
+        // Case 4: "tør " 
+        byte[] bytes4 = new byte[]{ (byte)0x74, (byte)0xF8, (byte)0x72, (byte)0x20 };
+        Pair<String, Charset> result4 = CharsetDetectAndDecode.decodeMidiData(bytes4);
+        Charset cs4 = result4.second;
+        assertEquals("tør ", result4.first,
+            () -> "Expected 'tør ' but got '" + result4.first +
+            "'. Winning charset was " + cs4.name()+" data (hex): "+MidiUtils.formatBytesHexOnly(bytes1));
+                
+        // Case 2: "heiß." 
+        byte[] bytes5 = new byte[]{ (byte)0x68, (byte)0x65, (byte)0x69, (byte)0xDF, (byte)0x2E };
+        Pair<String, Charset> result5 = CharsetDetectAndDecode.decodeMidiData(bytes5);
+        Charset cs5 = result5.second;
+        assertEquals("heiß.", result5.first,
+            () -> "Expected 'heiß. ' but got '" + result5.first +
+            "'. Winning charset was " + cs5.name()+" data (hex): "+MidiUtils.formatBytesHexOnly(bytes1));
+    }
+    
+    @Test
+    void testDecodeMidiData_CyrillicTrack() {
+        // bytes: C4 EE F0 EE E6 EA E0 20 31
+        // expected under Windows-1251 → "Дорожка 1"
+        byte[] data = new byte[]{
+            (byte)0xC4, (byte)0xEE, (byte)0xF0, (byte)0xEE,
+            (byte)0xE6, (byte)0xEA, (byte)0xE0, (byte)0x20,
+            (byte)0x31
+        };
+        Pair<String, Charset> result = CharsetDetectAndDecode.decodeMidiData(data);
+        Charset cs = result.second;
+        assertEquals("Дорожка 1", result.first,
+            () -> "Expected 'Дорожка 1' but got '" + result.first +
+                  "'. Winning charset was " + cs.name());
     }
 }

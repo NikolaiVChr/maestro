@@ -214,10 +214,14 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		sequenceInfo = SequenceInfo.fromMidi(file, miscSettings, usingOldVelocities, usingOldTempos, false, false);
 		title = sequenceInfo.getTitle();
 		composer = sequenceInfo.getComposer();
-		if (sequenceInfo.getDataCache() != null) copyright = sequenceInfo.getDataCache().getCopyright();
+		if (sequenceInfo.getDataCache() != null) {
+			copyright = sequenceInfo.getDataCache().getCopyright();
+			if (miscSettings.importLyrics) note = sequenceInfo.getDataCache().getLyrics();
+		} else {
+			note = "";
+		}
 		keySignature = (ICompileConstants.SHOW_KEY_FIELD) ? sequenceInfo.getKeySignature() : KeySignature.C_MAJOR;
 		timeSignature = sequenceInfo.getTimeSignature();
-		note = "";
 		setTempoFactor(sequenceInfo.getPrimaryTempoBPM(), sequenceInfo.getPrimaryTempoBPM());
 	}
 	
@@ -494,7 +498,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 			title = sequenceInfo.getTitle();
 			composer = sequenceInfo.getComposer();
-			if (sequenceInfo.getDataCache() != null) copyright = sequenceInfo.getDataCache().getCopyright();
+			if (sequenceInfo.getDataCache() != null) {
+				copyright = sequenceInfo.getDataCache().getCopyright();
+			}
 			keySignature = (ICompileConstants.SHOW_KEY_FIELD) ? sequenceInfo.getKeySignature() : KeySignature.C_MAJOR;
 			timeSignature = sequenceInfo.getTimeSignature();
 		} catch (FileNotFoundException e) {

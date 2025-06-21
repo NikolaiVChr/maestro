@@ -37,8 +37,10 @@ public class Logging {
 			root.severe("Logging to file disabled as folder dont exist: "+(new File(home, logFolder).toString()));
 		}
 		
-		Logger.getLogger("import").setLevel(Level.INFO);
-		//Logger.getLogger("import.midi").setLevel(Level.INFO);
+		// these dont work: parents always override their setting
+		Logger.getLogger("import").setLevel(Level.WARNING);
+		Logger.getLogger("import.midi").setLevel(Level.WARNING);
+		Logger.getLogger("import.midi.text").setLevel(Level.WARNING);
 		//Logger.getLogger("import.abc").setLevel(Level.INFO);
 		Logger.getLogger("export.preview").setLevel(Level.WARNING);
 		Logger.getLogger("export.abc").setLevel(Level.WARNING);

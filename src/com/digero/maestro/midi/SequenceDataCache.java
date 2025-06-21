@@ -12,7 +12,6 @@ import java.util.NavigableMap;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MetaMessage;
 import javax.sound.midi.MidiEvent;
@@ -62,6 +61,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	public boolean hasPorts = false;
 	private String copyright = "";
 	private boolean ignoreZeroChannelVolume;
+	private MidiText midiText;
 
 	public SequenceDataCache(Sequence song, MidiStandard standard, boolean[] rolandDrumChannels,
 			List<TreeMap<Long, Boolean>> yamahaDrumSwitches, boolean[] yamahaDrumChannels,
@@ -87,6 +87,8 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		int[] rpn = new int[CHANNEL_COUNT_ABC];
 		Arrays.fill(rpn, REGISTERED_PARAM_NONE);
 
+		midiText = new MidiText(this);
+		
 		/*
 		 * We need to be able to know which tracks have drum notes. We also need to know what instrument voices are used
 		 * in each track, so we build maps of voice changes that TrackInfo later can use to build strings of instruments
@@ -263,6 +265,8 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 									break;
 								}
 							}
+						} else if (!ignoreMidiText) {
+							midiText.collectSysex(tick, message, iTrack);
 						}
 					} else if ((!onlyFirstTrackTempos || iTrack == 0) && (divisionType == Sequence.PPQ) && MidiUtils.isMetaTempo(msg)) {
 						// TODO: Test midifiles to see how common it is to have tempo messages that are not in 1st track.
@@ -284,7 +288,9 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 						}
 					} else if (msg instanceof MetaMessage) {
 						MetaMessage m = (MetaMessage) msg;
-						if (m.getType() == META_TIME_SIGNATURE && foundTimeSignature == null) {
+						int type = m.getType();
+						byte[] data = m.getData();
+						if (type == META_TIME_SIGNATURE && foundTimeSignature == null) {
 							// TimeSignature in this class is used to keep track of source MIDIs meter.
 							// The one in TrackInfo is used to initially populate the meter field and abcsong.
 							// The one in AbcSong is used for output to abc.
@@ -299,10 +305,15 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 									}
 								}
 							}
-						} else if (m.getType() == META_MARKER) {
-							//System.out.println("Detected marker in MIDI");
-						} else if (m.getType() == META_COPYRIGHT && tick == 0L && iTrack == 0) {	
-							byte[] data = m.getData();
+						} else if (!ignoreMidiText && type == META_LYRIC && m.getData() != null) {				
+							midiText.collectTxt(tick, data, META_LYRIC, iTrack);
+						} else if (!ignoreMidiText && type == META_TEXT && m.getData() != null) {				
+							midiText.collectTxt(tick, data, META_TEXT, iTrack);
+						} else if (!ignoreMidiText && type == META_MARKER && m.getData() != null) {			
+							midiText.collectTxt(tick, data, META_MARKER, iTrack);
+						} else if (!ignoreMidiText && type == META_CUE_POINT && m.getData() != null) {			
+							midiText.collectTxt(tick, data, META_CUE_POINT, iTrack);
+						} else if (m.getType() == META_COPYRIGHT && tick == 0L && iTrack == 0) {
 							log.finer("\n(c): "+MidiUtils.formatBytes(data));
 							String tmp = "";
 							if (!ignoreMidiText) tmp = MidiUtils.decodeMidiText(data).trim();
@@ -398,7 +409,11 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		this.timeSignature = (foundTimeSignature == null) ? TimeSignature.FOUR_FOUR : foundTimeSignature;
 
 		songLengthTicks = lastTick;
+		
+		log.info("Lyrics stats: "+midiText.getTextStats());
 	}
+	
+	
 
 	public boolean isXGDrumsTrack(int track) {
 		if (track >= brandDrumBanks.length)
@@ -616,6 +631,10 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 
 	public void setCopyright(String copyright) {
 		this.copyright = copyright;
+	}
+	
+	public String getLyrics() {
+		return midiText.getText();
 	}
 
 	/**
