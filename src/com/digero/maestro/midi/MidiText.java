@@ -108,14 +108,12 @@ public class MidiText {
 				fragment.format = Format.UNKNOWN;
 				fragment.reaction = Reaction.LINE;
 				fragment.syline += decode(Arrays.copyOfRange(data, offset, data.length));
-				trackPlus(track);
 			} else if (data[0] == (byte) '<' && fragment.source == Source.LYRIC) {
 				valid = true;
 				offset = 1;
 				fragment.format = Format.SOLTON;
 				fragment.reaction = Reaction.LINE;
 				fragment.syline = decode(Arrays.copyOfRange(data, offset, data.length));
-				trackPlus(track);
 			} else if (data[0] == (byte) '%' && fragment.source == Source.LYRIC) {
 				valid = true;
 				offset = 1;
@@ -190,27 +188,23 @@ public class MidiText {
 					offset = 1;
 					fragment.reaction = Reaction.NEWLINE_OLD;
 					fragment.format = Format.SOFT_KARAOKE;
-					trackPlus(track);
 					log.finest("Newline: "+MidiUtils.formatBytesHexOnly(Arrays.copyOfRange(data, offset, data.length)));
 				} else if (data[0] == (byte) '\\' && fragment.source == Source.TEXT && data.length > 0) {
 					valid = true;
 					offset = 1;
 					fragment.reaction = Reaction.CLEAR_OLD;
 					fragment.format = Format.SOFT_KARAOKE;
-					trackPlus(track);
 					log.finest("Clear: "+MidiUtils.formatBytesHexOnly(data));
 				} else if (data[0] == (byte) '/' && fragment.source == Source.LYRIC && data.length > 0) {
 					valid = true;
 					offset = 1;
 					fragment.reaction = Reaction.NEWLINE_NEW;
 					fragment.format = Format.UNKNOWN;
-					trackPlus(track);
 				} else if (data[0] == (byte) '\\' && fragment.source == Source.LYRIC && data.length > 0) {
 					valid = true;
 					offset = 1;
 					fragment.reaction = Reaction.CLEAR_NEW;
 					fragment.format = Format.UNKNOWN;
-					trackPlus(track);
 					log.fine("Clear: "+MidiUtils.formatBytesHexOnly(data));
 				} else if (data.length > 0) {
 					valid = true;
@@ -218,7 +212,6 @@ public class MidiText {
 					fragment.format = fragment.source == Source.TEXT?Format.SOFT_KARAOKE:Format.TUNE1000;
 					if (lastType != null && fragment.format != lastType) fragment.reaction = Reaction.NEWLINE_NEW;//should maybe be old
 					lastType = fragment.format;
-					trackPlus(track);
 					//log.severe("Syllable: "+MidiUtils.formatBytesHexOnly(data));
 				}
 				if (valid) {
@@ -269,19 +262,9 @@ public class MidiText {
 				textStats.put(fragment.format, count);
 				boolean ok = text.add(fragment);
 				if (!ok) log.warning("Dropped syllable");
+				trackPlus(track, fragment);
 			}
 		}
-	}
-	
-	/**
-	 * 
-	 * @param track a fragment was seen in certain track, increase the counter for number of fragments in that track.
-	 */
-	private void trackPlus(int track) {
-		Integer curr = trackStats.get(track);
-		if (curr == null) curr = 0;
-		curr++;
-		trackStats.put(track, curr);
 	}
 
 	void collectSysex(long tick, byte[] message, int track) {
@@ -356,6 +339,31 @@ public class MidiText {
 			}
 		}
 		return str;
+	}
+	
+	/**
+	 * 
+	 * @param track a fragment was seen in certain track, increase the counter for number of fragments in that track.
+	 */
+	private void trackPlus(int track, TextFragment frag) {
+		Integer curr = trackStats.get(track);
+		if (curr == null) curr = 0;
+		if (frag.syline != null && (
+			   frag.reaction == Reaction.LINE
+			|| frag.reaction == Reaction.FIRST
+			|| frag.reaction == Reaction.SECOND
+			|| frag.reaction == Reaction.THIRD
+			|| frag.reaction == Reaction.FOURTH
+			|| frag.reaction == Reaction.SYLLABLE
+			|| frag.reaction == Reaction.NEWLINE_NEW
+			|| frag.reaction == Reaction.NEWLINE_OLD
+			|| frag.reaction == Reaction.CLEAR_NEW
+			|| frag.reaction == Reaction.CLEAR_OLD
+			|| frag.reaction == Reaction.NEWLINE_AFTER)) {
+				curr += frag.syline.length();
+				//curr++;
+		}
+		trackStats.put(track, curr);
 	}
 	
 	/**
