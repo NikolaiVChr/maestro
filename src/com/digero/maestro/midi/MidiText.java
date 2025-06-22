@@ -46,6 +46,7 @@ public class MidiText {
 				|| "ENGLISH".equalsIgnoreCase(lang)
 				|| "FREN".equalsIgnoreCase(lang)
 				|| "FRENCH".equalsIgnoreCase(lang)
+				|| "FR".equalsIgnoreCase(lang)
 			);
 	}
 
@@ -131,13 +132,13 @@ public class MidiText {
 				valid = true;
 				offset = 1;
 				fragment.format = Format.TUNE1000;
-				fragment.reaction = Reaction.CLEAR;
+				fragment.reaction = Reaction.CLEAR_NEW;
 				fragment.syline = "";
 			} else if (data[0] == (byte) '\r' && fragment.source == Source.LYRIC && data.length == 1) {
 				valid = true;
 				offset = 1;
 				fragment.format = Format.TUNE1000;
-				fragment.reaction = Reaction.NEWLINE;
+				fragment.reaction = Reaction.NEWLINE_NEW;
 				fragment.syline = "";
 			} else {
 				if (data[0] == (byte) '@' && data.length >= 2) {
@@ -187,37 +188,35 @@ public class MidiText {
 				} else if (data[0] == (byte) '/' && fragment.source == Source.TEXT && data.length > 0) {
 					valid = true;
 					offset = 1;
-					fragment.reaction = Reaction.NEWLINE;
+					fragment.reaction = Reaction.NEWLINE_OLD;
 					fragment.format = Format.SOFT_KARAOKE;
 					trackPlus(track);
 					log.finest("Newline: "+MidiUtils.formatBytesHexOnly(Arrays.copyOfRange(data, offset, data.length)));
 				} else if (data[0] == (byte) '\\' && fragment.source == Source.TEXT && data.length > 0) {
 					valid = true;
 					offset = 1;
-					fragment.reaction = Reaction.CLEAR;
+					fragment.reaction = Reaction.CLEAR_OLD;
 					fragment.format = Format.SOFT_KARAOKE;
 					trackPlus(track);
 					log.finest("Clear: "+MidiUtils.formatBytesHexOnly(data));
-				/*
-				} else if (data[0] == (byte) '/' && t.source == Source.LYRIC && data.length > 0) {
+				} else if (data[0] == (byte) '/' && fragment.source == Source.LYRIC && data.length > 0) {
 					valid = true;
 					offset = 1;
-					t.reaction = Reaction.NEWLINE;
-					t.type = Layout.UNKNOWN;
+					fragment.reaction = Reaction.NEWLINE_NEW;
+					fragment.format = Format.UNKNOWN;
 					trackPlus(track);
-				} else if (data[0] == (byte) '\\' && t.source == Source.LYRIC && data.length > 0) {
+				} else if (data[0] == (byte) '\\' && fragment.source == Source.LYRIC && data.length > 0) {
 					valid = true;
 					offset = 1;
-					t.reaction = Reaction.CLEAR;
-					t.type = Layout.UNKNOWN;
+					fragment.reaction = Reaction.CLEAR_NEW;
+					fragment.format = Format.UNKNOWN;
 					trackPlus(track);
 					log.fine("Clear: "+MidiUtils.formatBytesHexOnly(data));
-					*/
 				} else if (data.length > 0) {
 					valid = true;
 					fragment.reaction = Reaction.SYLLABLE;
 					fragment.format = fragment.source == Source.TEXT?Format.SOFT_KARAOKE:Format.TUNE1000;
-					if (lastType != null && fragment.format != lastType) fragment.reaction = Reaction.NEWLINE;
+					if (lastType != null && fragment.format != lastType) fragment.reaction = Reaction.NEWLINE_NEW;//should maybe be old
 					lastType = fragment.format;
 					trackPlus(track);
 					//log.severe("Syllable: "+MidiUtils.formatBytesHexOnly(data));
@@ -233,7 +232,6 @@ public class MidiText {
 						}
 						byte[] content = Arrays.copyOfRange(data, offset, end);
 						fragment.syline = decode(content);
-						
 						List<Integer> parts = new ArrayList<>();
 					    Matcher m = KARAKAN_PART_PATTERN.matcher(fragment.syline);
 					    while (m.find()) {
@@ -263,6 +261,7 @@ public class MidiText {
 			if (fragment.source == Source.CUE || fragment.source == Source.MARK) {
 				log.info(fragment.toString());
 			} else {
+				log.finer(MidiUtils.formatBytesHexOnly(data));
 				log.fine(fragment.toString());
 				Integer count = textStats.get(fragment.format);
 				if (count == null) count = 0;
@@ -368,10 +367,11 @@ public class MidiText {
 		int winner = 0;
 		int count = 0;
 		for (Entry<Integer, Integer> entry : trackStats.entrySet()) {
-			if (entry.getValue() > count) {
+			if (entry.getValue() >= count) {
 				winner = entry.getKey();
 				count = entry.getValue();
 			}
+			//System.out.println(entry.getKey()+": "+entry.getValue());
 		}
 		return winner;
 	}
@@ -400,9 +400,16 @@ public class MidiText {
 					if (fraction.track != mainTrack) break;
 					str += fraction.syline;
 					break;
-				case Reaction.NEWLINE:
+				case Reaction.NEWLINE_OLD:
 					if (fraction.track != mainTrack) break;
-					if (prev != Reaction.CLEAR || prevClear.trim().length() > 0) {
+					if (prev != Reaction.CLEAR_OLD || prevClear.trim().length() > 0) {
+						str += "\n";
+					}
+					str += fraction.syline;
+					break;
+				case Reaction.NEWLINE_NEW:
+					if (fraction.track != mainTrack) break;
+					if (prev != Reaction.CLEAR_NEW || prevClear.trim().length() > 0) {
 						str += "\n";
 					}
 					str += fraction.syline;
@@ -412,7 +419,8 @@ public class MidiText {
 					str += fraction.syline;
 					str += "\n";
 					break;
-				case Reaction.CLEAR:
+				case Reaction.CLEAR_NEW:
+				case Reaction.CLEAR_OLD:
 					str += "\n\n";
 					if (fraction.track != mainTrack) break;
 					str += fraction.syline;
@@ -461,13 +469,19 @@ public class MidiText {
 			SECOND,
 			THIRD,
 			FOURTH,
-			SYLLABLE,
+			
 			LINE,// full line
-			CLEAR,//clear screen
-			NEWLINE,// newline before syllable // in modern kar, next is sometimes at same tick as syllable, meaning syllable first, then newline.
+			CLEAR_OLD,//clear screen
+			NEWLINE_OLD,// newline before syllable
+			SYLLABLE,
 			NEWLINE_AFTER,// newline after syllable
+			CLEAR_NEW,//clear screen
+			NEWLINE_NEW,// newline
 			CHORD,
 			SYNC // highlight next full line
+			
+			// in modern Tune1000 kar, newline is sometimes at same tick as syllable, meaning syllable first, then newline.
+			// in older Soft Karaoke kar, newline is sometimes at same tick as syllable, meaning newline first, then syllable.
 		}
 		public enum Source {
 			// which kind of midi event that was source of this TextFragment.
