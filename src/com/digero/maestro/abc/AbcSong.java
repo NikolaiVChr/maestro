@@ -217,6 +217,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		if (sequenceInfo.getDataCache() != null) {
 			copyright = sequenceInfo.getDataCache().getCopyright();
 			if (miscSettings.importLyrics) note = sequenceInfo.getDataCache().getLyrics();
+			genre = sequenceInfo.getDataCache().getGenre();
+			if (composer == null || composer.isBlank()) composer = sequenceInfo.getDataCache().getComposer(); 
 		} else {
 			note = "";
 		}

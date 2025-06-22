@@ -25,6 +25,11 @@ public class MidiText {
 	public TreeSet<TextFragment> text = new TreeSet<>();
 	public Map<TextFragment.Format,Integer> textStats = new HashMap<>();
 	public Map<Integer,Integer> trackStats = new HashMap<>();
+	public String genre = "";
+	public String artist = "";
+	public String composer = "";
+	public String duration = "";
+	public String bpm = "";
 	// lang=ENGL means if no language specified, we prefer western charset,
 	// lang="" means only if language english is specified do we prefer western charset
 	String lang = "ENGL";
@@ -61,11 +66,49 @@ public class MidiText {
 			case MidiConstants.META_CUE_POINT:
 				fragment.source = Source.CUE;
 				break;
+			case MidiConstants.META_M_LIVE:
+				fragment.source = Source.MLIVE;
+				break;
 		}
 		fragment.track = track;
 		fragment.tick = tick;
 		if (data != null && data.length > 0) {
-			if (data[0] == (byte) '<' && fragment.source == Source.LYRIC) {
+			if (fragment.source == Source.MLIVE) {
+				valid = false;
+				offset = 1;
+				switch (data[0]) {
+				case MidiConstants.M_LIVE_GENRE:
+					genre = decode(Arrays.copyOfRange(data, offset, data.length));
+					fragment.syline = "Genre: ";
+					valid = true;
+					break;
+				case MidiConstants.M_LIVE_ARTIST:
+					artist = decode(Arrays.copyOfRange(data, offset, data.length));
+					fragment.syline = "Artist: ";
+					valid = true;
+					break;
+				case MidiConstants.M_LIVE_COMPOSER:
+					composer = decode(Arrays.copyOfRange(data, offset, data.length));
+					fragment.syline = "Composer: ";
+					valid = true;
+					break;
+				case MidiConstants.M_LIVE_DURATION:
+					duration = decode(Arrays.copyOfRange(data, offset, data.length));
+					fragment.syline = "Duration: ";
+					break;
+				case MidiConstants.M_LIVE_BPM:
+					bpm = decode(Arrays.copyOfRange(data, offset, data.length));
+					fragment.syline = "BPM: ";
+					break;
+				default:
+					return;
+				}
+				
+				fragment.format = Format.UNKNOWN;
+				fragment.reaction = Reaction.LINE;
+				fragment.syline += decode(Arrays.copyOfRange(data, offset, data.length));
+				trackPlus(track);
+			} else if (data[0] == (byte) '<' && fragment.source == Source.LYRIC) {
 				valid = true;
 				offset = 1;
 				fragment.format = Format.SOLTON;
@@ -244,9 +287,7 @@ public class MidiText {
 
 	void collectSysex(long tick, byte[] message, int track) {
 		// untested as I didn't find any midi files with embedded MIDISOFT lyrics
-		if (message.length > 7 && (message[0] & 0xFF) == 0xF0
-				&& (message[2] & 0xFF) == 0x00 && (message[3] & 0xFF) == 0x20 && (message[4] & 0xFF) == 0x24
-				&& (message[5] & 0xFF) == 0x00) {
+		if (MidiUtils.isSysexLyrics(message)) {
 			if ((message[6] & 0xFF) == 0x08) {
 				TextFragment fragment = new TextFragment();
 				fragment.format = Format.MIDISOFT;
@@ -434,7 +475,8 @@ public class MidiText {
 			LYRIC,
 			TEXT,
 			MARK, 
-			CUE
+			CUE,
+			MLIVE
 		}
 		public enum Format {
 			SOFT_KARAOKE,

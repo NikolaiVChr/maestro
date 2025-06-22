@@ -313,6 +313,8 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 							midiText.collectTxt(tick, data, META_MARKER, iTrack);
 						} else if (!ignoreMidiText && type == META_CUE_POINT && m.getData() != null) {			
 							midiText.collectTxt(tick, data, META_CUE_POINT, iTrack);
+						} else if (!ignoreMidiText && type == META_M_LIVE && m.getData() != null) {			
+							midiText.collectTxt(tick, data, META_M_LIVE, iTrack);
 						} else if (m.getType() == META_COPYRIGHT && tick == 0L && iTrack == 0) {
 							log.finer("\n(c): "+MidiUtils.formatBytes(data));
 							String tmp = "";
@@ -635,6 +637,14 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	
 	public String getLyrics() {
 		return midiText.getText();
+	}
+	
+	public String getGenre() {
+		return midiText.genre;
+	}
+	
+	public String getComposer() {
+		return midiText.artist;
 	}
 
 	/**

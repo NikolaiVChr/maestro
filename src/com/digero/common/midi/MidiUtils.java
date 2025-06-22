@@ -289,6 +289,9 @@ public class MidiUtils {
     		} else if (sysex.getMessage()[1] == MidiConstants.SYSEX_UNIVERSAL_NON_REALTIME) {
     			str += ", Non-Realtime";
     		}
+    		if (isSysexLyrics(sysex.getMessage())) {
+    			str += ", Lyrics";
+    		}
     		if (SequenceInfo.isResetGM(sysex.getMessage())) {
     			str += ", GM Reset";
     		} else if (SequenceInfo.isResetGS(sysex.getMessage())) {
@@ -296,7 +299,7 @@ public class MidiUtils {
     		} else if (SequenceInfo.isResetXG(sysex.getMessage())) {
     			str += ", XG Reset";
     		} else if (SequenceInfo.isResetGM2(sysex.getMessage())) {
-    			str += ", GM2 Reset";
+    			str += ", GM2 Reset";	
     		} else {
     			// take note of difference of midi (7 bit unsigned) vs. java (8 bit signed):
     			str += ", "+formatBytesHexOnly(sysex.getMessage());
@@ -312,6 +315,8 @@ public class MidiUtils {
     			str += ", Time Signature";
     		} else if (meta.getType() == MidiConstants.META_PORT_CHANGE) {
     			str += ", Port change";
+    		} else if (meta.getType() == MidiConstants.META_PORT_NAME) {
+    			str += ", Port name";
     		} else if (meta.getType() == MidiConstants.META_COPYRIGHT) {
     			str += ", Copyright";
     		} else if (meta.getType() == MidiConstants.META_TRACK_NAME) {
@@ -328,13 +333,23 @@ public class MidiUtils {
     			str += ", Program Change";
     		} else if (meta.getType() == MidiConstants.META_KEY_SIGNATURE) {
     			str += ", Key Signature";
-    		} else if (meta.getType() == MidiConstants.META_INSTRUMENT) {
-    			str += ", Instrument";
+    		} else if (meta.getType() == MidiConstants.META_INSTRUMENT_NAME) {
+    			str += ", Instrument name";
     		} else if (meta.getType() == MidiConstants.META_MARKER) {
     			str += ", Marker";
+    		} else if (meta.getType() == MidiConstants.META_M_LIVE) {
+    			str += ", M-Live";
     		}
     	}
     	str += ", Tick="+evt.getTick();
     	return str;
     }
+
+	public static boolean isSysexLyrics(byte[] message) {
+		if (message.length > 7 && (message[0] & 0xFF) == 0xF0
+				&& (message[2] & 0xFF) == 0x00 && (message[3] & 0xFF) == 0x20 && (message[4] & 0xFF) == 0x24
+				&& (message[5] & 0xFF) == 0x00)
+			return true;
+		return false;
+	}
 }
