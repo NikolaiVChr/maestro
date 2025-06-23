@@ -499,7 +499,7 @@ public class CharsetDetectAndDecode {
     		if (western && getScript(cs.name()) != Script.WESTERN) {
     			// choose a penalty large enough to swing ties, but not so large
     			// that a really bad asian decode beats a mediocre Western decode.
-    			cr.score += 25;
+    			cr.score += 8;
     		}
             if (cr.score < bestScore) {
                 bestScore = cr.score;
@@ -535,7 +535,7 @@ public class CharsetDetectAndDecode {
         
         @Override
         public String toString() {
-        	return cs.name()+" replCount="+replCount+" ctrlCount="+ctrlCount+" cyrCount="+cyrCount+" jpCount="+jpCount+" asciiCount="+asciiCount+" extLatinCount="+extLatinCount+" score="+score;
+        	return cs.name()+" '"+decoded+"' "+" replCount="+replCount+" ctrlCount="+ctrlCount+" cyrCount="+cyrCount+" jpCount="+jpCount+" asciiCount="+asciiCount+" extLatinCount="+extLatinCount+" score="+score;
         }
     }
     
@@ -866,7 +866,7 @@ public class CharsetDetectAndDecode {
                 japaneseCount++;
                 continue;
             }
-         // ASCII
+            // ASCII
             if (cp >= 0x20 && cp <= 0x7E) {
                 asciiCount++;
                 continue;
@@ -876,7 +876,7 @@ public class CharsetDetectAndDecode {
                 supplementCount++;
                 continue;
             }
-            // everything else we treat as “other” (counts below)
+            // everything else we treat as "other" (counts below)
         }
 
         res.replCount           = replCount;
@@ -885,40 +885,41 @@ public class CharsetDetectAndDecode {
         res.ctrlCount           = ctrlCount;
         res.asciiCount = asciiCount;
         res.extLatinCount = supplementCount;
-        // (you can also store cyrillicCount/japaneseCount in res if you prefer)
 
-        // 4. Unified “junk vs. script‐match” scoring
-        Script script;
-        if (csName.contains("shift_jis") || csName.contains("windows-31j") || csName.contains("euc-jp")) {
-            script = Script.JAPANESE;
-        } else if (csName.contains("gb18030") || csName.contains("big5")) {
-            script = Script.CHINESE;
-        } else if (csName.equals("windows-1251") || csName.equals("ibm866") || csName.equals("koi8-r")) {
-            script = Script.CYRILLIC;
-        } else {
-            script = Script.WESTERN;
-        }
+        // 4. Unified "junk vs. script-match" scoring
+        Script script = getScript(cs.name());
 
         int matchCount;
         switch (script) {
             case CYRILLIC:
-                matchCount = cyrillicCount; break;
+                matchCount = cyrillicCount;
+                break;
             case JAPANESE:
-                matchCount = japaneseCount; break;
+                matchCount = japaneseCount;
+                break;
             case CHINESE:
                 matchCount = (int) decoded.codePoints()
                                           .filter(cp -> cp >= 0x4E00 && cp <= 0x9FFF)
                                           .count();
                 break;
             default:
-                matchCount = asciiCount;    break;
+                matchCount = asciiCount;
+                break;
         }
 
         int totalCp  = decoded.codePointCount(0, decoded.length());
-        int nonMatch = totalCp - matchCount - (script==Script.WESTERN?res.extLatinCount:0) - (script==Script.CYRILLIC?res.asciiCount:0);
+        // new: treat ASCII (0x20–0x7F) as neutral for all non-Western scripts:
+        int neutral = 0;
+        if (script != Script.WESTERN) {
+            neutral += asciiCount;
+        } else {
+            // Western still allows Latin-1 Supplement as neutral
+            neutral += res.extLatinCount;
+        }
+        int nonMatch = totalCp - matchCount - neutral;
 
         // weights
-        int replWeight     = 200;  // per “�”
+        int replWeight     = 200;  // per "�"
         int ctrlWeight     = 20;  // per stray control
         int nonMatchWeight = 40;   // per code‐point not in our target script
         int matchBonus     = -5;   // per in‐script code‐point
@@ -930,16 +931,15 @@ public class CharsetDetectAndDecode {
         // --- new bit: charset‐specific priority ---
         int scriptPriority = getScriptPriority(csName, script);
         
-        /*
-        System.out.println(
-        		csName+" score:"
+        
+        log.fine("\n"+csName+" score:"
         		+"\nreplace: "+(replCount * replWeight)
         		+"\ncontrol: "+(ctrlCount * ctrlWeight)
         		+"\nnonMatch:"+(nonMatch * nonMatchWeight)
         		+"\ntie:     "+tieBreaker
         		+"\nprio:    "+scriptPriority
         		+"\nmatch:   "+(matchCount * matchBonus));
-        */
+        
         int junkPenalty = replCount * replWeight
                         + ctrlCount * ctrlWeight
                         + nonMatch * nonMatchWeight;
@@ -948,13 +948,13 @@ public class CharsetDetectAndDecode {
                   + matchCount * matchBonus
                   + tieBreaker
                   + scriptPriority;
-        //log.info(res.toString());
+        log.fine(res.toString());
         return res;
     }
 
     // Place this helper somewhere in the same class:
     private static int getWesternPriority(String csName) {
-        // lower is better; 0 means “top Western choice”
+        // lower is better; 0 means "top Western choice"
         if (csName.equals("iso-8859-1"))  return 0;
         if (csName.equals("iso-8859-15")) return 1;
         if (csName.equals("windows-1250")) return 2;

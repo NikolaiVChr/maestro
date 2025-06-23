@@ -1,8 +1,10 @@
 package com.digero.maestro.midi;
 
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -12,6 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.digero.common.midi.MidiUtils;
+import com.digero.common.util.Pair;
 import com.digero.common.midi.MidiConstants;
 import com.digero.maestro.midi.MidiText.TextFragment.Source;
 import com.digero.maestro.midi.MidiText.TextFragment.Reaction;
@@ -30,24 +33,60 @@ public class MidiText {
 	public String composer = "";
 	public String duration = "";
 	public String bpm = "";
-	// lang=ENGL means if no language specified, we prefer western charset,
-	// lang="" means only if language english is specified do we prefer western charset
-	String lang = "ENGL";
+	// language=ENGL means if no language specified, we prefer western charset,
+	// language="" means only if language english is specified do we prefer western charset
+	String language = "ENGL";
 	Format lastType = null;
+
+	private Map<Charset,Integer> csStats = new HashMap<>();
+	private int csTotal = 0;
 	
 	public MidiText(SequenceDataCache cache) {
 		this.cache = cache;
 	}
 	
 	private String decode(byte[] data) {
-		return MidiUtils.decodeMidiText(data, 
-				   "ENGL".equalsIgnoreCase(lang)
-				|| "EN".equalsIgnoreCase(lang)
-				|| "ENGLISH".equalsIgnoreCase(lang)
-				|| "FREN".equalsIgnoreCase(lang)
-				|| "FRENCH".equalsIgnoreCase(lang)
-				|| "FR".equalsIgnoreCase(lang)
+		Pair<String, Charset> result = MidiUtils.decodeMidiText(data, 
+				   "ENGL".equalsIgnoreCase(language)
+				|| "EN".equalsIgnoreCase(language)
+				|| "ENGLISH".equalsIgnoreCase(language)
+				|| "FREN".equalsIgnoreCase(language)
+				|| "FRENCH".equalsIgnoreCase(language)
+				|| "FR".equalsIgnoreCase(language)
 			);
+		//addToCharsetScore(result.second);
+		return result.first;
+	}
+	
+	private void reEncodeAll(Iterator<TextFragment> iterator, Charset cs) {
+		log.info("Re-decoding all text with "+cs.name());
+		while (iterator.hasNext()) {
+			TextFragment fragment = iterator.next();
+			if (fragment.sylineBytes == null || fragment.sylineBytes.length == 0) continue;
+			String text = new String(fragment.sylineBytes, cs);
+			fragment.syline = text;
+		}
+	}
+	
+	private void addToCharsetScore(Charset cs) {
+		Integer curr = csStats.get(cs);
+		if (curr == null) curr = 0;
+		curr++;
+		csStats.put(cs, curr);
+		csTotal++;
+	}
+	
+	private Charset calcWinningCS() {
+		Charset winner = null;
+		int count = 0;
+		for (Entry<Charset, Integer> entry : csStats.entrySet()) {
+			if (entry.getValue() >= count && entry.getValue() > csTotal/2) {
+				winner = entry.getKey();
+				count = entry.getValue();
+			}
+			log.info("Track "+entry.getKey()+" text score: "+entry.getValue());
+		}
+		return winner;
 	}
 
 	void collectTxt(long tick, byte[] data, int metaType, int track) {
@@ -78,54 +117,58 @@ public class MidiText {
 				valid = false;
 				offset = 1;
 				switch (data[0]) {
-				case MidiConstants.M_LIVE_GENRE:
-					genre = decode(Arrays.copyOfRange(data, offset, data.length));
-					fragment.syline = "Genre: ";
-					valid = true;
-					break;
-				case MidiConstants.M_LIVE_ARTIST:
-					artist = decode(Arrays.copyOfRange(data, offset, data.length));
-					fragment.syline = "Artist: ";
-					valid = true;
-					break;
-				case MidiConstants.M_LIVE_COMPOSER:
-					composer = decode(Arrays.copyOfRange(data, offset, data.length));
-					fragment.syline = "Composer: ";
-					valid = true;
-					break;
-				case MidiConstants.M_LIVE_DURATION:
-					duration = decode(Arrays.copyOfRange(data, offset, data.length));
-					fragment.syline = "Duration: ";
-					break;
-				case MidiConstants.M_LIVE_BPM:
-					bpm = decode(Arrays.copyOfRange(data, offset, data.length));
-					fragment.syline = "BPM: ";
-					break;
-				default:
-					return;
+					case MidiConstants.M_LIVE_GENRE:
+						genre = decode(Arrays.copyOfRange(data, offset, data.length));
+						fragment.syline = "Genre: ";
+						valid = true;
+						break;
+					case MidiConstants.M_LIVE_ARTIST:
+						artist = decode(Arrays.copyOfRange(data, offset, data.length));
+						fragment.syline = "Artist: ";
+						valid = true;
+						break;
+					case MidiConstants.M_LIVE_COMPOSER:
+						composer = decode(Arrays.copyOfRange(data, offset, data.length));
+						fragment.syline = "Composer: ";
+						valid = true;
+						break;
+					case MidiConstants.M_LIVE_DURATION:
+						duration = decode(Arrays.copyOfRange(data, offset, data.length));
+						fragment.syline = "Duration: ";
+						break;
+					case MidiConstants.M_LIVE_BPM:
+						bpm = decode(Arrays.copyOfRange(data, offset, data.length));
+						fragment.syline = "BPM: ";
+						break;
+					default:
+						return;
 				}
 				
 				fragment.format = Format.UNKNOWN;
 				fragment.reaction = Reaction.LINE;
 				fragment.syline += decode(Arrays.copyOfRange(data, offset, data.length));
+				fragment.sylineBytes = null;
 			} else if (data[0] == (byte) '<' && fragment.source == Source.LYRIC) {
 				valid = true;
 				offset = 1;
 				fragment.format = Format.SOLTON;
 				fragment.reaction = Reaction.LINE;
-				fragment.syline = decode(Arrays.copyOfRange(data, offset, data.length));
+				fragment.sylineBytes = Arrays.copyOfRange(data, offset, data.length);
+				fragment.syline = decode(fragment.sylineBytes);
 			} else if (data[0] == (byte) '%' && fragment.source == Source.LYRIC) {
 				valid = true;
 				offset = 1;
 				fragment.format = Format.SOLTON;
 				fragment.reaction = Reaction.CHORD;
-				fragment.syline = decode(Arrays.copyOfRange(data, offset, data.length));
+				fragment.sylineBytes = Arrays.copyOfRange(data, offset, data.length);
+				fragment.syline = decode(fragment.sylineBytes);
 			} else if (data[0] == (byte) '%' && fragment.source == Source.TEXT) {
 				valid = true;
 				offset = 1;
 				fragment.format = Format.TUNE1000;
 				fragment.reaction = Reaction.CHORD;
-				fragment.syline = decode(Arrays.copyOfRange(data, offset, data.length));
+				fragment.sylineBytes = Arrays.copyOfRange(data, offset, data.length);
+				fragment.syline = decode(fragment.sylineBytes);
 			} else if (data[0] == (byte) '\n' && fragment.source == Source.LYRIC && data.length == 1) {
 				valid = true;
 				offset = 1;
@@ -144,39 +187,41 @@ public class MidiText {
 					switch (data[1]) {
 						case 'K':
 						case 'k':
-						case 'W':
 							valid = data.length > 2;
 							offset = 2;
 							fragment.reaction = Reaction.RIGHTS;
-							fragment.format = Format.SOFT_KARAOKE;
+							fragment.format = fragment.source == Source.TEXT?Format.SOFT_KARAOKE:Format.TUNE1000;
 							break;
 						case 'L':
 						case 'l':
 							valid = data.length > 2;
 							offset = 2;
-							fragment.reaction = Reaction.LANG;
-							fragment.format = Format.SOFT_KARAOKE;
+							fragment.reaction = Reaction.LANGUAGE;
+							fragment.format = fragment.source == Source.TEXT?Format.SOFT_KARAOKE:Format.TUNE1000;
 							break;
 						case 'T':
 						case 't':
 							valid = data.length > 2;
 							offset = 2;
 							fragment.reaction = Reaction.TITLE;
-							fragment.format = Format.SOFT_KARAOKE;
+							fragment.format = fragment.source == Source.TEXT?Format.SOFT_KARAOKE:Format.TUNE1000;
 							break;
+						case 'W':
+							// not 100% sure what the W tag means, so we treat it as I
+							log.info(decode(data));
 						case 'I':
 						case 'i':
 							valid = data.length > 2;
 							offset = 2;
 							fragment.reaction = Reaction.INFO;
-							fragment.format = Format.SOFT_KARAOKE;
+							fragment.format = fragment.source == Source.TEXT?Format.SOFT_KARAOKE:Format.TUNE1000;
 							break;
 						case 'V':
 						case 'v':
 							valid = data.length > 2;
 							offset = 2;
 							fragment.reaction = Reaction.VERSION;
-							fragment.format = Format.SOFT_KARAOKE;
+							fragment.format = fragment.source == Source.TEXT?Format.SOFT_KARAOKE:Format.TUNE1000;
 							break;
 						default:
 							fragment.reaction = Reaction.LINE;
@@ -225,6 +270,7 @@ public class MidiText {
 						}
 						byte[] content = Arrays.copyOfRange(data, offset, end);
 						fragment.syline = decode(content);
+						fragment.sylineBytes = content;
 						List<Integer> parts = new ArrayList<>();
 					    Matcher m = KARAKAN_PART_PATTERN.matcher(fragment.syline);
 					    while (m.find()) {
@@ -238,7 +284,7 @@ public class MidiText {
 					    	fragment.syline = fragment.syline.substring(4);
 					    	fragment.format = Format.KARAKAN;
 					    }
-					    if (fragment.reaction == Reaction.LANG) lang = fragment.syline; 
+					    if (fragment.reaction == Reaction.LANGUAGE) language = fragment.syline; 
 					}
 					if (fragment.syline.equals("STARTAKKORD")) {
 						valid = false;
@@ -256,13 +302,10 @@ public class MidiText {
 			} else {
 				log.finer(MidiUtils.formatBytesHexOnly(data));
 				log.fine(fragment.toString());
-				Integer count = textStats.get(fragment.format);
-				if (count == null) count = 0;
-				count++;
-				textStats.put(fragment.format, count);
+				increaseTextStats(fragment.format);
 				boolean ok = text.add(fragment);
 				if (!ok) log.warning("Dropped syllable");
-				trackPlus(track, fragment);
+				addToTrackScore(track, fragment);
 			}
 		}
 	}
@@ -278,10 +321,7 @@ public class MidiText {
 				fragment.syline = "";
 				fragment.reaction = Reaction.SYNC;
 				fragment.tick = tick;
-				Integer count = textStats.get(fragment.format);
-				if (count == null) count = 0;
-				count++;
-				textStats.put(fragment.format, count);
+				increaseTextStats(fragment.format);
 				text.add(fragment);
 			} else {
 				boolean valid = false;
@@ -315,16 +355,20 @@ public class MidiText {
 					fragment.source = Source.SYSEX;
 					fragment.track = track;
 					fragment.tick = tick;
-					Integer count = textStats.get(fragment.format);
-					if (count == null) count = 0;
-					count++;
-					textStats.put(fragment.format, count);
+					increaseTextStats(fragment.format);
 					text.add(fragment);
 				}
 			}
 		}
 	}
 	
+	private void increaseTextStats(Format format) {
+		Integer count = textStats.get(format);
+		if (count == null) count = 0;
+		count++;
+		textStats.put(format, count);
+	}
+
 	/**
 	 * 
 	 * @return string describing count of how many of each lyrics format was seen in song.
@@ -345,7 +389,7 @@ public class MidiText {
 	 * 
 	 * @param track a fragment was seen in certain track, increase the counter for number of fragments in that track.
 	 */
-	private void trackPlus(int track, TextFragment frag) {
+	private void addToTrackScore(int track, TextFragment frag) {
 		Integer curr = trackStats.get(track);
 		if (curr == null) curr = 0;
 		if (frag.syline != null && (
@@ -371,7 +415,7 @@ public class MidiText {
 	 * We simply ignore the other tracks, they often for chorus or duets.
 	 * Or sometimes they are just copies.
 	 */
-	private int calcTrack() {
+	private int calcWinningTrack() {
 		int winner = 0;
 		int count = 0;
 		for (Entry<Integer, Integer> entry : trackStats.entrySet()) {
@@ -379,13 +423,17 @@ public class MidiText {
 				winner = entry.getKey();
 				count = entry.getValue();
 			}
-			//System.out.println(entry.getKey()+": "+entry.getValue());
+			log.info("Track "+entry.getKey()+" text score: "+entry.getValue());
 		}
 		return winner;
 	}
 	
 	public String getText() {
-		int mainTrack = calcTrack();
+		int mainTrack = calcWinningTrack();
+		/*
+		Charset mainCharset = calcWinningCS();
+		if (mainCharset != null) reEncodeAll(text.iterator(), mainCharset);
+		*/
 		String str = "";
 		if (!cache.getCopyright().isEmpty()) {
 			str += "MIDI copyright: "+cache.getCopyright()+"\n";
@@ -440,7 +488,7 @@ public class MidiText {
 				case Reaction.RIGHTS:
 					str += "Lyrics copyright: "+fraction.syline+"\n";
 					break;
-				case Reaction.LANG:
+				case Reaction.LANGUAGE:
 					str += "Language: "+fraction.syline+"\n";
 					break;
 				case Reaction.INFO:
@@ -452,7 +500,7 @@ public class MidiText {
 		}
 		return str;
 	}
-	
+
 	public class TextFragment implements Comparable<TextFragment> {
 		long tick;
 		Format format;
@@ -460,17 +508,18 @@ public class MidiText {
 		String syline;//  syllable/line
 		int track;
 		Reaction reaction;
+		byte[] sylineBytes;
 		
 		@Override
 		public String toString() {
-			return format+": "+reaction+" ("+source+") '"+syline+"' in track "+track+" tick="+tick;
+			return format+": "+reaction+" ("+source+") '"+syline+"' in track "+track+" tick="+tick+" hex:"+MidiUtils.formatBytesHexOnly(sylineBytes);
 		}
 		
 		public enum Reaction {
 			// the order matters
 			TITLE,
 			RIGHTS,
-			LANG,
+			LANGUAGE,
 			INFO,
 			VERSION,
 			FIRST,// first full line

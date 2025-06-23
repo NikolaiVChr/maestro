@@ -206,9 +206,9 @@ public class MidiUtils {
         return result.first;
 	}
 	
-	public static String decodeMidiText(byte[] data, boolean preferWestern) {
+	public static Pair<String, Charset> decodeMidiText(byte[] data, boolean preferWestern) {
         if (data == null || data.length == 0) {
-            return "";
+            return new Pair("", null);
         }
         Pair<String, Charset> result = CharsetDetectAndDecode.decodeMidiData(data, preferWestern);
         if (preferWestern && CharsetDetectAndDecode.getScript(result.second.name()) != CharsetDetectAndDecode.Script.WESTERN) {
@@ -216,7 +216,7 @@ public class MidiUtils {
         	log.warning("Decoder detected "+result.second.name()+", result: "+result.first+"  "
         			+CharsetDetectAndDecode.getScript(result.second.name())+", had preferred: "+CharsetDetectAndDecode.Script.WESTERN);
         }
-        return result.first;
+        return result;
 	}
     
     @SuppressWarnings("unused")
