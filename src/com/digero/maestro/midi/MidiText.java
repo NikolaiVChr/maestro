@@ -290,7 +290,7 @@ public class MidiText {
 						valid = false;
 					}
 					fragment.syline = fragment.syline.replace("|C:|", "");//chorus start
-					fragment.syline = fragment.syline.replace("|:C|", "");//chorus end (often in later syllable than start)
+					fragment.syline = fragment.syline.replace("|:C|", "");//chorus end (normally in later syllable than start)
 					fragment.syline = fragment.syline.replace("/", "\n");//newline command in middle of text (modern kar)
 				}
 			}
@@ -435,9 +435,12 @@ public class MidiText {
 		if (mainCharset != null) reEncodeAll(text.iterator(), mainCharset);
 		*/
 		String str = "";
+		/*
 		if (!cache.getCopyright().isEmpty()) {
+		 
 			str += "MIDI copyright: "+cache.getCopyright()+"\n";
 		}
+		*/
 		Reaction prev = null;
 		String prevClear = "";
 		for (TextFragment fraction : text) {
@@ -486,7 +489,7 @@ public class MidiText {
 					str += "Title: "+fraction.syline+"\n";
 					break;
 				case Reaction.RIGHTS:
-					str += "Lyrics copyright: "+fraction.syline+"\n";
+					//str += "Lyrics copyright: "+fraction.syline+"\n";
 					break;
 				case Reaction.LANGUAGE:
 					str += "Language: "+fraction.syline+"\n";
