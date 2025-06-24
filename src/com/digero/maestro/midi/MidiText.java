@@ -1,5 +1,6 @@
 package com.digero.maestro.midi;
 
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,7 +36,7 @@ public class MidiText {
 	public String bpm = "";
 	// language=ENGL means if no language specified, we prefer western charset,
 	// language="" means only if language english is specified do we prefer western charset
-	String language = "ENGL";
+	String language = "";
 	Format lastType = null;
 
 	private Map<Charset,Integer> csStats = new HashMap<>();
@@ -119,26 +120,26 @@ public class MidiText {
 				switch (data[0]) {
 					case MidiConstants.M_LIVE_GENRE:
 						genre = decode(Arrays.copyOfRange(data, offset, data.length));
-						fragment.syline = "Genre: ";
+						fragment.prefix = "Genre: ";
 						valid = true;
 						break;
 					case MidiConstants.M_LIVE_ARTIST:
 						artist = decode(Arrays.copyOfRange(data, offset, data.length));
-						fragment.syline = "Artist: ";
+						fragment.prefix = "Artist: ";
 						valid = true;
 						break;
 					case MidiConstants.M_LIVE_COMPOSER:
 						composer = decode(Arrays.copyOfRange(data, offset, data.length));
-						fragment.syline = "Composer: ";
+						fragment.prefix = "Composer: ";
 						valid = true;
 						break;
 					case MidiConstants.M_LIVE_DURATION:
 						duration = decode(Arrays.copyOfRange(data, offset, data.length));
-						fragment.syline = "Duration: ";
+						fragment.prefix = "Duration: ";
 						break;
 					case MidiConstants.M_LIVE_BPM:
 						bpm = decode(Arrays.copyOfRange(data, offset, data.length));
-						fragment.syline = "BPM: ";
+						fragment.prefix = "BPM: ";
 						break;
 					default:
 						return;
@@ -146,41 +147,35 @@ public class MidiText {
 				
 				fragment.format = Format.UNKNOWN;
 				fragment.reaction = Reaction.LINE;
-				fragment.syline += decode(Arrays.copyOfRange(data, offset, data.length));
-				fragment.sylineBytes = null;
+				fragment.sylineBytes = Arrays.copyOfRange(data, offset, data.length);
 			} else if (data[0] == (byte) '<' && fragment.source == Source.LYRIC) {
 				valid = true;
 				offset = 1;
 				fragment.format = Format.SOLTON;
 				fragment.reaction = Reaction.LINE;
 				fragment.sylineBytes = Arrays.copyOfRange(data, offset, data.length);
-				fragment.syline = decode(fragment.sylineBytes);
 			} else if (data[0] == (byte) '%' && fragment.source == Source.LYRIC) {
 				valid = true;
 				offset = 1;
 				fragment.format = Format.SOLTON;
 				fragment.reaction = Reaction.CHORD;
 				fragment.sylineBytes = Arrays.copyOfRange(data, offset, data.length);
-				fragment.syline = decode(fragment.sylineBytes);
 			} else if (data[0] == (byte) '%' && fragment.source == Source.TEXT) {
 				valid = true;
 				offset = 1;
 				fragment.format = Format.TUNE1000;
 				fragment.reaction = Reaction.CHORD;
 				fragment.sylineBytes = Arrays.copyOfRange(data, offset, data.length);
-				fragment.syline = decode(fragment.sylineBytes);
 			} else if (data[0] == (byte) '\n' && fragment.source == Source.LYRIC && data.length == 1) {
 				valid = true;
 				offset = 1;
 				fragment.format = Format.TUNE1000;
 				fragment.reaction = Reaction.CLEAR_NEW;
-				fragment.syline = "";
 			} else if (data[0] == (byte) '\r' && fragment.source == Source.LYRIC && data.length == 1) {
 				valid = true;
 				offset = 1;
 				fragment.format = Format.TUNE1000;
 				fragment.reaction = Reaction.NEWLINE_NEW;
-				fragment.syline = "";
 			} else {
 				if (data[0] == (byte) '@' && data.length >= 2) {
 					valid = true;
@@ -260,38 +255,17 @@ public class MidiText {
 					//log.severe("Syllable: "+MidiUtils.formatBytesHexOnly(data));
 				}
 				if (valid) {
-					if (data.length - offset == 0) {
-						fragment.syline = "";
-					} else {
+					if (data.length - offset > 0) {
 						int end = data.length;
 						if (data[data.length-1] == (byte)'\r') {
 							if (fragment.reaction == Reaction.SYLLABLE) fragment.reaction = Reaction.NEWLINE_AFTER;
 							end = Math.max(offset, end-1);
 						}
 						byte[] content = Arrays.copyOfRange(data, offset, end);
-						fragment.syline = decode(content);
 						fragment.sylineBytes = content;
-						List<Integer> parts = new ArrayList<>();
-					    Matcher m = KARAKAN_PART_PATTERN.matcher(fragment.syline);
-					    while (m.find()) {
-					        parts.add(Integer.parseInt(m.group(1)));
-						}
-					    if (parts.size() > 0 && !parts.contains(1)) {
-					    	// not vocal #1
-					    	valid = false;
-					    	fragment.format = Format.KARAKAN;
-					    } else if (parts.size() > 0) {
-					    	fragment.syline = fragment.syline.substring(4);
-					    	fragment.format = Format.KARAKAN;
-					    }
-					    if (fragment.reaction == Reaction.LANGUAGE) language = fragment.syline; 
-					}
-					if (fragment.syline.equals("STARTAKKORD")) {
-						valid = false;
-					}
-					fragment.syline = fragment.syline.replace("|C:|", "");//chorus start
-					fragment.syline = fragment.syline.replace("|:C|", "");//chorus end (normally in later syllable than start)
-					fragment.syline = fragment.syline.replace("/", "\n");//newline command in middle of text (modern kar)
+						
+					    if (fragment.reaction == Reaction.LANGUAGE) language = decode(fragment.sylineBytes); 
+					}					
 				}
 			}
 		}
@@ -309,6 +283,24 @@ public class MidiText {
 			}
 		}
 	}
+	
+	private boolean decodeKarakan(TextFragment fragment) {
+		String syllable = fragment.syline;
+		Matcher m = KARAKAN_PART_PATTERN.matcher(syllable);
+		List<Integer> parts = new ArrayList<>();
+	    while (m.find()) {
+	        parts.add(Integer.parseInt(m.group(1)));
+		}
+	    if (parts.size() > 0 && !parts.contains(1)) {
+	    	// not vocal #1
+	    	fragment.format = Format.KARAKAN;
+	    	return false;
+	    } else if (parts.size() > 0) {
+	    	syllable = syllable.substring(4);
+	    	fragment.format = Format.KARAKAN;
+	    }
+	    return true;
+	}
 
 	void collectSysex(long tick, byte[] message, int track) {
 		// untested as I didn't find any midi files with embedded MIDISOFT lyrics
@@ -318,7 +310,6 @@ public class MidiText {
 				fragment.format = Format.MIDISOFT;
 				fragment.source = Source.SYSEX;
 				fragment.track = track;
-				fragment.syline = "";
 				fragment.reaction = Reaction.SYNC;
 				fragment.tick = tick;
 				increaseTextStats(fragment.format);
@@ -350,7 +341,7 @@ public class MidiText {
 				}
 				if (valid) {
 					byte[] data = Arrays.copyOfRange(message, 7, message.length - 1);
-					fragment.syline = MidiUtils.decodeMidiText(data);
+					fragment.sylineBytes = data;
 					fragment.format = Format.MIDISOFT;
 					fragment.source = Source.SYSEX;
 					fragment.track = track;
@@ -404,7 +395,7 @@ public class MidiText {
 			|| frag.reaction == Reaction.CLEAR_NEW
 			|| frag.reaction == Reaction.CLEAR_OLD
 			|| frag.reaction == Reaction.NEWLINE_AFTER)) {
-				curr += frag.syline.length();
+				curr += frag.sylineBytes.length;
 				//curr++;
 		}
 		trackStats.put(track, curr);
@@ -435,6 +426,7 @@ public class MidiText {
 		if (mainCharset != null) reEncodeAll(text.iterator(), mainCharset);
 		*/
 		String str = "";
+		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 		/*
 		if (!cache.getCopyright().isEmpty()) {
 		 
@@ -442,7 +434,7 @@ public class MidiText {
 		}
 		*/
 		Reaction prev = null;
-		String prevClear = "";
+		byte[] prevClear = {};
 		for (TextFragment fraction : text) {
 			switch (fraction.reaction) {
 				case Reaction.LINE:
@@ -451,67 +443,93 @@ public class MidiText {
 				case Reaction.THIRD:
 				case Reaction.FOURTH:
 					if (fraction.track != mainTrack) break;
-					if (fraction.reaction == Reaction.FIRST) str += "\n";
-					str += fraction.syline;
-					str += "\n";
+					if (fraction.reaction == Reaction.FIRST) bytes.write(0x0A);
+					writeTrimmed(bytes, fraction.sylineBytes);
+					bytes.write(0x0A);
 					break;
 				case Reaction.SYLLABLE:
 					if (fraction.track != mainTrack) break;
-					str += fraction.syline;
+					writeTrimmed(bytes, fraction.sylineBytes);
 					break;
 				case Reaction.NEWLINE_OLD:
 					if (fraction.track != mainTrack) break;
-					if (prev != Reaction.CLEAR_OLD || prevClear.trim().length() > 0) {
-						str += "\n";
+					if (prev != Reaction.CLEAR_OLD || prevClear.length > 0) {
+						bytes.write(0x0A);
 					}
-					str += fraction.syline;
+					writeTrimmed(bytes, fraction.sylineBytes);
 					break;
 				case Reaction.NEWLINE_NEW:
 					if (fraction.track != mainTrack) break;
-					if (prev != Reaction.CLEAR_NEW || prevClear.trim().length() > 0) {
-						str += "\n";
+					if (prev != Reaction.CLEAR_NEW || prevClear.length > 0) {
+						bytes.write(0x0A);
 					}
-					str += fraction.syline;
+					writeTrimmed(bytes, fraction.sylineBytes);
 					break;
 				case Reaction.NEWLINE_AFTER:
 					if (fraction.track != mainTrack) break;
-					str += fraction.syline;
-					str += "\n";
+					writeTrimmed(bytes, fraction.sylineBytes);
+					bytes.write(0x0A);
 					break;
 				case Reaction.CLEAR_NEW:
 				case Reaction.CLEAR_OLD:
-					str += "\n\n";
+					bytes.write(0x0A);
+					bytes.write(0x0A);
 					if (fraction.track != mainTrack) break;
-					str += fraction.syline;
-					prevClear = fraction.syline;
+					writeTrimmed(bytes, fraction.sylineBytes);
+					prevClear = fraction.sylineBytes;
 					break;
 				case Reaction.TITLE:
-					str += "Title: "+fraction.syline+"\n";
+					str += "Title: "+decode(fraction.sylineBytes)+"\n";
 					break;
 				case Reaction.RIGHTS:
-					//str += "Lyrics copyright: "+fraction.syline+"\n";
+					//str += "Lyrics copyright: "+decode(fraction.sylineBytes)+"\n";
 					break;
 				case Reaction.LANGUAGE:
-					str += "Language: "+fraction.syline+"\n";
+					str += "Language: "+decode(fraction.sylineBytes)+"\n";
 					break;
 				case Reaction.INFO:
-					str += "Info: "+fraction.syline+"\n";
+					str += "Info: "+decode(fraction.sylineBytes)+"\n";
 				default:
 					break;
 			}
 			prev = fraction.reaction;
 		}
+		str += cleanSyllable(decode(bytes.toByteArray()));
 		return str;
+	}
+	
+	/**
+	 * Call me after decoding syllable/line
+	 * 
+	 * @param str
+	 * @return
+	 */
+	private String cleanSyllable(String str) {
+		str = str.replace("STARTAKKORD", "");
+		str = str.replace("|C:|", "");//chorus start
+		str = str.replace("|:C|", "");//chorus end (normally in later syllable than start)
+		str = str.replace("/", "\n");//newline command in middle of text (modern kar)
+		return str;
+	}
+	
+	private static void writeTrimmed(ByteArrayOutputStream out, byte[] data) {
+	    int end = data.length;
+	    while (end > 0 && data[end - 1] == (byte)0x00) {
+	        end--;
+	    }
+	    out.write(data, 0, end);
 	}
 
 	public class TextFragment implements Comparable<TextFragment> {
 		long tick;
 		Format format;
 		Source source;
-		String syline;//  syllable/line
+		String syline = "";//  syllable/line
 		int track;
 		Reaction reaction;
-		byte[] sylineBytes;
+		
+		String prefix = "";
+		byte[] sylineBytes = {};
 		
 		@Override
 		public String toString() {
