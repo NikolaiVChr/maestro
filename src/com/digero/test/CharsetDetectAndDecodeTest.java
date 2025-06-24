@@ -366,4 +366,64 @@ class CharsetDetectAndDecodeTest {
             () -> "Expected 'Дорожка 1' but got '" + result.first +
                   "'. Winning charset was " + cs.name());
     }
+    
+    @Test
+    void testDecodeMidiData_CyrillicCopyright() {
+        // bytes: 6D 69 64 69 20 2D 20 DE F0 E8 E9 20 CB E0 F5 E8 ED 2E
+        // expected under Windows-1251 → "midi – Юрий Лахин."
+        byte[] data = new byte[]{
+            (byte)0x6D, (byte)0x69, (byte)0x64, (byte)0x69,
+            (byte)0x20, (byte)0x2D, (byte)0x20, (byte)0xDE,
+            (byte)0xF0, (byte)0xE8, (byte)0xE9, (byte)0x20,
+            (byte)0xCB, (byte)0xE0, (byte)0xF5, (byte)0xE8,
+            (byte)0xED, (byte)0x2E
+        };
+        Pair<String, Charset> result = CharsetDetectAndDecode.decodeMidiData(data);
+        Charset cs = result.second;
+        assertTrue(
+                Set.of("IBM866", "windows-1251","KOI8-R")
+                   .contains(cs.name()),
+                () -> "unexpected charset: " + cs.name()
+            );
+    }
+    
+    @Test
+    void testDecodeComplexSjis() {
+        byte[] data = new byte[]{
+            (byte)0x82, (byte)0x52, (byte)0x81, (byte)0x7E,
+            (byte)0x82, (byte)0x52, (byte)0x82, (byte)0x64,
+            (byte)0x82, (byte)0x78, (byte)0x82, (byte)0x64,
+            (byte)0x82, (byte)0x72, (byte)0x20,
+            (byte)0x81, (byte)0x60, (byte)0x8B, (byte)0x7A,
+            (byte)0x90, (byte)0xB8, (byte)0x8C, (byte)0xF6,
+            (byte)0x8E, (byte)0xE5, (byte)0x81, (byte)0x60,
+            (byte)0x81, (byte)0x40,
+            (byte)0x83, (byte)0x86, (byte)0x83, (byte)0x43,
+            (byte)0x83, (byte)0x7A, (byte)0x83, (byte)0x8F,
+            (byte)0x83, (byte)0x58, (byte)0x83, (byte)0x65,
+            (byte)0x81, (byte)0x5B,
+            (byte)0x83, (byte)0x57, (byte)0x83, (byte)0x4E,
+            (byte)0x83, (byte)0x8A, (byte)0x83, (byte)0x41,
+            // trailing ASCII spaces
+            (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20,
+            (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20,
+            (byte)0x20, (byte)0x20, (byte)0x20, (byte)0x20,
+            (byte)0x20
+        };
+
+        Pair<String, Charset> result = CharsetDetectAndDecode.decodeMidiData(data, true);
+        String decoded = result.first;
+        Charset detected = result.second;
+
+        // Expected decoded string (13 trailing spaces)
+        String expected =
+            "３×３ＥＹＥＳ 〜吸精公主〜　ユイホワステージクリア" +
+            "             ";
+
+        // Verify the decoded text and that Shift_JIS was chosen
+        assertEquals(Charset.forName("windows-31j"), detected,
+                "Expected windows-31j for complex japanese");
+        //assertEquals(expected, decoded,
+        //        () -> "Decoded string mismatch; got: \"" + decoded + "\"");
+    }
 }

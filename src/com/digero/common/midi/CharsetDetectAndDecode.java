@@ -50,19 +50,20 @@ public class CharsetDetectAndDecode {
         if (utf8 != null) {
             return utf8;
         }
+                
+        Charset sjis = Charset.forName("Windows-31J");
         
         // Mix of ascii and Shift_JIS will trigger this
         // Strict
-        if (isValidShiftJis(data) && !western) {
-            // decode strictly (REPORT) or with REPLACE if REPORT passes validity
+        if (isValidShiftJis(data) && (!western || data.length > 8)) {
             try {
-                CharsetDecoder dec = Charset.forName("Shift_JIS")
-                    .newDecoder()
+                CharsetDecoder dec = sjis.newDecoder()
                     .onMalformedInput(CodingErrorAction.REPORT)
                     .onUnmappableCharacter(CodingErrorAction.REPORT);
-                String s = dec.decode(ByteBuffer.wrap(data)).toString();
+                CharBuffer buf = dec.decode(ByteBuffer.wrap(data));
+                String s = buf.toString();
                 if (isPrintableAndNoSurrogates(s) && decodedHasJapaneseChar(s)) {
-                    return new Pair<String, Charset>(decodeWithReplace(data,Charset.forName("Shift_JIS")),Charset.forName("Shift_JIS"));
+                    return new Pair<>(decodeWithReplace(data, sjis), sjis);
                 }
             } catch (CharacterCodingException e) {
             }
@@ -91,19 +92,27 @@ public class CharsetDetectAndDecode {
             return new Pair<>(s, cs);
         }
         
-        // Pure half width Shift_JIS will trigger this, with at least half of bytes being japanese
-        if (looksLikeAsciiOrHalfwidthKatakana(data) && !western) {
-            Charset sj = Charset.forName("windows-31j");
-            String decoded = decodeWithReplace(data, sj);
-            if (decodedHasMajorityHalfwidthKatakana(decoded)) {
-                return new Pair<>(decoded, sj);
+        // Pure half width Shift_JIS will trigger this, with at 60% of bytes being japanese
+        if (looksLikeAsciiOrHalfwidthKatakana(data)) {
+            String decoded = decodeWithReplace(data, sjis);
+            if (decodedHasMajorityHalfwidthKatakana(decoded, western?100:60)) {
+                return new Pair<>(decoded, sjis);
             }
+        }
+        
+        // Pure full width Shift_JIS will trigger this
+        if (looksLikeSjisDoubleBytes(data, western?100:60)) {
+        	String s = decodeWithReplace(data, sjis);
+        	if (isPrintableAndNoSurrogates(s) && decodedHasJapaneseChar(s)) {
+        		return new Pair<String, Charset>(s,sjis);
+        	}
         }
         
         Pair<String, Charset> result = detectAndDecode(data, 65);//25
         if (result != null && result.first.length() > 2) {
         	// TODO: consider moving this after legacy when legacy gets low confidence.
         	//       icu4j not very good with short data.
+        	log.fine("ICU4J returned "+result.first);
         	return result;
         }
         
@@ -359,9 +368,9 @@ public class CharsetDetectAndDecode {
 
     /**
      * Returns true if at least half of the code points in the string
-     * are half-width Katakana (U+FF61…U+FF9F).
+     * are half-width Katakana (U+FF61-U+FF9F).
      */
-    private static boolean decodedHasMajorityHalfwidthKatakana(String s) {
+    private static boolean decodedHasMajorityHalfwidthKatakana(String s, int percent) {
         // Count only the non-ASCII code points
         long nonAscii = s.codePoints()
                          .filter(cp -> cp > 0x7F)
@@ -373,7 +382,34 @@ public class CharsetDetectAndDecode {
                      .count();
         log.finer("JIS: "+kata+" nonAscii: "+nonAscii);
         // Now require >=60% of the non-ASCII be half-width Katakana
-        return kata * 10 >= nonAscii*6;
+        return kata*100 >= nonAscii*percent;
+    }
+    
+    /**
+     * Returns true if we see at least % valid SJIS two-byte sequences
+     * anywhere in the data.
+     */
+    private static boolean looksLikeSjisDoubleBytes(byte[] data, int percent) {
+        int n = data.length;
+        if (n < 5 || percent <= 0) return false;
+
+        int pairs = n - 1;
+        int doubleSeqCount = 0;
+        for (int i = 0; i + 1 < n; i++) {
+            int b1 = data[i]   & 0xFF;
+            int b2 = data[i+1] & 0xFF;
+            boolean leadOK  = (b1 >= 0x81 && b1 <= 0x9F)
+                           || (b1 >= 0xE0 && b1 <= 0xFC);
+            boolean trailOK = (b2 >= 0x40 && b2 <= 0x7E)
+                           || (b2 >= 0x80 && b2 <= 0xFC);
+            if (leadOK && trailOK) {
+                doubleSeqCount++;
+                i++;  // skip the trail byte to avoid overlapping
+            }
+        }
+
+        // now check ratio: doubleSeqCount/pairs >= percent/100
+        return doubleSeqCount * 100 >= pairs * percent;
     }
     
     private static boolean looksLikeWesternTextOld(byte[] data) {
@@ -915,6 +951,12 @@ public class CharsetDetectAndDecode {
         } else {
             // Western still allows Latin-1 Supplement as neutral
             neutral += res.extLatinCount;
+            if (totalCp > 7 && res.extLatinCount*4 > asciiCount*3) {
+            	// too many ext latin chars to be normal western text
+            	neutral /= 2;
+            } else if (totalCp > 4 && res.extLatinCount >= asciiCount) {
+            	neutral /= 2;
+            }
         }
         int nonMatch = totalCp - matchCount - neutral;
 

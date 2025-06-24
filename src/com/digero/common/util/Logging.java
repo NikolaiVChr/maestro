@@ -2,6 +2,8 @@ package com.digero.common.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
@@ -11,6 +13,20 @@ import java.util.logging.SimpleFormatter;
 import java.util.logging.XMLFormatter;
 
 public class Logging {
+	
+	static {
+        try {
+        	/*
+            // replace default System.out with one that writes UTF-8
+            System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
+            System.setErr(new PrintStream(System.err, true, StandardCharsets.UTF_8)); 
+            System.out.println("UTF-8 test: ✓ Привет мир – こんにちは世界");
+            */
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    
 	public static void configure(String app) throws IOException {
 		LogManager.getLogManager().reset();
 		

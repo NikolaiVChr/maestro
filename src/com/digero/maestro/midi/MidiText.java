@@ -512,7 +512,7 @@ public class MidiText {
 		
 		@Override
 		public String toString() {
-			return format+": "+reaction+" ("+source+") '"+syline+"' in track "+track+" tick="+tick+" hex:"+MidiUtils.formatBytesHexOnly(sylineBytes);
+			return format+": "+reaction+" ("+source+") '"+syline+"' in track "+track+" tick="+tick+(sylineBytes==null?"":(" hex:"+MidiUtils.formatBytesHexOnly(sylineBytes)));
 		}
 		
 		public enum Reaction {
