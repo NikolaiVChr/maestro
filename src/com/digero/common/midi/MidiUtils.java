@@ -208,14 +208,19 @@ public class MidiUtils {
 	
 	public static Pair<String, Charset> decodeMidiText(byte[] data, boolean preferWestern) {
         if (data == null || data.length == 0) {
-            return new Pair("", null);
+            return new Pair<>("", null);
         }
         Pair<String, Charset> result = CharsetDetectAndDecode.decodeMidiData(data, preferWestern);
         if (preferWestern && CharsetDetectAndDecode.getScript(result.second.name()) != CharsetDetectAndDecode.Script.WESTERN) {
-        	log.warning("Decoding lyrics bytes: "+formatBytes(data));
-        	log.warning("Decoder detected "+result.second.name()+", result: "+result.first+"  "
+        	log.warning("Decoding lyrics bytes: "+formatBytesHexOnly(data));
+        	log.warning("Decoder detected "+result.second.name()+" "
         			+CharsetDetectAndDecode.getScript(result.second.name())+", had preferred: "+CharsetDetectAndDecode.Script.WESTERN);
+        } else {
+        	log.fine("Decoding lyrics bytes: "+formatBytesHexOnly(data));
+        	log.info("Decoder detected "+result.second.name()+", result.length: "+result.first.length()+"  "
+    			+CharsetDetectAndDecode.getScript(result.second.name()));
         }
+    	
         return result;
 	}
     

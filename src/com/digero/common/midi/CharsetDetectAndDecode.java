@@ -1,5 +1,6 @@
 package com.digero.common.midi;
 
+import java.lang.Character.UnicodeBlock;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
@@ -7,11 +8,14 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.digero.common.util.Pair;
 import com.ibm.icu.text.CharsetDetector;
@@ -54,7 +58,6 @@ public class CharsetDetectAndDecode {
         Charset sjis = Charset.forName("Windows-31J");
         
         // Mix of ascii and Shift_JIS will trigger this
-        // Strict
         if (isValidShiftJis(data) && (!western || data.length > 8)) {
             try {
                 CharsetDecoder dec = sjis.newDecoder()
@@ -62,7 +65,8 @@ public class CharsetDetectAndDecode {
                     .onUnmappableCharacter(CodingErrorAction.REPORT);
                 CharBuffer buf = dec.decode(ByteBuffer.wrap(data));
                 String s = buf.toString();
-                if (isPrintableAndNoSurrogates(s) && decodedHasJapaneseChar(s)) {
+                if (isPrintableAndNoSurrogates(s) && decodedHasJapaneseChars(s, Math.max(1, s.length()/10))) {
+                	log.fine("First sjis shortcut");
                     return new Pair<>(decodeWithReplace(data, sjis), sjis);
                 }
             } catch (CharacterCodingException e) {
@@ -76,7 +80,8 @@ public class CharsetDetectAndDecode {
                     .onMalformedInput(CodingErrorAction.REPORT)
                     .onUnmappableCharacter(CodingErrorAction.REPORT);
                 String s = dec.decode(ByteBuffer.wrap(data)).toString();
-                if (isPrintableAndNoSurrogates(s) && decodedHasJapaneseChar(s)) {
+                if (isPrintableAndNoSurrogates(s) && decodedHasJapaneseChars(s, Math.max(1, s.length()/10))) {
+                	log.fine("Euc shortcut");
                 	return new Pair<String, Charset>(decodeWithReplace(data,Charset.forName("EUC-JP")),Charset.forName("EUC-JP"));
                 }
             } catch (CharacterCodingException e) {
@@ -84,7 +89,6 @@ public class CharsetDetectAndDecode {
         }
 
         if (looksLikeWindows1252(data)) {
-        	log.finer("loooks like windows-1252");
             // decode as Windows-1252 directly
         	Charset cs = Charset.forName("windows-1252");
             String s = decodeWithReplace(data, cs);
@@ -96,6 +100,7 @@ public class CharsetDetectAndDecode {
         if (looksLikeAsciiOrHalfwidthKatakana(data)) {
             String decoded = decodeWithReplace(data, sjis);
             if (decodedHasMajorityHalfwidthKatakana(decoded, western?100:60)) {
+            	log.fine("Second sjis shortcut");
                 return new Pair<>(decoded, sjis);
             }
         }
@@ -103,7 +108,8 @@ public class CharsetDetectAndDecode {
         // Pure full width Shift_JIS will trigger this
         if (looksLikeSjisDoubleBytes(data, western?100:60)) {
         	String s = decodeWithReplace(data, sjis);
-        	if (isPrintableAndNoSurrogates(s) && decodedHasJapaneseChar(s)) {
+        	if (isPrintableAndNoSurrogates(s) && decodedHasJapaneseChars(s, Math.max(1, s.length()/10))) {
+        		log.fine("Third sjis shortcut");
         		return new Pair<String, Charset>(s,sjis);
         	}
         }
@@ -248,6 +254,7 @@ public class CharsetDetectAndDecode {
 		Charset.forName("EUC-JP"),         // Unix Japanese (EUC-JP)
 		Charset.forName("GB18030"),        // Chinese Simplified (PRC standard, superset of GBK)
 		Charset.forName("Big5")            // Chinese Traditional (Taiwan/HK)
+		,Charset.forName("windows-1258")    // viet
 		
 		//List of their name():
 		/*
@@ -275,16 +282,7 @@ public class CharsetDetectAndDecode {
     	}
     }
     */
-    
-    private static boolean isAsian(Charset cs) {
-		String n = cs.name().toUpperCase();
-		return n.contains("SHIFT_JIS")
-			|| n.contains("WINDOWS-31J")
-			|| n.equals("EUC-JP")
-			|| n.equals("GB18030")
-			|| n.equals("BIG5");
-    }
-    
+        
     public static Script getScript(String csName) {
     	csName = csName.toLowerCase();
       if (csName.contains("shift_jis") 
@@ -295,14 +293,13 @@ public class CharsetDetectAndDecode {
       if (csName.equals("windows-1251") 
        || csName.equals("ibm866") 
        || csName.equals("koi8-r"))       return Script.CYRILLIC;
+      if (csName.equals("windows-1258"))  return Script.EASTERN;
       return Script.WESTERN;
     }
     
     static Set<String> ignored = new HashSet<>();
     
-    static {
-    	CharsetDetector detector = new CharsetDetector();
-    	
+    static {    	
     	for (String detect : CharsetDetector.getAllDetectableCharsets()) {
     		boolean on = false;
 	    	for (Charset cs : candidates) {
@@ -323,29 +320,11 @@ public class CharsetDetectAndDecode {
     }
     
     /**
-     * True iff the data is composed *only* of:
-     *   – Printable ASCII (0x20…0x7E), or
-     *   – Half-width Katakana byte values (0xA1…0xDF),
-     * and it contains at least one half-width Katakana byte.
+     * True iff the data is composed only of:
+     *   Printable ASCII (0x20-0x7E), or
+     *   Half-width Katakana byte values (0xA1-0xDF),
+     * and it contains at least two half-width Katakana byte.
      */
-    private static boolean looksLikeAsciiOrHalfwidthKatakanaOld(byte[] data) {
-        boolean sawKatakana = false;
-        for (byte bb : data) {
-            int b = bb & 0xFF;
-            if (b >= 0x20 && b <= 0x7E) {
-                // ASCII printable
-                continue;
-            }
-            if (b >= 0xA1 && b <= 0xDF) {
-                // half-width katakana
-                sawKatakana = true;
-                continue;
-            }
-            return false;
-        }
-        return sawKatakana;
-    }
-    
     private static boolean looksLikeAsciiOrHalfwidthKatakana(byte[] data) {
         int hwkCount = 0;
         for (byte bb : data) {
@@ -412,31 +391,6 @@ public class CharsetDetectAndDecode {
         return doubleSeqCount * 100 >= pairs * percent;
     }
     
-    private static boolean looksLikeWesternTextOld(byte[] data) {
-        int western = 0, total = data.length;
-        for (byte bb : data) {
-            int b = bb & 0xFF;
-            // printable ASCII + common Latin-1 punctuation (including ©)
-            if ((b >= 0x20 && b <= 0x7E) || b == 0xA9) {
-                western++;
-            }
-        }
-        // if 95%+ of bytes are Western, treat as Western text
-        return total > 0 && western * 100 >= 95 * total;
-    }
-    
-    private static boolean looksLikeWindows1252Old(byte[] data) {
-        for (byte bb : data) {
-            int b = bb & 0xFF;
-            if (b >= 0x80 && b <= 0x9F) {
-                // In CP-1252 these map to things like “€” (0x80), ‘‚’ (0x82), “smart quotes”, etc.
-                // In Latin-1 they'd be ISO controls, so seeing one here is a strong Win-1252 signal.
-                return true;
-            }
-        }
-        return false;
-    }
-    
     /**
      * True iff every byte maps to a printable CP-1252 character (no controls or undefined),
      * and at least one byte is a CP-1252-only extension (0x80–0x9F printable slot).
@@ -494,12 +448,44 @@ public class CharsetDetectAndDecode {
         // only true if we actually saw at least one CP-1252-specific printable
         return sawWinExt > 0;
     }
+    	
+	private static final Set<Integer> VIET_PRECOMPOSED = Set.of(
+	    0x0110, // Đ
+	    0x0111, // đ
+	    0x01A0, // Ơ
+	    0x01A1  // ơ
+	);
+	private static final Set<Integer> VIET_DIACRITICS = Set.of(
+	    0x0300, // ◌̀ (grave)
+	    0x0301, // ◌́ (acute)
+	    0x0303, // ◌̃ (tilde)
+	    0x0309, // ◌̉ (hook above)
+	    0x0323, // ◌̣ (dot below)
+	    0x031B  // ◌̛ (horn)
+	);
+	// simple vowel set
+	private static final Set<Integer> LATIN_VOWELS = Set.of(
+	    (int)'a',(int)'A',
+	    (int)'e',(int)'E',
+	    (int)'i',(int)'I',
+	    (int)'o',(int)'O',
+	    (int)'u',(int)'U',
+	    (int)'y',(int)'Y'
+	);
+	
+	private static final Pattern VIET_WORDS = Pattern.compile(
+	    "\\b(?:không|yêu|nhớ|người|tình|trời|đời|đừng|có lẽ|đã|của|muốn|đêm|ngày|tôi)\\b",
+	    Pattern.CASE_INSENSITIVE
+	);
     
     public static Pair<String, Charset> detectAndDecode(byte[] data, int minConfidence) {
         CharsetDetector detector = new CharsetDetector();
         detector.setText(data);
-        for (String detectNot : ignored) {
-        	detector.setDetectableCharset(detectNot, false);
+        if (data.length < 40) {
+        	// for short strings we only consider the most common charsets
+	        for (String detectNot : ignored) {
+	        	detector.setDetectableCharset(detectNot, false);
+	        }
         }
         CharsetMatch[] match;
         try {
@@ -550,7 +536,10 @@ public class CharsetDetectAndDecode {
         	//System.out.println("Decoding tie between charsets");
         	//System.out.println(" Winner is "+bestDecoded.cs.name());
         }        
-        if (bestDecoded == null) return new Pair<String, Charset> ("", null);
+        if (bestDecoded == null) {
+        	log.severe("Decoding failed");
+        	return new Pair<String, Charset> ("", null);
+        }
         log.fine("Legacy winner is "+bestDecoded);
         
         return new Pair<String, Charset> (bestDecoded.decoded, bestDecoded.cs);
@@ -560,438 +549,208 @@ public class CharsetDetectAndDecode {
     private static class CandidateResult {
         Charset cs;
         String decoded;
-        int replCount;//replacement chars
-        int ctrlCount;
-        int cyrCount;
-        int jpCount;
-        int asciiCount;
-        int extLatinCount;
+        int replCount = 0;//replacement chars
+        int ctrlCount = 0;
+        int cyrCount = 0;
+        int jpCount = 0;
+        int asciiCount = 0;
+        int extLatinCount = 0;
+		int vietCount = 0;
+		int wordCount = 0;
         boolean byteLevelValid;
-        int score;
+        int score = 0;
         
         @Override
         public String toString() {
-        	return cs.name()+" '"+decoded+"' "+" replCount="+replCount+" ctrlCount="+ctrlCount+" cyrCount="+cyrCount+" jpCount="+jpCount+" asciiCount="+asciiCount+" extLatinCount="+extLatinCount+" score="+score;
+        	if (decoded.length() < 12)
+        		return cs.name()+" '"+decoded+"' "+" replCount="+replCount+" ctrlCount="+ctrlCount+" cyrCount="+cyrCount+" jpCount="+jpCount+" vCount="+vietCount+" words="+wordCount+" asciiCount="+asciiCount+" extLatinCount="+extLatinCount+" score="+score;
+        	return cs.name()+" replCount="+replCount+" ctrlCount="+ctrlCount+" cyrCount="+cyrCount+" jpCount="+jpCount+" vCount="+vietCount+" words="+wordCount+" asciiCount="+asciiCount+" extLatinCount="+extLatinCount+" score="+score;
         }
-    }
-    
-    /**
-     * Evaluate one Charset candidate: byte-level validity, decode in REPLACE mode,
-     * count script-specific codepoints, and compute a score.
-     */
-    private static CandidateResult evaluateCandidateOld(byte[] data, Charset cs) {
-        CandidateResult res = new CandidateResult();
-        res.cs = cs;
-        String csName = cs.name().toLowerCase();
-
-        // 1. Byte-level validity & short-name logic for Japanese
-        if (csName.contains("shift_jis") || csName.contains("windows-31j")) {
-            res.byteLevelValid = isValidShiftJis(data);
-        } else if (csName.contains("euc-jp")) {
-            res.byteLevelValid = isValidEucJp(data);
-        } else {
-            // For other encodings, we accept byte-level; invalid sequences will show up as replacements
-            res.byteLevelValid = true;
-        }
-
-        // 2. Decode in REPLACE mode
-        String decoded;
-        if (!res.byteLevelValid) {
-            decoded = "";
-        } else {
-            decoded = decodeWithReplace(data, cs);
-        }
-        res.decoded = decoded;
-
-        // 3. Analyze decoded string
-        int repl = 0, ctrl = 0, cyr = 0, jp = 0, latin = 0;
-        int cyrLetterCount = 0;
-        int nonAsciiNonCyrillic = 0;
-        int digitCount = 0;
-        String replacement = cs.newDecoder().replacement();
-        for (int i = 0; i < decoded.length(); ) {
-            int cp = decoded.codePointAt(i);
-            i += Character.charCount(cp);
-            
-            // Replacement char from decode
-            if (replacement.equals(cp)) {
-                repl++;
-                continue;
-            }
-            // Control chars (exclude newline/tab)
-            if (cp < 0x20 && cp!='\n' && cp!='\r' && cp!='\t') {
-                ctrl++;
-                continue;
-            }
-            // Cyrillic block
-            if (cp >= 0x0400 && cp <= 0x052F) {
-                cyr++;
-            }
-            // Strict Cyrillic letters
-            if (isCyrillicLetter(cp)) {
-                cyrLetterCount++;
-            }
-            // Japanese
-            boolean isJap = (cp >= 0x3040 && cp <= 0x30FF)
-                          || (cp >= 0x4E00 && cp <= 0x9FFF)
-                          || (cp >= 0xFF61 && cp <= 0xFF9F);
-            if (isJap) {
-                jp++;
-                continue;
-            }
-            // ASCII digits
-            if (cp >= '0' && cp <= '9') {
-                digitCount++;
-                latin++;
-                continue;
-            }
-            // Printable ASCII (letters, punctuation, space)
-            if (cp >= 0x20 && cp <= 0x7E) {
-                latin++;
-                continue;
-            }
-            // Anything else >0x7F that is not Cyrillic letter: junk
-            if (cp > 0x7F && !isCyrillicLetter(cp)) {
-                nonAsciiNonCyrillic++;
-            }
-        }
-        res.replCount = repl;
-        res.ctrlCount = ctrl;
-        res.cyrCount = cyr;
-        res.jpCount = jp;
-        //res.printableLatinCount = latin;
-
-        // 4. Base score:
-        int baseScore = 0;
-        for (int i = 0; i < decoded.length(); i++) {
-            char c = decoded.charAt(i);
-            if (c == '\uFFFD' || c == '?') {
-                baseScore += 10;
-            } else if (c == '\n' || c == '\r') {
-                baseScore += 2;
-            } else if (c < 0x20 && c != '\t') {
-                baseScore += 5;
-            } else if (Character.isSurrogate(c)) {
-                baseScore += 5;
-            }
-        }
-        int score = baseScore;
-
-        // 5. Script-specific adjustments
-        if (csName.equals("windows-1251") || csName.equals("ibm866") || csName.equals("koi8-r")) {
-        	int junkWeight = 5;
-        	int letterBonus = 2;
-        	int noLetterPenalty = 50;
-        	int maxJunkPenalty = 100;
-        	
-        	score += Math.min(nonAsciiNonCyrillic * junkWeight, maxJunkPenalty);
-	    	
-        	if (cyr > 0) score -= 20;
-        	else score += 100;
-        	
-        	if (cyrLetterCount > 0) {
-        		score -= letterBonus*cyrLetterCount;
-        	} else {
-        		score += noLetterPenalty;
-        	}
-        } else if (csName.contains("shift_jis") || csName.contains("windows-31j")) {
-            // Shift_JIS candidate: byte-level validity already ensured by isValidShiftJis
-            if (!res.byteLevelValid) {
-                score += 1000;
-            } else if (jp >= 1) {
-                score -= 20;
-            } else {
-                score += 100;
-            }
-        } else if (csName.contains("euc-jp")) {
-            // EUC-JP candidate
-            if (!res.byteLevelValid) {
-                score += 1000;
-            } else if (jp >= 1) {
-                score -= 20;
-            } else {
-                score += 100;
-            }
-        } else if (csName.contains("gb18030")) {
-            // Hard-reject invalid byte patterns (rare)
-            // (GB18030 is a superset of GBK so everything C0..FD is legal; we skip
-            // an expensive validator and rely on replacement-char count instead.)
-            int replPenalty = res.replCount * 3;    //  each � adds noise
-            score += replPenalty;
-
-            /* ---------------------------------------------------------------
-             * Scoring:
-             *   – tiny baseline penalty so it doesn’t beat western text by accident
-             *   – reward strings that are mostly CJK ideographs
-             *   – penalise if no CJK at all
-             *   – mild penalty for heavy ASCII/CJK mixing
-             * --------------------------------------------------------------- */
-            score += 40;                            // baseline (was 200)
-
-            long cjk = decoded.codePoints()
-                              .filter(cp -> 0x4E00 <= cp && cp <= 0x9FFF)
-                              .count();
-            int len = decoded.codePointCount(0, decoded.length());
-            boolean hasCJK = cjk > 0;
-            boolean hasASCII = decoded.codePoints()
-                                      .anyMatch(cp -> 0x20 <= cp && cp <= 0x7E);
-
-            if (!hasCJK) {
-                score += 300;                       // looks western; deprioritise
-            } else {
-                double ratio = cjk / (double) len;
-                if (ratio == 1.0)      score -= 40; // all Chinese – strong evidence
-                else if (ratio >= .7)  score -= 20; // mostly Chinese
-            }
-
-            if (hasASCII && hasCJK) score += 40;    // mixed Latin & Chinese
-        } else if (csName.contains("gb18030") /* deprecated */) {
-            // baseline penalty
-            score += 200;
-            // ASCII vs CJK mix penalty
-            boolean hasAscii = latin > 0;
-            boolean hasCJK = decoded.codePoints().anyMatch(cp -> cp >= 0x4E00 && cp <= 0x9FFF);
-            if (hasAscii && hasCJK) score += 100;
-            // If no CJK at all, heavy penalty
-            if (!hasCJK) score += 200;
-            // If mostly CJK but short or few ideographs, penalize
-            int totalCp = decoded.codePointCount(0, decoded.length());
-            long cjkCount = decoded.codePoints().filter(cp -> cp >= 0x4E00 && cp <= 0x9FFF).count();
-            if (hasCJK && cjkCount < totalCp * 0.7) {
-                score += 100;
-            }
-        } else if (csName.contains("big5")) {
-            // 1)  Hard-reject byte streams that are not valid Big-5
-            if (countInvalidBig5Bytes(data) > 0) {
-                score += 1_000;
-            } else {
-                /*
-                 *  Scoring guidelines
-                 *  ------------------
-                 *  • Small baseline penalty so Big-5 won’t win on garbage.
-                 *  • Reward presence – and predominance – of CJK ideographs.
-                 *  • Penalise if there are none (very unlikely for real Big-5 text).
-                 *  • Mild penalty when ASCII and CJK are heavily mixed.
-                 *  • Tiny uncertainty penalty for strings shorter than 3 code points.
-                 */
-                score += 60;                         // baseline (was 200)
-
-                long cjk = decoded.codePoints()
-                                  .filter(cp -> 0x4E00 <= cp && cp <= 0x9FFF)
-                                  .count();
-                int  len = decoded.codePointCount(0, decoded.length());
-                boolean hasCJK  = cjk > 0;
-                boolean hasASCII = decoded.codePoints()
-                                          .anyMatch(cp -> 0x20 <= cp && cp <= 0x7E);
-
-                if (!hasCJK) {
-                    score += 300;                    // no Chinese at all → almost certainly wrong
-                } else {
-                    double ratio = cjk / (double) len;
-                    if (ratio == 1.0)      score -= 80;   // 100 % Chinese – strong evidence
-                    else if (ratio >= .7)  score -= 70;   // majority Chinese – good evidence
-                }
-
-                if (hasASCII && hasCJK)  score += 40;     // mixed Latin + Chinese
-
-                if (len < 3)             score += 30;     // very short → add a bit of doubt
-            }
-        } else if (csName.contains("big5") /* deprecated */) {
-            // 1) Byte-level validity: reject if invalid patterns
-            if (countInvalidBig5Bytes(data) > 0) {
-                score += 1000; // disqualify Big5
-            } else {
-                // 2) Base penalty so Big5 only wins with strong Chinese evidence
-                score += 200;
-
-                // 4) ASCII vs CJK mix penalty
-                boolean hasAscii = decoded.codePoints().anyMatch(cp -> (cp >= 0x20 && cp <= 0x7E));
-                boolean hasCJK = decodedHasCommonCJK(decoded);
-                if (hasAscii && hasCJK) {
-                    score += 100;
-                }
-                // 5) No CJK at all: heavy penalty
-                if (!hasCJK) {
-                    score += 200;
-                }
-                // 6) Proportion of CJK vs total length
-                int totalCp = decoded.codePointCount(0, decoded.length());
-                long cjkCount = decoded.codePoints().filter(cp -> cp >= 0x4E00 && cp <= 0x9FFF).count();
-                if (hasCJK) {
-                    // require most codepoints be CJK (e.g. >= 70%)
-                    if (totalCp > 0 && cjkCount < totalCp * 0.7) {
-                        score += 100;
-                    }
-                }
-                // 7) Optionally: check for common CJK punctuation or patterns
-                // e.g., Chinese punctuation like “，”、“。” often appear; if absent entirely, penalize:
-                boolean hasChinesePunct = decoded.contains("，") || decoded.contains("。") || decoded.contains("：");
-                if (hasCJK && !hasChinesePunct) {
-                    // light penalty: many Chinese names may not have punctuation, so keep small
-                    score += 20;
-                }
-            }
-        } else {
-            // Western single-byte candidate
-            int len = decoded.codePointCount(0, decoded.length());
-            int nonLatin = len - latin;
-            score += nonLatin * 2;
-            if (nonLatin > 0 && cyr == 0 && jp == 0) {
-                score += nonLatin * 3;
-            }
-        }
-
-        res.score = score;
-        
-        //System.out.println("\n "+res);
-        return res;
     }
     
     private static CandidateResult evaluateCandidate(byte[] data, Charset cs, boolean preferWestern) {
-        CandidateResult res = new CandidateResult();
-        res.cs = cs;
+        CandidateResult result = new CandidateResult();
+        result.cs = cs;
         String csName = cs.name().toLowerCase();
-
-        // 1. Byte‐level validity for Shift_JIS / EUC‐JP
+        Script script = getScript(cs.name());
+        
+        // Byte-level validity for Shift_JIS / EUC-JP
         if (csName.contains("shift_jis") || csName.contains("windows-31j")) {
-            res.byteLevelValid = isValidShiftJis(data);
+            result.byteLevelValid = isValidShiftJis(data);
         } else if (csName.contains("euc-jp")) {
-            res.byteLevelValid = isValidEucJp(data);
+            result.byteLevelValid = isValidEucJp(data);
         } else {
-            res.byteLevelValid = true;
+            result.byteLevelValid = true;
         }
 
-        // 2. Decode in REPLACE mode
-        String decoded = res.byteLevelValid
+        // Decode in REPLACE mode
+        String decoded = result.byteLevelValid
                        ? decodeWithReplace(data, cs)
                        : "";
-        res.decoded = decoded;
+        result.decoded = decoded;
 
-        // 3. Analyze decoded string
-        int replCount      = 0;
-        int ctrlCount      = 0;
-        int asciiCount     = 0;
-        int supplementCount= 0;
-        int cyrillicCount  = 0;
-        int japaneseCount  = 0;
-
+        
+        // Analyze decoded string
+        int neutral = 0;        
         String replChar = "\uFFFD";
+        int prevCp = 0;
         for (int i = 0; i < decoded.length(); ) {
             int cp = decoded.codePointAt(i);
             i += Character.charCount(cp);
 
             // replacement char
             if (decoded.startsWith(replChar, i - replChar.length())) {
-                replCount++;
+                result.replCount++;
+                continue;
+            }
+            if (cp == '\n' || cp == '\r' || cp == '\t') {
+                neutral++;
                 continue;
             }
             // control (except newline/tab)
-            if (cp < 0x20 && cp!='\n' && cp!='\r' && cp!='\t') {
-                ctrlCount++;
+            if (Character.isISOControl(cp)) {
+            	result.ctrlCount++;
                 continue;
             }
             // Cyrillic letters
             if (isCyrillicLetter(cp)) {
-                cyrillicCount++;
+            	result.cyrCount++;
                 continue;
             }
             // Japanese blocks
             if ((cp >= 0x3040 && cp <= 0x30FF) ||
                 (cp >= 0x4E00 && cp <= 0x9FFF) ||
                 (cp >= 0xFF61 && cp <= 0xFF9F)) {
-                japaneseCount++;
+            	result.jpCount++;
+                continue;
+            }
+            if (cp == ' ') {
+                neutral++;
                 continue;
             }
             // ASCII
             if (cp >= 0x20 && cp <= 0x7E) {
-                asciiCount++;
+            	result.asciiCount++;
                 continue;
             }
             // Latin-1 Supplement
             if (cp >= 0xA0 && cp <= 0xFF) {
-                supplementCount++;
+            	result.extLatinCount++;
                 continue;
             }
+            
+            if (VIET_PRECOMPOSED.contains(cp)) {// || (VIET_DIACRITICS.contains(cp) && LATIN_VOWELS.contains(prevCp))
+            	result.vietCount++;
+            	continue;
+	        }
+            UnicodeBlock block = Character.UnicodeBlock.of(cp);
+            
+            if (script == Script.EASTERN 
+                    && (block == UnicodeBlock.LATIN_EXTENDED_A || block == UnicodeBlock.COMBINING_DIACRITICAL_MARKS)) {
+               neutral++;
+               continue;
+            }
+            if (script == Script.EASTERN) System.out.println(block);
+            
+            prevCp = cp;// should also be before other returns but will be mess
             // everything else we treat as "other" (counts below)
         }
 
-        res.replCount           = replCount;
-        res.jpCount = japaneseCount;
-        res.cyrCount = cyrillicCount;
-        res.ctrlCount           = ctrlCount;
-        res.asciiCount = asciiCount;
-        res.extLatinCount = supplementCount;
-
-        // 4. Unified "junk vs. script-match" scoring
-        Script script = getScript(cs.name());
-
+        result.wordCount = 0;
+        int wordMatches = 0;
+        
+        // Unified "junk vs. script-match" scoring
         int matchCount;
         switch (script) {
             case CYRILLIC:
-                matchCount = cyrillicCount;
+                matchCount = result.cyrCount;
                 break;
             case JAPANESE:
-                matchCount = japaneseCount;
+                matchCount = result.jpCount;
                 break;
             case CHINESE:
                 matchCount = (int) decoded.codePoints()
                                           .filter(cp -> cp >= 0x4E00 && cp <= 0x9FFF)
                                           .count();
                 break;
+            case EASTERN:
+            	if (result.vietCount == 0) {
+            		matchCount = 0;
+            	} else {
+            		matchCount = result.vietCount + result.asciiCount;
+            	}            	
+            	break;
             default:
-                matchCount = asciiCount;
+                matchCount = result.asciiCount;
                 break;
         }
 
         int totalCp  = decoded.codePointCount(0, decoded.length());
-        // new: treat ASCII (0x20–0x7F) as neutral for all non-Western scripts:
-        int neutral = 0;
-        if (script != Script.WESTERN) {
-            neutral += asciiCount;
+
+        // treat ASCII (0x20-0x7F) as neutral for all non-Western scripts:
+        if (script == Script.EASTERN) {
+            neutral += result.extLatinCount;
+            Matcher m = VIET_WORDS.matcher(Normalizer.normalize(decoded, Normalizer.Form.NFC));
+        	while (m.find()) {
+        	    wordMatches++;
+        	}
+        	if (wordMatches < 3) {
+        		matchCount = -5000;
+        	}
+        	result.wordCount = wordMatches;
+        } else if (script != Script.WESTERN) {
+            neutral += result.asciiCount;
         } else {
             // Western still allows Latin-1 Supplement as neutral
-            neutral += res.extLatinCount;
-            if (totalCp > 7 && res.extLatinCount*4 > asciiCount*3) {
+            neutral += result.extLatinCount;
+            if (totalCp > 7 && result.extLatinCount*4 > result.asciiCount*3) {
             	// too many ext latin chars to be normal western text
             	neutral /= 2;
-            } else if (totalCp > 4 && res.extLatinCount >= asciiCount) {
+            } else if (totalCp > 4 && result.extLatinCount >= result.asciiCount) {
             	neutral /= 2;
             }
         }
         int nonMatch = totalCp - matchCount - neutral;
 
         // weights
-        int replWeight     = 200;  // per "�"
+        int replWeight     = 200;  // per replacement
         int ctrlWeight     = 20;  // per stray control
-        int nonMatchWeight = 40;   // per code‐point not in our target script
-        int matchBonus     = -5;   // per in‐script code‐point
+        int nonMatchWeight = 40;   // per code-point not in our target script
+        int matchBonus     = -5;   // per in-script code-point
+        int wordBonus      = -1000;   // per in-script word
         int tieBreaker     = script == Script.WESTERN  ? 0
                            : script == Script.CYRILLIC  ? (totalCp == 1?25:1)
                            : script == Script.JAPANESE  ? (totalCp == 1?26:2)
-                           :                                (totalCp == 1?27:3);
+                           : script == Script.EASTERN ?  (totalCp == 1?27:3)
+                           :                            (totalCp == 1?28:4);
         
-        // --- new bit: charset‐specific priority ---
+        // --- charset-specific priority ---
         int scriptPriority = getScriptPriority(csName, script);
+        
+        int emptyPenalty = decoded.isEmpty()?2000:0;
         
         
         log.fine("\n"+csName+" score:"
-        		+"\nreplace: "+(replCount * replWeight)
-        		+"\ncontrol: "+(ctrlCount * ctrlWeight)
+        		+"\nreplace: "+(result.replCount * replWeight)
+        		+"\ncontrol: "+(result.ctrlCount * ctrlWeight)
         		+"\nnonMatch:"+(nonMatch * nonMatchWeight)
         		+"\ntie:     "+tieBreaker
         		+"\nprio:    "+scriptPriority
-        		+"\nmatch:   "+(matchCount * matchBonus));
-        
-        int junkPenalty = replCount * replWeight
-                        + ctrlCount * ctrlWeight
-                        + nonMatch * nonMatchWeight;
+        		+"\nempty:   "+emptyPenalty
+        		+"\nmatch:   "+(matchCount * matchBonus)+" "+(wordMatches  * wordBonus));
+        log.finer("Total="+totalCp+" nonMatch="+nonMatch);
+        int junkPenalty = result.replCount * replWeight
+                        + result.ctrlCount * ctrlWeight
+                        + nonMatch * nonMatchWeight
+                        + emptyPenalty;
 
-        res.score = junkPenalty
+        result.score = junkPenalty
                   + matchCount * matchBonus
+                  + wordMatches * wordBonus
                   + tieBreaker
                   + scriptPriority;
-        log.fine(res.toString());
-        return res;
+        log.fine(result.toString());
+        return result;
     }
 
     // Place this helper somewhere in the same class:
@@ -1005,7 +764,7 @@ public class CharsetDetectAndDecode {
         return 10;  // all others
     }
     
-    public enum Script { WESTERN, CYRILLIC, JAPANESE, CHINESE }
+    public enum Script { WESTERN, CYRILLIC, JAPANESE, CHINESE, EASTERN }
 
     private static int getScriptPriority(String csName, Script script) {
         switch(script) {
@@ -1027,57 +786,11 @@ public class CharsetDetectAndDecode {
             if (csName.contains("gb18030")) return 0;
             if (csName.contains("big5"))    return 1;
             return 10;
+          case EASTERN:
+        	  return 0;
           default:
             return 10;
         }
-    }
-    
-    private static int countInvalidBig5Bytes(byte[] data) {
-        int invalid = 0, i = 0;
-        while (i < data.length) {
-            int b = data[i] & 0xFF;
-            if (b <= 0x7F) {
-                // ASCII single-byte
-                i++;
-            } else if (b >= 0x81 && b <= 0xFE) {
-                // possible two-byte Big5
-                if (i + 1 < data.length) {
-                    int b2 = data[i+1] & 0xFF;
-                    // trail: 0x40-0x7E or 0xA1-0xFE
-                    if ((0x40 <= b2 && b2 <= 0x7E) || (0xA1 <= b2 && b2 <= 0xFE)) {
-                        i += 2;
-                        continue;
-                    }
-                }
-                // invalid lead or missing/invalid trail
-                invalid++;
-                i++;
-            } else {
-                // byte in 0x80 or >0xFE: invalid
-                invalid++;
-                i++;
-            }
-        }
-        return invalid;
-    }
-
-    private static int countValidBig5Multi(byte[] data) {
-        int cnt = 0;
-        for (int i = 0; i < data.length - 1; i++) {
-            int b1 = data[i] & 0xFF;
-            int b2 = data[i+1] & 0xFF;
-            if (b1 >= 0x81 && b1 <= 0xFE
-             && ((0x40 <= b2 && b2 <= 0x7E) || (0xA1 <= b2 && b2 <= 0xFE))) {
-                cnt++;
-                i++;
-            }
-        }
-        return cnt;
-    }
-
-    // Check if decoded string has CJK ideographs in the common block
-    private static boolean decodedHasCommonCJK(String s) {
-        return s.codePoints().anyMatch(cp -> (cp >= 0x4E00 && cp <= 0x9FFF));
     }
     
     private static boolean isCyrillicLetter(int cp) {
@@ -1244,11 +957,12 @@ public class CharsetDetectAndDecode {
     }
 
     /** Check if decoded string has at least one Japanese character. */
-    private static boolean decodedHasJapaneseChar(String s) {
-	    return s.codePoints().anyMatch(cp ->
+    private static boolean decodedHasJapaneseChars(String s, int number) {
+	    long count = s.codePoints().filter(cp ->
 	        (cp >= 0x3040 && cp <= 0x30FF) ||  // full-width Hiragana/Katakana
 	        (cp >= 0x4E00 && cp <= 0x9FFF)  // Kanji
-	    );
+	    ).count();
+	    return count >= number;
 	}
     
     private static boolean decodedHasAnyJapaneseChar(String s) {
@@ -1401,7 +1115,7 @@ public class CharsetDetectAndDecode {
         }
         // decode and confirm presence of Japanese script
         String decoded = decodeWithReplace(data, Charset.forName("EUC-JP"));
-        return decodedHasJapaneseChar(decoded);
+        return decodedHasJapaneseChars(decoded, Math.max(1, decoded.length()/5));
     }
     
     private static boolean isPrintableAndNoSurrogates(String s) {
