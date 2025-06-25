@@ -1136,7 +1136,7 @@ public class AbcExporter {
 		Collections.sort(events);
 		
 		if (events.size() == 0) {
-			logNotes.info("Export to preview/abc: "+metadata.getSongTitle()+" has a part with no exported notes.");
+			logNotes.warning("Export to preview/abc: "+metadata.getSongTitle()+" has a part with no exported notes.");
 			if (!preview) ProjectFrame.feed("Note: Song has a part with no exported notes ("+part.getTitle()+")", null);
 			return new ArrayList<>();
 		}
@@ -1616,7 +1616,7 @@ public class AbcExporter {
 		Collections.sort(events);
 		
 		if (events.size() == 0) {
-			System.err.println("Export to preview/abc: "+metadata.getSongTitle()+" has a part with no exported notes.");
+			logNotes.warning("Export to preview/abc: "+metadata.getSongTitle()+" has a part with no exported notes.");
 			if (!preview) ProjectFrame.feed("Note: Song has a part with no exported notes ("+part.getTitle()+")", null);
 			return new ArrayList<>();
 		}

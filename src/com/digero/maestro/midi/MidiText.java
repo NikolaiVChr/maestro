@@ -59,37 +59,6 @@ public class MidiText {
 		return result.first;
 	}
 	
-	private void reEncodeAll(Iterator<TextFragment> iterator, Charset cs) {
-		log.info("Re-decoding all text with "+cs.name());
-		while (iterator.hasNext()) {
-			TextFragment fragment = iterator.next();
-			if (fragment.sylineBytes == null || fragment.sylineBytes.length == 0) continue;
-			String text = new String(fragment.sylineBytes, cs);
-			fragment.syline = text;
-		}
-	}
-	
-	private void addToCharsetScore(Charset cs) {
-		Integer curr = csStats.get(cs);
-		if (curr == null) curr = 0;
-		curr++;
-		csStats.put(cs, curr);
-		csTotal++;
-	}
-	
-	private Charset calcWinningCS() {
-		Charset winner = null;
-		int count = 0;
-		for (Entry<Charset, Integer> entry : csStats.entrySet()) {
-			if (entry.getValue() >= count && entry.getValue() > csTotal/2) {
-				winner = entry.getKey();
-				count = entry.getValue();
-			}
-			log.info("Track "+entry.getKey()+" text score: "+entry.getValue());
-		}
-		return winner;
-	}
-
 	void collectTxt(long tick, byte[] data, int metaType, int track) {
 		boolean valid = false;
 		int offset = 0;		
@@ -429,12 +398,14 @@ public class MidiText {
 	}
 	
 	public String getText() {
-		int mainTrack = calcWinningTrack();
-		/*
-		Charset mainCharset = calcWinningCS();
-		if (mainCharset != null) reEncodeAll(text.iterator(), mainCharset);
-		*/
 		String str = "";
+		
+		if (text.size() == 0) {
+			//important for abc tool that decoder don't get called,
+			//since its not present in its jar.
+			return str;
+		}
+		int mainTrack = calcWinningTrack();
 		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 		/*
 		if (!cache.getCopyright().isEmpty()) {
