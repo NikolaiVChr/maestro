@@ -71,7 +71,7 @@ public class SynthesizerFactory {
 		synthInfo.put("jitter correction", true);//default is true. Not sure what this does
 		synthInfo.put("large mode", false);// Default false. If enabled it seems to use lazy
 											// loading of soundfont samples.
-		synthInfo.put("format", new AudioFormat(44100, 16, 1, true, false));// use mono samples in memory
+		synthInfo.put("format", new AudioFormat(44100, 16, 2, true, false));// use mono samples in memory
 		return synthInfo;
 	}
 

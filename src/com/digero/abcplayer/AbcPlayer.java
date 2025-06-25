@@ -581,7 +581,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		add(mainCardPanel, "0, 0, 2, 0");
 		add(controlPanel, "1, 2");
 		
-		audioExporter = new AudioExportManager(this, AbcPlayer.APP_NAME + AbcPlayer.APP_VERSION, prefs);
+		audioExporter = new AudioExportManager(this, AbcPlayer.APP_NAME +" "+ AbcPlayer.APP_VERSION, prefs);
 
 		initMenu();
 

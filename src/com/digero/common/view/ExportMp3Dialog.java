@@ -209,38 +209,13 @@ public class ExportMp3Dialog extends JDialog implements TableLayoutConstants {
 		return qualityButtons[getQualityIndex()].getText().toLowerCase();
 	}
 
-	public String getQualityNew() {
-		switch (getQualityIndex()) {
-		case 0:
-			return "192k";
-		case 1:
-			return "256k";
-		case 2:
-			return "320k";
-		}
-		return "128k";
-	}
-
 	public File getSaveFile() {
 		return new File(saveAsField.getText());
 	}
-
-	public String getCommandLine(File wav) {
-		String args = " --silent";
-		args += " --preset " + getQuality();
-		if (getSongTitle().length() > 0)
-			args += " --tt " + Util.quote(getSongTitle());
-		if (getArtist().length() > 0)
-			args += " --ta " + Util.quote(getArtist());
-		if (getAlbum().length() > 0)
-			args += " --tl " + Util.quote(getAlbum());
-		args += " " + Util.quote(wav.getAbsolutePath());
-		args += " " + Util.quote(getSaveFile().getAbsolutePath());
-		return Util.quote(theExe.getAbsolutePath()) + args;
-	}
 	
-	public List<String> getCommandLineBuiltinLame(File wav) {
+	public List<String> getCommandLineBuiltinLame(File wav, String encodedBy) {
 		List<String> args = new ArrayList<String>();
+		
 		args.add("--silent");
 		args.add("--preset");
 		args.add(getQuality());
@@ -256,45 +231,13 @@ public class ExportMp3Dialog extends JDialog implements TableLayoutConstants {
 			args.add("--tl");
 			args.add(getAlbum());
 		}
-			
+		args.add("--tc");
+		args.add("Encoded by: "+encodedBy);
+		args.add("--nores");//no resampling
+		
 		args.add(wav.getAbsolutePath());
 		args.add(getSaveFile().getAbsolutePath());
-		return args;
-	}
 
-	public List<String> getCommandLineNew(File wav, String encodedBy) {
-		ArrayList<String> args = new ArrayList<>();
-		String os = System.getProperty("os.name");
-		if (os.contains("Windows")) {
-			args.add(theExe.getAbsolutePath());
-		} else {
-			args.add("ffmpeg");
-		}
-		args.add("-i");
-		args.add(wav.getAbsolutePath());
-		args.add("-vn");
-		args.add("-ar");
-		args.add("44100");
-		args.add("-ac");
-		args.add("2");
-		args.add("-b:a");
-		args.add(getQualityNew());
-		if (getSongTitle().length() > 0) {
-			args.add("-metadata");
-			args.add("title=" + getSongTitle());
-		}
-
-		if (getArtist().length() > 0) {
-			args.add("-metadata");
-			args.add("artist=" + getArtist());
-		}
-		if (getAlbum().length() > 0) {
-			args.add("-metadata");
-			args.add("album=" + getAlbum());
-		}
-		args.add("-metadata");
-		args.add("encoded_by=" + encodedBy);
-		args.add(getSaveFile().getAbsolutePath());
 		return args;
 	}
 

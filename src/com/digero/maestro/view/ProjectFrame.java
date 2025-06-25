@@ -410,7 +410,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		abcSequencerListener = new AbcSequencerListener();
 		abcSequencer.addChangeListener(abcSequencerListener);
 		
-		audioExporter = new AudioExportManager(this, MaestroMain.APP_NAME + MaestroMain.APP_VERSION, prefs);
+		audioExporter = new AudioExportManager(this, MaestroMain.APP_NAME +" "+ MaestroMain.APP_VERSION, prefs);
 
 		initMenu();
 		onSaveAndExportSettingsChanged();
@@ -1232,6 +1232,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				Toolkit.getDefaultToolkit().beep();
 				return;
 			}
+			refreshPreviewSequence(true);//important, so last edits gets written
 			audioExporter.exportWav(abcSequencer, getAbcExportFile());
 		});
 		
