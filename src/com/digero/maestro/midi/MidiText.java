@@ -121,17 +121,17 @@ public class MidiText {
 					case MidiConstants.M_LIVE_GENRE:
 						genre = decode(Arrays.copyOfRange(data, offset, data.length));
 						fragment.prefix = "Genre: ";
-						valid = true;
+						valid = data.length - offset > 0;
 						break;
 					case MidiConstants.M_LIVE_ARTIST:
 						artist = decode(Arrays.copyOfRange(data, offset, data.length));
 						fragment.prefix = "Artist: ";
-						valid = true;
+						valid = data.length - offset > 0;
 						break;
 					case MidiConstants.M_LIVE_COMPOSER:
 						composer = decode(Arrays.copyOfRange(data, offset, data.length));
 						fragment.prefix = "Composer: ";
-						valid = true;
+						valid = data.length - offset > 0;
 						break;
 					case MidiConstants.M_LIVE_DURATION:
 						duration = decode(Arrays.copyOfRange(data, offset, data.length));
@@ -142,11 +142,12 @@ public class MidiText {
 						fragment.prefix = "BPM: ";
 						break;
 					default:
+						log.severe("Unknown M-LIVE tag: "+data[0]+" -- "+ decode(Arrays.copyOfRange(data, offset, data.length)));
 						return;
 				}
 				
 				fragment.format = Format.UNKNOWN;
-				fragment.reaction = Reaction.LINE;
+				fragment.reaction = Reaction.META_LINE;
 				fragment.sylineBytes = Arrays.copyOfRange(data, offset, data.length);
 			} else if (data[0] == (byte) '<' && fragment.source == Source.LYRIC) {
 				valid = true;
@@ -177,7 +178,15 @@ public class MidiText {
 				fragment.format = Format.TUNE1000;
 				fragment.reaction = Reaction.NEWLINE_NEW;
 			} else {
-				if (data[0] == (byte) '@' && data.length >= 2) {
+				if (data.length >= 2 && data[0] == (byte) '*' && data[1] == (byte) ' ') {
+					valid = true;
+					fragment.reaction = Reaction.INFO;
+					offset = 2;
+					fragment.format = Format.UNKNOWN;
+					if (data.length == 6 && data[2] == (byte) 'E' && data[3] == (byte) 'N' && data[4] == (byte) 'G' && data[5] == (byte) 'L') {
+						fragment.reaction = Reaction.LANGUAGE;
+					}
+				} else if (data[0] == (byte) '@' && data.length >= 2) {
 					valid = true;
 					switch (data[1]) {
 						case 'K':
@@ -219,7 +228,7 @@ public class MidiText {
 							fragment.format = fragment.source == Source.TEXT?Format.SOFT_KARAOKE:Format.TUNE1000;
 							break;
 						default:
-							fragment.reaction = Reaction.LINE;
+							fragment.reaction = Reaction.META_LINE;
 							fragment.format = Format.UNKNOWN;
 							break;
 					}
@@ -489,6 +498,8 @@ public class MidiText {
 					break;
 				case Reaction.INFO:
 					str += "Info: "+decode(fraction.sylineBytes)+"\n";
+				case Reaction.META_LINE:
+					str += fraction.prefix+decode(fraction.sylineBytes)+"\n";
 				default:
 					break;
 			}
@@ -508,7 +519,19 @@ public class MidiText {
 		str = str.replace("STARTAKKORD", "");
 		str = str.replace("|C:|", "");//chorus start
 		str = str.replace("|:C|", "");//chorus end (normally in later syllable than start)
-		str = str.replace("/", "\n");//newline command in middle of text (modern kar)
+		StringBuilder sb = new StringBuilder();
+		// split on zero-width boundaries so we get the whole string even if no spaces
+		for (String token : str.split("(?<=\\s)|(?=\\s)")) {
+		    if (token.contains("://")) {
+		        // looks like a URL or URI scheme: leave it alone
+		        sb.append(token);
+		    } else {
+		    	//newline command in middle of text (modern kar)
+		        // replace all other slashes with newlines
+		        sb.append(token.replace("/", "\n"));
+		    }
+		}
+		str = sb.toString();
 		return str;
 	}
 	
@@ -557,6 +580,7 @@ public class MidiText {
 			NEWLINE_NEW,// newline
 			CHORD,
 			SYNC // highlight next full line
+			, META_LINE // M-LIVE
 			
 			// in modern Tune1000 kar, newline is sometimes at same tick as syllable, meaning syllable first, then newline.
 			// in older Soft Karaoke kar, newline is sometimes at same tick as syllable, meaning newline first, then syllable.

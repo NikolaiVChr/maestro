@@ -20,7 +20,7 @@ public class Logging {
             // replace default System.out with one that writes UTF-8
             System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
             System.setErr(new PrintStream(System.err, true, StandardCharsets.UTF_8)); 
-            System.out.println("UTF-8 test: ✓ Привет мир – こんにちは世界");
+            System.out.println("Console UTF-8 test: ✓ Привет мир – こんにちは世界");
             */
         } catch (Exception e) {
             e.printStackTrace();
