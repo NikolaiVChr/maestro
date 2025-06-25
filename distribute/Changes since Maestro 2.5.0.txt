@@ -45,6 +45,7 @@ Version 4.2.14
 - Fixed Abc Merge Tool refused to overwrite.
 - New import lyrics option in settings that can help to determine song-title/artist when filename is short and insufficient.
 - Fixed that some midi files could generate error in Maestro.
+- Fixed that wav and mp3 export would always be mono. Now they will be whatever maestro/abc-player setting is.
 
 Version 4.2.13
 - Fix that some songs could still change midi playback volume, overriding user's volume slider setting.

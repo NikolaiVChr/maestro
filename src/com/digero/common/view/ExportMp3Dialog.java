@@ -41,8 +41,6 @@ public class ExportMp3Dialog extends JDialog implements TableLayoutConstants {
 		Medium, Standard, Extreme
 	}
 
-	private File theExe;
-
 	private JTextField saveAsField;
 	private JTextField titleField;
 	private JCheckBox addLotroCheckbox;
@@ -62,7 +60,6 @@ public class ExportMp3Dialog extends JDialog implements TableLayoutConstants {
 		super(parent, AbcPlayer.APP_NAME + " - Export to MP3", false);
 
 		this.prefs = prefs;
-		this.theExe = theExe;
 		this.actionListeners = new ArrayList<>();
 
 		Border outerBorder = BorderFactory.createEmptyBorder(8, 8, 8, 8);
