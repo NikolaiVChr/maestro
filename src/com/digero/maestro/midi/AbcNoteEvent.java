@@ -10,9 +10,8 @@ public class AbcNoteEvent extends NoteEvent {
 	public AbcNoteEvent tiesTo = null;
 	
 	// These 3 is used by organic v2:
-	public long origStartABCMicros;
-	public long origEndABCMicros;
-	public long origDurationMicros;
+	public long startABCMicros;
+	public long endABCMicros;
 	
 	// These fields are used by the pruning:
 	// Note that if several midi notes contributed to one abc note,
@@ -60,12 +59,25 @@ public class AbcNoteEvent extends NoteEvent {
 	 * @return The new NoteEvent that was created starting at splitPointTick.
 	 */
 	public AbcNoteEvent splitWithTieAtTick(long splitPointTick) {
+		return splitWithTieAtTick(splitPointTick, -1);
+	}
+	
+	/**
+	 * Only called directly by multi-stage organic
+	 */
+	public AbcNoteEvent splitWithTieAtTick(long splitPointTick, long splitPointMicros) {
 		assert splitPointTick >= startTick:"split before beginning";
 		assert splitPointTick != startTick:"split at beginning";
 		assert splitPointTick < endTick:"split after end";
 
 		AbcNoteEvent next = new AbcNoteEvent(note, velocity, splitPointTick, endTick, tempoCache, this.origNote);
 		setEndTick(splitPointTick);
+		
+		if (splitPointMicros != -1) {
+			next.startABCMicros = splitPointMicros;
+			next.endABCMicros = endABCMicros;
+			endABCMicros = splitPointMicros;
+		}
 
 		if (note != Note.REST) {
 			if (this.tiesTo != null) {
@@ -120,17 +132,15 @@ public class AbcNoteEvent extends NoteEvent {
 			BentAbcNoteEvent c = new BentAbcNoteEvent(note, velocity, startTick, endTick, tempoCache, (BentMidiNoteEvent)(this.origNote));
 			if (origBend != null) c.setOrigBend(origBend);
 			c.continues = this.continues;
-			c.origStartABCMicros = this.origStartABCMicros;
-			c.origEndABCMicros = this.origEndABCMicros;
-			c.origDurationMicros = this.origDurationMicros;
+			c.startABCMicros = this.startABCMicros;
+			c.endABCMicros = this.endABCMicros;
 			return c;
 		} else {
 			AbcNoteEvent c = new AbcNoteEvent(note, velocity, startTick, endTick, tempoCache, origNote);
 			if (origBend != null) c.setOrigBend(origBend);
 			c.continues = this.continues;
-			c.origStartABCMicros = this.origStartABCMicros;
-			c.origEndABCMicros = this.origEndABCMicros;
-			c.origDurationMicros = this.origDurationMicros;
+			c.startABCMicros = this.startABCMicros;
+			c.endABCMicros = this.endABCMicros;
 			return c;
 		}
 	}

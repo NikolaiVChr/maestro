@@ -26,7 +26,7 @@ public class ConvertPPQ {
 
 		int origPPQ = orig.getResolution();
 		
-		log.fine("Resolution. Orig PPQ="+origPPQ);
+		log.finer("Resolution. Orig PPQ="+origPPQ);
 		
 		int newPPQ = origPPQ;
 		
@@ -53,11 +53,15 @@ public class ConvertPPQ {
 		int multi = 1 << doubleTimes; // Faster than (int)Math.pow(2, doubleTimes);
 
 		newPPQ *= multi;
-		
-		while(newPPQ < 2000) {
+				
+		while(MidiUtils.ticks2microsec(1, MidiUtils.convertTempo(120), newPPQ) > 500) {
+			// we require 500 us precision at 120 bpm, so that conversions between tick/micros gets more accurate
 			newPPQ *= 2;
 		}
-
+		
+		log.finer("1 old tick = "+MidiUtils.ticks2microsec(1, MidiUtils.convertTempo(120), origPPQ)+" old="+origPPQ);
+		log.finer("1 new tick = "+MidiUtils.ticks2microsec(1, MidiUtils.convertTempo(120), newPPQ)+" new="+newPPQ);
+		
 		if (newPPQ == origPPQ) return orig;
 
 		Sequence edit = null;

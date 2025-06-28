@@ -125,7 +125,7 @@ public class MidiUtils {
 	 * timing!
 	 */
 	public static long ticks2microsec(long tick, double tempoMPQ, int resolution) {
-		return (long) (((double) tick) * tempoMPQ / resolution);
+		return (long) (tick * tempoMPQ / resolution);
 	}
 	
 	public static long ticks2microsec(long tick, int tempoMPQ, int resolution) {
@@ -138,7 +138,7 @@ public class MidiUtils {
 	 */
 	public static long microsec2ticks(long us, double tempoMPQ, int resolution) {
 		// do not round to nearest tick
-		return (long) ((((double) us) * resolution) / tempoMPQ);
+		return (long) ((((double) resolution) * us) / tempoMPQ);
 	}
 	
 	public static long microsec2ticks(long us, int tempoMPQ, int resolution) {

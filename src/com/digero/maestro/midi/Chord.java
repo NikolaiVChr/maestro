@@ -369,9 +369,9 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		AbcNoteEvent shortest = null;
 		if (!notes.isEmpty()) {
 			for (AbcNoteEvent note : notes) {
-				if (note.origEndABCMicros < endNoteMicros) {
+				if (note.endABCMicros < endNoteMicros) {
 					shortest = note;
-					endNoteMicros = note.origEndABCMicros;
+					endNoteMicros = note.endABCMicros;
 				}
 			}
 		}
