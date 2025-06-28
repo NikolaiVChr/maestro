@@ -344,6 +344,22 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 	}
 	
 	/**
+	 * 
+	 * @return true if notes/rests differ in durations
+	 */
+	public boolean isUneven() {
+		long endNoteTick = getEndTick();
+		if (!notes.isEmpty()) {
+			for (AbcNoteEvent note : notes) {
+				if (note.getEndTick() > endNoteTick) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	
+	/**
 	 * Only call this from organic multi-stage please.
 	 * 
 	 * @return
@@ -435,9 +451,13 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 	}
 	
 	public List<AbcNoteEvent> prune(boolean sustained, boolean drum, boolean percussion, AbcPart abcPart) {
+		return prune(sustained,drum, percussion,abcPart,false);
+	}
+	
+	public List<AbcNoteEvent> prune(boolean sustained, boolean drum, boolean percussion, AbcPart abcPart, boolean keepShortest) {
 		// Determine which notes to prune to remain with a max of 6
 		List<AbcNoteEvent> deadNotes = new ArrayList<>();
-		//System.out.println("Starting prune");
+				
 		int noteMax = abcPart.getNoteMax();
 		
 		long oldEndTick = endTick;
@@ -448,17 +468,29 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 
 			List<AbcNoteEvent> newNotes = new ArrayList<>();
 
-			PruneComparator keepMe = new PruneComparator(sustained, drum, percussion, both, getShortest().getLengthTicks());
+			PruneComparator keepMe = new PruneComparator(sustained, drum, percussion, both, endTick-startTick);
 
 			notes.sort(keepMe);
 			
 			keepOnlyRestIfShortest();
 			
+			NoteEvent keptShort = null;
+			if (keepShortest) {
+				for (int i = notes.size() - 1; i >= 0; i--) {
+					if (newNotes.size() < noteMax && oldEndTick == notes.get(i).getEndTick()) {
+						keptShort = notes.get(i);
+						newNotes.add(notes.get(i));
+					}
+				}
+			}
+			
 			for (int i = notes.size() - 1; i >= 0; i--) {
-				if (newNotes.size() < noteMax) {
-					newNotes.add(notes.get(i));
-				} else {
-					deadNotes.add(notes.get(i));
+				if (keptShort != notes.get(i)) {
+					if (newNotes.size() < noteMax) {
+						newNotes.add(notes.get(i));
+					} else {
+						deadNotes.add(notes.get(i));
+					}
 				}
 			}
 			notes = newNotes;
@@ -469,8 +501,9 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		recalcEndTick();
 
 		assert oldEndTick == endTick || !both:"Old="+oldEndTick+" new="+endTick+" start="+startTick+" both="+hasRestAndNotes();
+		
 		/*
-		if (hasRestAndNotes()) {
+		if (getShortest().origStartABCMicros == 490032080) {
 			System.out.println();
 			for (AbcNoteEvent ne : notes) {
 				if (ne.note == Note.REST) {
@@ -481,6 +514,7 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 			}
 		}
 		*/
+		
 		return deadNotes;
 	}
 
@@ -501,7 +535,12 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		
 		notes.removeAll(rests);// no need to add the rests to deadnotes
 		
-		if (shortestRest != null && shortestRest.getLengthTicks() == restDura) notes.add(shortestRest);
+		if (shortestRest != null && shortestRest.getLengthTicks() == restDura) {
+			notes.add(shortestRest);
+			//System.out.println("kept rest");
+		} else {
+			//System.out.println("no shortest rest");
+		}
 	}
 	
 	class PruneComparator implements Comparator<AbcNoteEvent> {
@@ -784,6 +823,7 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 
 	/*
 	 * Check if all notes in chord start and end at same time
+	 * Only use in assert statements
 	 */
 	public boolean isConform() {
 		for (AbcNoteEvent ne : notes) {
@@ -814,6 +854,21 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 					}
 					tie = tie.tiesTo;
 				}
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * 
+	 * @param note
+	 * @return true if note is the shortest in the chord, and only note of that short duration.
+	 */
+	public boolean isShortest(AbcNoteEvent note) {
+		if (note.getEndTick() > endTick) return false;
+		for (AbcNoteEvent ne : notes) {
+			if (ne.getEndTick() == note.getEndTick() && note != ne) {
+				return false;
 			}
 		}
 		return true;

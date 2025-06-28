@@ -25,6 +25,9 @@ public class ConvertPPQ {
 		}
 
 		int origPPQ = orig.getResolution();
+		
+		log.fine("Resolution. Orig PPQ="+origPPQ);
+		
 		int newPPQ = origPPQ;
 		
 		if (newPPQ % 3 != 0) {
@@ -50,6 +53,10 @@ public class ConvertPPQ {
 		int multi = 1 << doubleTimes; // Faster than (int)Math.pow(2, doubleTimes);
 
 		newPPQ *= multi;
+		
+		while(newPPQ < 2000) {
+			newPPQ *= 2;
+		}
 
 		if (newPPQ == origPPQ) return orig;
 

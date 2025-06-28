@@ -1643,6 +1643,9 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		maxPoly = i;		
 	}
 	
+	/**
+	 * Only used by abc tools
+	 */
 	public int getMaxPoly() {
 		return maxPoly;		
 	}

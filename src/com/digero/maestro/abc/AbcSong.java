@@ -1445,6 +1445,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		}
 	}
 
+	/**
+	 * Only used by abc tools
+	 */
 	public int getMaxPartPoly() {
 		int poly = 6;
 		for (AbcPart part : parts) {
