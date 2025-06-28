@@ -464,6 +464,8 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 			abcPart.suppressSpinnerUpdate = true;
 			numberSpinner.setValue(abcPart.getPartNumber());
 			abcPart.suppressSpinnerUpdate = false;
+		} else if (e.getProperty() == AbcPartProperty.INSTRUMENT) {
+			setAbcPart(abcPart, true); // Revalidate layout
 		}
 	};
 
