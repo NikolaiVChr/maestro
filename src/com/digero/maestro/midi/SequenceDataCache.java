@@ -561,14 +561,30 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		return 4L * tickResolution * timeSignature.numerator / timeSignature.denominator;
 	}
 
+	/**
+	 * 1 based
+	 * Input 1 and you get tick 0
+	 * 
+	 * TODO: fix it, so both use 0
+	 * 
+	 */
 	@Override
 	public long getBarToTick(int bar) {
 		return getBarLengthTicks() * (bar - 1);
 	}
 
+	/**
+	 * 0 based
+	 */
 	@Override
 	public int tickToBarNumber(long tick) {
 		return (int) (tick / getBarLengthTicks());
+	}
+	
+	@Override
+	public float tickToBarNumberFloat(long tick) {
+		int barNumber = (tick < 0) ? 0 : (tickToBarNumber(tick));
+		return Util.map(tick, getBarToTick(barNumber+1), getBarToTick(barNumber+2), barNumber, barNumber+1);
 	}
 
 	public NavigableMap<Long, TempoEvent> getTempoEvents() {

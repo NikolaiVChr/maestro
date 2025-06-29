@@ -160,6 +160,11 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 			return 0;
 		return e.getValue();
 	}
+	
+	@Override
+	public float tickToBarNumberFloat(long tick) {
+		return (float) tickToBarNumber(tick);
+	}
 
 	@Override
 	public long getBarToTick(int bar) {

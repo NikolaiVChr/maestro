@@ -12,6 +12,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Level;
@@ -571,7 +572,7 @@ public class AbcExporter {
 					bar.setLength(0);
 				}
 				long micros = (long) ((qtm.tickToMicrosABCOrganic(c.getStartTick()) - songStartMicros));
-				out.println("%  (" + Util.formatDuration(micros) + ")");
+				out.printf(Locale.US, "%%  (%s) bar %.1f\n", Util.formatDuration(micros), part.getSequenceInfo().getDataCache().tickToBarNumberFloat(c.getStartTick()));
 
 				Arrays.fill(sharps, false);
 				Arrays.fill(flats, false);

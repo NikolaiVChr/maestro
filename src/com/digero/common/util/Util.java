@@ -599,6 +599,18 @@ public final class Util {
 		return toLow + (value - fromLow) * (toHigh - toLow) / (fromHigh - fromLow);
 	}
 	
+	public static float map(long value, long leftMin, long leftMax, int rightMin, int rightMax) {
+		// Figure out how 'wide' each range is
+		long leftSpan = leftMax - leftMin;
+		int rightSpan = rightMax - rightMin;
+
+		// Convert the left range into a 0-1 range (float)
+		double valueScaled = (value - leftMin) / (double) leftSpan;
+
+		// Convert the 0-1 range into a value in the right range.
+		return (float)(rightMin + (valueScaled * rightSpan));
+	}
+	
 	public boolean stringEquals(String str1, String str2) {
 		if (str1 == null && str2 == null) return true;
 		if (str1 == null || str2 == null) return false;

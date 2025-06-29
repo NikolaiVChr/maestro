@@ -16,6 +16,7 @@ import com.digero.common.midi.SequencerEvent.SequencerProperty;
 import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.util.IDiscardable;
 import com.digero.common.util.Listener;
+import com.digero.common.util.Util;
 
 @SuppressWarnings("serial")
 public class BarNumberLabel extends JLabel implements Listener<SequencerEvent>, IDiscardable {
@@ -100,24 +101,11 @@ public class BarNumberLabel extends JLabel implements Listener<SequencerEvent>, 
 		long tickLength = Math.max(0, sequencer.getTickLength());
 		long tick = Math.min(tickLength, sequencer.getThumbTick());
 
-		int barNumber = (tick < 0) ? 0 : (barNumberCache.tickToBarNumber(tick));
 		int barCount = barNumberCache.tickToBarNumber(tickLength) + 1;
 		
-		float barFloat = map(tick, barNumberCache.getBarToTick(barNumber+1), barNumberCache.getBarToTick(barNumber+2), barNumber, barNumber+1); 
+		float barFloat = barNumberCache.tickToBarNumberFloat(tick); 
 		
 		return String.format("%.2f/%d", barFloat, barCount);
-	}
-	
-	static float map(long value, long leftMin, long leftMax, int rightMin, int rightMax) {
-		// Figure out how 'wide' each range is
-		long leftSpan = leftMax - leftMin;
-		int rightSpan = rightMax - rightMin;
-
-		// Convert the left range into a 0-1 range (float)
-		double valueScaled = (value - leftMin) / (double) leftSpan;
-
-		// Convert the 0-1 range into a value in the right range.
-		return (float)(rightMin + (valueScaled * rightSpan));
 	}
 
 	private void update() {
