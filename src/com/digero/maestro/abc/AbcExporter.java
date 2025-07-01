@@ -46,6 +46,7 @@ import com.digero.maestro.midi.AbcNoteEvent;
 import com.digero.maestro.midi.BentAbcNoteEvent;
 import com.digero.maestro.midi.BentMidiNoteEvent;
 import com.digero.maestro.midi.Chord;
+import com.digero.maestro.midi.ChordOrganic;
 import com.digero.maestro.midi.MidiNoteEvent;
 import com.digero.maestro.midi.TrackInfo;
 import com.digero.maestro.view.ProjectFrame;
@@ -547,11 +548,12 @@ public class AbcExporter {
 		long currentMilli = 0L;
 		long passingNoteEndMilli = 0L;
 		long largestDriftMicros = 0L;
-		for (Chord c : chords) {
-			if (c.size() == 0) {
+		for (Chord ch : chords) {
+			if (ch.size() == 0) {
 				assert false : part.getAbcSong().getTitle()+" "+part.getTitle()+ ": Chord has no notes!";
 				continue;
 			}
+			ChordOrganic c = (ChordOrganic) ch;
 
 			//assert !c.hasRestAndNotes() || organic2;
 
@@ -609,25 +611,14 @@ public class AbcExporter {
 			}
 
 			int chordMicro;
-			if (organic2) {
-				chordMicro = (int)(c.getShortest().endABCMicros - c.getShortest().startABCMicros);
-			} else {
-				chordMicro = (int)((qtm.tickToMicrosABCOrganic(c.getEndTick()) - qtm.tickToMicrosABCOrganic(c.getStartTick())));
-			}
+			chordMicro = (int)(c.getEndMicros() - c.getStartMicros());
+			
 			
 			long cEndMicro;
-			if (organic2) {
-				cEndMicro = c.getShortest().endABCMicros - songStartMicros;
-			} else {
-				cEndMicro = qtm.tickToMicrosABCOrganic(c.getEndTick()) - songStartMicros;
-			}
+			cEndMicro = c.getEndMicros() - songStartMicros;
 			
 			long cStartMicro;
-			if (organic2) {
-				cStartMicro = c.getShortest().startABCMicros - songStartMicros;
-			} else {
-				cStartMicro = qtm.tickToMicrosABCOrganic(c.getStartTick()) - songStartMicros;
-			}
+			cStartMicro = c.getStartMicros() - songStartMicros;
 			
 			if ((cEndMicro-cStartMicro) < 59000) {
 				// this might not be serious as the tick resolution can be very low,
@@ -753,18 +744,10 @@ public class AbcExporter {
 				// now we do the micro calc again in case the timing algorithm
 				// has put notes/tests with uneven durations into the chord:
 				int noteMicro;
-				if (organic2) {
-					noteMicro = (int)(evt.endABCMicros - evt.startABCMicros);
-				} else {
-					noteMicro = (int)((qtm.tickToMicrosABCOrganic(evt.getEndTick()) - qtm.tickToMicrosABCOrganic(evt.getStartTick())));
-				}
+				noteMicro = (int)(evt.endABCMicros - evt.startABCMicros);
 				
 				long nEndMicro;
-				if (organic2) {
-					nEndMicro = evt.endABCMicros - songStartMicros;
-				} else {
-					nEndMicro = qtm.tickToMicrosABCOrganic(evt.getEndTick()) - songStartMicros;
-				}
+				nEndMicro = evt.endABCMicros - songStartMicros;
 				
 				int numerator;
 				int denominator;
@@ -1863,8 +1846,13 @@ public class AbcExporter {
 		assert assertionsEnabled = true;
 		
 		breakLongNotesOrganic(part, events);
+		
+		for (AbcNoteEvent note : events) {
+			note.startABCMicros = qtm.tickToMicrosABCOrganic(note.getStartTick()); 
+			note.endABCMicros = qtm.tickToMicrosABCOrganic(note.getEndTick());
+		}
 
-		List<Chord> chords = new ArrayList<>(events.size() / 2);
+		List<ChordOrganic> chords = new ArrayList<>(events.size() / 2);
 		List<AbcNoteEvent> tmpEvents = new ArrayList<>();
 
 		long minimumMicros = AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM());
@@ -1872,34 +1860,34 @@ public class AbcExporter {
 		// Combine notes that play at the same time into chords
 		
 		final boolean removeGliss = false;
-		Chord curChord = new Chord(events.get(0));
-		Chord prevChord = null;
-		Chord prevRestChord = null;
-		logNotes.finest(part.getTitle()+ ": Adding to curChord, note i=0 ticks:"+events.get(0).getStartTick()+"-"+events.get(0).getEndTick()+" "+events.get(0).note);
+		ChordOrganic curChord = new ChordOrganic(events.get(0), qtm);
+		ChordOrganic prevChord = null;
+		ChordOrganic prevRestChord = null;
+		logNotes.finest(part.getTitle()+ ": Adding to curChord, note i=0 micros:"+events.get(0).startABCMicros+"-"+events.get(0).endABCMicros+" "+events.get(0).note);
 		chords.add(curChord);
 		MAIN:for (int i = 1; i < events.size(); i++) {
 			AbcNoteEvent ne = events.get(i);
 			if (ne.tiesFrom == ne) continue;// hack
-			if (curChord.getStartTick() == ne.getStartTick()) {
+			if (curChord.getStartMicros() == ne.startABCMicros) {
 				// This note starts at the same time as the rest of the notes in the chord
 				assert !curChord.isRest();
 				curChord.add(ne);
-				logNotes.finest(part.getTitle()+ ": Adding to curChord note i="+i+" ticks:"+ne.getStartTick()+"-"+ne.getEndTick()+" "+ne.note);
+				logNotes.finest(part.getTitle()+ ": Adding to curChord note i="+i+" micros:"+ne.startABCMicros+"-"+ne.endABCMicros+" "+ne.note);
 			} else {								
 				// The curChord has all the notes it will get.
 				
 				// Note that ne can be a rest from cut up initial rest
 				
-				logNotes.fine("\n"+part.getTitle()+ ": Processing note i="+i+" ticks:"+ne.getStartTick()+"-"+ne.getEndTick()+" "+ne.note);
+				logNotes.finer(part.getTitle()+ ": Processing note i="+i+" micros:"+Util.formatDurationM(ne.startABCMicros)+"-"+Util.formatDurationM(ne.endABCMicros)+" "+ne.note);
 				
 				// remove zero duration notes if longer notes start at same time in curr chord
-				if (curChord.getLongestEndTick() > curChord.getStartTick()) {
+				if (curChord.getLongestEndMicros() > curChord.getStartMicros()) {
 					for (int j = 0; j < curChord.size(); j++) {
 						AbcNoteEvent jne = curChord.get(j);
-						if (jne.getEndTick() == jne.getStartTick()) {
+						if (jne.endABCMicros == jne.startABCMicros) {
 							// this note is zero duration and others in the chord is not
 							curChord.remove(jne);
-							logNotes.fine(part.getTitle()+" Removed zero dura note ("+jne.note.abc+")");
+							logNotes.finer(part.getTitle()+" Removed zero dura note ("+jne.note.abc+")");
 							if (jne.tiesFrom != null) {
 								jne.tiesFrom.tiesTo = null;
 							}
@@ -1910,15 +1898,15 @@ public class AbcExporter {
 						}
 					}
 					// A removal will have changed the chord's duration
-					curChord.recalcEndTick();
+					curChord.recalcEndMicros();
 				}
 				
 				if (curChord.early != null) {
 					//must be AFTER 'remove zero among longer'
 					//is BEFORE pruning to save pruning twice
-					curChord.setEarlyStartTick(useRestToShortenChords);
-					if (prevChord != null) prevChord.recalcEndTick();
-					logNotes.fine(part.getTitle()+ ": applying early start. curChord now start at "+curChord.getStartTick());
+					curChord.setEarlyStartMicros(useRestToShortenChords);
+					if (prevChord != null) prevChord.recalcEndMicros();
+					logNotes.finer(part.getTitle()+ ": applying early start. curChord now start at "+curChord.getStartMicros());
 					i--;
 					continue MAIN;
 				}
@@ -1932,84 +1920,88 @@ public class AbcExporter {
 					// One of the tiedTo notes that was pruned might be ne note,
 					// so we go one step back and re-process events.get(i)
 					i--;
-					logNotes.finest(part.getTitle()+ ": something was pruned");
+					logNotes.finer(part.getTitle()+ ": something was pruned");
 					continue MAIN;
 				}
 				
 				// Create a new chord
-				Chord nextChord = new Chord(ne);
-				logNotes.finest(part.getTitle()+ ": Create new chord "+ne.note.id);
+				ChordOrganic nextChord = new ChordOrganic(ne, qtm);
+				logNotes.finer(part.getTitle()+ ": Create new chord. "+ne.note);
 				
 				
 				// we first identify the two next chords as they will look after being cut up:
-				long curChordRoomMicros = qtm.tickToMicrosABCOrganic(ne.getStartTick()) - qtm.tickToMicrosABCOrganic(curChord.getStartTick());
+				long curChordRoomMicros = ne.startABCMicros - curChord.getStartMicros();
 				AbcNoteEvent ne1 = ne;
 				AbcNoteEvent ne2 = null;
 				long ne2End = Long.MAX_VALUE;
 				long ne2Start = Long.MAX_VALUE;
-				Chord nextChordTmp = new Chord(ne);
+				ChordOrganic nextChordTmp = new ChordOrganic(ne, qtm);
 				for (int ii = i+1; ii < events.size(); ii++) {
 					// find the shortest non-zero dura notes coming next
 					// remember events are sorted not only by start tick, but also end tick
 					AbcNoteEvent over = events.get(ii);
-					if (ne2 != null && over.getStartTick() > ne2.getStartTick()) {
+					if (ne2 != null && over.startABCMicros > ne2.startABCMicros) {
 						break;
 					}
-					if (over.getStartTick() == ne.getStartTick() && (ne1.getLengthTicks() == 0L || (over.getEndTick() < ne1.getEndTick() && over.getLengthTicks() != 0L))) {
+					if (over.startABCMicros == ne.startABCMicros && (ne1.endABCMicros - ne1.startABCMicros == 0L || (over.endABCMicros < ne1.endABCMicros && over.endABCMicros - over.startABCMicros != 0L))) {
 						// over is shorter than ne1 or ne1 is zero. over starts at same time as ne.
-						if (ne1.getEndTick() > over.getEndTick()) {
-							ne2Start = over.getEndTick();
-							ne2End = ne1.getEndTick();
+						if (ne1.endABCMicros > over.endABCMicros) {
+							ne2Start = over.endABCMicros;
+							ne2End = ne1.endABCMicros;
 						}
 						ne1 = over;
 						nextChordTmp.add(over);
-					} else if (over.getStartTick() == ne.getStartTick() && over.getLengthTicks() != 0L && ne1.getLengthTicks() != 0L && over.getLengthTicks() > ne1.getLengthTicks()) {
+					} else if (over.startABCMicros == ne.startABCMicros && over.endABCMicros - over.startABCMicros != 0L && ne1.endABCMicros - ne1.startABCMicros != 0L && over.endABCMicros - over.startABCMicros > ne1.endABCMicros - ne1.startABCMicros) {
 						// over is longer than ne1 and neither is zero. over starts at same time as ne.
 						// this means over is going to be cut up, so ne2 will become ending of over.
-						ne2Start = ne1.getEndTick();
-						ne2End = over.getEndTick();
+						ne2Start = ne1.endABCMicros;
+						ne2End = over.endABCMicros;
 						nextChordTmp.add(over);
-					} else if (over.getStartTick() == ne.getStartTick()) {
+					} else if (over.startABCMicros == ne.startABCMicros) {
 						nextChordTmp.add(over);
 					}
-					if (over.getStartTick() > ne.getStartTick() && (ne2 == null || ne2.getLengthTicks() == 0L)) {
+					if (over.startABCMicros > ne.startABCMicros && (ne2 == null || ne2.endABCMicros - ne2.startABCMicros == 0L)) {
 						// over starts after ne.
 						ne2 = over;
-						if (ne2.getStartTick() < ne2Start) {
-							ne2Start = over.getStartTick();
-							ne2End = over.getEndTick();
+						if (ne2.startABCMicros < ne2Start) {
+							ne2Start = over.startABCMicros;
+							ne2End = over.endABCMicros;
 						}
 					}
 				}
 				int nextValue = calcValue(nextChordTmp, part.getInstrument().sustainable);
 				// ne1 now represent the first chord, it might be longer than ne if ne is zero dura.
-				if ((ne2 != null && ne2.getStartTick() > ne2Start) || (ne2 == null && ne2Start < Long.MAX_VALUE)) {
-					ne2 = new AbcNoteEvent(Note.A0, 64, ne2Start, ne2End, qtm, ne1.origNote);
+				if ((ne2 != null && ne2.startABCMicros > ne2Start) || (ne2 == null && ne2Start < Long.MAX_VALUE)) {
+					ne2 = new AbcNoteEvent(Note.A0, 64, qtm.microsToTickABCOrganic(ne2Start), qtm.microsToTickABCOrganic(ne2End), qtm, ne1.origNote);
+					ne2.startABCMicros = ne2Start;
+					ne2.endABCMicros = ne2End;
+					ne2.setStartTick(qtm.microsToTickABCOrganic(ne2Start));
+					ne2.setEndTick(qtm.microsToTickABCOrganic(ne2End));
 				}
 				// ne2 now represent the second chord
-				long ne1RoomMicros = ne2 == null?Long.MAX_VALUE:qtm.tickToMicrosABCOrganic(ne2.getStartTick()) - qtm.tickToMicrosABCOrganic(ne.getStartTick());
-				long neMicros = qtm.tickToMicrosABCOrganic(ne.getEndTick()) - qtm.tickToMicrosABCOrganic(ne.getStartTick());
-				long ne1Micros = qtm.tickToMicrosABCOrganic(ne1.getEndTick()) - qtm.tickToMicrosABCOrganic(ne1.getStartTick());
-				long ne2Micros = ne2 == null?0L:qtm.tickToMicrosABCOrganic(ne2.getEndTick()) - qtm.tickToMicrosABCOrganic(ne2.getStartTick());
+				long ne1RoomMicros = ne2 == null?Long.MAX_VALUE:ne2.startABCMicros - ne.startABCMicros;
+				long neMicros = ne.endABCMicros - ne.startABCMicros;
+				long ne1Micros = ne1.endABCMicros - ne1.startABCMicros;
+				long ne2Micros = ne2 == null?0L:ne2.endABCMicros - ne2.startABCMicros;
 				
 				// handle fast glissando
 				boolean glissRemoved = deprecated1(part, events, minimumMicros, removeGliss, curChord, ne,
 						curChordRoomMicros, ne1RoomMicros, ne1Micros, ne2Micros);
 				
 				if (glissRemoved) {
-					logNotes.warning(part.getTitle()+ ": deprecated 1st");
+					logNotes.severe(part.getTitle()+ ": deprecated 1st");
 					i--;
 					continue MAIN; 
 				}
 				
 				// turn very fast arpeggio into block chord
-				if (ne.tiesFrom == null && ne.note != Note.REST
+				if (ne.note != Note.REST
 						&& curChordRoomMicros < minimumMicros
-						&& (curChord.getEndTick() > ne.getStartTick() || part.getInstrument().isPercussion)
+						&& (curChord.getEndMicros() > ne.startABCMicros || part.getInstrument().isPercussion)
 						&& !curChord.dontMove1 && !curChord.glissando && !curChord.isRest()) {
 					// curr end before next start prevents handling grace notes, they will be deleted later if they too short
 					for (AbcNoteEvent small : curChord.getNotes()) {
-						if (small.tiesFrom != null || small.tiesTo != null) {
+						if (small.tiesTo != null) {
 							// curr chord has already been cut up, or broken up due to being long notes, skip it
 							i--;
 							curChord.dontMove1 = true;// to prevent infinite loop
@@ -2017,70 +2009,85 @@ public class AbcExporter {
 							continue MAIN;
 						}
 					}
+					List<AbcNoteEvent> removeFromCur = new ArrayList<>();
+					boolean hasTieFrom = ne.tiesFrom != null;
+					boolean foundTieFrom = false;
 					for (AbcNoteEvent small : curChord.getNotes()) {
 						// make sure next chord dont have any notes with same pitch as one from curChord
-
+						/*
 						for (int ii = i; ii < events.size(); ii++) {
 							AbcNoteEvent next = events.get(ii);
-							if (next.getStartTick() > ne.getEndTick()) {
+							if (next.startABCMicros > ne.endABCMicros) {
 								// no reason to check more notes
 								break;
 							}
-							if (next.getStartTick() == ne.getStartTick()) {
+							not sure why I did this for next notes, when
+							we are gonna come in here again anyway in next
+							iteration, if more notes needs this done.
+							*/
+							AbcNoteEvent next = ne; 
+							if (next.startABCMicros == ne.startABCMicros) {
 								if (next.note == small.note) {
-									// cancel
-									// TODO: serious think about what going on here and write detailed comments
-									i--;
-									curChord.dontMove1 = true;// to prevent infinite loop
-									logNotes.finer(part.getTitle()+" Keep arpeggio (next chord has same note)");
-									continue MAIN;
+									logNotes.finer("Removing small note from curChord.");
+									removeFromCur.add(small);
+									if (next.tiesFrom == small) {
+										foundTieFrom = true;
+										next.tiesFrom = small.tiesFrom;
+										next.tiesFrom.tiesTo = next;
+									} else if (small.tiesFrom != null) {
+										small.tiesFrom.tiesTo = null;
+										small.tiesFrom = null;
+									}
 								}
 							}
-						}
+						//}
 					}
-					
+					for(AbcNoteEvent small : removeFromCur) {
+						curChord.remove(small);
+						events.remove(small);
+						i--;
+					}
+					if (useRestToShortenChords && hasTieFrom && !foundTieFrom) {
+						// As we move ne into curChord, ne.tiesFrom is shortened so they don't overlap
+						// ne.tiesFrom is not part of curChord
+						ne.tiesFrom.endABCMicros = curChord.getStartMicros();
+						ne.tiesFrom.setEndTick(qtm.microsToTickABCOrganic(curChord.getStartMicros()));
+					}
 					// Its too complex to move current chord into next cords position, so we do the opposite:					
 					logNotes.finer(part.getTitle()+" Turned arpeggio into block chord (early start)");
-					ne.setStartTick(curChord.getStartTick());
+					ne.startABCMicros = curChord.getStartMicros();
+					ne.setStartTick(qtm.microsToTickABCOrganic(ne.startABCMicros));
 					curChord.add(ne);// we note that this will later be pruned (again)
 					curChord.arp += 1;
-					curChord.recalcEndTick();
+					curChord.recalcEndMicros();
 					continue MAIN;
 				} else {
-					logNotes.finest("Not arp:\n");
-					logNotes.finest(" microsTillNext < minimumMicros "+(curChordRoomMicros < minimumMicros));
-					logNotes.finest(" overlap "+(curChord.getEndTick() > ne.getStartTick()));
+					logNotes.finer("Not arp. curChord.dontMove1="+curChord.dontMove1+". curChord.isRest="+curChord.isRest()+", curChordRoomMicros<minimumMicros="+(curChordRoomMicros < minimumMicros)+", overlap="+(curChord.getEndMicros() > ne.startABCMicros));
 				}
 				
-				
-				long shortest = qtm.tickToMicrosABCOrganic(curChord.getEndTick()) - qtm.tickToMicrosABCOrganic(curChord.getStartTick());
-				long space = qtm.tickToMicrosABCOrganic(ne.getStartTick()) - qtm.tickToMicrosABCOrganic(curChord.getStartTick());
-				long minEndMicro = qtm.tickToMicrosABCOrganic(curChord.getStartTick()) + minimumMicros;
-				long curMinEndTick = qtm.microsToTickABCOrganic(minEndMicro);
-				if (shortest < minimumMicros && space >= minimumMicros && ne.getStartTick() >= curMinEndTick) {
+				long shortest = curChord.getEndMicros() - curChord.getStartMicros();
+				long space = ne.startABCMicros - curChord.getStartMicros();
+				long minEndMicros = curChord.getStartMicros() + minimumMicros;
+				if (shortest < minimumMicros && space >= minimumMicros && ne.startABCMicros >= minEndMicros) {
 					// one or more notes in curChord is too short, but they have room to expand
-					curChord.setEndTickExpand(curMinEndTick);
-					logNotes.fine(part.getTitle()+ ": Expanded");
+					curChord.setEndMicrosExpand(minEndMicros);
+					logNotes.finer(part.getTitle()+ ": Expanded");
 				}
 				
 				
 				// cut up curChord if some notes longer than others
 				boolean reprocessCurrentNote = false;
-				long curEndMicro = qtm.tickToMicrosABCOrganic(curChord.getEndTick());
-				long curStartMicro = qtm.tickToMicrosABCOrganic(curChord.getStartTick());
+				long curEndMicro = curChord.getEndMicros();
+				long curStartMicro = curChord.getStartMicros();
+				long cutTarget = Math.min(curEndMicro, ne.startABCMicros);
 				
-				/*
-				if (curEndMicro < curStartMicro) {
-					qtm.tickToMicrosABCOrganic2(curChord.getStartTick(),curChord.getEndTick());
-				}
-				*/
-				
-				long targetEndTick = Math.min(nextChord.getStartTick(), curChord.getEndTick());
-				long curMinEndFitTick = Math.min(curMinEndTick, targetEndTick);
+				long curMinEndFitMicros = Math.min(minEndMicros, cutTarget);
 				if (!curChord.glissando) {
 					for (int j = 0; j < curChord.size(); j++) {
 						AbcNoteEvent jne = curChord.get(j);
-						logNotes.finest(jne.note+" is on cutting table "+jne.getStartTick()+" - "+jne.getEndTick()+". targetEndTick="+targetEndTick+" curMinEndFitTick="+curMinEndFitTick);
+						logNotes.finer(jne.note+" is on cutting table "
+									+Util.formatDurationM(jne.startABCMicros)+" - "+Util.formatDurationM(jne.endABCMicros)
+									+". curEndMicros="+Util.formatDurationM(curEndMicro)+" cutTarget="+Util.formatDurationM(cutTarget)+" curMinEndFitMicros="+Util.formatDurationM(curMinEndFitMicros));
 						if (!part.getInstrument().sustainable) {
 							// This might be a bit controversial
 							// But here we fix the duration on the chord to minimum or shorter,
@@ -2088,8 +2095,9 @@ public class AbcExporter {
 							// Controversial due to you can't later experiment by putting
 							// a sustained instrument on this part, it will be ruined for that purpose.
 							// But this will make fitting it all together easier.
-							jne.setEndTick(curMinEndFitTick);
-							logNotes.finest(jne.note+" curMinEndFitTick="+curMinEndFitTick+" tiesTo="+(jne.tiesTo!=null));
+							jne.endABCMicros = curMinEndFitMicros;
+							jne.setEndTick(qtm.microsToTickABCOrganic(jne.endABCMicros));
+							logNotes.finer(jne.note+" curMinEndFitMicros="+curMinEndFitMicros+" tiesTo="+(jne.tiesTo!=null));
 							if (jne.tiesTo != null) {
 								AbcNoteEvent tie = jne;
 								while(tie.tiesTo != null) {
@@ -2102,17 +2110,18 @@ public class AbcExporter {
 									old.tiesTo = null;
 								}
 							}
-						} else if (!useRestToShortenChords && jne.getEndTick() > targetEndTick) {						
-							long noteEndMicro = qtm.tickToMicrosABCOrganic(jne.getEndTick());
-							if (curChord.getEndTick() == targetEndTick && noteEndMicro-curEndMicro < minimumMicros/2 && jne.tiesTo == null) {
-								// note ends approx same time as end of chord
-								// we make it end same time as shortest note in chord,
+						} else if (!useRestToShortenChords && jne.endABCMicros > cutTarget) {
+							long noteEndMicro = jne.endABCMicros;
+							if (noteEndMicro-cutTarget < minimumMicros/2 && jne.tiesTo == null) {
+								// note ends approx same time as cutTarget
+								// we make it end same time as cutTarget,
 								// chord might become slightly longer later.
-								jne.setEndTick(curChord.getEndTick());
-								logNotes.finer(part.getTitle()+ ": Fit note ending to chord ending. tiesTo="+(jne.tiesTo!=null));
+								jne.endABCMicros = cutTarget;
+								jne.setEndTick(qtm.microsToTickABCOrganic(jne.endABCMicros));
+								logNotes.finer(part.getTitle()+ ": Fit note ending to cut target. tiesTo="+(jne.tiesTo!=null));
 							} else {
 								// This note extends past the end of the chord; break it into two tied notes
-								AbcNoteEvent next = jne.splitWithTieAtTick(targetEndTick);
+								AbcNoteEvent next = jne.splitWithTieAtTick(qtm.microsToTickABCOrganic(cutTarget), cutTarget);
 								
 								int ins = Collections.binarySearch(events, next);
 								if (ins < 0)
@@ -2130,7 +2139,7 @@ public class AbcExporter {
 					}
 				}
 				// The shorter notes will have changed the chord's duration
-				curChord.recalcEndTick();
+				curChord.recalcEndMicros();
 				if (reprocessCurrentNote) {
 					i--;
 					logNotes.finest(part.getTitle()+ ": Chord was cut up, reprocessing..");
@@ -2139,7 +2148,7 @@ public class AbcExporter {
 				
 				// Insert a rest into current chord if need to shorten chord
 				if (useRestToShortenChords && !curChord.hadRestAndNotes()
-						&& curChord.getEndTick() > nextChord.getStartTick()) {// && curChord.getEndTick() > targetEndTick
+						&& curChord.getEndMicros() > nextChord.getStartMicros()) {// && curChord.getEndMicros() > targetEndMicros
 					// The reason we only do this for sustainable is they benefit from this only,
 					// and adding a rest do limit the same time starting notes to 5.
 					// As long as the shortest is longer than next start we add a rest
@@ -2148,8 +2157,11 @@ public class AbcExporter {
 					// If there is notes same dura or shorter as the rest we insert,
 					// and they don't get pruned, the rest itself will get pruned, to not bloat.
 					tmpEvents.clear();
-					tmpEvents.add(new AbcNoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, curChord.getStartTick(),
-							Math.max(curMinEndTick, nextChord.getStartTick()), qtm, null));
+					long endMicro = Math.max(minEndMicros, nextChord.getStartMicros());
+					AbcNoteEvent shortRest = new AbcNoteEvent(Note.REST, Dynamics.DEFAULT.midiVol,qtm.microsToTickABCOrganic(curChord.getStartMicros()),qtm.microsToTickABCOrganic(endMicro), qtm, null);
+					shortRest.startABCMicros = curChord.getStartMicros();
+					shortRest.endABCMicros = endMicro;
+					tmpEvents.add(shortRest);
 					breakLongNotesOrganic(part, tmpEvents);
 					if (tmpEvents.size() > 0) {
 						int ins = Collections.binarySearch(events, tmpEvents.get(0));
@@ -2170,9 +2182,9 @@ public class AbcExporter {
 							logNotes.finer(part.getAbcSong().getSongTitle()+": 6 note chord had rest added !!!!!!!!!!");
 						}
 					}
-					logNotes.fine(part.getTitle()+ ": Inserted a rest into current chord to make it shorter newEndtick="+Math.max(curMinEndTick, nextChord.getStartTick()));
+					logNotes.fine(part.getTitle()+ ": Inserted a rest into current chord to make it shorter newEndMicros="+Math.max(minEndMicros, nextChord.getStartMicros()));
 				}
-				curChord.recalcEndTick();
+				curChord.recalcEndMicros();
 				if (reprocessCurrentNote) {
 					//i--;
 					logNotes.finest(part.getTitle()+ ": curChord was shortened using rests, reprocessing..");
@@ -2180,12 +2192,11 @@ public class AbcExporter {
 				}
 				
 				// Expand into gap to next chord if the gap is smaller than 0.06s
-				long oldCurEndMicro = qtm.tickToMicrosABCOrganic(curChord.getEndTick());
-				if (curChord.getEndTick() < nextChord.getStartTick()) {
-					long restMicros = qtm.tickToMicrosABCOrganic(nextChord.getStartTick()) - oldCurEndMicro;
+				long oldCurEndMicro = curChord.getEndMicros();
+				if (curChord.getEndMicros() < nextChord.getStartMicros()) {
+					long restMicros = nextChord.getStartMicros() - oldCurEndMicro;
 					if (restMicros <= minimumMicros && curChord.expandedMicros == null) {
-						assert nextChord.getStartTick() > curChord.getEndTick(); 
-						curChord.setEndTickExpand(nextChord.getStartTick());//TODO: breakup elongated notes
+						curChord.setEndMicrosExpand(nextChord.getStartMicros());//TODO: breakup elongated notes
 						
 						// later we might undo some of this, expandedMicros is how much we are allowed to undo.
 						curChord.expandedMicros = Math.min((oldCurEndMicro-curStartMicro)-minimumMicros, restMicros);
@@ -2196,22 +2207,21 @@ public class AbcExporter {
 				}
 				
 				// Handle curr chord if its shorter than 0.06s
-				if (curChord.getEndTick() < curMinEndTick && !curChord.dontMove2) {
-					long earlyCurrMicro = qtm.tickToMicrosABCOrganic(curChord.getEndTick()) - minimumMicros;
-					long earlyCurrTick = qtm.microsToTickABCOrganic(earlyCurrMicro);
-					logNotes.fine(part.getTitle()+": curChord too short. ends at "+curChord.getEndTick()+", ideal end at "+curMinEndTick);
+				if (curChord.getEndMicros() < minEndMicros && !curChord.dontMove2) {
+					long earlyCurrMicro = curChord.getEndMicros() - minimumMicros;
+					logNotes.finer(part.getTitle()+": curChord too short. ends at "+curChord.getEndMicros()+", ideal end at "+minEndMicros);
 					// test if we should early start curr chord
 					if (!useRestToShortenChords && ne2 != null && ne1RoomMicros < minimumMicros
 							&& curStartMicro - earlyCurrMicro < minimumMicros/2) {
 						// Both curr and ne does not have enough room.
 						// We need less than half of minimum though
 						if (prevRestChord != null
-								&& earlyCurrMicro - qtm.tickToMicrosABCOrganic(prevRestChord.getStartTick()) > minimumMicros) {
+								&& earlyCurrMicro - prevRestChord.getStartMicros() > minimumMicros) {
 							// There is a rest before curr that can be expanded into
-							curChord.early = earlyCurrTick;//TODO: breakup elongated notes
+							curChord.early = earlyCurrMicro;//TODO: breakup elongated notes
 							curChord.dontMove2 = true;
-							logNotes.fine(part.getTitle()+": Early start of 1st of two trills/gliss notes (rest). cur_early="+earlyCurrTick+" cur_start="+curChord.getStartTick()+" prev_end="+prevRestChord.getEndTick());
-							prevRestChord.setEndTickRetract(earlyCurrTick);
+							logNotes.finer(part.getTitle()+": Early start of 1st of two trills/gliss notes (rest). cur_early="+earlyCurrMicro+" cur_start="+curChord.getStartMicros()+" prev_end="+prevRestChord.getEndMicros());
+							prevRestChord.setEndMicrosRetract(earlyCurrMicro);
 							if (assertionsEnabled) assertSoftDura(prevRestChord, minimumMicros*4/5);
 							
 							i--;							
@@ -2219,11 +2229,11 @@ public class AbcExporter {
 						} else if (prevRestChord == null && prevChord != null && prevChord.expandedMicros != null
 								&& prevChord.expandedMicros > curStartMicro - earlyCurrMicro) {
 							// There is a chord before curr that can be expanded into
-							curChord.early = earlyCurrTick;//TODO: breakup elongated notes
+							curChord.early = earlyCurrMicro;//TODO: breakup elongated notes
 							curChord.dontMove2 = true;
 							// any ties will still hold as there will be no gap
-							logNotes.fine(part.getTitle()+": Early start of 1st of two trills/gliss notes (chord). cur_early="+earlyCurrTick+" cur_start="+curChord.getStartTick()+" prev_end="+prevChord.getEndTick());
-							prevChord.setEndTickRetract(earlyCurrTick);
+							logNotes.finer(part.getTitle()+": Early start of 1st of two trills/gliss notes (chord). cur_early="+earlyCurrMicro+" cur_start="+curChord.getStartMicros()+" prev_end="+prevChord.getEndMicros());
+							prevChord.setEndMicrosRetract(earlyCurrMicro);
 							prevChord.expandedMicros = null;
 							if (assertionsEnabled) assertSoftDura(prevChord, minimumMicros*4/5);
 							i--;							
@@ -2232,13 +2242,13 @@ public class AbcExporter {
 					}
 					
 					// Else try to make it longer					
-					if (nextChord.getStartTick() >= curMinEndTick) {
-						curChord.setEndTickExpand(curMinEndTick);
-						logNotes.fine(part.getTitle()+ ": trying to expand curChord to end at "+curMinEndTick);
+					if (nextChord.getStartMicros() >= minEndMicros) {
+						curChord.setEndMicrosExpand(minEndMicros);
+						logNotes.finer(part.getTitle()+ ": trying to expand curChord to end at "+minEndMicros);
 					} else {
 						// there was not room for a larger chord
 						int curValue = calcValue(curChord, part.getInstrument().sustainable);
-						long neMicroStart = qtm.tickToMicrosABCOrganic(ne.getStartTick());
+						long neMicroStart = ne.startABCMicros;
 						if (!curChord.glissando) {
 							boolean isRattle = true;
 							for (AbcNoteEvent n : curChord.getNotes()) {
@@ -2247,22 +2257,24 @@ public class AbcExporter {
 									break;
 								}
 							}
-							if ((ne2 == null || ne1RoomMicros > minimumMicros*2) && ne1.getEndTick() > curMinEndTick
-									&& (minEndMicro-neMicroStart < minimumMicros/2)) {//  || ne1Micros > minimumMicros*2
+							if ((ne2 == null || ne1RoomMicros > minimumMicros*2) && ne1.endABCMicros > minEndMicros
+									&& (minEndMicros-neMicroStart < minimumMicros/2)) {//  || ne1Micros > minimumMicros*2
 								// delay start of next chord up to 30 ms
-								long oldStartTick = ne.getStartTick();
+								long oldStartMicros = ne.startABCMicros;
 								for (int ii = i; ii < events.size(); ii++) {
 									AbcNoteEvent over = events.get(ii);
-									if (over.getStartTick() > oldStartTick) {
+									if (over.startABCMicros > oldStartMicros) {
 										break;
 									}
-									if (over.getStartTick() == oldStartTick) {
+									if (over.startABCMicros == oldStartMicros) {
 										// should be ok to do this even if tiesFrom is non-null
 										// since the tiesFrom has been expanded to end here
-										if (over.getLengthTicks() == 0L) {
-											over.setEndTick(curMinEndTick);
+										if (over.endABCMicros-over.startABCMicros == 0L) {
+											over.endABCMicros = minEndMicros;
+											over.setEndTick(qtm.microsToTickABCOrganic(minEndMicros));
 										}
-										over.setStartTick(curMinEndTick);
+										over.startABCMicros = minEndMicros;
+										over.setStartTick(qtm.microsToTickABCOrganic(minEndMicros));
 										
 										// TODO: Delaying start of next
 									}
@@ -2270,10 +2282,10 @@ public class AbcExporter {
 								
 								//going back and forth between micros and ticks is not always 1:1, so we stop infinite loops by setting this
 								curChord.dontMove2 = true;
-								curChord.setEndTickExpand(curMinEndTick);
+								curChord.setEndMicrosExpand(minEndMicros);
 								
 								i--;
-								logNotes.fine(part.getTitle()+" Delayed sequential chord by "+ ((minEndMicro-neMicroStart)/1000)+" ms 1");
+								logNotes.finer(part.getTitle()+" Delayed sequential chord by "+ ((minEndMicros-neMicroStart)/1000)+" ms 1");
 								continue MAIN;
 							} else if (!isRattle && ne2 != null && (isRattle(part, ne) || (ne1RoomMicros < minimumMicros
 									&& neMicros < minimumMicros))) {
@@ -2351,10 +2363,11 @@ public class AbcExporter {
 									
 								}
 								if (doable) {
-									ne.setStartTick(curChord.getStartTick());
+									ne.startABCMicros = curChord.getStartMicros();
+									ne.setStartTick(qtm.microsToTickABCOrganic(curChord.getStartMicros()));
 									curChord.add(ne);// we note that this will later be pruned (again)
 									curChord.arp += 1;
-									curChord.recalcEndTick();
+									curChord.recalcEndMicros();
 									logNotes.finer(part.getTitle()+": Included late arpeggio to block chord");
 									continue MAIN;
 								}
@@ -2381,24 +2394,24 @@ public class AbcExporter {
 								events.remove(ne);
 								i--;
 								curChord.removeRests();// It might not need the rest anymore so we remove it. Might get re-added.
-								curChord.recalcEndTick();
-								logNotes.fine(part.getTitle()+": Removed low value next chord");
+								curChord.recalcEndMicros();
+								logNotes.finer(part.getTitle()+": Removed low value next chord");
 								//note that this will make next chord even lower value,
 								//so rest of next chords notes will also be removed.
 								continue MAIN;
 							}
 							// give up and schedule curr chord for deletion, it likely contains a grace note
-							curChord.setEndTickRetract(curChord.getStartTick());
+							curChord.setEndMicrosRetract(curChord.getStartMicros());
 							curChord.delete = true;
-							logNotes.fine(part.getTitle()+": Removed short dura chord with "+curChord.size()+" notes. "+curChord.getStartTick());
+							logNotes.finer(part.getTitle()+": Removed short dura chord with "+curChord.size()+" notes. "+curChord.getStartMicros());
 							
 						} else {
 							// deprecated
-							logNotes.warning(part.getTitle()+ ": deprecated!!");
-							curChord.setEndTickExpand(curMinEndTick);
+							logNotes.severe(part.getTitle()+ ": deprecated!!");
+							curChord.setEndMicrosExpand(minEndMicros);
 							
 							boolean reRun = deprecated2(part, events, minimumMicros, curChord, i, ne, ne1, ne2,
-									ne1RoomMicros, ne1Micros, minEndMicro, curMinEndTick, neMicroStart);
+									ne1RoomMicros, ne1Micros, minEndMicros, minEndMicros, neMicroStart);
 							
 							if (reRun == true) {
 								continue MAIN;
@@ -2408,31 +2421,34 @@ public class AbcExporter {
 				}
 				assertSoftDura(curChord, minimumMicros*99/100);
 				
-				//System.out.println(curChord.getEndTick()+" < "+nextChord.getStartTick());
+				//System.out.println(curChord.getEndMicros()+" < "+nextChord.getStartMicros());
 				
 				// Insert a rest between the cur and next if needed
-				if (curChord.getEndTick() < nextChord.getStartTick()) {
-					long restMicros = qtm.tickToMicrosABCOrganic(nextChord.getStartTick()) - qtm.tickToMicrosABCOrganic(curChord.getEndTick());
+				if (curChord.getEndMicros() < nextChord.getStartMicros()) {
+					long restMicros = nextChord.getStartMicros() - curChord.getEndMicros();
 					if (restMicros >= minimumMicros) {
 						// there is space to make a rest
 						tmpEvents.clear();
-						tmpEvents.add(new AbcNoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, curChord.getEndTick(),
-								nextChord.getStartTick(), qtm, null));
+						AbcNoteEvent rest = new AbcNoteEvent(Note.REST, Dynamics.DEFAULT.midiVol,qtm.microsToTickABCOrganic(curChord.getEndMicros()),
+								qtm.microsToTickABCOrganic(nextChord.getStartMicros()), qtm, null);
+						tmpEvents.add(rest);
+						rest.startABCMicros = curChord.getEndMicros();
+						rest.endABCMicros = nextChord.getStartMicros();
 						breakLongNotesOrganic(part, tmpEvents);
 						
 						for (AbcNoteEvent restEvent : tmpEvents) {
-							Chord restChord = new Chord(restEvent);
+							ChordOrganic restChord = new ChordOrganic(restEvent, qtm);
 							chords.add(restChord);
 							prevRestChord = restChord;//break long notes keep them sorted so this is last
 							assertSoftDura(restChord, minimumMicros*99/100);
 						}
-						logNotes.finest(part.getTitle()+ ": add rest: "+curChord.getEndTick()+" - "+nextChord.getStartTick());
+						logNotes.finest(part.getTitle()+ ": add rest: "+curChord.getEndMicros()+" - "+nextChord.getStartMicros());
 					} else {
 						if (curChord.delete) {
 							// If we reach this code, then curr has been scheduled for deletion.
 							// Here we can either make next chord start sooner
 							// or find the chord before curr and expand that.
-							Chord chordToExpand = null;
+							ChordOrganic chordToExpand = null;
 							boolean found = false;
 							for(int k = chords.size()-1;k>=0;k--) {
 								if (!chords.get(k).delete) {
@@ -2442,24 +2458,24 @@ public class AbcExporter {
 								}
 							}
 
-							long expandCandidateMicros = found?(qtm.tickToMicrosABCOrganic(chordToExpand.getEndTick()) - qtm.tickToMicrosABCOrganic(chordToExpand.getStartTick())):0L; 
+							long expandCandidateMicros = found?(chordToExpand.getEndMicros() - chordToExpand.getStartMicros()):0L; 
 							if (!found || expandCandidateMicros > AbcConstants.LONGEST_NOTE_MICROS - AbcConstants.ONE_SECOND_MICROS/2 || ne1RoomMicros < minimumMicros) {
 								// We make next start sooner, since curChord is first chord or prev is longer than 7.5s
 								// this has the added benefit that if next chord is
 								// too short too, it will be longer.
-								nextChord.early = curChord.getEndTick();//TODO: breakup elongated notes
+								nextChord.early = curChord.getEndMicros();//TODO: breakup elongated notes
 								logNotes.fine(part.getTitle()+ ": Early start A");
 							} else if (found) {
-								chordToExpand.setEndTickExpand(ne.getStartTick());//TODO: breakup elongated notes
-								logNotes.fine(part.getTitle()+ ": Prev ("+chordToExpand.getStartTick()+") expanded to "+ne.getStartTick()+" isRest="+chordToExpand.isRest()+" isDeleted="+chordToExpand.delete);
+								chordToExpand.setEndMicrosExpand(ne.startABCMicros);//TODO: breakup elongated notes
+								logNotes.fine(part.getTitle()+ ": Prev ("+chordToExpand.getStartMicros()+") expanded to "+ne.startABCMicros+" isRest="+chordToExpand.isRest()+" isDeleted="+chordToExpand.delete);
 								//curChord = chordToExpand;
 							} else {
-								nextChord.early = curChord.getEndTick();//TODO: breakup elongated notes
+								nextChord.early = curChord.getEndMicros();//TODO: breakup elongated notes
 								logNotes.fine(part.getTitle()+ ": Early start B");
 							}
 							curChord = chordToExpand;
 						} else {
-							curChord.setEndTickExpand(ne.getStartTick());//TODO: breakup elongated notes
+							curChord.setEndMicrosExpand(ne.startABCMicros);//TODO: breakup elongated notes
 							logNotes.finest(part.getTitle()+ ": Chord expanded to fill gap");
 						}
 						prevRestChord = null;
@@ -2469,8 +2485,9 @@ public class AbcExporter {
 					prevRestChord = null;
 					
 					if (useRestToShortenChords) {
-						if (curChord.getEndTick() > nextChord.getStartTick()) {
-							ne.setStartTick(curChord.getStartTick());
+						if (curChord.getEndMicros() > nextChord.getStartMicros()) {
+							ne.startABCMicros = curChord.getStartMicros();
+							ne.setStartTick(qtm.microsToTickABCOrganic(curChord.getStartMicros()));
 							curChord.removeRests();
 							AbcNoteEvent same = null;
 							for (AbcNoteEvent cn : curChord.getNotes()) {
@@ -2491,8 +2508,9 @@ public class AbcExporter {
 								same.tiesFrom = null;
 								same.tiesTo = null;
 							} else if (ne.tiesFrom != null) {
-								ne.tiesFrom.setEndTick(ne.getStartTick());
-								logNotes.finer(part.getTitle()+": Adjusting tiesFrom endTick while shuffling ne into curr");
+								ne.tiesFrom.endABCMicros = ne.startABCMicros;
+								ne.tiesFrom.setEndTick(qtm.microsToTickABCOrganic(ne.startABCMicros));
+								logNotes.finer(part.getTitle()+": Adjusting tiesFrom endMicros while shuffling ne into curr");
 							}
 							logNotes.fine(part.getTitle()+": Shuffle ne into curr");
 							i--;
@@ -2509,47 +2527,49 @@ public class AbcExporter {
 					 * 
 					 */
 					for (AbcNoteEvent evt : curChord.getNotes()) {
-						long mics = qtm.tickToMicrosABCOrganic(evt.getEndTick()) - qtm.tickToMicrosABCOrganic(evt.getStartTick());
+						long mics = evt.endABCMicros - evt.startABCMicros;
 						assert mics <= TimingInfo.LONGEST_NOTE_MICROS + 500L: evt.note+" micros="+mics;
-					}					
-					long endCur = curChord.getEndTick();
-					curChord.recalcEndTick();
-					assert endCur == curChord.getEndTick();
+					}
+					long endCur = curChord.getEndMicros();
+					curChord.recalcEndMicros();
+					assert endCur == curChord.getEndMicros():"endMicros was not synced with chord content in "+curChord.toStringDuraMicros();
 					
-					//Chord realCurChord = chords.size()>0?chords.get(chords.size()-1):curChord;
-					Chord realCurChord = null;
+					/*
+					 * realCurChord is last non-deleted chord in chords.
+					 */
+					ChordOrganic realCurChord = null;
 					boolean found = false;
-					for(int k = chords.size()-1;k>=0;k--) {
+					for(int k = chords.size()-1; k >= 0; k--) {
 						if (!chords.get(k).delete) {
 							realCurChord = chords.get(k);
 							found = true;
 							break;
 						}
 					}
-					endCur = found?realCurChord.getEndTick():nextChord.getStartTick();
-					assert endCur == nextChord.getStartTick() || (nextChord.early != null && endCur == nextChord.early):endCur+" != "+nextChord.getStartTick()+" next_early="+nextChord.early;
+					endCur = found?realCurChord.getEndMicros():nextChord.getStartMicros();
+					assert endCur == nextChord.getStartMicros() || (nextChord.early != null && endCur == nextChord.early):"chords not aligned. "+Util.formatDurationM(endCur)+" != "+Util.formatDurationM(nextChord.getStartMicros())+" next_early="+nextChord.early;
 					
 					/*
 					// debug code to investigate specific chord gaps
-					if (!useRestToShortenChords && curChord.getEndTick() == 92927) {
+					if (!useRestToShortenChords && curChord.getEndMicros() == 92927) {
 						System.out.println("\nCh: "+curChord.toStringDura()+" useRest="+useRestToShortenChords+" delete="+curChord.delete);
 						
 						for (AbcNoteEvent n : curChord.getNotes()) {
-							System.out.println(n.note+": "+n.getStartTick()+" - "+n.getEndTick()+" tiesFrom="+(n.tiesFrom != null));
+							System.out.println(n.note+": "+n.startABCMicros+" - "+n.endABCMicros+" tiesFrom="+(n.tiesFrom != null));
 						}
 						if (chords.size()>1) {
 							System.out.println("\npre: "+chords.get(chords.size()-2).toStringDura()+" delete="+curChord.delete);
 							for (AbcNoteEvent n : chords.get(chords.size()-2).getNotes()) {
-								System.out.println(n.note+": "+n.getStartTick()+" - "+n.getEndTick()+" tiesTo="+(n.tiesTo != null));
+								System.out.println(n.note+": "+n.startABCMicros+" - "+n.endABCMicros+" tiesTo="+(n.tiesTo != null));
 							}
 							if (chords.size()>2) {
 								System.out.println("\npre-: "+chords.get(chords.size()-3).toStringDura()+" delete="+curChord.delete);
 								for (AbcNoteEvent n : chords.get(chords.size()-3).getNotes()) {
-									System.out.println(n.note+": "+n.getStartTick()+" - "+n.getEndTick());
+									System.out.println(n.note+": "+n.startABCMicros+" - "+n.endABCMicros);
 								}
 							}
 						}
-						//assert chords.get(chords.size()-2).getEndTick() == curChord.getStartTick();
+						//assert chords.get(chords.size()-2).endABCMicros == curChord.getStartMicros();
 						//assert false:"stopped";
 					}
 					*/
@@ -2572,7 +2592,7 @@ public class AbcExporter {
 			}
 		}
 		
-		for (Chord chord : chords) {
+		for (ChordOrganic chord : chords) {
 			if (assertionsEnabled && chord != curChord) assertSoftDura(chord, minimumMicros*99/100);
 		}
 
@@ -2585,17 +2605,17 @@ public class AbcExporter {
 			// The last Chord has all the notes it will get. But before continuing,
 			// normalize the chord so that all notes end at the same time
 			if (curChord.early != null) {
-				curChord.setEarlyStartTick(useRestToShortenChords);
-				if (prevChord != null) prevChord.recalcEndTick();
+				curChord.setEarlyStartMicros(useRestToShortenChords);
+				if (prevChord != null) prevChord.recalcEndMicros();
 				logNotes.fine("Last chord: early start");
 			}
 			
 			
 			// remove zero duration notes if longer notes start at same time
-			if (curChord.getLongestEndTick() > curChord.getStartTick()) {
+			if (curChord.getLongestEndMicros() > curChord.getStartMicros()) {
 				for (int j = 0; j < curChord.size(); j++) {
 					AbcNoteEvent jne = curChord.get(j);
-					if (jne.getEndTick() == jne.getStartTick()) {
+					if (jne.endABCMicros == jne.startABCMicros) {
 						// this note is zero duration and others in the chord is not
 						curChord.remove(jne);
 						logNotes.finest("Last chord: remove a zero dura note");
@@ -2609,7 +2629,7 @@ public class AbcExporter {
 					}
 				}
 				// The removal will have changed the chord's duration
-				curChord.recalcEndTick();
+				curChord.recalcEndMicros();
 			}
 			
 			
@@ -2617,37 +2637,38 @@ public class AbcExporter {
 			List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
 					part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part);
 			removeNotes(events, deadnotes, part);// we need to set the pruned flag for last chord too.
-			curChord.recalcEndTick();
+			curChord.recalcEndMicros();
 			
-			logNotes.fine(part.getTitle()+" final note ends at "+Util.formatDurationM(qtm.tickToMicrosABCOrganic(curChord.getEndTick()-exportStartTick)));
+			logNotes.fine(part.getTitle()+" final note ends at "+Util.formatDurationM(curChord.getEndMicros()-qtm.tickToMicrosABCOrganic(exportStartTick)));
 			
-			if (qtm.tickToMicrosABCOrganic(curChord.getEndTick()) < qtm.tickToMicrosABCOrganic(curChord.getStartTick()) + minimumMicros) {
-				curChord.setEndTickExpand(qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(curChord.getStartTick()) + minimumMicros));
+			if (curChord.getEndMicros() < curChord.getStartMicros() + minimumMicros) {
+				curChord.setEndMicrosExpand(curChord.getStartMicros() + minimumMicros);
 				logNotes.fine("Last chord: expand dura");
 			}
 			
-			long targetEndTick = curChord.getEndTick();
+			long targetEndMicros = curChord.getEndMicros();
 			reprocessLastChord = false;
 			
-			Chord nextChord = null;
+			ChordOrganic nextChord = null;
 			if (!useRestToShortenChords) {
-				long curEndMicro = qtm.tickToMicrosABCOrganic(curChord.getEndTick());
+				long curEndMicro = curChord.getEndMicros();
 				for (int j = 0; j < curChord.size(); j++) {
 					AbcNoteEvent jne = curChord.get(j);
-					if (jne.getEndTick() > targetEndTick) {
-						long noteEndMicro = qtm.tickToMicrosABCOrganic(jne.getEndTick());
-						if (curChord.getEndTick() == targetEndTick && noteEndMicro-curEndMicro < minimumMicros/2 && jne.tiesTo == null) {
+					if (jne.endABCMicros > targetEndMicros) {
+						long noteEndMicro = jne.endABCMicros;
+						if (noteEndMicro-curEndMicro < minimumMicros/2 && jne.tiesTo == null) {
 							// note ends approx same time as end of chord
 							// we make it end same time as shortest note in chord,
 							// chord might become slightly longer later.
-							jne.setEndTick(curChord.getEndTick());
+							jne.endABCMicros = curChord.getEndMicros();
+							jne.setEndTick(qtm.microsToTickABCOrganic(curChord.getEndMicros()));
 							logNotes.finer(part.getTitle()+ ": Fit note ending to last chord ending");
 						} else {
 							// This note extends past the end of the chord; break it into two tied notes
 							logNotes.finest("Last chord: cut up chord");
-							AbcNoteEvent next = jne.splitWithTieAtTick(targetEndTick);
+							AbcNoteEvent next = jne.splitWithTieAtTick(qtm.microsToTickABCOrganic(targetEndMicros), targetEndMicros);
 							if (nextChord == null) {
-								nextChord = new Chord(next);
+								nextChord = new ChordOrganic(next, qtm);
 								chords.add(nextChord);
 							} else {
 								nextChord.add(next);
@@ -2656,7 +2677,7 @@ public class AbcExporter {
 					}
 				}
 			}
-			curChord.recalcEndTick();
+			curChord.recalcEndMicros();
 			
 			if (assertionsEnabled && curChord != null) {
 				/*
@@ -2665,34 +2686,34 @@ public class AbcExporter {
 				 * 
 				 */
 				for (AbcNoteEvent evt : curChord.getNotes()) {
-					long mics = qtm.tickToMicrosABCOrganic(evt.getEndTick()) - qtm.tickToMicrosABCOrganic(evt.getStartTick());
+					long mics = evt.endABCMicros - evt.startABCMicros;
 					assert mics <= TimingInfo.LONGEST_NOTE_MICROS + 500L: evt.note+" micros="+mics;
 				}					
-				long endCur = curChord.getEndTick();
-				curChord.recalcEndTick();
-				assert endCur == curChord.getEndTick();
+				long endCur = curChord.getEndMicros();
+				curChord.recalcEndMicros();
+				assert endCur == curChord.getEndMicros();
 				
 				/*
 				// debug code to investigate specific chord gaps
-				if (!useRestToShortenChords && curChord.getStartTick() == 92859) {
+				if (!useRestToShortenChords && curChord.getStartMicros() == 92859) {
 					System.out.println("\nCh: "+curChord.toStringDura()+" useRest="+useRestToShortenChords+" delete="+curChord.delete);
 					
 					for (AbcNoteEvent n : curChord.getNotes()) {
-						System.out.println(n.note+": "+n.getStartTick()+" - "+n.getEndTick()+" tiesFrom="+(n.tiesFrom != null));
+						System.out.println(n.note+": "+n.startABCMicros+" - "+n.endABCMicros+" tiesFrom="+(n.tiesFrom != null));
 					}
 					if (chords.size()>1) {
 						System.out.println("\npre: "+chords.get(chords.size()-2).toStringDura()+" delete="+curChord.delete);
 						for (AbcNoteEvent n : chords.get(chords.size()-2).getNotes()) {
-							System.out.println(n.note+": "+n.getStartTick()+" - "+n.getEndTick()+" tiesTo="+(n.tiesTo != null));
+							System.out.println(n.note+": "+n.startABCMicros+" - "+n.endABCMicros+" tiesTo="+(n.tiesTo != null));
 						}
 						if (chords.size()>2) {
 							System.out.println("\npre-: "+chords.get(chords.size()-3).toStringDura()+" delete="+curChord.delete);
 							for (AbcNoteEvent n : chords.get(chords.size()-3).getNotes()) {
-								System.out.println(n.note+": "+n.getStartTick()+" - "+n.getEndTick());
+								System.out.println(n.note+": "+n.startABCMicros+" - "+n.endABCMicros);
 							}
 						}
 					}
-					//assert chords.get(chords.size()-2).getEndTick() == curChord.getStartTick();
+					//assert chords.get(chords.size()-2).endABCMicros == curChord.getStartMicros();
 					//assert false:"stopped";
 				}
 				*/
@@ -2702,7 +2723,7 @@ public class AbcExporter {
 			if (nextChord != null) {
 				reprocessLastChord = true;
 				curChord = nextChord;
-				curChord.recalcEndTick();
+				curChord.recalcEndMicros();
 			}
 		}
 		assert !curChord.hasRestAndNotes() || useRestToShortenChords;
@@ -2711,8 +2732,8 @@ public class AbcExporter {
 		List<Chord> trash = new ArrayList<>();
 		int count = 0;
 		for (int i = 0; i < chords.size(); i++) {
-			Chord chord = chords.get(i);
-			if (chord.getStartTick() == chord.getEndTick()) {
+			ChordOrganic chord = chords.get(i);
+			if (chord.getStartMicros() == chord.getEndMicros()) {
 				for (int j = 0; j < chord.size(); j++) {
 					AbcNoteEvent note = chord.get(j);
 					AbcNoteEvent tieIn = note.tiesFrom;
@@ -2733,11 +2754,10 @@ public class AbcExporter {
 			}
 		}
 		chords.removeAll(trash);
-		/*
+		
 		if (count > 0) {
-			System.out.println(part.getAbcSong().getSongTitle()+": deleting "+count+ " resting chords due to rest being too short !!!!!!");
+			logNotes.fine(part.getAbcSong().getSongTitle()+": deleting "+count+ " resting chords due to rest being too short !!!!!!");
 		}
-		*/
 		if (useRestToShortenChords) {
 			/*
 			 * It can happen that a note that is longer than the chord
@@ -2748,68 +2768,72 @@ public class AbcExporter {
 			 */
 			List<AbcNoteEvent> notesOn = new ArrayList<>();
 			Long lastEnd = null;
-			for (Chord chord : chords) {
+			for (ChordOrganic chord : chords) {
 				
-				if (lastEnd != null) assert chord.getStartTick() == lastEnd:"Gap between chords1. Start tick (second):"+chord.getStartTick();
+				if (lastEnd != null) assert chord.getStartMicros() == lastEnd:"Gap between chords1. Start micros (second):"+chord.getStartMicros();
 				
 				for (AbcNoteEvent curr : chord.getNotes()) {
 					for (AbcNoteEvent pre : notesOn) {
 						if (pre.note == curr.note) {
-							assert curr.getEndTick() > pre.getEndTick();
-							pre.setEndTick(curr.getStartTick());
+							assert curr.endABCMicros > pre.endABCMicros;
+							pre.endABCMicros = curr.startABCMicros;
+							pre.setEndTick(qtm.microsToTickABCOrganic(curr.startABCMicros));
 							logNotes.fine(part.getTitle()+": normalizing note!1! tied="+(pre.tiesTo != null));
 						}
 					}
 				}
-				List longerNotes = new ArrayList<>();				
+				List<AbcNoteEvent> longerNotes = new ArrayList<>();				
 				for (AbcNoteEvent ne : chord.getNotes()) {
-					if (ne.getEndTick() > chord.getEndTick()) {
+					if (ne.endABCMicros > chord.getEndMicros()) {
 						longerNotes.add(ne);
 					}
 				}
-				List notesOff = new ArrayList();
+				List<AbcNoteEvent> notesOff = new ArrayList<>();
 				for (AbcNoteEvent ne : notesOn) {
-					if (ne.getEndTick() <= chord.getEndTick()) {
+					if (ne.endABCMicros <= chord.getEndMicros()) {
 						notesOff.add(ne);
 					}
 				}
 				notesOn.removeAll(notesOff);
 				notesOn.addAll(longerNotes);
 				
-				lastEnd = chord.getEndTick();
+				lastEnd = chord.getEndMicros();
 				
 				if (assertionsEnabled) assertSoftDura(chord, minimumMicros*99/100);
 			}
 		} else if (assertionsEnabled) {
-			Chord preChord = null;
-			for (Chord chord : chords) {
+			ChordOrganic preChord = null;
+			for (ChordOrganic chord : chords) {
 				assert chord.isConform():part.getAbcSong().getTitle()+"( "+part.getTitle()+"): not conform 3.";
 				assert chord.isLinked():part.getAbcSong().getTitle()+"( "+part.getTitle()+"): not linked. "+part.getTitle();
-				assert preChord==null || preChord.getEndTick() == chord.getStartTick():"Gap between chords2. Start tick (second):"+chord.getStartTick();
+				assert preChord==null || preChord.getEndMicros() == chord.getStartMicros():"Gap between chords2. Start Micro (second):"+chord.getStartMicros();
 				preChord = chord;
 			}
 		}
 		if (assertionsEnabled) {
-			for (Chord chord : chords) {
+			for (ChordOrganic chord : chords) {
 				assertSoftDura(chord, minimumMicros*99/100);
 			}
 		}
 		
-		return chords;
+		List<Chord> returnList = new ArrayList<>(chords.size());
+		returnList.addAll(chords);
+		return returnList;
 	}
 	
-	private void assertSoftDura(Chord chord, long minimum) {
+	private void assertSoftDura(ChordOrganic chord, long minimum) {
 		if (chord == null) return;
-		chord.recalcEndTick();
+		chord.recalcEndMicros();
 		long chordDura = qtm.tickToMicrosABCOrganic(chord.getEndTick())-qtm.tickToMicrosABCOrganic(chord.getStartTick());
 		long maxEndTick = qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(chord.getStartTick()) + minimum);
+		long maxEndMicros = chord.getStartMicros() + minimum;
 		long tickMicro = qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(chord.getEndTick()) + 10000)-chord.getEndTick();
 		if (chordDura > 0L && chordDura < minimum) {
 			// we dont assert due to tick resolution might be so coarse that its within margin
 			logNotes.fine(chordDura+" < "+minimum+" dontMove2="+chord.dontMove2+" delete="+chord.delete
-					+" endTick="+chord.getEndTick()+" maxEnd="+maxEndTick+" 10ms="+tickMicro);
+					+" endTick="+chord.getEndTick()+" maxEndTick="+maxEndTick+" 10ms="+tickMicro
+					+" endMicros="+chord.getEndMicros()+" maxEndMicros="+maxEndMicros);
 		}
-				 
 	}
 	
 	private void assertNoteDuraOrganic1(AbcNoteEvent ne, long minimum) {
@@ -2818,14 +2842,14 @@ public class AbcExporter {
 		assert neDura == 0L || neDura >= minimum:neDura+" < "+minimum;
 	}
 
-	private int calcValue(Chord c, boolean sustained) {
+	private int calcValue(ChordOrganic c, boolean sustained) {
 		// weakness: this favors curChord if starting tick of next
 		//           chord is not exact aligned.
 		int value = -1;
 		value += c.sizeReal();
 		if (sustained) {
-			long start = qtm.tickToMicrosABCOrganic(c.getStartTick());
-			long end = qtm.tickToMicrosABCOrganic(c.getLongestEndTick());
+			long start = c.getStartMicros();
+			long end = c.getLongestEndMicros();
 			long dura = end - start;
 			value += dura/(AbcConstants.ONE_SECOND_MICROS/4L);
 		}
@@ -3315,9 +3339,9 @@ public class AbcExporter {
 		boolean assertionsEnabled = false;
 		assert assertionsEnabled = true;
 		
-	    List<Chord> chords = new ArrayList<>(events.size() / 2);
+	    List<ChordOrganic> chords = new ArrayList<>(events.size() / 2);
 	    
-	    if (events.size() == 0) return chords;
+	    if (events.size() == 0) return new ArrayList<>();
 	    
 	    TreeMap<Long,Long> gridTicks = new TreeMap<>();
 		for (long micros : grid) {
@@ -3453,7 +3477,7 @@ public class AbcExporter {
 	    		}
 	    		if (prevShortest != null) {
 	    			assert prev.endABCMicros == note.startABCMicros || prev.startABCMicros == note.startABCMicros
-	    					:(note.startABCMicros-prev.endABCMicros)+" gap detected between "+origString(prev)+" and "+origString(note);
+	    					:(note.startABCMicros-prev.endABCMicros)+" gap detected between "+prev.toStringMicros()+" and "+note.toStringMicros();
 	    		}
 	    		prev = note;
 	    		if (prev.startABCMicros < note.startABCMicros) {
@@ -3465,13 +3489,13 @@ public class AbcExporter {
 		//
 		//  Now put the notes and rests into chords
 		//
-	    Chord curChord = null;
+	    ChordOrganic curChord = null;
 	    AbcNoteEvent prevNote = null;
 	    int startI = 0;
 	    for (int i = 0; i < eventSegments.size(); i++) {
 	    	AbcNoteEvent noteSegment = eventSegments.get(i);
 	    	if (curChord == null) {
-	    		curChord = new Chord(noteSegment);
+	    		curChord = new ChordOrganic(noteSegment, qtm);
 	    		chords.add(curChord);
 	    	} else if (curChord.getShortest().startABCMicros != noteSegment.startABCMicros) {
 	    		assert curChord.getShortest().startABCMicros < noteSegment.startABCMicros;
@@ -3504,7 +3528,7 @@ public class AbcExporter {
 					continue;
 				}
 				
-	    		curChord = new Chord(noteSegment);
+	    		curChord = new ChordOrganic(noteSegment, qtm);
 	    		chords.add(curChord);
 	    		prevNote = noteSegment;// since they are also sorted by endTick, this is the shortest in the chord.
 	    		startI = i;
@@ -3521,8 +3545,8 @@ public class AbcExporter {
 		}
 	    
 	    if (assertionsEnabled) {
-	    	Chord prev = null;
-	    	for (Chord chord : chords) {
+	    	ChordOrganic prev = null;
+	    	for (ChordOrganic chord : chords) {
 	    		if (prev != null) {
 	    			for (AbcNoteEvent ne : chord.getNotes()) {
 	    				assert chord.getNotes().get(0).startABCMicros == ne.startABCMicros;
@@ -3543,8 +3567,8 @@ public class AbcExporter {
 			 * some notes to be same dura as the chord.
 			 */
 	    	List<AbcNoteEvent> notesOn = new ArrayList<>();
-			Chord preChord = null;
-			for (Chord chord : chords) {
+			ChordOrganic preChord = null;
+			for (ChordOrganic chord : chords) {
 				if (preChord != null) {
 					for (AbcNoteEvent curr : chord.getNotes()) {
 						for (AbcNoteEvent pre : notesOn) {
@@ -3573,13 +3597,11 @@ public class AbcExporter {
 			}
 		}
 	    
-	    return chords;
+	    List<Chord> returnList = new ArrayList<>(chords.size());
+		returnList.addAll(chords);	    
+	    return returnList;
 	}
 	
-	public String origString(AbcNoteEvent ne) {
-		return ne.startABCMicros+" -> "+ne.endABCMicros+" "+ne.note;
-	}
-
 	/**
 	 * 
 	 * Part of multi-stage organic path
@@ -3764,7 +3786,7 @@ public class AbcExporter {
 	}
 	
 	private boolean deprecated1(AbcPart part, List<AbcNoteEvent> events, long minimumMicros,
-			boolean removeGliss, Chord curChord, AbcNoteEvent ne, long microsTillNext, long microsTillNext2,
+			boolean removeGliss, ChordOrganic curChord, AbcNoteEvent ne, long microsTillNext, long microsTillNext2,
 			long neMicros, long ne2Micros) {
 		if (removeGliss) {
 			if ((curChord.getEndTick() > ne.getStartTick() || (neMicros < minimumMicros && ne2Micros < minimumMicros))
@@ -3811,7 +3833,7 @@ public class AbcExporter {
 		return false;
 	}
 
-	private boolean deprecated2(AbcPart part, List<AbcNoteEvent> events, long minimumMicros, Chord curChord,
+	private boolean deprecated2(AbcPart part, List<AbcNoteEvent> events, long minimumMicros, ChordOrganic curChord,
 			int i, AbcNoteEvent ne, AbcNoteEvent ne1, AbcNoteEvent ne2, long microsTillNext2, long neMicros,
 			long minEndMicro, long curMinEndTick, long neMicroStart) {
 
@@ -4219,7 +4241,7 @@ public class AbcExporter {
 	}
 	
 	/**
-	 * Use used by single-stage organic
+	 * Used by single-stage organic
 	 * 
 	 * @param part
 	 * @param events
@@ -4234,9 +4256,7 @@ public class AbcExporter {
 		for (int i = 0; i < events.size(); i++) {
 			AbcNoteEvent ne = events.get(i);
 			
-			long maxNoteEndTick = 
-					qtm.microsToTickOrganic(
-							qtm.tickToMicrosOrganic(ne.getStartTick()) + qtm.multiplyByExportTempoFactor(TimingInfo.LONGEST_NOTE_MICROS));
+			long maxNoteEndTick = qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(ne.getStartTick()) + TimingInfo.LONGEST_NOTE_MICROS);
 			
 			boolean drone = isDrone(part,ne);
 			boolean rest = ne.note == Note.REST;
@@ -4297,6 +4317,8 @@ public class AbcExporter {
 						logNotes.fine(part.getTitle()+" rest cut in half");
 					}
 					AbcNoteEvent next = new AbcNoteEvent(ne.note, ne.velocity, maxNoteEndTick, ne.getEndTick(), qtm, ne.origNote);
+					next.startABCMicros = qtm.tickToMicrosABCOrganic(maxNoteEndTick);
+					next.endABCMicros = qtm.tickToMicrosABCOrganic(ne.getEndTick());
 					assertNoteDuraOrganic1(next, AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM()));
 					
 					int ins = Collections.binarySearch(events, next);
@@ -4350,8 +4372,8 @@ public class AbcExporter {
 			}
 
 			if (ne.getEndTick() > targetEndTick) {
-				
-				AbcNoteEvent next = ne.splitWithTieAtTick(targetEndTick);
+				long targetEndMicros = qtm.tickToMicrosABCOrganic(targetEndTick);
+				AbcNoteEvent next = ne.splitWithTieAtTick(targetEndTick, targetEndMicros);
 				
 				assertNoteDuraOrganic1(ne, AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM()));
 				assertNoteDuraOrganic1(next, AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM()));

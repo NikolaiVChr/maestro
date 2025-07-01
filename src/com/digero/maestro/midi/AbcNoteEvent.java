@@ -2,6 +2,7 @@ package com.digero.maestro.midi;
 
 import com.digero.common.midi.ITempoCache;
 import com.digero.common.midi.Note;
+import com.digero.common.util.Util;
 import com.digero.maestro.abc.QuantizedTimingInfo;
 
 public class AbcNoteEvent extends NoteEvent {
@@ -66,8 +67,8 @@ public class AbcNoteEvent extends NoteEvent {
 	 * Only called directly by multi-stage organic
 	 */
 	public AbcNoteEvent splitWithTieAtTick(long splitPointTick, long splitPointMicros) {
-		assert splitPointTick >= startTick:"split before beginning";
-		assert splitPointTick != startTick:"split at beginning";
+		assert splitPointTick >= startTick:"split before beginning ("+splitPointTick+","+Util.formatDurationM(splitPointMicros)+") "+toString();
+		assert splitPointTick != startTick:"split at beginning ("+splitPointTick+","+Util.formatDurationM(splitPointMicros)+") "+toString();
 		assert splitPointTick < endTick:"split after end";
 
 		AbcNoteEvent next = new AbcNoteEvent(note, velocity, splitPointTick, endTick, tempoCache, this.origNote);
@@ -112,7 +113,13 @@ public class AbcNoteEvent extends NoteEvent {
 	
 	@Override
 	public String toString() {
-		return getClass().getName()+": " + note.toString() + " duraTicks=" + getFullLengthTicks() + " tick:"+startTick+"-"+endTick+" vol="+velocity+" TiesIsNull: "+(tiesFrom==null)+" "+(tiesTo == null)+" time: "+(getStartMicros()/1000000.0)+" to "+(getEndMicros()/1000000.0);
+		String post = "";
+		post = " time: "+Util.formatDurationM(startABCMicros)+" to "+Util.formatDurationM(endABCMicros); 
+		return getClass().getName()+": " + note.toString() + " duraTicks=" + getFullLengthTicks() + " tick:"+startTick+"-"+endTick+" vol="+velocity+" TiesIsNull: "+(tiesFrom==null)+" "+(tiesTo == null)+post;
+	}
+	
+	public String toStringMicros() {
+		return Util.formatDurationM(startABCMicros)+" -> "+Util.formatDurationM(endABCMicros)+" "+note;
 	}
 
 	/**

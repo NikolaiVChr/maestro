@@ -35,31 +35,20 @@ import com.digero.common.midi.Note;
 import com.digero.maestro.abc.AbcPart;
 
 public class Chord implements AbcConstants, Comparable<Chord> {
-	private static final Logger log = Logger.getLogger("export.notes");
+	protected static final Logger log = Logger.getLogger("export.notes");
 	
 	private ITempoCache tempoCache;
-	private long startTick;
-	private long endTick;
-	private List<AbcNoteEvent> notes = new ArrayList<>();
+	protected long startTick;
+	protected long endTick;
+	protected List<AbcNoteEvent> notes = new ArrayList<>();
 	private int highest = 0;// source midi highest and lowest pitch in the chord
 	private int lowest = 200;
-	public Long early = null; // organic
-	public boolean dontMove1 = false;
-	public boolean dontMove2 = false;
-	public boolean glissando = false;
-	public Long expandedMicros = null;
-	public int arp = 0; // arp notes added to this
-	public boolean delete = false;
-	private boolean hadRest = false;
 
 	public Chord(AbcNoteEvent firstNote) {
 		tempoCache = firstNote.getTempoCache();
 		startTick = firstNote.getStartTick();
 		endTick = firstNote.getEndTick();
 		notes.add(firstNote);
-		if (firstNote.note == Note.REST) {
-			hadRest = true;
-		}
 	}
 
 	public long getStartTick() {
@@ -266,20 +255,6 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		endTick = newEndTick;
 	}
 	
-	public void setEarlyStartTick(boolean useRestsInChords) {
-		//assert early <= endTick;
-		// organic
-		for (AbcNoteEvent note : notes) {
-			note.setStartTick(early);
-			if (useRestsInChords && note.tiesFrom != null) {
-				note.tiesFrom.setEndTick(early);//require recalcEndTick()
-				//System.out.println("note.tiesFrom.setEndTick(early);");
-			}
-		}
-		startTick = early;
-		early = null;
-	}
-
 	public void sort() {
 		Collections.sort(notes);
 	}
@@ -297,7 +272,6 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		}
 		*/
 		notes.add(ne);
-		if (ne.note == Note.REST) hadRest = true;
 
 		if (ne.getEndTick() < endTick) {
 			endTick = ne.getEndTick();
@@ -360,40 +334,6 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 	}
 	
 	/**
-	 * Only call this from organic multi-stage please.
-	 * 
-	 * @return
-	 */
-	public AbcNoteEvent getShortest() {
-		long endNoteMicros = Long.MAX_VALUE;
-		AbcNoteEvent shortest = null;
-		if (!notes.isEmpty()) {
-			for (AbcNoteEvent note : notes) {
-				if (note.endABCMicros < endNoteMicros) {
-					shortest = note;
-					endNoteMicros = note.endABCMicros;
-				}
-			}
-		}
-		return shortest;
-	}
-
-	/**
-	 * Remove all rests from chord and reset hadRest boolean.
-	 */	
-	public void removeRests() {
-		List<AbcNoteEvent> rests = new ArrayList<>();
-		for (AbcNoteEvent evt : notes) {
-			if (Note.REST == evt.note) {
-				rests.add(evt);
-			}
-		}
-		notes.removeAll(rests);
-		recalcEndTick();
-		hadRest = false;
-	}
-	
-	/**
 	 * 
 	 * @return false if contains notes
 	 */
@@ -423,22 +363,6 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		return hasRests && hasNotes;
 	}
 	
-	/**
-	 * Used only by organic1
-	 * 
-	 * @return
-	 */
-	public boolean hadRestAndNotes() {
-		boolean hasNotes = false;
-		for (AbcNoteEvent evt : notes) {
-			if (Note.REST != evt.note) {
-				hasNotes = true;
-				break;
-			}
-		}
-		return hadRest && hasNotes;
-	}
-
 	public void printIfUneven() {
 		long endNoteTick = getEndTick();
 		if (!notes.isEmpty()) {
@@ -836,18 +760,13 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		return true;
 	}
 
-	public String toStringDura() {
-		String post = delete?"(delete)":"";
-		return ""+startTick+"->"+endTick+" "+post;
-	}
-
 	public boolean isLinked() {
 		for (AbcNoteEvent ne : notes) {
 			if (ne.tiesFrom == null) {
 				AbcNoteEvent tie = ne;
 				while (tie.tiesTo != null) {
 					if (tie.tiesTo.getStartTick() != tie.getEndTick()) {
-						System.out.println("Chord "+startTick+"-"+endTick+" noteCount="+notes.size()+" restMix="+hasRestAndNotes()+" delete="+delete);
+						System.out.println("Chord "+startTick+"-"+endTick+" noteCount="+notes.size()+" restMix="+hasRestAndNotes());
 						System.out.println("Note to   "+tie.tiesTo.getStartTick()+"-"+tie.tiesTo.getEndTick()+" "+tie.tiesTo.note);
 						System.out.println("Note from "+tie.getStartTick()+"-"+tie.getEndTick()+" "+ne.note);
 						return false; 
