@@ -19,6 +19,7 @@ import java.util.SortedMap;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.Map.Entry;
+import java.util.logging.Logger;
 import java.util.NavigableMap;
 
 import javax.sound.midi.InvalidMidiDataException;
@@ -61,6 +62,8 @@ import com.digero.maestro.view.MiscSettings;
 import com.digero.maestro.view.SaveAndExportSettings;
 
 public class AbcSong implements IDiscardable, AbcMetadataSource {
+	protected static final Logger log = Logger.getLogger("song");
+	
 	public static final String MSX_FILE_DESCRIPTION = MaestroMain.APP_NAME + " Project";
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = MaestroMain.APP_NAME + " Projects";
 	public static final Version SONG_FILE_VERSION = new Version(4, 2, 12, 300);// Keep build above 117 to make earlier
@@ -451,7 +454,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 			handleTuneSections(songEle, fileVersion);
 
-			addListenerToParts(songEle, fileVersion);
+			loadPartsFromXML(songEle, fileVersion, sorted);
 		} catch (XPathExpressionException e) {
 			e.printStackTrace();
 			throw new ParseException("XPath error: " + e.getMessage(), null);
@@ -598,20 +601,21 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		convertTunelinesToLongs();
 	}
 
-	private void addListenerToParts(Element songEle, Version fileVersion)
+	private void loadPartsFromXML(Element songEle, Version fileVersion, boolean autoSorted)
 			throws XPathExpressionException, ParseException {
 		for (Element ele : XmlUtil.selectElements(songEle, "part")) {
 			AbcPart part = AbcPart.loadFromXml(this, ele, fileVersion);
-			/* see https://discord.com/channels/1127545258729803797/1127660185297633280/1351686726674022491
-			 * for discussion about this sorting and why its been disabled for now
-			int ins = Collections.binarySearch(parts, part, partNumberComparator);
-			if (ins < 0)
-				ins = -ins - 1;
-			parts.add(ins, part);
-			*/
+			
 			parts.add(part);
 			part.convertSectionsToLongTrees();
 			part.addAbcListener(abcPartListener);
+		}
+		if (autoSorted) {
+			/* see https://discord.com/channels/1127545258729803797/1127660185297633280/1351686726674022491
+			 * for discussion about this sorting and why its been disabled for now
+			 */
+			populateFirstNumbers();
+			parts.sort(partNumberComparator);
 		}
 	}
 
@@ -1179,16 +1183,15 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	 * 1st sort according to instrument base number
 	 * 2nd sort according to part number
 	 * 
-	 * Dont use this with setting firstNumber on parts first
+	 * Dont use this without setting firstNumber on parts first
 	 * 
 	 */
 	private Comparator<AbcPart> partNumberComparator = new Comparator<AbcPart>() {
 		@Override
 		public int compare(AbcPart p1, AbcPart p2) {
-			
 			if (p1.firstNumber != p2.firstNumber)
-				return p1.firstNumber - p2.firstNumber;
-			return p1.getPartNumber() - p2.getPartNumber();
+				return Integer.compare(p1.firstNumber, p2.firstNumber);
+			return Integer.compare(p1.getPartNumber(), p2.getPartNumber());
 		}
 	};
 	
@@ -1201,7 +1204,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			fireChangeEvent(AbcSongProperty.PART_LIST_ORDER, e.getSource());
 		}
 	};
-	
 
 	@Override
 	public String getBadgerTitle() {
@@ -1458,11 +1460,17 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		return poly;
 	}
 
+	/**
+	 * disable auto sorting of parts
+	 */
 	public void rearrangedParts() {
 		sorted = false;
 		fireChangeEvent(AbcSongProperty.PART_LIST_ORDER);		
 	}
 
+	/**
+	 * enable auto sorting of parts
+	 */
 	public void autoSortParts() {
 		sorted = true;
 		populateFirstNumbers();
