@@ -40,7 +40,10 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 	private long lastUpdateTick = -1;
 	private boolean lastRunning = false;
 	private TempoCacheSlow cache = null;
+	
+	@Deprecated
 	private long hoursPlus = 0L;
+	
 	private float tempoFactor = 1.f;
 	protected long realDuraTicks = Long.MAX_VALUE;
 	
@@ -286,10 +289,13 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 	 * @return sequence duration in microseconds
 	 */
 	public long getLength() {
-		// long l = sequencer.getMicrosecondLength();
-		// if (l < 0) {
-		long l = checkForSuperLongDuration(0);
-		// }
+		Sequence sequ = sequencer.getSequence();
+		long l = 0L;
+		if (sequ != null) {
+			// this can handle midis that has hours long duration.
+			// Sequencer.getMicrosecondLength cannot.
+			l = tick2microsecondSlow(sequ, Math.min(realDuraTicks, sequencer.getTickLength()));
+		}
 		return l;
 	}
 
@@ -453,26 +459,31 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 		cache.snapshotMicro = snapshotMicro;
 		return us;
 	}
-
-	private long checkForSuperLongDuration(long l) {
-		Sequence sequ = sequencer.getSequence();
-		if (sequ != null) {
-			l = tick2microsecondSlow(sequ, Math.min(realDuraTicks, sequencer.getTickLength()));
-			long hours = l / 3600000000L;
-			if (hoursPlus == 0L && hours > 0) {
+	
+	@Deprecated
+	private long checkForSuperLongDurationOld(long l) {
+		// this also works, but the new way is better 
+		if (hoursPlus > 0) {
+			return -l+3600000000L*hoursPlus; 
+		}
+		Sequence seq = sequencer.getSequence(); 
+		if (seq != null) { 
+			Track[] tracks = seq.getTracks(); 
+			long lastTick = 0; 
+			for	(Track track : tracks) { 
+				if (track.ticks() > lastTick) { 
+					lastTick = track.ticks(); 
+				}
+			}
+			if (lastTick > 0L) {
+				//System.out.println("lastTick="+lastTick+" us="+tick2microsecondSlow(seq, lastTick));
+				long hours = tick2microsecondSlow(seq, lastTick)/3600000000L;
+				System.out.println("This midi is over "+hours+" hours long. But do not worry :)");
+				l = -l+3600000000L*hours;
 				hoursPlus = hours;
 			}
 		}
-		return l;
-		/*
-		 * this also works, but the above way is better if (hoursPlus > 0) { return -l+3600000000L*hoursPlus; } Sequence
-		 * seq = sequencer.getSequence(); if (seq != null) { Track[] tracks = seq.getTracks(); long lastTick = 0; for
-		 * (Track track : tracks) { if (track.ticks() > lastTick) { lastTick = track.ticks(); } } if (lastTick > 0L) {
-		 * //System.out.println("lastTick="+lastTick+" us="+tick2microsecondSlow(seq, lastTick)); long hours =
-		 * tick2microsecondSlow(seq, lastTick)/3600000000L;
-		 * System.out.println("This midi is over "+hours+" hours long. But do not worry :)"); l = -l+3600000000L*hours;
-		 * hoursPlus = hours; } } return l;
-		 */
+		return l;		
 	}
 
 	public long getTickLength() {
