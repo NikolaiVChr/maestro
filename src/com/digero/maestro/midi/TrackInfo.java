@@ -29,6 +29,7 @@ import com.digero.common.midi.MidiStandard;
 import com.digero.common.midi.MidiUtils;
 import com.digero.common.midi.Note;
 import com.digero.common.midi.TimeSignature;
+import com.digero.common.util.Util;
 import com.digero.maestro.view.MiscSettings;
 
 /**
@@ -99,7 +100,7 @@ public class TrackInfo implements MidiConstants {
 			MidiMessage msg = evt.getMessage();
 			
 			if (evt.getTick() < 0) {
-				System.err.println("Negative tick: "+evt.getTick());
+				log.warning("Negative tick: "+evt.getTick());
 				continue;
 			}
 
@@ -145,7 +146,7 @@ public class TrackInfo implements MidiConstants {
 			if (msg instanceof ShortMessage) {
 				ShortMessage m = (ShortMessage) msg;
 				int cmd = m.getCommand();
-				int c = m.getChannel();
+				int ch = m.getChannel();
 
 				/*
 				 * if (isXGDrumTrack || isGSDrumTrack) { // } else if (noteEvents.isEmpty() && cmd ==
@@ -153,20 +154,20 @@ public class TrackInfo implements MidiConstants {
 				 * && cmd == ShortMessage.NOTE_ON)
 				 * System.err.println("Track "+trackNumber+" contains both notes and drums.."+(name!=null?name:""));
 				 */
-				if (notesOn[c] == null)
-					notesOn[c] = new ArrayList<>();
+				if (notesOn[ch] == null)
+					notesOn[ch] = new ArrayList<>();
 
 				if (cmd == ShortMessage.NOTE_ON || cmd == ShortMessage.NOTE_OFF) {
 					int noteId = m.getData1();
 					int velocity = m.getData2();
 					if (oldVelocities) {
 						// Order of math expression here is important, so I added parenthesizes:
-						velocity = (velocity * sequenceCache.getChannelVolume(c, tick)) / DEFAULT_CHANNEL_VOLUME;
+						velocity = (velocity * sequenceCache.getChannelVolume(ch, tick)) / DEFAULT_CHANNEL_VOLUME;
 						if (velocity > 127)
 							velocity = 127;
 					} else {
-						int ch_vol = sequenceCache.getChannelVolume(c, tick);
-						int expr = sequenceCache.getExpression(c, tick);
+						int ch_vol = sequenceCache.getChannelVolume(ch, tick);
+						int expr = sequenceCache.getExpression(ch, tick);
 						velocity *= (ch_vol / (double) MAX_VOLUME) * (expr / (double) MAX_EXPRESSION);
 						if (velocity == 0 && m.getData2() > 0 && ch_vol > 0 && expr > 0) {
 							// Do not allow very low expression and volume to reduce velocity to zero.
@@ -187,7 +188,7 @@ public class TrackInfo implements MidiConstants {
 
 					// If this is a Note ON and was preceded by a similar Note ON without a Note OFF, lets turn the preceding note off
 					// If this is a Note OFF lets do same, but also delete the preceding note if it has zero duration.
-					Iterator<MidiNoteEvent> iter = notesOn[c].iterator();
+					Iterator<MidiNoteEvent> iter = notesOn[ch].iterator();
 					while (iter.hasNext()) {
 						MidiNoteEvent ne = iter.next();
 						if (ne.note.id == noteId) {
@@ -204,7 +205,7 @@ public class TrackInfo implements MidiConstants {
 								noteEvents.remove(ne);
 								zeroNotesRemoved++;
 								
-								//System.out.println(name+" tick:"+tick+" file:"+sequenceInfo.getFileName()+" track:"+trackNumber+" mins:"+((sequenceCache.tickToMicros(tick)/1000000.0)/60));
+								log.fine(name+" Removing zero note (OFF), tick:"+tick+" file:"+sequenceInfo.getFileName()+" track:"+trackNumber+" time:"+Util.formatDurationM(sequenceCache.tickToMicros(tick)));
 							}
 							break;
 						}
@@ -216,12 +217,12 @@ public class TrackInfo implements MidiConstants {
 							continue; // Note was probably bent out of range. Not great, but not a reason to fail.
 						}
 
-						MidiNoteEvent ne = new MidiNoteEvent(note, velocity, tick, tick, sequenceCache, sequenceCache.getPanMap().get(c, tick));
-						if (!isDrumTrack && sequenceCache.getBendMap().get(c, tick) != 0) {
+						MidiNoteEvent ne = new MidiNoteEvent(note, velocity, tick, tick, sequenceCache, sequenceCache.getPanMap().get(ch, tick));
+						if (!isDrumTrack && sequenceCache.getBendMap().get(ch, tick) != 0) {
 							// pitch bend active in channel already when note starts
-							BentMidiNoteEvent be = new BentMidiNoteEvent(note, velocity, tick, tick, sequenceCache, sequenceCache.getPanMap().get(c, tick));
+							BentMidiNoteEvent be = new BentMidiNoteEvent(note, velocity, tick, tick, sequenceCache, sequenceCache.getPanMap().get(ch, tick));
 							allBentNotes.add(be);
-							be.addBend(tick, sequenceCache.getBendMap().get(c, tick));
+							be.addBend(tick, sequenceCache.getBendMap().get(ch, tick));
 							ne = be;
 						}
 						
@@ -232,13 +233,13 @@ public class TrackInfo implements MidiConstants {
 						if (velocity < minVelocity)
 							minVelocity = velocity;
 
-						instrumentExtensions.add(sequenceCache.getInstrumentExt(c, tick, isDrumTrack));
+						instrumentExtensions.add(sequenceCache.getInstrumentExt(ch, tick, isDrumTrack));
 						if (!isDrumTrack) {
-							instruments.add(sequenceCache.getInstrument(portMap.get(trackNumber), c, tick));
+							instruments.add(sequenceCache.getInstrument(portMap.get(trackNumber), ch, tick));
 						}
 						noteEvents.add(ne);
 						//notesInUse.add(ne.note.id);
-						notesOn[c].add(ne);
+						notesOn[ch].add(ne);
 					}
 				}
 			} else if (msg instanceof MetaMessage) {
@@ -270,6 +271,28 @@ public class TrackInfo implements MidiConstants {
 					} catch (InvalidMidiDataException e) {
 						// Ignore the illegal message
 					}
+				} else if (type == META_END_OF_TRACK) {
+					// turn off all notes, but keep them instead of discarding them like old days.
+					for (int ch = 0; ch < MidiConstants.CHANNEL_COUNT; ch++) {
+						if (notesOn[ch] != null) {
+							Iterator<MidiNoteEvent> iter = notesOn[ch].iterator();
+							while (iter.hasNext()) {
+								MidiNoteEvent ne = iter.next();
+								iter.remove();
+								ne.setEndTick(tick);
+								log.info("Ending note by EOT instead of Note OFF. tick="+tick);
+								if (tick == ne.getStartTick()) {
+									// Illegal zero duration note terminated, so Maestro don't have to process it and discard it in the abc export anyway.
+									// 								
+									noteEvents.remove(ne);
+									zeroNotesRemoved++;
+									
+									log.fine(name+" Removing zero note (EOT), tick:"+tick+" file:"+sequenceInfo.getFileName()+" track:"+trackNumber+" time:"+Util.formatDurationM(sequenceCache.tickToMicros(tick)));
+								}
+							}
+						}
+					}
+					// We keep iterating, perhaps there is track-name after EOT
 				}
 			}
 		}
@@ -300,7 +323,7 @@ public class TrackInfo implements MidiConstants {
 				ctNotesOn += notesOnChannel.size();
 		}
 		if (ctNotesOn > 0) {
-			log.info((ctNotesOn) + " note(s) not turned off at the end of the track.");
+			log.info("Deleting "+(ctNotesOn) + " note(s) not turned off at the end of the track.");
 
 			for (List<MidiNoteEvent> notesOnChannel : notesOn) {
 				if (notesOnChannel != null)
