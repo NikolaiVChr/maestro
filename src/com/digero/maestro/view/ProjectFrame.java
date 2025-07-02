@@ -1044,8 +1044,19 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		boolean running = !curSequencer.isRunning();
 
 		if (abcPreviewMode) {
-			if (!refreshPreviewSequence(true) && running)
+			if (!refreshPreviewSequence(true) && running) {
 				running = false;
+			} else {
+				long tick = abcSequencer.getTickPosition();
+				if (tick < abcPreviewStartTick)
+					tick = abcPreviewStartTick;
+
+				if (tick >= abcSequencer.getTickLength()) {
+					tick = 0;
+					running = false;
+				}
+				abcSequencer.setTickPosition(tick);
+			}
 		} else if (curSequencer.getTickPosition() == 0L) {
 			curSequencer.setTickPosition(firstMidiNoteTick);
 		}
@@ -2368,13 +2379,13 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		updatePreviewMode(abcPreviewModeNew, oldSequencer.isRunning());
 	}
 
-	private void updatePreviewMode(boolean newAbcPreviewMode, boolean running) {
+	private void updatePreviewMode(boolean newAbcPreviewMode, boolean shouldBeRunning) {
 		boolean runningNow = abcPreviewMode ? abcSequencer.isRunning() : sequencer.isRunning();
 
-		if (newAbcPreviewMode != abcPreviewMode || runningNow != running) {
-			if (running && newAbcPreviewMode) {
+		if (newAbcPreviewMode != abcPreviewMode || runningNow != shouldBeRunning) {
+			if (shouldBeRunning && newAbcPreviewMode) {
 				if (!refreshPreviewSequence(true)) {
-					running = false;
+					shouldBeRunning = false;
 
 					SequencerWrapper oldSequencer = abcPreviewMode ? abcSequencer : sequencer;
 					oldSequencer.stop();
@@ -2392,12 +2403,23 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			abcModeRadioButton.setSelected(newAbcPreviewMode);
 
 			SequencerWrapper newSequencer = newAbcPreviewMode ? abcSequencer : sequencer;
-			newSequencer.setRunning(running);
+			newSequencer.setRunning(shouldBeRunning);
 
 			abcPreviewMode = newAbcPreviewMode;
 
 			partPanel.setAbcPreviewMode(abcPreviewMode);
 			updateButtons(false);
+		}
+		if (abcPreviewMode) {
+			long tick = abcSequencer.getTickPosition();
+			if (tick < abcPreviewStartTick)
+				tick = abcPreviewStartTick;
+
+			if (tick >= abcSequencer.getTickLength()) {
+				tick = 0;
+				abcSequencer.setRunning(false);
+			}
+			abcSequencer.setTickPosition(tick);
 		}
 	}
 
@@ -2461,7 +2483,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			}
 			abcSequencer.setSequence(previewSequenceInfo.getSequence());
 			abcSequencer.setStartTick(abcPreviewStartTick);// Needed for MP3 and WAV exports.
-
+			/*
 			if (tick < abcPreviewStartTick)
 				tick = abcPreviewStartTick;
 
@@ -2469,6 +2491,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				tick = 0;
 				abcRunning = false;
 			}
+			*/
 
 			if (abcRunning && sequencer.isRunning())
 				sequencer.stop();
