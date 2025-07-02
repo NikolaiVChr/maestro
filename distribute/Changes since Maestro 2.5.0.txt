@@ -48,6 +48,8 @@ Version 4.2.16
 - Fixed that wav and mp3 export would always be mono. Now they will be whatever maestro/abc-player setting is.
 - Reduced average abc filesize of organic output when poly 6+ is disabled.
 - Fixed some issues in multi and single-stage organic timing.
+- If a midi note has no note OFF signal, but there is a EndOfTrack signal, end it at EOT signal instead of deleting it.
+- Fix minor inaccuracy of song position time display in Maestro.
 
 Version 4.2.13
 - Fix that some songs could still change midi playback volume, overriding user's volume slider setting.
