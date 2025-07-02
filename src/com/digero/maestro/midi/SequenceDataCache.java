@@ -281,7 +281,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 						
 							tempo.put(tick, new TempoEvent(tempoRaw, tick, te.micros + elapsedMicros));
 						} else {
-							System.out.println("Warning: MIDI has tempo message of zero MPQ! Ignoring it..");
+							log.warning("MIDI has tempo message of zero MPQ! Ignoring it..");
 							track.remove(evt);
 							sz--;
 							j--;
