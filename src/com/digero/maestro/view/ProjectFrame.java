@@ -2453,7 +2453,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			abcBarLabel.setInitialOffsetTick(abcPreviewStartTick);
 			abcPositionLabel.setInitialOffsetTick(abcPreviewStartTick);
 
-			boolean running = abcSequencer.isRunning();
+			boolean abcRunning = abcSequencer.isRunning();
 			if (abcPreviewMode) {
 				// Refreshing while playing Original (GS) will cause a GS Reset,
 				// which will mess with volume, hence the if statement.
@@ -2467,14 +2467,14 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 			if (tick >= abcSequencer.getTickLength()) {
 				tick = 0;
-				running = false;
+				abcRunning = false;
 			}
 
-			if (running && sequencer.isRunning())
+			if (abcRunning && sequencer.isRunning())
 				sequencer.stop();
-
+			
 			abcSequencer.setTickPosition(tick);
-			abcSequencer.setRunning(running);
+			abcSequencer.setRunning(abcRunning);
 			compileStats();
 		} catch (InvalidMidiDataException | AbcConversionException e) {
 			sequencer.stop();

@@ -38,12 +38,10 @@ public class ChordOrganic extends Chord {
 		if (firstNote.note == Note.REST) hadRest = true;
 	}
 
-	@Override
 	public long getStartMicros() {
 		return startMicros;
 	}
 
-	@Override
 	public long getEndMicros() {
 		return endMicros;
 	}

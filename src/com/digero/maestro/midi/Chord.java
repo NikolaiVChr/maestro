@@ -59,21 +59,6 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		return endTick;
 	}
 
-	@Deprecated
-	public long getStartMicros() {
-		return tempoCache.tickToMicros(startTick);
-	}
-
-	@Deprecated
-	public long getEndMicros() {
-		return tempoCache.tickToMicros(endTick);
-	}
-	
-	@Deprecated
-	public long getLongestEndMicros() {
-		return tempoCache.tickToMicros(getLongestEndTick());
-	}
-
 	public int size() {
 		return notes.size();
 	}
@@ -97,98 +82,7 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		return notes.remove(ne);
 	}
 	
-	public Dynamics calcDynamics(CalcDynamics method) {
-		switch (method) {
-			case LOUDEST:
-				return calcDynamicsLoudest();
-			case POWER_RMS_DB:
-				return calcDynamicsDbBlending(2.0d);
-			case POWER_MID_DB:
-				return calcDynamicsDbBlending(1.5d);
-			case WEIGHTED:
-				return calcDynamicsWeightBlending();
-			case SOFTEST:
-				return calcDynamicsSoftest();
-		}
-		return calcDynamicsLoudest();
-	}
-
-	public Dynamics calcDynamicsLoudest() {
-		int velocity = Integer.MIN_VALUE;
-		for (AbcNoteEvent ne : notes) {
-			if (ne.note != Note.REST && ne.tiesFrom == null && ne.velocity > velocity)
-				velocity = ne.velocity;
-		}
-
-		if (velocity == Integer.MIN_VALUE)
-			return null;
-
-		return Dynamics.fromMidiVelocity(velocity);
-	}
 	
-	public Dynamics calcDynamicsSoftest() {
-		int velocity = Integer.MAX_VALUE;
-		for (AbcNoteEvent ne : notes) {
-			if (ne.note != Note.REST && ne.tiesFrom == null && ne.velocity < velocity)
-				velocity = ne.velocity;
-		}
-
-		if (velocity == Integer.MAX_VALUE)
-			return null;
-
-		return Dynamics.fromMidiVelocity(velocity);
-	}
-	
-	public Dynamics calcDynamicsWeightBlending() {
-		int minVolume = Integer.MAX_VALUE;
-		int maxVolume = Integer.MIN_VALUE;
-		int total = 0;
-		int number = 0;
-		
-		for (AbcNoteEvent ne : notes) {
-			if (ne.note != Note.REST && ne.tiesFrom == null) {
-				total += ne.velocity;
-				minVolume = Math.min(minVolume, ne.velocity);
-				maxVolume = Math.max(maxVolume, ne.velocity);
-				number++;
-			}
-		}
-		
-		if (number == 0) return null;
-		
-		int averageVolume = total / number;
-		int blendedVolume = (averageVolume * 2 + minVolume + maxVolume) / 4;
-		
-		return Dynamics.fromMidiVelocity(blendedVolume);
-	}
-	
-	// Gamma must be between 1 and 2. 1.0 = 6 dB for adding two with same vol together. 1.5 = 4.5 dB. 2.0 = 3 dB (RMS).
-    public Dynamics calcDynamicsDbBlending(double gamma) {
-    	assert gamma >= 1.0d && gamma <= 2.0d;
-    	int numberOfVelocities = 0;
-    	double totalDB = 0;
-        for (AbcNoteEvent ne : notes) {
-			if (ne.note != Note.REST && ne.tiesFrom == null) {
-				numberOfVelocities++;
-				totalDB += Math.pow(10d, (midiToDb(ne.velocity) / 20) * gamma);
-			}
-        }
-        if (numberOfVelocities == 0) return null;
-        double mean = totalDB / numberOfVelocities;
-        double targetAmp = Math.pow(mean, 1.0d / gamma);
-        int target = (int) Math.round(127.0 * targetAmp);
-        target = Math.max(0, Math.min(127, target));
-        return Dynamics.fromMidiVelocity(target);
-    }
-	
-	public double midiToDb(int midiVelocity) {
-		if (midiVelocity == 0) return -100d;
-        return 20 * Math.log10(midiVelocity / 127.0d);
-    }
-
-    public int dbToMidi(double db) {
-        return Math.min(127, (int) (127d * Math.pow(10d, db / 20d)));
-    }
     
 	public void recalcEndTick() {
 		if (!notes.isEmpty()) {
@@ -372,6 +266,72 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 				}
 			}
 		}
+	}
+	
+	
+
+	public List<AbcNoteEvent> getNotes() {
+		return notes;
+	}
+
+	@Override
+	public int compareTo(Chord o) {
+		long starting = this.getStartTick() - o.getStartTick();
+		if (starting == 0L) {
+			starting = this.getEndTick() - o.getEndTick();
+		}
+		// we do this as comparing two longs that are really large can result in integer overflow if we just cast to int:
+		if (starting < 0L) return -1;
+		if (starting > 0L) return 1;
+		return 0;
+	}
+	
+	/*
+	 * Check if all notes in chord start and end at same time
+	 * Only use in assert statements
+	 */
+	public boolean isConform() {
+		for (AbcNoteEvent ne : notes) {
+			if (ne.getStartTick() != startTick || ne.getEndTick() != endTick) {
+				System.out.println("Chord "+startTick+"-"+endTick+" noteCount="+notes.size()+" restMix="+hasRestAndNotes());
+				System.out.println("Note  "+ne.getStartTick()+"-"+ne.getEndTick()+" "+ne.note);
+				return false;
+			}
+		}
+		return true;
+	}
+
+	public boolean isLinked() {
+		for (AbcNoteEvent ne : notes) {
+			if (ne.tiesFrom == null) {
+				AbcNoteEvent tie = ne;
+				while (tie.tiesTo != null) {
+					if (tie.tiesTo.getStartTick() != tie.getEndTick()) {
+						System.out.println("Chord "+startTick+"-"+endTick+" noteCount="+notes.size()+" restMix="+hasRestAndNotes());
+						System.out.println("Note to   "+tie.tiesTo.getStartTick()+"-"+tie.tiesTo.getEndTick()+" "+tie.tiesTo.note);
+						System.out.println("Note from "+tie.getStartTick()+"-"+tie.getEndTick()+" "+ne.note);
+						return false; 
+					}
+					tie = tie.tiesTo;
+				}
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * 
+	 * @param note
+	 * @return true if note is the shortest in the chord, and only note of that short duration.
+	 */
+	public boolean isShortest(AbcNoteEvent note) {
+		if (note.getEndTick() > endTick) return false;
+		for (AbcNoteEvent ne : notes) {
+			if (ne.getEndTick() == note.getEndTick() && note != ne) {
+				return false;
+			}
+		}
+		return true;
 	}
 	
 	public List<AbcNoteEvent> prune(boolean sustained, boolean drum, boolean percussion, AbcPart abcPart) {
@@ -697,22 +657,99 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 			// 1: n1 wins -1: n2 wins 0:equal
 		}
 	}
-
-	public List<AbcNoteEvent> getNotes() {
-		return notes;
-	}
-
-	@Override
-	public int compareTo(Chord o) {
-		long starting = this.getStartTick() - o.getStartTick();
-		if (starting == 0L) {
-			starting = this.getEndTick() - o.getEndTick();
+	
+	public Dynamics calcDynamics(CalcDynamics method) {
+		switch (method) {
+			case LOUDEST:
+				return calcDynamicsLoudest();
+			case POWER_RMS_DB:
+				return calcDynamicsDbBlending(2.0d);
+			case POWER_MID_DB:
+				return calcDynamicsDbBlending(1.5d);
+			case WEIGHTED:
+				return calcDynamicsWeightBlending();
+			case SOFTEST:
+				return calcDynamicsSoftest();
 		}
-		// we do this as comparing two longs that are really large can result in integer overflow if we just cast to int:
-		if (starting < 0L) return -1;
-		if (starting > 0L) return 1;
-		return 0;
+		return calcDynamicsLoudest();
 	}
+
+	private Dynamics calcDynamicsLoudest() {
+		int velocity = Integer.MIN_VALUE;
+		for (AbcNoteEvent ne : notes) {
+			if (ne.note != Note.REST && ne.tiesFrom == null && ne.velocity > velocity)
+				velocity = ne.velocity;
+		}
+
+		if (velocity == Integer.MIN_VALUE)
+			return null;
+
+		return Dynamics.fromMidiVelocity(velocity);
+	}
+	
+	private Dynamics calcDynamicsSoftest() {
+		int velocity = Integer.MAX_VALUE;
+		for (AbcNoteEvent ne : notes) {
+			if (ne.note != Note.REST && ne.tiesFrom == null && ne.velocity < velocity)
+				velocity = ne.velocity;
+		}
+
+		if (velocity == Integer.MAX_VALUE)
+			return null;
+
+		return Dynamics.fromMidiVelocity(velocity);
+	}
+	
+	private Dynamics calcDynamicsWeightBlending() {
+		int minVolume = Integer.MAX_VALUE;
+		int maxVolume = Integer.MIN_VALUE;
+		int total = 0;
+		int number = 0;
+		
+		for (AbcNoteEvent ne : notes) {
+			if (ne.note != Note.REST && ne.tiesFrom == null) {
+				total += ne.velocity;
+				minVolume = Math.min(minVolume, ne.velocity);
+				maxVolume = Math.max(maxVolume, ne.velocity);
+				number++;
+			}
+		}
+		
+		if (number == 0) return null;
+		
+		int averageVolume = total / number;
+		int blendedVolume = (averageVolume * 2 + minVolume + maxVolume) / 4;
+		
+		return Dynamics.fromMidiVelocity(blendedVolume);
+	}
+	
+	// Gamma must be between 1 and 2. 1.0 = 6 dB for adding two with same vol together. 1.5 = 4.5 dB. 2.0 = 3 dB (RMS).
+	private Dynamics calcDynamicsDbBlending(double gamma) {
+    	assert gamma >= 1.0d && gamma <= 2.0d;
+    	int numberOfVelocities = 0;
+    	double totalDB = 0;
+        for (AbcNoteEvent ne : notes) {
+			if (ne.note != Note.REST && ne.tiesFrom == null) {
+				numberOfVelocities++;
+				totalDB += Math.pow(10d, (midiToDb(ne.velocity) / 20) * gamma);
+			}
+        }
+        if (numberOfVelocities == 0) return null;
+        double mean = totalDB / numberOfVelocities;
+        double targetAmp = Math.pow(mean, 1.0d / gamma);
+        int target = (int) Math.round(127.0 * targetAmp);
+        target = Math.max(0, Math.min(127, target));
+        return Dynamics.fromMidiVelocity(target);
+    }
+	
+	private double midiToDb(int midiVelocity) {
+		if (midiVelocity == 0) return -100d;
+        return 20 * Math.log10(midiVelocity / 127.0d);
+    }
+
+	private int dbToMidi(double db) {
+        return Math.min(127, (int) (127d * Math.pow(10d, db / 20d)));
+    }
 	
 	public static enum CalcDynamics {
 		// name() is saved in project files
@@ -743,53 +780,5 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 	        }
 	        throw new IllegalArgumentException("Unknown CalcDynamics: " + name);
 	    }
-	}
-
-	/*
-	 * Check if all notes in chord start and end at same time
-	 * Only use in assert statements
-	 */
-	public boolean isConform() {
-		for (AbcNoteEvent ne : notes) {
-			if (ne.getStartTick() != startTick || ne.getEndTick() != endTick) {
-				System.out.println("Chord "+startTick+"-"+endTick+" noteCount="+notes.size()+" restMix="+hasRestAndNotes());
-				System.out.println("Note  "+ne.getStartTick()+"-"+ne.getEndTick()+" "+ne.note);
-				return false;
-			}
-		}
-		return true;
-	}
-
-	public boolean isLinked() {
-		for (AbcNoteEvent ne : notes) {
-			if (ne.tiesFrom == null) {
-				AbcNoteEvent tie = ne;
-				while (tie.tiesTo != null) {
-					if (tie.tiesTo.getStartTick() != tie.getEndTick()) {
-						System.out.println("Chord "+startTick+"-"+endTick+" noteCount="+notes.size()+" restMix="+hasRestAndNotes());
-						System.out.println("Note to   "+tie.tiesTo.getStartTick()+"-"+tie.tiesTo.getEndTick()+" "+tie.tiesTo.note);
-						System.out.println("Note from "+tie.getStartTick()+"-"+tie.getEndTick()+" "+ne.note);
-						return false; 
-					}
-					tie = tie.tiesTo;
-				}
-			}
-		}
-		return true;
-	}
-
-	/**
-	 * 
-	 * @param note
-	 * @return true if note is the shortest in the chord, and only note of that short duration.
-	 */
-	public boolean isShortest(AbcNoteEvent note) {
-		if (note.getEndTick() > endTick) return false;
-		for (AbcNoteEvent ne : notes) {
-			if (ne.getEndTick() == note.getEndTick() && note != ne) {
-				return false;
-			}
-		}
-		return true;
 	}
 }

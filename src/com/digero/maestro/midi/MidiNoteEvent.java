@@ -25,8 +25,6 @@ public class MidiNoteEvent extends NoteEvent {
 		throw new RuntimeException("Trying to modify a midi note event!");
 	}
 	
-	
-	
 	/*@Override
 	public boolean equals(Object obj) {
 		if (obj instanceof MidiNoteEvent) {

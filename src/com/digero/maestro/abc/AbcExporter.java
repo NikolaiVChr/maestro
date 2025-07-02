@@ -1455,6 +1455,7 @@ public class AbcExporter {
 	}
 
 	private void applyFermata(AbcPart part, List<AbcNoteEvent> events) {
+		final long margin = 5000L;//5 ms
 		if (part.conclusionFermata != 0) {
 			long finalNoteTickEnd = 0L;
 			List<AbcNoteEvent> conclusion = new ArrayList<>();
@@ -1466,14 +1467,14 @@ public class AbcExporter {
 					if (organic) {
 						long concludeMicros = qtm.tickToMicrosABCOrganic(finalNoteTickEnd);
 						for (AbcNoteEvent potential : conclusion) {
-							if (qtm.tickToMicrosABCOrganic(potential.getEndTick()) + 5000L < concludeMicros) {
+							if (qtm.tickToMicrosABCOrganic(potential.getEndTick()) + margin < concludeMicros) {
 								conclusionRemove.add(potential);
 							}
 						}
 					} else {
 						long concludeMicros = qtm.tickToMicrosABC(finalNoteTickEnd, part);
 						for (AbcNoteEvent potential : conclusion) {
-							if (qtm.tickToMicrosABC(potential.getEndTick(), part) + 5000L < concludeMicros) {
+							if (qtm.tickToMicrosABC(potential.getEndTick(), part) + margin < concludeMicros) {
 								conclusionRemove.add(potential);
 							}
 						}
@@ -1545,6 +1546,8 @@ public class AbcExporter {
 	}
 
 	private void applyLegato(AbcPart part, int trackNumber, List<MidiNoteEvent> listOfNotes) {
+		// if the silence between notes is smaller than 1 second (in orig midi tempo),
+		// then extend note endings to bridge the gap.
 		if (part.getInstrument().sustainable) {
 			long lastTick = 0L;
 			for (int curr = 0; curr < listOfNotes.size(); curr++) {
@@ -1554,34 +1557,34 @@ public class AbcExporter {
 					currNe.setLegatoEndTick(part, null);
 					continue;
 				}
-				long currEnd = currNe.getEndTick();
-				long nextEnd = currEnd;
+				long currEndTick = currNe.getEndTick();
+				long nextEndTick = currEndTick;
 				long currEndMicro;
 				if (organic) {
-					currEndMicro = qtm.tickToMicrosOrganic(currEnd);
+					currEndMicro = qtm.tickToMicrosOrganic(currEndTick);
 				} else {
-					currEndMicro = qtm.tickToMicros(currEnd);
+					currEndMicro = qtm.tickToMicros(currEndTick);
 				}
 				// Now find where next note event starts
 				for (int next = curr+1; next < listOfNotes.size(); next++) {
 					MidiNoteEvent nextNe = listOfNotes.get(next);
-					if (nextNe.getStartTick() <= nextEnd && nextNe.getEndTick() > currEnd) {
+					if (nextNe.getStartTick() <= nextEndTick && nextNe.getEndTick() > currEndTick) {
 						break;
 					}
-					if (nextNe.getStartTick() > nextEnd) {
-						nextEnd = nextNe.getStartTick();
+					if (nextNe.getStartTick() > nextEndTick) {
+						nextEndTick = nextNe.getStartTick();
 						break;
 					}
 				}
-				if (nextEnd > currEnd) {
+				if (nextEndTick > currEndTick) {
 					long nextEndMicro;
 					if (organic) {
-						nextEndMicro = qtm.tickToMicrosOrganic(nextEnd);
+						nextEndMicro = qtm.tickToMicrosOrganic(nextEndTick);
 					} else {
-						nextEndMicro = qtm.tickToMicros(nextEnd);
+						nextEndMicro = qtm.tickToMicros(nextEndTick);
 					}
 					if (nextEndMicro - currEndMicro < AbcConstants.ONE_SECOND_MICROS) {
-						currNe.setLegatoEndTick(part, nextEnd);
+						currNe.setLegatoEndTick(part, nextEndTick);
 					} else {
 						currNe.setLegatoEndTick(part, null);								
 					}
@@ -1624,7 +1627,7 @@ public class AbcExporter {
 					// Notice that bent notes on chromatic tracks are treated as only 1 note here
 				} else if (possibleCombiNote != null && possibleCombiNote.id > LotroCombiDrumInfo.maxCombi.id) {
 					// Just for safety, should never land here.
-					logNotes.severe("// Just for safety, should never land here:+\n"+ne);
+					logNotes.severe("Just for safety, should never land here: "+ne);
 					removeList.add(ne);
 				}
 			}
@@ -1721,7 +1724,6 @@ public class AbcExporter {
 
 		// subdivide bent notes
 		long lastEnding = 0;
-		AbcNoteEvent lastEvent = null;
 		List<AbcNoteEvent> extraEvents = new ArrayList<>();
 		List<AbcNoteEvent> deleteEvents = new ArrayList<>();
 		
@@ -1749,14 +1751,12 @@ public class AbcExporter {
 					assert bent.note != Note.REST;
 					if (bent.getEndTick() > lastEnding) {
 						lastEnding = bent.getEndTick();
-						lastEvent = bent;
 					}
 				}
 				extraEvents.addAll(bentNotes);
 			} else {
 				if (ne.getEndTick() > lastEnding) {
 					lastEnding = ne.getEndTick();
-					lastEvent = ne;
 				}
 			}
 		}
@@ -1863,7 +1863,7 @@ public class AbcExporter {
 		ChordOrganic curChord = new ChordOrganic(events.get(0), qtm);
 		ChordOrganic prevChord = null;
 		ChordOrganic prevRestChord = null;
-		logNotes.finest(part.getTitle()+ ": Adding to curChord, note i=0 micros:"+events.get(0).startABCMicros+"-"+events.get(0).endABCMicros+" "+events.get(0).note);
+		logNotes.finest(part.getTitle()+ ": Adding to curChord, note i=0 micros:"+Util.formatDurationM(events.get(0).startABCMicros)+"-"+Util.formatDurationM(events.get(0).endABCMicros)+" "+events.get(0).note);
 		chords.add(curChord);
 		MAIN:for (int i = 1; i < events.size(); i++) {
 			AbcNoteEvent ne = events.get(i);
@@ -1872,7 +1872,7 @@ public class AbcExporter {
 				// This note starts at the same time as the rest of the notes in the chord
 				assert !curChord.isRest();
 				curChord.add(ne);
-				logNotes.finest(part.getTitle()+ ": Adding to curChord note i="+i+" micros:"+ne.startABCMicros+"-"+ne.endABCMicros+" "+ne.note);
+				logNotes.finest(part.getTitle()+ ": Adding to curChord note i="+i+" micros:"+Util.formatDurationM(ne.startABCMicros)+"-"+Util.formatDurationM(ne.endABCMicros)+" "+ne.note);
 			} else {								
 				// The curChord has all the notes it will get.
 				
@@ -1906,7 +1906,7 @@ public class AbcExporter {
 					//is BEFORE pruning to save pruning twice
 					curChord.setEarlyStartMicros(useRestToShortenChords);
 					if (prevChord != null) prevChord.recalcEndMicros();
-					logNotes.finer(part.getTitle()+ ": applying early start. curChord now start at "+curChord.getStartMicros());
+					logNotes.finer(part.getTitle()+ ": applying early start. curChord now start at "+Util.formatDurationM(curChord.getStartMicros()));
 					i--;
 					continue MAIN;
 				}
@@ -2182,7 +2182,8 @@ public class AbcExporter {
 							logNotes.finer(part.getAbcSong().getSongTitle()+": 6 note chord had rest added !!!!!!!!!!");
 						}
 					}
-					logNotes.fine(part.getTitle()+ ": Inserted a rest into current chord to make it shorter newEndMicros="+Math.max(minEndMicros, nextChord.getStartMicros()));
+					logNotes.fine(part.getTitle()+ ": Inserted a rest into current chord to make it shorter newEndMicros="
+								+ Util.formatDurationM(Math.max(minEndMicros, nextChord.getStartMicros())));
 				}
 				curChord.recalcEndMicros();
 				if (reprocessCurrentNote) {
@@ -2220,7 +2221,9 @@ public class AbcExporter {
 							// There is a rest before curr that can be expanded into
 							curChord.early = earlyCurrMicro;//TODO: breakup elongated notes
 							curChord.dontMove2 = true;
-							logNotes.finer(part.getTitle()+": Early start of 1st of two trills/gliss notes (rest). cur_early="+earlyCurrMicro+" cur_start="+curChord.getStartMicros()+" prev_end="+prevRestChord.getEndMicros());
+							logNotes.finer(part.getTitle()+": Early start of 1st of two trills/gliss notes (rest). cur_early="
+										+ Util.formatDurationM(earlyCurrMicro)+" cur_start="+Util.formatDurationM(curChord.getStartMicros())
+										+ " prev_end="+Util.formatDurationM(prevRestChord.getEndMicros()));
 							prevRestChord.setEndMicrosRetract(earlyCurrMicro);
 							if (assertionsEnabled) assertSoftDura(prevRestChord, minimumMicros*4/5);
 							
@@ -2232,7 +2235,9 @@ public class AbcExporter {
 							curChord.early = earlyCurrMicro;//TODO: breakup elongated notes
 							curChord.dontMove2 = true;
 							// any ties will still hold as there will be no gap
-							logNotes.finer(part.getTitle()+": Early start of 1st of two trills/gliss notes (chord). cur_early="+earlyCurrMicro+" cur_start="+curChord.getStartMicros()+" prev_end="+prevChord.getEndMicros());
+							logNotes.finer(part.getTitle()+": Early start of 1st of two trills/gliss notes (chord). cur_early="
+										+ Util.formatDurationM(earlyCurrMicro)+" cur_start="+Util.formatDurationM(curChord.getStartMicros())
+										+ " prev_end="+Util.formatDurationM(prevChord.getEndMicros()));
 							prevChord.setEndMicrosRetract(earlyCurrMicro);
 							prevChord.expandedMicros = null;
 							if (assertionsEnabled) assertSoftDura(prevChord, minimumMicros*4/5);
@@ -2244,7 +2249,7 @@ public class AbcExporter {
 					// Else try to make it longer					
 					if (nextChord.getStartMicros() >= minEndMicros) {
 						curChord.setEndMicrosExpand(minEndMicros);
-						logNotes.finer(part.getTitle()+ ": trying to expand curChord to end at "+minEndMicros);
+						logNotes.finer(part.getTitle()+ ": trying to expand curChord to end at "+Util.formatDurationM(minEndMicros));
 					} else {
 						// there was not room for a larger chord
 						int curValue = calcValue(curChord, part.getInstrument().sustainable);
@@ -2320,7 +2325,7 @@ public class AbcExporter {
 								// we don't use dontMove2 here, as we might want to get back in here with other ne.
 								i--;
 								
-								logNotes.finer(part.getTitle()+": Deleted ne, is second of two trills/gliss notes, dura="+ (ne1Micros/1000L)+" ms");
+								logNotes.finer(part.getTitle()+": Deleted ne, is second of two trills/gliss notes, dura="+Util.formatDurationM(ne1Micros));
 								continue MAIN;
 							} else if (curChord.arp > 1) {
 								boolean doable = true;
@@ -2403,7 +2408,7 @@ public class AbcExporter {
 							// give up and schedule curr chord for deletion, it likely contains a grace note
 							curChord.setEndMicrosRetract(curChord.getStartMicros());
 							curChord.delete = true;
-							logNotes.finer(part.getTitle()+": Removed short dura chord with "+curChord.size()+" notes. "+curChord.getStartMicros());
+							logNotes.finer(part.getTitle()+": Removed short dura chord with "+curChord.size()+" notes. "+Util.formatDurationM(curChord.getStartMicros()));
 							
 						} else {
 							// deprecated
