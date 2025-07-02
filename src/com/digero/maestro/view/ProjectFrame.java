@@ -162,6 +162,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private boolean allowOverwriteSaveFile = false;
 	private boolean allowOverwriteExportFile = false;
 	private NoteFilterSequencerWrapper sequencer;
+	private long firstMidiNoteTick = 0;
 	private VolumeTransceiver volumeTransceiver;
 	private LotroSequencerWrapper abcSequencer;
 	private VolumeTransceiver abcVolumeTransceiver;
@@ -1045,6 +1046,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		if (abcPreviewMode) {
 			if (!refreshPreviewSequence(true) && running)
 				running = false;
+		} else if (curSequencer.getTickPosition() == 0L) {
+			curSequencer.setTickPosition(firstMidiNoteTick);
 		}
 
 		curSequencer.setRunning(running);
@@ -2123,6 +2126,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private File file = null;
 	private boolean inCloseFile = false;// In progress of asking user if wanting to save
 	private boolean inOpenFile = false;// In progress of either opening file or finding midi.
+
 	public void openFile(File openfile, boolean updateLastOpenedList) {
 		// begin system for preventing cascading dialogs
 		// As long as the dialog for asking to close open project is there,
@@ -2207,8 +2211,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			SequenceInfo sequenceInfo = abcSong.getSequenceInfo();
 			sequencer.setSequence(sequenceInfo.getSequence());
 			sequencer.setRealDura(sequenceInfo.realDuraTicks);
-
-			sequencer.setTickPosition(sequenceInfo.calcFirstNoteTick());
+			
+			firstMidiNoteTick = sequenceInfo.calcFirstNoteTick();
+			if (!abcSong.isFromXmlFile() && !abcSong.isFromAbcFile()) {
+				sequencer.setTickPosition(firstMidiNoteTick);
+			}
 			midiBarLabel.setBarNumberCache(sequenceInfo.getDataCache());
 
 			setPartsListModel();
