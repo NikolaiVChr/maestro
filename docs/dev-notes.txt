@@ -1,0 +1,43 @@
+Song ending
+===========
+This is overview of ABC preview/export song ending calcs.
+
+AbcExporter.exportEndTick
+getSongStartEndTick() finds the ending tick by asking parts for last note ending and adding conclusionFermata to it if needed.
+For non-sustained notes it sets the ending when the actual sound ends, not when the midi/abc note ends.
+applyFermata() might make it larger, but this is now done also inside getSongStartEndTick(), so not sure if thats redundant.
+For mix and legacy timings it is quantized.
+
+Abc-export
+Mix and legacy timings skip notes that does not start before AbcExporter.exportEndTick
+They also clamp note-endings to to it, and insert rest to always reach it.
+Both organic timings ignores AbcExporter.exportEndTick
+Part/file-name durations read AbcExporter.exportEndTick, convert it to micros and apply tempo-factor.
+
+Sequencer.getTickLength()
+Java's builtin song duration measure. Relies on EOT events, else it counts straggling tempo events etc. after last note.
+
+SequenceInfo.realDuraTicks
+Calculated in fixupTrackLength() when loading midi and can be significantly lower than Sequencer.getTickLength(),
+if there is 20+ seconds pauses in song and that pause is significant portion of song.
+It includes events after EOT.
+For preview sequences it is not set, so is zero. But thats okay, LotroSequencerWrapper which inherits
+SequenceWrapper and represent preview midi, wont get this field set
+
+SequenceWrapper.getTickLength()
+Does min(SequenceInfo.realDuraTicks, Sequencer.getTickLength()) in midi playback. (NoteFilterSequencerWrapper)
+Does Sequencer.getTickLength() in abc preview playback. (LotroSequencerWrapper)
+Hence why its important in preview to put in EOT in each track, else it can count straggling tempo-events etc.
+
+SequenceWrapper.tickToMicros()
+Calls my custom tick2microsecondSlow to get accurate micros in preview midi.
+
+SongPositionLabel
+Asks SequenceWrapper.getTickLength() for duration in ticks.
+Converts to micros by calling SequenceWrapper.tickToMicros().
+
+Last Homely Hobbit: Examine abc's for issues
+Expected to report the song duration longer than it actually is if it ends with percussion, plucky or brusque.
+Reason is notes in midis is often longer than the lotro instrument put on the track, and since
+AbcExporter.exportEndTick does not count the entire note, but stop when the lotro note for the instrument will stop
+sounding, Maestro can output durations shorter than Last Homely Hobbit expects by several seconds.

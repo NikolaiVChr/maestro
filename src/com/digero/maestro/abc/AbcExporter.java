@@ -2876,18 +2876,16 @@ public class AbcExporter {
 	}	
 	
 	/**
-	 * process the notes using new multi-stage and faster organic principle
+	 * process the notes using new multi-stage organic principle
 	 * 
-	 * This is much better and easier to read code. The single-stage is full of nested conditions.
-	 * But the older single-stage might sound better, not sure.
+	 * This is much better and easier to read code (used to be, before poly 6+ at least).
+	 * The single-stage is full of nested conditions.
 	 * 
 	 */
-	private List<Chord> processOrganic2(AbcPart part, List<AbcNoteEvent> events, boolean useRestToShortenChords) {
-		// TODO: Last note if non-sustained will make song too long, both notes a reported time. Example: ABBA - Chiquita	
+	private List<Chord> processOrganic2(AbcPart part, List<AbcNoteEvent> events, boolean useRestToShortenChords) {	
 	
 		final long minimumMicros = AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM());
 		
-				
 		NavigableSet<Long> grid = createGrid(events, minimumMicros, part, useRestToShortenChords);
 		
 		events = snapNotesToGrid(events, grid, minimumMicros);
