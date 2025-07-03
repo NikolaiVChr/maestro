@@ -532,9 +532,9 @@ public class AbcExporter {
 		boolean useMicroAccuracy = useRestsInChords;//pair.second;
 		
 		if (useMicroAccuracy) {
-			logAbc.info("ABC part organic export: Q="+Q+", L=1/"+L+", 1 numerator=1 us, denom="+oneMicro+", minimum="+(minimumMicro)+" us.");
+			logAbc.info("ABC part organic export: Q="+Q+", L=1/"+L+", 1 numerator=1 us, denom="+oneMicro+", minimum="+(minimumMicro)+" μs.");
 		} else {
-			logAbc.info("ABC part organic export: Q="+Q+", L=1/"+L+", 1 numerator="+milliFactor+" us, denom="+oneMilli+", minimum="+(minimumMilli*milliFactor)+" us.");
+			logAbc.info("ABC part organic export: Q="+Q+", L=1/"+L+", 1 numerator="+milliFactor+" us, denom="+oneMilli+", minimum="+(minimumMilli*milliFactor)+" μs.");
 		}
 		
 		for (Chord c : chords) {
@@ -623,7 +623,7 @@ public class AbcExporter {
 			if ((cEndMicro-cStartMicro) < 59000) {
 				// this might not be serious as the tick resolution can be very low,
 				// like 10 ms per tick.
-				logAbc.fine("combine output mismatch: "+qtm.tickToMicrosABCOrganic(c.getStartTick())+" -> "+qtm.tickToMicrosABCOrganic(c.getEndTick())+" ("+(cEndMicro-cStartMicro)+" us)");
+				logAbc.fine("combine output mismatch: "+qtm.tickToMicrosABCOrganic(c.getStartTick())+" -> "+qtm.tickToMicrosABCOrganic(c.getEndTick())+" ("+(cEndMicro-cStartMicro)+" μs)");
 				//assert false;
 			}
 			
@@ -646,7 +646,7 @@ public class AbcExporter {
 				
 				if (chordMicro > AbcConstants.LONGEST_NOTE_MICROS) {
 					// should never happen
-					logAbc.severe(part.getTitle() +": chord is "+(chordMicro)+" us, drone="+isDrone(part, c.get(0)));
+					logAbc.severe(part.getTitle() +": chord is "+(chordMicro)+" μs, drone="+isDrone(part, c.get(0)));
 					chordMicro = (int)(AbcConstants.LONGEST_NOTE_MICROS-1L);
 				}
 				
@@ -658,7 +658,7 @@ public class AbcExporter {
 					if ((Math.abs(driftChordMicros) > 10000 && diff != Integer.MIN_VALUE)) {
 						long postDiff = (currentMicro + chordMicro) - cEndMicro;
 						logAbc.severe("Start driftMicros="+driftChordMicros+". End adjustment was "+(-diff+minAdjust)
-								+", ideal adjustment would have been "+(-diff)+", resultDiff="+(-postDiff)+" us. ("+part.getTitle()+")");
+								+", ideal adjustment would have been "+(-diff)+", resultDiff="+(-postDiff)+" μs. ("+part.getTitle()+")");
 						logAbc.severe("Adjustment main="+(-diff)+" extra="+minAdjust);
 						logAbc.severe("Chord "+(cEndMicro-cStartMicro));
 					}
@@ -691,7 +691,7 @@ public class AbcExporter {
 				
 				if (chordMilli*milliFactor > AbcConstants.LONGEST_NOTE_MICROS) {
 					// should never happen
-					logAbc.severe(part.getTitle() +": chord is "+(chordMilli*milliFactor)+" us, drone="+isDrone(part, c.get(0)));
+					logAbc.severe(part.getTitle() +": chord is "+(chordMilli*milliFactor)+" μs, drone="+isDrone(part, c.get(0)));
 					chordMilli = (int)(AbcConstants.LONGEST_NOTE_MICROS/milli2micro-1L);
 					assert chordMilli*milliFactor <= AbcConstants.LONGEST_NOTE_MICROS;
 				}
@@ -704,7 +704,7 @@ public class AbcExporter {
 						long postDiff = (currentMicro + chordMilli*milliFactor) - cEndMicro;
 						logAbc.severe("High drift in "+part.getAbcSong().getTitle());
 						logAbc.severe("Start driftMicros="+driftMicros+". End adjustment was "+(milliFactor*(-diff/milliFactor+minAdjust))
-								+", ideal adjustment would have been "+(-diff)+", resultDiff="+(-postDiff)+" us. ("+part.getTitle()+")");
+								+", ideal adjustment would have been "+(-diff)+", resultDiff="+(-postDiff)+" μs. ("+part.getTitle()+")");
 						logAbc.severe("Adjustment main="+(milliFactor*(-diff/milliFactor))+" extra="+(milliFactor*(minAdjust)));
 						logAbc.severe("Chord "+(cEndMicro-cStartMicro));
 					}
@@ -799,7 +799,7 @@ public class AbcExporter {
 						}
 						if (noteMilli*milliFactor > AbcConstants.LONGEST_NOTE_MICROS) {
 							// should never happen
-							logAbc.severe(part.getTitle() +": note is "+(noteMilli*milliFactor)+" us, drone="+isDrone(part, evt));
+							logAbc.severe(part.getTitle() +": note is "+(noteMilli*milliFactor)+" μs, drone="+isDrone(part, evt));
 							noteMilli = (int)(AbcConstants.LONGEST_NOTE_MICROS/milli2micro-1L);
 							assert noteMilli*milliFactor <= AbcConstants.LONGEST_NOTE_MICROS;
 						}
@@ -868,7 +868,7 @@ public class AbcExporter {
 		//The tolerance is 10 ms. But should best be under 1 ms.
 		//Since we now round to 0.1 millis instead of micros in organic when poly 6+ is disabled,
 		//drift is a real thing, and we log it:
-		logAbc.info("Largest drift was "+largestDriftMicros+" us. ("+part.getTitle()+")");
+		logAbc.info("Largest drift was "+largestDriftMicros+" μs. ("+part.getTitle()+")");
 		logAbc.fine(part.getTitle()+" EXPORT: ends at "+Util.formatDurationM(currentMicro)+" - micro:"+currentMicro);
 
 		addLineBreaks.run();

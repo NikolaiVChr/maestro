@@ -100,6 +100,7 @@ import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.LotroSequencerWrapper;
 import com.digero.common.midi.MidiConstants;
 import com.digero.common.midi.MidiStandard;
+import com.digero.common.midi.MidiUtils;
 import com.digero.common.midi.NoteFilterSequencerWrapper;
 import com.digero.common.midi.SequencerEvent;
 import com.digero.common.midi.SequencerEvent.SequencerProperty;
@@ -2483,6 +2484,12 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			}
 			abcSequencer.setSequence(previewSequenceInfo.getSequence());
 			abcSequencer.setStartTick(abcPreviewStartTick);// Needed for MP3 and WAV exports.
+
+			log.info("A new preview was generated");
+			log.info("Duration MIDI:    "+Util.formatDurationM(sequencer.getLength()));
+			log.info("Duration Preview: "+Util.formatDurationM(abcSequencer.getLength()-abcSequencer.tickToMicros(abcPreviewStartTick))+", rounded up: "+Util.formatDuration(abcSequencer.getLength()-abcSequencer.tickToMicros(abcPreviewStartTick)));
+			log.info("Duration ABC:     "+Util.formatDurationM(abcSong.getSongLengthMicros())+", rounded up: "+Util.formatDuration(abcSong.getSongLengthMicros()));
+			
 			/*
 			if (tick < abcPreviewStartTick)
 				tick = abcPreviewStartTick;

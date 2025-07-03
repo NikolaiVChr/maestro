@@ -273,17 +273,17 @@ public class MidiUtils {
     		int command = shorty.getCommand();
     		switch (command) {
     			case ShortMessage.NOTE_ON:
-    				str += ", Note ON"; break;
+    				str += "Note ON, Velocity="+shorty.getData2(); break;
     			case ShortMessage.NOTE_OFF:
-    				str += ", Note ON"; break;
+    				str += "Note OFF"; break;
     			case ShortMessage.CHANNEL_PRESSURE:
-    				str += ", Aftertouch"; break;
+    				str += "Aftertouch"; break;
     			case ShortMessage.POLY_PRESSURE:
-    				str += ", Aftertouch (poly)"; break;
+    				str += "Aftertouch (poly)"; break;
     			case ShortMessage.CONTROL_CHANGE:
-    				str += ", Control Change"; break;
+    				str += "Control Change"; break;
     			case ShortMessage.PITCH_BEND:
-    				str += ", Pitch Bend"; break;
+    				str += "Pitch Bend"; break;
     		}
         	str += ", Channel="+shorty.getChannel();
     	} else if (m instanceof SysexMessage) {
