@@ -72,7 +72,7 @@ public class SongPositionLabel extends JLabel implements Listener<SequencerEvent
 		long tick = Math.max(0L, Math.min(tickLength, sequencer.getThumbTick()));
 
 		long initialOffsetMicros = sequencer.tickToMicros(initialOffsetTick);
-		long micros = sequencer.tickToMicros(tick) - initialOffsetMicros;
+		long micros = Math.max(0, sequencer.tickToMicros(tick) - initialOffsetMicros);
 		long length = sequencer.tickToMicros(tickLength) - initialOffsetMicros;
 
 		if (countdown) {
