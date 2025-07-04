@@ -24,10 +24,12 @@ import javax.sound.midi.Track;
 import com.digero.common.midi.ExtensionMidiInstrument;
 import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.MidiConstants;
+import com.digero.common.midi.MidiFactory;
 import com.digero.common.midi.MidiInstrument;
 import com.digero.common.midi.MidiStandard;
 import com.digero.common.midi.MidiUtils;
 import com.digero.common.midi.Note;
+import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.midi.TimeSignature;
 import com.digero.common.util.Util;
 import com.digero.maestro.view.MiscSettings;
@@ -93,6 +95,11 @@ public class TrackInfo implements MidiConstants {
 		int[] pitchBend = new int[CHANNEL_COUNT_ABC];
 
 		List<BentMidiNoteEvent> allBentNotes = new ArrayList<>();
+		
+		List<MidiEvent> danglingNoteOffs = new ArrayList<>();
+		long EOT = Long.MAX_VALUE;
+		MidiEvent EOTevt = null;
+		long lastValidEvent = 0L;
 
 		long tick = -10000000;
 		for (int j = 0, sz = track.size(); j < sz; j++) {
@@ -142,8 +149,12 @@ public class TrackInfo implements MidiConstants {
 				}
 			}
 			tick = evt.getTick();
-
+			
 			if (msg instanceof ShortMessage) {
+				if (tick > EOT) {
+					danglingNoteOffs.add(evt);
+					continue;
+				}
 				ShortMessage m = (ShortMessage) msg;
 				int cmd = m.getCommand();
 				int ch = m.getChannel();
@@ -188,12 +199,14 @@ public class TrackInfo implements MidiConstants {
 
 					// If this is a Note ON and was preceded by a similar Note ON without a Note OFF, lets turn the preceding note off
 					// If this is a Note OFF lets do same, but also delete the preceding note if it has zero duration.
+					boolean turnedNoteOff = false;
 					Iterator<MidiNoteEvent> iter = notesOn[ch].iterator();
 					while (iter.hasNext()) {
 						MidiNoteEvent ne = iter.next();
 						if (ne.note.id == noteId) {
 							iter.remove();
 							ne.setEndTick(tick);
+							turnedNoteOff = true;
 							if (tick == ne.getStartTick() && (cmd == ShortMessage.NOTE_ON && velocity > 0)) {
 								// Illegal zero duration note terminated, so Maestro don't have to process it and discard it in the abc export anyway.
 								// 
@@ -210,7 +223,16 @@ public class TrackInfo implements MidiConstants {
 							break;
 						}
 					}
-
+					
+					if ((cmd == ShortMessage.NOTE_OFF || (cmd == ShortMessage.NOTE_ON && velocity == 0)) && !turnedNoteOff) {
+						// note OFF event, but no notes to turn off.
+						// events like this can make a midi appear longer than they are,
+						// so we remove the event.
+						danglingNoteOffs.add(evt);
+					} else {
+						lastValidEvent = tick;
+					}
+					
 					if (cmd == ShortMessage.NOTE_ON && velocity > 0) {
 						Note note = Note.fromId(noteId);
 						if (note == null) {
@@ -252,26 +274,28 @@ public class TrackInfo implements MidiConstants {
 					String tmp = "";
 					if (!ignoreMidiText) tmp = MidiUtils.decodeMidiText(data).trim();
 					
-					if (tmp.length() > 0 && !tmp.equalsIgnoreCase("untitled")
-							&& !tmp.equalsIgnoreCase("WinJammer Demo")) {
-						// System.out.println("Starts with @ "+data[0]+" "+(data[0] & 0xFF));
-
-						/*
-						 * String pattern = "\u000B";// Vertical tab in unicode Pattern r = Pattern.compile(pattern);
-						 * Matcher match = r.matcher(tmp); tmp = match.replaceAll(" ");
-						 */
-
+					if (tmp.length() > 0 && !tmp.equalsIgnoreCase("untitled")) {
 						name = tmp;
 					}
 				} else if (type == META_KEY_SIGNATURE && keySignature == null) {
 					keySignature = new KeySignature(m);
-				} else if (type == META_TIME_SIGNATURE && timeSignature == null) {
+				} else if (type == META_TIME_SIGNATURE) {
 					try {
-						timeSignature = new TimeSignature(m);
+						if (timeSignature == null) timeSignature = new TimeSignature(m);
 					} catch (InvalidMidiDataException e) {
 						// Ignore the illegal message
 					}
 				} else if (type == META_END_OF_TRACK) {
+					if (tick < EOT) {
+						EOT = tick;
+						EOTevt = evt;
+						boolean assertEnabled = false;
+						assert assertEnabled = true;
+						if (assertEnabled) {
+							// heavy operation so we skip if assert is disabled
+							log.fine(trackNumber+": EOT at "+Util.formatDurationM(MidiUtils.tick2microsecond(sequenceInfo.getSequence(), tick, new SequencerWrapper.TempoCacheSlow(sequenceInfo.getSequence()))));
+						}
+					}
 					// turn off all notes, but keep them instead of discarding them like old days.
 					for (int ch = 0; ch < MidiConstants.CHANNEL_COUNT; ch++) {
 						if (notesOn[ch] != null) {
@@ -293,10 +317,51 @@ public class TrackInfo implements MidiConstants {
 						}
 					}
 					// We keep iterating, perhaps there is track-name after EOT
+				} else {
+					lastValidEvent = tick;
+				}
+			} else {
+				//SysEx
+			}
+		}
+		
+		// this compliments SequenceInfo.fixupTrackLength(),
+		// here we have better knowledge of note OFFs that
+		// does nothing.
+		List<MidiEvent> danglingEvents = new ArrayList<>();
+		if (EOT > lastValidEvent+1 && EOT != Long.MAX_VALUE) {
+			/*
+			track.remove(EOTevt);
+			EOTevt.setTick((lastValidEvent+1));
+			track.add(EOTevt);// this dont work, as java24 auto adjust the tick to be after last event
+			log.fine("Moved EOT to "+EOTevt.getTick()+", that should have been "+(lastValidEvent+1));
+			*/
+			for (int j = track.size()-1; j >= 0; j--) {
+				MidiEvent evt = track.get(j);
+				if (evt.getTick() > lastValidEvent+1) {
+					if (evt.getMessage() instanceof ShortMessage) {
+						log.fine(trackNumber+": removing "+MidiUtils.midiEventToShortString(evt));
+						danglingNoteOffs.add(evt);
+					} else {
+						log.fine(trackNumber+": moving "+MidiUtils.midiEventToShortString(evt)+" to "+(lastValidEvent+1));
+						danglingEvents.add(evt);
+					}
+				} else {
+					break;
 				}
 			}
 		}
-
+		
+		for (MidiEvent off : danglingNoteOffs) {
+			track.remove(off);
+		}
+		
+		for (MidiEvent evt : danglingEvents.reversed()) {
+			track.remove(evt);
+			MidiEvent nw = new MidiEvent(evt.getMessage(), lastValidEvent);
+			track.add(nw);
+		}
+		
 		for (BentMidiNoteEvent be : allBentNotes) {
 			// All bent notes that span more than an octave will
 			// already here be split into small pieces.

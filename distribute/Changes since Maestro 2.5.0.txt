@@ -52,6 +52,7 @@ Version 4.2.16
 - Fix minor inaccuracy of song position time display in Maestro.
 - Fix maestro not always play very first note when opening project.
 - Fix that after pressing stop when not in abc preview, sequencer when play, would play initial silence in the midi.
+- Prevent midi playback from skipping to first enabled note when enabling first lotro part.
 
 Version 4.2.13
 - Fix that some songs could still change midi playback volume, overriding user's volume slider setting.

@@ -993,7 +993,7 @@ public class SequenceInfo implements MidiConstants {
 							if (command == ShortMessage.NOTE_OFF || (command == ShortMessage.NOTE_ON && ((ShortMessage)evt.getMessage()).getData2() == 0)) {
 								// note OFF or note ON with zero velocity
 								endTick = evt.getTick();
-								log.finer(i+": last note endTick = "+endTick);
+								log.finer(i+": last note OFF = "+MidiUtils.midiEventToShortString(evt));
 								break;
 							}
 							if (command == ShortMessage.NOTE_ON && lastEOT != null) {

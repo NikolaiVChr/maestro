@@ -12,10 +12,12 @@ Abc-export
 Mix and legacy timings skip notes that does not start before AbcExporter.exportEndTick
 They also clamp note-endings to to it, and insert rest to always reach it.
 Both organic timings ignores AbcExporter.exportEndTick
-Part/file-name durations read AbcExporter.exportEndTick, convert it to micros and apply tempo-factor.
+Part/file-name durations read AbcExporter.exportEndTick, convert it to micros and apply tempo-factor,
+and rounds it up to nearest second. Delay and initial rest added to accommodate delays are not counted in final
+output durations, so it can be off by 1.1 seconds.
 
 Sequencer.getTickLength()
-Java's builtin song duration measure. Relies on EOT events, else it counts straggling tempo events etc. after last note.
+Java's built-in song duration measure. It sadly counts straggling tempo events etc. after last note.
 
 SequenceInfo.realDuraTicks
 Calculated in fixupTrackLength() when loading midi and can be significantly lower than Sequencer.getTickLength(),
