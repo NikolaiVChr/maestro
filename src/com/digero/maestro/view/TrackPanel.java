@@ -483,6 +483,8 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		}
 		updateState();
 		updateColors();
+		updateBadTooltipText();
+		updateTitleText();
 	}
 	
 	@Override

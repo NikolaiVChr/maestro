@@ -937,12 +937,14 @@ public class SequenceInfo implements MidiConstants {
 	 * 
 	 * @param song
 	 */
-	@SuppressWarnings("unchecked") //
 	public static long fixupTrackLength(Sequence song) {
 		log.fine("Before: " + Util.formatDurationM(song.getMicrosecondLength()));
 		SequencerWrapper.TempoCacheSlow tempoCache = new SequencerWrapper.TempoCacheSlow(song);
 		Track[] tracks = song.getTracks();
+		
+		@SuppressWarnings("unchecked")
 		List<MidiEvent>[] suspectEvents = new List[tracks.length];
+		
 		TreeSet<MidiEvent> allEvents = new TreeSet<>(new Comparator<MidiEvent>() {
 			@Override
 			public int compare(MidiEvent o1, MidiEvent o2) {
@@ -1013,12 +1015,13 @@ public class SequenceInfo implements MidiConstants {
 		/*
 		 * Weakness in this, is that if there is note OFF far at end without corresponding note ON,
 		 * then notegraphs will show empty until that useless note OFF.
+		 * TrackInfo will try to fix that.
 		 */
 
 		for (int i = 0; i < tracks.length; i++) {
 			Track track = tracks[i];
 			
-			for (MidiEvent evt : suspectEvents[i]) {
+			for (MidiEvent evt : suspectEvents[i].reversed()) {
 				if (evt.getTick() > endTick) {
 					track.remove(evt);
 					
