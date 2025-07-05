@@ -1779,7 +1779,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			updateTitlePending = true;
 			SwingUtilities.invokeLater(() -> {
 				updateTitlePending = false;
-				String title = MaestroMain.APP_NAME;
+				String title = MaestroMain.APP_NAME + " " + MaestroMain.APP_VERSION;
 				if (abcSong != null) {
 					if (abcSong.getProjectFile() != null) {
 						title += " - " + abcSong.getProjectFile().getName();
