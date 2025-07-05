@@ -1039,6 +1039,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 	}
 
+	/**
+	 * Play/pause button (or spacebar)
+	 */
 	private void updateSequencer() {
 		SequencerWrapper curSequencer = abcPreviewMode ? abcSequencer : sequencer;
 
