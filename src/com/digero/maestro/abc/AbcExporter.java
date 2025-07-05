@@ -403,6 +403,7 @@ public class AbcExporter {
 				}
 				out.println(AbcField.ORGANIC + Boolean.toString(organic));
 				out.println(AbcField.ORGANIC_MULTI_STAGE + Boolean.toString(organic && organic2));
+				out.println(AbcField.POLY_6_PLUS + Boolean.toString(useRestsInChords));
 				out.println(AbcField.SKIP_SILENCE_AT_START + Boolean.toString(skipSilenceAtStart));
 				out.println(AbcField.DELETE_MINIMAL_NOTES + Boolean.toString(deleteMinimalNotes && !organic));
 				out.println(AbcField.ABC_VERSION + "2.1");
@@ -635,7 +636,7 @@ public class AbcExporter {
 			
 			if (useMicroAccuracy) {
 				long diff = (currentMicro + chordMicro) - cEndMicro;
-				chordMicro -= diff;
+				chordMicro -= (int)diff;
 				
 				int minAdjust = 0;
 				if (chordMicro < minimumMicro) {
@@ -753,25 +754,25 @@ public class AbcExporter {
 				int denominator;
 				
 				if (useMicroAccuracy) {
-					/* this not needed atm, as we use conform chords only
-					 * when using micro accuracy, maybe in future.
-					long diff = (currentMicro + noteMicro) - cEndMicro;
-					noteMicro -= diff;
-					
-					if (noteMicro < minimumMicro) {
-						logAbc.finest("Increased note from "+noteMicro+" to "+minimumMicro+" micros.");
-						noteMicro = (int)minimumMicro;
+					if (nEndMicro == cEndMicro) {
+						numerator = chordMicro;
+					} else {
+						long diff = (currentMicro + noteMicro) - nEndMicro;
+						noteMicro -= (int) diff;
+						
+						if (noteMicro < minimumMicro) {
+							logAbc.finest("Increased note from "+noteMicro+" to "+minimumMicro+" micros.");
+							noteMicro = (int)minimumMicro;
+						}
+						
+						if (noteMicro > AbcConstants.LONGEST_NOTE_MICROS) {
+							// should never happen
+							logAbc.severe(part.getTitle() +": note is "+(noteMicro)+" us, drone="+isDrone(part, c.get(0)));
+							noteMicro = (int)(AbcConstants.LONGEST_NOTE_MICROS-1L);
+						}
+						
+						numerator = noteMicro;
 					}
-					
-					if (noteMicro > AbcConstants.LONGEST_NOTE_MICROS) {
-						// should never happen
-						logAbc.severe(part.getTitle() +": note is "+(noteMicro)+" us, drone="+isDrone(part, c.get(0)));
-						noteMicro = (int)(AbcConstants.LONGEST_NOTE_MICROS-1L);
-					}
-					assert noteMicro == chordMicro;
-					*/
-					
-					numerator = chordMicro;//noteMicro
 					denominator = oneMicro;
 				} else {
 					int noteMilli = Math.floorDiv(noteMicro, milliFactor);
