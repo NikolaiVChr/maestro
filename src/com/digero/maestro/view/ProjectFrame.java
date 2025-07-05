@@ -281,7 +281,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	 */
 
 	public ProjectFrame() {
-		super(MaestroMain.APP_NAME);
+		super(MaestroMain.APP_NAME+" "+MaestroMain.APP_VERSION);
 		if ("32".equals(System.getProperty("sun.arch.data.model"))) {
 			JOptionPane.showMessageDialog(null,
 					"You are running with 32 bit Java.\nPlease start with 64 bit Java instead,\nto ensure Maestro do not run out of memory.\n",
