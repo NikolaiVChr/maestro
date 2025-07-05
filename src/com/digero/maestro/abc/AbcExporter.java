@@ -403,7 +403,7 @@ public class AbcExporter {
 				}
 				out.println(AbcField.ORGANIC + Boolean.toString(organic));
 				out.println(AbcField.ORGANIC_MULTI_STAGE + Boolean.toString(organic && organic2));
-				out.println(AbcField.POLY_6_PLUS + Boolean.toString(useRestsInChords));
+				out.println(AbcField.ORGANIC_POLY_6_PLUS + Boolean.toString(organic && useRestsInChords));
 				out.println(AbcField.SKIP_SILENCE_AT_START + Boolean.toString(skipSilenceAtStart));
 				out.println(AbcField.DELETE_MINIMAL_NOTES + Boolean.toString(deleteMinimalNotes && !organic));
 				out.println(AbcField.ABC_VERSION + "2.1");
