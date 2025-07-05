@@ -412,10 +412,8 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 
 		songLengthTicks = lastTick;
 		
-		log.info("Lyrics stats: "+midiText.getTextStats());
-	}
-	
-	
+		if (!ignoreMidiText && standard != MidiStandard.ABC) log.info("Lyrics stats: "+midiText.getTextStats());
+	}	
 
 	public boolean isXGDrumsTrack(int track) {
 		if (track >= brandDrumBanks.length)
