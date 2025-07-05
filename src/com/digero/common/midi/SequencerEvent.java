@@ -58,6 +58,42 @@ public class SequencerEvent extends EventObject {
 			}
 			System.out.println();
 		}
+		
+		@Override
+		public String toString() {
+			String str = "";
+			if ((mask & POSITION.mask) != 0) {
+				str += " POSITION";
+			}
+			if ((mask & LENGTH.mask) != 0) {
+				str += " LENGTH";
+			}
+			if ((mask & DRAG_POSITION.mask) != 0) {
+				str += " DRAG_POSITION";
+			}
+			if ((mask & IS_DRAGGING.mask) != 0) {
+				str += " IS_DRAGGING";
+			}
+			if ((mask & IS_RUNNING.mask) != 0) {
+				str += " IS_RUNNING";
+			}
+			if ((mask & IS_LOADED.mask) != 0) {
+				str += " IS_LOADED";
+			}
+			if ((mask & TRACK_ACTIVE.mask) != 0) {
+				str += " TRACK_ACTIVE";
+			}
+			if ((mask & TEMPO.mask) != 0) {
+				str += " TEMPO";
+			}
+			if ((mask & SEQUENCE.mask) != 0) {
+				str += " SEQUENCE";
+			}
+			if ((mask & SONG_ENDED.mask) != 0) {
+				str += " SONG_ENDED";
+			}
+			return str;
+		}
 
 		SequencerProperty() {
 			mask = MaskMaker.getNextMask();
@@ -90,5 +126,10 @@ public class SequencerEvent extends EventObject {
 
 	public SequencerProperty getProperty() {
 		return property;
+	}
+	
+	public String toString() {
+		String str = property.toString();		
+		return str;
 	}
 }

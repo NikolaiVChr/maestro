@@ -40,7 +40,7 @@ Thanks to all who gave feedback of features and bugs plus suggestions.
 Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
 ================
 
-Version 4.2.16
+Version 4.2.17
 - Fixed Abc Merge Tool button for testing was no longer working.
 - Fixed Abc Merge Tool refused to overwrite.
 - New import lyrics option in settings that can help to determine song-title/artist when filename is short and insufficient.
@@ -53,6 +53,8 @@ Version 4.2.16
 - Fix maestro not always play very first note when opening project.
 - Fix that after pressing stop when not in abc preview, sequencer when play, would play initial silence in the midi.
 - Prevent midi playback from skipping to first enabled note when enabling first lotro part.
+- Add Maestro version to window title.
+- Fix old bug that loading a project while maestro is running, could make first note(s) repeat in abc preview.
 
 Version 4.2.13
 - Fix that some songs could still change midi playback volume, overriding user's volume slider setting.

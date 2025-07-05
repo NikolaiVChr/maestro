@@ -1537,8 +1537,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		public void onEvent(SequencerEvent evt) {
 			updateButtons(false);
 			if (evt.getProperty() == SequencerProperty.IS_RUNNING) {
-				if (sequencer.isRunning())
+				if (sequencer.isRunning()) {
 					abcSequencer.stop();
+				}
 			} else if (!echoingPosition) {
 				try {
 					echoingPosition = true;
@@ -1563,8 +1564,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		public void onEvent(SequencerEvent evt) {
 			updateButtons(false);
 			if (evt.getProperty() == SequencerProperty.IS_RUNNING) {
-				if (abcSequencer.isRunning())
+				if (abcSequencer.isRunning()) {
 					sequencer.stop();
+				}
 			} else if (!echoingPosition) {
 				try {
 					echoingPosition = true;
@@ -1967,11 +1969,14 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			if (saveSettings.deleteMinimalNotes != abcSong.isDeleteMinimalNotes()) {
 				saveSettings.deleteMinimalNotes = abcSong.isDeleteMinimalNotes();
 				saveSettings.saveToPrefs();
-			}
-			if (abcSequencer.isRunning())
-				refreshPreviewSequence(false);
-			else if (abcPreviewMode)
-				refreshPreviewSequence(false);
+				
+				// having this outside the condition will trigger refreshPreviewSequence()
+				// from inside refreshPreviewSequence()
+				if (abcSequencer.isRunning())
+					refreshPreviewSequence(false);
+				else if (abcPreviewMode)
+					refreshPreviewSequence(false);
+			}			
 			break;
 		case GENRE:
 			if (!genreField.getText().equals(abcSong.getGenre())) {
@@ -2427,7 +2432,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 	}
 
-	private boolean refreshPreviewPending = false;
+	private volatile boolean refreshPreviewPending = false;
 	private JPanel playControlPanel;
 
 	private class RefreshPreviewTask implements Runnable {
@@ -2472,19 +2477,22 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 					false);
 			
 			
-			long tick = sequencer.getTickPosition();
+			
 			abcPreviewStartTick = exporter.getExportStartTick();
 			abcPreviewTempoFactor = abcSequencer.getTempoFactor();
 			abcBarLabel.setBarNumberCache(exporter.getTimingInfo());
 			abcBarLabel.setInitialOffsetTick(abcPreviewStartTick);
 			abcPositionLabel.setInitialOffsetTick(abcPreviewStartTick);
-
+			
+			long tick = sequencer.getTickPosition();
+			
 			boolean abcRunning = abcSequencer.isRunning();
 			if (abcPreviewMode) {
 				// Refreshing while playing Original (GS) will cause a GS Reset,
 				// which will mess with volume, hence the if statement.
 				abcSequencer.reset(false);
 			}
+			
 			abcSequencer.setSequence(previewSequenceInfo.getSequence());
 			abcSequencer.setStartTick(abcPreviewStartTick);// Needed for MP3 and WAV exports.
 
