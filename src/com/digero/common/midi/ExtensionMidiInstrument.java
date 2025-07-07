@@ -17,9 +17,9 @@ public class ExtensionMidiInstrument {
 	public static final String TRACK_NAME_DRUM_GM2 = "GM2 Drums";
 
 	private static ExtensionMidiInstrument instance = null;
-	private static HashMap<String, String> mapxg = new HashMap<>();
-	private static HashMap<String, String> mapgs = new HashMap<>();
-	private static HashMap<String, String> mapgm2 = new HashMap<>();
+	private static final HashMap<String, String> mapxg = new HashMap<>();
+	private static final HashMap<String, String> mapgs = new HashMap<>();
+	private static final HashMap<String, String> mapgm2 = new HashMap<>();
 
 	public static ExtensionMidiInstrument getInstance() {
 		if (instance != null) {
