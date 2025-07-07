@@ -2,12 +2,7 @@ package com.digero.maestro.midi;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.logging.Logger;
 
 import javax.sound.midi.InvalidMidiDataException;
@@ -54,9 +49,9 @@ public class SequenceInfo implements MidiConstants {
 	public MidiStandard standard = MidiStandard.GM;
 	public boolean hasPorts = false;
 	public int midiType = -1;// -1 = abc, 0 = type 0, 1 = type 1, 2 = type 2
-	private boolean[] rolandDrumChannels = new boolean[CHANNEL_COUNT_ABC];// Which of the channels GS designates as
+	private final boolean[] rolandDrumChannels = new boolean[CHANNEL_COUNT_ABC];// Which of the channels GS designates as
 																			// drums
-	private boolean[] yamahaDrumChannels = new boolean[CHANNEL_COUNT_ABC];// Which of the channels XG designates as
+	private final boolean[] yamahaDrumChannels = new boolean[CHANNEL_COUNT_ABC];// Which of the channels XG designates as
 																			// drums
 	private ArrayList<TreeMap<Long, Boolean>> yamahaDrumSwitches = null;// Which channel/tick XG switches to drums
 																		// outside of designated drum channels
@@ -64,7 +59,7 @@ public class SequenceInfo implements MidiConstants {
 																		// of designated drum channels
 	private int primaryTempoMPQ;
 	private final List<TrackInfo> trackInfoList;
-	private TreeMap<Integer, Integer> portMap = new TreeMap<>();
+	private final TreeMap<Integer, Integer> portMap = new TreeMap<>();
 	public static List<ExportTrackInfo> lastTrackInfos = null;
 	public long realDuraTicks;
 
@@ -81,7 +76,7 @@ public class SequenceInfo implements MidiConstants {
 			throws InvalidMidiDataException, ParseException {
 		if (params.abcInfo == null)
 			params.abcInfo = new AbcInfo();
-		SequenceInfo sequenceInfo = new SequenceInfo(params.filesData.get(0).file.getName(), AbcToMidi.convert(params),
+		SequenceInfo sequenceInfo = new SequenceInfo(params.filesData.getFirst().file.getName(), AbcToMidi.convert(params),
 				-1, miscSettings, oldVelocities, true, false, ignoreMidiText);
 		sequenceInfo.title = params.abcInfo.getTitle();
 		sequenceInfo.composer = params.abcInfo.getComposer();
@@ -168,7 +163,7 @@ public class SequenceInfo implements MidiConstants {
 		title = title.replace("�", "-");// replace long dash with normal ascii dash
 
 		String[] array = title.split("-", 2);
-		if (array.length > 1 && array[0].length() > 0 && array[1].length() > 0) {
+		if (array.length > 1 && !array[0].isEmpty() && !array[1].isEmpty()) {
 			composer = array[0].trim();
 			title = array[1].trim();
 		}
@@ -278,9 +273,8 @@ public class SequenceInfo implements MidiConstants {
 			for (int j = 0; j < t.size(); j++) {
 				MidiEvent evt = t.get(j);
 				MidiMessage msg = evt.getMessage();
-				if (msg instanceof ShortMessage) {
-					ShortMessage m = (ShortMessage) msg;
-					if (m.getCommand() == ShortMessage.NOTE_ON) {
+				if (msg instanceof ShortMessage m) {
+                    if (m.getCommand() == ShortMessage.NOTE_ON) {
 						if (evt.getTick() < firstNoteTick) {
 							firstNoteTick = evt.getTick();
 						}
@@ -300,9 +294,8 @@ public class SequenceInfo implements MidiConstants {
 			for (int j = t.size() - 1; j >= 0; j--) {
 				MidiEvent evt = t.get(j);
 				MidiMessage msg = evt.getMessage();
-				if (msg instanceof ShortMessage) {
-					ShortMessage m = (ShortMessage) msg;
-					if (m.getCommand() == ShortMessage.NOTE_OFF) {
+				if (msg instanceof ShortMessage m) {
+                    if (m.getCommand() == ShortMessage.NOTE_OFF) {
 						if (evt.getTick() > lastNoteTick) {
 							lastNoteTick = evt.getTick();
 						}
@@ -363,14 +356,10 @@ public class SequenceInfo implements MidiConstants {
 
 		standard = MidiStandard.GM;
 
-		for (int i = 0; i < CHANNEL_COUNT_ABC; i++) {
-			rolandDrumChannels[i] = false;
-		}
+        Arrays.fill(rolandDrumChannels, false);
 		rolandDrumChannels[DRUM_CHANNEL] = true;
 
-		for (int i = 0; i < CHANNEL_COUNT_ABC; i++) {
-			yamahaDrumChannels[i] = false;
-		}
+        Arrays.fill(yamahaDrumChannels, false);
 		yamahaDrumChannels[DRUM_CHANNEL] = true;
 
 		Track[] tracks = seq.getTracks();
@@ -390,9 +379,8 @@ public class SequenceInfo implements MidiConstants {
 			for (int j = 0; j < track.size(); j++) {
 				MidiEvent evt = track.get(j);
 				MidiMessage msg = evt.getMessage();
-				if (msg instanceof SysexMessage) {
-					SysexMessage sysex = (SysexMessage) msg;
-					byte[] message = sysex.getMessage();
+				if (msg instanceof SysexMessage sysex) {
+                    byte[] message = sysex.getMessage();
 
 					/*
 					 * StringBuilder sb = new StringBuilder(); for (byte b : message) { sb.append(String.format("%02X ",
@@ -499,9 +487,8 @@ public class SequenceInfo implements MidiConstants {
 							entry.sysex.add(evt);
 						}
 					}
-				} else if (msg instanceof ShortMessage) {
-					ShortMessage m = (ShortMessage) msg;
-					int cmd = m.getCommand();
+				} else if (msg instanceof ShortMessage m) {
+                    int cmd = m.getCommand();
 
 					if (cmd == ShortMessage.PROGRAM_CHANGE) {
 						PatchEntry entry = null;
@@ -535,13 +522,13 @@ public class SequenceInfo implements MidiConstants {
 			mmaDrumSwitches.add(new TreeMap<>());
 		}
 
-		/**
-		 * yamahaBankAndPatchChanges (XG) & mmaBankAndPatchChanges (GM2):
-		 * 
-		 * 0 = chromatic voice
-		 * 1 = Has switched to drums, but patch not selected yet.
-		 * 2 = drum
-		 * 
+		/*
+		  yamahaBankAndPatchChanges (XG) & mmaBankAndPatchChanges (GM2):
+
+		  0 = chromatic voice
+		  1 = Has switched to drums, but patch not selected yet.
+		  2 = drum
+
 		 */
 		final int CHROMATIC = 0;
 		final int DRUMS_UNKNOWN_PATCH = 1;
@@ -582,13 +569,12 @@ public class SequenceInfo implements MidiConstants {
 
 			for (MidiEvent evt : masterList) {
 				MidiMessage msg = evt.getMessage();
-				if (msg instanceof SysexMessage) {
-					SysexMessage sysex = (SysexMessage) msg;
-					byte[] message = sysex.getMessage();
+				if (msg instanceof SysexMessage sysex) {
+                    byte[] message = sysex.getMessage();
 					// we already know that this sysex is a XG bank/patch change, so no need for if statement.
 					String bank = message[6] == 1 ? "MSB"
 							: (message[6] == 2 ? "LSB" : (message[6] == 3 ? "Patch" : ""));
-					if (!"".equals(bank) && message[5] < 16 && message[5] >= 0 && message[7] < 128 && message[7] >= 0) {
+					if (!bank.isEmpty() && message[5] < 16 && message[5] >= 0 && message[7] < 128 && message[7] >= 0) {
 						// System.err.println(fileName+": Yamaha XG Sysex "+bank+" set to "+message[7]+" for channel
 						// "+message[5]);
 						int ch = message[5];
@@ -610,9 +596,8 @@ public class SequenceInfo implements MidiConstants {
 							}
 						}
 					}
-				} else if (msg instanceof ShortMessage) {
-					ShortMessage m = (ShortMessage) msg;
-					int cmd = m.getCommand();
+				} else if (msg instanceof ShortMessage m) {
+                    int cmd = m.getCommand();
 					int ch = m.getChannel();
 
 					if (cmd == ShortMessage.PROGRAM_CHANGE) {
@@ -759,12 +744,11 @@ public class SequenceInfo implements MidiConstants {
 				MidiEvent evt = track.get(j);
 				MidiMessage msg = evt.getMessage();
 				
-				if (!(msg instanceof ShortMessage)) {
+				if (!(msg instanceof ShortMessage m)) {
 					continue;
 				}
 
-				ShortMessage m = (ShortMessage) msg;
-				int chan = m.getChannel();
+                int chan = m.getChannel();
 
 				if (m.getCommand() != ShortMessage.NOTE_ON) {
 					continue;
@@ -839,9 +823,8 @@ public class SequenceInfo implements MidiConstants {
 				for (int j = 0; j < track.size(); j++) {
 					MidiEvent evt = track.get(j);
 					MidiMessage msg = evt.getMessage();
-					if (msg instanceof ShortMessage) {
-						ShortMessage smsg = (ShortMessage) msg;
-						int chan = smsg.getChannel();
+					if (msg instanceof ShortMessage smsg) {
+                        int chan = smsg.getChannel();
 						if (drumTrack != null && drumsGM == 1 && chan == DRUM_CHANNEL) {
 							// GM drum note split into new track
 							drumTrack.add(evt);
@@ -952,13 +935,12 @@ public class SequenceInfo implements MidiConstants {
 			}});
 		
 		// populate allEvents with events from all tracks
-		for (int i = 0; i < tracks.length; i++) {
-			Track track = tracks[i];
-			for (int j = track.size() - 1; j >= 0; --j) {
-				MidiEvent evt = track.get(j);
-				allEvents.add(evt);
-			}
-		}
+        for (Track track : tracks) {
+            for (int j = track.size() - 1; j >= 0; --j) {
+                MidiEvent evt = track.get(j);
+                allEvents.add(evt);
+            }
+        }
 		
 		long earlyEndTick = 0L;
 		long maxEmpty = Math.max(song.getTickLength()/4L, MidiUtils.microsecond2tick(song, 20L*AbcConstants.ONE_SECOND_MICROS, tempoCache));
@@ -988,7 +970,7 @@ public class SequenceInfo implements MidiConstants {
 					if (evt.getMessage() instanceof MetaMessage) {
 						if (suspectEvents[i] == null)
 							suspectEvents[i] = new ArrayList<>();
-						suspectEvents[i].add(0, evt);
+						suspectEvents[i].addFirst(evt);
 					} else {
 						if (evt.getMessage() instanceof ShortMessage) {
 							int command = ((ShortMessage)evt.getMessage()).getCommand();
@@ -1060,15 +1042,14 @@ public class SequenceInfo implements MidiConstants {
 		
 		// remove all events after earlyEndTick
 		// isn't this a risk to remove tracknames etc.?
-		for (int i = 0; i < tracks.length; i++) {
-			Track track = tracks[i];
-			for (int j = 0; j < track.size(); j++) {
-				MidiEvent evt = track.get(j);
-				if (evt.getTick() > earlyEndTick + 1L) {
-					track.remove(evt);
-				}
-			}
-		}
+        for (Track track : tracks) {
+            for (int j = 0; j < track.size(); j++) {
+                MidiEvent evt = track.get(j);
+                if (evt.getTick() > earlyEndTick + 1L) {
+                    track.remove(evt);
+                }
+            }
+        }
 		//System.out.println("last="+last+" endTick="+endTick);
 		
 		//System.out.println("Real song duration: "

@@ -39,29 +39,29 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	private final float divisionType;
 	private final int primaryTempoMPQ;
 	private final TimeSignature timeSignature;
-	private NavigableMap<Long, TempoEvent> tempo = new TreeMap<>();
+	private final NavigableMap<Long, TempoEvent> tempo = new TreeMap<>();
 
 	private final long songLengthTicks;
 	private static final int NO_RESULT = -250;
 
-	private MapByChannelPort instruments = new MapByChannelPort(DEFAULT_INSTRUMENT);
-	private MapByChannel channelVolume = new MapByChannel(DEFAULT_CHANNEL_VOLUME);
-	private MapByChannel expression = new MapByChannel(DEFAULT_EXPRESSION);
-	private MapByChannel pitchBendRangeCoarse = new MapByChannel(DEFAULT_PITCH_BEND_RANGE_SEMITONES);
-	private MapByChannel pitchBendRangeFine = new MapByChannel(DEFAULT_PITCH_BEND_RANGE_CENTS);
+	private final MapByChannelPort instruments = new MapByChannelPort(DEFAULT_INSTRUMENT);
+	private final MapByChannel channelVolume = new MapByChannel(DEFAULT_CHANNEL_VOLUME);
+	private final MapByChannel expression = new MapByChannel(DEFAULT_EXPRESSION);
+	private final MapByChannel pitchBendRangeCoarse = new MapByChannel(DEFAULT_PITCH_BEND_RANGE_SEMITONES);
+	private final MapByChannel pitchBendRangeFine = new MapByChannel(DEFAULT_PITCH_BEND_RANGE_CENTS);
 	private final MapByChannel bendMap;
 	private final MapByChannel panMap;
-	private MapByChannel mapMSB = new MapByChannel(0);
-	private MapByChannel mapLSB = new MapByChannel(0);
-	private MapByChannel mapPatch = new MapByChannel(0);
-	private DrumBankType[] brandDrumBanks;
+	private final MapByChannel mapMSB = new MapByChannel(0);
+	private final MapByChannel mapLSB = new MapByChannel(0);
+	private final MapByChannel mapPatch = new MapByChannel(0);
+	private final DrumBankType[] brandDrumBanks;
 	private final MidiStandard standard;
-	private boolean[] rolandDrumChannels = null;
-	private boolean[] yamahaDrumChannels = null;
+	private final boolean[] rolandDrumChannels;
+	private final boolean[] yamahaDrumChannels;
 	public boolean hasPorts = false;
 	private String copyright = "";
-	private boolean ignoreZeroChannelVolume;
-	private MidiText midiText;
+	private final boolean ignoreZeroChannelVolume;
+	private final MidiText midiText;
 
 	public SequenceDataCache(Sequence song, MidiStandard standard, boolean[] rolandDrumChannels,
 			List<TreeMap<Long, Boolean>> yamahaDrumSwitches, boolean[] yamahaDrumChannels,
@@ -116,9 +116,8 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 					if (tick != 0L)
 						break;
 					MidiMessage msg = evt.getMessage();
-					if (msg instanceof MetaMessage) {
-						MetaMessage meta = (MetaMessage) msg;
-						if (meta.getType() == META_PORT_CHANGE) {
+					if (msg instanceof MetaMessage meta) {
+                        if (meta.getType() == META_PORT_CHANGE) {
 							byte[] portChange = meta.getData();
 							if (portChange.length == 1) {
 								// Support for (non-midi-standard) port assignments used by Cakewalk and
@@ -131,6 +130,9 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 								hasPorts = MidiStandard.GM == standard;
 								break;
 							}
+						} else if (meta.getType() == META_PORT_NAME) {
+							byte[] data = meta.getData();
+							log.fine("Named port: "+(new String(data)));
 						}
 					}
 				}
@@ -146,9 +148,8 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 					if (tick > lastTick)// && msg instanceof ShortMessage
 						lastTick = tick;
 
-					if (msg instanceof ShortMessage) {
-						ShortMessage shortMsg = (ShortMessage) msg;
-						int cmd = shortMsg.getCommand();
+					if (msg instanceof ShortMessage shortMsg) {
+                        int cmd = shortMsg.getCommand();
 						int ch = shortMsg.getChannel();
 
 						if (cmd == ShortMessage.NOTE_ON) {
@@ -185,7 +186,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 							switch (shortMsg.getData1()) {
 							case CHANNEL_VOLUME_CONTROLLER_COARSE:
 								if (shortMsg.getData2() != 0 || !ignoreZeroChannelVolume)
-								channelVolume.put(ch, tick, shortMsg.getData2());
+									channelVolume.put(ch, tick, shortMsg.getData2());
 								break;
 							case CHANNEL_EXPRESSION_CONTROLLER:
 								expression.put(ch, tick, shortMsg.getData2());
@@ -243,9 +244,8 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 							// Reason is that later on another track there might get put some
 							// bends in between them.
 						}
-					} else if (msg instanceof SysexMessage) {
-						SysexMessage sysex = (SysexMessage) msg;
-						byte[] message = sysex.getMessage();
+					} else if (msg instanceof SysexMessage sysex) {
+                        byte[] message = sysex.getMessage();
 						if (message.length == 9 && (message[0] & 0xFF) == 0xF0 && (message[1] & 0xFF) == 0x43
 								&& (message[4] & 0xFF) == 0x08 && (message[8] & 0xFF) == 0xF7) {
 							String bank = message[6] == 1 ? "MSB"
@@ -286,9 +286,8 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 							sz--;
 							j--;
 						}
-					} else if (msg instanceof MetaMessage) {
-						MetaMessage m = (MetaMessage) msg;
-						int type = m.getType();
+					} else if (msg instanceof MetaMessage m) {
+                        int type = m.getType();
 						byte[] data = m.getData();
 						if (type == META_TIME_SIGNATURE && foundTimeSignature == null) {
 							// TimeSignature in this class is used to keep track of source MIDIs meter.
@@ -320,7 +319,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 							String tmp = "";
 							if (!ignoreMidiText) tmp = MidiUtils.decodeMidiText(data).trim();
 							
-							if (tmp.length() > 0) {
+							if (!tmp.isEmpty()) {
 								copyright = tmp;
 								log.info("MIDI copyright: "+tmp);
 							}
@@ -375,16 +374,14 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 			}
 		} else {
 			// If this sequence is for preview then we only need to find lastTick
-			for (int iTrack = 0; iTrack < tracks.length; iTrack++) {
-				Track track = tracks[iTrack];
-
-				for (int j = 0, sz = track.size(); j < sz; j++) {
-					MidiEvent evt = track.get(j);
-					long tick = evt.getTick();
-					if (tick > lastTick)
-						lastTick = tick;
-				}
-			}
+            for (Track track : tracks) {
+                for (int j = 0, sz = track.size(); j < sz; j++) {
+                    MidiEvent evt = track.get(j);
+                    long tick = evt.getTick();
+                    if (tick > lastTick)
+                        lastTick = tick;
+                }
+            }
 		}
 
 		// Account for the duration of the final tempo
@@ -665,8 +662,8 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	 * Map by channel
 	 */
 	protected static class MapByChannel {
-		private NavigableMap<Long, Integer>[] map;
-		private int defaultValue;
+		private final NavigableMap<Long, Integer>[] map;
+		private final int defaultValue;
 
 		@SuppressWarnings("unchecked") //
 		public MapByChannel(int defaultValue) {
@@ -715,8 +712,8 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	 * Map by channel
 	 */
 	private static class MapByChannelPort {
-		private NavigableMap<Long, Integer>[][] map;
-		private int defaultValue;
+		private final NavigableMap<Long, Integer>[][] map;
+		private final int defaultValue;
 
 		@SuppressWarnings("unchecked") //
 		public MapByChannelPort(int defaultValue) {
