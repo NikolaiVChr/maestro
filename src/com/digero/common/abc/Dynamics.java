@@ -19,7 +19,7 @@ public enum Dynamics {
 	public static final Dynamics MAXIMUM = ffff;
 	public static final Dynamics MINIMUM = pppp;
 
-	public static final Dynamics fromMidiVelocity(int velocity) {
+	public static Dynamics fromMidiVelocity(int velocity) {
 		Dynamics[] values = values();
 		Dynamics best = values[0];
 		int deltaBest = Math.abs(velocity - values[0].midiVol);
