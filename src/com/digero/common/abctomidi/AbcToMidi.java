@@ -1090,8 +1090,8 @@ public class AbcToMidi {
 		Tuplet tuplet = new Tuplet(test[0], compound);
 		boolean pass = tuplet.toString().equals(test[1]);
 		if (!pass) {
-			System.out.println("Actual: " + tuplet.toString());
-			System.out.println("Expected: " + test[1]);
+			System.err.println("Actual: " + tuplet.toString());
+			System.err.println("Expected: " + test[1]);
 		}
 		return pass;
 	}

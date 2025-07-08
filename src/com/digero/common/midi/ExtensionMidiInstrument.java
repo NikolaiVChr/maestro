@@ -8,8 +8,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
+import java.util.logging.Logger;
 
 public class ExtensionMidiInstrument {
+	private static final Logger log = Logger.getLogger("file");
 
 	public static final String TRACK_NAME_DRUM_GM = "Drums";
 	public static final String TRACK_NAME_DRUM_GS = "GS Drums";
@@ -125,7 +127,7 @@ public class ExtensionMidiInstrument {
 		try {
 			InputStream in = instance.getClass().getResourceAsStream(fileName);
 			if (in == null) {
-				System.err.println(fileName + " not readable.");
+				log.severe(fileName + " not readable.");
 				return;
 			}
 			BufferedReader theFileReader = new BufferedReader(new InputStreamReader(in));
@@ -137,10 +139,10 @@ public class ExtensionMidiInstrument {
 					lookupByte, regex);
 			theFileReader.close();
 		} catch (FileNotFoundException e) {
-			System.err.println(fileName + " not readable.");
+			log.severe(fileName + " not readable.");
 			e.printStackTrace();
 		} catch (IOException e) {
-			System.err.println(fileName + " line failed to read.");
+			log.severe(fileName + " line failed to read.");
 			e.printStackTrace();
 		}
 	}
@@ -157,7 +159,7 @@ public class ExtensionMidiInstrument {
 				String[] splits = line.split(regex);
 				if (splits.length != 3) {
 					// Something is wrong in the tab formatting of one of the files
-					System.err.println("\nWrong number of tabs in " + fileName + ":");
+					log.severe("Wrong number of tabs in " + fileName + ":");
 					int l = 0;
 					for (String a : splits) {
 						System.err.println(l + ": " + a);
@@ -199,15 +201,15 @@ public class ExtensionMidiInstrument {
 		String key = String.format("%03d%03d%03d", MSB, LSB, patch);
 		if (extension == MidiStandard.XG) {
 			if (mapxg.get(key) != null)
-				System.out.println("Warning duplicate entry for (" + MSB + ", " + LSB + ", " + patch + ") in XG map");
+				log.warning("Duplicate entry for (" + MSB + ", " + LSB + ", " + patch + ") in XG map");
 			mapxg.put(key, name);
 		} else if (extension == MidiStandard.GS) {
 			if (mapgs.get(key) != null)
-				System.out.println("Warning duplicate entry for (" + MSB + ", " + LSB + ", " + patch + ") in GS map");
+				log.warning("Duplicate entry for (" + MSB + ", " + LSB + ", " + patch + ") in GS map");
 			mapgs.put(key, name);
 		} else if (extension == MidiStandard.GM2) {
 			if (mapgm2.get(key) != null)
-				System.out.println("Warning duplicate entry for (" + MSB + ", " + LSB + ", " + patch + ") in GM2 map");
+				log.warning("Duplicate entry for (" + MSB + ", " + LSB + ", " + patch + ") in GM2 map");
 			mapgm2.put(key, name);
 		}
 	}

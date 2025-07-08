@@ -16,8 +16,8 @@ class TuneInfo {
 	private KeySignature key;
 	private long ppqn;
 	private int primaryTempoBPM;
-	private NavigableMap<Long, Integer> curPartTempoMap = new TreeMap<>(); // Tick -> BPM
-	private NavigableMap<Long, Integer> allPartsTempoMap = new TreeMap<>(); // Tick -> BPM
+	private final NavigableMap<Long, Integer> curPartTempoMap = new TreeMap<>(); // Tick -> BPM
+	private final NavigableMap<Long, Integer> allPartsTempoMap = new TreeMap<>(); // Tick -> BPM
 	private LotroInstrument instrument;
 	private boolean instrumentSet;
 	private boolean instrumentSetHard = false;

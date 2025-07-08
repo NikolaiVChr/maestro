@@ -6,9 +6,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 
 public class LotroInstrumentSampleDuration {
-	
+	private static final Logger log = Logger.getLogger("file");
 	private static LotroInstrumentSampleDuration instance = null;
 	private static Map<String, Map<Integer, Long>> db = null;
 	
@@ -45,7 +46,7 @@ public class LotroInstrumentSampleDuration {
 		db = new HashMap<>(); 
 		InputStream in = getInstance().getClass().getResourceAsStream(fileName);
 		if (in == null) {
-			System.err.println(fileName + " not readable.");
+			log.severe(fileName + " not readable.");
 			return;
 		}
 		BufferedReader theFileReader = new BufferedReader(new InputStreamReader(in));			
@@ -63,8 +64,8 @@ public class LotroInstrumentSampleDuration {
 			String[] splits = line.split(",");
 			if (splits.length != 3) {
 				// Something is wrong in the tab formatting of one of the files
-				System.err.println("\nWrong number of entries in " + fileName + ":");
-				System.exit(1);
+				log.severe("Wrong number of entries in " + fileName + ": "+splits.length);
+				throw new IOException("Wrong number of entries in " + fileName + ": " + splits.length);
 			}
 			
 			String instr = splits[0].trim();

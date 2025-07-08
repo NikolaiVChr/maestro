@@ -55,6 +55,7 @@ public class Logging {
 		
 		// these dont work: parents always override their setting
 		Logger.getLogger("import").setLevel(Level.WARNING);
+		Logger.getLogger("import.abc").setLevel(Level.WARNING);
 		Logger.getLogger("import.midi").setLevel(Level.WARNING);
 		Logger.getLogger("import.midi.text").setLevel(Level.WARNING);
 		//Logger.getLogger("import.abc").setLevel(Level.INFO);

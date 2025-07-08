@@ -1,27 +1,6 @@
 package com.digero;
 
-import static com.digero.common.abc.LotroInstrument.BARDIC_FIDDLE;
-import static com.digero.common.abc.LotroInstrument.BASIC_BAGPIPE;
-import static com.digero.common.abc.LotroInstrument.BASIC_BASSOON;
-import static com.digero.common.abc.LotroInstrument.BASIC_CLARINET;
-import static com.digero.common.abc.LotroInstrument.BASIC_COWBELL;
-import static com.digero.common.abc.LotroInstrument.BASIC_DRUM;
-import static com.digero.common.abc.LotroInstrument.BASIC_FIDDLE;
-import static com.digero.common.abc.LotroInstrument.BASIC_FLUTE;
-import static com.digero.common.abc.LotroInstrument.BASIC_HARP;
-import static com.digero.common.abc.LotroInstrument.BASIC_HORN;
-import static com.digero.common.abc.LotroInstrument.BASIC_LUTE;
-import static com.digero.common.abc.LotroInstrument.BASIC_PIBGORN;
-import static com.digero.common.abc.LotroInstrument.BASIC_THEORBO;
-import static com.digero.common.abc.LotroInstrument.BRUSQUE_BASSOON;
-import static com.digero.common.abc.LotroInstrument.LONELY_MOUNTAIN_BASSOON;
-import static com.digero.common.abc.LotroInstrument.LONELY_MOUNTAIN_FIDDLE;
-import static com.digero.common.abc.LotroInstrument.LUTE_OF_AGES;
-import static com.digero.common.abc.LotroInstrument.MISTY_MOUNTAIN_HARP;
-import static com.digero.common.abc.LotroInstrument.MOOR_COWBELL;
-import static com.digero.common.abc.LotroInstrument.SPRIGHTLY_FIDDLE;
-import static com.digero.common.abc.LotroInstrument.STUDENT_FIDDLE;
-import static com.digero.common.abc.LotroInstrument.TRAVELLERS_TRUSTY_FIDDLE;
+import static com.digero.common.abc.LotroInstrument.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;

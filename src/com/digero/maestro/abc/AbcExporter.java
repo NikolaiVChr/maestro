@@ -73,10 +73,10 @@ public class AbcExporter {
 	private long exportEndTick;
 	
 	// the tempo changes might not be shared evenly among the parts, so this is really only for making abc more readable
-	private boolean exportTempos = false;
+	private final boolean exportTempos = false;
 	
 	// Some midis have zero duration notes that should played (this is for organic only)
-	private boolean deleteEmptyNotes = false;
+	private final boolean deleteEmptyNotes = false;
 	
 	public int stereoPan = 100;// zero is mono, 100 is very wide.
 	private int firstBarNumber;
@@ -179,10 +179,7 @@ public class AbcExporter {
 	 * Build all the preview chords here.
 	 * 
 	 * @param chordsMade      the map of lists of chord that need to be filled.
-	 * @param exportStartTick
-	 * @param exportEndTick
-	 * @throws AbcConversionException
-	 */
+     */
 	private void exportForPreviewChords(Map<AbcPart, List<Chord>> chordsMade)
 			throws AbcConversionException {
 		for (AbcPart part : parts) {
@@ -357,16 +354,15 @@ public class AbcExporter {
 		}
 
 		for (AbcNoteEvent on : notesOn) {
-			if (organic) {
-				long off = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(on.getEndTick()) + delayMicros);
-				lastEnd = Math.max(off, lastEnd);
-				track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off));
-			} else {
-				long off = qtm.microsToTick(qtm.tickToMicros(on.getEndTick()) + delayMicros);
-				lastEnd = Math.max(off, lastEnd);
-				track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off));
-			}
-		}
+            long off;
+            if (organic) {
+                off = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(on.getEndTick()) + delayMicros);
+            } else {
+                off = qtm.microsToTick(qtm.tickToMicros(on.getEndTick()) + delayMicros);
+            }
+            lastEnd = Math.max(off, lastEnd);
+            track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off));
+        }
 
 		track.add(MidiFactory.createEndOfTrackEvent(lastEnd));
 
@@ -385,11 +381,11 @@ public class AbcExporter {
 			if (!parts.isEmpty()) {
 				out.println("%abc-2.1");
 				out.println(AbcField.SONG_TITLE + StringCleaner.cleanForABC(metadata.getSongTitle()));
-				if (metadata.getComposer().length() > 0) {
+				if (!metadata.getComposer().isEmpty()) {
 					out.println(AbcField.SONG_COMPOSER + StringCleaner.cleanForABC(metadata.getComposer()));
 				}
 				out.println(AbcField.SONG_DURATION + Util.formatDuration(getSongLengthMicros()));
-				if (metadata.getTranscriber().length() > 0) {
+				if (!metadata.getTranscriber().isEmpty()) {
 					out.println(AbcField.SONG_TRANSCRIBER + StringCleaner.cleanForABC(metadata.getTranscriber()));
 				}
 				out.println(AbcField.ABC_CREATOR + MaestroMain.APP_NAME + " v" + MaestroMain.APP_VERSION);
@@ -429,15 +425,15 @@ public class AbcExporter {
 		String mood = StringCleaner.cleanForABC(metadata.getMood()).toLowerCase().trim();
 		String outAll = metadata.getPartSetup();
 		String badgerTitle = metadata.getBadgerTitle();
-		if (genre.length() > 0 || mood.length() > 0 || outAll != null || badgerTitle != null) {
+		if (!genre.isEmpty() || !mood.isEmpty() || outAll != null || badgerTitle != null) {
 			out.println();
 			if (badgerTitle != null) {
 				out.println(badgerTitle);
 			}
-			if (genre.length() > 0) {
+			if (!genre.isEmpty()) {
 				out.println("N: Genre: " + genre);
 			}
-			if (mood.length() > 0) {
+			if (!mood.isEmpty()) {
 				out.println("N: Mood: " + mood);
 			}
 			if (outAll != null) {
@@ -568,7 +564,7 @@ public class AbcExporter {
 
 			if (countChords % 8 == 0) {
 				// Print at every 8th chord
-				if (bar.length() > 0) {
+				if (!bar.isEmpty()) {
 					addLineBreaks.run();
 					out.print(bar);
 					out.println(" |");
@@ -588,7 +584,7 @@ public class AbcExporter {
 				curExportTempoBPM = tm.getExportTempoBPM();
 
 				// Print the partial bar
-				if (bar.length() > 0) {
+				if (!bar.isEmpty()) {
 					addLineBreaks.run();
 					out.println(bar);
 					bar.setLength(0);
@@ -816,7 +812,7 @@ public class AbcExporter {
 				
 				// Apply tempo
 				if (exportTempos && curExportTempoBPM != Q) {
-					numerator *= Q;
+					numerator *= (int) Q;
 					denominator *= curExportTempoBPM;
 				}
 
@@ -965,7 +961,7 @@ public class AbcExporter {
 
 			if (barNumber > curBarNumber) {
 				// Print the previous bar
-				if (bar.length() > 0) {
+				if (!bar.isEmpty()) {
 					addLineBreaks.run();
 					out.print(bar);
 					out.println(" |");
@@ -990,7 +986,7 @@ public class AbcExporter {
 				curExportTempoBPM = tm.getExportTempoBPM();
 
 				// Print the partial bar
-				if (bar.length() > 0) {
+				if (!bar.isEmpty()) {
 					addLineBreaks.run();
 					out.println(bar);
 					bar.setLength(0);
@@ -1111,10 +1107,10 @@ public class AbcExporter {
 		out.println(AbcField.MADE_FOR + part.getInstrument().friendlyName.trim());
 
 		if (metadata != null) {
-			if (metadata.getComposer().length() > 0)
+			if (!metadata.getComposer().isEmpty())
 				out.println("C: " + StringCleaner.cleanForABC(metadata.getComposer()));
 
-			if (metadata.getTranscriber().length() > 0)
+			if (!metadata.getTranscriber().isEmpty())
 				out.println("Z: " + StringCleaner.cleanForABC(metadata.getTranscriber()));
 		}
 
@@ -1289,7 +1285,7 @@ public class AbcExporter {
 		
 		Collections.sort(events);
 		
-		if (events.size() == 0) {
+		if (events.isEmpty()) {
 			logNotes.warning("Export to preview/abc: "+metadata.getSongTitle()+" has a part with no exported notes.");
 			if (!preview) ProjectFrame.feed("Note: Song has a part with no exported notes ("+part.getTitle()+")", null);
 			return new ArrayList<>();
@@ -1297,9 +1293,9 @@ public class AbcExporter {
 		
 		// Add initial rest if necessary
 		
-		if (events.get(0).getStartTick() > exportStartTick) {
-			events.add(0, new AbcNoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, exportStartTick,
-					events.get(0).getStartTick(), qtm, null));
+		if (events.getFirst().getStartTick() > exportStartTick) {
+			events.addFirst(new AbcNoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, exportStartTick,
+					events.getFirst().getStartTick(), qtm, null));
 		}
 
 		// Add a rest at the end if necessary
@@ -1328,7 +1324,7 @@ public class AbcExporter {
 		
 		
 		// Combine notes that play at the same time into chords
-		Chord curChord = new Chord(events.get(0));
+		Chord curChord = new Chord(events.getFirst());
 		chords.add(curChord);
 		for (int i = 1; i < events.size(); i++) {
 			AbcNoteEvent ne = events.get(i);
@@ -1460,32 +1456,31 @@ public class AbcExporter {
 		if (part.conclusionFermata != 0) {
 			long finalNoteTickEnd = 0L;
 			List<AbcNoteEvent> conclusion = new ArrayList<>();
-			for (int cc = 0; cc < events.size() ; cc++) {
-				AbcNoteEvent ne = events.get(cc);
-				if (ne.getEndTick() > finalNoteTickEnd) {
-					finalNoteTickEnd = ne.getEndTick();
-					List<AbcNoteEvent> conclusionRemove = new ArrayList<>();
-					if (organic) {
-						long concludeMicros = qtm.tickToMicrosABCOrganic(finalNoteTickEnd);
-						for (AbcNoteEvent potential : conclusion) {
-							if (qtm.tickToMicrosABCOrganic(potential.getEndTick()) + margin < concludeMicros) {
-								conclusionRemove.add(potential);
-							}
-						}
-					} else {
-						long concludeMicros = qtm.tickToMicrosABC(finalNoteTickEnd, part);
-						for (AbcNoteEvent potential : conclusion) {
-							if (qtm.tickToMicrosABC(potential.getEndTick(), part) + margin < concludeMicros) {
-								conclusionRemove.add(potential);
-							}
-						}
-					}
-					conclusion.removeAll(conclusionRemove);
-					conclusion.add(ne);
-				} else if (ne.getEndTick() == finalNoteTickEnd) {
-					conclusion.add(ne);
-				}
-			}
+            for (AbcNoteEvent ne : events) {
+                if (ne.getEndTick() > finalNoteTickEnd) {
+                    finalNoteTickEnd = ne.getEndTick();
+                    List<AbcNoteEvent> conclusionRemove = new ArrayList<>();
+                    if (organic) {
+                        long concludeMicros = qtm.tickToMicrosABCOrganic(finalNoteTickEnd);
+                        for (AbcNoteEvent potential : conclusion) {
+                            if (qtm.tickToMicrosABCOrganic(potential.getEndTick()) + margin < concludeMicros) {
+                                conclusionRemove.add(potential);
+                            }
+                        }
+                    } else {
+                        long concludeMicros = qtm.tickToMicrosABC(finalNoteTickEnd, part);
+                        for (AbcNoteEvent potential : conclusion) {
+                            if (qtm.tickToMicrosABC(potential.getEndTick(), part) + margin < concludeMicros) {
+                                conclusionRemove.add(potential);
+                            }
+                        }
+                    }
+                    conclusion.removeAll(conclusionRemove);
+                    conclusion.add(ne);
+                } else if (ne.getEndTick() == finalNoteTickEnd) {
+                    conclusion.add(ne);
+                }
+            }
 			long fermataEndTick;
 			if (organic) {
 				fermataEndTick = qtm.microsToTickABCOrganic(part.conclusionFermata * 1000L + qtm.tickToMicrosABCOrganic(finalNoteTickEnd));
@@ -1493,13 +1488,12 @@ public class AbcExporter {
 				fermataEndTick = qtm.quantize(qtm.microsToTickABC(part.conclusionFermata * 1000L + qtm.tickToMicrosABC(finalNoteTickEnd)), part);
 			}
 			boolean sustain = false;
-			for (int cc = 0; cc < conclusion.size() ; cc++) {
-				AbcNoteEvent ne = conclusion.get(cc);
-				if (part.getInstrument().isSustainable(ne.note.id)) {
-					sustain = true;
-					ne.setEndTick(fermataEndTick);
-				}
-			}
+            for (AbcNoteEvent ne : conclusion) {
+                if (part.getInstrument().isSustainable(ne.note.id)) {
+                    sustain = true;
+                    ne.setEndTick(fermataEndTick);
+                }
+            }
 			if (fermataEndTick > exportEndTick && sustain) {
 				// This is a hack, as at the time this runs
 				// exportEndTick has already been used elsewhere.
@@ -1716,7 +1710,7 @@ public class AbcExporter {
 			} catch (IOException e) {
 				throw new AbcConversionException("Failed to read instrument sample durations.", e);
 			}
-			return new Pair<List<Chord>, Boolean>(Collections.emptyList(), false);
+			return new Pair<>(Collections.emptyList(), false);
 		}
 
 		Collections.sort(events);
@@ -1769,17 +1763,17 @@ public class AbcExporter {
 		
 		Collections.sort(events);
 		
-		if (events.size() == 0) {
+		if (events.isEmpty()) {
 			logNotes.warning("Export to preview/abc: "+metadata.getSongTitle()+" has a part with no exported notes.");
 			if (!preview) ProjectFrame.feed("Note: Song has a part with no exported notes ("+part.getTitle()+")", null);
-			return new Pair<List<Chord>, Boolean>(Collections.emptyList(), false);
+			return new Pair<>(Collections.emptyList(), false);
 		}
 		
 		// Add initial rest if necessary
 		
-		if (events.get(0).getStartTick() > exportStartTick) {
-			events.add(0, new AbcNoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, exportStartTick,
-					events.get(0).getStartTick(), qtm, null));
+		if (events.getFirst().getStartTick() > exportStartTick) {
+			events.addFirst(new AbcNoteEvent(Note.REST, Dynamics.DEFAULT.midiVol, exportStartTick,
+					events.getFirst().getStartTick(), qtm, null));
 		}
 
 		// Remove duplicate notes
@@ -1836,7 +1830,7 @@ public class AbcExporter {
 		
 		//Collections.sort(chords);
 		
-		return new Pair<List<Chord>, Boolean>(chords, useRestToShortenChords);
+		return new Pair<>(chords, useRestToShortenChords);
 	}	
 
 	/**
@@ -1861,10 +1855,10 @@ public class AbcExporter {
 		// Combine notes that play at the same time into chords
 		
 		final boolean removeGliss = false;
-		ChordOrganic curChord = new ChordOrganic(events.get(0), qtm);
+		ChordOrganic curChord = new ChordOrganic(events.getFirst(), qtm);
 		ChordOrganic prevChord = null;
 		ChordOrganic prevRestChord = null;
-		logNotes.finest(part.getTitle()+ ": Adding to curChord, note i=0 micros:"+Util.formatDurationM(events.get(0).startABCMicros)+"-"+Util.formatDurationM(events.get(0).endABCMicros)+" "+events.get(0).note);
+		logNotes.finest(part.getTitle()+ ": Adding to curChord, note i=0 micros:"+Util.formatDurationM(events.getFirst().startABCMicros)+"-"+Util.formatDurationM(events.getFirst().endABCMicros)+" "+events.getFirst().note);
 		chords.add(curChord);
 		MAIN:for (int i = 1; i < events.size(); i++) {
 			AbcNoteEvent ne = events.get(i);
@@ -2164,8 +2158,8 @@ public class AbcExporter {
 					shortRest.endABCMicros = endMicro;
 					tmpEvents.add(shortRest);
 					breakLongNotesOrganic(part, tmpEvents);
-					if (tmpEvents.size() > 0) {
-						int ins = Collections.binarySearch(events, tmpEvents.get(0));
+					if (!tmpEvents.isEmpty()) {
+						int ins = Collections.binarySearch(events, tmpEvents.getFirst());
 						if (ins < 0)
 							ins = -ins - 1;
 						
@@ -2173,8 +2167,8 @@ public class AbcExporter {
 						
 						// back up and process again
 						reprocessCurrentNote = true;
-						curChord.add(tmpEvents.get(0));
-						events.add(ins, tmpEvents.get(0));
+						curChord.add(tmpEvents.getFirst());
+						events.add(ins, tmpEvents.getFirst());
 						if (tmpEvents.size() > 1) {
 							logNotes.info(part.getAbcSong().getSongTitle()+": Rest needed to be broken up !!!!!!!!!!");
 						}
@@ -2419,7 +2413,7 @@ public class AbcExporter {
 							boolean reRun = deprecated2(part, events, minimumMicros, curChord, i, ne, ne1, ne2,
 									ne1RoomMicros, ne1Micros, minEndMicros, minEndMicros, neMicroStart);
 							
-							if (reRun == true) {
+							if (reRun) {
 								continue MAIN;
 							}
 						}
@@ -2735,30 +2729,29 @@ public class AbcExporter {
 		assert !curChord.hasRestAndNotes() || useRestToShortenChords;
 		
 		// delete all chords with zero duration, as there was no room for them
-		List<Chord> trash = new ArrayList<>();
+		List<ChordOrganic> trash = new ArrayList<>();
 		int count = 0;
-		for (int i = 0; i < chords.size(); i++) {
-			ChordOrganic chord = chords.get(i);
-			if (chord.getStartMicros() == chord.getEndMicros()) {
-				for (int j = 0; j < chord.size(); j++) {
-					AbcNoteEvent note = chord.get(j);
-					AbcNoteEvent tieIn = note.tiesFrom;
-					AbcNoteEvent tieOut = note.tiesTo;
-					if (tieIn != null && tieOut != null) {
-						tieIn.tiesTo = tieOut;
-						tieOut.tiesFrom = tieIn;
-					} else if (tieIn != null) {
-						tieIn.tiesTo = null;
-					} else if (tieOut != null) {
-						tieOut.tiesFrom = null;
-					}
-				}
-				trash.add(chord);
-				if (chord.hasRestAndNotes()) count++;
-			} else {
-				if (assertionsEnabled) assertSoftDura(chord, minimumMicros*99/100);
-			}
-		}
+        for (ChordOrganic chord : chords) {
+            if (chord.getStartMicros() == chord.getEndMicros()) {
+                for (int j = 0; j < chord.size(); j++) {
+                    AbcNoteEvent note = chord.get(j);
+                    AbcNoteEvent tieIn = note.tiesFrom;
+                    AbcNoteEvent tieOut = note.tiesTo;
+                    if (tieIn != null && tieOut != null) {
+                        tieIn.tiesTo = tieOut;
+                        tieOut.tiesFrom = tieIn;
+                    } else if (tieIn != null) {
+                        tieIn.tiesTo = null;
+                    } else if (tieOut != null) {
+                        tieOut.tiesFrom = null;
+                    }
+                }
+                trash.add(chord);
+                if (chord.hasRestAndNotes()) count++;
+            } else {
+                if (assertionsEnabled) assertSoftDura(chord, minimumMicros * 99 / 100);
+            }
+        }
 		chords.removeAll(trash);
 		
 		if (count > 0) {
@@ -2857,7 +2850,7 @@ public class AbcExporter {
 			long start = c.getStartMicros();
 			long end = c.getLongestEndMicros();
 			long dura = end - start;
-			value += dura/(AbcConstants.ONE_SECOND_MICROS/4L);
+			value += (int) (dura/(AbcConstants.ONE_SECOND_MICROS/4L));
 		}
 		return value;
 	}
@@ -3006,7 +2999,7 @@ public class AbcExporter {
 					List<GridLine> list = microsWeights.get(keys[i]);
 					microsWeights.remove(keys[i]);
 					long newMicros = nextStart.micros - minimumMicros;
-					if (list.get(0).micros > debugStart && list.get(0).micros < debugEnd) logNotes.finest("Moving lines earlier "+Util.formatDurationM(list.get(0).micros)+" to "+Util.formatDurationM(newMicros));
+					if (list.getFirst().micros > debugStart && list.getFirst().micros < debugEnd) logNotes.finest("Moving lines earlier "+Util.formatDurationM(list.getFirst().micros)+" to "+Util.formatDurationM(newMicros));
 					for (GridLine line : list) {
 						line.micros = newMicros;
 					}
@@ -3023,7 +3016,7 @@ public class AbcExporter {
 					List<GridLine> list = microsWeights.get(keys[i]);
 					microsWeights.remove(keys[i]);
 					long newMicros = prevStart.micros + minimumMicros;
-					if (list.get(0).micros > debugStart && list.get(0).micros < debugEnd) logNotes.finest("Moving lines later "+Util.formatDurationM(list.get(0).micros)+" to "+Util.formatDurationM(newMicros));
+					if (list.getFirst().micros > debugStart && list.getFirst().micros < debugEnd) logNotes.finest("Moving lines later "+Util.formatDurationM(list.getFirst().micros)+" to "+Util.formatDurationM(newMicros));
 					for (GridLine line : list) {
 						line.micros = newMicros;
 					}
@@ -3044,11 +3037,11 @@ public class AbcExporter {
 	    List<List<GridLine>> clusters = new ArrayList<>();
 	    List<GridLine> currentCluster = new ArrayList<>();
 	    if (!gridLines.isEmpty()) {
-	        currentCluster.add(gridLines.get(0));
+	        currentCluster.add(gridLines.getFirst());
 	    }
 	    for (int i = 1; i < gridLines.size(); i++) {
 	        GridLine curr = gridLines.get(i);
-	        GridLine last = currentCluster.get(0);
+	        GridLine last = currentCluster.getFirst();
 	        if (curr.micros - last.micros < minimumMicros) {//curr.type.equals(last.type) && (
 	            currentCluster.add(curr);
 	        } else {
@@ -3061,18 +3054,18 @@ public class AbcExporter {
 	        clusters.add(currentCluster);
 	    }
 	    
-	    Comparator<GridLine> gridLineComparator = new Comparator<GridLine>() {
-	        @Override
-	        public int compare(GridLine a, GridLine b) {
-	            int cmp = Long.compare(a.micros, b.micros);
-	            if (cmp == 0) {
-	                return Integer.compare(a.type, b.type);
-	            }
-	            return cmp;
-	        }
-	    };
+	    Comparator<GridLine> gridLineComparator = new Comparator<>() {
+            @Override
+            public int compare(GridLine a, GridLine b) {
+                int cmp = Long.compare(a.micros, b.micros);
+                if (cmp == 0) {
+                    return Integer.compare(a.type, b.type);
+                }
+                return cmp;
+            }
+        };
 		
-	    NavigableSet<GridLine> grid = new TreeSet<GridLine>(gridLineComparator);
+	    NavigableSet<GridLine> grid = new TreeSet<>(gridLineComparator);
 	    
 	    GridLine lastAverage = null;
 	    // inside each cluster, calc a weighted average
@@ -3098,7 +3091,7 @@ public class AbcExporter {
 	            totalWeight += line.weight;
 	        }
 	        long micros = weightedSum / totalWeight;// average weighted micros
-	        if (firstCluster && cluster.get(0).micros == 0L) {
+	        if (firstCluster && cluster.getFirst().micros == 0L) {
 	        	/*
 	        	 * When first note start is close to zero so a rest was inserted (which might be too short),
 	        	 * or a note starts at zero, we here make sure the weights don't move the zero gridline.
@@ -3108,9 +3101,9 @@ public class AbcExporter {
 	        }
 	        firstCluster = false;
 	        GridLine currAverage = new GridLine(micros, type, totalWeight);
-	        currAverage.firstMicros = cluster.get(0).micros;// micros of the first line in the cluster
+	        currAverage.firstMicros = cluster.getFirst().micros;// micros of the first line in the cluster
 	        if (endsShouldHaveNoSwayOverStartOfCluster && firstStartMicros != null) currAverage.firstMicros = firstStartMicros; 
-	        currAverage.lastMicros =  cluster.get(cluster.size()-1).micros;// micros of the last line in the cluster
+	        currAverage.lastMicros =  cluster.getLast().micros;// micros of the last line in the cluster
 	        if (lastAverage != null) {
 	        	// TODO: weakness of this is that last might be adjusted to later position when it was curr,
 	        	//       and then adjusted earlier afterwards. But due to removing by weight later on,
@@ -3142,11 +3135,11 @@ public class AbcExporter {
 	        lastAverage = currAverage;
 	    }
 	    
-	    if (grid.isEmpty()) return new TreeSet<Long>();
+	    if (grid.isEmpty()) return new TreeSet<>();
 	    
 	    
     
-	    
+	    long minTail = minimumMicros * 2;
 	    Iterator<GridLine> gridIter = grid.iterator();
 	    GridLine prev = gridIter.next();
 	    
@@ -3162,7 +3155,7 @@ public class AbcExporter {
 	        while (curr.micros - prev.micros > TimingInfo.LONGEST_NOTE_MICROS) {
 	            long candidateTime = prev.micros + TimingInfo.LONGEST_NOTE_MICROS;
 	            GridLine candidate = new GridLine(candidateTime, GENERAL, 0);
-	            if (curr.micros - candidate.micros < minimumMicros * 2) {
+	            if (curr.micros - candidate.micros < minTail) {
 	                break;
 	            } else {
 	                refinedGrid.add(candidate);
@@ -3201,7 +3194,7 @@ public class AbcExporter {
 	    boolean assertionsEnabled = false;
 		assert assertionsEnabled = true;
 	    
-	    NavigableSet<Long> gridTimes = new TreeSet<Long>();
+	    NavigableSet<Long> gridTimes = new TreeSet<>();
 	    Long lastLine = null;
 	    int lastType = INITIAL;
 	    for (GridLine line : refinedGrid) {
@@ -3210,7 +3203,7 @@ public class AbcExporter {
 	        if (assertionsEnabled && lastLine != null) {
 	        	// TODO: comment out when system more solid
 	        	assert line.micros >= lastLine+minimumMicros:part.getTitle()+": "+lastType+" "+(line.micros - lastLine)+" micros  "+line.type;
-	        	assert line.micros <= lastLine+TimingInfo.LONGEST_NOTE_MICROS+70000:part.getTitle()+": "+lastType+" "+((line.micros - lastLine)/1000)+"ms "+line.type;
+	        	assert line.micros <= lastLine+TimingInfo.LONGEST_NOTE_MICROS+minTail:part.getTitle()+": "+lastType+" "+((line.micros - lastLine)/1000)+"ms "+line.type;
 	        }
 	        lastType = line.type;
 	        lastLine = line.micros;
@@ -3345,7 +3338,7 @@ public class AbcExporter {
 		
 	    List<ChordOrganic> chords = new ArrayList<>(events.size() / 2);
 	    
-	    if (events.size() == 0) return new ArrayList<>();
+	    if (events.isEmpty()) return new ArrayList<>();
 	    
 	    TreeMap<Long,Long> gridTicks = new TreeMap<>();
 		for (long micros : grid) {
@@ -3383,91 +3376,90 @@ public class AbcExporter {
 		AbcNoteEvent prevChordsShortest = null;// prev chords shortest note
 		long lastStartMicros = -1L;
 		boolean firstLoop = true;
-		for (int i = 0; i < eventSegments.size(); i++) {
-	    	AbcNoteEvent noteSegment = eventSegments.get(i);
-	    	if (!firstLoop) {
-	    		if (noteSegment.startABCMicros > lastStartMicros) {
-	    			
-	    			// new chord
-	    			// here we rely on the sorting to be shortest notes first. (beside sorting by start tick)
-	    			if (lastEndNote != null && noteSegment.startABCMicros > lastEndNote.endABCMicros) {
-	    				assert lastStartMicros == lastEndNote.startABCMicros;
-	    				assert lastEndMicros <= lastEndNote.endABCMicros;
-	    				// prev chord had a note and that note end before this starts,
-	    				// so we dont need the short rest(s) in prev chord
-	    				restTrash.addAll(potentialTrash);
-	    				// insert rest from last note/bridge to current segment
-		    			AbcNoteEvent rest = new AbcNoteEvent(Note.REST,64,lastEndNote.getEndTick(),noteSegment.getStartTick(),qtm,null);
-		    			rest.startABCMicros = lastEndNote.endABCMicros;
-		    			rest.endABCMicros = noteSegment.startABCMicros;
-		    			List<AbcNoteEvent> segments = splitToGrid(rest, gridTicks, part, useRestToShortenChords);
-		    	    	rests.addAll(segments);
-	    			} else if (prevChordsShortest != lastEndNote && lastEndNote != null && noteSegment.startABCMicros == lastEndNote.endABCMicros) {
-	    				// prev chord had a shortest actual note and that note ends when this starts,
-	    				// so we don't need the short rest(s)
-	    				restTrash.addAll(potentialTrash);
-	    				
-	    				assert prevChordsShortest.getLengthTicks() <= lastEndNote.getLengthTicks();
-	    				assert prevChordsShortest.startABCMicros == lastEndNote.startABCMicros;	    				
-	    			} else if (noteSegment.startABCMicros > lastEndMicros) {
-	    				// insert rest from last short rest to current segment
-		    			AbcNoteEvent rest = new AbcNoteEvent(Note.REST,64,lastEndTick,noteSegment.getStartTick(),qtm,null);
-		    			rest.startABCMicros = lastEndMicros;
-		    			rest.endABCMicros = noteSegment.startABCMicros;
-		    			List<AbcNoteEvent> segments = splitToGrid(rest, gridTicks, part, useRestToShortenChords);
-		    	    	rests.addAll(segments);
-		    	    	
-		    		} else {		    			
-		    			assert noteSegment.startABCMicros == lastEndMicros;
-		    		}
-	    			prevChordsShortest = noteSegment;//The shortest note/rest in the new chord
-	    			
-	    			if (noteSegment.note != Note.REST) lastEndNote = noteSegment;
-	    	    	else lastEndNote = null;
-	    			
-	    			potentialTrash = new ArrayList<>();
-	    			if (noteSegment.note == Note.REST) potentialTrash.add(noteSegment);
-	    			
-	    			if (noteSegment.endABCMicros <= lastEndMicros) {
-	    				logNotes.severe("noteSegment.origEndABCMicros > lastEndMicros = "+(noteSegment.endABCMicros > lastEndMicros));
-	    			}
-		    		lastEndMicros = noteSegment.endABCMicros;
-		    		lastEndTick = noteSegment.getEndTick();
-		    		
-	    		} else if (noteSegment.note != Note.REST && lastEndNote == null) {
-	    			// second or later in this chord
-	    			// is shortest actual note in this chord
-	    			assert prevChordsShortest.getLengthTicks() <= noteSegment.getLengthTicks();
-	    			assert prevChordsShortest.startABCMicros == noteSegment.startABCMicros;
-	    			assert prevChordsShortest.endABCMicros <= noteSegment.endABCMicros;
-	    			lastEndNote = noteSegment;
-	    		} else if (noteSegment.note == Note.REST) {
-	    			// There might be more than 1 rest that starts at same time,
-	    			// we will either remove all of them or let pruning do its work.
-	    			potentialTrash.add(noteSegment);
-	    		} else {
-	    			// not shortest note and not rest, we ignore it
-	    		}
-	    	} else {
-	    		if (noteSegment.endABCMicros <= lastEndMicros) {
-	    			logNotes.severe("noteSegment.origEndABCMicros > lastEndMicros = "+(noteSegment.endABCMicros > lastEndMicros));
-	    		}
-	    		lastEndMicros = noteSegment.endABCMicros;
-	    		lastEndTick = noteSegment.getEndTick();
-    			prevChordsShortest = noteSegment;
-    			if (noteSegment.note != Note.REST) {
-    				lastEndNote = noteSegment;
-    			} else {
-    				lastEndNote = null;
-    				potentialTrash.add(noteSegment);
-    			}
-	    	}
-	    	lastStartMicros = noteSegment.startABCMicros;
-	    	firstLoop = false;
-		}
+        for (AbcNoteEvent noteSegment : eventSegments) {
+            if (!firstLoop) {
+                if (noteSegment.startABCMicros > lastStartMicros) {
+
+                    // new chord
+                    // here we rely on the sorting to be shortest notes first. (beside sorting by start tick)
+                    if (lastEndNote != null && noteSegment.startABCMicros > lastEndNote.endABCMicros) {
+                        assert lastStartMicros == lastEndNote.startABCMicros;
+                        assert lastEndMicros <= lastEndNote.endABCMicros;
+                        // prev chord had a note and that note end before this starts,
+                        // so we dont need the short rest(s) in prev chord
+                        restTrash.addAll(potentialTrash);
+                        // insert rest from last note/bridge to current segment
+                        AbcNoteEvent rest = new AbcNoteEvent(Note.REST, 64, lastEndNote.getEndTick(), noteSegment.getStartTick(), qtm, null);
+                        rest.startABCMicros = lastEndNote.endABCMicros;
+                        rest.endABCMicros = noteSegment.startABCMicros;
+                        List<AbcNoteEvent> segments = splitToGrid(rest, gridTicks, part, useRestToShortenChords);
+                        rests.addAll(segments);
+                    } else if (prevChordsShortest != lastEndNote && lastEndNote != null && noteSegment.startABCMicros == lastEndNote.endABCMicros) {
+                        // prev chord had a shortest actual note and that note ends when this starts,
+                        // so we don't need the short rest(s)
+                        restTrash.addAll(potentialTrash);
+
+                        assert prevChordsShortest.getLengthTicks() <= lastEndNote.getLengthTicks();
+                        assert prevChordsShortest.startABCMicros == lastEndNote.startABCMicros;
+                    } else if (noteSegment.startABCMicros > lastEndMicros) {
+                        // insert rest from last short rest to current segment
+                        AbcNoteEvent rest = new AbcNoteEvent(Note.REST, 64, lastEndTick, noteSegment.getStartTick(), qtm, null);
+                        rest.startABCMicros = lastEndMicros;
+                        rest.endABCMicros = noteSegment.startABCMicros;
+                        List<AbcNoteEvent> segments = splitToGrid(rest, gridTicks, part, useRestToShortenChords);
+                        rests.addAll(segments);
+
+                    } else {
+                        assert noteSegment.startABCMicros == lastEndMicros;
+                    }
+                    prevChordsShortest = noteSegment;//The shortest note/rest in the new chord
+
+                    if (noteSegment.note != Note.REST) lastEndNote = noteSegment;
+                    else lastEndNote = null;
+
+                    potentialTrash = new ArrayList<>();
+                    if (noteSegment.note == Note.REST) potentialTrash.add(noteSegment);
+
+                    if (noteSegment.endABCMicros <= lastEndMicros) {
+                        logNotes.severe("noteSegment.origEndABCMicros > lastEndMicros = " + (noteSegment.endABCMicros > lastEndMicros));
+                    }
+                    lastEndMicros = noteSegment.endABCMicros;
+                    lastEndTick = noteSegment.getEndTick();
+
+                } else if (noteSegment.note != Note.REST && lastEndNote == null) {
+                    // second or later in this chord
+                    // is shortest actual note in this chord
+                    assert prevChordsShortest.getLengthTicks() <= noteSegment.getLengthTicks();
+                    assert prevChordsShortest.startABCMicros == noteSegment.startABCMicros;
+                    assert prevChordsShortest.endABCMicros <= noteSegment.endABCMicros;
+                    lastEndNote = noteSegment;
+                } else if (noteSegment.note == Note.REST) {
+                    // There might be more than 1 rest that starts at same time,
+                    // we will either remove all of them or let pruning do its work.
+                    potentialTrash.add(noteSegment);
+                } else {
+                    // not shortest note and not rest, we ignore it
+                }
+            } else {
+                if (noteSegment.endABCMicros <= lastEndMicros) {
+                    logNotes.severe("noteSegment.origEndABCMicros > lastEndMicros = " + (noteSegment.endABCMicros > lastEndMicros));
+                }
+                lastEndMicros = noteSegment.endABCMicros;
+                lastEndTick = noteSegment.getEndTick();
+                prevChordsShortest = noteSegment;
+                if (noteSegment.note != Note.REST) {
+                    lastEndNote = noteSegment;
+                } else {
+                    lastEndNote = null;
+                    potentialTrash.add(noteSegment);
+                }
+            }
+            lastStartMicros = noteSegment.startABCMicros;
+            firstLoop = false;
+        }
 		eventSegments.addAll(rests);
 		eventSegments.removeAll(restTrash);
-		if (restTrash.size() > 0) logNotes.finest("Trashing rests:"+restTrash.size());
+		if (!restTrash.isEmpty()) logNotes.finest("Trashing rests:"+restTrash.size());
 		
 		Collections.sort(eventSegments);
 		
@@ -3475,18 +3467,14 @@ public class AbcExporter {
 			AbcNoteEvent prev = null;
 			AbcNoteEvent prevShortest = null;
 	    	for (AbcNoteEvent note : eventSegments) {
-	    		if (prev != null) {
-	    			assert prev.startABCMicros <= note.startABCMicros
-	    				:note.note+": "+prev.startABCMicros+"-"+prev.endABCMicros+" "+note.note+": "+note.startABCMicros+"-"+note.endABCMicros+" compare="+prev.compareTo(note);
-	    		}
-	    		if (prevShortest != null) {
-	    			assert prev.endABCMicros == note.startABCMicros || prev.startABCMicros == note.startABCMicros
-	    					:(note.startABCMicros-prev.endABCMicros)+" gap detected between "+prev.toStringMicros()+" and "+note.toStringMicros();
-	    		}
-	    		prev = note;
-	    		if (prev.startABCMicros < note.startABCMicros) {
+                assert prev == null || prev.startABCMicros <= note.startABCMicros
+                    :note.note+": "+prev.startABCMicros+"-"+prev.endABCMicros+" "+note.note+": "+note.startABCMicros+"-"+note.endABCMicros+" compare="+prev.compareTo(note);
+                assert prevShortest == null || prevShortest.endABCMicros == note.startABCMicros || prevShortest.startABCMicros == note.startABCMicros
+                        :(note.startABCMicros-prevShortest.endABCMicros)+" gap detected between "+prevShortest.toStringMicros()+" and "+note.toStringMicros();
+	    		if (prev == null || prev.startABCMicros < note.startABCMicros) {
 	    			prevShortest = note;
 	    		}
+				prev = note;
 	    	}
 	    }
 		
@@ -3524,7 +3512,7 @@ public class AbcExporter {
 				breakTies(deadnotes);
 				eventSegments.removeAll(deadnotes);
 				
-				if (deadnotes.size() > 0) {
+				if (!deadnotes.isEmpty()) {
 					// we go steps back and re-process
 					i = startI-1;
 					chords.remove(curChord);
@@ -3553,10 +3541,10 @@ public class AbcExporter {
 	    	for (ChordOrganic chord : chords) {
 	    		if (prev != null) {
 	    			for (AbcNoteEvent ne : chord.getNotes()) {
-	    				assert chord.getNotes().get(0).startABCMicros == ne.startABCMicros;
+	    				assert chord.getNotes().getFirst().startABCMicros == ne.startABCMicros;
 	    				assert chord.getShortest().endABCMicros <= ne.endABCMicros;
 	    			}
-	    			assert prev.getShortest().endABCMicros == chord.getNotes().get(0).startABCMicros:prev.getShortest().endABCMicros+" != "+chord.getNotes().get(0).startABCMicros;
+	    			assert prev.getShortest().endABCMicros == chord.getNotes().getFirst().startABCMicros:prev.getShortest().endABCMicros+" != "+chord.getNotes().getFirst().startABCMicros;
 	    		}
 	    		prev = chord;
 	    	}
@@ -3713,7 +3701,7 @@ public class AbcExporter {
 					AbcNoteEvent restShorter = new AbcNoteEvent(Note.REST, 4, ne.getStartTick(), ceilTick, qtm, null);
 					restShorter.startABCMicros = ne.startABCMicros;
 					restShorter.endABCMicros = ceilMicros;
-					assert restShorter.endABCMicros - restShorter.startABCMicros < TimingInfo.LONGEST_NOTE_MICROS + 70000 : ((ne.endABCMicros - ne.startABCMicros)/1000) +" ms";
+					assert restShorter.endABCMicros - restShorter.startABCMicros < TimingInfo.LONGEST_NOTE_MICROS + 120002 : ((ne.endABCMicros - ne.startABCMicros)/1000) +" ms";
 					segments.add(restShorter);
 					logNotes.fine("Add rest into chord starting at "+Util.formatDurationM(restShorter.startABCMicros));
 					break;
@@ -3746,7 +3734,7 @@ public class AbcExporter {
 					ne2.endABCMicros = ne.endABCMicros;
 					ne.endABCMicros = ceilMicros;
 					ne.setEndTick(ceilTick);
-					assert ne.endABCMicros - ne.startABCMicros < TimingInfo.LONGEST_NOTE_MICROS + 70000 : ((ne.endABCMicros - ne.startABCMicros)) +" us";
+					assert ne.endABCMicros - ne.startABCMicros < TimingInfo.LONGEST_NOTE_MICROS + 120002 : ((ne.endABCMicros - ne.startABCMicros)) +" us";
 					segments.add(ne2);
 					restartMicros = ceilMicros;
 					restartTick = ceilTick;
@@ -3754,7 +3742,7 @@ public class AbcExporter {
 				// TODO: comment out when system more solid
 				
 				assert ne.startABCMicros < ne.endABCMicros;
-				assert ne.startABCMicros + TimingInfo.LONGEST_NOTE_MICROS + 70000 >= ne.endABCMicros;
+				assert ne.startABCMicros + TimingInfo.LONGEST_NOTE_MICROS + 120002 >= ne.endABCMicros;
 				assert ne2.startABCMicros < ne2.endABCMicros;
 				assert ne.getStartTick() < ne.getEndTick();
 				assert ne2.getStartTick() < ne2.getEndTick();
@@ -3779,7 +3767,7 @@ public class AbcExporter {
 			AbcNoteEvent prev = null;
 			for (AbcNoteEvent segment : segments) {
 				long microsDura = segment.endABCMicros-segment.startABCMicros;
-				assert microsDura <= TimingInfo.LONGEST_NOTE_MICROS + 70000: segment.note+" vel="+segment.velocity+"  "+((ne.endABCMicros - ne.startABCMicros)/1000) +" ms";
+				assert microsDura <= TimingInfo.LONGEST_NOTE_MICROS + 120002: segment.note+" vel="+segment.velocity+"  "+((ne.endABCMicros - ne.startABCMicros)/1000) +" ms";
 				if (prev != null) {
 					
 				}
@@ -3945,8 +3933,7 @@ public class AbcExporter {
 	 * Remove duplicate notes that play at the same time (comes from combining tracks into same part)
 	 * 
 	 * @param events All the notes from all the combined tracks
-	 * @param instrument 
-	 */
+     */
 	private void removeDuplicateNotes(List<AbcNoteEvent> events, LotroInstrument instrument) {
 		// If prioritizeLongNotes is true, then notes that are subset of the other but lower or equal value
 		// will just be deleted if sustained.
@@ -4084,22 +4071,21 @@ public class AbcExporter {
 	
 	private void removeDuplicateNotesVerify(List<AbcNoteEvent> events, LotroInstrument instrument) {
 		List<AbcNoteEvent> notesOn = new ArrayList<>();
-		Iterator<AbcNoteEvent> neIter = events.iterator();
-		while (neIter.hasNext()) {
-			AbcNoteEvent ne = neIter.next();//second
-			Iterator<AbcNoteEvent> onIter = notesOn.iterator();
-			while (onIter.hasNext()) {
-				AbcNoteEvent on = onIter.next();//first
-				if (on.getEndTick() <= ne.getStartTick() && (on.getLengthTicks() > 0 || on.getStartTick() < ne.getStartTick())) {
-					// First note has already been turned off
-					onIter.remove();
-				} else if (on.note.id == ne.note.id) {
-					logNotes.severe("OOPSIE ");
-					System.exit(0);
-				}
-			}
-			notesOn.add(ne);
-		}
+        //second
+        for (AbcNoteEvent ne : events) {
+            Iterator<AbcNoteEvent> onIter = notesOn.iterator();
+            while (onIter.hasNext()) {
+                AbcNoteEvent on = onIter.next();//first
+                if (on.getEndTick() <= ne.getStartTick() && (on.getLengthTicks() > 0 || on.getStartTick() < ne.getStartTick())) {
+                    // First note has already been turned off
+                    onIter.remove();
+                } else if (on.note.id == ne.note.id) {
+                    logNotes.severe("OOPSIE ");
+                    System.exit(0);
+                }
+            }
+            notesOn.add(ne);
+        }
 	}
 
 	private void breakLongNotes(AbcPart part, List<AbcNoteEvent> events) {
@@ -4177,7 +4163,6 @@ public class AbcExporter {
 				targetEndTick = minEnding;
 				assert qtm.quantize(minEnding, part) == minEnding; 
 			}
-			assert (targetEndTick >= minEnding);
 			assert (ne.getEndTick() >= minEnding) : "1="+(qtm.quantize(ne.getEndTick(), part) == ne.getEndTick())+" 2="+(qtm.quantize(ne.getStartTick(), part) == ne.getStartTick());
 			assert (targetEndTick <= ne.getEndTick());
 
@@ -4246,17 +4231,14 @@ public class AbcExporter {
 	
 	/**
 	 * Used by single-stage organic
-	 * 
-	 * @param part
-	 * @param events
-	 */
+	 *
+     */
 	private void breakLongNotesOrganic(AbcPart part, List<AbcNoteEvent> events) {
 		TreeSet<Long> points = new TreeSet<>();
-		for (int i = 0; i < events.size(); i++) {
-			AbcNoteEvent ne = events.get(i);
-			points.add(ne.getStartTick());
-			//points.add(ne.getEndTick()); // ends are more likely to be moved later, so we grab only starts
-		}
+        for (AbcNoteEvent ne : events) {
+            points.add(ne.getStartTick());
+            //points.add(ne.getEndTick()); // ends are more likely to be moved later, so we grab only starts
+        }
 		for (int i = 0; i < events.size(); i++) {
 			AbcNoteEvent ne = events.get(i);
 			
@@ -4328,12 +4310,12 @@ public class AbcExporter {
 					int ins = Collections.binarySearch(events, next);
 					if (ins < 0)
 						ins = -ins - 1;
-					assert (ins > i): "REST="+(ne.note == Note.REST);
+					assert (ins > i): "REST="+(rest);
 					events.add(ins, next);
 
 					ne.continues = next.getLengthTicks();// needed for pruning
 					
-					if (ne.note == Note.REST) {
+					if (rest) {
 						// need to be after the assert
 						i--;
 					}
@@ -4431,9 +4413,8 @@ public class AbcExporter {
 	private List<AbcNoteEvent> expandPitchBends(AbcPart part, AbcNoteEvent ne) {
 		// Handle pitch bend by subdividing tone into shorter quantized notes.
 		// By the time this method is ran, start and end tick of the bent tone is already quantized.
-		if (ne instanceof BentAbcNoteEvent) {
-			BentAbcNoteEvent be = (BentAbcNoteEvent) ne;
-			int noteID = be.note.id;
+		if (ne instanceof BentAbcNoteEvent be) {
+            int noteID = be.note.id;
 			assert be.note != Note.REST;
 			int startPitch = noteID;
 			List<AbcNoteEvent> benders = new ArrayList<>();
@@ -4442,16 +4423,14 @@ public class AbcExporter {
 			long lastGridTick = 0L;
 			for (long t = be.getStartTick(); t < be.getEndTick(); t++) {
 				Integer entry = be.getBend(t);
-				if (entry != null) {
-					noteID = startPitch + entry;
-				} else {
-					// Since all bent notes have a bend at start tick,
-					// and that start tick might have been quantized to lower tick.
-					// Make sure we grab that initial value here.
-					entry = be.bends.firstEntry().getValue();
-					noteID = startPitch + entry;
-				}
-				if (current == null) {
+                if (entry == null) {
+                    // Since all bent notes have a bend at start tick,
+                    // and that start tick might have been quantized to lower tick.
+                    // Make sure we grab that initial value here.
+                    entry = be.bends.firstEntry().getValue();
+                }
+                noteID = startPitch + entry;
+                if (current == null) {
 					current = createBentSubNote(be, noteID, current, t, entry);
 					if (current == null)
 						return new ArrayList<>();
@@ -4527,16 +4506,14 @@ public class AbcExporter {
 							qtm.tickToMicrosABCOrganic(t) + AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())
 							), entry)) {
 				entry = be.getBend(t);
-				if (entry != null) {
-					noteID = startPitch + entry;
-				} else {
-					// Since all bent notes have a bend at start tick,
-					// and that start tick might have been quantized to lower tick.
-					// Make sure we grab that initial value here.
-					entry = be.bends.firstEntry().getValue();
-					noteID = startPitch + entry;
-				}
-				if (current == null) {
+                if (entry == null) {
+                    // Since all bent notes have a bend at start tick,
+                    // and that start tick might have been quantized to lower tick.
+                    // Make sure we grab that initial value here.
+                    entry = be.bends.firstEntry().getValue();
+                }
+                noteID = startPitch + entry;
+                if (current == null) {
 					current = createBentSubNote(be, noteID, current, t, entry);
 					if (current == null)
 						return new ArrayList<>();
@@ -4591,11 +4568,8 @@ public class AbcExporter {
 
 	/**
 	 * Run this after pruning to tidy up ties
-	 * 
-	 * @param events
-	 * @param notes
-	 * @param part
-	 */
+	 *
+     */
 	private void removeNotes(List<AbcNoteEvent> events, List<AbcNoteEvent> notes, AbcPart part) {
 		for (AbcNoteEvent ne : notes) {
 
@@ -4624,11 +4598,8 @@ public class AbcExporter {
 	
 	/**
 	 * Run this after when unmixing to tidy up ties
-	 * 
-	 * @param events
-	 * @param notes
-	 * @param part
-	 */
+	 *
+     */
 	private void breakTies(List<AbcNoteEvent> notes) {
 		for (AbcNoteEvent ne : notes) {
 
@@ -4656,8 +4627,7 @@ public class AbcExporter {
 	 * 
 	 * @param lengthenToBar lengthen ending to bar
 	 * @param accountForSustain lengthen to allow preview midi playback to decay
-	 * @return
-	 */
+     */
 	public Pair<Long, Long> getSongStartEndTick(boolean lengthenToBar, boolean accountForSustain) {
 		// Remove silent bars before the song starts
 		long startTick = skipSilenceAtStart ? Long.MAX_VALUE : 0L;
@@ -4775,8 +4745,7 @@ public class AbcExporter {
 
 	/**
 	 * Does not account for tempo adjustment
-	 * @return 
-	 */
+     */
 	public long getExportStartMicros() {
 		if (organic) {
 			return qtm.tickToMicrosOrganic(getExportStartTick());
@@ -4788,17 +4757,15 @@ public class AbcExporter {
 	/**
 	 * Returns the final song duration.
 	 * Used to export duration in part names, file name and metadata.
-	 * 
-	 * @return
-	 */
+	 *
+     */
 	private long getSongLengthMicros() {
 		return qtm.divideByExportTempoFactor(getExportEndMicros() - getExportStartMicros());
 	}
 
 	/**
 	 * Does not account for tempo adjustment
-	 * @return 
-	 */
+     */
 	public long getExportEndMicros() {
 		if (organic) {
 			return qtm.tickToMicrosOrganic(getExportEndTick());

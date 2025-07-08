@@ -54,7 +54,7 @@ public class AutoExporter {
 	volatile File destFolderAuto;
 	volatile File midiFolderAuto;
 
-	private Preferences prefs = Preferences.userNodeForPackage(MaestroMain.class);
+	private final Preferences prefs = Preferences.userNodeForPackage(MaestroMain.class);
 	private final String DIR_AUTO_SOURCE  = "dir_source";
 	private final String DIR_AUTO_MIDI    = "dir_midi";
 	private final String DIR_AUTO_DEST    = "dir_destination";
@@ -332,7 +332,7 @@ public class AutoExporter {
 	    @Override
 	    public FileVisitResult visitFileFailed(Path file,
 	                                       IOException exc) {
-	        System.err.println(exc);
+			log.warning(exc.getMessage());
 	        return CONTINUE;
 	    }
 	}
@@ -565,7 +565,6 @@ public class AutoExporter {
 	/**
 	 * 
 	 * @param sourceFolderAuto2
-	 * @param destFolderAuto
 	 * @param project
 	 * @return folder nested inside destFolderAuto in same manner as project is nested inside sourceFolderAuto2
 	 * @throws IOException
@@ -593,9 +592,6 @@ public class AutoExporter {
 	
 	/**
 	 * 
-	 * @param sourceFolderAuto2
-	 * @param midiFolderAuto2
-	 * @param newFile
 	 * @return folder nested inside midiFolderAuto in same manner as projectFile is nested inside sourceFolderAuto
 	 * @throws IOException
 	 */
