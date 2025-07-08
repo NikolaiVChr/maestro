@@ -104,7 +104,7 @@ public class AutoExporter {
 					updateProgress();
 					updateField();
 				} catch (Exception e) {
-					e.printStackTrace();
+					log.severe("Error updating progress/field: " + e.toString());
 				}
 			}
 		}, 250L, 250L);
@@ -144,7 +144,7 @@ public class AutoExporter {
 				try {
 					autoExport();
 				} catch (Exception ioe) {
-					ioe.printStackTrace();
+					log.warning("Error exporting: " + ioe.toString());
 					setProgress(0);
 					appendToField("<br><font color='red'>"+ioe.toString()+"</font>");
 					SwingUtilities.invokeLater(() -> {
@@ -351,8 +351,8 @@ public class AutoExporter {
 		        	try {
 						exportProject(file.toFile());
 					} catch (Exception e) {
+						log.warning(file.getFileName()+": "+e.getMessage());
 						appendToField("<br><font color='red'>"+e.toString()+"</font>");
-						e.printStackTrace();
 					}
 					exportCount++;
 					setProgress((int) (exportCount * progressFactor));
@@ -564,7 +564,6 @@ public class AutoExporter {
 
 	/**
 	 * 
-	 * @param sourceFolderAuto2
 	 * @param project
 	 * @return folder nested inside destFolderAuto in same manner as project is nested inside sourceFolderAuto2
 	 * @throws IOException
@@ -695,7 +694,7 @@ public class AutoExporter {
 	}
 
 	/** Used when the MIDI file in a Maestro song project can't be loaded. */
-	private FileResolver openFileResolver = new FileResolver() {
+	private final FileResolver openFileResolver = new FileResolver() {
 		private File newMidi;
 
 		@Override
@@ -772,8 +771,8 @@ public class AutoExporter {
 							result = jfc.showOpenDialog(frame);
 						});
 					} catch (Exception e) {
+						log.severe(e.toString());
 						appendToField("<br><font color='red'>"+e.toString()+"</font>");
-						e.printStackTrace();
 					}
 					if (result == JFileChooser.APPROVE_OPTION) {
 						alternateFile = jfc.getSelectedFile();
@@ -785,8 +784,8 @@ public class AutoExporter {
 		
 				return alternateFile;
 			} catch (InvocationTargetException | InterruptedException e) {
+				log.severe(e.toString());
 				appendToField("<br><font color='red'>"+e.toString()+"</font>");
-				e.printStackTrace();
 			}
 			return null;
 		}

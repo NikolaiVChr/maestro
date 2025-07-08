@@ -1,6 +1,7 @@
 package com.digero.common.abctomidi;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -10,6 +11,7 @@ import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import com.digero.common.abc.AbcConstants;
@@ -20,6 +22,8 @@ import com.digero.common.midi.IBarNumberCache;
 import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.TimeSignature;
 import com.digero.common.util.Util;
+
+import javax.swing.*;
 
 public class AbcInfo implements AbcConstants, IBarNumberCache {
 	private static class PartInfo {
@@ -33,6 +37,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		private int endLine = 0;
 	}
 
+	private static final Logger log = Logger.getLogger("import.abc");
 	private boolean empty = true;
 	private List<File> abcFiles;
 	private String titlePrefix;
@@ -423,8 +428,12 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		case ABC_CREATOR:
 			abcCreator = value.trim();
 			issue = VersionsWithIssues.check(abcCreator);
-			if (issue != null && songTitle != null) {
-				System.out.println(songTitle + ": " + issue);
+			if (issue != null) {
+				String title = songTitle != null ? songTitle: "";
+				log.warning("Potential corrupted ABC. "+title+" ABC was exported with a flawed Maestro: "+issue);
+                SwingUtilities.invokeLater(() -> {
+                    JOptionPane.showMessageDialog(null, title+" ABC was exported with a flawed Maestro: "+issue, "Potential corrupted ABC", JOptionPane.WARNING_MESSAGE);
+                });
 			}
 			break;
 		case ABC_VERSION:

@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
+import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,6 +28,7 @@ import com.digero.common.midi.Note;
 import com.digero.common.midi.PanGenerator;
 import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.util.LotroParseException;
+import com.digero.common.util.Pair;
 import com.digero.common.util.ParseException;
 import com.digero.maestro.abc.AbcExporter.ExportTrackInfo;
 import com.digero.maestro.midi.SequenceInfo;
@@ -131,6 +133,8 @@ public class AbcToMidi {
 		Map<Integer, Integer> accidentals = new HashMap<>(); // noteId => deltaNoteId
 
 		List<MidiEvent> noteOffEvents = new ArrayList<>();
+		List<Pair<Integer, Long>> notesOn = new ArrayList<>();
+
 		int lineNumberForRegions = -1;
 		SequenceInfo.lastTrackInfos = new ArrayList<>();
 		for (FileAndData fileAndData : filesData) {
@@ -209,6 +213,7 @@ public class AbcToMidi {
 								track.add(MidiFactory.createEndOfTrackEvent(noteOffEvents.getLast().getTick()));
 							}
 							noteOffEvents.clear();
+							notesOn.clear();
 
 							if (trackNumber > 0)
 								abcInfo.setPartEndLine(trackNumber, lineNumberForRegions - 1);
@@ -670,6 +675,24 @@ public class AbcToMidi {
 								}
 							}
 
+							// check for invalid overlapping notes
+							Iterator<Pair<Integer, Long>> notesOnIter = notesOn.iterator();
+							while (notesOnIter.hasNext()) {
+								Pair<Integer, Long> soundingNote = notesOnIter.next();
+								if (soundingNote.second <= chordStartTick) {
+									notesOnIter.remove();
+								}
+							}
+							for (Pair<Integer,Long> soundingNote : notesOn) {
+								if (noteId == soundingNote.first && chordStartTick < soundingNote.second && enableLotroErrors) {
+									log.warning(fileName+": Overlapping note, lotro might not play part "
+											+info.getPartNumber()+" correctly");
+									// This should maybe give a warning instead, not catastrophic failure
+									throw new LotroParseException("Overlapping note, lotro might not play part "
+											+info.getPartNumber()+" correctly", fileName, lineNumber, m.start());
+								}
+							}
+
 							// Check for overlapping notes, and remove extra note off events
 							Iterator<MidiEvent> noteOffIter = noteOffEvents.iterator();
 							while (noteOffIter.hasNext()) {
@@ -685,11 +708,6 @@ public class AbcToMidi {
 									evt.setTick(Math.round(chordStartTick));
 									track.add(evt);
 									noteOffIter.remove();
-									if (enableLotroErrors) {
-										// This should maybe give a warning instead, not catastrophic failure
-										throw new LotroParseException("Overlapping note, lotro might not play part "+info.getPartNumber()+" correctly", fileName, lineNumber,
-												m.start());
-									}
 									break;
 								}
 							}
@@ -723,6 +741,7 @@ public class AbcToMidi {
 										info.getDynamics().getVol(useLotroInstruments), Math.round(chordStartTick)));
 							}
 
+							notesOn.add(new Pair<>(noteId, (long)noteEndTick));
 							handleNoteTie(useLotroInstruments, enableLotroErrors, info, track, channel, PPQN, tiedNotes,
 									noteOffEvents, fileName, lineNumber, m, numerator_abc, denominator_abc, abcNoteL,
 									abcNoteAcc, curTempoBPM, noteEndTick, noteLetter, octaveStr, noteId, lotroNoteId, info.getInstrument());
@@ -1004,7 +1023,6 @@ public class AbcToMidi {
 			throw new ParseException("Empty or invalid ABC files", fileName);
 		}
 		
-		
 		return abcInfo;
 	}
 
@@ -1090,6 +1108,7 @@ public class AbcToMidi {
 		Tuplet tuplet = new Tuplet(test[0], compound);
 		boolean pass = tuplet.toString().equals(test[1]);
 		if (!pass) {
+			System.err.println("Input: " + test[0]);
 			System.err.println("Actual: " + tuplet.toString());
 			System.err.println("Expected: " + test[1]);
 		}

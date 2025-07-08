@@ -2775,6 +2775,7 @@ public class AbcExporter {
 					for (AbcNoteEvent pre : notesOn) {
 						if (pre.note == curr.note) {
 							assert curr.endABCMicros > pre.endABCMicros;
+							assert pre.note != Note.REST;
 							pre.endABCMicros = curr.startABCMicros;
 							pre.setEndTick(qtm.microsToTickABCOrganic(curr.startABCMicros));
 							logNotes.fine(part.getTitle()+": normalizing note!1! tied="+(pre.tiesTo != null));
@@ -3567,6 +3568,7 @@ public class AbcExporter {
 							if (pre.note == curr.note) {
 								pre.endABCMicros = curr.startABCMicros;
 								assert curr.endABCMicros > pre.endABCMicros;
+								assert pre.note != Note.REST;
 								logNotes.finer(part.getAbcSong().getTitle()+ ": normalizing note!!!");
 							}
 						}
