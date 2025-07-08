@@ -8,8 +8,12 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
 	<build>
+		<!--
+		 Ideally Maven expects src/main and src/test
+		 In IDEA, mark srcTest/test as test root, so it will stop complaining
+		 -->
 		<sourceDirectory>src</sourceDirectory>
-		<testSourceDirectory>src/com/digero/test</testSourceDirectory>
+		<testSourceDirectory>srcTest/test</testSourceDirectory>
 		<resources>
 			<resource>
 				<directory>src</directory>
@@ -31,10 +35,6 @@
 				        <arg>--add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED</arg>
 				        <arg>--add-exports=java.desktop/sun.awt.shell=ALL-UNNAMED</arg>
     	  			</compilerArgs>
-				    <excludes>
-				    	<!-- must be excluded since its under src, else it will compile all of source -->
-          				<exclude>com/digero/test/**</exclude>
-        			</excludes>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -180,6 +180,12 @@
 		    <artifactId>junit-jupiter-api</artifactId>
 		    <version>5.10.2</version>
 		    <scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter-engine</artifactId>
+			<version>5.10.2</version>
+			<scope>test</scope>
 		</dependency>
 		<dependency>
         	<groupId>org.junit.jupiter</groupId>

@@ -5,11 +5,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -35,6 +32,8 @@ import com.digero.maestro.abc.AbcExporter.ExportTrackInfo;
 import com.digero.maestro.midi.SequenceInfo;
 
 public class AbcToMidi {
+	private static final Logger log = Logger.getLogger("import.abc");
+
 	/** This is a static-only class */
 	private AbcToMidi() {
 	}
@@ -185,7 +184,7 @@ public class AbcToMidi {
 				int comment = line.indexOf('%');
 				if (comment >= 0)
 					line = line.substring(0, comment);
-				if (line.trim().length() == 0)
+				if (line.isBlank())
 					continue;
 
 				int chordSize = 0;
@@ -206,7 +205,7 @@ public class AbcToMidi {
 							}
 
 							accidentals.clear();
-							if (noteOffEvents.size() > 0 && track != null) {
+							if (!noteOffEvents.isEmpty() && track != null) {
 								track.add(MidiFactory.createEndOfTrackEvent(noteOffEvents.getLast().getTick()));
 							}
 							noteOffEvents.clear();
@@ -599,11 +598,11 @@ public class AbcToMidi {
 						if (octaveStr == null)
 							octaveStr = "";
 						if (noteLetter == 'z' || noteLetter == 'x') {
-							if (m.group(NOTE_ACCIDENTAL) != null && m.group(NOTE_ACCIDENTAL).length() > 0) {
+							if (m.group(NOTE_ACCIDENTAL) != null && !m.group(NOTE_ACCIDENTAL).isEmpty()) {
 								throw new ParseException("Unexpected accidental on a rest", fileName, lineNumber,
 										m.start(NOTE_ACCIDENTAL));
 							}
-							if (octaveStr.length() > 0) {
+							if (!octaveStr.isEmpty()) {
 								throw new ParseException("Unexpected octave indicator on a rest", fileName, lineNumber,
 										m.start(NOTE_OCTAVE));
 							}
@@ -686,6 +685,11 @@ public class AbcToMidi {
 									evt.setTick(Math.round(chordStartTick));
 									track.add(evt);
 									noteOffIter.remove();
+									if (enableLotroErrors) {
+										// This should maybe give a warning instead, not catastrophic failure
+										throw new LotroParseException("Overlapping note, lotro might not play part "+info.getPartNumber()+" correctly", fileName, lineNumber,
+												m.start());
+									}
 									break;
 								}
 							}
@@ -748,7 +752,7 @@ public class AbcToMidi {
 						lineAndColumn & 0xFFFF);
 			}
 		}
-		if (noteOffEvents.size() > 0 && track != null) {
+		if (!noteOffEvents.isEmpty() && track != null) {
 			track.add(MidiFactory.createEndOfTrackEvent(noteOffEvents.getLast().getTick()));
 		}
 
@@ -767,11 +771,7 @@ public class AbcToMidi {
 			int mpq = (int) MidiUtils.convertTempo(tempoEvent.getValue());
 			tracks[0].add(MidiFactory.createTempoEvent(mpq, tick));
 		}
-		if (tick == null) {
-			tracks[0].add(MidiFactory.createEndOfTrackEvent(1L));
-		} else {
-			tracks[0].add(MidiFactory.createEndOfTrackEvent(tick));
-		}
+        tracks[0].add(MidiFactory.createEndOfTrackEvent(Objects.requireNonNullElse(tick, 1L)));
 
 		// Add name and pan events
 		tracks[0].add(MidiFactory.createTrackNameEvent(abcInfo.getTitle()));
@@ -1053,7 +1053,7 @@ public class AbcToMidi {
 				if (p < 2 || p > 9)
 					throw new IllegalArgumentException();
 
-				if (parts.length >= 2 && parts[1].length() > 0)
+				if (parts.length >= 2 && !parts[1].isEmpty())
 					q = Integer.parseInt(parts[1]);
 				else if (p == 3 || p == 6)
 					q = 2;
@@ -1078,18 +1078,21 @@ public class AbcToMidi {
 			return "("+p+":"+q+":"+r;
 		}
 	}
-	
-	static {
-		//
-		// Unit test for tuplets
-		// TODO: Include compound time boolean in tests
-		//
-		String tests[][] = {{"3","(3:2:3"},{"3:2:","(3:2:3"},{"3:2","(3:2:3"},{"3::2","(3:2:2"},{"3::","(3:2:3"}};
-		for(String pair[] : tests) {
-			Tuplet tuplet = new Tuplet(pair[0], false);
-			boolean pass = tuplet.toString().equals(pair[1]);
-			if (!pass) System.out.println("\nTuplet unit test:  ("+pair[0]+" => "+tuplet+"   PASS = "+pass+"\n\n");
-			assert pass;
+
+	/**
+	 * Used by Unit test only
+	 *
+	 * @param test a pair of strings [input, expected]
+	 * @param compound meter
+	 * @return true if pass
+	 */
+	public static boolean testTuplet(String[] test, boolean compound) {
+		Tuplet tuplet = new Tuplet(test[0], compound);
+		boolean pass = tuplet.toString().equals(test[1]);
+		if (!pass) {
+			System.out.println("Actual: " + tuplet.toString());
+			System.out.println("Expected: " + test[1]);
 		}
+		return pass;
 	}
 }

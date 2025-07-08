@@ -1,4 +1,4 @@
-package com.digero.test;
+package com.digero;
 
 import static org.junit.jupiter.api.Assertions.*;
 
