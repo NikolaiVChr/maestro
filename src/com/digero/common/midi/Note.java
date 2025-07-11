@@ -22,6 +22,8 @@
 
 package com.digero.common.midi;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -83,6 +85,7 @@ public enum Note {
 		return id >= MIN_PLAYABLE.id && id <= MAX_PLAYABLE.id;
 	}
 
+	@Nullable
 	public static Note fromId(int id) {
 		if (id == REST.id)
 			return REST;

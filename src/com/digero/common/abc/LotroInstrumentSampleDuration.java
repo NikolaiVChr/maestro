@@ -71,20 +71,12 @@ public class LotroInstrumentSampleDuration {
 			String instr = splits[0].trim();
 			int note = Integer.parseInt(splits[1].trim());
 			long dura = Long.parseLong(splits[2].trim());
-			Map<Integer, Long> instrMap = db.get(instr);
-			if (instrMap == null) {
-				instrMap = new HashMap<>();
-				db.put(instr, instrMap);
-			}
-			instrMap.put(note, dura);
+            Map<Integer, Long> instrMap = db.computeIfAbsent(instr, k -> new HashMap<>());
+            instrMap.put(note, dura);
 			if (instr.equals(LotroInstrument.BASIC_FIDDLE.friendlyName) && note > 42) {
 				// Student fiddle need the basic fiddle notes also above 42.
-				Map<Integer, Long> instrMap2 = db.get(LotroInstrument.STUDENT_FIDDLE.friendlyName);
-				if (instrMap2 == null) {
-					instrMap2 = new HashMap<>();
-					db.put(LotroInstrument.STUDENT_FIDDLE.friendlyName, instrMap2);
-				}
-				instrMap2.put(note, dura);
+                Map<Integer, Long> instrMap2 = db.computeIfAbsent(LotroInstrument.STUDENT_FIDDLE.friendlyName, k -> new HashMap<>());
+                instrMap2.put(note, dura);
 			}
 			line = theFileReader.readLine();
 		}

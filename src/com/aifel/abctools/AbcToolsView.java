@@ -20,7 +20,6 @@ import java.awt.Component;
 import javax.swing.JSeparator;
 import javax.swing.JProgressBar;
 
-@SuppressWarnings("serial")
 public class AbcToolsView extends JFrame {
 
 	private JPanel contentPane;

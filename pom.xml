@@ -216,5 +216,20 @@
 	   		<artifactId>icu4j</artifactId><!-- used for charset decoding -->
 	   		<version>77.1</version>
 	 	</dependency>
+		<!-- https://mvnrepository.com/artifact/org.jetbrains/annotations -->
+		<!--
+		 This enables annotations like:
+
+		 @NotNull
+		 @Nullable
+		 @Contract
+
+		 Its about 17 KB
+		-->
+		<dependency>
+			<groupId>org.jetbrains</groupId>
+			<artifactId>annotations</artifactId>
+			<version>26.0.2</version>
+		</dependency>
 	</dependencies>
 </project>

@@ -18,16 +18,16 @@ import com.digero.maestro.view.MiscSettings;
 
 public class AbcTools {
 
-	private Preferences toolsPrefs = Preferences.userNodeForPackage(AbcTools.class);
-	private Preferences mergePrefs;
+	private final Preferences toolsPrefs = Preferences.userNodeForPackage(AbcTools.class);
+	private final Preferences mergePrefs;
 	
 	private volatile static AbcToolsView frame = null;
 	
 	@SuppressWarnings("unused")
 	private static AbcTools abcTools;
 
-	private AutoExporter autoInstance;
-	private MergeTool mergeInstance;
+	private final AutoExporter autoInstance;
+	private final MergeTool mergeInstance;
 	
 	public static void main(String[] args) throws IOException {
 		Logging.configure("ABC Tools");

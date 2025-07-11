@@ -50,7 +50,7 @@ public class TimingInfo {
 		str += "minNoteLengthTicks "+minNoteLengthTicks + "\n";
 		str += "swing "+useTripletTiming + "\n";
 		str += "tempo "+MidiUtils.convertTempo(roundTempoMPQ((double) tempoMPQ *origTempo/newTempo)) + " BPM\n";
-		str += "minDuration "+ (MidiUtils.ticks2microsec(minNoteLengthTicks, tempoMPQ, resolutionPPQ)) *origTempo/(long)(newTempo*1000L) + " ms\n";
+		str += "minDuration "+ (MidiUtils.ticks2microsec(minNoteLengthTicks, tempoMPQ, resolutionPPQ)) *origTempo/ (newTempo*1000L) + " ms\n";
 		return str;
 	}
 
@@ -155,7 +155,7 @@ public class TimingInfo {
 	}
 
 	public int getExportTempoMPQ() {
-		return (int) Math.round(tempoMPQ * origTempo/newTempo);
+		return tempoMPQ * origTempo/newTempo;
 	}
 
 	public int getExportTempoBPM() {

@@ -51,6 +51,7 @@ import com.digero.maestro.midi.MidiNoteEvent;
 import com.digero.maestro.midi.TrackInfo;
 import com.digero.maestro.view.ProjectFrame;
 
+@SuppressWarnings({"FieldCanBeLocal", "UnusedAssignment", "AssertWithSideEffects"})
 public class AbcExporter {
 	private static final Logger logNotes = Logger.getLogger("export.notes");//processing and fitting of notes to lotros abc format
 	private static final Logger logAbc = Logger.getLogger("export.abc");//creation of abc
@@ -300,16 +301,15 @@ public class AbcExporter {
 					if (endTick <= ne.getStartTick()) {
 						// This note has been turned off
 						onIter.remove();
-						if (organic) {
-							long off = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(endTick) + delayMicros);
-							lastEnd = Math.max(off, lastEnd);
-							track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off));
-						} else {
-							long off = qtm.microsToTick(qtm.tickToMicros(endTick) + delayMicros);
-							lastEnd = Math.max(off, lastEnd);
-							track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off));
-						}
-					}
+                        long off;
+                        if (organic) {
+                            off = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(endTick) + delayMicros);
+                        } else {
+                            off = qtm.microsToTick(qtm.tickToMicros(endTick) + delayMicros);
+                        }
+                        lastEnd = Math.max(off, lastEnd);
+                        track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off));
+                    }
 				}
 
 				long endTick = ne.getTieEnd().getEndTick();
@@ -570,7 +570,7 @@ public class AbcExporter {
 					out.println(" |");
 					bar.setLength(0);
 				}
-				long micros = (long) ((qtm.tickToMicrosABCOrganic(c.getStartTick()) - songStartMicros));
+				long micros = (qtm.tickToMicrosABCOrganic(c.getStartTick()) - songStartMicros);
 				out.printf(Locale.US, "%%  (%s) bar %.1f\n", Util.formatDuration(micros), part.getSequenceInfo().getDataCache().tickToBarNumberFloat(c.getStartTick()));
 
 				Arrays.fill(sharps, false);
@@ -2017,7 +2017,7 @@ public class AbcExporter {
 								break;
 							}
 							not sure why I did this for next notes, when
-							we are gonna come in here again anyway in next
+							we are going to come in here again anyway in next
 							iteration, if more notes needs this done.
 							*/
 							AbcNoteEvent next = ne; 
@@ -2768,8 +2768,8 @@ public class AbcExporter {
 			List<AbcNoteEvent> notesOn = new ArrayList<>();
 			Long lastEnd = null;
 			for (ChordOrganic chord : chords) {
-				
-				if (lastEnd != null) assert chord.getStartMicros() == lastEnd:"Gap between chords1. Start micros (second):"+chord.getStartMicros();
+
+                assert lastEnd == null || chord.getStartMicros() == lastEnd :"Gap between chords1. Start micros (second):"+chord.getStartMicros();
 				
 				for (AbcNoteEvent curr : chord.getNotes()) {
 					for (AbcNoteEvent pre : notesOn) {
@@ -2859,18 +2859,14 @@ public class AbcExporter {
 	private boolean isRattle(AbcPart part, AbcNoteEvent ne) {
 		if (part.getInstrument() == LotroInstrument.BASIC_DRUM) {
 			Note note = ne.note;
-			if (note == Note.G3 || note == Note.A3 || note ==  Note.B3 || note ==  Note.C4 || note ==  Note.Fs2 || note ==  Note.Gs2) {
-				return true;
-			}
+            return note == Note.G3 || note == Note.A3 || note == Note.B3 || note == Note.C4 || note == Note.Fs2 || note == Note.Gs2;
 		}
 		return false;
 	}
 	
 	private boolean isDrone(AbcPart part, AbcNoteEvent ne) {
 		if (part.getInstrument() == LotroInstrument.BASIC_BAGPIPE && ne.note != Note.REST) {
-			if (ne.note.id <= AbcConstants.BAGPIPE_LAST_DRONE_NOTE_ID) {
-				return true;
-			}
+            return ne.note.id <= AbcConstants.BAGPIPE_LAST_DRONE_NOTE_ID;
 		}
 		return false;
 	}	
@@ -2955,7 +2951,7 @@ public class AbcExporter {
 			@SuppressWarnings("unchecked")
 			List<GridLine>[] typeList = new List[] {};
 			Long[] typeLong = {};		
-			List<GridLine>[] vals = (List<GridLine>[]) microsWeights.values().toArray(typeList);
+			List<GridLine>[] vals = microsWeights.values().toArray(typeList);
 			Long[] keys = microsWeights.keySet().toArray(typeLong);
 			GridLine prevStart = null;
 			GridLine prevEnd = null;
@@ -3237,13 +3233,13 @@ public class AbcExporter {
 		List<AbcNoteEvent> snappedNotes = new ArrayList<>(notes.size());
 		
 		if (logNotes.getLevel() == Level.FINEST) {
-			String str = "";
+			StringBuilder str = new StringBuilder();
 			for (Long microGridLine : grid) {
 				if (microGridLine > 70000000L && microGridLine < 74000000) {
-					str += Util.formatDurationM(microGridLine)+", ";
+					str.append(Util.formatDurationM(microGridLine)).append(", ");
 				}
 			}
-			logNotes.finest(str);
+			logNotes.finest(str.toString());
 		}
 		
 	    for (AbcNoteEvent note : notes) {
@@ -3560,20 +3556,18 @@ public class AbcExporter {
 			 * some notes to be same dura as the chord.
 			 */
 	    	List<AbcNoteEvent> notesOn = new ArrayList<>();
-			ChordOrganic preChord = null;
 			for (ChordOrganic chord : chords) {
-				if (preChord != null) {
-					for (AbcNoteEvent curr : chord.getNotes()) {
-						for (AbcNoteEvent pre : notesOn) {
-							if (pre.note == curr.note) {
-								pre.endABCMicros = curr.startABCMicros;
-								assert curr.endABCMicros > pre.endABCMicros;
-								assert pre.note != Note.REST;
-								logNotes.finer(part.getAbcSong().getTitle()+ ": normalizing note!!!");
-							}
+				for (AbcNoteEvent curr : chord.getNotes()) {
+					for (AbcNoteEvent pre : notesOn) {
+						if (pre.note == curr.note) {
+							pre.endABCMicros = curr.startABCMicros;
+							assert curr.endABCMicros > pre.endABCMicros;
+							assert pre.note != Note.REST;
+							logNotes.finer(part.getAbcSong().getTitle()+ ": normalizing note!2!");
 						}
 					}
 				}
+
 				List<AbcNoteEvent> longerNotes = new ArrayList<>();
 				for (AbcNoteEvent ne : chord.getNotes()) {
 					if (ne.endABCMicros > chord.getShortest().endABCMicros) {

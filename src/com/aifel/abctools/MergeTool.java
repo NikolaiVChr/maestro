@@ -167,7 +167,7 @@ public class MergeTool {
 								instr = LotroInstrument.findInstrumentName(theFiles.get(fileNo).getName(), null);
 								if (instr != null) {
 									line += "[" + instr + "]";
-								} else if (instr == null) {
+								} else {
 									instr = LotroInstrument
 											.findInstrumentNameAggressively(theFiles.get(fileNo).getName(), null);
 									if (instr != null)
@@ -179,7 +179,7 @@ public class MergeTool {
 								}
 							}
 						} else if (type == 'Q') {
-							if (!"".equals(Q) && !Q.equals(value)) {
+							if (!Q.isEmpty() && !Q.equals(value)) {
 								mismatch = true;
 							}
 							Q = value;
@@ -201,31 +201,26 @@ public class MergeTool {
 				switch (misresult) {
 				case JOptionPane.YES_OPTION:
 					break;
-				case JOptionPane.NO_OPTION:
+				case JOptionPane.NO_OPTION, JOptionPane.CANCEL_OPTION:
 					frame.setTextFieldText("Cancelled merge.");
 					lastExport = null;
 					refreshTest();
 					return;
-				case JOptionPane.CANCEL_OPTION:
-					frame.setTextFieldText("Cancelled merge.");
-					lastExport = null;
-					refreshTest();
-					return;
-				}
+                }
 			}
 
-			String n1 = theFiles.get(0).getName();
+			String n1 = theFiles.getFirst().getName();
 			int dot = n1.lastIndexOf('.');
 			if (dot > 0)
 				n1 = n1.substring(0, dot);
 
-			String n2 = theFiles.get(theFiles.size() - 1).getName();
+			String n2 = theFiles.getLast().getName();
 			dot = n2.lastIndexOf('.');
 			if (dot > 0)
 				n2 = n2.substring(0, dot);
 
 			String newName = trimNonAbc(getLongestCommonSubstring(n1, n2));
-			if (newName.length() == 0)
+			if (newName.isEmpty())
 				newName = "mySong";
 			newName += Util.ABC_FILE_EXTENSION;
 			File newFile = new File(destFolder, newName);
@@ -322,13 +317,13 @@ public class MergeTool {
 	private static String trimNonAbc(String text) {
 		// remove leading and trailing '-' '_' and trailing '('
 		text = text.trim();
-		if (text.length() == 0)
+		if (text.isEmpty())
 			return text;
 		if (text.endsWith("-") || text.endsWith("_") || text.endsWith("(")) {
 			text = text.substring(0, text.length() - 1);
 		}
 		if (text.startsWith("-") || text.startsWith("_")) {
-			text = text.substring(1, text.length());
+			text = text.substring(1);
 		}
 		return text;
 	}

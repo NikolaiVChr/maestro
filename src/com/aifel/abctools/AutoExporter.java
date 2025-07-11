@@ -391,7 +391,7 @@ public class AutoExporter {
 	    @Override
 	    public FileVisitResult visitFileFailed(Path file,
 	                                       IOException exc) {
-	        System.err.println(exc);
+	        log.warning(exc.getMessage());
 	        return CONTINUE;
 	    }
 	}
