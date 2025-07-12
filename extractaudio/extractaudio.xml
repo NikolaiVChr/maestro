@@ -121,6 +121,4 @@
 	
 	<target name="ExtractAndMove" depends="Extract,MoveFiles" />
 	<target name="Done" depends="MoveFiles" />
-
-	<extension-point name="AntTest" description="Run any targets that are labeled as extensionOf='AntTest'" />
 </project>

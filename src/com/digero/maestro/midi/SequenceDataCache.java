@@ -630,11 +630,11 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		return prev;
 	}
 
-	public MapByChannel getBendMap() {
+	protected MapByChannel getBendMap() {
 		return bendMap;
 	}
 
-	public MapByChannel getPanMap() {
+	protected MapByChannel getPanMap() {
 		return panMap;
 	}
 

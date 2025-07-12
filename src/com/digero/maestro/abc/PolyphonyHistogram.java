@@ -267,7 +267,8 @@ public class PolyphonyHistogram   {
 		assert polyphony == 0;
 		if (maximum > 6) {
 			//System.out.println(" ++++ "+part.getAbcSong().getTitle()+" ("+part.getTitle()+"): "+maximum+" poly");
-			successes++;
+			int successesPlus = successes + 1;
+			successes = successesPlus;
 		}
 		return maximum;
 	}

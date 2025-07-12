@@ -39,7 +39,7 @@ public class TrackVolumeBar extends JPanel implements IDiscardable {
 	public static final int WIDTH = PTR_WIDTH * 5;
 
 	private volatile List<ActionListener> actionListeners;
-	private Object actionListenersMutex = new Object();
+	private final Object actionListenersMutex = new Object();
 
 	private static final int VALUE_GUTTER = 16;
 	private static final int STEP_SIZE = 16;

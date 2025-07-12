@@ -43,6 +43,4 @@
 	<target name="LotroInstruments.Clean">
 		<delete file="${build}\LotroInstruments.sf2" />
 	</target>
-
-	<extension-point name="AntTest" description="Run any targets that are labeled as extensionOf='AntTest'" />
 </project>

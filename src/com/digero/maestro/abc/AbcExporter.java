@@ -1134,7 +1134,7 @@ public class AbcExporter {
 				applyLegato(part, t, listOfNotes);
 
 				for (MidiNoteEvent ne : listOfNotes) {
-					// Skip notes that are outside of the play range.
+					// Skip notes that are outside the play range.
 					if (ne.getEndTick() <= exportStartTick || ne.getStartTick() >= exportEndTick) {
 						//if (part.mapNoteEvent(t, ne) != null && part.shouldPlay(ne, t)) System.out.println(metadata.getSongTitle()+": Skipping note that are outside songs time range.\n"+ne);
 						continue;
@@ -1645,7 +1645,7 @@ public class AbcExporter {
 				applyLegato(part, t, listOfNotes);
 				
 				for (MidiNoteEvent ne : listOfNotes) {
-					// Skip notes that are outside of the play range.
+					// Skip notes that are outside the play range.
 					if (ne.getEndTick() <= exportStartTick) {//  || ne.getStartTick() >= exportEndTick
 						//if (part.mapNoteEvent(t, ne) != null && part.shouldPlay(ne, t)) System.out.println(metadata.getSongTitle()+": Skipping note that are outside songs time range.\n"+ne);
 						continue;
@@ -3123,7 +3123,7 @@ public class AbcExporter {
 		        		// we move the curr later, but not later than its last line
 		        		currAverage.micros = Math.min(currAverage.lastMicros, currAverage.micros + needed);
 		        	} else {
-		        		// we exhausted all 4 options and give up on adjusting, the loop will never be infinite
+		        		// we exhausted all 4 options and now give up on adjusting, the loop will never be infinite
 		        		break;
 		        	}
 	        	}
