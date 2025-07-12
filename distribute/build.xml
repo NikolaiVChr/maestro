@@ -15,18 +15,8 @@
 	<property name="basename.AbcPlayer" value="AbcPlayer" />
 	<property name="basename.Maestro" value="Maestro" />
 	<property name="basename.AbcTools" value="AbcTools" />
-	<loadfile property="version.AbcPlayer" srcFile="${src}/com/digero/abcplayer/version.txt">
-		<filterchain>
-			<striplinebreaks/>
-			<trim/>
-		</filterchain>
-	</loadfile>
-	<loadfile property="version.Maestro" srcFile="${src}/com/digero/maestro/version.txt">
-		<filterchain>
-			<striplinebreaks/>
-			<trim/>
-		</filterchain>
-	</loadfile>
+	<property file="${src}/com/digero/abcplayer/version.txt" />
+	<property file="${src}/com/digero/maestro/version.txt" />
 	<property name="version.AbcTools" value="${version.AbcPlayer}" />
 	<condition property="isWindows">
 		<os family="windows" />
