@@ -1,5 +1,7 @@
 package com.digero.common.util;
 
+import org.jetbrains.annotations.NotNull;
+
 public class Version implements Comparable<Version> {
 	public static Version parseVersion(String versionString) {
 		if (versionString == null)
@@ -66,7 +68,7 @@ public class Version implements Comparable<Version> {
 	}
 
 	@Override
-	public int compareTo(Version that) {
+	public int compareTo(@NotNull Version that) {
 		if (that == null)
 			return 1;
 

@@ -5,7 +5,6 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -25,7 +24,7 @@ public class MidiText {
 	private static final Logger log = Logger.getLogger("import.midi.text");
 	
 	private static final Pattern KARAKAN_PART_PATTERN = Pattern.compile("\\[P(\\d+)]");
-	private SequenceDataCache cache;
+	private final SequenceDataCache cache;
 	public TreeSet<TextFragment> text = new TreeSet<>();
 	public Map<TextFragment.Format,Integer> textStats = new HashMap<>();
 	public Map<Integer,Integer> trackStats = new HashMap<>();
@@ -201,30 +200,30 @@ public class MidiText {
 							fragment.format = Format.UNKNOWN;
 							break;
 					}
-				} else if (data[0] == (byte) '/' && fragment.source == Source.TEXT && data.length > 0) {
+				} else if (data[0] == (byte) '/' && fragment.source == Source.TEXT) {
 					valid = true;
 					offset = 1;
 					fragment.reaction = Reaction.NEWLINE_OLD;
 					fragment.format = Format.SOFT_KARAOKE;
 					log.finest("Newline: "+MidiUtils.formatBytesHexOnly(Arrays.copyOfRange(data, offset, data.length)));
-				} else if (data[0] == (byte) '\\' && fragment.source == Source.TEXT && data.length > 0) {
+				} else if (data[0] == (byte) '\\' && fragment.source == Source.TEXT) {
 					valid = true;
 					offset = 1;
 					fragment.reaction = Reaction.CLEAR_OLD;
 					fragment.format = Format.SOFT_KARAOKE;
 					log.finest("Clear: "+MidiUtils.formatBytesHexOnly(data));
-				} else if (data[0] == (byte) '/' && fragment.source == Source.LYRIC && data.length > 0) {
+				} else if (data[0] == (byte) '/' && fragment.source == Source.LYRIC) {
 					valid = true;
 					offset = 1;
 					fragment.reaction = Reaction.NEWLINE_NEW;
 					fragment.format = Format.UNKNOWN;
-				} else if (data[0] == (byte) '\\' && fragment.source == Source.LYRIC && data.length > 0) {
+				} else if (data[0] == (byte) '\\' && fragment.source == Source.LYRIC) {
 					valid = true;
 					offset = 1;
 					fragment.reaction = Reaction.CLEAR_NEW;
 					fragment.format = Format.UNKNOWN;
 					log.fine("Clear: "+MidiUtils.formatBytesHexOnly(data));
-				} else if (data.length > 0) {
+				} else {
 					valid = true;
 					fragment.reaction = Reaction.SYLLABLE;
 					fragment.format = fragment.source == Source.TEXT?Format.SOFT_KARAOKE:Format.TUNE1000;
@@ -269,11 +268,11 @@ public class MidiText {
 	    while (m.find()) {
 	        parts.add(Integer.parseInt(m.group(1)));
 		}
-	    if (parts.size() > 0 && !parts.contains(1)) {
+	    if (!parts.isEmpty() && !parts.contains(1)) {
 	    	// not vocal #1
 	    	fragment.format = Format.KARAKAN;
 	    	return false;
-	    } else if (parts.size() > 0) {
+	    } else if (!parts.isEmpty()) {
 	    	syllable = syllable.substring(4);
 	    	fragment.format = Format.KARAKAN;
 	    }
@@ -318,8 +317,7 @@ public class MidiText {
 						break;
 				}
 				if (valid) {
-					byte[] data = Arrays.copyOfRange(message, 7, message.length - 1);
-					fragment.sylineBytes = data;
+                    fragment.sylineBytes = Arrays.copyOfRange(message, 7, message.length - 1);
 					fragment.format = Format.MIDISOFT;
 					fragment.source = Source.SYSEX;
 					fragment.track = track;
@@ -343,15 +341,15 @@ public class MidiText {
 	 * @return string describing count of how many of each lyrics format was seen in song.
 	 */
 	public String getTextStats() {
-		String str = "";
+		StringBuilder str = new StringBuilder();
 		for (Format type : Format.values()) {
 			Integer count = textStats.get(type);
 			if (count != null) {
-				if (!str.isEmpty()) str += ", "; 
-				str += type+": "+count; 
+				if (!str.isEmpty()) str.append(", ");
+				str.append(type).append(": ").append(count);
 			}
 		}
-		return str;
+		return str.toString();
 	}
 	
 	/**
@@ -398,12 +396,12 @@ public class MidiText {
 	}
 	
 	public String getText() {
-		String str = "";
+		StringBuilder str = new StringBuilder();
 		
-		if (text.size() == 0) {
+		if (text.isEmpty()) {
 			//important for abc tool that decoder don't get called,
 			//since its not present in its jar.
-			return str;
+			return str.toString();
 		}
 		int mainTrack = calcWinningTrack();
 		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
@@ -459,33 +457,31 @@ public class MidiText {
 					prevClear = fraction.sylineBytes;
 					break;
 				case Reaction.TITLE:
-					str += "Title: "+decode(fraction.sylineBytes)+"\n";
+					str.append("Title: ").append(decode(fraction.sylineBytes)).append("\n");
 					break;
 				case Reaction.RIGHTS:
 					//str += "Lyrics copyright: "+decode(fraction.sylineBytes)+"\n";
 					break;
 				case Reaction.LANGUAGE:
-					str += "Language: "+decode(fraction.sylineBytes)+"\n";
+					str.append("Language: ").append(decode(fraction.sylineBytes)).append("\n");
 					break;
 				case Reaction.INFO:
-					str += "Info: "+decode(fraction.sylineBytes)+"\n";
+					str.append("Info: ").append(decode(fraction.sylineBytes)).append("\n");
 				case Reaction.META_LINE:
-					str += fraction.prefix+decode(fraction.sylineBytes)+"\n";
+					str.append(fraction.prefix).append(decode(fraction.sylineBytes)).append("\n");
 				default:
 					break;
 			}
 			prev = fraction.reaction;
 		}
-		str += cleanSyllable(decode(bytes.toByteArray()));
-		return str;
+		str.append(cleanSyllable(decode(bytes.toByteArray())));
+		return str.toString();
 	}
 	
 	/**
 	 * Call me after decoding syllable/line
-	 * 
-	 * @param str
-	 * @return
-	 */
+	 *
+     */
 	private String cleanSyllable(String str) {
 		str = str.replace("STARTAKKORD", "");
 		str = str.replace("|C:|", "");//chorus start
@@ -514,7 +510,7 @@ public class MidiText {
 	    out.write(data, 0, end);
 	}
 
-	public class TextFragment implements Comparable<TextFragment> {
+	public static class TextFragment implements Comparable<TextFragment> {
 		long tick;
 		Format format;
 		Source source;

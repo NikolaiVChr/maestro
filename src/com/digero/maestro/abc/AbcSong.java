@@ -402,7 +402,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				df.setTimeZone(TimeZone.getTimeZone("GMT"));
 				try {
 					firstExportTime = df.parse(exportTimeStr);
-				} catch (java.text.ParseException e) {					
+				} catch (java.text.ParseException ignored) {
 				}
 			} else if (exportFile != null) {
 				// Project has been saved before, but we don't know when.
@@ -466,11 +466,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			// Convert the msx 1.0.X format into Maestro version format.
 			fileVersion = new Version(2, 5, 0, fileVersion.getRevision());
 		}
-		if (fileVersion.compareTo(SONG_FILE_VERSION) > 0) {
-			return true;
-		}
-		return false;
-	}
+        return fileVersion.compareTo(SONG_FILE_VERSION) > 0;
+    }
 
 	private void tryToLoadFromFile(FileResolver fileResolver, boolean isAbc, MiscSettings miscSettings) {
 		if (newSourceFile == null) newSourceFile = sourceFile;
@@ -553,12 +550,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 	/**
 	 * Loading tuneline from xml
-	 * 
-	 * @param songElement
-	 * @param fileVersion
-	 * @throws XPathExpressionException
-	 * @throws ParseException
-	 */
+	 *
+     */
 	private void handleTuneSections(Element songElement, Version fileVersion) throws XPathExpressionException, ParseException {
 		float lastEnd = 0;
 		for (Element tuneEle : XmlUtil.selectElements(songElement, "tuneSection")) {
@@ -645,11 +638,11 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		SaveUtil.appendChildTextElement(songEle, "title", title);
 		SaveUtil.appendChildTextElement(songEle, "composer", composer);
 		SaveUtil.appendChildTextElement(songEle, "transcriber", transcriber);
-		if (genre.length() > 0)
+		if (!genre.isEmpty())
 			SaveUtil.appendChildTextElement(songEle, "genre", genre);
-		if (mood.length() > 0)
+		if (!mood.isEmpty())
 			SaveUtil.appendChildTextElement(songEle, "mood", mood);
-		if (note.length() > 0)
+		if (!note.isEmpty())
 			SaveUtil.appendChildTextElement(songEle, "note", note);
 		if (firstExportTime != null && firstExportTime.getTime() != 0L) {
 			DateFormat df = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
@@ -1186,18 +1179,18 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	 * Dont use this without setting firstNumber on parts first
 	 * 
 	 */
-	private Comparator<AbcPart> partNumberComparator = new Comparator<AbcPart>() {
-		@Override
-		public int compare(AbcPart p1, AbcPart p2) {
-			if (p1.firstNumber != p2.firstNumber)
-				return Integer.compare(p1.firstNumber, p2.firstNumber);
-			return Integer.compare(p1.getPartNumber(), p2.getPartNumber());
-		}
-	};
+	private final Comparator<AbcPart> partNumberComparator = new Comparator<>() {
+        @Override
+        public int compare(AbcPart p1, AbcPart p2) {
+            if (p1.firstNumber != p2.firstNumber)
+                return Integer.compare(p1.firstNumber, p2.firstNumber);
+            return Integer.compare(p1.getPartNumber(), p2.getPartNumber());
+        }
+    };
 	
 	public boolean suppressPartSort = false;
 
-	private Listener<AbcPartEvent> abcPartListener = e -> {
+	private final Listener<AbcPartEvent> abcPartListener = e -> {
 		if (e.getProperty() == AbcPartProperty.PART_NUMBER && !suppressPartSort && sorted) {
 			populateFirstNumbers();
 			parts.sort(partNumberComparator);
@@ -1230,7 +1223,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			} else if (instrParts.size() == 1) {
 				// System.out.println(partIndex + ": " + instrParts.get(0).getInstrument() + " =
 				// " + 0);
-				instrParts.get(0).setTypeNumber(0);
+				instrParts.getFirst().setTypeNumber(0);
 			}
 		}
 		// System.out.println();

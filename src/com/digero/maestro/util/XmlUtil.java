@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.AbstractList;
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -189,7 +190,7 @@ public class XmlUtil {
 
 	public static Document openDocument(InputStream stream) throws SAXException, IOException {
 		try {
-			BufferedReader reader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
+			BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
 	        StringBuilder xmlBuilder = new StringBuilder();
 	        String line;
 	        
@@ -203,7 +204,7 @@ public class XmlUtil {
 	        String sanitizedXml = xmlBuilder.toString(); // Final sanitized XML string
 
 	        // Convert sanitized XML string back to an InputStream
-	        InputStream sanitizedStream = new ByteArrayInputStream(sanitizedXml.getBytes("UTF-8"));
+	        InputStream sanitizedStream = new ByteArrayInputStream(sanitizedXml.getBytes(StandardCharsets.UTF_8));
 			LineNumberHandler handler = new LineNumberHandler();
 			SAXParserFactory.newInstance().newSAXParser().parse(sanitizedStream, handler);
 			return handler.getDocument();
@@ -248,8 +249,8 @@ public class XmlUtil {
 
 	private static class LineNumberHandler extends DefaultHandler {
 		private Document doc = null;
-		private Deque<Node> stack = new ArrayDeque<>();
-		private StringBuilder text = new StringBuilder();
+		private final Deque<Node> stack = new ArrayDeque<>();
+		private final StringBuilder text = new StringBuilder();
 		private Locator locator = null;
 
 		public Document getDocument() {
@@ -257,7 +258,7 @@ public class XmlUtil {
 		}
 
 		private void appendText() {
-			if (text.length() > 0)
+			if (!text.isEmpty())
 				stack.peek().appendChild(doc.createTextNode(text.toString()));
 			text.setLength(0);
 		}
@@ -353,7 +354,7 @@ public class XmlUtil {
 	// XPath
 	//
 
-	private static XPath xpath = XPathFactory.newInstance().newXPath();
+	private static final XPath xpath = XPathFactory.newInstance().newXPath();
 
 	public static Node selectSingleNode(Node fromNode, String xpathString) throws XPathExpressionException {
 		return (Node) xpath.evaluate(xpathString, fromNode, XPathConstants.NODE);
@@ -378,9 +379,8 @@ public class XmlUtil {
 
 	public static String formatException(SAXException e) {
 		String msg = e.getMessage();
-		if (e instanceof SAXParseException) {
-			SAXParseException e2 = (SAXParseException) e;
-			if (e2.getLineNumber() >= 0) {
+		if (e instanceof SAXParseException e2) {
+            if (e2.getLineNumber() >= 0) {
 				msg += " (line " + e2.getLineNumber();
 				if (e2.getColumnNumber() >= 0)
 					msg += ", column " + e2.getColumnNumber();

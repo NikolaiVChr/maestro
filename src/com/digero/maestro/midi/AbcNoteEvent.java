@@ -67,8 +67,8 @@ public class AbcNoteEvent extends NoteEvent {
 	 * Only called directly by multi-stage organic
 	 */
 	public AbcNoteEvent splitWithTieAtTick(long splitPointTick, long splitPointMicros) {
-		assert splitPointTick >= startTick:"split before beginning ("+splitPointTick+","+Util.formatDurationM(splitPointMicros)+") "+toString();
-		assert splitPointTick != startTick:"split at beginning ("+splitPointTick+","+Util.formatDurationM(splitPointMicros)+") "+toString();
+		assert splitPointTick >= startTick:"split before beginning ("+splitPointTick+","+Util.formatDurationM(splitPointMicros)+") "+ this;
+		assert splitPointTick != startTick:"split at beginning ("+splitPointTick+","+Util.formatDurationM(splitPointMicros)+") "+ this;
 		assert splitPointTick < endTick:"split after end";
 
 		AbcNoteEvent next = new AbcNoteEvent(note, velocity, splitPointTick, endTick, tempoCache, this.origNote);

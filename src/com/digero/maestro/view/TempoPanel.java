@@ -151,7 +151,7 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
 		minBPM = 60;
 		maxBPM = 160;
 		for (TimingInfoEvent event : events3) {
-			int bpm = event.info.getTempoBPM();
+			int bpm = event.info().getTempoBPM();
 			if (bpm < minBPM)
 				minBPM = bpm;
 			if (bpm > maxBPM)
@@ -253,10 +253,10 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
 				TimingInfoEvent prevEvent = null;
 				for (TimingInfoEvent event : events2) {
 					if (prevEvent != null) {
-						int id = tempoToNoteId(prevEvent.info.getTempoMPQ(), minBPM, maxBPM);
+						int id = tempoToNoteId(prevEvent.info().getTempoMPQ(), minBPM, maxBPM);
 						Note fakenote = Note.fromId(id);
 						assert fakenote != null : "If this happens then something is wrong with min/max BPM";
-						if (fakenote != null) events.add(new FakeNoteEvent(fakenote, prevEvent.tick, event.tick, sequenceInfo.getDataCache()));
+						if (fakenote != null) events.add(new FakeNoteEvent(fakenote, prevEvent.tick(), event.tick(), sequenceInfo.getDataCache()));
 					} else {
 						//int bpm = (int) Math.round(MidiUtils.convertTempo(event.info.getTempoMPQ()));
 						//System.out.println(bpm);
@@ -265,9 +265,9 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
 				}
 				
 				if (prevEvent != null) {
-					int id = tempoToNoteId(prevEvent.info.getTempoMPQ(), minBPM, maxBPM);
+					int id = tempoToNoteId(prevEvent.info().getTempoMPQ(), minBPM, maxBPM);
 					events.add(
-							new FakeNoteEvent(Note.fromId(id), prevEvent.tick, sequenceInfo.getDataCache().getSongLengthTicks(), sequenceInfo.getDataCache()));
+							new FakeNoteEvent(Note.fromId(id), prevEvent.tick(), sequenceInfo.getDataCache().getSongLengthTicks(), sequenceInfo.getDataCache()));
 				} else {
 					int id = tempoToNoteId(sequenceInfo.getPrimaryTempoMPQ(), minBPM, maxBPM);
 					events.add(new FakeNoteEvent(Note.fromId(id), 0, sequenceInfo.getDataCache().getSongLengthTicks(), sequenceInfo.getDataCache()));

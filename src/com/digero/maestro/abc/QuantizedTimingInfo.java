@@ -26,6 +26,7 @@ import com.digero.maestro.midi.SequenceDataCache.TempoEvent;
 import com.digero.maestro.midi.SequenceInfo;
 import com.digero.common.midi.MidiConstants;
 import com.digero.common.midi.MidiUtils;
+import org.jetbrains.annotations.NotNull;
 
 public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 	private static final Logger log = Logger.getLogger("export.timing");
@@ -1097,25 +1098,15 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		return timingInfoByTickOrganic;
 	}
 
-	public static class TimingInfoEvent {
-		public final long tick;
-		public final long micros;
-		public final double barNumber; // May start in the middle of a bar
+	/**
+	 * @param barNumber May start in the middle of a bar
+	 */
+	public record TimingInfoEvent(long tick, long micros, double barNumber, TimingInfo info, TimingInfo infoOdd) {
 
-		public final TimingInfo info;
-		public final TimingInfo infoOdd;
-
-		public TimingInfoEvent(long tick, long micros, double barNumber, TimingInfo info, TimingInfo infoOdd) {
-			this.tick = tick;
-			this.micros = micros;
-			this.barNumber = barNumber;
-			this.info = info;
-			this.infoOdd = infoOdd;
-		}
-		
 		@Override
+		@NotNull
 		public String toString() {
-			return "Tick="+tick+" micros="+micros+" bar="+barNumber+(info!=null&&infoOdd!=null?" Info":(infoOdd==null&&info!=null?" InfoOdd":(info!=null?" Dual":" Faulty")));			
+			return "Tick=" + tick + " micros=" + micros + " bar=" + barNumber + (info != null && infoOdd != null ? " Info" : (infoOdd == null && info != null ? " InfoOdd" : (info != null ? " Dual" : " Faulty")));
 		}
 	}
 
@@ -1141,9 +1132,7 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 
 	/**
 	 * Only used by tempopanel
-	 * @param thumbTick
-	 * @return
-	 */
+     */
 	public int getAbcTempoMPQForTick(long thumbTick) {
 		TimingInfoEvent entry;
 		if (organic) {

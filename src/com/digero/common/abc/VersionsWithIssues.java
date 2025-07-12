@@ -10,17 +10,28 @@ public class VersionsWithIssues {
 	static List<IssueVersion> versionsWithIssues = new ArrayList<>();
 	
 	static {
-		versionsWithIssues.add(new IssueVersion(new Version(3,4,4), "Notes can be missing if they had no rest inbetween them and were same pitch."));//beta
-		versionsWithIssues.add(new IssueVersion(new Version(3,3,9), new Version(3,3,13), "Song might have wrong tempo until first tempochange."));//beta
-		versionsWithIssues.add(new IssueVersion(new Version(3,3,7), "Notes can be missing."));
-		versionsWithIssues.add(new IssueVersion(new Version(3,3,6), "Possible issue with delayed start or ending."));
-		versionsWithIssues.add(new IssueVersion(new Version(3,2,0), "Song duration in part names can be longer than actual song length."));
-		versionsWithIssues.add(new IssueVersion(new Version(3,1,9), new Version(3,1,10), "Notes can be missing."));
-		versionsWithIssues.add(new IssueVersion(new Version(2,5,0,118), "Initial silence might not have been removed."));//beta of auto exporter
-		versionsWithIssues.add(new IssueVersion(new Version(3,6,6), new Version(4,0,11), "Notes can be missing or out of rhythm (if exported with organic)."));//beta of organic
-		versionsWithIssues.add(new IssueVersion(new Version(4,2,4), new Version(4,2,9), "Parts can be silenced in lotro (if exported with organic singlestage)."));
-		versionsWithIssues.add(new IssueVersion(new Version(4,2,10), "Rare chance of ties having rest between them in organic single-stage."));
-		versionsWithIssues.add(new IssueVersion(new Version(4,2,14), new Version(4,2,16), "Notes can be cut short (if exported with organic and poly 6+)."));//beta
+		versionsWithIssues.add(new IssueVersion(new Version(3,4,4),
+				"Notes can be missing if they had no rest inbetween them and were same pitch."));//beta
+		versionsWithIssues.add(new IssueVersion(new Version(3,3,9), new Version(3,3,13),
+				"Song might have wrong tempo until first tempochange."));//beta
+		versionsWithIssues.add(new IssueVersion(new Version(3,3,7),
+				"Notes can be missing."));
+		versionsWithIssues.add(new IssueVersion(new Version(3,3,6),
+				"Possible issue with delayed start or ending."));
+		versionsWithIssues.add(new IssueVersion(new Version(3,2,0),
+				"Song duration in part names can be longer than actual song length."));
+		versionsWithIssues.add(new IssueVersion(new Version(3,1,9), new Version(3,1,10),
+				"Notes can be missing."));
+		versionsWithIssues.add(new IssueVersion(new Version(2,5,0,118),
+				"Initial silence might not have been removed."));//beta of auto exporter
+		versionsWithIssues.add(new IssueVersion(new Version(3,6,6), new Version(4,0,11),
+				"Notes can be missing or out of rhythm (if exported with organic)."));//beta of organic
+		versionsWithIssues.add(new IssueVersion(new Version(4,2,4), new Version(4,2,9),
+				"Parts can be silenced in lotro (if exported with organic singlestage)."));
+		versionsWithIssues.add(new IssueVersion(new Version(4,2,10),
+				"Rare chance of ties having rest between them in organic single-stage."));
+		versionsWithIssues.add(new IssueVersion(new Version(4,2,14), new Version(4,2,16),
+				"Notes can be cut short (if exported with organic and poly 6+)."));//beta
 	}
 	
 	/**

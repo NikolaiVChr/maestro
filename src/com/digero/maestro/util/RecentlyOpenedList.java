@@ -10,12 +10,12 @@ public class RecentlyOpenedList {
 	
 	private static final int RECENT_LIST_MAX_SIZE = 16;
 	
-	private Preferences prefs;
-	private LinkedList<File> openedFiles;
+	private final Preferences prefs;
+	private final LinkedList<File> openedFiles;
 	
 	public RecentlyOpenedList(Preferences prefs) {
 		this.prefs = prefs;
-		openedFiles = new LinkedList<File>();
+		openedFiles = new LinkedList<>();
 	}
 	
 	public LinkedList<File> getList() {

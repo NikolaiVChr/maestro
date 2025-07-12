@@ -16,7 +16,7 @@ public class ParseException extends Exception {
 
 	private static String formatMessage(String message, String fileName, int line, int column) {
 		String msg = "Error";
-		if (fileName != null && fileName.length() > 0)
+		if (fileName != null && !fileName.isEmpty())
 			msg += " reading " + fileName;
 
 		if (line >= 0) {

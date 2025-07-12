@@ -146,7 +146,7 @@ public class SaveUtil {
 			return defaultValue;
 
 		String text = node.getTextContent();
-		if (text == null || text.equals(""))
+		if (text == null || text.isEmpty())
 			return defaultValue;
 
 		try {
@@ -173,7 +173,7 @@ public class SaveUtil {
 	public static ParseException invalidValueException(Node node, String message) {
 		SaveUtil.clean(node);
 		String msg = "Invalid value \"" + node.getTextContent() + "\" for " + node.getNodeName();
-		if (message != null && message.length() > 0)
+		if (message != null && !message.isEmpty())
 			msg += ": " + message;
 
 		File f = XmlUtil.getDocumentFile(node.getOwnerDocument());
@@ -192,7 +192,7 @@ public class SaveUtil {
 				clean(child);
 			else if (nodeType == Node.TEXT_NODE) {
 				String trimmedNodeVal = child.getNodeValue().trim();
-				if (trimmedNodeVal.length() == 0)
+				if (trimmedNodeVal.isEmpty())
 					node.removeChild(child);
 				else
 					child.setNodeValue(trimmedNodeVal);

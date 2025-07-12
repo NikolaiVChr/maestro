@@ -26,8 +26,8 @@ public class TimingInfo {
 	private final int tempoMPQ;
 	private final int resolutionPPQ;
 	
-	private int newTempo;
-	private int origTempo;
+	private final int newTempo;
+	private final int origTempo;
 
 	private final TimeSignature meter;
 
@@ -35,7 +35,7 @@ public class TimingInfo {
 	private final int minNoteDivisor;
 	private final long minNoteLengthTicks;
 	private final long maxNoteLengthTicks;
-	private boolean useTripletTiming;
+	private final boolean useTripletTiming;
 	private boolean organic = false;
 
 	@Override

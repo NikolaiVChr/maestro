@@ -2,7 +2,6 @@ package com.digero.maestro.abc;
 
 import java.util.EventObject;
 
-@SuppressWarnings("serial")
 public class AbcPartEvent extends EventObject {
 	public enum AbcPartProperty {
 		TITLE(false), //

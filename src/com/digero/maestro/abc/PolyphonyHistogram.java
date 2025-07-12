@@ -23,12 +23,12 @@ import com.digero.maestro.midi.Chord;
 
 public class PolyphonyHistogram   {
 
-	private static Map<AbcPart, TreeMap<Long, Pair<Long,Integer>>> histogramData = new HashMap<>();
+	private static final Map<AbcPart, TreeMap<Long, Pair<Long,Integer>>> histogramData = new HashMap<>();
 	private static TreeMap<Long, Pair<Long,Integer>> sum = new TreeMap<>();// <micros,numberOfNotes>
 	private static boolean dirty = false;
 	private static int max = 0;
 	public static boolean enabled = true;// set to true to enable this system, set to false to save cpu power.
-	private static Listener<SequencerEvent> listener = new MyListener();
+	private static final Listener<SequencerEvent> listener = new MyListener();
 	private static LotroSequencerWrapper abcSeq = null;
 	
 	public static volatile int successes = 0;//debug for abctools (organic1=118 organic2=44) approx factor 3
@@ -62,11 +62,8 @@ public class PolyphonyHistogram   {
 	
 	/**
 	 * Called from AbcExporter.java
-	 *  
-	 * @param part
-	 * @param chords
-	 * @throws IOException 
-	 */
+	 *
+     */
 	public static void count(AbcPart part, List<Chord> chords, boolean organic, QuantizedTimingInfo qtm) throws IOException {
 		if (!enabled) return;
 		
@@ -104,12 +101,7 @@ public class PolyphonyHistogram   {
 						long endMax = startMicros + duraMicros;
 						endMicros = Math.min(endMax, endMicros);
 					}
-					if (organic) {
-						endTick   = qtm.microsToTickABCOrganic(endMicros);
-					} else {
-						endTick   = qtm.microsToTickABC(endMicros);
-					}
-				} else {
+                } else {
 					int pitch = event.note.id;
 					if (part.getInstrument() == LotroInstrument.BASIC_COWBELL || part.getInstrument() == LotroInstrument.MOOR_COWBELL) {
 						pitch = AbcConstants.COWBELL_NOTE_ID;
@@ -120,13 +112,13 @@ public class PolyphonyHistogram   {
 						duraMicros = AbcConstants.ONE_SECOND_MICROS;
 					}
 					endMicros = startMicros + duraMicros;
-					if (organic) {
-						endTick   = qtm.microsToTickABCOrganic(endMicros);
-					} else {
-						endTick   = qtm.microsToTickABC(endMicros);
-					}
-				}
-				if (endMicros == startMicros) continue;
+                }
+                if (organic) {
+                    endTick   = qtm.microsToTickABCOrganic(endMicros);
+                } else {
+                    endTick   = qtm.microsToTickABC(endMicros);
+                }
+                if (endMicros == startMicros) continue;
 								
 				Pair<Long,Integer> oldStart = partMap.get(startMicros);
 				if (oldStart == null) {
@@ -160,8 +152,7 @@ public class PolyphonyHistogram   {
 	 * playing in part.
 	 * 
 	 * This method does NOT take decay in consideration.
-	 * @return 
-	 *  
+     *
 	 */
 	public static int maxPolyInPart(AbcPart part, List<Chord> chords, boolean organic, QuantizedTimingInfo qtm) throws IOException {
 	
@@ -199,12 +190,7 @@ public class PolyphonyHistogram   {
 						long endMax = startMicros + duraMicros;
 						endMicros = Math.min(endMax, endMicros);
 					}
-					if (organic) {
-						endTick   = qtm.microsToTickABCOrganic(endMicros);
-					} else {
-						endTick   = qtm.microsToTickABC(endMicros);
-					}
-				} else {
+                } else {
 					int pitch = event.note.id;
 					if (part.getInstrument() == LotroInstrument.BASIC_COWBELL || part.getInstrument() == LotroInstrument.MOOR_COWBELL) {
 						pitch = AbcConstants.COWBELL_NOTE_ID;
@@ -218,13 +204,13 @@ public class PolyphonyHistogram   {
 					long endMax = startMicros + duraMicros;
 					endMicros = Math.min(endMax, endMicros);
 					*/
-					if (organic) {
-						endTick   = qtm.microsToTickABCOrganic(endMicros);
-					} else {
-						endTick   = qtm.microsToTickABC(endMicros);
-					}
-				}
-				if (endMicros == startMicros) continue;
+                }
+                if (organic) {
+                    endTick   = qtm.microsToTickABCOrganic(endMicros);
+                } else {
+                    endTick   = qtm.microsToTickABC(endMicros);
+                }
+                if (endMicros == startMicros) continue;
 								
 				Pair<Long,Integer> oldStart = partMap.get(startMicros);
 				if (oldStart == null) {
@@ -288,14 +274,13 @@ public class PolyphonyHistogram   {
 	
 	/**
 	 * Expensive method, so only run when needed.
-	 * 
-	 * @param song
-	 */
+	 *
+     */
 	public static void sumUp(AbcSong song) {
 		sum = new TreeMap<>();
 		max = 0;
 		Set<AbcPart> partSet = new HashSet<>(histogramData.keySet());
-		List<TreeMap<Long, Pair<Long,Integer>>> treeList = new ArrayList<TreeMap<Long, Pair<Long,Integer>>>();
+		List<TreeMap<Long, Pair<Long,Integer>>> treeList = new ArrayList<>();
 		for (AbcPart part : partSet) {
 			if (part.discarded) {
 				histogramData.remove(part);
@@ -359,7 +344,7 @@ public class PolyphonyHistogram   {
 	 * Request the number of concurrently playing notes.
 	 * Be sure to call sumUp first if is dirty.
 	 * 
-	 * @return Number of notes being played
+	 * @return Set with Number of notes being played at specific micros
 	 */
 	public static Set<Entry<Long, Pair<Long,Integer>>> getAll() {
 		return sum.entrySet();

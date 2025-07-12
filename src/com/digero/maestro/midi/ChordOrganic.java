@@ -1,14 +1,8 @@
 package com.digero.maestro.midi;
 
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
-import java.util.logging.Logger;
 
-import com.digero.common.abc.AbcConstants;
-import com.digero.common.abc.Dynamics;
-import com.digero.common.midi.ITempoCache;
 import com.digero.common.midi.Note;
 import com.digero.common.util.Util;
 import com.digero.maestro.abc.AbcPart;
@@ -28,7 +22,7 @@ public class ChordOrganic extends Chord {
 	public int arp = 0; // arp notes added to this
 	public boolean delete = false;
 	private boolean hadRest = false;
-	private QuantizedTimingInfo qtm;
+	private final QuantizedTimingInfo qtm;
 
 	public ChordOrganic(AbcNoteEvent firstNote, QuantizedTimingInfo qtm) {
 		super(firstNote);
@@ -48,7 +42,7 @@ public class ChordOrganic extends Chord {
 	
 	public void recalcEndMicros() {
 		if (!notes.isEmpty()) {
-			endMicros = notes.get(0).endABCMicros;
+			endMicros = notes.getFirst().endABCMicros;
 			for (int k = 1; k < notes.size(); k++) {
 				AbcNoteEvent note = notes.get(k);
 				if (note.endABCMicros < endMicros) {
@@ -65,9 +59,8 @@ public class ChordOrganic extends Chord {
 	
 	/**
 	 * Wont change anything if the chord is a rest with no notes
-	 * 
-	 * @param newEndMicros
-	 */
+	 *
+     */
 	public void setEndMicros(long newEndMicros) {
 		if (isRest()) return;
 		for (AbcNoteEvent note : notes) {
@@ -159,9 +152,8 @@ public class ChordOrganic extends Chord {
 	
 	/**
 	 * Only call this from organic multi-stage please.
-	 * 
-	 * @return
-	 */
+	 *
+     */
 	public AbcNoteEvent getShortest() {
 		long endNoteMicros = Long.MAX_VALUE;
 		AbcNoteEvent shortest = null;
@@ -193,9 +185,8 @@ public class ChordOrganic extends Chord {
 		
 	/**
 	 * Used only by organic1
-	 * 
-	 * @return
-	 */
+	 *
+     */
 	public boolean hadRestAndNotes() {
 		boolean hasNotes = false;
 		for (AbcNoteEvent evt : notes) {
@@ -236,10 +227,8 @@ public class ChordOrganic extends Chord {
 			starting = this.endMicros - oo.getEndMicros();
 		}
 		// we do this as comparing two longs that are really large can result in integer overflow if we just cast to int:
-		if (starting < 0L) return -1;
-		if (starting > 0L) return 1;
-		return 0;
-	}
+        return Long.compare(starting, 0L);
+    }
 	
 	/*
 	 * Check if all notes in chord start and end at same time
@@ -264,7 +253,6 @@ public class ChordOrganic extends Chord {
 	
 	/**
 	 * 
-	 * @param note
 	 * @return true if note is the shortest in the chord, and only note of that short duration.
 	 */
 	@Override

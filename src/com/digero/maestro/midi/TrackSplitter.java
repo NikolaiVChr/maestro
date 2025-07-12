@@ -58,13 +58,12 @@ public class TrackSplitter {
 			for (int i = 0; i < oldTrack.size(); i++) {
 				MidiEvent evt = oldTrack.get(i);
 				MidiMessage msg = evt.getMessage();
-				if (msg instanceof MetaMessage) {
-					MetaMessage meta = (MetaMessage) msg;
-					int type = meta.getType();
+				if (msg instanceof MetaMessage meta) {
+                    int type = meta.getType();
 					if (type == MidiConstants.META_TRACK_NAME) {
 						byte[] data = meta.getData();
 						String tmp = MidiUtils.decodeMidiText(data).trim();
-						if (tmp.length() > 0) {
+						if (!tmp.isEmpty()) {
 							oldTrackName = tmp;
 							break;
 						}
@@ -76,7 +75,7 @@ public class TrackSplitter {
 					}
 				}
 			}
-			if (oldTrackName.equals("")) {
+			if (oldTrackName.isEmpty()) {
 				oldTrackName = "Track " + j;
 			}
 
@@ -107,9 +106,8 @@ public class TrackSplitter {
 				MidiEvent evt = oldTrack.get(i);
 				long tick = evt.getTick();
 				MidiMessage msg = evt.getMessage();
-				if (msg instanceof ShortMessage) {
-					ShortMessage shortMsg = (ShortMessage) msg;
-					int cmd = shortMsg.getCommand();
+				if (msg instanceof ShortMessage shortMsg) {
+                    int cmd = shortMsg.getCommand();
 					int channel = shortMsg.getChannel();
 
 					if (cmd == ShortMessage.NOTE_OFF || cmd == ShortMessage.NOTE_ON) {
@@ -127,7 +125,7 @@ public class TrackSplitter {
 					// instrument.
 					// If not associated with an instrument, then it is put in track 0, where we
 					// keep all the meta, sysex, bank changes and normal program changes..
-					if (instr != null && !"".equals(instr)) {
+					if (instr != null && !instr.isEmpty()) {
 						String trackID = hasPorts ? (channel + instr) : instr;// If its not a Cakewalk midi then we
 																				// lumps all of same instr together,
 																				// regardless of channel.
@@ -199,20 +197,13 @@ public class TrackSplitter {
 	 * <p>
 	 * TODO: Consider to remove it, cause Maestro will assign +pppp+ to it, and it will become audible which is probably
 	 * not what the midi maker intended.
-	 * 
-	 * @param index
-	 * @param notesOn
-	 * @param port
-	 * @param tick
-	 * @param channel
-	 * @param note
-	 * @return
-	 */
+	 *
+     */
 	private String treatAsMidiOn(int index, List<HashMap<Integer, String>> notesOn, int port, long tick, int channel,
 			int note) {
 		String instr;
 		instr = fetchInstrName(tick, channel, port, index);
-		if (instr != null && !"".equals(instr)) {
+		if (instr != null && !instr.isEmpty()) {
 			notesOn.get(channel).put(note, instr);
 		}
 		return instr;
@@ -220,11 +211,8 @@ public class TrackSplitter {
 
 	/**
 	 * We add all program changes for this GM+ port to the first expanded track that uses this port.
-	 * 
-	 * @param newMetaTrack
-	 * @param portPrograms
-	 * @param firstTrackUsingPorts
-	 */
+	 *
+     */
 	private void addPortChangesToTrack(Track newMetaTrack, List<MidiEvent> portPrograms, Track firstTrackUsingPorts) {
 		if (firstTrackUsingPorts != null) {
 			for (MidiEvent event : portPrograms) {
@@ -232,7 +220,7 @@ public class TrackSplitter {
 			}
 		} else {
 			// This should not be needed, something went wrong if this is executed with actual port programs.
-			if (portPrograms.size() > 0) log.severe("No events added to new tracks. portPrograms="+portPrograms.size());
+			if (!portPrograms.isEmpty()) log.severe("No events added to new tracks. portPrograms="+portPrograms.size());
 			for (MidiEvent event : portPrograms) {
 				newMetaTrack.add(event);
 			}
@@ -246,8 +234,7 @@ public class TrackSplitter {
 			int instrumentNumber = sequenceCache.getInstrument(port, channel, tick);
 			return MidiInstrument.fromId(instrumentNumber).toString();
 		} else {
-			String in = sequenceCache.getInstrumentExt(channel, tick, isDrumsTrack(track));
-			return in;
+            return sequenceCache.getInstrumentExt(channel, tick, isDrumsTrack(track));
 		}
 	}
 

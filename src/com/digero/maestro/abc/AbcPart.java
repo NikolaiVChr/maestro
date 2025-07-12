@@ -57,20 +57,20 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	public boolean suppressSpinnerUpdate = false;
 	private String title;
 	private LotroInstrument instrument;
-	private int[] trackTranspose;
-	private boolean[] trackEnabled;
+	private final int[] trackTranspose;
+	private final boolean[] trackEnabled;
 	private List<String> trackNames;//used only by autoexporter
-	private boolean[] trackPriority;
+	private final boolean[] trackPriority;
 	public boolean[] playLeft;
 	public boolean[] playCenter;
 	public boolean[] playRight;
-	private int[] trackVolumeAdjust;
-	private DrumNoteMap[] drumNoteMap;
-	private StudentFXNoteMap[] fxNoteMap;
+	private final int[] trackVolumeAdjust;
+	private final DrumNoteMap[] drumNoteMap;
+	private final StudentFXNoteMap[] fxNoteMap;
 	private BitSet[] drumsEnabled;
 	private BitSet[] cowbellsEnabled;
 	private BitSet[] fxEnabled;
-	private Boolean[] studentFX;
+	private final Boolean[] studentFX;
 	private boolean studentOverride = false;
 	
 	public static final int badgerPrioStep = 1;
@@ -83,7 +83,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	private int enabledTrackCount = 0;
 	private int previewSequenceTrackNumber = -1;
 	private final ListenerList<AbcPartEvent> listeners = new ListenerList<>();
-	private Preferences drumPrefs = Preferences.userNodeForPackage(AbcPart.class).node("drums");
+	private final Preferences drumPrefs = Preferences.userNodeForPackage(AbcPart.class).node("drums");
 
 	private int noteMax = AbcConstants.MAX_CHORD_NOTES;
 	public List<TreeMap<Float, PartSection>> sections;
@@ -385,7 +385,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				if (t < 0 || t >= getTrackCount()) {
 					String optionalName = xmlTrackName;
 
-					if (optionalName.length() > 0) {
+					if (!optionalName.isEmpty()) {
 						optionalName = " (" + optionalName + ")";
 					}
 
@@ -533,7 +533,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	}
 
 	private int findTrackNumberByName(String trackName) {
-		if (trackName.equals(""))
+		if (trackName.isEmpty())
 			return -1;
 
 		int namedTrackNumber = -1;
@@ -550,7 +550,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		return namedTrackNumber;
 	}
 
-	private Listener<AbcSongEvent> songListener = e -> {
+	private final Listener<AbcSongEvent> songListener = e -> {
 		if (e.getProperty() == AbcSongProperty.TRANSPOSE) {
 			fireChangeEvent(AbcPartProperty.BASE_TRANSPOSE, !isPercussionPart() /* affectsAbcPreview */);
 		}
@@ -614,8 +614,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	 * 
 	 * @param track track
 	 * @param ne noteevent
-	 * @return
-	 */
+     */
 	public Note mapNoteEvent(int track, NoteEvent ne) {
 		return mapNoteEvent(track, ne, ne.note.id);
 	}
@@ -636,8 +635,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	 * @param track track
 	 * @param ne noteevent
 	 * @param noteId use a custom note id
-	 * @return
-	 */
+     */
 	public Note mapNoteEvent(int track, NoteEvent ne, int noteId, boolean skipAudibleCheck) {
 		long tickStart = ne.getStartTick();
 		if (!skipAudibleCheck && !getAudible(track, tickStart)) {
@@ -659,10 +657,9 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				dstNote = getDrumMap(track).get(noteId);
 
 			return (dstNote == LotroDrumInfo.DISABLED.note.id) ? null : Note.fromId(dstNote);
-		} else if (ne instanceof BentMidiNoteEvent) {
-			BentMidiNoteEvent be = (BentMidiNoteEvent) ne;
-			
-			int minBend = be.getMinBend();
+		} else if (ne instanceof BentMidiNoteEvent be) {
+
+            int minBend = be.getMinBend();
 			int maxBend = be.getMaxBend();
 			int transpose = getTranspose(track, tickStart);
 			Pair<Integer,Integer> limits = getSectionPitchLimits(track, tickStart);
@@ -765,9 +762,6 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 
 	/**
 	 * 
-	 * @param track
-	 * @param noteId
-	 * @param tickStart
 	 * @return Return the note id the note would have had if the instrument did not a have range limit.
 	 */
 	public int mapNoteFullOctaves(int track, int noteId, long tickStart) {
@@ -1001,7 +995,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 					return -1;
 				String ending = title.substring(result2[1]);
 
-				if (ending.length() == 0)
+				if (ending.isEmpty())
 					return 0;
 
 				try {
@@ -1018,7 +1012,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 
 			String ending = title.substring(result.second.end());
 
-			if (ending.length() == 0)
+			if (ending.isEmpty())
 				return 0;
 
 			try {
@@ -1129,7 +1123,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		}
 		
 		if (nonSection.get(track) != null) {
-			return new Pair<Integer, Integer>(nonSection.get(track).fromPitch.id, nonSection.get(track).toPitch.id);
+			return new Pair<>(nonSection.get(track).fromPitch.id, nonSection.get(track).toPitch.id);
 		}
 
 		return secLimits;
@@ -1185,8 +1179,6 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	}
 
 	/**
-	 * @param track
-	 * @param ne
 	 * @return velocity of the noteEvent, or is reset velocities active, then mezzoforte
 	 */
 	public int getSectionNoteVelocity(int track, NoteEvent ne) {
@@ -1279,19 +1271,17 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	/**
 	 * Check if a note at certain tick should not be silenced by tune or section editor.
 	 * 
-	 * @param track
-	 * @param tickStart
 	 * @param active if false then ignore section-editor silence and only consider tune-editor silence.
 	 * @return false if silenced
 	 */
 	public boolean getAudible(int track, long tickStart, boolean active) {
-		Long firstBarTick = abcSong.getFirstBarTick();
-		Long lastBarTick  = abcSong.getLastBarTick();
+		long firstBarTick = abcSong.getFirstBarTick();
+		long lastBarTick  = abcSong.getLastBarTick();
 				
-		if (abcSong.getFirstBar() != null && firstBarTick != null && tickStart < firstBarTick) {
+		if (abcSong.getFirstBar() != null && tickStart < firstBarTick) {
 			return false;
 		}
-		if (abcSong.getLastBar() != null && lastBarTick != null && tickStart >= lastBarTick) {
+		if (abcSong.getLastBar() != null && tickStart >= lastBarTick) {
 			return false;
 		}
 		
@@ -1427,7 +1417,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	public boolean isPercussionPart() {
 		return instrument.isPercussion;
 	}
-	
+
+	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean isChromatic(int track) {
 		if (instrument == LotroInstrument.STUDENT_FIDDLE) {
 			if (studentFX[track] == null) {
@@ -1515,10 +1506,9 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	private final ChangeListener drumMapChangeListener = new ChangeListener() {
 		@Override
 		public void stateChanged(ChangeEvent e) {
-			if (e.getSource() instanceof DrumNoteMap) {
-				DrumNoteMap map = (DrumNoteMap) e.getSource();
+			if (e.getSource() instanceof DrumNoteMap map) {
 
-				// Don't write pass-through drum maps to the prefs node
+                // Don't write pass-through drum maps to the prefs node
 				// these are used for non-drum tracks and their mapping
 				// isn't desirable to save.
 				if (!(map instanceof PassThroughDrumNoteMap) && !(map instanceof StudentFXNoteMap))

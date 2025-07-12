@@ -24,6 +24,8 @@ package com.digero.maestro.midi;
 
 import com.digero.common.midi.ITempoCache;
 import com.digero.common.midi.Note;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 public class NoteEvent implements Comparable<NoteEvent> {
 	protected final ITempoCache tempoCache;
@@ -118,10 +120,9 @@ public class NoteEvent implements Comparable<NoteEvent> {
 		return getStartTick() == getEndTick();
 	}
 
+	@Contract(pure = true)
 	@Override
-	public int compareTo(NoteEvent that) {
-		if (that == null)
-			return 1;
+	public int compareTo(@NotNull NoteEvent that) {
 
 		// many methods rely on this:
 		if (this.startTick != that.startTick)

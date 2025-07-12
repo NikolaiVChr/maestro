@@ -18,7 +18,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.prefs.Preferences;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -61,12 +60,8 @@ public final class Util {
 
 	/**
 	 * Truncate string and append an ellipsis "..." if exceed a certain pixel width
-	 * 
-	 * @param text
-	 * @param maxWidth
-	 * @param font
-	 * @return
-	 */
+	 *
+     */
 	@SuppressWarnings("deprecation") //
 	public static String ellipsis(String text, float maxWidth, Font font) {
 		FontMetrics metrics = Toolkit.getDefaultToolkit().getFontMetrics(font);
@@ -125,11 +120,8 @@ public final class Util {
 	 * A more safe way to get the Windows Documents folder even if using OneDrive.
 	 * 
 	 * TODO: Not sure how to handle Linux.
-	 * 
-	 * @return
-	 * @throws IOException
-	 * @throws InterruptedException
-	 */
+	 *
+     */
 	private static File getDocumentsFolder() throws IOException, InterruptedException {
         Process process = Runtime.getRuntime().exec(
             new String[]{"REG", "QUERY", "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders", "/v", "Personal"}
@@ -161,7 +153,7 @@ public final class Util {
     private static String expandEnvironmentVariables(String text) {
         Pattern pattern = Pattern.compile("%(\\w+)%");
         Matcher matcher = pattern.matcher(text);
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         while (matcher.find()) {
             String varName = matcher.group(1);
             String envValue = System.getenv(varName);
@@ -177,8 +169,7 @@ public final class Util {
 
     /**
      * TODO: getDocumentsFolder() is better than this, but probably not for Linux 
-     * 
-     * @return
+     *
      */
 	private static File getUserDocumentsPath() {
 		String userHome = System.getProperty("user.home", "");
@@ -444,13 +435,8 @@ public final class Util {
 
 	/**
 	 * Handle the case where the window was last saved on a screen that is no longer connected
-	 * 
-	 * @param width
-	 * @param height
-	 * @param x
-	 * @param y
-	 * @return
-	 */
+	 *
+     */
 	private static Rectangle calculateOnScreen(int width, int height, int x, int y) {
 		Rectangle windowRect = new Rectangle(x, y, width, height);
 		Rectangle onScreen = null;
@@ -526,14 +512,14 @@ public final class Util {
 
 		StringBuilder s = new StringBuilder(5);
 
-		int t = (int) (micros / (1000));
+		long milli = micros / 1000L;
 		
-		int hr = t / (60000 * 60000);
-		t %= 60000 * 60000;
-		int min = t / 60000;
-		t %= 60000;
-		int sec = t / 1000;
-		int ms = t - sec*1000;
+		int hr = (int)(milli / (60000L * 60000L));
+		milli %= 60000L * 60000L;
+		int min = (int)(milli / 60000L);
+		milli %= 60000L;
+		int sec = (int)(milli / 1000L);
+		int ms = (int)(milli % 1000L);
 		
 		int tMax = (int) (maxMicros / (1000 * 1000));
 		int hrMax = tMax / (60 * 60);

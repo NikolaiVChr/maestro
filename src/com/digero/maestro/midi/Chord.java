@@ -37,7 +37,7 @@ import com.digero.maestro.abc.AbcPart;
 public class Chord implements AbcConstants, Comparable<Chord> {
 	protected static final Logger log = Logger.getLogger("export.notes");
 	
-	private ITempoCache tempoCache;
+	private final ITempoCache tempoCache;
 	protected long startTick;
 	protected long endTick;
 	protected List<AbcNoteEvent> notes = new ArrayList<>();
@@ -86,7 +86,7 @@ public class Chord implements AbcConstants, Comparable<Chord> {
     
 	public void recalcEndTick() {
 		if (!notes.isEmpty()) {
-			endTick = notes.get(0).getEndTick();
+			endTick = notes.getFirst().getEndTick();
 			for (int k = 1; k < notes.size(); k++) {
 				if (notes.get(k).getEndTick() < endTick) {
 					endTick = notes.get(k).getEndTick();
@@ -103,7 +103,7 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 	public void testEndTick() {
 		long endTick2;
 		if (!notes.isEmpty()) {
-			endTick2 = notes.get(0).getEndTick();
+			endTick2 = notes.getFirst().getEndTick();
 			for (int k = 1; k < notes.size(); k++) {
 				if (notes.get(k).getEndTick() < endTick2) {
 					endTick2 = notes.get(k).getEndTick();
@@ -117,9 +117,8 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 	
 	/**
 	 * Wont change anything if the chord is a rest with no notes
-	 * 
-	 * @param newEndTick
-	 */
+	 *
+     */
 	public void setEndTick(long newEndTick) {
 		if (isRest()) return;
 		for (AbcNoteEvent note : notes) {
@@ -246,7 +245,7 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		for (AbcNoteEvent evt : notes) {
 			if (Note.REST == evt.note) {
 				hasRests = true;
-			} else if (Note.REST != evt.note) {
+			} else {
 				hasNotes = true;
 			}
 		}
@@ -281,10 +280,8 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 			starting = this.getEndTick() - o.getEndTick();
 		}
 		// we do this as comparing two longs that are really large can result in integer overflow if we just cast to int:
-		if (starting < 0L) return -1;
-		if (starting > 0L) return 1;
-		return 0;
-	}
+        return Long.compare(starting, 0L);
+    }
 	
 	/*
 	 * Check if all notes in chord start and end at same time
@@ -321,7 +318,6 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 
 	/**
 	 * 
-	 * @param note
 	 * @return true if note is the shortest in the chord, and only note of that short duration.
 	 */
 	public boolean isShortest(AbcNoteEvent note) {
@@ -469,7 +465,7 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 					return 1;
 				}
 			}
-			if (restPresent && n1.note != Note.REST && n2.note != Note.REST) {
+			if (restPresent) {
 				if (n1.getLengthTicks() != n2.getLengthTicks()) {
 					// we might be pruning the rest, so lets make sure we keep a note with same short dura
 					if (n1.getLengthTicks() == restDura) {
@@ -575,7 +571,7 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 				// Lower prio for notes that has octave spacing from highest or lowest notes
 				if (n1OctSpacing && highest != midiNote1 && lowest != midiNote1) {
 					// orig n1 has that spacing
-					points += -2;
+                    points -= 2;
 				}
 				if (n2OctSpacing && highest != midiNote2 && lowest != midiNote2) {
 					// orig n2 has that spacing
@@ -587,7 +583,7 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 					if (n1.getFullLengthTicks() + n1.continues > n2.getFullLengthTicks() + n2.continues) {
 						points += 2;
 					} else if (n2.getFullLengthTicks() + n2.continues > n1.getFullLengthTicks() + n1.continues) {
-						points += -2;
+                        points -= 2;
 					}
 				}
 
@@ -596,7 +592,7 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 					if (abcNote1 > abcNote2) {
 						points += 2;
 					} else if (abcNote2 > abcNote1) {
-						points += -2;
+                        points -= 2;
 					}
 				}
 
@@ -605,7 +601,7 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 						points += 1;
 					}
 					if (n2.tiesFrom != null) {
-						points += -1;
+                        points -= 1;
 					}
 				}
 
@@ -659,20 +655,14 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 	}
 	
 	public Dynamics calcDynamics(CalcDynamics method) {
-		switch (method) {
-			case LOUDEST:
-				return calcDynamicsLoudest();
-			case POWER_RMS_DB:
-				return calcDynamicsDbBlending(2.0d);
-			case POWER_MID_DB:
-				return calcDynamicsDbBlending(1.5d);
-			case WEIGHTED:
-				return calcDynamicsWeightBlending();
-			case SOFTEST:
-				return calcDynamicsSoftest();
-		}
-		return calcDynamicsLoudest();
-	}
+        return switch (method) {
+            case LOUDEST -> calcDynamicsLoudest();
+            case POWER_RMS_DB -> calcDynamicsDbBlending(2.0d);
+            case POWER_MID_DB -> calcDynamicsDbBlending(1.5d);
+            case WEIGHTED -> calcDynamicsWeightBlending();
+            case SOFTEST -> calcDynamicsSoftest();
+        };
+    }
 
 	private Dynamics calcDynamicsLoudest() {
 		int velocity = Integer.MIN_VALUE;
@@ -751,7 +741,7 @@ public class Chord implements AbcConstants, Comparable<Chord> {
         return Math.min(127, (int) (127d * Math.pow(10d, db / 20d)));
     }
 	
-	public static enum CalcDynamics {
+	public enum CalcDynamics {
 		// name() is saved in project files
 		// label is shown in UI
 		

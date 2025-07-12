@@ -13,10 +13,11 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import com.digero.common.midi.Note;
+import org.jetbrains.annotations.NotNull;
 
 public class LotroStudentFXInfo implements Comparable<LotroStudentFXInfo> {
-	private static Map<Integer, LotroStudentFXInfo> byId = new HashMap<>();
-	private static SortedMap<String, SortedSet<LotroStudentFXInfo>> byCategory = new TreeMap<>();
+	private static final Map<Integer, LotroStudentFXInfo> byId = new HashMap<>();
+	private static final SortedMap<String, SortedSet<LotroStudentFXInfo>> byCategory = new TreeMap<>();
 
 	public static final LotroStudentFXInfo DISABLED = new LotroStudentFXInfo(Note.REST, "None", "#None");
 	public static final List<LotroStudentFXInfo> ALL_FX;
@@ -42,17 +43,18 @@ public class LotroStudentFXInfo implements Comparable<LotroStudentFXInfo> {
 			}
 		}
 
-		ALL_FX = Collections.unmodifiableList(new ArrayList<>(new AbstractCollection<LotroStudentFXInfo>() {
-			@Override
-			public Iterator<LotroStudentFXInfo> iterator() {
-				return new FXInfoIterator();
-			}
+		ALL_FX = Collections.unmodifiableList(new ArrayList<>(new AbstractCollection<>() {
+            @Override
+			@NotNull
+            public Iterator<LotroStudentFXInfo> iterator() {
+                return new FXInfoIterator();
+            }
 
-			@Override
-			public int size() {
-				return byId.size();
-			}
-		}));
+            @Override
+            public int size() {
+                return byId.size();
+            }
+        }));
 	}
 
 //	private static final Comparator<Note> noteComparator = new Comparator<Note>() {
@@ -101,7 +103,7 @@ public class LotroStudentFXInfo implements Comparable<LotroStudentFXInfo> {
 	}
 
 	private static class FXInfoIterator implements Iterator<LotroStudentFXInfo> {
-		private Iterator<SortedSet<LotroStudentFXInfo>> outerIter;
+		private final Iterator<SortedSet<LotroStudentFXInfo>> outerIter;
 		private Iterator<LotroStudentFXInfo> innerIter;
 
 		public FXInfoIterator() {
@@ -143,9 +145,7 @@ public class LotroStudentFXInfo implements Comparable<LotroStudentFXInfo> {
 	}
 
 	@Override
-	public int compareTo(LotroStudentFXInfo that) {
-		if (that == null)
-			return 1;
+	public int compareTo(@NotNull LotroStudentFXInfo that) {
 
 		return this.note.id - that.note.id;
 	}

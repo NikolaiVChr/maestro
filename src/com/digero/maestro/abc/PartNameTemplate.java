@@ -85,7 +85,7 @@ public class PartNameTemplate {
 	}
 
 	public abstract static class Variable {
-		private String description;
+		private final String description;
 
 		private Variable(String description) {
 			this.description = description;
@@ -103,13 +103,13 @@ public class PartNameTemplate {
 		}
 	}
 
-	private Settings settings;
-	private Preferences prefsNode;
+	private final Settings settings;
+	private final Preferences prefsNode;
 
 	private AbcMetadataSource metadata = null;
 	private AbcPartMetadataSource currentAbcPart;
 
-	private SortedMap<String, Variable> variables;
+	private final SortedMap<String, Variable> variables;
 
 	public PartNameTemplate(Preferences prefsNode) {
 		this.prefsNode = prefsNode;

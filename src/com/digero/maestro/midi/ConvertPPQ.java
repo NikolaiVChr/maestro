@@ -16,7 +16,7 @@ public class ConvertPPQ {
 	
 	private static final Logger log = Logger.getLogger("import.midi");
 
-	private static int halfRequirement = 6;
+	private static final int halfRequirement = 6;
 
 	public static Sequence convert(Sequence orig) {
 		if (orig.getDivisionType() != Sequence.PPQ) {

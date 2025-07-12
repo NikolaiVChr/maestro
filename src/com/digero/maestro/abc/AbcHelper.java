@@ -19,8 +19,7 @@ public class AbcHelper {
 		if (title.contains(nick)) {
 			int startingPosition = title.indexOf(nick);
 			int endingPosition = startingPosition + nick.length();
-			Integer[] result = { startingPosition, endingPosition };
-			return result;
+            return new Integer[]{ startingPosition, endingPosition };
 		}
 		return null;
 	}

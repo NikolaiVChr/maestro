@@ -4165,10 +4165,10 @@ public class AbcExporter {
 			// Tie notes across tempo boundaries
 			final QuantizedTimingInfo.TimingInfoEvent nextTempoEvent = qtm.getNextTimingEvent(ne.getStartTick(),
 					part);
-			if (nextTempoEvent != null && nextTempoEvent.tick < targetEndTick) {
-				targetEndTick = nextTempoEvent.tick;
+			if (nextTempoEvent != null && nextTempoEvent.tick() < targetEndTick) {
+				targetEndTick = nextTempoEvent.tick();
 				assert (targetEndTick - ne.getStartTick() >= tm.getMinNoteLengthTicks());
-				assert (ne.getEndTick() - targetEndTick >= nextTempoEvent.info.getMinNoteLengthTicks());
+				assert (ne.getEndTick() - targetEndTick >= nextTempoEvent.info().getMinNoteLengthTicks());
 				assert targetEndTick == qtm.quantize(targetEndTick, part);
 			}
 
@@ -4386,15 +4386,15 @@ public class AbcExporter {
 		}
 		QuantizedTimingInfo.TimingInfoEvent event1L = timings.get(1L);
 		for (QuantizedTimingInfo.TimingInfoEvent event : timings.values()) {
-			if (event.tick > end)
+			if (event.tick() > end)
 				continue;
 
-			track0.add(MidiFactory.createTempoEvent(event.info.getExportTempoMPQ(), event.tick));
+			track0.add(MidiFactory.createTempoEvent(event.info().getExportTempoMPQ(), event.tick()));
 
-			if (event.tick == 0L && event1L == null) {
+			if (event.tick() == 0L && event1L == null) {
 				// The Java MIDI sequencer can sometimes miss a tempo event at tick 0
 				// Add another tempo event at tick 1 to work around the bug
-				track0.add(MidiFactory.createTempoEvent(event.info.getExportTempoMPQ(), 1));
+				track0.add(MidiFactory.createTempoEvent(event.info().getExportTempoMPQ(), 1));
 			}
 		}
 	}
@@ -4658,7 +4658,7 @@ public class AbcExporter {
 		long q = qtm.tickToBarStartTick(startTick);
 		firstBarNumber = qtm.tickToBarNumber(q);
 		long startTickFinal = qtm.quantizeDown(q);
-		logNotes.fine(metadata.getSongTitle()+": firstBar "+firstBarNumber+"  q="+q+" startTick="+startTick+" startTickfinal="+startTickFinal+"\n"+qtm.getTimingEventForTick(q)+"\n"+qtm.getTimingEventForTick(q).info+"\n"+qtm.getTimingEventForTick(q).infoOdd);
+		logNotes.fine(metadata.getSongTitle()+": firstBar "+firstBarNumber+"  q="+q+" startTick="+startTick+" startTickfinal="+startTickFinal+"\n"+qtm.getTimingEventForTick(q)+"\n"+ qtm.getTimingEventForTick(q).info() +"\n"+ qtm.getTimingEventForTick(q).infoOdd());
 		logNotes.fine("Bar 1 starts at "+qtm.barNumberToBarStartTick(0)+" "+(qtm.barNumberToMicrosecond(0)/1000000.0));
 		logNotes.fine("Bar 2 starts at "+qtm.barNumberToBarStartTick(1)+" "+(qtm.barNumberToMicrosecond(1)/1000000.0));
 		logNotes.fine("Bar 3 starts at "+qtm.barNumberToBarStartTick(2)+" "+(qtm.barNumberToMicrosecond(2)/1000000.0)+"\n\n\n\n\n\n");

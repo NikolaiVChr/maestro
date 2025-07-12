@@ -5,7 +5,7 @@ import java.util.AbstractList;
 import javax.swing.DefaultListModel;
 
 public class ListModelWrapper<E> extends AbstractList<E> {
-	private DefaultListModel<E> listModel;
+	private final DefaultListModel<E> listModel;
 
 	public ListModelWrapper(DefaultListModel<E> listModel) {
 		this.listModel = listModel;

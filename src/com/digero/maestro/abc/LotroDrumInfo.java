@@ -13,10 +13,11 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import com.digero.common.midi.Note;
+import org.jetbrains.annotations.NotNull;
 
 public class LotroDrumInfo implements Comparable<LotroDrumInfo> {
-	private static Map<Integer, LotroDrumInfo> byId = new HashMap<>();
-	private static SortedMap<String, SortedSet<LotroDrumInfo>> byCategory = new TreeMap<>();
+	private static final Map<Integer, LotroDrumInfo> byId = new HashMap<>();
+	private static final SortedMap<String, SortedSet<LotroDrumInfo>> byCategory = new TreeMap<>();
 
 	public static final LotroDrumInfo DISABLED = new LotroDrumInfo(Note.REST, "None", "#None");
 	public static final List<LotroDrumInfo> ALL_DRUMS;
@@ -88,17 +89,18 @@ public class LotroDrumInfo implements Comparable<LotroDrumInfo> {
 			}
 		}
 
-		ALL_DRUMS = Collections.unmodifiableList(new ArrayList<>(new AbstractCollection<LotroDrumInfo>() {
-			@Override
-			public Iterator<LotroDrumInfo> iterator() {
-				return new DrumInfoIterator();
-			}
+		ALL_DRUMS = Collections.unmodifiableList(new ArrayList<>(new AbstractCollection<>() {
+            @Override
+			@NotNull
+            public Iterator<LotroDrumInfo> iterator() {
+                return new DrumInfoIterator();
+            }
 
-			@Override
-			public int size() {
-				return byId.size();
-			}
-		}));
+            @Override
+            public int size() {
+                return byId.size();
+            }
+        }));
 	}
 
 //	private static final Comparator<Note> noteComparator = new Comparator<Note>() {
@@ -147,7 +149,7 @@ public class LotroDrumInfo implements Comparable<LotroDrumInfo> {
 	}
 
 	private static class DrumInfoIterator implements Iterator<LotroDrumInfo> {
-		private Iterator<SortedSet<LotroDrumInfo>> outerIter;
+		private final Iterator<SortedSet<LotroDrumInfo>> outerIter;
 		private Iterator<LotroDrumInfo> innerIter;
 
 		public DrumInfoIterator() {
@@ -189,10 +191,7 @@ public class LotroDrumInfo implements Comparable<LotroDrumInfo> {
 	}
 
 	@Override
-	public int compareTo(LotroDrumInfo that) {
-		if (that == null)
-			return 1;
-
+	public int compareTo(@NotNull LotroDrumInfo that) {
 		return this.note.id - that.note.id;
 	}
 

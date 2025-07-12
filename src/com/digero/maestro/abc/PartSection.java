@@ -1,6 +1,7 @@
 package com.digero.maestro.abc;
 
 import com.digero.common.midi.Note;
+import org.jetbrains.annotations.NotNull;
 
 public class PartSection implements Comparable<PartSection> {
 	public int octaveStep = 0;
@@ -21,8 +22,7 @@ public class PartSection implements Comparable<PartSection> {
 	public Note toPitch = Note.MAX;
 	
 	@Override
-	public int compareTo(PartSection that) {
-		if (that == null) throw new NullPointerException();
+	public int compareTo(@NotNull PartSection that) {
 		float result = this.startBar - that.startBar;
 		if (result > 0) return 1;
 		if (result < 0) return -1;
