@@ -5,7 +5,7 @@
   <dependencySets>
     <dependencySet>
       <scope>runtime</scope>
-      <useProjectArtifact>true</useProjectArtifact>
+      <useProjectArtifact>false</useProjectArtifact>
       <unpack>true</unpack>
       <outputDirectory>/</outputDirectory>
       <excludes>
@@ -21,7 +21,9 @@
       <outputDirectory>/</outputDirectory>
       <includes>
         <include>**/*.class</include>
-        <!-- txt and png come from useProjectArtifact -->
+        <include>**/*.txt</include>
+        <include>**/*.properties</include>
+        <include>**/*.png</include>
       </includes>
     </fileSet>
   </fileSets>

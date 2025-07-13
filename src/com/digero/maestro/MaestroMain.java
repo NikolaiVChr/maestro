@@ -43,7 +43,7 @@ public class MaestroMain {
 		// note that 'log' is not initialized in this method
 		try {
 			Properties props = new Properties();
-			props.load(MaestroMain.class.getResourceAsStream("version.txt"));
+			props.load(MaestroMain.class.getResourceAsStream("version.properties"));
 			String versionString = props.getProperty("version.Maestro");
 			if (versionString != null)
 				APP_VERSION = Version.parseVersion(versionString);
@@ -84,7 +84,7 @@ public class MaestroMain {
 		log = Logger.getLogger("");//must be after configure
 		try {
 			Properties props = new Properties();
-			props.load(MaestroMain.class.getResourceAsStream("version.txt"));
+			props.load(MaestroMain.class.getResourceAsStream("version.properties"));
 			String versionString = props.getProperty("version.Maestro");
 			if (versionString != null)
 				APP_VERSION = Version.parseVersion(versionString);

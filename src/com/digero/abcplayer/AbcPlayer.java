@@ -106,7 +106,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		
 		try {
 			Properties props = new Properties();
-			props.load(AbcPlayer.class.getResourceAsStream("version.txt"));
+			props.load(AbcPlayer.class.getResourceAsStream("version.properties"));
 			String versionString = props.getProperty("version.AbcPlayer");
 			if (versionString != null)
 				APP_VERSION = Version.parseVersion(versionString);

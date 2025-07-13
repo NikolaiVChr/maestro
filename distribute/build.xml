@@ -15,8 +15,8 @@
 	<property name="basename.AbcPlayer" value="AbcPlayer" />
 	<property name="basename.Maestro" value="Maestro" />
 	<property name="basename.AbcTools" value="AbcTools" />
-	<property file="${src}/com/digero/abcplayer/version.txt" />
-	<property file="${src}/com/digero/maestro/version.txt" />
+	<property file="${src}/com/digero/abcplayer/version.properties" />
+	<property file="${src}/com/digero/maestro/version.properties" />
 	<property name="version.AbcTools" value="${version.AbcPlayer}" />
 	<condition property="isWindows">
 		<os family="windows" />
