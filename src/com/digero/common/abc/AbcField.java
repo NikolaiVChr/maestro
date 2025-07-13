@@ -76,9 +76,7 @@ public enum AbcField {
 		StringBuilder output = new StringBuilder(2 + paddedLength);
 		output.append("%%");
 		output.append(name);
-		for (int i = name.length(); i < paddedLength; i++) {
-			output.append(' ');
-		}
+        output.append(" ".repeat(Math.max(0, paddedLength - name.length())));
 
 		return output.toString();
 	}

@@ -220,13 +220,14 @@ public class MaestroMain {
 					// while (socket.isConnected()) {
 					String data = in.readLine();
 
+					String substring = data.substring(data.length() - 4);
 					if (data != null && data.length() >= 5
-							&& (data.substring(data.length() - 4).equalsIgnoreCase(Util.MID_FILE_EXTENSION)
+							&& (substring.equalsIgnoreCase(Util.MID_FILE_EXTENSION)
 									|| data.substring(data.length() - 5).equalsIgnoreCase(Util.MIDI_FILE_EXTENSION)
-									|| data.substring(data.length() - 4).equalsIgnoreCase(Util.ABC_FILE_EXTENSION)
-									|| data.substring(data.length() - 4).equalsIgnoreCase(Util.TXT_FILE_EXTENSION)
-									|| data.substring(data.length() - 4).equalsIgnoreCase(Util.MSX_FILE_EXTENSION)
-									|| data.substring(data.length() - 4).equalsIgnoreCase(Util.KAR_FILE_EXTENSION))) {
+									|| substring.equalsIgnoreCase(Util.ABC_FILE_EXTENSION)
+									|| substring.equalsIgnoreCase(Util.TXT_FILE_EXTENSION)
+									|| substring.equalsIgnoreCase(Util.MSX_FILE_EXTENSION)
+									|| substring.equalsIgnoreCase(Util.KAR_FILE_EXTENSION))) {
 						log.finer("Received "+data);
 						String[] datas = { data };
 						activate(datas);

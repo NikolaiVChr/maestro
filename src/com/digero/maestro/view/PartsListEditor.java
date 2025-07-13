@@ -41,8 +41,8 @@ public class PartsListEditor extends PartsList {
 	
 	@Override
 	public Dimension getPreferredSize() {
-		int width = getComponentCount() * rowDim.height;
-		return new Dimension(rowDim.width, width);
+		int height = getComponentCount() * rowDim.height;
+		return new Dimension(rowDim.width, height);
 	}
 	
 	@Override

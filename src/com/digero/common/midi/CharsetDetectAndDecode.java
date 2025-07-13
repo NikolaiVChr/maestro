@@ -307,9 +307,10 @@ public class CharsetDetectAndDecode {
 	    			on = true;
 	    		} else {
 		    		for (String alias : cs.aliases()) {
-		    			if (alias.equalsIgnoreCase(detect)) {
-			    			on = true;
-		    			}
+                        if (alias.equalsIgnoreCase(detect)) {
+                            on = true;
+                            break;
+                        }
 		    	    }
 	    		}	    		
 	    	}
@@ -756,12 +757,14 @@ public class CharsetDetectAndDecode {
     // Place this helper somewhere in the same class:
     private static int getWesternPriority(String csName) {
         // lower is better; 0 means "top Western choice"
-        if (csName.equals("iso-8859-1"))  return 0;
-        if (csName.equals("iso-8859-15")) return 1;
-        if (csName.equals("windows-1250")) return 2;
-        if (csName.equals("x-MacRoman"))  return 3;
-        if (csName.equals("windows-1252")) return 4;
-        return 10;  // all others
+        return switch (csName) {
+            case "iso-8859-1" -> 0;
+            case "iso-8859-15" -> 1;
+            case "windows-1250" -> 2;
+            case "x-MacRoman" -> 3;
+            case "windows-1252" -> 4;
+            default -> 10;
+        };
     }
     
     public enum Script { WESTERN, CYRILLIC, JAPANESE, CHINESE, EASTERN }

@@ -313,7 +313,6 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		JPanel instrNamePanel = new JPanel(instrumentsLayout);
 		instrNamePanel.setBorder(BorderFactory.createEmptyBorder(0, PAD, 0, 0));
 
-		final List<InstrumentDropdown> instrumentDropdowns = new ArrayList<>();
 		LotroInstrument[] instruments = LotroInstrument.values();
 		for (int i = 0; i < instruments.length; i++) {
 			LotroInstrument inst = instruments[i];
@@ -328,7 +327,6 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 			}
 			InstrumentDropdown dropdown = new InstrumentDropdown(inst);
 
-			instrumentDropdowns.add(dropdown);
 			instrNamePanel.add(dropdown, col + ", " + row);
 			instrNamePanel.add(new JLabel(inst.toString() + " "), (col + 1) + ", " + row);
 		}

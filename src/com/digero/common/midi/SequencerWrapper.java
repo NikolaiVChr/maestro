@@ -103,7 +103,7 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 	public void addTransceiver(Transceiver transceiver) {
 		Transmitter lastTransmitter = transmitter;
 		if (!transceivers.isEmpty())
-			lastTransmitter = transceivers.get(transceivers.size() - 1);
+			lastTransmitter = transceivers.getLast();
 
 		// Hook up the transceiver in the chain
 		lastTransmitter.setReceiver(transceiver);
@@ -364,7 +364,7 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 			}
 			int size = list.size() + 1;
 			firstTempoIsFake = true;
-			if ((size > 1) && (list.get(0).getTick() == 0)) {
+			if ((size > 1) && (list.getFirst().getTick() == 0)) {
 				// do not need to add an initial tempo event at the beginning
 				size--;
 				firstTempoIsFake = false;

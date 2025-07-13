@@ -179,7 +179,7 @@ public class TrackInfo implements MidiConstants {
 					} else {
 						int ch_vol = sequenceCache.getChannelVolume(ch, tick);
 						int expr = sequenceCache.getExpression(ch, tick);
-						velocity *= (ch_vol / (double) MAX_VOLUME) * (expr / (double) MAX_EXPRESSION);
+						velocity *= (int) ((ch_vol / (double) MAX_VOLUME) * (expr / (double) MAX_EXPRESSION));
 						if (velocity == 0 && m.getData2() > 0 && ch_vol > 0 && expr > 0) {
 							// Do not allow very low expression and volume to reduce velocity to zero.
 							velocity = 1;

@@ -9,6 +9,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.List;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.LotroInstrument;
@@ -31,7 +32,7 @@ public class PolyphonyHistogram   {
 	private static final Listener<SequencerEvent> listener = new MyListener();
 	private static LotroSequencerWrapper abcSeq = null;
 	
-	public static volatile int successes = 0;//debug for abctools (organic1=118 organic2=44) approx factor 3
+	public static volatile AtomicInteger successes = new AtomicInteger(0);//debug for abctools (organic1=118 organic2=44) approx factor 3
 
 	public static void setSequencer(LotroSequencerWrapper abcSequencer) {
 		if (abcSeq != null) abcSeq.removeChangeListener(listener);
@@ -267,8 +268,7 @@ public class PolyphonyHistogram   {
 		assert polyphony == 0;
 		if (maximum > 6) {
 			//System.out.println(" ++++ "+part.getAbcSong().getTitle()+" ("+part.getTitle()+"): "+maximum+" poly");
-			int successesPlus = successes + 1;
-			successes = successesPlus;
+            successes.incrementAndGet();
 		}
 		return maximum;
 	}

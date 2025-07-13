@@ -268,9 +268,8 @@ public class MidiUtils {
     public static String midiEventToShortString(MidiEvent evt) {
     	String str = "";
     	MidiMessage m = evt.getMessage();
-    	if (m instanceof ShortMessage) {
-    		ShortMessage shorty = (ShortMessage)m;
-    		int command = shorty.getCommand();
+    	if (m instanceof ShortMessage shorty) {
+            int command = shorty.getCommand();
     		switch (command) {
     			case ShortMessage.NOTE_ON:
     				str += "Note ON, Velocity="+shorty.getData2(); break;
@@ -286,9 +285,8 @@ public class MidiUtils {
     				str += "Pitch Bend"; break;
     		}
         	str += ", Channel="+shorty.getChannel();
-    	} else if (m instanceof SysexMessage) {
-    		SysexMessage sysex = (SysexMessage)m;
-    		str += "Sysex";
+    	} else if (m instanceof SysexMessage sysex) {
+            str += "Sysex";
     		if (sysex.getMessage()[1] == MidiConstants.SYSEX_UNIVERSAL_REALTIME) {
     			str += ", Realtime";
     		} else if (sysex.getMessage()[1] == MidiConstants.SYSEX_UNIVERSAL_NON_REALTIME) {
@@ -309,9 +307,8 @@ public class MidiUtils {
     			// take note of difference of midi (7 bit unsigned) vs. java (8 bit signed):
     			str += ", "+formatBytesHexOnly(sysex.getMessage());
     		}
-    	} else if (m instanceof MetaMessage) {
-    		MetaMessage meta = (MetaMessage)m;
-    		str += "Meta";
+    	} else if (m instanceof MetaMessage meta) {
+            str += "Meta";
     		if (isMetaTempo(m)) {
     			str += ", Tempo";
     		} else if (isMetaEndOfTrack(m)) {

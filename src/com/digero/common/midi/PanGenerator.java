@@ -110,17 +110,11 @@ public class PanGenerator {
 		int sign;
 		int c = count[instrument.ordinal()]++;
 
-		switch (c % 3) {
-			case 0:
-				sign = 1;
-				break;
-			case 1:
-				sign = -1;
-				break;
-			default:
-				sign = 0;
-				break;
-		}
+        sign = switch (c % 3) {
+            case 0 -> 1;
+            case 1 -> -1;
+            default -> 0;
+        };
 		
 		int result = 0;
 		switch (instrument) {

@@ -3,6 +3,7 @@ package com.digero.common.midi;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.logging.Logger;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
@@ -65,7 +66,7 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 			String wanted = prefs.get(prefMIDISelect, null);
 			boolean foundInUse = false;
 			boolean foundWanted = false;
-			boolean needWanted = wanted != deviceInUse;
+			boolean needWanted = !Objects.equals(wanted, deviceInUse);
 
 			for (Info d : infos) {
 				if (d != null && d.getName() != null) {

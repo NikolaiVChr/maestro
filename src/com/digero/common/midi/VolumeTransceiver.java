@@ -78,7 +78,7 @@ public class VolumeTransceiver implements Transceiver, MidiConstants
 			}
 		} else if (message instanceof SysexMessage) {
 			SysexMessage m = (SysexMessage) message;
-			
+
 			byte[] sysex = m.getMessage();
 					    
 			if (sysex.length > 4 && sysex[1] == SYSEX_UNIVERSAL_REALTIME && (sysex[3] & 0xFF) == 0x04 && (sysex[4] & 0xFF) == 0x01) {

@@ -17,19 +17,13 @@ public enum Accidental {
 	}
 
 	public static Accidental fromDeltaId(int deltaNoteId) {
-		switch (deltaNoteId) {
-		case -2:
-			return DOUBLE_FLAT;
-		case -1:
-			return FLAT;
-		case 0:
-			return NATURAL;
-		case 1:
-			return SHARP;
-		case 2:
-			return DOUBLE_SHARP;
-		default:
-			return NONE;
-		}
+        return switch (deltaNoteId) {
+            case -2 -> DOUBLE_FLAT;
+            case -1 -> FLAT;
+            case 0 -> NATURAL;
+            case 1 -> SHARP;
+            case 2 -> DOUBLE_SHARP;
+            default -> NONE;
+        };
 	}
 }
