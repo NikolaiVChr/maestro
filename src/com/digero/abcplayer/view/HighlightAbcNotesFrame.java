@@ -1,15 +1,6 @@
 package com.digero.abcplayer.view;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Container;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.Point;
-import java.awt.Rectangle;
-import java.awt.Shape;
+import java.awt.*;
 import java.awt.dnd.DropTarget;
 import java.awt.dnd.DropTargetListener;
 import java.awt.event.KeyEvent;
@@ -18,6 +9,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.geom.Rectangle2D;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -64,31 +56,30 @@ import com.digero.common.util.Themer;
 import com.digero.common.util.Util;
 import com.digero.common.view.ColorTable;
 
-@SuppressWarnings("serial")
 public class HighlightAbcNotesFrame extends JFrame {
-	private SequencerWrapper sequencer;
+	private final SequencerWrapper sequencer;
 
 	private NavigableSet<AbcRegion> regions = new TreeSet<>();
 	private int lineOffset = 0;
 	private boolean showFullPartName = false;
 	private Integer scrollToIndexNextUpdate = null;
 	private NavigableMap<Integer, AbcRegion> indexToRegion = null;
-	private Map<AbcRegion, Object> highlightedRegions = new HashMap<>();
-	private Map<AbcRegion, Object> highlightedTiedRegions = new HashMap<>();
+	private final Map<AbcRegion, Object> highlightedRegions = new HashMap<>();
+	private final Map<AbcRegion, Object> highlightedTiedRegions = new HashMap<>();
 	private int[] lineStartIndex;
 
-	private Highlighter highlighter;
-	private Highlighter.HighlightPainter chordPainter;
-	private Highlighter.HighlightPainter noteOnPainter;
-	private Highlighter.HighlightPainter tiedNoteOnPainter;
-	private Highlighter.HighlightPainter inactiveNoteOnPainter;
-	private Highlighter.HighlightPainter inactiveTiedNoteOnPainter;
-	private Highlighter.HighlightPainter restPainter;
-	private Highlighter.HighlightPainter inactiveRestPainter;
+	private final Highlighter highlighter;
+	private final Highlighter.HighlightPainter chordPainter;
+	private final Highlighter.HighlightPainter noteOnPainter;
+	private final Highlighter.HighlightPainter tiedNoteOnPainter;
+	private final Highlighter.HighlightPainter inactiveNoteOnPainter;
+	private final Highlighter.HighlightPainter inactiveTiedNoteOnPainter;
+	private final Highlighter.HighlightPainter restPainter;
+	private final Highlighter.HighlightPainter inactiveRestPainter;
 
-	private JTextArea textArea;
-	private JTextArea gutterTextArea;
-	private JScrollPane textAreaScrollPane;
+	private final JTextArea textArea;
+	private final JTextArea gutterTextArea;
+	private final JScrollPane textAreaScrollPane;
 
 	private boolean updatePending = false;
 	private boolean resetAllHighlightsNextUpdate = false;
@@ -96,8 +87,8 @@ public class HighlightAbcNotesFrame extends JFrame {
 	private int lastAutoScrollY = -1;
 	private boolean dragActive = false;
 
-	private JCheckBox autoScrollCheckBox;
-	private JComboBox<PartInfo> followTrackComboBox;
+	private final JCheckBox autoScrollCheckBox;
+	private final JComboBox<PartInfo> followTrackComboBox;
 
 	public HighlightAbcNotesFrame(SequencerWrapper seq, Preferences abcPlayerPreferences) {
 		super(AbcPlayer.APP_NAME);
@@ -205,8 +196,8 @@ public class HighlightAbcNotesFrame extends JFrame {
 	}
 
 	private static class TextAreaContainer extends JPanel implements Scrollable {
-		private JTextArea textArea;
-		private JTextArea gutter;
+		private final JTextArea textArea;
+		private final JTextArea gutter;
 
 		public TextAreaContainer(JTextArea textArea, JTextArea gutter) {
 			super(new BorderLayout());
@@ -251,23 +242,16 @@ public class HighlightAbcNotesFrame extends JFrame {
 		}
 	}
 
-	/** For use in followTrackComboBox */
-	private static class PartInfo {
-		public final String name;
-		public final int trackNumber;
-		public final int trackStartLine;
+	/**
+	 * For use in followTrackComboBox
+	 */
+		private record PartInfo(String name, int trackNumber, int trackStartLine) {
 
-		public PartInfo(String name, int trackNumber, int trackStartLine) {
-			this.name = name;
-			this.trackNumber = trackNumber;
-			this.trackStartLine = trackStartLine;
+			@Override
+			public String toString() {
+				return name;
+			}
 		}
-
-		@Override
-		public String toString() {
-			return name;
-		}
-	}
 
 	public void addDropListener(DropTargetListener listener) {
 		new DropTarget(this, listener);
@@ -280,7 +264,7 @@ public class HighlightAbcNotesFrame extends JFrame {
 		private int top;
 		private int right;
 		private int bottom;
-		private Color color;
+		private final Color color;
 
 		public RestPainter(Color color) {
 			this(color, 0, 0, 0, 2);
@@ -302,11 +286,14 @@ public class HighlightAbcNotesFrame extends JFrame {
 		public void paint(Graphics g, int offs0, int offs1, Shape bounds, JTextComponent c) {
 			try {
 				TextUI mapper = c.getUI();
-				Rectangle p0 = mapper.modelToView(c, offs0);
-				Rectangle p1 = mapper.modelToView(c, offs1);
+				Rectangle2D p0 = mapper.modelToView2D(c, offs0, Position.Bias.Forward);
+				Rectangle2D p1 = mapper.modelToView2D(c, offs1, Position.Bias.Forward);
+
+				Rectangle2D union = p0.createUnion(p1);
 
 				g.setColor(color);
-				drawRect(g, p0.union(p1));
+				Graphics2D g2 = (Graphics2D) g;
+				g2.draw(union);
 			} catch (BadLocationException e) {
 			}
 		}
@@ -454,7 +441,7 @@ public class HighlightAbcNotesFrame extends JFrame {
 				}
 			}
 
-			int index = textArea.viewToModel(pt);
+			int index = textArea.viewToModel2D(pt);
 			Map.Entry<Integer, AbcRegion> e = indexToRegion.ceilingEntry(index);
 			if (!isValidEntry(e, pt, index)) {
 				e = indexToRegion.floorEntry(index);
@@ -475,7 +462,9 @@ public class HighlightAbcNotesFrame extends JFrame {
 				if (e != null) {
 					int line = getLine(e.getValue());
 
-					Rectangle lineEndRect = textArea.modelToView(lineStartIndex[line + 1] - 1);
+					Rectangle2D lineEndRect2D = textArea.modelToView2D(lineStartIndex[line + 1] - 1);
+					if (lineEndRect2D == null) return false;
+					Rectangle lineEndRect = lineEndRect2D.getBounds();
 					int lineEndX = lineEndRect.x + lineEndRect.width;
 
 					// Check if it's the same line
@@ -572,9 +561,8 @@ public class HighlightAbcNotesFrame extends JFrame {
 
 	/**
 	 * Init track list in the combo box
-	 * 
-	 * @param abcInfo
-	 */
+	 *
+     */
 	private void initTrackList(AbcInfo abcInfo) {
 		followTrackComboBox.removeAllItems();
 		if (abcInfo != null) {
@@ -663,10 +651,12 @@ public class HighlightAbcNotesFrame extends JFrame {
 
 		if (scrollToIndexNextUpdate != null) {
 			try {
-				Rectangle rect = textArea.modelToView(scrollToIndexNextUpdate);
-				Point scrollPt = (rect != null) ? new Point(0, rect.y) : new Point(0, 0);
+				Rectangle2D r2d = textArea.modelToView2D(scrollToIndexNextUpdate);
+				Rectangle rect = (r2d != null) ? r2d.getBounds() : new Rectangle(0, 0, 0, 0);
+				Point scrollPt = new Point(0, rect.y);
 				textAreaScrollPane.getViewport().setViewPosition(scrollPt);
 			} catch (BadLocationException e) {
+				textAreaScrollPane.getViewport().setViewPosition(new Point(0, 0));
 			}
 			scrollToIndexNextUpdate = null;
 		}
@@ -692,9 +682,8 @@ public class HighlightAbcNotesFrame extends JFrame {
 
 	/**
 	 * Add highlighted regions
-	 * 
-	 * @throws BadLocationException
-	 */
+	 *
+     */
 	private int addHighlightedRegions(long tick, int followedTrackNumber) throws BadLocationException {
 		int endOfFollowedTrack = -1;
 		for (AbcRegion region : regions) {
@@ -730,9 +719,8 @@ public class HighlightAbcNotesFrame extends JFrame {
 
 	/**
 	 * Add tied highlighted regions
-	 * 
-	 * @throws BadLocationException
-	 */
+	 *
+     */
 	private void addTiedHighlightedRegions() throws BadLocationException {
 		for (AbcRegion region : highlightedRegions.keySet()) {
 			for (AbcRegion t = region.getTiesFrom(); t != null; t = t.getTiesFrom()) {
@@ -760,20 +748,21 @@ public class HighlightAbcNotesFrame extends JFrame {
 
 	/**
 	 * Scroll to the end
-	 * 
-	 * @param endOfFollowedTrack
-	 * @throws BadLocationException
-	 */
+	 *
+     */
 	private void scrollToEnd(int endOfFollowedTrack) throws BadLocationException {
 		if (endOfFollowedTrack >= 0 && autoScrollCheckBox.isSelected()) {
-			Rectangle rect = textArea.modelToView(endOfFollowedTrack);
-			if (rect != null && rect.y != lastAutoScrollY) {
-				lastAutoScrollY = rect.y;
-				if (!dragActive) {
-					final int marginLines = 4;
-					rect.y -= rect.height * marginLines;
-					rect.height *= (2 * marginLines + 1);
-					textArea.scrollRectToVisible(rect);
+			Rectangle2D rect2D = textArea.modelToView2D(endOfFollowedTrack);
+			if (rect2D != null) {
+				Rectangle rect = rect2D.getBounds();
+				if (rect.y != lastAutoScrollY) {
+					lastAutoScrollY = rect.y;
+					if (!dragActive) {
+						final int marginLines = 4;
+						rect.y -= rect.height * marginLines;
+						rect.height *= (2 * marginLines + 1);
+						textArea.scrollRectToVisible(rect);
+					}
 				}
 			}
 		}
@@ -781,9 +770,8 @@ public class HighlightAbcNotesFrame extends JFrame {
 
 	/**
 	 * Remove regions that aren't highlighted anymore
-	 * 
-	 * @param tick
-	 */
+	 *
+     */
 	private void removeNoLongerHighlightedRegions(long tick) {
 		Iterator<Map.Entry<AbcRegion, Object>> highlightIter = highlightedRegions.entrySet().iterator();
 		while (highlightIter.hasNext()) {
