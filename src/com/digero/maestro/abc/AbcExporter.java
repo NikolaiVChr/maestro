@@ -1909,7 +1909,8 @@ public class AbcExporter {
 				// We prune AFTER removed shorter zero notes, so they dont take up slot from
 				// 6 max notes.
 				List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
-						part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part);
+						part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion,
+						part, useRestToShortenChords);
 				removeNotes(events, deadnotes, part);
 				if (!deadnotes.isEmpty()) {
 					// One of the tiedTo notes that was pruned might be ne note,
@@ -3505,7 +3506,7 @@ public class AbcExporter {
 				}
 	    			    		
 				List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
-						part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part, true);
+						part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part, useRestToShortenChords);
 				breakTies(deadnotes);
 				eventSegments.removeAll(deadnotes);
 				

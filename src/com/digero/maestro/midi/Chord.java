@@ -333,7 +333,7 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 	public List<AbcNoteEvent> prune(boolean sustained, boolean drum, boolean percussion, AbcPart abcPart) {
 		return prune(sustained,drum, percussion,abcPart,false);
 	}
-	
+
 	public List<AbcNoteEvent> prune(boolean sustained, boolean drum, boolean percussion, AbcPart abcPart, boolean keepShortest) {
 		// Determine which notes to prune to remain with a max of 6
 		List<AbcNoteEvent> deadNotes = new ArrayList<>();
@@ -351,15 +351,19 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 			PruneComparator keepMe = new PruneComparator(sustained, drum, percussion, both, endTick-startTick);
 
 			notes.sort(keepMe);
-			
-			keepOnlyRestIfShortest();
+
+			// notes are now sorted by most important last
+
+			List<AbcNoteEvent> deadRests = keepOnlyRestIfShortest();
+			deadNotes.addAll(deadRests);
 			
 			NoteEvent keptShort = null;
 			if (keepShortest) {
 				for (int i = notes.size() - 1; i >= 0; i--) {
-					if (newNotes.size() < noteMax && oldEndTick == notes.get(i).getEndTick()) {
+					if (oldEndTick == notes.get(i).getEndTick()) {
 						keptShort = notes.get(i);
 						newNotes.add(notes.get(i));
+						break;
 					}
 				}
 			}
@@ -376,38 +380,33 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 			notes = newNotes;
 			
 		} else {
-			keepOnlyRestIfShortest();
+			deadNotes = keepOnlyRestIfShortest();
 		}
 		recalcEndTick();
 
 		assert oldEndTick == endTick || !both:"Old="+oldEndTick+" new="+endTick+" start="+startTick+" both="+hasRestAndNotes();
-		
-		/*
-		if (getShortest().origStartABCMicros == 490032080) {
-			System.out.println();
-			for (AbcNoteEvent ne : notes) {
-				if (ne.note == Note.REST) {
-					System.out.println(" rest="+ne.getLengthTicks());
-				} else {
-					System.out.println(" note="+ne.getLengthTicks());
-				}
-			}
-		}
-		*/
-		
+
 		return deadNotes;
 	}
 
-	private void keepOnlyRestIfShortest() {
+	/**
+	 * Keep only 1 rest and only if it's the shortest event in the chord,
+	 * and no note is equally short.
+	 *
+	 * @return rests that were removed
+	 */
+	private List<AbcNoteEvent> keepOnlyRestIfShortest() {
 		List<AbcNoteEvent> rests = new ArrayList<>();
 		AbcNoteEvent shortestRest = null;
 		long restDura = Long.MAX_VALUE;
 		for (AbcNoteEvent ne : notes) {
-			if (ne.getLengthTicks() < restDura) {
+			if (ne.getLengthTicks() < restDura || (ne.getLengthTicks() == restDura && ne.note != Note.REST)) {
 				// we only keep the shortest
 				restDura = ne.getLengthTicks();
 				if (ne.note == Note.REST) {
 					shortestRest = ne;
+				} else {
+					shortestRest = null;
 				}
 			}
 			if (ne.note == Note.REST) rests.add(ne);
@@ -416,11 +415,13 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		notes.removeAll(rests);// no need to add the rests to deadnotes
 		
 		if (shortestRest != null && shortestRest.getLengthTicks() == restDura) {
-			notes.add(shortestRest);
+			notes.add(shortestRest);// add at the end, so most important
+			rests.remove(shortestRest);
 			//System.out.println("kept rest");
 		} else {
 			//System.out.println("no shortest rest");
 		}
+		return rests;
 	}
 	
 	class PruneComparator implements Comparator<AbcNoteEvent> {
