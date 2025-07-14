@@ -33,28 +33,33 @@ Special Thanks
 ==============
 Thanks to Digero for an amazing original Maestro and ABC Player.
 Thanks to Jersiel for teaching Aifel music theory and giving ideas and feedback,
-          without which he could not have made much of this.
+          without which he could not have contributed to much of this.
 Thanks to all who gave feedback of features and bugs plus suggestions.
+Special thanks to the folks who have tested beta builds and gave feedback.
 
 
-Maestro upgrades by Aifel of Laurelin, Elamond of Landroval and Karloman
+Maestro upgrades by Aifel of Meriadoc, Elamond of Landroval and Karloman
 ================
 
-Version 4.2.18
+Version 4.2.19
 - Fixed Abc Merge Tool button for testing was no longer working.
 - Fixed Abc Merge Tool refused to overwrite.
 - New import lyrics option in settings that can help to determine song-title/artist when filename is short and insufficient.
-- Fixed that some midi files could generate error in Maestro.
+- Fixed that some midi files could generate error in Maestro if they had events weeks beyond end of song.
 - Fixed that wav and mp3 export would always be mono. Now they will be whatever maestro/abc-player setting is.
 - Reduced average abc filesize of organic output when poly 6+ is disabled.
-- Fixed some issues in multi and single-stage organic timing.
+- Improvements to multi and single-stage organic timing.
 - If a midi note has no note OFF signal, but there is a EndOfTrack signal, end it at EOT signal instead of deleting it.
+- Output bar numbers with timestamp in abc.
+- If part auto-sort is enabled, sort the parts when loading project and auto-exporting projects.
 - Fix minor inaccuracy of song position time display in Maestro.
-- Fix maestro not always play very first note when opening project.
-- Fix that after pressing stop when not in abc preview, sequencer when play, would play initial silence in the midi.
-- Prevent midi playback from skipping to first enabled note when enabling first lotro part.
+- Fix some cases where the song display in maestro would be significantly longer than its actual duration. It can still happen, but more rarely now.
+- Fix that maestro not always play very first note when opening project.
+- Fix that after pressing stop when not in abc preview, midi playback would play initial silence in the midi.
+- Prevent midi playback from skipping midi playback to first enabled note when enabling first lotro part.
 - Add Maestro version to window title.
 - Fix old bug that loading a project while maestro is running, could make first note(s) repeat in abc preview.
+- Added same pitch note overlap as a lotro error in abc player.
 
 Version 4.2.13
 - Fix that some songs could still change midi playback volume, overriding user's volume slider setting.
