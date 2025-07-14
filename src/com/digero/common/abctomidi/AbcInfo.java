@@ -432,7 +432,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 				String title = songTitle != null ? songTitle: "";
 				log.warning("Potential corrupted ABC. "+title+" ABC was exported with a flawed Maestro: "+issue);
                 SwingUtilities.invokeLater(() -> {
-                    JOptionPane.showMessageDialog(null, title+" ABC was exported with a flawed Maestro: "+issue, "Potential corrupted ABC", JOptionPane.WARNING_MESSAGE);
+                    JOptionPane.showMessageDialog(null, title+" ABC was exported with a flawed Maestro: "+issue, "Potential corrupted ABC from "+abcCreator, JOptionPane.WARNING_MESSAGE);
                 });
 			}
 			break;

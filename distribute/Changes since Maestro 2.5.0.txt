@@ -60,6 +60,7 @@ Version 4.2.19
 - Add Maestro version to window title.
 - Fix old bug that loading a project while maestro is running, could make first note(s) repeat in abc preview.
 - Added same pitch note overlap as a lotro error in abc player.
+- Abc Player will now notify if loading in an abc made with a Maestro that had a known issue.
 
 Version 4.2.13
 - Fix that some songs could still change midi playback volume, overriding user's volume slider setting.

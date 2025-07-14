@@ -27,7 +27,7 @@ public class VersionsWithIssues {
 		versionsWithIssues.add(new IssueVersion(new Version(3,6,6), new Version(4,0,11),
 				"Notes can be missing or out of rhythm (if exported with organic)."));//beta of organic
 		versionsWithIssues.add(new IssueVersion(new Version(4,2,4), new Version(4,2,9),
-				"Parts can be silenced in lotro (if exported with organic singlestage)."));
+				"Parts can be silenced in lotro (if exported with organic single-stage and poly 6+)."));
 		versionsWithIssues.add(new IssueVersion(new Version(4,2,10),
 				"Rare chance of ties having rest between them in organic single-stage."));
 		versionsWithIssues.add(new IssueVersion(new Version(4,2,14), new Version(4,2,16),

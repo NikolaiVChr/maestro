@@ -46,7 +46,7 @@ public final class AboutDialog {
 				+ "Version " + appVersion + "<br>" //
 				+ "Created by Digero of Landroval.<br>" //
 				+ "Copyright &copy; 2015 Ben Howell.<br>" //
-				+ "Upgraded by Aifel of Laurelin,<br>" //
+				+ "Upgraded by Aifel of Meriadoc,<br>" //
 				+ "Elamond of Landroval and Karloman.<br>" //
 				+ "<br>" //
 				+ "<a href='" + appUrl + "'>" + "wiki link" + "</a><br>" //
