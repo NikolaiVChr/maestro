@@ -37,7 +37,6 @@ import com.digero.common.view.InstrumentComboBox;
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
 
-@SuppressWarnings("serial")
 public class TrackListPanel extends JPanel implements Listener<SequencerEvent>, TableLayoutConstants {
 	public static int TRACKLIST_ROWHEIGHT = 22;
 	private static final Object TRACK_INDEX_KEY = new Object();
@@ -103,15 +102,18 @@ public class TrackListPanel extends JPanel implements Listener<SequencerEvent>, 
 //		setBackground(Color.WHITE);
 	}
 
-	@SuppressWarnings("rawtypes") //
+	/**
+	 * Must be called from only AWT event thread.
+	 */
+	@SuppressWarnings(value = "rawtypes")
 	public void clear() {
 		for (Component c : getComponents()) {
-			if (c instanceof JCheckBox) {
-				((JCheckBox) c).removeActionListener(trackMuteListener);
-				((JCheckBox) c).removeActionListener(trackSoloListener);
+			if (c instanceof JCheckBox box) {
+				box.removeActionListener(trackMuteListener);
+				box.removeActionListener(trackSoloListener);
 			}
-			if (c instanceof JComboBox) {
-				((JComboBox) c).removeActionListener(instrumentChangeListener);
+			if (c instanceof JComboBox combo) {
+				combo.removeActionListener(instrumentChangeListener);
 			}
 		}
 		trackControls = null;
@@ -124,23 +126,26 @@ public class TrackListPanel extends JPanel implements Listener<SequencerEvent>, 
 	}
 
 	public void songChanged(AbcInfo abcInfo) {
-		clear();
-		if (sequencer.getSequence() == null) {
-			this.abcInfo = null;
-			return;
-		}
+		SwingUtilities.invokeLater(() -> {
+			AbcInfo localInfo = abcInfo;// must be done to avoid threading issues.
+			clear();
+			if (sequencer.getSequence() == null) {
+				this.abcInfo = null;
+				return;
+			}
 
-		this.abcInfo = abcInfo;
+			this.abcInfo = localInfo;
 
-		Track[] tracks = sequencer.getSequence().getTracks();
-		trackControls = new TrackControls[tracks.length];
+			Track[] tracks = sequencer.getSequence().getTracks();
 
-		for (int i = 0; i < tracks.length; i++) {
-			showTracksWithOneNote(abcInfo, i, tracks);
-		}
+			trackControls = new TrackControls[tracks.length];
 
-		revalidate();
-		repaint();
+			for (int i = 0; i < tracks.length; i++) {
+				showTracksWithOneNote(localInfo, i, tracks);
+			}
+			revalidate();
+			repaint();
+		});
 	}
 
 	/**
@@ -381,12 +386,13 @@ public class TrackListPanel extends JPanel implements Listener<SequencerEvent>, 
 	}
 
 	private void update() {
-		if (updatePending || !isVisible())
-			return;
-
-		updatePending = true;
+		// we do this on event thread due
+		// avoid threading issues with
+		// trackControls
 		SwingUtilities.invokeLater(() -> {
-			updatePending = false;
+			if (!isVisible())
+				return;
+
 			updateCore();
 		});
 	}
