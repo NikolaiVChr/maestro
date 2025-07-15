@@ -32,6 +32,8 @@ public class VersionsWithIssues {
 				"Rare chance of ties having rest between them in organic single-stage."));
 		versionsWithIssues.add(new IssueVersion(new Version(4,2,14), new Version(4,2,16),
 				"Notes can be cut short (if exported with organic and poly 6+)."));//beta
+		versionsWithIssues.add(new IssueVersion(new Version(4,3,0),
+				"Part main volume can be corrupted, check project also."));
 	}
 	
 	/**
