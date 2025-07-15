@@ -30,7 +30,7 @@ public class CharsetDetectAndDecode {
 	
 	public static Pair<String, Charset> decodeMidiData(byte[] data, boolean western) {
 		
-		if (data == null || data.length == 0) return new Pair<String, Charset>("", null);
+		if (data == null || data.length == 0) return new Pair<>("", null);
 
         // Marker sniff
         String marker = sniffAsciiMarker(data);
@@ -82,7 +82,7 @@ public class CharsetDetectAndDecode {
                 String s = dec.decode(ByteBuffer.wrap(data)).toString();
                 if (isPrintableAndNoSurrogates(s) && decodedHasJapaneseChars(s, Math.max(1, s.length()/10))) {
                 	log.fine("Euc shortcut");
-                	return new Pair<String, Charset>(decodeWithReplace(data,Charset.forName("EUC-JP")),Charset.forName("EUC-JP"));
+                	return new Pair<>(decodeWithReplace(data, Charset.forName("EUC-JP")), Charset.forName("EUC-JP"));
                 }
             } catch (CharacterCodingException e) {
             }
@@ -110,7 +110,7 @@ public class CharsetDetectAndDecode {
         	String s = decodeWithReplace(data, sjis);
         	if (isPrintableAndNoSurrogates(s) && decodedHasJapaneseChars(s, Math.max(1, s.length()/10))) {
         		log.fine("Third sjis shortcut");
-        		return new Pair<String, Charset>(s,sjis);
+        		return new Pair<>(s, sjis);
         	}
         }
         
@@ -146,17 +146,16 @@ public class CharsetDetectAndDecode {
 
     private static Pair<String, Charset> decodeWithMarker(byte[] data, String marker) {
         int offset = marker.length();
-        if (data.length <= offset) return new Pair<String, Charset>("", null);
+        if (data.length <= offset) return new Pair<>("", null);
         byte[] tail = Arrays.copyOfRange(data, offset, data.length);
-        Charset cs;
-        switch (marker) {
-            case "@LATIN":     cs = StandardCharsets.ISO_8859_1; break;
-            case "@JP":        cs = Charset.forName("windows-31j"); break;
-            case "@UTF-16LE":  cs = StandardCharsets.UTF_16LE; break;
-            case "@UTF-16BE":  cs = StandardCharsets.UTF_16BE; break;
-            default:           cs = StandardCharsets.ISO_8859_1;
-        }
-        return new Pair<String, Charset>(new String(tail, cs), cs);
+        Charset cs = switch (marker) {
+            case "@LATIN" -> StandardCharsets.ISO_8859_1;
+            case "@JP" -> Charset.forName("windows-31j");
+            case "@UTF-16LE" -> StandardCharsets.UTF_16LE;
+            case "@UTF-16BE" -> StandardCharsets.UTF_16BE;
+            default -> StandardCharsets.ISO_8859_1;
+        };
+        return new Pair<>(new String(tail, cs), cs);
     }
 
     private static Pair<String, Charset> tryBomDecode(byte[] data) {
@@ -164,19 +163,19 @@ public class CharsetDetectAndDecode {
         if (data.length >= 3
          && (data[0]&0xFF)==0xEF && (data[1]&0xFF)==0xBB && (data[2]&0xFF)==0xBF) {
             String s = new String(data, 3, data.length-3, StandardCharsets.UTF_8);
-            if (isPrintableAndNoSurrogates(s)) return new Pair<String, Charset>(s, StandardCharsets.UTF_8);
+            if (isPrintableAndNoSurrogates(s)) return new Pair<>(s, StandardCharsets.UTF_8);
         }
         // UTF-16BE BOM
         if (data.length >= 2
          && (data[0]&0xFF)==0xFE && (data[1]&0xFF)==0xFF) {
             String s = new String(data, 2, data.length-2, StandardCharsets.UTF_16BE);
-            if (isPrintableAndNoSurrogates(s)) return new Pair<String, Charset>(s, StandardCharsets.UTF_16BE);
+            if (isPrintableAndNoSurrogates(s)) return new Pair<>(s, StandardCharsets.UTF_16BE);
         }
         // UTF-16LE BOM
         if (data.length >= 2
          && (data[0]&0xFF)==0xFF && (data[1]&0xFF)==0xFE) {
             String s = new String(data, 2, data.length-2, StandardCharsets.UTF_16LE);
-            if (isPrintableAndNoSurrogates(s)) return new Pair<String, Charset>(s, StandardCharsets.UTF_16LE);
+            if (isPrintableAndNoSurrogates(s)) return new Pair<>(s, StandardCharsets.UTF_16LE);
         }
         return null;
     }
@@ -190,7 +189,7 @@ public class CharsetDetectAndDecode {
             return null;                           // too short or odd length
         }
 
-        // Count zeroes in even & odd positions
+        // Count zeroes in even and odd positions
         int evenZero = 0, oddZero = 0;
         for (int i = 0; i < data.length; i += 2) {
             if (data[i] == 0)   evenZero++;
@@ -209,14 +208,14 @@ public class CharsetDetectAndDecode {
             return null;
         }
         
-        /**
+        /*
          * If >25% of bytes are zero at the same offset (even or odd), we treat the input
          * as UTF-16BE (zeros at even indices) or UTF-16LE (zeros at odd indices).
          */
         
         Charset cs = looks16BE ? StandardCharsets.UTF_16BE : StandardCharsets.UTF_16LE;
         String s = new String(data, cs);
-        return isPrintableAndNoSurrogates(s) ? new Pair<String, Charset>(s, cs) : null;
+        return isPrintableAndNoSurrogates(s) ? new Pair<>(s, cs) : null;
     }
  
     private static Pair<String, Charset> tryStrictUtf8(byte[] data) {
@@ -231,7 +230,7 @@ public class CharsetDetectAndDecode {
             CharBuffer cb = dec.decode(ByteBuffer.wrap(trimmed));
             String s = cb.toString();
             if (isPrintableAndNoSurrogates(s)) {
-                return new Pair<String, Charset>(s,StandardCharsets.UTF_8);
+                return new Pair<>(s, StandardCharsets.UTF_8);
             }
         } catch (CharacterCodingException ignored){}
         return null;
@@ -332,11 +331,9 @@ public class CharsetDetectAndDecode {
             int b = bb & 0xFF;
             if (b >= 0x20 && b <= 0x7E) {
                 // printable ASCII
-                continue;
             } else if (b >= 0xA1 && b <= 0xDF) {
                 // half-width Katakana
                 hwkCount++;
-                continue;
             } else {
                 // contains something outside ASCII/half-width Katakana
                 return false;
@@ -402,13 +399,11 @@ public class CharsetDetectAndDecode {
             int b = bb & 0xFF;
             if (b >= 0x20 && b <= 0x7E) {
                 // ASCII printable
-                continue;
             } else if (b == 0x81 || b == 0x8D || b == 0x8F || b == 0x90 || b == 0x9D) {
             	//unused slots
             	return false;
             } else if (b >= 0xA0 && b <= 0xFF) {
                 // Latin-1 printable (also CP-1252)
-                continue;
             } else {
                 // b is in 0x80–0x9F: only some of these are printable in CP-1252
                 switch (b) {
@@ -503,7 +498,7 @@ public class CharsetDetectAndDecode {
         }
         try {
         	log.fine("icu4j: "+match[0].getName()+" "+confidence+"% for "+match[0].getString());
-            return new Pair<String, Charset>(match[0].getString(), Charset.forName(match[0].getName()));
+            return new Pair<>(match[0].getString(), Charset.forName(match[0].getName()));
         } catch (Exception e) {
             return null;
         }
@@ -539,11 +534,11 @@ public class CharsetDetectAndDecode {
         }        
         if (bestDecoded == null) {
         	log.severe("Decoding failed");
-        	return new Pair<String, Charset> ("", null);
+        	return new Pair<>("", null);
         }
         log.fine("Legacy winner is "+bestDecoded);
         
-        return new Pair<String, Charset> (bestDecoded.decoded, bestDecoded.cs);
+        return new Pair<>(bestDecoded.decoded, bestDecoded.cs);
     }
 
     /** Holds evaluation results for one charset candidate. */
@@ -856,7 +851,7 @@ public class CharsetDetectAndDecode {
 	    //   • at least 1 kana (hiragana or full-width katakana), or
 	    //   • at least 2 CJK characters.
 	    // This prevents Latin1 accents that form a single rare Kanji
-	    // from being mis-recognised as Shift_JIS.
+	    // from being mis-recognized as Shift_JIS.
 	    if (validMulti < 1) return false;
 	
 	    String decoded = decodeWithReplace(data, Charset.forName("Shift_JIS"));
@@ -946,15 +941,14 @@ public class CharsetDetectAndDecode {
                     }
                 }
                 invalid++;
-                i++;
             } else {
                 if ((0x00 <= b && b <= 0x7F) || (0xA1 <= b && b <= 0xDF)) {
                     // ok
                 } else {
                     invalid++;
                 }
-                i++;
             }
+            i++;
         }
         return invalid;
     }

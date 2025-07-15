@@ -17,7 +17,7 @@ public class StringCleaner {
 		after = after.replace('.', ' ').trim();// lotro do not like when there is more than one dot
 		// after = String.join("_", after.split(":*?\"<>|"));// Need to be converted to proper regex
 		// System.out.println("New file : "+after);
-		if (after.length() == 0)
+		if (after.isEmpty())
 			after = "mySong";
 		return after;
 	}
@@ -130,7 +130,7 @@ public class StringCleaner {
 				"Shch", // 0x29
 				"", // 0x2a
 				"Y", // 0x2b
-				"\'", // 0x2c
+                "'", // 0x2c
 				"E", // 0x2d
 				"Iu", // 0x2e
 				"Ia", // 0x2f
@@ -162,7 +162,7 @@ public class StringCleaner {
 				"shch", // 0x49
 				"", // 0x4a
 				"y", // 0x4b
-				"\'", // 0x4c
+                "'", // 0x4c
 				"e", // 0x4d
 				"iu", // 0x4e
 				"ia", // 0x4f
@@ -228,65 +228,65 @@ public class StringCleaner {
 				"?", // 0x8b
 				"\"", // 0x8c
 				"\"", // 0x8d
-				"R\'", // 0x8e
-				"r\'", // 0x8f
-				"G\'", // 0x90
-				"g\'", // 0x91
-				"G\'", // 0x92
-				"g\'", // 0x93
-				"G\'", // 0x94
-				"g\'", // 0x95
-				"Zh\'", // 0x96
-				"zh\'", // 0x97
-				"Z\'", // 0x98
-				"z\'", // 0x99
-				"K\'", // 0x9a
-				"k\'", // 0x9b
-				"K\'", // 0x9c
-				"k\'", // 0x9d
-				"K\'", // 0x9e
-				"k\'", // 0x9f
-				"K\'", // 0xa0
-				"k\'", // 0xa1
-				"N\'", // 0xa2
-				"n\'", // 0xa3
+                "R'", // 0x8e
+                "r'", // 0x8f
+                "G'", // 0x90
+                "g'", // 0x91
+                "G'", // 0x92
+                "g'", // 0x93
+                "G'", // 0x94
+                "g'", // 0x95
+                "Zh'", // 0x96
+                "zh'", // 0x97
+                "Z'", // 0x98
+                "z'", // 0x99
+                "K'", // 0x9a
+                "k'", // 0x9b
+                "K'", // 0x9c
+                "k'", // 0x9d
+                "K'", // 0x9e
+                "k'", // 0x9f
+                "K'", // 0xa0
+                "k'", // 0xa1
+                "N'", // 0xa2
+                "n'", // 0xa3
 				"Ng", // 0xa4
 				"ng", // 0xa5
-				"P\'", // 0xa6
-				"p\'", // 0xa7
+                "P'", // 0xa6
+                "p'", // 0xa7
 				"Kh", // 0xa8
 				"kh", // 0xa9
-				"S\'", // 0xaa
-				"s\'", // 0xab
-				"T\'", // 0xac
-				"t\'", // 0xad
+                "S'", // 0xaa
+                "s'", // 0xab
+                "T'", // 0xac
+                "t'", // 0xad
 				"U", // 0xae
 				"u", // 0xaf
-				"U\'", // 0xb0
-				"u\'", // 0xb1
-				"Kh\'", // 0xb2
-				"kh\'", // 0xb3
+                "U'", // 0xb0
+                "u'", // 0xb1
+                "Kh'", // 0xb2
+                "kh'", // 0xb3
 				"Tts", // 0xb4
 				"tts", // 0xb5
-				"Ch\'", // 0xb6
-				"ch\'", // 0xb7
-				"Ch\'", // 0xb8
-				"ch\'", // 0xb9
+                "Ch'", // 0xb6
+                "ch'", // 0xb7
+                "Ch'", // 0xb8
+                "ch'", // 0xb9
 				"H", // 0xba
 				"h", // 0xbb
 				"Ch", // 0xbc
 				"ch", // 0xbd
-				"Ch\'", // 0xbe
-				"ch\'", // 0xbf
+                "Ch'", // 0xbe
+                "ch'", // 0xbf
 				"`", // 0xc0
 				"Zh", // 0xc1
 				"zh", // 0xc2
-				"K\'", // 0xc3
-				"k\'", // 0xc4
+                "K'", // 0xc3
+                "k'", // 0xc4
 				"?", // 0xc5
 				"?", // 0xc6
-				"N\'", // 0xc7
-				"n\'", // 0xc8
+                "N'", // 0xc7
+                "n'", // 0xc8
 				"?", // 0xc9
 				"?", // 0xca
 				"Ch", // 0xcb

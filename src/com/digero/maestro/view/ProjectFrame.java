@@ -582,7 +582,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		
 		partEditor = new PartEditor(this, sequencer, miscSettings);
 
-		/**
+		/*
 		 * Wrap the part list in a panel that forces the list to the top. Fixes a swing bug where clicking after the end
 		 * of the list will select the last element.
 		 */
@@ -2178,7 +2178,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		try {
 			abcSong = new AbcSong(file, partAutoNumberer, partNameTemplate, exportFilenameTemplate, instrNameSettings,
 					openFileResolver, miscSettings, saveSettings);
-			sequencer.onlyFirstTrackTempos = abcSong.isUsingOldTempos();
+			SequencerWrapper.onlyFirstTrackTempos = abcSong.isUsingOldTempos();
 			abcSong.setBadger(miscSettings.showBadger);
 			abcSong.addSongListener(abcSongListener);
 			abcSong.addSongListener(partsList.songListener);

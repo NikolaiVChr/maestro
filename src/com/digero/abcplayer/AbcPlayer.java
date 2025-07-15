@@ -84,7 +84,6 @@ import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
 import net.miginfocom.swing.MigLayout;
 
-@SuppressWarnings("serial")
 public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConstants, TrackListPanelCallback {
 	private static final ExtensionFileFilter ABC_FILE_FILTER = new ExtensionFileFilter("ABC Files and Playlists", Util.ABC_FILE_EXTENSION_NO_DOT, Util.TXT_FILE_EXTENSION_NO_DOT, Util.ABCP_FILE_EXTENSION_NO_DOT);
 	public static final String APP_NAME = "ABC Player";
@@ -98,7 +97,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 
 	private JMenu recentItems;
 	private Queue<String> recentQueue;
-	private int recentMaxItems = 11;
+	private final int recentMaxItems = 11;
 
 	private static ServerSocket serverSocket;
 
@@ -123,14 +122,17 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		if (args != null && args.length > 1 && args[args.length-1].equals("--tools")) {
 			tools = true;
 			songArgs = Arrays.copyOf(args, args.length - 1);
-		} else {
+		} else if (args != null) {
 			tools = false;
 			songArgs = Arrays.copyOf(args, args.length);
+		} else {
+			tools = false;
+			songArgs = new String[0];
 		}
 		
 		if (!tools) Logging.configure(APP_NAME);
 
-		System.setProperty("sun.sound.useNewAudioEngine", "true");
+		//System.setProperty("sun.sound.useNewAudioEngine", "true");
 		
 		try {
 			if (!tools) {
@@ -208,43 +210,43 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 	private final SequencerWrapper sequencer;
 	private boolean useLotroInstruments = true;
 
-	private FileFilterDropListener dropListener;
-	private DropTarget mainWindowDropTarget;
+	private final FileFilterDropListener dropListener;
+	private final DropTarget mainWindowDropTarget;
 
-	private JPanel content;
+	private final JPanel content;
 
-	private JLabel titleLabel;
-	private JLabel composerLabel;
-	private JLabel transcriberLabel;
-	private JLabel moodLabel;
-	private JLabel genreLabel;
+	private final JLabel titleLabel;
+	private final JLabel composerLabel;
+	private final JLabel transcriberLabel;
+	private final JLabel moodLabel;
+	private final JLabel genreLabel;
 
-	private TrackListPanel trackListPanel;
+	private final TrackListPanel trackListPanel;
 	
 	private boolean showPlaylistView = false;
-	private JPanel mainCardPanel;
-	private CardLayout mainCardPanelLayout;
-	private JPanel songViewPanel;
+	private final JPanel mainCardPanel;
+	private final CardLayout mainCardPanelLayout;
+	private final JPanel songViewPanel;
 	private AbcPlaylistPanel playlistViewPanel;
 
-	private SongPositionBar songPositionBar;
-	private SongPositionLabel songPositionLabel;
-	private BarNumberLabel barNumberLabel;
-	private JLabel tempoLabel;
-	private TempoBar tempoBar;
-	private NativeVolumeBar volumeBar;
-	private VolumeTransceiver volumeTransceiver;
+	private final SongPositionBar songPositionBar;
+	private final SongPositionLabel songPositionLabel;
+	private final BarNumberLabel barNumberLabel;
+	private final JLabel tempoLabel;
+	private final TempoBar tempoBar;
+	private final NativeVolumeBar volumeBar;
+	private final VolumeTransceiver volumeTransceiver;
 
-	private ImageIcon playIcon;
-	private ImageIcon pauseIcon;
-	private ImageIcon stopIcon;
-	private ImageIcon playIconDisabled;
-	private ImageIcon pauseIconDisabled;
-	private ImageIcon stopIconDisabled;
-	private ImageIcon playlistIcon;
-	private JButton playButton;
-	private JButton stopButton;
-	private JButton playlistToggleButton;
+	private final ImageIcon playIcon;
+	private final ImageIcon pauseIcon;
+	private final ImageIcon stopIcon;
+	private final ImageIcon playIconDisabled;
+	private final ImageIcon pauseIconDisabled;
+	private final ImageIcon stopIconDisabled;
+	private final ImageIcon playlistIcon;
+	private final JButton playButton;
+	private final JButton stopButton;
+	private final JButton playlistToggleButton;
 
 	private JCheckBoxMenuItem lotroErrorsMenuItem;
 	private JCheckBoxMenuItem stereoMenuItem;
@@ -258,16 +260,16 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 
 	private HighlightAbcNotesFrame abcViewFrame;
 	
-	private AudioExportManager audioExporter;
+	private final AudioExportManager audioExporter;
 
 	private final Map<Integer, LotroInstrument> instrumentOverrideMap = new HashMap<>();
 	private List<FileAndData> abcData;
 	private AbcInfo abcInfo = new AbcInfo();
 
-	private Preferences prefs = Preferences.userNodeForPackage(AbcPlayer.class);
+	private final Preferences prefs = Preferences.userNodeForPackage(AbcPlayer.class);
 	
 	private boolean playedFromFiletree = false;
-	private boolean tools;
+	private final boolean tools;
 
 //	private boolean isExporting = false;
 
@@ -541,37 +543,38 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		songViewPanel.add(trackListScroller, "1, 2");
 		
 		playlistViewPanel = new AbcPlaylistPanel(prefs.node("playlist"));
-		playlistViewPanel.setPlaylistListener(new Listener<PlaylistEvent>(){
-			@Override
-			public void onEvent(PlaylistEvent e) {
-				switch(e.getType()) {
-				case PLAY_FROM_ABCINFO:
-					AbcInfo inf = (AbcInfo)(e.getSource());
-					SwingUtilities.invokeLater(new OpenSongRunnable(false, inf.getSourceFiles().get(0)));
-					break;
-				case PLAY_FROM_FILE:
-					playlistViewPanel.resetPlaylistPosition();
-					File f = (File)(e.getSource());
-					playedFromFiletree = true;
-					SwingUtilities.invokeLater(new OpenSongRunnable(false, f));
-					if (e.getShowSongView()) {
-						showPlaylistView = false;
-						updatePlaylistCardView();
-					}
-					break;
-				case CLOSE_SONG:
-					closeSong();
-					break;
-				case PLAYLIST_OPENED:
-					if (abcData == null || !sequencer.isRunning()) {
-						showPlaylistView = true;
-						updatePlaylistCardView();
-					}
-					break;
-				default: break;
-				}
-			}
-		});
+		playlistViewPanel.setPlaylistListener(new Listener<>() {
+            @Override
+            public void onEvent(PlaylistEvent e) {
+                switch (e.getType()) {
+                    case PLAY_FROM_ABCINFO:
+                        AbcInfo inf = (AbcInfo) (e.getSource());
+                        SwingUtilities.invokeLater(new OpenSongRunnable(false, inf.getSourceFiles().getFirst()));
+                        break;
+                    case PLAY_FROM_FILE:
+                        playlistViewPanel.resetPlaylistPosition();
+                        File f = (File) (e.getSource());
+                        playedFromFiletree = true;
+                        SwingUtilities.invokeLater(new OpenSongRunnable(false, f));
+                        if (e.getShowSongView()) {
+                            showPlaylistView = false;
+                            updatePlaylistCardView();
+                        }
+                        break;
+                    case CLOSE_SONG:
+                        closeSong();
+                        break;
+                    case PLAYLIST_OPENED:
+                        if (abcData == null || !sequencer.isRunning()) {
+                            showPlaylistView = true;
+                            updatePlaylistCardView();
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
+        });
 
 		mainCardPanelLayout = new CardLayout();
 		mainCardPanel = new JPanel(mainCardPanelLayout);
@@ -826,7 +829,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			}
 			File abcFile = null;
 			if (!abcData.isEmpty())
-				abcFile = abcData.get(0).file;
+				abcFile = abcData.getFirst().file;
 			audioExporter.exportMp3Builtin((LotroSequencerWrapper)sequencer, abcFile, APP_NAME_LONG, APP_NAME);
 		});
 
@@ -841,7 +844,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			}
 			File abcFile = null;
 			if (!abcData.isEmpty())
-				abcFile = abcData.get(0).file;
+				abcFile = abcData.getFirst().file;
 			audioExporter.exportWav((LotroSequencerWrapper)sequencer, abcFile);
 		});
 
@@ -1080,8 +1083,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 
 	private String recentFilenameFromPath(String path) {
 		Path p = Paths.get(path);
-		String fileName = p.getFileName().toString();
-		return fileName;
+        return p.getFileName().toString();
 	}
 
 	private void recentActionPerformed(ActionEvent evt, String title) {
@@ -1126,7 +1128,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 					String lineTrim = line.trim();
 					// If we find a line that's not a comment before the
 					// X: line, then this isn't an ABC file
-					if (lineTrim.length() > 0 && !lineTrim.startsWith("%")) {
+					if (!lineTrim.isEmpty() && !lineTrim.startsWith("%")) {
 						isValid = false;
 						break;
 					}
@@ -1266,8 +1268,8 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 	}
 
 	private class OpenSongRunnable implements Runnable {
-		private File[] abcFiles;
-		private boolean append;
+		private final File[] abcFiles;
+		private final boolean append;
 
 		public OpenSongRunnable(boolean append, File... abcFiles) {
 			this.append = append;
@@ -1561,7 +1563,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		}
 
 		String title = APP_NAME;
-		if (!"".equals(fileNames.toString()))
+		if (!"".contentEquals(fileNames))
 			title += " - " + fileNames;
 
 		setTitle(title);
@@ -1632,18 +1634,13 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			sequencer.setRunning(running);
 		} catch (InvalidMidiDataException e) {
 			JOptionPane.showMessageDialog(this, e.getMessage(), "MIDI error", JOptionPane.ERROR_MESSAGE);
-			return;
-		}
+        }
 	}
 
 	private static boolean openPort() {
 
 		try {
 			serverSocket = new ServerSocket(9000 + APP_VERSION.getBuild());
-			if (serverSocket == null) {
-				// System.out.println("Port is null");
-				return false;
-			}
 			if (serverSocket.getLocalPort() != 9000 + APP_VERSION.getBuild()) {
 				// System.out.println("Port is "+serverSocket.getLocalPort());
 				return false;
@@ -1664,8 +1661,9 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 					// while (socket.isConnected()) {
 					String data = in.readLine();
 
-					if (data != null && data.length() >= 4
-							&& (data.substring(data.length() - 4).equalsIgnoreCase(Util.ABC_FILE_EXTENSION) || data.substring(data.length() - 5).equalsIgnoreCase(Util.ABCP_FILE_EXTENSION))) {// &&
+					if (data != null
+							&& (Util.stringEndsWithIgnoreCase(data, Util.ABC_FILE_EXTENSION)
+							 || Util.stringEndsWithIgnoreCase(data, Util.ABCP_FILE_EXTENSION))) {// &&
 																							// !data.substring(0,3).equalsIgnoreCase("GET")
 																							// &&
 						// System.out.println("Receiving file path ("+data.length()+" chars) from port

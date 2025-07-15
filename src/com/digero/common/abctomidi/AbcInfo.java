@@ -1,7 +1,6 @@
 package com.digero.common.abctomidi;
 
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -243,7 +242,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		if (info == null || info.name == null)
 			return "Track " + trackIndex;
 
-		if (info.nameIsFromExtendedInfo || titlePrefix == null || titlePrefix.length() == 0
+		if (info.nameIsFromExtendedInfo || titlePrefix == null || titlePrefix.isEmpty()
 				|| titlePrefix.length() == info.name.length())
 			return info.name;
 
@@ -257,7 +256,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 	public String getPartFullName_MaybeNull(int trackIndex) {
 		AbcInfo.PartInfo info = partInfoByIndex.get(trackIndex);
 		if (info == null || info.rawName == null) {
-			if (info.name != null)
+			if (info != null && info.name != null)
 				return info.name;
 			return "Track " + trackIndex;
 		}
@@ -373,7 +372,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 			return;
 		}
 		
-		List<Integer> partList = new ArrayList<Integer>(numParts);
+		List<Integer> partList = new ArrayList<>(numParts);
 		
 		for (int i = 2; i < data.length; i++) {
 			try {
@@ -390,7 +389,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		}
 		
 		if (partSetups == null) {
-			partSetups = new ArrayList<List<Integer>>();
+			partSetups = new ArrayList<>();
 		}
 		partSetups.add(partList);
 	}
@@ -548,7 +547,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 			.compile(openPunct + "([\\(\\[\\{]\\d{1,2}:\\d{2}[\\)\\]\\}])?" + openPunct + "$");
 
 	private String getTitlePrefix() {
-		if (titlePrefix == null || titlePrefix.length() == 0) {
+		if (titlePrefix == null || titlePrefix.isEmpty()) {
 			if (metadata.containsKey('T'))
 				return metadata.get('T');
 			return "(Untitled)";

@@ -69,10 +69,8 @@ public class Version implements Comparable<Version> {
 
 	@Override
 	public int compareTo(@NotNull Version that) {
-		if (that == null)
-			return 1;
 
-		if (this.major != that.major)
+        if (this.major != that.major)
 			return this.major - that.major;
 
 		if (this.minor != that.minor)

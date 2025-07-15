@@ -564,7 +564,7 @@ public final class Util {
 
 	public static boolean stringEndsWithIgnoreCase(String source, String suffix) {
 		int beginIndex = source.length() - suffix.length();
-		return (beginIndex >= 0) && source.substring(beginIndex, source.length()).equalsIgnoreCase(suffix);
+		return (beginIndex >= 0) && source.substring(beginIndex).equalsIgnoreCase(suffix);
 	}
 
 	public static String fileNameWithoutExtension(File file) {

@@ -108,7 +108,7 @@ public class MaestroMain {
 			return;
 		}
 
-		System.setProperty("sun.sound.useNewAudioEngine", "true");
+		//System.setProperty("sun.sound.useNewAudioEngine", "true");
 		
 		SwingUtilities.invokeAndWait(() -> {
 			try {
@@ -197,10 +197,6 @@ public class MaestroMain {
 
 		try {
 			serverSocket = new ServerSocket(8000 + APP_VERSION.getBuild());
-			if (serverSocket == null) {
-				log.fine("Port is null");
-				return false;
-			}
 			if (serverSocket.getLocalPort() != 8000 + APP_VERSION.getBuild()) {
 				log.fine("Port is "+serverSocket.getLocalPort());
 				return false;
@@ -220,13 +216,13 @@ public class MaestroMain {
 					// while (socket.isConnected()) {
 					String data = in.readLine();
 
-					if (data != null && data.length() >= 5
-							&& (data.substring(data.length() - 4).equalsIgnoreCase(Util.MID_FILE_EXTENSION)
-									|| data.substring(data.length() - 5).equalsIgnoreCase(Util.MIDI_FILE_EXTENSION)
-									|| data.substring(data.length() - 4).equalsIgnoreCase(Util.ABC_FILE_EXTENSION)
-									|| data.substring(data.length() - 4).equalsIgnoreCase(Util.TXT_FILE_EXTENSION)
-									|| data.substring(data.length() - 4).equalsIgnoreCase(Util.MSX_FILE_EXTENSION)
-									|| data.substring(data.length() - 4).equalsIgnoreCase(Util.KAR_FILE_EXTENSION))) {
+					if (data != null
+							&& (Util.stringEndsWithIgnoreCase(data, Util.MID_FILE_EXTENSION)
+									|| Util.stringEndsWithIgnoreCase(data, Util.MIDI_FILE_EXTENSION)
+									|| Util.stringEndsWithIgnoreCase(data, Util.ABC_FILE_EXTENSION)
+									|| Util.stringEndsWithIgnoreCase(data, Util.TXT_FILE_EXTENSION)
+									|| Util.stringEndsWithIgnoreCase(data, Util.MSX_FILE_EXTENSION)
+									|| Util.stringEndsWithIgnoreCase(data, Util.KAR_FILE_EXTENSION))) {
 						log.finer("Received "+data);
 						String[] datas = { data };
 						activate(datas);

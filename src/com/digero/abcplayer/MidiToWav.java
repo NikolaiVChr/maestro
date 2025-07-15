@@ -1,7 +1,6 @@
 package com.digero.abcplayer;
 
 import java.io.OutputStream;
-import java.util.HashMap;
 import java.util.Map;
 
 import javax.sound.midi.MetaMessage;
@@ -15,7 +14,6 @@ import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 
-import com.digero.common.midi.MidiConstants;
 import com.digero.common.midi.SynthesizerFactory;
 import com.sun.media.sound.AudioSynthesizer;
 

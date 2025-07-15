@@ -150,10 +150,7 @@ public class TrackListPanel extends JPanel implements Listener<SequencerEvent>, 
 
 	/**
 	 * Only show tracks with at least one note
-	 * 
-	 * @param abcInfo
-	 * @param index
-	 * @param track
+	 *
 	 */
 	private void showTracksWithOneNote(AbcInfo abcInfo, int index, Track[] tracks) {
 		Track track = tracks[index];
