@@ -51,7 +51,7 @@ import com.digero.maestro.midi.MidiNoteEvent;
 import com.digero.maestro.midi.TrackInfo;
 import com.digero.maestro.view.ProjectFrame;
 
-@SuppressWarnings({"FieldCanBeLocal", "UnusedAssignment", "AssertWithSideEffects"})
+@SuppressWarnings({"AssertWithSideEffects"})
 public class AbcExporter {
 	private static final Logger logNotes = Logger.getLogger("export.notes");//processing and fitting of notes to lotros abc format
 	private static final Logger logAbc = Logger.getLogger("export.abc");//creation of abc
