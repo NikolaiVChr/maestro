@@ -38,7 +38,7 @@ Thanks to all who gave feedback of features and bugs plus suggestions.
 Special thanks to the folks who have tested beta builds and gave feedback.
 
 
-Maestro upgrades by Aifel of Meriadoc, Elamond of Landroval and Karloman
+Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
 Version 4.2.19
