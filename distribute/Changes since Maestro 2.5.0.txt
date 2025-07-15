@@ -41,7 +41,7 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
-Version 4.2.19
+Version 4.3.0
 - Fixed Abc Merge Tool button for testing was no longer working.
 - Fixed Abc Merge Tool refused to overwrite.
 - New import lyrics option in settings that can help to determine song-title/artist when filename is short and insufficient.
@@ -50,7 +50,7 @@ Version 4.2.19
 - Reduced average abc filesize of organic output when poly 6+ is disabled.
 - Improvements to multi and single-stage organic timing.
 - If a midi note has no note OFF signal, but there is a EndOfTrack signal, end it at EOT signal instead of deleting it.
-- Output bar numbers with timestamp in abc.
+- Output midi bar numbers with timestamp in abc when outputting with organic.
 - If part auto-sort is enabled, sort the parts when loading project and auto-exporting projects.
 - Fix minor inaccuracy of song position time display in Maestro.
 - Fix some cases where the song display in maestro would be significantly longer than its actual duration. It can still happen, but more rarely now.
