@@ -231,7 +231,7 @@ class CharsetDetectAndDecodeTest {
     void emptyInput() {
         Pair<String, Charset> p = CharsetDetectAndDecode.decodeMidiData(new byte[0]);
         assertEquals("", p.first);
-        assertEquals(null, p.second);
+        assertNull(p.second);
     }
     
     @Test @DisplayName("Half width Shift JIS")

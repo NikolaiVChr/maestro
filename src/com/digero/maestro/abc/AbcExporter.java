@@ -2160,6 +2160,8 @@ public class AbcExporter {
 					tmpEvents.add(shortRest);
 					breakLongNotesOrganic(part, tmpEvents);
 					if (!tmpEvents.isEmpty()) {
+						// If rest needed to be broken up, we just keep the first segment
+						// we wont get in here again due to condition for hadRestAndNotes()
 						int ins = Collections.binarySearch(events, tmpEvents.getFirst());
 						if (ins < 0)
 							ins = -ins - 1;
@@ -2170,9 +2172,7 @@ public class AbcExporter {
 						reprocessCurrentNote = true;
 						curChord.add(tmpEvents.getFirst());
 						events.add(ins, tmpEvents.getFirst());
-						if (tmpEvents.size() > 1) {
-							logNotes.info(part.getAbcSong().getSongTitle()+": Rest needed to be broken up !!!!!!!!!!");
-						}
+
 						if (curChord.size() > 6) {
 							// uncommon, less than 10 songs out of 1000 had this happen 
 							logNotes.finer(part.getAbcSong().getSongTitle()+": 6 note chord had rest added !!!!!!!!!!");
@@ -4301,7 +4301,7 @@ public class AbcExporter {
 					}
 					AbcNoteEvent next = new AbcNoteEvent(ne.note, ne.velocity, maxNoteEndTick, ne.getEndTick(), qtm, ne.origNote);
 					next.startABCMicros = qtm.tickToMicrosABCOrganic(maxNoteEndTick);
-					next.endABCMicros = qtm.tickToMicrosABCOrganic(ne.getEndTick());
+					next.endABCMicros = ne.endABCMicros;
 					assertNoteDuraOrganic1(next, AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM()));
 					
 					int ins = Collections.binarySearch(events, next);
@@ -4318,6 +4318,7 @@ public class AbcExporter {
 					}
 				}
 				ne.setEndTick(maxNoteEndTick);
+				ne.endABCMicros = qtm.tickToMicrosABCOrganic(maxNoteEndTick);
 				assertNoteDuraOrganic1(ne, AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM()));
 			}
 
@@ -4345,7 +4346,7 @@ public class AbcExporter {
 
 			logNotes.finer("min("+ne.getEndTick()+", "+maxForDrones+")");
 			
-			if (rest && targetEndTick > qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(ne.getStartTick())
+			if (rest && ne.getEndTick() > qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(ne.getStartTick())
 					+ qtm.multiplyByExportTempoFactor(TimingInfo.LONGEST_NOTE_MICROS))) {
 				// Rest longer than 5s, split it at 4s:
 				targetEndTick = 
