@@ -124,8 +124,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 								// Musescore.
 								// We only support this for GM, and only super well-formed (tick == 0).
 								port = (int) portChange[0];
-								// System.out.println("Port change on track "+iiTrack+" tick "+tick+" port
-								// "+formatBytes(portChange));
+								log.fine("Port change on track "+iiTrack+", tick "+tick+", port "+MidiUtils.formatBytes(portChange));
 								portMap.put(iiTrack, port);
 								hasPorts = MidiStandard.GM == standard;
 								break;
@@ -180,6 +179,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 											|| mmaDrumSwitches.get(ch).floorEntry(tick) == null
 											|| !mmaDrumSwitches.get(ch).floorEntry(tick).getValue())) {
 								instruments.put(portMap.get(iTrack), ch, tick, shortMsg.getData1());
+								log.fine("Instrument change on track "+iTrack+", tick "+tick+", instrument "+MidiInstrument.fromId(shortMsg.getData1())+ ", port "+portMap.get(iTrack)+", channel "+ch);
 							}
 							mapPatch.put(ch, tick, shortMsg.getData1());
 						} else if (cmd == ShortMessage.CONTROL_CHANGE) {

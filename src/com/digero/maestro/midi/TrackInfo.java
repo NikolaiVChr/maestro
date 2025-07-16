@@ -256,6 +256,7 @@ public class TrackInfo implements MidiConstants {
 						instrumentExtensions.add(sequenceCache.getInstrumentExt(ch, tick, isDrumTrack));
 						if (!isDrumTrack) {
 							instruments.add(sequenceCache.getInstrument(portMap.get(trackNumber), ch, tick));
+							log.finest("Track 0 uses instrument "+MidiInstrument.fromId(sequenceCache.getInstrument(portMap.get(trackNumber), ch, tick))+", channel "+ch);
 						}
 						noteEvents.add(ne);
 						//notesInUse.add(ne.note.id);
