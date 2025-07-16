@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.sound.midi.InvalidMidiDataException;
@@ -77,12 +78,8 @@ public class SynthesizerFactory {
 
 	/**
 	 * This is used for ABC preview in both Maestro and AbcPlayer
-	 * 
-	 * @param synth
-	 * @throws MidiUnavailableException
-	 * @throws InvalidMidiDataException
-	 * @throws IOException
-	 */
+	 *
+     */
 	@SuppressWarnings("restriction")
 	public static void initLotroSynthesizer(Synthesizer synth)
 			throws MidiUnavailableException, InvalidMidiDataException, IOException {
@@ -107,12 +104,8 @@ public class SynthesizerFactory {
 
 	/**
 	 * This is used for exporting wav and mp3 audio files.
-	 * 
-	 * @param synth
-	 * @throws MidiUnavailableException
-	 * @throws InvalidMidiDataException
-	 * @throws IOException
-	 */
+	 *
+     */
 	@SuppressWarnings("restriction")
 	public static void initAudioSynthesizer(Synthesizer synth)
 			throws MidiUnavailableException, InvalidMidiDataException, IOException {
@@ -131,7 +124,7 @@ public class SynthesizerFactory {
 							SynthesizerFactory.class.getProtectionDomain().getCodeSource().getLocation().toURI())
 							.getParent();
 				} catch (URISyntaxException e) {
-					e.printStackTrace();
+					log.log(java.util.logging.Level.SEVERE, "Failed to find soundfont", e);
 				}
 				soundFontFile = new File(folder, "LotroInstruments.sf2");
 			}
@@ -142,7 +135,7 @@ public class SynthesizerFactory {
 				StackTraceElement trace = npe.getStackTrace()[0];
 				if (trace.getClassName().equals("com.sun.media.sound.JARSoundbankReader")
 						&& trace.getMethodName().equals("isZIP")) {
-					log.severe("Failed to find soundfont");
+					log.log(Level.SEVERE, "Failed to find soundfont", npe);
 					throw new IOException("Soundbank file not found");
 				} else {
 					throw npe;

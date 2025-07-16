@@ -2,14 +2,9 @@ package com.digero.abcplayer;
 
 import java.io.OutputStream;
 import java.util.Map;
+import java.util.logging.Logger;
 
-import javax.sound.midi.MetaMessage;
-import javax.sound.midi.MidiEvent;
-import javax.sound.midi.MidiMessage;
-import javax.sound.midi.MidiUnavailableException;
-import javax.sound.midi.Receiver;
-import javax.sound.midi.Sequence;
-import javax.sound.midi.Track;
+import javax.sound.midi.*;
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
@@ -18,45 +13,43 @@ import com.digero.common.midi.SynthesizerFactory;
 import com.sun.media.sound.AudioSynthesizer;
 
 public class MidiToWav {
+	private static final Logger log = Logger.getLogger("export.audio");
+
 	/**
 	 * Render sequence using selected or default soundbank into wave audio file.
 	 */
-	public static void render(Sequence sequence, OutputStream out, long startTick) throws MidiUnavailableException {
-		try {
-			// Find available AudioSynthesizer.
-			AudioSynthesizer synth = SynthesizerFactory.findAudioSynthesizer();
-			if (synth == null) {
-				throw new MidiUnavailableException("Failed to find appropriate synthesizer");
-			}
+	public static void render(Sequence sequence, OutputStream out, long startTick) throws Exception {
+		// Find available AudioSynthesizer.
+		AudioSynthesizer synth = SynthesizerFactory.findAudioSynthesizer();
+		if (synth == null) {
+			throw new MidiUnavailableException("Failed to find appropriate synthesizer");
+		}
 
-			// Open AudioStream from AudioSynthesizer.
-			boolean opened = synth.isOpen();
-			if (opened)
-				synth.close();
-
-			Map<String, Object> synthInfo = SynthesizerFactory.setupSynthesizerPropertyInfo();
-			
-			AudioInputStream stream = synth.openStream(null, synthInfo);
-			SynthesizerFactory.initAudioSynthesizer(synth);
-
-			// Play Sequence into AudioSynthesizer Receiver.
-			double total = send(sequence, synth.getReceiver(), startTick);
-
-			// Calculate how long the WAVE file needs to be.
-			long len = (long) (stream.getFormat().getFrameRate() * (total + 1));
-			stream = new AudioInputStream(stream, stream.getFormat(), len);
-
-			// Write WAVE file to disk.
-			AudioSystem.write(stream, AudioFileFormat.Type.WAVE, out);
-
-			// We are finished, close synthesizer.
+		// Open AudioStream from AudioSynthesizer.
+		boolean opened = synth.isOpen();
+		if (opened)
 			synth.close();
 
-			if (opened)
-				synth.open();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		Map<String, Object> synthInfo = SynthesizerFactory.setupSynthesizerPropertyInfo();
+
+		AudioInputStream stream = synth.openStream(null, synthInfo);
+		SynthesizerFactory.initAudioSynthesizer(synth);
+
+		// Play Sequence into AudioSynthesizer Receiver.
+		double total = send(sequence, synth.getReceiver(), startTick);
+
+		// Calculate how long the WAVE file needs to be.
+		long len = (long) (stream.getFormat().getFrameRate() * (total + 1));
+		stream = new AudioInputStream(stream, stream.getFormat(), len);
+
+		// Write WAVE file to disk.
+		AudioSystem.write(stream, AudioFileFormat.Type.WAVE, out);
+
+		// We are finished, close synthesizer.
+		synth.close();
+
+		if (opened)
+			synth.open();
 	}
 
 	/**

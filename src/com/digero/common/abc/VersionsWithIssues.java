@@ -13,9 +13,9 @@ public class VersionsWithIssues {
 	static {
 		// These are issues that can have exported corrupted abc files in some way.
 		abcVersionsWithIssues.add(new IssueVersion(new Version(3,4,4),
-				"Notes can be missing if they had no rest inbetween them and were same pitch."));//beta
+				"Notes can be missing if they had no rest in-between them and were same pitch."));//beta
 		abcVersionsWithIssues.add(new IssueVersion(new Version(3,3,9), new Version(3,3,13),
-				"Song might have wrong tempo until first tempochange."));//beta
+				"Song might have wrong tempo until first tempo-change."));//beta
 		abcVersionsWithIssues.add(new IssueVersion(new Version(3,3,7),
 				"Notes can be missing."));
 		abcVersionsWithIssues.add(new IssueVersion(new Version(3,3,6),
@@ -39,7 +39,7 @@ public class VersionsWithIssues {
 
 		// these are issues that can have corrupted project files in some way:
 		msxVersionsWithIssues.add(new IssueVersion(new Version(4,3,0),
-				"Main volumes can be changed due to bug in 4.3.0, it's suggested you check all volumes."));
+				"Main volumes can be modified due to bug in 4.3.0, it's suggested you re-adjust all volumes."));
 	}
 	
 	/**

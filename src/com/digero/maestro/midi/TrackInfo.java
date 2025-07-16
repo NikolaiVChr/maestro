@@ -172,7 +172,7 @@ public class TrackInfo implements MidiConstants {
 					int noteId = m.getData1();
 					int velocity = m.getData2();
 					if (oldVelocities) {
-						// Order of math expression here is important, so I added parenthesizes:
+						// The order of math expression here is important, so I added some parentheses:
 						velocity = (velocity * sequenceCache.getChannelVolume(ch, tick)) / DEFAULT_CHANNEL_VOLUME;
 						if (velocity > 127)
 							velocity = 127;
@@ -182,7 +182,7 @@ public class TrackInfo implements MidiConstants {
 						double volume_modifier = (ch_vol / (double) MAX_VOLUME) * (expr / (double) MAX_EXPRESSION);
 						velocity = (int) Math.clamp(volume_modifier * velocity, 0.0d, 127.0d);
 						if (velocity == 0 && m.getData2() > 0 && ch_vol > 0 && expr > 0) {
-							// Do not allow very low expression and volume to reduce velocity to zero.
+							// Do not allow very low expression and channel volume to reduce velocity to zero.
 							velocity = 1;
 						}
 					}

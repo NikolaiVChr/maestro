@@ -1,14 +1,9 @@
 package com.digero.common.view;
 
 import java.awt.BorderLayout;
-import java.awt.Cursor;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
@@ -22,23 +17,22 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.SwingUtilities;
-import javax.swing.filechooser.FileFilter;
 
 import com.digero.abcplayer.MidiToWav;
 import com.digero.common.midi.LotroSequencerWrapper;
-import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.util.ExtensionFileFilter;
-import com.digero.common.util.Util;
+import com.digero.maestro.MaestroMain;
+import com.digero.maestro.view.ProjectFrame;
 
 public class AudioExportManager {
 	private static final Logger log = Logger.getLogger("export.audio");
 		
-	private JFrame parentWindow;
+	private final JFrame parentWindow;
 	private JFileChooser exportFileDialog;
 	private boolean isExporting = false;
-	private Preferences prefs;
+	private final Preferences prefs;
 	
-	private String encodedBy;
+	private final String encodedBy;
 
 	public AudioExportManager(JFrame parentWindow, String encodedBy, Preferences prefs) {
 		this.parentWindow = parentWindow;
@@ -95,10 +89,10 @@ public class AudioExportManager {
 	}
 	
 	private class ExportMp3BuiltinTask implements Runnable {
-		private Sequence sequence;
-		private ExportMp3Dialog mp3Dialog;
-		private JDialog waitFrame;
-		private long startTick;
+		private final Sequence sequence;
+		private final ExportMp3Dialog mp3Dialog;
+		private final JDialog waitFrame;
+		private final long startTick;
 
 		public ExportMp3BuiltinTask(Sequence sequence, ExportMp3Dialog mp3Dialog, JDialog waitFrame, long startTick) {
 			this.sequence = sequence;
@@ -112,7 +106,7 @@ public class AudioExportManager {
 			isExporting = true;
 			Exception error = null;
 			try {
-				File wavFile = File.createTempFile("AbcPlayer-", ".wav");
+				File wavFile = File.createTempFile("Abc-", ".wav");
 				try (FileOutputStream fos = new FileOutputStream(wavFile)) {
 					MidiToWav.render(sequence, fos, startTick);
 					fos.close();
@@ -135,8 +129,8 @@ public class AudioExportManager {
 	}
 
 	private class ExportMp3FinishedTask implements Runnable {
-		private Exception error;
-		private JDialog waitFrame;
+		private final Exception error;
+		private final JDialog waitFrame;
 
 		public ExportMp3FinishedTask(Exception error, JDialog waitFrame) {
 			this.error = error;
@@ -148,6 +142,8 @@ public class AudioExportManager {
 			if (error != null) {
 				JOptionPane.showMessageDialog(parentWindow, error.getMessage(), "Error saving MP3 file",
 						JOptionPane.ERROR_MESSAGE);
+				log.log(Level.WARNING, "Something happened while converting to mp3.", error);
+				if (parentWindow instanceof ProjectFrame) ProjectFrame.feed("ERROR: " + error, MaestroMain.getFirstLines(error));
 			}
 			waitFrame.setVisible(false);
 		}
@@ -155,10 +151,10 @@ public class AudioExportManager {
 	}
 	
 	private class ExportWavTask implements Runnable {
-		private Sequence sequence;
-		private File file;
-		private JDialog waitFrame;
-		private long startTick;
+		private final Sequence sequence;
+		private final File file;
+		private final JDialog waitFrame;
+		private final long startTick;
 
 		public ExportWavTask(Sequence sequence, File file, JDialog waitFrame, long startTick) {
 			this.sequence = sequence;
@@ -181,14 +177,14 @@ public class AudioExportManager {
 			} finally {
 				isExporting = false;
 				SwingUtilities.invokeLater(new ExportWavFinishedTask(error, waitFrame));
-				log.info("Wav generation fnished");
+				log.info("Wav generation finished");
 			}
 		}
 	}
 
 	private class ExportWavFinishedTask implements Runnable {
-		private Exception error;
-		private JDialog waitFrame;
+		private final Exception error;
+		private final JDialog waitFrame;
 
 		public ExportWavFinishedTask(Exception error, JDialog waitFrame) {
 			this.error = error;
@@ -200,12 +196,13 @@ public class AudioExportManager {
 			if (error != null) {
 				JOptionPane.showMessageDialog(parentWindow, error.getMessage(), "Error saving WAV file",
 						JOptionPane.ERROR_MESSAGE);
+				log.log(Level.WARNING, "Something happened while converting to wav.", error);
+				if (parentWindow instanceof ProjectFrame) ProjectFrame.feed("ERROR: " + error, MaestroMain.getFirstLines(error));
 			}
 			waitFrame.setVisible(false);
 		}
 	}
 	
-	@SuppressWarnings("serial")
 	private class WaitDialog extends JDialog {
 		public WaitDialog(JFrame owner, File saveFile) {
 			super(owner, "Exporting...", false);
