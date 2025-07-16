@@ -92,7 +92,7 @@
                     </Directory>
                     <Directory Id="RuntimeDir" Name="runtime" />
                     <Component Id="aifel_changelog.txt" Guid="{46B882CB-E9A8-4A1E-A92C-C5717FDECECB}">
-                        <File Id="aifel_changelog.txt" Source="Changes since Maestro 2.5.0.txt" KeyPath="yes" />
+                        <File Id="aifel_changelog.txt" Source="readme.txt" KeyPath="yes" />
                     </Component>
                     <Component Id="MaestroExecutable" Guid="{A20EBF40-4857-46C3-8B6C-CF3CBF64A824}">
                         <File Source="$(var.build)/Maestro.exe" KeyPath="yes">

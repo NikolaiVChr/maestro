@@ -55,7 +55,7 @@
 		<!--<copy file="Start Maestro.bat" todir="${build}" />
 		<copy file="Start AbcPlayer.bat" todir="${build}" />
 		<copy file="Start ABC Tools.bat" todir="${build}" />-->
-		<copy file="Changes since Maestro 2.5.0.txt" todir="${build}" />
+		<copy file="readme.txt" todir="${build}" />
 		<copy file="${target}/Maestro.jar" todir="${build}" />
 		<copy file="${target}/AbcPlayer.jar" todir="${build}" />
 		<copy file="${target}/AbcTools.jar" todir="${build}" />
@@ -239,7 +239,7 @@
 	
 	<target name="BetaToolsMSI" depends="Build" description="Make Beta MSI for AbcTools">
 		<mkdir dir="${jpackageBetaTools}" />
-		<copy file="Changes since Maestro 2.5.0.txt" todir="${jpackageBetaTools}" />
+		<copy file="readme.txt" todir="${jpackageBetaTools}" />
 		<copy file="${build}/AbcTools.jar" todir="${jpackageBetaTools}" />
 	    <exec executable="${env.JAVA_HOME}/bin/jpackage.exe" failonerror="true">
 	    	<env key="PATH" path="${tools}/wix"/>
@@ -273,7 +273,7 @@
 	
 	<target name="BetaPlayerMSI" depends="Build" description="Make Beta MSI for Abc Player">
 		<mkdir dir="${jpackageBetaPlayer}" />
-		<copy file="Changes since Maestro 2.5.0.txt" todir="${jpackageBetaPlayer}" />
+		<copy file="readme.txt" todir="${jpackageBetaPlayer}" />
 		<copy file="${build}/AbcPlayer.jar" todir="${jpackageBetaPlayer}" />
 		<copy file="${build}/LotroInstruments.sf2" todir="${jpackageBetaPlayer}" />
 	    <exec executable="${env.JAVA_HOME}/bin/jpackage.exe" failonerror="true">
@@ -308,7 +308,7 @@
 	
 	<target name="BetaMaestroMSI" depends="Build" description="Make Beta MSI for Maestro">
 		<mkdir dir="${jpackageBetaMaestro}" />
-		<copy file="Changes since Maestro 2.5.0.txt" todir="${jpackageBetaMaestro}" />
+		<copy file="readme.txt" todir="${jpackageBetaMaestro}" />
 		<copy file="${build}/Maestro.jar" todir="${jpackageBetaMaestro}" />
 		<copy file="${build}/LotroInstruments.sf2" todir="${jpackageBetaMaestro}" />
 	    <exec executable="${env.JAVA_HOME}/bin/jpackage.exe" failonerror="true">
@@ -411,7 +411,7 @@
 			<zipfileset file="${build}/Maestro.exe" fullpath="Maestro.exe" />
 			<zipfileset file="${build}/AbcPlayer.exe" fullpath="AbcPlayer.exe" />
 			<zipfileset file="${build}/AbcTools.exe" fullpath="AbcTools.exe"/>
-			<include name="Changes since Maestro 2.5.0.txt" />
+			<include name="readme.txt" />
 			<zipfileset dir="${build}/app" prefix="app"/>
 			<zipfileset dir="${build}/runtime" prefix="runtime"/>
 			<zipfileset file="launch_maestro.sh" fullpath="linux_or_mac/linux_maestro.sh" filemode="755" />
