@@ -27,6 +27,7 @@ import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
 import javax.xml.xpath.XPathExpressionException;
 
+import com.digero.common.abc.VersionsWithIssues;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
@@ -455,6 +456,17 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			handleTuneSections(songEle, fileVersion);
 
 			loadPartsFromXML(songEle, fileVersion, sorted);
+
+			Version def = new Version(0,0,0);
+			Version maestroVersion = SaveUtil.parseValue(songEle, "@maestroVersion", def);
+			if (!def.equals(maestroVersion)) {
+				String issue = VersionsWithIssues.checkProject(maestroVersion);
+				if (issue != null) {
+					JOptionPane.showMessageDialog(null,
+							"Project was saved with Maestro version " + maestroVersion + " which had this issue: " + issue,
+							"Warning for "+file.getName(), JOptionPane.WARNING_MESSAGE);
+				}
+			}
 		} catch (XPathExpressionException e) {
 			e.printStackTrace();
 			throw new ParseException("XPath error: " + e.getMessage(), null);
