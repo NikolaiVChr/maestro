@@ -19,7 +19,6 @@ import javax.swing.JPanel;
 import com.digero.common.icons.IconLoader;
 import com.digero.common.util.Util;
 import com.digero.common.util.Version;
-import com.digero.maestro.view.ProjectFrame;
 
 public final class AboutDialog {
 	public static void show(JFrame parent, final String appName, final Version appVersion, final String appUrl,

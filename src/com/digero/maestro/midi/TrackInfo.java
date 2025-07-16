@@ -1,7 +1,5 @@
 package com.digero.maestro.midi;
 
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -24,7 +22,6 @@ import javax.sound.midi.Track;
 import com.digero.common.midi.ExtensionMidiInstrument;
 import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.MidiConstants;
-import com.digero.common.midi.MidiFactory;
 import com.digero.common.midi.MidiInstrument;
 import com.digero.common.midi.MidiStandard;
 import com.digero.common.midi.MidiUtils;

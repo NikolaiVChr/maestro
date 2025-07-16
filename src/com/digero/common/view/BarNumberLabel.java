@@ -2,13 +2,9 @@ package com.digero.common.view;
 
 import java.awt.Dimension;
 import java.awt.FontMetrics;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.Insets;
-import java.awt.RenderingHints;
 
 import javax.swing.JLabel;
-import javax.swing.UIManager;
 
 import com.digero.common.midi.IBarNumberCache;
 import com.digero.common.midi.SequencerEvent;
@@ -16,7 +12,6 @@ import com.digero.common.midi.SequencerEvent.SequencerProperty;
 import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.util.IDiscardable;
 import com.digero.common.util.Listener;
-import com.digero.common.util.Util;
 
 @SuppressWarnings("serial")
 public class BarNumberLabel extends JLabel implements Listener<SequencerEvent>, IDiscardable {

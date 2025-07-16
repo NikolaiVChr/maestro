@@ -10,8 +10,6 @@ import javax.sound.midi.Sequence;
 import javax.sound.midi.ShortMessage;
 import javax.sound.midi.SysexMessage;
 
-import org.apache.commons.codec.Charsets;
-
 import com.digero.common.midi.SequencerWrapper.TempoCacheSlow;
 import com.digero.common.util.Pair;
 import com.digero.maestro.midi.SequenceInfo;

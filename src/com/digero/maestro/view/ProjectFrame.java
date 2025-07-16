@@ -100,7 +100,6 @@ import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.LotroSequencerWrapper;
 import com.digero.common.midi.MidiConstants;
 import com.digero.common.midi.MidiStandard;
-import com.digero.common.midi.MidiUtils;
 import com.digero.common.midi.NoteFilterSequencerWrapper;
 import com.digero.common.midi.SequencerEvent;
 import com.digero.common.midi.SequencerEvent.SequencerProperty;

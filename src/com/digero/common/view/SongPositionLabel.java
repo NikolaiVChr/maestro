@@ -2,13 +2,9 @@ package com.digero.common.view;
 
 import java.awt.Dimension;
 import java.awt.FontMetrics;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.Insets;
-import java.awt.RenderingHints;
 
 import javax.swing.JLabel;
-import javax.swing.UIManager;
 
 import com.digero.common.midi.SequencerEvent;
 import com.digero.common.midi.SequencerEvent.SequencerProperty;
