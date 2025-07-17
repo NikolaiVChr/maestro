@@ -56,10 +56,6 @@ public class ExtensionMidiInstrument {
 	/**
 	 * Determine name of voice.
 	 * 
-	 * @param extension
-	 * @param MSB
-	 * @param LSB
-	 * @param patch
 	 * @param rhythmChannel rhythmic non-chromatic channel.
 	 * @return string with instrument name
 	 */

@@ -23,7 +23,7 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 	public static final String prefMIDISelect = "Preferred MIDI out device";
 	public static Preferences prefs = Preferences.userNodeForPackage(NoteFilterSequencerWrapper.class);
 	private Preferences prefsNode = null;
-	private NoteFilterTransceiver filter;
+	private final NoteFilterTransceiver filter;
 	private MidiDevice device = null;
 	private int listNumber = 0;
 	public static String deviceInUse = null;
@@ -110,7 +110,7 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 			if (midiOut) {
 				prefsNode.putLong(info.getName(), new Date().getTime());
 				//System.out.println(infoToString(info));
-				if (info.getName() != null && info.getName().length() > 0 && info.getName().equals(preferred)) {
+				if (info.getName() != null && !info.getName().isEmpty() && info.getName().equals(preferred)) {
 					myInfo = info;
 					if (info.getDescription() != null) description = info.getDescription();
 					if (!"Unknown vendor".equals(info.getVendor())) vendor = info.getVendor();

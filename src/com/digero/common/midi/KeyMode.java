@@ -4,7 +4,7 @@ public enum KeyMode {
 	MAJOR, MINOR, DORIAN, PHRYGIAN, LYDIAN, MIXOLYDIAN, AEOLIAN, IONIAN, LOCRIAN;
 
 	public static KeyMode parseMode(String modeString) {
-		if (modeString.equals("") || modeString.equals("M"))
+		if (modeString.isEmpty() || modeString.equals("M"))
 			return MAJOR;
 		if (modeString.equals("m"))
 			return MINOR;

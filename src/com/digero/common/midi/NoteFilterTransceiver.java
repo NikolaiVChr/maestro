@@ -16,8 +16,8 @@ import com.digero.maestro.abc.LotroCombiDrumInfo;
 public class NoteFilterTransceiver implements Transceiver, MidiConstants, ICompileConstants {
 	private Receiver receiver = null;
 	private boolean hasAbcPart = false;
-	private BitSet[] notesOn = new BitSet[CHANNEL_COUNT_ABC];
-	private BitSet solos = new BitSet();
+	private final BitSet[] notesOn = new BitSet[CHANNEL_COUNT_ABC];
+	private final BitSet solos = new BitSet();
 
 	public void onAbcPartChanged(boolean hasAbcPart) {
 		this.hasAbcPart = hasAbcPart;

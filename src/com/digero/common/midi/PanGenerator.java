@@ -18,7 +18,7 @@ public class PanGenerator {
 	public static final int MAX_WIDE = 50;
 	
 
-	private int[] count;
+	private final int[] count;
 	private int sum;
 
 	public PanGenerator() {

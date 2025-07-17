@@ -56,7 +56,7 @@ public class KeySignature implements MidiConstants {
 	}
 
 	public KeySignature(String str) {
-		if (str.length() == 0)
+		if (str.isEmpty())
 			throw new IllegalArgumentException(INVALID_KEY_SIGNATURE + str);
 
 		String keyPart;

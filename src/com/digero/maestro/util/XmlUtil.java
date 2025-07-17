@@ -180,7 +180,7 @@ public class XmlUtil {
 	    return false;
 	}
 
-
+	@Deprecated
 	private static boolean isValidXmlCharacter(char c) {
 	    return (c == 0x09 || c == 0x0A || c == 0x0D) || 
 	           (c >= 0x20 && c <= 0xD7FF) ||

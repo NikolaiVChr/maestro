@@ -6,15 +6,18 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.digero.common.util.Pair;
 
 public class MidiDrumExtended {
+	private static final Logger log = Logger.getLogger("import.midi");
 	
 	private static MidiDrumExtended instance = null;
-	private static HashMap<String, String> map = new HashMap<>();
+	private static final HashMap<String, String> map = new HashMap<>();
 
 	public static MidiDrumExtended getInstance() {
 		if (instance != null) {
@@ -39,7 +42,7 @@ public class MidiDrumExtended {
 		String key = String.format("%s:%s%03d", standard, kit, drumId);
 		String hit = map.get(key);
 		if (hit == null) {
-			key = String.format("%s:%s%03d", standard, MidiInstrument.STANDARD_DRUM_KIT.toString(), drumId);
+			key = String.format("%s:%s%03d", standard, MidiInstrument.STANDARD_DRUM_KIT, drumId);
 			hit = map.get(key);
 			if (hit != null) {
 				return hit;
@@ -62,11 +65,9 @@ public class MidiDrumExtended {
 			readLines(fileName, theFileReader, line);
 			theFileReader.close();
 		} catch (FileNotFoundException e) {
-			System.err.println(fileName + " not readable.");
-			e.printStackTrace();
+			log.log(Level.SEVERE, fileName + " not readable.", e);
 		} catch (IOException e) {
-			System.err.println(fileName + " line failed to read.");
-			e.printStackTrace();
+			log.log(Level.SEVERE, fileName + " line failed to read.", e);
 		}
 	}
 
@@ -82,13 +83,12 @@ public class MidiDrumExtended {
 				String[] splits = line.split("=");
 				if (splits.length != 3) {
 					// Something is wrong in the tab formatting of one of the files
-					System.err.println("\nWrong number of = in " + fileName + ":");
+					log.severe("Wrong number of = in " + fileName + ":");
 					int l = 0;
 					for (String a : splits) {
 						System.err.println(l + ": " + a);
 						l++;
 					}
-					line = theFileReader.readLine();
 					break;
 				}
 				if (splits[1].equals(MidiStandard.GS.toString())) std = MidiStandard.GS;

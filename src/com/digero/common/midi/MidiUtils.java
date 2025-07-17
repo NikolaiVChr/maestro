@@ -13,7 +13,6 @@ import javax.sound.midi.SysexMessage;
 import com.digero.common.midi.SequencerWrapper.TempoCacheSlow;
 import com.digero.common.util.Pair;
 import com.digero.maestro.midi.SequenceInfo;
-import com.digero.common.midi.MidiConstants;
 
 /**
  * A minimal copy of all used MidiUtils features.

@@ -175,12 +175,10 @@ public enum Note {
 				abc.append(Character.toLowerCase(s.charAt(0)));
 
 			// Add commas for octaves below 3
-			for (int c = octave; c < 3; c++)
-				abc.append(',');
+            abc.append(",".repeat(Math.max(0, 3 - octave)));
 
 			// Add apostrophes for octaves above 4
-			for (int c = octave; c > 4; c--)
-				abc.append('\'');
+            abc.append("'".repeat(Math.max(0, octave - 4)));
 
 			this.abc = abc.toString();
 		}
