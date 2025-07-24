@@ -1008,7 +1008,7 @@ public class SequenceInfo implements MidiConstants {
 				if (evt.getTick() > endTick) {
 					track.remove(evt);
 					
-					log.info("Moving event from "
+					log.finer("Moving event from "
 							+ Util.formatDurationM(MidiUtils.tick2microsecond(song, evt.getTick(), tempoCache)) + " to "
 							+ Util.formatDurationM(MidiUtils.tick2microsecond(song, endTick, tempoCache)));
 					

@@ -98,6 +98,7 @@ public class XmlUtil {
 	            case 0x2019:      // ’
 	                cp = '\'';
 	                break;
+					/* both em and en dash are legal in xml 1.1
 	            case 0x2013:      // en-dash
 	                cp = '-';
 	                break;
@@ -105,6 +106,7 @@ public class XmlUtil {
 	                out.append("--");
 	                i += Character.charCount(cp);
 	                continue;
+					*/
 	            default:
 	        }
 

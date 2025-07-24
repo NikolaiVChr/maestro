@@ -43,6 +43,7 @@ Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 
 Version 4.3.2
 - Made a popup window warning if loading a project saved with v4.3.0
+- Fixed when loading project, midis with em dash got converted to double dashes and the midi file could not be found.
 
 Version 4.3.1
 - Fixed severe volume bug in Maestro in 4.3.0
