@@ -2778,6 +2778,12 @@ public class AbcExporter {
 							assert curr.endABCMicros > pre.endABCMicros;
 							assert pre.note != Note.REST;
 							pre.endABCMicros = curr.startABCMicros;
+							if (pre.tiesTo == null) {
+								// I suspect lotro internally can
+								// have rounding errors.
+								// So we shorten a slight bit.
+								pre.endABCMicros--;
+							}
 							pre.setEndTick(qtm.microsToTickABCOrganic(curr.startABCMicros));
 							logNotes.fine(part.getTitle()+": normalizing note!1! tied="+(pre.tiesTo != null));
 						}
@@ -3554,7 +3560,7 @@ public class AbcExporter {
 			 * is also present in next chord. And if there is a
 			 * volume difference between the chord, lotro will
 			 * silence entire part. So to prevent that, we shorten
-			 * some notes to be same dura as the chord.
+			 * some notes.
 			 */
 	    	List<AbcNoteEvent> notesOn = new ArrayList<>();
 			for (ChordOrganic chord : chords) {
@@ -3562,6 +3568,12 @@ public class AbcExporter {
 					for (AbcNoteEvent pre : notesOn) {
 						if (pre.note == curr.note) {
 							pre.endABCMicros = curr.startABCMicros;
+							if (pre.tiesTo == null) {
+								// I suspect lotro internally can
+								// have rounding errors.
+								// So we shorten a slight bit.
+								pre.endABCMicros--;
+							}
 							assert curr.endABCMicros > pre.endABCMicros;
 							assert pre.note != Note.REST;
 							logNotes.finer(part.getAbcSong().getTitle()+ ": normalizing note!2!");

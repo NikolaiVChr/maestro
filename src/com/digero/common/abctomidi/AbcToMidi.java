@@ -132,7 +132,7 @@ public class AbcToMidi {
 		Map<Integer, Integer> accidentals = new HashMap<>(); // noteId => deltaNoteId
 
 		List<MidiEvent> noteOffEvents = new ArrayList<>();
-		List<Pair<Integer, Long>> notesOn = new ArrayList<>();
+		List<Pair<Integer, Double>> notesOn = new ArrayList<>();
 
 		int lineNumberForRegions = -1;
 		SequenceInfo.lastTrackInfos = new ArrayList<>();
@@ -675,20 +675,21 @@ public class AbcToMidi {
 							}
 
 							// check for invalid overlapping notes
-							Iterator<Pair<Integer, Long>> notesOnIter = notesOn.iterator();
+							Iterator<Pair<Integer, Double>> notesOnIter = notesOn.iterator();
 							while (notesOnIter.hasNext()) {
-								Pair<Integer, Long> soundingNote = notesOnIter.next();
+								Pair<Integer, Double> soundingNote = notesOnIter.next();
 								if (soundingNote.second <= chordStartTick) {
 									notesOnIter.remove();
 								}
 							}
-							for (Pair<Integer,Long> soundingNote : notesOn) {
-								if (noteId == soundingNote.first && chordStartTick < soundingNote.second && enableLotroErrors) {
+							for (Pair<Integer,Double> soundingNote : notesOn) {
+								if (noteId == soundingNote.first && chordStartTick + 0.0001d < soundingNote.second && enableLotroErrors) {
+									// 0.0001 is for rounding errors
 									log.warning(fileName+": Overlapping note, lotro might not play part "
 											+info.getPartNumber()+" correctly");
 									// This should maybe give a warning instead, not catastrophic failure
 									throw new LotroParseException("Overlapping note, lotro might not play part "
-											+info.getPartNumber()+" correctly", fileName, lineNumber, m.start());
+											+info.getPartNumber()+" correctly. "+(soundingNote.second-chordStartTick), fileName, lineNumber, m.start());
 								}
 							}
 
@@ -740,7 +741,7 @@ public class AbcToMidi {
 										info.getDynamics().getVol(useLotroInstruments), Math.round(chordStartTick)));
 							}
 
-							notesOn.add(new Pair<>(noteId, (long)noteEndTick));
+							notesOn.add(new Pair<>(noteId, noteEndTick));
 							handleNoteTie(useLotroInstruments, enableLotroErrors, info, track, channel, PPQN, tiedNotes,
 									noteOffEvents, fileName, lineNumber, m, numerator_abc, denominator_abc, abcNoteL,
 									abcNoteAcc, curTempoBPM, noteEndTick, noteLetter, octaveStr, noteId, lotroNoteId, info.getInstrument());
