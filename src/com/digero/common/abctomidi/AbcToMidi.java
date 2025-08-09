@@ -29,6 +29,7 @@ import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.util.LotroParseException;
 import com.digero.common.util.Pair;
 import com.digero.common.util.ParseException;
+import com.digero.common.util.Triple;
 import com.digero.maestro.abc.AbcExporter.ExportTrackInfo;
 import com.digero.maestro.midi.SequenceInfo;
 
@@ -132,7 +133,7 @@ public class AbcToMidi {
 		Map<Integer, Integer> accidentals = new HashMap<>(); // noteId => deltaNoteId
 
 		List<MidiEvent> noteOffEvents = new ArrayList<>();
-		List<Pair<Integer, Double>> notesOn = new ArrayList<>();
+		List<Triple<Integer, Double, String>> notesOn = new ArrayList<>();
 
 		int lineNumberForRegions = -1;
 		SequenceInfo.lastTrackInfos = new ArrayList<>();
@@ -221,6 +222,7 @@ public class AbcToMidi {
 							trackNumber++;
 							partStartLine = lineNumber;
 							chordStartTick = 0;
+                            chordEndTick = 0;
 							abcInfo.setPartNumber(trackNumber, info.getPartNumber());
 							abcInfo.setPartStartLine(trackNumber, lineNumberForRegions);
 							track = null; // Will create a new track after the header is done
@@ -373,6 +375,7 @@ public class AbcToMidi {
 								}
 
 								chordStartTick = chordEndTick;
+                                log.finer("chordStartTick ]="+chordStartTick);
 								break;
 
 							case '|': // Bar line
@@ -592,10 +595,14 @@ public class AbcToMidi {
 
 						double noteEndTick = chordStartTick
 								+ DEFAULT_NOTE_TICKS * (double) numerator / (double) denominator;
-
+                        log.finer("noteEndTick="+noteEndTick);
 						// A chord is as long as its shortest note
-						if (chordEndTick == chordStartTick || noteEndTick < chordEndTick)
-							chordEndTick = noteEndTick;
+						if (chordEndTick == chordStartTick || noteEndTick < chordEndTick) {
+                            chordEndTick = noteEndTick;
+                            log.finer("chordEndTick="+noteEndTick);
+                        } else {
+                            log.finer("skipping chordEndTick "+chordEndTick+" != "+chordStartTick);
+                        }
 
 						char noteLetter = m.group(NOTE_LETTER).charAt(0);
 						String octaveStr = m.group(NOTE_OCTAVE);
@@ -675,18 +682,19 @@ public class AbcToMidi {
 							}
 
 							// check for invalid overlapping notes
-							Iterator<Pair<Integer, Double>> notesOnIter = notesOn.iterator();
+							Iterator<Triple<Integer, Double, String>> notesOnIter = notesOn.iterator();
 							while (notesOnIter.hasNext()) {
-								Pair<Integer, Double> soundingNote = notesOnIter.next();
+                                Triple<Integer, Double, String> soundingNote = notesOnIter.next();
 								if (soundingNote.second <= chordStartTick) {
 									notesOnIter.remove();
 								}
 							}
-							for (Pair<Integer,Double> soundingNote : notesOn) {
-								if (noteId == soundingNote.first && chordStartTick + 0.0001d < soundingNote.second && enableLotroErrors) {
+							for (Triple<Integer,Double, String> soundingNote : notesOn) {
+								if (lotroNoteId == soundingNote.first && chordStartTick + 0.0001d < soundingNote.second && enableLotroErrors) {
 									// 0.0001 is for rounding errors
-									log.warning(fileName+": Overlapping note, lotro might not play part "
-											+info.getPartNumber()+" correctly");
+                                    double lengthSeconds = info.getWholeNoteTime() * (numerator_abc / (double) denominator_abc);
+									log.warning(fileName+": Overlapping note "+soundingNote.third+", lotro might not play part "
+											+info.getPartNumber()+" correctly. Overlap ticks="+(soundingNote.second-chordStartTick)+" "+soundingNote.second+" - "+chordStartTick+" "+noteEndTick+ " "+lengthSeconds+"s");
 									// This should maybe give a warning instead, not catastrophic failure
 									throw new LotroParseException("Overlapping note, lotro might not play part "
 											+info.getPartNumber()+" correctly. "+(soundingNote.second-chordStartTick), fileName, lineNumber, m.start());
@@ -740,15 +748,20 @@ public class AbcToMidi {
 								track.add(MidiFactory.createNoteOnEventEx(noteId, channel,
 										info.getDynamics().getVol(useLotroInstruments), Math.round(chordStartTick)));
 							}
-
-							notesOn.add(new Pair<>(noteId, noteEndTick));
+                            if (info.getPartNumber() == 211 && noteEndTick > 812281 && noteEndTick < 812282) {
+                                double lengthSeconds = info.getWholeNoteTime() * (numerator_abc / (double) denominator_abc);
+                                log.finer(" start note dura="+lengthSeconds+"s, end="+noteEndTick+", start="+chordStartTick);
+                            }
+							notesOn.add(new Triple<>(lotroNoteId, noteEndTick, abcNoteAcc+noteLetter+octaveStr+abcNoteL));
 							handleNoteTie(useLotroInstruments, enableLotroErrors, info, track, channel, PPQN, tiedNotes,
 									noteOffEvents, fileName, lineNumber, m, numerator_abc, denominator_abc, abcNoteL,
 									abcNoteAcc, curTempoBPM, noteEndTick, noteLetter, octaveStr, noteId, lotroNoteId, info.getInstrument());
 						}
 
-						if (!inChord)
-							chordStartTick = noteEndTick;
+						if (!inChord) {
+                            chordStartTick = noteEndTick;
+                            log.finer("chordStartTick n="+chordStartTick);
+                        }
 						i = m.end();
 					}
 
