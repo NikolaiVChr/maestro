@@ -278,7 +278,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 							TempoEvent te = getTempoEventForTick(tick);
 							long elapsedMicros = MidiUtils.ticks2microsec(tick - te.tick, te.tempoMPQ, tickResolution);
 							tempoLengths.put(te.tempoMPQ, elapsedMicros + Util.valueOf(tempoLengths.get(te.tempoMPQ), 0));
-						
+							if (iTrack > 0) log.fine("Track "+iTrack+" has tempo message in non-first track. "+MidiUtils.convertTempo(te.tempoMPQ)+" BPM, tick "+tick);
 							tempo.put(tick, new TempoEvent(tempoRaw, tick, te.micros + elapsedMicros));
 						} else {
 							log.warning("MIDI has tempo message of zero MPQ! Ignoring it..");
