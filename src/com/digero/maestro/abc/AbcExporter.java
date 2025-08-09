@@ -1839,13 +1839,13 @@ public class AbcExporter {
 	private List<Chord> processOrganic(AbcPart part, List<AbcNoteEvent> events, boolean useRestToShortenChords) {
 		boolean assertionsEnabled = false;
 		assert assertionsEnabled = true;
-		
+
+        for (AbcNoteEvent note : events) {
+            note.startABCMicros = qtm.tickToMicrosABCOrganic(note.getStartTick());
+            note.endABCMicros = qtm.tickToMicrosABCOrganic(note.getEndTick());
+        }
+
 		breakLongNotesOrganic(part, events);
-		
-		for (AbcNoteEvent note : events) {
-			note.startABCMicros = qtm.tickToMicrosABCOrganic(note.getStartTick()); 
-			note.endABCMicros = qtm.tickToMicrosABCOrganic(note.getEndTick());
-		}
 
 		List<ChordOrganic> chords = new ArrayList<>(events.size() / 2);
 		List<AbcNoteEvent> tmpEvents = new ArrayList<>();
@@ -4243,15 +4243,17 @@ public class AbcExporter {
 	 *
      */
 	private void breakLongNotesOrganic(AbcPart part, List<AbcNoteEvent> events) {
-		TreeSet<Long> points = new TreeSet<>();
+		TreeSet<Long> startPoints = new TreeSet<>();
         for (AbcNoteEvent ne : events) {
-            points.add(ne.getStartTick());
-            //points.add(ne.getEndTick()); // ends are more likely to be moved later, so we grab only starts
+            startPoints.add(ne.getStartTick());
+            //startPoints.add(ne.getEndTick()); // ends are more likely to be moved later, so we grab only starts
         }
+        long shortestMicros = AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM());
 		for (int i = 0; i < events.size(); i++) {
 			AbcNoteEvent ne = events.get(i);
-			
-			long maxNoteEndTick = qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(ne.getStartTick()) + TimingInfo.LONGEST_NOTE_MICROS);
+
+            // we subtrack 1 tick to be sure later asserts dont choke on rounding errors
+			long maxNoteEndTick = qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(ne.getStartTick()) + TimingInfo.LONGEST_NOTE_MICROS)-1L;
 			
 			boolean drone = isDrone(part,ne);
 			boolean rest = ne.note == Note.REST;
@@ -4259,62 +4261,54 @@ public class AbcExporter {
 			// Make a hard break for notes that are longer than LotRO can play
 			// Bagpipe notes up to B2 can sustain indefinitely; don't break them
 			if (ne.getEndTick() > maxNoteEndTick && !rest && !drone) {
+				// restart note unless non-sustainable, then end it premature
 
-				// If the note is a rest or sustainable, add another one after
-				// this ends to keep it going...
-				if (rest || part.getInstrument().isSustainable(ne.note.id)) {
+				if (part.getInstrument().isSustainable(ne.note.id)) {
 
-					if (!rest) {
-						long start  = qtm.tickToMicrosABCOrganic(ne.getStartTick());
-						long finale = qtm.tickToMicrosABCOrganic(ne.getEndTick());
-						long cut    = qtm.tickToMicrosABCOrganic(maxNoteEndTick);
-						if (finale - cut < AbcConstants.ONE_SECOND_MICROS) {
-							// we dont want to cut it half a second before the end
-							// so we cut 1 second earlier
-							// TODO: This might time its cut different from the cuts in other parts at same time
-							//       But not sure how to handle that, and it might in some cases be good thing. 
-							cut -= AbcConstants.ONE_SECOND_MICROS;
-							long maxNoteEndTick2 = qtm.microsToTickABCOrganic(cut);
-							long bar1 = qtm.tickToBarStartTickOrganic(maxNoteEndTick2);
-							long bar2 = qtm.tickToBarStartTickOrganic(maxNoteEndTick);
-							
-							if (Math.abs(maxNoteEndTick2 - bar1) < Math.abs(maxNoteEndTick2 - bar2)
-									&& qtm.tickToMicrosABCOrganic(bar1)-start > AbcConstants.ONE_SECOND_MICROS) {
-								// prev bar is closer than next from 4.0 sec
-								// and prev bar is at least 1 sec from start
-								maxNoteEndTick = bar1;
-								logNotes.fine(part.getTitle()+" bar1 break");
-							} else if (qtm.tickToMicrosABCOrganic(bar2)-start > AbcConstants.ONE_SECOND_MICROS) {
-								// prev bar from 5 secs 
-								maxNoteEndTick = bar2;
-								logNotes.fine(part.getTitle()+" bar2 break");
-							} else {
-								maxNoteEndTick = maxNoteEndTick2;
-								logNotes.fine(part.getTitle()+" break 1 sec earlier");
-							}
-						} else {
-							long bar3 = qtm.tickToBarStartTickOrganic(maxNoteEndTick);
-							long slipMicros = qtm.tickToMicrosABCOrganic(maxNoteEndTick) - qtm.tickToMicrosABCOrganic(bar3);
+                    long start  = qtm.tickToMicrosABCOrganic(ne.getStartTick());
+                    long finale = qtm.tickToMicrosABCOrganic(ne.getEndTick());
+                    long cut    = qtm.tickToMicrosABCOrganic(maxNoteEndTick);
+                    if (finale - cut < AbcConstants.ONE_SECOND_MICROS * 2) {
+                        // we dont want to cut it less than 2 second before the end
+                        // so we cut at 2 seconds before finale
+                        // TODO: This might time its cut different from the cuts in other parts at same time
+                        //       But not sure how to handle that, and it might in some cases be good thing.
+                        cut = finale - 2 * AbcConstants.ONE_SECOND_MICROS;
+                        long maxNoteEndTick2 = qtm.microsToTickABCOrganic(cut);
+                        long bar1 = qtm.tickToBarStartTickOrganic(maxNoteEndTick2);
+                        long bar2 = qtm.tickToBarEndTickOrganic(maxNoteEndTick2);
 
-							if (qtm.tickToBarEndTickOrganic(ne.getStartTick()) < bar3
-									&& slipMicros < AbcConstants.ONE_SECOND_MICROS) {
-								// minimum 2nd bar from start and maximum 1 sec from 5 secs
-								maxNoteEndTick = bar3;
-								logNotes.fine(part.getTitle()+" bar3 break");
-							} else {
-								logNotes.fine(part.getTitle()+" 5.0 sec break");
-							}
-						}
-					}
-					
-					if (rest) {
-						maxNoteEndTick = (ne.getEndTick() - ne.getStartTick())/2;
-						logNotes.fine(part.getTitle()+" rest cut in half");
-					}
+                        if (Math.abs(maxNoteEndTick2 - bar1) < Math.abs(maxNoteEndTick2 - bar2)
+                                && qtm.tickToMicrosABCOrganic(bar1)-start > AbcConstants.ONE_SECOND_MICROS * 2) {
+                            // prev bar is closer than next from cut
+                            // and prev bar is at least 2 sec from start
+                            maxNoteEndTick = bar1;
+                            logNotes.fine(part.getTitle()+" bar1 break");
+                        } else if (finale - qtm.tickToMicrosABCOrganic(bar2) > 14*AbcConstants.ONE_SECOND_MICROS/8) {
+                            // next bar from cut and finale is at least 1.75 sec from finale
+                            maxNoteEndTick = bar2;
+                            logNotes.fine(part.getTitle()+" bar2 break");
+                        } else {
+                            maxNoteEndTick = maxNoteEndTick2;
+                            logNotes.fine(part.getTitle()+" break 2 sec before 5 sec max");
+                        }
+                    } else {
+                        long bar3 = qtm.tickToBarStartTickOrganic(maxNoteEndTick);
+                        long slipMicros = qtm.tickToMicrosABCOrganic(maxNoteEndTick) - qtm.tickToMicrosABCOrganic(bar3);
+
+                        if (slipMicros < AbcConstants.ONE_SECOND_MICROS * 2) {
+                            // maximum 2 sec from 5 secs
+                            maxNoteEndTick = bar3;
+                            logNotes.fine(part.getTitle()+" bar3 break");
+                        } else {
+                            logNotes.fine(part.getTitle()+" 5.0 sec break");
+                        }
+                    }
+
 					AbcNoteEvent next = new AbcNoteEvent(ne.note, ne.velocity, maxNoteEndTick, ne.getEndTick(), qtm, ne.origNote);
 					next.startABCMicros = qtm.tickToMicrosABCOrganic(maxNoteEndTick);
 					next.endABCMicros = ne.endABCMicros;
-					assertNoteDuraOrganic1(next, AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM()));
+					assertNoteDuraOrganic1(next, shortestMicros);
 					
 					int ins = Collections.binarySearch(events, next);
 					if (ins < 0)
@@ -4323,63 +4317,71 @@ public class AbcExporter {
 					events.add(ins, next);
 
 					ne.continues = next.getLengthTicks();// needed for pruning
-					
-					if (rest) {
-						// need to be after the assert
-						i--;
-					}
 				}
 				ne.setEndTick(maxNoteEndTick);
 				ne.endABCMicros = qtm.tickToMicrosABCOrganic(maxNoteEndTick);
 				assertNoteDuraOrganic1(ne, AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM()));
-			}
+			} else if (ne.getEndTick() > maxNoteEndTick && drone) {
+                // drones should be tied instead of cut up
+                // Where this is tied can matter for other notes, so
+                // find where other notes start or end and choose that place.
 
-			// drones should be tied instead of cut up:
-			// Where this is tied can matter for other notes, so
-			// find where other notes start or end and choose that place.
-			long maxForDrones = qtm.microsToTickABCOrganic(
-					qtm.tickToMicrosABCOrganic(ne.getStartTick()) + TimingInfo.LONGEST_NOTE_MICROS-AbcConstants.ONE_SECOND_MICROS/4);
-			long minForDrones = qtm.microsToTickABCOrganic(
-					qtm.tickToMicrosABCOrganic(ne.getStartTick()) + TimingInfo.LONGEST_NOTE_MICROS-AbcConstants.ONE_SECOND_MICROS);
-			// Max tie upholds minimum dura of next
-			long maxTie = qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(ne.getEndTick()) - AbcConstants.ONE_SECOND_MICROS/10);
-			logNotes.finer("note "+ne.getStartTick()+" - "+ne.getEndTick()+", drone="+drone+", rest="+rest);
-			logNotes.finer("minForDrones = "+minForDrones);
-			logNotes.finer("maxForDrones = "+maxForDrones);
-			if (maxTie > minForDrones) maxForDrones = Math.min(maxForDrones, maxTie);
-			logNotes.finer("maxTie = "+maxTie);
-			Long bestForDrones = points.floor(maxForDrones);
-			if (bestForDrones != null && bestForDrones > minForDrones && bestForDrones <= maxTie) {
-				maxForDrones = bestForDrones;
-				logNotes.finer("maxForDrones = bestForDrones = "+bestForDrones);
-			}
-				
-			long targetEndTick = Math.min(ne.getEndTick(), maxForDrones);
+                // maxTickForDrones is 4.75 s after start
+                long maxTickForDrones = qtm.microsToTickABCOrganic(
+                        qtm.tickToMicrosABCOrganic(ne.getStartTick()) + TimingInfo.LONGEST_NOTE_MICROS - AbcConstants.ONE_SECOND_MICROS / 4);
 
-			logNotes.finer("min("+ne.getEndTick()+", "+maxForDrones+")");
-			
-			if (rest && ne.getEndTick() > qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(ne.getStartTick())
-					+ qtm.multiplyByExportTempoFactor(TimingInfo.LONGEST_NOTE_MICROS))) {
-				// Rest longer than 5s, split it at 4s:
-				targetEndTick = 
-						qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(ne.getStartTick())
-								+ qtm.multiplyByExportTempoFactor(AbcConstants.LONGEST_NOTE_MICROS/2));
-				logNotes.finer("targetEndTick="+targetEndTick);
-			}
+                // minForDrones is 4.00 s after start
+                long minTickForDrones = qtm.microsToTickABCOrganic(
+                        qtm.tickToMicrosABCOrganic(ne.getStartTick()) + TimingInfo.LONGEST_NOTE_MICROS - AbcConstants.ONE_SECOND_MICROS);
 
-			if (ne.getEndTick() > targetEndTick) {
-				long targetEndMicros = qtm.tickToMicrosABCOrganic(targetEndTick);
-				AbcNoteEvent next = ne.splitWithTieAtTick(targetEndTick, targetEndMicros);
-				
-				assertNoteDuraOrganic1(ne, AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM()));
-				assertNoteDuraOrganic1(next, AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM()));
-				
-				int ins = Collections.binarySearch(events, next);
-				if (ins < 0)
-					ins = -ins - 1;
-				assert (ins > i);
-				events.add(ins, next);
-			}
+                logNotes.finer("note " + ne.getStartTick() + " - " + ne.getEndTick() + ", drone=" + drone + ", rest=" + rest);
+                logNotes.finer("minForDrones = " + minTickForDrones);
+                logNotes.finer("maxTickForDrones = " + maxTickForDrones);
+
+                Long bestTickForDrones = startPoints.floor(maxTickForDrones);
+                if (bestTickForDrones != null && bestTickForDrones > minTickForDrones) {
+                    maxTickForDrones = bestTickForDrones;
+                    logNotes.finer("maxTickForDrones = bestForDrones = " + bestTickForDrones);
+                }
+
+                long targetEndTick = Math.min(ne.getEndTick(), maxTickForDrones);
+
+                logNotes.finer("min(" + ne.getEndTick() + ", " + maxTickForDrones + ")");
+
+                if (ne.getEndTick() > targetEndTick) {
+                    long targetEndMicros = qtm.tickToMicrosABCOrganic(targetEndTick);
+                    AbcNoteEvent next = ne.splitWithTieAtTick(targetEndTick, targetEndMicros);
+
+                    assertNoteDuraOrganic1(ne, shortestMicros);
+                    assertNoteDuraOrganic1(next, shortestMicros);
+
+                    int ins = Collections.binarySearch(events, next);
+                    if (ins < 0)
+                        ins = -ins - 1;
+                    assert (ins > i);
+                    events.add(ins, next);
+                }
+            } else if (ne.getEndTick() > maxNoteEndTick && rest) {
+                // Rest longer than 5s, split it at 4s:
+                long targetEndTick =
+                            qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(ne.getStartTick())
+                                    + AbcConstants.LONGEST_NOTE_MICROS / 2);
+                logNotes.finer("targetEndTick=" + targetEndTick);
+
+                if (ne.getEndTick() > targetEndTick) {
+                    long targetEndMicros = qtm.tickToMicrosABCOrganic(targetEndTick);
+                    AbcNoteEvent next = ne.splitWithTieAtTick(targetEndTick, targetEndMicros);
+
+                    assertNoteDuraOrganic1(ne, shortestMicros);
+                    assertNoteDuraOrganic1(next, shortestMicros);
+
+                    int ins = Collections.binarySearch(events, next);
+                    if (ins < 0)
+                        ins = -ins - 1;
+                    assert (ins > i);
+                    events.add(ins, next);
+                }
+            }
 		}
 	}
 
