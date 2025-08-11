@@ -80,8 +80,7 @@ public class MaestroMain {
 				}
 			});
 		});
-		Logging.configure(APP_NAME);
-		log = Logger.getLogger("");//must be after configure
+
 		try {
 			Properties props = new Properties();
 			props.load(MaestroMain.class.getResourceAsStream("version.properties"));
@@ -107,6 +106,9 @@ public class MaestroMain {
 			sendArgsToPort(args);
 			return;
 		}
+
+        Logging.configure(APP_NAME);
+        log = Logger.getLogger("");//must be after configure
 
 		//System.setProperty("sun.sound.useNewAudioEngine", "true");
 		
