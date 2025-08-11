@@ -969,8 +969,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		noteButton = new JButton("Note");
 		noteButton.addActionListener(e -> partPanel.textnoteToggle());
-		noteButton.setToolTipText("<html>Show notepad where custom notes can be entered.<br>"
-				+ "Will be saved in msx project file.</html>");
+		noteButton.setToolTipText("<html>Show notepad where custom comments can be entered.<br>"
+				+ "Will be saved in project file.</html>");
 				
 		feedLabel = new JLabel();
 		feedLabel.addMouseListener(new MouseAdapter() {
