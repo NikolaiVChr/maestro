@@ -107,7 +107,7 @@ public class MaestroMain {
 			return;
 		}
 
-        Logging.configure(APP_NAME);
+        Logging.configure(APP_NAME);//should be after "return" so that each instance that just sends a file to running maestro, dont create new log file.
         log = Logger.getLogger("");//must be after configure
 
 		//System.setProperty("sun.sound.useNewAudioEngine", "true");
@@ -200,19 +200,19 @@ public class MaestroMain {
 		try {
 			serverSocket = new ServerSocket(8000 + APP_VERSION.getBuild());
 			if (serverSocket.getLocalPort() != 8000 + APP_VERSION.getBuild()) {
-				log.fine("Port is "+serverSocket.getLocalPort());
+				//log.fine("Port is "+serverSocket.getLocalPort());
 				return false;
 			}
 		} catch (IOException e) {
 			// e.printStackTrace();
 			return false;
 		}
-		log.finer("Made port");
+		//log.finer("Made port");
 		(new Thread(() -> {
 			try {
 				while (true) {
 					Socket socket = serverSocket.accept();
-					log.finer("Accepted");
+					//log.finer("Accepted");
 					BufferedReader in = new BufferedReader(
 							new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_16));
 					// while (socket.isConnected()) {
@@ -225,11 +225,11 @@ public class MaestroMain {
 									|| Util.stringEndsWithIgnoreCase(data, Util.TXT_FILE_EXTENSION)
 									|| Util.stringEndsWithIgnoreCase(data, Util.MSX_FILE_EXTENSION)
 									|| Util.stringEndsWithIgnoreCase(data, Util.KAR_FILE_EXTENSION))) {
-						log.finer("Received "+data);
+						//log.finer("Received "+data);
 						String[] datas = { data };
 						activate(datas);
 					} else {
-						log.fine("Received nothing: "+data);
+						//log.fine("Received nothing: "+data);
 					}
 					// }
 					socket.close();
