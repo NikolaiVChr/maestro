@@ -79,6 +79,7 @@ public class AutoExporter {
 	private File nestedProject = null;
 	private File oldMidi = null;
 	private volatile boolean cancel = false;
+    private volatile boolean inProgress = false;
 	
 	PartAutoNumberer partAutoNumberer;
 	PartNameTemplate partNameTemplate;
@@ -133,7 +134,9 @@ public class AutoExporter {
 			frame.getBtnMIDI().addActionListener(getMIDIAutoActionListener());
 			frame.getBtnSourceAuto().addActionListener(getSourceAutoActionListener());
 			frame.addForceOrganicActionListener(getOrganicActionListener());
-			
+            frame.addForceOrganic2ActionListener(getOrganicActionListener());
+            frame.addForceMixActionListener(getOrganicActionListener());
+            frame.addForceLegacyActionListener(getOrganicActionListener());
 			refreshAuto();
 		});		
 	}
@@ -144,15 +147,14 @@ public class AutoExporter {
 				try {
 					autoExport();
 				} catch (Exception ioe) {
+                    inProgress = false;
 					log.warning("Error exporting: " + ioe.toString());
 					setProgress(0);
 					appendToField("<br><font color='red'>"+ioe.toString()+"</font>");
 					SwingUtilities.invokeLater(() -> {
 						frame.getBtnStartExport().setEnabled(true);
 						frame.getBtnCancelExport().setEnabled(false);
-						frame.setForceMixTimingEnabled(!frame.getForceOrganicSelected());
-						frame.setForceOrganicEnabled(true);
-						frame.setForceOrganic2Enabled(frame.getForceOrganicSelected());
+                        enableForceCheckBoxes();
 						frame.setBtnDestAutoEnabled(true);
 						frame.setBtnMIDIEnabled(true);
 						frame.setBtnSourceAutoEnabled(true);
@@ -181,11 +183,13 @@ public class AutoExporter {
 	}
 
 	private void autoExport() throws Exception {
+        inProgress = true;
 		SwingUtilities.invokeAndWait(() -> {
 			refreshAuto();
 			frame.getBtnStartExport().setEnabled(false);
 			frame.getBtnCancelExport().setEnabled(true);
 			frame.setForceMixTimingEnabled(false);
+            frame.setForceLegacyTimingEnabled(false);
 			frame.setForceOrganicEnabled(false);
 			frame.setForceOrganic2Enabled(false);
 			frame.setBtnDestAutoEnabled(false);
@@ -199,6 +203,7 @@ public class AutoExporter {
 		});
 		// Test if dest is empty
 		if (destFolderAuto.listFiles(new FolderFileFilter()).length != 0) {
+            inProgress = false;
 			setToField("Start with selecting source, midi and destination folders.<br>"
 					+ "<font color='red'>Destination folder must be empty!</font>"
 					+ "<br>MIDI folder is optional. It is used when midi cannot be found,"
@@ -208,9 +213,7 @@ public class AutoExporter {
 			SwingUtilities.invokeLater(() -> {
 				frame.getBtnStartExport().setEnabled(true);
 				frame.getBtnCancelExport().setEnabled(false);
-				frame.setForceMixTimingEnabled(!frame.getForceOrganicSelected());
-				frame.setForceOrganicEnabled(true);
-				frame.setForceOrganic2Enabled(frame.getForceOrganicSelected());
+                enableForceCheckBoxes();
 				frame.setBtnDestAutoEnabled(true);
 				frame.setBtnMIDIEnabled(true);
 				frame.setBtnSourceAutoEnabled(true);
@@ -274,13 +277,11 @@ public class AutoExporter {
 			appendToField("<br><br>Exports cancelled.");
 			log.info("Auto exports cancelled");
 		}
-		
+        inProgress = false;
 		SwingUtilities.invokeLater(() -> {
 			frame.getBtnStartExport().setEnabled(true);
 			frame.getBtnCancelExport().setEnabled(false);
-			frame.setForceMixTimingEnabled(!frame.getForceOrganicSelected());
-			frame.setForceOrganicEnabled(true);
-			frame.setForceOrganic2Enabled(frame.getForceOrganicSelected());
+            enableForceCheckBoxes();
 			frame.setBtnDestAutoEnabled(true);
 			frame.setBtnMIDIEnabled(true);
 			frame.setBtnSourceAutoEnabled(true);
@@ -449,16 +450,21 @@ public class AutoExporter {
 		boolean oldMix = abcSong.isMixTiming();
 		boolean oldOrganic = abcSong.isOrganic();
 		boolean oldOrganic2 = abcSong.isOrganic2();
-		if (frame.getForceMixTimingSelected() && !frame.getForceOrganicSelected()) {
-			if (!oldMix) timingModified = frame.getSaveMSXtimingSelected(); 
+        if (frame.getForceLegacyTimingSelected()) {
+            if (oldMix || oldOrganic) timingModified = frame.getSaveMSXtimingSelected();
+            abcSong.setMixTiming(false);
+            abcSong.setOrganic(false);
+        } else if (frame.getForceMixTimingSelected()) {
+			if (oldOrganic || !oldMix) timingModified = frame.getSaveMSXtimingSelected();
 			abcSong.setMixTiming(true);
-		}
-		if (frame.getForceOrganicSelected()) {
-			if (!oldOrganic) timingModified = frame.getSaveMSXtimingSelected();
+            abcSong.setOrganic(false);
+		} else if (frame.getForceOrganicSelected()) {
+			if (!oldOrganic || oldOrganic2) timingModified = frame.getSaveMSXtimingSelected();
 			abcSong.setOrganic(true);
-		}
-		if (frame.getForceOrganic2Selected() && frame.getForceOrganicSelected()) {
-			if (!oldOrganic2) timingModified = frame.getSaveMSXtimingSelected();
+            abcSong.setOrganic2(false);
+		} else if (frame.getForceOrganic2Selected()) {
+			if (!oldOrganic || !oldOrganic2) timingModified = frame.getSaveMSXtimingSelected();
+            abcSong.setOrganic(true);
 			abcSong.setOrganic2(true);
 		}
 		
@@ -664,12 +670,40 @@ public class AutoExporter {
 		return new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				if (!frame.getForceOrganicEnabled()) return;
-				frame.setForceMixTimingEnabled(!frame.getForceOrganicSelected());
-				frame.setForceOrganic2Enabled(frame.getForceOrganicSelected());
+                enableForceCheckBoxes();
 			}			
 		};
 	}
+
+    private void enableForceCheckBoxes() {
+        if (inProgress) return;
+        if (frame.getForceOrganicSelected()) {
+            frame.setForceMixTimingEnabled(false);
+            frame.setForceLegacyTimingEnabled(false);
+            frame.setForceOrganic2Enabled(false);
+            frame.setForceOrganicEnabled(true);
+        } else if (frame.getForceOrganic2Selected()) {
+            frame.setForceMixTimingEnabled(false);
+            frame.setForceLegacyTimingEnabled(false);
+            frame.setForceOrganicEnabled(false);
+            frame.setForceOrganic2Enabled(true);
+        } else if (frame.getForceMixTimingSelected()) {
+            frame.setForceOrganicEnabled(false);
+            frame.setForceLegacyTimingEnabled(false);
+            frame.setForceOrganic2Enabled(false);
+            frame.setForceMixTimingEnabled(true);
+        } else if (frame.getForceLegacyTimingSelected()) {
+            frame.setForceOrganicEnabled(false);
+            frame.setForceMixTimingEnabled(false);
+            frame.setForceOrganic2Enabled(false);
+            frame.setForceLegacyTimingEnabled(true);
+        } else {
+            frame.setForceOrganicEnabled(true);
+            frame.setForceMixTimingEnabled(true);
+            frame.setForceLegacyTimingEnabled(true);
+            frame.setForceOrganic2Enabled(true);
+        }
+    }
 
 	private ActionListener getDestAutoActionListener() {
 		return new ActionListener() {

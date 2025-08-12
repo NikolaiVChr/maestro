@@ -45,6 +45,7 @@ public class AbcToolsView extends JFrame {
 	private JButton btnSourceAuto;
 	private JButton btnStart;
 	private JButton btnCancel;
+    private JCheckBox forceLegacyTiming;
 	private JCheckBox forceMixTiming;
 	private JCheckBox forceOrganic;
 	private JCheckBox forceOrganic2;
@@ -211,23 +212,29 @@ public class AbcToolsView extends JFrame {
 		btnStart.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(btnStart);
 		
-		forceOrganic = new JCheckBox("Force Organic");
+		forceOrganic = new JCheckBox("Force Org. Single-stage");
 		forceOrganic.setSelected(false);
-		forceOrganic.setToolTipText("Force organic even if a project do not have it enabled.");
+		forceOrganic.setToolTipText("Force organic single-stage even if a project do not have it enabled.");
 		forceOrganic.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(forceOrganic);
 		
-		forceOrganic2 = new JCheckBox("Force Multi-stage");
+		forceOrganic2 = new JCheckBox("Force Org. Multi-stage");
 		forceOrganic2.setSelected(false);
-		forceOrganic2.setToolTipText("<html>Force organic multi-stage even if a project do not have it enabled.<br>Only has effect if organic is enabled by force or in project.</html>");
+        forceOrganic2.setToolTipText("Force organic multi-stage even if a project do not have it enabled.");
 		forceOrganic2.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(forceOrganic2);
 
 		forceMixTiming = new JCheckBox("Force Mix Timings");
 		forceMixTiming.setSelected(false);
-		forceMixTiming.setToolTipText("<html>Force mix timings even if a project do not have it enabled.<br>If the project already has organic enabled, this wont turn off organic.");
+        forceMixTiming.setToolTipText("Force mix timings even if a project do not have it enabled.");
 		forceMixTiming.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(forceMixTiming);
+
+        forceLegacyTiming = new JCheckBox("Force Legacy Timings");
+        forceLegacyTiming.setSelected(false);
+        forceLegacyTiming.setToolTipText("Force lagacy timings even if a project do not have it enabled.");
+        forceLegacyTiming.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelAuto.add(forceLegacyTiming);
 
 		recursiveCheckBox = new JCheckBox("Recursive");
 		recursiveCheckBox.setToolTipText("Go through sub folders and create a similar output folder tree");
@@ -344,6 +351,18 @@ public class AbcToolsView extends JFrame {
 	public void setForceMixTimingSelected(boolean selected) {
 		forceMixTiming.setSelected(selected);
 	}
+
+    public boolean getForceLegacyTimingSelected() {
+        return forceLegacyTiming.isSelected();
+    }
+
+    public void setForceLegacyTimingSelected(boolean selected) {
+        forceLegacyTiming.setSelected(selected);
+    }
+
+    public void setForceLegacyTimingEnabled(boolean enabled) {
+        forceLegacyTiming.setEnabled(enabled);
+    }
 	
 	public boolean getForceOrganicSelected() {
 		return forceOrganic.isSelected();
@@ -539,4 +558,13 @@ public class AbcToolsView extends JFrame {
 	public void addForceOrganicActionListener(ActionListener l) {
 		forceOrganic.addActionListener(l);
 	}
+    public void addForceOrganic2ActionListener(ActionListener l) {
+        forceOrganic2.addActionListener(l);
+    }
+    public void addForceLegacyActionListener(ActionListener l) {
+        forceLegacyTiming.addActionListener(l);
+    }
+    public void addForceMixActionListener(ActionListener l) {
+        forceMixTiming.addActionListener(l);
+    }
 }
