@@ -3154,10 +3154,23 @@ public class AbcExporter {
 	        
 	        // The grid segments might be larger than 5.0 seconds
 		    // Cut it up
-	        // TODO: This can cause short bursts after one or more long tones
-	        //       Fix it.
 	        while (curr.micros - prev.micros > TimingInfo.LONGEST_NOTE_MICROS) {
-	            long candidateTime = prev.micros + TimingInfo.LONGEST_NOTE_MICROS;
+                long candidateTime;
+                if (curr.micros - prev.micros < TimingInfo.LONGEST_NOTE_MICROS * 2 - 500) {
+                    // this prevents restarting into short bursts
+                    candidateTime = prev.micros + (curr.micros - prev.micros) / 2;
+
+                    // min and max points to prevent any segment to be longer than 5 secs
+                    long minMicros = curr.micros - TimingInfo.LONGEST_NOTE_MICROS;
+                    long maxMicros = prev.micros + TimingInfo.LONGEST_NOTE_MICROS;
+
+                    candidateTime = closestBarMicrosABC(part, candidateTime,
+                            Math.min(candidateTime - minMicros, TimingInfo.ONE_SECOND_MICROS),
+                            Math.min(maxMicros - candidateTime, TimingInfo.ONE_SECOND_MICROS));
+                } else {
+                    candidateTime = closestBarMicrosABC(part, prev.micros + TimingInfo.LONGEST_NOTE_MICROS,
+                            (TimingInfo.ONE_SECOND_MICROS/2L), 0L);
+                }
 	            GridLine candidate = new GridLine(candidateTime, GENERAL, 0);
 	            if (curr.micros - candidate.micros < minTail) {
 	                break;
@@ -3216,6 +3229,31 @@ public class AbcExporter {
 	    
 	    return gridTimes;
 	}
+
+    /**
+     * Part of multi-stage organic path
+     *
+     * @param part abc part
+     * @param micros origin point
+     * @param maxDistanceDown max distance down in micros from origin point
+     * @param maxDistanceUp max distance up in micros from origin point
+     * @return nearest midi bar line in micros
+     */
+    private long closestBarMicrosABC(AbcPart part, long micros, long maxDistanceDown, long maxDistanceUp) {
+        long tick = qtm.microsToTickABCOrganic(micros);
+        long barTicks = part.getAbcSong().getSequenceInfo().getDataCache().getBarLengthTicks();
+        long down = (tick / barTicks) * barTicks;
+        long up = down + barTicks;
+        long closestBarTick = tick-down < up - tick ? down : up;
+        long closestBarMicros = qtm.tickToMicrosABCOrganic(closestBarTick);
+        if (micros - closestBarMicros > maxDistanceDown) {
+            return micros;
+        }
+        if (closestBarMicros - micros > maxDistanceUp) {
+            return micros;
+        }
+        return closestBarMicros;
+    }
 	
 	/**
 	 * 
@@ -3250,7 +3288,7 @@ public class AbcExporter {
 		}
 		
 	    for (AbcNoteEvent note : notes) {
-	    	
+
 	        Long floor = grid.floor(note.startABCMicros);
 	        Long ceiling = grid.ceiling(note.startABCMicros);
 	        
