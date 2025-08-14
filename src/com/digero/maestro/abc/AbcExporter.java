@@ -4408,19 +4408,21 @@ public class AbcExporter {
                             ne.startABCMicros + AbcConstants.LONGEST_NOTE_MICROS / 2;
                 logNotes.finer("targetEndMicros=" + targetEndMicros);
 
-                if (ne.endABCMicros > targetEndMicros) {
-                    long targetEndTick = qtm.microsToTickABCOrganic(targetEndMicros);
-                    AbcNoteEvent next = ne.splitWithTieAtTick(targetEndTick, targetEndMicros);
+                long targetEndTick = qtm.microsToTickABCOrganic(targetEndMicros);
+                AbcNoteEvent next = new AbcNoteEvent(ne.note, ne.velocity, targetEndTick, ne.getEndTick(), qtm, ne.origNote);
+                next.startABCMicros = targetEndMicros;
+                next.endABCMicros = ne.endABCMicros;
+                ne.setEndTick(targetEndTick);
+                ne.endABCMicros = targetEndMicros;
 
-                    assertNoteDuraOrganic1(ne, shortestMicros);
-                    assertNoteDuraOrganic1(next, shortestMicros);
+                assertNoteDuraOrganic1(ne, shortestMicros);
+                assertNoteDuraOrganic1(next, shortestMicros);
 
-                    int ins = Collections.binarySearch(events, next);
-                    if (ins < 0)
-                        ins = -ins - 1;
-                    assert (ins > i);
-                    events.add(ins, next);
-                }
+                int ins = Collections.binarySearch(events, next);
+                if (ins < 0)
+                    ins = -ins - 1;
+                assert (ins > i);
+                events.add(ins, next);
             }
             assert ne.endABCMicros - ne.startABCMicros <= TimingInfo.LONGEST_NOTE_MICROS:Util.formatDurationM(ne.endABCMicros - ne.startABCMicros)+" too long still. instr="+part.getInstrument()+" drone="+drone+" rest="+rest;
 		}
