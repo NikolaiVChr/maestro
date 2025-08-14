@@ -67,9 +67,9 @@ public class AbcToolsView extends JFrame {
 	 */
 	public AbcToolsView() {
 		setTitle("ABC Tools");
-		setMinimumSize(new Dimension(800, 430));
+		setMinimumSize(new Dimension(800, 450));
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 500, 430);
+		setBounds(100, 100, 500, 450);
 		contentPane = new JPanel();
 
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
