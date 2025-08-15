@@ -4547,35 +4547,38 @@ public class AbcExporter {
 	 */
 	private List<AbcNoteEvent> expandPitchBendsOrganic(AbcPart part, AbcNoteEvent ne) {
 		// Handle pitch bend by subdividing tone into shorter notes.
-		if (ne instanceof BentAbcNoteEvent) {
-			BentAbcNoteEvent be = (BentAbcNoteEvent) ne;
-			int noteID = be.note.id;
+		if (ne instanceof BentAbcNoteEvent be) {
+            int noteID = be.note.id;
 			assert be.note != Note.REST;
 			int startPitch = noteID;
 			List<AbcNoteEvent> benders = new ArrayList<>();
 			AbcNoteEvent current = null;
+            long minimumDura = AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM());
 
-			Integer entry = null;
-			for (long t = be.getStartTick(); t < be.getEndTick();
-					t = be.getNextBend(qtm.microsToTickABCOrganic(
-							qtm.tickToMicrosABCOrganic(t) + AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())
-							), entry)) {
-				entry = be.getBend(t);
-                if (entry == null) {
+			Integer bend = null;
+			for (long tick = be.getStartTick(); tick < be.getEndTick();
+					tick = be.getNextBend(qtm.microsToTickABCOrganicRoundUp(
+							qtm.tickToMicrosABCOrganic(tick) + minimumDura*65L/60L), bend)
+                    ) {
+                // Faction 65/60 makes bends more detailed as they are much less susceptible to
+                // micro/tick rounding inaccuracies.
+				bend = be.getBend(tick);
+                if (bend == null) {
                     // Since all bent notes have a bend at start tick,
                     // and that start tick might have been quantized to lower tick.
                     // Make sure we grab that initial value here.
-                    entry = be.bends.firstEntry().getValue();
+                    // For organic this shouldn't happen, is a legacy/mix issue.
+                    bend = be.bends.firstEntry().getValue();
                 }
-                noteID = startPitch + entry;
+                noteID = startPitch + bend;
                 if (current == null) {
-					current = createBentSubNote(be, noteID, current, t, entry);
+					current = createBentSubNote(be, noteID, current, tick, bend);
 					if (current == null)
 						return new ArrayList<>();
 					benders.add(current);
 				} else {
 					if (current.note.id != noteID) {
-						current = createBentSubNote(be, noteID, current, t, entry);
+						current = createBentSubNote(be, noteID, current, tick, bend);
 						if (current == null)
 							return new ArrayList<>();
 						benders.add(current);

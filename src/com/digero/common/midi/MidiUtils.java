@@ -143,6 +143,12 @@ public class MidiUtils {
 		return us * resolution / tempoMPQ;
 	}
 
+    public static long microsec2ticksCeil(long us, int tempoMPQ, int resolution) {
+        // do not round to nearest tick
+        long addUp = us * resolution % tempoMPQ == 0?0L:1L;
+        return us * resolution / tempoMPQ + addUp;
+    }
+
 	/**
 	 * converts<br>
 	 * 1 - MPQ-Tempo to BPM tempo<br>

@@ -904,6 +904,13 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		TimingInfoEvent e = getTimingEventForMicrosOrganic(micros);
 		return e.tick + MidiUtils.microsec2ticks(micros - e.micros, e.info.getTempoMPQ(), e.info.getResolutionPPQ());
 	}
+
+    public long microsToTickABCOrganicRoundUp(long micros) {
+        if (newTempo == origTempo) return microsToTickOrganic(micros);
+        micros = micros * newTempo/(long)origTempo;
+        TimingInfoEvent e = getTimingEventForMicrosOrganic(micros);
+        return e.tick + MidiUtils.microsec2ticksCeil(micros - e.micros, e.info.getTempoMPQ(), e.info.getResolutionPPQ());
+    }
 	
 	@Override
 	public int tickToBarNumber(long tick) {

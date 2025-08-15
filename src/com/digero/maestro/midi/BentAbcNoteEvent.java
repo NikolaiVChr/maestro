@@ -31,18 +31,25 @@ public class BentAbcNoteEvent extends AbcNoteEvent {
 			return null;
 		return entry.getValue();
 	}
-	
-	public Long getNextBend(long tick, int lastBend) {
-		Entry<Long, Integer> entry_c = bends.ceilingEntry(tick);
-		Entry<Long, Integer> entry_f = bends.floorEntry(tick);
+
+    /**
+     * Returns the next bend change tick or endTick if no bend change is found.
+     * If the supplied tick has a different bend than the lastBend, it returns the supplied tick.     *
+     */
+	public long getNextBend(long tick, int lastBend) {
+		Entry<Long, Integer> entry_floor = bends.floorEntry(tick);
 		
-		if (entry_f != null && entry_f.getValue() != lastBend) return tick; 
+		if (entry_floor != null && entry_floor.getValue() != lastBend) return tick;
+
+        Entry<Long, Integer> entry_ceil = bends.ceilingEntry(tick+1L);
 		
-		if (entry_c == null)
+		if (entry_ceil == null)
 			return endTick;
-		
-		return entry_c.getKey();
-	}
+
+		long nextTickChange = entry_ceil.getKey();
+
+        return Math.min(nextTickChange, endTick);
+    }
 	
 	/**
 	 * 
