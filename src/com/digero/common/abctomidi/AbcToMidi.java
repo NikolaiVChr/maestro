@@ -20,6 +20,7 @@ import javax.sound.midi.Track;
 import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.AbcField;
 import com.digero.common.abc.LotroInstrument;
+import com.digero.common.abc.LotroInstrumentSampleDuration;
 import com.digero.common.midi.MidiConstants;
 import com.digero.common.midi.MidiFactory;
 import com.digero.common.midi.MidiUtils;
@@ -755,7 +756,7 @@ public class AbcToMidi {
 							notesOn.add(new Triple<>(lotroNoteId, noteEndTick, abcNoteAcc+noteLetter+octaveStr+abcNoteL));
 							handleNoteTie(useLotroInstruments, enableLotroErrors, info, track, channel, PPQN, tiedNotes,
 									noteOffEvents, fileName, lineNumber, m, numerator_abc, denominator_abc, abcNoteL,
-									abcNoteAcc, curTempoBPM, noteEndTick, noteLetter, octaveStr, noteId, lotroNoteId, info.getInstrument());
+									abcNoteAcc, curTempoBPM, chordStartTick, noteEndTick, noteLetter, octaveStr, noteId, lotroNoteId, info.getInstrument());
 						}
 
 						if (!inChord) {
@@ -829,7 +830,7 @@ public class AbcToMidi {
 	private static void handleNoteTie(boolean useLotroInstruments, final boolean enableLotroErrors, TuneInfo info,
 			Track track, int channel, long PPQN, Map<Integer, Integer> tiedNotes, List<MidiEvent> noteOffEvents,
 			String fileName, int lineNumber, Matcher m, int numerator_abc, int denominator_abc, String abcNoteL,
-			String abcNoteAcc, int curTempoBPM, double noteEndTick, char noteLetter, String octaveStr, int noteId,
+			String abcNoteAcc, int curTempoBPM, double noteStartTick, double noteEndTick, char noteLetter, String octaveStr, int noteId,
 			int lotroNoteId, LotroInstrument instrument) throws LotroParseException {
 		
 		if (m.group(NOTE_TIE) != null) {
@@ -851,10 +852,22 @@ public class AbcToMidi {
 			double noteEndTickTmp = noteEndTick;
 			if (useLotroInstruments) {
 				boolean sustainable = info.getInstrument().isSustainable(lotroNoteId);
+                boolean skipExtra = false;
+                if (!sustainable) {
+                    try {
+                        // This makes long notes on plucked and percussion notes shorter so they match the sample,
+                        // which in turn makes the duration display show correct length.
+                        long lengthMicros = LotroInstrumentSampleDuration.getDura(info.getInstrument().friendlyName, lotroNoteId);
+                        noteEndTickTmp = noteStartTick + lengthMicros * PPQN / MPQN;
+                        skipExtra = true;
+                    } catch (IOException e) {
+                        log.warning("Unable to find duration for note "+lotroNoteId+" in "+info.getInstrument().friendlyName+", "+e.getMessage());
+                    }
+                }
 				double extraSeconds = sustainable ? AbcConstants.SUSTAINED_NOTE_HOLD_SECONDS
 						: AbcConstants.NON_SUSTAINED_NOTE_HOLD_SECONDS;
 
-				noteEndTickTmp += extraSeconds * AbcConstants.ONE_SECOND_MICROS * PPQN / MPQN;
+				if (!skipExtra) noteEndTickTmp += extraSeconds * AbcConstants.ONE_SECOND_MICROS * PPQN / MPQN;
 			}
 			MidiEvent noteOff = MidiFactory.createNoteOffEventEx(noteId, channel,
 					info.getDynamics().getVol(useLotroInstruments), Math.round(noteEndTickTmp));

@@ -48,6 +48,7 @@ Version 4.3.5
 - Renamed 'Changes since Maestro 2.5.0.txt' file to 'readme.txt'.
 - Improve where organic restart too long notes.
 - Auto-exporter force timings now overrides any project setting.
+- Fixed that ABC player playback duration display didn't always match up with outputted ABC meta data duration.
 
 Version 4.3.1
 - Fixed severe volume bug in Maestro in 4.3.0
