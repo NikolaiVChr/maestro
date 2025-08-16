@@ -1397,7 +1397,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				if (dialog.isNumbererSettingsChanged()) {
 					partAutoNumberer.setSettings(dialog.getNumbererSettings());
 					partAutoNumberer.renumberAllParts();
-                    //partsList.updateParts();
 				}
 				partNameTemplate.setSettings(dialog.getNameTemplateSettings());
 				partPanel.settingsChanged();
