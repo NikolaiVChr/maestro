@@ -1,6 +1,8 @@
 package com.digero.maestro.util;
 
 import java.util.AbstractList;
+import java.util.ArrayList;
+import java.util.Comparator;
 
 import javax.swing.DefaultListModel;
 
@@ -49,4 +51,17 @@ public class ListModelWrapper<E> extends AbstractList<E> {
 	public boolean remove(Object o) {
 		return listModel.removeElement(o);
 	}
+
+    /**
+    * This could take 1.6 seconds for 24 part song.
+    * With this method override it's now about 100 ms.
+    * Listener were reason.
+    */
+    @Override
+    public void sort(Comparator<? super E> c) {
+        ArrayList<E> temp = new ArrayList<>(this);// 5 us
+        temp.sort(c);// 8 us
+        listModel.clear();// 19 ms
+        listModel.addAll(temp);// 85 ms (1 listener)
+    }
 }

@@ -775,7 +775,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		part.discard();
 		//since we suppressed sorting we do it now:
 		populateFirstNumbers();
-		if (sorted) parts.sort(partNumberComparator);//timed this sort, and its slow as f., dont understand why
+		if (sorted) parts.sort(partNumberComparator);
 		fireChangeEvent(AbcSongProperty.PART_LIST_ORDER, part);
 	}
 
@@ -1199,8 +1199,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
             return Integer.compare(p1.getPartNumber(), p2.getPartNumber());
         }
     };
-	
-	public boolean suppressPartSort = false;// beside this class, also used from PartAutoNumberer
+
+    public boolean suppressPartSort = false;// beside this class, also used from PartAutoNumberer
 
 	private final Listener<AbcPartEvent> abcPartListener = e -> {
 		if (e.getProperty() == AbcPartProperty.PART_NUMBER && !suppressPartSort && sorted) {
