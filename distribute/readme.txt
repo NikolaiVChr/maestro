@@ -41,7 +41,7 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
-Version 4.3.5
+Version 4.3.6
 - Made a popup window warning if loading a project saved with v4.3.0
 - Fixed when loading project, midis with em dash got converted to double dashes and the midi file could not be found.
 - Abc Player was a little too confidently saying that notes were overlapping when they were not. This has been improved.
@@ -49,6 +49,9 @@ Version 4.3.5
 - Improve where organic restart too long notes.
 - Auto-exporter force timings now overrides any project setting.
 - Fixed that ABC player playback duration display didn't always match up with outputted ABC meta data duration.
+- Fixed that when importing part numbering config, the instruments did not update in the parts list after applying settings.
+- Made automatic emergency reset of part numbering scheme if it is corrupt.
+- Remove slow bottleneck of updating part numbers when running renumberAllParts().
 
 Version 4.3.1
 - Fixed severe volume bug in Maestro in 4.3.0

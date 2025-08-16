@@ -196,6 +196,10 @@ public class PartAutoNumberer {
 		List<? extends NumberedAbcPart> partsCopy = new ArrayList<>(parts);// This is to prevent a reordering of parts
 																			// while iterating through it.
 
+        NumberedAbcPart part1 = partsCopy.getFirst();
+        if (part1 != null) {
+            ((AbcPart)part1).getAbcSong().suppressPartSort = true;
+        }
 		for (NumberedAbcPart part : partsCopy) {
 			int partNumber = getFirstNumber(part.getInstrument());
 			while (numbersInUse.contains(partNumber)) {
@@ -204,7 +208,10 @@ public class PartAutoNumberer {
 			numbersInUse.add(partNumber);
 			part.setPartNumber(partNumber);
 		}
-
+        if (part1 != null) {
+            ((AbcPart)part1).getAbcSong().suppressPartSort = false;
+            ((AbcPart)part1).getAbcSong().sortParts(null);
+        }
 	}
 
 	public void onPartAdded(NumberedAbcPart partAdded) {

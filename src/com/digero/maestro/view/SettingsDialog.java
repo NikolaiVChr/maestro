@@ -15,6 +15,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.logging.Logger;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
@@ -62,6 +63,8 @@ import info.clearthought.layout.TableLayoutConstants;
 
 @SuppressWarnings("serial")
 public class SettingsDialog extends JDialog implements TableLayoutConstants {
+    protected static final Logger log = Logger.getLogger("misc.settings");
+
 	private static final String PART_NUMBERING_CONFIG_DIRECTORY = "PartNumConfigDir";
 	public static final int NUMBERING_TAB = 0;
 	public static final int NAME_TEMPLATE_TAB = 1;
@@ -172,7 +175,11 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		buttonsContainerPanel.add(buttonsPanel);
 
 		tabPanel = new JTabbedPane();
-		tabPanel.addTab("ABC Part Numbering", createNumberingPanel()); // NUMBERING_TAB
+        JPanel numberingPanel = createNumberingPanel();
+        if (numberingPanel == null) {
+            numberingPanel = createNumberingPanel();
+        }
+		tabPanel.addTab("ABC Part Numbering", numberingPanel); // NUMBERING_TAB
 		tabPanel.addTab("ABC Part Naming", createNameTemplatePanel()); // NAME_TEMPLATE_TAB
 		tabPanel.addTab("File Naming", createExportTemplatePanel());
 		tabPanel.addTab("Instrument names", createInstrNamePanel());
@@ -211,6 +218,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		instrumentSpinners.clear();
 
 		LotroInstrument[] instruments = LotroInstrument.values();
+
 		for (int i = 0; i < instruments.length; i++) {
 			LotroInstrument inst = instruments[i];
 
@@ -222,6 +230,16 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 			} else {
 				instrumentsLayout.insertRow(row, PREFERRED);
 			}
+            if (partNumbererSettings.getFirstNumber(inst) < 0) {
+                log.severe("first number of "+inst+" is less than zero: "+partNumbererSettings.getFirstNumber(inst));
+                partNumbererSettings.restoreDefaults();
+                return null;
+            }
+            if (partNumbererSettings.getFirstNumber(inst) > (partNumbererSettings.isIncrementByTen() ? 10 : 999)) {
+                log.severe("first number of "+inst+" is too large: "+partNumbererSettings.getFirstNumber(inst)+"/"+(partNumbererSettings.isIncrementByTen() ? 10 : 999));
+                partNumbererSettings.restoreDefaults();
+                return null;
+            }
 			InstrumentSpinner spinner = new InstrumentSpinner(inst);
 			instrumentSpinners.add(spinner);
 			instrumentsPanel.add(spinner, col + ", " + row);
@@ -438,6 +456,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 			for (InstrumentSpinner spinner : instrumentSpinners) {
 				if (spinner.instrument.name().equals(ins.name())) {
 					spinner.setValue(firstPartNo);
+                    spinner.stateChanged(null);
 				}
 			}
 		}

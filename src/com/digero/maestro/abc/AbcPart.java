@@ -13,6 +13,7 @@ import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
@@ -53,6 +54,8 @@ import com.digero.maestro.util.XmlUtil;
 import com.digero.maestro.view.InstrNameSettings;
 
 public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscardable {
+    protected static final Logger log = Logger.getLogger("song");
+
 	private int partNumber = 1;
 	public boolean suppressSpinnerUpdate = false;
 	private String title;
@@ -1356,6 +1359,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	@Override
 	public void setPartNumber(int partNumber) {
 		if (this.partNumber != partNumber) {
+            log.finer(getTitle()+": setPartNumber: "+this.partNumber+" -> "+partNumber);
 			this.partNumber = partNumber;
 			fireChangeEvent(AbcPartProperty.PART_NUMBER);
 		}

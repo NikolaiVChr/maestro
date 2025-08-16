@@ -1200,17 +1200,21 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         }
     };
 	
-	public boolean suppressPartSort = false;
+	public boolean suppressPartSort = false;// beside this class, also used from PartAutoNumberer
 
 	private final Listener<AbcPartEvent> abcPartListener = e -> {
 		if (e.getProperty() == AbcPartProperty.PART_NUMBER && !suppressPartSort && sorted) {
-			populateFirstNumbers();
-			parts.sort(partNumberComparator);
-			fireChangeEvent(AbcSongProperty.PART_LIST_ORDER, e.getSource());
-		}
+            sortParts(e.getSource());
+        }
 	};
 
-	@Override
+    public void sortParts(AbcPart source) {
+        populateFirstNumbers();
+        parts.sort(partNumberComparator);
+        fireChangeEvent(AbcSongProperty.PART_LIST_ORDER, source);
+    }
+
+    @Override
 	public String getBadgerTitle() {
 		if (!badger)
 			return null;
