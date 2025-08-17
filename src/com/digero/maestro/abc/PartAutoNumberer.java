@@ -197,7 +197,7 @@ public class PartAutoNumberer {
 																			// while iterating through it.
 
         NumberedAbcPart part1 = partsCopy.getFirst();
-        if (part1 != null) {
+        if (part1 != null && ((AbcPart)part1).getAbcSong().sorted) {
             ((AbcPart)part1).getAbcSong().suppressPartSort = true;
         }
 		for (NumberedAbcPart part : partsCopy) {
@@ -208,7 +208,7 @@ public class PartAutoNumberer {
 			numbersInUse.add(partNumber);
 			part.setPartNumber(partNumber);
 		}
-        if (part1 != null) {
+        if (part1 != null && ((AbcPart)part1).getAbcSong().sorted) {
             ((AbcPart)part1).getAbcSong().suppressPartSort = false;
             ((AbcPart)part1).getAbcSong().sortParts(null);
         }
