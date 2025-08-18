@@ -8,13 +8,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Logger;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 import com.digero.common.abc.LotroInstrument;
 
 public class PartAutoNumberer {
+    protected static final Logger log = Logger.getLogger("song");
+
 	public static class Settings {
+
 		private Map<LotroInstrument, Integer> firstNumber = new EnumMap<>(LotroInstrument.class);
 		private boolean incrementByTen;
 		private final Preferences prefs;
@@ -62,36 +66,35 @@ public class PartAutoNumberer {
 		 */
 		public String prefsKey(LotroInstrument instrument) {
 			// @formatter:off
-			switch (instrument)
+			// Missing case statement
+			return switch (instrument)
 			{
-				case LUTE_OF_AGES:             return "Lute of Ages";
-				case BASIC_LUTE:               return "Basic Lute";
-				case BASIC_HARP:               return "Harp";
-				case MISTY_MOUNTAIN_HARP:      return "Misty Mountain Harp";
-				case BARDIC_FIDDLE:            return "Bardic Fiddle";
-				case BASIC_FIDDLE:             return "Basic Fiddle";
-				case LONELY_MOUNTAIN_FIDDLE:   return "Lonely Mountain Fiddle";
-				case SPRIGHTLY_FIDDLE:         return "Sprightly Fiddle";
-				case STUDENT_FIDDLE:           return "Student's Fiddle";
-				case TRAVELLERS_TRUSTY_FIDDLE: return "Traveller's Trusty Fiddle";
-				case BASIC_THEORBO:            return "Theorbo";
-				case BASIC_FLUTE:              return "Flute";
-				case BASIC_CLARINET:           return "Clarinet";
-				case BASIC_HORN:               return "Horn";
-				case BASIC_BASSOON:            return "Basic Bassoon";
-				case BRUSQUE_BASSOON:          return "Brusque Bassoon";
-				case LONELY_MOUNTAIN_BASSOON:  return "Lonely Mountain Bassoon";
-				case BASIC_BAGPIPE:            return "Bagpipe";
-				case BASIC_PIBGORN:            return "Pibgorn";
-				case BASIC_DRUM:               return "Drums";
-				case BASIC_COWBELL:            return "Cowbell";
-				case MOOR_COWBELL:             return "Moor Cowbell";
-			}
+                case LUTE_OF_AGES->"Lute of Ages";
+                case BASIC_LUTE->"Basic Lute";
+                case BASIC_HARP->"Harp";
+                case MISTY_MOUNTAIN_HARP->"Misty Mountain Harp";
+                case BARDIC_FIDDLE->"Bardic Fiddle";
+                case BASIC_FIDDLE->"Basic Fiddle";
+                case LONELY_MOUNTAIN_FIDDLE->"Lonely Mountain Fiddle";
+                case SPRIGHTLY_FIDDLE->"Sprightly Fiddle";
+                case STUDENT_FIDDLE->"Student's Fiddle";
+                case TRAVELLERS_TRUSTY_FIDDLE->"Traveller's Trusty Fiddle";
+                case BASIC_THEORBO->"Theorbo";
+                case BASIC_FLUTE->"Flute";
+                case BASIC_CLARINET->"Clarinet";
+                case BASIC_HORN->"Horn";
+                case BASIC_BASSOON->"Basic Bassoon";
+                case BRUSQUE_BASSOON->"Brusque Bassoon";
+                case LONELY_MOUNTAIN_BASSOON->"Lonely Mountain Bassoon";
+                case BASIC_BAGPIPE->"Bagpipe";
+                case BASIC_PIBGORN->"Pibgorn";
+                case BASIC_DRUM->"Drums";
+                case BASIC_COWBELL->"Cowbell";
+                case MOOR_COWBELL->"Moor Cowbell";
+                default->instrument.toString();
+            };
 			// @formatter:on
-
-			assert false; // Missing case statement
-			return instrument.toString();
-		}
+        }
 
 		private void init(LotroInstrument instrument, int defaultValue) {
 			firstNumber.put(instrument, prefs.getInt(prefsKey(instrument), defaultValue));
@@ -241,26 +244,27 @@ public class PartAutoNumberer {
 			return;
 
 		int deletedNumber = partDeleted.getPartNumber();
-		int deletedFirstNumber = getFirstNumber(partDeleted.getInstrument());// System.out.println(deletedFirstNumber+"
-																				// is the first from the
-																				// deleted");
+		int deletedFirstNumber = getFirstNumber(partDeleted.getInstrument());
+
 		if (!isAutoAssigned(partDeleted, -1, deletedFirstNumber)) {
-			// System.out.println(partDeleted.getInstrument().toString()+" deleted and did not fit");
+			log.fine(partDeleted.getInstrument().toString()+" deleted and did not fit");
 			return;
 		}
 
 		for (NumberedAbcPart part : parts) {
 			int partNumber = part.getPartNumber();
-			int partFirstNumber = getFirstNumber(part.getInstrument());// System.out.println(partFirstNumber+" is the
-																		// first");
+			int partFirstNumber = getFirstNumber(part.getInstrument());
+
 			boolean autoTest = isAutoAssigned(part, deletedNumber, deletedFirstNumber);
 			if (part != partDeleted && partNumber > deletedNumber && partNumber > partFirstNumber
 					&& partFirstNumber == deletedFirstNumber && autoTest) {
-				part.setPartNumber(partNumber - getIncrement());// System.out.println(partNumber+" decremented");
-				if (part.getPartNumber() == deletedNumber)
-					deletedNumber = partNumber;// the deleted spot was filled out, the one that filled it out is now
-												// considered deleted
-			} // else System.out.println(autoTest+" "+partNumber+" isAutoAssigned(part)");
+				part.setPartNumber(partNumber - getIncrement());
+				if (part.getPartNumber() == deletedNumber) {
+                    deletedNumber = partNumber;
+                    // the deleted spot was filled out, the one that filled it out is now
+                    // considered deleted
+                }
+			}
 		}
 	}
 
@@ -285,7 +289,7 @@ public class PartAutoNumberer {
 		}
 		outer: while (cohesive && checkNumber < testNumber) {
 			if (checkNumber == deletedNumber) {
-				// System.out.println(checkNumber+" checks out (deleted)");
+				// checks out (deleted)
 				checkNumber += getIncrement();
 				continue outer;
 			}
@@ -294,10 +298,9 @@ public class PartAutoNumberer {
 
 				if (checkNumber == partNumber) {
 					if (testFirstNumber != getFirstNumber(part.getInstrument())) {
-						// System.out.println(" testFirstNumber != getFirstNumber(part.getInstrument())");
 						return false;
 					}
-					// System.out.println(checkNumber+" checks out");
+					// It checks out
 					checkNumber += getIncrement();
 					continue outer;
 				}

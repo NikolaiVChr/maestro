@@ -135,7 +135,7 @@ public class TrackSplitter {
 							if (firstTrackUsingPorts == null)
 								firstTrackUsingPorts = newTrack;
 							newTrack.add(MidiFactory.createTrackNameEvent(oldTrackName + " : " + trackCounter));
-							newTrack.add(oldEndOfTrack);
+                            //if (oldEndOfTrack != null) newTrack.add(MidiFactory.createEndOfTrackEvent(oldEndOfTrack.getTick()));
 							if (hasPorts) {
 								// We put the GM+ port change in every one of the new tracks if the old had it.
 								MidiEvent evtPort = MidiFactory.createPortEvent(port);
@@ -154,7 +154,39 @@ public class TrackSplitter {
 						newMetaTrack.add(evt);
 					}
 				} else {
-					newMetaTrack.add(evt);
+                    if (msg instanceof MetaMessage metaMsg) {
+                        int type = metaMsg.getType();
+                        if (j > 0 && (type == MidiConstants.META_TEXT || type == MidiConstants.META_LYRIC || type == MidiConstants.META_MARKER || type == MidiConstants.META_CUE_POINT)) {
+                            // Its lyrics related
+                            Track newTrack = newTracks.get("Lyrics " + j);
+                            if (newTrack == null) {
+                                newTrack = expandedSequence.createTrack();
+                                newTrack.add(MidiFactory.createTrackNameEvent(oldTrackName + " : Lyrics"));
+                                //if (oldEndOfTrack != null) newTrack.add(MidiFactory.createEndOfTrackEvent(oldEndOfTrack.getTick()));
+
+                                trackCounter += 1;
+                                newTracks.put("Lyrics " + j, newTrack);
+                            }
+                            newTrack.add(evt);
+
+                        } else if (j > 0 && type == MidiConstants.META_TEMPO) {
+                            // Its tempo but not in first track
+                            Track newTrack = newTracks.get("Tempos " + j);
+                            if (newTrack == null) {
+                                newTrack = expandedSequence.createTrack();
+                                newTrack.add(MidiFactory.createTrackNameEvent(oldTrackName + " : Tempos"));
+                                //if (oldEndOfTrack != null) newTrack.add(MidiFactory.createEndOfTrackEvent(oldEndOfTrack.getTick()));
+
+                                trackCounter += 1;
+                                newTracks.put("Tempos " + j, newTrack);
+                            }
+                            newTrack.add(evt);
+                        } else {
+                            newMetaTrack.add(evt);
+                        }
+                    } else {
+                        newMetaTrack.add(evt);
+                    }
 				}
 			}
 			

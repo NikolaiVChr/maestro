@@ -252,6 +252,7 @@ public class MidiText {
 				log.info(fragment.toString());
 			} else {
 				log.finer(MidiUtils.formatBytesHexOnly(data));
+                //fragment.syline = decode(fragment.sylineBytes);//for debug
 				log.fine(fragment.toString());
 				increaseTextStats(fragment.format);
 				boolean ok = text.add(fragment);
@@ -404,6 +405,7 @@ public class MidiText {
 			return str.toString();
 		}
 		int mainTrack = calcWinningTrack();
+        log.fine("Winning lyrics track: "+mainTrack);
 		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 		/*
 		if (!cache.getCopyright().isEmpty()) {
