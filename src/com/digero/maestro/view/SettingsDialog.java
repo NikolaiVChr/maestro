@@ -889,6 +889,13 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		exceed6CheckBox.addActionListener(
 				e -> saveSettings.useRestsInChords = exceed6CheckBox.isSelected());
 
+        final JCheckBox warnSamePartsCheckBox = new JCheckBox(
+                "Warn if two or more part has same name");
+        warnSamePartsCheckBox.setToolTipText("Same names can make some songbooks get confused.");
+        warnSamePartsCheckBox.setSelected(saveSettings.warnOnExportOfSamePartNames);
+        warnSamePartsCheckBox.addActionListener(
+                e -> saveSettings.warnOnExportOfSamePartNames = warnSamePartsCheckBox.isSelected());
+
 		TableLayout layout = new TableLayout();
 		layout.insertColumn(0, PREFERRED);
 //		layout.insertColumn(1, FILL);
@@ -925,6 +932,9 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		
 		layout.insertRow(++row, PREFERRED);
 		panel.add(exceed6CheckBox, "0, " + row);
+
+        layout.insertRow(++row, PREFERRED);
+        panel.add(warnSamePartsCheckBox, "0, " + row);
 
 		return panel;
 	}

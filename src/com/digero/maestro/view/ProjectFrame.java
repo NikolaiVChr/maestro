@@ -2683,6 +2683,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			JOptionPane.showMessageDialog(this, "No ABC Song is open", "Error", JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
+
+        if (!confirmExportDespiteWarnings()) {
+            return false;
+        }
 		
 		File exportFile = getAbcExportFile();
 		File allowOverwriteFile = allowOverwriteExportFile ? abcSong.getExportFile() : null;
@@ -2718,11 +2722,25 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			return false;
 		}
 
-		if (shouldExportAbcAs())
-			return exportAbcAs();
+		if (shouldExportAbcAs()) {
+            return exportAbcAs();
+        } else if (!confirmExportDespiteWarnings()) {
+            return false;
+        }
 
 		return finishExportAbc(abcSong.getExportFile());
 	}
+
+    private boolean confirmExportDespiteWarnings() {
+        List<String> warnings = abcSong.getExportWarnings();
+        for(String warning : warnings) {
+            int option = JOptionPane.showConfirmDialog(this, warning+"\nDo you want to proceed with exporting without fixing it?", "Warning", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            if (option != JOptionPane.YES_OPTION) {
+                return false;
+            }
+        }
+        return true;
+    }
 
 	private boolean finishExportAbc(File exportFile) {
 		exportSuccessfulLabel.setVisible(false);

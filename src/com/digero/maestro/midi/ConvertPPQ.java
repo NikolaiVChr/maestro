@@ -56,6 +56,8 @@ public class ConvertPPQ {
 				
 		while(MidiUtils.ticks2microsec(1, MidiUtils.convertTempo(120), newPPQ) > 500) {
 			// we require 500 us precision at 120 bpm, so that conversions between tick/micros gets more accurate
+            // 60 BPM will be double microsecs of 120 BPM per tick, and so on. Some songs dip below 10 BPM at places.
+            // But generally this should keep it below 5 milliseconds, even for low BPM dips. Human ear can hear 10 ms resolution.
 			newPPQ *= 2;
 		}
 		

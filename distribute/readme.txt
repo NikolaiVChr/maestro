@@ -54,6 +54,8 @@ Version 4.3.8
 - Remove slow bottleneck of updating part numbers when running renumberAllParts().
 - Make maestro react faster when deleting a part in a song with many parts.
 - Fix that when expanding midi, lyrics and tempo changes got all lumped up into first track.
+- New option added for warning if two parts are named the same.
+- New export warning if polyphony goes above 64. Auto-exporter will not warn though.
 
 Version 4.3.1
 - Fixed severe volume bug in Maestro in 4.3.0

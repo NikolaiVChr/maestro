@@ -24,6 +24,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.xml.xpath.XPathExpressionException;
 
+import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -860,6 +861,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		return abcSong.getSequenceInfo().getTrackCount();
 	}
 
+    @NotNull
 	@Override
 	public String getTitle() {
 		return title;

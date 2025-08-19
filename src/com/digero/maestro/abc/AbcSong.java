@@ -28,6 +28,7 @@ import javax.swing.JOptionPane;
 import javax.xml.xpath.XPathExpressionException;
 
 import com.digero.common.abc.VersionsWithIssues;
+import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.SAXException;
@@ -134,7 +135,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private String copyright = "";
 	private final SaveAndExportSettings saveAndExportSettings;
 
-	public AbcSong(File file, PartAutoNumberer partAutoNumberer, PartNameTemplate partNameTemplate,
+    public AbcSong(File file, PartAutoNumberer partAutoNumberer, PartNameTemplate partNameTemplate,
 			ExportFilenameTemplate exportFilenameTemplate, InstrNameSettings instrNameSettings,
 			FileResolver fileResolver, MiscSettings miscSettings, SaveAndExportSettings saveAndExportSettings)
 			throws IOException, InvalidMidiDataException, ParseException, SAXException {
@@ -1469,7 +1470,41 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		return poly;
 	}
 
-	/**
+    @NotNull
+    public List<String> getExportWarnings() {
+        List<String> warns = new ArrayList<>();
+        if (PolyphonyHistogram.max() > 64) {
+            warns.add("More notes ("+PolyphonyHistogram.max()+"/64) playing at same time than lotro can handle.");
+        }
+        if (saveAndExportSettings.warnOnExportOfSamePartNames && isPartsTitlesSimilar()) {
+            warns.add("Two or more parts has same name. Renaming or clicking the 'Numerate' button can fix them.");
+        }
+        return warns;
+    }
+
+    private boolean isPartsTitlesSimilar() {
+        if (parts.size() <= 1) {
+            return false;
+        }
+
+        for (int i = 0; i < parts.size(); i++) {
+            if (parts.get(i).getEnabledTrackCount() == 0) continue;
+            String title1 = parts.get(i).getTitle();
+
+            for (int j = i + 1; j < parts.size(); j++) {
+                if (parts.get(j).getEnabledTrackCount() == 0) continue;
+                String title2 = parts.get(j).getTitle();
+
+                if (title1.equals(title2)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
 	 * disable auto sorting of parts
 	 */
 	public void rearrangedParts() {
