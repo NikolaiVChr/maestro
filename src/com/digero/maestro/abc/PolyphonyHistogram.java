@@ -1,14 +1,8 @@
 package com.digero.maestro.abc;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.List;
-import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.digero.common.abc.AbcConstants;
@@ -334,6 +328,7 @@ public class PolyphonyHistogram   {
 	 * @return Number of notes being played at this time
 	 */
 	public static int get(long microsecond) {
+        if (!enabled) return 0;
 		Long key = sum.floorKey(microsecond);
 		if (key == null) {
 			return 0;
@@ -348,6 +343,7 @@ public class PolyphonyHistogram   {
 	 * @return Set with Number of notes being played at specific micros
 	 */
 	public static Set<Entry<Long, Pair<Long,Integer>>> getAll() {
+        if (!enabled) return new HashSet<>();
 		return sum.entrySet();
 	}
 	
@@ -366,6 +362,7 @@ public class PolyphonyHistogram   {
 	 * @return peak
 	 */
 	public static int max() {
+        if (!enabled) return 0;
 		return max;
 	}
 

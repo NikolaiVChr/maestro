@@ -857,7 +857,7 @@ public class AbcToMidi {
                     try {
                         // This makes long notes on plucked and percussion notes shorter so they match the sample,
                         // which in turn makes the duration display show correct length.
-                        int sampleID = info.getInstrument() == LotroInstrument.BASIC_COWBELL || info.getInstrument() == LotroInstrument.MOOR_COWBELL?71:lotroNoteId;
+                        int sampleID = info.getInstrument() == LotroInstrument.BASIC_COWBELL || info.getInstrument() == LotroInstrument.MOOR_COWBELL?AbcConstants.COWBELL_NOTE_ID:lotroNoteId;
                         long lengthMicros = LotroInstrumentSampleDuration.getDura(info.getInstrument().friendlyName, sampleID);
                         noteEndTickTmp = noteStartTick + lengthMicros * PPQN / MPQN;
                         skipExtra = true;

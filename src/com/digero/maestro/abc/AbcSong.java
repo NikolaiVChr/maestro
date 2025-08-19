@@ -1474,6 +1474,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
     public List<String> getExportWarnings() {
         List<String> warns = new ArrayList<>();
         if (PolyphonyHistogram.max() > 64) {
+            // There is growing concerns that 64+ polyphony can make audience lag (stutter),
+            // so this warning is not optional.
             warns.add("More notes ("+PolyphonyHistogram.max()+"/64) playing at same time than lotro can handle.");
         }
         if (saveAndExportSettings.warnOnExportOfSamePartNames && isPartsTitlesSimilar()) {
