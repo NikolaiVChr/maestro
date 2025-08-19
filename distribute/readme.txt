@@ -49,6 +49,7 @@ Version 4.3.8
 - Improve how organic restart too long notes.
 - Auto-exporter force timings now overrides any project setting.
 - Fixed that ABC player playback duration display didn't always match up with outputted ABC meta data duration.
+- Made subdividing of pitch-bends have more details when using organic output (in some cases).
 - Fixed that when importing part numbering config, the instruments did not update in the parts list after applying settings.
 - Made automatic emergency reset of part numbering scheme if it is corrupt.
 - Remove slow bottleneck of updating part numbers when running renumberAllParts().
