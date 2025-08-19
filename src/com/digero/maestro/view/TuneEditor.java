@@ -48,7 +48,6 @@ public class TuneEditor {
 		if (openDialog != null)
 			return;
 
-		@SuppressWarnings("serial")
 		class TuneDialog extends JDialog {
 			
 			public int numberOfSections = 8;
@@ -153,7 +152,7 @@ public class TuneEditor {
 						SectionEditor.clipboardEnabled[i] = tuneInputs.get(i).enable[0].isSelected();
 					}
 					SectionEditor.clipboardArmed = true;
-					pasteSections.setEnabled(SectionEditor.clipboardArmed);
+					pasteSections.setEnabled(true);
 				});
 				copySections.setToolTipText("<html><b> Copy the section starts and ends.</html>");
 				panel.add(copySections, "1,2,1,2,f,f");
@@ -326,7 +325,7 @@ public class TuneEditor {
 				} else {
 					// Ensure that window is on screen fully if monitors or resolution changed
 					GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-					GraphicsDevice devices[] = ge.getScreenDevices();
+					GraphicsDevice[] devices = ge.getScreenDevices();
 					Rectangle bounds = this.getBounds();
 					bounds.x = lastLocation.x;
 					bounds.y = lastLocation.y;

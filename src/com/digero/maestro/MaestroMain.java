@@ -190,6 +190,7 @@ public class MaestroMain {
 		}
 	}
 
+    @Deprecated
 	public static void onVolumeChanged() {
 		if (mainWindow != null)
 			mainWindow.onVolumeChanged();

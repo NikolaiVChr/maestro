@@ -19,6 +19,7 @@ import com.digero.maestro.abc.AbcSongEvent;
 
 import info.clearthought.layout.TableLayout;
 
+@Deprecated
 public class MaxDialog {
 
 	protected static Point lastLocation = new Point(0, 0);

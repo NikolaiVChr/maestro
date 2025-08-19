@@ -144,7 +144,6 @@ import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
 import net.miginfocom.swing.MigLayout;
 
-@SuppressWarnings("serial")
 public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompileConstants {
 	private static final Logger log = Logger.getLogger("file");
 	
@@ -1491,6 +1490,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 	}
 
+    @Deprecated
 	public void onVolumeChanged() {
 		volumeSlider.setValue(getVolume());
 		volumeSlider.repaint();
@@ -2211,7 +2211,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				String note = abcSong.getNote();
 				if (note != null) {
 					partPanel.setTextnote(note);
-					if (note.length() > 0) {
+					if (!note.isEmpty()) {
 						partPanel.textnoteVisible(true);
 					}
 				}
@@ -2972,8 +2972,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	 * 
 	 * Will output what all threads are doing.
 	 * 
-	 * @param lockedMonitors
-	 * @param lockedSynchronizers
 	 * @return A string ready to be printed out
 	 */
 	@SuppressWarnings("unused")

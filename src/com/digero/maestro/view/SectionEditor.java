@@ -63,7 +63,6 @@ public class SectionEditor {
 		if (openDialog != null)
 			return;
 
-		@SuppressWarnings("serial")
 		class SectionDialog extends JDialog {
 			
 			private JTabbedPane tabPanel;
@@ -282,7 +281,7 @@ public class SectionEditor {
 						clipboardEnabled[i] = sectionInputs.get(i).enable[0].isSelected();
 					}
 					clipboardArmed = true;
-					pasteSections.setEnabled(clipboardArmed);
+					pasteSections.setEnabled(true);
 				});
 				copySections.setToolTipText("<html><b> Copy the section starts and ends.</html>");
 				panel.add(copySections, "1,3,2,3,f,f");
@@ -423,7 +422,7 @@ public class SectionEditor {
 				} else {
 					// Ensure that window is on screen fully if monitors or resolution changed
 					GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-					GraphicsDevice devices[] = ge.getScreenDevices();
+					GraphicsDevice[] devices = ge.getScreenDevices();
 					Rectangle bounds = this.getBounds();
 					bounds.x = lastLocation.x;
 					bounds.y = lastLocation.y;
@@ -799,11 +798,8 @@ public class SectionEditor {
 			  
 			    /**
 			     * Keeps 3 scrollpanes in vertical sync
-			     * 
-			     * @param sp1
-			     * @param sp2
-			     * @param sp3
-			     */
+			     *
+                 */
 			    public SSynchronizer(JScrollPane sp1, JScrollPane sp2, JScrollPane sp3)
 			    {
 			        v1 = sp1.getVerticalScrollBar();

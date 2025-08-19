@@ -8,6 +8,7 @@ import java.awt.GraphicsEnvironment;
 import java.awt.Insets;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
+import java.io.Serial;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JDialog;
@@ -19,7 +20,12 @@ import com.digero.maestro.abc.AbcPartEvent;
 import com.digero.maestro.abc.AbcSongEvent;
 
 public class PartEditor extends JDialog {
-	private static final long serialVersionUID = 2872004091137636859L;
+	@Serial
+    private static final long serialVersionUID = 2872004091137636859L;
+
+    private static final int DEFAULT_WIDTH = 300;
+    private static final int DEFAULT_HEIGHT = 800;
+
 	private PartsListEditor partsList;
 	private ProjectFrame pFrame;
 
@@ -32,7 +38,7 @@ public class PartEditor extends JDialog {
 		add(partsList, BorderLayout.NORTH);
 		// set location should think it big to put it a bit up on screen
 		// hence the 800, so if open a song with 24 parts, there will be room.
-		setMinimumSize(new Dimension(300,800));
+		setMinimumSize(new Dimension(DEFAULT_WIDTH, DEFAULT_HEIGHT));
 		Dimension sz = this.getMinimumSize();
 		sz.width = PartEditorItem.getProtoDimension().width;
 		setMinimumSize(sz);
@@ -63,7 +69,7 @@ public class PartEditor extends JDialog {
 	private void keepInScreen() {
 		// Ensure that window is on screen fully if monitors or resolution changed
 		GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-		GraphicsDevice devices[] = ge.getScreenDevices();
+		GraphicsDevice[] devices = ge.getScreenDevices();
 		Rectangle bounds = this.getBounds();
 		int areaOnScreen = 0;
 		
