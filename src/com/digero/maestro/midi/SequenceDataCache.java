@@ -62,12 +62,14 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	private String copyright = "";
 	private final boolean ignoreZeroChannelVolume;
 	private final MidiText midiText;
+    private boolean tempoInHigherTracks = false;
 
 	public SequenceDataCache(Sequence song, MidiStandard standard, boolean[] rolandDrumChannels,
 			List<TreeMap<Long, Boolean>> yamahaDrumSwitches, boolean[] yamahaDrumChannels,
 			List<TreeMap<Long, Boolean>> mmaDrumSwitches, SortedMap<Integer, Integer> portMap, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume, boolean ignoreMidiText) {
-		
-		Map<Integer, Long> tempoLengths = new HashMap<>();
+
+        // This is total accumulated duration in micros of each tempo used in the song
+		Map<Integer, Long> tempoLengths = new HashMap<>();// MPQ -> micros
 
 		this.standard = standard;
 		this.rolandDrumChannels = rolandDrumChannels;
@@ -268,24 +270,38 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 						} else if (!ignoreMidiText) {
 							midiText.collectSysex(tick, message, iTrack);
 						}
-					} else if ((!onlyFirstTrackTempos || iTrack == 0) && (divisionType == Sequence.PPQ) && MidiUtils.isMetaTempo(msg)) {
-						// TODO: Test midifiles to see how common it is to have tempo messages that are not in 1st track.
-						// If its used, then handle them instead of ignoring them, but think about backwards compat.
-						
-						// Note that this is also done in the SequencerWrapper.TempoCacheSlow
-						int tempoRaw = MidiUtils.getTempoMPQ(msg);
-						if (tempoRaw != 0) {
-							TempoEvent te = getTempoEventForTick(tick);
-							long elapsedMicros = MidiUtils.ticks2microsec(tick - te.tick, te.tempoMPQ, tickResolution);
-							tempoLengths.put(te.tempoMPQ, elapsedMicros + Util.valueOf(tempoLengths.get(te.tempoMPQ), 0));
-							if (iTrack > 0) log.fine("Track "+iTrack+" has tempo message in non-first track. "+MidiUtils.convertTempo(te.tempoMPQ)+" BPM, tick "+tick);
-							tempo.put(tick, new TempoEvent(tempoRaw, tick, te.micros + elapsedMicros));
-						} else {
-							log.warning("MIDI has tempo message of zero MPQ! Ignoring it..");
-							track.remove(evt);
-							sz--;
-							j--;
-						}
+					} else if (divisionType == Sequence.PPQ && MidiUtils.isMetaTempo(msg)) {
+
+                        int tempoRaw = MidiUtils.getTempoMPQ(msg);
+                        if (tempoRaw != 0) {
+                            if (iTrack > 0) tempoInHigherTracks = true;
+
+                            if (!onlyFirstTrackTempos || iTrack == 0) {
+                                // Note that this is also done in the SequencerWrapper.TempoCacheSlow
+
+                                tempo.put(tick, new TempoEvent(tempoRaw, tick, 0L));// micros is added later
+                                if (iTrack != 0) {
+                                    log.fine("Track " + iTrack + " has tempo message in non-first track. " + MidiUtils.convertTempo(tempoRaw) + " BPM, tick " + tick);
+                                    // we move the tempo event to track 0 so the playback
+                                    // matches our internal tempos.
+                                    // This means that if the user expands the midi
+                                    // the expanded midi will have all tempos in track 0 too.
+                                    // Not ideal but at least consistent.
+
+                                    track.remove(evt);
+                                    sz--;
+                                    j--;
+                                    tracks[0].add(evt);
+                                    // if already tempo(s) at this tick in track 0, since this is added later will take
+                                    // precedence over the existing one(s) in track 0.
+                                }
+                            }
+                        } else {
+                            log.warning("MIDI has tempo message of zero MPQ! Ignoring it..");
+                            track.remove(evt);
+                            sz--;
+                            j--;
+                        }
 					} else if (msg instanceof MetaMessage m) {
                         int type = m.getType();
 						byte[] data = m.getData();
@@ -384,10 +400,22 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
             }
 		}
 
+        // We now populate the tempo events with micros,
+        // and we calculate total durations of each tempo in use.
+        TempoEvent prevTempoEvent = null;
+        for (TempoEvent tempoEvent : tempo.values()) {
+            long tick = tempoEvent.tick;
+            if (prevTempoEvent != null) {
+                long elapsedMicros = MidiUtils.ticks2microsec(tick - prevTempoEvent.tick, prevTempoEvent.tempoMPQ, tickResolution);
+                tempoLengths.put(prevTempoEvent.tempoMPQ, elapsedMicros + Util.valueOf(tempoLengths.get(prevTempoEvent.tempoMPQ), 0));
+                tempoEvent.micros = prevTempoEvent.micros + elapsedMicros;
+            }
+            prevTempoEvent = tempoEvent;
+        }
+
 		// Account for the duration of the final tempo
-		TempoEvent te = getTempoEventForTick(lastTick);
-		long elapsedMicros = MidiUtils.ticks2microsec(lastTick - te.tick, te.tempoMPQ, tickResolution);
-		tempoLengths.put(te.tempoMPQ, elapsedMicros + Util.valueOf(tempoLengths.get(te.tempoMPQ), 0));
+		long elapsedMicros = MidiUtils.ticks2microsec(lastTick - prevTempoEvent.tick, prevTempoEvent.tempoMPQ, tickResolution);
+		tempoLengths.put(prevTempoEvent.tempoMPQ, elapsedMicros + Util.valueOf(tempoLengths.get(prevTempoEvent.tempoMPQ), 0));
 
 		// Convert the bend ranges into seminote integers.
 		// We do this after the main iteration so that the
@@ -586,7 +614,11 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		return tempo;
 	}
 
-	/**
+    public boolean isTempoInHigherTracks() {
+        return tempoInHigherTracks;
+    }
+
+    /**
 	 * Tempo Handling
 	 */
 	public static class TempoEvent {
@@ -612,6 +644,9 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		return new TempoEvent(tempoMPQ, startTick, startMicros);
 	}
 
+    /**
+     * Floor
+     */
 	public TempoEvent getTempoEventForTick(long tick) {
 		Entry<Long, TempoEvent> entry = tempo.floorEntry(tick);
 		if (entry != null)

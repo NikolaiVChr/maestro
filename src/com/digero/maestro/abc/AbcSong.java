@@ -68,7 +68,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	
 	public static final String MSX_FILE_DESCRIPTION = MaestroMain.APP_NAME + " Project";
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = MaestroMain.APP_NAME + " Projects";
-	public static final Version SONG_FILE_VERSION = new Version(4, 2, 12, 300);// Keep build above 117 to make earlier
+	public static final Version SONG_FILE_VERSION = new Version(4, 3, 9, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
 
@@ -117,6 +117,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private File projectFile; // The XML Maestro song file
 	private boolean usingOldVelocities = false;
 	private boolean usingOldTempos = false;
+    private boolean temposWereFixed = false;// If tempos were fixed in v4.3.9 or later. Future use.
 	private boolean hideEdits = false;
 	public final static Chord.CalcDynamics dynamicsMethodDefault = CalcDynamics.LOUDEST;
 	public Chord.CalcDynamics dynamicsMethod = dynamicsMethodDefault;
@@ -170,7 +171,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		fromAbcFile = fileName.endsWith(Util.ABC_FILE_EXTENSION) || fileName.endsWith(Util.TXT_FILE_EXTENSION);
 
 		if (fromXmlFile)
-			initFromXml(file, fileResolver, miscSettings);
+			initFromXml(file, fileResolver, miscSettings, ignoreMidiText);
 		else if (fromAbcFile)
 			initFromAbc(file, miscSettings);
 		else
@@ -345,7 +346,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		note = "";
 	}
 
-	private void initFromXml(File file, FileResolver fileResolver, MiscSettings miscSettings)
+	private void initFromXml(File file, FileResolver fileResolver, MiscSettings miscSettings, boolean calledFromTools)
 			throws SAXException, IOException, ParseException {
 		try {
 			projectFile = file;
@@ -397,6 +398,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			mood = SaveUtil.parseValue(songEle, "mood", mood);
 			note = SaveUtil.parseValue(songEle, "note", "");
 			sorted = SaveUtil.parseValue(songEle, "autoSortedParts", true);
+            temposWereFixed = SaveUtil.parseValue(songEle, "temposWereFixed", false);
 			
 			String exportTimeStr = SaveUtil.parseValue(songEle, "firstExportTime", "");
 			if (!exportTimeStr.isEmpty()) {
@@ -468,6 +470,31 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 							"Warning for "+file.getName(), JOptionPane.WARNING_MESSAGE);
 				}
 			}
+            if (sequenceInfo.getDataCache().isTempoInHigherTracks()
+                    && !usingOldTempos && !maestroVersion.equals(def)
+                    && maestroVersion.compareTo(new Version(4, 3, 9)) < 0) {
+                log.warning("Warning!! Tempos in " + file.getName() + " project has been fixed for potential problems. User needs to review the edits.");
+                temposWereFixed = true;
+                if (!calledFromTools) {
+                    JOptionPane.showMessageDialog(null,
+                            "Warning!!\nTempos in " + file.getName() + " project has been fixed for potential problems." +
+                                    " This means main tempo might have changed and section/tune edits might have to be redone" +
+                                    " as bar lines in theory can have been affected too.",
+                            "Warning for " + file.getName(), JOptionPane.WARNING_MESSAGE);
+                } else {
+                    int option = JOptionPane.showOptionDialog(null,
+                            "Warning!!\nTempos in " + file.getName() + " project should be fixed for potential problems." +
+                                    " This means main tempo might change and section/tune edits might have to be redone" +
+                                    " as bar lines in theory can be affected too." +
+                                    "\nIt is recommended to skip it for now and then open project in Maestro to check.",
+                            "Important question for " + file.getName(), JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE,
+                            null, new String[] {"Export anyway (Not recommended!)", "Skip project"}, 1);
+
+                    if (option == 1 || option == JOptionPane.CLOSED_OPTION) {
+                        throw new ParseException("Project needs to be reviewed in Maestro.", null);
+                    }
+                }
+            }
 		} catch (XPathExpressionException e) {
 			e.printStackTrace();
 			throw new ParseException("XPath error: " + e.getMessage(), null);
@@ -663,6 +690,10 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			SaveUtil.appendChildTextElement(songEle, "firstExportTime", df.format(firstExportTime));
 		}
 		SaveUtil.appendChildTextElement(songEle, "autoSortedParts", String.valueOf(sorted));
+
+        if (temposWereFixed) {
+            SaveUtil.appendChildTextElement(songEle, "temposWereFixed", String.valueOf(temposWereFixed));
+        }
 
 		appendImportSettings(doc, songEle);
 		appendExportSettings(doc, songEle);
@@ -1411,6 +1442,10 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public boolean isUsingOldTempos() {
 		return usingOldTempos;
 	}
+
+    public void setUsingOldTempos(boolean onlyFirstTrackTempos) {
+        usingOldTempos = onlyFirstTrackTempos;
+    }
 	
 	public QuantizedTimingInfo getQTM() {
 		try {
@@ -1523,4 +1558,5 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		parts.sort(partNumberComparator);
 		fireChangeEvent(AbcSongProperty.PART_LIST_ORDER);	
 	}
+
 }

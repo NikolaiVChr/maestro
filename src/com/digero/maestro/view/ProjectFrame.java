@@ -193,6 +193,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private JCheckBox tripletCheckBox;
 	private JCheckBox mixCheckBox;
 	private JCheckBox prioCheckBox;
+    private JCheckBox tempoOnlyFirstCheckBox;
 	private JComboBox<Chord.CalcDynamics> dynaCombo;
 	private JButton exportButton;
 	private JLabel exportSuccessfulLabel;
@@ -804,7 +805,30 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				+ Chord.CalcDynamics.POWER_MID_DB+": A bit softer than RMS.\n"
 				+ Chord.CalcDynamics.WEIGHTED+": Generally softer than "+Chord.CalcDynamics.POWER_MID_DB+".\n"
 				+ Chord.CalcDynamics.SOFTEST+": Volume of the softest note.");
-		
+
+        tempoOnlyFirstCheckBox = new JCheckBox("Only tempo changes from first track");
+        tempoOnlyFirstCheckBox.setToolTipText(
+                "<html>If the midi only have tempos in first track then this option cannot be changed.<br><br>"
+                + "Furthermore if a midi is expanded (from menu) with this option disabled,<br>"
+                + "the expanded midi will have all its tempos put into first track.<br><br>"
+                + "Changing this option can change the layout of the bar lines,<br>"
+                + "so be sure to review the section/tune edits if changing this option.</html>");
+        tempoOnlyFirstCheckBox.addActionListener(e -> {
+            if (abcSong == null) {
+                return;
+            }
+
+            if (abcSong.getProjectFile() == null) {
+                //return; // should be an invalid state, item is disabled if no msx file
+            }
+
+            abcSong.setUsingOldTempos(tempoOnlyFirstCheckBox.isSelected());
+
+            setAbcSongModified(true);
+            File sourceFile = abcSong.getSourceFile();
+            reloadWithNewSource(sourceFile);
+        });
+
 		exportSuccessfulLabel = new JLabel("Exported");
 		exportSuccessfulLabel.setIcon(IconLoader.getImageIcon("check_16.png"));
 		exportSuccessfulLabel.setBorder(BorderFactory.createEmptyBorder(0, 2, 0, 0));
@@ -875,6 +899,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		row++;
 		settingsLayout.insertRow(row, PREFERRED);
 		settingsPanel.add(dynaCombo, "0, " + row + ", 2, " + row + ", L, C");
+        row++;
+        settingsLayout.insertRow(row, PREFERRED);
+        settingsPanel.add(tempoOnlyFirstCheckBox, "0, " + row + ", 2, " + row + ", L, C");
 		//row++;
 		//settingsLayout.insertRow(row, PREFERRED);
 		//settingsPanel.add(zeroDropdown, "0, " + row + ", 2, " + row + ", L, C");
@@ -1731,6 +1758,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		mixCheckBox.setEnabled(midiLoaded && !organicCheckBox.isSelected());
 		prioCheckBox.setEnabled(midiLoaded && mixCheckBox.isSelected() && !organicCheckBox.isSelected());
 		dynaCombo.setEnabled(midiLoaded);
+        tempoOnlyFirstCheckBox.setEnabled(abcSong != null && abcSong.getSequenceInfo().getDataCache().isTempoInHigherTracks());//  && abcSong.getProjectFile() != null
 		noteButton.setEnabled(midiLoaded);
 		if (midiLoaded) {
 			midiModeRadioButton.setText("Original ("
@@ -1773,6 +1801,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	private boolean updateTitlePending = false;
 
+    /**
+     * Update title of maestro window
+     */
 	private void updateTitle() {
 		if (!updateTitlePending) {
 			updateTitlePending = true;
@@ -2124,7 +2155,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		tripletCheckBox.setSelected(false);
 		mixCheckBox.setSelected(true);
 		prioCheckBox.setSelected(false);
-		dynaCombo.setSelectedItem(AbcSong.dynamicsMethodDefault);
+        dynaCombo.setSelectedItem(AbcSong.dynamicsMethodDefault);
+        tempoOnlyFirstCheckBox.setSelected(false);
 		midiBarLabel.setBarNumberCache(null);
 		abcBarLabel.setBarNumberCache(null);
 		abcBarLabel.setInitialOffsetTick(abcPreviewStartTick);
@@ -2226,6 +2258,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			tripletCheckBox.setSelected(abcSong.isTripletTiming());
 			mixCheckBox.setSelected(abcSong.isMixTiming());
 			prioCheckBox.setSelected(abcSong.isPriorityActive());
+            tempoOnlyFirstCheckBox.setSelected(abcSong.isUsingOldTempos());
 
 			SequenceInfo sequenceInfo = abcSong.getSequenceInfo();
 			sequencer.setSequence(sequenceInfo.getSequence());
@@ -2317,7 +2350,17 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			abcSong.setSourceFile(oldSource);
 			return false;
 		}
-		
+
+        // discard old abcSong and abcParts
+		AbcSong oldAbcSong = abcSong;
+        if (oldAbcSong != null) {
+            oldAbcSong.getParts().getListModel().removeListDataListener(partsListListener);
+            oldAbcSong.discard();
+        }
+        boolean abcPreview = abcPreviewMode;
+        boolean hideEdits = hideEditsCheckbox.isSelected();
+        abcSongModified = false;
+
 		openFile(tmpMsx, false);
 		if (abcSong != null) {
 			abcSong.setProjectFile(originalMsx);
@@ -2326,6 +2369,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 		
 		partsList.restoreSoloMuteState(soloMuteState);
+
+        updatePreviewMode(abcPreview, miscSettings.autoplayOnOpen);
+        if (hideEdits && !hideEditsCheckbox.isSelected()) hideEditsCheckbox.doClick();
 		
 		return true;
 	}
@@ -2962,7 +3008,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			break;
 		case JOptionPane.NO_OPTION:
 			break;
-		case JOptionPane.CANCEL_OPTION:
+		case JOptionPane.CANCEL_OPTION, JOptionPane.CLOSED_OPTION:
 			break;
 		}
 

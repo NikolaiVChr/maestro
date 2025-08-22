@@ -41,6 +41,20 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
+Version 4.3.9
+- Added per project option to restrict to only using tempo changes from first track.
+    Changing this option can change the layout of the bar lines,
+    so be sure to review the section/tune edits after changing this option.
+- Fix playback of midi if project is using tempos from beyond first track,
+    so it matches with what is actually being shown in the editor.
+- Fix handling of rare case of tempo changes in midi that are not well formed.
+    Projects started in Maestro before v4.0.18 are not affected.
+    These fixes are not backward compatible.
+    It can result in a different main tempo than a project was last saved with.
+    As for projects where user had modified the main tempo; since main tempo change is saved as an relative factor,
+    the fixes should not ruin the song for that reason.
+    Maestro and Auto-exporter will popup a warning if edits might be needed.
+
 Version 4.3.8
 - Made a popup window warning if loading a project saved with v4.3.0
 - Fixed when loading project, midis with em dash got converted to double dashes and the midi file could not be found.

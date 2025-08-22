@@ -2,8 +2,8 @@ package com.digero.common.midi;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.logging.Logger;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MidiEvent;
@@ -24,6 +24,8 @@ import com.digero.common.util.Listener;
 import com.digero.common.util.ListenerList;
 
 public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardable {
+    private static final Logger log = Logger.getLogger("playback");
+
 	public static final int UPDATE_FREQUENCY_MILLIS = 50;
 	public static final long UPDATE_FREQUENCY_MICROS = UPDATE_FREQUENCY_MILLIS * 1000;
 
@@ -301,7 +303,7 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 
 	/**
 	 * Reimplemented from java.midi but using long instead of int that will make it overflow
-	 * 
+	 *
 	 * @author Nikolai
 	 *
 	 */
@@ -332,7 +334,7 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 		}
 
 		public synchronized void refresh(Sequence seq) {
-			ArrayList<MidiEvent> list = new ArrayList<>();
+            NavigableMap<Long, MidiEvent> list = new TreeMap<>();
 			Track[] tracks = seq.getTracks();
 			if (tracks.length > 0) {
 				if (onlyFirstTrackTempos) {
@@ -344,11 +346,11 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 						MidiMessage msg = ev.getMessage();
 						if (MidiUtils.isMetaTempo(msg) && MidiUtils.getTempoMPQ(msg) != 0) {
 							// found a valid tempo event. Add it to the list
-							list.add(ev);
+							list.put(ev.getTick(), ev);
 						}
 					}
 				} else {
-					// tempo events only occur in track 0
+					// tempo events occur in any track
 					for(Track track : tracks) {
 						int c = track.size();
 						for (int i = 0; i < c; i++) {
@@ -356,15 +358,16 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 							MidiMessage msg = ev.getMessage();
 							if (MidiUtils.isMetaTempo(msg) && MidiUtils.getTempoMPQ(msg) != 0) {
 								// found a valid tempo event. Add it to the list
-								list.add(ev);
+                                list.put(ev.getTick(), ev);
 							}
 						}
 					}
 				}
 			}
+
 			int size = list.size() + 1;
 			firstTempoIsFake = true;
-			if ((size > 1) && (list.getFirst().getTick() == 0)) {
+			if (list.get(0L) != null) {
 				// do not need to add an initial tempo event at the beginning
 				size--;
 				firstTempoIsFake = false;
@@ -378,10 +381,10 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 				tempos[0] = MidiUtils.DEFAULT_TEMPO_MPQ;
 				e++;
 			}
-			for (int i = 0; i < list.size(); i++, e++) {
-				MidiEvent evt = list.get(i);
+			for (MidiEvent evt : list.values()) {
 				ticks[e] = evt.getTick();
 				tempos[e] = MidiUtils.getTempoMPQ(evt.getMessage());
+                e++;
 			}
 			snapshotIndex = 0;
 			snapshotMicro = 0;

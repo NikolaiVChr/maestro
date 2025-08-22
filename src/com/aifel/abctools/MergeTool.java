@@ -201,7 +201,7 @@ public class MergeTool {
 				switch (misresult) {
 				case JOptionPane.YES_OPTION:
 					break;
-				case JOptionPane.NO_OPTION, JOptionPane.CANCEL_OPTION:
+				case JOptionPane.NO_OPTION, JOptionPane.CANCEL_OPTION, JOptionPane.CLOSED_OPTION:
 					frame.setTextFieldText("Cancelled merge.");
 					lastExport = null;
 					refreshTest();
@@ -239,7 +239,7 @@ public class MergeTool {
 					lastExport = null;
 					refreshTest();
 					return;
-				case JOptionPane.CANCEL_OPTION:
+				case JOptionPane.CANCEL_OPTION, JOptionPane.CLOSED_OPTION:
 					frame.setTextFieldText("Cancelled save.");
 					lastExport = null;
 					refreshTest();
