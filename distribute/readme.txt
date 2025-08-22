@@ -54,6 +54,7 @@ Version 4.3.9
     As for projects where user had modified the main tempo; since main tempo change is saved as an relative factor,
     the fixes should not ruin the song for that reason.
     Maestro and Auto-exporter will popup a warning if edits might be needed.
+- Abc Tools auto-exporter will now summarize a list of skipped or failed exports after finishing.
 
 Version 4.3.8
 - Made a popup window warning if loading a project saved with v4.3.0

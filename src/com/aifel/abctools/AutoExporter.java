@@ -69,7 +69,9 @@ public class AutoExporter {
 	private volatile String textAuto = "";
 	private boolean txtFieldDirty = false;
 	private final Object txtFieldMutex = new Object();
-	
+
+    private List<File> skippedProjects = new ArrayList<>();
+
 	private volatile int progressInt = 0;
 	private volatile boolean txtFieldPrimedForUpdate = false;
 	private boolean projectModified = false;
@@ -236,6 +238,7 @@ public class AutoExporter {
 		saveSettings = new SaveAndExportSettings(prefs.node("saveAndExportSettings"));
 		miscSettings = new MiscSettings(prefs.node("miscSettings"), true);
 
+        skippedProjects = new ArrayList<>();
 		setProgress(0);
 		cancel = false;
 		if (!frame.getRecursiveCheckBoxSelected()) {
@@ -253,7 +256,9 @@ public class AutoExporter {
 				try {
 					exportProject(project);
 				} catch (ParseException e) {
+                    log.warning(project.getName()+": "+e.getMessage());
 					appendToField("<br><font color='red'>"+e.toString()+"</font>");
+                    skippedProjects.add(project);
 				}
 				exportCount++;
 				setProgress((int) (exportCount * progressFactor));
@@ -269,6 +274,12 @@ public class AutoExporter {
 			
 			Files.walkFileTree(sourceFolderAuto.toPath(), new ProcessFiles());
 		}
+        if (!skippedProjects.isEmpty()) {
+            appendToField("<br><br>Skipped/failed " + skippedProjects.size() + " project files:");
+            for (File f : skippedProjects) {
+                appendToField("<br><font color='orange'>" + f.getParent() + File.separator + f.getName()+"</font>");
+            }
+        }
 		if (!cancel) {
 			setProgress(1000);
 			appendToField("<br><br>Exports finished. ");//+com.digero.maestro.abc.PolyphonyHistogram.successes
@@ -354,6 +365,7 @@ public class AutoExporter {
 					} catch (Exception e) {
 						log.warning(file.getFileName()+": "+e.getMessage());
 						appendToField("<br><font color='red'>"+e.toString()+"</font>");
+                        skippedProjects.add(file.toFile());
 					}
 					exportCount++;
 					setProgress((int) (exportCount * progressFactor));
