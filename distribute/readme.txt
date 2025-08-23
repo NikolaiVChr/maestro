@@ -48,7 +48,7 @@ Version 4.3.9
 - Fix playback of midi if project is using tempos from beyond first track,
     so it matches with what is actually being shown in the editor.
 - Fix handling of rare case of tempo changes in midi that are not well formed.
-    Projects started in Maestro before v4.0.18 are not affected.
+    Projects started in Maestro before v4.0.0 are not affected.
     These fixes are not backward compatible.
     It can result in a different main tempo than a project was last saved with.
     As for projects where user had modified the main tempo; since main tempo change is saved as an relative factor,
