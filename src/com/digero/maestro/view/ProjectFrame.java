@@ -1834,6 +1834,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		if (e.getProperty() == AbcPartProperty.TITLE && partPanel != null)
 			partPanel.setNewTitle(e.getSource());
 
+        if (e.getProperty() == AbcPartProperty.PART_NUMBER_MANUAL)
+            partAutoNumberer.renumberAllParts();
+
 		partsList.repaint();
 		partEditor.repaint();
 

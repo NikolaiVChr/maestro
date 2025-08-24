@@ -58,6 +58,15 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
     protected static final Logger log = Logger.getLogger("song");
 
 	private int partNumber = 1;
+
+    /**
+     * Whether the part-number for this part have been modified by the user.
+     * If true, the part-number has been explicitly assigned, and automatic assignment
+     * should be bypassed. Defaults to false unless explicitly changed.
+     * Right after loading from XML it can be null until abcSong makes sure it's a boolean.
+     */
+    private Boolean partNumberManuallyModified = false;
+
 	public boolean suppressSpinnerUpdate = false;
 	private String title;
 	private LotroInstrument instrument;
@@ -203,6 +212,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		Document doc = ele.getOwnerDocument();
 
 		ele.setAttribute("id", String.valueOf(partNumber));
+        ele.setAttribute("userAssignedId", String.valueOf(partNumberManuallyModified));
 		ele.setAttribute("badgerPriority", String.valueOf(badgerPrio));
 		SaveUtil.appendChildTextElement(ele, "title", String.valueOf(title));
 		SaveUtil.appendChildTextElement(ele, "instrument", String.valueOf(instrument));
@@ -362,6 +372,12 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	private void initFromXml(Element ele, Version fileVersion) throws ParseException {
 		try {
 			partNumber = SaveUtil.parseValue(ele, "@id", partNumber);
+            String lock = SaveUtil.parseValue(ele, "@userAssignedId", "null");
+            if (lock.equals("null")) {
+                partNumberManuallyModified = null;
+            } else {
+                partNumberManuallyModified = Boolean.valueOf(lock);
+            }
 			badgerPrio = SaveUtil.parseValue(ele, "@badgerPrio", -1);// backward compat with 4.1.3
 			if (badgerPrio == -1) {
 				badgerPrio = SaveUtil.parseValue(ele, "@badgerPriority", badgerPrioHighest);
@@ -1080,7 +1096,12 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		}
 	}
 
-	public int getTrackTranspose(int track) {
+    @Override
+    public int getFirstNumber() {
+        return firstNumber;
+    }
+
+    public int getTrackTranspose(int track) {
 		return isPercussionPart() ? 0 : trackTranspose[track];
 	}
 
@@ -1358,7 +1379,23 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		return partNumber;
 	}
 
-	@Override
+    @Override
+    public Boolean isPartNumberManuallyAssigned() {
+        return partNumberManuallyModified;
+    }
+
+    @Override
+    public void setPartNumberManuallyAssigned(boolean manuallyAssigned, boolean notifyListeners) {
+        partNumberManuallyModified = manuallyAssigned;
+        if (notifyListeners) fireChangeEvent(AbcPartProperty.PART_NUMBER_MANUAL);
+    }
+
+    @Override
+    public void notifyPartNumberManuallyAssigned() {
+        fireChangeEvent(AbcPartProperty.PART_NUMBER_MANUAL);
+    }
+
+    @Override
 	public void setPartNumber(int partNumber) {
 		if (this.partNumber != partNumber) {
             log.finer(getTitle()+": setPartNumber: "+this.partNumber+" -> "+partNumber);

@@ -19,7 +19,8 @@ public class AbcPartEvent extends EventObject {
 		TRACK_PRIORITY, //
 		MAX_EDIT(true), //
 		STUDENT_FX(true), //
-		CONCLUSION_FERMATA_EDIT(true); //
+		CONCLUSION_FERMATA_EDIT(true),
+        PART_NUMBER_MANUAL(false); //
 
 		private final boolean renderRelated;
 

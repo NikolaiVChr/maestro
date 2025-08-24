@@ -11,7 +11,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Set;
@@ -68,7 +67,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	
 	public static final String MSX_FILE_DESCRIPTION = MaestroMain.APP_NAME + " Project";
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = MaestroMain.APP_NAME + " Projects";
-	public static final Version SONG_FILE_VERSION = new Version(4, 3, 9, 300);// Keep build above 117 to make earlier
+	public static final Version SONG_FILE_VERSION = new Version(4, 3, 10, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
 
@@ -310,6 +309,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 			newPart.setTitle(abcInfo.getPartName(t));
 			newPart.setPartNumber(abcInfo.getPartNumber(t));
+            newPart.setPartNumberManuallyAssigned(true, true);// what is loaded from abc we consider manually assigned numbers
 			newPart.setTrackEnabled(t, true);
 
 			Set<Integer> midiInstruments = trackInfo.getInstruments();
@@ -324,7 +324,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			}
 			populateFirstNumbers();
 			newPart.firstNumber = partAutoNumberer.getFirstNumber(newPart.getInstrument());
-			int ins = Collections.binarySearch(parts, newPart, partNumberComparator);
+			int ins = Collections.binarySearch(parts, newPart, partAutoNumberer.getComparator());
 			if (ins < 0)
 				ins = -ins - 1;
 			parts.add(ins, newPart);
@@ -332,6 +332,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			newPart.addAbcListener(abcPartListener);
 			t++;
 		}
+
 
 		tripletTiming = abcInfo.hasTriplets();
 		mixTiming = abcInfo.hasMixTimings();
@@ -643,12 +644,13 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			part.convertSectionsToLongTrees();
 			part.addAbcListener(abcPartListener);
 		}
+        partAutoNumberer.assignManualPartNumber(parts);// convert all null values to booleans.
 		if (autoSorted) {
-			/* see https://discord.com/channels/1127545258729803797/1127660185297633280/1351686726674022491
-			 * for discussion about this sorting and why its been disabled for now
-			 */
-			populateFirstNumbers();
-			parts.sort(partNumberComparator);
+            /* see https://discord.com/channels/1127545258729803797/1127660185297633280/1351686726674022491
+             * for discussion about this sorting and why its been disabled for now
+             */
+            populateFirstNumbers();
+            parts.sort(partAutoNumberer.getComparator());
 		}
 	}
 
@@ -784,7 +786,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		partAutoNumberer.onPartAdded(newPart);
 		populateFirstNumbers();
 		newPart.firstNumber = partAutoNumberer.getFirstNumber(newPart.getInstrument());
-		int idx = Collections.binarySearch(parts, newPart, partNumberComparator);
+		int idx = Collections.binarySearch(parts, newPart, partAutoNumberer.getComparator());
 		if (idx < 0)
 			idx = (-idx - 1);
 		parts.add(idx, newPart);
@@ -807,7 +809,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		part.discard();
 		//since we suppressed sorting we do it now:
 		populateFirstNumbers();
-		if (sorted) parts.sort(partNumberComparator);
+		if (sorted) parts.sort(partAutoNumberer.getComparator());
 		fireChangeEvent(AbcSongProperty.PART_LIST_ORDER, part);
 	}
 
@@ -1214,23 +1216,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			part.firstNumber = partAutoNumberer.getFirstNumber(part.getInstrument());
 		}
 	}
-	
-	/**
-	 * 
-	 * 1st sort according to instrument base number
-	 * 2nd sort according to part number
-	 * 
-	 * Dont use this without setting firstNumber on parts first
-	 * 
-	 */
-	private final Comparator<AbcPart> partNumberComparator = new Comparator<>() {
-        @Override
-        public int compare(AbcPart p1, AbcPart p2) {
-            if (p1.firstNumber != p2.firstNumber)
-                return Integer.compare(p1.firstNumber, p2.firstNumber);
-            return Integer.compare(p1.getPartNumber(), p2.getPartNumber());
-        }
-    };
 
     public boolean suppressPartSort = false;// beside this class, also used from PartAutoNumberer
 
@@ -1242,7 +1227,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
     public void sortParts(AbcPart source) {
         populateFirstNumbers();
-        parts.sort(partNumberComparator);
+        parts.sort(partAutoNumberer.getComparator());
         fireChangeEvent(AbcSongProperty.PART_LIST_ORDER, source);
     }
 
@@ -1555,7 +1540,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public void autoSortParts() {
 		sorted = true;
 		populateFirstNumbers();
-		parts.sort(partNumberComparator);
+        parts.sort(partAutoNumberer.getComparator());
 		fireChangeEvent(AbcSongProperty.PART_LIST_ORDER);	
 	}
 

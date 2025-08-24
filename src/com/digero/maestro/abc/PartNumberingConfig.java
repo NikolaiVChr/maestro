@@ -14,17 +14,20 @@ import java.util.StringTokenizer;
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.util.ParseException;
 import com.digero.maestro.MaestroMain;
+import com.digero.maestro.midi.Chord;
 
 public class PartNumberingConfig {
-	public int increment = -1;
+    public PartAutoNumberer.OrderOption orderOption = PartAutoNumberer.orderOptionDefault;
+    public int increment = -1;
 	public Map<LotroInstrument, Integer> firstPartMap = new EnumMap<>(LotroInstrument.class);
 
-	public PartNumberingConfig() {
+    public PartNumberingConfig() {
 	}
 
-	public PartNumberingConfig(int increment, Map<LotroInstrument, Integer> firstPartMap) {
+	public PartNumberingConfig(int increment, Map<LotroInstrument, Integer> firstPartMap, PartAutoNumberer.OrderOption orderOption) {
 		this.increment = increment;
 		this.firstPartMap = firstPartMap;
+        this.orderOption = orderOption;
 	}
 
 	public void save(File outputFile) throws IOException {
@@ -33,12 +36,14 @@ public class PartNumberingConfig {
 		out.println("% Created using " + MaestroMain.APP_NAME + " v" + MaestroMain.APP_VERSION);
 		out.println("% Format:");
 		out.println("% INCREMENT => [Increment Number (must be 1 or 10)]");
+        out.println("% ORDERING => [CLUSTER_SIMILAR or PART_NUMBER]");
 		out.println("% [Instrument] => [First Part Number]");
 		out.println("% First part numbers are in the range 0 to 10 if INCREMENT is 10");
 		out.println("% Or in the range 0 to 999 if INCREMENT is 1");
 		out.println("% Comments begin with %");
 		out.println();
-
+        out.println("ORDERING => " + orderOption.name());
+        out.println();
 		out.println("INCREMENT => " + increment);
 		out.println();
 		for (Entry<LotroInstrument, Integer> entry : firstPartMap.entrySet()) {
@@ -53,6 +58,7 @@ public class PartNumberingConfig {
 		String line;
 		int lineNo = 0;
 		int increment = -1;
+        PartAutoNumberer.OrderOption orderOption = PartAutoNumberer.orderOptionDefault;
 		Map<LotroInstrument, Integer> map = new EnumMap<>(LotroInstrument.class);
 
 		try (BufferedReader r = new BufferedReader(new InputStreamReader(inputStream))) {
@@ -97,7 +103,14 @@ public class PartNumberingConfig {
 						throw new ParseException("Invalid value of INCREMENT " + increment + ". Should be 1 or 10", fn,
 								lineNo);
 					}
-				}
+				} else if (key.equals("ORDERING")) {
+                    try {
+                        orderOption = PartAutoNumberer.OrderOption.fromString(value);
+                    } catch (IllegalArgumentException nfe) {
+                        throw new ParseException("Invalid value of ORDERING " + value + ". Should be CLUSTER_SIMILAR or PART_NUMBER", fn,
+                                lineNo);
+                    }
+                }
 			}
 
 			if (increment == -1) {
@@ -114,6 +127,7 @@ public class PartNumberingConfig {
 			}
 		}
 
+        this.orderOption = orderOption;
 		this.increment = increment;
 		this.firstPartMap = map;
 	}

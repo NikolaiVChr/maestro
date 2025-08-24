@@ -1,34 +1,75 @@
 package com.digero.maestro.abc;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.logging.Logger;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 import com.digero.common.abc.LotroInstrument;
+import com.digero.maestro.util.ListModelWrapper;
 
 public class PartAutoNumberer {
     protected static final Logger log = Logger.getLogger("song");
 
-	public static class Settings {
+    public static final PartAutoNumberer.OrderOption orderOptionDefault = PartAutoNumberer.OrderOption.CLUSTER_SIMILAR;
+
+    public Comparator<? super AbcPart> getComparator() {
+        if (settings.orderOption == OrderOption.CLUSTER_SIMILAR) {
+            return partSimilarComparator;
+        }
+        return partNumberComparator;
+    }
+
+    /**
+     *
+     * 1st sort according to instrument base number
+     * 2nd sort according to part number
+     *
+     * Dont use this without setting firstNumber on parts first
+     *
+     */
+    private final Comparator<NumberedAbcPart> partSimilarComparator = new Comparator<>() {
+        @Override
+        public int compare(NumberedAbcPart p1, NumberedAbcPart p2) {
+            if (p1.getFirstNumber() != p2.getFirstNumber())
+                return Integer.compare(p1.getFirstNumber(), p2.getFirstNumber());
+            return Integer.compare(p1.getPartNumber(), p2.getPartNumber());
+        }
+    };
+
+    /**
+     *
+     * sort according to part number
+     *
+     *
+     */
+    private final Comparator<NumberedAbcPart> partNumberComparator = new Comparator<>() {
+        @Override
+        public int compare(NumberedAbcPart p1, NumberedAbcPart p2) {
+            return Integer.compare(p1.getPartNumber(), p2.getPartNumber());
+        }
+    };
+
+    public static class Settings {
 
 		private Map<LotroInstrument, Integer> firstNumber = new EnumMap<>(LotroInstrument.class);
 		private boolean incrementByTen;
 		private final Preferences prefs;
+        public PartAutoNumberer.OrderOption orderOption;
 
 		private Settings(Preferences prefs) {
 			this.prefs = prefs;
 			incrementByTen = prefs.getBoolean("incrementByTen", true);
 			int x10 = incrementByTen ? 1 : 10;
 
-			if (!prefs.getBoolean("newCowbellDefaults", false)) {
+            try {
+                orderOption = OrderOption.fromString(prefs.get("orderOption", orderOptionDefault.name()));
+            } catch (IllegalArgumentException e) {
+                orderOption = orderOptionDefault;
+            }
+
+            if (!prefs.getBoolean("newCowbellDefaults", false)) {
 				prefs.putBoolean("newCowbellDefaults", true);
 				prefs.remove(prefsKey(LotroInstrument.BASIC_COWBELL));
 				prefs.remove(prefsKey(LotroInstrument.MOOR_COWBELL));
@@ -61,9 +102,9 @@ public class PartAutoNumberer {
 		}
 
 		/**
-		 * @return the original name of the instrument before it was renamed, which can be used a stable prefs key even
-		 *         if the instrument is renamed.
-		 */
+         * @return the original name of the instrument before it was renamed, which can be used a stable prefs key even
+         * if the instrument is renamed.
+         */
 		public String prefsKey(LotroInstrument instrument) {
 			// @formatter:off
 			// Missing case statement
@@ -109,6 +150,7 @@ public class PartAutoNumberer {
 				prefs.putInt(prefsKey(entry.getKey()), entry.getValue());
 			}
 			prefs.putBoolean("incrementByTen", incrementByTen);
+            prefs.put("orderOption", orderOption.name());
 		}
 
 		public Settings(Settings source) {
@@ -119,6 +161,7 @@ public class PartAutoNumberer {
 		public void copyFrom(Settings source) {
 			firstNumber = new EnumMap<>(source.firstNumber);
 			incrementByTen = source.incrementByTen;
+            orderOption = source.orderOption;
 		}
 
 		public int getIncrement() {
@@ -189,6 +232,44 @@ public class PartAutoNumberer {
 		this.parts = parts;
 	}
 
+    /**
+     * Make sure the abc parts have a 'part number manually assigned' that is not null.
+     */
+    public void assignManualPartNumber(ListModelWrapper<AbcPart> parts) {
+        Boolean manualAssigned = null;
+        for (AbcPart part : parts) {
+            if (part.isPartNumberManuallyAssigned() == null) {
+                // sort of a hack, since scheme can be changed between saving and loading project.
+                if (!isFittingInAutoNumberingScheme(part, -1, -1)) {
+                    manualAssigned = true;
+                } else if (manualAssigned == null) {
+                    manualAssigned = false;
+                }
+            }
+        }
+        if (manualAssigned != null) {
+            for (AbcPart part : parts) {
+                if (part.isPartNumberManuallyAssigned() == null) part.setPartNumberManuallyAssigned(manualAssigned, false);
+            }
+            // instead of notifying listeners many times, we do it once here
+            // We don't have to worry about which abc-part that send out notify,
+            // since PartPanel.setAbcPart() will get called after this has ran.
+            // So the UI will be uptodate.
+            parts.getFirst().notifyPartNumberManuallyAssigned();
+        }
+    }
+
+    /**
+     * Renumbers all parts, ensuring that each part is assigned a
+     * unique, sequential part number starting from a specific base value.
+     *
+     * The method uses an increment value to
+     * derive new part numbers, ensuring no duplicates exist among the assigned numbers.
+     *
+     * The renumbering process considers the instrument associated with each part to calculate the
+     * starting number, then increments as necessary to avoid conflicts with numbers already in use.
+     *
+     */
 	public void renumberAllParts() {
 
 		if (parts == null)
@@ -203,7 +284,15 @@ public class PartAutoNumberer {
         if (part1 != null && ((AbcPart)part1).getAbcSong().sorted) {
             ((AbcPart)part1).getAbcSong().suppressPartSort = true;
         }
+        for (NumberedAbcPart part : partsCopy) {
+            if (part.isPartNumberManuallyAssigned() == true) {
+                numbersInUse.add(part.getPartNumber());
+            }
+        }
 		for (NumberedAbcPart part : partsCopy) {
+            if (part.isPartNumberManuallyAssigned()) {
+                continue;
+            }
 			int partNumber = getFirstNumber(part.getInstrument());
 			while (numbersInUse.contains(partNumber)) {
 				partNumber += getIncrement();
@@ -236,6 +325,7 @@ public class PartAutoNumberer {
 		} while (conflict);
 
 		partAdded.setPartNumber(newPartNumber);
+        partAdded.setPartNumberManuallyAssigned(false, true);
 	}
 
 	public void onPartDeleted(NumberedAbcPart partDeleted) {
@@ -246,50 +336,70 @@ public class PartAutoNumberer {
 		int deletedNumber = partDeleted.getPartNumber();
 		int deletedFirstNumber = getFirstNumber(partDeleted.getInstrument());
 
-		if (!isAutoAssigned(partDeleted, -1, deletedFirstNumber)) {
+		if (!isFittingInAutoNumberingScheme(partDeleted, -1, -1)) {
 			log.fine(partDeleted.getInstrument().toString()+" deleted and did not fit");
 			return;
 		}
 
-		for (NumberedAbcPart part : parts) {
+        List<? extends NumberedAbcPart> partsCopy = new ArrayList<>(parts);
+        partsCopy.sort(partNumberComparator);
+
+		for (NumberedAbcPart part : partsCopy) {
 			int partNumber = part.getPartNumber();
 			int partFirstNumber = getFirstNumber(part.getInstrument());
 
-			boolean autoTest = isAutoAssigned(part, deletedNumber, deletedFirstNumber);
+			boolean autoTest = isFittingInAutoNumberingScheme(part, deletedNumber, deletedFirstNumber);
+            if (!autoTest || part.isPartNumberManuallyAssigned() == true) {
+                continue;
+            }
 			if (part != partDeleted && partNumber > deletedNumber && partNumber > partFirstNumber
-					&& partFirstNumber == deletedFirstNumber && autoTest) {
-				part.setPartNumber(partNumber - getIncrement());
-				if (part.getPartNumber() == deletedNumber) {
-                    deletedNumber = partNumber;
-                    // the deleted spot was filled out, the one that filled it out is now
-                    // considered deleted
-                }
+					&& partFirstNumber == deletedFirstNumber) {
+                part.setPartNumber(deletedNumber);
+                deletedNumber = partNumber;
+                // the deleted spot was filled out, the one that filled it out is now
+                // considered deleted
 			}
 		}
 	}
 
-	private boolean isAutoAssigned(NumberedAbcPart testPart, int deletedNumber, int deletedFirstNumber) {
-		// Return true if this part fit into the auto numbering scheme.
-		// If it does not or a part with lower part number has a different firstNumber,
-		// but seemingly fit into this parts numbering scheme
-		// it will also return false.
+    /**
+     * Return true if testPart fit into the auto numbering scheme.
+     * If it does not or a part with lower part number has a different firstNumber,
+     * but seemingly fit into this parts numbering scheme
+     * it will also return false.
+     *
+     * Since this method can be called after a part has been removed,
+     * the caller can optionally supply a deleted partNumber and its firstNumber.
+     * Else supply -1 for both.
+     *
+     */
+	private boolean isFittingInAutoNumberingScheme(NumberedAbcPart testPart, int deletedNumber, int deletedFirstNumber) {
+
 		int testNumber = testPart.getPartNumber();
 		int testFirstNumber = getFirstNumber(testPart.getInstrument());
-		if (testNumber == testFirstNumber)
-			return true;
+		if (testNumber == testFirstNumber) {
+            // it fits
+            return true;
+        }
 		if (getIncrement() == 10 && Math.abs(testNumber) % 10 != testFirstNumber) {
+            // increment is 10, but the number does not fit into the scheme
 			return false;
 		}
-		if (testNumber < testFirstNumber)
-			return false;
+		if (testNumber < testFirstNumber) {
+            // the part number is lower than the first number, so it does not fit into the scheme
+            return false;
+        }
 		boolean cohesive = true;
 		int checkNumber = testFirstNumber;
 		if (testFirstNumber != deletedFirstNumber) {
-			deletedNumber = -1;// should not be considered
+            // testPart is not sharing firstNumber with the deleted part,
+            // so deletedNumber is set to -1, which means it's ignored.
+			deletedNumber = -1;
 		}
 		outer: while (cohesive && checkNumber < testNumber) {
 			if (checkNumber == deletedNumber) {
-				// checks out (deleted)
+				// checks out (deleted), we pretend it still there
+                // and continue looping.
 				checkNumber += getIncrement();
 				continue outer;
 			}
@@ -298,6 +408,11 @@ public class PartAutoNumberer {
 
 				if (checkNumber == partNumber) {
 					if (testFirstNumber != getFirstNumber(part.getInstrument())) {
+                        // a part, which has a part-number that fits with testPart firstNumber,
+                        // but is lower than testPart's part-number.
+                        // However the part-number does not match its own firstNumber.
+                        // So since testPart is placed after this part,
+                        // but the number order is broken, we return false.
 						return false;
 					}
 					// It checks out
@@ -311,25 +426,41 @@ public class PartAutoNumberer {
 		return cohesive;
 	}
 
+    /**
+     * Called directly from UI
+     * So both this part and the part that potentially have the number we want,
+     * will be marked as manually assigned.
+     */
 	public void setPartNumber(NumberedAbcPart partToChange, int newPartNumber) {
 
 		if (parts == null)
 			return;
 
+        NumberedAbcPart replace = null;
+
 		for (NumberedAbcPart part : parts) {
 			if (part != partToChange && part.getPartNumber() == newPartNumber) {
 				part.setPartNumber(partToChange.getPartNumber());
+                replace = part;
 				break;
 			}
 		}
 		partToChange.setPartNumber(newPartNumber);
+
+        // we do these after both setpartnumber so that the assigning gets done properly.
+        if (replace != null) {
+            // We don't notify listeners here,
+            // we do it after setting the second part also.
+            replace.setPartNumberManuallyAssigned(true, false);
+        }
+        partToChange.setPartNumberManuallyAssigned(true, true);
 	}
 
 	public void setInstrument(NumberedAbcPart partToChange, LotroInstrument newInstrument) {
 
 		if (newInstrument != partToChange.getInstrument()) {
-			if (getFirstNumber(partToChange.getInstrument()) == getFirstNumber(newInstrument)) {
-				// Lets keep the part number, since it has the same first number
+			if (partToChange.isPartNumberManuallyAssigned() || getFirstNumber(partToChange.getInstrument()) == getFirstNumber(newInstrument)) {
+				// Lets keep the part number, since it either has the same first number, or is locked
 				partToChange.setInstrument(newInstrument);
 			} else {
 				onPartDeleted(partToChange);
@@ -350,4 +481,32 @@ public class PartAutoNumberer {
 		});
 		return instruments;
 	}
+
+    public enum OrderOption {
+        // name() is saved in maestro options
+        // label is shown in UI
+
+        CLUSTER_SIMILAR("Cluster instr. with similar numbers"),
+        PART_NUMBER("Sort purely by part-numbers");
+
+        private final String label;
+
+        OrderOption(String label) {
+            this.label = label;
+        }
+
+        @Override
+        public String toString() {
+            return label;
+        }
+
+        public static PartAutoNumberer.OrderOption fromString(String name) {
+            for (PartAutoNumberer.OrderOption c : values()) {
+                if (c.label.equalsIgnoreCase(name) || c.name().equalsIgnoreCase(name)) {
+                    return c;
+                }
+            }
+            throw new IllegalArgumentException("Unknown OrderOption: " + name);
+        }
+    }
 }

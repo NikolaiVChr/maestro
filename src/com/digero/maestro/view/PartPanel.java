@@ -81,6 +81,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 
 	private JSpinner numberSpinner;
 	private SpinnerNumberModel numberSpinnerModel;
+    private JCheckBox numberLockedCheckBox;
 	private JButton numberSettingsButton;
 	private JTextField nameTextField;
 	private JComboBox<LotroInstrument> instrumentComboBox;
@@ -142,6 +143,16 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 				PartPanel.this.partAutoNumberer.setPartNumber(abcPart, (Integer) numberSpinner.getValue());
 			}
 		});
+
+        numberLockedCheckBox = new JCheckBox("Lock");
+        numberLockedCheckBox.setHorizontalTextPosition(SwingConstants.RIGHT);
+        numberLockedCheckBox.setFocusable(false);
+        numberLockedCheckBox.setToolTipText("<html>Fix the part number to the current value.</html>");
+        numberLockedCheckBox.addChangeListener(e -> {
+            if (abcPart != null) {
+                abcPart.setPartNumberManuallyAssigned(numberLockedCheckBox.isSelected(), true);
+            }
+        });
 
 		numberSettingsButton = new JButton(IconLoader.getImageIcon("gear_16.png"));
 		numberSettingsButton.setMargin(new Insets(0, 0, 0, 0));
@@ -227,7 +238,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		xPanel.add(new JLabel("X:"));
 		xPanel.add(numberSpinner);
 		partSettingsPanel.add(xPanel);
-		
+		partSettingsPanel.add(numberLockedCheckBox);
 		partSettingsPanel.add(numberSettingsButton);
 		
 		JPanel iPanel = new JPanel(new WrapLayout(FlowLayout.LEFT, HGAP, 0));
@@ -466,7 +477,9 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 			abcPart.suppressSpinnerUpdate = false;
 		} else if (e.getProperty() == AbcPartProperty.INSTRUMENT) {
 			setAbcPart(abcPart, true); // Revalidate layout
-		}
+        } else if (e.getProperty() == AbcPartProperty.PART_NUMBER_MANUAL) {
+            numberLockedCheckBox.setSelected(abcPart.isPartNumberManuallyAssigned());
+        }
 	};
 
 	public void settingsChanged() {
@@ -498,6 +511,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 
 		if (abcPart == null) {
 			numberSpinner.setEnabled(false);
+            numberLockedCheckBox.setEnabled(false);
 			nameTextField.setEnabled(false);
 			instrumentComboBox.setEnabled(false);
 			
@@ -505,12 +519,14 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 			vZoomSlider.setEnabled(false);
 
 			numberSpinner.setValue(0);
+            numberLockedCheckBox.setSelected(false);
 			nameTextField.setText("");
 			instrumentComboBox.setSelectedItem(LotroInstrument.DEFAULT_INSTRUMENT);
 
 			clearTrackListPanel(true);
 		} else {
 			numberSpinner.setEnabled(true);
+            numberLockedCheckBox.setEnabled(true);
 			nameTextField.setEnabled(true);
 			instrumentComboBox.setEnabled(true);
 			
@@ -518,6 +534,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 			vZoomSlider.setEnabled(true);
 
 			numberSpinner.setValue(abcPart.getPartNumber());
+            numberLockedCheckBox.setSelected(abcPart.isPartNumberManuallyAssigned());
 			nameTextField.setText(abcPart.getTitle());
 			instrumentComboBox.setSelectedItem(abcPart.getInstrument());
 

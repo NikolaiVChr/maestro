@@ -58,6 +58,7 @@ import com.digero.maestro.abc.PartAutoNumberer;
 import com.digero.maestro.abc.PartNameTemplate;
 import com.digero.maestro.abc.PartNumberingConfig;
 
+import com.digero.maestro.midi.Chord;
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
 
@@ -80,7 +81,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 
 	private JTabbedPane tabPanel;
 
-	private PartAutoNumberer.Settings partNumbererSettings;
+	private final PartAutoNumberer.Settings partNumbererSettings;
 
 	private PartNameTemplate.Settings nameTemplateSettings;
 	private PartNameTemplate nameTemplate;
@@ -99,6 +100,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 
 	private List<InstrumentSpinner> instrumentSpinners = new ArrayList<>();
 	private JComboBox<Integer> incrementComboBox = new JComboBox<>(new Integer[] { 1, 10 });
+    private JComboBox<PartAutoNumberer.OrderOption> orderCombo;
 	private JFrame own;
 	private JComboBox<String> deviceBox;
 
@@ -276,7 +278,20 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 			partNumbererSettings.setIncrementByTen(newInc == 10);
 		});
 
-		TableLayout incrementPanelLayout = new TableLayout(//
+        JLabel orderTitle = new JLabel("<html><b><u>Part Order Sorting: </u></b></html>");
+        orderCombo = new JComboBox<PartAutoNumberer.OrderOption>(PartAutoNumberer.OrderOption.values());
+        orderCombo.setSelectedItem(partNumbererSettings.orderOption);
+        orderCombo.addActionListener(e -> {
+            PartAutoNumberer.OrderOption oldOrder = partNumbererSettings.orderOption;
+            PartAutoNumberer.OrderOption newOrder = ((PartAutoNumberer.OrderOption)orderCombo.getSelectedItem());
+            if (oldOrder == newOrder)
+                return;
+
+            numbererSettingsChanged = true;
+            partNumbererSettings.orderOption = newOrder;
+        });
+
+        TableLayout incrementPanelLayout = new TableLayout(//
 				new double[] { PREFERRED, FILL }, //
 				new double[] { PREFERRED });
 		incrementPanelLayout.setHGap(10);
@@ -309,16 +324,18 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 
 		TableLayout numberingLayout = new TableLayout(//
 				new double[] { FILL }, //
-				new double[] { PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED });
+				new double[] { PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED });
 
 		numberingLayout.setVGap(PAD);
 		JPanel numberingPanel = new JPanel(numberingLayout);
 		numberingPanel.setBorder(BorderFactory.createEmptyBorder(PAD, PAD, PAD, PAD));
-		numberingPanel.add(instrumentsTitle, "0, 0");
-		numberingPanel.add(instrumentsPanel, "0, 1, L, F");
-		numberingPanel.add(incrementTitle, "0, 3");
-		numberingPanel.add(incrementPanel, "0, 4, F, F");
-		numberingPanel.add(mapPanel, "0, 5");
+        numberingPanel.add(orderTitle, "0, 0");
+        numberingPanel.add(orderCombo, "0, 1, L, C");
+		numberingPanel.add(instrumentsTitle, "0, 2");
+		numberingPanel.add(instrumentsPanel, "0, 3, L, F");
+		numberingPanel.add(incrementTitle, "0, 4");
+		numberingPanel.add(incrementPanel, "0, 5, F, F");
+		numberingPanel.add(mapPanel, "0, 6");
 		return numberingPanel;
 	}
 
@@ -449,6 +466,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		}
 
 		incrementComboBox.setSelectedItem(config.increment);
+        orderCombo.setSelectedItem(config.orderOption);
 
 		for (LotroInstrument ins : config.firstPartMap.keySet()) {
 			int firstPartNo = config.firstPartMap.get(ins);
@@ -502,7 +520,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 			map.put(spinner.instrument, (Integer) spinner.getValue());
 		}
 
-		PartNumberingConfig config = new PartNumberingConfig(increment, map);
+		PartNumberingConfig config = new PartNumberingConfig(increment, map, (PartAutoNumberer.OrderOption) orderCombo.getSelectedItem());
 
 		try {
 			config.save(saveFile);
