@@ -39,6 +39,7 @@ public enum LotroInstrumentGroup {
 			case BASIC_DRUM:
 			case BASIC_COWBELL:
 			case MOOR_COWBELL:
+            case JAUNTY_HAND_KNELLS:
 				return LotroInstrumentGroup.PERCUSSION;
 
 			case LUTE_OF_AGES:
@@ -47,7 +48,6 @@ public enum LotroInstrumentGroup {
 			case MISTY_MOUNTAIN_HARP:
 			case BASIC_THEORBO:
 			case TRAVELLERS_TRUSTY_FIDDLE:
-            case JAUNTY_HAND_KNELLS:
 			default:
 				return LotroInstrumentGroup.PLUCKED_STRINGS;
 		}

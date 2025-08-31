@@ -133,6 +133,8 @@ public class LotroInstrumentTest {
 		test(BASIC_COWBELL, "Song - BasicCowbell 2");
 		test(BASIC_COWBELL, "Song - Cowbell");
 
+        test(JAUNTY_HAND_KNELLS, "JHK");
+
 		test(null, "Dilute");
 		test(null, "Sharp");
 		test(null, "Basic Fiddlesticks");

@@ -24,7 +24,7 @@ public class LotroInstrumentNick {
 	static String[] LOA = { "AgeLute", "LuteA", "LOA", "Laute", "Luth", "LuthSiecles", "LauteVZ" };
 	static String[] THEO = { "Theorbo", "Theo", "Theorbe" };
 	static String[] TTF = { "TravellerFiddle", "TrustyFiddle", "TTFiddle", "ViolonV", "TTF", "GeigeDR" };
-    static String[] JHK = {"Hand-knells", "Jaunty"};
+    static String[] JHK = {"Hand-knells", "Jaunty", "Glockenspiel"};
     static String[] BARDIC = { "Bardic", "BardenGeige", "ViolonBarde", "BrdFiddle" };
 	static String[] BASICF = { "ViolonBase", "StFiedel", "BscFiddle" };
 	static String[] LMF = { "LMF", "LonelyFiddle", "LMFiddle", "GeigeEB", "ViolonMS" };
