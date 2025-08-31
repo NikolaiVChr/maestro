@@ -79,6 +79,7 @@ public class PanGenerator {
 			break;
 		case BASIC_HARP:
 		case SPRIGHTLY_FIDDLE:
+        case JAUNTY_HAND_KNELLS:
 		case MISTY_MOUNTAIN_HARP:
 			instrument = LotroInstrument.BASIC_HARP;
 			break;

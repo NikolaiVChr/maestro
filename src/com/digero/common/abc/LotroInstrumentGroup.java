@@ -47,6 +47,7 @@ public enum LotroInstrumentGroup {
 			case MISTY_MOUNTAIN_HARP:
 			case BASIC_THEORBO:
 			case TRAVELLERS_TRUSTY_FIDDLE:
+            case JAUNTY_HAND_KNELLS:
 			default:
 				return LotroInstrumentGroup.PLUCKED_STRINGS;
 		}

@@ -41,6 +41,7 @@ public enum LotroInstrument
 	LUTE_OF_AGES             ( "Lute of Ages",              false, MidiInstrument.NYLON_GUITAR,         0,      false,     0.0f, "Lute", "Age Lute", "LuteA", "LOA", "Guitar", "laute", "luth", "luth (des)? siècles", "luth (des)? siecles", "laute vz", "laute vergangener zeiten"),
 	BASIC_THEORBO            ( "Basic Theorbo",             false, MidiInstrument.ACOUSTIC_BASS,       -1,      false,   -12.0f, "Theorbo", "Theo", "Bass", "theorbe", "théorbe"),
 	TRAVELLERS_TRUSTY_FIDDLE ( "Traveller's Trusty Fiddle", false, MidiInstrument.PIZZICATO_STRINGS,    1,      false,    -3.0f, "Travell?er'?s? (Trusty)? Fiddle", "Trusty Fiddle", "TT Fiddle", "(fidèle)? violon (de)? voyageur", "violon v", "TTF", "geige des reisenden", "geige dr"),
+    JAUNTY_HAND_KNELLS       ( "Jaunty Hand-knells",        false, MidiInstrument.GLOCKENSPIEL,         3,      false,     0.0f, "Hand-? knells", "Jaunty", "JAUNTY_HAND_KNELLS"),
 
 	BARDIC_FIDDLE            ( "Bardic Fiddle",              true, MidiInstrument.VIOLIN,               1,      false,     6.0f, "Bardic", "brd fiddle", "Violin", "Barden-? Geige", "violon (de)? barde"),
 	BASIC_FIDDLE             ( "Basic Fiddle",               true, MidiInstrument.VIOLA,                1,      false,     6.25f, "Bsc Fiddle", "Violon (de)? base", "standard-? fiedel", "st fiedel"),
