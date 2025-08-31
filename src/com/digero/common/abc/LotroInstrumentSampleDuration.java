@@ -25,7 +25,11 @@ public class LotroInstrumentSampleDuration {
 		if (db == null) {
 			parse();
 		}
-		Long dura = db.get(friendlyName).get(note);
+        Map<Integer, Long> instr = db.get(friendlyName);
+        if (instr == null) {
+            return null;
+        }
+		Long dura = instr.get(note);
 		return dura;
 	}
 	

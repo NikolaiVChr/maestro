@@ -13,6 +13,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
@@ -53,8 +54,7 @@ public class MaestroMain {
 
 	public static void main(final String[] args) throws Exception {
 		Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
-			throwable.printStackTrace();
-			log.severe(throwable.toString());
+			log.log(Level.SEVERE, throwable.toString(), throwable);
 		    ProjectFrame.feed("ERROR: exception in thread " + thread.getName() + ": " + throwable+". Please notify the devs.", getFirstLines(throwable));
 		    if (mainWindow != null) {		    	
 		    	SwingUtilities.invokeLater(() -> {
@@ -68,15 +68,14 @@ public class MaestroMain {
 		});
 		SwingUtilities.invokeLater(() -> {
 			Thread.currentThread().setUncaughtExceptionHandler((thread, throwable) -> {
-			    throwable.printStackTrace();
-			    log.severe(throwable.toString());
+                log.log(Level.SEVERE, throwable.toString(), throwable);
 			    try {
 				    ProjectFrame.feed("ERROR: exception in thread " + thread.getName() + ": " + throwable+". Please notify the devs..", getFirstLines(throwable));
 				    if (mainWindow != null) {
 				    	mainWindow.showFeed();
 				    }
 			    } catch (Exception e) {
-					e.printStackTrace();
+                    log.log(Level.SEVERE, e.toString(), e);
 				}
 			});
 		});
