@@ -134,6 +134,10 @@ public class LotroInstrumentTest {
 		test(BASIC_COWBELL, "Song - Cowbell");
 
         test(JAUNTY_HAND_KNELLS, "JHK");
+        test(JAUNTY_HAND_KNELLS, "Handglocken");
+        test(JAUNTY_HAND_KNELLS, "Hand-glocke");
+        test(JAUNTY_HAND_KNELLS, "Glas");
+
 
 		test(null, "Dilute");
 		test(null, "Sharp");
