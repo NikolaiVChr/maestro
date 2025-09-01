@@ -71,6 +71,7 @@ public class AutoExporter {
 	private final Object txtFieldMutex = new Object();
 
     private List<File> skippedProjects = new ArrayList<>();
+    //private List<File> highCandidates = new ArrayList<>();
 
 	private volatile int progressInt = 0;
 	private volatile boolean txtFieldPrimedForUpdate = false;
@@ -239,6 +240,7 @@ public class AutoExporter {
 		miscSettings = new MiscSettings(prefs.node("miscSettings"), true);
 
         skippedProjects = new ArrayList<>();
+        //highCandidates = new ArrayList<>();
 		setProgress(0);
 		cancel = false;
 		if (!frame.getRecursiveCheckBoxSelected()) {
@@ -280,6 +282,14 @@ public class AutoExporter {
                 appendToField("<br><font color='orange'>" + f.getParent() + File.separator + f.getName()+"</font>");
             }
         }
+        /*
+        if (!highCandidates.isEmpty()) {
+            System.out.println("High candidates " + highCandidates.size() + " project files:");
+            for (File f : highCandidates) {
+                System.out.println(f.getParent() + File.separator + f.getName());
+            }
+        }
+         */
 		if (!cancel) {
 			setProgress(1000);
 			appendToField("<br><br>Exports finished. ");//+com.digero.maestro.abc.PolyphonyHistogram.successes
@@ -457,6 +467,12 @@ public class AutoExporter {
 		nestedProject = project;
 		AbcSong abcSong = new AbcSong(project, partAutoNumberer, partNameTemplate, exportFilenameTemplate,
 				instrNameSettings, openFileResolver, miscSettings, frame.getSaveMSXSelected(), saveSettings, true);
+    /*
+        if (abcSong.highCandidate) {
+            highCandidates.add(project);
+        }
+
+     */
 
 		boolean timingModified = false;
 		boolean oldMix = abcSong.isMixTiming();

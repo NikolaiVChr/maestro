@@ -135,6 +135,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private String copyright = "";
 	private final SaveAndExportSettings saveAndExportSettings;
 
+    //public boolean highCandidate = false;
+
     public AbcSong(File file, PartAutoNumberer partAutoNumberer, PartNameTemplate partNameTemplate,
 			ExportFilenameTemplate exportFilenameTemplate, InstrNameSettings instrNameSettings,
 			FileResolver fileResolver, MiscSettings miscSettings, SaveAndExportSettings saveAndExportSettings)

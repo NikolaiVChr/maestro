@@ -473,6 +473,11 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				boolean fx = SaveUtil.parseValue(trackEle, "@fx", false);
 				studentOverride = SaveUtil.parseValue(trackEle, "@studentOverride", false);
 				trackTranspose[t] = SaveUtil.parseValue(trackEle, "transpose", trackTranspose[t]);
+                /*
+                if (trackTranspose[t] < 0 && (instrument == LotroInstrument.BASIC_FLUTE || instrument == LotroInstrument.TRAVELLERS_TRUSTY_FIDDLE || (instrument == LotroInstrument.BASIC_LUTE && trackTranspose[t] < -12))) {
+                    abcSong.highCandidate = true;
+                }
+                 */
 				trackVolumeAdjust[t] = SaveUtil.parseValue(trackEle, "volumeAdjust", trackVolumeAdjust[t]);
 				int prio = SaveUtil.parseValue(trackEle, "combinePriority", 1);
 				if (prio == QuantizedTimingInfo.COMBINE_PRIORITY_MULTIPLIER) {
