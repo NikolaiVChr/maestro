@@ -17,7 +17,7 @@ import static com.digero.maestro.view.CountIn.CountInDynamics.*;
 import static com.digero.maestro.view.CountIn.CountInPattern.*;
 
 public class CountIn {
-    public float barCount = 1;
+    public float barCount = 1.0f;
     public CountInPattern pattern = null;
     public AbcPart part = null;
     public LotroDrumInfo hit = null;
@@ -25,7 +25,7 @@ public class CountIn {
 
     public CountIn(CountInPattern pattern, float barCount, AbcPart part, LotroDrumInfo hit) {
         this.pattern = pattern;
-        this.barCount = pattern.bars;
+        this.barCount = barCount;
         this.part = part;
         this.hit = hit;
     }
@@ -58,9 +58,47 @@ public class CountIn {
         ONE_AND_TWO_AND_THREE_AND_ONE_AND_TWO_AND_THREE_AND ("1 and 2 and 3 and | 1 and 2 and 3 and",
                 new TimeSignature(3,4), 2,
                 new CountInDynamics[]{STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT}),
-        ONE_TRIP_LET_TWO_TRIP_LET_THREE_TRIP_LET_FOUR_TRIP_LET ("1-trip-let 2-trip-let 3-trip-let 4-trip-let",
+        ONE_TWO ("1 2",
+                new TimeSignature(2,4), 1,
+                new CountInDynamics[]{ACCENTED,STANDARD}),
+        ONE_AND_TWO_AND ("1 and 2 and",
+                new TimeSignature(2,4), 1,
+                new CountInDynamics[]{STANDARD,SOFT,STANDARD,SOFT}),
+        ONE_TWO_ONE_TWO ("1 2 | 1 2",
+                new TimeSignature(2,4), 2,
+                new CountInDynamics[]{ACCENTED,STANDARD,ACCENTED,STANDARD}),
+        ONE_AND_TWO_AND_ONE_AND_TWO_AND ("1 and 2 and | 1 and 2 and",
+                new TimeSignature(2,4), 2,
+                new CountInDynamics[]{STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT}),
+        ONE_TWO_THREE_FOUR_FIVE ("1 2 3 4 5",
+                new TimeSignature(5,4), 1,
+                new CountInDynamics[]{ACCENTED,STANDARD,STANDARD,STANDARD,STANDARD}),
+        ONE_TWO_THREE_FOUR_FIVE_SIX ("1 2 3 4 5 6",
+                new TimeSignature(6,8), 1,
+                new CountInDynamics[]{ACCENTED,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD}),
+        ONE_TWO_THREE_FOUR_FIVE_SIX_SEVEN ("1 2 3 4 5 6 7",
+                new TimeSignature(7,8), 1,
+                new CountInDynamics[]{ACCENTED,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD}),
+        ONE_AND_A_TWO_AND_A ("1 and a 2 and a",
+                new TimeSignature(6,8), 1,
+                new CountInDynamics[]{STANDARD,SOFT,SOFT,STANDARD,SOFT,SOFT}),
+        FOUR_TRIPLETS ("1-trip-let 2-trip-let 3-trip-let 4-trip-let",
                 new TimeSignature(4,4), 1,
-                new CountInDynamics[]{STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD})
+                new CountInDynamics[]{ACCENTED_TRIPLET,STANDARD,STANDARD,ACCENTED_TRIPLET,STANDARD,STANDARD,ACCENTED_TRIPLET,STANDARD,STANDARD,ACCENTED_TRIPLET,STANDARD,STANDARD}),
+        THREE_TRIPLETS ("1-trip-let 2-trip-let 3-trip-let",
+                new TimeSignature(3,4), 1,
+                new CountInDynamics[]{ACCENTED_TRIPLET,STANDARD,STANDARD,ACCENTED_TRIPLET,STANDARD,STANDARD,ACCENTED_TRIPLET,STANDARD,STANDARD}),
+        TWO_TRIPLETS ("1-trip-let 2-trip-let",
+                new TimeSignature(6,8), 1,
+                new CountInDynamics[]{ACCENTED_TRIPLET,STANDARD,STANDARD,ACCENTED_TRIPLET,STANDARD,STANDARD}),
+        /*
+        ONE_TRIP_LET_TWO_TRIP_LET_THREE_TRIP_LET_FOUR_TRIP_LET_2 ("1-trip-let 2-trip-let 3-trip-let 4-trip-let | 1-trip-let 2-trip-let 3-trip-let 4-trip-let",
+                new TimeSignature(4,4), 2,
+                new CountInDynamics[]{STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD}),
+        ONE_TRIP_LET_TWO_TRIP_LET_THREE_TRIP_LET_2 ("1-trip-let 2-trip-let 3-trip-let | 1-trip-let 2-trip-let 3-trip-let",
+                new TimeSignature(3,4), 2,
+                new CountInDynamics[]{STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD})
+        */
         ;
 
         final String name;
@@ -82,6 +120,7 @@ public class CountIn {
 
     public enum CountInDynamics {
         ACCENTED (Dynamics.ff),
+        ACCENTED_TRIPLET (Dynamics.f),
         STANDARD (Dynamics.mf),
         SOFT (Dynamics.p);
 
@@ -144,6 +183,20 @@ public class CountIn {
             hitBox.addActionListener(e -> {
                 CountIn.lastCountIn = getCountIn(comboBox, txtField, hitBox, part);
             });
+            dialog.addWindowListener(new java.awt.event.WindowAdapter() {
+                @Override
+                public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+                    // Handle window closing event here
+                    // For example, you might want to save the current state
+                    CountIn.lastCountIn = getCountIn(comboBox, txtField, hitBox, part);
+                }
+
+                @Override
+                public void windowClosed(java.awt.event.WindowEvent windowEvent) {
+
+                }
+            });
+
 
             GridBagConstraints gbc = new GridBagConstraints();
             gbc.insets = new Insets(6, 8, 6, 8);

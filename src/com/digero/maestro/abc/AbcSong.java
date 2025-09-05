@@ -805,6 +805,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		setMixDirty(true);
 		fireChangeEvent(AbcSongProperty.BEFORE_PART_REMOVED, part);
 		parts.remove(part);
+        if (countIn != null && countIn.part == part) {
+            countIn = null;
+        }
 		suppressPartSort = true;
 		partAutoNumberer.onPartDeleted(part);
 		suppressPartSort = false;

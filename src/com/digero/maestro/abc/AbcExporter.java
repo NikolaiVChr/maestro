@@ -27,12 +27,7 @@ import javax.sound.midi.Sequence;
 import javax.sound.midi.Track;
 
 import com.digero.common.abc.*;
-import com.digero.common.midi.ITempoCache;
-import com.digero.common.midi.KeySignature;
-import com.digero.common.midi.MidiConstants;
-import com.digero.common.midi.MidiFactory;
-import com.digero.common.midi.Note;
-import com.digero.common.midi.PanGenerator;
+import com.digero.common.midi.*;
 import com.digero.common.util.Pair;
 import com.digero.common.util.Triple;
 import com.digero.common.util.Util;
@@ -277,31 +272,47 @@ public class AbcExporter {
 		}
 		track.add(MidiFactory.createPanEvent(pan, channel));
 
-        long countInTick = exportStartTick;
-        long countInTicks = 0L;
+        long countInMicros = 0L;//all track notes will be delayed by this
         if (countIn != null) {
-            countInTick = countIn.startTick;
-            countInTicks = exportStartTick - countInTick;
+            TimingInfoEvent info;
+            if (organic) {
+                info = qtm.getTimingEventForTickOrganic(exportStartTick);
+            } else {
+                info = qtm.getTimingEventForTick(exportStartTick);
+            }
+            long countInTicks = (long)(countIn.barCount*info.info().getBarLengthTicks());
+            countInMicros = MidiUtils.ticks2microsec(countInTicks, info.info().getTempoMPQ(), info.info().getResolutionPPQ());
+            logPreview.severe("Count-in for preview: total count-in. micros = "+countInMicros+" bars = "+countIn.barCount);
             if (countIn.part == part) {
                 int hits = countIn.pattern.dynamics.length;
-                long hitTicks = countInTicks / hits;
-                long tick = countInTick;
+                long hitMicros = countInMicros / hits;
+                long tick = exportStartTick;
                 long hitDura = 500000;
                 try {
                     hitDura = LotroInstrumentSampleDuration.getDura(LotroInstrument.BASIC_DRUM.friendlyName, countIn.hit.note.id);
-                } catch (IOException e) {
-
+                } catch (IOException | NullPointerException e) {
                 }
+                hitDura = Math.min(hitDura, hitMicros);
+                logPreview.severe("Count-in for preview: hitMicros: "+hitMicros+" hitDura: "+hitDura);
                 for (CountIn.CountInDynamics dyn : countIn.pattern.dynamics) {
                     Dynamics volume = dyn.dynamics;
-                    track.add(MidiFactory.createNoteOnEventEx(countIn.hit.note.id, 9,
+                    track.add(MidiFactory.createNoteOnEventEx(countIn.hit.note.id, channel,
                             volume.midiVol, tick));
-                    track.add(MidiFactory.createNoteOffEventEx(countIn.hit.note.id, 9,
-                            0, tick+));
-
-                    tick += hitTicks;
+                    long spanTicks;
+                    if (organic) {
+                        spanTicks = qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(tick) + hitDura);
+                    } else {
+                        spanTicks = qtm.microsToTickABC(qtm.tickToMicrosABC(tick) + hitDura);
+                    }
+                    track.add(MidiFactory.createNoteOffEventEx(countIn.hit.note.id, channel,
+                            0, spanTicks));
+                    logPreview.severe("Count-in for preview: added a count-in hit: "+countIn.hit.name+" velocity = "+volume.midiVol);
+                    if (organic) {
+                        tick = qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(tick) + hitMicros);
+                    } else {
+                        tick = qtm.microsToTickABC(qtm.tickToMicrosABC(tick) + hitMicros);
+                    }
                 }
-
             }
         }
 
@@ -317,6 +328,9 @@ public class AbcExporter {
 			// Make delay on instrument be audible in preview
 			delayMicros = qtm.multiplyByExportTempoFactor(part.delay * 1000L);
 		}
+        if (countInMicros > 0L) {
+            delayMicros += qtm.multiplyByExportTempoFactor(countInMicros);;
+        }
 		long lastEnd = 0L;
 		for (Chord chord : chords) {
 			Dynamics dynamics = chord.calcDynamics(part.getAbcSong().dynamicsMethod);
@@ -348,7 +362,7 @@ public class AbcExporter {
                             off = qtm.microsToTick(qtm.tickToMicros(endTick) + delayMicros);
                         }
                         lastEnd = Math.max(off, lastEnd);
-                        track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off + countInTicks));
+                        track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off));
                     }
 				}
 
@@ -383,10 +397,10 @@ public class AbcExporter {
 				
 				if (organic) {
 					track.add(MidiFactory.createNoteOnEventEx(ne.note.id + noteDelta, channel,
-							dynamics.getVol(useLotroInstruments), qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(ne.getStartTick()) + delayMicros) + countInTicks));
+							dynamics.getVol(useLotroInstruments), qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(ne.getStartTick()) + delayMicros)));
 				} else {
 					track.add(MidiFactory.createNoteOnEventEx(ne.note.id + noteDelta, channel,
-							dynamics.getVol(useLotroInstruments), qtm.microsToTick(qtm.tickToMicros(ne.getStartTick()) + delayMicros) + countInTicks));
+							dynamics.getVol(useLotroInstruments), qtm.microsToTick(qtm.tickToMicros(ne.getStartTick()) + delayMicros)));
 				}
 				notesOn.add(ne);
 				part.numberOfExportedNotes++;
@@ -401,10 +415,10 @@ public class AbcExporter {
                 off = qtm.microsToTick(qtm.tickToMicros(on.getEndTick()) + delayMicros);
             }
             lastEnd = Math.max(off, lastEnd);
-            track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off + countInTicks));
+            track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off));
         }
 
-		track.add(MidiFactory.createEndOfTrackEvent(lastEnd + countInTicks));
+		track.add(MidiFactory.createEndOfTrackEvent(lastEnd));
 
 		return new Triple<>(trackNumber, channel, lastEnd);
 	}
