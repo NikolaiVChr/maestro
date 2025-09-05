@@ -49,8 +49,8 @@ public class TrackSplitter {
 		Track newMetaTrack = expandedSequence.createTrack();
 		newMetaTrack.add(MidiFactory.createTrackNameEvent("META"));
 		long lastEOTTick = 0L;
-		for (int j = 0; j < oldTracks.length; j++) {
-			Track oldTrack = oldTracks[j];
+		for (int oldTrackNumber = 0; oldTrackNumber < oldTracks.length; oldTrackNumber++) {
+			Track oldTrack = oldTracks[oldTrackNumber];
 
 			// Find the old name and end of track for the track we want to expand
 			String oldTrackName = "";
@@ -76,7 +76,7 @@ public class TrackSplitter {
 				}
 			}
 			if (oldTrackName.isEmpty()) {
-				oldTrackName = "Track " + j;
+				oldTrackName = "Track " + oldTrackNumber;
 			}
 
 			// This hash map contains a map from instrument name into new track.
@@ -92,7 +92,7 @@ public class TrackSplitter {
 			}
 
 			// GM+ stuff
-			int port = portMap.get(j);
+			int port = portMap.get(oldTrackNumber);
 			List<MidiEvent> portPrograms = new ArrayList<>();// Program changes within specific port, they will later be
 																// put into 'firstTrackUsingPorts'
 			Track firstTrackUsingPorts = null;// The first of the new expanded tracks, this will come to contain GM+
@@ -111,7 +111,7 @@ public class TrackSplitter {
 					int channel = shortMsg.getChannel();
 
 					if (cmd == ShortMessage.NOTE_OFF || cmd == ShortMessage.NOTE_ON) {
-						instr = handleEvent(j, notesOn, port, tick, channel, cmd, shortMsg);
+						instr = handleEvent(oldTrackNumber, notesOn, port, tick, channel, cmd, shortMsg);
 						// if (instr == null) System.out.println("instr==null "+on);
 						// if ("".equals(instr)) System.out.println("instr=='' "+on);
 					} else if (hasPorts && cmd == ShortMessage.PROGRAM_CHANGE) {
@@ -156,29 +156,31 @@ public class TrackSplitter {
 				} else {
                     if (msg instanceof MetaMessage metaMsg) {
                         int type = metaMsg.getType();
-                        if (j > 0 && (type == MidiConstants.META_TEXT || type == MidiConstants.META_LYRIC || type == MidiConstants.META_MARKER || type == MidiConstants.META_CUE_POINT)) {
+                        if (oldTrackNumber > 0 && (type == MidiConstants.META_TEXT || type == MidiConstants.META_LYRIC || type == MidiConstants.META_MARKER || type == MidiConstants.META_CUE_POINT)) {
                             // Its lyrics related
-                            Track newTrack = newTracks.get("Lyrics " + j);
+                            String trackID = "Lyrics " + oldTrackNumber;
+                            Track newTrack = newTracks.get(trackID);
                             if (newTrack == null) {
                                 newTrack = expandedSequence.createTrack();
                                 newTrack.add(MidiFactory.createTrackNameEvent(oldTrackName + " : Lyrics"));
                                 //if (oldEndOfTrack != null) newTrack.add(MidiFactory.createEndOfTrackEvent(oldEndOfTrack.getTick()));
 
                                 trackCounter += 1;
-                                newTracks.put("Lyrics " + j, newTrack);
+                                newTracks.put(trackID, newTrack);
                             }
                             newTrack.add(evt);
 
-                        } else if (j > 0 && type == MidiConstants.META_TEMPO) {
+                        } else if (oldTrackNumber > 0 && type == MidiConstants.META_TEMPO) {
                             // Its tempo but not in first track
-                            Track newTrack = newTracks.get("Tempos " + j);
+                            String trackID = "Tempos " + oldTrackNumber;
+                            Track newTrack = newTracks.get(trackID);
                             if (newTrack == null) {
                                 newTrack = expandedSequence.createTrack();
                                 newTrack.add(MidiFactory.createTrackNameEvent(oldTrackName + " : Tempos"));
                                 //if (oldEndOfTrack != null) newTrack.add(MidiFactory.createEndOfTrackEvent(oldEndOfTrack.getTick()));
 
                                 trackCounter += 1;
-                                newTracks.put("Tempos " + j, newTrack);
+                                newTracks.put(trackID, newTrack);
                             }
                             newTrack.add(evt);
                         } else {
@@ -204,13 +206,13 @@ public class TrackSplitter {
 		return expandedSequence;
 	}
 
-	private String handleEvent(int j, List<HashMap<Integer, String>> notesOn, int port, long tick, int channel, int cmd,
+	private String handleEvent(int oldTrackNumber, List<HashMap<Integer, String>> notesOn, int port, long tick, int channel, int cmd,
 			ShortMessage shortMsg) {
 		boolean on = cmd == ShortMessage.NOTE_ON;
 		int note = shortMsg.getData1();
 		int velocity = shortMsg.getData2();
 		if (on && velocity > 0) {
-			return treatAsMidiOn(j, notesOn, port, tick, channel, note);
+			return treatAsMidiOn(oldTrackNumber, notesOn, port, tick, channel, note);
 		} else if (!on) {
 			// This is a genuine midi OFF event
 			return notesOn.get(channel).remove(note);
@@ -218,17 +220,18 @@ public class TrackSplitter {
 			// This is a midi ON event that might act as a midi OFF
 			String instr = notesOn.get(channel).remove(note);
 			if (instr == null) {
-				instr = treatAsMidiOn(j, notesOn, port, tick, channel, note);
+				instr = treatAsMidiOn(oldTrackNumber, notesOn, port, tick, channel, note);
 			}
 			return instr;
 		}
 	}
 
 	/**
-	 * Its not preceded by a midi ON, so we treat is as a midi ON although, it's silent.
+	 * Its a silent MIDI ON not preceded by a midi ON, so we treat is as a midi ON although, it's silent.
 	 * <p>
-	 * TODO: Consider to remove it, cause Maestro will assign +pppp+ to it, and it will become audible which is probably
-	 * not what the midi maker intended.
+	 * TODO: Consider to remove it, cause Maestro will assign +pppp+ to it,
+     * TODO: and it will become audible which is probably
+	 * TODO: not what the midi maker intended.
 	 *
      */
 	private String treatAsMidiOn(int index, List<HashMap<Integer, String>> notesOn, int port, long tick, int channel,
