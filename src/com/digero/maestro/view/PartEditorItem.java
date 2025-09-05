@@ -14,6 +14,7 @@ import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 
+import com.digero.common.abc.LotroInstrument;
 import com.digero.common.util.IDiscardable;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcPartMetadataSource;
@@ -27,6 +28,7 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 	private JTextField delayField;
 	private JTextField conclusionFermataField;
 	private JTextField maxField;
+    private JButton countInButton;
 
 	protected static Dimension horizGapi = new Dimension(15,15);
 	
@@ -47,8 +49,8 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 	
 	@Override
 	protected double[] getColumns(boolean showBadger) {
-		double[] LAYOUT_COLS_EDITOR = new double[] { FILL, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED };
-		double[] LAYOUT_COLS_BADGER_EDITOR = new double[] { FILL, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED };
+		double[] LAYOUT_COLS_EDITOR = new double[] { FILL, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED };
+		double[] LAYOUT_COLS_BADGER_EDITOR = new double[] { FILL, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED };
 		
 		return showBadger?LAYOUT_COLS_BADGER_EDITOR:LAYOUT_COLS_EDITOR;
 	}
@@ -139,6 +141,14 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 				validateMaxInput();
 			}
 		});
+
+        countInButton = new JButton("Count-in");
+        countInButton.setSize(new Dimension(countInButton.getPreferredSize().width, getProtoDimension().height));
+        countInButton.addActionListener(e -> {
+           CountIn result = CountIn.show(this, part, part.getAbcSong().getCountIn());
+           part.getAbcSong().setCountIn(result);
+        });
+        countInButton.setVisible(part.getInstrument() == LotroInstrument.BASIC_DRUM);
 	}
 
 	@Override
@@ -167,6 +177,7 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		add(c, ++col + ", 0");
 		add(new JLabel("Max notes"), ++col + ", 0");
 		add(maxField, ++col + ", 0");
+        add(countInButton, ++col + ", 0");
 	}
 	
 	@Override
@@ -207,6 +218,9 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		fieldSize.height = h;
 		maxField.setPreferredSize(fieldSize);
 
+        countInButton = new JButton("Count-in");
+        countInButton.setSize(new Dimension(countInButton.getPreferredSize().width, h));
+
 		int col = -1;
 		add(title, ++col + ", 0");
 		add(badgerButton, ++col + ", 0");
@@ -226,7 +240,8 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		c.setPreferredSize(horizGapi);
 		add(c, ++col + ", 0");
 		add(new JLabel("Max notes"), ++col + ", 0");
-		add(maxField, ++col + ", 0");	
+		add(maxField, ++col + ", 0");
+        add(countInButton, ++col + ", 0");
 	}
 	
 	public static Dimension getProtoDimension() {

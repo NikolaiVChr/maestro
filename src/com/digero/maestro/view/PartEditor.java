@@ -24,7 +24,7 @@ public class PartEditor extends JDialog {
     private static final long serialVersionUID = 2872004091137636859L;
 
     private static final int DEFAULT_WIDTH = 300;
-    private static final int DEFAULT_HEIGHT = 800;
+    private static final int DEFAULT_HEIGHT = 850; // 800
 
 	private PartsListEditor partsList;
 	private ProjectFrame pFrame;

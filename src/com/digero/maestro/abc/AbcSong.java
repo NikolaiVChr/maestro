@@ -27,6 +27,7 @@ import javax.swing.JOptionPane;
 import javax.xml.xpath.XPathExpressionException;
 
 import com.digero.common.abc.VersionsWithIssues;
+import com.digero.maestro.view.CountIn;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -134,6 +135,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public boolean storeNewExportFile = true;
 	private String copyright = "";
 	private final SaveAndExportSettings saveAndExportSettings;
+    private CountIn countIn = null;
 
     public AbcSong(File file, PartAutoNumberer partAutoNumberer, PartNameTemplate partNameTemplate,
 			ExportFilenameTemplate exportFilenameTemplate, InstrNameSettings instrNameSettings,
@@ -1544,4 +1546,11 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		fireChangeEvent(AbcSongProperty.PART_LIST_ORDER);	
 	}
 
+    public CountIn getCountIn() {
+        return countIn;
+    }
+
+    public void setCountIn(CountIn countin) {
+        countIn = countin;
+    }
 }

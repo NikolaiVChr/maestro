@@ -26,11 +26,7 @@ import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Track;
 
-import com.digero.common.abc.AbcConstants;
-import com.digero.common.abc.AbcField;
-import com.digero.common.abc.Dynamics;
-import com.digero.common.abc.LotroInstrument;
-import com.digero.common.abc.StringCleaner;
+import com.digero.common.abc.*;
 import com.digero.common.midi.ITempoCache;
 import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.MidiConstants;
@@ -49,6 +45,7 @@ import com.digero.maestro.midi.Chord;
 import com.digero.maestro.midi.ChordOrganic;
 import com.digero.maestro.midi.MidiNoteEvent;
 import com.digero.maestro.midi.TrackInfo;
+import com.digero.maestro.view.CountIn;
 import com.digero.maestro.view.ProjectFrame;
 
 @SuppressWarnings({"AssertWithSideEffects"})
@@ -138,7 +135,22 @@ public class AbcExporter {
 			// Track 0: Title and meta info
 			Track track0 = sequence.createTrack();
 			track0.add(MidiFactory.createTrackNameEvent(metadata.getSongTitle()));
-			
+
+            AbcPart one = parts.getFirst();
+            CountIn countIn = null;
+            if (one != null) {
+                countIn = one.getAbcSong().getCountIn();
+                if (countIn != null) {
+                    float countInBars = countIn.barCount;
+                    //int tempoMPQ = one.getAbcSong().getSequenceInfo().getDataCache().getTempoMPQ(exportStartTick);
+                    //float barStart = one.getAbcSong().getSequenceInfo().getDataCache().tickToBarNumberFloat(exportStartTick);
+
+                    long barLength = one.getAbcSong().getSequenceInfo().getDataCache().getBarLengthTicks();
+                    long countInStart = exportStartTick - (long)(barLength * countInBars);
+
+                    countIn.startTick = countInStart;
+                }
+            }
 
 			PanGenerator panner = new PanGenerator();
 			
@@ -151,7 +163,7 @@ public class AbcExporter {
 							: PanGenerator.CENTER;
 					
 					ExportTrackInfo inf = exportPartToPreview(part, sequence, pan,
-							useLotroInstruments, chordsMade);
+							useLotroInstruments, chordsMade, countIn);
 					infoList.add(inf);
 					lastEnd = Math.max(lastEnd, inf.endOfTrack);
 					logPreview.fine(part.getTitle()+" assigned to channel "+inf.channel+" on track "+inf.trackNumber);
@@ -204,11 +216,11 @@ public class AbcExporter {
 	}
 
 	ExportTrackInfo exportPartToPreview(AbcPart part, Sequence sequence,
-			int pan, boolean useLotroInstruments, 
-			Map<AbcPart, List<Chord>> chordsMade) throws AbcConversionException {
+                                        int pan, boolean useLotroInstruments,
+                                        Map<AbcPart, List<Chord>> chordsMade, CountIn countIn) throws AbcConversionException {
 		List<Chord> chords = chordsMade.get(part);
 
-		Triple<Integer, Integer, Long> trackNumber = exportPartToMidi(part, sequence, chords, pan, useLotroInstruments);
+		Triple<Integer, Integer, Long> trackNumber = exportPartToMidi(part, sequence, chords, pan, useLotroInstruments, countIn);
 		/*
 		List<AbcNoteEvent> noteEvents = new ArrayList<>(chords.size());
 		
@@ -239,7 +251,7 @@ public class AbcExporter {
 	}
 
 	private Triple<Integer, Integer, Long> exportPartToMidi(AbcPart part, Sequence out, List<Chord> chords, int pan,
-			boolean useLotroInstruments) {
+                                                            boolean useLotroInstruments, CountIn countIn) {
 		part.numberOfExportedNotes = 0;
 		int trackNumber = out.getTracks().length;
 		part.setPreviewSequenceTrackNumber(trackNumber);
@@ -264,6 +276,34 @@ public class AbcExporter {
 			track.add(MidiFactory.createChorusControlEvent(AbcConstants.MIDI_CHORUS, channel, 1));
 		}
 		track.add(MidiFactory.createPanEvent(pan, channel));
+
+        long countInTick = exportStartTick;
+        long countInTicks = 0L;
+        if (countIn != null) {
+            countInTick = countIn.startTick;
+            countInTicks = exportStartTick - countInTick;
+            if (countIn.part == part) {
+                int hits = countIn.pattern.dynamics.length;
+                long hitTicks = countInTicks / hits;
+                long tick = countInTick;
+                long hitDura = 500000;
+                try {
+                    hitDura = LotroInstrumentSampleDuration.getDura(LotroInstrument.BASIC_DRUM.friendlyName, countIn.hit.note.id);
+                } catch (IOException e) {
+
+                }
+                for (CountIn.CountInDynamics dyn : countIn.pattern.dynamics) {
+                    Dynamics volume = dyn.dynamics;
+                    track.add(MidiFactory.createNoteOnEventEx(countIn.hit.note.id, 9,
+                            volume.midiVol, tick));
+                    track.add(MidiFactory.createNoteOffEventEx(countIn.hit.note.id, 9,
+                            0, tick+));
+
+                    tick += hitTicks;
+                }
+
+            }
+        }
 
 
 		List<AbcNoteEvent> notesOn = new ArrayList<>();
@@ -308,7 +348,7 @@ public class AbcExporter {
                             off = qtm.microsToTick(qtm.tickToMicros(endTick) + delayMicros);
                         }
                         lastEnd = Math.max(off, lastEnd);
-                        track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off));
+                        track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off + countInTicks));
                     }
 				}
 
@@ -343,10 +383,10 @@ public class AbcExporter {
 				
 				if (organic) {
 					track.add(MidiFactory.createNoteOnEventEx(ne.note.id + noteDelta, channel,
-							dynamics.getVol(useLotroInstruments), qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(ne.getStartTick()) + delayMicros)));
+							dynamics.getVol(useLotroInstruments), qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(ne.getStartTick()) + delayMicros) + countInTicks));
 				} else {
 					track.add(MidiFactory.createNoteOnEventEx(ne.note.id + noteDelta, channel,
-							dynamics.getVol(useLotroInstruments), qtm.microsToTick(qtm.tickToMicros(ne.getStartTick()) + delayMicros)));
+							dynamics.getVol(useLotroInstruments), qtm.microsToTick(qtm.tickToMicros(ne.getStartTick()) + delayMicros) + countInTicks));
 				}
 				notesOn.add(ne);
 				part.numberOfExportedNotes++;
@@ -361,10 +401,10 @@ public class AbcExporter {
                 off = qtm.microsToTick(qtm.tickToMicros(on.getEndTick()) + delayMicros);
             }
             lastEnd = Math.max(off, lastEnd);
-            track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off));
+            track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off + countInTicks));
         }
 
-		track.add(MidiFactory.createEndOfTrackEvent(lastEnd));
+		track.add(MidiFactory.createEndOfTrackEvent(lastEnd + countInTicks));
 
 		return new Triple<>(trackNumber, channel, lastEnd);
 	}
