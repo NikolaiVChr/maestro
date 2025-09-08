@@ -2023,7 +2023,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				moodField.select(0, 0);
 			}
 			break;
-
+        case COUNT_IN:
+            setAbcSongModified(true);
+            refreshPreviewSequence(false);
+            break;
 		case EXPORT_FILE:
 			// Don't care
 			break;

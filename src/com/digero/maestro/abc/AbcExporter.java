@@ -75,8 +75,9 @@ public class AbcExporter {
 	private int firstBarNumber;
 
 	private int lastChannelUsedInPreview = -1;
+    private long startTickForCountIn = 0L;
 
-	public AbcExporter(List<AbcPart> parts, QuantizedTimingInfo timingInfo, KeySignature keySignature,
+    public AbcExporter(List<AbcPart> parts, QuantizedTimingInfo timingInfo, KeySignature keySignature,
 			AbcMetadataSource metadata, boolean skipSilenceAtStart, boolean organic) throws AbcConversionException {
 		this.parts = parts;
 		this.qtm = timingInfo;
@@ -136,14 +137,21 @@ public class AbcExporter {
             if (one != null) {
                 countIn = one.getAbcSong().getCountIn();
                 if (countIn != null) {
-                    float countInBars = countIn.barCount;
-                    //int tempoMPQ = one.getAbcSong().getSequenceInfo().getDataCache().getTempoMPQ(exportStartTick);
-                    //float barStart = one.getAbcSong().getSequenceInfo().getDataCache().tickToBarNumberFloat(exportStartTick);
-
-                    long barLength = one.getAbcSong().getSequenceInfo().getDataCache().getBarLengthTicks();
-                    long countInStart = exportStartTick - (long)(barLength * countInBars);
-
-                    countIn.startTick = countInStart;
+                    TimingInfoEvent info;
+                    if (organic) {
+                        info = qtm.getTimingEventForTickOrganic(startTickForCountIn);
+                    } else {
+                        info = qtm.getTimingEventForTick(startTickForCountIn);
+                    }
+                    long countInTicks = (long)(countIn.barCount*info.info().getBarLengthTicks());
+                    long countInMicros = MidiUtils.ticks2microsec(countInTicks, info.info().getTempoMPQ(), info.info().getResolutionPPQ());
+                    long hitMicros = countInMicros/countIn.pattern.dynamics.length;
+                    if (countInMicros > AbcConstants.LONGEST_NOTE_MICROS - 2 * AbcConstants.ONE_SECOND_MICROS) {
+                        countInMicros = 0L;
+                    } else if (hitMicros < AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())) {
+                        countInMicros = 0L;
+                    }
+                    countIn.micros = countInMicros;
                 }
             }
 
@@ -153,7 +161,7 @@ public class AbcExporter {
 			long lastEnd = 0L;
 			for (AbcPart part : parts) {
 				
-				if (part.getEnabledTrackCount() > 0) {
+				if (part.getEnabledTrackCount() > 0 || (countIn != null && countIn.micros > 0L && countIn.part == part)) {
 					int pan = (parts.size() > 1) ? panner.get(part.getInstrument(), part.getTitle(), stereoPan)
 							: PanGenerator.CENTER;
 					
@@ -247,178 +255,189 @@ public class AbcExporter {
 
 	private Triple<Integer, Integer, Long> exportPartToMidi(AbcPart part, Sequence out, List<Chord> chords, int pan,
                                                             boolean useLotroInstruments, CountIn countIn) {
-		part.numberOfExportedNotes = 0;
-		int trackNumber = out.getTracks().length;
-		part.setPreviewSequenceTrackNumber(trackNumber);
+        part.numberOfExportedNotes = 0;
+        int trackNumber = out.getTracks().length;
+        part.setPreviewSequenceTrackNumber(trackNumber);
 
-		int channel = lastChannelUsedInPreview + 1;
-		
-		if (channel == MidiConstants.DRUM_CHANNEL) {
-			channel++;
-		}
+        int channel = lastChannelUsedInPreview + 1;
 
-		lastChannelUsedInPreview = Math.max(channel, lastChannelUsedInPreview);
+        if (channel == MidiConstants.DRUM_CHANNEL) {
+            channel++;
+        }
 
-		Track track = out.createTrack();
+        lastChannelUsedInPreview = Math.max(channel, lastChannelUsedInPreview);
 
-		track.add(MidiFactory.createTrackNameEvent(part.getTitle()));
-		if (useLotroInstruments) {
-			// Only change the channel voice once
-			track.add(MidiFactory.createLotroChangeEvent(part.getInstrument().midi.id(), channel, 0));
-			logPreview.fine("Channel "+channel+" for "+part.getInstrument());
-			track.add(MidiFactory.createChannelVolumeEvent(MidiConstants.MAX_VOLUME, channel, 1));
-			track.add(MidiFactory.createReverbControlEvent(AbcConstants.MIDI_REVERB, channel, 1));
-			track.add(MidiFactory.createChorusControlEvent(AbcConstants.MIDI_CHORUS, channel, 1));
-		}
-		track.add(MidiFactory.createPanEvent(pan, channel));
+        Track track = out.createTrack();
+
+        track.add(MidiFactory.createTrackNameEvent(part.getTitle()));
+        if (useLotroInstruments) {
+            // Only change the channel voice once
+            track.add(MidiFactory.createLotroChangeEvent(part.getInstrument().midi.id(), channel, 0));
+            logPreview.fine("Channel " + channel + " for " + part.getInstrument());
+            track.add(MidiFactory.createChannelVolumeEvent(MidiConstants.MAX_VOLUME, channel, 1));
+            track.add(MidiFactory.createReverbControlEvent(AbcConstants.MIDI_REVERB, channel, 1));
+            track.add(MidiFactory.createChorusControlEvent(AbcConstants.MIDI_CHORUS, channel, 1));
+        }
+        track.add(MidiFactory.createPanEvent(pan, channel));
+
+        long lastEnd = 0L;
 
         long countInMicros = 0L;//all track notes will be delayed by this
         if (countIn != null) {
+            long minimumMicro = AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM());
             TimingInfoEvent info;
             if (organic) {
-                info = qtm.getTimingEventForTickOrganic(exportStartTick);
+                info = qtm.getTimingEventForTickOrganic(startTickForCountIn);
             } else {
-                info = qtm.getTimingEventForTick(exportStartTick);
+                info = qtm.getTimingEventForTick(startTickForCountIn);
             }
-            long countInTicks = (long)(countIn.barCount*info.info().getBarLengthTicks());
+            long countInTicks = (long) (countIn.barCount * info.info().getBarLengthTicks());
             countInMicros = MidiUtils.ticks2microsec(countInTicks, info.info().getTempoMPQ(), info.info().getResolutionPPQ());
-            logPreview.severe("Count-in for preview: total count-in. micros = "+countInMicros+" bars = "+countIn.barCount);
-            if (countIn.part == part) {
+            if (countInMicros > AbcConstants.LONGEST_NOTE_MICROS - 2 * AbcConstants.ONE_SECOND_MICROS) {
+                countInMicros = 0;
+                countIn = null;
+                logPreview.warning("Count-in for preview: count-in longer than 6 seconds, cancelling count-in.");
+            } else {
+                logPreview.severe("Count-in for preview: total count-in. micros = " + countInMicros + " bars = " + countIn.barCount);
                 int hits = countIn.pattern.dynamics.length;
                 long hitMicros = countInMicros / hits;
-                long tick = exportStartTick;
-                long hitDura = 500000;
-                try {
-                    hitDura = LotroInstrumentSampleDuration.getDura(LotroInstrument.BASIC_DRUM.friendlyName, countIn.hit.note.id);
-                } catch (IOException | NullPointerException e) {
-                }
-                hitDura = Math.min(hitDura, hitMicros);
-                logPreview.severe("Count-in for preview: hitMicros: "+hitMicros+" hitDura: "+hitDura);
-                for (CountIn.CountInDynamics dyn : countIn.pattern.dynamics) {
-                    Dynamics volume = dyn.dynamics;
-                    track.add(MidiFactory.createNoteOnEventEx(countIn.hit.note.id, channel,
-                            volume.midiVol, tick));
-                    long spanTicks;
-                    if (organic) {
-                        spanTicks = qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(tick) + hitDura);
-                    } else {
-                        spanTicks = qtm.microsToTickABC(qtm.tickToMicrosABC(tick) + hitDura);
-                    }
-                    track.add(MidiFactory.createNoteOffEventEx(countIn.hit.note.id, channel,
-                            0, spanTicks));
-                    logPreview.severe("Count-in for preview: added a count-in hit: "+countIn.hit.name+" velocity = "+volume.midiVol);
-                    if (organic) {
-                        tick = qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(tick) + hitMicros);
-                    } else {
-                        tick = qtm.microsToTickABC(qtm.tickToMicrosABC(tick) + hitMicros);
-                    }
-                }
-            }
-        }
+                if (countIn.part == part) {
+                    if (hitMicros >= minimumMicro) {
+                        long tick = startTickForCountIn;
+                        logPreview.severe("Count-in for preview: hitMicros: " + hitMicros);
+                        for (CountIn.CountInDynamics dyn : countIn.pattern.dynamics) {
+                            Dynamics volume = dyn.dynamics;
+                            track.add(MidiFactory.createNoteOnEventEx(countIn.hit.note.id, channel,
+                                    volume.midiVol, tick));
 
-
-		List<AbcNoteEvent> notesOn = new ArrayList<>();
-
-		int noteDelta = 0;
-		if (!useLotroInstruments)
-			noteDelta = part.getInstrument().octaveDelta * 12;
-
-		long delayMicros = 0;
-		if (part.delay != 0) {
-			// Make delay on instrument be audible in preview
-			delayMicros = qtm.multiplyByExportTempoFactor(part.delay * 1000L);
-		}
-        if (countInMicros > 0L) {
-            delayMicros += qtm.multiplyByExportTempoFactor(countInMicros);;
-        }
-		long lastEnd = 0L;
-		for (Chord chord : chords) {
-			Dynamics dynamics = chord.calcDynamics(part.getAbcSong().dynamicsMethod);
-			if (dynamics == null)
-				dynamics = Dynamics.DEFAULT;
-			for (int j = 0; j < chord.size(); j++) {
-				AbcNoteEvent ne = chord.get(j);
-				// Skip rests and notes that are the continuation of a tied note
-				if (ne.note == Note.REST || ne.tiesFrom != null)
-					continue;
-
-				// Add note off events for any notes that have been turned off by this point
-				Iterator<AbcNoteEvent> onIter = notesOn.iterator();
-				while (onIter.hasNext()) {
-					AbcNoteEvent on = onIter.next();
-
-					// Shorten the note to end at the same time that the next one starts
-					long endTick = on.getEndTick();
-					if (on.note.id == ne.note.id && on.getEndTick() > ne.getStartTick())
-						endTick = ne.getStartTick();
-
-					if (endTick <= ne.getStartTick()) {
-						// This note has been turned off
-						onIter.remove();
-                        long off;
-                        if (organic) {
-                            off = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(endTick) + delayMicros);
-                        } else {
-                            off = qtm.microsToTick(qtm.tickToMicros(endTick) + delayMicros);
+                            logPreview.severe("Count-in for preview: added a count-in hit: " + countIn.hit.name + " velocity = " + volume.midiVol);
+                            if (organic) {
+                                tick = qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(tick) + hitMicros);
+                            } else {
+                                tick = qtm.microsToTickABC(qtm.tickToMicrosABC(tick) + hitMicros);
+                            }
+                            track.add(MidiFactory.createNoteOffEventEx(countIn.hit.note.id, channel,
+                                    0, tick));
+                            lastEnd = tick;
                         }
-                        lastEnd = Math.max(off, lastEnd);
-                        track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off));
+                    } else {
+                        countInMicros = 0L;
+                        logPreview.warning("Count-in for preview: count-in hits shorter than 60 ms, cancelling count-in.");
                     }
-				}
-
-				long endTick = ne.getTieEnd().getEndTick();
-
-				// Lengthen to match the note lengths used in the game
-				if (useLotroInstruments) {
-					boolean sustainable = part.getInstrument().isSustainable(ne.note.id);
-					double extraSeconds = 0.0d;
-					if(sustainable) {
-						// This is better match lotro linear power decay, since our midi playback is linear dB decay instead.
-						extraSeconds = AbcConstants.SUSTAINED_NOTE_HOLD_SECONDS;
-					} else if (part.getInstrument() == LotroInstrument.STUDENT_FIDDLE) {
-						// This is to not stop fx noise before it has played out
-						extraSeconds = AbcConstants.STUDENT_FX_MIN_SECONDS;
-					} else {
-						// This is to not stop plucked/drum note before it has played out
-						extraSeconds = AbcConstants.NON_SUSTAINED_NOTE_HOLD_SECONDS;
-					}
-					if (organic) {
-						endTick = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(endTick)
-								+ qtm.multiplyByExportTempoFactor((long)(extraSeconds * TimingInfo.ONE_SECOND_MICROS)));
-					} else {
-						endTick = qtm.microsToTick(qtm.tickToMicros(endTick)
-							+ qtm.multiplyByExportTempoFactor((long)(extraSeconds * TimingInfo.ONE_SECOND_MICROS)));
-					}
-				}
-				
-				if (endTick != ne.getEndTick()) {
-					ne = new AbcNoteEvent(ne.note, ne.velocity, ne.getStartTick(), endTick, qtm, ne.origNote);
-				}
-				
-				if (organic) {
-					track.add(MidiFactory.createNoteOnEventEx(ne.note.id + noteDelta, channel,
-							dynamics.getVol(useLotroInstruments), qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(ne.getStartTick()) + delayMicros)));
-				} else {
-					track.add(MidiFactory.createNoteOnEventEx(ne.note.id + noteDelta, channel,
-							dynamics.getVol(useLotroInstruments), qtm.microsToTick(qtm.tickToMicros(ne.getStartTick()) + delayMicros)));
-				}
-				notesOn.add(ne);
-				part.numberOfExportedNotes++;
-			}
-		}
-
-		for (AbcNoteEvent on : notesOn) {
-            long off;
-            if (organic) {
-                off = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(on.getEndTick()) + delayMicros);
-            } else {
-                off = qtm.microsToTick(qtm.tickToMicros(on.getEndTick()) + delayMicros);
+                } else if (hitMicros < minimumMicro) {
+                    countInMicros = 0L;
+                    logPreview.warning("Count-in for preview: count-in hits shorter than 60 ms, cancelling count-in.");
+                }
             }
-            lastEnd = Math.max(off, lastEnd);
-            track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off));
         }
 
-		track.add(MidiFactory.createEndOfTrackEvent(lastEnd));
+        if (chords != null) {
+            // chords can be null if no tracks are selected, but there is a count-in on this drum
+
+            List<AbcNoteEvent> notesOn = new ArrayList<>();
+
+            int noteDelta = 0;
+            if (!useLotroInstruments)
+                noteDelta = part.getInstrument().octaveDelta * 12;
+
+            long delayMicros = 0;
+            if (part.delay != 0) {
+                // Make delay on instrument be audible in preview
+                delayMicros = qtm.multiplyByExportTempoFactor(part.delay * 1000L);
+            }
+            if (countInMicros > 0L) {
+                delayMicros += qtm.multiplyByExportTempoFactor(countInMicros);
+            }
+
+            for (Chord chord : chords) {
+                Dynamics dynamics = chord.calcDynamics(part.getAbcSong().dynamicsMethod);
+                if (dynamics == null)
+                    dynamics = Dynamics.DEFAULT;
+                for (int j = 0; j < chord.size(); j++) {
+                    AbcNoteEvent ne = chord.get(j);
+                    // Skip rests and notes that are the continuation of a tied note
+                    if (ne.note == Note.REST || ne.tiesFrom != null)
+                        continue;
+
+                    // Add note off events for any notes that have been turned off by this point
+                    Iterator<AbcNoteEvent> onIter = notesOn.iterator();
+                    while (onIter.hasNext()) {
+                        AbcNoteEvent on = onIter.next();
+
+                        // Shorten the note to end at the same time that the next one starts
+                        long endTick = on.getEndTick();
+                        if (on.note.id == ne.note.id && on.getEndTick() > ne.getStartTick())
+                            endTick = ne.getStartTick();
+
+                        if (endTick <= ne.getStartTick()) {
+                            // This note has been turned off
+                            onIter.remove();
+                            long off;
+                            if (organic) {
+                                off = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(endTick) + delayMicros);
+                            } else {
+                                off = qtm.microsToTick(qtm.tickToMicros(endTick) + delayMicros);
+                            }
+                            lastEnd = Math.max(off, lastEnd);
+                            track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off));
+                        }
+                    }
+
+                    long endTick = ne.getTieEnd().getEndTick();
+
+                    // Lengthen to match the note lengths used in the game
+                    if (useLotroInstruments) {
+                        boolean sustainable = part.getInstrument().isSustainable(ne.note.id);
+                        double extraSeconds = 0.0d;
+                        if (sustainable) {
+                            // This is better match lotro linear power decay, since our midi playback is linear dB decay instead.
+                            extraSeconds = AbcConstants.SUSTAINED_NOTE_HOLD_SECONDS;
+                        } else if (part.getInstrument() == LotroInstrument.STUDENT_FIDDLE) {
+                            // This is to not stop fx noise before it has played out
+                            extraSeconds = AbcConstants.STUDENT_FX_MIN_SECONDS;
+                        } else {
+                            // This is to not stop plucked/drum note before it has played out
+                            extraSeconds = AbcConstants.NON_SUSTAINED_NOTE_HOLD_SECONDS;
+                        }
+                        if (organic) {
+                            endTick = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(endTick)
+                                    + qtm.multiplyByExportTempoFactor((long) (extraSeconds * TimingInfo.ONE_SECOND_MICROS)));
+                        } else {
+                            endTick = qtm.microsToTick(qtm.tickToMicros(endTick)
+                                    + qtm.multiplyByExportTempoFactor((long) (extraSeconds * TimingInfo.ONE_SECOND_MICROS)));
+                        }
+                    }
+
+                    if (endTick != ne.getEndTick()) {
+                        ne = new AbcNoteEvent(ne.note, ne.velocity, ne.getStartTick(), endTick, qtm, ne.origNote);
+                    }
+
+                    if (organic) {
+                        track.add(MidiFactory.createNoteOnEventEx(ne.note.id + noteDelta, channel,
+                                dynamics.getVol(useLotroInstruments), qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(ne.getStartTick()) + delayMicros)));
+                    } else {
+                        track.add(MidiFactory.createNoteOnEventEx(ne.note.id + noteDelta, channel,
+                                dynamics.getVol(useLotroInstruments), qtm.microsToTick(qtm.tickToMicros(ne.getStartTick()) + delayMicros)));
+                    }
+                    notesOn.add(ne);
+                    part.numberOfExportedNotes++;
+                }
+            }
+
+            for (AbcNoteEvent on : notesOn) {
+                long off;
+                if (organic) {
+                    off = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(on.getEndTick()) + delayMicros);
+                } else {
+                    off = qtm.microsToTick(qtm.tickToMicros(on.getEndTick()) + delayMicros);
+                }
+                lastEnd = Math.max(off, lastEnd);
+                track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off));
+            }
+        }
+
+        track.add(MidiFactory.createEndOfTrackEvent(lastEnd));
+
 
 		return new Triple<>(trackNumber, channel, lastEnd);
 	}
@@ -463,7 +482,7 @@ public class AbcExporter {
 			}
 	
 			for (AbcPart part : parts) {
-				if (part.getEnabledTrackCount() > 0) {
+				if (part.getEnabledTrackCount() > 0 || (part.getAbcSong().getCountIn() != null && part.getAbcSong().getCountIn().micros > 0L && part.getAbcSong().getCountIn().part == part)) {
 					if (organic) {
 						exportPartToAbcOrganic(part, out, delayEnabled);
 					} else {
@@ -558,10 +577,52 @@ public class AbcExporter {
 				}
 			}
 		};
+
+        long countInMicros = 0L;//all non-count-in track notes will be delayed by this
+        CountIn countIn = null;
+        if (part.getAbcSong().getCountIn() != null) {
+            countIn = part.getAbcSong().getCountIn();
+            TimingInfoEvent info;
+            if (organic) {
+                info = qtm.getTimingEventForTickOrganic(startTickForCountIn);
+            } else {
+                info = qtm.getTimingEventForTick(startTickForCountIn);
+            }
+            long countInTicks = (long)(countIn.barCount*info.info().getBarLengthTicks());
+            countInMicros = MidiUtils.ticks2microsec(countInTicks, info.info().getTempoMPQ(), info.info().getResolutionPPQ());
+            if (countInMicros > AbcConstants.LONGEST_NOTE_MICROS - 2 * AbcConstants.ONE_SECOND_MICROS) {
+                countInMicros = 0;
+                countIn = null;
+                logPreview.warning("Count-in for ABC: count-in longer than 6 seconds, cancelling count-in.");
+                ProjectFrame.feed("Warning: Count-in cancelled, it's too long.", "Reduce to at/under 6 seconds.");
+            } else {
+                logPreview.severe("Count-in for ABC: total count-in. micros = " + countInMicros + " bars = " + countIn.barCount);
+            }
+        }
 		
-		if (delayEnabled) {
+		if (delayEnabled || countIn != null) {
+
+            long hitMicros = 0L;
+
+            if (countIn != null && countIn.part == part) {
+                int hits = countIn.pattern.dynamics.length;
+                hitMicros = countInMicros / hits;
+                countInMicros = 0L;
+                if (hitMicros < minimumMicro) {
+                    countIn = null;//cancel, since count-in is too short
+                    logPreview.warning("Count-in for ABC: hitMicros shorter than 60 ms, cancelling count-in.");
+                    ProjectFrame.feed("Warning: Count-in cancelled, it's too short.", "Expand so each drum hit is more than 60 ms apart.");
+                }
+            } else if (countIn != null) {
+                int hits = countIn.pattern.dynamics.length;
+                hitMicros = countInMicros / hits;
+                if (hitMicros < minimumMicro) {
+                    countInMicros = 0L;
+                }
+            }
+
 			// the 100 is so the delay is always larger than 60 ms, even if its 0 ms.
-			int delayMicro = (part.delay+100)*1000;
+			int delayMicro = (part.delay+100)*1000 + (int) countInMicros;
 			int oneMicro2 = oneMicro;
 			
 			// we never reduce delay, that way we can see the parts oneMilli easy in the abc.
@@ -573,6 +634,24 @@ public class AbcExporter {
 			*/
 			
 			out.println("z" + delayMicro + "/" + oneMicro2 + " | ");
+
+            if (countIn != null && countIn.part == part) {
+                /*
+                 Count-in on songs where the first note is delayed,
+                 will ignore the delay. If it's the count-in drum itself that are delayed,
+                 count-in will also be delayed.
+                 */
+
+                logPreview.severe("Count-in for ABC: hitMicros: "+hitMicros);
+                for (CountIn.CountInDynamics dyn : countIn.pattern.dynamics) {
+                    Dynamics volume = dyn.dynamics;
+                    bar.append('+').append(volume).append("+ ");
+                    bar.append(countIn.hit.note.abc);
+                    bar.append(hitMicros + "/" + oneMicro2);
+
+                    logPreview.severe("Count-in for ABC: added a count-in hit: "+countIn.hit.name+" velocity = "+volume.midiVol);
+                }
+            }
 		}
 		
 		Pair<List<Chord>, Boolean> pair = combineOrganic(part, false);
@@ -943,6 +1022,7 @@ public class AbcExporter {
 		final int BAR_LENGTH = 160;
 		final long songStartMicros = qtm.tickToMicros(exportStartTick);
 		final int primaryExportTempoBPM = qtm.getPrimaryExportTempoBPM();
+        long minimumMicro = AbcConstants.getShortestNoteMicros(primaryExportTempoBPM);
 		int curBarNumber = firstBarNumber;
 		int curExportTempoBPM = primaryExportTempoBPM;
 		Dynamics curDyn = null;
@@ -978,21 +1058,82 @@ public class AbcExporter {
 				break;
 		}
 
-		if (delayEnabled) {
+        long countInMicros = 0L;//all non-count-in track notes will be delayed by this
+        CountIn countIn = null;
+        if (part.getAbcSong().getCountIn() != null) {
+            countIn = part.getAbcSong().getCountIn();
+            TimingInfoEvent info;
+            if (organic) {
+                info = qtm.getTimingEventForTickOrganic(startTickForCountIn);
+            } else {
+                info = qtm.getTimingEventForTick(startTickForCountIn);
+            }
+            long countInTicks = (long)(countIn.barCount*info.info().getBarLengthTicks());
+            countInMicros = MidiUtils.ticks2microsec(countInTicks, info.info().getTempoMPQ(), info.info().getResolutionPPQ());
+            if (countInMicros > AbcConstants.LONGEST_NOTE_MICROS - 2 * AbcConstants.ONE_SECOND_MICROS) {
+                countInMicros = 0;
+                countIn = null;
+                logPreview.warning("Count-in for ABC: count-in longer than 6 seconds, cancelling count-in.");
+                ProjectFrame.feed("Warning: Count-in cancelled, it's too long.", "Reduce to at/under 6 seconds.");
+            } else {
+                logPreview.severe("Count-in for ABC: total count-in. micros = " + countInMicros + " bars = " + countIn.barCount);
+            }
+        }
+
+		if (delayEnabled || countIn != null) {
+
+            long hitMicros = 0L;
+
+            if (countIn != null && countIn.part == part) {
+                int hits = countIn.pattern.dynamics.length;
+                hitMicros = countInMicros / hits;
+                countInMicros = 0L;
+                if (hitMicros < minimumMicro) {
+                    countIn = null;//cancel, since count-in is too short
+                    logPreview.warning("Count-in for ABC: hitMicros shorter than 60 ms, cancelling count-in.");
+                    ProjectFrame.feed("Warning: Count-in cancelled, it's too short.", "Expand so each drum hit is more than 60 ms apart.");
+                }
+            } else if (countIn != null) {
+                int hits = countIn.pattern.dynamics.length;
+                hitMicros = countInMicros / hits;
+                if (hitMicros < minimumMicro) {
+                    countInMicros = 0L;
+                    countIn = null;
+                }
+            }
+
 			long L = (qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? 16L : 8L;
 			
 			// One whole abc note is this many microseconds:
 			int oneMicro = (int)(qtm.getMeter().denominator * TimingInfo.ONE_SECOND_MICROS * 60L / (qtm.getPrimaryExportTempoBPM() * L));
 
 			// the 100 is so the delay is always larger than 60 ms, even if its 0 ms.
-			int delayMicro = (part.delay+100)*1000;
+			int delayMicro = (part.delay+100)*1000 + (int) countInMicros;
 			
 			// Reduce the fraction
 			int gcd = Util.gcd(delayMicro, oneMicro);
 			delayMicro /= gcd;
-			oneMicro /= gcd;
+			int oneMicro2 = oneMicro / gcd;
 			
-			out.println("z" + delayMicro + "/" + oneMicro + " |");
+			out.println("z" + delayMicro + "/" + oneMicro2 + " |");
+
+            if (countIn != null && countIn.part == part) {
+                /*
+                 Count-in on songs where the first note is delayed,
+                 will ignore the delay. If it's the count-in drum itself that are delayed,
+                 count-in will also be delayed.
+                 */
+                
+                logPreview.severe("Count-in for ABC: hitMicros: "+hitMicros);
+                for (CountIn.CountInDynamics dyn : countIn.pattern.dynamics) {
+                    Dynamics volume = dyn.dynamics;
+                    bar.append('+').append(volume).append("+ ");
+                    bar.append(countIn.hit.note.abc);
+                    bar.append(hitMicros + "/" + oneMicro + " |");
+
+                    logPreview.severe("Count-in for ABC: added a count-in hit: "+countIn.hit.name+" velocity = "+volume.midiVol);
+                }
+            }
 		}
 		
 		for (Chord c : chords) {
@@ -1341,7 +1482,9 @@ public class AbcExporter {
 		
 		if (events.isEmpty()) {
 			logNotes.warning("Export to preview/abc: "+metadata.getSongTitle()+" has a part with no exported notes.");
-			if (!preview) ProjectFrame.feed("Note: Song has a part with no exported notes ("+part.getTitle()+")", null);
+			if (!preview && !(part.getAbcSong().getCountIn() != null && part.getAbcSong().getCountIn().part == part)) {
+                ProjectFrame.feed("Note: Song has a part with no exported notes ("+part.getTitle()+")", null);
+            }
 			return new ArrayList<>();
 		}
 		
@@ -1819,7 +1962,9 @@ public class AbcExporter {
 		
 		if (events.isEmpty()) {
 			logNotes.warning("Export to preview/abc: "+metadata.getSongTitle()+" has a part with no exported notes.");
-			if (!preview) ProjectFrame.feed("Note: Song has a part with no exported notes ("+part.getTitle()+")", null);
+			if (!preview && !(part.getAbcSong().getCountIn() != null && part.getAbcSong().getCountIn().part == part)) {
+                ProjectFrame.feed("Note: Song has a part with no exported notes ("+part.getTitle()+")", null);
+            }
 			return new Pair<>(Collections.emptyList(), false);
 		}
 		
@@ -4762,7 +4907,9 @@ public class AbcExporter {
 			startTick = 0L;
 		if (endTick == Long.MIN_VALUE)
 			endTick = 0L;
-		
+
+        startTickForCountIn = startTick;
+
 		if (organic) {
 			// TODO: Why do we start 100 ms before first note? ..I forgot why I made this
 			//       Its not related to the 100 ms used in delay parts.
@@ -4879,10 +5026,20 @@ public class AbcExporter {
 	 * Does not account for tempo adjustment
      */
 	public long getExportEndMicros() {
+        long countInMicros = 0L;
+        AbcPart part = getParts().getFirst();
+        if (part != null) {
+            AbcSong song = part.getAbcSong();
+            CountIn countIn = song.getCountIn();
+            if (countIn != null) {
+                // we add the total count-in duration to the song duration
+                countInMicros = qtm.multiplyByExportTempoFactor(countIn.micros);
+            }
+        }
 		if (organic) {
-			return qtm.tickToMicrosOrganic(getExportEndTick());
+			return qtm.tickToMicrosOrganic(getExportEndTick()) + countInMicros;
 		} else {
-			return qtm.tickToMicros(getExportEndTick());
+			return qtm.tickToMicros(getExportEndTick()) + countInMicros;
 		}
 	}
 

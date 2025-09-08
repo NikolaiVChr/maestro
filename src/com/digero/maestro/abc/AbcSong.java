@@ -805,8 +805,10 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		setMixDirty(true);
 		fireChangeEvent(AbcSongProperty.BEFORE_PART_REMOVED, part);
 		parts.remove(part);
+        boolean removedCountIn = false;
         if (countIn != null && countIn.part == part) {
             countIn = null;
+            removedCountIn = true;
         }
 		suppressPartSort = true;
 		partAutoNumberer.onPartDeleted(part);
@@ -816,6 +818,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		populateFirstNumbers();
 		if (sorted) parts.sort(partAutoNumberer.getComparator());
 		fireChangeEvent(AbcSongProperty.PART_LIST_ORDER, part);
+        if (removedCountIn) fireChangeEvent(AbcSongProperty.COUNT_IN);
 	}
 
 	public String getTitle() {
@@ -1555,5 +1558,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
     public void setCountIn(CountIn countin) {
         countIn = countin;
+        fireChangeEvent(AbcSongProperty.COUNT_IN);
     }
 }
