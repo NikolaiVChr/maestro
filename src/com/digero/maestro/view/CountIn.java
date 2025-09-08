@@ -5,7 +5,6 @@ import com.digero.common.midi.Note;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.LotroCombiDrumInfo;
 import com.digero.maestro.abc.LotroDrumInfo;
-import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import javax.swing.*;
@@ -371,19 +370,19 @@ public class CountIn {
             }
 
             patternBox.addActionListener(e -> {
-                CountIn.lastCountIn = getCountIn(patternBox, barField, hitBox, currentPart);
+                CountIn.lastCountIn = getInstance(patternBox, barField, hitBox, currentPart);
             });
             barField.addActionListener(e -> {
-                CountIn.lastCountIn = getCountIn(patternBox, barField, hitBox, currentPart);
+                CountIn.lastCountIn = getInstance(patternBox, barField, hitBox, currentPart);
             });
             hitBox.addActionListener(e -> {
-                CountIn.lastCountIn = getCountIn(patternBox, barField, hitBox, currentPart);
+                CountIn.lastCountIn = getInstance(patternBox, barField, hitBox, currentPart);
             });
             dialog.addWindowListener(new WindowAdapter() {
 
                 @Override
                 public void windowClosing(WindowEvent windowEvent) {
-                    CountIn.lastCountIn = getCountIn(patternBox, barField, hitBox, currentPart);
+                    CountIn.lastCountIn = getInstance(patternBox, barField, hitBox, currentPart);
                 }
 
                 @Override
@@ -447,9 +446,10 @@ public class CountIn {
         return CountIn.lastCountIn;
     }
 
-    private static CountIn getCountIn(JComboBox<CountInPattern> comboBox, JTextField txtField, JComboBox<LotroDrumInfo> hitBox, AbcPart part) {
+    private static CountIn getInstance(JComboBox<CountInPattern> comboBox, JTextField txtField, JComboBox<LotroDrumInfo> hitBox, AbcPart part) {
         CountInPattern pattern = (CountInPattern) comboBox.getSelectedItem();
         LotroDrumInfo hit = (LotroDrumInfo) hitBox.getSelectedItem();
+        if (hit == null || pattern == null) return null;
 
         float barCount = (float) pattern.bars;
         try {

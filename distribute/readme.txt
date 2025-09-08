@@ -41,7 +41,7 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
-Version 4.3.10
+Version 4.3.11
 - Added per project option to restrict to only using tempo changes from first track.
     Changing this option can change the layout of the bar lines,
     so be sure to review the section/tune edits after changing this option.
@@ -57,6 +57,7 @@ Version 4.3.10
 - Abc Tools auto-exporter will now summarize a list of skipped or failed exports after finishing.
 - Added new option to part numbering; part ordering sort.
 - Added setting to lock a part-number to prevent it from ever getting reassigned automatically.
+- Added count-in control for drum to part-editor. Note: Using it will make the play-head out of sync with abc preview.
 
 Version 4.3.8
 - Made a popup window warning if loading a project saved with v4.3.0

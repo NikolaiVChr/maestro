@@ -298,19 +298,19 @@ public class AbcExporter {
                 countIn = null;
                 logPreview.warning("Count-in for preview: count-in longer than 6 seconds, cancelling count-in.");
             } else {
-                logPreview.severe("Count-in for preview: total count-in. micros = " + countInMicros + " bars = " + countIn.barCount);
+                logPreview.info("Count-in for preview: total count-in. micros = " + countInMicros + " bars = " + countIn.barCount);
                 int hits = countIn.pattern.dynamics.length;
                 long hitMicros = countInMicros / hits;
                 if (countIn.part == part) {
                     if (hitMicros >= minimumMicro) {
                         long tick = startTickForCountIn;
-                        logPreview.severe("Count-in for preview: hitMicros: " + hitMicros);
+                        logPreview.info("Count-in for preview: hitMicros: " + hitMicros);
                         for (CountIn.CountInDynamics dyn : countIn.pattern.dynamics) {
                             Dynamics volume = dyn.dynamics;
                             track.add(MidiFactory.createNoteOnEventEx(countIn.hit.note.id, channel,
                                     volume.midiVol, tick));
 
-                            logPreview.severe("Count-in for preview: added a count-in hit: " + countIn.hit.name + " velocity = " + volume.midiVol);
+                            logPreview.info("Count-in for preview: added a count-in hit: " + countIn.hit.name + " velocity = " + volume.midiVol);
                             if (organic) {
                                 tick = qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(tick) + hitMicros);
                             } else {
@@ -596,7 +596,7 @@ public class AbcExporter {
                 logPreview.warning("Count-in for ABC: count-in longer than 6 seconds, cancelling count-in.");
                 ProjectFrame.feed("Warning: Count-in cancelled, it's too long.", "Reduce to at/under 6 seconds.");
             } else {
-                logPreview.severe("Count-in for ABC: total count-in. micros = " + countInMicros + " bars = " + countIn.barCount);
+                logPreview.info("Count-in for ABC: total count-in. micros = " + countInMicros + " bars = " + countIn.barCount);
             }
         }
 		
@@ -642,14 +642,14 @@ public class AbcExporter {
                  count-in will also be delayed.
                  */
 
-                logPreview.severe("Count-in for ABC: hitMicros: "+hitMicros);
+                logPreview.info("Count-in for ABC: hitMicros: "+hitMicros);
                 for (CountIn.CountInDynamics dyn : countIn.pattern.dynamics) {
                     Dynamics volume = dyn.dynamics;
                     bar.append('+').append(volume).append("+ ");
                     bar.append(countIn.hit.note.abc);
                     bar.append(hitMicros + "/" + oneMicro2);
 
-                    logPreview.severe("Count-in for ABC: added a count-in hit: "+countIn.hit.name+" velocity = "+volume.midiVol);
+                    logPreview.info("Count-in for ABC: added a count-in hit: "+countIn.hit.name+" velocity = "+volume.midiVol);
                 }
             }
 		}
@@ -1076,7 +1076,7 @@ public class AbcExporter {
                 logPreview.warning("Count-in for ABC: count-in longer than 6 seconds, cancelling count-in.");
                 ProjectFrame.feed("Warning: Count-in cancelled, it's too long.", "Reduce to at/under 6 seconds.");
             } else {
-                logPreview.severe("Count-in for ABC: total count-in. micros = " + countInMicros + " bars = " + countIn.barCount);
+                logPreview.info("Count-in for ABC: total count-in. micros = " + countInMicros + " bars = " + countIn.barCount);
             }
         }
 
@@ -1124,14 +1124,14 @@ public class AbcExporter {
                  count-in will also be delayed.
                  */
                 
-                logPreview.severe("Count-in for ABC: hitMicros: "+hitMicros);
+                logPreview.info("Count-in for ABC: hitMicros: "+hitMicros);
                 for (CountIn.CountInDynamics dyn : countIn.pattern.dynamics) {
                     Dynamics volume = dyn.dynamics;
                     bar.append('+').append(volume).append("+ ");
                     bar.append(countIn.hit.note.abc);
                     bar.append(hitMicros + "/" + oneMicro + " |");
 
-                    logPreview.severe("Count-in for ABC: added a count-in hit: "+countIn.hit.name+" velocity = "+volume.midiVol);
+                    logPreview.info("Count-in for ABC: added a count-in hit: "+countIn.hit.name+" velocity = "+volume.midiVol);
                 }
             }
 		}
