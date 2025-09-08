@@ -24,9 +24,9 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.xml.xpath.XPathExpressionException;
 
+import com.digero.maestro.view.CountIn;
 import org.jetbrains.annotations.NotNull;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
+import org.w3c.dom.*;
 
 import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.Dynamics;
@@ -219,6 +219,14 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		if (delay != 0) {
 			SaveUtil.appendChildTextElement(ele, "delay", String.valueOf(delay));
 		}
+        CountIn countIn = abcSong.getCountIn();
+        if (countIn != null && countIn.part == this) {
+            Element countInNode = doc.createElement("countIn");
+            countInNode.setAttribute("pattern", countIn.pattern.name());
+            countInNode.setAttribute("barCount", String.valueOf(countIn.barCount));
+            countInNode.setAttribute("hitId", String.valueOf(countIn.hit.note.id));
+            ele.appendChild(countInNode);
+        }
 		if (conclusionFermata != 0) {
 			SaveUtil.appendChildTextElement(ele, "conclusionFermata", String.valueOf(conclusionFermata));
 		}
@@ -391,6 +399,26 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			delay = SaveUtil.parseValue(ele, "delay", 0);
 			conclusionFermata = SaveUtil.parseValue(ele, "conclusionFermata", 0);
 			noteMax = SaveUtil.parseValue(ele, "@noteMax", AbcConstants.MAX_CHORD_NOTES);
+            NodeList countInElems = ele.getElementsByTagName("countIn");
+            if (countInElems.getLength() > 0) {
+                Node countInEle = countInElems.item(0);
+                NamedNodeMap attr = countInEle.getAttributes();
+                Node patternAttr = attr.getNamedItem("pattern");
+                Node barCountAttr = attr.getNamedItem("barCount");
+                Node hitIdAttr = attr.getNamedItem("hitId");
+                if (patternAttr != null && barCountAttr != null && hitIdAttr != null) {
+                    String pattern = patternAttr.getNodeValue();
+                    String barCount = barCountAttr.getNodeValue();
+                    String hitId = hitIdAttr.getNodeValue();
+                    try {
+                        CountIn countIn = new CountIn(pattern, barCount, this, hitId);
+                        getAbcSong().setCountIn(countIn);
+                        CountIn.setLastCountIn(countIn);
+                    } catch (NullPointerException | IllegalArgumentException e) {
+                        log.warning("Count-in in MSX Project is corrupt. Skipping.");
+                    }
+                }
+            }
 			for (Element trackEle : XmlUtil.selectElements(ele, "track")) {
 
 				// Try to find the specified track in the midi sequence by name, in case it

@@ -68,7 +68,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	
 	public static final String MSX_FILE_DESCRIPTION = MaestroMain.APP_NAME + " Project";
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = MaestroMain.APP_NAME + " Projects";
-	public static final Version SONG_FILE_VERSION = new Version(4, 3, 10, 300);// Keep build above 117 to make earlier
+	public static final Version SONG_FILE_VERSION = new Version(4, 3, 11, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
 
@@ -206,6 +206,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		
 		hideEdits = false;
 		ignoreMidiText = false;
+
+        CountIn.setLastCountIn(null);
 
 		/*
 		 * if (sequenceInfo != null) { // Make life easier for Garbage Collector for (TrackInfo ti :
@@ -1557,7 +1559,14 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
     }
 
     public void setCountIn(CountIn countin) {
-        countIn = countin;
-        fireChangeEvent(AbcSongProperty.COUNT_IN);
+        boolean changed = true;
+        if (this.countIn != null) {
+            changed = !this.countIn.equals(countin);
+        } else if (countin == null) {
+            // both null
+            changed = false;
+        }
+        this.countIn = countin;
+        if (changed) fireChangeEvent(AbcSongProperty.COUNT_IN);
     }
 }

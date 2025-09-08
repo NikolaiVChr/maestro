@@ -2,14 +2,16 @@ package com.digero.maestro.view;
 
 import com.digero.common.abc.Dynamics;
 import com.digero.common.midi.Note;
-import com.digero.common.midi.TimeSignature;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.LotroCombiDrumInfo;
 import com.digero.maestro.abc.LotroDrumInfo;
+import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
 import javax.swing.*;
 
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -17,10 +19,10 @@ import static com.digero.maestro.view.CountIn.CountInDynamics.*;
 import static com.digero.maestro.view.CountIn.CountInPattern.*;
 
 public class CountIn {
-    public float barCount = 1.0f;
-    public CountInPattern pattern = null;
-    public AbcPart part = null;
-    public LotroDrumInfo hit = null;
+    public final float barCount;
+    public final CountInPattern pattern;
+    public final AbcPart part;
+    public final LotroDrumInfo hit;
     public long micros;// set by abcExporter
 
     public CountIn(CountInPattern pattern, float barCount, AbcPart part, LotroDrumInfo hit) {
@@ -30,86 +32,143 @@ public class CountIn {
         this.hit = hit;
     }
 
+    /**
+     * Constructs a CountIn object from the given MSX strings.
+     * Throws exceptions if the given strings are invalid.
+     */
+    public CountIn(String pattern, String barCount, AbcPart part, String hitId) {
+        this.pattern = CountInPattern.valueOf(pattern);
+        this.barCount = Float.parseFloat(barCount);
+        this.part = part;
+        this.hit = LotroDrumInfo.getById(Integer.parseInt(hitId));
+        if (this.hit == null) {
+            throw new IllegalArgumentException("Invalid hit ID: " + hitId);
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null) return false;
+        if (o == this) return true;
+        if (!(o instanceof CountIn that)) return false;
+        if (pattern != that.pattern) return false;
+        if (barCount != that.barCount) return false;
+        if (hit != that.hit) return false;
+        if (part != that.part) return false;
+        return true;
+    }
+
     public enum CountInPattern {
         OFF ("Off",
                 "",
-                new TimeSignature(4,4), 1,
+                //new TimeSignature(4,4),
+                1,
                 new CountInDynamics[]{}),
         ONE_TWO_THREE_FOUR ("1 2 3 4",
                 "(4/4)",
-                new TimeSignature(4,4), 1,
+                //new TimeSignature(4,4),
+                1,
                 new CountInDynamics[]{ACCENTED,STANDARD,STANDARD,STANDARD}),
         ONE_AND_TWO_AND_THREE_AND_FOUR_AND ("1 and 2 and 3 and 4 and",
                 "(4/4, 2/2, 12/8)",
-                new TimeSignature(4,4), 1,
+                //new TimeSignature(4,4),
+                1,
                 new CountInDynamics[]{STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT}),
         ONE_TWO_THREE_FOUR_2 ("1 2 3 4 | 1 2 3 4",
                 "(4/4, 2/2, 12/8)",
-                new TimeSignature(4,4), 2,
+                //new TimeSignature(4,4),
+                2,
                 new CountInDynamics[]{ACCENTED,STANDARD,STANDARD,STANDARD,ACCENTED,STANDARD,STANDARD,STANDARD}),
         ONE_AND_TWO_AND_THREE_AND_FOUR_AND_2 ("1 and 2 and 3 and 4 | 1 and 2 and 3 and 4",
                 "(4/4, 2/2, 12/8)",
-                new TimeSignature(4,4), 2,
-                new CountInDynamics[]{STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT}),
+                //new TimeSignature(4,4),
+                2,
+                new CountInDynamics[]{
+                        STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT,
+                        STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT
+                        }),
         ONE_TWO_THREE ("1 2 3",
                 "(3/4, 6/8)",
-                new TimeSignature(3,4), 1,
+                //new TimeSignature(3,4),
+                1,
                 new CountInDynamics[]{ACCENTED,STANDARD,STANDARD}),
         ONE_AND_TWO_AND_THREE_AND ("1 and 2 and 3 and",
                 "(3/4, 6/8)",
-                new TimeSignature(3,4), 1,
+                //new TimeSignature(3,4),
+                1,
                 new CountInDynamics[]{STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT}),
         ONE_TWO_THREE_2 ("1 2 3 | 1 2 3",
                 "(3/4, 6/8)",
-                new TimeSignature(3,4), 2,
+                //new TimeSignature(3,4),
+                2,
                 new CountInDynamics[]{ACCENTED,STANDARD,STANDARD,ACCENTED,STANDARD,STANDARD}),
         ONE_AND_TWO_AND_THREE_AND_2 ("1 and 2 and 3 and | 1 and 2 and 3 and",
                 "(3/4, 6/8)",
-                new TimeSignature(3,4), 2,
-                new CountInDynamics[]{STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT}),
+                //new TimeSignature(3,4),
+                2,
+                new CountInDynamics[]{
+                        STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT,
+                        STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT
+                        }),
         ONE_TWO ("1 2",
                 "(2/4, 2/2, 4/4)",
-                new TimeSignature(2,4), 1,
+                //new TimeSignature(2,4),
+                1,
                 new CountInDynamics[]{ACCENTED,STANDARD}),
         ONE_AND_TWO_AND ("1 and 2 and",
                 "(2/4)",
-                new TimeSignature(2,4), 1,
+                //new TimeSignature(2,4),
+                1,
                 new CountInDynamics[]{STANDARD,SOFT,STANDARD,SOFT}),
         ONE_TWO_2 ("1 2 | 1 2",
                 "(2/4, 2/2)",
-                new TimeSignature(2,4), 2,
+                //new TimeSignature(2,4),
+                2,
                 new CountInDynamics[]{ACCENTED,STANDARD,ACCENTED,STANDARD}),
         ONE_AND_TWO_AND_2 ("1 and 2 and | 1 and 2 and",
                 "(2/4)",
-                new TimeSignature(2,4), 2,
+                //new TimeSignature(2,4),
+                2,
                 new CountInDynamics[]{STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT}),
         ONE_TWO_THREE_FOUR_FIVE ("1 2 3 4 5",
                 "(5/4, 5/8)",
-                new TimeSignature(5,4), 1,
+                //new TimeSignature(5,4),
+                1,
                 new CountInDynamics[]{ACCENTED,STANDARD,STANDARD,STANDARD,STANDARD}),
         ONE_TWO_THREE_FOUR_FIVE_SIX ("1 2 3 4 5 6",
                 "(6/8)",
-                new TimeSignature(6,8), 1,
+                //new TimeSignature(6,8),
+                1,
                 new CountInDynamics[]{ACCENTED,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD}),
         ONE_TWO_THREE_FOUR_FIVE_SIX_SEVEN ("1 2 3 4 5 6 7",
                 "(7/4, 7/8)",
-                new TimeSignature(7,8), 1,
+                //new TimeSignature(7,8),
+                1,
                 new CountInDynamics[]{ACCENTED,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD}),
         ONE_AND_A_TWO_AND_A ("1 and a 2 and a",
                 "(6/8 jig, 12/8 compound)",
-                new TimeSignature(6,8), 1,
+                //new TimeSignature(6,8),
+                1,
                 new CountInDynamics[]{STANDARD,SOFT,SOFT,STANDARD,SOFT,SOFT}),
         FOUR_TRIPLETS ("1-trip-let 2-trip-let 3-trip-let 4-trip-let",
                 "(4/4 swing)",
-                new TimeSignature(4,4), 1,
-                new CountInDynamics[]{ACCENTED_TRIPLET,STANDARD,STANDARD,ACCENTED_TRIPLET,STANDARD,STANDARD,ACCENTED_TRIPLET,STANDARD,STANDARD,ACCENTED_TRIPLET,STANDARD,STANDARD}),
+                //new TimeSignature(4,4),
+                1,
+                new CountInDynamics[]{
+                        ACCENTED_TRIPLET,STANDARD,STANDARD,ACCENTED_TRIPLET,STANDARD,STANDARD,
+                        ACCENTED_TRIPLET,STANDARD,STANDARD,ACCENTED_TRIPLET,STANDARD,STANDARD
+                        }),
         THREE_TRIPLETS ("1-trip-let 2-trip-let 3-trip-let",
                 "(3/4 jazz waltz)",
-                new TimeSignature(3,4), 1,
-                new CountInDynamics[]{ACCENTED_TRIPLET,STANDARD,STANDARD,ACCENTED_TRIPLET,STANDARD,STANDARD,ACCENTED_TRIPLET,STANDARD,STANDARD}),
+                //new TimeSignature(3,4),
+                1,
+                new CountInDynamics[]{ACCENTED_TRIPLET,STANDARD,STANDARD,ACCENTED_TRIPLET,STANDARD,STANDARD,
+                            ACCENTED_TRIPLET,STANDARD,STANDARD
+                            }),
         TWO_TRIPLETS ("1-trip-let 2-trip-let",
                 "(6/8, 12/8, 4/4 swing, 3/4 swing)",
-                new TimeSignature(6,8), 1,
+                //new TimeSignature(6,8),
+                1,
                 new CountInDynamics[]{ACCENTED_TRIPLET,STANDARD,STANDARD,ACCENTED_TRIPLET,STANDARD,STANDARD}),
         /*
         ONE_TRIP_LET_TWO_TRIP_LET_THREE_TRIP_LET_FOUR_TRIP_LET_2 ("1-trip-let 2-trip-let 3-trip-let 4-trip-let | 1-trip-let 2-trip-let 3-trip-let 4-trip-let",
@@ -123,16 +182,16 @@ public class CountIn {
 
         final String name;
         final String usedBy;
-        final TimeSignature timeSignature;
+        //final TimeSignature timeSignature;
         public final CountInDynamics[] dynamics;
         final int bars;
 
-        CountInPattern(String name, String usedBy, TimeSignature timeSignature, int bars, CountInDynamics[] dynamics) {
+        CountInPattern(String name, String usedBy, int defaultBars, CountInDynamics[] dynamics) {
             this.name = name;
             this.usedBy = usedBy;
-            this.timeSignature = timeSignature;
+            //this.timeSignature = timeSignature;
             this.dynamics = dynamics;
-            this.bars = bars;
+            this.bars = defaultBars;
         }
 
         public String toString() {
@@ -169,9 +228,9 @@ public class CountIn {
             rightLabel.setFont(rightLabel.getFont().deriveFont(rightLabel.getFont().getSize() * 0.85f));
 
             panel.add(leftLabel, BorderLayout.WEST);
-            panel.add(rightLabel, BorderLayout.EAST);
+            panel.add(rightLabel, BorderLayout.CENTER);
 
-            // Ensure panel respects the original cell height
+            // Ensure panel respects the original jcombobox cell height
             panel.setBorder(BorderFactory.createEmptyBorder(2, 4, 2, 4));
         }
 
@@ -179,10 +238,34 @@ public class CountIn {
         public Component getListCellRendererComponent(JList<? extends CountInPattern> list, CountInPattern value, int index,
                                                       boolean isSelected, boolean cellHasFocus) {
 
-            leftLabel.setText(value.name);
-            rightLabel.setText(value.usedBy);
+            String leftText = value.name + " ";
+            String rightText = value.usedBy;
 
-            // Apply selection colors
+            // Get available width and prioritize left text
+            int totalWidth = list.getWidth() - 16; // Account for padding and borders
+            if (totalWidth > 0 && !rightText.isEmpty()) {
+                FontMetrics leftFm = leftLabel.getFontMetrics(leftLabel.getFont());
+                FontMetrics rightFm = rightLabel.getFontMetrics(rightLabel.getFont());
+
+                int leftWidth = leftFm.stringWidth(leftText);
+                int rightWidth = rightFm.stringWidth(rightText);
+                int minGap = 8; // Minimum space between labels
+
+                // If they would overlap, truncate the RIGHT text to make room for left
+                if (leftWidth + rightWidth + minGap > totalWidth) {
+                    int maxRightWidth = totalWidth - leftWidth - minGap - rightFm.stringWidth("...");
+                    if (maxRightWidth > rightFm.stringWidth("...")) {
+                        rightText = truncateText(rightText, rightFm, maxRightWidth) + "...";
+                    } else {
+                        // no room, hide the right text
+                        rightText = "";
+                    }
+                }
+            }
+
+            leftLabel.setText(leftText);
+            rightLabel.setText(rightText);
+
             Color fg = isSelected ? list.getSelectionForeground() : list.getForeground();
             Color bg = isSelected ? list.getSelectionBackground() : list.getBackground();
 
@@ -192,43 +275,40 @@ public class CountIn {
             panel.setOpaque(isSelected);
 
             // Make the right label slightly dimmer when not selected
-            if (!isSelected && !value.usedBy.isEmpty()) {
+            if (!isSelected && !rightText.isEmpty()) {
                 rightLabel.setForeground(fg.darker());
             }
 
             return panel;
         }
-    }
 
+        private String truncateText(String text, FontMetrics fm, int maxWidth) {
+            if (fm.stringWidth(text) <= maxWidth) {
+                return text;
+            }
 
-    private static class PatternRenderer2 extends JLabel implements ListCellRenderer<CountInPattern> {
-
-        private PatternRenderer2() {
-            super();
+            for (int i = text.length() - 1; i > 0; i--) {
+                String truncated = text.substring(0, i);
+                if (fm.stringWidth(truncated) <= maxWidth) {
+                    return truncated;
+                }
+            }
+            return "";
         }
 
-        @Override
-        public Component getListCellRendererComponent(JList<? extends CountInPattern> list, CountInPattern value, int index, boolean isSelected, boolean cellHasFocus) {
-
-            String leftText = value.name;
-            String rightText = value.usedBy;
-
-            // Use HTML table to align text
-            String htmlText = String.format(
-                    "<html><table width='100%%'><tr><td align='left'>%s</td><td align='right'>%s</td></tr></table></html>",
-                    leftText, rightText
-            );
-
-            setText(htmlText);
-            setBackground(isSelected ? list.getSelectionBackground() : list.getBackground());
-
-            return PatternRenderer2.this;
-        }
     }
 
     private static JDialog dialog = null;
     private static CountIn lastCountIn = null;
     private static AbcPart currentPart = null;
+    private static JLabel partHeader = null;
+
+    public static void setLastCountIn(CountIn lastCountIn) {
+        if (dialog != null) {
+            dialog.setVisible(false);
+        }
+        CountIn.lastCountIn = lastCountIn;
+    }
 
     public static CountIn show(Component parent, AbcPart part, CountIn lastCountIn) {
         if (dialog == null) {
@@ -241,9 +321,15 @@ public class CountIn {
             dialog.setLocationRelativeTo(parent);
             dialog.setResizable(false);
             dialog.setModal(true);
+
+            partHeader = new JLabel(part.getTitle());
+            partHeader.setHorizontalAlignment(SwingConstants.CENTER);
+
             JComboBox<CountInPattern> patternBox = new JComboBox<>(CountInPattern.values());
+            patternBox.setEditable(false);
             patternBox.setRenderer(new PatternRenderer());
             patternBox.setMaximumRowCount(CountInPattern.values().length);
+
             List<LotroDrumInfo> usableDIs = new ArrayList<>();
             for (LotroDrumInfo di : LotroDrumInfo.ALL_DRUMS) {
                 if (di.note == Note.REST) continue;
@@ -251,28 +337,34 @@ public class CountIn {
                 usableDIs.add(di);
             }
             JComboBox<LotroDrumInfo> hitBox = new JComboBox<>(usableDIs.toArray(new LotroDrumInfo[]{}));
+            hitBox.setEditable(false);
 
             JLabel barText = new JLabel("Bars");
+            barText.setHorizontalAlignment(SwingConstants.RIGHT);
+            barText.setAlignmentX(Component.RIGHT_ALIGNMENT);
+
             JTextField barField = new JTextField(String.format("%.2f", 1.0f));
-
-            barText.setToolTipText("Count-in cannot be longer than 6 seconds,\nand must not be overly fast.");
-            barField.setToolTipText("Count-in cannot be longer than 6 seconds,\nand must not be overly fast.");
-            patternBox.setToolTipText("If this count-in is activated then any count-in\non other drum parts will be cancelled.");
-
             barField.setHorizontalAlignment(SwingConstants.CENTER);
+
+            String toolTipText = "Count-in cannot be longer than 6 seconds," +
+                    "\nand must not be overly fast." +
+                    "\n\nWhen a count-in is active," +
+                    "\nthe play-head will be ahead of" +
+                    "\nactual song rendering for technical reasons.";
+
+            barText.setToolTipText(toolTipText);
+            barField.setToolTipText(toolTipText);
+            patternBox.setToolTipText("If this count-in is activated then any count-in" +
+                    "\non other drum parts will be cancelled.");
+
             if (lastCountIn != null) {
                 patternBox.setSelectedItem(lastCountIn.pattern);
                 hitBox.setSelectedItem(lastCountIn.hit);
-                barField.setText(String.format("%.2f", (float)lastCountIn.barCount));
+                barField.setText(String.format("%.2f", lastCountIn.barCount));
             } else {
                 /*
-                TimeSignature time = part.getAbcSong().getTimeSignature();
-                for (CountInPattern pattern : CountInPattern.values()) {
-                    if (pattern.timeSignature.equals(time) && pattern.bars == 1) {
-                        patternBox.setSelectedItem(pattern);
-                        break;
-                    }
-                }
+                I originally want some auto-detection here,
+                but it cannot be done reliable.
                 */
                 patternBox.setSelectedItem(OFF);
                 hitBox.setSelectedItem(LotroDrumInfo.getById(Note.Ds3.id));// Rimshot 1
@@ -287,16 +379,15 @@ public class CountIn {
             hitBox.addActionListener(e -> {
                 CountIn.lastCountIn = getCountIn(patternBox, barField, hitBox, currentPart);
             });
-            dialog.addWindowListener(new java.awt.event.WindowAdapter() {
+            dialog.addWindowListener(new WindowAdapter() {
+
                 @Override
-                public void windowClosing(java.awt.event.WindowEvent windowEvent) {
-                    // Handle window closing event here
-                    // For example, you might want to save the current state
+                public void windowClosing(WindowEvent windowEvent) {
                     CountIn.lastCountIn = getCountIn(patternBox, barField, hitBox, currentPart);
                 }
 
                 @Override
-                public void windowClosed(java.awt.event.WindowEvent windowEvent) {
+                public void windowClosed(WindowEvent windowEvent) {
 
                 }
             });
@@ -306,36 +397,43 @@ public class CountIn {
             gbc.insets = new Insets(6, 8, 6, 8);
             gbc.fill = GridBagConstraints.HORIZONTAL;
 
-            // Row 0: pattern combo (spans 2 columns)
+            // Row 0: part header (spans 2 columns)
             gbc.gridx = 0;
             gbc.gridy = 0;
             gbc.gridwidth = 2;
             gbc.weightx = 1.0;
-            dialog.getContentPane().add(patternBox, gbc);
+            dialog.getContentPane().add(partHeader, gbc);
 
-            // Row 1: "Bars" label
-            gbc = (GridBagConstraints) gbc.clone();
+            // Row 1: pattern combo (spans 2 columns)
             gbc.gridx = 0;
             gbc.gridy = 1;
-            gbc.gridwidth = 1;
-            gbc.weightx = 0.0;
-            gbc.fill = GridBagConstraints.NONE;
-            gbc.anchor = GridBagConstraints.LINE_START;
-            dialog.getContentPane().add(barText, gbc);
-
-            // Row 1: bars text field
-            gbc = (GridBagConstraints) gbc.clone();
-            gbc.gridx = 1;
-            gbc.gridy = 1;
+            gbc.gridwidth = 2;
             gbc.weightx = 1.0;
-            gbc.fill = GridBagConstraints.HORIZONTAL;
-            gbc.anchor = GridBagConstraints.CENTER;
-            dialog.getContentPane().add(barField, gbc);
+            dialog.getContentPane().add(patternBox, gbc);
 
-            // Row 2: hit drum combo (spans 2 columns)
+            // Row 2: "Bars" label
             gbc = (GridBagConstraints) gbc.clone();
             gbc.gridx = 0;
             gbc.gridy = 2;
+            gbc.gridwidth = 1;
+            gbc.weightx = 0.5;
+            gbc.fill = GridBagConstraints.HORIZONTAL;
+            gbc.anchor = GridBagConstraints.LINE_END;
+            dialog.getContentPane().add(barText, gbc);
+
+            // Row 2: bars text field
+            gbc = (GridBagConstraints) gbc.clone();
+            gbc.gridx = 1;
+            gbc.gridy = 2;
+            gbc.weightx = 0.0;
+            gbc.fill = GridBagConstraints.NONE;
+            gbc.anchor = GridBagConstraints.CENTER;
+            dialog.getContentPane().add(barField, gbc);
+
+            // Row 3: hit drum combo (spans 2 columns)
+            gbc = (GridBagConstraints) gbc.clone();
+            gbc.gridx = 0;
+            gbc.gridy = 3;
             gbc.gridwidth = 2;
             gbc.weightx = 1.0;
             gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -344,6 +442,7 @@ public class CountIn {
         }
         currentPart = part;
         CountIn.lastCountIn = lastCountIn;
+        partHeader.setText(part.getTitle());
         dialog.setVisible(!dialog.isVisible());
         return CountIn.lastCountIn;
     }
