@@ -345,7 +345,7 @@ public class CountIn {
             JTextField barField = new JTextField(String.format("%.2f", 1.0f));
             barField.setHorizontalAlignment(SwingConstants.CENTER);
 
-            String toolTipText = "Count-in cannot be longer than 6 seconds," +
+            String toolTipText = "Resulting count-in must not be longer than 12 seconds," +
                     "\nand must not be overly fast." +
                     "\n\nWhen a count-in is active," +
                     "\nthe play-head will be ahead of" +

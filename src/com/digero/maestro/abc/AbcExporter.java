@@ -146,7 +146,7 @@ public class AbcExporter {
                     long countInTicks = (long)(countIn.barCount*info.info().getBarLengthTicks());
                     long countInMicros = MidiUtils.ticks2microsec(countInTicks, info.info().getTempoMPQ(), info.info().getResolutionPPQ());
                     long hitMicros = countInMicros/countIn.pattern.dynamics.length;
-                    if (countInMicros > AbcConstants.LONGEST_NOTE_MICROS - 2 * AbcConstants.ONE_SECOND_MICROS) {
+                    if (countInMicros > AbcConstants.LONGEST_COUNT_IN_MICROS) {
                         countInMicros = 0L;
                     } else if (hitMicros < AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())) {
                         countInMicros = 0L;
@@ -293,10 +293,11 @@ public class AbcExporter {
             }
             long countInTicks = (long) (countIn.barCount * info.info().getBarLengthTicks());
             countInMicros = MidiUtils.ticks2microsec(countInTicks, info.info().getTempoMPQ(), info.info().getResolutionPPQ());
-            if (countInMicros > AbcConstants.LONGEST_NOTE_MICROS - 2 * AbcConstants.ONE_SECOND_MICROS) {
+            if (countInMicros > AbcConstants.LONGEST_COUNT_IN_MICROS) {
+                // 12 seconds is max
                 countInMicros = 0;
                 countIn = null;
-                logPreview.warning("Count-in for preview: count-in longer than 6 seconds, cancelling count-in.");
+                logPreview.warning("Count-in for preview: count-in longer than 12 seconds, cancelling count-in.");
             } else {
                 logPreview.info("Count-in for preview: total count-in. micros = " + countInMicros + " bars = " + countIn.barCount);
                 int hits = countIn.pattern.dynamics.length;
@@ -590,11 +591,11 @@ public class AbcExporter {
             }
             long countInTicks = (long)(countIn.barCount*info.info().getBarLengthTicks());
             countInMicros = MidiUtils.ticks2microsec(countInTicks, info.info().getTempoMPQ(), info.info().getResolutionPPQ());
-            if (countInMicros > AbcConstants.LONGEST_NOTE_MICROS - 2 * AbcConstants.ONE_SECOND_MICROS) {
+            if (countInMicros > AbcConstants.LONGEST_COUNT_IN_MICROS) {
                 countInMicros = 0;
                 countIn = null;
-                logPreview.warning("Count-in for ABC: count-in longer than 6 seconds, cancelling count-in.");
-                ProjectFrame.feed("Warning: Count-in cancelled, it's too long.", "Reduce to at/under 6 seconds.");
+                logPreview.warning("Count-in for ABC: count-in longer than 12 seconds, cancelling count-in.");
+                ProjectFrame.feed("Warning: Count-in cancelled, it's too long.", "Reduce to at/under 12 seconds.");
             } else {
                 logPreview.info("Count-in for ABC: total count-in. micros = " + countInMicros + " bars = " + countIn.barCount);
             }
@@ -632,9 +633,16 @@ public class AbcExporter {
 			delayMilli /= gcd;
 			oneMilli2 /= gcd;
 			*/
-			
-			out.println("z" + delayMicro + "/" + oneMicro2 + " | ");
+			int delayMicro2 = 0;
+            if (delayMicro > 7 * AbcConstants.ONE_SECOND_MICROS) {
+                delayMicro2 = delayMicro;
+                delayMicro /= 2;
+                delayMicro2 = delayMicro2 - delayMicro;
+            }
 
+			out.print("z" + delayMicro + "/" + oneMicro2);
+            if (delayMicro2 > 0) out.print(" z" + delayMicro2 + "/" + oneMicro2);
+            out.println(" | ");
             if (countIn != null && countIn.part == part) {
                 /*
                  Count-in on songs where the first note is delayed,
@@ -1070,11 +1078,11 @@ public class AbcExporter {
             }
             long countInTicks = (long)(countIn.barCount*info.info().getBarLengthTicks());
             countInMicros = MidiUtils.ticks2microsec(countInTicks, info.info().getTempoMPQ(), info.info().getResolutionPPQ());
-            if (countInMicros > AbcConstants.LONGEST_NOTE_MICROS - 2 * AbcConstants.ONE_SECOND_MICROS) {
+            if (countInMicros > AbcConstants.LONGEST_COUNT_IN_MICROS) {
                 countInMicros = 0;
                 countIn = null;
-                logPreview.warning("Count-in for ABC: count-in longer than 6 seconds, cancelling count-in.");
-                ProjectFrame.feed("Warning: Count-in cancelled, it's too long.", "Reduce to at/under 6 seconds.");
+                logPreview.warning("Count-in for ABC: count-in longer than 12 seconds, cancelling count-in.");
+                ProjectFrame.feed("Warning: Count-in cancelled, it's too long.", "Reduce to at/under 12 seconds.");
             } else {
                 logPreview.info("Count-in for ABC: total count-in. micros = " + countInMicros + " bars = " + countIn.barCount);
             }
@@ -1111,11 +1119,20 @@ public class AbcExporter {
 			int delayMicro = (part.delay+100)*1000 + (int) countInMicros;
 			
 			// Reduce the fraction
-			int gcd = Util.gcd(delayMicro, oneMicro);
-			delayMicro /= gcd;
-			int oneMicro2 = oneMicro / gcd;
-			
-			out.println("z" + delayMicro + "/" + oneMicro2 + " |");
+			//int gcd = Util.gcd(delayMicro, oneMicro);
+			//delayMicro /= gcd;
+			//int oneMicro2 = oneMicro / gcd;
+
+            int delayMicro2 = 0;
+            if (delayMicro > 7 * AbcConstants.ONE_SECOND_MICROS) {
+                delayMicro2 = delayMicro;
+                delayMicro /= 2;
+                delayMicro2 = delayMicro2 - delayMicro;
+            }
+
+            out.print("z" + delayMicro + "/" + oneMicro);
+            if (delayMicro2 > 0) out.print(" z" + delayMicro2 + "/" + oneMicro);
+            out.println(" | ");
 
             if (countIn != null && countIn.part == part) {
                 /*

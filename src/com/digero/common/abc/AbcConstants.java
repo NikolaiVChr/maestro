@@ -11,6 +11,7 @@ public interface AbcConstants {
 	long ONE_MINUTE_MICROS = 60L * ONE_SECOND_MICROS;
 	long SHORTEST_NOTE_MICROS = ONE_MINUTE_MICROS / 1000L;// Some times LOTRO will play this short a note, sometimes not..
 	long LONGEST_NOTE_MICROS = 8L * ONE_SECOND_MICROS;
+    long LONGEST_COUNT_IN_MICROS = ONE_SECOND_MICROS * 12L;
 	double SHORTEST_NOTE_SECONDS = 0.06d;// LOTRO will accept this short note duration except at 30, 60, 90 and 120 bpm.
 	double LONGEST_NOTE_SECONDS = 8.0d;// This limits goes for rests also
 	long LONGEST_NOTE_MICROS_WORST_CASE = (2L * SHORTEST_NOTE_MICROS - 1L)
@@ -43,7 +44,7 @@ public interface AbcConstants {
 	/** The highest Note ID for the student fiddle "flub" notes */
 	int STUDENT_FIDDLE_LAST_FLUB_NOTE_ID = Note.Fs2.id;
 
-	static long getShortestNoteMicros(int bpm) {
+    static long getShortestNoteMicros(int bpm) {
 		int[] strangeBPM = {9, 11, 13, 15, 18, 22, 26, 30, 36, 37, 43, 44, 45, 51, 52, 60, 72, 74, 86, 88, 90, 102, 104, 120, 144, 148, 172, 176, 180, 204, 208, 240, 288, 296, 344, 352, 360, 408, 416, 480, 576, 592, 688, 704, 720};
 		for (int strange : strangeBPM) {
 			if (strange == bpm) {
