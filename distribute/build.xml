@@ -110,7 +110,8 @@
 	</target>
 	
 	<target name="LotroInstruments" description="Copy SF2 file">
-		<copy file="LotroInstruments.sf2" todir="${build}" />
+        <delete file="${build}/LotroInstruments.sf2" />
+		<copy file="LotroInstruments.sf2" todir="${build}" overwrite="true" failonerror="true"/>
 	</target>
 
 	<target name="Build" depends="CopyThings,LotroInstruments" description="Make all except ZIP and MSI files"/>
