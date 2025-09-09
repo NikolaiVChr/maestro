@@ -183,8 +183,12 @@ class SectionEditorLine implements Comparable<SectionEditorLine> {
 
 	protected void setTooltips() {
 		String enableTT = "<html><b> Enable a specific section edit. </b><br> Pressing APPLY will disable a section if it is bad.</html>";
-		String barATT = "<html><b> The start bar (inclusive) where this section edit starts. </b><br> Must be above or equal to 0 and greater or equal than the 'From bar' of previous enabled sections.</html>";
-		String barBTT = "<html><b> The end bar (exclusive) where this section edit end. </b><br> Must be greater than the 'From bar'.</html>";
+		String barATT = "<html><b> The start bar (inclusive) where this section edit starts." +
+                "</b><br> Must be above or equal to 0 and greater or equal than the 'From bar' of previous enabled sections." +
+                "<br><br>Right mouse-click to fetch current song position.</html>";
+		String barBTT = "<html><b> The end bar (exclusive) where this section edit end." +
+                "</b><br> Must be greater than the 'From bar'." +
+                "<br><br>Right mouse-click to fetch current song position.</html>";
 		String transposeTT = "<html><b> Transpose this section some octaves up or down. </b><br> Enter a positive or negative number. </html>";
 		String veloTT = "<html><b> Offset the volume of this section. </b><br> Experiment to find the number that does what you want. <br> Normally a number from -250 to 250. </html>";
 		String silentTT = "<html><b> Silence this section. </b></html>";

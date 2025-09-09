@@ -6,15 +6,9 @@ import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.awt.event.ActionListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.awt.event.*;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.SortedMap;
-import java.util.TreeMap;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -54,15 +48,15 @@ public class TuneEditor {
 
 			private final double[] LAYOUT_COLS = new double[] { TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.PREFERRED };
 			private double[] LAYOUT_ROWS;
-			private AbcSong abcSong;
+			private final AbcSong abcSong;
 
-			private List<TuneEditorLine> tuneInputs = new ArrayList<>(numberOfSections);
+			private final List<TuneEditorLine> tuneInputs = new ArrayList<>(numberOfSections);
 
-			JButton copySections = new JButton("Copy");
-			JButton pasteSections = new JButton("Paste");
+			final JButton copySections = new JButton("Copy");
+			final JButton pasteSections = new JButton("Paste");
 			
-			private JPanel miscPanel;
-			private JPanel tempoPanel;
+			private final JPanel miscPanel;
+			private final JPanel tempoPanel;
 			
 			private final JButton add1 = new JButton("Add");
 
@@ -200,7 +194,9 @@ public class TuneEditor {
 				add1.setEnabled(numberOfSections < numberOfSectionsMax);
 				
 				Float firstBar = abcSong.getFirstBar();
-				JTextField startSong = new JTextField(firstBar==null?"0.0":Float.toString(firstBar)); 
+				JTextField startSong = new JTextField(firstBar==null?"0.0":Float.toString(firstBar));
+                attachMouseBarListener(startSong);
+                startSong.setToolTipText("Right mouse-click to fetch current song position.");
 				JLabel startSongLabel = new JLabel("Start song at: ");
 				JCheckBox startSongEnable = new JCheckBox("Start song late");
 				
@@ -220,7 +216,9 @@ public class TuneEditor {
 				panel.add(startSong, "4,3, 4, 3,f,f");
 
 				Float lastBar = abcSong.getLastBar();
-				JTextField endSong = new JTextField(lastBar==null?"100000.0":Float.toString(lastBar)); 
+				JTextField endSong = new JTextField(lastBar==null?"100000.0":Float.toString(lastBar));
+                endSong.setToolTipText("Right mouse-click to fetch current song position.");
+                attachMouseBarListener(endSong);
 				JLabel endSongLabel = new JLabel("End song at: ");
 				JCheckBox endSongEnable = new JCheckBox("End song early");
 				
@@ -365,8 +363,28 @@ public class TuneEditor {
 
 			private void makeNewTuneLine() {
 				TuneEditorLine l = new TuneEditorLine();
+                attachMouseBarListeners(l);
 				tuneInputs.add(l);
 			}
+
+            private void attachMouseBarListeners(TuneEditorLine tuneEditorLine) {
+                attachMouseBarListener(tuneEditorLine.barA[0]);
+                attachMouseBarListener(tuneEditorLine.barA[1]);
+                attachMouseBarListener(tuneEditorLine.barB[0]);
+                attachMouseBarListener(tuneEditorLine.barB[1]);
+            }
+
+            private void attachMouseBarListener(JTextField txtField) {
+                txtField.addMouseListener(new MouseAdapter() {
+                    public void mouseClicked(MouseEvent e) {
+                        if (e.getButton() == MouseEvent.BUTTON3 && txtField.isEnabled()) {
+                            if (jf instanceof ProjectFrame projectFrame) {
+                                txtField.setText(String.format(Locale.US, "%.3f", projectFrame.getSourcePlayHeadBar()));
+                            }
+                        }
+                    }
+                });
+            }
 			
 			private void layoutTabs() {
 				double[] LAYOUT_ROWS_NEW = tabsRows();

@@ -3,6 +3,7 @@ package com.digero.common.view;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
 import java.awt.Insets;
+import java.util.Locale;
 
 import javax.swing.JLabel;
 
@@ -13,10 +14,9 @@ import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.util.IDiscardable;
 import com.digero.common.util.Listener;
 
-@SuppressWarnings("serial")
 public class BarNumberLabel extends JLabel implements Listener<SequencerEvent>, IDiscardable {
 	private IBarNumberCache barNumberCache;
-	private SequencerWrapper sequencer;
+	private final SequencerWrapper sequencer;
 	private long initialOffsetTick = 0L;
 	private boolean floatingPoint = false;
 	private int maxTextWidth = 0;
@@ -100,7 +100,7 @@ public class BarNumberLabel extends JLabel implements Listener<SequencerEvent>, 
 		
 		float barFloat = barNumberCache.tickToBarNumberFloat(tick); 
 		
-		return String.format("%.2f/%d", barFloat, barCount);
+		return String.format(Locale.US, "%.2f/%d", barFloat, barCount);
 	}
 
 	private void update() {

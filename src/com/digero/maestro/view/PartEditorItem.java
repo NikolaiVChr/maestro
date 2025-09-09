@@ -6,6 +6,8 @@ import java.awt.Insets;
 import java.awt.LayoutManager;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.io.Serial;
+import java.util.Locale;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -23,7 +25,8 @@ import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
 
 public class PartEditorItem extends PartsListItem implements IDiscardable, TableLayoutConstants {
-	private static final long serialVersionUID = -1794798972919435416L;
+	@Serial
+    private static final long serialVersionUID = -1794798972919435416L;
 
 	private JTextField delayField;
 	private JTextField conclusionFermataField;
@@ -60,7 +63,7 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		title = new JLabel(part.toString());
 		title.setBorder(BorderFactory.createEmptyBorder(0, 3, 0, 0));
 
-		JList<AbcPartMetadataSource> dummy = new JList<AbcPartMetadataSource>();
+		JList<AbcPartMetadataSource> dummy = new JList<>();
 		selectedFg = dummy.getSelectionForeground();
 		selectedBg = dummy.getSelectionBackground();
 		unselectedFg = dummy.getForeground();
@@ -90,7 +93,7 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 			badgerButton.setText(text);
 		});
 
-		delayField = new JTextField(String.format("%.3f", part.delay * 0.001f).replace(',', '.'));
+		delayField = new JTextField(String.format(Locale.US, "%.3f", part.delay * 0.001f).replace(',', '.'));
 		delayField.setHorizontalAlignment(SwingConstants.CENTER);
 		Dimension fieldSize = delayField.getPreferredSize();
 		fieldSize.height = h;
@@ -107,7 +110,7 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 			}
 		});
 		
-		conclusionFermataField = new JTextField(String.format("%.3f", part.conclusionFermata * 0.001f).replace(',', '.'));
+		conclusionFermataField = new JTextField(String.format(Locale.US, "%.3f", part.conclusionFermata * 0.001f).replace(',', '.'));
 		conclusionFermataField.setHorizontalAlignment(SwingConstants.CENTER);
 		fieldSize = conclusionFermataField.getPreferredSize();
 		fieldSize.height = h;
@@ -200,13 +203,13 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		badgerButton.setMargin(new Insets(0, 0, 0, 0));
 		badgerButton.setFocusable(false);
 		
-		delayField = new JTextField(String.format("%.3f", 1000 * 0.001f));
+		delayField = new JTextField(String.format(Locale.US, "%.3f", 1000 * 0.001f));
 		delayField.setHorizontalAlignment(SwingConstants.CENTER);
 		Dimension fieldSize = delayField.getPreferredSize();
 		fieldSize.height = h;
 		delayField.setPreferredSize(fieldSize);
 		
-		conclusionFermataField = new JTextField(String.format("%.3f", 2500 * 0.001f));
+		conclusionFermataField = new JTextField(String.format(Locale.US, "%.3f", 2500 * 0.001f));
 		conclusionFermataField.setHorizontalAlignment(SwingConstants.CENTER);
 		fieldSize = conclusionFermataField.getPreferredSize();
 		fieldSize.height = h;
@@ -263,7 +266,7 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		} catch (NumberFormatException nfe) {
 
 		}
-		delayField.setText(String.format("%.3f", part.delay * 0.001f).replace(',', '.'));
+		delayField.setText(String.format(Locale.US, "%.3f", part.delay * 0.001f).replace(',', '.'));
 	}
 	
 	private void validateFermataInput() {
@@ -279,7 +282,7 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		} catch (NumberFormatException nfe) {
 	
 		}
-		conclusionFermataField.setText(String.format("%.3f", part.conclusionFermata * 0.001f).replace(',', '.'));
+		conclusionFermataField.setText(String.format(Locale.US, "%.3f", part.conclusionFermata * 0.001f).replace(',', '.'));
 	}
 	
 	private void validateMaxInput() {

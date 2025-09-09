@@ -13,6 +13,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import static com.digero.maestro.view.CountIn.CountInDynamics.*;
 import static com.digero.maestro.view.CountIn.CountInPattern.*;
@@ -342,7 +343,7 @@ public class CountIn {
             barText.setHorizontalAlignment(SwingConstants.RIGHT);
             barText.setAlignmentX(Component.RIGHT_ALIGNMENT);
 
-            JTextField barField = new JTextField(String.format("%.2f", 1.0f));
+            JTextField barField = new JTextField(String.format(Locale.US, "%.2f", 1.0f));
             barField.setHorizontalAlignment(SwingConstants.CENTER);
 
             String toolTipText = "Resulting count-in must not be longer than 12 seconds," +
@@ -359,7 +360,7 @@ public class CountIn {
             if (lastCountIn != null) {
                 patternBox.setSelectedItem(lastCountIn.pattern);
                 hitBox.setSelectedItem(lastCountIn.hit);
-                barField.setText(String.format("%.2f", lastCountIn.barCount));
+                barField.setText(String.format(Locale.US, "%.2f", lastCountIn.barCount));
             } else {
                 /*
                 I originally want some auto-detection here,
@@ -455,7 +456,7 @@ public class CountIn {
         try {
             barCount = Float.parseFloat(txtField.getText().replace(',', '.'));
         } catch (NumberFormatException nfe) {
-            txtField.setText(String.format("%.2f", barCount));
+            txtField.setText(String.format(Locale.US, "%.2f", barCount));
             return null;
         }
         if (hit.note == Note.REST) return null;

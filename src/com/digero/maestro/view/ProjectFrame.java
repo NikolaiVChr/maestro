@@ -91,6 +91,7 @@ import javax.swing.filechooser.FileFilter;
 import javax.swing.text.BadLocationException;
 import javax.xml.transform.TransformerException;
 
+import com.digero.maestro.midi.SequenceDataCache;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
@@ -151,9 +152,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private static final int VGAP = 4;
 	private static final double[] LAYOUT_COLS = new double[] { 180, FILL };
 	private static final double[] LAYOUT_ROWS = new double[] { FILL };
-	private static TableLayout tableLayout = new TableLayout(LAYOUT_COLS, LAYOUT_ROWS);
+	private static final TableLayout tableLayout = new TableLayout(LAYOUT_COLS, LAYOUT_ROWS);
 
-	private Preferences prefs = Preferences.userNodeForPackage(MaestroMain.class);
+	private final Preferences prefs = Preferences.userNodeForPackage(MaestroMain.class);
 
 	private AbcSong abcSong;
 	private boolean abcSongModified = false;
@@ -166,9 +167,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private LotroSequencerWrapper abcSequencer;
 	private VolumeTransceiver abcVolumeTransceiver;
 	private PartAutoNumberer partAutoNumberer;
-	private PartNameTemplate partNameTemplate;
-	private ExportFilenameTemplate exportFilenameTemplate;
-	private InstrNameSettings instrNameSettings;
+	private final PartNameTemplate partNameTemplate;
+	private final ExportFilenameTemplate exportFilenameTemplate;
+	private final InstrNameSettings instrNameSettings;
 	private SaveAndExportSettings saveSettings;
 	private MiscSettings miscSettings;
 
@@ -180,8 +181,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private JTextField moodField;
 	private TableLayout songInfoLayout;
 	private JPanel songInfoPanel;
-	private JLabel genreLabel = new JLabel("G:");
-	private JLabel moodLabel = new JLabel("M:");
+	private final JLabel genreLabel = new JLabel("G:");
+	private final JLabel moodLabel = new JLabel("M:");
 	private PrefsDocumentListener transcriberFieldListener;
 	private JSpinner transposeSpinner;
 	private JSpinner tempoSpinner;
@@ -791,7 +792,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				refreshPreviewSequence(false);
 		});
 		
-		dynaCombo = new JComboBox<Chord.CalcDynamics>(Chord.CalcDynamics.values());
+		dynaCombo = new JComboBox<>(Chord.CalcDynamics.values());
 		dynaCombo.setSelectedItem(AbcSong.dynamicsMethodDefault);
 		dynaCombo.addItemListener(i -> {
 			if (abcSong != null) {
@@ -1624,8 +1625,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
 	private static class PrefsDocumentListener implements DocumentListener {
-		private Preferences prefs;
-		private String prefName;
+		private final Preferences prefs;
+		private final String prefName;
 		private boolean ignoreChanges = false;
 
 		public PrefsDocumentListener(Preferences prefs, String prefName) {
@@ -1667,7 +1668,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
 	private boolean updateButtonsPending = false;
-	private Runnable updateButtonsTask = () -> {
+	private final Runnable updateButtonsTask = () -> {
 		boolean hasAbcNotes = false;
 		if (abcSong != null) {
 			for (AbcPart part : abcSong.getParts()) {
@@ -1827,7 +1828,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 	}
 
-	private Listener<AbcPartEvent> abcPartListener = e -> {
+	private final Listener<AbcPartEvent> abcPartListener = e -> {
 		if (e.getProperty() == AbcPartProperty.TRACK_ENABLED)
 			updateButtons(false);
 
@@ -1853,7 +1854,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		updateExportOrExportAsButton();
 	};
 
-	private Listener<AbcSongEvent> abcSongListener = e -> {
+	private final Listener<AbcSongEvent> abcSongListener = e -> {
 		if (abcSong == null || abcSong != e.getSource())
 			return;
 
@@ -2042,7 +2043,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		setAbcSongModified(true);
 	};
 
-	private ListDataListener partsListListener = new ListDataListener() {
+	private final ListDataListener partsListListener = new ListDataListener() {
 		@Override
 		public void intervalAdded(ListDataEvent e) {
 			partsList.updateParts();
@@ -2389,7 +2390,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
 	/** Used when the MIDI file in a Maestro song project can't be loaded. */
-	private FileResolver openFileResolver = new FileResolver() {
+	private final FileResolver openFileResolver = new FileResolver() {
 		@Override
 		public File locateFile(File original, String message) {
 			message += "\n\nWould you like to try to locate the file?";
@@ -2433,6 +2434,21 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		return "<html><h3><font color=\"" + ColorTable.PANEL_TEXT_ERROR.getHtml() + "\">" + Util.htmlEscape(title)
 				+ "</font></h3>" + Util.htmlEscape(message).replace("\n", "<br>") + "<h3>&nbsp;</h3></html>";
 	}
+
+    public float getSourcePlayHeadBar() {
+        long tickLength = Math.max(0, sequencer.getTickLength());
+        long tick = Math.min(tickLength, sequencer.getThumbTick());
+        SequenceDataCache cache = abcSong.getSequenceInfo().getDataCache();
+        /*
+        QuantizedTimingInfo qtm = null;
+        try {
+            qtm = abcSong.getAbcExporter().getTimingInfo();
+        } catch (AbcConversionException e) {
+            throw new RuntimeException(e);
+        }
+         */
+        return cache.tickToBarNumberFloat(tick);
+    }
 
 	private void updatePreviewMode(boolean abcPreviewModeNew) {
 		SequencerWrapper oldSequencer = abcPreviewMode ? abcSequencer : sequencer;
@@ -2763,8 +2779,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				exportFilenameTemplate.shouldRegenerateFilename() &&
 				!exportFilenameTemplate.formatName().equals(abcSong.getExportFile().getName());
 
-		return saveSettings.showExportFileChooser || !allowOverwriteExportFile || abcSong.getExportFile() == null
-				|| !abcSong.getExportFile().exists() || regeneratedFilenameIsDifferent;
+        File exportFile = abcSong == null ? null : abcSong.getExportFile();
+
+		return saveSettings.showExportFileChooser || !allowOverwriteExportFile || exportFile == null
+				|| !exportFile.exists() || regeneratedFilenameIsDifferent;
 	}
 
 	private boolean exportAbc() {

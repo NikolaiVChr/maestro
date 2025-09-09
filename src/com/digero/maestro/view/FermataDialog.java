@@ -3,6 +3,7 @@ package com.digero.maestro.view;
 import java.awt.Point;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.Locale;
 
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -64,7 +65,7 @@ public class FermataDialog {
 
 				panel.setLayout(new TableLayout(LAYOUT_COLS, LAYOUT_ROWS));
 
-				conclusionFermataField = new JTextField(String.format("%.3f", abcPart.conclusionFermata * 0.001f));
+				conclusionFermataField = new JTextField(String.format(Locale.US, "%.3f", abcPart.conclusionFermata * 0.001f));
 				conclusionFermataField.setHorizontalAlignment(SwingConstants.CENTER);
 
 				JButton okButton = new JButton("APPLY");
@@ -78,7 +79,7 @@ public class FermataDialog {
 					} catch (NumberFormatException nfe) {
 
 					}
-					conclusionFermataField.setText(String.format("%.3f", abcPart.conclusionFermata * 0.001f));
+					conclusionFermataField.setText(String.format(Locale.US, "%.3f", abcPart.conclusionFermata * 0.001f));
 				});
 				titleLabel = new JLabel("<html><b> Conclusion fermata on " + abcPart.toString() + " </html>");
 				panel.add(titleLabel, "0, 0, 3, 0, C, C");
@@ -137,7 +138,7 @@ public class FermataDialog {
 				
 				abcPart.addAbcListener(abcPartListener);
 				abcPart.getAbcSong().addSongListener(songListener);
-				conclusionFermataField.setText(String.format("%.3f", abcPart.conclusionFermata * 0.001f));
+				conclusionFermataField.setText(String.format(Locale.US, "%.3f", abcPart.conclusionFermata * 0.001f));
 				titleLabel.setText("<html><b> Conclusion fermata on " + abcPart.toString() + " </html>");
 			}
 		}

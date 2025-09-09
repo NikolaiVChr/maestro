@@ -885,13 +885,13 @@ public class AbcToMidi {
 		// Using double for lengthSeconds can result in rounding errors in 17 decimal
 		// place.
 		if (enableLotroErrors && ((float) lengthSeconds) < ((float) AbcConstants.SHORTEST_NOTE_SECONDS)) {
-			throw new LotroParseException("Rest's duration is too short (" + String.format("%.3f", lengthSeconds)
+			throw new LotroParseException("Rest's duration is too short (" + String.format(Locale.US, "%.3f", lengthSeconds)
 					+ "s)(" + noteLetter + " " + abcNoteL + ")", fileName, lineNumber, m.start());
 		} else if (enableLotroErrors && AbcConstants.getShortestNoteMicros(bpm) == 60001L && ((float) lengthSeconds) == ((float) AbcConstants.SHORTEST_NOTE_SECONDS)) {
-			throw new LotroParseException("Rest's duration is too short (" + String.format("%.3f", lengthSeconds)
+			throw new LotroParseException("Rest's duration is too short (" + String.format(Locale.US, "%.3f", lengthSeconds)
 						+ "s)(" + noteLetter + " " + abcNoteL + ")", fileName, lineNumber, m.start());
 		} else if (enableLotroErrors && lengthSeconds > AbcConstants.LONGEST_NOTE_SECONDS) {
-			throw new LotroParseException("Rest's duration is too long (" + String.format("%.3f", lengthSeconds) + "s)("
+			throw new LotroParseException("Rest's duration is too long (" + String.format(Locale.US, "%.3f", lengthSeconds) + "s)("
 					+ noteLetter + " " + abcNoteL + ")", fileName, lineNumber, m.start());
 		}
 	}
@@ -903,17 +903,17 @@ public class AbcToMidi {
 		// place.
 		if (enableLotroErrors && ((float) lengthSeconds) < ((float) AbcConstants.SHORTEST_NOTE_SECONDS)) {
 			throw new LotroParseException(
-					"Note's duration is too short (" + String.format("%.3f", lengthSeconds) + "s)(" + abcNoteAcc
+					"Note's duration is too short (" + String.format(Locale.US, "%.3f", lengthSeconds) + "s)(" + abcNoteAcc
 							+ noteLetter + octaveStr + abcNoteL + addGroup(m, shouldAddGroup) + ")",
 					fileName, lineNumber, m.start());
 		} else if (enableLotroErrors && AbcConstants.getShortestNoteMicros(bpm) == 60001L && ((float) lengthSeconds) == ((float) AbcConstants.SHORTEST_NOTE_SECONDS)) {
 			throw new LotroParseException(
-					"Note's duration is too short (" + String.format("%.3f", lengthSeconds) + "s)(" + abcNoteAcc
+					"Note's duration is too short (" + String.format(Locale.US, "%.3f", lengthSeconds) + "s)(" + abcNoteAcc
 							+ noteLetter + octaveStr + abcNoteL + addGroup(m, shouldAddGroup) + ")",
 					fileName, lineNumber, m.start());
 		} else if (enableLotroErrors && lengthSeconds > AbcConstants.LONGEST_NOTE_SECONDS) {
 			throw new LotroParseException(
-					"Note's duration is too long (" + String.format("%.3f", lengthSeconds) + "s)(" + abcNoteAcc
+					"Note's duration is too long (" + String.format(Locale.US, "%.3f", lengthSeconds) + "s)(" + abcNoteAcc
 							+ noteLetter + octaveStr + abcNoteL + addGroup(m, shouldAddGroup) + ")",
 					fileName, lineNumber, m.start());
 		}

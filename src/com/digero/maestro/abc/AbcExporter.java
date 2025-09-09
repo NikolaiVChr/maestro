@@ -1137,7 +1137,8 @@ public class AbcExporter {
             if (countIn != null && countIn.part == part) {
                 /*
                  Count-in on songs where the first note is delayed,
-                 will ignore the delay. If it's the count-in drum itself that are delayed,
+                 will ignore the delay and count-in to the first note as it were without delay.
+                 If it's the count-in drum itself that are delayed,
                  count-in will also be delayed.
                  */
                 

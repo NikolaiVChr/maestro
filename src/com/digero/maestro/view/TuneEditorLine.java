@@ -171,8 +171,12 @@ class TuneEditorLine implements Comparable<TuneEditorLine> {
 
 	protected void setTooltips() {
 		String enableTT = "<html><b> Enable a specific section edit. </b><br> Pressing APPLY will disable a section if it is bad.</html>";
-		String barATT = "<html><b> The start bar (inclusive) where this section edit starts. </b><br> Must be above or equal to 0.0 and greater or equal than the 'From bar' of previous enabled sections.</html>";
-		String barBTT = "<html><b> The end bar (exclusive) where this section edit end. </b><br> Must be greater than the 'From bar'.</html>";
+		String barATT = "<html><b> The start bar (inclusive) where this section edit starts. " +
+                "</b><br> Must be above or equal to 0.0 and greater or equal than the 'From bar' of previous enabled sections." +
+                "<br><br>Right mouse-click to fetch current song position.</html>";
+		String barBTT = "<html><b> The end bar (exclusive) where this section edit end. " +
+                "</b><br> Must be greater than the 'From bar'." +
+                "<br><br>Right mouse-click to fetch current song position.</html>";
 		String transposeTT = "<html><b> Transpose this section some octaves up or down. </b><br> Enter a positive or negative number. </html>";
 		String accTT = "<html><b> Accelerando/Ritardando in this section. The number is BPM that it will increase or decrease in this section.</b></html>";
 		String tempoTT = "<html><b> Tempo BPM offset in this section.</b></html>";

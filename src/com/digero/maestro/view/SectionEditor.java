@@ -7,16 +7,9 @@ import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.awt.event.ActionListener;
-import java.awt.event.AdjustmentEvent;
-import java.awt.event.AdjustmentListener;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.awt.event.*;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.TreeMap;
 
 import javax.swing.BorderFactory;
 import javax.swing.ButtonModel;
@@ -65,34 +58,34 @@ public class SectionEditor {
 
 		class SectionDialog extends JDialog {
 			
-			private JTabbedPane tabPanel;
+			private final JTabbedPane tabPanel;
 
-			private JPanel panel;
+			private final JPanel panel;
 			
 			public int numberOfSections = 8;
 
 			private final double[] LAYOUT_COLS = new double[] { TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.PREFERRED, TableLayout.PREFERRED };
-			private double[] LAYOUT_ROWS;
+			private final double[] LAYOUT_ROWS;
 			private AbcPart abcPart;
 			private int track;
 			private JLabel titleLabel = new JLabel();
 
-			private List<SectionEditorLine> sectionInputs = new ArrayList<>(numberOfSections);
-			private NonSectionEditorLine nonSectionInput = new NonSectionEditorLine();
+			private final List<SectionEditorLine> sectionInputs = new ArrayList<>(numberOfSections);
+			private final NonSectionEditorLine nonSectionInput = new NonSectionEditorLine();
 
-			JButton showVolume = new JButton("Show volume");
-			JButton copySections = new JButton("Copy");
-			JButton pasteSections = new JButton("Paste");
+			final JButton showVolume = new JButton("Show volume");
+			final JButton copySections = new JButton("Copy");
+			final JButton pasteSections = new JButton("Paste");
 			
-			private JPanel doublingPanel;
-			private JPanel miscPanel;
-			private JPanel rangePanel;
-			private JPanel doublingPanelM;
-			private JPanel miscPanelM;
-			private JPanel rangePanelM;
-			JScrollPane tabMiscScroll = new JScrollPane();
-			JScrollPane tabRangeScroll = new JScrollPane();
-			JScrollPane tabDoubleScroll = new JScrollPane();
+			private final JPanel doublingPanel;
+			private final JPanel miscPanel;
+			private final JPanel rangePanel;
+			private final JPanel doublingPanelM;
+			private final JPanel miscPanelM;
+			private final JPanel rangePanelM;
+			final JScrollPane tabMiscScroll = new JScrollPane();
+			final JScrollPane tabRangeScroll = new JScrollPane();
+			final JScrollPane tabDoubleScroll = new JScrollPane();
 
 			private final JButton add1 = new JButton("Add");
 			
@@ -446,6 +439,27 @@ public class SectionEditor {
 				this.repaint();
 			}
 
+            private void attachMouseBarListeners(SectionEditorLine sectionEditorLine) {
+                attachMouseBarListener(sectionEditorLine.barA[0]);
+                attachMouseBarListener(sectionEditorLine.barA[1]);
+                attachMouseBarListener(sectionEditorLine.barA[2]);
+                attachMouseBarListener(sectionEditorLine.barB[0]);
+                attachMouseBarListener(sectionEditorLine.barB[1]);
+                attachMouseBarListener(sectionEditorLine.barB[2]);
+            }
+
+            private void attachMouseBarListener(JTextField txtField) {
+                txtField.addMouseListener(new MouseAdapter() {
+                    public void mouseClicked(MouseEvent e) {
+                        if (e.getButton() == MouseEvent.BUTTON3) {
+                            if (jf instanceof ProjectFrame projectFrame) {
+                                txtField.setText(String.format(Locale.US, "%.3f", projectFrame.getSourcePlayHeadBar()));
+                            }
+                        }
+                    }
+                });
+            }
+
 			private float processSections(TreeMap<Float, PartSection> tm, float lastEnd) {
 				for (int k = 0; k < numberOfSections; k++) {
 					if (SectionDialog.this.sectionInputs.get(k).enable[0].isSelected()) {
@@ -627,6 +641,7 @@ public class SectionEditor {
 
 			private void makeNewSectorLine(final boolean percussion) {
 				SectionEditorLine l = new SectionEditorLine();
+                attachMouseBarListeners(l);
 				sectionInputs.add(l);
 			}
 
@@ -740,7 +755,7 @@ public class SectionEditor {
 				rangePanelM.add(nonLine.tab3line, "0, "+2+", 7, "+2+", f, f");				
 			}
 
-			private Listener<AbcPartEvent> abcPartListener = e -> {
+			private final Listener<AbcPartEvent> abcPartListener = e -> {
 				if (e.getProperty() == AbcPartProperty.TITLE) {
 					titleLabel.setText("<html><b> " + abcPart.getTitle() + ": </b> "
 							+ abcPart.getInstrument().toString() + " on track " + track + " </html>");
@@ -774,7 +789,7 @@ public class SectionEditor {
 				nonSectionInput.toPitch.setEnabled(!perc);
 			}
 
-			private Listener<AbcSongEvent> songListener = e -> {
+			private final Listener<AbcSongEvent> songListener = e -> {
 				switch (e.getProperty()) {
 				case BEFORE_PART_REMOVED:
 					AbcPart deleted = e.getPart();
@@ -794,7 +809,9 @@ public class SectionEditor {
 			
 			class SSynchronizer implements AdjustmentListener
 			{
-			    JScrollBar v1, v2, v3;
+			    final JScrollBar v1;
+                final JScrollBar v2;
+                final JScrollBar v3;
 			  
 			    /**
 			     * Keeps 3 scrollpanes in vertical sync
