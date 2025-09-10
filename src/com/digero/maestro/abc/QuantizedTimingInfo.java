@@ -785,7 +785,10 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		}
 		return quan;
 	}
-	
+
+    /**
+     * Quantize down to nearest grid that coincides with both swing and regular grid.
+     */
 	public long quantizeDown(long tick) {
 		// exportStartTick, this is a double check to ensure we are on both grids for startTick.
 		TimingInfoEvent e = getTimingEventForTick(tick);
@@ -833,17 +836,15 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 	public long tickToMicrosABC(long tick) {
 		if (newTempo == origTempo) return tickToMicros(tick);
 		TimingInfoEvent e = getTimingEventForTick(tick);
-		return (e.micros
-				+ MidiUtils.ticks2microsec(tick - e.tick, e.info.getTempoMPQ(), e.info.getResolutionPPQ()))
-				*origTempo/(long)newTempo;
+		return divideByExportTempoFactor(e.micros
+				+ MidiUtils.ticks2microsec(tick - e.tick, e.info.getTempoMPQ(), e.info.getResolutionPPQ()));
 	}
 	
 	public long tickToMicrosABCOrganic(long tick) {
 		if (newTempo == origTempo) return tickToMicrosOrganic(tick); 
 		TimingInfoEvent e = getTimingEventForTickOrganic(tick);
-		return (e.micros
-				+ MidiUtils.ticks2microsec(tick - e.tick, e.info.getTempoMPQ(), e.info.getResolutionPPQ()))
-				*origTempo/(long)newTempo;
+		return divideByExportTempoFactor(e.micros
+				+ MidiUtils.ticks2microsec(tick - e.tick, e.info.getTempoMPQ(), e.info.getResolutionPPQ()));
 	}
 	
 	public void tickToMicrosABCOrganic2(long tick1, long tick2) {
@@ -893,21 +894,24 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 	 */
 	public long microsToTickABC(long micros) {
 		if (newTempo == origTempo) return microsToTick(micros); 
-		micros = micros * newTempo/(long)origTempo;
+		micros = multiplyByExportTempoFactor(micros);
 		TimingInfoEvent e = getTimingEventForMicros(micros);
 		return e.tick + MidiUtils.microsec2ticks(micros - e.micros, e.info.getTempoMPQ(), e.info.getResolutionPPQ());
 	}
-	
+
+    /**
+     * Tick to microseconds for organic. Does take export tempo change into consideration. The micro is in the ABC song.
+     */
 	public long microsToTickABCOrganic(long micros) {
 		if (newTempo == origTempo) return microsToTickOrganic(micros);
-		micros = micros * newTempo/(long)origTempo;
+		micros = multiplyByExportTempoFactor(micros);
 		TimingInfoEvent e = getTimingEventForMicrosOrganic(micros);
 		return e.tick + MidiUtils.microsec2ticks(micros - e.micros, e.info.getTempoMPQ(), e.info.getResolutionPPQ());
 	}
 
     public long microsToTickABCOrganicRoundUp(long micros) {
         if (newTempo == origTempo) return microsToTickOrganic(micros);
-        micros = micros * newTempo/(long)origTempo;
+        micros = multiplyByExportTempoFactor(micros);
         TimingInfoEvent e = getTimingEventForMicrosOrganic(micros);
         return e.tick + MidiUtils.microsec2ticksCeil(micros - e.micros, e.info.getTempoMPQ(), e.info.getResolutionPPQ());
     }

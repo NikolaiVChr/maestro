@@ -304,7 +304,7 @@ public class AbcExporter {
                 long hitMicros = countInMicros / hits;
                 if (countIn.part == part) {
                     if (hitMicros >= minimumMicro) {
-                        long tick = startTickForCountIn;
+                        long tick = exportStartTick;
                         logPreview.info("Count-in for preview: hitMicros: " + hitMicros);
                         for (CountIn.CountInDynamics dyn : countIn.pattern.dynamics) {
                             Dynamics volume = dyn.dynamics;
@@ -2412,7 +2412,7 @@ public class AbcExporter {
 					if (restMicros <= minimumMicros && curChord.expandedMicros == null) {
 						curChord.setEndMicrosExpand(nextChord.getStartMicros());//TODO: breakup elongated notes
 						
-						// later we might undo some of this, expandedMicros is how much we are allowed to undo.
+						// later we might undo some of this; expandedMicros is how much we are allowed to undo.
 						curChord.expandedMicros = Math.min((oldCurEndMicro-curStartMicro)-minimumMicros, restMicros);
 						if (curChord.expandedMicros <= 0L) curChord.expandedMicros = null;
 						
@@ -4929,17 +4929,18 @@ public class AbcExporter {
         startTickForCountIn = startTick;
 
 		if (organic) {
-			// TODO: Why do we start 100 ms before first note? ..I forgot why I made this
+			// TODO: We start 80 ms before first note to be sure preview plays first note.
 			//       Its not related to the 100 ms used in delay parts.
-			startTick = Math.max(0L, qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(startTick)-80000L));
+			//startTick = Math.max(0L, qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(startTick)-80000L));
 			return new Pair<>(startTick, endTick);
 		}
 
 		// Remove integral number of bars
-		long q = qtm.tickToBarStartTick(startTick);
-		firstBarNumber = qtm.tickToBarNumber(q);
-		long startTickFinal = qtm.quantizeDown(q);
-		logNotes.fine(metadata.getSongTitle()+": firstBar "+firstBarNumber+"  q="+q+" startTick="+startTick+" startTickfinal="+startTickFinal+"\n"+qtm.getTimingEventForTick(q)+"\n"+ qtm.getTimingEventForTick(q).info() +"\n"+ qtm.getTimingEventForTick(q).infoOdd());
+		//long q = qtm.tickToBarStartTick(startTick);
+		firstBarNumber = qtm.tickToBarNumber(startTick);
+		long startTickFinal = qtm.quantizeDown(startTick);// this can produce a rest between count-in and first note. Want to be sure count-in is accurate: use organic.
+		//logNotes.fine(metadata.getSongTitle()+": firstBar "+firstBarNumber+"  q="+startTick+" startTick="+startTick+" startTickfinal="+startTickFinal+"\n"+qtm.getTimingEventForTick(q)+"\n"+ qtm.getTimingEventForTick(q).info() +"\n"+ qtm.getTimingEventForTick(q).infoOdd());
+        logNotes.fine(metadata.getSongTitle()+": firstBar "+firstBarNumber+" startTick="+startTick+" startTickfinal="+startTickFinal+"\n"+qtm.getTimingEventForTick(startTick)+"\n"+ qtm.getTimingEventForTick(startTick).info() +"\n"+ qtm.getTimingEventForTick(startTick).infoOdd());
 		logNotes.fine("Bar 1 starts at "+qtm.barNumberToBarStartTick(0)+" "+(qtm.barNumberToMicrosecond(0)/1000000.0));
 		logNotes.fine("Bar 2 starts at "+qtm.barNumberToBarStartTick(1)+" "+(qtm.barNumberToMicrosecond(1)/1000000.0));
 		logNotes.fine("Bar 3 starts at "+qtm.barNumberToBarStartTick(2)+" "+(qtm.barNumberToMicrosecond(2)/1000000.0)+"\n\n\n\n\n\n");
