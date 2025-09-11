@@ -57,7 +57,7 @@ Version 4.4.0
 - Abc Tools auto-exporter will now summarize a list of skipped or failed exports after finishing.
 - Added new option to part numbering; part ordering sort.
 - Added setting to lock a part-number to prevent it from ever getting reassigned automatically.
-- Added Jaunty Hand-knells instrument.
+- Added Jaunty Hand-knells instrument. (volume not tuned yet)
 
 Version 4.3.8
 - Made a popup window warning if loading a project saved with v4.3.0
