@@ -27,6 +27,7 @@ import javax.swing.JOptionPane;
 import javax.xml.xpath.XPathExpressionException;
 
 import com.digero.common.abc.VersionsWithIssues;
+import com.digero.maestro.view.CountIn;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;

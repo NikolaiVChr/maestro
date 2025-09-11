@@ -57,6 +57,8 @@ Version 4.4.0
 - Abc Tools auto-exporter will now summarize a list of skipped or failed exports after finishing.
 - Added new option to part numbering; part ordering sort.
 - Added setting to lock a part-number to prevent it from ever getting reassigned automatically.
+- Added count-in control for drum to part-editor. Note: Using it will make the play-head out of sync with abc preview.
+- Right mouse click in a to/from bar field will now paste current song position.
 - Added Jaunty Hand-knells instrument. (volume not tuned yet)
 
 Version 4.3.8
