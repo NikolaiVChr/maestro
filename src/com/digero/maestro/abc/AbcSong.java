@@ -27,7 +27,6 @@ import javax.swing.JOptionPane;
 import javax.xml.xpath.XPathExpressionException;
 
 import com.digero.common.abc.VersionsWithIssues;
-import com.digero.maestro.view.CountIn;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -68,7 +67,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	
 	public static final String MSX_FILE_DESCRIPTION = MaestroMain.APP_NAME + " Project";
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = MaestroMain.APP_NAME + " Projects";
-	public static final Version SONG_FILE_VERSION = new Version(4, 3, 11, 300);// Keep build above 117 to make earlier
+	public static final Version SONG_FILE_VERSION = new Version(4, 4, 0, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
 

@@ -97,6 +97,7 @@ public class PartAutoNumberer {
 			init(LotroInstrument.LONELY_MOUNTAIN_FIDDLE, LotroInstrument.BASIC_FIDDLE);
 			init(LotroInstrument.SPRIGHTLY_FIDDLE, LotroInstrument.BASIC_FIDDLE);
 			init(LotroInstrument.TRAVELLERS_TRUSTY_FIDDLE, LotroInstrument.BASIC_FIDDLE);
+            init(LotroInstrument.JAUNTY_HAND_KNELLS, LotroInstrument.BASIC_HARP);
 
 			assert (firstNumber.size() == LotroInstrument.values().length);
 		}
@@ -120,6 +121,7 @@ public class PartAutoNumberer {
                 case SPRIGHTLY_FIDDLE->"Sprightly Fiddle";
                 case STUDENT_FIDDLE->"Student's Fiddle";
                 case TRAVELLERS_TRUSTY_FIDDLE->"Traveller's Trusty Fiddle";
+                case JAUNTY_HAND_KNELLS->"Jaunty Hand-Knells";
                 case BASIC_THEORBO->"Theorbo";
                 case BASIC_FLUTE->"Flute";
                 case BASIC_CLARINET->"Clarinet";

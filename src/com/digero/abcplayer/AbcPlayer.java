@@ -88,7 +88,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 	private static final ExtensionFileFilter ABC_FILE_FILTER = new ExtensionFileFilter("ABC Files and Playlists", Util.ABC_FILE_EXTENSION_NO_DOT, Util.TXT_FILE_EXTENSION_NO_DOT, Util.ABCP_FILE_EXTENSION_NO_DOT);
 	public static final String APP_NAME = "ABC Player";
 	private static final String APP_NAME_LONG = APP_NAME + " for The Lord of the Rings Online";
-	private static final String APP_URL = "https://github.com/digero/maestro/";
+	private static final String WIKI_URL = "https://maestro.miraheze.org/wiki/Main_Page";
 	static Version APP_VERSION = new Version(0, 0, 0);
 
 	private static AbcPlayer mainWindow = null;
@@ -992,7 +992,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		JMenuItem about = toolsMenu.add(new JMenuItem("About " + APP_NAME + "..."));
 		about.setMnemonic(KeyEvent.VK_A);
 		about.addActionListener(
-				e -> AboutDialog.show(AbcPlayer.this, APP_NAME_LONG, APP_VERSION, APP_URL, "abcplayer_64.png"));
+				e -> AboutDialog.show(AbcPlayer.this, APP_NAME_LONG, APP_VERSION, WIKI_URL, "abcplayer_64.png"));
 
 		JMenu abcViewMenu = mainMenu.add(new JMenu(" ABC View "));
 		abcViewMenu.setMnemonic(KeyEvent.VK_A);

@@ -39,6 +39,7 @@ public enum LotroInstrumentGroup {
 			case BASIC_DRUM:
 			case BASIC_COWBELL:
 			case MOOR_COWBELL:
+            case JAUNTY_HAND_KNELLS:
 				return LotroInstrumentGroup.PERCUSSION;
 
 			case LUTE_OF_AGES:
