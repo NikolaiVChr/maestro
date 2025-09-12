@@ -41,6 +41,10 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
+Version 4.4.1
+- Added 2 bad jaunty hand-knells notes to track title tooltip. A2 and G#2
+- Increased volume of Jaunty Hand-knells slightly.
+
 Version 4.4.0
 - Added per project option to restrict to only using tempo changes from first track.
     Changing this option can change the layout of the bar lines,

@@ -734,6 +734,22 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 					badString = "</b><br><p style='color:red;'>" + "Bad B4 notes: " + b4count + "</p>";
 				}
 				break;
+            case JAUNTY_HAND_KNELLS:
+                int count = 0;
+                for (MidiNoteEvent ne : trackInfo.getEvents()) {
+                    if (!(ne instanceof BentMidiNoteEvent)) {
+                        Note mn = abcPart.mapNote(trackInfo.getTrackNumber(), ne.note.id, ne.getStartTick());
+                        if (mn != null && abcPart.shouldPlay(ne, trackInfo.getTrackNumber()) && (mn.id == Note.A2.id || mn.id == Note.Gs2.id)) {
+                            count += 1;
+                        }
+                    }
+                }
+                if (count == 0) {
+                    badString = "</b><br>" + "Bad notes: " + count;
+                } else {
+                    badString = "</b><br><p style='color:red;'>" + "Bad notes: " + count + "</p>";
+                }
+                break;
 			default:
 				badString = "";
 		}

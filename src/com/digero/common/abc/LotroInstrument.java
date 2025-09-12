@@ -56,7 +56,7 @@ public enum LotroInstrument
             "Travell?er'?s? (Trusty)? Fiddle", "Trusty Fiddle", "TT Fiddle",
             "(fidèle)? violon (de)? voyageur", "violon v", "TTF", "geige des reisenden", "geige dr"),
     JAUNTY_HAND_KNELLS       ( "Jaunty Hand-knells",        false,
-            MidiInstrument.GLOCKENSPIEL,         3,      false,     0.0f,
+            MidiInstrument.GLOCKENSPIEL,         3,      false,     -6.0f,
             "Hand-? knells", "Jaunty", "(Jaunty)? (Hand)?-?knells?", "JAUNTY_HAND_KNELLS", "JHK",
             "Glockenspiel","(Fr[oö]?e?hliche)? Hand-?glocken?","FHG",
             "Glas (portatifs)? (enjou[ée]s)?","GPE","(Fr)? Hand-?glocken?","GP Enjou[ée]s", "Glas (PE)?"),
