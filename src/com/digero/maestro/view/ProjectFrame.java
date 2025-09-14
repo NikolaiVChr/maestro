@@ -1321,6 +1321,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 					new ExtensionFileFilter("MIDI and ABC files", Util.MID_FILE_EXTENSION_NO_DOT,
 							Util.MIDI_FILE_EXTENSION_NO_DOT, Util.KAR_FILE_EXTENSION_NO_DOT, Util.ABC_FILE_EXTENSION_NO_DOT,
 							Util.TXT_FILE_EXTENSION_NO_DOT));
+            openMidiChooser.setAcceptAllFileFilterUsed(false);
 
 			result = openMidiChooser.showOpenDialog(ProjectFrame.this);
 			if (result != JFileChooser.APPROVE_OPTION) {
@@ -2443,6 +2444,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				jfc.setFileFilter(new ExtensionFileFilter("MIDI and ABC files", Util.MID_FILE_EXTENSION_NO_DOT,
 						Util.MIDI_FILE_EXTENSION_NO_DOT, Util.KAR_FILE_EXTENSION_NO_DOT, Util.ABC_FILE_EXTENSION_NO_DOT,
 						Util.TXT_FILE_EXTENSION_NO_DOT));
+                jfc.setAcceptAllFileFilterUsed(false);
 				jfc.setDialogTitle("Open missing MIDI/ABC");
 				if (original != null)
 					jfc.setSelectedFile(original);

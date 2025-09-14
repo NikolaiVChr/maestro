@@ -833,6 +833,7 @@ public class AutoExporter {
 							Util.ABC_FILE_EXTENSION_NO_DOT,Util.TXT_FILE_EXTENSION_NO_DOT,
 							Util.MID_FILE_EXTENSION_NO_DOT,Util.MIDI_FILE_EXTENSION_NO_DOT,
 							Util.KAR_FILE_EXTENSION_NO_DOT));
+                    jfc.setAcceptAllFileFilterUsed(false);
 					if (original != null)
 						jfc.setSelectedFile(original);
 		
