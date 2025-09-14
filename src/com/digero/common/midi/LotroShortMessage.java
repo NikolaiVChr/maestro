@@ -3,6 +3,10 @@ package com.digero.common.midi;
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.ShortMessage;
 
+/**
+ * LotroShortMessage is a wrapper around ShortMessage
+ * that allows the channel number to be greater than 15.
+ */
 public class LotroShortMessage extends ShortMessage {
 	private int channel2 = -1;
 

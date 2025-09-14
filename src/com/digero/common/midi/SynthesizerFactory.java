@@ -64,12 +64,12 @@ public class SynthesizerFactory {
 		synthInfo.put("load default soundbank", false);// default is true
 		synthInfo.put("max polyphony", 128);// default is 64
 		synthInfo.put("control rate", 147f); // default is 147f
-		synthInfo.put("interpolation", "linear");// default is linear."linear", "linear1", "linear2", "cubic", "lanczos", "sinc", "point".
+		synthInfo.put("interpolation", "point");// default is linear. Options: "point", "linear", "linear1", "linear2", "cubic", "lanczos", "sinc".
 		synthInfo.put("auto gain control", true);// default is true. Set to false it can give pops when skipping in
 													// song, especially for abc player.
 		synthInfo.put("latency", 250000L);// 12000 microseconds is default. But that low with 24 parts will give pops
 										  // and clicks in playback in abc player.
-		synthInfo.put("jitter correction", true);//default is true. Not sure what this does
+		synthInfo.put("jitter correction", true);//default is true. Use seperate thread with nanotime to make playback of messages more timewise accurate. Is also cause of why maestro playback gets delayed after OS sleep or hibernation.
 		synthInfo.put("large mode", false);// Default false. If enabled it seems to use lazy
 											// loading of soundfont samples.
 		synthInfo.put("format", new AudioFormat(44100, 16, 2, true, false));// use mono samples in memory

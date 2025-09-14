@@ -274,9 +274,14 @@ public class AbcExporter {
             // Only change the channel voice once
             track.add(MidiFactory.createLotroChangeEvent(part.getInstrument().midi.id(), channel, 0));
             logPreview.fine("Channel " + channel + " for " + part.getInstrument());
+            track.add(MidiFactory.createChannelVolumeEvent(MidiConstants.MAX_VOLUME, channel, 0));
+            track.add(MidiFactory.createReverbControlEvent(AbcConstants.MIDI_REVERB, channel, 0));
+            track.add(MidiFactory.createChorusControlEvent(AbcConstants.MIDI_CHORUS, channel, 0));
+            track.add(MidiFactory.createExpressionEvent(MidiConstants.MAX_EXPRESSION, channel, 0));
             track.add(MidiFactory.createChannelVolumeEvent(MidiConstants.MAX_VOLUME, channel, 1));
             track.add(MidiFactory.createReverbControlEvent(AbcConstants.MIDI_REVERB, channel, 1));
             track.add(MidiFactory.createChorusControlEvent(AbcConstants.MIDI_CHORUS, channel, 1));
+            track.add(MidiFactory.createExpressionEvent(MidiConstants.MAX_EXPRESSION, channel, 1));
         }
         track.add(MidiFactory.createPanEvent(pan, channel));
 

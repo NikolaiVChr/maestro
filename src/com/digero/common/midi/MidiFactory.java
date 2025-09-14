@@ -131,6 +131,13 @@ public class MidiFactory implements MidiConstants {
 		return createControllerEvent(CHANNEL_VOLUME_CONTROLLER_COARSE, volume, channel, ticks);
 	}
 
+    public static MidiEvent createExpressionEvent(int volume, int channel, int tick) {
+        if (volume < 0 || volume > Byte.MAX_VALUE)
+            throw new IllegalArgumentException();
+
+        return createControllerEvent(CHANNEL_EXPRESSION_CONTROLLER, volume, channel, tick);
+    }
+
 	public static MidiEvent createControllerEvent(byte controller, int value, int channel, long ticks) {
 		try {
 			LotroShortMessage msg = new LotroShortMessage();
