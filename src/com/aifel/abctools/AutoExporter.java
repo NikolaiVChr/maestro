@@ -821,6 +821,14 @@ public class AutoExporter {
 				if (result == JOptionPane.YES_OPTION) {
 					JFileChooser jfc = new JFileChooser();
 					jfc.setDialogTitle("Open missing MIDI/ABC");
+                    jfc.addChoosableFileFilter(
+                            new ExtensionFileFilter("MIDI",
+                                    Util.MID_FILE_EXTENSION_NO_DOT,
+                                    Util.MIDI_FILE_EXTENSION_NO_DOT, Util.KAR_FILE_EXTENSION_NO_DOT));
+                    jfc.addChoosableFileFilter(
+                            new ExtensionFileFilter("ABC",
+                                    Util.ABC_FILE_EXTENSION_NO_DOT,
+                                    Util.TXT_FILE_EXTENSION_NO_DOT));
 					jfc.setFileFilter(new ExtensionFileFilter("MIDI and ABC files",
 							Util.ABC_FILE_EXTENSION_NO_DOT,Util.TXT_FILE_EXTENSION_NO_DOT,
 							Util.MID_FILE_EXTENSION_NO_DOT,Util.MIDI_FILE_EXTENSION_NO_DOT,

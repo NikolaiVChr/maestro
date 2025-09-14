@@ -88,6 +88,8 @@ import javax.swing.event.DocumentListener;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import javax.swing.filechooser.FileFilter;
+import javax.swing.filechooser.FileSystemView;
+import javax.swing.filechooser.FileView;
 import javax.swing.text.BadLocationException;
 import javax.xml.transform.TransformerException;
 
@@ -1199,13 +1201,25 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				if (openFileChooser == null) {
 					openFileChooser = new JFileChooser(prefs.get("openFileChooser.path", null));
 					openFileChooser.setMultiSelectionEnabled(false);
+                    openFileChooser.addChoosableFileFilter(
+                            new ExtensionFileFilter("MIDI",
+                                    Util.MID_FILE_EXTENSION_NO_DOT,
+                                    Util.MIDI_FILE_EXTENSION_NO_DOT, Util.KAR_FILE_EXTENSION_NO_DOT));
+                    openFileChooser.addChoosableFileFilter(
+                            new ExtensionFileFilter("ABC",
+                                    Util.ABC_FILE_EXTENSION_NO_DOT,
+                                    Util.TXT_FILE_EXTENSION_NO_DOT));
+                    openFileChooser.addChoosableFileFilter(
+                            new ExtensionFileFilter("Project",
+                                    Util.MSX_FILE_EXTENSION_NO_DOT));
 					openFileChooser.setFileFilter(
-							new ExtensionFileFilter("MIDI, ABC, and " + AbcSong.MSX_FILE_DESCRIPTION_PLURAL,
+							new ExtensionFileFilter("MIDI, ABC, and Project",
 									Util.MID_FILE_EXTENSION_NO_DOT,
 									Util.MIDI_FILE_EXTENSION_NO_DOT, Util.KAR_FILE_EXTENSION_NO_DOT,
 									Util.ABC_FILE_EXTENSION_NO_DOT,
 									Util.TXT_FILE_EXTENSION_NO_DOT, Util.MSX_FILE_EXTENSION_NO_DOT));
-				}
+                    openFileChooser.setAcceptAllFileFilterUsed(false);
+                }
 
 				int result = openFileChooser.showOpenDialog(ProjectFrame.this);
 				if (result == JFileChooser.APPROVE_OPTION) {
@@ -1295,6 +1309,14 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			
 			JFileChooser openMidiChooser = new JFileChooser(abcSong.getSourceFile().getAbsoluteFile().getParent());
 			openMidiChooser.setMultiSelectionEnabled(false);
+            openMidiChooser.addChoosableFileFilter(
+                    new ExtensionFileFilter("MIDI",
+                            Util.MID_FILE_EXTENSION_NO_DOT,
+                            Util.MIDI_FILE_EXTENSION_NO_DOT, Util.KAR_FILE_EXTENSION_NO_DOT));
+            openMidiChooser.addChoosableFileFilter(
+                    new ExtensionFileFilter("ABC",
+                            Util.ABC_FILE_EXTENSION_NO_DOT,
+                            Util.TXT_FILE_EXTENSION_NO_DOT));
 			openMidiChooser.setFileFilter(
 					new ExtensionFileFilter("MIDI and ABC files", Util.MID_FILE_EXTENSION_NO_DOT,
 							Util.MIDI_FILE_EXTENSION_NO_DOT, Util.KAR_FILE_EXTENSION_NO_DOT, Util.ABC_FILE_EXTENSION_NO_DOT,
@@ -2410,6 +2432,14 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			File alternateFile = null;
 			if (result == JOptionPane.OK_OPTION) {
 				JFileChooser jfc = new JFileChooser();
+                jfc.addChoosableFileFilter(
+                        new ExtensionFileFilter("MIDI",
+                                Util.MID_FILE_EXTENSION_NO_DOT,
+                                Util.MIDI_FILE_EXTENSION_NO_DOT, Util.KAR_FILE_EXTENSION_NO_DOT));
+                jfc.addChoosableFileFilter(
+                        new ExtensionFileFilter("ABC",
+                                Util.ABC_FILE_EXTENSION_NO_DOT,
+                                Util.TXT_FILE_EXTENSION_NO_DOT));
 				jfc.setFileFilter(new ExtensionFileFilter("MIDI and ABC files", Util.MID_FILE_EXTENSION_NO_DOT,
 						Util.MIDI_FILE_EXTENSION_NO_DOT, Util.KAR_FILE_EXTENSION_NO_DOT, Util.ABC_FILE_EXTENSION_NO_DOT,
 						Util.TXT_FILE_EXTENSION_NO_DOT));
