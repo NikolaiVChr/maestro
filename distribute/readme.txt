@@ -12,7 +12,7 @@ Install instruction (.zip)
 ===================
 1: Copy the content of this ZIP into a any new folder.
 2: Use the executable files to start.
-(3): Make Windows shortcuts to start Maestro, AbcTools or AbcPlayer in the unzipped folder.
+(3): Make Windows shortcuts to start Maestro, Abc-Tools or Abc-Player in the unzipped folder.
 
 
 Linux/Mac instruction (.zip)
@@ -42,7 +42,7 @@ Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
 Version 4.4.2
-- Added per project option to restrict to only using tempo changes from first track.
+- Added per project option to restrict to only using tempo changes from the first track.
     Changing this option can change the layout of the bar lines,
     so be sure to review the section/tune edits after changing this option.
 - Fix playback of midi if project is using tempos from beyond first track,
