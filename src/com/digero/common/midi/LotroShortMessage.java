@@ -25,7 +25,8 @@ public class LotroShortMessage extends ShortMessage {
 		return channel2;
 	}
 
-	@Override
+	@SuppressWarnings("MethodDoesntCallSuperMethod")
+    @Override
 	public Object clone() {
 		LotroShortMessage clone = new LotroShortMessage();
 		try {

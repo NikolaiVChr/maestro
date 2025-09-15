@@ -10,6 +10,7 @@ import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -97,7 +98,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 
 	public void addSourceFile(File file) {
 		if (abcFiles == null) {
-			abcFiles = new ArrayList<File>();
+			abcFiles = new ArrayList<>();
 		}
 		abcFiles.add(file);
 	}
@@ -365,7 +366,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 			try {
 				numParts = Integer.parseInt(partCountStr);
 			} catch (NumberFormatException e) {
-				e.printStackTrace();
+				log.log(Level.WARNING, "Invalid instrument setup: " + value, e);
 				return;
 			}
 		} else {
@@ -379,7 +380,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 				int partNo = Integer.parseInt(data[i]);
 				partList.add(partNo);
 			} catch (NumberFormatException e) {
-				e.printStackTrace();
+                log.log(Level.WARNING, "Invalid instrument setup: " + value, e);
 				return;
 			}
 		}

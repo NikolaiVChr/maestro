@@ -879,7 +879,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		if (!badger) {
 			return null;
 		}
-		String str = "";
+		StringBuilder str = new StringBuilder();
 		for (int i = AbcPart.badgerPrioHighest; i <= AbcPart.badgerPrioLowest; i++) {
 			StringBuilder str2 = new StringBuilder();
 			ListModelWrapper<AbcPart> prts = getParts();
@@ -895,9 +895,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			if (onCount == 0) {
 				continue;
 			}
-			str += String.format("N: TS %2d, %s\n", count, str2);
+			str.append(String.format("N: TS %2d, %s\n", count, str2));
 		}
-		return str;
+		return str.toString();
 	}
 
 	@Override

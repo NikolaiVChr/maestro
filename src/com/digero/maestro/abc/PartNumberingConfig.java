@@ -14,7 +14,6 @@ import java.util.StringTokenizer;
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.util.ParseException;
 import com.digero.maestro.MaestroMain;
-import com.digero.maestro.midi.Chord;
 
 public class PartNumberingConfig {
     public PartAutoNumberer.OrderOption orderOption = PartAutoNumberer.orderOptionDefault;

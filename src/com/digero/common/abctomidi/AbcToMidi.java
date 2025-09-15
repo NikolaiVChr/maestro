@@ -28,7 +28,6 @@ import com.digero.common.midi.Note;
 import com.digero.common.midi.PanGenerator;
 import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.util.LotroParseException;
-import com.digero.common.util.Pair;
 import com.digero.common.util.ParseException;
 import com.digero.common.util.Triple;
 import com.digero.maestro.abc.AbcExporter.ExportTrackInfo;

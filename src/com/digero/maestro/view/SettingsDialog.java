@@ -58,7 +58,6 @@ import com.digero.maestro.abc.PartAutoNumberer;
 import com.digero.maestro.abc.PartNameTemplate;
 import com.digero.maestro.abc.PartNumberingConfig;
 
-import com.digero.maestro.midi.Chord;
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
 

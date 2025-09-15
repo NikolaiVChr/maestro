@@ -3,7 +3,6 @@ package com.digero.maestro.midi;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.List;
 import java.util.logging.Logger;
 
 import javax.sound.midi.InvalidMidiDataException;

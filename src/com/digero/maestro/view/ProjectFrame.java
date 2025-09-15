@@ -88,8 +88,6 @@ import javax.swing.event.DocumentListener;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import javax.swing.filechooser.FileFilter;
-import javax.swing.filechooser.FileSystemView;
-import javax.swing.filechooser.FileView;
 import javax.swing.text.BadLocationException;
 import javax.xml.transform.TransformerException;
 
