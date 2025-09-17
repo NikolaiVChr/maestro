@@ -849,7 +849,7 @@ public class AutoExporter {
 						alternateFile = jfc.getSelectedFile();
 						projectModified = true;
 					}
-				} else if (result == JOptionPane.CANCEL_OPTION) {
+				} else if (result == JOptionPane.CANCEL_OPTION || result == JOptionPane.CLOSED_OPTION) {
 					cancel = true;
 				}
 		
