@@ -417,59 +417,59 @@ public class MidiText {
 		byte[] prevClear = {};
 		for (TextFragment fraction : text) {
 			switch (fraction.reaction) {
-				case Reaction.LINE:
-				case Reaction.FIRST:
-				case Reaction.SECOND:
-				case Reaction.THIRD:
-				case Reaction.FOURTH:
+				case LINE:
+				case FIRST:
+				case SECOND:
+				case THIRD:
+				case FOURTH:
 					if (fraction.track != mainTrack) break;
 					if (fraction.reaction == Reaction.FIRST) bytes.write(0x0A);
 					writeTrimmed(bytes, fraction.sylineBytes);
 					bytes.write(0x0A);
 					break;
-				case Reaction.SYLLABLE:
+				case SYLLABLE:
 					if (fraction.track != mainTrack) break;
 					writeTrimmed(bytes, fraction.sylineBytes);
 					break;
-				case Reaction.NEWLINE_OLD:
+				case NEWLINE_OLD:
 					if (fraction.track != mainTrack) break;
 					if (prev != Reaction.CLEAR_OLD || prevClear.length > 0) {
 						bytes.write(0x0A);
 					}
 					writeTrimmed(bytes, fraction.sylineBytes);
 					break;
-				case Reaction.NEWLINE_NEW:
+				case NEWLINE_NEW:
 					if (fraction.track != mainTrack) break;
 					if (prev != Reaction.CLEAR_NEW || prevClear.length > 0) {
 						bytes.write(0x0A);
 					}
 					writeTrimmed(bytes, fraction.sylineBytes);
 					break;
-				case Reaction.NEWLINE_AFTER:
+				case NEWLINE_AFTER:
 					if (fraction.track != mainTrack) break;
 					writeTrimmed(bytes, fraction.sylineBytes);
 					bytes.write(0x0A);
 					break;
-				case Reaction.CLEAR_NEW:
-				case Reaction.CLEAR_OLD:
+				case CLEAR_NEW:
+				case CLEAR_OLD:
 					bytes.write(0x0A);
 					bytes.write(0x0A);
 					if (fraction.track != mainTrack) break;
 					writeTrimmed(bytes, fraction.sylineBytes);
 					prevClear = fraction.sylineBytes;
 					break;
-				case Reaction.TITLE:
+				case TITLE:
 					str.append("Title: ").append(decode(fraction.sylineBytes)).append("\n");
 					break;
-				case Reaction.RIGHTS:
+				case RIGHTS:
 					//str += "Lyrics copyright: "+decode(fraction.sylineBytes)+"\n";
 					break;
-				case Reaction.LANGUAGE:
+				case LANGUAGE:
 					str.append("Language: ").append(decode(fraction.sylineBytes)).append("\n");
 					break;
-				case Reaction.INFO:
+				case INFO:
 					str.append("Info: ").append(decode(fraction.sylineBytes)).append("\n");
-				case Reaction.META_LINE:
+				case META_LINE:
 					str.append(fraction.prefix).append(decode(fraction.sylineBytes)).append("\n");
 				default:
 					break;

@@ -2130,7 +2130,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 			int result = JOptionPane.showConfirmDialog(this, message, "Save Changes", JOptionPane.YES_NO_CANCEL_OPTION,
 					JOptionPane.QUESTION_MESSAGE, IconLoader.getImageIcon("msxfile_32.png"));
-			if (result == JOptionPane.CANCEL_OPTION)
+			if (result == JOptionPane.CANCEL_OPTION || result == JOptionPane.CLOSED_OPTION)
 				return false;
 
 			if (result == JOptionPane.YES_OPTION) {
@@ -2722,7 +2722,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				int res = JOptionPane.showConfirmDialog(this,
 						"File \"" + fileName + "\" already exists.\n" + "Do you want to replace it?",
 						"Confirm Replace File", JOptionPane.YES_NO_CANCEL_OPTION);
-				if (res == JOptionPane.CANCEL_OPTION)
+				if (res == JOptionPane.CANCEL_OPTION || res == JOptionPane.CLOSED_OPTION)
 					return null;
 				if (res != JOptionPane.YES_OPTION)
 					continue;

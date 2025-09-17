@@ -248,7 +248,7 @@ public class ExportMp3Dialog extends JDialog implements TableLayoutConstants {
 		} else if (f.exists()) {
 			int result = JOptionPane.showConfirmDialog(this, "File " + f.getName() + " already exists. Overwrite?",
 					"Confirm overwrite", JOptionPane.YES_NO_CANCEL_OPTION);
-			if (result == JOptionPane.CANCEL_OPTION) {
+			if (result == JOptionPane.CANCEL_OPTION || result == JOptionPane.CLOSED_OPTION) {
 				setVisible(false);
 				return false;
 			}
