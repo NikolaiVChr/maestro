@@ -41,6 +41,9 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
+Version 4.4.3
+- Closing yes/no/cancel dialogs will now act as choosing cancel.
+
 Version 4.4.2
 - Added per project option to restrict to only using tempo changes from the first track.
     Changing this option can change the layout of the bar lines,
