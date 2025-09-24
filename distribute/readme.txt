@@ -43,6 +43,7 @@ Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 
 Version 4.4.3
 - Closing yes/no/cancel dialogs will now act as choosing cancel.
+- Replace jaunty G#2 note and attenuate the instrument.
 
 Version 4.4.2
 - Added per project option to restrict to only using tempo changes from the first track.
