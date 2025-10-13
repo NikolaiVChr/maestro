@@ -41,6 +41,11 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
+Version 4.4.4
+- Removed warnings for bad Jaunty notes.
+- Update Jaunty note durations for polyphony to match update 45.5.0
+- Make Maestro release lock on midi files as soon as they are read, so they can be moved or renamed, while Maestro is still running.
+
 Version 4.4.3
 - Closing yes/no/cancel dialogs will now act as choosing cancel.
 - Replace jaunty G#2 note and attenuate the instrument.
