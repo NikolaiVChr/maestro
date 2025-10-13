@@ -1,7 +1,6 @@
 package com.digero.maestro.midi;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -96,10 +95,14 @@ public class SequenceInfo implements MidiConstants {
 	 */
 	public static SequenceInfo fromMidi(File midiFile, MiscSettings miscSettings, boolean oldVelocities, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume, boolean ignoreMidiText)
 			throws InvalidMidiDataException, IOException, ParseException {
-		MidiFileFormat midiFileFormat = MidiSystem.getMidiFileFormat(midiFile);
-		return new SequenceInfo(midiFile.getName(), ConvertPPQ.convert(MidiSystem.getSequence(midiFile)),
-				midiFileFormat.getType(), miscSettings, oldVelocities, onlyFirstTrackTempos, ignoreZeroChannelVolume,
-				ignoreMidiText);
+        try (InputStream is1 = new BufferedInputStream(new FileInputStream(midiFile));
+             InputStream is2 = new BufferedInputStream(new FileInputStream(midiFile))) {
+            Sequence sequence = MidiSystem.getSequence(is1);
+            MidiFileFormat midiFileFormat = MidiSystem.getMidiFileFormat(is2);
+            return new SequenceInfo(midiFile.getName(), ConvertPPQ.convert(sequence),
+                    midiFileFormat.getType(), miscSettings, oldVelocities, onlyFirstTrackTempos, ignoreZeroChannelVolume,
+                    ignoreMidiText);
+        }
 	}
 
 	/**
