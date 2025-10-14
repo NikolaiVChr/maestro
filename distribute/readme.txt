@@ -45,6 +45,7 @@ Version 4.4.4
 - Removed warnings for bad Jaunty notes.
 - Update Jaunty note durations for polyphony to match update 45.5.0
 - Make Maestro release lock on midi files as soon as they are read, so they can be moved or renamed, while Maestro is still running.
+- Combine timing checkboxes into a dropdown menu
 
 Version 4.4.3
 - Closing yes/no/cancel dialogs will now act as choosing cancel.

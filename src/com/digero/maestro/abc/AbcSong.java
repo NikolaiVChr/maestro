@@ -255,12 +255,27 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			tripletTiming = false;
 			organic = false;
 			organic2 = false;
+            priorityActive = false;
 			break;
 		case "Mix Timings Swing/Triplet":
 			mixTiming = true;
 			tripletTiming = true;
 			organic2 = false;
+            priorityActive = false;
 			break;
+        case "Mix Timings Combine Priorities":
+            mixTiming = true;
+            tripletTiming = false;
+            organic = false;
+            organic2 = false;
+            priorityActive = true;
+            break;
+        case "Mix Timings Swing/Triplet Combine Priorities":
+            mixTiming = true;
+            tripletTiming = true;
+            organic2 = false;
+            priorityActive = true;
+            break;
 		case "Organic Singlestage":
 			mixTiming = true;
 			tripletTiming = false;
@@ -281,6 +296,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		}
 		fireChangeEvent(AbcSongProperty.TRIPLET_TIMING);
 		fireChangeEvent(AbcSongProperty.MIX_TIMING);
+        fireChangeEvent(AbcSongProperty.MIX_TIMING_COMBINE_PRIORITIES);
 		fireChangeEvent(AbcSongProperty.ORGANIC);
 	}
 

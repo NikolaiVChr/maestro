@@ -41,6 +41,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
@@ -92,6 +93,7 @@ import javax.swing.text.BadLocationException;
 import javax.xml.transform.TransformerException;
 
 import com.digero.maestro.midi.SequenceDataCache;
+import org.jetbrains.annotations.Nullable;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
@@ -189,11 +191,15 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private JButton resetTempoButton;
 	private JFormattedTextField keySignatureField;
 	private JFormattedTextField timeSignatureField;
-	private JCheckBox organicCheckBox;
+    private JComboBox<TimingEnum> timingCombo;
+    private boolean noTimingAction = false;
+	/*
+    private JCheckBox organicCheckBox;
 	private JCheckBox organic2CheckBox;
 	private JCheckBox tripletCheckBox;
 	private JCheckBox mixCheckBox;
 	private JCheckBox prioCheckBox;
+	 */
     private JCheckBox tempoOnlyFirstCheckBox;
 	private JComboBox<Chord.CalcDynamics> dynaCombo;
 	private JButton exportButton;
@@ -728,7 +734,17 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 			});
 		}
-		
+
+        timingCombo = new JComboBox<>(TimingEnum.values());
+
+        timingCombo.addActionListener(e -> {
+            TimingEnum enm = ((TimingEnum) Objects.requireNonNull(timingCombo.getSelectedItem()));
+            timingCombo.setToolTipText(enm.getTooltip());
+            if (noTimingAction) return;
+            enm.action(abcSong);
+            refreshPreviewSequence(false);
+        });
+        /*
 		organicCheckBox = new JCheckBox("Organic output (BETA)");
 		
 		organicCheckBox.setToolTipText("<html>Attempt to export more fluid timings.<br>"
@@ -791,6 +807,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			//if (abcSequencer.isRunning())
 				refreshPreviewSequence(false);
 		});
+
+         */
 		
 		dynaCombo = new JComboBox<>(Chord.CalcDynamics.values());
 		dynaCombo.setSelectedItem(AbcSong.dynamicsMethodDefault);
@@ -882,6 +900,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			settingsPanel.add(new JLabel("Key:"), "0, " + row);
 			settingsPanel.add(keySignatureField, "1, " + row + ", 2, " + row + ", L, F");
 		}
+        row++;
+        settingsLayout.insertRow(row, PREFERRED);
+        settingsPanel.add(timingCombo, "0, " + row + ", 2, " + row + ", L, C");
+        /*
 		row++;
 		settingsLayout.insertRow(row, PREFERRED);
 		settingsPanel.add(organicCheckBox, "0, " + row + ", 2, " + row + ", L, C");
@@ -897,6 +919,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		row++;
 		settingsLayout.insertRow(row, PREFERRED);
 		settingsPanel.add(prioCheckBox, "0, " + row + ", 2, " + row + ", C, C");
+
+         */
 		row++;
 		settingsLayout.insertRow(row, PREFERRED);
 		settingsPanel.add(dynaCombo, "0, " + row + ", 2, " + row + ", L, C");
@@ -1774,11 +1798,15 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		resetTempoButton.setVisible(resetTempoButton.isEnabled());
 		keySignatureField.setEnabled(midiLoaded);
 		timeSignatureField.setEnabled(midiLoaded);
+        timingCombo.setEnabled(midiLoaded);
+        /*
 		organicCheckBox.setEnabled(midiLoaded);
 		organic2CheckBox.setEnabled(midiLoaded && organicCheckBox.isSelected());
 		tripletCheckBox.setEnabled(midiLoaded && !organicCheckBox.isSelected());
 		mixCheckBox.setEnabled(midiLoaded && !organicCheckBox.isSelected());
 		prioCheckBox.setEnabled(midiLoaded && mixCheckBox.isSelected() && !organicCheckBox.isSelected());
+
+         */
 		dynaCombo.setEnabled(midiLoaded);
         tempoOnlyFirstCheckBox.setEnabled(abcSong != null && abcSong.getSequenceInfo().getDataCache().isTempoInHigherTracks());//  && abcSong.getProjectFile() != null
 		noteButton.setEnabled(midiLoaded);
@@ -1926,24 +1954,13 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				timeSignatureField.setValue(abcSong.getTimeSignature());
 			break;
 		case ORGANIC:
-			if (organicCheckBox.isSelected() != abcSong.isOrganic())
-				organicCheckBox.setSelected(abcSong.isOrganic());
-			if (organic2CheckBox.isSelected() != abcSong.isOrganic2())
-				organic2CheckBox.setSelected(abcSong.isOrganic2());
+        case TRIPLET_TIMING:
+        case MIX_TIMING:
+        case MIX_TIMING_COMBINE_PRIORITIES:
+            noTimingAction = true;
+            timingCombo.setSelectedItem(TimingEnum.getInstance(abcSong.isOrganic(),abcSong.isOrganic2(),abcSong.isMixTiming(),abcSong.isTripletTiming(),abcSong.isPriorityActive()));
+            noTimingAction = false;
 			updateButtons(false);
-			break;
-		case TRIPLET_TIMING:
-			if (tripletCheckBox.isSelected() != abcSong.isTripletTiming())
-				tripletCheckBox.setSelected(abcSong.isTripletTiming());
-			break;
-		case MIX_TIMING:
-			if (mixCheckBox.isSelected() != abcSong.isMixTiming())
-				mixCheckBox.setSelected(abcSong.isMixTiming());
-			updateButtons(false);
-			break;
-		case MIX_TIMING_COMBINE_PRIORITIES:
-			if (prioCheckBox.isSelected() != abcSong.isPriorityActive())
-				prioCheckBox.setSelected(abcSong.isPriorityActive());
 			break;
 		case CALC_DYNAMICS:
 			dynaCombo.setSelectedItem(abcSong.dynamicsMethod);
@@ -2178,11 +2195,14 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		tempoSpinner.setValue(MidiConstants.DEFAULT_TEMPO_BPM);
 		keySignatureField.setValue(KeySignature.C_MAJOR);
 		timeSignatureField.setValue(TimeSignature.FOUR_FOUR);
+        timingCombo.setSelectedItem(TimingEnum.MIX);
+        /*
 		organicCheckBox.setSelected(false);
 		organic2CheckBox.setSelected(false);
 		tripletCheckBox.setSelected(false);
 		mixCheckBox.setSelected(true);
 		prioCheckBox.setSelected(false);
+         */
         dynaCombo.setSelectedItem(AbcSong.dynamicsMethodDefault);
         tempoOnlyFirstCheckBox.setSelected(false);
 		midiBarLabel.setBarNumberCache(null);
@@ -2281,11 +2301,16 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			tempoSpinner.setValue(abcSong.getTempoBPM());
 			keySignatureField.setValue(abcSong.getKeySignature());
 			timeSignatureField.setValue(abcSong.getTimeSignature());
+            noTimingAction = true;
+            timingCombo.setSelectedItem(TimingEnum.getInstance(abcSong.isOrganic(),abcSong.isOrganic2(),abcSong.isMixTiming(),abcSong.isTripletTiming(),abcSong.isPriorityActive()));
+            noTimingAction = false;
+            /*
 			organicCheckBox.setSelected(abcSong.isOrganic());
 			organic2CheckBox.setSelected(abcSong.isOrganic2());
 			tripletCheckBox.setSelected(abcSong.isTripletTiming());
 			mixCheckBox.setSelected(abcSong.isMixTiming());
 			prioCheckBox.setSelected(abcSong.isPriorityActive());
+             */
             tempoOnlyFirstCheckBox.setSelected(abcSong.isUsingOldTempos());
 
 			SequenceInfo sequenceInfo = abcSong.getSequenceInfo();
@@ -3151,4 +3176,104 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			});
 		}
 	}
+
+    public enum TimingEnum {
+        ORGANIC_MULTISTAGE ("Organic Multi-stage",true, true, false,false,false),
+        ORGANIC_SINGLESTAGE ("Organic Single-stage", true, false, false,false,false),
+        MIX ("Mix Timings", false, false, true,false,false),
+        MIX_SWING ("Mix Timings, Swing", false, false, true,true,false),
+        MIX_PRIO ("Mix Timings, Combine Priorities", false, false, true,false,true),
+        MIX_SWING_PRIO ("Mix Timings, Swing, Combine Priorities", false, false, true,true,true),
+        LEGACY ("Legacy Timings", false, false, false,false,false),
+        LEGACY_SWING ("Legacy Timings, Swing", false, false, false,true,false),
+        ;
+
+        public final boolean organic;
+        public final boolean multistage;
+        public final boolean mixTimings;
+        public final boolean swing;
+        public final boolean priority;
+        public final String info;
+
+        TimingEnum(String info, boolean organic, boolean multistage, boolean mixTimings, boolean swing, boolean priority) {
+            this.info = info;
+            this.organic = organic;
+            this.multistage = multistage;
+            this.mixTimings = mixTimings;
+            this.swing = swing;
+            this.priority = priority;
+        }
+
+        public void action(@Nullable AbcSong abcSong) {
+            if (abcSong != null) {
+                abcSong.setOrganic(organic);
+                abcSong.setOrganic2(multistage);
+                abcSong.setMixTiming(mixTimings);
+                abcSong.setTripletTiming(swing);
+                abcSong.setPriorityActive(priority);
+            }
+        }
+
+        String getTooltip() {
+            return switch (this) {
+                case ORGANIC_MULTISTAGE -> "<html>Different approach to exporting fluid timings.<br>"
+                        + "This is a beta feature, use on own risk.</html>";
+                case ORGANIC_SINGLESTAGE -> "<html>Export more fluid timings.<br>"
+                        + "This is a beta feature, use on own risk.</html>";
+                case LEGACY -> "<html>Export whole song in the same fixed timing grid.<html>";
+                case LEGACY_SWING -> "<html>Export whole song in the same fixed timing grid." +
+                        "<br>Will setup the grid for triplets or a swing rhythm.<br><br>"
+                        + "This can cause short/fast notes to incorrectly be output as triplets.<br>"
+                        + "Don't use this unless the song has many triplets or a swing/jig rhythm.</html>";
+                case MIX_SWING_PRIO -> "<html>Allow Maestro to detect which notes<br>"
+                        + "that needs triplet/swing timing.<br><br>"
+                        + "It is done per part, so some notes in a parts might export as swing/tuplets<br>"
+                        + "while other parts at same time export even notes." +
+                        "<br>In case of uncertainty swing/triplet will be choosen."+
+                        "<br>Allows to set track priority.<br>" +
+                        "Checkboxes will appear when combining tracks,<br>" +
+                        "those enabled will prioritize the timings of those tracks over non-prioritized tracks.</html>";
+                case MIX -> "<html>Allow Maestro to detect which notes<br>"
+                        + "that needs triplet/swing timing.<br><br>"
+                        + "It is done per part, so some notes in a parts might export as swing/tuplets<br>"
+                        + "while other parts at same time export even notes.</html>";
+                case MIX_SWING -> "<html>Allow Maestro to detect which notes<br>"
+                        + "that needs triplet/swing timing.<br><br>"
+                        + "It is done per part, so some notes in a parts might export as swing/tuplets<br>"
+                        + "while other parts at same time export even notes.<br>" +
+                        "In case of uncertainty swing/triplet will be choosen.</html>";
+                case MIX_PRIO -> "<html>Allow Maestro to detect which notes<br>"
+                        + "that needs triplet/swing timing.<br><br>"
+                        + "It is done per part, so some notes in a parts might export as swing/tuplets<br>"
+                        + "while other parts at same time export even notes." +
+                        "<br>Allows to set track priority.<br>" +
+                        "Checkboxes will appear when combining tracks,<br>" +
+                        "those enabled will prioritize the timings of those tracks over non-prioritized tracks.</html>";
+                default -> null;
+            };
+        }
+
+        static TimingEnum getInstance(boolean organic, boolean multistage, boolean mixTimings, boolean swing, boolean priority) {
+            if (organic) {
+                if (multistage) return ORGANIC_MULTISTAGE;
+                else return ORGANIC_SINGLESTAGE;
+            } else if (mixTimings) {
+                if (swing) {
+                    if (priority) return MIX_SWING_PRIO;
+                    else return MIX_SWING;
+                } else {
+                    if (priority) return MIX_PRIO;
+                    else return MIX;
+                }
+            } else {
+                if (swing) return LEGACY_SWING;
+                else return LEGACY;
+            }
+        }
+
+        @Override
+        public String toString() {
+            return info;
+        }
+    }
 }
