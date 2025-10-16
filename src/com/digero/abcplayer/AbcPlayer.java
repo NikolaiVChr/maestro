@@ -274,7 +274,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 //	private boolean isExporting = false;
 
 	public AbcPlayer(boolean tools) {
-		super(APP_NAME);
+		super(APP_NAME + " v" + APP_VERSION);
 		this.tools = tools;
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
