@@ -39,7 +39,7 @@ public class DrumNoteMap implements IDiscardable {
 	protected byte[] map = null;
 	private List<ChangeListener> listeners = null;
 
-	public String getXmlName() {
+	public static String getXmlName() {
 		return "drumMap";
 	}
 

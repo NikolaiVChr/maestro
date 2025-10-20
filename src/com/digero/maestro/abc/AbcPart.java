@@ -80,10 +80,14 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	private final int[] trackVolumeAdjust;
 	private final DrumNoteMap[] drumNoteMap;
 	private final StudentFXNoteMap[] fxNoteMap;
+    private final JauntyHandKnellsFXNoteMap[] jauntyHandKnellsFXNoteMap;
 	private BitSet[] drumsEnabled;
 	private BitSet[] cowbellsEnabled;
 	private BitSet[] fxEnabled;
-	private final Boolean[] studentFX;
+	private final Boolean[] fx;
+    /**
+     * If this is enabled, lowest student note allowable is including fx
+     */
 	private boolean studentOverride = false;
 	
 	public static final int badgerPrioStep = 1;
@@ -133,11 +137,12 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		this.playLeft = new boolean[t];
 		this.playCenter = new boolean[t];
 		this.playRight = new boolean[t];
-		this.studentFX = new Boolean[t];
+		this.fx = new Boolean[t];
 
 		this.trackVolumeAdjust = new int[t];
 		this.drumNoteMap = new DrumNoteMap[t];
 		this.fxNoteMap = new StudentFXNoteMap[t];
+        this.jauntyHandKnellsFXNoteMap = new JauntyHandKnellsFXNoteMap[t];
 		this.sections = new ArrayList<>();
 		this.nonSection = new ArrayList<>();
 		this.sectionsModified = new ArrayList<>();
@@ -148,7 +153,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			this.playLeft[i] = true;
 			this.playCenter[i] = true;
 			this.playRight[i] = true;
-			this.studentFX[i] = null;
+			this.fx[i] = null;
 		}
 	}
 
@@ -172,6 +177,12 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				fxNoteMap[i] = null;
 			}
 		}
+        for (int i = 0; i < jauntyHandKnellsFXNoteMap.length; i++) {
+            if (jauntyHandKnellsFXNoteMap[i] != null) {
+                jauntyHandKnellsFXNoteMap[i].removeChangeListener(drumMapChangeListener);
+                jauntyHandKnellsFXNoteMap[i] = null;
+            }
+        }
 		sections = null;
 		sectionsTicked = null;
 		sectionsModified = null;
@@ -313,13 +324,21 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			}
 			
 			if (instrument == LotroInstrument.STUDENT_FIDDLE) {
-				trackEle.setAttribute("fx", String.valueOf(isStudentFX(t)));
+				trackEle.setAttribute("fx", String.valueOf(isFX(t)));
 				trackEle.setAttribute("studentOverride", String.valueOf(isStudentOverride()));
 			}
 
-			if (instrument.isPercussion || (instrument == LotroInstrument.STUDENT_FIDDLE && isStudentFX(t))) {
+			if (instrument.isPercussion || (instrument == LotroInstrument.STUDENT_FIDDLE && isFX(t))) {
 				calculateEnabledSet(ele, doc, t, trackEle);
 			}
+
+            if (instrument == LotroInstrument.JAUNTY_HAND_KNELLS) {
+                trackEle.setAttribute("fx", String.valueOf(isFX(t)));
+            }
+
+            if (instrument.isPercussion || ((instrument == LotroInstrument.STUDENT_FIDDLE || instrument == LotroInstrument.JAUNTY_HAND_KNELLS) && isFX(t))) {
+                calculateEnabledSet(ele, doc, t, trackEle);
+            }
 		}
 	}
 	    
@@ -348,11 +367,13 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		}
 
 		if (!isCowbellPart()) {
-			if (!isStudentPart() && drumNoteMap[t] != null)
+			if (!isDrumPart() && drumNoteMap[t] != null)
 				drumNoteMap[t]
 						.saveToXml((Element) trackEle.appendChild(doc.createElement(drumNoteMap[t].getXmlName())));
 			if (isStudentPart() && fxNoteMap[t] != null)
 				fxNoteMap[t].saveToXml((Element) trackEle.appendChild(doc.createElement(fxNoteMap[t].getXmlName())));
+            if (isJauntyHandKnellsPart() && jauntyHandKnellsFXNoteMap[t] != null)
+                jauntyHandKnellsFXNoteMap[t].saveToXml((Element) trackEle.appendChild(doc.createElement(jauntyHandKnellsFXNoteMap[t].getXmlName())));
 		}
 	}
 
@@ -522,13 +543,16 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 					// compat handling
 					handlePercussion(fileVersion, trackEle, t);
 					fx = fxNoteMap[t] != null;
-					setStudentFX(t, fx);
+					setFX(t, fx);
 				} else if (instrument == LotroInstrument.STUDENT_FIDDLE && fx) {
 					handlePercussion(fileVersion, trackEle, t);
-					setStudentFX(t, fx);
+					setFX(t, fx);
 				} else if (instrument == LotroInstrument.STUDENT_FIDDLE) {
-					setStudentFX(t, fx);
-				}
+					setFX(t, fx);
+				} else if (instrument == LotroInstrument.JAUNTY_HAND_KNELLS) {
+                    if (fx) handlePercussion(fileVersion, trackEle, t);
+                    setFX(t, fx);
+                }
 			}
 		} catch (XPathExpressionException e) {
 			throw new ParseException("XPath error: " + e.getMessage(), null);
@@ -542,18 +566,24 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			calculateEnabledSet(t, drumsEle);
 		}
 
-		Element drumMapEle = XmlUtil.selectSingleElement(trackEle, "drumMap");
+		Element drumMapEle = XmlUtil.selectSingleElement(trackEle, DrumNoteMap.getXmlName());
 		if (drumMapEle != null) {
 			drumNoteMap[t] = DrumNoteMap.loadFromXml(drumMapEle, fileVersion);
 			if (drumNoteMap[t] != null)
 				drumNoteMap[t].addChangeListener(drumMapChangeListener);
 		}
-		drumMapEle = XmlUtil.selectSingleElement(trackEle, "fxMap");
+		drumMapEle = XmlUtil.selectSingleElement(trackEle, StudentFXNoteMap.getXmlName());
 		if (drumMapEle != null) {
 			fxNoteMap[t] = StudentFXNoteMap.loadFromXml(drumMapEle, fileVersion);
 			if (fxNoteMap[t] != null)
 				fxNoteMap[t].addChangeListener(drumMapChangeListener);
 		}
+        drumMapEle = XmlUtil.selectSingleElement(trackEle, JauntyHandKnellsFXNoteMap.getXmlName());
+        if (drumMapEle != null) {
+            jauntyHandKnellsFXNoteMap[t] = JauntyHandKnellsFXNoteMap.loadFromXml(drumMapEle, fileVersion);
+            if (jauntyHandKnellsFXNoteMap[t] != null)
+                jauntyHandKnellsFXNoteMap[t].addChangeListener(drumMapChangeListener);
+        }
 	}
 
 	private void calculateEnabledSet(int t, Element drumsEle) throws ParseException, XPathExpressionException {
@@ -637,7 +667,14 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				dstNote = Note.A2.id; // "Tom High 2"
 			else if (instrument == LotroInstrument.STUDENT_FIDDLE)
 				dstNote = getFXMap(track).get(noteId);
-			else
+            else if (instrument == LotroInstrument.JAUNTY_HAND_KNELLS) {
+                dstNote = getJauntyHandKnellsFXMap(track).get(noteId);
+                dstNote += getFXTranspose(track, tickStart);
+                while (dstNote < instrument.lowestPlayable.id)
+                    dstNote += 12;
+                while (dstNote > instrument.highestPlayable.id)
+                    dstNote -= 12;
+            } else
 				dstNote = getDrumMap(track).get(noteId);
 
 			return (dstNote == LotroDrumInfo.DISABLED.note.id) ? null : Note.fromId(dstNote);
@@ -706,7 +743,14 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				dstNote = Note.A2.id; // "Tom High 2"
 			else if (instrument == LotroInstrument.STUDENT_FIDDLE)
 				dstNote = getFXMap(track).get(noteId);
-			else
+            else if (instrument == LotroInstrument.JAUNTY_HAND_KNELLS) {
+                dstNote = getJauntyHandKnellsFXMap(track).get(noteId);
+                dstNote += getFXTranspose(track, tickStart);
+                while (dstNote < instrument.lowestPlayable.id)
+                    dstNote += 12;
+                while (dstNote > instrument.highestPlayable.id)
+                    dstNote -= 12;
+            } else
 				dstNote = getDrumMap(track).get(noteId);
 
 			return (dstNote == LotroDrumInfo.DISABLED.note.id) ? null : Note.fromId(dstNote);
@@ -1158,6 +1202,12 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		}
 		return temp;
 	}
+
+    public int getFXTranspose(int track, long tickStart) {
+        // TODO: consider adding tune-editor transpose here also
+        int temp = getSectionTranspose(tickStart, track);
+        return temp;
+    }
 	
 	public Pair<Integer, Integer> getSectionPitchLimits(int track, long tickStart) {
 		Pair<Integer, Integer> secLimits = new Pair<>(minDefault.id,Note.MAX.id);
@@ -1374,13 +1424,14 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			enabledTrackCount += enabled ? 1 : -1;
 			abcSong.setMixDirty(true);
 			boolean fx_also = false;
-			if (studentFX[track] == null) {
-				studentFX[track] = isDrumTrack(track);
+			if (fx[track] == null) {
+                // by default we enable FX on drum tracks
+				fx[track] = isDrumTrack(track);
 				fx_also = true;
 			}
 			fireChangeEvent(AbcPartProperty.TRACK_ENABLED, track);
 			if (fx_also)
-				fireChangeEvent(AbcPartProperty.STUDENT_FX, track);
+				fireChangeEvent(AbcPartProperty.FX, track);
 		}
 	}
 
@@ -1494,36 +1545,40 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		return instrument.isPercussion;
 	}
 
+    /**
+     * If drum/fx hit panels should be hidden
+     */
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean isChromatic(int track) {
-		if (instrument == LotroInstrument.STUDENT_FIDDLE) {
-			if (studentFX[track] == null) {
-				setStudentFX(track, isDrumTrack(track));
+		if (instrument == LotroInstrument.STUDENT_FIDDLE || instrument == LotroInstrument.JAUNTY_HAND_KNELLS) {
+			if (fx[track] == null) {
+				setFX(track, isDrumTrack(track));
 			}
-			return !studentFX[track] || studentOverride;
+			return !fx[track] || studentOverride;
 		}
 		return !isPercussionPart();
 	}
 	
-	public boolean isStudentFX(int track) {
+	public boolean isFX(int track) {
 		if (studentOverride) return false;
-		if (instrument == LotroInstrument.STUDENT_FIDDLE && studentFX[track] == null) {
-			setStudentFX(track, isDrumTrack(track));
-		} else if (instrument != LotroInstrument.STUDENT_FIDDLE) {
+		if ((instrument == LotroInstrument.STUDENT_FIDDLE || instrument == LotroInstrument.JAUNTY_HAND_KNELLS) && fx[track] == null) {
+			setFX(track, isDrumTrack(track));
+		} else if (instrument != LotroInstrument.STUDENT_FIDDLE && instrument != LotroInstrument.JAUNTY_HAND_KNELLS) {
 			return false;//avoid setting studentFX to non-null unless we are sure it has been assigned a track
 		}
-		return studentFX[track];
+		return fx[track];
 	}
 
-	public void setStudentFX(int track, boolean enabled) {
-		if (studentFX[track] == null || studentFX[track] != enabled) {
-			studentFX[track] = enabled;
+	public void setFX(int track, boolean enabled) {
+		if (fx[track] == null || fx[track] != enabled) {
+			fx[track] = enabled;
 			abcSong.setMixDirty(true);
-			fireChangeEvent(AbcPartProperty.STUDENT_FX, track);
+			fireChangeEvent(AbcPartProperty.FX, track);
 		}
 	}
 	
 	public void setStudentOverride(boolean b) {
+        // new student parts will have gotten this enabled, else false
 		studentOverride = b;
 	}
 	
@@ -1543,6 +1598,10 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	public boolean isStudentPart() {
 		return instrument == LotroInstrument.STUDENT_FIDDLE;
 	}
+
+    public boolean isJauntyHandKnellsPart() {
+        return instrument == LotroInstrument.JAUNTY_HAND_KNELLS;
+    }
 
 	public boolean isDrumTrack(int track) {
 		return abcSong.getSequenceInfo().getTrackInfo(track).isDrumTrack();
@@ -1579,6 +1638,14 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		return fxNoteMap[track];
 	}
 
+    public JauntyHandKnellsFXNoteMap getJauntyHandKnellsFXMap(int track) {
+        if (jauntyHandKnellsFXNoteMap[track] == null) {
+            jauntyHandKnellsFXNoteMap[track] = new JauntyHandKnellsFXNoteMap();
+            jauntyHandKnellsFXNoteMap[track].addChangeListener(drumMapChangeListener);
+        }
+        return jauntyHandKnellsFXNoteMap[track];
+    }
+
 	private final ChangeListener drumMapChangeListener = new ChangeListener() {
 		@Override
 		public void stateChanged(ChangeEvent e) {
@@ -1611,11 +1678,15 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		if (isStudentPart())
 			return getFXMap(track).get(drumId) != LotroStudentFXInfo.DISABLED.note.id;
 
+        if (isJauntyHandKnellsPart()) {
+            return getJauntyHandKnellsFXMap(track).get(drumId) != LotroChromaticFXInfo.DISABLED.note.id;
+        }
+
 		return getDrumMap(track).get(drumId) != LotroDrumInfo.DISABLED.note.id;
 	}
 
 	public boolean isPercussionNoteEnabled(int track, int drumId) {
-		BitSet[] enabledSet = isCowbellPart() ? cowbellsEnabled : (isStudentPart() && isStudentFX(track)) ? fxEnabled : drumsEnabled;
+		BitSet[] enabledSet = isCowbellPart() ? cowbellsEnabled : (isStudentPart() && isFX(track)) ? fxEnabled : drumsEnabled;
 
 		if (enabledSet == null || enabledSet[track] == null) {
 			return !isCowbellPart() || (drumId == MidiDrum.COWBELL.id())

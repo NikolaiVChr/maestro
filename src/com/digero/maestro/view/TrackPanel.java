@@ -361,7 +361,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		fxBox.addActionListener(e -> {
 			int track = trackInfo.getTrackNumber();
 			boolean fx = fxBox.isSelected();
-			abcPart.setStudentFX(track, fx);
+			abcPart.setFX(track, fx);
 		});
 		//fxBox.setVerticalTextPosition(SwingConstants.BOTTOM);
 		//fxBox.setHorizontalTextPosition(SwingConstants.CENTER);
@@ -498,7 +498,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 	
 	// returns <titleWidth, priorityWidth, controlWidth
 	// Also sets some static constants in this class to be scaled properly
-	static TrackDimensions calculateTrackDims(boolean student) {
+	static TrackDimensions calculateTrackDims(boolean fx) {
 		Font font = UIManager.getFont("defaultFont");
 
 		float height = 1.0f;// Will be higher than 1.0 if screen larger than FullHD
@@ -523,7 +523,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 			// Lerp track height between 10pt (48) and 18pt (72)
 			int extraCheckbox = 0;
-			if (student) extraCheckbox = 0;//font.getSize() * 2;
+			if (fx) extraCheckbox = 0;//font.getSize() * 2;
 			dims.rowHeight = (int) ((48 + (72 - 48) * (sizeDiff / divider) + extraCheckbox) * height);
 			//dims.rowHeight = (int) ((48 + (72 - 48) * (sizeDiff / divider)) * height);
 
@@ -533,7 +533,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 			return dims;
 		} else {
 			int extraCheckbox = 0;
-			if (student) extraCheckbox = 0;
+			if (fx) extraCheckbox = 0;
 			return new TrackDimensions(TITLE_WIDTH_DEFAULT, PRIORITY_WIDTH_DEFAULT, CONTROL_WIDTH_DEFAULT,
 					(int)((extraCheckbox + ROW_HEIGHT_DEFAULT) * height));
 		}
@@ -571,13 +571,13 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 		JMenuItem importItem = drumMapMenu.add(new JMenuItem("Import..."));
 		importItem.addActionListener(e -> {
-			if (!abcPart.isStudentPart()) {
+			if (!abcPart.isStudentPart() && !abcPart.isJauntyHandKnellsPart()) {
 				loadDrumMapping();
 			}
 		});
 		JMenuItem exportItem = drumMapMenu.add(new JMenuItem("Export..."));
 		exportItem.addActionListener(e -> {
-			if (!abcPart.isStudentPart()) {
+			if (!abcPart.isStudentPart() && !abcPart.isJauntyHandKnellsPart()) {
 				saveDrumMapping();
 			}
 		});
@@ -917,10 +917,10 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 			sectionButton.setVisible(trackEnabled);
 		}
 
-		fxBox.setVisible(trackEnabled && abcPart.getInstrument().equals(LotroInstrument.STUDENT_FIDDLE));
+		fxBox.setVisible(trackEnabled && (abcPart.getInstrument().equals(LotroInstrument.STUDENT_FIDDLE) || abcPart.getInstrument().equals(LotroInstrument.JAUNTY_HAND_KNELLS)));
 		if (fxBox.isVisible()) {
 			add(fxBox, CONTROL_COLUMN + ", 1");
-			fxBox.setSelected(abcPart.isStudentFX(trackInfo.getTrackNumber()));
+			fxBox.setSelected(abcPart.isFX(trackInfo.getTrackNumber()));
 			fxBox.setEnabled(!abcPart.isStudentOverride());
 			// TODO: disabling checkbox cannot really be seen in flatlaf :(
 		} else {
@@ -1270,15 +1270,15 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 				if (highId < MidiConstants.LOWEST_NOTE_ID || highId > MidiConstants.HIGHEST_NOTE_ID)
 					return false;
 				
-				if (abcPart.isStudentOverride()) {
+				if (abcPart.isStudentOverride() || abcPart.isJauntyHandKnellsPart()) {
 					return abcPart.getInstrument().isPlayable(highId) && abcPart.getInstrument().isPlayable(lowId);
 				}
-				return abcPart.getInstrument().isPlayable(highId, abcPart.isStudentPart() && !abcPart.isStudentFX(trackInfo.getTrackNumber())) && abcPart.getInstrument().isPlayable(lowId, abcPart.isStudentPart() && !abcPart.isStudentFX(trackInfo.getTrackNumber()));
+				return abcPart.getInstrument().isPlayable(highId, abcPart.isStudentPart() && !abcPart.isFX(trackInfo.getTrackNumber())) && abcPart.getInstrument().isPlayable(lowId, abcPart.isStudentPart() && !abcPart.isFX(trackInfo.getTrackNumber()));
 			}
-			if (abcPart.isStudentOverride()) {
+			if (abcPart.isStudentOverride() || abcPart.isJauntyHandKnellsPart()) {
 				return abcPart.getInstrument().isPlayable(highId) && abcPart.getInstrument().isPlayable(lowId);
 			}
-			return abcPart.getInstrument().isPlayable(midId, abcPart.isStudentPart() && !abcPart.isStudentFX(trackInfo.getTrackNumber()));
+			return abcPart.getInstrument().isPlayable(midId, abcPart.isStudentPart() && !abcPart.isFX(trackInfo.getTrackNumber()));
 		}
 
 		@Override

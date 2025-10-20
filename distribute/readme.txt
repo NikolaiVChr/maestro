@@ -47,6 +47,11 @@ Version 4.4.5
 - Make Maestro release lock on midi files as soon as they are read, so they can be moved or renamed, while Maestro is still running.
 - Combine timing checkboxes into a dropdown menu.
 - Add version number to abc player window title.
+- Added FX option to Jaunty hand-knells. As FX it allows section-editor octave transposing and doubling.
+    Note range limits in section editor wont be enabled.
+    Tune-editor transposing (key-change) does not affect it. Neither does track or song transposing.
+    Depending on beta feedback, key-changes can be made to affect it. After beta, it wont change in future.
+- Disabled doubling, transpose and note range control inputs in section-editor for Student FX.
 
 Version 4.4.3
 - Closing yes/no/cancel dialogs will now act as choosing cancel.

@@ -18,7 +18,7 @@ public class AbcPartEvent extends EventObject {
 		DELAY_EDIT(true), //
 		TRACK_PRIORITY, //
 		MAX_EDIT(true), //
-		STUDENT_FX(true), //
+		FX(true), //TODO: rename to FX
 		CONCLUSION_FERMATA_EDIT(true),
         PART_NUMBER_MANUAL(false); //
 

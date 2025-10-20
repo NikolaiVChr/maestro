@@ -1,5 +1,6 @@
 package com.digero.maestro.view;
 
+import com.digero.maestro.abc.*;
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
 
@@ -36,12 +37,6 @@ import com.digero.common.util.Listener;
 import com.digero.common.util.Pair;
 import com.digero.common.util.Util;
 import com.digero.common.view.ColorTable;
-import com.digero.maestro.abc.AbcPart;
-import com.digero.maestro.abc.AbcPartEvent;
-import com.digero.maestro.abc.AbcSongEvent;
-import com.digero.maestro.abc.LotroDrumInfo;
-import com.digero.maestro.abc.LotroStudentFXInfo;
-import com.digero.maestro.abc.PartSection;
 import com.digero.maestro.abc.AbcSongEvent.AbcSongProperty;
 import com.digero.maestro.midi.NoteEvent;
 import com.digero.maestro.midi.SequenceDataCache;
@@ -76,6 +71,7 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 	private JCheckBox checkBox;
 	private JComboBox<LotroDrumInfo> drumComboBox;
 	private JComboBox<LotroStudentFXInfo> drumComboBoxFX;
+    private JComboBox<LotroChromaticFXInfo> drumComboBoxJauntyFX;
 	private DrumNoteGraph noteGraph;
 	private TrackVolumeBar trackVolumeBar;
 	private ActionListener trackVolumeBarListener;
@@ -145,6 +141,13 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 			LotroStudentFXInfo selected = (LotroStudentFXInfo) drumComboBoxFX.getSelectedItem();
 			abcPart.getFXMap(trackInfo.getTrackNumber()).set(drumId, selected.note.id);
 		});
+        drumComboBoxJauntyFX = new JComboBox<>(LotroChromaticFXInfo.getRange(LotroInstrument.JAUNTY_HAND_KNELLS).toArray(new LotroChromaticFXInfo[0]));
+        drumComboBoxJauntyFX.setSelectedItem(getSelectedJauntyFX());
+        drumComboBoxJauntyFX.setMaximumRowCount(20);
+        drumComboBoxJauntyFX.addActionListener(e -> {
+            LotroChromaticFXInfo selected = (LotroChromaticFXInfo) drumComboBoxJauntyFX.getSelectedItem();
+            abcPart.getJauntyHandKnellsFXMap(trackInfo.getTrackNumber()).set(drumId, selected.note.id);
+        });
 		drumComboBox = new JComboBox<>(LotroDrumInfo.ALL_DRUMS.toArray(new LotroDrumInfo[0]));
 		drumComboBox.setSelectedItem(getSelectedDrum());
 		drumComboBox.setMaximumRowCount(20);
@@ -227,6 +230,7 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 		add(checkBox, "1, 0");
 		add(drumComboBox, "2, 0, f, c");
 		add(drumComboBoxFX, "2, 0, f, c");
+        add(drumComboBoxJauntyFX, "2, 0, f, c");
 
 		updateState();
 		//noteGraph.setPreferredSize(new Dimension(noteGraph.getPreferredSize().width, getPreferredSize().height)); the getter is overridden
@@ -262,7 +266,9 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 			checkBox.setEnabled(abcPart.isTrackEnabled(trackInfo.getTrackNumber()));
 			checkBox.setSelected(abcPart.isPercussionNoteEnabled(trackInfo.getTrackNumber(), drumId));
 			if (abcPart.getInstrument() == LotroInstrument.STUDENT_FIDDLE) {
-				drumComboBoxFX.setSelectedItem(getSelectedFX());
+                drumComboBoxFX.setSelectedItem(getSelectedFX());
+            } else if (abcPart.getInstrument() == LotroInstrument.JAUNTY_HAND_KNELLS) {
+                drumComboBoxJauntyFX.setSelectedItem(getSelectedJauntyFX());
 			} else {
 				drumComboBox.setSelectedItem(getSelectedDrum());
 			}
@@ -329,6 +335,8 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 		drumComboBox.setVisible(abcPart.getInstrument() == LotroInstrument.BASIC_DRUM);
 		drumComboBoxFX.setEnabled(trackEnabled);
 		drumComboBoxFX.setVisible(abcPart.getInstrument() == LotroInstrument.STUDENT_FIDDLE);
+        drumComboBoxJauntyFX.setEnabled(trackEnabled);
+        drumComboBoxJauntyFX.setVisible(abcPart.getInstrument() == LotroInstrument.JAUNTY_HAND_KNELLS);
 
 		if (!noteEnabled) {
 			// disabled
@@ -375,6 +383,10 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 	private LotroStudentFXInfo getSelectedFX() {
 		return LotroStudentFXInfo.getById(abcPart.getFXMap(trackInfo.getTrackNumber()).get(drumId));
 	}
+
+    private LotroChromaticFXInfo getSelectedJauntyFX() {
+        return LotroChromaticFXInfo.getById(LotroInstrument.JAUNTY_HAND_KNELLS, abcPart.getJauntyHandKnellsFXMap(trackInfo.getTrackNumber()).get(drumId));
+    }
 
 	public class DrumNoteGraph extends NoteGraph {
 		private boolean showingAbcNotesOn = true;
@@ -512,6 +524,7 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 		checkBox.setSelected(abcPart.isPercussionNoteEnabled(trackInfo.getTrackNumber(), drumId));
 		drumComboBox.setSelectedItem(getSelectedDrum());
 		drumComboBoxFX.setSelectedItem(getSelectedFX());
+        drumComboBoxJauntyFX.setSelectedItem(getSelectedJauntyFX());
 		updateState();
 	}
 }

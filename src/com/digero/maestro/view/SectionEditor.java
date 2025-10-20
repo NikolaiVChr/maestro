@@ -261,7 +261,7 @@ public class SectionEditor {
 					makeNewSectorLine(percussion);
 				}
 				layoutTabs();
-				enableDueToPercussion(abcPart);
+				enableDueToPercussion(abcPart, track);
 				addSectorLines(nonSectionInput);
 
 				copySections.getModel().addActionListener(e -> {
@@ -765,28 +765,33 @@ public class SectionEditor {
 					
 					
 					
-					enableDueToPercussion(abcPart);
-				}
+					enableDueToPercussion(abcPart, track);
+				} else if (e.getProperty() == AbcPartProperty.FX) {
+                    enableDueToPercussion(abcPart, track);
+                }
 			};
 
-			private void enableDueToPercussion(AbcPart abcPart) {
+			private void enableDueToPercussion(AbcPart abcPart, int track) {
 				boolean perc = abcPart.getInstrument().isPercussion;
-				
+				boolean fx = abcPart.isFX(track);
+                boolean isJauntyFX = fx && abcPart.isJauntyHandKnellsPart();
+                boolean isStudentFX = fx && abcPart.isStudentPart();
+
 				for (SectionEditorLine l : sectionInputs) {
-					l.transpose.setEnabled(!perc);
-					l.doubling0.setEnabled(!perc);
-					l.doubling1.setEnabled(!perc);
-					l.doubling2.setEnabled(!perc);
-					l.doubling3.setEnabled(!perc);
-					l.toPitch.setEnabled(!perc);
-					l.fromPitch.setEnabled(!perc);
+					l.transpose.setEnabled(!perc && !isStudentFX);
+					l.doubling0.setEnabled(!perc && !isStudentFX);
+					l.doubling1.setEnabled(!perc && !isStudentFX);
+					l.doubling2.setEnabled(!perc && !isStudentFX);
+					l.doubling3.setEnabled(!perc && !isStudentFX);
+					l.toPitch.setEnabled(!perc && !fx);
+					l.fromPitch.setEnabled(!perc && !fx);
 				}
-				nonSectionInput.doubling0.setEnabled(!perc);
-				nonSectionInput.doubling1.setEnabled(!perc);
-				nonSectionInput.doubling2.setEnabled(!perc);
-				nonSectionInput.doubling3.setEnabled(!perc);
-				nonSectionInput.fromPitch.setEnabled(!perc);
-				nonSectionInput.toPitch.setEnabled(!perc);
+				nonSectionInput.doubling0.setEnabled(!perc && !isStudentFX);
+				nonSectionInput.doubling1.setEnabled(!perc && !isStudentFX);
+				nonSectionInput.doubling2.setEnabled(!perc && !isStudentFX);
+				nonSectionInput.doubling3.setEnabled(!perc && !isStudentFX);
+				nonSectionInput.fromPitch.setEnabled(!perc && !fx);
+				nonSectionInput.toPitch.setEnabled(!perc && !fx);
 			}
 
 			private final Listener<AbcSongEvent> songListener = e -> {
