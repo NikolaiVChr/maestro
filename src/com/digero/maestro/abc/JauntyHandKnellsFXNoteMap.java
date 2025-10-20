@@ -61,8 +61,10 @@ public class JauntyHandKnellsFXNoteMap extends DrumNoteMap {
 
 	@Override
     protected byte getDefaultMapping(byte noteId) {
-        if (noteId >= LotroInstrument.JAUNTY_HAND_KNELLS.lowestPlayable.id && noteId <= LotroInstrument.JAUNTY_HAND_KNELLS.highestPlayable.id)
-            return noteId;
+        byte octaveDelta = (byte) (LotroInstrument.JAUNTY_HAND_KNELLS.octaveDelta * 12);
+        if (noteId >= LotroInstrument.JAUNTY_HAND_KNELLS.lowestPlayable.id + octaveDelta
+                && noteId <= LotroInstrument.JAUNTY_HAND_KNELLS.highestPlayable.id + octaveDelta)
+            return (byte) (noteId - octaveDelta);
         else
             return DISABLED_NOTE_ID;
     }

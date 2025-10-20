@@ -15,11 +15,11 @@ import java.util.TreeSet;
 import com.digero.common.midi.Note;
 import org.jetbrains.annotations.NotNull;
 
-public class LotroDrumInfo implements Comparable<LotroDrumInfo> {
+public class LotroDrumInfo extends LotroEventInfo<LotroDrumInfo> {
 	private static final Map<Integer, LotroDrumInfo> byId = new HashMap<>();
 	private static final SortedMap<String, SortedSet<LotroDrumInfo>> byCategory = new TreeMap<>();
 
-	public static final LotroDrumInfo DISABLED = new LotroDrumInfo(Note.REST, "None", "#None");
+	public static final LotroDrumInfo DISABLED = new LotroDrumInfo(Note.REST, noneName, "#None");
 	public static final List<LotroDrumInfo> ALL_DRUMS;
 
 	static {
@@ -185,26 +185,13 @@ public class LotroDrumInfo implements Comparable<LotroDrumInfo> {
 		this.category = category;
 	}
 
-	@Override
-	public String toString() {
-		return name;
-	}
+    @Override
+    public String getName() {
+        return name;
+    }
 
-	@Override
-	public int compareTo(@NotNull LotroDrumInfo that) {
-		return this.note.id - that.note.id;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (obj == null || obj.getClass() != this.getClass())
-			return false;
-
-		return this.note.id == ((LotroDrumInfo) obj).note.id;
-	}
-
-	@Override
-	public int hashCode() {
-		return this.note.id;
-	}
+    @Override
+    public Note getNote() {
+        return note;
+    }
 }

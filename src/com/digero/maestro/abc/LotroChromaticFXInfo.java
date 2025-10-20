@@ -6,9 +6,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
-public class LotroChromaticFXInfo implements Comparable<LotroChromaticFXInfo> {
+public class LotroChromaticFXInfo extends LotroEventInfo<LotroChromaticFXInfo> {
     private static final List<Note> notes = new ArrayList<>();
-	public static final LotroChromaticFXInfo DISABLED = new LotroChromaticFXInfo(Note.REST, "None");
+	public static final LotroChromaticFXInfo DISABLED = new LotroChromaticFXInfo(Note.REST, noneName);
     private static final List<LotroChromaticFXInfo> JAUNTY_FX;
     private static final Map<Integer, LotroChromaticFXInfo> JAUNTY_BY_ID;
 
@@ -58,19 +58,6 @@ public class LotroChromaticFXInfo implements Comparable<LotroChromaticFXInfo> {
         };
     }
 
-//	private static final Comparator<Note> noteComparator = new Comparator<Note>() {
-//		public int compare(Note o1, Note o2) {
-//			return o1.id - o2.id;
-//		}
-//	};
-
-//	private static void makeCategory(String category, Note... notes) {
-//		Arrays.sort(notes, noteComparator);
-//		for (Note note : notes) {
-//			add(category, note);
-//		}
-//	}
-
 	private static void add(Note note) {
 		notes.add(note);
 	}
@@ -81,6 +68,16 @@ public class LotroChromaticFXInfo implements Comparable<LotroChromaticFXInfo> {
             default -> null;
         };
 	}
+
+    @Override
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public Note getNote() {
+        return note;
+    }
 
     private static class ChromaticFXInfoIterator implements Iterator<LotroChromaticFXInfo> {
 		private final Iterator<LotroChromaticFXInfo> outerIter;
@@ -109,35 +106,11 @@ public class LotroChromaticFXInfo implements Comparable<LotroChromaticFXInfo> {
 		}
 	}
 
-	public final Note note;
-	public final String name;
+    public final Note note;
+    public final String name;
 
 	private LotroChromaticFXInfo(Note note, String name) {
 		this.note = note;
 		this.name = name;
-	}
-
-	@Override
-	public String toString() {
-		return name;
-	}
-
-	@Override
-	public int compareTo(@NotNull LotroChromaticFXInfo that) {
-
-		return this.note.id - that.note.id;
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (obj == null || obj.getClass() != this.getClass())
-			return false;
-
-		return this.note.id == ((LotroChromaticFXInfo) obj).note.id;
-	}
-
-	@Override
-	public int hashCode() {
-		return this.note.id;
 	}
 }

@@ -323,11 +323,11 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				}
 			}
 			
-			if (instrument == LotroInstrument.STUDENT_FIDDLE) {
+			if (isStudentPart()) {
 				trackEle.setAttribute("fx", String.valueOf(isFX(t)));
 				trackEle.setAttribute("studentOverride", String.valueOf(isStudentOverride()));
 			}
-            if (instrument == LotroInstrument.JAUNTY_HAND_KNELLS) {
+            if (isJauntyHandKnellsPart()) {
                 trackEle.setAttribute("fx", String.valueOf(isFX(t)));
             }
 			if (instrument.isPercussion || ((isStudentPart() || isJauntyHandKnellsPart()) && isFX(t))) {
@@ -536,17 +536,17 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				
 				if (instrument.isPercussion) {
 					loadDrumHitsFromXML(fileVersion, trackEle, t);
-				} else if (new Version(3, 2, 9, 300).compareTo(fileVersion) > 0 && instrument == LotroInstrument.STUDENT_FIDDLE) {
+				} else if (new Version(3, 2, 9, 300).compareTo(fileVersion) > 0 && isStudentPart()) {
 					// compat handling
 					loadDrumHitsFromXML(fileVersion, trackEle, t);
 					fx = fxNoteMap[t] != null;
 					setFX(t, fx);
-				} else if (instrument == LotroInstrument.STUDENT_FIDDLE && fx) {
+				} else if (isStudentPart() && fx) {
 					loadDrumHitsFromXML(fileVersion, trackEle, t);
 					setFX(t, fx);
-				} else if (instrument == LotroInstrument.STUDENT_FIDDLE) {
+				} else if (isStudentPart()) {
 					setFX(t, fx);
-				} else if (instrument == LotroInstrument.JAUNTY_HAND_KNELLS) {
+				} else if (isJauntyHandKnellsPart()) {
                     if (fx) loadDrumHitsFromXML(fileVersion, trackEle, t);
                     setFX(t, fx);
                 }
@@ -668,9 +668,9 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				dstNote = Note.G2.id; // "Tom High 1"
 			else if (instrument == LotroInstrument.MOOR_COWBELL)
 				dstNote = Note.A2.id; // "Tom High 2"
-			else if (instrument == LotroInstrument.STUDENT_FIDDLE)
+			else if (isStudentPart())
 				dstNote = getFXMap(track).get(noteId);
-            else if (instrument == LotroInstrument.JAUNTY_HAND_KNELLS) {
+            else if (isJauntyHandKnellsPart()) {
                 dstNote = getJauntyHandKnellsFXMap(track).get(noteId);
                 if (dstNote == LotroChromaticFXInfo.DISABLED.note.id) {
                     return null;
@@ -692,7 +692,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				return null;
 			}
 			int lowest = instrument.lowestPlayable.id;
-			if (instrument == LotroInstrument.STUDENT_FIDDLE && !isStudentOverride())
+			if (isStudentPart() && !isStudentOverride())
 				lowest = LotroInstrument.STUDENT_CHROMATIC_LOWEST.id;
 			
 			while (noteId < lowest)
@@ -747,9 +747,9 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				dstNote = Note.G2.id; // "Tom High 1"
 			else if (instrument == LotroInstrument.MOOR_COWBELL)
 				dstNote = Note.A2.id; // "Tom High 2"
-			else if (instrument == LotroInstrument.STUDENT_FIDDLE)
+			else if (isStudentPart())
 				dstNote = getFXMap(track).get(noteId);
-            else if (instrument == LotroInstrument.JAUNTY_HAND_KNELLS) {
+            else if (isJauntyHandKnellsPart()) {
                 dstNote = getJauntyHandKnellsFXMap(track).get(noteId);
                 if (dstNote == LotroChromaticFXInfo.DISABLED.note.id) {
                     return null;
@@ -779,7 +779,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			}
 			
 			int lowest = instrument.lowestPlayable.id;
-			if (instrument == LotroInstrument.STUDENT_FIDDLE && !isStudentOverride())
+			if (isStudentPart() && !isStudentOverride())
 				lowest = LotroInstrument.STUDENT_CHROMATIC_LOWEST.id;
 
 			int octaveFittingMin = 0;
@@ -811,7 +811,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				noteId += octaveFittingMin;
 			}
 			
-			if (instrument == LotroInstrument.STUDENT_FIDDLE && octaveFittingMax != 0 && octaveFittingMin != 0) {
+			if (isStudentPart() && octaveFittingMax != 0 && octaveFittingMin != 0) {
 				//System.out.println("\n"+noteId+": octaveFittingMax:"+ octaveFittingMax+" octaveFittingMin:"+octaveFittingMin+" minBend:"+be.getMinBend()+" maxBend:"+be.getMaxBend());
 				//System.out.println("final absolute: "+(be.getMinBend()+noteId)+" to "+(be.getMaxBend()+noteId)+"  instrument limits is "+lowest+" to "+instrument.highestPlayable.id);
 			}
@@ -835,7 +835,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			}
 			
 			int lowest = instrument.lowestPlayable.id;
-			if (instrument == LotroInstrument.STUDENT_FIDDLE && !isStudentOverride())
+			if (isStudentPart() && !isStudentOverride())
 				lowest = LotroInstrument.STUDENT_CHROMATIC_LOWEST.id;
 			
 			while (noteId < lowest)
@@ -1559,7 +1559,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
      */
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean isChromatic(int track) {
-		if (instrument == LotroInstrument.STUDENT_FIDDLE || instrument == LotroInstrument.JAUNTY_HAND_KNELLS) {
+		if (isStudentPart() || isJauntyHandKnellsPart()) {
 			if (fx[track] == null) {
 				setFX(track, isDrumTrack(track));
 			}
@@ -1592,7 +1592,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	}
 	
 	public boolean isStudentOverride() {
-		if (instrument != LotroInstrument.STUDENT_FIDDLE) studentOverride = false; 
+		if (!isStudentPart()) studentOverride = false;
 		return studentOverride;
 	}
 	
