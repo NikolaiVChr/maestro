@@ -778,6 +778,7 @@ public class SectionEditor {
                 boolean isStudentFX = fx && abcPart.isStudentPart();
 
 				for (SectionEditorLine l : sectionInputs) {
+                    l.legato.setEnabled(abcPart.getInstrument().sustainable && !isStudentFX);
 					l.transpose.setEnabled(!perc && !isStudentFX);
 					l.doubling0.setEnabled(!perc && !isStudentFX);
 					l.doubling1.setEnabled(!perc && !isStudentFX);
@@ -786,6 +787,7 @@ public class SectionEditor {
 					l.toPitch.setEnabled(!perc && !fx);
 					l.fromPitch.setEnabled(!perc && !fx);
 				}
+                nonSectionInput.legato.setEnabled(abcPart.getInstrument().sustainable && !isStudentFX);
 				nonSectionInput.doubling0.setEnabled(!perc && !isStudentFX);
 				nonSectionInput.doubling1.setEnabled(!perc && !isStudentFX);
 				nonSectionInput.doubling2.setEnabled(!perc && !isStudentFX);

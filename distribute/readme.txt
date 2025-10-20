@@ -51,7 +51,8 @@ Version 4.4.5
     Note range limits in section editor wont be enabled.
     Tune-editor transposing (key-change) does not affect it. Neither does track or song transposing.
     Depending on beta feedback, key-changes can be made to affect it. After beta, it wont change in future.
-- Disabled doubling, transpose and note range control inputs in section-editor for Student FX.
+- Disabled doubling, transpose, legato and note range control inputs in section-editor for Student FX.
+- Disabled legato control for non-sustained instruments as it have no effect for them anyway.
 
 Version 4.4.3
 - Closing yes/no/cancel dialogs will now act as choosing cancel.
