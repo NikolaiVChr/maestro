@@ -25,6 +25,7 @@ public class SynthesizerFactory {
 	private static final Logger log = Logger.getLogger("playback.abc");
 	private static Soundbank lotroSoundbank = null;
 	private static File soundFontFile = new File("LotroInstruments.sf2");
+    public static final long PLAYBACK_LATENCY_MICROS = 250000L;
 
 	public static void setSoundFontLocation(File soundFontFile) {
 		if (SynthesizerFactory.soundFontFile != soundFontFile) {
@@ -67,7 +68,7 @@ public class SynthesizerFactory {
 		synthInfo.put("interpolation", "point");// default is linear. Options: "point", "linear", "linear1", "linear2", "cubic", "lanczos", "sinc".
 		synthInfo.put("auto gain control", true);// default is true. Set to false it can give pops when skipping in
 													// song, especially for abc player.
-		synthInfo.put("latency", 250000L);// 12000 microseconds is default. But that low with 24 parts will give pops
+		synthInfo.put("latency", PLAYBACK_LATENCY_MICROS);// 12000 microseconds is default. But that low with 24 parts will give pops
 										  // and clicks in playback in abc player.
 		synthInfo.put("jitter correction", true);//default is true. Use seperate thread with nanotime to make playback of messages more timewise accurate. Is also cause of why maestro playback gets delayed after OS sleep or hibernation.
 		synthInfo.put("large mode", false);// Default false. If enabled it seems to use lazy

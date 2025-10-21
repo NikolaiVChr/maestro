@@ -993,6 +993,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		midiModeRadioButton.setSelected(true);
 		abcPreviewMode = abcModeRadioButton.isSelected();
+        SequencerWrapper.isAbcPreview = abcPreviewMode;
 
 		volumeSlider = new JSlider(0, MidiConstants.MAX_VOLUME, getVolume());
 		volumeSlider.setFocusable(false);
@@ -2537,6 +2538,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			newSequencer.setRunning(shouldBeRunning);
 
 			abcPreviewMode = newAbcPreviewMode;
+            SequencerWrapper.isAbcPreview = abcPreviewMode;
 
 			partPanel.setAbcPreviewMode(abcPreviewMode);
 			updateButtons(false);

@@ -27,8 +27,9 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
     private static final Logger log = Logger.getLogger("playback");
 
 	public static final int UPDATE_FREQUENCY_MILLIS = 50;
-	public static final long UPDATE_FREQUENCY_MICROS = UPDATE_FREQUENCY_MILLIS * 1000;
+	public static final long UPDATE_FREQUENCY_MICROS = UPDATE_FREQUENCY_MILLIS * 1000L;
 
+    protected static Sequencer abcSeq = null;// is set only by LotroSequencer
 	protected Sequencer sequencer;
 	protected Receiver receiver;
 	private Transmitter transmitter;
@@ -55,6 +56,8 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 	// For Maestro, the tempo factor is factored into midi tempo messages
 	// when the sequence is refreshed, so it shouldn't be sent to the sequence.
 	private boolean useSequenceTempoFactor = false;
+
+    public static boolean isAbcPreview = true;// set to true so don't have to touch abc player.
 
 	private ListenerList<SequencerEvent> listeners = null;
 
@@ -245,6 +248,9 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 		}
 	}
 
+    /**
+     * Get the playback position in microseconds.
+     */
 	public long getPosition() {
 		if (getSequence() == null)
 			return 0L;
@@ -255,6 +261,38 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 		// return sequencer.getMicrosecondPosition();
 	}
 
+    /**
+     * Song position in microseconds, taking into account the playback latency.
+     *
+     */
+    public long getDelayedPosition() {
+        long micros = getPosition();
+
+        if (isAbcPreview && abcSeq != null && abcSeq.isRunning()) {
+            /*
+             * Subtract the playback latency
+             * to compensate for the delay between
+             * the MIDI clock and the sound being played.
+             *
+             * Stuff like this shows that LotroSequencerWrapper and NoteFilterSequencerWrapper
+             * really should have been 1 class. The midi seqWrapper needs to know if the abc
+             * sequencer is running in this method, so for now I have put abcSeq as a static member.
+             *
+             * And we cannot just get position from abcSeqWrapper where we use getPosition and getThumbPosition.
+             * As the micros might not match with UI,
+             * since UI is really displaying the midi sequence, not the abc which might have tune-editor
+             * tempo changes or main tempo change.
+             */
+            micros -= SynthesizerFactory.PLAYBACK_LATENCY_MICROS;
+            micros = Math.max(0L, micros);
+        }
+
+        return micros;
+    }
+
+    /**
+     * Set the playback position in microseconds.
+     */
 	public void setPosition(long position) {
 		if (position == 0) {
 			// Sun's RealtimeSequencer isn't entirely reliable when calling
@@ -606,10 +644,10 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 	}
 
 	/**
-	 * If dragging, returns the drag position. Otherwise returns the song position.
+	 * If dragging, returns the drag position in micros. Otherwise returns the song position.
 	 */
 	public long getThumbPosition() {
-		return isDragging() ? getDragPosition() : getPosition();
+		return isDragging() ? getDragPosition() : getDelayedPosition();
 	}
 
 	/**

@@ -28,6 +28,7 @@ public class LotroSequencerWrapper extends NoteFilterSequencerWrapper {
 	
 	public LotroSequencerWrapper() throws MidiUnavailableException {
 		super();
+        abcSeq = sequencer;
 	}
 
 	/**

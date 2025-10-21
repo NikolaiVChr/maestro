@@ -365,7 +365,7 @@ public class NoteGraph extends JPanel implements Listener<SequencerEvent>, IDisc
 
 		// Repaint the parts that need it
 		if (evt.getProperty() == SequencerProperty.POSITION) {
-			final long currentSongPos = sequencer.getPosition();
+			final long currentSongPos = sequencer.getDelayedPosition();
 			final long leftSongPos = Math.min(currentSongPos, Math.min(lastPaintedMinSongPos, songPos));
 			final long rightSongPos = Math.max(currentSongPos, Math.max(lastPaintedSongPos, songPos))
 					+ SequencerWrapper.UPDATE_FREQUENCY_MICROS;
