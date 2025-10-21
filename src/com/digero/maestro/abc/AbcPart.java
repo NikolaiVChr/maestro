@@ -541,10 +541,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 					loadDrumHitsFromXML(fileVersion, trackEle, t);
 					fx = fxNoteMap[t] != null;
 					setFX(t, fx);
-				} else if (isStudentPart() && fx) {
-					loadDrumHitsFromXML(fileVersion, trackEle, t);
-					setFX(t, fx);
 				} else if (isStudentPart()) {
+					if (fx) loadDrumHitsFromXML(fileVersion, trackEle, t);
 					setFX(t, fx);
 				} else if (isJauntyHandKnellsPart()) {
                     if (fx) loadDrumHitsFromXML(fileVersion, trackEle, t);
