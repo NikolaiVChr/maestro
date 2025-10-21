@@ -71,15 +71,15 @@ public class Version implements Comparable<Version> {
 	public int compareTo(@NotNull Version that) {
 
         if (this.major != that.major)
-			return this.major - that.major;
+			return Integer.compare(this.major, that.major);
 
 		if (this.minor != that.minor)
-			return this.minor - that.minor;
+			return Integer.compare(this.minor, that.minor);
 
 		if (this.revision != that.revision)
-			return this.revision - that.revision;
+			return Integer.compare(this.revision, that.revision);
 
-		return this.build - that.build;
+		return Integer.compare(this.build, that.build);
 	}
 
 	@Override

@@ -87,17 +87,17 @@ public class AbcRegion implements Comparable<AbcRegion> {
 	@Override
 	public int compareTo(AbcRegion that) {
 		if (this.startTick != that.startTick)
-			return (int) (this.startTick - that.startTick);
+			return Long.compare(this.startTick, that.startTick);
 
 		if (this.endTick != that.endTick)
-			return (int) (this.endTick - that.endTick);
+			return Long.compare(this.endTick, that.endTick);
 
 		if (this.line != that.line)
-			return (this.line - that.line);
+			return Integer.compare(this.line, that.line);
 
 		if (this.startIndex != that.startIndex)
-			return (this.startIndex - that.startIndex);
+			return Integer.compare(this.startIndex, that.startIndex);
 
-		return (this.endIndex - that.endIndex);
+		return Integer.compare(this.endIndex, that.endIndex);
 	}
 }

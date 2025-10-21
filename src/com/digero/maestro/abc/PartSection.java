@@ -23,9 +23,6 @@ public class PartSection implements Comparable<PartSection> {
 	
 	@Override
 	public int compareTo(@NotNull PartSection that) {
-		float result = this.startBar - that.startBar;
-		if (result > 0) return 1;
-		if (result < 0) return -1;
-		return 0;
+		return Float.compare(this.startBar, that.startBar);
 	}
 }

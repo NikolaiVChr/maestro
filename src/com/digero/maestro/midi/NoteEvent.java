@@ -126,15 +126,15 @@ public class NoteEvent implements Comparable<NoteEvent> {
 
 		// many methods rely on this:
 		if (this.startTick != that.startTick)
-			return (this.startTick > that.startTick) ? 1 : -1;
+			return Long.compare(this.startTick, that.startTick);
 
 		// chordifyOrganic() rely on this:
 		if (this.endTick != that.endTick)
-			return (this.endTick > that.endTick) ? 1 : -1;
+			return Long.compare(this.endTick, that.endTick);
 		
 		// nothing rely on this (I hope)
 		if (this.note.id != that.note.id)
-			return this.note.id - that.note.id;		
+			return Integer.compare(this.note.id, that.note.id);
 
 		return 0;
 	}

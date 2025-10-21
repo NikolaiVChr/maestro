@@ -31,6 +31,6 @@ public abstract class LotroEventInfo<T extends LotroEventInfo<T>> implements Com
 
     @Override
     public int compareTo(@NotNull T that) {
-        return this.getNote().id - that.getNote().id;
+        return Integer.compare(this.getNote().id, that.getNote().id);
     }
 }
