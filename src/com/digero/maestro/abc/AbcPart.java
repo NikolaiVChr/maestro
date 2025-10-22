@@ -1210,9 +1210,14 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		return temp;
 	}
 
+    /**
+     * Only includes section-editor and tune-editor transpose.
+     */
     public int getFXTranspose(int track, long tickStart) {
-        // TODO: consider adding tune-editor transpose here also
         int temp = getSectionTranspose(tickStart, track);
+        if (!isDrumTrack(track)) {
+            temp += getAbcSong().getTuneTranspose(tickStart);
+        }
         return temp;
     }
 	

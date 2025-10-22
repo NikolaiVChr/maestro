@@ -49,7 +49,7 @@ Version 4.4.6
 - Add version number to abc player window title.
 - Added FX option to Jaunty hand-knells. As FX it allows section-editor octave transposing and doubling.
     Note range limits in section editor wont be enabled.
-    Tune-editor transposing (key-change) does not affect it. Neither does track or song transposing.
+    Tune-editor transposing (key-change) will affect it unless its a drum track. Track or song transposing will not.
     Depending on beta feedback, key-changes can be made to affect it. After beta, it wont change in future.
 - Disabled doubling, transpose, legato and note range control inputs in section-editor for Student FX.
 - Disabled legato control for non-sustained instruments as it have no effect for them anyway.
