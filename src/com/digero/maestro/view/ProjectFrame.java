@@ -1744,8 +1744,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		playButton.setEnabled(midiLoaded);
 		midiModeRadioButton.setEnabled(midiLoaded || hasAbcNotes);
 		abcModeRadioButton.setEnabled(hasAbcNotes);
-		stopButton.setEnabled((midiLoaded && (sequencer.isRunning() || sequencer.getPosition() != 0))
-				|| (abcSequencer.isLoaded() && (abcSequencer.isRunning() || abcSequencer.getPosition() != 0)));
+		stopButton.setEnabled((midiLoaded && (sequencer.isRunning() || !sequencer.isAtStart()))
+				|| (abcSequencer.isLoaded() && (abcSequencer.isRunning() || !abcSequencer.isAtStart())));
 
 		newPartButton.setEnabled(abcSong != null);
 		deletePartButton.setEnabled(partsList.getSelectedIndex() != -1);

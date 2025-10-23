@@ -121,7 +121,7 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 		
 	}
 
-	private class TimerActionListener implements ActionListener {
+    private class TimerActionListener implements ActionListener {
 		@Override
 		public void actionPerformed(ActionEvent e) {
 			if (sequencer != null && sequencer.isOpen()) {
@@ -247,6 +247,14 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 			fireChangeEvent(SequencerProperty.POSITION);
 		}
 	}
+
+    /**
+     * If the sequencer is at time zero
+     * More fast than checking getPosition() == 0L
+     */
+    public boolean isAtStart() {
+        return getTickPosition() == 0L;
+    }
 
     /**
      * Get the playback position in microseconds.
@@ -644,7 +652,7 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 	}
 
 	/**
-	 * If dragging, returns the drag position in micros. Otherwise returns the song position.
+	 * If dragging, returns the drag position in micros. Otherwise returns the song micros position.
 	 */
 	public long getThumbPosition() {
 		return isDragging() ? getDragPosition() : getDelayedPosition();

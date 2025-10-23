@@ -1606,7 +1606,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		playButton.setEnabled(loaded);
 		playButton.setIcon(sequencer.isRunning() ? pauseIcon : playIcon);
 		playButton.setDisabledIcon(sequencer.isRunning() ? pauseIconDisabled : playIconDisabled);
-		stopButton.setEnabled(loaded && (sequencer.isRunning() || sequencer.getPosition() != 0));
+		stopButton.setEnabled(loaded && (sequencer.isRunning() || !sequencer.isAtStart()));
 	}
 
 	private void refreshSequence() {
