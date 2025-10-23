@@ -1112,7 +1112,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				}
 				abcSequencer.setTickPosition(tick);
 			}
-		} else if (curSequencer.getTickPosition() == 0L) {
+		} else if (curSequencer.isAtStart()) {
 			curSequencer.setTickPosition(firstMidiNoteTick);
 		}
 

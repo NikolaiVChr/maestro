@@ -1462,7 +1462,10 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		}
 
 		boolean running = sequencer.isRunning() || !sequencer.isLoaded();
+
+        // safer to use micros than tick here as it's essentially a new midi we will be starting
 		long position = sequencer.getPosition();
+
 		sequencer.stop(); // pause
 
 		List<FileAndData> data = new ArrayList<>(abcData);
@@ -1610,7 +1613,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 	}
 
 	private void refreshSequence() {
-		long position = sequencer.getPosition();
+		long tickPosition = sequencer.getTickPosition();
 		Sequence song;
 
 		try {
@@ -1630,7 +1633,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			boolean running = sequencer.isRunning();
 			sequencer.reset(false);
 			sequencer.setSequence(song);
-			sequencer.setPosition(position);
+			sequencer.setPosition(tickPosition);
 			sequencer.setRunning(running);
 		} catch (InvalidMidiDataException e) {
 			JOptionPane.showMessageDialog(this, e.getMessage(), "MIDI error", JOptionPane.ERROR_MESSAGE);

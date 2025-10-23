@@ -302,11 +302,11 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
      * Set the playback position in microseconds.
      */
 	public void setPosition(long position) {
-		if (position == 0) {
+		if (position == 0L) {
 			// Sun's RealtimeSequencer isn't entirely reliable when calling
 			// setMicrosecondPosition(0). Instead call setTickPosition(0),
 			// which has the same effect and isn't so buggy.
-			setTickPosition(0);
+			setTickPosition(0L);
 		} else if (position != getPosition()) {
 			sequencer.setTickPosition(microsToTick(position));
 			lastUpdateTick = sequencer.getTickPosition();
