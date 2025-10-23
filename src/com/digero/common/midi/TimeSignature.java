@@ -48,9 +48,8 @@ public class TimeSignature implements MidiConstants {
 			log.fine("Orig MIDI time signature: "+(data[0] & 0xFF)+"/"+(1 << data[1])+" - ");
 			log.fine((data[3] & 0xFF)+" 32nd notes per "+(data[2] & 0xFF)+" MIDI clocks.");
 			log.fine("New  MIDI time signature: 4/4 - 8 32nd notes per 24 MIDI clocks.");
-			 
 		} else {
-            // convert the bytes to unsigned since javas byte is signed but MIDIs is unsigned.
+            // convert the bytes to unsigned since javas byte is signed but MIDIs are unsigned.
 			this.numerator = data[0] & 0xFF;
 			this.denominator = 1 << data[1];
 			this.metronome = data[2] & 0xFF;
@@ -61,6 +60,7 @@ public class TimeSignature implements MidiConstants {
 	}
 
 	public TimeSignature(MetaMessage midiMessage, boolean tryHarder) throws InvalidMidiDataException {
+        // This constructor gets called when the other constructor throws an exception
 		byte[] data = midiMessage.getData();
 		if (midiMessage.getType() != META_TIME_SIGNATURE || data.length < 2 || data.length == 3) {
 			throw new InvalidMidiDataException("Midi message is not a time signature event. Length:" + data.length);
