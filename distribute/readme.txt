@@ -43,7 +43,7 @@ Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 
 Version 4.4.6
 - Removed warnings for bad Jaunty notes.
-- Update Jaunty note durations for polyphony to match update 45.5.0
+- Update Jaunty note durations for polyphony to match lotro update 45.5.0
 - Make Maestro release lock on midi files as soon as they are read, so they can be moved or renamed, while Maestro is still running.
 - Combine timing checkboxes into a dropdown menu.
 - Add version number to abc player window title.
@@ -53,6 +53,7 @@ Version 4.4.6
 - Disabled doubling, transpose, legato and note range control inputs in section-editor for Student FX.
 - Disabled legato control for non-sustained instruments as it have no effect for them anyway.
 - Fixed that the abc playback audio and visible play-head was out of sync with 0.25 seconds.
+- Fixed that maestro did not handle midi with meter numerator higher than 127 correctly.
 
 Version 4.4.3
 - Closing yes/no/cancel dialogs will now act as choosing cancel.

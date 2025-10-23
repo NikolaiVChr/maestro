@@ -1212,6 +1212,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 
     /**
      * Only includes section-editor and tune-editor transpose.
+     * Used only by Jaunty for now
      */
     public int getFXTranspose(int track, long tickStart) {
         int temp = getSectionTranspose(tickStart, track);
