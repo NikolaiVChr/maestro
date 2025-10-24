@@ -1620,7 +1620,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 	}
 
 	private void refreshSequence() {
-		long tickPosition = sequencer.getTickPosition();
+		long position = sequencer.getPosition();
 		Sequence song;
 
 		try {
@@ -1640,7 +1640,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			boolean running = sequencer.isRunning();
 			sequencer.reset(false);
 			sequencer.setSequence(song);
-			sequencer.setPosition(tickPosition);
+			sequencer.setPosition(position);
 			sequencer.setRunning(running);
 		} catch (InvalidMidiDataException e) {
 			JOptionPane.showMessageDialog(this, e.getMessage(), "MIDI error", JOptionPane.ERROR_MESSAGE);
