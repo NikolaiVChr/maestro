@@ -3,13 +3,10 @@ package com.digero.common.midi;
 import java.nio.charset.Charset;
 import java.util.logging.Logger;
 
-import javax.sound.midi.MetaMessage;
-import javax.sound.midi.MidiEvent;
-import javax.sound.midi.MidiMessage;
-import javax.sound.midi.Sequence;
-import javax.sound.midi.ShortMessage;
-import javax.sound.midi.SysexMessage;
+import javax.sound.midi.*;
 
+import com.digero.common.abc.LotroInstrument;
+import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.midi.SequencerWrapper.TempoCacheSlow;
 import com.digero.common.util.Pair;
 import com.digero.maestro.midi.SequenceInfo;
@@ -187,6 +184,16 @@ public class MidiUtils {
 		}
 		return (msg[5] & 0xFF) | ((msg[4] & 0xFF) << 8) | ((msg[3] & 0xFF) << 16);
 	}
+
+    public static MidiEvent replacePanningEvent (Track track, LotroInstrument instrument, String partName, MidiEvent prevPanEvent, int panModifier) {
+        PanGenerator pan = new PanGenerator();
+        ShortMessage panMsg = (ShortMessage) prevPanEvent.getMessage();
+        int panAmount = pan.get(instrument, partName, panModifier);
+        MidiEvent panEvent = MidiFactory.createPanEvent(panAmount, panMsg.getChannel());
+        track.remove(prevPanEvent);
+        track.add(panEvent);
+        return panEvent;
+    }
 
 	/** return true if the passed message is Meta End Of Track */
 	public static boolean isMetaEndOfTrack(MidiMessage midiMsg) {

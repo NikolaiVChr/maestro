@@ -54,6 +54,7 @@ Version 4.4.6
 - Disabled legato control for non-sustained instruments as it have no effect for them anyway.
 - Fixed that the abc playback audio and visible play-head was out of sync with 0.25 seconds.
 - Fixed that maestro did not handle midi with meter numerator higher than 127 correctly.
+- Replaced the stereo menu item in Abc Player with a slider.
 
 Version 4.4.3
 - Closing yes/no/cancel dialogs will now act as choosing cancel.

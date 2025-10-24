@@ -109,7 +109,7 @@ public class MidiFactory implements MidiConstants {
 	}
 
 	public static MidiEvent createPanEvent(int value, int channel) {
-		return createPanEvent(value, channel, 0);
+		return createPanEvent(value, channel, 0L);
 	}
 
 	public static MidiEvent createPanEvent(int value, int channel, long ticks) {

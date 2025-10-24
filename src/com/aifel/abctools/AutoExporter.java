@@ -582,7 +582,7 @@ public class AutoExporter {
 				params.useLotroInstruments = true;
 				params.abcInfo = info;
 				params.enableLotroErrors = true;
-				params.stereo = false;
+				params.stereo = 0;
 				params.generateRegions = true;
 				AbcToMidi.convert(params);
 			} catch (LotroParseException e) {

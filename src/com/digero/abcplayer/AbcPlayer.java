@@ -40,9 +40,7 @@ import java.util.StringTokenizer;
 import java.util.prefs.Preferences;
 
 import javax.imageio.ImageIO;
-import javax.sound.midi.InvalidMidiDataException;
-import javax.sound.midi.MidiUnavailableException;
-import javax.sound.midi.Sequence;
+import javax.sound.midi.*;
 import javax.swing.*;
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
@@ -58,11 +56,8 @@ import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.abctomidi.AbcToMidi;
 import com.digero.common.abctomidi.FileAndData;
 import com.digero.common.icons.IconLoader;
-import com.digero.common.midi.LotroSequencerWrapper;
-import com.digero.common.midi.MidiConstants;
+import com.digero.common.midi.*;
 import com.digero.common.midi.SequencerEvent.SequencerProperty;
-import com.digero.common.midi.SequencerWrapper;
-import com.digero.common.midi.VolumeTransceiver;
 import com.digero.common.util.ExtensionFileFilter;
 import com.digero.common.util.FileFilterDropListener;
 import com.digero.common.util.Listener;
@@ -249,7 +244,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 	private final JButton playlistToggleButton;
 
 	private JCheckBoxMenuItem lotroErrorsMenuItem;
-	private JCheckBoxMenuItem stereoMenuItem;
+	private JSlider stereoMenuItem;
 	private JCheckBoxMenuItem showFullPartNameMenuItem;
 	private JCheckBoxMenuItem showAbcViewMenuItem;
 	private JCheckBoxMenuItem countdownMenuItem;
@@ -924,13 +919,25 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		lotroErrorsMenuItem
 				.addActionListener(e -> prefs.putBoolean("ignoreLotroErrors", lotroErrorsMenuItem.isSelected()));
 
-		toolsMenu.add(stereoMenuItem = new JCheckBoxMenuItem("Stereo pan in multi-part songs"));
+        toolsMenu.addSeparator();
+        JLabel stereoLabel = new JLabel("Stereo pan in multi-part songs");
+        stereoLabel.setEnabled(false);
+        toolsMenu.add(stereoLabel);
+		toolsMenu.add(stereoMenuItem = new JSlider(JSlider.HORIZONTAL, 0, 100, 100));
+        toolsMenu.addSeparator();
 		stereoMenuItem.setToolTipText("<html>Separates the parts of a multi-part song by <br>"
 				+ "panning them towards the left or right speaker.</html>");
-		stereoMenuItem.setSelected(prefs.getBoolean("stereoMenuItem", true));
-		stereoMenuItem.addActionListener(e -> {
-			prefs.putBoolean("stereoMenuItem", stereoMenuItem.isSelected());
+        boolean oldStereo = prefs.getBoolean("stereoMenuItem", true);
+		stereoMenuItem.setValue(prefs.getInt("stereoSliderMenuItem", oldStereo?100:0));
+		stereoMenuItem.addChangeListener(e -> {
+			prefs.putInt("stereoSliderMenuItem", stereoMenuItem.getValue());
 			refreshSequence();
+            /*
+            boolean isRunning = sequencer.isRunning();
+            if (isRunning) sequencer.stop();
+            updateStereo(stereoMenuItem.getValue());
+            if (isRunning) sequencer.start();
+             */
 		});
 		
 		toolsMenu.add(countdownMenuItem = new JCheckBoxMenuItem("Countdown instead of up"));
@@ -1372,7 +1379,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 				params.useLotroInstruments = useLotroInstruments;
 				params.abcInfo = info;
 				params.enableLotroErrors = !lotroErrorsMenuItem.isSelected();
-				params.stereo = stereoMenuItem.isSelected();
+				params.stereo = stereoMenuItem.getValue();
 				params.generateRegions = true;
 				song = AbcToMidi.convert(params);
 			} catch (LotroParseException e) {
@@ -1482,7 +1489,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 				params.instrumentOverrideMap = instrumentOverrideMap;
 				params.abcInfo = info;
 				params.enableLotroErrors = !lotroErrorsMenuItem.isSelected();
-				params.stereo = stereoMenuItem.isSelected();
+				params.stereo = stereoMenuItem.getValue();
 				params.generateRegions = true;
 				song = AbcToMidi.convert(params);
 			} catch (LotroParseException e) {
@@ -1622,7 +1629,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			params.instrumentOverrideMap = instrumentOverrideMap;
 			params.abcInfo = abcInfo;
 			params.enableLotroErrors = false;
-			params.stereo = stereoMenuItem.isSelected();
+			params.stereo = stereoMenuItem.getValue();
 			song = AbcToMidi.convert(params);
 		} catch (ParseException e) {
 			JOptionPane.showMessageDialog(this, e.getMessage(), "Error changing instrument", JOptionPane.ERROR_MESSAGE);
@@ -1639,6 +1646,26 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			JOptionPane.showMessageDialog(this, e.getMessage(), "MIDI error", JOptionPane.ERROR_MESSAGE);
         }
 	}
+
+    /**
+     * Change stereo rendition
+     *
+     * Not used atm., since just using refreshSequence
+     *
+     * @param panModifier 0 to 100, 0 is mono, 100 is full stereo
+     */
+    private void updateStereo (int panModifier) {
+        if (sequencer != null && sequencer.getSequence() != null && abcInfo != null) {
+            Sequence seq = sequencer.getSequence();
+            Track[] tracks = seq.getTracks();
+            int partCount = abcInfo.getPartCount();
+            for (int i = 1; i < partCount; i++) {
+                MidiEvent prevEvent = abcInfo.getPartPanEvent(i);
+                MidiEvent newPanEvent = MidiUtils.replacePanningEvent(tracks[i], abcInfo.getPartInstrument(i), abcInfo.getPartFullName(i), prevEvent, panModifier);
+                abcInfo.setPanEvent(newPanEvent, i);
+            }
+        }
+    }
 
 	private static boolean openPort() {
 

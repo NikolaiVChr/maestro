@@ -23,11 +23,14 @@ import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.TimeSignature;
 import com.digero.common.util.Util;
 
+import javax.sound.midi.MidiEvent;
 import javax.swing.*;
 
 public class AbcInfo implements AbcConstants, IBarNumberCache {
-	private static class PartInfo {
-		private int number = 1;
+
+    private static class PartInfo {
+        private MidiEvent panEvent = null;
+        private int number = 1;
 		private LotroInstrument instrument = LotroInstrument.DEFAULT_INSTRUMENT;
 		private boolean instrumentIsFromMadeFor = false;
 		private String name = null;
@@ -571,6 +574,14 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		}
 		return a;
 	}
+
+    public void setPanEvent(MidiEvent panEvent, int trackIndex) {
+        partInfoByIndex.get(trackIndex).panEvent = panEvent;
+    }
+
+    public MidiEvent getPartPanEvent(int trackIndex) {
+        return partInfoByIndex.get(trackIndex).panEvent;
+    }
 	
 	// used for set exporter
 	public static AbcInfo getDummyAbcInfo() {

@@ -46,7 +46,7 @@ public class AbcToMidi {
 		public boolean useLotroInstruments = true;
 		public Map<Integer, LotroInstrument> instrumentOverrideMap = null;
 		public boolean enableLotroErrors = false;
-		public boolean stereo = true;
+		public int stereo = 100;
 		public boolean generateRegions = false;
 		public AbcInfo abcInfo = null;
 
@@ -108,7 +108,7 @@ public class AbcToMidi {
 
 	private static Sequence convert(List<FileAndData> filesData, boolean useLotroInstruments,
 			Map<Integer, LotroInstrument> instrumentOverrideMap, AbcInfo abcInfo, final boolean enableLotroErrors,
-			final boolean stereo, final boolean generateRegions) throws ParseException {
+			final int stereo, final boolean generateRegions) throws ParseException {
 		if (abcInfo == null)
 			abcInfo = new AbcInfo();
 		else
@@ -791,7 +791,7 @@ public class AbcToMidi {
 		abcInfo.setPartEndLine(trackNumber, lineNumberForRegions);
 
 		PanGenerator pan = null;
-		if (stereo && trackNumber > 1)
+		if (stereo > 0 && trackNumber > 1)
 			pan = new PanGenerator();
 
 		Track[] tracks = seq.getTracks();
@@ -812,8 +812,10 @@ public class AbcToMidi {
 
 			int panAmount = PanGenerator.CENTER;
 			if (pan != null)
-				panAmount = pan.get(abcInfo.getPartInstrument(i), abcInfo.getPartName(i));
-			tracks[i].add(MidiFactory.createPanEvent(panAmount, getTrackChannel(i)));
+				panAmount = pan.get(abcInfo.getPartInstrument(i), abcInfo.getPartName(i), stereo);
+            MidiEvent panEvent = MidiFactory.createPanEvent(panAmount, getTrackChannel(i));
+			tracks[i].add(panEvent);
+            abcInfo.setPanEvent(panEvent, i);
 		}
 
 		// Add time and key signature events
