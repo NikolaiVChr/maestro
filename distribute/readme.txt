@@ -41,6 +41,8 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
+Version 4.4.7
+
 Version 4.4.6
 - Removed warnings for bad Jaunty notes.
 - Update Jaunty note durations for polyphony to match lotro update 45.5.0
