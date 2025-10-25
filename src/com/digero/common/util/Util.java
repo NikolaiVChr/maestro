@@ -17,6 +17,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.util.prefs.Preferences;
 import java.util.regex.Matcher;
@@ -582,10 +584,20 @@ public final class Util {
 	}
 	
 	public static float map(float value, float fromLow, float fromHigh, float toLow, float toHigh) {
+        if (fromLow == fromHigh) {
+            // TODO: consider throwing an exception instead.
+            return toLow;
+        }
 		return toLow + (value - fromLow) * (toHigh - toLow) / (fromHigh - fromLow);
 	}
 	
 	public static float map(long value, long leftMin, long leftMax, int rightMin, int rightMax) {
+
+        if (leftMin == leftMax) {
+            // TODO: consider throwing an exception instead.
+            return (float) rightMin;
+        }
+
 		// Figure out how 'wide' each range is
 		long leftSpan = leftMax - leftMin;
 		int rightSpan = rightMax - rightMin;
@@ -596,6 +608,30 @@ public final class Util {
 		// Convert the 0-1 range into a value in the right range.
 		return (float)(rightMin + (valueScaled * rightSpan));
 	}
+
+    /**
+     * Expensive
+     */
+    public static int mapBig(long value, long leftMin, long leftMax, int rightMin, int rightMax) {
+        // since left range can span a rather big number, we use big decimal to make sure its division is done proper
+        // double could do a fine job, but due to backwards compatibility won't change it.
+
+        if (leftMin == leftMax) {
+            // TODO: consider throwing an exception instead.
+            return rightMin;
+        }
+
+        // Figure out how 'wide' each range is
+        BigDecimal leftSpan = BigDecimal.valueOf(leftMax-leftMin);
+        BigDecimal rightSpan = BigDecimal.valueOf(rightMax-rightMin);
+
+        // Convert the left range into a 0-1 range (float)
+        // The result will have 10 decimal places of precision
+        BigDecimal valueScaled = BigDecimal.valueOf(value-leftMin).divide(leftSpan, 10, RoundingMode.HALF_UP);
+
+        // Convert the 0-1 range into a value in the right range.
+        return rightMin + valueScaled.multiply(rightSpan).intValue();
+    }
 	
 	public boolean stringEquals(String str1, String str2) {
 		if (str1 == null && str2 == null) return true;

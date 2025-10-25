@@ -18,7 +18,7 @@ public class PartSection implements Comparable<PartSection> {
 	public float endBar = 0;// exclusive
 	public long startTick = -1L;
 	public long endTick = -1L;
-	public Note fromPitch = Note.C0;
+	public Note fromPitch = AbcPart.minDefault;
 	public Note toPitch = Note.MAX;
 	
 	@Override

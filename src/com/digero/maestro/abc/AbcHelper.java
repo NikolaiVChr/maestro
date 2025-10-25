@@ -1,7 +1,5 @@
 package com.digero.maestro.abc;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.List;
 
 import javax.xml.xpath.XPathExpressionException;
@@ -24,22 +22,7 @@ public class AbcHelper {
 		return null;
 	}
 
-	static int map(long value, long leftMin, long leftMax, int rightMin, int rightMax) {
-		// since left range can span a rather big number we use big decimal to make sure its division is done proper
-		
-		// Figure out how 'wide' each range is
-		BigDecimal leftSpan = BigDecimal.valueOf(leftMax-leftMin);
-		BigDecimal rightSpan = BigDecimal.valueOf(rightMax-rightMin);
-
-		// Convert the left range into a 0-1 range (float)
-		// The result will have 10 decimal places of precision
-		BigDecimal valueScaled = BigDecimal.valueOf(value-leftMin).divide(leftSpan, 10, RoundingMode.HALF_UP);
-
-		// Convert the 0-1 range into a value in the right range.
-		return rightMin + valueScaled.multiply(rightSpan).intValue();
-	}
-
-	static PartSection generatePartSection(Element sectionEle, Version fileVersion) throws ParseException, XPathExpressionException {
+	static PartSection loadPartSectionFromXML(Element sectionEle, Version fileVersion) throws ParseException, XPathExpressionException {
 		PartSection ps = new PartSection();
 		if (fileVersion.compareTo(new Version(3, 3, 4, 300)) < 0) {
 			ps.startBar = SaveUtil.parseValue(sectionEle, "startBar", 0);
@@ -72,20 +55,16 @@ public class AbcHelper {
 		return ps;
 	}
 
-	static void appendIfNotPercussion(PartSection partSection, Element sectionElement, boolean isPercussion) {
-		if (!isPercussion) {
+	static void saveDoublingToXML(PartSection partSection, Element sectionElement, boolean skip) {
+		if (!skip) {
 			if (partSection.doubling[0])
-				SaveUtil.appendChildTextElement(sectionElement, "double2OctDown",
-						String.valueOf(partSection.doubling[0]));
+				SaveUtil.appendChildTextElement(sectionElement, "double2OctDown", String.valueOf(true));
 			if (partSection.doubling[1])
-				SaveUtil.appendChildTextElement(sectionElement, "double1OctDown",
-						String.valueOf(partSection.doubling[1]));
+				SaveUtil.appendChildTextElement(sectionElement, "double1OctDown",	String.valueOf(true));
 			if (partSection.doubling[2])
-				SaveUtil.appendChildTextElement(sectionElement, "double1OctUp",
-						String.valueOf(partSection.doubling[2]));
+				SaveUtil.appendChildTextElement(sectionElement, "double1OctUp", String.valueOf(true));
 			if (partSection.doubling[3])
-				SaveUtil.appendChildTextElement(sectionElement, "double2OctUp",
-						String.valueOf(partSection.doubling[3]));
+				SaveUtil.appendChildTextElement(sectionElement, "double2OctUp", String.valueOf(true));
 		}
 	}
 

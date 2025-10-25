@@ -603,12 +603,27 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	public int tickToBarNumber(long tick) {
 		return (int) (tick / getBarLengthTicks());
 	}
-	
+
+    /**
+     * Used in UI to show the user the play-head position and to paste its position into
+     * section bar inputs.
+     * Also used to print the bar positions in the abc file.
+     */
 	@Override
 	public float tickToBarNumberFloat(long tick) {
-		int barNumber = (tick < 0) ? 0 : (tickToBarNumber(tick));
-		return Util.map(tick, getBarToTick(barNumber+1), getBarToTick(barNumber+2), barNumber, barNumber+1);
+        return (float)(Math.max(0L, tick) / (double)getBarLengthTicks());
 	}
+
+    /**
+     * Used to convert the users section bar inputs to a tick.
+     * Cannot be changed in any way, due to backwards compatibility.
+     *
+     * Notice that 4.5 might not be in the middle of a bar time-wise etc.
+     * The reason is that tempo-changes inside the bar can change tick per time-unit.
+     */
+    public long barFloatToTick(float bar) {
+        return (long)(bar * getBarLengthTicks());
+    }
 
 	public NavigableMap<Long, TempoEvent> getTempoEvents() {
 		return tempo;

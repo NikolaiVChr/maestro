@@ -586,24 +586,23 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		}
 		
 		SequenceDataCache data = se.getDataCache();
-		long barLengthTicks = data.getBarLengthTicks();
 		
 		if (tuneBars != null) {
 			for (TuneLine tuneLine : tuneBars.values()) {
 				assert tuneLine.startTick == -1L;
 				assert tuneLine.endTick == -1L;
 				
-				tuneLine.startTick = (long)(barLengthTicks * tuneLine.startBar);
-				tuneLine.endTick   = (long)(barLengthTicks * tuneLine.endBar);// don't use ceil() here
+				tuneLine.startTick = data.barFloatToTick(tuneLine.startBar);
+				tuneLine.endTick   = data.barFloatToTick(tuneLine.endBar);// don't use ceil() here
 			}
 		}
 		if (firstBar != null) {
-			firstBarTick = (long)(barLengthTicks * firstBar);
+			firstBarTick = data.barFloatToTick(firstBar);
 		} else {
 			firstBarTick = -1L;
 		}
 		if (lastBar != null) {
-			lastBarTick = (long)(barLengthTicks * lastBar);
+			lastBarTick = data.barFloatToTick(lastBar);
 		} else {
 			lastBarTick = -1L;
 		}
@@ -1205,6 +1204,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		return timingInfo;
 	}
 
+    /**
+     * Get abc exporter and make sure its properties are up to date.
+     */
 	public AbcExporter getAbcExporter() throws AbcConversionException {
 		QuantizedTimingInfo qtm = getAbcTimingInfo();
 		KeySignature key = getKeySignature();
@@ -1266,8 +1268,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	}
 
 	public void assignNumbersToSimilarPartTypes() {
-		// System.out.println();
-		// System.out.println("=== assignNumbersToSimilarPartTypes ===");
 		for (LotroInstrument instr : LotroInstrument.values()) {
 			List<AbcPart> instrParts = new ArrayList<>();
 			for (AbcPart part : parts) {
@@ -1275,17 +1275,13 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 					instrParts.add(part);
 				}
 			}
-			// int partIndex = 0;
-			if (instrParts.size() > 1) {// This is not super tight, as one or more of them might not have assigned any
-										// track. TODO.
+			if (instrParts.size() > 1) {
+                // This is not super tight, as one or more of them might not have assigned any track. TODO.
 				AbcHelper.setTypeNumbers(instrParts);
 			} else if (instrParts.size() == 1) {
-				// System.out.println(partIndex + ": " + instrParts.get(0).getInstrument() + " =
-				// " + 0);
 				instrParts.getFirst().setTypeNumber(0);
 			}
 		}
-		// System.out.println();
 	}
 
 	public boolean isPriorityActive() {

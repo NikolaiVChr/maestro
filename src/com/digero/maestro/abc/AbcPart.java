@@ -1,6 +1,5 @@
 package com.digero.maestro.abc;
 
-import static com.digero.maestro.abc.AbcHelper.map;
 import static com.digero.maestro.abc.AbcHelper.matchNick;
 import static java.awt.Frame.getFrames;
 
@@ -24,6 +23,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.xml.xpath.XPathExpressionException;
 
+import com.digero.common.util.*;
 import com.digero.maestro.view.CountIn;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.*;
@@ -35,12 +35,6 @@ import com.digero.common.abc.LotroInstrumentSampleDuration;
 import com.digero.common.midi.MidiConstants;
 import com.digero.common.midi.MidiDrum;
 import com.digero.common.midi.Note;
-import com.digero.common.util.IDiscardable;
-import com.digero.common.util.Listener;
-import com.digero.common.util.ListenerList;
-import com.digero.common.util.Pair;
-import com.digero.common.util.ParseException;
-import com.digero.common.util.Version;
 import com.digero.maestro.abc.AbcPartEvent.AbcPartProperty;
 import com.digero.maestro.abc.AbcSongEvent.AbcSongProperty;
 import com.digero.maestro.midi.AbcNoteEvent;
@@ -197,7 +191,6 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			throw new RuntimeException("Error in floating point section");
 		}
 		SequenceDataCache data = se.getDataCache();
-		long barLengthTicks = data.getBarLengthTicks();
 		List<TreeMap<Long, PartSection>> longsections = new ArrayList<>();
 		for (TreeMap<Float, PartSection> section : sections) {
 			if (section == null) {
@@ -207,9 +200,9 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			TreeMap<Long, PartSection> longtree = new TreeMap<>();
 			for (Entry<Float, PartSection> entry : section.entrySet()) {
 				PartSection ps = entry.getValue();
-								
-				ps.startTick = (long)(barLengthTicks * ps.startBar);
-				ps.endTick   = (long)(barLengthTicks * ps.endBar);
+
+				ps.startTick = data.barFloatToTick(ps.startBar);
+				ps.endTick   = data.barFloatToTick(ps.endBar);
 				
 				PartSection prev = longtree.put(ps.startTick, ps);
 				assert prev == null;
@@ -302,7 +295,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 					SaveUtil.appendChildTextElement(sectionEle, "fade", String.valueOf(ps.fade));
 					SaveUtil.appendChildTextElement(sectionEle, "dialogLine", String.valueOf(ps.dialogLine));
 					SaveUtil.appendChildTextElement(sectionEle, "resetVelocities", String.valueOf(ps.resetVelocities));
-					AbcHelper.appendIfNotPercussion(ps, sectionEle, instrument.isPercussion);
+					AbcHelper.saveDoublingToXML(ps, sectionEle, instrument.isPercussion || (isFX(t) && isStudentPart()));
 					if (ps.fromPitch != minDefault || ps.toPitch != Note.MAX) {
 						SaveUtil.appendChildTextElement(sectionEle, "fromPitch", String.valueOf(ps.fromPitch.id));
 						SaveUtil.appendChildTextElement(sectionEle, "toPitch", String.valueOf(ps.toPitch.id));
@@ -316,7 +309,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				SaveUtil.appendChildTextElement(sectionEle, "silence", String.valueOf(ps.silence));
 				SaveUtil.appendChildTextElement(sectionEle, "legato", String.valueOf(ps.legato));
 				SaveUtil.appendChildTextElement(sectionEle, "resetVelocities", String.valueOf(ps.resetVelocities));
-				AbcHelper.appendIfNotPercussion(ps, sectionEle, instrument.isPercussion);
+				AbcHelper.saveDoublingToXML(ps, sectionEle, instrument.isPercussion || (isFX(t) && isStudentPart()));
 				if (ps.fromPitch != minDefault || ps.toPitch != Note.MAX) {
 					SaveUtil.appendChildTextElement(sectionEle, "fromPitch", String.valueOf(ps.fromPitch.id));
 					SaveUtil.appendChildTextElement(sectionEle, "toPitch", String.valueOf(ps.toPitch.id));
@@ -326,11 +319,10 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			if (isStudentPart()) {
 				trackEle.setAttribute("fx", String.valueOf(isFX(t)));
 				trackEle.setAttribute("studentOverride", String.valueOf(isStudentOverride()));
-			}
-            if (isJauntyHandKnellsPart()) {
+			} else if (isJauntyHandKnellsPart()) {
                 trackEle.setAttribute("fx", String.valueOf(isFX(t)));
             }
-			if (instrument.isPercussion || ((isStudentPart() || isJauntyHandKnellsPart()) && isFX(t))) {
+            if (instrument.isPercussion || ((isStudentPart() || isJauntyHandKnellsPart()) && isFX(t))) {
 				saveDrumHitsToXML(ele, doc, t, trackEle);
 			}
 		}
@@ -474,7 +466,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				TreeMap<Float, PartSection> tree = sections.get(t);
 				float lastEnd = 0.0f;
 				for (Element sectionEle : XmlUtil.selectElements(trackEle, "section")) {
-					PartSection ps = AbcHelper.generatePartSection(sectionEle, fileVersion);
+					PartSection ps = AbcHelper.loadPartSectionFromXML(sectionEle, fileVersion);
 					if (ps.startBar >= 0.0f && ps.endBar > ps.startBar) {
 						if (tree == null) {
 							tree = new TreeMap<>();
@@ -1024,6 +1016,14 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		return typeNumber;
 	}
 
+    /**
+     * Type number is when there are multiple parts with the same instrument
+     * and they have a number assigned after the instrument name.
+     *
+     * Parts with no tracks normally have assigned 0 as a type number
+     * Parts whose title does not start with instr name or nickname
+     * usually get typenumber of -1
+     */
 	public boolean setTypeNumber(int typeNumberNew) {
 		if (!isTypeNumberMatchingTitle()) {
 			int potentialOld = getTypeNumberMatchingTitle();
@@ -1379,9 +1379,9 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	
 	private int computeFadeFactor(long tick, long startTick, long endTick, int fade) {
 	    if (fade > 0) {
-	        return map(tick, startTick, endTick, 100, 100 - fade);
+	        return Util.mapBig(tick, startTick, endTick, 100, 100 - fade);
 	    } else if (fade < 0) {
-	        return map(tick, startTick, endTick, 100 + fade, 100);
+	        return Util.mapBig(tick, startTick, endTick, 100 + fade, 100);
 	    }
 	    return 100;
 	}
