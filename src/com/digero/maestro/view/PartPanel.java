@@ -38,6 +38,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
+import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.icons.IconLoader;
 import com.digero.common.midi.NoteFilterSequencerWrapper;
@@ -86,7 +87,9 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 	private JTextField nameTextField;
 	private JComboBox<LotroInstrument> instrumentComboBox;
 	private JLabel messageLabel;
-	
+
+    private static final int ZOOM_SLIDER_MAX = 1000;
+    private static final int ZOOM_SLIDER_MOUSE_WHEEL_STEP = 15;
 	private JSlider hZoomSlider;
 	private JSlider vZoomSlider;
 	
@@ -197,21 +200,22 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		// We never support a zoom max of less than 6x
 		final float maxHZoomBase = 6.f;
 		// For songs longer than 1 minute, we divide song length in seconds
-		// by 10 to get adjusted zoom
+		// by 8 to get adjusted zoom
 		// so that approx. 8 seconds of music is on screen for max zoom
 		final float zoomSecondDivider = 8f;
 		JLabel hZoomLabel = new JLabel("HZoom:");
-		hZoomSlider = new JSlider(0, 1000, 0);
+		hZoomSlider = new JSlider(0, ZOOM_SLIDER_MAX, 0);
 		hZoomSlider.setFocusable(false);
 		hZoomSlider.addChangeListener(e -> {
-			float secs = (sequencer.getLength() / (1000 * 1000.f));
+			float secs = (sequencer.getLength() / ((float) AbcConstants.ONE_SECOND_MICROS));
 			float adjustedZoom = Math.max(maxHZoomBase, secs / zoomSecondDivider);
-			float oldHZoom = hZoom; 
-			hZoom = Util.map((float)Math.pow(hZoomSlider.getValue(),4d), 0.0f, (float)Math.pow(1000.0d,4d), 1.f, adjustedZoom);
+			float oldHZoom = hZoom;
+            double normalizedSliderValue = hZoomSlider.getValue() / (double) ZOOM_SLIDER_MAX;
+			hZoom = Util.map((float)Math.pow(normalizedSliderValue,4d), 0.0f, 1.0f, 1.f, adjustedZoom);
 			if (hZoom != oldHZoom) {
 				calcZoomTarget();
 				updateZoom();
-				if (mousePointTrack != null) mousePointTrack.x *= hZoom / oldHZoom;
+				if (mousePointTrack != null) mousePointTrack.x *= (int) (hZoom / oldHZoom);
 				scrollToPosition(mouseHzooming);
 				repaintAfterZoom();
 	//			System.out.println("hz: " + hZoom);
@@ -220,10 +224,10 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		
 		final float maxVZoom = 6.f;
 		JLabel vZoomLabel = new JLabel("VZoom:");
-		vZoomSlider = new JSlider(0, 1000, 0);
+		vZoomSlider = new JSlider(0, ZOOM_SLIDER_MAX, 0);
 		vZoomSlider.setFocusable(false);
 		vZoomSlider.addChangeListener(e -> {
-			vZoom = Util.map(vZoomSlider.getValue(), 0, 1000, 1, maxVZoom);
+			vZoom = Util.map(vZoomSlider.getValue(), 0, ZOOM_SLIDER_MAX, 1, maxVZoom);
 			updateZoom();
 			repaintAfterZoom();
 //			System.out.println("vz: " + vZoom);
@@ -429,7 +433,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 	// since it's just a normal scroll (no shift or control held)
 	boolean handleMouseWheelZoom(MouseWheelEvent e) {
 		if (e.isControlDown()) {
-				int val = hZoomSlider.getValue() - 15 * e.getWheelRotation();
+				int val = hZoomSlider.getValue() - ZOOM_SLIDER_MOUSE_WHEEL_STEP * e.getWheelRotation();
 				mouseHzooming = true;
 				PointerInfo info = MouseInfo.getPointerInfo();
 				if (info != null) {
@@ -444,13 +448,13 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 					mousePointView = null;
 					mousePointTrack = null;
 				}
-				hZoomSlider.setValue(Util.clamp(val, 0, 1000));
+				hZoomSlider.setValue(Util.clamp(val, 0, ZOOM_SLIDER_MAX));
 				mouseHzooming  = false;
 				return true;
 		}
 		else if (e.isShiftDown()) {
-			int val = vZoomSlider.getValue() - 15 * e.getWheelRotation();
-			vZoomSlider.setValue(Util.clamp(val, 0, 1000));
+			int val = vZoomSlider.getValue() - ZOOM_SLIDER_MOUSE_WHEEL_STEP * e.getWheelRotation();
+			vZoomSlider.setValue(Util.clamp(val, 0, ZOOM_SLIDER_MAX));
 			return true;
 		}
 		
