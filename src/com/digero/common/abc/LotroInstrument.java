@@ -151,9 +151,13 @@ public enum LotroInstrument
 		return sustainable && isPlayable(noteId, noteId >= STUDENT_CHROMATIC_LOWEST.id);
 	}
 
+    /**
+     * Never call this from a student part with studentOverride == true.
+     */
 	public boolean isPlayable(int noteId, boolean studentChromatic) {
 		if (this == STUDENT_FIDDLE) {
-			if (studentChromatic) {
+            if (studentChromatic) {
+                // FX isn't checked
 				return noteId >= STUDENT_CHROMATIC_LOWEST.id && noteId <= highestPlayable.id;
 			} else {
 				return noteId >= lowestPlayable.id && noteId <= STUDENT_FX_HIGHEST.id;

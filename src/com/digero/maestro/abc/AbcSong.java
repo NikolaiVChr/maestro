@@ -340,7 +340,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				}
 			}
 			if (newPart.getInstrument() == LotroInstrument.STUDENT_FIDDLE) {
-				newPart.setStudentOverride(true);
+				newPart.setStudentFromABC(true);
 			}
 			populateFirstNumbers();
 			newPart.firstNumber = partAutoNumberer.getFirstNumber(newPart.getInstrument());

@@ -82,7 +82,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
     /**
      * If this is enabled, lowest student note allowable is including fx
      */
-	private boolean studentOverride = false;
+	private boolean studentFromABC = false;
 	
 	public static final int badgerPrioStep = 1;
 	public static final int badgerPrioHighest = 1;
@@ -237,93 +237,83 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		if (noteMax != AbcConstants.MAX_CHORD_NOTES) {
 			ele.setAttribute("noteMax", String.valueOf(noteMax));
 		}
-		for (int t = 0; t < getTrackCount(); t++) {
-			if (!isTrackEnabled(t))
+		for (int track = 0; track < getTrackCount(); track++) {
+			if (!isTrackEnabled(track))
 				continue;
 
-			TrackInfo trackInfo = abcSong.getSequenceInfo().getTrackInfo(t);
+			TrackInfo trackInfo = abcSong.getSequenceInfo().getTrackInfo(track);
 
 			Element trackEle = (Element) ele.appendChild(doc.createElement("track"));
-			trackEle.setAttribute("id", String.valueOf(t));
+			trackEle.setAttribute("id", String.valueOf(track));
 			if (trackInfo.hasName()) {
 				trackEle.setAttribute("name", XmlUtil.sanitizeStringForXMLSaving(trackInfo.getName()));
-			} else if (abcSong.ignoreMidiText && trackNames != null && trackNames.size() > t && trackNames.get(t) != null) {
+			} else if (abcSong.ignoreMidiText && trackNames != null && trackNames.size() > track && trackNames.get(track) != null) {
 				//used by autoexporter
-				trackEle.setAttribute("name", XmlUtil.sanitizeStringForXMLSaving(trackNames.get(t)));
+				trackEle.setAttribute("name", XmlUtil.sanitizeStringForXMLSaving(trackNames.get(track)));
 			}
 				
-			if (trackTranspose[t] != 0)
-				SaveUtil.appendChildTextElement(trackEle, "transpose", String.valueOf(trackTranspose[t]));
-			if (trackVolumeAdjust[t] != 0)
-				SaveUtil.appendChildTextElement(trackEle, "volumeAdjust", String.valueOf(trackVolumeAdjust[t]));
-			if (abcSong.isMixTiming() && abcSong.isPriorityActive() && trackPriority[t])
-				SaveUtil.appendChildTextElement(trackEle, "combinePriority",
-						String.valueOf(QuantizedTimingInfo.COMBINE_PRIORITY_MULTIPLIER));// Hardcoded
-																							// to
-																							// 4
-																							// for
-																							// now,
-																							// change
-																							// QTM
-																							// and
-																							// UI
-																							// if
-																							// messing
-																							// with
-																							// this
+			if (trackTranspose[track] != 0)
+				SaveUtil.appendChildTextElement(trackEle, "transpose", String.valueOf(trackTranspose[track]));
+			if (trackVolumeAdjust[track] != 0)
+				SaveUtil.appendChildTextElement(trackEle, "volumeAdjust", String.valueOf(trackVolumeAdjust[track]));
+			if (abcSong.isMixTiming() && abcSong.isPriorityActive() && trackPriority[track])
+                SaveUtil.appendChildTextElement(trackEle, "combinePriority",
+                        String.valueOf(QuantizedTimingInfo.COMBINE_PRIORITY_MULTIPLIER));
+			if (!playLeft[track])
+				trackEle.setAttribute("playLeft", String.valueOf(playLeft[track]));
+			if (!playCenter[track])
+				trackEle.setAttribute("playCenter", String.valueOf(playCenter[track]));
+			if (!playRight[track])
+				trackEle.setAttribute("playRight", String.valueOf(playRight[track]));
 
-			if (!playLeft[t])
-				trackEle.setAttribute("playLeft", String.valueOf(playLeft[t]));
-			if (!playCenter[t])
-				trackEle.setAttribute("playCenter", String.valueOf(playCenter[t]));
-			if (!playRight[t])
-				trackEle.setAttribute("playRight", String.valueOf(playRight[t]));
-			
-			TreeMap<Float, PartSection> tree = sections.get(t);
+            boolean fx = isFX(track);
+            boolean studentFX = fx && isStudentPart();
+
+			TreeMap<Float, PartSection> tree = sections.get(track);
 			if (tree != null) {
 				for (Entry<Float, PartSection> entry : tree.entrySet()) {
 					PartSection ps = entry.getValue();
 					Element sectionEle = (Element) trackEle.appendChild(doc.createElement("section"));
 					SaveUtil.appendChildTextElement(sectionEle, "startBar", String.valueOf(ps.startBar));
 					SaveUtil.appendChildTextElement(sectionEle, "endBar", String.valueOf(ps.endBar));
-					if (!instrument.isPercussion) {
+					if (!instrument.isPercussion && !studentFX) {
 						SaveUtil.appendChildTextElement(sectionEle, "octaveStep", String.valueOf(ps.octaveStep));
 					}
 					SaveUtil.appendChildTextElement(sectionEle, "volumeStep", String.valueOf(ps.volumeStep));
 					SaveUtil.appendChildTextElement(sectionEle, "silence", String.valueOf(ps.silence));
-					SaveUtil.appendChildTextElement(sectionEle, "legato", String.valueOf(ps.legato));
+                    if (instrument.sustainable && !studentFX) SaveUtil.appendChildTextElement(sectionEle, "legato", String.valueOf(ps.legato));
 					SaveUtil.appendChildTextElement(sectionEle, "fade", String.valueOf(ps.fade));
 					SaveUtil.appendChildTextElement(sectionEle, "dialogLine", String.valueOf(ps.dialogLine));
 					SaveUtil.appendChildTextElement(sectionEle, "resetVelocities", String.valueOf(ps.resetVelocities));
-					AbcHelper.saveDoublingToXML(ps, sectionEle, instrument.isPercussion || (isFX(t) && isStudentPart()));
-					if (ps.fromPitch != minDefault || ps.toPitch != Note.MAX) {
-						SaveUtil.appendChildTextElement(sectionEle, "fromPitch", String.valueOf(ps.fromPitch.id));
+					AbcHelper.saveDoublingToXML(ps, sectionEle, instrument.isPercussion || studentFX);
+					if (!fx && !instrument.isPercussion && (ps.fromPitch != minDefault || ps.toPitch != Note.MAX)) {
+                        SaveUtil.appendChildTextElement(sectionEle, "fromPitch", String.valueOf(ps.fromPitch.id));
 						SaveUtil.appendChildTextElement(sectionEle, "toPitch", String.valueOf(ps.toPitch.id));
 					}
 				}
 			}
 
-			if (nonSection.get(t) != null) {
-				PartSection ps = nonSection.get(t);
+			if (nonSection.get(track) != null) {
+				PartSection ps = nonSection.get(track);
 				Element sectionEle = (Element) trackEle.appendChild(doc.createElement("nonSection"));
 				SaveUtil.appendChildTextElement(sectionEle, "silence", String.valueOf(ps.silence));
-				SaveUtil.appendChildTextElement(sectionEle, "legato", String.valueOf(ps.legato));
+				if (instrument.sustainable && !studentFX) SaveUtil.appendChildTextElement(sectionEle, "legato", String.valueOf(ps.legato));
 				SaveUtil.appendChildTextElement(sectionEle, "resetVelocities", String.valueOf(ps.resetVelocities));
-				AbcHelper.saveDoublingToXML(ps, sectionEle, instrument.isPercussion || (isFX(t) && isStudentPart()));
-				if (ps.fromPitch != minDefault || ps.toPitch != Note.MAX) {
+				AbcHelper.saveDoublingToXML(ps, sectionEle, instrument.isPercussion || studentFX);
+				if (!fx && !instrument.isPercussion && (ps.fromPitch != minDefault || ps.toPitch != Note.MAX)) {
 					SaveUtil.appendChildTextElement(sectionEle, "fromPitch", String.valueOf(ps.fromPitch.id));
 					SaveUtil.appendChildTextElement(sectionEle, "toPitch", String.valueOf(ps.toPitch.id));
 				}
 			}
 			
 			if (isStudentPart()) {
-				trackEle.setAttribute("fx", String.valueOf(isFX(t)));
-				trackEle.setAttribute("studentOverride", String.valueOf(isStudentOverride()));
+				trackEle.setAttribute("fx", String.valueOf(fx));
+				trackEle.setAttribute("studentOverride", String.valueOf(isStudentFromABC()));
 			} else if (isJauntyHandKnellsPart()) {
-                trackEle.setAttribute("fx", String.valueOf(isFX(t)));
+                trackEle.setAttribute("fx", String.valueOf(fx));
             }
-            if (instrument.isPercussion || ((isStudentPart() || isJauntyHandKnellsPart()) && isFX(t))) {
-				saveDrumHitsToXML(ele, doc, t, trackEle);
+            if (instrument.isPercussion || ((isStudentPart() || isJauntyHandKnellsPart()) && fx)) {
+				saveDrumHitsToXML(ele, doc, track, trackEle);
 			}
 		}
 	}
@@ -509,7 +499,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				trackEnabled[t] = true;
 				enabledTrackCount++;
 				boolean fx = SaveUtil.parseValue(trackEle, "@fx", false);
-				studentOverride = SaveUtil.parseValue(trackEle, "@studentOverride", false);
+				studentFromABC = SaveUtil.parseValue(trackEle, "@studentOverride", false);
 				trackTranspose[t] = SaveUtil.parseValue(trackEle, "transpose", trackTranspose[t]);
                 /*
                 if (trackTranspose[t] < 0 && (instrument == LotroInstrument.BASIC_FLUTE || instrument == LotroInstrument.TRAVELLERS_TRUSTY_FIDDLE || (instrument == LotroInstrument.BASIC_LUTE && trackTranspose[t] < -12))) {
@@ -682,7 +672,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				return null;
 			}
 			int lowest = instrument.lowestPlayable.id;
-			if (isStudentPart() && !isStudentOverride())
+			if (isStudentPart() && !isStudentFromABC())
 				lowest = LotroInstrument.STUDENT_CHROMATIC_LOWEST.id;
 			
 			while (noteId < lowest)
@@ -769,7 +759,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			}
 			
 			int lowest = instrument.lowestPlayable.id;
-			if (isStudentPart() && !isStudentOverride())
+			if (isStudentPart() && !isStudentFromABC())
 				lowest = LotroInstrument.STUDENT_CHROMATIC_LOWEST.id;
 
 			int octaveFittingMin = 0;
@@ -825,7 +815,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			}
 			
 			int lowest = instrument.lowestPlayable.id;
-			if (isStudentPart() && !isStudentOverride())
+			if (isStudentPart() && !isStudentFromABC())
 				lowest = LotroInstrument.STUDENT_CHROMATIC_LOWEST.id;
 			
 			while (noteId < lowest)
@@ -1164,7 +1154,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			throw new NullPointerException();
 
 		if (this.instrument != instrument) {
-			studentOverride = false;
+			setStudentFromABC(false);
 			this.instrument = instrument;
 			boolean affectsPreview = false;
 			for (boolean enabled : trackEnabled) {
@@ -1567,13 +1557,17 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			if (fx[track] == null) {
 				setFX(track, isDrumTrack(track));
 			}
-			return !fx[track] || studentOverride;
+			return !fx[track] || isStudentFromABC();
 		}
 		return !isPercussionPart();
 	}
-	
+
+    /**
+     * If the FX checkbox is checked for student or jaunty.
+     * Will always return false for student loaded from ABC source.
+     */
 	public boolean isFX(int track) {
-		if (studentOverride) return false;
+		if (isStudentFromABC()) return false;
 		if ((isStudentPart() || isJauntyHandKnellsPart()) && fx[track] == null) {
 			setFX(track, isDrumTrack(track));
 		} else if (!isStudentPart() && !isJauntyHandKnellsPart()) {
@@ -1590,14 +1584,17 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		}
 	}
 	
-	public void setStudentOverride(boolean b) {
-        // new student parts will have gotten this enabled, else false
-		studentOverride = b;
+	public void setStudentFromABC(boolean studentFromABCSource) {
+        // student parts from ABC source will have gotten this enabled, else false
+		studentFromABC = studentFromABCSource;
 	}
-	
-	public boolean isStudentOverride() {
-		if (!isStudentPart()) studentOverride = false;
-		return studentOverride;
+
+    /**
+     * if it is a student part and loaded from ABC source
+     */
+	public boolean isStudentFromABC() {
+		if (!isStudentPart()) studentFromABC = false;
+		return studentFromABC;
 	}
 	
 	public boolean isDrumPart() {

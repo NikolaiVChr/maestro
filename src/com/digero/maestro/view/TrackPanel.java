@@ -921,7 +921,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		if (fxBox.isVisible()) {
 			add(fxBox, CONTROL_COLUMN + ", 1");
 			fxBox.setSelected(abcPart.isFX(trackInfo.getTrackNumber()));
-			fxBox.setEnabled(!abcPart.isStudentOverride());
+			fxBox.setEnabled(!abcPart.isStudentFromABC());
 			// TODO: disabling checkbox cannot really be seen in flatlaf :(
 		} else {
 			remove(fxBox);
@@ -1249,6 +1249,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 			int midId = transposeNote(ne.note.id + addition, ne.getStartTick());
 			int lowId = midId;
 			int highId = midId;
+			boolean studentChromatic = abcPart.isStudentPart() && !abcPart.isFX(trackInfo.getTrackNumber());
 
 			if (midId < MidiConstants.LOWEST_NOTE_ID || midId > MidiConstants.HIGHEST_NOTE_ID)
 				return false;
@@ -1270,15 +1271,17 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 				if (highId < MidiConstants.LOWEST_NOTE_ID || highId > MidiConstants.HIGHEST_NOTE_ID)
 					return false;
 				
-				if (abcPart.isStudentOverride() || abcPart.isJauntyHandKnellsPart()) {
+				if (abcPart.isStudentFromABC()) {
+				    // ABC dont have bent notes so this should normally not happen
+				    // If source is changed to a midi in menu when source was ABC, I guess this can happen
 					return abcPart.getInstrument().isPlayable(highId) && abcPart.getInstrument().isPlayable(lowId);
 				}
-				return abcPart.getInstrument().isPlayable(highId, abcPart.isStudentPart() && !abcPart.isFX(trackInfo.getTrackNumber())) && abcPart.getInstrument().isPlayable(lowId, abcPart.isStudentPart() && !abcPart.isFX(trackInfo.getTrackNumber()));
+				return abcPart.getInstrument().isPlayable(highId, studentChromatic) && abcPart.getInstrument().isPlayable(lowId, studentChromatic);
 			}
-			if (abcPart.isStudentOverride() || abcPart.isJauntyHandKnellsPart()) {
+			if (abcPart.isStudentFromABC()) {
 				return abcPart.getInstrument().isPlayable(highId) && abcPart.getInstrument().isPlayable(lowId);
 			}
-			return abcPart.getInstrument().isPlayable(midId, abcPart.isStudentPart() && !abcPart.isFX(trackInfo.getTrackNumber()));
+			return abcPart.getInstrument().isPlayable(midId, studentChromatic);
 		}
 
 		@Override

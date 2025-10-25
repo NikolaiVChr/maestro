@@ -776,6 +776,7 @@ public class SectionEditor {
 				boolean fx = abcPart.isFX(track);
                 boolean isJauntyFX = fx && abcPart.isJauntyHandKnellsPart();
                 boolean isStudentFX = fx && abcPart.isStudentPart();
+                boolean limitsEnabled = !perc && !fx;
 
 				for (SectionEditorLine l : sectionInputs) {
                     l.legato.setEnabled(abcPart.getInstrument().sustainable && !isStudentFX);
@@ -784,16 +785,16 @@ public class SectionEditor {
 					l.doubling1.setEnabled(!perc && !isStudentFX);
 					l.doubling2.setEnabled(!perc && !isStudentFX);
 					l.doubling3.setEnabled(!perc && !isStudentFX);
-					l.toPitch.setEnabled(!perc && !fx);
-					l.fromPitch.setEnabled(!perc && !fx);
+					l.toPitch.setEnabled(limitsEnabled);
+					l.fromPitch.setEnabled(limitsEnabled);
 				}
                 nonSectionInput.legato.setEnabled(abcPart.getInstrument().sustainable && !isStudentFX);
 				nonSectionInput.doubling0.setEnabled(!perc && !isStudentFX);
 				nonSectionInput.doubling1.setEnabled(!perc && !isStudentFX);
 				nonSectionInput.doubling2.setEnabled(!perc && !isStudentFX);
 				nonSectionInput.doubling3.setEnabled(!perc && !isStudentFX);
-				nonSectionInput.fromPitch.setEnabled(!perc && !fx);
-				nonSectionInput.toPitch.setEnabled(!perc && !fx);
+				nonSectionInput.fromPitch.setEnabled(limitsEnabled);
+				nonSectionInput.toPitch.setEnabled(limitsEnabled);
 			}
 
 			private final Listener<AbcSongEvent> songListener = e -> {
