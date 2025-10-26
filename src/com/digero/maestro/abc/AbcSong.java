@@ -783,7 +783,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		}
 	}
 
-	public void exportAbc(File exportFile) throws IOException, AbcConversionException {
+	public void exportAbc(File exportFile, String appName) throws IOException, AbcConversionException {
 		boolean delayEnabled = false;
 		for (AbcPart part : parts) {
 			if (part.delay != 0) {
@@ -792,10 +792,10 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			}
 		}
 		try (FileOutputStream out = new FileOutputStream(exportFile)) {
-			getAbcExporter().exportToAbc(out, delayEnabled);
+			getAbcExporter().exportToAbc(out, delayEnabled, appName);
 			if (firstExportTime == null) firstExportTime = new Date();
 		}
-        setFileMetadata(exportFile.toPath());
+        setFileMetadata(exportFile.toPath(), appName);
 	}
 
     /**
@@ -814,7 +814,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
      *
      * Since NTFS native encoding is UTF_16LE, we use that.
      */
-    private void setFileMetadata(Path file) {
+    private void setFileMetadata(Path file, String appName) {
         try {
             UserDefinedFileAttributeView view = Files.getFileAttributeView(
                     file, UserDefinedFileAttributeView.class);
@@ -828,7 +828,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
                 view.write("Number of parts", StandardCharsets.UTF_16LE.encode(Integer.toString(getActivePartCount())));
                 view.write("Tempo", StandardCharsets.UTF_16LE.encode(getTempoBPM() + " BPM"));
                 view.write("Duration", StandardCharsets.UTF_16LE.encode(Util.formatDurationM(getSongLengthMicros())));
-                view.write("Export Tool", StandardCharsets.UTF_16LE.encode(MaestroMain.APP_NAME+" v"+MaestroMain.APP_VERSION));
+                view.write("Export Tool", StandardCharsets.UTF_16LE.encode(appName+" v"+MaestroMain.APP_VERSION));
                 view.write("Export Date", StandardCharsets.UTF_16LE.encode(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())));
                 Pair<Integer, Integer> pair = getBadgerMaximum();
                 if (pair != null) {

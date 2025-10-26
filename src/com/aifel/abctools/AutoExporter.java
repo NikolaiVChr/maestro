@@ -544,7 +544,7 @@ public class AutoExporter {
 		}
 		finalFolder.mkdirs();// for recursive exporting we need the folders to exist.
 
-		abcSong.exportAbc(exportFile);
+		abcSong.exportAbc(exportFile, AbcTools.APP_NAME);
 		int maxPoly = abcSong.getMaxPartPoly();
 		if (maxPoly > 6) appendToField("<br><font color='orange'>&nbsp;&nbsp;part polyphony max was "+maxPoly+".</font>");
 		if ((abcSong.getExportFile() == null || exportFile.compareTo(abcSong.getExportFile()) != 0) && frame.getSaveMSXabcSelected()) {

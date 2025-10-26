@@ -3,7 +3,9 @@ package com.digero.common.abc;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.aifel.abctools.AbcTools;
 import com.digero.common.util.Version;
+import com.digero.maestro.MaestroMain;
 
 public class VersionsWithIssues {
 	
@@ -48,7 +50,8 @@ public class VersionsWithIssues {
 	 * @return null if the abc should be fine, a string if there can be an issue.
 	 */
 	static public String check(String abcVersionText) {
-		String versionText = abcVersionText.replace("Maestro v", "");
+		String versionText = abcVersionText.replace(MaestroMain.APP_NAME + " v", "");
+        versionText = versionText.replace(AbcTools.APP_NAME + " v", "");
 		Version version = Version.parseVersion(versionText);
 		return check(version);
 	}

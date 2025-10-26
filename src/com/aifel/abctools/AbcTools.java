@@ -18,6 +18,7 @@ import com.digero.maestro.view.MiscSettings;
 
 public class AbcTools {
 
+    public static final String APP_NAME = "ABC Tools";
 	private final Preferences toolsPrefs = Preferences.userNodeForPackage(AbcTools.class);
 	private final Preferences mergePrefs;
 	
@@ -30,7 +31,7 @@ public class AbcTools {
 	private final MergeTool mergeInstance;
 	
 	public static void main(String[] args) throws IOException {
-		Logging.configure("ABC Tools");
+		Logging.configure(APP_NAME);
 		try {
 			SwingUtilities.invokeAndWait(() -> {
 				try {

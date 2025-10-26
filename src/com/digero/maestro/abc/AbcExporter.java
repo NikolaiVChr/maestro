@@ -448,7 +448,7 @@ public class AbcExporter {
 		return new Triple<>(trackNumber, channel, lastEnd);
 	}
 
-	public void exportToAbc(OutputStream os, boolean delayEnabled) throws AbcConversionException {
+	public void exportToAbc(OutputStream os, boolean delayEnabled, String appName) throws AbcConversionException {
 				
 		// accountForSustain is true so that songbooks wont stop their timer before last note has finished sounding.
 		// lengthenToBar is false for opposite reason, so reporting the correct duration to songbooks.
@@ -467,7 +467,7 @@ public class AbcExporter {
 				if (!metadata.getTranscriber().isEmpty()) {
 					out.println(AbcField.SONG_TRANSCRIBER + StringCleaner.cleanForABC(metadata.getTranscriber()));
 				}
-				out.println(AbcField.ABC_CREATOR + MaestroMain.APP_NAME + " v" + MaestroMain.APP_VERSION);
+				out.println(AbcField.ABC_CREATOR + appName + " v" + MaestroMain.APP_VERSION);
 				out.println(AbcField.EXPORT_TIMESTAMP + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
 				if (!organic) {
 					out.println(AbcField.SWING_RHYTHM + Boolean.toString(qtm.isTripletTiming()));

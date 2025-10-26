@@ -2875,7 +2875,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		try {
 			StringCleaner.cleanABC = saveSettings.convertABCStringsToBasicAscii;
-			abcSong.exportAbc(exportFile);
+			abcSong.exportAbc(exportFile, MaestroMain.APP_NAME);
 
 			SwingUtilities.invokeLater(() -> {
 				exportSuccessfulLabel.setText(abcSong.getExportFile().getName());
