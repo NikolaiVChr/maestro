@@ -142,9 +142,8 @@ public class KeySignature implements MidiConstants {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj instanceof KeySignature) {
-			KeySignature that = (KeySignature) obj;
-			return this.mode == that.mode && this.sharpsFlats == that.sharpsFlats;
+		if (obj instanceof KeySignature that) {
+            return this.mode == that.mode && this.sharpsFlats == that.sharpsFlats;
 		}
 		return false;
 	}
@@ -188,27 +187,17 @@ public class KeySignature implements MidiConstants {
 	private static final int[] FLATS = new int[] { Note.BX.id, Note.EX.id, Note.AX.id, Note.DX.id, Note.GX.id,
 			Note.CX.id, Note.FX.id };
 
-	private static final String[] modeToKeys(KeyMode mode) {
-		switch (mode) {
-		case MAJOR:
-		case IONIAN:
-			return MAJOR_KEYS;
-		case MINOR:
-		case AEOLIAN:
-			return MINOR_KEYS;
-		case DORIAN:
-			return DORIAN_KEYS;
-		case PHRYGIAN:
-			return PHRYGIAN_KEYS;
-		case LYDIAN:
-			return LYDIAN_KEYS;
-		case MIXOLYDIAN:
-			return MIXOLYDIAN_KEYS;
-		case LOCRIAN:
-			return LOCRIAN_KEYS;
-		default:
-			return null;
-		}
+	private static String[] modeToKeys(KeyMode mode) {
+        return switch (mode) {
+            case MAJOR, IONIAN -> MAJOR_KEYS;
+            case MINOR, AEOLIAN -> MINOR_KEYS;
+            case DORIAN -> DORIAN_KEYS;
+            case PHRYGIAN -> PHRYGIAN_KEYS;
+            case LYDIAN -> LYDIAN_KEYS;
+            case MIXOLYDIAN -> MIXOLYDIAN_KEYS;
+            case LOCRIAN -> LOCRIAN_KEYS;
+            default -> null;
+        };
 	}
 
 	public static void main(String[] args) {

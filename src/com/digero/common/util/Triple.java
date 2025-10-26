@@ -15,11 +15,10 @@ public class Triple<T1, T2, T3> {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (!(obj instanceof Triple<?, ?, ?>))
+		if (!(obj instanceof Triple<?, ?, ?> that))
 			return false;
 
-		Triple<?, ?, ?> that = (Triple<?, ?, ?>) obj;
-		return (Objects.equals(this.first, that.first)) && (Objects.equals(this.second, that.second))
+        return (Objects.equals(this.first, that.first)) && (Objects.equals(this.second, that.second))
 				&& (Objects.equals(this.third, that.third));
 	}
 

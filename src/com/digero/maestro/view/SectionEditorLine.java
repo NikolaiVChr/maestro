@@ -54,7 +54,7 @@ class SectionEditorLine implements Comparable<SectionEditorLine> {
 		String thatStr = that.barB[0].getText();
 				
 		Float thisNum = Float.MAX_VALUE;
-		Float thatNum = Float.MAX_VALUE;
+		float thatNum = Float.MAX_VALUE;
 		
 		try {
 			thisNum = Float.parseFloat(thisStr);

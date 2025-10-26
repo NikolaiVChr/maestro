@@ -59,7 +59,7 @@ public class InstrumentPicker {
 				String input = new Scanner(System.in).nextLine();
 
 				int val;
-				if (input.length() == 0) {
+				if (input.isEmpty()) {
 					val = NOT_INSTRUMENT;
 				} else {
 					try {

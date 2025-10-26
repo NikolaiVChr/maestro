@@ -20,11 +20,6 @@ public class JauntyHandKnellsFXNoteMap extends DrumNoteMap {
 	}
 
 	@Override
-	public boolean isModified() {
-		return map != null;
-	}
-
-	@Override
 	public byte get(int midiNoteId) {
 		if (midiNoteId < Byte.MIN_VALUE || midiNoteId > Byte.MAX_VALUE) {
 			throw new IllegalArgumentException();
@@ -89,11 +84,6 @@ public class JauntyHandKnellsFXNoteMap extends DrumNoteMap {
 			return false;
 
 		return Arrays.equals(map, ((JauntyHandKnellsFXNoteMap) obj).map);
-	}
-
-	@Override
-	public int hashCode() {
-		return Arrays.hashCode(map);
 	}
 
 	@Override

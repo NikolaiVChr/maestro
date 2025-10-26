@@ -2691,40 +2691,40 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 	
 	private String getNumberOfExportNotes() {
-		String out = "";
+		StringBuilder out = new StringBuilder();
 		for (AbcPart part : abcSong.getParts()) {
-			out += "Part #"+part.getPartNumber()+" will export "+part.numberOfExportedNotes+" notes.\n";
+			out.append("Part #").append(part.getPartNumber()).append(" will export ").append(part.numberOfExportedNotes).append(" notes.\n");
 			if (part.numberOfRemovedNotesForSafety > 0) {
-				out += "  Removed "+part.numberOfRemovedNotesForSafety+" very short notes.\n";
+				out.append("  Removed ").append(part.numberOfRemovedNotesForSafety).append(" very short notes.\n");
 			}
 		}
-		out += "\n";
-		return out;
+		out.append("\n");
+		return out.toString();
 	}
 	
 	private String getEmptyParts() {
-		String out = "";
+		StringBuilder out = new StringBuilder();
 		for (AbcPart part : abcSong.getParts()) {
 			if (part.getEnabledTrackCount() == 0) {
-				out += "Part #"+part.getPartNumber()+" has no assigned tracks!\n\n";
+				out.append("Part #").append(part.getPartNumber()).append(" has no assigned tracks!\n\n");
 			}
 		}
-		return out;
+		return out.toString();
 	}
 	
 	private String checkDuplicatePartTitles() {
-		String out = "";
+		StringBuilder out = new StringBuilder();
 		ListModelWrapper<AbcPart> parts = abcSong.getParts();
 		for (int i = 0 ; i < parts.size(); i++) {
 			AbcPart part1 = parts.get(i);
 			for (int j = i+1 ; j < parts.size(); j++) {
 				AbcPart part2 = parts.get(j);
 				if (part1.getTitle().equals(part2.getTitle())) {
-					out += "Warning: Part #"+part1.getPartNumber()+" and part #"+part2.getPartNumber()+" has same title:\n "+part1.getTitle()+"\n\n";
+					out.append("Warning: Part #").append(part1.getPartNumber()).append(" and part #").append(part2.getPartNumber()).append(" has same title:\n ").append(part1.getTitle()).append("\n\n");
 				}
 			}
 		}
-		return out;
+		return out.toString();
 	}
 
 	private File doSaveDialog(File defaultFile, File allowOverwriteFile, String extension, FileFilter fileFilter) {
@@ -3121,7 +3121,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	 */
 	@SuppressWarnings("unused")
 	private static String threadDump(boolean lockedMonitors, boolean lockedSynchronizers) {
-		StringBuffer threadDump = new StringBuffer(System.lineSeparator());
+		StringBuilder threadDump = new StringBuilder(System.lineSeparator());
 		ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
 		for (ThreadInfo threadInfo : threadMXBean.dumpAllThreads(lockedMonitors, lockedSynchronizers)) {
 			threadDump.append(threadInfo.toString());

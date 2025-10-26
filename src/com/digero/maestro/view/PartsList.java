@@ -48,7 +48,7 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 	protected DefaultListModel<AbcPart> model;
 	private BoxLayout layout;
 
-	protected List<PartsListItem> parts = new ArrayList<PartsListItem>();
+	protected List<PartsListItem> parts = new ArrayList<>();
 	protected AbcPart selectedPart = null;
 	protected int selectedIndex = -1;
 	protected MiscSettings miscSettings;
@@ -76,7 +76,7 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 			}
 		});
 		
-		model = new DefaultListModel<AbcPart>();
+		model = new DefaultListModel<>();
 			
 		handler = new PanelTransferHandler(this, true, false);
 		setTransferHandler(handler);		
@@ -138,7 +138,7 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 	}
 	
 	public void updateParts() {
-		parts = new ArrayList<PartsListItem>();
+		parts = new ArrayList<>();
 		removeAll();
 
 		if (model.getSize() == 0) {
@@ -266,9 +266,9 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 	}
 	
 	public List<Pair<Boolean, Boolean>> getSoloMuteStates() {
-		List<Pair<Boolean, Boolean>> partSoloMuteList = new ArrayList<Pair<Boolean, Boolean>>(parts.size());
+		List<Pair<Boolean, Boolean>> partSoloMuteList = new ArrayList<>(parts.size());
 		for (PartsListItem item : parts) {
-			Pair<Boolean, Boolean> soloMute = new Pair<Boolean, Boolean>(item.isSoloed(), item.isMuted());
+			Pair<Boolean, Boolean> soloMute = new Pair<>(item.isSoloed(), item.isMuted());
 			partSoloMuteList.add(soloMute);
 		}
 		return partSoloMuteList;

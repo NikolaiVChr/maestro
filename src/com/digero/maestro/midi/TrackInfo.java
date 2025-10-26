@@ -147,13 +147,12 @@ public class TrackInfo implements MidiConstants {
 			}
 			tick = evt.getTick();
 			
-			if (msg instanceof ShortMessage) {
+			if (msg instanceof ShortMessage m) {
 				if (tick > EOT) {
 					danglingNoteOffs.add(evt);
 					continue;
 				}
-				ShortMessage m = (ShortMessage) msg;
-				int cmd = m.getCommand();
+                int cmd = m.getCommand();
 				int ch = m.getChannel();
 
 				/*
@@ -263,9 +262,8 @@ public class TrackInfo implements MidiConstants {
 						notesOn[ch].add(ne);
 					}
 				}
-			} else if (msg instanceof MetaMessage) {
-				MetaMessage m = (MetaMessage) msg;
-				int type = m.getType();
+			} else if (msg instanceof MetaMessage m) {
+                int type = m.getType();
 
 				if (type == META_TRACK_NAME && name == null && m.getData() != null) {
 					byte[] data = m.getData();
@@ -273,7 +271,7 @@ public class TrackInfo implements MidiConstants {
 					String tmp = "";
 					if (!ignoreMidiText) tmp = MidiUtils.decodeMidiText(data).trim();
 					
-					if (tmp.length() > 0 && !tmp.equalsIgnoreCase("untitled")) {
+					if (!tmp.isEmpty() && !tmp.equalsIgnoreCase("untitled")) {
 						name = tmp;
 					}
 				} else if (type == META_KEY_SIGNATURE && keySignature == null) {
@@ -488,7 +486,7 @@ public class TrackInfo implements MidiConstants {
 
 				names.append(i);
 			}
-			if (names.length() == 0)
+			if (names.isEmpty())
 				return MidiInstrument.STANDARD_DRUM_KIT;
 
 			return names.toString();
@@ -517,7 +515,7 @@ public class TrackInfo implements MidiConstants {
 				names.append(i);
 			}
 		}
-		if (names.length() == 0) {
+		if (names.isEmpty()) {
 			first = true;
 			for (int i : instruments) {
 				if (!first)

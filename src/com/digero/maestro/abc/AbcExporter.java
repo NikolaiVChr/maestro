@@ -1152,7 +1152,7 @@ public class AbcExporter {
                     Dynamics volume = dyn.dynamics;
                     bar.append('+').append(volume).append("+ ");
                     bar.append(countIn.hit.note.abc);
-                    bar.append(hitMicros + "/" + oneMicro + " |");
+                    bar.append(hitMicros).append("/").append(oneMicro).append(" |");
 
                     logPreview.info("Count-in for ABC: added a count-in hit: "+countIn.hit.name+" velocity = "+volume.midiVol);
                 }

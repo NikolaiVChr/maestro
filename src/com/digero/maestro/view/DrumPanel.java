@@ -24,8 +24,6 @@ import javax.swing.JPanel;
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.midi.MidiDrum;
 import com.digero.common.midi.MidiDrumExtended;
-import com.digero.common.midi.MidiInstrument;
-import com.digero.common.midi.MidiStandard;
 import com.digero.common.midi.Note;
 import com.digero.common.midi.NoteFilterSequencerWrapper;
 import com.digero.common.midi.SequencerEvent;
@@ -477,7 +475,7 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 			NavigableMap<Long, PartSection> subtree = tree.headMap(b, false);
 			for (Entry<Long, PartSection> entry : subtree.entrySet()) {
 				if (entry.getValue().startTick < b && entry.getValue().endTick >= a) {
-					list.add(new Pair<Long,Long>(data.tickToMicros(entry.getValue().startTick), data.tickToMicros(entry.getValue().endTick)));
+					list.add(new Pair<>(data.tickToMicros(entry.getValue().startTick), data.tickToMicros(entry.getValue().endTick)));
 				}
 			}
 			return list;

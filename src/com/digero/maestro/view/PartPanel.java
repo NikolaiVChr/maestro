@@ -68,7 +68,6 @@ import info.clearthought.layout.TableLayoutConstants;
  * It also hold the part header at top, and tempopanel and histogram panel.
  * 
  */
-@SuppressWarnings("serial")
 public class PartPanel extends JPanel implements ICompileConstants, TableLayoutConstants {
 	private static final int HGAP = 4;
 	private static final int VGAP = 4;
@@ -103,7 +102,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 	// Note graphs
 	HistogramPanel histogramPanel;
 	TempoPanel tempoPanel;
-	HashMap<Integer, TrackPanel> trackPanels = new HashMap<Integer, TrackPanel>();
+	HashMap<Integer, TrackPanel> trackPanels = new HashMap<>();
 	
 	private ControlLayout controlLayout;
 	private GraphLayout graphLayout;
@@ -411,7 +410,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		
 		boolean inView = trackHeadGraphPos >= minimum && trackHeadGraphPos <= maximum;
 		
-		if (!inView) sequenceProgress = ((minimum+maximum)/2)/(double)graphLayout.getTrackWidth();
+		if (!inView) sequenceProgress = ((minimum+maximum)/2.0d)/(double)graphLayout.getTrackWidth();
 		
 		return inView;
 	}

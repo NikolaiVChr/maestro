@@ -931,11 +931,12 @@ public class SequenceInfo implements MidiConstants {
 		@SuppressWarnings("unchecked")
 		List<MidiEvent>[] suspectEvents = new List[tracks.length];
 		
-		TreeSet<MidiEvent> allEvents = new TreeSet<>(new Comparator<MidiEvent>() {
-			@Override
-			public int compare(MidiEvent o1, MidiEvent o2) {
-				return Long.compare(o1.getTick(), o2.getTick());
-			}});
+		TreeSet<MidiEvent> allEvents = new TreeSet<>(new Comparator<>() {
+            @Override
+            public int compare(MidiEvent o1, MidiEvent o2) {
+                return Long.compare(o1.getTick(), o2.getTick());
+            }
+        });
 		
 		// populate allEvents with events from all tracks
         for (Track track : tracks) {

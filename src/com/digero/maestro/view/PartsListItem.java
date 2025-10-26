@@ -110,7 +110,7 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 
 		int h = title.getPreferredSize().height + getBuffer();
 
-		JList<AbcPartMetadataSource> dummy = new JList<AbcPartMetadataSource>();
+		JList<AbcPartMetadataSource> dummy = new JList<>();
 		selectedFg = dummy.getSelectionForeground();
 		selectedBg = dummy.getSelectionBackground();
 		unselectedFg = dummy.getForeground();

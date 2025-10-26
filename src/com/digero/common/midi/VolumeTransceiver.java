@@ -69,17 +69,15 @@ public class VolumeTransceiver implements Transceiver, MidiConstants
 	@Override public void send(MidiMessage message, long timeStamp)
 	{
 		boolean systemReset = false;
-		if (message instanceof ShortMessage)
+		if (message instanceof ShortMessage m)
 		{
-			ShortMessage m = (ShortMessage) message;
-			if (m.getCommand() == ShortMessage.SYSTEM_RESET)
+            if (m.getCommand() == ShortMessage.SYSTEM_RESET)
 			{
 				systemReset = true;
 			}
-		} else if (message instanceof SysexMessage) {
-			SysexMessage m = (SysexMessage) message;
+		} else if (message instanceof SysexMessage m) {
 
-			byte[] sysex = m.getMessage();
+            byte[] sysex = m.getMessage();
 					    
 			if (sysex.length > 4 && sysex[1] == SYSEX_UNIVERSAL_REALTIME && (sysex[3] & 0xFF) == 0x04 && (sysex[4] & 0xFF) == 0x01) {
 				//System.out.println("Ignored SysEx device volume command:\n"+MidiUtils.formatBytes(sysex));

@@ -43,7 +43,7 @@ class TuneEditorLine implements Comparable<TuneEditorLine> {
 		String thatStr = that.barB[0].getText();
 				
 		Float thisNum = Float.MAX_VALUE;
-		Float thatNum = Float.MAX_VALUE;
+		float thatNum = Float.MAX_VALUE;
 		
 		
 		

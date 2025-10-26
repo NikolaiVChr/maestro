@@ -188,7 +188,7 @@ public class ExportMp3Dialog extends JDialog implements TableLayoutConstants {
 
 	public String getSongTitle() {
 		String title = titleField.getText().trim();
-		if (title.length() > 0 && addLotroCheckbox.isSelected()) {
+		if (!title.isEmpty() && addLotroCheckbox.isSelected()) {
 			title += " (LOTRO)";
 		}
 		return title;
@@ -211,20 +211,20 @@ public class ExportMp3Dialog extends JDialog implements TableLayoutConstants {
 	}
 	
 	public List<String> getCommandLineBuiltinLame(File wav, String encodedBy) {
-		List<String> args = new ArrayList<String>();
+		List<String> args = new ArrayList<>();
 		
 		args.add("--silent");
 		args.add("--preset");
 		args.add(getQuality());
-		if (getSongTitle().length() > 0) {
+		if (!getSongTitle().isEmpty()) {
 			args.add("--tt");
 			args.add(getSongTitle());
 		}
-		if (getArtist().length() > 0) {
+		if (!getArtist().isEmpty()) {
 			args.add ("--ta");
 			args.add(getArtist());
 		}
-		if (getAlbum().length() > 0) {
+		if (!getAlbum().isEmpty()) {
 			args.add("--tl");
 			args.add(getAlbum());
 		}

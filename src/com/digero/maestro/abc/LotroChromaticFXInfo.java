@@ -83,8 +83,7 @@ public class LotroChromaticFXInfo extends LotroEventInfo<LotroChromaticFXInfo> {
 		private final Iterator<LotroChromaticFXInfo> outerIter;
 
 		public ChromaticFXInfoIterator(SortedMap<String, LotroChromaticFXInfo> byName) {
-            List<LotroChromaticFXInfo> list = new ArrayList<>();
-            list.addAll(byName.values());
+            List<LotroChromaticFXInfo> list = new ArrayList<>(byName.values());
             Collections.sort(list);
 
 			outerIter = list.iterator();

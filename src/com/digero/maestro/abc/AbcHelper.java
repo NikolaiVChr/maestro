@@ -25,8 +25,8 @@ public class AbcHelper {
 	static PartSection loadPartSectionFromXML(Element sectionEle, Version fileVersion) throws ParseException, XPathExpressionException {
 		PartSection ps = new PartSection();
 		if (fileVersion.compareTo(new Version(3, 3, 4, 300)) < 0) {
-			ps.startBar = SaveUtil.parseValue(sectionEle, "startBar", 0);
-			ps.endBar = SaveUtil.parseValue(sectionEle, "endBar", 0);
+			ps.startBar = (float)SaveUtil.parseValue(sectionEle, "startBar", 0);
+			ps.endBar = (float)SaveUtil.parseValue(sectionEle, "endBar", 0);
 			ps.startBar -= 1.0f;
 		} else {
 			ps.startBar = SaveUtil.parseValue(sectionEle, "startBar", 0.0f);

@@ -18,11 +18,10 @@ public class Pair<T1, T2> {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (!(obj instanceof Pair<?, ?>))
+		if (!(obj instanceof Pair<?, ?> that))
 			return false;
 
-		Pair<?, ?> that = (Pair<?, ?>) obj;
-		return (Objects.equals(this.first, that.first)) && (Objects.equals(this.second, that.second));
+        return (Objects.equals(this.first, that.first)) && (Objects.equals(this.second, that.second));
 	}
 
 	@Override

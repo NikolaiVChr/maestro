@@ -239,7 +239,7 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 
 		@Override
 		protected List<NoteEvent> getEvents() {
-			if (PolyphonyHistogram.isDirty() || events.size() == 0)
+			if (PolyphonyHistogram.isDirty() || events.isEmpty())
 				recalcPolyphonyEvents();
 			return events;
 		}

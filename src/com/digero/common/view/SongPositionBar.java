@@ -56,7 +56,7 @@ public class SongPositionBar extends JPanel implements Listener<SequencerEvent> 
 
 	private boolean useInvertedColors = false;
 
-	private Rectangle ptrRect = new Rectangle(0, 0, PTR_WIDTH, PTR_HEIGHT);
+	private final Rectangle ptrRect = new Rectangle(0, 0, PTR_WIDTH, PTR_HEIGHT);
 
 	public SongPositionBar(SequencerWrapper sequencer) {
 		setSequence(sequencer);

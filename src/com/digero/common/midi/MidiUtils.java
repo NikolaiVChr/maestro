@@ -6,7 +6,6 @@ import java.util.logging.Logger;
 import javax.sound.midi.*;
 
 import com.digero.common.abc.LotroInstrument;
-import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.midi.SequencerWrapper.TempoCacheSlow;
 import com.digero.common.util.Pair;
 import com.digero.maestro.midi.SequenceInfo;

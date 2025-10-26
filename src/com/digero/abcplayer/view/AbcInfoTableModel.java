@@ -14,7 +14,7 @@ public class AbcInfoTableModel extends AbstractTableModel {
 
 	private static final long serialVersionUID = -7672178885656979023L;
 	
-	private ArrayList<AbcInfo> data = new ArrayList<AbcInfo>();
+	private ArrayList<AbcInfo> data = new ArrayList<>();
 	
 	public List<AbcInfo> getTableData() {
 		return data;
@@ -38,7 +38,7 @@ public class AbcInfoTableModel extends AbstractTableModel {
 	
 	public void moveRows(int rowsToMove[], int toIdx) {
 		int effectiveInsertIdx = toIdx;
-		ArrayList<AbcInfo> tmpSwap = new ArrayList<AbcInfo>();
+		ArrayList<AbcInfo> tmpSwap = new ArrayList<>();
 		Arrays.sort(rowsToMove);
 
 		for (int i = rowsToMove.length - 1; i >= 0; i--) {
@@ -103,7 +103,7 @@ public class AbcInfoTableModel extends AbstractTableModel {
 			}
 		};
 		
-		Collections.sort(data, comp);
+		data.sort(comp);
 		
 		fireTableDataChanged();
 	}
@@ -200,7 +200,7 @@ public class AbcInfoTableModel extends AbstractTableModel {
 	}
 	
 	public List<String> getColumnNames() {
-		List<String> cols = new ArrayList<String>(COL_COUNT);
+		List<String> cols = new ArrayList<>(COL_COUNT);
 		for (int i = 0; i < COL_COUNT; i++) {
 			cols.add(getColumnName(i));
 		}
@@ -208,7 +208,7 @@ public class AbcInfoTableModel extends AbstractTableModel {
 	}
 	
 	public static List<String> getColNames() {
-		List<String> cols = new ArrayList<String>(COL_COUNT);
+		List<String> cols = new ArrayList<>(COL_COUNT);
 		for (int i = 0; i < COL_COUNT; i++) {
 			cols.add(getNameOfColumn(i));
 		}

@@ -241,7 +241,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 							}
 						} else if (cmd == ShortMessage.PITCH_BEND) {
 							double pct = 2.0d * (((shortMsg.getData1() | (shortMsg.getData2() << 7)) / (double) (1 << 14)) - 0.5d);
-							rawBendMap.add(new Triple<Integer, Long, Double>(ch, tick, pct));
+							rawBendMap.add(new Triple<>(ch, tick, pct));
 							// Notice we put in the bend even if its a repeat of same bend.
 							// Reason is that later on another track there might get put some
 							// bends in between them.

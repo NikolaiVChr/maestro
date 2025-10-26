@@ -64,43 +64,43 @@ public class AudioSorter {
 
 	private static void copyToFinalNames(final String sourceRoot, final String targetRoot, final String instrumentName,
 			final boolean checkEquals) throws IOException {
-		Files.walkFileTree(Paths.get(sourceRoot, instrumentName), new SimpleFileVisitor<Path>() {
-			private int i = 35;
-			private Path previous = null;
+		Files.walkFileTree(Paths.get(sourceRoot, instrumentName), new SimpleFileVisitor<>() {
+            private int i = 35;
+            private Path previous = null;
 
-			@Override
-			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-				boolean equals = false;
-				if (checkEquals) {
-					if (previous != null) {
-						String line = "";
-						while (line.length() == 0) {
-							System.out.print("Equal? (Y/N): ");
-							AudioPlayer.playAudioFile(previous.toFile(), 400);
-							AudioPlayer.playAudioFile(file.toFile(), 400);
-							BufferedReader rdr = new BufferedReader(new InputStreamReader(System.in));
-							line = rdr.readLine();
-							equals = "Y".equalsIgnoreCase(line);
-						}
-					}
-				}
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                boolean equals = false;
+                if (checkEquals) {
+                    if (previous != null) {
+                        String line = "";
+                        while (line.isEmpty()) {
+                            System.out.print("Equal? (Y/N): ");
+                            AudioPlayer.playAudioFile(previous.toFile(), 400);
+                            AudioPlayer.playAudioFile(file.toFile(), 400);
+                            BufferedReader rdr = new BufferedReader(new InputStreamReader(System.in));
+                            line = rdr.readLine();
+                            equals = "Y".equalsIgnoreCase(line);
+                        }
+                    }
+                }
 
-				if (!equals) {
-					i++;
-					previous = file;
-				} else {
-					previous = null;
-				}
+                if (!equals) {
+                    i++;
+                    previous = file;
+                } else {
+                    previous = null;
+                }
 
-				String targetFileName = instrumentName + "_" + i + (equals ? "a" : "") + ".wav";
-				Path target = equals ? Paths.get(targetRoot, "a", targetFileName)
-						: Paths.get(targetRoot, targetFileName);
+                String targetFileName = instrumentName + "_" + i + (equals ? "a" : "") + ".wav";
+                Path target = equals ? Paths.get(targetRoot, "a", targetFileName)
+                        : Paths.get(targetRoot, targetFileName);
 
-				System.out.println(target);
-				Files.copy(file, target);
-				return FileVisitResult.SKIP_SUBTREE;
-			}
-		});
+                System.out.println(target);
+                Files.copy(file, target);
+                return FileVisitResult.SKIP_SUBTREE;
+            }
+        });
 	}
 
 	private static void sortFolder(String instrument, File sourceRoot, File targetRoot) throws IOException {

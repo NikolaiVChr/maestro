@@ -34,7 +34,7 @@ public class TempoBar extends JPanel implements Listener<SequencerEvent> {
 	private static final float MAX_TEMPO = 2.0f; // Must be at least 2.0
 
 	private SequencerWrapper seq;
-	private Rectangle ptrRect = new Rectangle(0, 0, PTR_WIDTH, PTR_HEIGHT);
+	private final Rectangle ptrRect = new Rectangle(0, 0, PTR_WIDTH, PTR_HEIGHT);
 	private boolean useInvertedColors;
 
 	public TempoBar(SequencerWrapper seq) {
@@ -122,7 +122,7 @@ public class TempoBar extends JPanel implements Listener<SequencerEvent> {
 	}
 
 	private void updatePointerRect() {
-		ptrRect.x = (int) (getWidth() * tempoToPct(seq.getTempoFactor()) - PTR_WIDTH / 2);
+		ptrRect.x = (int) (getWidth() * tempoToPct(seq.getTempoFactor()) - PTR_WIDTH / 2.0f);
 	}
 
 	private class MouseHandler implements MouseListener, MouseMotionListener {

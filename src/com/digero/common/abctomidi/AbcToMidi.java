@@ -947,9 +947,8 @@ public class AbcToMidi {
 		ShortMessage programChange = null;
 		for (int j = 0; j < track.size(); j++) {
 			MidiEvent evt = track.get(j);
-			if (evt.getMessage() instanceof ShortMessage) {
-				ShortMessage m = (ShortMessage) evt.getMessage();
-				if (m.getCommand() == ShortMessage.PROGRAM_CHANGE) {
+			if (evt.getMessage() instanceof ShortMessage m) {
+                if (m.getCommand() == ShortMessage.PROGRAM_CHANGE) {
 					programChange = m;
 					break;
 				}

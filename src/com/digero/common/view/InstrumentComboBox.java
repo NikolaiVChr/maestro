@@ -32,33 +32,33 @@ public class InstrumentComboBox extends JComboBox<LotroInstrument> {
 		ArrayList<Object> items = new ArrayList<>(Arrays.asList(LotroInstrument.values()));
 
 		items.addAll(Arrays.asList(LotroInstrumentGroup.values()));
-		items.sort(new Comparator<Object>() {
-			@Override
-			public int compare(Object a, Object b) {
-				if (a == b)
-					return 0;
+		items.sort(new Comparator<>() {
+            @Override
+            public int compare(Object a, Object b) {
+                if (a == b)
+                    return 0;
 
-				LotroInstrumentGroup groupA = groupOf(a);
-				LotroInstrumentGroup groupB = groupOf(b);
-				if (groupA != groupB)
-					return groupA.ordinal() - groupB.ordinal();
+                LotroInstrumentGroup groupA = groupOf(a);
+                LotroInstrumentGroup groupB = groupOf(b);
+                if (groupA != groupB)
+                    return groupA.ordinal() - groupB.ordinal();
 
-				// Groups always come before their items
-				if (a instanceof LotroInstrumentGroup)
-					return -1;
-				if (b instanceof LotroInstrumentGroup)
-					return 1;
+                // Groups always come before their items
+                if (a instanceof LotroInstrumentGroup)
+                    return -1;
+                if (b instanceof LotroInstrumentGroup)
+                    return 1;
 
-				LotroInstrument instA = (LotroInstrument) a;
-				LotroInstrument instB = (LotroInstrument) b;
-				return instA.ordinal() - instB.ordinal();
-			}
+                LotroInstrument instA = (LotroInstrument) a;
+                LotroInstrument instB = (LotroInstrument) b;
+                return instA.ordinal() - instB.ordinal();
+            }
 
-			private LotroInstrumentGroup groupOf(Object o) {
-				return (o instanceof LotroInstrumentGroup) ? (LotroInstrumentGroup) o : //
-						LotroInstrumentGroup.groupOf((LotroInstrument) o);
-			}
-		});
+            private LotroInstrumentGroup groupOf(Object o) {
+                return (o instanceof LotroInstrumentGroup) ? (LotroInstrumentGroup) o : //
+                        LotroInstrumentGroup.groupOf((LotroInstrument) o);
+            }
+        });
 
 		this.items = Collections.unmodifiableList(items);
 

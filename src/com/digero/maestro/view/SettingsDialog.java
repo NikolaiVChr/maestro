@@ -10,10 +10,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
 import java.util.prefs.BackingStoreException;
@@ -278,7 +275,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		});
 
         JLabel orderTitle = new JLabel("<html><b><u>Part Order Sorting: </u></b></html>");
-        orderCombo = new JComboBox<PartAutoNumberer.OrderOption>(PartAutoNumberer.OrderOption.values());
+        orderCombo = new JComboBox<>(PartAutoNumberer.OrderOption.values());
         orderCombo.setSelectedItem(partNumbererSettings.orderOption);
         orderCombo.addActionListener(e -> {
             PartAutoNumberer.OrderOption oldOrder = partNumbererSettings.orderOption;
@@ -1227,11 +1224,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		for (String key : keys) {
 			deviceBox.addItem(key);
 		}
-		if (preferredDevice != null) {
-			deviceBox.setSelectedItem(preferredDevice);
-		} else {
-			deviceBox.setSelectedItem(defaultStr);
-		}
+        deviceBox.setSelectedItem(Objects.requireNonNullElse(preferredDevice, defaultStr));
 	}
 
 	public void setActiveTab(int tab) {
@@ -1307,7 +1300,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 
 		@Override
 		public String getSongTitle() {
-			if (originalSource != null && originalSource.getSongTitle().length() > 0)
+			if (originalSource != null && !originalSource.getSongTitle().isEmpty())
 				return originalSource.getSongTitle();
 
 			return "Example Title";
@@ -1315,7 +1308,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 
 		@Override
 		public String getComposer() {
-			if (originalSource != null && originalSource.getComposer().length() > 0)
+			if (originalSource != null && !originalSource.getComposer().isEmpty())
 				return originalSource.getComposer();
 
 			return "Example Composer";
@@ -1323,7 +1316,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 
 		@Override
 		public String getTranscriber() {
-			if (originalSource != null && originalSource.getTranscriber().length() > 0)
+			if (originalSource != null && !originalSource.getTranscriber().isEmpty())
 				return originalSource.getTranscriber();
 
 			return "Your Name Here";
