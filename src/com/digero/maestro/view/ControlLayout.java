@@ -5,21 +5,18 @@ import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Insets;
 import java.awt.LayoutManager;
-import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
 
 public class ControlLayout implements LayoutManager {
-	private List<Component> components = new ArrayList<>();
-	private List<Integer> componentPos = new ArrayList<>();
-	private int minimumSize;
+	private final List<Component> components = new ArrayList<>();
+	private final List<Integer> componentPos = new ArrayList<>();
+	private final int minimumSize;
 	private float zoomV = 1.0f;
-	private JPanel graphsPanel;
+	private final JPanel graphsPanel;
 	private int prefH = 0;
-	private JScrollPane scrollPane;
 
 	/**
 	 * Make sure Graphs Panel and this layout have same number of components.
@@ -28,19 +25,18 @@ public class ControlLayout implements LayoutManager {
 	 * @param minimumSize pixels
 	 * @param graphsPanel Panel with the notegraphs. It must use GraphLayout as layout.
 	 */
-	ControlLayout(int minimumSize, JPanel graphsPanel, JScrollPane scrollPane) {
+	ControlLayout(int minimumSize, JPanel graphsPanel) {
 		if (graphsPanel == null) {
 			throw new IllegalArgumentException("GraphsPanel must be non null");
 		}
 		this.minimumSize = minimumSize;
 		this.graphsPanel = graphsPanel;
-		this.scrollPane = scrollPane;
 	}
 
 	@Override
 	public void addLayoutComponent(String name, Component comp) {
 		if (name == null) {
-			throw new IllegalArgumentException("Cannot add to layout: Unknown constraint: " + name);
+			throw new IllegalArgumentException("Cannot add to layout: Unknown null constraint");
 		}
 		components.add(comp);
 	}
@@ -55,29 +51,39 @@ public class ControlLayout implements LayoutManager {
 		Dimension dim = new Dimension(minimumSize + parent.getInsets().left + parent.getInsets().right, minimumSize * components.size() + parent.getInsets().top + parent.getInsets().bottom);
 		return dim;
 	}
-	
-	@Override
-	public Dimension preferredLayoutSize(Container parent) {
-		Dimension dim = new Dimension(0, 0);
 
-		int width = 0;
-		int height = 0;
+    @Override
+    public Dimension preferredLayoutSize(Container parent) {
+        int widestWidth = 0;
+        int totalHeight = 0;
 
-		for (Component c : components) {
-			Dimension cDim = c.getPreferredSize();
-			height += cDim.height;
-			width += cDim.width;
-		}
+        for (Component c : components) {
+            if (c.isVisible()) {
+                Dimension cDim = c.getPreferredSize();
 
-		dim.width = width;
-		dim.height = height;
+                // in layoutContainer
+                if (cDim.width > widestWidth) {
+                    widestWidth = cDim.width;
+                }
 
-		Insets insets = parent.getInsets();
-		dim.width += insets.left + insets.right;
-		dim.height += insets.top + insets.bottom;
+                // as in layoutContainer
+                int height = (int) (Math.max(minimumSize, cDim.height) * zoomV);
+                if (((PartPanelItem)c).isVerticalZoomForbidden()) {
+                    height = cDim.height;
+                }
+                totalHeight += height;
+            }
+        }
 
-		return dim;
-	}
+        Insets insets = parent.getInsets();
+        widestWidth += insets.left + insets.right;
+        totalHeight += insets.top + insets.bottom;
+
+        // like layoutContainer
+        prefH = totalHeight;
+
+        return new Dimension(widestWidth, totalHeight);
+    }
 
 	@Override
 	public void layoutContainer(Container target) {
@@ -98,7 +104,6 @@ public class ControlLayout implements LayoutManager {
 				}
 			}
 		}
-		Point position = scrollPane.getViewport().getViewPosition();
 		
 		int y = north;
 		componentPos.clear();
@@ -111,8 +116,8 @@ public class ControlLayout implements LayoutManager {
 				}
 				c.setSize(widestWidth, height);
 				componentPos.add(y);
-				c.setBounds(west, y - position.y, widestWidth, height);
-				//c.setBounds(west, y - scrollPane.getBounds().y, widestWidth, height);				
+
+                c.setBounds(west, y, widestWidth, height);
 				y += height;
 			} else {
 				// Histogram will come in here when midi preview is selected.

@@ -421,20 +421,18 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 		abcPart.addAbcListener(abcListener = e -> {
 			
-			if (e.isNoteGraphRelated()) {
-				updateState();
-				noteGraph.repaint();
-				updateBadTooltipText();
-				updateTitleText();
-			}
-
 			if (e.getProperty() == AbcPartProperty.INSTRUMENT || e.getProperty() == AbcPartProperty.TRACK_ENABLED) {
 				updateColors();
 				updateState();
 				noteGraph.repaint();
 				updateBadTooltipText();
 				updateTitleText();
-			}
+			} else if (e.isNoteGraphRelated()) {
+                updateState();
+                noteGraph.repaint();
+                updateBadTooltipText();
+                updateTitleText();
+            }
 		});
 		
 		abcPart.getAbcSong().addSongListener(songListener = e -> {

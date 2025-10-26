@@ -11,10 +11,10 @@ import java.util.List;
 import javax.swing.JViewport;
 
 public class GraphLayout implements LayoutManager {
-	private List<Component> components = new ArrayList<>();
-	private int minimumSize;
+	private final List<Component> components = new ArrayList<>();
+	private final int minimumSize;
 	private float zoomH = 1.0f;
-	private ControlLayout controlLayout;
+	private final ControlLayout controlLayout;
 	private JViewport port;
 	
 	/**
@@ -40,7 +40,7 @@ public class GraphLayout implements LayoutManager {
 	@Override
 	public void addLayoutComponent(String name, Component comp) {
 		if (name == null) {
-			throw new IllegalArgumentException("Cannot add to layout: Unknown constraint: " + name);
+			throw new IllegalArgumentException("Cannot add to layout: Unknown null constraint");
 		}
 		components.add(comp);
 	}
@@ -55,17 +55,28 @@ public class GraphLayout implements LayoutManager {
 		Dimension dim = new Dimension(minimumSize + parent.getInsets().left + parent.getInsets().right, minimumSize * components.size() + parent.getInsets().top + parent.getInsets().bottom);
 		return dim;
 	}
-	
-	@Override
-	public Dimension preferredLayoutSize(Container parent) {
-		Dimension dim = new Dimension(0, 0);
-		Dimension pDim = parent.getSize();
 
-		dim.width = pDim.width;
-		dim.height = controlLayout.getPreferredHeight();
+    @Override
+    public Dimension preferredLayoutSize(Container parent) {
+        Insets insets = parent.getInsets();
 
-		return dim;
-	}
+
+        int preferredWidth = 0;
+        if (port != null && port.getExtentSize() != null) {
+            // same logic as layoutContainer
+            preferredWidth = (int) (port.getExtentSize().width * zoomH);
+        } else {
+            // Fallback
+            preferredWidth = minimumSize;
+        }
+
+        int preferredHeight = controlLayout.getPreferredHeight();
+
+        return new Dimension(
+                preferredWidth + insets.left + insets.right,
+                preferredHeight // height from controlLayout already includes insets
+        );
+    }
 
 	@Override
 	public void layoutContainer(Container target) {

@@ -1,10 +1,5 @@
 package com.digero.maestro.view;
 
-import static javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED;
-import static javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER;
-import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS;
-import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED;
-
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -19,22 +14,7 @@ import java.awt.event.MouseWheelEvent;
 import java.text.ParseException;
 import java.util.HashMap;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JScrollBar;
-import javax.swing.JScrollPane;
-import javax.swing.JSlider;
-import javax.swing.JSpinner;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.ScrollPaneConstants;
-import javax.swing.SpinnerNumberModel;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
@@ -61,6 +41,8 @@ import com.digero.maestro.midi.TrackInfo;
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
 
+import static javax.swing.ScrollPaneConstants.*;
+
 /**
  * We should really rename this class. It has nothing to do with parts. Very confusing. ~Aifel
  * 
@@ -72,47 +54,48 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 	private static final int HGAP = 4;
 	private static final int VGAP = 4;
 
-	private AbcPart abcPart;// The currently selected abcPart in left part panel
-	private PartAutoNumberer partAutoNumberer;
-	private NoteFilterSequencerWrapper sequencer;
-	private SequencerWrapper abcSequencer;
+    private AbcPart abcPart;// The currently selected abcPart in left part panel
+	private final PartAutoNumberer partAutoNumberer;
+	private final NoteFilterSequencerWrapper sequencer;
+	private final SequencerWrapper abcSequencer;
 	private boolean isAbcPreviewMode = false;
 	private boolean showMaxPolyphony = false;
 
 	private JSpinner numberSpinner;
-	private SpinnerNumberModel numberSpinnerModel;
+	private final SpinnerNumberModel numberSpinnerModel;
     private JCheckBox numberLockedCheckBox;
-	private JButton numberSettingsButton;
-	private JTextField nameTextField;
-	private JComboBox<LotroInstrument> instrumentComboBox;
-	private JLabel messageLabel;
+	private final JButton numberSettingsButton;
+	private final JTextField nameTextField;
+	private final JComboBox<LotroInstrument> instrumentComboBox;
+	private final JLabel messageLabel;
 
     private static final int ZOOM_SLIDER_MAX = 1000;
     private static final int ZOOM_SLIDER_MOUSE_WHEEL_STEP = 15;
-	private JSlider hZoomSlider;
-	private JSlider vZoomSlider;
+	private final JSlider hZoomSlider;
+	private final JSlider vZoomSlider;
 	
-	private JPanel splitPanel;
+	private final JPanel splitPanel;
 	
-	private JPanel controlPanel;
+    private final PatchedJScrollPane controlPanelScrollPane;
+	private final JPanel controlPanel;
 	
-	private PatchedJScrollPane noteGraphScrollPane;
-	private JPanel noteGraphPanel;
+	private final PatchedJScrollPane noteGraphScrollPane;
+	private final JPanel noteGraphPanel;
 	
 	// Note graphs
 	HistogramPanel histogramPanel;
 	TempoPanel tempoPanel;
 	HashMap<Integer, TrackPanel> trackPanels = new HashMap<>();
 	
-	private ControlLayout controlLayout;
-	private GraphLayout graphLayout;
+	private final ControlLayout controlLayout;
+	private final GraphLayout graphLayout;
 
 	private boolean initialized = false;
 
 	private float hZoom = 1.f;
 	private float vZoom = 1.f;
 	private boolean textnoteVisible = false;
-	private JTextArea noteContent = new JTextArea();
+	private final JTextArea noteContent = new JTextArea();
 	private JScrollPane notePanel = null;
 	private boolean syncUpdate = false;
 	private boolean mouseHzooming = false;
@@ -131,6 +114,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		layout.setVGap(VGAP);
 
 		setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()));
+        setOpaque(true);
 		
 		this.showMaxPolyphony = showMaxPolyphony;
 
@@ -214,7 +198,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 			if (hZoom != oldHZoom) {
 				calcZoomTarget();
 				updateZoom();
-				if (mousePointTrack != null) mousePointTrack.x *= (int) (hZoom / oldHZoom);
+				if (mousePointTrack != null) mousePointTrack.x = (int) (mousePointTrack.x * hZoom / oldHZoom);
 				scrollToPosition(mouseHzooming);
 				repaintAfterZoom();
 	//			System.out.println("hz: " + hZoom);
@@ -267,39 +251,44 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		splitPanel.setBorder(BorderFactory.createEmptyBorder());
 		splitPanel.setBackground(ColorTable.PANEL_BACKGROUND_DISABLED.get());
 		
-		noteGraphPanel = new JPanel() {
-			@Override
-			public Dimension getPreferredSize() {
-				int widestWidth = (int) (noteGraphScrollPane.getViewport().getExtentSize().width * graphLayout.getZoomHorizontal());
-				int height = controlLayout.getPreferredHeight();
-				return new Dimension(widestWidth, height);
-			}
-		};
+		noteGraphPanel = new JPanel();
+        noteGraphPanel.setOpaque(true);
 		noteGraphScrollPane = new PatchedJScrollPane(noteGraphPanel, VERTICAL_SCROLLBAR_ALWAYS, HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        noteGraphScrollPane.getViewport().setScrollMode(JViewport.SIMPLE_SCROLL_MODE);//prevent flicking of text on a modern OS
 
-		controlLayout = new ControlLayout(TrackPanel.calculateTrackDims().rowHeight + 1, noteGraphPanel, noteGraphScrollPane);
-		controlPanel = new JPanel(controlLayout) {
-			@Override
-			public Dimension getPreferredSize() {
-				int widestWidth = 0;
-				for (Component c : getComponents()) {
-					if (c.isVisible()) {
-						Dimension cDim = c.getPreferredSize();
-						if (cDim.width > widestWidth) {
-							widestWidth = cDim.width;
-						}
-					}
-				}
-				return new Dimension(widestWidth, controlLayout.getPreferredHeight());
-			}
-		};
-		MouseAdapter listenForControlFocus = new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				getRootPane().requestFocus();
-			}
-		};
-		controlPanel.addMouseListener(listenForControlFocus);
+		controlLayout = new ControlLayout(TrackPanel.calculateTrackDims().rowHeight + 1, noteGraphPanel);
+		controlPanel = new JPanel(controlLayout);
+        controlPanel.setOpaque(true);
+        controlPanelScrollPane = new PatchedJScrollPane(controlPanel, VERTICAL_SCROLLBAR_NEVER, HORIZONTAL_SCROLLBAR_NEVER);
+        controlPanelScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        controlPanelScrollPane.getViewport().setScrollMode(JViewport.SIMPLE_SCROLL_MODE);
+        // Link control scroll bar model to note graph scroll bar
+        // so they're both controlled by note graph scroll bar
+        int unit = TrackPanel.calculateTrackDims().rowHeight / 2;
+        JScrollBar noteGraphBar = noteGraphScrollPane.getVerticalScrollBar();
+        JScrollBar controlBar = controlPanelScrollPane.getVerticalScrollBar();
+        noteGraphBar.setUnitIncrement(unit);
+        controlBar.setUnitIncrement(unit);
+        controlPanelScrollPane.getVerticalScrollBar().setModel(
+                noteGraphScrollPane.getVerticalScrollBar().getModel()
+        );
+
+        MouseAdapter listenForControlFocus = new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                getRootPane().requestFocus();
+            }
+
+            @Override
+            public void mouseWheelMoved(MouseWheelEvent e) {
+                if (!handleMouseWheelZoom(e)) {
+                    noteGraphScrollPane.dispatchEvent(SwingUtilities.convertMouseEvent(controlPanel, e, noteGraphScrollPane));
+                }
+            }
+        };
+        controlPanel.addMouseListener(listenForControlFocus);
+        controlPanel.addMouseWheelListener(listenForControlFocus);
+
 		controlPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0)); // top, left, bottom, right
 		controlPanel.setBackground(ColorTable.PANEL_BACKGROUND_DISABLED.get());
 		
@@ -320,17 +309,12 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 			}
 		});
 		noteGraphScrollPane.getViewport().addChangeListener(ch -> {
-			controlPanel.invalidate();
-			validate();
-			repaint();
+			controlPanel.invalidate();// change graphs -> change controls
+			//revalidate();
+			//repaint();
 		});
-		
-		// Link control scroll bar model to note graph scroll bar
-		// so they're both controlled by note graph scroll bar
-		JScrollBar noteGraphBar = noteGraphScrollPane.getVerticalScrollBar();		
-		noteGraphBar.setUnitIncrement(TrackPanel.calculateTrackDims().rowHeight / 2);
 
-		splitPanel.add(controlPanel, "0, 0");
+		splitPanel.add(controlPanelScrollPane, "0, 0");
 		splitPanel.add(noteGraphScrollPane, "1, 0, f, f");
 		
 		messageLabel = new JLabel();
@@ -450,8 +434,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 				hZoomSlider.setValue(Util.clamp(val, 0, ZOOM_SLIDER_MAX));
 				mouseHzooming  = false;
 				return true;
-		}
-		else if (e.isShiftDown()) {
+		} else if (e.isShiftDown()) {
 			int val = vZoomSlider.getValue() - ZOOM_SLIDER_MOUSE_WHEEL_STEP * e.getWheelRotation();
 			vZoomSlider.setValue(Util.clamp(val, 0, ZOOM_SLIDER_MAX));
 			return true;
@@ -473,7 +456,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		numberSettingsButton.setVisible(true);
 	}
 
-	private Listener<AbcPartEvent> abcPartListener = e -> {
+	private final Listener<AbcPartEvent> abcPartListener = e -> {
 		if (e.getProperty() == AbcPartProperty.PART_NUMBER) {
 			abcPart.suppressSpinnerUpdate = true;
 			numberSpinner.setValue(abcPart.getPartNumber());
@@ -624,7 +607,8 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		}
 
 		//updateTracksVisible();
-		validate();
+
+		revalidate();
 		repaint();
 	}
 
@@ -693,7 +677,6 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 	private void repaintAfterZoom() {
 		//Note invalidate does not invalidate sub components, hence why its called on the panels directly
 		noteGraphPanel.invalidate();
-		noteGraphScrollPane.invalidate();
 		controlPanel.invalidate();
 		revalidate();
 		repaint();
@@ -717,8 +700,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		} else {
 			remove(notePanel);
 		}
-		validate();
-		repaint();
+		revalidate();
 	}
 
 	public String getTextnote() {
@@ -734,4 +716,9 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		this.showMaxPolyphony = showMaxPolyphony;
 		setAbcPreviewMode(isAbcPreviewMode());
 	}
+
+    @Override
+    public boolean isValidateRoot() {
+        return true;
+    }
 }

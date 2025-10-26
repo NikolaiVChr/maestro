@@ -2027,6 +2027,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		case PART_LIST_ORDER:
 			partsList.selectPart(abcSong.getParts().indexOf(partPanel.getAbcPart()));
+            // this is important, else after a deletion, tracklist might be in wrong state:
+            partPanel.setAbcPart(partsList.getSelectedPart(), true);
+
 			partsList.repaint();
 			partEditor.repaint();
 			updateButtons(false);
