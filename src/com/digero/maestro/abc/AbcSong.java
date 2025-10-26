@@ -6,6 +6,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.UserDefinedFileAttributeView;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -27,6 +31,7 @@ import javax.swing.JOptionPane;
 import javax.xml.xpath.XPathExpressionException;
 
 import com.digero.common.abc.VersionsWithIssues;
+import com.digero.common.util.*;
 import com.digero.maestro.view.CountIn;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
@@ -39,13 +44,6 @@ import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.abctomidi.AbcToMidi;
 import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.TimeSignature;
-import com.digero.common.util.ICompileConstants;
-import com.digero.common.util.IDiscardable;
-import com.digero.common.util.Listener;
-import com.digero.common.util.ListenerList;
-import com.digero.common.util.ParseException;
-import com.digero.common.util.Util;
-import com.digero.common.util.Version;
 import com.digero.maestro.MaestroMain;
 import com.digero.maestro.abc.AbcPartEvent.AbcPartProperty;
 import com.digero.maestro.abc.AbcSongEvent.AbcSongProperty;
@@ -797,7 +795,54 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			getAbcExporter().exportToAbc(out, delayEnabled);
 			if (firstExportTime == null) firstExportTime = new Date();
 		}
+        setFileMetadata(exportFile.toPath());
 	}
+
+    /**
+     * Write metainfo about the file to NTFS/Linux filesystems.
+     * This info cannot be seen by looking at file properties.
+     *
+     * It can be revealed by CMD:
+     * more < "test.abc":Artist
+     *
+     * Or Powershell:
+     * Get-Content -Path .\test.abc -Stream Artist
+     *
+     * But more importantly, it can be read by Java, so in the future
+     * don't have to read all files content in Abc Playlist
+     * to get this info.
+     *
+     * Since NTFS native encoding is UTF_16LE, we use that.
+     */
+    private void setFileMetadata(Path file) {
+        try {
+            UserDefinedFileAttributeView view = Files.getFileAttributeView(
+                    file, UserDefinedFileAttributeView.class);
+
+            if (view != null) {
+                view.write("Artist", StandardCharsets.UTF_16LE.encode(getComposer()));
+                view.write("Title", StandardCharsets.UTF_16LE.encode(getTitle()));
+                view.write("Transcriber", StandardCharsets.UTF_16LE.encode(getTranscriber()));
+                view.write("Genre", StandardCharsets.UTF_16LE.encode(getGenre()));
+                view.write("Mood", StandardCharsets.UTF_16LE.encode(getMood()));
+                view.write("Number of parts", StandardCharsets.UTF_16LE.encode(Integer.toString(getActivePartCount())));
+                view.write("Tempo", StandardCharsets.UTF_16LE.encode(getTempoBPM() + " BPM"));
+                view.write("Duration", StandardCharsets.UTF_16LE.encode(Util.formatDurationM(getSongLengthMicros())));
+                view.write("Export Tool", StandardCharsets.UTF_16LE.encode(MaestroMain.APP_NAME+" v"+MaestroMain.APP_VERSION));
+                view.write("Export Date", StandardCharsets.UTF_16LE.encode(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())));
+                Pair<Integer, Integer> pair = getBadgerMaximum();
+                if (pair != null) {
+                    view.write("Minimum parts", StandardCharsets.UTF_16LE.encode(Integer.toString(pair.first)));
+                    view.write("Maximum parts", StandardCharsets.UTF_16LE.encode(Integer.toString(pair.second)));
+                }
+                log.info("Successfully wrote metadata!");
+            } else {
+                log.warning("User defined attributes not supported by this file system.");
+            }
+        } catch (IOException e) {
+            log.warning("Failed to write metadata: " + e.getMessage());
+        }
+    }
 
 	public AbcPart createNewPart() {
 		AbcPart newPart = new AbcPart(this);
@@ -914,6 +959,37 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		}
 		return str.toString();
 	}
+
+    private Pair<Integer, Integer> getBadgerMaximum() {
+        Integer min = null;
+        Integer max = null;
+        if (badger) {
+            for (int i = AbcPart.badgerPrioHighest; i <= AbcPart.badgerPrioLowest; i++) {
+                ListModelWrapper<AbcPart> prts = getParts();
+                int count = 0;
+                int onCount = 0;
+                for (AbcPart prt : prts) {
+                    if (prt.getEnabledTrackCount() > 0 && prt.getBadgerPrio() <= i) {
+                        count += 1;
+                        if (prt.getBadgerPrio() == i) onCount++;
+                    }
+                }
+                if (onCount == 0) {
+                    continue;
+                }
+                if (min == null || count < min) {
+                    min = count;
+                }
+                if (max == null || count > max) {
+                    max = count;
+                }
+            }
+        }
+        if (min == null || max == null) {
+            return null;
+        }
+        return new Pair<>(min, max);
+    }
 
 	@Override
 	public int getActivePartCount() {
