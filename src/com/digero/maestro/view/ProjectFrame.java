@@ -35,10 +35,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
 import javax.imageio.ImageIO;
+import javax.print.attribute.standard.Severity;
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.MidiUnavailableException;
@@ -275,8 +277,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private JLabel feedLabel;
 	private static volatile String feed = "";
 	private static volatile String feedFull = "";
-	
-	/*
+    private PreviewExportWorker previewWorker = null;
+
+    /*
 	 * private static Color BRIGHT_RED = new Color(255, 0, 0); private static Color ORANGE = new Color(235, 150, 64);
 	 * private static Color BLACK = new Color(0, 0, 0);
 	 */
@@ -1892,7 +1895,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		setAbcSongModified(true);
 
 		if (e.isAbcPreviewRelated()) {
-			refreshPreviewSequence(false);
+            // must be immediate since song.parts can change in subsequent
+            // part listeners and generate preview now runs on a different thread
+			refreshPreviewSequence(true);
 		}
 
 		if (e.isAbcPreviewRelated() && partPanel != null) {
@@ -2557,101 +2562,183 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 	}
 
-	private volatile boolean refreshPreviewPending = false;
-	private JPanel playControlPanel;
+    private JPanel playControlPanel;
 
-	private class RefreshPreviewTask implements Runnable {
-		@Override
-		public void run() {
-			if (refreshPreviewPending) {
-				if (!refreshPreviewSequence(true))
-					abcSequencer.stop();
-			}
-		}
-	}
+    private class PreviewExportWorker extends SwingWorker<SequenceInfo, Boolean> {
 
-	private boolean refreshPreviewSequence(boolean immediate) {
-		if (!immediate) {
-			if (!refreshPreviewPending) {
-				refreshPreviewPending = true;
-				SwingUtilities.invokeLater(new RefreshPreviewTask());
-			}
-			return true;
-		}
+        private final AbcExporter myExporter;
+        private final boolean lotroInstruments;
+        private final boolean oldVelocities;
 
-		refreshPreviewPending = false;
+        public PreviewExportWorker(AbcExporter myExporter, boolean lotroInstruments, boolean oldVelocities) {
+            this.myExporter = myExporter;
+            this.lotroInstruments = lotroInstruments;
+            this.oldVelocities = oldVelocities;
+        }
 
-		if (abcSong == null || abcSong.getActivePartCount() == 0) {
-			abcPreviewStartTick = 0L;
-			abcPreviewTempoFactor = 1.0f;
-			abcSequencer.clearSequence();
-			abcSequencer.reset(false);
-			abcBarLabel.setBarNumberCache(null);
-			abcBarLabel.setInitialOffsetTick(abcPreviewStartTick);
-			abcPositionLabel.setInitialOffsetTick(abcPreviewStartTick);
-			return false;
-		}
-		
-		try {
-			abcSong.setSkipSilenceAtStart(saveSettings.skipSilenceAtStart);
-			abcSong.setDeleteMinimalNotes(saveSettings.deleteMinimalNotes);
-			// abcSong.setShowPruned(saveSettings.showPruned);
-			AbcExporter exporter = abcSong.getAbcExporter();
-			exporter.stereoPan = prefs.getInt("stereoPan", 100);
-			SequenceInfo previewSequenceInfo = SequenceInfo.fromAbcParts(exporter, !failedToLoadLotroInstruments,
-					false);
-			
-			
-			
-			abcPreviewStartTick = exporter.getExportStartTick();
-			abcPreviewTempoFactor = abcSequencer.getTempoFactor();
-			abcBarLabel.setBarNumberCache(exporter.getTimingInfo());
-			abcBarLabel.setInitialOffsetTick(abcPreviewStartTick);
-			abcPositionLabel.setInitialOffsetTick(abcPreviewStartTick);
-			
-			long tick = sequencer.getTickPosition();
-			
-			boolean abcRunning = abcSequencer.isRunning();
-			if (abcPreviewMode) {
-				// Refreshing while playing Original (GS) will cause a GS Reset,
-				// which will mess with volume, hence the if statement.
-				abcSequencer.reset(false);
-			}
-			
-			abcSequencer.setSequence(previewSequenceInfo.getSequence());
-			abcSequencer.setStartTick(abcPreviewStartTick);// Needed for MP3 and WAV exports.
+        /**
+         * This runs on non-Swing thread
+         */
+        @Override
+        protected SequenceInfo doInBackground() throws AbcConversionException, InvalidMidiDataException {
+            return SequenceInfo.fromAbcParts(myExporter, lotroInstruments, oldVelocities);
+        }
 
-			log.info("A new preview was generated");
-			log.info("Duration MIDI:    "+Util.formatDurationM(sequencer.getLength()));
-			log.info("Duration Preview: "+Util.formatDurationM(abcSequencer.getLength()-abcSequencer.tickToMicros(abcPreviewStartTick))+", rounded up: "+Util.formatDuration(abcSequencer.getLength()-abcSequencer.tickToMicros(abcPreviewStartTick)));
-			log.info("Duration ABC:     "+Util.formatDurationM(abcSong.getSongLengthMicros())+", rounded up: "+Util.formatDuration(abcSong.getSongLengthMicros()));
-			
-			/*
-			if (tick < abcPreviewStartTick)
-				tick = abcPreviewStartTick;
+        /**
+         * This runs on Swing thread
+         */
+        @Override
+        protected void done() {
+            if (isCancelled()) {
+                return;
+            }
+            try {
+                applyPreview(get(), myExporter);
 
-			if (tick >= abcSequencer.getTickLength()) {
-				tick = 0;
-				abcRunning = false;
-			}
-			*/
+            } catch (Throwable e) {
+                log.log(Level.WARNING, "Error exporting preview", e);
+                Throwable cause = e.getCause() != null ? e.getCause() : e;
 
-			if (abcRunning && sequencer.isRunning())
-				sequencer.stop();
-			
-			abcSequencer.setTickPosition(tick);
-			abcSequencer.setRunning(abcRunning);
-			compileStats();
-		} catch (InvalidMidiDataException | AbcConversionException e) {
-			sequencer.stop();
-			abcSequencer.stop();
-			JOptionPane.showMessageDialog(ProjectFrame.this, e.getMessage(), "Error previewing ABC",
-					JOptionPane.WARNING_MESSAGE);
-			return false;
-		}
+                sequencer.stop();
+                abcSequencer.stop();
+                JOptionPane.showMessageDialog(ProjectFrame.this, e.getMessage(), "Error previewing ABC",
+                        JOptionPane.WARNING_MESSAGE);
+            } finally {
+                //setUIEnabled(true);
+            }
+        }
+    }
 
-		return true;
-	}
+    private void applyPreview(SequenceInfo previewSequenceInfo, AbcExporter exporter) {
+
+        abcPreviewStartTick = exporter.getExportStartTick();
+        abcPreviewTempoFactor = abcSequencer.getTempoFactor();
+        abcBarLabel.setBarNumberCache(exporter.getTimingInfo());
+        abcBarLabel.setInitialOffsetTick(abcPreviewStartTick);
+        abcPositionLabel.setInitialOffsetTick(abcPreviewStartTick);
+
+        long tick = sequencer.getTickPosition();
+
+        boolean abcRunning = abcSequencer.isRunning();
+        if (abcPreviewMode) {
+            // Refreshing while playing Original (GS) will cause a GS Reset,
+            // which will mess with volume, hence the if statement.
+            abcSequencer.reset(false);
+        }
+        try {
+            abcSequencer.setSequence(previewSequenceInfo.getSequence());
+            abcSequencer.setStartTick(abcPreviewStartTick);// Needed for MP3 and WAV exports.
+
+            log.info("A new preview was generated");
+            log.info("Duration MIDI:    " + Util.formatDurationM(sequencer.getLength()));
+            log.info("Duration Preview: " + Util.formatDurationM(abcSequencer.getLength() - abcSequencer.tickToMicros(abcPreviewStartTick)) + ", rounded up: " + Util.formatDuration(abcSequencer.getLength() - abcSequencer.tickToMicros(abcPreviewStartTick)));
+            log.info("Duration ABC:     " + Util.formatDurationM(abcSong.getSongLengthMicros()) + ", rounded up: " + Util.formatDuration(abcSong.getSongLengthMicros()));
+
+            /*
+            if (tick < abcPreviewStartTick)
+                tick = abcPreviewStartTick;
+
+            if (tick >= abcSequencer.getTickLength()) {
+                tick = 0;
+                abcRunning = false;
+            }
+            */
+
+            if (abcRunning && sequencer.isRunning())
+                sequencer.stop();
+
+            abcSequencer.setTickPosition(tick);
+            abcSequencer.setRunning(abcRunning);
+        } catch (InvalidMidiDataException e) {
+            log.log(Level.WARNING, "Error after exporting preview", e);
+            sequencer.stop();
+            abcSequencer.stop();
+            JOptionPane.showMessageDialog(ProjectFrame.this, e.getMessage(), "Error previewing ABC",
+                    JOptionPane.WARNING_MESSAGE);
+        }
+        compileStats();
+    }
+
+    private boolean refreshPreviewSequence(boolean immediate) {
+        if (!SwingUtilities.isEventDispatchThread()) {
+            log.severe("refreshPreviewSequence: not on Swing thread");
+            Thread.dumpStack();
+            return false;
+        }
+        PreviewExportWorker oldWorker = null;
+        if (previewWorker != null) {
+            if (!previewWorker.isDone()) {
+                oldWorker = previewWorker;
+                previewWorker.cancel(true);
+            }
+        }
+
+        if (abcSong == null || abcSong.getActivePartCount() == 0) {
+            abcPreviewStartTick = 0L;
+            abcPreviewTempoFactor = 1.0f;
+            abcSequencer.clearSequence();
+            abcSequencer.reset(false);
+            abcBarLabel.setBarNumberCache(null);
+            abcBarLabel.setInitialOffsetTick(abcPreviewStartTick);
+            abcPositionLabel.setInitialOffsetTick(abcPreviewStartTick);
+            //setUIEnabled(true);
+            return false;
+        }
+
+        if (!immediate) {
+            try {
+                abcSong.setSkipSilenceAtStart(saveSettings.skipSilenceAtStart);
+                abcSong.setDeleteMinimalNotes(saveSettings.deleteMinimalNotes);
+                // abcSong.setShowPruned(saveSettings.showPruned);
+                AbcExporter exporter = abcSong.getAbcExporter();
+                exporter.stereoPan = prefs.getInt("stereoPan", 100);
+                previewWorker = new PreviewExportWorker(exporter, !failedToLoadLotroInstruments, false);
+                //setUIEnabled(false);
+                previewWorker.execute();
+            } catch (AbcConversionException e) {
+                log.log(Level.WARNING, "Error exporting preview", e);
+                sequencer.stop();
+                abcSequencer.stop();
+                JOptionPane.showMessageDialog(ProjectFrame.this, e.getMessage(), "Error previewing ABC",
+                        JOptionPane.WARNING_MESSAGE);
+            }
+
+            return true;
+        }
+
+        try {
+            if (oldWorker != null) {
+                try {
+                    oldWorker.get();
+                    // doInBackground has now finished
+                    // wait even though its cancelled cause
+                    // getBacExporter might change abcExporter and
+                    // mess up its internal state
+                } catch (Throwable ignored) {
+                }
+            }
+
+            abcSong.setSkipSilenceAtStart(saveSettings.skipSilenceAtStart);
+            abcSong.setDeleteMinimalNotes(saveSettings.deleteMinimalNotes);
+            // abcSong.setShowPruned(saveSettings.showPruned);
+            AbcExporter exporter = abcSong.getAbcExporter();
+            exporter.stereoPan = prefs.getInt("stereoPan", 100);
+            SequenceInfo previewSequenceInfo = SequenceInfo.fromAbcParts(exporter, !failedToLoadLotroInstruments, false);
+            applyPreview(previewSequenceInfo, exporter);
+            //setUIEnabled(true);
+            return true;
+        } catch(Exception e) {
+            //setUIEnabled(true);
+            log.log(Level.WARNING, "Error exporting preview (immediate)", e);
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
+
+            sequencer.stop();
+            abcSequencer.stop();
+            JOptionPane.showMessageDialog(ProjectFrame.this, e.getMessage(), "Error previewing ABC",
+                    JOptionPane.WARNING_MESSAGE);
+        }
+        return false;
+    }
 
 	private void commitAllFields() {
 		try {

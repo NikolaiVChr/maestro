@@ -62,6 +62,8 @@ public class SequenceInfo implements MidiConstants {
 	public static List<ExportTrackInfo> lastTrackInfos = null;
 	public long realDuraTicks;
 
+    private static final Object PREVIEW_EXPORT_LOCK = new Object();
+
 	/**
 	 * Create instance of this class while creating MIDI sequence from abc file.
 	 * 
@@ -116,7 +118,10 @@ public class SequenceInfo implements MidiConstants {
 	 */
 	public static SequenceInfo fromAbcParts(AbcExporter abcExporter, boolean useLotroInstruments, boolean oldVelocities)
 			throws InvalidMidiDataException, AbcConversionException {
-		return new SequenceInfo(abcExporter, useLotroInstruments);
+        synchronized (PREVIEW_EXPORT_LOCK) {
+            // lock so ProjectFrame don't go in here before previous is finished
+            return new SequenceInfo(abcExporter, useLotroInstruments);
+        }
 	}
 
 	private SequenceInfo(String fileName, Sequence sequence, int type, MiscSettings miscSettings, boolean oldVelocities, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume, boolean ignoreMidiText)
