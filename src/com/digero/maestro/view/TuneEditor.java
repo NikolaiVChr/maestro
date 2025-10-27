@@ -2,12 +2,10 @@ package com.digero.maestro.view;
 
 import static javax.swing.SwingConstants.CENTER;
 
-import java.awt.GraphicsDevice;
-import java.awt.GraphicsEnvironment;
-import java.awt.Point;
-import java.awt.Rectangle;
+import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
+import java.util.List;
 import java.util.Map.Entry;
 
 import javax.swing.BorderFactory;
@@ -35,8 +33,24 @@ public class TuneEditor {
 
 	private static Point lastLocation = null;
 	private static JDialog openDialog = null;
+    private static final MouseAdapter blocker = new MouseAdapter() {};
 	final static double[] LAYOUT_COLS_TABS = new double[] { 0.166, 0.166, 0.166, 0.166, 0.166, 0.17};
 	public static final int numberOfSectionsMax = 20;
+
+    public static void uiEnabled(boolean on) {
+        if (openDialog != null) {
+            Component glassPane = openDialog.getGlassPane();
+            if (!on) {
+                openDialog.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+                glassPane.addMouseListener(blocker);
+                glassPane.setVisible(true);
+            } else {
+                glassPane.setVisible(false);
+                glassPane.removeMouseListener(blocker);
+                openDialog.setCursor(Cursor.getDefaultCursor());
+            }
+        }
+    }
 
 	public static void show(JFrame jf, AbcSong abcSong) {
 		if (openDialog != null)

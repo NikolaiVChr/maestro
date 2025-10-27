@@ -6,15 +6,7 @@ import static java.awt.event.InputEvent.SHIFT_DOWN_MASK;
 import static javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED;
 import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Desktop;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.GridLayout;
-import java.awt.Image;
-import java.awt.Insets;
-import java.awt.Toolkit;
+import java.awt.*;
 import java.awt.dnd.DropTarget;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -90,6 +82,7 @@ import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.text.BadLocationException;
+import javax.swing.SwingWorker;
 import javax.xml.transform.TransformerException;
 
 import com.digero.maestro.midi.SequenceDataCache;
@@ -149,7 +142,9 @@ import net.miginfocom.swing.MigLayout;
 
 public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompileConstants {
 	private static final Logger log = Logger.getLogger("file");
-	
+
+    private boolean uiEnabled = true;
+
 	private static final int HGAP = 4;
 	private static final int VGAP = 4;
 	private static final double[] LAYOUT_COLS = new double[] { 180, FILL };
@@ -1741,39 +1736,42 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			updatePreviewMode(false);
 		}
 
-		playButton.setEnabled(midiLoaded);
-		midiModeRadioButton.setEnabled(midiLoaded || hasAbcNotes);
-		abcModeRadioButton.setEnabled(hasAbcNotes);
-		stopButton.setEnabled((midiLoaded && (sequencer.isRunning() || !sequencer.isAtStart()))
-				|| (abcSequencer.isLoaded() && (abcSequencer.isRunning() || !abcSequencer.isAtStart())));
+        volumeSlider.setEnabled(uiEnabled);
+        panSlider.setEnabled(uiEnabled);
 
-		newPartButton.setEnabled(abcSong != null);
-		deletePartButton.setEnabled(partsList.getSelectedIndex() != -1);
-		sortPartsButton.setEnabled(abcSong != null);
-		numerateButton.setEnabled(midiLoaded);
+		playButton.setEnabled(midiLoaded && uiEnabled);
+		midiModeRadioButton.setEnabled((midiLoaded || hasAbcNotes) && uiEnabled);
+		abcModeRadioButton.setEnabled(hasAbcNotes && uiEnabled);
+		stopButton.setEnabled((midiLoaded && (sequencer.isRunning() || !sequencer.isAtStart()))
+				|| (abcSequencer.isLoaded() && (abcSequencer.isRunning() || !abcSequencer.isAtStart())) && uiEnabled);
+
+		newPartButton.setEnabled(abcSong != null && uiEnabled);
+		deletePartButton.setEnabled(partsList.getSelectedIndex() != -1 && uiEnabled);
+		sortPartsButton.setEnabled(abcSong != null && uiEnabled);
+		numerateButton.setEnabled(midiLoaded && uiEnabled);
 		updatePartEditorButton();
-		exportButton.setEnabled(hasAbcNotes);
-		exportMenuItem.setEnabled(hasAbcNotes);
-		exportAsMenuItem.setEnabled(hasAbcNotes);
-		saveMenuItem.setEnabled(abcSong != null);
-		saveAsMenuItem.setEnabled(abcSong != null);
-		saveExpandedMidiMenuItem.setEnabled(abcSong != null);
-		exportAudioMenu.setEnabled(abcSong != null);
-		exportMp3MenuItem.setEnabled(abcSong != null);
-		exportWavMenuItem.setEnabled(abcSong != null);
+		exportButton.setEnabled(hasAbcNotes && uiEnabled);
+		exportMenuItem.setEnabled(hasAbcNotes && uiEnabled);
+		exportAsMenuItem.setEnabled(hasAbcNotes && uiEnabled);
+		saveMenuItem.setEnabled(abcSong != null && uiEnabled);
+		saveAsMenuItem.setEnabled(abcSong != null && uiEnabled);
+		saveExpandedMidiMenuItem.setEnabled(abcSong != null && uiEnabled);
+		exportAudioMenu.setEnabled(abcSong != null && uiEnabled);
+		exportMp3MenuItem.setEnabled(abcSong != null && uiEnabled);
+		exportWavMenuItem.setEnabled(abcSong != null && uiEnabled);
 		String errStr = "<html><p style='color:red;'>Must save as an MSX project first</p></html>";
-		chooseMidiFileMenuItem.setEnabled(abcSong != null && abcSong.getProjectFile() != null);
+		chooseMidiFileMenuItem.setEnabled(abcSong != null && abcSong.getProjectFile() != null && uiEnabled);
 		chooseMidiFileMenuItem.setToolTipText(abcSong != null && abcSong.getProjectFile() == null ? errStr : "");
-		reloadMidiFileMenuItem.setEnabled(abcSong != null && abcSong.getProjectFile() != null);
+		reloadMidiFileMenuItem.setEnabled(abcSong != null && abcSong.getProjectFile() != null && uiEnabled);
 		reloadMidiFileMenuItem.setToolTipText(abcSong != null && abcSong.getProjectFile() == null ? errStr : "");
 		
-		closeProject.setEnabled(midiLoaded);
+		closeProject.setEnabled(midiLoaded && uiEnabled);
 
-		songTitleField.setEnabled(midiLoaded);
-		composerField.setEnabled(midiLoaded);
-		transcriberField.setEnabled(midiLoaded);
-		moodField.setEnabled(midiLoaded);
-		genreField.setEnabled(midiLoaded);
+		songTitleField.setEnabled(midiLoaded && uiEnabled);
+		composerField.setEnabled(midiLoaded && uiEnabled);
+		transcriberField.setEnabled(midiLoaded && uiEnabled);
+		moodField.setEnabled(midiLoaded && uiEnabled);
+		genreField.setEnabled(midiLoaded && uiEnabled);
 		if (miscSettings.showBadger) {
 			songInfoLayout.setRow(new double[] { PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED });
 		} else {
@@ -1784,10 +1782,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		genreField.setVisible(miscSettings.showBadger);
 		moodLabel.setVisible(miscSettings.showBadger);
 		genreLabel.setVisible(miscSettings.showBadger);
-		transposeSpinner.setEnabled(midiLoaded);
-		tempoSpinner.setEnabled(midiLoaded);
-		tuneEditorButton.setEnabled(midiLoaded);
-		hideEditsCheckbox.setEnabled(midiLoaded);
+		transposeSpinner.setEnabled(midiLoaded && uiEnabled);
+		tempoSpinner.setEnabled(midiLoaded && uiEnabled);
+		tuneEditorButton.setEnabled(midiLoaded && uiEnabled);
+		hideEditsCheckbox.setEnabled(midiLoaded && uiEnabled);
 		if (!midiLoaded) hideEditsCheckbox.setSelected(false);
 		if (midiLoaded && (abcSong.tuneBars != null || abcSong.getFirstBar() != null || abcSong.getLastBar() != null)) {
 			tuneEditorButton.setForeground(new Color(0.2f, 0.8f, 0.2f));
@@ -1795,11 +1793,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			Color c = UIManager.getColor("Button.foreground");
 			tuneEditorButton.setForeground(c);
 		}
-		resetTempoButton.setEnabled(midiLoaded && abcSong != null && abcSong.getTempoFactor() != 1.0f);
+		resetTempoButton.setEnabled(midiLoaded && abcSong != null && abcSong.getTempoFactor() != 1.0f && uiEnabled);
 		resetTempoButton.setVisible(resetTempoButton.isEnabled());
-		keySignatureField.setEnabled(midiLoaded);
-		timeSignatureField.setEnabled(midiLoaded);
-        timingCombo.setEnabled(midiLoaded);
+		keySignatureField.setEnabled(midiLoaded && uiEnabled);
+		timeSignatureField.setEnabled(midiLoaded && uiEnabled);
+        timingCombo.setEnabled(midiLoaded && uiEnabled);
         /*
 		organicCheckBox.setEnabled(midiLoaded);
 		organic2CheckBox.setEnabled(midiLoaded && organicCheckBox.isSelected());
@@ -1808,9 +1806,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		prioCheckBox.setEnabled(midiLoaded && mixCheckBox.isSelected() && !organicCheckBox.isSelected());
 
          */
-		dynaCombo.setEnabled(midiLoaded);
-        tempoOnlyFirstCheckBox.setEnabled(abcSong != null && abcSong.getSequenceInfo().getDataCache().isTempoInHigherTracks());//  && abcSong.getProjectFile() != null
-		noteButton.setEnabled(midiLoaded);
+		dynaCombo.setEnabled(midiLoaded && uiEnabled);
+        tempoOnlyFirstCheckBox.setEnabled(abcSong != null && abcSong.getSequenceInfo().getDataCache().isTempoInHigherTracks() && uiEnabled);//  && abcSong.getProjectFile() != null
+		noteButton.setEnabled(midiLoaded && uiEnabled);
 		if (midiLoaded) {
 			midiModeRadioButton.setText("Original ("
 					+ ((abcSong.getSequenceInfo().standard == MidiStandard.GM && abcSong.getSequenceInfo().hasPorts)
@@ -1838,7 +1836,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	};
 
 	public void updatePartEditorButton() {
-		partEditorButton.setEnabled(partsList.getSelectedIndex() != -1);		
+		partEditorButton.setEnabled(partsList.getSelectedIndex() != -1 && uiEnabled);
 	}
 	
 	void updateButtons(boolean immediate) {
@@ -2873,11 +2871,17 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
     }
 
 	private boolean finishExportAbc(File exportFile) {
+        setUIEnabled(false);
 		exportSuccessfulLabel.setVisible(false);
 		commitAllFields();
+        StringCleaner.cleanABC = saveSettings.convertABCStringsToBasicAscii;
 
+        AbcExportWorker worker = new AbcExportWorker(exportFile);
+        worker.execute();
+        return true;
+        /*
 		try {
-			StringCleaner.cleanABC = saveSettings.convertABCStringsToBasicAscii;
+
 			abcSong.exportAbc(exportFile, MaestroMain.APP_NAME);
 
 			SwingUtilities.invokeLater(() -> {
@@ -2901,7 +2905,90 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			JOptionPane.showMessageDialog(this, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
+        */
 	}
+
+    private class AbcExportWorker extends SwingWorker<Void, Void> {
+
+        private final File exportFile;
+
+        public AbcExportWorker(File exportFile) {
+            this.exportFile = exportFile;
+        }
+
+        /**
+         * This runs on non-Swing thread
+         */
+        @Override
+        protected Void doInBackground() throws IOException, AbcConversionException {
+            abcSong.exportAbc(exportFile, MaestroMain.APP_NAME);
+            return null;
+        }
+
+        /**
+         * This runs on Swing thread
+         */
+        @Override
+        protected void done() {
+            try {
+                get(); // get exceptions from doInBackground()
+
+                exportSuccessfulLabel.setText(abcSong.getExportFile().getName());
+                exportSuccessfulLabel.setToolTipText("Exported " + abcSong.getExportFile().getName());
+                exportSuccessfulLabel.setVisible(true);
+
+                if (exportLabelHideTimer == null) {
+                    exportLabelHideTimer = new Timer(8000, e -> exportSuccessfulLabel.setVisible(false));
+                    exportLabelHideTimer.setRepeats(false);
+                }
+                exportLabelHideTimer.stop();
+                exportLabelHideTimer.start();
+                onSaveAndExportSettingsChanged();
+
+            } catch (Exception e) {
+                Throwable cause = e.getCause() != null ? e.getCause() : e;
+
+                if (cause instanceof FileNotFoundException) {
+                    JOptionPane.showMessageDialog(ProjectFrame.this, "Failed to create file!\n" + cause.getMessage(),
+                            "Failed to create file", JOptionPane.ERROR_MESSAGE);
+                } else if (cause instanceof IOException || cause instanceof AbcConversionException) {
+                    JOptionPane.showMessageDialog(ProjectFrame.this, cause.getMessage(), "Error",
+                            JOptionPane.ERROR_MESSAGE);
+                } else {
+                    // Catch any other unexpected errors
+                    JOptionPane.showMessageDialog(ProjectFrame.this, "An unexpected error occurred:\n" + cause.getMessage(),
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } finally {
+                setUIEnabled(true);
+            }
+        }
+    }
+
+    private final MouseAdapter blocker = new MouseAdapter() {};
+
+    /**
+     * A setEnabled for the entire Maestro App.
+     */
+    private void setUIEnabled(boolean on) {
+        uiEnabled = on;
+        Component glassPane = getGlassPane();
+        if (!on) {
+            setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+            glassPane.addMouseListener(blocker);
+            glassPane.setVisible(true);
+        } else {
+            glassPane.setVisible(false);
+            glassPane.removeMouseListener(blocker);
+            setCursor(Cursor.getDefaultCursor());
+        }
+
+        // Disable the dialogs also,
+        // as any changes from them can bring multi-threading trouble:
+        partEditor.uiEnabled(on);
+        SectionEditor.uiEnabled(on);
+        TuneEditor.uiEnabled(on);
+    }
 
 	private boolean saveAs() {
 		if (abcSong == null) {

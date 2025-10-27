@@ -1,13 +1,7 @@
 package com.digero.maestro.view;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.GraphicsConfiguration;
-import java.awt.GraphicsDevice;
-import java.awt.GraphicsEnvironment;
-import java.awt.Insets;
-import java.awt.Rectangle;
-import java.awt.Toolkit;
+import java.awt.*;
+import java.awt.event.MouseAdapter;
 import java.io.Serial;
 
 import javax.swing.DefaultListModel;
@@ -50,6 +44,21 @@ public class PartEditor extends JDialog {
 		sz.height = 100;
 		setMinimumSize(sz);		
 	}
+
+    private final MouseAdapter blocker = new MouseAdapter() {};
+
+    public void uiEnabled(boolean on) {
+        Component glassPane = getGlassPane();
+        if (!on) {
+            setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+            glassPane.addMouseListener(blocker);
+            glassPane.setVisible(true);
+        } else {
+            glassPane.setVisible(false);
+            glassPane.removeMouseListener(blocker);
+            setCursor(Cursor.getDefaultCursor());
+        }
+    }
 
 	public void setModel(DefaultListModel<AbcPart> listModel) {
 		partsList.setModel(listModel);

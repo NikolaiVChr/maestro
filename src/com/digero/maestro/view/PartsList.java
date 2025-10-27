@@ -43,7 +43,6 @@ import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.abc.AbcSongEvent;
 import info.clearthought.layout.TableLayoutConstants;
 
-@SuppressWarnings("serial")
 public class PartsList extends JPanel implements IDiscardable, TableLayoutConstants {
 	protected DefaultListModel<AbcPart> model;
 	private final BoxLayout layout;
