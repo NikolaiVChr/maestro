@@ -2,7 +2,10 @@ package com.digero.common.midi;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 import java.util.logging.Logger;
 
 import javax.sound.midi.InvalidMidiDataException;
@@ -36,10 +39,10 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 	private List<Transceiver> transceivers = new ArrayList<>();
 	private long dragTick;
 	private boolean isDragging;
-	private TempoCacheSlow tempoCache = new TempoCacheSlow();
+	private final TempoCacheSlow tempoCache = new TempoCacheSlow();
 	private boolean[] trackActiveCache = null;
 
-	private Timer updateTimer = new Timer(UPDATE_FREQUENCY_MILLIS, new TimerActionListener());
+	private final Timer updateTimer = new Timer(UPDATE_FREQUENCY_MILLIS, new TimerActionListener());
 	private long lastUpdateTick = -1;
 	private boolean lastRunning = false;
 	private TempoCacheSlow cache = null;
