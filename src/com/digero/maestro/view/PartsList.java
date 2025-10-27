@@ -46,7 +46,7 @@ import info.clearthought.layout.TableLayoutConstants;
 @SuppressWarnings("serial")
 public class PartsList extends JPanel implements IDiscardable, TableLayoutConstants {
 	protected DefaultListModel<AbcPart> model;
-	private BoxLayout layout;
+	private final BoxLayout layout;
 
 	protected List<PartsListItem> parts = new ArrayList<>();
 	protected AbcPart selectedPart = null;
@@ -57,7 +57,7 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 
 	protected final Dimension rowDimension;
 	private int dropInsertIndex = -1;
-	private PanelTransferHandler handler;
+	private final PanelTransferHandler handler;
 
 	public PartsList(SequencerWrapper abcSequencer, MiscSettings miscSettings) {
 		this.abcSequencer = abcSequencer;
@@ -363,7 +363,9 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 	};
 	
 	public static class PanelTransferHandler extends TransferHandler {
-		
+        /** This global flag is true when any D&D is in progress. */
+        public static volatile boolean isDragInProgress = false;
+
 		PartsList main;
 		private boolean canImport;
 		private boolean export;
@@ -380,6 +382,8 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 		    //System.out.println("Starting drag for: " + c);
 			
 		    if (!export) return null;
+
+            isDragInProgress = true;
 
 		    int panelIndex = main.model.indexOf(((PartsListItem) c.getParent()).getPart()); 
 		    if (panelIndex == -1) {
@@ -468,6 +472,7 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
         
         @Override
         public void exportDone(JComponent c, Transferable t, int action) {
+            isDragInProgress = false;
             if (action == TransferHandler.MOVE) {
                 //cleanup
             }

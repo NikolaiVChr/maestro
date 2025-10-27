@@ -252,16 +252,20 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		splitPanel.setBackground(ColorTable.PANEL_BACKGROUND_DISABLED.get());
 		
 		noteGraphPanel = new JPanel();
-        noteGraphPanel.setOpaque(true);
 		noteGraphScrollPane = new PatchedJScrollPane(noteGraphPanel, VERTICAL_SCROLLBAR_ALWAYS, HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        noteGraphScrollPane.getViewport().setScrollMode(JViewport.SIMPLE_SCROLL_MODE);//prevent flicking of text on a modern OS
+
 
 		controlLayout = new ControlLayout(TrackPanel.calculateTrackDims().rowHeight + 1, noteGraphPanel);
-		controlPanel = new JPanel(controlLayout);
-        controlPanel.setOpaque(true);
+		controlPanel = new JPanel(controlLayout) {
+            @Override
+            public boolean isValidateRoot() {
+                return true;
+            }
+        };
+
         controlPanelScrollPane = new PatchedJScrollPane(controlPanel, VERTICAL_SCROLLBAR_NEVER, HORIZONTAL_SCROLLBAR_NEVER);
         controlPanelScrollPane.setBorder(BorderFactory.createEmptyBorder());
-        controlPanelScrollPane.getViewport().setScrollMode(JViewport.SIMPLE_SCROLL_MODE);
+
         // Link control scroll bar model to note graph scroll bar
         // so they're both controlled by note graph scroll bar
         int unit = TrackPanel.calculateTrackDims().rowHeight / 2;
@@ -272,6 +276,10 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
         controlPanelScrollPane.getVerticalScrollBar().setModel(
                 noteGraphScrollPane.getVerticalScrollBar().getModel()
         );
+
+        // This will make the play-head update smooth when on auto-follow:
+        controlPanelScrollPane.getViewport().setScrollMode(JViewport.BACKINGSTORE_SCROLL_MODE);
+        noteGraphScrollPane.getViewport().setScrollMode(JViewport.SIMPLE_SCROLL_MODE);
 
         MouseAdapter listenForControlFocus = new MouseAdapter() {
             @Override
@@ -307,11 +315,6 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 			public void mouseClicked(MouseEvent e) {
 				getRootPane().requestFocus();
 			}
-		});
-		noteGraphScrollPane.getViewport().addChangeListener(ch -> {
-			controlPanel.invalidate();// change graphs -> change controls
-			//revalidate();
-			//repaint();
 		});
 
 		splitPanel.add(controlPanelScrollPane, "0, 0");
@@ -352,6 +355,13 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 			if (noteGraphScrollPane.getHorizontalScrollBar().getValueIsAdjusting()) {
 				return;
 			}
+
+            // If a PartsList Drag'n'Drop operation is active, pause follow.
+            // That fixes the d'n'd cursor flicker.
+            if (PartsList.PanelTransferHandler.isDragInProgress) {
+                return;
+            }
+
 			sequenceProgress = sequencer.getThumbPosition() / (double)(sequencer.getLength());
 			scrollToPosition(false);
 		});
@@ -409,7 +419,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		}		
 		Point oldView = noteGraphScrollPane.getViewport().getViewPosition();
 		Point newView = new Point(Math.min(graphWidth - viewWidth, Math.max(0,value)), oldView.y);
-		noteGraphScrollPane.getViewport().setViewPosition(newView);
+		if (!newView.equals(oldView)) noteGraphScrollPane.getViewport().setViewPosition(newView);
 	}
 	
 	// Returns false if we should forward the event to the scroll pane
