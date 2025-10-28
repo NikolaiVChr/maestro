@@ -125,7 +125,7 @@ public class ControlLayout implements LayoutManager {
 			}
 		}
 		prefH  = y + insets.bottom; 
-		graphsPanel.invalidate();
+		graphsPanel.revalidate();
 	}
 	
 	/**
