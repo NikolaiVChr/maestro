@@ -394,6 +394,10 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		setAbcPart(null, false);
 		initialized = true;
 	}
+
+    public void scrollToTop() {
+        noteGraphScrollPane.getVerticalScrollBar().setValue(0);
+    }
 	
 	private boolean calcZoomTarget() {
 		sequenceProgress = sequencer.getThumbPosition() / (double)(sequencer.getLength());
