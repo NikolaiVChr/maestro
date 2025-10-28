@@ -909,7 +909,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 		fxBox.setVisible(trackEnabled && (abcPart.getInstrument().equals(LotroInstrument.STUDENT_FIDDLE) || abcPart.getInstrument().equals(LotroInstrument.JAUNTY_HAND_KNELLS)));
 		if (fxBox.isVisible()) {
-			add(fxBox, CONTROL_COLUMN + ", 1");
+			add(fxBox, CONTROL_COLUMN + ", 1, f, t");
 			fxBox.setSelected(abcPart.isFX(trackInfo.getTrackNumber()));
 			fxBox.setEnabled(!abcPart.isStudentFromABC());
 			// TODO: disabling checkbox cannot really be seen in flatlaf :(
