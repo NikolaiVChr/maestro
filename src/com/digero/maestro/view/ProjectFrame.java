@@ -3114,10 +3114,12 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 exportLabelHideTimer.stop();
                 exportLabelHideTimer.start();
                 onSaveAndExportSettingsChanged();
-
-            } catch (Exception e) {
+            } catch (CancellationException ignored) {
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (ExecutionException e) {
                 Throwable cause = e.getCause() != null ? e.getCause() : e;
-
+                log.log(Level.WARNING, "Error when exporting ABC", cause);
                 if (cause instanceof FileNotFoundException) {
                     JOptionPane.showMessageDialog(ProjectFrame.this, "Failed to create file!\n" + cause.getMessage(),
                             "Failed to create file", JOptionPane.ERROR_MESSAGE);
@@ -3129,6 +3131,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                     JOptionPane.showMessageDialog(ProjectFrame.this, "An unexpected error occurred:\n" + cause.getMessage(),
                             "Error", JOptionPane.ERROR_MESSAGE);
                 }
+
+            } catch (Exception e) {
+                log.log(Level.SEVERE, "Error exporting ABC", e);
+                JOptionPane.showMessageDialog(ProjectFrame.this, "An unexpected UI error occurred:\n" + e.getMessage(),
+                        "Error", JOptionPane.ERROR_MESSAGE);
             } finally {
                 setUIEnabled(true);
             }
