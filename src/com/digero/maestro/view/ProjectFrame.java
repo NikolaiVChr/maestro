@@ -2426,6 +2426,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			setAbcSongModified(midiResolved);
 			midiResolved = false;
 			updateTitle();
+            partPanel.scrollToTop();
 		} catch (SAXParseException e) {
 			String message = e.getMessage();
 			if (e.getLineNumber() >= 0) {
