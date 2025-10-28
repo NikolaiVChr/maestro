@@ -20,7 +20,27 @@ public class PartSection implements Comparable<PartSection> {
 	public long endTick = -1L;
 	public Note fromPitch = AbcPart.minDefault;
 	public Note toPitch = Note.MAX;
-	
+
+    public PartSection() {
+    }
+
+    PartSection(PartSection orig) {
+        this.octaveStep = orig.octaveStep;
+        this.volumeStep = orig.volumeStep;
+        this.fade = orig.fade;
+        this.resetVelocities = orig.resetVelocities;
+        this.silence = orig.silence;
+        this.legato = orig.legato;
+        this.dialogLine = orig.dialogLine;
+        this.doubling = orig.doubling.clone();
+        this.startBar = orig.startBar;
+        this.endBar = orig.endBar;
+        this.startTick = orig.startTick;
+        this.endTick = orig.endTick;
+        this.fromPitch = orig.fromPitch;
+        this.toPitch = orig.toPitch;
+    }
+
 	@Override
 	public int compareTo(@NotNull PartSection that) {
 		return Float.compare(this.startBar, that.startBar);

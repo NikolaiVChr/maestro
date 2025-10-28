@@ -39,6 +39,24 @@ public class DrumNoteMap implements IDiscardable {
 	protected byte[] map = null;
 	private List<ChangeListener> listeners = null;
 
+    public DrumNoteMap() {
+
+    }
+
+    protected DrumNoteMap(DrumNoteMap orig) {
+        if (orig.map != null) {
+            map = Arrays.copyOf(orig.map, orig.map.length);
+        }
+        listeners = null;
+    }
+
+    /**
+     * Subclasses MUST implement this.
+     */
+    public DrumNoteMap copy() {
+        return new DrumNoteMap(this);
+    }
+
 	public static String getXmlName() {
 		return "drumMap";
 	}
