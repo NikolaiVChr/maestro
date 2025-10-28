@@ -2632,6 +2632,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         private final AbcExporter myExporter;
         private final boolean lotroInstruments;
         private final boolean oldVelocities;
+        private Throwable backgroundException = null;
 
         public PreviewExportWorker(AbcExporter myExporter, boolean lotroInstruments, boolean oldVelocities) {
             this.myExporter = myExporter;
@@ -2644,7 +2645,12 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
          */
         @Override
         protected SequenceInfo doInBackground() throws AbcConversionException, InvalidMidiDataException {
-            return SequenceInfo.fromAbcParts(myExporter, lotroInstruments, oldVelocities);
+            try {
+                return SequenceInfo.fromAbcParts(myExporter, lotroInstruments, oldVelocities);
+            } catch (Throwable t) {
+                backgroundException = t;
+                throw t;
+            }
         }
 
         /**
@@ -2653,13 +2659,27 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         @Override
         protected void done() {
             if (isCancelled()) {
+                if (backgroundException != null) {
+                    // Log the error that
+                    // happened even though we were cancelled.
+                    log.log(Level.WARNING, "Exception occurred during cancelled preview export", backgroundException);
+                }
                 return;
             }
             try {
                 applyPreview(get(), myExporter);
+            } catch (ExecutionException e) {
+                Throwable cause = e.getCause() != null ? e.getCause() : e;
+                log.log(Level.WARNING, "Error exporting preview", cause);
 
+                sequencer.stop();
+                abcSequencer.stop();
+                JOptionPane.showMessageDialog(ProjectFrame.this, cause.getMessage(), "Error previewing ABC",
+                        JOptionPane.WARNING_MESSAGE);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             } catch (Throwable e) {
-                log.log(Level.WARNING, "Error exporting preview", e);
+                log.log(Level.WARNING, "Error applying preview", e);
                 Throwable cause = e.getCause() != null ? e.getCause() : e;
 
                 sequencer.stop();
