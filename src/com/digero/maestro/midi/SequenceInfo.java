@@ -132,8 +132,7 @@ public class SequenceInfo implements MidiConstants {
     public static SequenceInfo fromAbcParts(AbcSong abcSong, boolean useLotroInstruments, boolean oldVelocities)
             throws InvalidMidiDataException, AbcConversionException {
         synchronized (PREVIEW_EXPORT_LOCK) {
-            AbcSong songCopy = new AbcSong(abcSong);
-            AbcExporter exportCopy = songCopy.getAbcExporter();
+            AbcExporter exportCopy = abcSong.getAbcExporter();
             // lock so ProjectFrame don't go in here before previous is finished
             return new SequenceInfo(exportCopy, useLotroInstruments);
         }

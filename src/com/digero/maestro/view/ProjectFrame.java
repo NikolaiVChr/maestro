@@ -2635,12 +2635,15 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
     private class PreviewExportWorker extends SwingWorker<SequenceInfo, Boolean> {
 
         private final AbcExporter myExporter;
+        private final AbcSong mySong;
         private final boolean lotroInstruments;
         private final boolean oldVelocities;
         private Throwable backgroundException = null;
 
-        public PreviewExportWorker(AbcExporter myExporter, boolean lotroInstruments, boolean oldVelocities) {
-            this.myExporter = myExporter;
+        public PreviewExportWorker(AbcSong mySong, boolean lotroInstruments, boolean oldVelocities, int pan) throws AbcConversionException {
+            this.mySong = new AbcSong(mySong);
+            this.myExporter = this.mySong.getAbcExporter();
+            this.myExporter.stereoPan = pan;
             this.lotroInstruments = lotroInstruments;
             this.oldVelocities = oldVelocities;
         }
@@ -2651,7 +2654,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         @Override
         protected SequenceInfo doInBackground() throws AbcConversionException, InvalidMidiDataException {
             try {
-                return SequenceInfo.fromAbcParts(abcSong, lotroInstruments, oldVelocities);
+                return SequenceInfo.fromAbcParts(mySong, lotroInstruments, oldVelocities);
             } catch (Throwable t) {
                 backgroundException = t;
                 throw t;
@@ -2776,9 +2779,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 abcSong.setSkipSilenceAtStart(saveSettings.skipSilenceAtStart);
                 abcSong.setDeleteMinimalNotes(saveSettings.deleteMinimalNotes);
                 // abcSong.setShowPruned(saveSettings.showPruned);
-                AbcExporter exporter = abcSong.getAbcExporter();
-                exporter.stereoPan = prefs.getInt("stereoPan", 100);
-                previewWorker = new PreviewExportWorker(exporter, !failedToLoadLotroInstruments, false);
+                previewWorker = new PreviewExportWorker(abcSong, !failedToLoadLotroInstruments, false, prefs.getInt("stereoPan", 100));
                 setSourceChangeEnabled(false);
                 previewWorker.execute();
             } catch (AbcConversionException e) {
