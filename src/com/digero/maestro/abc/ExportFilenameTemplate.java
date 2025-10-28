@@ -157,38 +157,38 @@ public class ExportFilenameTemplate {
 
         SortedMap<String, Variable> vars = new TreeMap<>(caseInsensitiveStringComparator);
 
-        variables.put("$SongTitle", new Variable("The title of the song, as entered in the \"T:\" field") {
+        vars.put("$SongTitle", new Variable("The title of the song, as entered in the \"T:\" field") {
             @Override
             public String getValue() {
                 return getMetadataSource().getSongTitle().trim();
             }
         });
-        variables.put("$SongLength", new Variable("The playing time of the song in mm_ss format") {
+        vars.put("$SongLength", new Variable("The playing time of the song in mm_ss format") {
             @Override
             public String getValue() {
                 return Util.formatDuration(getMetadataSource().getSongLengthMicros(), 0, '-');
             }
         });
-        variables.put("$SongComposer", new Variable("The song composer/artist, as entered in the \"C:\" field") {
+        vars.put("$SongComposer", new Variable("The song composer/artist, as entered in the \"C:\" field") {
             @Override
             public String getValue() {
                 return getMetadataSource().getComposer().trim();
             }
         });
-        variables.put("$SongTranscriber", new Variable("Your name, as entered in the \"Z:\" field") {
+        vars.put("$SongTranscriber", new Variable("Your name, as entered in the \"Z:\" field") {
             @Override
             public String getValue() {
                 return getMetadataSource().getTranscriber().trim();
             }
         });
-        variables.put("$PartCount", new Variable("Number of parts in the ABC file") {
+        vars.put("$PartCount", new Variable("Number of parts in the ABC file") {
             @Override
             public String getValue() {
                 return String.format(settings.partCountZeroPadded ? "%02d" : "%d",
                         getMetadataSource().getActivePartCount());
             }
         });
-        variables.put("$SourceFile", new Variable("Source file name (midi or ABC)") {
+        vars.put("$SourceFile", new Variable("Source file name (midi or ABC)") {
             @Override
             public String getValue() {
                 String name = getMetadataSource().getSourceFilename();

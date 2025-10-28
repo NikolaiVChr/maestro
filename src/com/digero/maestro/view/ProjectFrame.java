@@ -147,6 +147,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private static final Logger log = Logger.getLogger("file");
 
     private boolean uiEnabled = true;
+    private boolean sourceChangeEnabled = true;
 
 	private static final int HGAP = 4;
 	private static final int VGAP = 4;
@@ -288,6 +289,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
     private boolean fireDynaListeners = true;
     private boolean fireTimingListeners = true;
     private boolean updateTimingUIControl = true;
+    private JMenuItem openItem;
 
     /*
 	 * private static Color BRIGHT_RED = new Color(255, 0, 0); private static Color ORANGE = new Color(235, 150, 64);
@@ -1221,7 +1223,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		JMenu fileMenu = menuBar.add(new JMenu(" File "));
 		fileMenu.setMnemonic('F');
 
-		JMenuItem openItem = fileMenu.add(new JMenuItem("Open file..."));
+        openItem = fileMenu.add(new JMenuItem("Open file..."));
 		openItem.setMnemonic('O');
 		openItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, CTRL_DOWN_MASK));
 		openItem.addActionListener(new ActionListener() {
@@ -1746,7 +1748,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		if (!hasAbcNotes) {
 			midiModeRadioButton.setSelected(true);
 			abcSequencer.setRunning(false);
-			updatePreviewMode(false);
+			//updatePreviewMode(false);
+            abcSequencer.clearSequence();
 		}
 
         volumeSlider.setEnabled(uiEnabled);
@@ -1773,12 +1776,14 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		exportMp3MenuItem.setEnabled(abcSong != null && uiEnabled);
 		exportWavMenuItem.setEnabled(abcSong != null && uiEnabled);
 		String errStr = "<html><p style='color:red;'>Must save as an MSX project first</p></html>";
-		chooseMidiFileMenuItem.setEnabled(abcSong != null && abcSong.getProjectFile() != null && uiEnabled);
+		chooseMidiFileMenuItem.setEnabled(abcSong != null && abcSong.getProjectFile() != null && uiEnabled && sourceChangeEnabled);
 		chooseMidiFileMenuItem.setToolTipText(abcSong != null && abcSong.getProjectFile() == null ? errStr : "");
-		reloadMidiFileMenuItem.setEnabled(abcSong != null && abcSong.getProjectFile() != null && uiEnabled);
+		reloadMidiFileMenuItem.setEnabled(abcSong != null && abcSong.getProjectFile() != null && uiEnabled && sourceChangeEnabled);
 		reloadMidiFileMenuItem.setToolTipText(abcSong != null && abcSong.getProjectFile() == null ? errStr : "");
+        openRecentMenu.setEnabled(sourceChangeEnabled);
+        openItem.setEnabled(sourceChangeEnabled);
 		
-		closeProject.setEnabled(midiLoaded && uiEnabled);
+		closeProject.setEnabled(midiLoaded && uiEnabled && sourceChangeEnabled);
 
 		songTitleField.setEnabled(midiLoaded && uiEnabled);
 		composerField.setEnabled(midiLoaded && uiEnabled);
@@ -2646,7 +2651,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         @Override
         protected SequenceInfo doInBackground() throws AbcConversionException, InvalidMidiDataException {
             try {
-                return SequenceInfo.fromAbcParts(myExporter, lotroInstruments, oldVelocities);
+                return SequenceInfo.fromAbcParts(abcSong, lotroInstruments, oldVelocities);
             } catch (Throwable t) {
                 backgroundException = t;
                 throw t;
@@ -2687,13 +2692,12 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 JOptionPane.showMessageDialog(ProjectFrame.this, e.getMessage(), "Error previewing ABC",
                         JOptionPane.WARNING_MESSAGE);
             } finally {
-                //setUIEnabled(true);
+                setSourceChangeEnabled(true);
             }
         }
     }
 
     private void applyPreview(SequenceInfo previewSequenceInfo, AbcExporter exporter) {
-
         abcPreviewStartTick = exporter.getExportStartTick();
         abcPreviewTempoFactor = abcSequencer.getTempoFactor();
         abcBarLabel.setBarNumberCache(exporter.getTimingInfo());
@@ -2744,8 +2748,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
     private boolean refreshPreviewSequence(boolean immediate) {
         if (!SwingUtilities.isEventDispatchThread()) {
-            log.severe("refreshPreviewSequence: not on Swing thread");
-            Thread.dumpStack();
+            log.log(Level.SEVERE, "refreshPreviewSequence: not on Swing thread", new RuntimeException());
             return false;
         }
         PreviewExportWorker oldWorker = null;
@@ -2764,7 +2767,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             abcBarLabel.setBarNumberCache(null);
             abcBarLabel.setInitialOffsetTick(abcPreviewStartTick);
             abcPositionLabel.setInitialOffsetTick(abcPreviewStartTick);
-            //setUIEnabled(true);
+            setSourceChangeEnabled(true);
             return false;
         }
 
@@ -2776,7 +2779,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 AbcExporter exporter = abcSong.getAbcExporter();
                 exporter.stereoPan = prefs.getInt("stereoPan", 100);
                 previewWorker = new PreviewExportWorker(exporter, !failedToLoadLotroInstruments, false);
-                //setUIEnabled(false);
+                setSourceChangeEnabled(false);
                 previewWorker.execute();
             } catch (AbcConversionException e) {
                 log.log(Level.WARNING, "Error exporting preview", e);
@@ -2784,6 +2787,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 abcSequencer.stop();
                 JOptionPane.showMessageDialog(ProjectFrame.this, e.getMessage(), "Error previewing ABC",
                         JOptionPane.WARNING_MESSAGE);
+                setSourceChangeEnabled(true);
             }
 
             return true;
@@ -2808,7 +2812,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             exporter.stereoPan = prefs.getInt("stereoPan", 100);
             SequenceInfo previewSequenceInfo = SequenceInfo.fromAbcParts(exporter, !failedToLoadLotroInstruments, false);
             applyPreview(previewSequenceInfo, exporter);
-            //setUIEnabled(true);
+            setSourceChangeEnabled(true);
             return true;
         } catch(Exception e) {
             //setUIEnabled(true);
@@ -2820,6 +2824,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             JOptionPane.showMessageDialog(ProjectFrame.this, e.getMessage(), "Error previewing ABC",
                     JOptionPane.WARNING_MESSAGE);
         }
+        setSourceChangeEnabled(true);
         return false;
     }
 
@@ -3143,6 +3148,14 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
     }
 
     private final MouseAdapter blocker = new MouseAdapter() {};
+
+    /**
+     * A setEnabled for changing source
+     */
+    private void setSourceChangeEnabled(boolean on) {
+        sourceChangeEnabled = on;
+        updateButtons(true);
+    }
 
     /**
      * A setEnabled for the entire Maestro App.

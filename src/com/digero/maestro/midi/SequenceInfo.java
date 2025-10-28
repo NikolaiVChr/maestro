@@ -33,6 +33,7 @@ import com.digero.maestro.abc.AbcConversionException;
 import com.digero.maestro.abc.AbcExporter;
 import com.digero.maestro.abc.AbcExporter.ExportTrackInfo;
 import com.digero.maestro.abc.AbcMetadataSource;
+import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.view.MiscSettings;
 
 /**
@@ -124,6 +125,20 @@ public class SequenceInfo implements MidiConstants {
         }
 	}
 
+    /**
+     * Will export a new preview using a deep copy of AbcSong.
+     * QTM and SequenceInfo are not copied, so the source must not change while in progress.
+     */
+    public static SequenceInfo fromAbcParts(AbcSong abcSong, boolean useLotroInstruments, boolean oldVelocities)
+            throws InvalidMidiDataException, AbcConversionException {
+        synchronized (PREVIEW_EXPORT_LOCK) {
+            AbcSong songCopy = new AbcSong(abcSong);
+            AbcExporter exportCopy = songCopy.getAbcExporter();
+            // lock so ProjectFrame don't go in here before previous is finished
+            return new SequenceInfo(exportCopy, useLotroInstruments);
+        }
+    }
+
 	private SequenceInfo(String fileName, Sequence sequence, int type, MiscSettings miscSettings, boolean oldVelocities, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume, boolean ignoreMidiText)
 			throws InvalidMidiDataException, ParseException {
 		this.fileName = fileName;
@@ -208,6 +223,7 @@ public class SequenceInfo implements MidiConstants {
 		primaryTempoMPQ = sequenceCache.getPrimaryTempoMPQ();
 
 		this.trackInfoList = null;
+
 	}
 
 	public String getFileName() {

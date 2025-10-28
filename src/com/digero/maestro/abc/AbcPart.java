@@ -123,7 +123,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		abcSong.addSongListener(songListener);
 		this.instrument = LotroInstrument.DEFAULT_INSTRUMENT;
 		this.instrNameSettings = abcSong.getInstrNameSettings();
-		this.title = instrNameSettings.getInstrNick(instrument);
+		this.title = this.instrNameSettings.getInstrNick(instrument);
 
 		int t = getTrackCount();
 		this.trackTranspose = new int[t];
