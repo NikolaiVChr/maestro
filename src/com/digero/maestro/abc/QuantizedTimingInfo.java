@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
@@ -1045,21 +1046,21 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 
 	TimingInfoEvent getTimingEventForTick(long tick) {
 		if (timingInfoByTick.floorEntry(tick) == null) {
-			System.err.println("ERROR: Asking for timing event at tick "+tick);
+			log.log(Level.SEVERE, "ERROR: Asking for timing event at tick "+tick);
 		}
 		return timingInfoByTick.floorEntry(tick).getValue();
 	}
 	
 	TimingInfoEvent getTimingEventForTickOrganic(long tick) {
 		if (timingInfoByTickOrganic.floorEntry(tick) == null) {
-			System.err.println("ERROR: Asking for timing event at tick "+tick);
+            log.log(Level.SEVERE, "ERROR: Asking for timing event at tick "+tick);
 		}
 		return timingInfoByTickOrganic.floorEntry(tick).getValue();
 	}
 	
 	Entry<Long, TimingInfoEvent> getTimingEventForTickOrganic2(long tick) {
 		if (timingInfoByTickOrganic.floorEntry(tick) == null) {
-			System.err.println("ERROR: Asking for timing event at tick "+tick);
+            log.log(Level.SEVERE, "ERROR: Asking for timing event at tick "+tick);
 		}
 		return timingInfoByTickOrganic.floorEntry(tick);
 	}
