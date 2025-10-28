@@ -34,7 +34,10 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
@@ -187,7 +190,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private JFormattedTextField keySignatureField;
 	private JFormattedTextField timeSignatureField;
     private JComboBox<TimingEnum> timingCombo;
-    private boolean noTimingAction = false;
+
 	/*
     private JCheckBox organicCheckBox;
 	private JCheckBox organic2CheckBox;
@@ -275,8 +278,17 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private JLabel feedLabel;
 	private static volatile String feed = "";
 	private static volatile String feedFull = "";
-	
-	/*
+
+    // these properties have in common that they stop UI
+    // listeners in doing all their work:
+    private boolean fireTransposeListeners = true;
+    private boolean fireMeterListeners = true;
+    private boolean fireTempoListeners = true;
+    private boolean fireDynaListeners = true;
+    private boolean fireTimingListeners = true;
+    private boolean updateTimingUIControl = true;
+
+    /*
 	 * private static Color BRIGHT_RED = new Color(255, 0, 0); private static Color ORANGE = new Color(235, 150, 64);
 	 * private static Color BLACK = new Color(0, 0, 0);
 	 */
@@ -652,8 +664,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		transposeSpinner
 				.setToolTipText("<html>Transpose the entire song by semitones.<br>" + "12 semitones = 1 octave</html>");
 		transposeSpinner.addChangeListener(e -> {
-			if (abcSong != null)
-				abcSong.setTranspose(getTranspose());
+			if (abcSong != null && fireTransposeListeners)
+                abcSong.setTranspose(getTranspose());
+            refreshPreviewSequence(false);
 		});
 
 		tempoSpinner = new JSpinner(new SpinnerNumberModel(MidiConstants.DEFAULT_TEMPO_BPM /* value */, 8 /* min */,
@@ -664,15 +677,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				+ "they will all be adjusted proportionally.</html>");
 		tempoSpinner.addChangeListener(e -> {
 			if (abcSong != null) {
-				abcSong.setTempoBPM((Integer) tempoSpinner.getValue());
+				if (fireTempoListeners) abcSong.setTempoBPM((Integer) tempoSpinner.getValue());
 
 				abcSequencer.setTempoFactor(abcSong.getTempoFactor());
 
-				//if (abcSequencer.isRunning()) {
-					//float delta = abcPreviewTempoFactor / abcSequencer.getTempoFactor();
-					//if (Math.max(delta, 1 / delta) > 1.5f)
-						refreshPreviewSequence(false);
-				//}
+				refreshPreviewSequence(false);
 			} else {
 				abcSequencer.setTempoFactor(1.0f);
 			}
@@ -698,16 +707,15 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				+ "This mainly affects the display only, but can affect long notes slightly.<br>"
 				+ "Examples: 4/4, 3/4, 3/8, 2/2, 2/4, 6/8</html>");
 		timeSignatureField.addPropertyChangeListener("value", evt -> {
-			if (abcSong != null)
+			if (abcSong != null && fireMeterListeners)
 				abcSong.setTimeSignature((TimeSignature) timeSignatureField.getValue());
 
-			//if (abcSequencer.isRunning()) {
-				// Breaking up of long notes can depend on time signature for bar lines.
-				refreshPreviewSequence(false);
-			//}
+            // Breaking up of long notes can depend on time signature for bar lines.
+            refreshPreviewSequence(false);
 		});
 		timeSignatureField.addActionListener(e -> {
 			// This is for when pressing enter on an illegal time signature
+            // This listener will not run when setting value programmatically.
 			// To update the UI back to the meter of last legal from AbcSong.
 			// This is ran after propertychange above. (hopefully always)
 			// TODO: This ugly hack could be done better
@@ -735,8 +743,12 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         timingCombo.addActionListener(e -> {
             TimingEnum enm = ((TimingEnum) Objects.requireNonNull(timingCombo.getSelectedItem()));
             timingCombo.setToolTipText(enm.getTooltip());
-            if (noTimingAction) return;
-            enm.action(abcSong);
+
+            if (fireTimingListeners) {
+                updateTimingUIControl = false;
+                enm.action(abcSong);
+                updateTimingUIControl = true;
+            }
             refreshPreviewSequence(false);
         });
         /*
@@ -809,7 +821,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		dynaCombo.setSelectedItem(AbcSong.dynamicsMethodDefault);
 		dynaCombo.addItemListener(i -> {
 			if (abcSong != null) {
-				abcSong.dynamicsMethod = (Chord.CalcDynamics) dynaCombo.getSelectedItem();
+				if (fireDynaListeners) abcSong.dynamicsMethod = (Chord.CalcDynamics) dynaCombo.getSelectedItem();
 				refreshPreviewSequence(false);
 			}
 		});
@@ -1907,6 +1919,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			return;
 
 		int idx;
+        boolean modified = true;
 
 		switch (e.getProperty()) {
 		case TITLE:
@@ -1932,15 +1945,14 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		case TEMPO_FACTOR:
 			if (getTempo() != abcSong.getTempoBPM())
-				tempoSpinner.setValue(abcSong.getTempoBPM());
-			//if (abcSequencer.isRunning())
-				refreshPreviewSequence(false);
-			//else if (abcPreviewMode)
-			//	refreshPreviewSequence(false);
+				setTempo(abcSong.getTempoBPM());
+
+            //not needed as listeners on spinner will refresh
+			//refreshPreviewSequence(false);
+
 			break;
 		case TRANSPOSE:
-			if (getTranspose() != abcSong.getTranspose())
-				transposeSpinner.setValue(abcSong.getTranspose());
+			setTranspose(abcSong.getTranspose());
 			break;
 		case KEY_SIGNATURE:
 			if (SHOW_KEY_FIELD) {
@@ -1949,20 +1961,34 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			}
 			break;
 		case TIME_SIGNATURE:
-			if (!timeSignatureField.getValue().equals(abcSong.getTimeSignature()))
-				timeSignatureField.setValue(abcSong.getTimeSignature());
+			setMeter(abcSong.getTimeSignature());
 			break;
 		case ORGANIC:
         case TRIPLET_TIMING:
         case MIX_TIMING:
         case MIX_TIMING_COMBINE_PRIORITIES:
-            noTimingAction = true;
-            timingCombo.setSelectedItem(TimingEnum.getInstance(abcSong.isOrganic(),abcSong.isOrganic2(),abcSong.isMixTiming(),abcSong.isTripletTiming(),abcSong.isPriorityActive()));
-            noTimingAction = false;
+            break;
+        case TIMINGS_MULTI:
+            // one or more timing settings were change in abc song
+            if (updateTimingUIControl) {
+                // the change originated from the song
+                // so we update the combo box, but do
+                // not let it propagate back to song
+                //
+                // Sadly it means the some settings will trigger multiple
+                // refresh previews (up to 5).
+                // Must sorta live with that I guess..
+                fireTimingListeners = false;
+                timingCombo.setSelectedItem(TimingEnum.getInstance(abcSong.isOrganic(), abcSong.isOrganic2(), abcSong.isMixTiming(), abcSong.isTripletTiming(), abcSong.isPriorityActive()));
+                fireTimingListeners = true;
+            } else {
+                // the change originated from the combo box,
+                // so we should not set it again
+            }
 			updateButtons(false);
 			break;
 		case CALC_DYNAMICS:
-			dynaCombo.setSelectedItem(abcSong.dynamicsMethod);
+			setDyna(abcSong.dynamicsMethod);
 			break;
 		case PART_ADDED:
 			e.getPart().addAbcListener(abcPartListener);
@@ -1989,13 +2015,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		case TUNE_EDIT:
 			updateButtons(false);
 			if (partsList.getSelectedPart() != null) {
-				// We do this to show the tempo panel if tune editor has changed something
+				// We do this to show the tempo panel if the tune editor has changed something
 				partPanel.setAbcPart(partsList.getSelectedPart(), true);
 			}
-			if (abcSequencer.isRunning())
-				refreshPreviewSequence(false);
-			else if (abcPreviewMode)
-				refreshPreviewSequence(false);
+            if (abcPreviewMode)
+                refreshPreviewSequence(false);
 			break;
 
 		case BEFORE_PART_REMOVED:
@@ -2014,9 +2038,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 						"Click the " + newPartButton.getText() + " button to add a new part."));
 			}
 
-			if (abcSequencer.isRunning())
-				refreshPreviewSequence(false);
-			else if (abcPreviewMode)
+			if (abcPreviewMode)
 				refreshPreviewSequence(false);
 
 			partsList.repaint();
@@ -2025,7 +2047,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		case PART_LIST_ORDER:
 			partsList.selectPart(abcSong.getParts().indexOf(partPanel.getAbcPart()));
-            // this is important, else after a deletion, tracklist might be in wrong state:
+            // this is important, else after a deletion, the tracklist might be in the wrong state:
             partPanel.setAbcPart(partsList.getSelectedPart(), true);
 
 			partsList.repaint();
@@ -2035,9 +2057,15 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		case SKIP_SILENCE_AT_START:
 			if (saveSettings.skipSilenceAtStart != abcSong.isSkipSilenceAtStart()) {
+                // not sure this is sane
+                // skip is not a song property its a setting
+                // its only in abcSong for convenience
+                // I cannot think of a case where setting it on abcsong
+                // should propagate to settings.
 				saveSettings.skipSilenceAtStart = abcSong.isSkipSilenceAtStart();
 				saveSettings.saveToPrefs();
 			}
+            modified = false;
 			break;
 		case DELETE_MINIMAL_NOTES:
 			if (saveSettings.deleteMinimalNotes != abcSong.isDeleteMinimalNotes()) {
@@ -2046,11 +2074,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				
 				// having this outside the condition will trigger refreshPreviewSequence()
 				// from inside refreshPreviewSequence()
-				if (abcSequencer.isRunning())
+				if (abcPreviewMode)
 					refreshPreviewSequence(false);
-				else if (abcPreviewMode)
-					refreshPreviewSequence(false);
-			}			
+			}
+            modified = false;
 			break;
 		case GENRE:
 			if (!genreField.getText().equals(abcSong.getGenre())) {
@@ -2076,11 +2103,12 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			break;
 		case HIDE_EDITS_UPDATE:
 			// Don't care
+            modified = false;
 			break;
 		}
 
 		updateExportOrExportAsButton();
-		setAbcSongModified(true);
+		if (modified) setAbcSongModified(true);
 	};
 
 	private final ListDataListener partsListListener = new ListDataListener() {
@@ -2125,9 +2153,46 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		return (Integer) transposeSpinner.getValue();
 	}
 
+    /**
+     * Will not activate the changelistener to set abcSong
+     */
+    public void setTranspose(int transpose) {
+        fireTransposeListeners = false;
+        transposeSpinner.setValue(transpose);
+        fireTransposeListeners = true;
+    }
+
+    /**
+     * Will not activate the changelistener to set abcSong
+     */
+    private void setMeter(TimeSignature ts) {
+        fireMeterListeners = false;
+        timeSignatureField.setValue(ts);
+        fireMeterListeners = true;
+    }
+
+    /**
+     * Will not activate the changelistener to set abcSong
+     */
+    private void setTempo(int tempoBPM) {
+        fireTempoListeners = false;
+        tempoSpinner.setValue(tempoBPM);
+        fireTempoListeners = true;
+    }
+
 	public int getTempo() {
 		return (Integer) tempoSpinner.getValue();
 	}
+
+    /**
+     * Will not activate the changelistener to set abcSong
+     */
+    private void setDyna(Chord.CalcDynamics dyna) {
+        fireDynaListeners = false;
+        dynaCombo.setSelectedItem(dyna);
+        fireDynaListeners = true;
+    }
+
 
 	/**
 	 * 
@@ -2278,7 +2343,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			genreField.select(0, 0);
 			moodField.setText(abcSong.getMood());
 			moodField.select(0, 0);
-			dynaCombo.setSelectedItem(abcSong.dynamicsMethod);
+			setDyna(abcSong.dynamicsMethod);
 
 			if (abcSong.isFromAbcFile() || abcSong.isFromXmlFile()) {
 				transcriberFieldListener.setIgnoreChanges(true);
@@ -2299,13 +2364,13 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				}
 			}
 
-			transposeSpinner.setValue(abcSong.getTranspose());
-			tempoSpinner.setValue(abcSong.getTempoBPM());
+			setTranspose(abcSong.getTranspose());
+			setTempo(abcSong.getTempoBPM());
 			keySignatureField.setValue(abcSong.getKeySignature());
-			timeSignatureField.setValue(abcSong.getTimeSignature());
-            noTimingAction = true;
+			setMeter(abcSong.getTimeSignature());
+            fireTimingListeners = true;
             timingCombo.setSelectedItem(TimingEnum.getInstance(abcSong.isOrganic(),abcSong.isOrganic2(),abcSong.isMixTiming(),abcSong.isTripletTiming(),abcSong.isPriorityActive()));
-            noTimingAction = false;
+            fireTimingListeners = false;
             /*
 			organicCheckBox.setSelected(abcSong.isOrganic());
 			organic2CheckBox.setSelected(abcSong.isOrganic2());
@@ -2591,7 +2656,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			abcPositionLabel.setInitialOffsetTick(abcPreviewStartTick);
 			return false;
 		}
-		
+
 		try {
 			abcSong.setSkipSilenceAtStart(saveSettings.skipSilenceAtStart);
 			abcSong.setDeleteMinimalNotes(saveSettings.deleteMinimalNotes);
@@ -2600,24 +2665,24 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			exporter.stereoPan = prefs.getInt("stereoPan", 100);
 			SequenceInfo previewSequenceInfo = SequenceInfo.fromAbcParts(exporter, !failedToLoadLotroInstruments,
 					false);
-			
-			
-			
+
+
+
 			abcPreviewStartTick = exporter.getExportStartTick();
 			abcPreviewTempoFactor = abcSequencer.getTempoFactor();
 			abcBarLabel.setBarNumberCache(exporter.getTimingInfo());
 			abcBarLabel.setInitialOffsetTick(abcPreviewStartTick);
 			abcPositionLabel.setInitialOffsetTick(abcPreviewStartTick);
-			
+
 			long tick = sequencer.getTickPosition();
-			
+
 			boolean abcRunning = abcSequencer.isRunning();
 			if (abcPreviewMode) {
 				// Refreshing while playing Original (GS) will cause a GS Reset,
 				// which will mess with volume, hence the if statement.
 				abcSequencer.reset(false);
 			}
-			
+
 			abcSequencer.setSequence(previewSequenceInfo.getSequence());
 			abcSequencer.setStartTick(abcPreviewStartTick);// Needed for MP3 and WAV exports.
 
@@ -2625,7 +2690,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			log.info("Duration MIDI:    "+Util.formatDurationM(sequencer.getLength()));
 			log.info("Duration Preview: "+Util.formatDurationM(abcSequencer.getLength()-abcSequencer.tickToMicros(abcPreviewStartTick))+", rounded up: "+Util.formatDuration(abcSequencer.getLength()-abcSequencer.tickToMicros(abcPreviewStartTick)));
 			log.info("Duration ABC:     "+Util.formatDurationM(abcSong.getSongLengthMicros())+", rounded up: "+Util.formatDuration(abcSong.getSongLengthMicros()));
-			
+
 			/*
 			if (tick < abcPreviewStartTick)
 				tick = abcPreviewStartTick;
@@ -2638,7 +2703,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 			if (abcRunning && sequencer.isRunning())
 				sequencer.stop();
-			
+
 			abcSequencer.setTickPosition(tick);
 			abcSequencer.setRunning(abcRunning);
 			compileStats();
@@ -3298,11 +3363,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
         public void action(@Nullable AbcSong abcSong) {
             if (abcSong != null) {
-                abcSong.setOrganic(organic);
-                abcSong.setOrganic2(multistage);
-                abcSong.setMixTiming(mixTimings);
-                abcSong.setTripletTiming(swing);
-                abcSong.setPriorityActive(priority);
+                abcSong.setTimings(organic, multistage, mixTimings, swing, priority);
             }
         }
 

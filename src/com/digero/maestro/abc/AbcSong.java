@@ -296,6 +296,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		fireChangeEvent(AbcSongProperty.MIX_TIMING);
         fireChangeEvent(AbcSongProperty.MIX_TIMING_COMBINE_PRIORITIES);
 		fireChangeEvent(AbcSongProperty.ORGANIC);
+        fireChangeEvent(AbcSongProperty.TIMINGS_MULTI);
 	}
 
 	private void initFromAbc(File file, MiscSettings miscSettings)
@@ -1114,6 +1115,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		if (this.mixTiming != mixTiming) {
 			this.mixTiming = mixTiming;
 			fireChangeEvent(AbcSongProperty.MIX_TIMING);
+            fireChangeEvent(AbcSongProperty.TIMINGS_MULTI);
 		}
 	}
 
@@ -1121,6 +1123,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		if (this.mixVersion != mixVersion) {
 			this.mixVersion = mixVersion;
 			fireChangeEvent(AbcSongProperty.MIX_TIMING);// We can use same event as for mixtiming
+            fireChangeEvent(AbcSongProperty.TIMINGS_MULTI);
 		}
 	}
 
@@ -1128,8 +1131,47 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		if (this.tripletTiming != tripletTiming) {
 			this.tripletTiming = tripletTiming;
 			fireChangeEvent(AbcSongProperty.TRIPLET_TIMING);
+            fireChangeEvent(AbcSongProperty.TIMINGS_MULTI);
 		}
 	}
+
+    /**
+     * Set multiple timing settings at once
+     * This will decrease number of preview generations done.
+     * And also less property change events in some cases.
+     */
+    public void setTimings(boolean org, boolean org2, boolean mix, boolean swing, boolean prio) {
+        boolean changed = false;
+        if (this.tripletTiming != swing) {
+            this.tripletTiming = swing;
+            fireChangeEvent(AbcSongProperty.TRIPLET_TIMING);
+            changed = true;
+        }
+        if (this.mixTiming != mix) {
+            this.mixTiming = mix;
+            fireChangeEvent(AbcSongProperty.MIX_TIMING);
+            changed = true;
+        }
+        if (this.priorityActive != prio) {
+            setMixDirty(true);
+            this.priorityActive = prio;
+            fireChangeEvent(AbcSongProperty.MIX_TIMING_COMBINE_PRIORITIES);
+            changed = true;
+        }
+        boolean orgChanged = false;
+        if (organic != org) {
+            organic = org;
+            orgChanged = true;
+            changed = true;
+        }
+        if (organic2 != org2) {
+            organic2 = org2;
+            orgChanged = true;
+            changed = true;
+        }
+        if (orgChanged) fireChangeEvent(AbcSongProperty.ORGANIC);
+        if (changed) fireChangeEvent(AbcSongProperty.TIMINGS_MULTI);
+    }
 
 	public boolean isSkipSilenceAtStart() {
 		return skipSilenceAtStart;
@@ -1369,6 +1411,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			setMixDirty(true);
 			this.priorityActive = priorityActive;
 			fireChangeEvent(AbcSongProperty.MIX_TIMING_COMBINE_PRIORITIES);
+            fireChangeEvent(AbcSongProperty.TIMINGS_MULTI);
 		}
 	}
 	
@@ -1376,6 +1419,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		if (organic != org) {
 			organic = org;
 			fireChangeEvent(AbcSongProperty.ORGANIC);
+            fireChangeEvent(AbcSongProperty.TIMINGS_MULTI);
 		}
 	}
 	
@@ -1388,6 +1432,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		if (organic2 != multistage) {
 			organic2 = multistage;
 			fireChangeEvent(AbcSongProperty.ORGANIC);
+            fireChangeEvent(AbcSongProperty.TIMINGS_MULTI);
 		}
 	}
 	

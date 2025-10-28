@@ -618,7 +618,9 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 
 	private final Listener<AbcSongEvent> songListener = e -> {
 		if (e.getProperty() == AbcSongProperty.TRANSPOSE) {
-			fireChangeEvent(AbcPartProperty.BASE_TRANSPOSE, !isPercussionPart() /* affectsAbcPreview */);
+            // the reason for false is that abcSong own event will already trigger
+            // preview generation, do not want to trigger one for each part.
+			fireChangeEvent(AbcPartProperty.BASE_TRANSPOSE, false);
 		}
 		if (e.getProperty() == AbcSongProperty.MIX_TIMING_COMBINE_PRIORITIES
 				|| e.getProperty() == AbcSongProperty.MIX_TIMING) {
