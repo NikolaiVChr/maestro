@@ -135,7 +135,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
         numberLockedCheckBox.setHorizontalTextPosition(SwingConstants.RIGHT);
         numberLockedCheckBox.setFocusable(false);
         numberLockedCheckBox.setToolTipText("<html>Fix the part number to the current value.</html>");
-        numberLockedCheckBox.addChangeListener(e -> {
+        numberLockedCheckBox.addActionListener(e -> {
             if (abcPart != null) {
                 abcPart.setPartNumberManuallyAssigned(numberLockedCheckBox.isSelected(), true);
             }
