@@ -40,7 +40,7 @@ public class SectionEditor {
 
 	private static Point lastLocation = null;
 	
-	public static final int numberOfSectionsMax = 120;
+	public static final int numberOfSectionsMax = 150;
 	static boolean clipboardArmed = false;
 	static String[] clipboardStart = null;
 	static String[] clipboardEnd = null;

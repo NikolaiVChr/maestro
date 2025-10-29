@@ -46,6 +46,7 @@ Version 4.5.0
 - Offload Maestro ABC exporting to a non-UI thread.
 - Various internal event optimizations.
 - Offload Maestro ABC preview generating to a non-UI thread.
+- Increased max number of sections in section-editor to 150.
 
 Version 4.4.6
 - Removed warnings for bad Jaunty notes.
