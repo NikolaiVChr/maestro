@@ -1768,7 +1768,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		sortPartsButton.setEnabled(abcSong != null && uiEnabled);
 		numerateButton.setEnabled(midiLoaded && uiEnabled);
 		updatePartEditorButton();
-		exportButton.setEnabled(hasAbcNotes && uiEnabled);
+		exportButton.setEnabled(hasAbcNotes);// so that it keep focus, we keep it enabled during export.
 		exportMenuItem.setEnabled(hasAbcNotes && uiEnabled);
 		exportAsMenuItem.setEnabled(hasAbcNotes && uiEnabled);
 		saveMenuItem.setEnabled(abcSong != null && uiEnabled);
