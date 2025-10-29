@@ -45,6 +45,7 @@ Version 4.4.7
 - Play-head follow feature no longer jitters.
 - Offload Maestro ABC exporting to a non-UI thread.
 - Various internal event optimizations.
+- Offload Maestro ABC preview generating to a non-UI thread.
 
 Version 4.4.6
 - Removed warnings for bad Jaunty notes.
