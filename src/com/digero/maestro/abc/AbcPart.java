@@ -117,7 +117,14 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	
 	public static final Note minDefault = Note.C0;//limit
 
+    public final long uniqueID;//shared with any copies
+
 	public AbcPart(AbcSong abcSong) {
+        this(abcSong, System.nanoTime());
+    }
+
+    private AbcPart(AbcSong abcSong, long uniqueID) {
+        this.uniqueID = uniqueID;
 		this.abcSong = abcSong;
         listeners = new ListenerList<>();
 		abcSong.addSongListener(songListener);
@@ -1800,7 +1807,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
      * Copy constructor for threaded worker.
      */
     public AbcPart(AbcPart orig, AbcSong abcSongCopy) {
-        this(abcSongCopy);
+        this(abcSongCopy, orig.uniqueID);
 
         // Primitive and Immutable Fields
         this.partNumber = orig.partNumber;

@@ -127,10 +127,10 @@ public class AbcExporter {
 		exportEndTick = startEndTick.second;
 	}
 
-	public Pair<List<ExportTrackInfo>, Sequence> exportToPreview(boolean useLotroInstruments)
+	public Triple<List<ExportTrackInfo>, Sequence, PolyphonyHistogram> exportToPreview(boolean useLotroInstruments)
 			throws AbcConversionException, InvalidMidiDataException {
 		try {
-			PolyphonyHistogram.clearAll();
+            PolyphonyHistogram histogram = new PolyphonyHistogram();
 			Pair<Long, Long> startEndTick = getSongStartEndTick(false, true);
 			exportStartTick = startEndTick.first;
 			exportEndTick = startEndTick.second;
@@ -146,18 +146,18 @@ public class AbcExporter {
 				// tempo spinner while no parts are enabled, due to setting a abc sequence.
 				for (AbcPart part : parts) {
 					try {
-						PolyphonyHistogram.count(part, new ArrayList<>(), organic, qtm);
+						histogram.count(part, new ArrayList<>(), organic, qtm);
 					} catch (IOException e) {
 						throw new AbcConversionException("Failed to read instrument sample durations.", e);
 					}
 				}
-				return new Pair<>(infoList, new Sequence(Sequence.PPQ, 96));
+				return new Triple<>(infoList, new Sequence(Sequence.PPQ, 96),histogram);
 			}
 			if (parts.size() > MAX_RAID) {
 				throw new AbcConversionException("Songs with more than " + MAX_RAID + " parts can never be previewed.\n"
 						+ "This song currently has " + parts.size() + " parts and failed to preview.");
 			}
-			exportForPreviewChords(chordsMade);// export the chords here early, as we possibly
+			exportForPreviewChords(chordsMade, histogram);// export the chords here early, as we possibly
 																		// need to process them for sharing.
 			
 			
@@ -217,7 +217,7 @@ public class AbcExporter {
 			 * track0.add(MidiFactory.createNoteOffEventEx(40,9,0,100L)); }
 			 */
 			
-			return new Pair<>(infoList, sequence);
+			return new Triple<>(infoList, sequence, histogram);
 		} catch (RuntimeException e) {
 			// Unpack the InvalidMidiDataException if it was the cause
 			if (e.getCause() instanceof InvalidMidiDataException)
@@ -232,20 +232,20 @@ public class AbcExporter {
 	 * 
 	 * @param chordsMade      the map of lists of chord that need to be filled.
      */
-	private void exportForPreviewChords(Map<AbcPart, List<Chord>> chordsMade)
+	private void exportForPreviewChords(Map<AbcPart, List<Chord>> chordsMade, PolyphonyHistogram histogram)
 			throws AbcConversionException {
 		for (AbcPart part : parts) {
 			if (part.getEnabledTrackCount() > 0) {
 				if (organic) {
-					Pair<List<Chord>,Boolean> chords = combineOrganic(part, true);
+					Pair<List<Chord>,Boolean> chords = combineOrganic(part, true, histogram);
 					chordsMade.put(part, chords.first);
 				} else {
-					List<Chord> chords = combineAndQuantize(part, true);
+					List<Chord> chords = combineAndQuantize(part, true, histogram);
 					chordsMade.put(part, chords);
 				}
 			} else {
 				try {
-					PolyphonyHistogram.count(part, new ArrayList<>(), organic, qtm);
+					histogram.count(part, new ArrayList<>(), organic, qtm);
 				} catch (IOException e) {
 					throw new AbcConversionException("Failed to read instrument sample durations.", e);
 				}
@@ -522,13 +522,13 @@ public class AbcExporter {
 				
 				outputBadger(out);
 			}
-	
+	        PolyphonyHistogram histogram = new PolyphonyHistogram();
 			for (AbcPart part : parts) {
 				if (part.getEnabledTrackCount() > 0 || (part.getAbcSong().getCountIn() != null && part.getAbcSong().getCountIn().micros > 0L && part.getAbcSong().getCountIn().part == part)) {
 					if (organic) {
-						exportPartToAbcOrganic(part, out, delayEnabled);
+						exportPartToAbcOrganic(part, out, delayEnabled, histogram);
 					} else {
-						exportPartToAbc(part, out, delayEnabled);
+						exportPartToAbc(part, out, delayEnabled, histogram);
 					}
 				}
 			}
@@ -558,7 +558,7 @@ public class AbcExporter {
 	}
 	
 	private void exportPartToAbcOrganic(AbcPart part, PrintStream out,
-			boolean delayEnabled) throws AbcConversionException {
+			boolean delayEnabled, PolyphonyHistogram histogram) throws AbcConversionException {
 		
 		exportPartHeaderToAbc(part, out);
 		
@@ -703,7 +703,7 @@ public class AbcExporter {
             }
 		}
 		
-		Pair<List<Chord>, Boolean> pair = combineOrganic(part, false);
+		Pair<List<Chord>, Boolean> pair = combineOrganic(part, false, histogram);
 		 
 		List<Chord> chords = pair.first;
 		
@@ -1057,8 +1057,8 @@ public class AbcExporter {
 	}
 
 	private void exportPartToAbc(AbcPart part, PrintStream out,
-			boolean delayEnabled) throws AbcConversionException {
-		List<Chord> chords = combineAndQuantize(part, false);
+			boolean delayEnabled, PolyphonyHistogram histogram) throws AbcConversionException {
+		List<Chord> chords = combineAndQuantize(part, false, histogram);
 
 		exportPartHeaderToAbc(part, out);
 
@@ -1378,7 +1378,7 @@ public class AbcExporter {
 	/**
 	 * Combine the tracks into one, quantize the note lengths, separate into chords.
 	 */
-	private List<Chord> combineAndQuantize(AbcPart part, boolean preview) throws AbcConversionException {
+	private List<Chord> combineAndQuantize(AbcPart part, boolean preview, PolyphonyHistogram histogram) throws AbcConversionException {
 		// Combine the events from the enabled tracks
 		List<AbcNoteEvent> events = new ArrayList<>();
 		for (int t = 0; t < part.getTrackCount(); t++) {
@@ -1447,7 +1447,7 @@ public class AbcExporter {
 		
 		if (events.isEmpty() && preview) {
 			try {
-				PolyphonyHistogram.count(part, new ArrayList<>(), organic, qtm);
+				histogram.count(part, new ArrayList<>(), organic, qtm);
 			} catch (IOException e) {
 				throw new AbcConversionException("Failed to read instrument sample durations.", e);
 			}
@@ -1698,7 +1698,7 @@ public class AbcExporter {
 		
 		if (preview) {
 			try {
-				PolyphonyHistogram.count(part, chords, organic, qtm);
+				histogram.count(part, chords, organic, qtm);
 			} catch (IOException e) {
 				throw new AbcConversionException("Failed to read instrument sample durations.", e);
 			}
@@ -1891,7 +1891,7 @@ public class AbcExporter {
 	/**
 	 * Combine the tracks into one, quantize the note lengths, separate into chords.
 	 */
-	private Pair<List<Chord>, Boolean> combineOrganic(AbcPart part, boolean preview) throws AbcConversionException {
+	private Pair<List<Chord>, Boolean> combineOrganic(AbcPart part, boolean preview, PolyphonyHistogram histogram) throws AbcConversionException {
 		// Combine the events from the enabled tracks
 		List<AbcNoteEvent> events = new ArrayList<>();
 		for (int t = 0; t < part.getTrackCount(); t++) {
@@ -1962,7 +1962,7 @@ public class AbcExporter {
 		
 		if (events.isEmpty() && preview) {
 			try {
-				PolyphonyHistogram.count(part, new ArrayList<>(), organic, qtm);
+				histogram.count(part, new ArrayList<>(), organic, qtm);
 			} catch (IOException e) {
 				throw new AbcConversionException("Failed to read instrument sample durations.", e);
 			}
@@ -2057,7 +2057,7 @@ public class AbcExporter {
 		if (useRestToShortenChords) {
 			int max = 0;
 			try {
-				max = PolyphonyHistogram.maxPolyInPart(part, chords, organic, qtm);
+				max = histogram.maxPolyInPart(part, chords, organic, qtm);
 			} catch (IOException e) {
 				throw new AbcConversionException("Failed to read instrument sample durations.", e);
 			}
@@ -2080,7 +2080,7 @@ public class AbcExporter {
 		
 		if (preview) {
 			try {
-				PolyphonyHistogram.count(part, chords, organic, qtm);
+				histogram.count(part, chords, organic, qtm);
 			} catch (IOException e) {
 				throw new AbcConversionException("Failed to read instrument sample durations.", e);
 			}

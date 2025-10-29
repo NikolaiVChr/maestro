@@ -1662,12 +1662,12 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	}
 
     @NotNull
-    public List<String> getExportWarnings() {
+    public List<String> getExportWarnings(PolyphonyHistogram histogram) {
         List<String> warns = new ArrayList<>();
-        if (PolyphonyHistogram.max() > 64) {
+        if (histogram != null && histogram.maxAll() > 64) {
             // There is growing concerns that 64+ polyphony can make audience lag (stutter),
             // so this warning is not optional.
-            warns.add("More notes ("+PolyphonyHistogram.max()+"/64) playing at same time than lotro can handle.");
+            warns.add("More notes ("+histogram.maxAll()+"/64) playing at same time than lotro can handle.");
         }
         if (saveAndExportSettings.warnOnExportOfSamePartNames && isPartsTitlesSimilar()) {
             warns.add("Two or more parts has same name. Renaming or clicking the 'Numerate' button can fix them.");
@@ -1826,5 +1826,14 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         // Fields not needed by worker
         this.projectFile = null;
         this.exportFile = null;
+    }
+
+    public AbcPart getPartFromID(long ID) {
+        for(AbcPart part : parts) {
+            if (part.uniqueID == ID) {
+                return part;
+            }
+        }
+        return null;
     }
 }

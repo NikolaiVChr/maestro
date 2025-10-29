@@ -28,12 +28,10 @@ import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.midi.TimeSignature;
 import com.digero.common.util.Pair;
 import com.digero.common.util.ParseException;
+import com.digero.common.util.Triple;
 import com.digero.common.util.Util;
-import com.digero.maestro.abc.AbcConversionException;
-import com.digero.maestro.abc.AbcExporter;
+import com.digero.maestro.abc.*;
 import com.digero.maestro.abc.AbcExporter.ExportTrackInfo;
-import com.digero.maestro.abc.AbcMetadataSource;
-import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.view.MiscSettings;
 
 /**
@@ -62,6 +60,7 @@ public class SequenceInfo implements MidiConstants {
 	private final TreeMap<Integer, Integer> portMap = new TreeMap<>();
 	public static List<ExportTrackInfo> lastTrackInfos = null;
 	public long realDuraTicks;
+    public final PolyphonyHistogram histogram;
 
     private static final Object PREVIEW_EXPORT_LOCK = new Object();
 
@@ -143,6 +142,7 @@ public class SequenceInfo implements MidiConstants {
 		this.fileName = fileName;
 		this.sequence = sequence;
 		this.midiType = type;
+        this.histogram = null;
 		log.info("Importing (Type "+type+"): "+fileName);
 
 		determineStandard(sequence, fileName);
@@ -213,10 +213,11 @@ public class SequenceInfo implements MidiConstants {
 		this.composer = metadata.getComposer();
 		this.title = metadata.getSongTitle();
 
-		Pair<List<ExportTrackInfo>, Sequence> result = abcExporter.exportToPreview(useLotroInstruments);
+		Triple<List<ExportTrackInfo>, Sequence, PolyphonyHistogram> result = abcExporter.exportToPreview(useLotroInstruments);
 
 		sequence = result.second;
 		lastTrackInfos = result.first;
+        histogram = result.third;
 		standard = MidiStandard.PREVIEW;
 		sequenceCache = new SequenceDataCache(sequence, standard, null, null, null, null, portMap, true, false, true);
 		primaryTempoMPQ = sequenceCache.getPrimaryTempoMPQ();

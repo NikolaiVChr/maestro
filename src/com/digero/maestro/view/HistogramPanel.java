@@ -67,8 +67,9 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 	private LeanJLabel currentCountLabel;
 
 	private AbcSong abcSong;
+    private PolyphonyHistogram histogram = null;
 
-	public HistogramPanel(SequenceInfo sequenceInfo, SequencerWrapper sequencer, SequencerWrapper abcSequencer,
+    public HistogramPanel(SequenceInfo sequenceInfo, SequencerWrapper sequencer, SequencerWrapper abcSequencer,
 			AbcSong abcSong) {
 		super(new TableLayout(LAYOUT_COLS, LAYOUT_ROWS));
 		this.abcSong = abcSong;
@@ -154,26 +155,37 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 		return abcPreviewMode;
 	}
 
-	private void updateCountLabel() {
-		if (PolyphonyHistogram.isDirty()) {
-			PolyphonyHistogram.sumUp(abcSong);
-		}
-		int notes = PolyphonyHistogram.get(abcSequencer.getThumbPosition());// Must be abcSeq, due to tuneeditor can change micros from this call
-		currentCountLabel.setText(notes + " notes (Peak: " + PolyphonyHistogram.max()+")");
+    /**
+     * Called by sequencer updates, abcPart updates and preview mode toggle.
+     */
+	public void updateCountLabel() {
+        if (histogram != null) {
+            if (histogram.isDirty()) {
+                histogram.sumUp(abcSong);
+            }
+            int notes = histogram.get(abcSequencer.getThumbPosition());// Must be abcSeq, due to tuneeditor can change micros from this call
+            currentCountLabel.setText(notes + " notes (Peak: " + histogram.max() + ")");
+        } else {
+            currentCountLabel.setText("No preview data");
+        }
 	}
 
 	private Listener<SequencerEvent> sequencerListener = e -> {
-		// TODO: Should this listen only to abcSequencer? Consider carefully
 		
-		//if (e.getProperty() == SequencerProperty.IS_RUNNING)
-			histoGraph.repaint();
+		histoGraph.repaint();
 		
 		//if (e.getProperty().isInMask(SequencerProperty.THUMB_POSITION_MASK)) {
 			updateCountLabel();
-		//}		
+		//}
 	};
 
-	public class HistogramNoteGraph extends NoteGraph {
+    public void setHistogram(PolyphonyHistogram histogram) {
+        this.histogram = histogram;
+        histoGraph.repaint();
+        updateCountLabel();
+    }
+
+    public class HistogramNoteGraph extends NoteGraph {
 		private List<NoteEvent> events = new ArrayList<>();
 
 		public HistogramNoteGraph(SequenceInfo sequenceInfo, SequencerWrapper sequencer) {
@@ -195,22 +207,26 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 			if (abcSong.getQTM() == null) return;
 			
 			Entry<Long, Pair<Long,Integer>> prevEvent = null;
-			
-			PolyphonyHistogram.sumUp(abcSong);
-			PolyphonyHistogram.setClean();
+
+            if (histogram != null) {
+                histogram.sumUp(abcSong);
+                histogram.setClean();
+            }
 
 			SequenceDataCache dataCache = sequenceInfo.getDataCache();
 			long prevTick = 0L;
-			for (Entry<Long, Pair<Long,Integer>> event : PolyphonyHistogram.getAll()) {
-				
-				if (prevEvent != null) {
-					//assert prevTick >= event.getValue().first : "OOPS HISTO";
-					int id = Math.min(CLIP_MAX_NOTES,prevEvent.getValue().second);
-					events.add(new FakeNoteEvent(Note.fromId(id), prevEvent.getValue().first, event.getValue().first, dataCache));
-				}
-				prevEvent = event;
-				prevTick = event.getValue().first;
-			}
+            if (histogram != null) {
+                for (Entry<Long, Pair<Long, Integer>> event : histogram.getAll()) {
+
+                    if (prevEvent != null) {
+                        //assert prevTick >= event.getValue().first : "OOPS HISTO";
+                        int id = Math.min(CLIP_MAX_NOTES, prevEvent.getValue().second);
+                        events.add(new FakeNoteEvent(Note.fromId(id), prevEvent.getValue().first, event.getValue().first, dataCache));
+                    }
+                    prevEvent = event;
+                    prevTick = event.getValue().first;
+                }
+            }
 
 			if (prevEvent != null) {
 				int id = Math.min(CLIP_MAX_NOTES,prevEvent.getValue().second);
@@ -239,7 +255,7 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 
 		@Override
 		protected List<NoteEvent> getEvents() {
-			if (PolyphonyHistogram.isDirty() || events.isEmpty())
+			if (histogram == null || histogram.isDirty() || events.isEmpty())
 				recalcPolyphonyEvents();
 			return events;
 		}

@@ -160,6 +160,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private AbcSong abcSong;
 	private boolean abcSongModified = false;
 
+    private PolyphonyHistogram histogram = null;
+
 	private boolean allowOverwriteSaveFile = false;
 	private boolean allowOverwriteExportFile = false;
 	private NoteFilterSequencerWrapper sequencer;
@@ -349,7 +351,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 								+ LotroSequencerWrapper.getLoadLotroSynthError());
 				failedToLoadLotroInstruments = true;
 			}
-			PolyphonyHistogram.setSequencer(abcSequencer);
+
 		} catch (MidiUnavailableException e) {
 			JOptionPane
 					.showMessageDialog(
@@ -1912,7 +1914,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		if (e.isAbcPreviewRelated()) {
             // must be immediate since song.parts can change in subsequent
             // part listeners and generate preview now runs on a different thread
-			refreshPreviewSequence(true);
+            // update: since it now uses copy of abcsong, non-immediate is ok.
+			refreshPreviewSequence(false);
 		}
 
 		if (e.isAbcPreviewRelated() && partPanel != null) {
@@ -2739,10 +2742,15 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
             abcSequencer.setTickPosition(tick);
             abcSequencer.setRunning(abcRunning);
+            previewSequenceInfo.histogram.setSequencer(abcSequencer);
+            partPanel.setHistogram(previewSequenceInfo.histogram);
+            histogram = previewSequenceInfo.histogram;
         } catch (InvalidMidiDataException e) {
             log.log(Level.WARNING, "Error after exporting preview", e);
             sequencer.stop();
             abcSequencer.stop();
+            partPanel.setHistogram(null);
+            histogram = null;
             JOptionPane.showMessageDialog(ProjectFrame.this, e.getMessage(), "Error previewing ABC",
                     JOptionPane.WARNING_MESSAGE);
         }
@@ -3036,7 +3044,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
     private boolean confirmExportDespiteWarnings() {
-        List<String> warnings = abcSong.getExportWarnings();
+        List<String> warnings = abcSong.getExportWarnings(histogram);
         for(String warning : warnings) {
             int option = JOptionPane.showConfirmDialog(this, warning+"\nDo you want to proceed with exporting without fixing it?", "Warning", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
             if (option != JOptionPane.YES_OPTION) {

@@ -36,6 +36,7 @@ import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcPartEvent;
 import com.digero.maestro.abc.AbcPartEvent.AbcPartProperty;
 import com.digero.maestro.abc.PartAutoNumberer;
+import com.digero.maestro.abc.PolyphonyHistogram;
 import com.digero.maestro.midi.TrackInfo;
 
 import info.clearthought.layout.TableLayout;
@@ -476,6 +477,10 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
         } else if (e.getProperty() == AbcPartProperty.PART_NUMBER_MANUAL) {
             numberLockedCheckBox.setSelected(abcPart.isPartNumberManuallyAssigned());
         }
+        if(e.isAbcPreviewRelated()) {
+            //not needed, we update panel from ProjectFrame, when setting new histogram
+            //histogramPanel.updateCountLabel();
+        }
 	};
 
 	public void settingsChanged() {
@@ -730,5 +735,9 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
     @Override
     public boolean isValidateRoot() {
         return true;
+    }
+
+    public void setHistogram(PolyphonyHistogram histogram) {
+        histogramPanel.setHistogram(histogram);
     }
 }
