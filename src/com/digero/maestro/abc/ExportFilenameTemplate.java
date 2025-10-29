@@ -17,6 +17,9 @@ import com.digero.common.util.Pair;
 import com.digero.common.util.Util;
 import com.digero.maestro.view.SettingsDialog.MockMetadataSource;
 
+/**
+ * As long as settings are not changed, this class is stateless, please keep it that way.
+ */
 public class ExportFilenameTemplate {
 	public static final String spaceReplaceChars4 = "RemoveAndCaps";
 	public static final String[] spaceReplaceChars = { " ", "", "_", "-", spaceReplaceChars4 };
@@ -122,7 +125,7 @@ public class ExportFilenameTemplate {
 			this.description = description;
 		}
 
-		public abstract String getValue();
+        public abstract String getValue(Settings settings, AbcMetadataSource metadata);
 
 		public String getDescription() {
 			return description;
@@ -130,15 +133,13 @@ public class ExportFilenameTemplate {
 
 		@Override
 		public String toString() {
-			return getValue();
+			return getDescription();
 		}
 	}
 
 	private final Settings settings;
 
-	private AbcMetadataSource metadata = null;
-
-	private SortedMap<String, Variable> variables;
+	private final SortedMap<String, Variable> variables;
 
 	public ExportFilenameTemplate(Preferences prefsNode) {
 		this.settings = new Settings(prefsNode);
@@ -146,9 +147,8 @@ public class ExportFilenameTemplate {
         variables = generateVariables();
     }
 
-    public ExportFilenameTemplate(ExportFilenameTemplate orig, AbcMetadataSource metadataCopy) {
+    public ExportFilenameTemplate(ExportFilenameTemplate orig) {
         this.settings = orig.getSettingsCopy();
-        this.metadata = metadataCopy;
         variables = generateVariables();
     }
 
@@ -159,39 +159,45 @@ public class ExportFilenameTemplate {
 
         vars.put("$SongTitle", new Variable("The title of the song, as entered in the \"T:\" field") {
             @Override
-            public String getValue() {
-                return getMetadataSource().getSongTitle().trim();
+            public String getValue(Settings settings, AbcMetadataSource metadata) {
+                if (metadata == null) metadata = new MockMetadataSource(null);
+                return metadata.getSongTitle().trim();
             }
         });
         vars.put("$SongLength", new Variable("The playing time of the song in mm_ss format") {
             @Override
-            public String getValue() {
-                return Util.formatDuration(getMetadataSource().getSongLengthMicros(), 0, '-');
+            public String getValue(Settings settings, AbcMetadataSource metadata) {
+                if (metadata == null) metadata = new MockMetadataSource(null);
+                return Util.formatDuration(metadata.getSongLengthMicros(), 0, '-');
             }
         });
         vars.put("$SongComposer", new Variable("The song composer/artist, as entered in the \"C:\" field") {
             @Override
-            public String getValue() {
-                return getMetadataSource().getComposer().trim();
+            public String getValue(Settings settings, AbcMetadataSource metadata) {
+                if (metadata == null) metadata = new MockMetadataSource(null);
+                return metadata.getComposer().trim();
             }
         });
         vars.put("$SongTranscriber", new Variable("Your name, as entered in the \"Z:\" field") {
             @Override
-            public String getValue() {
-                return getMetadataSource().getTranscriber().trim();
+            public String getValue(Settings settings, AbcMetadataSource metadata) {
+                if (metadata == null) metadata = new MockMetadataSource(null);
+                return metadata.getTranscriber().trim();
             }
         });
         vars.put("$PartCount", new Variable("Number of parts in the ABC file") {
             @Override
-            public String getValue() {
+            public String getValue(Settings settings, AbcMetadataSource metadata) {
+                if (metadata == null) metadata = new MockMetadataSource(null);
                 return String.format(settings.partCountZeroPadded ? "%02d" : "%d",
-                        getMetadataSource().getActivePartCount());
+                        metadata.getActivePartCount());
             }
         });
         vars.put("$SourceFile", new Variable("Source file name (midi or ABC)") {
             @Override
-            public String getValue() {
-                String name = getMetadataSource().getSourceFilename();
+            public String getValue(Settings settings, AbcMetadataSource metadata) {
+                if (metadata == null) metadata = new MockMetadataSource(null);
+                String name = metadata.getSourceFilename();
                 return name.substring(0, name.lastIndexOf('.'));
             }
         });
@@ -207,17 +213,6 @@ public class ExportFilenameTemplate {
 		this.settings.save();
 	}
 
-	public AbcMetadataSource getMetadataSource() {
-		if (metadata == null)
-			metadata = new MockMetadataSource(null);
-
-		return metadata;
-	}
-
-	public void setMetadataSource(AbcMetadataSource metadata) {
-		this.metadata = metadata;
-	}
-
 	public SortedMap<String, Variable> getVariables() {
 		return Collections.unmodifiableSortedMap(variables);
 	}
@@ -230,16 +225,13 @@ public class ExportFilenameTemplate {
 		return settings.isExportFilenamePatternEnabled() && settings.shouldAlwaysRegenerateFromPattern();
 	}
 
-	public String formatName() {
-		return formatName(settings);
+	public String formatName(AbcMetadataSource metadata) {
+		return formatName(settings, metadata);
 	}
 
-	public String formatName(ExportFilenameTemplate.Settings settings) {
+	public String formatName(ExportFilenameTemplate.Settings settings, AbcMetadataSource metadata) {
 		String name = settings.getExportFilenamePattern();
 
-		// hacky but it works - save and restore later
-		boolean zeroPad = this.settings.partCountZeroPadded;
-		this.settings.partCountZeroPadded = settings.partCountZeroPadded;
 
 		// Find all variables starting with $
 		Pattern regex = Pattern.compile("\\$[A-Za-z]+");
@@ -255,7 +247,7 @@ public class ExportFilenameTemplate {
 			Pair<Integer, Integer> match = reverseIter.previous();
 			Variable var = variables.get(name.substring(match.first, match.second));
 			if (var != null) {
-				String value = var.getValue();
+				String value = var.getValue(settings, metadata);
 				if (value != null) {
 					if (ExportFilenameTemplate.spaceReplaceChars4.equals(settings.getWhitespaceReplaceText())) {
 						value = Arrays.stream(value.trim().split("\\s+"))
@@ -271,8 +263,6 @@ public class ExportFilenameTemplate {
 				name = name.substring(0, match.first) + value + name.substring(match.second);
 			}
 		}
-
-		this.settings.partCountZeroPadded = zeroPad;
 
 		name += Util.ABC_FILE_EXTENSION;
 

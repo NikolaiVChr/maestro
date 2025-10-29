@@ -14,6 +14,9 @@ import com.digero.common.util.Util;
 import com.digero.maestro.view.SettingsDialog.MockMetadataSource;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * As long as settings are not changed, this class is stateless, please keep it that way.
+ */
 public class PartNameTemplate {
 
 	
@@ -86,7 +89,7 @@ public class PartNameTemplate {
 			this.description = description;
 		}
 
-		public abstract String getValue();
+		public abstract String getValue(AbcMetadataSource metadata, AbcPartMetadataSource currentPart);
 
 		public String getDescription() {
 			return description;
@@ -94,15 +97,12 @@ public class PartNameTemplate {
 
 		@Override
 		public String toString() {
-			return getValue();
+			return getValue(null, null);
 		}
 	}
 
 	private final Settings settings;
 	private final Preferences prefsNode;
-
-	private AbcMetadataSource metadata = null;
-	private AbcPartMetadataSource currentAbcPart;
 
 	private final SortedMap<String, Variable> variables;
 
@@ -117,11 +117,9 @@ public class PartNameTemplate {
      * This copy does not have saveSettings capabilities.
      * Consider it a read-only view.
      */
-    public PartNameTemplate(PartNameTemplate orig, AbcMetadataSource metadataCopy) {
+    public PartNameTemplate(PartNameTemplate orig) {
         this.settings = orig.getSettingsCopy();
         this.prefsNode = null;
-        this.metadata = metadataCopy;
-        this.currentAbcPart = null;
         variables = getStringVariableSortedMap();
     }
 
@@ -133,60 +131,64 @@ public class PartNameTemplate {
 
         variables.put("$SongTitle", new Variable("The title of the song, as entered in the \"T:\" field") {
             @Override
-            public String getValue() {
-                return getMetadataSource().getSongTitle().trim();
+            public String getValue(AbcMetadataSource metadata, AbcPartMetadataSource currentPart) {
+                if (metadata == null) metadata = new MockMetadataSource(null);
+                return metadata.getSongTitle().trim();
             }
         });
         variables.put("$SongLength", new Variable("The playing time of the song in mm:ss format") {
             @Override
-            public String getValue() {
-                return Util.formatDuration(getMetadataSource().getSongLengthMicros());
+            public String getValue(AbcMetadataSource metadata, AbcPartMetadataSource currentPart) {
+                if (metadata == null) metadata = new MockMetadataSource(null);
+                return Util.formatDuration(metadata.getSongLengthMicros());
             }
         });
         variables.put("$SongComposer", new Variable("The song composer/artist, as entered in the \"C:\" field") {
             @Override
-            public String getValue() {
-                return getMetadataSource().getComposer().trim();
+            public String getValue(AbcMetadataSource metadata, AbcPartMetadataSource currentPart) {
+                if (metadata == null) metadata = new MockMetadataSource(null);
+                return metadata.getComposer().trim();
             }
         });
         variables.put("$SongTranscriber", new Variable("Your name, as entered in the \"Z:\" field") {
             @Override
-            public String getValue() {
-                return getMetadataSource().getTranscriber().trim();
+            public String getValue(AbcMetadataSource metadata, AbcPartMetadataSource currentPart) {
+                if (metadata == null) metadata = new MockMetadataSource(null);
+                return metadata.getTranscriber().trim();
             }
         });
         variables.put("$PartName", new Variable("The part name for the individual ABC part") {
             @Override
-            public String getValue() {
-                if (currentAbcPart == null)
+            public String getValue(AbcMetadataSource metadata, AbcPartMetadataSource currentPart) {
+                if (currentPart == null)
                     return "";
 
-                return currentAbcPart.getTitle().trim();
+                return currentPart.getTitle().trim();
             }
         });
         variables.put("$PartNumber", new Variable("The part number for the individual ABC part") {
             @Override
-            public String getValue() {
-                if (currentAbcPart == null)
+            public String getValue(AbcMetadataSource metadata, AbcPartMetadataSource currentPart) {
+                if (currentPart == null)
                     return "0";
 
-                return String.valueOf(currentAbcPart.getPartNumber());
+                return String.valueOf(currentPart.getPartNumber());
             }
         });
         variables.put("$PartCount", new Variable("Number of parts in the ABC file") {
             @Override
-            public String getValue() {
-                return String.format("%d",
-                        getMetadataSource().getActivePartCount());
+            public String getValue(AbcMetadataSource metadata, AbcPartMetadataSource currentPart) {
+                if (metadata == null) metadata = new MockMetadataSource(null);
+                return String.format("%d", metadata.getActivePartCount());
             }
         });
         variables.put("$PartInstrument", new Variable("The instrument for the individual ABC part") {
             @Override
-            public String getValue() {
-                if (currentAbcPart == null)
+            public String getValue(AbcMetadataSource metadata, AbcPartMetadataSource currentPart) {
+                if (currentPart == null)
                     return LotroInstrument.DEFAULT_INSTRUMENT.toString();
 
-                return currentAbcPart.getInstrument().toString();
+                return currentPart.getInstrument().toString();
             }
         });
         variables.put("$FilePath",
@@ -195,16 +197,16 @@ public class PartNameTemplate {
                         + "If the file is saved directly in the LOTRO/Music directory, "
                         + "this will be the same as <b>$FileName</b>.") {
                     @Override
-                    public String getValue() {
-                        if (getMetadataSource().getExportFile() == null)
+                    public String getValue(AbcMetadataSource metadata, AbcPartMetadataSource currentPart) {
+                        if (metadata == null || metadata.getExportFile() == null)
                             return "";
 
                         File root = Util.getLotroMusicPath(true);
-                        String saveFileName = Util.fileNameWithoutExtension(getMetadataSource().getExportFile());
+                        String saveFileName = Util.fileNameWithoutExtension(metadata.getExportFile());
 
                         StringBuilder path = new StringBuilder(saveFileName);
                         boolean foundRoot = false;
-                        for (File file = getMetadataSource().getExportFile().getParentFile(); file != null; file = file
+                        for (File file = metadata.getExportFile().getParentFile(); file != null; file = file
                                 .getParentFile()) {
                             if (root.equals(file)) {
                                 foundRoot = true;
@@ -221,11 +223,11 @@ public class PartNameTemplate {
                 });
         variables.put("$FileName", new Variable("The name of the ABC file, without the .abc extension") {
             @Override
-            public String getValue() {
-                if (getMetadataSource().getExportFile() == null)
+            public String getValue(AbcMetadataSource metadata, AbcPartMetadataSource currentPart) {
+                if (metadata == null || metadata.getExportFile() == null)
                     return "";
 
-                return Util.fileNameWithoutExtension(getMetadataSource().getExportFile());
+                return Util.fileNameWithoutExtension(metadata.getExportFile());
             }
         });
         return variables;
@@ -240,35 +242,17 @@ public class PartNameTemplate {
 		this.settings.save(prefsNode);
 	}
 
-	public AbcMetadataSource getMetadataSource() {
-		if (metadata == null)
-			metadata = new MockMetadataSource(null);
 
-		return metadata;
-	}
-
-	public void setMetadataSource(AbcMetadataSource metadata) {
-		this.metadata = metadata;
-	}
-
-	public void setCurrentAbcPart(AbcPartMetadataSource currentAbcPart) {
-		this.currentAbcPart = currentAbcPart;
-	}
-
-	public AbcPartMetadataSource getCurrentAbcPart() {
-		return currentAbcPart;
-	}
 
 	public SortedMap<String, Variable> getVariables() {
 		return Collections.unmodifiableSortedMap(variables);
 	}
 
-	public String formatName(AbcPartMetadataSource currentAbcPart) {
-		return formatName(settings.getPartNamePattern(), currentAbcPart, settings.getWhitespaceReplaceText());
+	public String formatName(AbcMetadataSource metadata, AbcPartMetadataSource currentAbcPart) {
+		return formatName(metadata, settings.getPartNamePattern(), currentAbcPart, settings.getWhitespaceReplaceText());
 	}
 
-	public String formatName(String partNamePattern, AbcPartMetadataSource currentAbcPart, String whiteSpaceReplaceChars) {
-		this.currentAbcPart = currentAbcPart;
+	public String formatName(AbcMetadataSource metadata, String partNamePattern, AbcPartMetadataSource currentAbcPart, String whiteSpaceReplaceChars) {
 		String name = partNamePattern;
 
 		Pattern regex = Pattern.compile("\\$[A-Za-z]+");
@@ -284,22 +268,20 @@ public class PartNameTemplate {
 			Pair<Integer, Integer> match = reverseIter.previous();
 			Variable var = variables.get(name.substring(match.first, match.second));
 			if (var != null) {
-				if (var.getValue() != null) {
+				if (var.getValue(metadata, currentAbcPart) != null) {
 					if (Settings.spaceReplaceChars4.equals(whiteSpaceReplaceChars)) {
 						name = name.substring(0, match.first) + 
-								Arrays.stream(var.getValue().split("\\s+"))
+								Arrays.stream(var.getValue(metadata, currentAbcPart).split("\\s+"))
 								.filter(word -> !word.isEmpty())
 				                .map(word -> Character.toUpperCase(word.charAt(0)) + word.substring(1))
 				                .collect(Collectors.joining(""))
 				                + name.substring(match.second);
 					} else {
-						name = name.substring(0, match.first) + var.getValue().replaceAll("\\s+", whiteSpaceReplaceChars) + name.substring(match.second);
+						name = name.substring(0, match.first) + var.getValue(metadata, currentAbcPart).replaceAll("\\s+", whiteSpaceReplaceChars) + name.substring(match.second);
 					}
 				}
 			}
 		}
-
-		this.currentAbcPart = null;
 		return name;
 	}
 

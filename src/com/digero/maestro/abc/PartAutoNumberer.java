@@ -9,6 +9,11 @@ import java.util.prefs.Preferences;
 import com.digero.common.abc.LotroInstrument;
 import com.digero.maestro.util.ListModelWrapper;
 
+/**
+ * As long as settings are not changed, this class is stateless, please keep it that way.
+ *
+ * Contract: Do not add or remove from the parts passed to these methods, ever.
+ */
 public class PartAutoNumberer {
     protected static final Logger log = Logger.getLogger("song");
 
@@ -199,7 +204,6 @@ public class PartAutoNumberer {
 	}
 
 	private Settings settings;
-	private List<? extends NumberedAbcPart> parts = null;
 
 	public PartAutoNumberer(Preferences prefsNode) {
 		this.settings = new Settings(prefsNode);
@@ -207,7 +211,6 @@ public class PartAutoNumberer {
 
     public PartAutoNumberer(PartAutoNumberer orig) {
         this.settings = orig.getSettingsCopy();
-        this.parts = null;
     }
 
 	public void restoreDefaultSettings() {
@@ -235,10 +238,6 @@ public class PartAutoNumberer {
 		this.settings.save();
 	}
 
-	public void setParts(List<? extends NumberedAbcPart> parts) {
-		this.parts = parts;
-	}
-
     /**
      * Make sure the abc parts have a 'part number manually assigned' that is not null.
      */
@@ -247,7 +246,7 @@ public class PartAutoNumberer {
         for (AbcPart part : parts) {
             if (part.isPartNumberManuallyAssigned() == null) {
                 // sort of a hack, since scheme can be changed between saving and loading project.
-                if (!isFittingInAutoNumberingScheme(part, -1, -1)) {
+                if (!isFittingInAutoNumberingScheme(part, -1, -1, parts)) {
                     manualAssigned = true;
                 } else if (manualAssigned == null) {
                     manualAssigned = false;
@@ -277,7 +276,7 @@ public class PartAutoNumberer {
      * starting number, then increments as necessary to avoid conflicts with numbers already in use.
      *
      */
-	public void renumberAllParts() {
+	public void renumberAllParts(List<? extends NumberedAbcPart> parts) {
 
 		if (parts == null)
 			return;
@@ -313,7 +312,7 @@ public class PartAutoNumberer {
         }
 	}
 
-	public void onPartAdded(NumberedAbcPart partAdded) {
+	public void onPartAdded(NumberedAbcPart partAdded, List<? extends NumberedAbcPart> parts) {
 
 		if (parts == null)
 			return;
@@ -335,7 +334,7 @@ public class PartAutoNumberer {
         partAdded.setPartNumberManuallyAssigned(false, true);
 	}
 
-	public void onPartDeleted(NumberedAbcPart partDeleted) {
+	public void onPartDeleted(NumberedAbcPart partDeleted, List<? extends NumberedAbcPart> parts) {
 		// System.out.println(partDeleted.getPartNumber()+" deleted");
 		if (parts == null)
 			return;
@@ -343,7 +342,7 @@ public class PartAutoNumberer {
 		int deletedNumber = partDeleted.getPartNumber();
 		int deletedFirstNumber = getFirstNumber(partDeleted.getInstrument());
 
-		if (!isFittingInAutoNumberingScheme(partDeleted, -1, -1)) {
+		if (!isFittingInAutoNumberingScheme(partDeleted, -1, -1, parts)) {
 			log.fine(partDeleted.getInstrument().toString()+" deleted and did not fit");
 			return;
 		}
@@ -355,7 +354,7 @@ public class PartAutoNumberer {
 			int partNumber = part.getPartNumber();
 			int partFirstNumber = getFirstNumber(part.getInstrument());
 
-			boolean autoTest = isFittingInAutoNumberingScheme(part, deletedNumber, deletedFirstNumber);
+			boolean autoTest = isFittingInAutoNumberingScheme(part, deletedNumber, deletedFirstNumber, parts);
             if (!autoTest || part.isPartNumberManuallyAssigned() == true) {
                 continue;
             }
@@ -380,7 +379,7 @@ public class PartAutoNumberer {
      * Else supply -1 for both.
      *
      */
-	private boolean isFittingInAutoNumberingScheme(NumberedAbcPart testPart, int deletedNumber, int deletedFirstNumber) {
+	private boolean isFittingInAutoNumberingScheme(NumberedAbcPart testPart, int deletedNumber, int deletedFirstNumber, List<? extends NumberedAbcPart> parts) {
 
 		int testNumber = testPart.getPartNumber();
 		int testFirstNumber = getFirstNumber(testPart.getInstrument());
@@ -438,7 +437,7 @@ public class PartAutoNumberer {
      * So both this part and the part that potentially have the number we want,
      * will be marked as manually assigned.
      */
-	public void setPartNumber(NumberedAbcPart partToChange, int newPartNumber) {
+	public void setPartNumber(NumberedAbcPart partToChange, int newPartNumber, List<? extends NumberedAbcPart> parts) {
 
 		if (parts == null)
 			return;
@@ -463,16 +462,16 @@ public class PartAutoNumberer {
         partToChange.setPartNumberManuallyAssigned(true, true);
 	}
 
-	public void setInstrument(NumberedAbcPart partToChange, LotroInstrument newInstrument) {
+	public void setInstrument(NumberedAbcPart partToChange, LotroInstrument newInstrument, List<? extends NumberedAbcPart> parts) {
 
 		if (newInstrument != partToChange.getInstrument()) {
 			if (partToChange.isPartNumberManuallyAssigned() || getFirstNumber(partToChange.getInstrument()) == getFirstNumber(newInstrument)) {
 				// Lets keep the part number, since it either has the same first number, or is locked
 				partToChange.setInstrument(newInstrument);
 			} else {
-				onPartDeleted(partToChange);
+				onPartDeleted(partToChange, parts);
 				partToChange.setInstrument(newInstrument);
-				onPartAdded(partToChange);
+				onPartAdded(partToChange, parts);
 			}
 		}
 	}

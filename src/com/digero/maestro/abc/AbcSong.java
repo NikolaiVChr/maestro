@@ -153,13 +153,10 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 		storeNewSourceFile = saveMSXwhenSourceChange;
 		this.partAutoNumberer = partAutoNumberer;
-		this.partAutoNumberer.setParts(Collections.unmodifiableList(parts));
 
 		this.partNameTemplate = partNameTemplate;
-		this.partNameTemplate.setMetadataSource(this);
 
 		this.exportFilenameTemplate = exportFilenameTemplate;
-		this.exportFilenameTemplate.setMetadataSource(this);
 
 		this.instrNameSettings = instrNameSettings;
 		
@@ -184,12 +181,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	@Override
 	public void discard() {
 		fireChangeEvent(AbcSongProperty.SONG_CLOSING);
-
-		if (partAutoNumberer != null)
-			partAutoNumberer.setParts(null);
-
-		if (partNameTemplate != null)
-			partNameTemplate.setMetadataSource(null);
 
 		listeners.discard();
 
@@ -850,7 +841,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public AbcPart createNewPart() {
 		AbcPart newPart = new AbcPart(this);
 		newPart.addAbcListener(abcPartListener);
-		partAutoNumberer.onPartAdded(newPart);
+		partAutoNumberer.onPartAdded(newPart, parts);
 		populateFirstNumbers();
 		newPart.firstNumber = partAutoNumberer.getFirstNumber(newPart.getInstrument());
 		int idx = Collections.binarySearch(parts, newPart, partAutoNumberer.getComparator());
@@ -876,7 +867,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
             removedCountIn = true;
         }
 		suppressPartSort = true;
-		partAutoNumberer.onPartDeleted(part);
+		partAutoNumberer.onPartDeleted(part, parts);
 		suppressPartSort = false;
 		part.discard();
 		//since we suppressed sorting we do it now:
@@ -1223,7 +1214,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 	@Override
 	public String getPartName(AbcPartMetadataSource abcPart) {
-		return partNameTemplate.formatName(abcPart);
+		return partNameTemplate.formatName(this, abcPart);
 	}
 
 	public File getSourceFile() {
@@ -1785,8 +1776,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
         // settings classes
         this.partAutoNumberer = new PartAutoNumberer(other.partAutoNumberer);
-        this.partNameTemplate = new PartNameTemplate(other.partNameTemplate, this);
-        this.exportFilenameTemplate = new ExportFilenameTemplate(other.exportFilenameTemplate, this);
+        this.partNameTemplate = new PartNameTemplate(other.partNameTemplate);
+        this.exportFilenameTemplate = new ExportFilenameTemplate(other.exportFilenameTemplate);
         this.instrNameSettings = new InstrNameSettings(other.instrNameSettings);
         this.saveAndExportSettings = new SaveAndExportSettings(other.saveAndExportSettings);
 
@@ -1819,9 +1810,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         if (other.countIn != null) {
             this.countIn = new CountIn(other.countIn.pattern, other.countIn.barCount, countInPart, other.countIn.hit);
         }
-
-        List<AbcPart> partsCopy = Collections.unmodifiableList(parts);
-        this.partAutoNumberer.setParts(partsCopy);
 
         // Fields not needed by worker
         this.projectFile = null;

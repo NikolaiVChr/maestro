@@ -99,8 +99,9 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
     private JComboBox<PartAutoNumberer.OrderOption> orderCombo;
 	private JFrame own;
 	private JComboBox<String> deviceBox;
+    private AbcSong song = null;
 
-	public SettingsDialog(JFrame owner, Preferences maestroPrefs, PartAutoNumberer partNumberer,
+    public SettingsDialog(JFrame owner, Preferences maestroPrefs, PartAutoNumberer partNumberer,
 			PartNameTemplate nameTemplate, ExportFilenameTemplate exportTemplate, SaveAndExportSettings saveSettings,
 			MiscSettings miscSettings, InstrNameSettings instrNameSettings) {
 		super(owner, "Options", true);
@@ -202,6 +203,15 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		updateNameTemplateExample();
 		updateExportFilenameExample();
 	}
+
+    public void setVisible(boolean visible, AbcSong song) {
+        super.setVisible(visible);
+        this.song = song;
+    }
+
+    public void setVisible(boolean visible) {
+        throw new UnsupportedOperationException("Not supported, use the other version.");
+    }
 
 	private JPanel createNumberingPanel() {
 		JLabel instrumentsTitle = new JLabel("<html><b><u>First part number</u></b></html>");
@@ -612,12 +622,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		nameTemplatePanel.add(nameLabel, "0, " + row);
 		nameTemplatePanel.add(exampleLabel, "1, " + row);
 
-		AbcMetadataSource originalMetadataSource = nameTemplate.getMetadataSource();
-		AbcPartMetadataSource originalAbcPart = nameTemplate.getCurrentAbcPart();
-
-		MockMetadataSource mockMetadata = new MockMetadataSource(originalMetadataSource);
-		nameTemplate.setMetadataSource(mockMetadata);
-		nameTemplate.setCurrentAbcPart(mockMetadata);
+		MockMetadataSource mockMetadata = new MockMetadataSource(song);
 		StringCleaner.cleanABC = saveSettings.convertABCStringsToBasicAscii;
 		for (Entry<String, PartNameTemplate.Variable> entry : nameTemplate.getVariables().entrySet()) {
 			String tooltipText = "<html><b>" + entry.getKey() + "</b><br>"
@@ -625,25 +630,21 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 
 			JLabel keyLabel = new JLabel(entry.getKey());
 			keyLabel.setToolTipText(tooltipText);
-			JLabel descriptionLabel = new JLabel(StringCleaner.cleanForABC(entry.getValue().getValue()));
+			JLabel descriptionLabel = new JLabel(StringCleaner.cleanForABC(entry.getValue().getValue(mockMetadata, mockMetadata)));
 			descriptionLabel.setToolTipText(tooltipText);
 
 			layout.insertRow(++row, PREFERRED);
 			nameTemplatePanel.add(keyLabel, "0, " + row);
 			nameTemplatePanel.add(descriptionLabel, "1, " + row);
 		}
-		nameTemplate.setMetadataSource(originalMetadataSource);
-		nameTemplate.setCurrentAbcPart(originalAbcPart);
 
 		return nameTemplatePanel;
 	}
 
 	private void updateNameTemplateExample() {
-		AbcMetadataSource originalMetadataSource = nameTemplate.getMetadataSource();
-		MockMetadataSource mockMetadata = new MockMetadataSource(originalMetadataSource);
-		nameTemplate.setMetadataSource(mockMetadata);
+		MockMetadataSource mockMetadata = new MockMetadataSource(song);
 
-		String exampleText = nameTemplate.formatName(nameTemplateSettings.getPartNamePattern(), mockMetadata, nameTemplateSettings.getWhitespaceReplaceText());
+		String exampleText = nameTemplate.formatName(mockMetadata, nameTemplateSettings.getPartNamePattern(), mockMetadata, nameTemplateSettings.getWhitespaceReplaceText());
 		StringCleaner.cleanABC = saveSettings.convertABCStringsToBasicAscii;
 		exampleText = StringCleaner.cleanForABC(exampleText);
 		String exampleTextEllipsis = Util.ellipsis(exampleText, nameTemplateExampleLabel.getWidth(),
@@ -653,7 +654,6 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		if (!exampleText.equals(exampleTextEllipsis))
 			nameTemplateExampleLabel.setToolTipText(exampleText);
 
-		nameTemplate.setMetadataSource(originalMetadataSource);
 	}
 
 	private JPanel createExportTemplatePanel() {
@@ -785,34 +785,29 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		panel.add(nameLabel, "0, " + row);
 		panel.add(exampleLabel, "1, " + row);
 
-		AbcMetadataSource originalMetadataSource = exportTemplate.getMetadataSource();
 
-		MockMetadataSource mockMetadata = new MockMetadataSource(originalMetadataSource);
-		exportTemplate.setMetadataSource(mockMetadata);
+		MockMetadataSource mockMetadata = new MockMetadataSource(song);
 		for (Entry<String, ExportFilenameTemplate.Variable> entry : exportTemplate.getVariables().entrySet()) {
 			String tooltipText = "<html><b>" + entry.getKey() + "</b><br>"
 					+ entry.getValue().getDescription().replace("\n", "<br>") + "</html>";
 
 			JLabel keyLabel = new JLabel(entry.getKey());
 			keyLabel.setToolTipText(tooltipText);
-			JLabel descriptionLabel = new JLabel(StringCleaner.cleanForFileName(entry.getValue().getValue()));
+			JLabel descriptionLabel = new JLabel(StringCleaner.cleanForFileName(entry.getValue().getValue(exportTemplateSettings, mockMetadata)));
 			descriptionLabel.setToolTipText(tooltipText);
 
 			layout.insertRow(++row, PREFERRED);
 			panel.add(keyLabel, "0, " + row);
 			panel.add(descriptionLabel, "1, " + row);
 		}
-		exportTemplate.setMetadataSource(originalMetadataSource);
 
 		return panel;
 	}
 
 	private void updateExportFilenameExample() {
-		AbcMetadataSource originalMetadataSource = exportTemplate.getMetadataSource();
-		MockMetadataSource mockMetadata = new MockMetadataSource(originalMetadataSource);
-		exportTemplate.setMetadataSource(mockMetadata);
+		MockMetadataSource mockMetadata = new MockMetadataSource(song);
 
-		String exampleText = StringCleaner.cleanForFileName(Util.fileNameWithoutExtension(exportTemplate.formatName(exportTemplateSettings)))+Util.ABC_FILE_EXTENSION;
+		String exampleText = StringCleaner.cleanForFileName(Util.fileNameWithoutExtension(exportTemplate.formatName(exportTemplateSettings, mockMetadata)))+Util.ABC_FILE_EXTENSION;
 		exampleText = "Example filename:  " + exampleText;
 		String exampleTextEllipsis = Util.ellipsis(exampleText, exportTemplateExampleLabel.getWidth(),
 				exportTemplateExampleLabel.getFont());
@@ -821,7 +816,6 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		if (!exampleText.equals(exampleTextEllipsis))
 			exportTemplateExampleLabel.setToolTipText(exampleText);
 
-		exportTemplate.setMetadataSource(originalMetadataSource);
 	}
 
 	private JPanel createSaveAndExportSettingsPanel() {

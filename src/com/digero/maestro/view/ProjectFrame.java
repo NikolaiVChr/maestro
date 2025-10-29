@@ -1477,11 +1477,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				dialog.setLocation(x, y);
 			}
 			dialog.setActiveTab(tab);
-			dialog.setVisible(true);
+			dialog.setVisible(true, abcSong);
 			if (dialog.isSuccess()) {
 				if (dialog.isNumbererSettingsChanged()) {
 					partAutoNumberer.setSettings(dialog.getNumbererSettings());
-					partAutoNumberer.renumberAllParts();
+					partAutoNumberer.renumberAllParts(abcSong.getParts());
 				}
 				partNameTemplate.setSettings(dialog.getNameTemplateSettings());
 				partPanel.settingsChanged();
@@ -1503,7 +1503,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				switch (tab) {
 				case 0: // part auto numberer
 					partAutoNumberer.restoreDefaultSettings();
-					partAutoNumberer.renumberAllParts();
+					partAutoNumberer.renumberAllParts(abcSong.getParts());
 					break;
 				case 1: // part naming
 					partNameTemplate.restoreDefaultSettings();
@@ -1904,7 +1904,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			partPanel.setNewTitle(e.getSource());
 
         if (e.getProperty() == AbcPartProperty.PART_NUMBER_MANUAL)
-            partAutoNumberer.renumberAllParts();
+            partAutoNumberer.renumberAllParts(abcSong.getParts());
 
 		partsList.repaint();
 		partEditor.repaint();
@@ -2955,7 +2955,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		// Always regenerate setting from pattern export is highest precedent
 		if (exportFilenameTemplate.shouldRegenerateFilename()) {
-			fileName = exportFilenameTemplate.formatName();
+			fileName = exportFilenameTemplate.formatName(abcSong);
 		} else if (exportFile != null) // else use abc filename if exists already
 		{
 			fileName = exportFile.getName();
@@ -2964,7 +2964,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			fileName = abcSong.getProjectFile().getName();
 		} else if (exportFilenameTemplate.isEnabled()) // else use pattern if usage is enabled
 		{
-			fileName = exportFilenameTemplate.formatName();
+			fileName = exportFilenameTemplate.formatName(abcSong);
 		} else if (abcSong.getSourceFile() != null) // else default to source file (midi/abc)
 		{
 			fileName = abcSong.getSourceFilename();
@@ -3016,7 +3016,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		boolean regeneratedFilenameIsDifferent =
 				abcSong != null && abcSong.getExportFile() != null &&
 				exportFilenameTemplate.shouldRegenerateFilename() &&
-				!exportFilenameTemplate.formatName().equals(abcSong.getExportFile().getName());
+				!exportFilenameTemplate.formatName(abcSong).equals(abcSong.getExportFile().getName());
 
         File exportFile = abcSong == null ? null : abcSong.getExportFile();
 
@@ -3211,7 +3211,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		// Always regenerate setting from pattern export is highest precedent
 		if (exportFilenameTemplate.shouldRegenerateFilename()) {
-			fileName = exportFilenameTemplate.formatName();
+			fileName = exportFilenameTemplate.formatName(abcSong);
 		} else if (saveFile != null) // else use MSX file if exists already
 		{
 			fileName = saveFile.getName();
@@ -3220,7 +3220,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			fileName = abcSong.getExportFile().getName();
 		} else if (exportFilenameTemplate.isEnabled()) // else use pattern if enabled
 		{
-			fileName = exportFilenameTemplate.formatName();
+			fileName = exportFilenameTemplate.formatName(abcSong);
 		} else if (abcSong.getSourceFile() != null) // else use source (midi/abc) file
 		{
 			fileName = abcSong.getSourceFilename();

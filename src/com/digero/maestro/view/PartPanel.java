@@ -123,11 +123,13 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 		this.abcSequencer = abcSequencer;
 		this.partAutoNumberer = partAutoNumberer;
 
-		numberSpinnerModel = new SpinnerNumberModel(0, 0, 999, partAutoNumberer.getIncrement());
+		numberSpinnerModel = new SpinnerNumberModel(0, 0, 999,
+                partAutoNumberer.getIncrement());
 		numberSpinner = new JSpinner(numberSpinnerModel);
 		numberSpinner.addChangeListener(e -> {
 			if (abcPart != null && !abcPart.suppressSpinnerUpdate) {
-				PartPanel.this.partAutoNumberer.setPartNumber(abcPart, (Integer) numberSpinner.getValue());
+				PartPanel.this.partAutoNumberer.setPartNumber(abcPart,
+                        (Integer) numberSpinner.getValue(), abcPart.getAbcSong().getParts());
 			}
 		});
 
@@ -172,7 +174,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 			if (abcPart != null) {
 				LotroInstrument newInstrument = (LotroInstrument) instrumentComboBox.getSelectedItem();
 				LotroInstrument oldInstrument = abcPart.getInstrument();
-				PartPanel.this.partAutoNumberer.setInstrument(abcPart, newInstrument);
+				PartPanel.this.partAutoNumberer.setInstrument(abcPart, newInstrument, abcPart.getAbcSong().getParts());
 				abcPart.replaceTitleInstrument(newInstrument, oldInstrument);
 				nameTextField.setText(abcPart.getTitle());
 				//updateTracksVisible();

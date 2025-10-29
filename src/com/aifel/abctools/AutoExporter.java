@@ -14,11 +14,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import javax.swing.JFileChooser;
@@ -46,6 +43,7 @@ import com.digero.maestro.util.XmlUtil;
 import com.digero.maestro.view.InstrNameSettings;
 import com.digero.maestro.view.MiscSettings;
 import com.digero.maestro.view.SaveAndExportSettings;
+import org.jetbrains.annotations.NotNull;
 
 public class AutoExporter {
 	private static final Logger log = Logger.getLogger("util");
@@ -63,24 +61,20 @@ public class AutoExporter {
 	private final Timer swingUpdateTimer;
 
 	private double progressFactor = 1;
-	private int exportCount = 0;
+	private final AtomicInteger exportCount = new AtomicInteger(0);
 	private int totalExportCount = 0;
 	private volatile int result = 0;
 	private volatile String textAuto = "";
 	private boolean txtFieldDirty = false;
 	private final Object txtFieldMutex = new Object();
 
-    private List<File> skippedProjects = new ArrayList<>();
+    private final List<File> skippedProjects = Collections.synchronizedList(new ArrayList<>());
     //private List<File> highCandidates = new ArrayList<>();
-
+    private final Object fileNamingLock = new Object();
 	private volatile int progressInt = 0;
 	private volatile boolean txtFieldPrimedForUpdate = false;
-	private boolean projectModified = false;
 	private final AbcTools main;
 	private final Preferences autoPrefs;
-	private File newNestedMidi = null;
-	private File nestedProject = null;
-	private File oldMidi = null;
 	private volatile boolean cancel = false;
     private volatile boolean inProgress = false;
 	
@@ -239,42 +233,75 @@ public class AutoExporter {
 		saveSettings = new SaveAndExportSettings(prefs.node("saveAndExportSettings"));
 		miscSettings = new MiscSettings(prefs.node("miscSettings"), true);
 
-        skippedProjects = new ArrayList<>();
+        StringCleaner.cleanABC = saveSettings.convertABCStringsToBasicAscii;
+
+        skippedProjects.clear();
         //highCandidates = new ArrayList<>();
 		setProgress(0);
 		cancel = false;
 		if (!frame.getRecursiveCheckBoxSelected()) {
 			File[] projects = sourceFolderAuto.listFiles(new MsxFileFilter());
-			
-			appendToField("<br>Found " + projects.length + " project files.<br>");
-			
-			progressFactor = 1000.0d / projects.length;
-			exportCount = 0;
-			
-			for (File project : projects) {
-				if (cancel) {
-					break;
-				}
-				try {
-					exportProject(project);
-				} catch (ParseException e) {
-                    log.warning(project.getName()+": "+e.getMessage());
-					appendToField("<br><font color='red'>"+e.toString()+"</font>");
-                    skippedProjects.add(project);
-				}
-				exportCount++;
-				setProgress((int) (exportCount * progressFactor));
-			}
-		} else {		
-			totalExportCount = 0;
-			
-			Files.walkFileTree(sourceFolderAuto.toPath(), new CountFiles());
-			appendToField("<br>Found " + totalExportCount + " project files.<br>");
-			
-			progressFactor = 1000.0d / totalExportCount;
-			exportCount = 0;
-			
-			Files.walkFileTree(sourceFolderAuto.toPath(), new ProcessFiles());
+            if (projects != null) {
+                List<Path> filesToProcess = Arrays.stream(projects)
+                        .map(File::toPath).toList();
+
+                appendToField("<br>Found " + projects.length + " project files.<br>");
+
+                progressFactor = 1000.0d / projects.length;
+                exportCount.set(0);
+
+                filesToProcess.parallelStream().forEach(file -> {
+                    if (cancel) {
+                        return;
+                    }
+
+                    try {
+                        // thread-safe
+                        exportProject(file.toFile());
+                    } catch (Exception e) {
+                        log.warning(file.getFileName() + ": " + e.getMessage());
+
+                        skippedProjects.add(file.toFile());
+
+                        appendToField("<br><font color='red'>" + e.toString() + "</font>");
+                    }
+
+                    setProgress((int) (exportCount.incrementAndGet() * progressFactor));
+                });
+            }
+        } else {
+            List<Path> filesToProcess;
+            try (var paths = Files.walk(sourceFolderAuto.toPath())) {
+                filesToProcess = paths
+                        // Use your filter logic from the FileVisitors
+                        .filter(path -> !path.getFileName().toString().startsWith("."))
+                        .filter(Files::isRegularFile)
+                        .filter(path -> new MsxFileFilter().accept(path.toFile()))
+                        .toList();
+            }
+
+            totalExportCount = filesToProcess.size();
+            appendToField("<br>Found " + totalExportCount + " project files.<br>");
+
+            progressFactor = 1000.0d / totalExportCount;
+            exportCount.set(0);
+
+            filesToProcess.parallelStream().forEach(file -> {
+                if (cancel) {
+                    return;
+                }
+
+                try {
+                    // exportProject is thread-safe
+                    exportProject(file.toFile());
+                } catch (Exception e) {
+                    log.warning(file.getFileName() + ": " + e.getMessage());
+                    skippedProjects.add(file.toFile());
+                    appendToField("<br><font color='red'>" + e.toString() + "</font>");
+                }
+
+                setProgress((int) (exportCount.incrementAndGet() * progressFactor));
+            });
 		}
         if (!skippedProjects.isEmpty()) {
             appendToField("<br><br>Skipped/failed " + skippedProjects.size() + " project files:");
@@ -313,13 +340,14 @@ public class AutoExporter {
 			frame.setRecursiveCheckBoxEnabled(true);
 		});
 	}
-	
+
+    @Deprecated
 	public class CountFiles extends SimpleFileVisitor<Path> {
 		
 		MsxFileFilter f = new MsxFileFilter();
 		
 	    @Override
-	    public FileVisitResult visitFile(Path file, BasicFileAttributes attr) {
+	    public @NotNull FileVisitResult visitFile(Path file, BasicFileAttributes attr) {
 	        if (attr.isRegularFile() && f.accept(file.toFile())) {
 	        	totalExportCount++;
 	        }
@@ -327,7 +355,7 @@ public class AutoExporter {
 	    }
 	
 	    @Override
-	    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+	    public @NotNull FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
 	        throws IOException
 	    {
 	        Objects.requireNonNull(dir);
@@ -340,8 +368,8 @@ public class AutoExporter {
 	    
 	    // Print each directory visited.
 	    @Override
-	    public FileVisitResult postVisitDirectory(Path dir,
-	                                          IOException exc) {
+	    public @NotNull FileVisitResult postVisitDirectory(Path dir,
+                                                           IOException exc) {
 	        //System.out.format("Finished directory: %s%n", dir);
 	        return CONTINUE;
 	    }
@@ -352,19 +380,20 @@ public class AutoExporter {
 	    // and an error occurs, an IOException 
 	    // is thrown.
 	    @Override
-	    public FileVisitResult visitFileFailed(Path file,
-	                                       IOException exc) {
+	    public @NotNull FileVisitResult visitFileFailed(Path file,
+                                                        IOException exc) {
 			log.warning(exc.getMessage());
 	        return CONTINUE;
 	    }
 	}
-	
+
+    @Deprecated
 	public class ProcessFiles extends SimpleFileVisitor<Path> {
 
 		MsxFileFilter f = new MsxFileFilter();
 		
 	    @Override
-	    public FileVisitResult visitFile(Path file, BasicFileAttributes attr) {
+	    public @NotNull FileVisitResult visitFile(Path file, BasicFileAttributes attr) {
 	    	if (cancel) return TERMINATE;
 	    	if (f.accept(file.toFile())) {
 		        if (attr.isSymbolicLink()) {
@@ -377,8 +406,7 @@ public class AutoExporter {
 						appendToField("<br><font color='red'>"+e.toString()+"</font>");
                         skippedProjects.add(file.toFile());
 					}
-					exportCount++;
-					setProgress((int) (exportCount * progressFactor));
+					setProgress((int) (exportCount.incrementAndGet() * progressFactor));
 		        } else {
 		            System.out.format("Ignoring: %s ", file);
 		        }
@@ -387,7 +415,7 @@ public class AutoExporter {
 	    }
 	    
 	    @Override
-	    public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+	    public @NotNull FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
 	        throws IOException
 	    {
 	        Objects.requireNonNull(dir);
@@ -400,8 +428,8 @@ public class AutoExporter {
 	
 	    // Print each directory visited.
 	    @Override
-	    public FileVisitResult postVisitDirectory(Path dir,
-	                                          IOException exc) {
+	    public @NotNull FileVisitResult postVisitDirectory(Path dir,
+                                                           IOException exc) {
 	        System.out.format("Finished directory: %s%n", dir);
 	        return CONTINUE;
 	    }
@@ -412,8 +440,8 @@ public class AutoExporter {
 	    // and an error occurs, an IOException 
 	    // is thrown.
 	    @Override
-	    public FileVisitResult visitFileFailed(Path file,
-	                                       IOException exc) {
+	    public @NotNull FileVisitResult visitFileFailed(Path file,
+                                                        IOException exc) {
 	        log.warning(exc.getMessage());
 	        return CONTINUE;
 	    }
@@ -458,13 +486,28 @@ public class AutoExporter {
 		}
 	}
 
-	private void exportProject(File project) throws Exception {
-		appendToField("<br>Exporting " + project.getName());
+    /**
+     * Class to hold thread-specific fields.
+     */
+    private class ProjectInfo {
+        boolean projectModified;
+        File newNestedMidi;
+        File oldMidi;
+        File nestedProject;
+        String appendText;
+    }
 
-		projectModified = false;
-		newNestedMidi = null;
-		oldMidi = null;
-		nestedProject = project;
+	private void exportProject(File project) throws Exception {
+        ProjectInfo pInfo = new ProjectInfo();
+        pInfo.projectModified = false;
+        pInfo.newNestedMidi = null;
+        pInfo.oldMidi = null;
+        pInfo.nestedProject = project;
+        pInfo.appendText = "<br>Exporting " + project.getName();
+
+        FileResolverAsync openFileResolver = new FileResolverAsync();
+        openFileResolver.pInfo = pInfo;
+
 		AbcSong abcSong = new AbcSong(project, partAutoNumberer, partNameTemplate, exportFilenameTemplate,
 				instrNameSettings, openFileResolver, miscSettings, frame.getSaveMSXSelected(), saveSettings, true);
     /*
@@ -500,14 +543,13 @@ public class AutoExporter {
 		abcSong.setSkipSilenceAtStart(saveSettings.skipSilenceAtStart);
 		abcSong.setDeleteMinimalNotes(saveSettings.deleteMinimalNotes);
 		abcSong.setBadger(miscSettings.showBadger);
-		StringCleaner.cleanABC = saveSettings.convertABCStringsToBasicAscii;
 
 		File exportFile = abcSong.getExportFile();
 		String fileName = "mySong"+Util.ABC_FILE_EXTENSION;
 
 		// Always regenerate setting from pattern export is highest precedent
 		if (exportFilenameTemplate.shouldRegenerateFilename()) {
-			fileName = exportFilenameTemplate.formatName();
+			fileName = exportFilenameTemplate.formatName(abcSong);
 		} else if (exportFile != null) // else use abc filename if exists already
 		{
 			fileName = exportFile.getName();
@@ -516,7 +558,7 @@ public class AutoExporter {
 			fileName = abcSong.getProjectFile().getName();
 		} else if (exportFilenameTemplate.isEnabled()) // else use pattern if usage is enabled
 		{
-			fileName = exportFilenameTemplate.formatName();
+			fileName = exportFilenameTemplate.formatName(abcSong);
 		} else if (abcSong.getSourceFile() != null) // else default to source file (midi/abc)
 		{
 			fileName = abcSong.getSourceFilename();
@@ -533,40 +575,43 @@ public class AutoExporter {
 		File finalFolder = getTreeFolder(sourceFolderAuto, destFolderAuto, project);
 
 		exportFile = new File(finalFolder, fileName);
-		String finalName = exportFile.getName();
-		dot = finalName.lastIndexOf('.');
-		if (dot > 0)
-			finalName = finalName.substring(0, dot);
-		int n = 1;
-		while (exportFile.exists()) {
-			n++;
-			exportFile = new File(exportFile.getParentFile(), finalName + " (" + n + ")"+Util.ABC_FILE_EXTENSION);
-		}
-		finalFolder.mkdirs();// for recursive exporting we need the folders to exist.
+
+        synchronized (fileNamingLock) {
+            String finalName = exportFile.getName();
+            dot = finalName.lastIndexOf('.');
+            if (dot > 0)
+                finalName = finalName.substring(0, dot);
+            int n = 1;
+            while (exportFile.exists()) {
+                n++;
+                exportFile = new File(exportFile.getParentFile(), finalName + " (" + n + ")" + Util.ABC_FILE_EXTENSION);
+            }
+            finalFolder.mkdirs();// for recursive exporting we need the folders to exist.
+        }
 
 		abcSong.exportAbc(exportFile, AbcTools.APP_NAME);
 		int maxPoly = abcSong.getMaxPartPoly();
-		if (maxPoly > 6) appendToField("<br><font color='orange'>&nbsp;&nbsp;part polyphony max was "+maxPoly+".</font>");
+		if (maxPoly > 6) pInfo.appendText += "<br><font color='orange'>&nbsp;&nbsp;part polyphony max was "+maxPoly+".</font>";
 		if ((abcSong.getExportFile() == null || exportFile.compareTo(abcSong.getExportFile()) != 0) && frame.getSaveMSXabcSelected()) {
-			projectModified = true;
+			pInfo.projectModified = true;
 		}
 		abcSong.setExportFile(exportFile);
 		
-		if (projectModified && !frame.getSaveMSXtimingSelected()) {
+		if (pInfo.projectModified && !frame.getSaveMSXtimingSelected()) {
 			// Don't save forced timing changes to project file
 			abcSong.setMixTiming(oldMix);
 			abcSong.setOrganic(oldOrganic);
 			abcSong.setOrganic2(oldOrganic2);
 		}
 		
-		if (timingModified || ( projectModified && (frame.getSaveMSXSelected() || frame.getSaveMSXabcSelected()) )) {
+		if (timingModified || ( pInfo.projectModified && (frame.getSaveMSXSelected() || frame.getSaveMSXabcSelected()) )) {
 			try {
 				XmlUtil.saveDocument(abcSong.saveToXml(), abcSong.getProjectFile());
-				appendToField("<br>&nbsp;&nbsp;msx saved.");
+                pInfo.appendText += "<br>&nbsp;&nbsp;msx saved.";
 			} catch (FileNotFoundException e) {
-				appendToField("<br><font color='red'>&nbsp;&nbsp;msx saving failed.</font>");
+                pInfo.appendText += "<br><font color='red'>&nbsp;&nbsp;msx saving failed.</font>";
 			} catch (IOException | TransformerException e) {
-				appendToField("<br><font color='red'>&nbsp;&nbsp;msx saving failed.</font>");
+                pInfo.appendText += "<br><font color='red'>&nbsp;&nbsp;msx saving failed.</font>";
 			}				
 		}
 		
@@ -591,9 +636,10 @@ public class AutoExporter {
 				JOptionPane.showMessageDialog(frame, e.getMessage(), exportFile.getName()+": Error reading ABC", JOptionPane.ERROR_MESSAGE);
 			}
 		}
-		
-		
-		appendToField("<br>&nbsp;&nbsp;as " + exportFile.getName());
+
+
+        pInfo.appendText += "<br>&nbsp;&nbsp;as " + exportFile.getName();
+        appendToField(pInfo.appendText);
 	}
 
 	/**
@@ -756,51 +802,52 @@ public class AutoExporter {
 	}
 
 	/** Used when the MIDI file in a Maestro song project can't be loaded. */
-	private final FileResolver openFileResolver = new FileResolver() {
+	private class FileResolverAsync implements FileResolver {
 		private File newMidi;
+        public ProjectInfo pInfo = null;
 
 		@Override
 		public File locateFile(File original, String message) {
 			//System.out.println("\nOriginal="+original.getPath());
-			if (oldMidi == null) oldMidi = original;// To ensure message on screen shows midi from project file.
+			if (pInfo.oldMidi == null) pInfo.oldMidi = original;// To ensure message on screen shows midi from project file.
 			newMidi = new File(midiFolderAuto, original.getName());
-			if (newNestedMidi == null && frame.getRecursiveCheckBoxSelected()) {
+			if (pInfo.newNestedMidi == null && frame.getRecursiveCheckBoxSelected()) {
 				try {
-					File finalFolder = getTreeFolderMidi(nestedProject);
+					File finalFolder = getTreeFolderMidi(pInfo.nestedProject);
 					if (finalFolder != null) {
-						newNestedMidi = new File(finalFolder, original.getName());
+                        pInfo.newNestedMidi = new File(finalFolder, original.getName());
 						//System.out.println("New="+newNestedMidi.getPath());
 					} else {
 						//System.out.println("finalFolder == null");
 					}
 				} catch (IOException e) {
-					newNestedMidi = null;
+                    pInfo.newNestedMidi = null;
 					//System.out.println("IO");
 				}
 			} else {
-				if (newNestedMidi != null) {
+				if (pInfo.newNestedMidi != null) {
 					//System.out.println("New already="+String.valueOf(newNestedMidi.getPath()));
 				} else {
 					//System.out.println("NULL - New already=");
 				}
 			}
-			if (original.equals(newNestedMidi)) {
+			if (original.equals(pInfo.newNestedMidi)) {
 				if (neverLocateMidi) return null;
 				message += "\n\nWould you like to try to locate the file?";
-				return resolveHelper(oldMidi, message);
+				return resolveHelper(pInfo.oldMidi, message);
 			} else if (original.equals(newMidi)) {
-				if (newNestedMidi != null) {
+				if (pInfo.newNestedMidi != null) {
 					//System.out.println("return newNestedMidi");
-					projectModified = true;
-					return newNestedMidi;
+                    pInfo.projectModified = true;
+					return pInfo.newNestedMidi;
 				}
 				//System.out.println("newNestedMidi == null");
 				if (neverLocateMidi) return null;
 				message += "\n\nWould you like to try to locate the file?";
-				return resolveHelper(oldMidi, message);
+				return resolveHelper(pInfo.oldMidi, message);
 			}
 			//System.out.println("return newMidi="+newMidi.getPath());
-			projectModified = true;
+            pInfo.projectModified = true;
 			return newMidi;
 		}
 
@@ -843,11 +890,11 @@ public class AutoExporter {
 						});
 					} catch (Exception e) {
 						log.severe(e.toString());
-						appendToField("<br><font color='red'>"+e.toString()+"</font>");
+                        pInfo.appendText += "<br><font color='red'>"+e.toString()+"</font>";
 					}
 					if (result == JFileChooser.APPROVE_OPTION) {
 						alternateFile = jfc.getSelectedFile();
-						projectModified = true;
+                        pInfo.projectModified = true;
 					}
 				} else if (result == JOptionPane.CANCEL_OPTION || result == JOptionPane.CLOSED_OPTION) {
 					cancel = true;
@@ -856,11 +903,11 @@ public class AutoExporter {
 				return alternateFile;
 			} catch (InvocationTargetException | InterruptedException e) {
 				log.severe(e.toString());
-				appendToField("<br><font color='red'>"+e.toString()+"</font>");
+                pInfo.appendText += "<br><font color='red'>"+e.toString()+"</font>";
 			}
 			return null;
 		}
-	};
+	}
 	
 	void flushPrefs () {
 		autoPrefs.put(DIR_AUTO_SOURCE, sourceFolderAuto.getAbsolutePath());
