@@ -28,11 +28,10 @@ import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.midi.TimeSignature;
 import com.digero.common.util.Pair;
 import com.digero.common.util.ParseException;
+import com.digero.common.util.Triple;
 import com.digero.common.util.Util;
-import com.digero.maestro.abc.AbcConversionException;
-import com.digero.maestro.abc.AbcExporter;
+import com.digero.maestro.abc.*;
 import com.digero.maestro.abc.AbcExporter.ExportTrackInfo;
-import com.digero.maestro.abc.AbcMetadataSource;
 import com.digero.maestro.view.MiscSettings;
 
 /**
@@ -61,6 +60,9 @@ public class SequenceInfo implements MidiConstants {
 	private final TreeMap<Integer, Integer> portMap = new TreeMap<>();
 	public static List<ExportTrackInfo> lastTrackInfos = null;
 	public long realDuraTicks;
+    public final PolyphonyHistogram histogram;
+
+    private static final Object PREVIEW_EXPORT_LOCK = new Object();
 
 	/**
 	 * Create instance of this class while creating MIDI sequence from abc file.
@@ -116,14 +118,31 @@ public class SequenceInfo implements MidiConstants {
 	 */
 	public static SequenceInfo fromAbcParts(AbcExporter abcExporter, boolean useLotroInstruments, boolean oldVelocities)
 			throws InvalidMidiDataException, AbcConversionException {
-		return new SequenceInfo(abcExporter, useLotroInstruments);
+        synchronized (PREVIEW_EXPORT_LOCK) {
+            // lock so ProjectFrame don't go in here before previous is finished
+            return new SequenceInfo(abcExporter, useLotroInstruments);
+        }
 	}
+
+    /**
+     * Will export a new preview using a deep copy of AbcSong.
+     * QTM and SequenceInfo are not copied, so the source must not change while in progress.
+     */
+    public static SequenceInfo fromAbcParts(AbcSong abcSong, boolean useLotroInstruments, boolean oldVelocities)
+            throws InvalidMidiDataException, AbcConversionException {
+        synchronized (PREVIEW_EXPORT_LOCK) {
+            AbcExporter exportCopy = abcSong.getAbcExporter();
+            // lock so ProjectFrame don't go in here before previous is finished
+            return new SequenceInfo(exportCopy, useLotroInstruments);
+        }
+    }
 
 	private SequenceInfo(String fileName, Sequence sequence, int type, MiscSettings miscSettings, boolean oldVelocities, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume, boolean ignoreMidiText)
 			throws InvalidMidiDataException, ParseException {
 		this.fileName = fileName;
 		this.sequence = sequence;
 		this.midiType = type;
+        this.histogram = null;
 		log.info("Importing (Type "+type+"): "+fileName);
 
 		determineStandard(sequence, fileName);
@@ -194,15 +213,17 @@ public class SequenceInfo implements MidiConstants {
 		this.composer = metadata.getComposer();
 		this.title = metadata.getSongTitle();
 
-		Pair<List<ExportTrackInfo>, Sequence> result = abcExporter.exportToPreview(useLotroInstruments);
+		Triple<List<ExportTrackInfo>, Sequence, PolyphonyHistogram> result = abcExporter.exportToPreview(useLotroInstruments);
 
 		sequence = result.second;
 		lastTrackInfos = result.first;
+        histogram = result.third;
 		standard = MidiStandard.PREVIEW;
 		sequenceCache = new SequenceDataCache(sequence, standard, null, null, null, null, portMap, true, false, true);
 		primaryTempoMPQ = sequenceCache.getPrimaryTempoMPQ();
 
 		this.trackInfoList = null;
+
 	}
 
 	public String getFileName() {

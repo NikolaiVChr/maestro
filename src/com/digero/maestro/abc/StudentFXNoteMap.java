@@ -18,6 +18,19 @@ public class StudentFXNoteMap extends DrumNoteMap {
 	protected static final byte DISABLED_NOTE_ID = (byte) LotroStudentFXInfo.DISABLED.note.id;
 	private static final String MAP_PREFS_KEY = "StudentFXNoteMap.map";
 
+    public StudentFXNoteMap() {
+        super();
+    }
+
+    protected StudentFXNoteMap(StudentFXNoteMap orig) {
+        super(orig);
+    }
+
+    @Override
+    public StudentFXNoteMap copy() {
+        return new StudentFXNoteMap(this);
+    }
+
 	public static String getXmlName() {
 		return "fxMap";
 	}

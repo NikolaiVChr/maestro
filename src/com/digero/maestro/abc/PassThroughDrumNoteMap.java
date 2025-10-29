@@ -8,6 +8,20 @@ import com.digero.common.midi.MidiConstants;
  * A drummap used for when loading abc as source. Drum sounds will per default map to themselves.
  */
 public class PassThroughDrumNoteMap extends DrumNoteMap {
+
+    public PassThroughDrumNoteMap() {
+        super();
+    }
+
+    protected PassThroughDrumNoteMap(PassThroughDrumNoteMap orig) {
+        super(orig);
+    }
+
+    @Override
+    public PassThroughDrumNoteMap copy() {
+        return new PassThroughDrumNoteMap(this);
+    }
+
 	@Override
 	protected byte getDefaultMapping(byte noteId) {
 		if (LotroInstrument.BASIC_DRUM.isPlayable(noteId))

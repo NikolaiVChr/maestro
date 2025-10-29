@@ -203,9 +203,11 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 			prevTransmitter.setReceiver(receiver);
 
 			try {
-				ShortMessage msg = new ShortMessage();
-				msg.setMessage(ShortMessage.SYSTEM_RESET);
-				receiver.send(msg, -1);
+                if (seqSave != null) {
+                    ShortMessage msg = new ShortMessage();
+                    msg.setMessage(ShortMessage.SYSTEM_RESET);
+                    receiver.send(msg, -1);
+                }
 			} catch (InvalidMidiDataException e) {
 				e.printStackTrace();
 			}
@@ -217,14 +219,16 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 					sequencer.open();
 
 				LotroShortMessage msg = new LotroShortMessage();
-				for (int i = 0; i < CHANNEL_COUNT_ABC; i++) {
-					msg.setMessage(ShortMessage.PROGRAM_CHANGE, i, 0, 0);
-					receiver.send(msg, -1);
-					msg.setMessage(ShortMessage.CONTROL_CHANGE, i, RESET_ALL_CONTROLLERS, 0);
-					receiver.send(msg, -1);
-				}
-				msg.setMessage(ShortMessage.SYSTEM_RESET);
-				receiver.send(msg, -1);
+                if (sequencer.getSequence() != null) {
+                    for (int i = 0; i < CHANNEL_COUNT_ABC; i++) {
+                        msg.setMessage(ShortMessage.PROGRAM_CHANGE, i, 0, 0);
+                        receiver.send(msg, -1);
+                        msg.setMessage(ShortMessage.CONTROL_CHANGE, i, RESET_ALL_CONTROLLERS, 0);
+                        receiver.send(msg, -1);
+                    }
+                    msg.setMessage(ShortMessage.SYSTEM_RESET);
+                    receiver.send(msg, -1);
+                }
 			} catch (MidiUnavailableException e) {
 				// Ignore
 			} catch (InvalidMidiDataException e) {
@@ -244,6 +248,9 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 	}
 
 	public void setTickPosition(long tick) {
+        if (sequencer.getSequence() == null) {
+            return;
+        }
 		if (tick != getTickPosition()) {
 			sequencer.setTickPosition(tick);
 			lastUpdateTick = sequencer.getTickPosition();
@@ -305,6 +312,9 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
      * Set the playback position in microseconds.
      */
 	public void setPosition(long position) {
+        if (sequencer.getSequence() == null) {
+            return;
+        }
 		if (position == 0L) {
 			// Sun's RealtimeSequencer isn't entirely reliable when calling
 			// setMicrosecondPosition(0). Instead call setTickPosition(0),
@@ -564,6 +574,10 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 	}
 
 	public void setRunning(boolean isRunning) {
+        if (sequencer.getSequence() == null) {
+            lastRunning = false;
+            return;
+        }
 		if (isRunning != this.isRunning()) {
 			if (isRunning) {
 				sequencer.start();

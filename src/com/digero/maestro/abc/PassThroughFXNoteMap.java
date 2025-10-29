@@ -6,6 +6,20 @@ import com.digero.common.abc.LotroInstrument;
 import com.digero.common.midi.MidiConstants;
 
 public class PassThroughFXNoteMap extends StudentFXNoteMap {
+
+    public PassThroughFXNoteMap() {
+        super();
+    }
+
+    protected PassThroughFXNoteMap(PassThroughFXNoteMap orig) {
+        super(orig);
+    }
+
+    @Override
+    public PassThroughFXNoteMap copy() {
+        return new PassThroughFXNoteMap(this);
+    }
+
 	@Override
 	protected byte getDefaultMapping(byte noteId) {
 		if (noteId >= LotroInstrument.STUDENT_FIDDLE.lowestPlayable.id && noteId <= LotroInstrument.STUDENT_FX_HIGHEST.id)

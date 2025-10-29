@@ -14,6 +14,18 @@ public class JauntyHandKnellsFXNoteMap extends DrumNoteMap {
 	protected static final byte DISABLED_NOTE_ID = (byte) LotroChromaticFXInfo.DISABLED.note.id;
 	private static final String MAP_PREFS_KEY = "JauntyHandKnellsFXNoteMap.map";
 
+    public JauntyHandKnellsFXNoteMap() {
+        super();
+    }
+
+    protected JauntyHandKnellsFXNoteMap(JauntyHandKnellsFXNoteMap orig) {
+        super(orig);
+    }
+
+    @Override
+    public JauntyHandKnellsFXNoteMap copy() {
+        return new JauntyHandKnellsFXNoteMap(this);
+    }
 
 	public static String getXmlName() {
 		return "jauntyHandKnellsFxMap";

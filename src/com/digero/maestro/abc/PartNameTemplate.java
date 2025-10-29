@@ -1,13 +1,7 @@
 package com.digero.maestro.abc;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.ListIterator;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 import java.util.regex.Matcher;
@@ -18,6 +12,7 @@ import com.digero.common.abc.LotroInstrument;
 import com.digero.common.util.Pair;
 import com.digero.common.util.Util;
 import com.digero.maestro.view.SettingsDialog.MockMetadataSource;
+import org.jetbrains.annotations.NotNull;
 
 public class PartNameTemplate {
 
@@ -115,108 +110,126 @@ public class PartNameTemplate {
 		this.prefsNode = prefsNode;
 		this.settings = new Settings(prefsNode);
 
-		Comparator<String> caseInsensitiveStringComparator = String::compareToIgnoreCase;
+        variables = getStringVariableSortedMap();
+    }
 
-		variables = new TreeMap<>(caseInsensitiveStringComparator);
+    /**
+     * This copy does not have saveSettings capabilities.
+     * Consider it a read-only view.
+     */
+    public PartNameTemplate(PartNameTemplate orig, AbcMetadataSource metadataCopy) {
+        this.settings = orig.getSettingsCopy();
+        this.prefsNode = null;
+        this.metadata = metadataCopy;
+        this.currentAbcPart = null;
+        variables = getStringVariableSortedMap();
+    }
 
-		variables.put("$SongTitle", new Variable("The title of the song, as entered in the \"T:\" field") {
-			@Override
-			public String getValue() {
-				return getMetadataSource().getSongTitle().trim();
-			}
-		});
-		variables.put("$SongLength", new Variable("The playing time of the song in mm:ss format") {
-			@Override
-			public String getValue() {
-				return Util.formatDuration(getMetadataSource().getSongLengthMicros());
-			}
-		});
-		variables.put("$SongComposer", new Variable("The song composer/artist, as entered in the \"C:\" field") {
-			@Override
-			public String getValue() {
-				return getMetadataSource().getComposer().trim();
-			}
-		});
-		variables.put("$SongTranscriber", new Variable("Your name, as entered in the \"Z:\" field") {
-			@Override
-			public String getValue() {
-				return getMetadataSource().getTranscriber().trim();
-			}
-		});
-		variables.put("$PartName", new Variable("The part name for the individual ABC part") {
-			@Override
-			public String getValue() {
-				if (currentAbcPart == null)
-					return "";
+    private @NotNull SortedMap<String, Variable> getStringVariableSortedMap() {
+        final SortedMap<String, Variable> variables;
+        Comparator<String> caseInsensitiveStringComparator = String::compareToIgnoreCase;
 
-				return currentAbcPart.getTitle().trim();
-			}
-		});
-		variables.put("$PartNumber", new Variable("The part number for the individual ABC part") {
-			@Override
-			public String getValue() {
-				if (currentAbcPart == null)
-					return "0";
+        variables = new TreeMap<>(caseInsensitiveStringComparator);
 
-				return String.valueOf(currentAbcPart.getPartNumber());
-			}
-		});
-		variables.put("$PartCount", new Variable("Number of parts in the ABC file") {
-			@Override
-			public String getValue() {
-				return String.format("%d",
-						getMetadataSource().getActivePartCount());
-			}
-		});
-		variables.put("$PartInstrument", new Variable("The instrument for the individual ABC part") {
-			@Override
-			public String getValue() {
-				if (currentAbcPart == null)
-					return LotroInstrument.DEFAULT_INSTRUMENT.toString();
+        variables.put("$SongTitle", new Variable("The title of the song, as entered in the \"T:\" field") {
+            @Override
+            public String getValue() {
+                return getMetadataSource().getSongTitle().trim();
+            }
+        });
+        variables.put("$SongLength", new Variable("The playing time of the song in mm:ss format") {
+            @Override
+            public String getValue() {
+                return Util.formatDuration(getMetadataSource().getSongLengthMicros());
+            }
+        });
+        variables.put("$SongComposer", new Variable("The song composer/artist, as entered in the \"C:\" field") {
+            @Override
+            public String getValue() {
+                return getMetadataSource().getComposer().trim();
+            }
+        });
+        variables.put("$SongTranscriber", new Variable("Your name, as entered in the \"Z:\" field") {
+            @Override
+            public String getValue() {
+                return getMetadataSource().getTranscriber().trim();
+            }
+        });
+        variables.put("$PartName", new Variable("The part name for the individual ABC part") {
+            @Override
+            public String getValue() {
+                if (currentAbcPart == null)
+                    return "";
 
-				return currentAbcPart.getInstrument().toString();
-			}
-		});
-		variables.put("$FilePath",
-				new Variable("The path to the ABC file including the ABC file name, "
-						+ "if it is in a subdirectory of the LOTRO/Music directory.\n"
-						+ "If the file is saved directly in the LOTRO/Music directory, "
-						+ "this will be the same as <b>$FileName</b>.") {
-					@Override
-					public String getValue() {
-						if (getMetadataSource().getExportFile() == null)
-							return "";
+                return currentAbcPart.getTitle().trim();
+            }
+        });
+        variables.put("$PartNumber", new Variable("The part number for the individual ABC part") {
+            @Override
+            public String getValue() {
+                if (currentAbcPart == null)
+                    return "0";
 
-						File root = Util.getLotroMusicPath(true);
-						String saveFileName = Util.fileNameWithoutExtension(getMetadataSource().getExportFile());
+                return String.valueOf(currentAbcPart.getPartNumber());
+            }
+        });
+        variables.put("$PartCount", new Variable("Number of parts in the ABC file") {
+            @Override
+            public String getValue() {
+                return String.format("%d",
+                        getMetadataSource().getActivePartCount());
+            }
+        });
+        variables.put("$PartInstrument", new Variable("The instrument for the individual ABC part") {
+            @Override
+            public String getValue() {
+                if (currentAbcPart == null)
+                    return LotroInstrument.DEFAULT_INSTRUMENT.toString();
 
-						StringBuilder path = new StringBuilder(saveFileName);
-						boolean foundRoot = false;
-						for (File file = getMetadataSource().getExportFile().getParentFile(); file != null; file = file
-								.getParentFile()) {
-							if (root.equals(file)) {
-								foundRoot = true;
-								break;
-							}
-							path.insert(0, file.getName() + "/");
-						}
+                return currentAbcPart.getInstrument().toString();
+            }
+        });
+        variables.put("$FilePath",
+                new Variable("The path to the ABC file including the ABC file name, "
+                        + "if it is in a subdirectory of the LOTRO/Music directory.\n"
+                        + "If the file is saved directly in the LOTRO/Music directory, "
+                        + "this will be the same as <b>$FileName</b>.") {
+                    @Override
+                    public String getValue() {
+                        if (getMetadataSource().getExportFile() == null)
+                            return "";
 
-						if (foundRoot)
-							return path.toString();
+                        File root = Util.getLotroMusicPath(true);
+                        String saveFileName = Util.fileNameWithoutExtension(getMetadataSource().getExportFile());
 
-						return saveFileName;
-					}
-				});
-		variables.put("$FileName", new Variable("The name of the ABC file, without the .abc extension") {
-			@Override
-			public String getValue() {
-				if (getMetadataSource().getExportFile() == null)
-					return "";
+                        StringBuilder path = new StringBuilder(saveFileName);
+                        boolean foundRoot = false;
+                        for (File file = getMetadataSource().getExportFile().getParentFile(); file != null; file = file
+                                .getParentFile()) {
+                            if (root.equals(file)) {
+                                foundRoot = true;
+                                break;
+                            }
+                            path.insert(0, file.getName() + "/");
+                        }
 
-				return Util.fileNameWithoutExtension(getMetadataSource().getExportFile());
-			}
-		});
-	}
+                        if (foundRoot)
+                            return path.toString();
+
+                        return saveFileName;
+                    }
+                });
+        variables.put("$FileName", new Variable("The name of the ABC file, without the .abc extension") {
+            @Override
+            public String getValue() {
+                if (getMetadataSource().getExportFile() == null)
+                    return "";
+
+                return Util.fileNameWithoutExtension(getMetadataSource().getExportFile());
+            }
+        });
+        return variables;
+    }
 
 	public Settings getSettingsCopy() {
 		return new Settings(settings);

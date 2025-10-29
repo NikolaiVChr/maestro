@@ -18,23 +18,24 @@ import com.digero.maestro.midi.Chord;
 
 public class PolyphonyHistogram   {
 
-	private static final Map<AbcPart, TreeMap<Long, Pair<Long,Integer>>> histogramData = new HashMap<>();
-	private static TreeMap<Long, Pair<Long,Integer>> sum = new TreeMap<>();// <micros,numberOfNotes>
-	private static boolean dirty = false;
-	private static int max = 0;
+	private final Map<Long, TreeMap<Long, Pair<Long,Integer>>> histogramData = new HashMap<>();
+	private TreeMap<Long, Pair<Long,Integer>> sum = new TreeMap<>();// <micros,numberOfNotes>
+	private boolean dirty = false;
+	private int max = 0;
+    private int maxAll = 0;
 	public static boolean enabled = true;// set to true to enable this system, set to false to save cpu power.
-	private static final Listener<SequencerEvent> listener = new MyListener();
-	private static LotroSequencerWrapper abcSeq = null;
+	private final Listener<SequencerEvent> listener = new MyListener();
+	private LotroSequencerWrapper abcSeq = null;
 	
 	public static volatile AtomicInteger successes = new AtomicInteger(0);//debug for abctools (organic1=118 organic2=44) approx factor 3
 
-	public static void setSequencer(LotroSequencerWrapper abcSequencer) {
+	public void setSequencer(LotroSequencerWrapper abcSequencer) {
 		if (abcSeq != null) abcSeq.removeChangeListener(listener);
 		if (abcSequencer != null) abcSequencer.addChangeListener(listener);
 		abcSeq = abcSequencer;
 	}
-	
-	static class MyListener implements Listener<SequencerEvent> {
+
+    class MyListener implements Listener<SequencerEvent> {
 		@Override
 		public void onEvent(SequencerEvent e) {
 			switch (e.getProperty()) {
@@ -59,7 +60,7 @@ public class PolyphonyHistogram   {
 	 * Called from AbcExporter.java
 	 *
      */
-	public static void count(AbcPart part, List<Chord> chords, boolean organic, QuantizedTimingInfo qtm) throws IOException {
+	public void count(AbcPart part, List<Chord> chords, boolean organic, QuantizedTimingInfo qtm) throws IOException {
 		if (!enabled) return;
 		
 		TreeMap<Long, Pair<Long,Integer>> partMap = new TreeMap<>();
@@ -132,11 +133,11 @@ public class PolyphonyHistogram   {
 				assert endMicros - startMicros > 0L;
 			}
 		}
-		histogramData.put(part, partMap);
+		histogramData.put(part.uniqueID, partMap);
 		dirty = true;
 	}
 	
-	public static void clearAll() {
+	public void clearAll() {
 		histogramData.clear();
 	}
 	
@@ -149,7 +150,7 @@ public class PolyphonyHistogram   {
 	 * This method does NOT take decay in consideration.
      *
 	 */
-	public static int maxPolyInPart(AbcPart part, List<Chord> chords, boolean organic, QuantizedTimingInfo qtm) throws IOException {
+	public int maxPolyInPart(AbcPart part, List<Chord> chords, boolean organic, QuantizedTimingInfo qtm) throws IOException {
 	
 		TreeMap<Long, Pair<Long,Integer>> partMap = new TreeMap<>();
 		List<AbcNoteEvent> done = new ArrayList<>();
@@ -271,17 +272,22 @@ public class PolyphonyHistogram   {
 	 * Expensive method, so only run when needed.
 	 *
      */
-	public static void sumUp(AbcSong song) {
+	public void sumUp(AbcSong song) {
 		sum = new TreeMap<>();
 		max = 0;
-		Set<AbcPart> partSet = new HashSet<>(histogramData.keySet());
+        maxAll = 0;
+		Set<Long> partSet = new HashSet<>(histogramData.keySet());
 		List<TreeMap<Long, Pair<Long,Integer>>> treeList = new ArrayList<>();
-		for (AbcPart part : partSet) {
-			if (part.discarded) {
-				histogramData.remove(part);
+        List<TreeMap<Long, Pair<Long,Integer>>> treeListMuted = new ArrayList<>();
+		for (Long uniqueID : partSet) {
+            AbcPart part = song.getPartFromID(uniqueID);
+			if (part == null || part.discarded) {
+				histogramData.remove(uniqueID);
 			} else if (part.isActive()){
-				treeList.add(histogramData.get(part));
-			}
+				treeList.add(histogramData.get(uniqueID));
+			} else {
+                treeListMuted.add(histogramData.get(uniqueID));
+            }
 		}
 		TreeMap<Long, Pair<Long,Integer>> songMap = new TreeMap<>();
 		for (TreeMap<Long, Pair<Long,Integer>> partMap : treeList) {
@@ -302,6 +308,7 @@ public class PolyphonyHistogram   {
 				songMap.put(micros, oldValue);
 			}
 		}
+
 		int polyphony = 0;
 		Set<Entry<Long, Pair<Long,Integer>>> entrySongSet = songMap.entrySet();
 		long lastTick = -1L;
@@ -318,6 +325,39 @@ public class PolyphonyHistogram   {
 			}
 		}
 		assert polyphony == 0;
+
+        // now add the muted parts
+        for (TreeMap<Long, Pair<Long,Integer>> partMap : treeListMuted) {
+            Set<Entry<Long, Pair<Long,Integer>>> entrySet = partMap.entrySet();
+            lastTick = -1L;
+            for (Entry<Long, Pair<Long,Integer>> entry : entrySet) {
+                long micros = entry.getKey();//micros
+                int noteStarts = entry.getValue().second;//number of notes
+                long tick = entry.getValue().first;
+                //assert tick >= lastTick:"HISTO OOPS 3";
+                lastTick = tick;
+
+                Pair<Long,Integer> oldValue = songMap.get(micros);
+                if (oldValue == null) {
+                    oldValue = new Pair<>(tick, 0);
+                }
+                oldValue.second += noteStarts;
+                songMap.put(micros, oldValue);
+            }
+        }
+        entrySongSet = songMap.entrySet();
+        lastTick = -1L;
+        lastMicro = -1L;
+        for (Entry<Long, Pair<Long,Integer>> entry : entrySongSet) {
+            // this assert can happen due to converting back and forth is not sure to output original tick, rounding I reckon
+            //assert entry.getValue().first >= lastTick:" CAN HAPPEN at "+Util.formatDuration(entry.getKey())+"="+entry.getValue().first+"  "+Util.formatDuration(lastMicro)+"="+lastTick;
+            lastTick = entry.getValue().first;
+            lastMicro = entry.getKey();
+            polyphony += entry.getValue().second;
+            if (polyphony > maxAll) {
+                maxAll = polyphony;
+            }
+        }
 	}
 	
 	/**
@@ -327,7 +367,7 @@ public class PolyphonyHistogram   {
 	 * @param microsecond Time of request
 	 * @return Number of notes being played at this time
 	 */
-	public static int get(long microsecond) {
+	public int get(long microsecond) {
         if (!enabled) return 0;
 		Long key = sum.floorKey(microsecond);
 		if (key == null) {
@@ -342,7 +382,7 @@ public class PolyphonyHistogram   {
 	 * 
 	 * @return Set with Number of notes being played at specific micros
 	 */
-	public static Set<Entry<Long, Pair<Long,Integer>>> getAll() {
+	public Set<Entry<Long, Pair<Long,Integer>>> getAll() {
         if (!enabled) return new HashSet<>();
 		return sum.entrySet();
 	}
@@ -352,7 +392,7 @@ public class PolyphonyHistogram   {
 	 * 
 	 * @return dirty boolean
 	 */
-	public static boolean isDirty() {
+	public boolean isDirty() {
 		return dirty;
 	}
 
@@ -361,12 +401,21 @@ public class PolyphonyHistogram   {
 	 * 
 	 * @return peak
 	 */
-	public static int max() {
+	public int max() {
         if (!enabled) return 0;
 		return max;
 	}
 
-	public static void setClean() {
+	public void setClean() {
 		dirty = false;
-	}	
+	}
+
+    /**
+     * Peak notes during song
+     * ignores any mutes/soloed parts
+     */
+    public int maxAll() {
+        if (!enabled) return 0;
+        return maxAll;
+    }
 }

@@ -205,6 +205,11 @@ public class PartAutoNumberer {
 		this.settings = new Settings(prefsNode);
 	}
 
+    public PartAutoNumberer(PartAutoNumberer orig) {
+        this.settings = orig.getSettingsCopy();
+        this.parts = null;
+    }
+
 	public void restoreDefaultSettings() {
 		settings.restoreDefaults();
 	}

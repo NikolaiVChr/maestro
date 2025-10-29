@@ -110,7 +110,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private AbcExporter abcExporter;
 	private File sourceFile; // The MIDI or ABC file that this song was loaded from
 	private File newSourceFile = null;
-	public static String errorString = "ERROR";
+	public final static String errorString = "ERROR";
 	private File exportFile; // The ABC export file
 	private File projectFile; // The XML Maestro song file
 	private boolean usingOldVelocities = false;
@@ -122,13 +122,13 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	
 	private boolean ignoreZeroChannelVolume = false;
 
-	private final ListModelWrapper<AbcPart> parts = new ListModelWrapper<>(new DefaultListModel<>());
+	private final ListModelWrapper<AbcPart> parts;
 	public boolean sorted = true;
 	public boolean ignoreMidiText = false;
 
-	private final ListenerList<AbcSongEvent> listeners = new ListenerList<>();
+	private ListenerList<AbcSongEvent> listeners = new ListenerList<>();
 	boolean mixDirty = true;
-	private Date firstExportTime = null;// UTC date and time for first time this project was exported to abc.
+	private Date firstExportTime = null;// UTC date and time for the first time this project was exported to abc.
 	public boolean storeNewSourceFile = true;
 	public boolean storeNewExportFile = true;
 	private String copyright = "";
@@ -148,7 +148,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			FileResolver fileResolver, MiscSettings miscSettings, boolean saveMSXwhenSourceChange,
 			SaveAndExportSettings saveAndExportSettings, boolean ignoreMidiText)
 			throws IOException, InvalidMidiDataException, ParseException, SAXException {
-		
+
+        parts = new ListModelWrapper<>(new DefaultListModel<>());
+
 		storeNewSourceFile = saveMSXwhenSourceChange;
 		this.partAutoNumberer = partAutoNumberer;
 		this.partAutoNumberer.setParts(Collections.unmodifiableList(parts));
@@ -1332,6 +1334,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		if (abcExporter == null) {
 			abcExporter = new AbcExporter(parts, qtm, key, this, skipSilenceAtStart, organic);
 		}
+
+        // from song:
+
 		if (abcExporter.getTimingInfo() != qtm) {
 			abcExporter.setTimingInfo(qtm);
 		}
@@ -1339,21 +1344,44 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		if (abcExporter.getKeySignature() != key)
 			abcExporter.setKeySignature(key);
 
-		if (abcExporter.isSkipSilenceAtStart() != skipSilenceAtStart)
-			abcExporter.setSkipSilenceAtStart(skipSilenceAtStart);
-
-		if (abcExporter.isDeleteMinimalNotes() != deleteMinimalNotes)
-			abcExporter.setDeleteMinimalNotes(deleteMinimalNotes);
-		
 		if (abcExporter.isOrganic() != organic)
 			abcExporter.setOrganic(organic);
 		
 		if (abcExporter.isOrganic2() != organic2)
 			abcExporter.setOrganic2(organic2);
-		
+
+        // from settings:
+
+        if (abcExporter.isSkipSilenceAtStart() != skipSilenceAtStart)
+            abcExporter.setSkipSilenceAtStart(skipSilenceAtStart);
+
+        if (abcExporter.isDeleteMinimalNotes() != deleteMinimalNotes)
+            abcExporter.setDeleteMinimalNotes(deleteMinimalNotes);
+
 		if (abcExporter.isUseRestsInChords() != saveAndExportSettings.useRestsInChords)
 			abcExporter.setUseRestsInChords(saveAndExportSettings.useRestsInChords);
-		
+
+        /*
+        Current:
+          it gets parts directly in constructor, since that pointer never changes
+          it gets mixTimings, swing, meter, main-tempo from QTM
+          it get bar info from part->seqinfo->datacache
+          transpose stuff is hidden from it, only used inside part methods
+          same for section-edits and tune-edits
+          part-edits it gets from parts
+          it gets dynamics method from part->song
+          it does not have knowledge of mix timings priorities, only QTM and abc-parts has that.
+
+        Goal:
+          No changes in parts, song or qtm should affect it once its started.
+          Done: QTM is a final copy, datacache same
+          TODO: Song, Part should be final copies too.
+                Memory should be okay.
+                CPU time to copy them worries me a bit.
+                As for auto-export ABC, that should be able to be multi-threaded so
+                that 5 or so songs can be exported at once. That's a later project.
+         */
+
 		return abcExporter;
 	}
 
@@ -1634,12 +1662,12 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	}
 
     @NotNull
-    public List<String> getExportWarnings() {
+    public List<String> getExportWarnings(PolyphonyHistogram histogram) {
         List<String> warns = new ArrayList<>();
-        if (PolyphonyHistogram.max() > 64) {
+        if (histogram != null && histogram.maxAll() > 64) {
             // There is growing concerns that 64+ polyphony can make audience lag (stutter),
             // so this warning is not optional.
-            warns.add("More notes ("+PolyphonyHistogram.max()+"/64) playing at same time than lotro can handle.");
+            warns.add("More notes ("+histogram.maxAll()+"/64) playing at same time than lotro can handle.");
         }
         if (saveAndExportSettings.warnOnExportOfSamePartNames && isPartsTitlesSimilar()) {
             warns.add("Two or more parts has same name. Renaming or clicking the 'Numerate' button can fix them.");
@@ -1701,5 +1729,111 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         }
         this.countIn = countin;
         if (changed) fireChangeEvent(AbcSongProperty.COUNT_IN);
+    }
+
+    /**
+     * Copy constructor for creating a thread-safe snapshot for worker threads.
+     */
+    public AbcSong(AbcSong other) {
+        // Immutable/Shared Fields
+        this.title = other.title;
+        this.composer = other.composer;
+        this.transcriber = other.transcriber;
+        this.genre = other.genre;
+        this.mood = other.mood;
+        this.note = other.note;
+        this.badger = other.badger;
+        this.tempoFactor = other.tempoFactor;
+        this.newTempo = other.newTempo;
+        this.origTempo = other.origTempo;
+        this.transpose = other.transpose;
+        this.keySignature = other.keySignature;
+        this.timeSignature = other.timeSignature;
+        this.tripletTiming = other.tripletTiming;
+        this.mixTiming = other.mixTiming;
+        this.organic = other.organic;
+        this.organic2 = other.organic2;
+        this.mixVersion = other.mixVersion;
+        this.priorityActive = other.priorityActive;
+        this.skipSilenceAtStart = other.skipSilenceAtStart;
+        this.deleteMinimalNotes = other.deleteMinimalNotes;
+        this.firstBar = other.firstBar;
+        this.lastBar = other.lastBar;
+        this.firstBarTick = other.firstBarTick;
+        this.lastBarTick = other.lastBarTick;
+        this.fromAbcFile = other.fromAbcFile;
+        this.fromXmlFile = other.fromXmlFile;
+        this.usingOldVelocities = other.usingOldVelocities;
+        this.usingOldTempos = other.usingOldTempos;
+        this.temposWereFixed = other.temposWereFixed;
+        this.hideEdits = other.hideEdits;
+        this.dynamicsMethod = other.dynamicsMethod;
+        this.ignoreZeroChannelVolume = other.ignoreZeroChannelVolume;
+        this.sorted = other.sorted;
+        this.ignoreMidiText = other.ignoreMidiText;
+        this.copyright = other.copyright;
+        this.sourceFile = other.sourceFile;
+        this.firstExportTime = other.firstExportTime==null?null:(new Date(other.firstExportTime.getTime()));
+        this.storeNewSourceFile = other.storeNewSourceFile;
+        this.storeNewExportFile = other.storeNewExportFile;
+        this.suppressPartSort = other.suppressPartSort;
+        this.newSourceFile = other.newSourceFile;
+
+        // read-only/shared services.
+        this.sequenceInfo = other.sequenceInfo;// lets assume the midi don't change while we work, then this is immutable
+        this.timingInfo = other.timingInfo;// would be time-consuming to deep copy, plus it's kinda immutable
+
+        // settings classes
+        this.partAutoNumberer = new PartAutoNumberer(other.partAutoNumberer);
+        this.partNameTemplate = new PartNameTemplate(other.partNameTemplate, this);
+        this.exportFilenameTemplate = new ExportFilenameTemplate(other.exportFilenameTemplate, this);
+        this.instrNameSettings = new InstrNameSettings(other.instrNameSettings);
+        this.saveAndExportSettings = new SaveAndExportSettings(other.saveAndExportSettings);
+
+        // objects that needs to be generated by worker or here
+        this.listeners = new ListenerList<>();
+        this.abcExporter = null; // Will be regenerated by the worker
+        this.mixDirty = true; // Force regeneration
+
+        // Deep Copies
+        if (other.tuneBars != null) {
+            this.tuneBars = new TreeMap<>();
+            for (Entry<Float, TuneLine> entry : other.tuneBars.entrySet()) {
+                this.tuneBars.put(entry.getKey(), new TuneLine(entry.getValue()));
+            }
+        }
+        if (other.tuneBarsModified != null) {
+            this.tuneBarsModified = java.util.Arrays.copyOf(other.tuneBarsModified, other.tuneBarsModified.length);
+        }
+
+        this.parts = new ListModelWrapper<>(new DefaultListModel<>());
+        AbcPart countInPart = null;
+        for (AbcPart origPart : other.parts) {
+            AbcPart newPart = new AbcPart(origPart, this);
+            this.parts.add(newPart);
+            if (other.countIn != null && other.countIn.part == origPart) {
+                countInPart = newPart;
+            }
+        }
+
+        if (other.countIn != null) {
+            this.countIn = new CountIn(other.countIn.pattern, other.countIn.barCount, countInPart, other.countIn.hit);
+        }
+
+        List<AbcPart> partsCopy = Collections.unmodifiableList(parts);
+        this.partAutoNumberer.setParts(partsCopy);
+
+        // Fields not needed by worker
+        this.projectFile = null;
+        this.exportFile = null;
+    }
+
+    public AbcPart getPartFromID(long ID) {
+        for(AbcPart part : parts) {
+            if (part.uniqueID == ID) {
+                return part;
+            }
+        }
+        return null;
     }
 }

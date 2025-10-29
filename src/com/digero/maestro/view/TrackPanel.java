@@ -1,12 +1,6 @@
 package com.digero.maestro.view;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.Insets;
-import java.awt.LayoutManager;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
@@ -908,16 +902,14 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 		// Update the visibility of controls
 		trackVolumeBar.setVisible(trackEnabled);
-		if (transposeSpinner != null) {
-			transposeSpinner.setVisible(trackEnabled && !abcPart.isPercussionPart());
-		}
+
 		if (sectionButton != null) {
 			sectionButton.setVisible(trackEnabled);
 		}
 
 		fxBox.setVisible(trackEnabled && (abcPart.getInstrument().equals(LotroInstrument.STUDENT_FIDDLE) || abcPart.getInstrument().equals(LotroInstrument.JAUNTY_HAND_KNELLS)));
 		if (fxBox.isVisible()) {
-			add(fxBox, CONTROL_COLUMN + ", 1");
+			add(fxBox, CONTROL_COLUMN + ", 1, f, t");
 			fxBox.setSelected(abcPart.isFX(trackInfo.getTrackNumber()));
 			fxBox.setEnabled(!abcPart.isStudentFromABC());
 			// TODO: disabling checkbox cannot really be seen in flatlaf :(
@@ -964,6 +956,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 					if (row <= layout.getNumRow())
 						layout.insertRow(row, PREFERRED);
 					add(drumlinePanel, "0, " + row + ", " + NOTE_COLUMN + ", " + row);
+                    row++;
 				}
 				
 				// Rebuild note graph panel
@@ -991,6 +984,12 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 				}
 				
 				noteGraphPanel.removeAll();
+
+                int baseRows = LAYOUT_ROWS.length;
+                while (layout.getNumRow() > baseRows) {
+                    layout.deleteRow(layout.getNumRow() - 1);
+                }
+
 				noteGraph.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()));
 				noteGraphPanel.add(noteGraph, "grow");
 
@@ -1003,7 +1002,13 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 			revalidate();
 			noteGraphPanel.revalidate();
+            repaint();
+            noteGraphPanel.repaint();
 		}
+
+        if (transposeSpinner != null) {
+            transposeSpinner.setVisible(trackEnabled && !abcPart.isPercussionPart() && !showDrumPanels);
+        }
 
 		if (showDrumPanels) {
 			drumMapMenu.setVisible(abcPart.isDrumPart());

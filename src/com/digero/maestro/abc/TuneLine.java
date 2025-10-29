@@ -16,7 +16,23 @@ public class TuneLine {
 	public float endBar = 0;
 	public long endTick = -1L;
 
-	@Override
+    public TuneLine() {
+
+    }
+
+    public TuneLine(TuneLine orig) {
+        this.startBar = orig.startBar;
+        this.startTick = orig.startTick;
+        this.endBar = orig.endBar;
+        this.endTick = orig.endTick;
+        this.tempo = orig.tempo;
+        this.fade = orig.fade;
+        this.accelerando = orig.accelerando;
+        this.dialogLine = orig.dialogLine;
+        this.seminoteStep = orig.seminoteStep;
+    }
+
+    @Override
 	public String toString() {
 		return "Tune Line " + startBar + " to " + endBar + ": tempo=" + tempo + " seminoteStep=" + seminoteStep
 				 + " fade=" + fade + " accelerando=" + accelerando + " dialogLine=" + dialogLine;

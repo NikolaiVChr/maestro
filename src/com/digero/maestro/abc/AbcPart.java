@@ -73,14 +73,14 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	public boolean[] playRight;
 	private final int[] trackVolumeAdjust;
 	private final DrumNoteMap[] drumNoteMap;
-	private final StudentFXNoteMap[] fxNoteMap;
+	private final StudentFXNoteMap[] studentFxNoteMap;
     private final JauntyHandKnellsFXNoteMap[] jauntyHandKnellsFXNoteMap;
 	private BitSet[] drumsEnabled;
 	private BitSet[] cowbellsEnabled;
 	private BitSet[] fxEnabled;//TODO: not sure if good idea that this is shared with jaunty
 	private final Boolean[] fx;
     /**
-     * If this is enabled, lowest student note allowable is including fx
+     * If this is enabled, the lowest student note allowable is including fx
      */
 	private boolean studentFromABC = false;
 	
@@ -93,7 +93,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	private final AbcSong abcSong;
 	private int enabledTrackCount = 0;
 	private int previewSequenceTrackNumber = -1;
-	private final ListenerList<AbcPartEvent> listeners = new ListenerList<>();
+	private final ListenerList<AbcPartEvent> listeners;
 	private final Preferences drumPrefs = Preferences.userNodeForPackage(AbcPart.class).node("drums");
 
 	private int noteMax = AbcConstants.MAX_CHORD_NOTES;
@@ -117,12 +117,20 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	
 	public static final Note minDefault = Note.C0;//limit
 
+    public final long uniqueID;//shared with any copies
+
 	public AbcPart(AbcSong abcSong) {
+        this(abcSong, System.nanoTime());
+    }
+
+    private AbcPart(AbcSong abcSong, long uniqueID) {
+        this.uniqueID = uniqueID;
 		this.abcSong = abcSong;
+        listeners = new ListenerList<>();
 		abcSong.addSongListener(songListener);
 		this.instrument = LotroInstrument.DEFAULT_INSTRUMENT;
 		this.instrNameSettings = abcSong.getInstrNameSettings();
-		this.title = instrNameSettings.getInstrNick(instrument);
+		this.title = this.instrNameSettings.getInstrNick(instrument);
 
 		int t = getTrackCount();
 		this.trackTranspose = new int[t];
@@ -135,7 +143,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 
 		this.trackVolumeAdjust = new int[t];
 		this.drumNoteMap = new DrumNoteMap[t];
-		this.fxNoteMap = new StudentFXNoteMap[t];
+		this.studentFxNoteMap = new StudentFXNoteMap[t];
         this.jauntyHandKnellsFXNoteMap = new JauntyHandKnellsFXNoteMap[t];
 		this.sections = new ArrayList<>();
 		this.nonSection = new ArrayList<>();
@@ -151,10 +159,6 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		}
 	}
 
-	public AbcPart(AbcSong abcSong, Element loadFrom) {
-		this(abcSong);
-	}
-
 	@Override
 	public void discard() {
 		abcSong.removeSongListener(songListener);
@@ -165,10 +169,10 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				drumNoteMap[i] = null;
 			}
 		}
-		for (int i = 0; i < fxNoteMap.length; i++) {
-			if (fxNoteMap[i] != null) {
-				fxNoteMap[i].removeChangeListener(drumMapChangeListener);
-				fxNoteMap[i] = null;
+		for (int i = 0; i < studentFxNoteMap.length; i++) {
+			if (studentFxNoteMap[i] != null) {
+				studentFxNoteMap[i].removeChangeListener(drumMapChangeListener);
+				studentFxNoteMap[i] = null;
 			}
 		}
         for (int i = 0; i < jauntyHandKnellsFXNoteMap.length; i++) {
@@ -349,8 +353,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			if (isDrumPart() && drumNoteMap[t] != null)
 				drumNoteMap[t]
 						.saveToXml((Element) trackEle.appendChild(doc.createElement(DrumNoteMap.getXmlName())));
-			if (isStudentPart() && fxNoteMap[t] != null)
-				fxNoteMap[t].saveToXml((Element) trackEle.appendChild(doc.createElement(StudentFXNoteMap.getXmlName())));
+			if (isStudentPart() && studentFxNoteMap[t] != null)
+				studentFxNoteMap[t].saveToXml((Element) trackEle.appendChild(doc.createElement(StudentFXNoteMap.getXmlName())));
             if (isJauntyHandKnellsPart() && jauntyHandKnellsFXNoteMap[t] != null)
                 jauntyHandKnellsFXNoteMap[t].saveToXml((Element) trackEle.appendChild(doc.createElement(JauntyHandKnellsFXNoteMap.getXmlName())));
 		}
@@ -521,7 +525,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				} else if (new Version(3, 2, 9, 300).compareTo(fileVersion) > 0 && isStudentPart()) {
 					// compat handling
 					loadDrumHitsFromXML(fileVersion, trackEle, t);
-					fx = fxNoteMap[t] != null;
+					fx = studentFxNoteMap[t] != null;
 					setFX(t, fx);
 				} else if (isStudentPart()) {
 					if (fx) loadDrumHitsFromXML(fileVersion, trackEle, t);
@@ -554,9 +558,9 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		}
 		drumMapEle = XmlUtil.selectSingleElement(trackEle, StudentFXNoteMap.getXmlName());
 		if (drumMapEle != null) {
-			fxNoteMap[t] = StudentFXNoteMap.loadFromXml(drumMapEle, fileVersion);
-			if (fxNoteMap[t] != null)
-				fxNoteMap[t].addChangeListener(drumMapChangeListener);
+			studentFxNoteMap[t] = StudentFXNoteMap.loadFromXml(drumMapEle, fileVersion);
+			if (studentFxNoteMap[t] != null)
+				studentFxNoteMap[t].addChangeListener(drumMapChangeListener);
 		}
         drumMapEle = XmlUtil.selectSingleElement(trackEle, JauntyHandKnellsFXNoteMap.getXmlName());
         if (drumMapEle != null) {
@@ -1634,20 +1638,20 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	}
 
 	public StudentFXNoteMap getFXMap(int track) {
-		if (fxNoteMap[track] == null) {
+		if (studentFxNoteMap[track] == null) {
 			// For non-drum tracks, just use a straight pass-through
 			// if (!abcSong.getSequenceInfo().getTrackInfo(track).isDrumTrack())
 			// {
-			fxNoteMap[track] = new PassThroughFXNoteMap();
+			studentFxNoteMap[track] = new PassThroughFXNoteMap();
 			// }
 			// else
 			// {
 			// drumNoteMap[track] = new StudentFXNoteMap();
 			// drumNoteMap[track].load(drumPrefs);
 			// }
-			fxNoteMap[track].addChangeListener(drumMapChangeListener);
+			studentFxNoteMap[track].addChangeListener(drumMapChangeListener);
 		}
-		return fxNoteMap[track];
+		return studentFxNoteMap[track];
 	}
 
     public JauntyHandKnellsFXNoteMap getJauntyHandKnellsFXMap(int track) {
@@ -1798,4 +1802,141 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	public int getMaxPoly() {
 		return maxPoly;		
 	}
+
+    /**
+     * Copy constructor for threaded worker.
+     */
+    public AbcPart(AbcPart orig, AbcSong abcSongCopy) {
+        this(abcSongCopy, orig.uniqueID);
+
+        // Primitive and Immutable Fields
+        this.partNumber = orig.partNumber;
+        this.partNumberManuallyModified = orig.partNumberManuallyModified;
+        this.suppressSpinnerUpdate = orig.suppressSpinnerUpdate;
+        this.title = orig.title;
+        this.instrument = orig.instrument;
+        this.studentFromABC = orig.studentFromABC;
+        this.badgerPrio = orig.badgerPrio;
+        this.firstNumber = orig.firstNumber;
+        this.enabledTrackCount = orig.enabledTrackCount;
+        this.previewSequenceTrackNumber = orig.previewSequenceTrackNumber;
+        this.noteMax = orig.noteMax;
+        this.delay = orig.delay;
+        this.conclusionFermata = orig.conclusionFermata;
+        this.typeNumber = orig.typeNumber;
+        this.muted = orig.muted;
+        this.soloed = orig.soloed;
+        this.numberOfExportedNotes = orig.numberOfExportedNotes;
+        this.numberOfRemovedNotesForSafety = orig.numberOfRemovedNotesForSafety;
+        this.maxPoly = orig.maxPoly;
+        // discarded remains false
+        // abcSong, instrNameSettings, songListener, drumPrefs,
+        // listeners and drumMapChangeListener are set by this(abcSongCopy).
+
+        int origTrackCount = orig.getTrackCount();
+
+        // Copy arrays
+        System.arraycopy(orig.trackTranspose, 0, this.trackTranspose, 0, origTrackCount);
+        System.arraycopy(orig.trackEnabled, 0, this.trackEnabled, 0, origTrackCount);
+        System.arraycopy(orig.trackPriority, 0, this.trackPriority, 0, origTrackCount);
+        System.arraycopy(orig.playLeft, 0, this.playLeft, 0, origTrackCount);
+        System.arraycopy(orig.playCenter, 0, this.playCenter, 0, origTrackCount);
+        System.arraycopy(orig.playRight, 0, this.playRight, 0, origTrackCount);
+        System.arraycopy(orig.trackVolumeAdjust, 0, this.trackVolumeAdjust, 0, origTrackCount);
+        System.arraycopy(orig.fx, 0, this.fx, 0, origTrackCount);
+        if (orig.trackNames != null) {
+            this.trackNames = new ArrayList<>(orig.trackNames);
+        }
+
+        // Deep copies
+
+        // BitSet[] arrays
+        if (orig.drumsEnabled != null) {
+            this.drumsEnabled = new BitSet[origTrackCount];
+            for (int i = 0; i < origTrackCount; i++) {
+                if (orig.drumsEnabled[i] != null) {
+                    this.drumsEnabled[i] = (BitSet) orig.drumsEnabled[i].clone();
+                }
+            }
+        }
+        if (orig.cowbellsEnabled != null) {
+            this.cowbellsEnabled = new BitSet[origTrackCount];
+            for (int i = 0; i < origTrackCount; i++) {
+                if (orig.cowbellsEnabled[i] != null) {
+                    this.cowbellsEnabled[i] = (BitSet) orig.cowbellsEnabled[i].clone();
+                }
+            }
+        }
+        if (orig.fxEnabled != null) {
+            this.fxEnabled = new BitSet[origTrackCount];
+            for (int i = 0; i < origTrackCount; i++) {
+                if (orig.fxEnabled[i] != null) {
+                    this.fxEnabled[i] = (BitSet) orig.fxEnabled[i].clone();
+                }
+            }
+        }
+
+        // DrumNoteMap[] arrays
+        for (int i = 0; i < origTrackCount; i++) {
+            if (orig.drumNoteMap[i] != null) {
+                this.drumNoteMap[i] = orig.drumNoteMap[i].copy();
+            }
+            if (orig.studentFxNoteMap[i] != null) {
+                this.studentFxNoteMap[i] = orig.studentFxNoteMap[i].copy();
+            }
+            if (orig.jauntyHandKnellsFXNoteMap[i] != null) {
+                this.jauntyHandKnellsFXNoteMap[i] = orig.jauntyHandKnellsFXNoteMap[i].copy();
+            }
+        }
+
+        // List<TreeMap<Float, PartSection>> sections
+        // this(abcSongCopy) already initialized 'this.sections' with nulls.
+        for (int i = 0; i < origTrackCount; i++) {
+            TreeMap<Float, PartSection> origMap = orig.sections.get(i);
+            if (origMap != null) {
+                TreeMap<Float, PartSection> newMap = new TreeMap<>();
+                for (Entry<Float, PartSection> entry : origMap.entrySet()) {
+                    newMap.put(entry.getKey(), new PartSection(entry.getValue()));
+                }
+                this.sections.set(i, newMap);
+            }
+        }
+
+        // List<TreeMap<Long, PartSection>> sectionsTicked
+        if (orig.sectionsTicked != null) {
+            this.sectionsTicked = new ArrayList<>();
+            for (int i = 0; i < origTrackCount; i++) {
+                this.sectionsTicked.add(null);
+            }
+
+            for (int i = 0; i < origTrackCount; i++) {
+                TreeMap<Long, PartSection> origMap = orig.sectionsTicked.get(i);
+                if (origMap != null) {
+                    TreeMap<Long, PartSection> newMap = new TreeMap<>();
+                    for (Entry<Long, PartSection> entry : origMap.entrySet()) {
+                        newMap.put(entry.getKey(), new PartSection(entry.getValue()));
+                    }
+                    this.sectionsTicked.set(i, newMap);
+                }
+            }
+        }
+
+        // List<PartSection> nonSection
+        // this(abcSongCopy) already initialized 'this.nonSection' with nulls.
+        for (int i = 0; i < origTrackCount; i++) {
+            PartSection origSection = orig.nonSection.get(i);
+            if (origSection != null) {
+                this.nonSection.set(i, new PartSection(origSection));
+            }
+        }
+
+        // List<boolean[]> sectionsModified
+        // this(abcSongCopy) already initialized 'this.sectionsModified' with nulls.
+        for (int i = 0; i < origTrackCount; i++) {
+            boolean[] origArray = orig.sectionsModified.get(i);
+            if (origArray != null) {
+                this.sectionsModified.set(i, origArray.clone());
+            }
+        }
+    }
 }

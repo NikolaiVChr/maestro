@@ -134,7 +134,7 @@ public class ExportFilenameTemplate {
 		}
 	}
 
-	private Settings settings;
+	private final Settings settings;
 
 	private AbcMetadataSource metadata = null;
 
@@ -143,51 +143,62 @@ public class ExportFilenameTemplate {
 	public ExportFilenameTemplate(Preferences prefsNode) {
 		this.settings = new Settings(prefsNode);
 
-		Comparator<String> caseInsensitiveStringComparator = String::compareToIgnoreCase;
+        variables = generateVariables();
+    }
 
-		variables = new TreeMap<>(caseInsensitiveStringComparator);
+    public ExportFilenameTemplate(ExportFilenameTemplate orig, AbcMetadataSource metadataCopy) {
+        this.settings = orig.getSettingsCopy();
+        this.metadata = metadataCopy;
+        variables = generateVariables();
+    }
 
-		variables.put("$SongTitle", new Variable("The title of the song, as entered in the \"T:\" field") {
-			@Override
-			public String getValue() {
-				return getMetadataSource().getSongTitle().trim();
-			}
-		});
-		variables.put("$SongLength", new Variable("The playing time of the song in mm_ss format") {
-			@Override
-			public String getValue() {
-				return Util.formatDuration(getMetadataSource().getSongLengthMicros(), 0, '-');
-			}
-		});
-		variables.put("$SongComposer", new Variable("The song composer/artist, as entered in the \"C:\" field") {
-			@Override
-			public String getValue() {
-				return getMetadataSource().getComposer().trim();
-			}
-		});
-		variables.put("$SongTranscriber", new Variable("Your name, as entered in the \"Z:\" field") {
-			@Override
-			public String getValue() {
-				return getMetadataSource().getTranscriber().trim();
-			}
-		});
-		variables.put("$PartCount", new Variable("Number of parts in the ABC file") {
-			@Override
-			public String getValue() {
-				return String.format(settings.partCountZeroPadded ? "%02d" : "%d",
-						getMetadataSource().getActivePartCount());
-			}
-		});
-		variables.put("$SourceFile", new Variable("Source file name (midi or ABC)") {
-			@Override
-			public String getValue() {
-				String name = getMetadataSource().getSourceFilename();
-				return name.substring(0, name.lastIndexOf('.'));
-			}
-		});
-	}
+    private SortedMap<String, Variable> generateVariables() {
+        Comparator<String> caseInsensitiveStringComparator = String::compareToIgnoreCase;
 
-	public Settings getSettingsCopy() {
+        SortedMap<String, Variable> vars = new TreeMap<>(caseInsensitiveStringComparator);
+
+        vars.put("$SongTitle", new Variable("The title of the song, as entered in the \"T:\" field") {
+            @Override
+            public String getValue() {
+                return getMetadataSource().getSongTitle().trim();
+            }
+        });
+        vars.put("$SongLength", new Variable("The playing time of the song in mm_ss format") {
+            @Override
+            public String getValue() {
+                return Util.formatDuration(getMetadataSource().getSongLengthMicros(), 0, '-');
+            }
+        });
+        vars.put("$SongComposer", new Variable("The song composer/artist, as entered in the \"C:\" field") {
+            @Override
+            public String getValue() {
+                return getMetadataSource().getComposer().trim();
+            }
+        });
+        vars.put("$SongTranscriber", new Variable("Your name, as entered in the \"Z:\" field") {
+            @Override
+            public String getValue() {
+                return getMetadataSource().getTranscriber().trim();
+            }
+        });
+        vars.put("$PartCount", new Variable("Number of parts in the ABC file") {
+            @Override
+            public String getValue() {
+                return String.format(settings.partCountZeroPadded ? "%02d" : "%d",
+                        getMetadataSource().getActivePartCount());
+            }
+        });
+        vars.put("$SourceFile", new Variable("Source file name (midi or ABC)") {
+            @Override
+            public String getValue() {
+                String name = getMetadataSource().getSourceFilename();
+                return name.substring(0, name.lastIndexOf('.'));
+            }
+        });
+        return vars;
+    }
+
+    public Settings getSettingsCopy() {
 		return new Settings(settings);
 	}
 
