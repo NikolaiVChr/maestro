@@ -1396,6 +1396,24 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         fireChangeEvent(AbcSongProperty.PART_LIST_ORDER, source);
     }
 
+    /**
+     * disable auto sorting of parts
+     */
+    public void rearrangedParts() {
+        sorted = false;
+        fireChangeEvent(AbcSongProperty.PART_LIST_ORDER);
+    }
+
+    /**
+     * enable auto sorting of parts
+     */
+    public void autoSortParts() {
+        sorted = true;
+        populateFirstNumbers();
+        parts.sort(partAutoNumberer.getComparator());
+        fireChangeEvent(AbcSongProperty.PART_LIST_ORDER);
+    }
+
     @Override
 	public String getBadgerTitle() {
 		if (!badger)
@@ -1687,24 +1705,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
         return false;
     }
-
-    /**
-	 * disable auto sorting of parts
-	 */
-	public void rearrangedParts() {
-		sorted = false;
-		fireChangeEvent(AbcSongProperty.PART_LIST_ORDER);		
-	}
-
-	/**
-	 * enable auto sorting of parts
-	 */
-	public void autoSortParts() {
-		sorted = true;
-		populateFirstNumbers();
-        parts.sort(partAutoNumberer.getComparator());
-		fireChangeEvent(AbcSongProperty.PART_LIST_ORDER);	
-	}
 
     public CountIn getCountIn() {
         return countIn;

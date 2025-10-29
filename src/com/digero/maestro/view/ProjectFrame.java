@@ -2053,9 +2053,12 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			break;
 
 		case PART_LIST_ORDER:
-			partsList.selectPart(abcSong.getParts().indexOf(partPanel.getAbcPart()));
+            partsList.selectPart(abcSong.getParts().indexOf(partPanel.getAbcPart()));
             // this is important, else after a deletion, the tracklist might be in the wrong state:
-            partPanel.setAbcPart(partsList.getSelectedPart(), true);
+            if (partsList.getSelectedPart() != null) {
+                // might be null shortly after loading from midi
+                partPanel.setAbcPart(partsList.getSelectedPart(), true);
+            }
 
 			partsList.repaint();
 			partEditor.repaint();

@@ -273,7 +273,6 @@ public class AutoExporter {
             List<Path> filesToProcess;
             try (var paths = Files.walk(sourceFolderAuto.toPath())) {
                 filesToProcess = paths
-                        // Use your filter logic from the FileVisitors
                         .filter(path -> !path.getFileName().toString().startsWith("."))
                         .filter(Files::isRegularFile)
                         .filter(path -> new MsxFileFilter().accept(path.toFile()))

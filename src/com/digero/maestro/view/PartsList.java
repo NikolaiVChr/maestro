@@ -209,11 +209,17 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 	}
 
 	int getSelectedIndex() {
+        if (selectedIndex == -1) {
+            //System.out.println("Warning: PartsList selectedIndex is -1");
+            //System.out.println("model.size()=" + model.size());
+        } else {
+            //System.out.println("PartsList selectedIndex=" + selectedIndex);
+        }
 		return selectedIndex;
 	}
 
 	AbcPart getSelectedPart() {
-		if (model == null)
+		if (model == null || selectedIndex == -1 || selectedIndex >= model.size())
 			return null;
 		return model.elementAt(getSelectedIndex());
 	}
