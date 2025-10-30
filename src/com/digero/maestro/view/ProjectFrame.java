@@ -2599,8 +2599,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 					SequencerWrapper oldSequencer = abcPreviewMode ? abcSequencer : sequencer;
 					oldSequencer.stop();
 				}
-			} else {
-				// for histogram
+			} else if (abcSong.getActivePartCount() > 0) {
+				// for histogram. The condition is due to it might be
+                // refreshPreviewSequence thats calling us, and we
+                // don't want infinite loop.
 				refreshPreviewSequence(false);
 			}
 
@@ -2778,6 +2780,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             abcBarLabel.setBarNumberCache(null);
             abcBarLabel.setInitialOffsetTick(abcPreviewStartTick);
             abcPositionLabel.setInitialOffsetTick(abcPreviewStartTick);
+            partPanel.setHistogram(new PolyphonyHistogram());
+            updatePreviewMode(false);
             setSourceChangeEnabled(true);
             return false;
         }

@@ -744,6 +744,6 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
     }
 
     public void setHistogram(PolyphonyHistogram histogram) {
-        histogramPanel.setHistogram(histogram);
+        if (histogramPanel != null) histogramPanel.setHistogram(histogram);
     }
 }
