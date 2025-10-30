@@ -13,6 +13,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.text.ParseException;
 import java.util.HashMap;
+import java.util.logging.Logger;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -52,6 +53,8 @@ import static javax.swing.ScrollPaneConstants.*;
  * 
  */
 public class PartPanel extends JPanel implements ICompileConstants, TableLayoutConstants {
+    protected static final Logger log = Logger.getLogger("view.PartPanel");
+
 	private static final int HGAP = 4;
 	private static final int VGAP = 4;
 
@@ -474,6 +477,7 @@ public class PartPanel extends JPanel implements ICompileConstants, TableLayoutC
 	}
 
 	private final Listener<AbcPartEvent> abcPartListener = e -> {
+        //log.warning(this.getClass().getTypeName()+" AbcPartEvent: "+e.getProperty());
 		if (e.getProperty() == AbcPartProperty.PART_NUMBER) {
 			abcPart.suppressSpinnerUpdate = true;
 			numberSpinner.setValue(abcPart.getPartNumber());

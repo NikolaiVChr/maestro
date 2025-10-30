@@ -19,6 +19,7 @@ import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DropTargetEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
@@ -44,6 +45,8 @@ import com.digero.maestro.abc.AbcSongEvent;
 import info.clearthought.layout.TableLayoutConstants;
 
 public class PartsList extends JPanel implements IDiscardable, TableLayoutConstants {
+    protected static final Logger log = Logger.getLogger("view.PartsList");
+
 	protected DefaultListModel<AbcPart> model;
 	private final BoxLayout layout;
 
@@ -332,6 +335,7 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 	};
 
 	public Listener<AbcPartEvent> partListener = e -> {
+        //log.warning(this.getClass().getTypeName()+" AbcPartEvent: "+e.getProperty());
 		switch (e.getProperty()) {
 		case TRACK_ENABLED:
 		case INSTRUMENT:
@@ -347,7 +351,7 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 		AbcSong song = e.getSource();
 		if (song == null)
 			return;
-
+        //log.warning(this.getClass().getTypeName()+" AbcSongEvent: "+e.getProperty());
 		switch (e.getProperty()) {
 		case PART_ADDED:
 			e.getPart().addAbcListener(partListener);
@@ -360,7 +364,10 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 			updatePartSoloMute(part);
 			break;
 		case PART_LIST_ORDER:
-			updateParts();
+            // we do this in Projectframe instead, so
+            // that we are sure updateParts runs before
+            // project parts calls setselecteditem
+			//updateParts();
 			break;
 		default:
 			break;

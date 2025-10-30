@@ -1897,6 +1897,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
 	private final Listener<AbcPartEvent> abcPartListener = e -> {
+        //log.warning(this.getClass().getTypeName()+" AbcPartEvent: "+e.getProperty());
 		if (e.getProperty() == AbcPartProperty.TRACK_ENABLED)
 			updateButtons(false);
 
@@ -1931,6 +1932,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		int idx;
         boolean modified = true;
+
+        //log.warning(this.getClass().getTypeName()+" AbcSongEvent: "+e.getProperty());
 
 		switch (e.getProperty()) {
 		case TITLE:
@@ -2053,6 +2056,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			break;
 
 		case PART_LIST_ORDER:
+            partsList.updateParts();//important to run before the below code
             partsList.selectPart(abcSong.getParts().indexOf(partPanel.getAbcPart()));
             // this is important, else after a deletion, the tracklist might be in the wrong state:
             if (partsList.getSelectedPart() != null) {

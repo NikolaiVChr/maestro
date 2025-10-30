@@ -1385,6 +1385,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
     public boolean suppressPartSort = false;// beside this class, also used from PartAutoNumberer
 
 	private final Listener<AbcPartEvent> abcPartListener = e -> {
+        //log.warning(this.getClass().getTypeName()+" AbcPartEvent: "+e.getProperty());
 		if (e.getProperty() == AbcPartProperty.PART_NUMBER && !suppressPartSort && sorted) {
             sortParts(e.getSource());
         }
