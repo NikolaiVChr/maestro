@@ -16,7 +16,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
@@ -296,169 +295,160 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	 */
 
 	public ProjectFrame() {
-		super(MaestroMain.APP_NAME+" "+MaestroMain.APP_VERSION);
-		if ("32".equals(System.getProperty("sun.arch.data.model"))) {
-			JOptionPane.showMessageDialog(null,
-					"You are running with 32 bit Java.\nPlease start with 64 bit Java instead,\nto ensure Maestro do not run out of memory.\n",
-					"32 bit detected", JOptionPane.ERROR_MESSAGE);
-			System.err.println(
-					"You are running with 32 bit Java.\nPlease start with 64 bit Java instead.\n Find Configure Java program in Start menu and\n configure it to start the 64 bit per default.\n\n");
-			// System.exit(1);
-			// return;
-		}
-		
-		setMinimumSize(new Dimension(512, 384));
-		Util.initWinBounds(this, prefs.node("window"), 800, 600);
+        super(MaestroMain.APP_NAME + " " + MaestroMain.APP_VERSION);
+        if ("32".equals(System.getProperty("sun.arch.data.model"))) {
+            JOptionPane.showMessageDialog(null,
+                    "You are running with 32 bit Java.\nPlease start with 64 bit Java instead,\nto ensure Maestro do not run out of memory.\n",
+                    "32 bit detected", JOptionPane.ERROR_MESSAGE);
+            System.err.println(
+                    "You are running with 32 bit Java.\nPlease start with 64 bit Java instead.\n Find Configure Java program in Start menu and\n configure it to start the 64 bit per default.\n\n");
+            // System.exit(1);
+            // return;
+        }
 
-		ToolTipManager.sharedInstance().setDismissDelay(8000);
+        setMinimumSize(new Dimension(512, 384));
+        Util.initWinBounds(this, prefs.node("window"), 800, 600);
 
-		disableSpaceFocus();
+        ToolTipManager.sharedInstance().setDismissDelay(8000);
 
-		String welcomeMessage = formatInfoMessage("Hello Maestro",
-				"Drag and drop a MIDI or ABC file to open it.\n" + "Or use File > Open.");
+        disableSpaceFocus();
 
-		partAutoNumberer = new PartAutoNumberer(prefs.node("partAutoNumberer"));
-		partNameTemplate = new PartNameTemplate(prefs.node("partNameTemplate"));
-		exportFilenameTemplate = new ExportFilenameTemplate(prefs.node("exportFilenameTemplate"));
-		instrNameSettings = new InstrNameSettings(prefs.node("instrNameSettings"));
-		saveSettings = new SaveAndExportSettings(prefs.node("saveAndExportSettings"));
-		miscSettings = new MiscSettings(prefs.node("miscSettings"),
-				true /*
-						 * Fallback if miscSettings is empty. Maestro 2.5.0.115 and earlier save misc settings in
-						 * saveAndExportSettings
-						 */);
+        String welcomeMessage = formatInfoMessage("Hello Maestro",
+                "Drag and drop a MIDI or ABC file to open it.\n" + "Or use File > Open.");
 
-		if (miscSettings.checkForUpdates) checkVersionCompare();
-		
-		checkVolumeTransceiver();
+        partAutoNumberer = new PartAutoNumberer(prefs.node("partAutoNumberer"));
+        partNameTemplate = new PartNameTemplate(prefs.node("partNameTemplate"));
+        exportFilenameTemplate = new ExportFilenameTemplate(prefs.node("exportFilenameTemplate"));
+        instrNameSettings = new InstrNameSettings(prefs.node("instrNameSettings"));
+        saveSettings = new SaveAndExportSettings(prefs.node("saveAndExportSettings"));
+        miscSettings = new MiscSettings(prefs.node("miscSettings"),
+                true /*
+         * Fallback if miscSettings is empty. Maestro 2.5.0.115 and earlier save misc settings in
+         * saveAndExportSettings
+         */);
 
-		try {
-			sequencer = new NoteFilterSequencerWrapper();
-			if (volumeTransceiver != null)
-				sequencer.addTransceiver(volumeTransceiver);
+        if (miscSettings.checkForUpdates) checkVersionCompare();
 
-			abcSequencer = new LotroSequencerWrapper();
-			if (abcVolumeTransceiver != null)
-				abcSequencer.addTransceiver(abcVolumeTransceiver);
+        checkVolumeTransceiver();
 
-			if (LotroSequencerWrapper.getLoadLotroSynthError() != null) {
-				welcomeMessage = formatErrorMessage("Could not load LOTRO instrument sounds",
-						"ABC Preview will use standard MIDI instruments instead\n"
-								+ "(drums do not sound good in this mode).\n\n" + "Error details:\n"
-								+ LotroSequencerWrapper.getLoadLotroSynthError());
-				failedToLoadLotroInstruments = true;
-			}
+        try {
+            sequencer = new NoteFilterSequencerWrapper();
+            if (volumeTransceiver != null)
+                sequencer.addTransceiver(volumeTransceiver);
 
-		} catch (MidiUnavailableException e) {
-			JOptionPane
-					.showMessageDialog(
-							null, "Failed to initialize MIDI sequencer.\nThe program will now exit.\n\n"
-									+ "Error details:\n" + e.getMessage(),
-							"Failed to initialize MIDI sequencer", JOptionPane.ERROR_MESSAGE);
-			System.exit(1);
-			return;
-		}
+            abcSequencer = new LotroSequencerWrapper();
+            if (abcVolumeTransceiver != null)
+                abcSequencer.addTransceiver(abcVolumeTransceiver);
 
-		// SWING stuff starts here
+            if (LotroSequencerWrapper.getLoadLotroSynthError() != null) {
+                welcomeMessage = formatErrorMessage("Could not load LOTRO instrument sounds",
+                        "ABC Preview will use standard MIDI instruments instead\n"
+                                + "(drums do not sound good in this mode).\n\n" + "Error details:\n"
+                                + LotroSequencerWrapper.getLoadLotroSynthError());
+                failedToLoadLotroInstruments = true;
+            }
 
-		loadIcons();
+        } catch (MidiUnavailableException e) {
+            JOptionPane
+                    .showMessageDialog(
+                            null, "Failed to initialize MIDI sequencer.\nThe program will now exit.\n\n"
+                                    + "Error details:\n" + e.getMessage(),
+                            "Failed to initialize MIDI sequencer", JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
+            return;
+        }
 
-		setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-		addWindowListener(new WindowAdapter() {
-			@Override
-			public void windowClosing(WindowEvent e) {
-				if (closeSong()) {
-					setVisible(false);
-					dispose();
-					System.exit(0);
-				}
-			}
-		});
+        // SWING stuff starts here
 
-		playIcon = IconLoader.getImageIcon("play_blue.png");
-		playIconDisabled = IconLoader.getDisabledIcon("play_blue.png");
-		pauseIcon = IconLoader.getImageIcon("pause_blue.png");
-		pauseIconDisabled = IconLoader.getDisabledIcon("pause_blue.png");
-		abcPlayIcon = IconLoader.getImageIcon("play_yellow.png");
-		abcPlayIconDisabled = IconLoader.getDisabledIcon("play_yellow.png");
-		abcPauseIcon = IconLoader.getImageIcon("pause.png");
-		abcPauseIconDisabled = IconLoader.getDisabledIcon("pause.png");
-		stopIcon = IconLoader.getImageIcon("stop.png");
-		stopIconDisabled = IconLoader.getDisabledIcon("stop.png");
+        loadIcons();
 
-		// TableLayout tableLayout = new TableLayout(LAYOUT_COLS, LAYOUT_ROWS);
-		tableLayout.setHGap(HGAP);
-		tableLayout.setVGap(VGAP);
+        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                if (closeSong()) {
+                    setVisible(false);
+                    dispose();
+                    System.exit(0);
+                }
+            }
+        });
 
-		content = new JPanel(tableLayout, false);
-		setContentPane(content);
+        loadControlIcons();
 
-		generateSongInfoPanel();
+        // TableLayout tableLayout = new TableLayout(LAYOUT_COLS, LAYOUT_ROWS);
+        tableLayout.setHGap(HGAP);
+        tableLayout.setVGap(VGAP);
 
-		generateSongPartsPanel();
+        content = new JPanel(tableLayout, false);
+        setContentPane(content);
 
-		generateExportSettingsPanel();
+        generateSongInfoPanel();
 
-		generateMidiPartsAndControlsPanel();
+        generateSongPartsPanel();
 
-		if (!SHOW_TEMPO_SPINNER)
-			tempoSpinner.setEnabled(false);
-		if (!SHOW_METER_TEXTBOX)
-			timeSignatureField.setEnabled(false);
-		if (!SHOW_KEY_FIELD)
-			keySignatureField.setEnabled(false);
+        generateExportSettingsPanel();
 
-		add(generateTopLevelSplitPane(), "0, 0, 1, 0");
-		
-		dropListener = new FileFilterDropListener(false, Util.MID_FILE_EXTENSION_NO_DOT,
-				Util.MIDI_FILE_EXTENSION_NO_DOT, Util.KAR_FILE_EXTENSION_NO_DOT, Util.ABC_FILE_EXTENSION_NO_DOT,
-				Util.TXT_FILE_EXTENSION_NO_DOT, Util.MSX_FILE_EXTENSION_NO_DOT);
-		dropListener.addActionListener(e -> {
-			final File file = dropListener.getDroppedFile();
-			SwingUtilities.invokeLater(() -> openFile(file));
-		});
-		new DropTarget(this, dropListener);
-		
-		//dropListener.exclude = partsList; // not the cause of the partsList d'n'd flicker
+        generateMidiPartsAndControlsPanel();
 
-		mainSequencerListener = new MainSequencerListener();
-		sequencer.addChangeListener(mainSequencerListener);
+        if (!SHOW_TEMPO_SPINNER)
+            tempoSpinner.setEnabled(false);
+        if (!SHOW_METER_TEXTBOX)
+            timeSignatureField.setEnabled(false);
+        if (!SHOW_KEY_FIELD)
+            keySignatureField.setEnabled(false);
 
-		abcSequencerListener = new AbcSequencerListener();
-		abcSequencer.addChangeListener(abcSequencerListener);
-		
-		audioExporter = new AudioExportManager(this, MaestroMain.APP_NAME +" "+ MaestroMain.APP_VERSION, prefs);
+        add(generateTopLevelSplitPane(), "0, 0, 1, 0");
 
-		initMenu();
-		onSaveAndExportSettingsChanged();
-		arrangementView.showInfoMessage(welcomeMessage);
-		updateButtons(false);//must be false since we are not in AWT thread now.
+        dropListener = new FileFilterDropListener(false, Util.MID_FILE_EXTENSION_NO_DOT,
+                Util.MIDI_FILE_EXTENSION_NO_DOT, Util.KAR_FILE_EXTENSION_NO_DOT, Util.ABC_FILE_EXTENSION_NO_DOT,
+                Util.TXT_FILE_EXTENSION_NO_DOT, Util.MSX_FILE_EXTENSION_NO_DOT);
+        dropListener.addActionListener(e -> {
+            final File file = dropListener.getDroppedFile();
+            SwingUtilities.invokeLater(() -> openFile(file));
+        });
+        new DropTarget(this, dropListener);
 
-		// Add support for using spacebar for pause/play.
-		ActionListener spaceBarListener = e -> {
-			if (!sequencer.isLoaded()) {
-				return;
-			}
-			updateSequencer();
-			// Attempt to fix a bug where spacebar will later affect focused components
-			disableSpaceFocus();
-		};
-		this.getRootPane().registerKeyboardAction(spaceBarListener, KeyStroke.getKeyStroke(' '),
-				JComponent.WHEN_IN_FOCUSED_WINDOW);
+        //dropListener.exclude = partsList; // not the cause of the partsList d'n'd flicker
 
-		// Add a listener to remove focus from current component when somewhere else is
-		// clicked.
-		MouseAdapter listenForFocus = new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				getRootPane().requestFocus();
-			}
-		};
-		addMouseListener(listenForFocus);
+        mainSequencerListener = new MainSequencerListener();
+        sequencer.addChangeListener(mainSequencerListener);
 
-	}
+        abcSequencerListener = new AbcSequencerListener();
+        abcSequencer.addChangeListener(abcSequencerListener);
 
-	private void generateSongInfoPanel() {
+        audioExporter = new AudioExportManager(this, MaestroMain.APP_NAME + " " + MaestroMain.APP_VERSION, prefs);
+
+        initMenu();
+        onSaveAndExportSettingsChanged();
+        arrangementView.showInfoMessage(welcomeMessage);
+        updateButtons(false);//must be false since we are not in AWT thread now.
+
+        // Add support for using spacebar for pause/play.
+        ActionListener spaceBarListener = e -> {
+            if (!sequencer.isLoaded()) {
+                return;
+            }
+            updateSequencer();
+            // Attempt to fix a bug where spacebar will later affect focused components
+            disableSpaceFocus();
+        };
+        this.getRootPane().registerKeyboardAction(spaceBarListener, KeyStroke.getKeyStroke(' '),
+                JComponent.WHEN_IN_FOCUSED_WINDOW);
+
+        // Add a listener to remove focus from the current component when somewhere else is
+        // clicked.
+        MouseAdapter listenForFocus = new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                getRootPane().requestFocus();
+            }
+        };
+        addMouseListener(listenForFocus);
+
+    }
+
+    private void generateSongInfoPanel() {
 		songTitleField = new JTextField();
 		songTitleField.setToolTipText("Song Title");
 		songTitleField.getDocument().addDocumentListener(new SimpleDocumentListener() {
@@ -1173,6 +1163,19 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			log.log(Level.WARNING, "Error when loading icons", ex);
 		}
 	}
+
+    private void loadControlIcons() {
+        playIcon = IconLoader.getImageIcon("play_blue.png");
+        playIconDisabled = IconLoader.getDisabledIcon("play_blue.png");
+        pauseIcon = IconLoader.getImageIcon("pause_blue.png");
+        pauseIconDisabled = IconLoader.getDisabledIcon("pause_blue.png");
+        abcPlayIcon = IconLoader.getImageIcon("play_yellow.png");
+        abcPlayIconDisabled = IconLoader.getDisabledIcon("play_yellow.png");
+        abcPauseIcon = IconLoader.getImageIcon("pause.png");
+        abcPauseIconDisabled = IconLoader.getDisabledIcon("pause.png");
+        stopIcon = IconLoader.getImageIcon("stop.png");
+        stopIconDisabled = IconLoader.getDisabledIcon("stop.png");
+    }
 
 	private void checkVolumeTransceiver() {
 		volumeTransceiver = new VolumeTransceiver();
@@ -2075,9 +2078,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		case SKIP_SILENCE_AT_START:
 			if (saveSettings.skipSilenceAtStart != abcSong.isSkipSilenceAtStart()) {
-                // not sure this is sane
-                // skip is not a song property its a setting
-                // its only in abcSong for convenience
+                // not sure that this is sane
+                // skip is not a song property it's a setting
+                // it's only in abcSong for convenience
                 // I cannot think of a case where setting it on abcsong
                 // should propagate to settings.
 				saveSettings.skipSilenceAtStart = abcSong.isSkipSilenceAtStart();
@@ -2314,9 +2317,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	public void openFile(File openfile, boolean updateLastOpenedList) {
 		// begin system for preventing cascading dialogs
 		// As long as the dialog for asking to close open project is there,
-		// double clicking in explorer in windows will change which song eventually gets open.
+		// double-clicking in explorer in windows will change which song eventually gets open.
 		// When dialog for finding midi is there, subsequent explorer double clicks are ignored
-		// until after midi found or cancelled.
+		// until after midi found or canceled.
 		// Not ideal, but works.
 		filetemp = openfile;
 		if (inCloseFile || inOpenFile) {
@@ -2682,7 +2685,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             if (isCancelled()) {
                 if (backgroundException != null) {
                     // Log the error that
-                    // happened even though we were cancelled.
+                    // happened even though we were canceled.
                     log.log(Level.WARNING, "Exception occurred during cancelled preview export", backgroundException);
                 }
                 return;
@@ -2819,7 +2822,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 try {
                     oldWorker.get();
                     // doInBackground has now finished
-                    // wait even though its cancelled cause
+                    // wait even though its canceled cause
                     // getBacExporter might change abcExporter and
                     // mess up its internal state
                 } catch (Throwable ignored) {
@@ -3180,6 +3183,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
     /**
      * A setEnabled for the entire Maestro App.
+     * Modal dialogs like settings
      */
     private void setUIEnabled(boolean on) {
         uiEnabled = on;
@@ -3321,29 +3325,27 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		File saveFile = null;
 
-		if (saveFile == null) {
-			String defaultFolder;
+        String defaultFolder;
 
-			defaultFolder = Util.getLotroMusicPath(false).getAbsolutePath();
+        defaultFolder = Util.getLotroMusicPath(false).getAbsolutePath();
 
-			String folder = prefs.get("saveDialogFolder", defaultFolder);
-			if (!new File(folder).exists())
-				folder = defaultFolder;
+        String folder = prefs.get("saveDialogFolder", defaultFolder);
+        if (!new File(folder).exists())
+            folder = defaultFolder;
 
-			saveFile = abcSong.getSourceFile();
-			String fileName = "expanded_" + saveFile.getName();
-			Path path = Paths.get(saveFile.getAbsolutePath());
-			String directory = path.getParent().toString();
+        saveFile = abcSong.getSourceFile();
+        String fileName = "expanded_" + saveFile.getName();
+        Path path = Paths.get(saveFile.getAbsolutePath());
+        String directory = path.getParent().toString();
 
-			int dot = fileName.lastIndexOf('.');
-			if (dot > 0)
-				fileName = fileName.substring(0, dot);
-			fileName += Util.MID_FILE_EXTENSION;
+        int dot = fileName.lastIndexOf('.');
+        if (dot > 0)
+            fileName = fileName.substring(0, dot);
+        fileName += Util.MID_FILE_EXTENSION;
 
-			saveFile = new File(directory, fileName);
-		}
+        saveFile = new File(directory, fileName);
 
-		saveFile = doSaveDialog(saveFile, saveFile, Util.MID_FILE_EXTENSION, new ExtensionFileFilter("MIDI songs (*.mid)", Util.MID_FILE_EXTENSION_NO_DOT));
+        saveFile = doSaveDialog(saveFile, saveFile, Util.MID_FILE_EXTENSION, new ExtensionFileFilter("MIDI songs (*.mid)", Util.MID_FILE_EXTENSION_NO_DOT));
 
 		if (saveFile == null)
 			return false;
@@ -3389,7 +3391,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			openFile(saveFile);
 			break;
 		case JOptionPane.NO_OPTION:
-			break;
 		case JOptionPane.CANCEL_OPTION, JOptionPane.CLOSED_OPTION:
 			break;
 		}
@@ -3461,7 +3462,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 													}
 												}
 											} catch (URISyntaxException | IOException e) {
-												e.printStackTrace();
+												log.log(Level.WARNING, "Failed to open browser", e);
 											}
 										}
 									}
@@ -3470,11 +3471,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 							}
 						}
 					} catch (Exception io) {
-						io.printStackTrace();
+                        log.log(Level.WARNING, "Failed to read current version string from HTTP", io);
 					}
 					connection.disconnect();
-				} catch (Exception e) {
-					e.printStackTrace();
+				} catch (Throwable e) {
+                    log.log(Level.WARNING, "Failed to connect to github to read current version string", e);
 				}
 			});
 		}
