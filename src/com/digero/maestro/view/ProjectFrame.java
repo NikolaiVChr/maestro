@@ -190,13 +190,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private JFormattedTextField timeSignatureField;
     private JComboBox<TimingEnum> timingCombo;
 
-	/*
-    private JCheckBox organicCheckBox;
-	private JCheckBox organic2CheckBox;
-	private JCheckBox tripletCheckBox;
-	private JCheckBox mixCheckBox;
-	private JCheckBox prioCheckBox;
-	 */
     private JCheckBox tempoOnlyFirstCheckBox;
 	private JComboBox<Chord.CalcDynamics> dynaCombo;
 	private JButton exportButton;
@@ -288,11 +281,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
     private boolean fireTimingListeners = true;
     private boolean updateTimingUIControl = true;
     private JMenuItem openItem;
-
-    /*
-	 * private static Color BRIGHT_RED = new Color(255, 0, 0); private static Color ORANGE = new Color(235, 150, 64);
-	 * private static Color BLACK = new Color(0, 0, 0);
-	 */
 
 	public ProjectFrame() {
         super(MaestroMain.APP_NAME + " " + MaestroMain.APP_VERSION);
@@ -743,71 +731,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             }
             refreshPreviewSequence(false);
         });
-        /*
-		organicCheckBox = new JCheckBox("Organic output (BETA)");
-		
-		organicCheckBox.setToolTipText("<html>Attempt to export more fluid timings.<br>"
-				+ "This is a new beta feature, use on own risk.</html>");
-		
-		organicCheckBox.addActionListener(e -> {
-			if (abcSong != null)
-				abcSong.setOrganic(organicCheckBox.isSelected());
-
-			//if (abcSequencer.isRunning())
-				refreshPreviewSequence(false);
-		});
-		
-		organic2CheckBox = new JCheckBox("Multistage");
-		
-		organic2CheckBox.setToolTipText("<html>Different approach to exporting fluid timings.<br>"
-				+ "This is a new beta feature, use on own risk.</html>");
-		
-		organic2CheckBox.addActionListener(e -> {
-			if (abcSong != null)
-				abcSong.setOrganic2(organic2CheckBox.isSelected());
-
-			//if (abcSequencer.isRunning())
-				refreshPreviewSequence(false);
-		});
-
-		tripletCheckBox = new JCheckBox("Triplets/swing rhythm");
-		tripletCheckBox.setToolTipText("<html>Tweak the timing to allow for triplets or a swing rhythm.<br><br>"
-				+ "This can cause short/fast notes to incorrectly be output as triplets.<br>"
-				+ "Leave it unchecked unless the song has triplets or a swing rhythm.</html>");
-		tripletCheckBox.addActionListener(e -> {
-			if (abcSong != null)
-				abcSong.setTripletTiming(tripletCheckBox.isSelected());
-
-			//if (abcSequencer.isRunning())
-				refreshPreviewSequence(false);
-		});
-
-		mixCheckBox = new JCheckBox("Mix Timings");
-		mixCheckBox.setToolTipText("<html>Allow Maestro to detect which notes<br>"
-				+ "that differs from the above triplet/swing setting.<br><br>"
-				+ "It is done per part, so some notes in a parts might export as swing/tuplets<br>"
-				+ "while other parts at same time export even notes.</html>");
-		mixCheckBox.addActionListener(e -> {
-			if (abcSong != null)
-				abcSong.setMixTiming(mixCheckBox.isSelected());
-
-			//if (abcSequencer.isRunning())
-				refreshPreviewSequence(false);
-		});
-
-		prioCheckBox = new JCheckBox("Combine Priorities");
-		prioCheckBox.setToolTipText("<html>This allow to set track priority for Mix Timings.<br><br>"
-				+ "Checkboxes will appear when combining tracks,<br>"
-				+ "those enabled will prioritize the timings of those" + "tracks over non-prioritized tracks.</html>");
-		prioCheckBox.addActionListener(e -> {
-			if (abcSong != null)
-				abcSong.setPriorityActive(prioCheckBox.isSelected());
-
-			//if (abcSequencer.isRunning())
-				refreshPreviewSequence(false);
-		});
-
-         */
 		
 		dynaCombo = new JComboBox<>(Chord.CalcDynamics.values());
 		dynaCombo.setSelectedItem(AbcSong.dynamicsMethodDefault);
@@ -902,24 +825,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         row++;
         settingsLayout.insertRow(row, PREFERRED);
         settingsPanel.add(timingCombo, "0, " + row + ", 2, " + row + ", L, C");
-        /*
-		row++;
-		settingsLayout.insertRow(row, PREFERRED);
-		settingsPanel.add(organicCheckBox, "0, " + row + ", 2, " + row + ", L, C");
-		row++;
-		settingsLayout.insertRow(row, PREFERRED);
-		settingsPanel.add(organic2CheckBox, "0, " + row + ", 2, " + row + ", C, C");
-		row++;
-		settingsLayout.insertRow(row, PREFERRED);
-		settingsPanel.add(tripletCheckBox, "0, " + row + ", 2, " + row + ", L, C");
-		row++;
-		settingsLayout.insertRow(row, PREFERRED);
-		settingsPanel.add(mixCheckBox, "0, " + row + ", 2, " + row + ", L, C");
-		row++;
-		settingsLayout.insertRow(row, PREFERRED);
-		settingsPanel.add(prioCheckBox, "0, " + row + ", 2, " + row + ", C, C");
 
-         */
 		row++;
 		settingsLayout.insertRow(row, PREFERRED);
 		settingsPanel.add(dynaCombo, "0, " + row + ", 2, " + row + ", L, C");
@@ -1825,14 +1731,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		keySignatureField.setEnabled(midiLoaded && uiEnabled);
 		timeSignatureField.setEnabled(midiLoaded && uiEnabled);
         timingCombo.setEnabled(midiLoaded && uiEnabled);
-        /*
-		organicCheckBox.setEnabled(midiLoaded);
-		organic2CheckBox.setEnabled(midiLoaded && organicCheckBox.isSelected());
-		tripletCheckBox.setEnabled(midiLoaded && !organicCheckBox.isSelected());
-		mixCheckBox.setEnabled(midiLoaded && !organicCheckBox.isSelected());
-		prioCheckBox.setEnabled(midiLoaded && mixCheckBox.isSelected() && !organicCheckBox.isSelected());
 
-         */
 		dynaCombo.setEnabled(midiLoaded && uiEnabled);
         tempoOnlyFirstCheckBox.setEnabled(abcSong != null && abcSong.getSequenceInfo().getDataCache().isTempoInHigherTracks() && uiEnabled);//  && abcSong.getProjectFile() != null
 		noteButton.setEnabled(midiLoaded && uiEnabled);
@@ -2284,13 +2183,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		keySignatureField.setValue(KeySignature.C_MAJOR);
 		timeSignatureField.setValue(TimeSignature.FOUR_FOUR);
         timingCombo.setSelectedItem(TimingEnum.MIX);
-        /*
-		organicCheckBox.setSelected(false);
-		organic2CheckBox.setSelected(false);
-		tripletCheckBox.setSelected(false);
-		mixCheckBox.setSelected(true);
-		prioCheckBox.setSelected(false);
-         */
         dynaCombo.setSelectedItem(AbcSong.dynamicsMethodDefault);
         tempoOnlyFirstCheckBox.setSelected(false);
 		midiBarLabel.setBarNumberCache(null);
@@ -2392,13 +2284,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             fireTimingListeners = true;
             timingCombo.setSelectedItem(TimingEnum.getInstance(abcSong.isOrganic(),abcSong.isOrganic2(),abcSong.isMixTiming(),abcSong.isTripletTiming(),abcSong.isPriorityActive()));
             fireTimingListeners = false;
-            /*
-			organicCheckBox.setSelected(abcSong.isOrganic());
-			organic2CheckBox.setSelected(abcSong.isOrganic2());
-			tripletCheckBox.setSelected(abcSong.isTripletTiming());
-			mixCheckBox.setSelected(abcSong.isMixTiming());
-			prioCheckBox.setSelected(abcSong.isPriorityActive());
-             */
+
             tempoOnlyFirstCheckBox.setSelected(abcSong.isUsingOldTempos());
 
 			SequenceInfo sequenceInfo = abcSong.getSequenceInfo();
@@ -3183,7 +3069,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
     /**
      * A setEnabled for the entire Maestro App.
-     * Modal dialogs like settings
      */
     private void setUIEnabled(boolean on) {
         uiEnabled = on;
