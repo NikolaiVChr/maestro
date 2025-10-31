@@ -954,7 +954,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 					if (row <= layout.getNumRow())
 						layout.insertRow(row, PREFERRED);
 					add(drumlinePanel, "0, " + row + ", " + NOTE_COLUMN + ", " + row);
-                    row++;
+                    //row++;// a bit convoluted logic, but this line will make the order opposite
 				}
 				
 				// Rebuild note graph panel
