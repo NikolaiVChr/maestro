@@ -16,11 +16,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.awt.image.BufferedImage;
+import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
@@ -1160,13 +1157,20 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	private void loadIcons() {
 		try {
+            // 15, 32, 48 and 256 are the most common used icon sizes that a modern Windows uses
 			List<Image> icons = new ArrayList<>();
-			icons.add(ImageIO.read(IconLoader.class.getResourceAsStream("maestro_16.png")));
-			icons.add(ImageIO.read(IconLoader.class.getResourceAsStream("maestro_32.png")));
+            InputStream icon16 = IconLoader.class.getResourceAsStream("maestro_16.png");
+            InputStream icon32 = IconLoader.class.getResourceAsStream("maestro_32.png");
+            InputStream icon48 = IconLoader.class.getResourceAsStream("maestro_48.png");
+            InputStream icon256 = IconLoader.class.getResourceAsStream("maestro_256.png");
+			if (icon16 != null) icons.add(ImageIO.read(icon16));
+            if (icon32 != null) icons.add(ImageIO.read(icon32));
+            if (icon48 != null) icons.add(ImageIO.read(icon48));
+            if (icon256 != null) icons.add(ImageIO.read(icon256));
 			setIconImages(icons);
 		} catch (Exception ex) {
 			// Ignore
-			ex.printStackTrace();
+			log.log(Level.WARNING, "Error when loading icons", ex);
 		}
 	}
 
