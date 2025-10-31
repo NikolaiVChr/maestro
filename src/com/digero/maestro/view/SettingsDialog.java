@@ -210,6 +210,10 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
     }
 
     public void setVisible(boolean visible) {
+        if (!visible) {
+            super.setVisible(false);
+            return;
+        }
         throw new UnsupportedOperationException("Not supported, use the other version.");
     }
 
