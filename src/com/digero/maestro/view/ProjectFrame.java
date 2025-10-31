@@ -234,7 +234,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	private JPanel settingsPanel;
 
-	private PartPanel partPanel;
+	private ArrangementView arrangementView;
 
 	private JButton tuneEditorButton;
 	private JCheckBox hideEditsCheckbox;
@@ -434,7 +434,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		initMenu();
 		onSaveAndExportSettingsChanged();
-		partPanel.showInfoMessage(welcomeMessage);
+		arrangementView.showInfoMessage(welcomeMessage);
 		updateButtons(false);//must be false since we are not in AWT thread now.
 
 		// Add support for using spacebar for pause/play.
@@ -584,7 +584,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			AbcPart abcPart = partsList.getSelectedPart();
 			sequencer.getFilter().onAbcPartChanged(abcPart != null);
 			abcSequencer.getFilter().onAbcPartChanged(abcPart != null);
-			partPanel.setAbcPart(abcPart, false);
+			arrangementView.setAbcPart(abcPart, false);
 			if (abcPart != null) {
 				updateButtons(false);
 			} else {
@@ -951,8 +951,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
 	private void generateMidiPartsAndControlsPanel() {
-		partPanel = new PartPanel(sequencer, partAutoNumberer, abcSequencer, miscSettings.showMaxPolyphony);
-		partPanel.addSettingsActionListener(e -> doSettingsDialog(SettingsDialog.NUMBERING_TAB));
+		arrangementView = new ArrangementView(sequencer, partAutoNumberer, abcSequencer, miscSettings.showMaxPolyphony);
+		arrangementView.addSettingsActionListener(e -> doSettingsDialog(SettingsDialog.NUMBERING_TAB));
 
 		tuneEditorButton = new JButton();
 		tuneEditorButton.setText("Tune-editor");
@@ -986,8 +986,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		ActionListener modeButtonListener = e -> {
 			updatePreviewMode(abcModeRadioButton.isSelected());
-			if (partPanel != null) {
-				partPanel.repaint();
+			if (arrangementView != null) {
+				arrangementView.repaint();
 			}
 		};
 
@@ -1032,7 +1032,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		abcBarLabel.setVisible(!midiBarLabel.isVisible());
 
 		noteButton = new JButton("Note");
-		noteButton.addActionListener(e -> partPanel.textnoteToggle());
+		noteButton.addActionListener(e -> arrangementView.textnoteToggle());
 		noteButton.setToolTipText("<html>Show notepad where custom comments can be entered.<br>"
 				+ "Will be saved in project file.</html>");
 				
@@ -1071,7 +1071,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		playControlPanel.add(feedLabel, "span 8, center");
 
 		midiPartsAndControls = new JPanel(new BorderLayout(HGAP, VGAP));
-		midiPartsAndControls.add(partPanel, BorderLayout.CENTER);
+		midiPartsAndControls.add(arrangementView, BorderLayout.CENTER);
 		midiPartsAndControls.add(playControlPanel, BorderLayout.SOUTH);
 		midiPartsAndControls.setBorder(BorderFactory.createTitledBorder("Part Settings"));
 	}
@@ -1138,7 +1138,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		JPanel partsListAndColorizer = new JPanel(new BorderLayout(HGAP, VGAP));
 		partsListAndColorizer.add(partsListPanel, BorderLayout.CENTER);
 		if (SHOW_COLORIZER)
-			partsListAndColorizer.add(new Colorizer(partPanel), BorderLayout.SOUTH);
+			partsListAndColorizer.add(new Colorizer(arrangementView), BorderLayout.SOUTH);
 		abcPartsAndSettings.add(partsListAndColorizer, BorderLayout.CENTER);
 		abcPartsAndSettings.add(settingsPanel, BorderLayout.SOUTH);
 
@@ -1212,8 +1212,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		discardObject(midiBarLabel);
 		discardObject(abcBarLabel);
 
-		partPanel.setTextnote("");
-		partPanel.textnoteVisible(false);
+		arrangementView.setTextnote("");
+		arrangementView.textnoteVisible(false);
 
 		super.dispose();
 	}
@@ -1484,7 +1484,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 					partAutoNumberer.renumberAllParts(abcSong.getParts());
 				}
 				partNameTemplate.setSettings(dialog.getNameTemplateSettings());
-				partPanel.settingsChanged();
+				arrangementView.settingsChanged();
 
 				exportFilenameTemplate.setSettings(dialog.getExportFilenameTemplateSettings());
 
@@ -1507,7 +1507,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 					break;
 				case 1: // part naming
 					partNameTemplate.restoreDefaultSettings();
-					partPanel.settingsChanged();
+					arrangementView.settingsChanged();
 					break;
 				case 2: // file naming
 					exportFilenameTemplate.restoreDefaultSettings();
@@ -1552,7 +1552,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		// if (abcSong != null)
 		// abcSong.setShowPruned(saveSettings.showPruned);
 
-		partPanel.setPolyphony(miscSettings.showMaxPolyphony);
+		arrangementView.setPolyphony(miscSettings.showMaxPolyphony);
 		if (abcSong != null) {
 			abcSong.setBadger(miscSettings.showBadger);
 		}
@@ -1901,8 +1901,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		if (e.getProperty() == AbcPartProperty.TRACK_ENABLED)
 			updateButtons(false);
 
-		if (e.getProperty() == AbcPartProperty.TITLE && partPanel != null)
-			partPanel.setNewTitle(e.getSource());
+		if (e.getProperty() == AbcPartProperty.TITLE && arrangementView != null)
+			arrangementView.setNewTitle(e.getSource());
 
         if (e.getProperty() == AbcPartProperty.PART_NUMBER_MANUAL)
             partAutoNumberer.renumberAllParts(abcSong.getParts());
@@ -1919,8 +1919,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			refreshPreviewSequence(false);
 		}
 
-		if (e.isAbcPreviewRelated() && partPanel != null) {
-			partPanel.repaint();
+		if (e.isAbcPreviewRelated() && arrangementView != null) {
+			arrangementView.repaint();
 		}
 		
 		updateExportOrExportAsButton();
@@ -2026,7 +2026,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			updateButtons(false);
 			if (partsList.getSelectedPart() != null) {
 				// We do this to show the tempo panel if the tune editor has changed something
-				partPanel.setAbcPart(partsList.getSelectedPart(), true);
+				arrangementView.setAbcPart(partsList.getSelectedPart(), true);
 			}
             if (abcPreviewMode)
                 refreshPreviewSequence(false);
@@ -2044,7 +2044,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 			if (abcSong.getParts().isEmpty()) {
 				sequencer.stop();
-				partPanel.showInfoMessage(formatInfoMessage("Add a part", "This ABC song has no parts.\n" + //
+				arrangementView.showInfoMessage(formatInfoMessage("Add a part", "This ABC song has no parts.\n" + //
 						"Click the " + newPartButton.getText() + " button to add a new part."));
 			}
 
@@ -2057,11 +2057,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		case PART_LIST_ORDER:
             partsList.updateParts();//important to run before the below code
-            partsList.selectPart(abcSong.getParts().indexOf(partPanel.getAbcPart()));
+            partsList.selectPart(abcSong.getParts().indexOf(arrangementView.getAbcPart()));
             // this is important, else after a deletion, the tracklist might be in the wrong state:
             if (partsList.getSelectedPart() != null) {
                 // might be null shortly after loading from midi
-                partPanel.setAbcPart(partsList.getSelectedPart(), true);
+                arrangementView.setAbcPart(partsList.getSelectedPart(), true);
             }
 
 			partsList.repaint();
@@ -2160,7 +2160,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
 	private boolean isAbcSongModified() {
-		return abcSong != null && (abcSongModified || !partPanel.getTextnote().equals(abcSong.getNote()));
+		return abcSong != null && (abcSongModified || !arrangementView.getTextnote().equals(abcSong.getNote()));
 	}
 
 	public int getTranspose() {
@@ -2247,11 +2247,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			abcSong = null;
 		}
 
-		partPanel.setAbcPart(null, false);
-		partPanel.setTextnote("");
-		partPanel.textnoteVisible(false);
-		partPanel.unZoom();
-		partPanel.closeAbcSong();
+		arrangementView.setAbcPart(null, false);
+		arrangementView.setTextnote("");
+		arrangementView.textnoteVisible(false);
+		arrangementView.unZoom();
+		arrangementView.closeAbcSong();
 		
 		partEditor.setVisible(false);
 
@@ -2371,9 +2371,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			if (abcSong.isFromXmlFile() || miscSettings.importLyrics) {
 				String note = abcSong.getNote();
 				if (note != null) {
-					partPanel.setTextnote(note);
+					arrangementView.setTextnote(note);
 					if (!note.isEmpty()) {
-						partPanel.textnoteVisible(true);
+						arrangementView.textnoteVisible(true);
 					}
 				}
 			}
@@ -2440,7 +2440,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			setAbcSongModified(midiResolved);
 			midiResolved = false;
 			updateTitle();
-            partPanel.scrollToTop();
+            arrangementView.scrollToTop();
 		} catch (SAXParseException e) {
 			String message = e.getMessage();
 			if (e.getLineNumber() >= 0) {
@@ -2449,10 +2449,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 					message += ", column " + e.getColumnNumber();
 			}
 
-			partPanel.showInfoMessage(formatErrorMessage("Could not open " + file.getName(), message));
+			arrangementView.showInfoMessage(formatErrorMessage("Could not open " + file.getName(), message));
 			midiResolved = false;
 		} catch (InvalidMidiDataException | IOException | ParseException | SAXException e) {
-			partPanel.showInfoMessage(formatErrorMessage("Could not open " + file.getName(), e.getMessage()));
+			arrangementView.showInfoMessage(formatErrorMessage("Could not open " + file.getName(), e.getMessage()));
 			midiResolved = false;
 		}
 		
@@ -2603,7 +2603,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 					SequencerWrapper oldSequencer = abcPreviewMode ? abcSequencer : sequencer;
 					oldSequencer.stop();
 				}
-			} else if (abcSong.getActivePartCount() > 0) {
+			} else if (abcSong != null && abcSong.getActivePartCount() > 0) {
 				// for histogram. The condition is due to it might be
                 // refreshPreviewSequence thats calling us, and we
                 // don't want infinite loop.
@@ -2623,7 +2623,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			abcPreviewMode = newAbcPreviewMode;
             SequencerWrapper.isAbcPreview = abcPreviewMode;
 
-			partPanel.setAbcPreviewMode(abcPreviewMode);
+			arrangementView.setAbcPreviewMode(abcPreviewMode);
 			updateButtons(false);
 		}
 		if (abcPreviewMode) {
@@ -2749,13 +2749,13 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             abcSequencer.setTickPosition(tick);
             abcSequencer.setRunning(abcRunning);
             previewSequenceInfo.histogram.setSequencer(abcSequencer);
-            partPanel.setHistogram(previewSequenceInfo.histogram);
+            arrangementView.setHistogram(previewSequenceInfo.histogram);
             histogram = previewSequenceInfo.histogram;
         } catch (InvalidMidiDataException e) {
             log.log(Level.WARNING, "Error after exporting preview", e);
             sequencer.stop();
             abcSequencer.stop();
-            partPanel.setHistogram(null);
+            arrangementView.setHistogram(null);
             histogram = null;
             JOptionPane.showMessageDialog(ProjectFrame.this, e.getMessage(), "Error previewing ABC",
                     JOptionPane.WARNING_MESSAGE);
@@ -2784,7 +2784,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             abcBarLabel.setBarNumberCache(null);
             abcBarLabel.setInitialOffsetTick(abcPreviewStartTick);
             abcPositionLabel.setInitialOffsetTick(abcPreviewStartTick);
-            partPanel.setHistogram(new PolyphonyHistogram());
+            arrangementView.setHistogram(new PolyphonyHistogram());
             updatePreviewMode(false);
             setSourceChangeEnabled(true);
             return false;
@@ -2847,8 +2847,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	private void commitAllFields() {
 		try {
-			abcSong.setNote(partPanel.getTextnote());
-			partPanel.commitAllFields();
+			abcSong.setNote(arrangementView.getTextnote());
+			arrangementView.commitAllFields();
 			transposeSpinner.commitEdit();
 			tempoSpinner.commitEdit();
 			timeSignatureField.commitEdit();
@@ -2860,7 +2860,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	
 	public void compileStats() {
 		if (abcSong == null) {
-			//partPanel.setNote("No AbcSong");
+			//arrangementView.setNote("No AbcSong");
 			return;
 		}
 		String tempNote = "";
@@ -2869,8 +2869,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		tempNote += checkDuplicatePartTitles();
 		tempNote += getNumberOfExportNotes();
 		tempNote += getEmptyParts();
-		//partPanel.setNote(tempNote);
-		//partPanel.noteVisible(true);
+		//arrangementView.setNote(tempNote);
+		//arrangementView.noteVisible(true);
 	}
 	
 	private String getTimingStats() {

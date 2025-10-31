@@ -68,7 +68,7 @@ public class ControlLayout implements LayoutManager {
 
                 // as in layoutContainer
                 int height = (int) (Math.max(minimumSize, cDim.height) * zoomV);
-                if (((PartPanelItem)c).isVerticalZoomForbidden()) {
+                if (((ArrangementViewItem)c).isVerticalZoomForbidden()) {
                     height = cDim.height;
                 }
                 totalHeight += height;
@@ -111,7 +111,7 @@ public class ControlLayout implements LayoutManager {
 			if (c.isVisible()) {
 				Dimension cDim = c.getPreferredSize();
 				int height = (int) (Math.max(minimumSize,cDim.height) * zoomV);
-				if (((PartPanelItem)c).isVerticalZoomForbidden()) {
+				if (((ArrangementViewItem)c).isVerticalZoomForbidden()) {
 					height = cDim.height;
 				}
 				c.setSize(widestWidth, height);

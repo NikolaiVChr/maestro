@@ -259,7 +259,7 @@ public class PartAutoNumberer {
             }
             // instead of notifying listeners many times, we do it once here
             // We don't have to worry about which abc-part that send out notify,
-            // since PartPanel.setAbcPart() will get called after this has ran.
+            // since ArrangementView.setAbcPart() will get called after this has ran.
             // So the UI will be uptodate.
             parts.getFirst().notifyPartNumberManuallyAssigned();
         }

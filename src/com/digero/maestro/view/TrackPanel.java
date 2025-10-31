@@ -70,7 +70,7 @@ import info.clearthought.layout.TableLayoutConstraints;
 import net.miginfocom.swing.MigLayout;
 
 @SuppressWarnings("serial")
-public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConstants, ICompileConstants, PartPanelItem {
+public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConstants, ICompileConstants, ArrangementViewItem {
 
 	private static final String DRUM_NOTE_MAP_DIR_PREF_KEY = "DrumNoteMap.directory";
 
@@ -652,10 +652,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		UIManager.put("MenuBar.selectionForeground", fg);
 	}
 
-	public TrackInfo getTrackInfo() {
-		return trackInfo;
-	}
-
+    @Override
 	public void setAbcPreviewMode(boolean isAbcPreviewMode) {
 		if (this.isAbcPreviewMode != isAbcPreviewMode) {
 			this.isAbcPreviewMode = isAbcPreviewMode;
@@ -668,7 +665,8 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		}
 	}
 
-	private boolean isAbcPreviewMode() {
+    @Override
+	public boolean isAbcPreviewMode() {
 		return abcSequencer != null && isAbcPreviewMode;
 	}
 

@@ -32,7 +32,7 @@ import com.digero.maestro.midi.SequenceInfo;
 import com.digero.maestro.view.TrackPanel.TrackDimensions;
 
 @SuppressWarnings("serial")
-public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutConstants, PartPanelItem {
+public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutConstants, ArrangementViewItem {
 	// 0 1 2 3
 	// +---+-------------------+-----------+---------------------+
 	// | | | | +---------------+ |
@@ -61,7 +61,8 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 
 	private final SequencerWrapper sequencer;
 	private final SequencerWrapper abcSequencer;
-	private boolean abcPreviewMode = false;
+    private boolean show = false;
+    private boolean abcPreviewMode = false;
 
 	private HistogramNoteGraph histoGraph;
 	private LeanJLabel currentCountLabel;
@@ -133,24 +134,35 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 			abcSequencer.removeChangeListener(sequencerListener);
 	}
 
-	public void setAbcPreviewMode(boolean abcPreviewMode, boolean showMaxPolyphony) {
+    public void setShowPanel(boolean show) {
+        this.show = show;
+        updateVisibility();
+    }
+
+    private void updateVisibility() {
+        setVisible(abcPreviewMode && show);
+        histoGraph.setVisible(abcPreviewMode && show);
+        if (abcPreviewMode && show) {
+            setMaximumSize(null);
+            histoGraph.setMaximumSize(null);
+        } else {
+            setMaximumSize(new Dimension(0,0));
+            histoGraph.setMaximumSize(new Dimension(0,0));
+        }
+        PolyphonyHistogram.enabled = show;//TODO
+    }
+
+    @Override
+	public void setAbcPreviewMode(boolean abcPreviewMode) {
 		if (this.abcPreviewMode != abcPreviewMode) {
 			this.abcPreviewMode = abcPreviewMode;
 			updateCountLabel();
 			currentCountLabel.revalidate();
 		}
-		setVisible(abcPreviewMode && showMaxPolyphony);
-		histoGraph.setVisible(abcPreviewMode && showMaxPolyphony);
-		if (abcPreviewMode && showMaxPolyphony) {
-			setMaximumSize(null);
-			histoGraph.setMaximumSize(null);
-		} else {
-			setMaximumSize(new Dimension(0,0));
-			histoGraph.setMaximumSize(new Dimension(0,0));
-		}
-		PolyphonyHistogram.enabled = showMaxPolyphony;//TODO
+        updateVisibility();
 	}
 
+    @Override
 	public boolean isAbcPreviewMode() {
 		return abcPreviewMode;
 	}

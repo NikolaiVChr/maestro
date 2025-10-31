@@ -42,7 +42,7 @@ import com.digero.maestro.midi.TrackInfo;
 import com.digero.maestro.view.TrackPanel.TrackDimensions;
 
 @SuppressWarnings("serial")
-public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConstants, ICompileConstants {
+public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardable, TableLayoutConstants, ICompileConstants {
 	// 0 1 2 3
 	// +---+--------------------+----------+--------------------+
 	// | | TRACK NAME | Drum | +--------------+ |
@@ -233,12 +233,18 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 		updateState();
 		//noteGraph.setPreferredSize(new Dimension(noteGraph.getPreferredSize().width, getPreferredSize().height)); the getter is overridden
 	}
-	
-	public DrumNoteGraph getNoteGraph() {
+
+    @Override
+	public JPanel getNoteGraph() {
 		return noteGraph;
 	}
-	
-	public void setSelected(boolean selected) {
+
+    @Override
+    public boolean isVerticalZoomForbidden() {
+        return true;
+    }
+
+    public void setSelected(boolean selected) {
 		checkBox.setSelected(selected);
 		abcPart.setDrumEnabled(trackInfo.getTrackNumber(), drumId, checkBox.isSelected());
 	}
@@ -363,6 +369,7 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 		}
 	}
 
+    @Override
 	public void setAbcPreviewMode(boolean isAbcPreviewMode) {
 		if (this.isAbcPreviewMode != isAbcPreviewMode) {
 			this.isAbcPreviewMode = isAbcPreviewMode;
@@ -370,7 +377,8 @@ public class DrumPanel extends JPanel implements IDiscardable, TableLayoutConsta
 		}
 	}
 
-	private boolean isAbcPreviewMode() {
+    @Override
+	public boolean isAbcPreviewMode() {
 		return abcSequencer != null && isAbcPreviewMode;
 	}
 

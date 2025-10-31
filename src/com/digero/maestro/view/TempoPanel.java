@@ -38,7 +38,7 @@ import com.digero.maestro.midi.SequenceInfo;
 import com.digero.maestro.view.TrackPanel.TrackDimensions;
 
 @SuppressWarnings("serial")
-public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConstants, PartPanelItem {
+public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConstants, ArrangementViewItem {
 	// 0 1 2 3
 	// +---+-------------------+-----------+---------------------+
 	// | | | | +---------------+ |
@@ -174,6 +174,7 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
 			abcSequencer.removeChangeListener(sequencerListener);
 	}
 
+    @Override
 	public void setAbcPreviewMode(boolean abcPreviewMode) {
 		refreshWanted = true;
 		if (this.abcPreviewMode != abcPreviewMode) {
@@ -183,6 +184,7 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
 		if (tempoGraph != null) tempoGraph.repaint();
 	}
 
+    @Override
 	public boolean isAbcPreviewMode() {
 		return abcPreviewMode;
 	}
