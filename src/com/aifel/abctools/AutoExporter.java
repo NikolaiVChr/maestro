@@ -21,6 +21,10 @@ import java.util.prefs.Preferences;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.Element;
+import javax.swing.text.html.HTMLDocument;
+import javax.swing.text.html.HTMLEditorKit;
 import javax.xml.transform.TransformerException;
 
 import com.aifel.abctools.AbcTools.MsxFileFilter;
@@ -65,6 +69,7 @@ public class AutoExporter {
 	private int totalExportCount = 0;
 	private volatile int result = 0;
 	private volatile String textAuto = "";
+    private volatile boolean txtFieldClear = false;
 	private boolean txtFieldDirty = false;
 	private final Object txtFieldMutex = new Object();
 
@@ -106,12 +111,12 @@ public class AutoExporter {
 				}
 			}
 		}, 250L, 250L);
-		setToField("Start with selecting source, midi and destination folders."
-				+ "<br>Destination folder must be empty!"
-				+ "<br>MIDI folder is optional. It is used when midi cannot be found,"
-				+ " then it looks in that folder before asking for location."
-				+ "<br>When exporting it will use your Maestro settings for filename, partname etc etc."
-				+ "<br>Close Maestro while this app runs.");
+		setToField("<p>Start with selecting source, midi and destination folders.</p>"
+				+ "<p>Destination folder must be empty!</p>"
+				+ "<p>MIDI folder is optional. It is used when midi cannot be found,"
+				+ " then it looks in that folder before asking for location.</p>"
+				+ "<p>When exporting it will use your Maestro settings for filename, partname etc etc.</p>"
+				+ "<p>Close Maestro while this app runs.</p>");
 		
 		sourceFolderAuto = new File(autoPrefs.get(DIR_AUTO_SOURCE, myHome));
 		midiFolderAuto = new File(autoPrefs.get(DIR_AUTO_MIDI, myHome));
@@ -147,7 +152,7 @@ public class AutoExporter {
                     inProgress = false;
 					log.warning("Error exporting: " + ioe.toString());
 					setProgress(0);
-					appendToField("<br><font color='red'>"+ioe.toString()+"</font>");
+					appendToField("<p><font color='red'>"+ioe.toString()+"</font></p>");
 					SwingUtilities.invokeLater(() -> {
 						frame.getBtnStartExport().setEnabled(true);
 						frame.getBtnCancelExport().setEnabled(false);
@@ -201,12 +206,12 @@ public class AutoExporter {
 		// Test if dest is empty
 		if (destFolderAuto.listFiles(new FolderFileFilter()).length != 0) {
             inProgress = false;
-			setToField("Start with selecting source, midi and destination folders.<br>"
-					+ "<font color='red'>Destination folder must be empty!</font>"
-					+ "<br>MIDI folder is optional. It is used when midi cannot be found,"
-					+ " then it looks in that folder before asking for location."
-					+ "<br>When exporting it will use your Maestro settings for filename, partname etc etc."
-					+ "<br>Close Maestro while this app runs.");
+			setToField("<p>Start with selecting source, midi and destination folders.</p><p>"
+					+ "<font color='red'>Destination folder must be empty!</font></p>"
+					+ "<p>MIDI folder is optional. It is used when midi cannot be found,"
+					+ " then it looks in that folder before asking for location.</p>"
+					+ "<p>When exporting it will use your Maestro settings for filename, partname etc etc.</p>"
+					+ "<p>Close Maestro while this app runs.</p>");
 			SwingUtilities.invokeLater(() -> {
 				frame.getBtnStartExport().setEnabled(true);
 				frame.getBtnCancelExport().setEnabled(false);
@@ -224,7 +229,7 @@ public class AutoExporter {
 			return;
 		}
 		
-		setToField("Keep Maestro closed while this app runs.<br><br>Exporting in progress");
+		setToField("<p>Keep Maestro closed while this app runs.</p><p></p><p>Exporting in progress</p>");
 
 		partAutoNumberer = new PartAutoNumberer(prefs.node("partAutoNumberer"));
 		partNameTemplate = new PartNameTemplate(prefs.node("partNameTemplate"));
@@ -245,7 +250,7 @@ public class AutoExporter {
                 List<Path> filesToProcess = Arrays.stream(projects)
                         .map(File::toPath).toList();
 
-                appendToField("<br>Found " + projects.length + " project files.<br>");
+                appendToField("<p>Found " + projects.length + " project files.</p><p></p>");
 
                 progressFactor = 1000.0d / projects.length;
                 exportCount.set(0);
@@ -263,7 +268,7 @@ public class AutoExporter {
 
                         skippedProjects.add(file.toFile());
 
-                        appendToField("<br><font color='red'>" + e.toString() + "</font>");
+                        appendToField("<p></p><p><font color='red'>" + e.toString() + "</font></p>");
                     }
 
                     setProgress((int) (exportCount.incrementAndGet() * progressFactor));
@@ -280,7 +285,7 @@ public class AutoExporter {
             }
 
             totalExportCount = filesToProcess.size();
-            appendToField("<br>Found " + totalExportCount + " project files.<br>");
+            appendToField("<p>Found " + totalExportCount + " project files.<p>");
 
             progressFactor = 1000.0d / totalExportCount;
             exportCount.set(0);
@@ -296,16 +301,16 @@ public class AutoExporter {
                 } catch (Exception e) {
                     log.warning(file.getFileName() + ": " + e.getMessage());
                     skippedProjects.add(file.toFile());
-                    appendToField("<br><font color='red'>" + e.toString() + "</font>");
+                    appendToField("<p><font color='red'>" + e.toString() + "</font></p>");
                 }
 
                 setProgress((int) (exportCount.incrementAndGet() * progressFactor));
             });
 		}
         if (!skippedProjects.isEmpty()) {
-            appendToField("<br><br>Skipped/failed " + skippedProjects.size() + " project files:");
+            appendToField("<p></p><p>Skipped/failed " + skippedProjects.size() + " project files:</p>");
             for (File f : skippedProjects) {
-                appendToField("<br><font color='orange'>" + f.getParent() + File.separator + f.getName()+"</font>");
+                appendToField("<p></p><p><font color='orange'>" + f.getParent() + File.separator + f.getName()+"</font></p>");
             }
         }
         /*
@@ -318,10 +323,10 @@ public class AutoExporter {
          */
 		if (!cancel) {
 			setProgress(1000);
-			appendToField("<br><br>Exports finished. ");//+com.digero.maestro.abc.PolyphonyHistogram.successes
+			appendToField("<p></p><p>Exports finished. </p>");//+com.digero.maestro.abc.PolyphonyHistogram.successes
 			log.info("Auto exports finished outputting "+totalExportCount+" files");
 		} else {
-			appendToField("<br><br>Exports cancelled.");
+			appendToField("<p></p><p>Exports cancelled.</p>");
 			log.info("Auto exports cancelled");
 		}
         inProgress = false;
@@ -402,7 +407,7 @@ public class AutoExporter {
 						exportProject(file.toFile());
 					} catch (Exception e) {
 						log.warning(file.getFileName()+": "+e.getMessage());
-						appendToField("<br><font color='red'>"+e.toString()+"</font>");
+						appendToField("<p></p><p><font color='red'>"+e.toString()+"</font></p>");
                         skippedProjects.add(file.toFile());
 					}
 					setProgress((int) (exportCount.incrementAndGet() * progressFactor));
@@ -450,40 +455,68 @@ public class AutoExporter {
 		progressInt = progress;
 	}
 
+    /**
+     * Do not use <br> wrap each line in <p></p> instead
+     */
 	private void appendToField(String txt) {
 		synchronized(txtFieldMutex) {
 			txtFieldDirty = true;
 			textAuto += txt;
 		}
 	}
-	
+
+    /**
+     * Do not use <br> wrap each line in <p></p> instead
+     */
 	private void setToField(String txt) {
 		synchronized(txtFieldMutex) {
 			txtFieldDirty = true;
+            txtFieldClear = true;
 			textAuto = txt;
 		}
-	}
-	
-	private void updateProgress() {
-		SwingUtilities.invokeLater(() -> {
-			frame.setProgressBarValue(progressInt);
-		});
 	}
 
 	private void updateField() {
 		synchronized(txtFieldMutex) {
 			if (txtFieldDirty && !txtFieldPrimedForUpdate) {
 				txtFieldPrimedForUpdate = true;
+                final String textToProcess = textAuto;
+                final boolean clear = txtFieldClear;
+                textAuto = "";
+                txtFieldClear = false;
+                txtFieldDirty = false;
 				SwingUtilities.invokeLater(() -> {
-					synchronized(txtFieldMutex) {
-						frame.getTxtAutoExport().setText("<html>" + textAuto + "</html>");
-						txtFieldDirty = false;
+                    try {
+                        if (clear) {
+                            frame.getTxtAutoExport().setText(textToProcess);
+                        } else {
+                            HTMLEditorKit kit = (HTMLEditorKit) frame.getTxtAutoExport().getEditorKit();
+                            HTMLDocument doc = (HTMLDocument) frame.getTxtAutoExport().getDocument();
+                            Element body = doc.getElement("body");
+                            if (body != null) {
+                                kit.insertHTML(doc, body.getEndOffset() - 1, textToProcess, 0, 0, null);
+                            } else {
+                                // Fallback
+                                kit.insertHTML(doc, doc.getLength(), textToProcess, 0, 0, null);
+                            }
+                        }
+                    } catch (BadLocationException | IOException e) {
+                        log.warning(e.getMessage());
+                    }
+
+                    synchronized(txtFieldMutex) {
 						txtFieldPrimedForUpdate = false;
 					}
 				});
 			}
 		}
 	}
+
+    private void updateProgress() {
+        SwingUtilities.invokeLater(() -> {
+            frame.setProgressBarValue(progressInt);
+        });
+    }
 
     /**
      * Class to hold thread-specific fields.
@@ -502,7 +535,7 @@ public class AutoExporter {
         pInfo.newNestedMidi = null;
         pInfo.oldMidi = null;
         pInfo.nestedProject = project;
-        pInfo.appendText = "<br>Exporting " + project.getName();
+        pInfo.appendText = "<p>Exporting " + project.getName()+"</p>";
 
         FileResolverAsync openFileResolver = new FileResolverAsync();
         openFileResolver.pInfo = pInfo;
@@ -590,7 +623,7 @@ public class AutoExporter {
 
 		abcSong.exportAbc(exportFile, AbcTools.APP_NAME);
 		int maxPoly = abcSong.getMaxPartPoly();
-		if (maxPoly > 6) pInfo.appendText += "<br><font color='orange'>&nbsp;&nbsp;part polyphony max was "+maxPoly+".</font>";
+		if (maxPoly > 6) pInfo.appendText += "<p></p><p><font color='orange'>&nbsp;&nbsp;part polyphony max was "+maxPoly+".</font></p>";
 		if ((abcSong.getExportFile() == null || exportFile.compareTo(abcSong.getExportFile()) != 0) && frame.getSaveMSXabcSelected()) {
 			pInfo.projectModified = true;
 		}
@@ -606,11 +639,11 @@ public class AutoExporter {
 		if (timingModified || ( pInfo.projectModified && (frame.getSaveMSXSelected() || frame.getSaveMSXabcSelected()) )) {
 			try {
 				XmlUtil.saveDocument(abcSong.saveToXml(), abcSong.getProjectFile());
-                pInfo.appendText += "<br>&nbsp;&nbsp;msx saved.";
+                pInfo.appendText += "<p></p><p>&nbsp;&nbsp;msx saved.</p>";
 			} catch (FileNotFoundException e) {
-                pInfo.appendText += "<br><font color='red'>&nbsp;&nbsp;msx saving failed.</font>";
+                pInfo.appendText += "<p></p><p><font color='red'>&nbsp;&nbsp;msx saving failed.</font></p>";
 			} catch (IOException | TransformerException e) {
-                pInfo.appendText += "<br><font color='red'>&nbsp;&nbsp;msx saving failed.</font>";
+                pInfo.appendText += "<p></p><p><font color='red'>&nbsp;&nbsp;msx saving failed.</font></p>";
 			}				
 		}
 		
@@ -637,7 +670,7 @@ public class AutoExporter {
 		}
 
 
-        pInfo.appendText += "<br>&nbsp;&nbsp;as " + exportFile.getName();
+        pInfo.appendText += "<p>&nbsp;&nbsp;as " + exportFile.getName()+"</p>";
         appendToField(pInfo.appendText);
 	}
 
@@ -889,7 +922,7 @@ public class AutoExporter {
 						});
 					} catch (Exception e) {
 						log.severe(e.toString());
-                        pInfo.appendText += "<br><font color='red'>"+e.toString()+"</font>";
+                        pInfo.appendText += "<p></p><p><font color='red'>"+e.toString()+"</font></p>";
 					}
 					if (result == JFileChooser.APPROVE_OPTION) {
 						alternateFile = jfc.getSelectedFile();
@@ -902,7 +935,7 @@ public class AutoExporter {
 				return alternateFile;
 			} catch (InvocationTargetException | InterruptedException e) {
 				log.severe(e.toString());
-                pInfo.appendText += "<br><font color='red'>"+e.toString()+"</font>";
+                pInfo.appendText += "<p></p><p><font color='red'>"+e.toString()+"</font></p>";
 			}
 			return null;
 		}

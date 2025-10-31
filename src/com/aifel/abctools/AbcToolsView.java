@@ -1,24 +1,14 @@
 package com.aifel.abctools;
 
-import javax.swing.JFrame;
-import javax.swing.JPanel;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.text.html.HTMLEditorKit;
+import javax.swing.text.html.StyleSheet;
 import java.awt.BorderLayout;
-import javax.swing.JScrollPane;
-import javax.swing.JLabel;
-import javax.swing.JSplitPane;
-import javax.swing.JTabbedPane;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JEditorPane;
-import javax.swing.JTextArea;
 import java.awt.Dimension;
 import java.awt.event.ActionListener;
 
-import javax.swing.BoxLayout;
 import java.awt.Component;
-import javax.swing.JSeparator;
-import javax.swing.JProgressBar;
 
 public class AbcToolsView extends JFrame {
 
@@ -50,7 +40,7 @@ public class AbcToolsView extends JFrame {
 	private JCheckBox forceOrganic;
 	private JCheckBox forceOrganic2;
 	private JScrollPane scrollPaneAutoTxt;
-	private JEditorPane txtAutoExport;
+	private JTextPane txtAutoExport;
 	private JLabel lblMidiAuto;
 	private JButton btnMIDI;
 	private JPanel panel_2;
@@ -271,9 +261,13 @@ public class AbcToolsView extends JFrame {
 		scrollPaneAutoTxt = new JScrollPane();
 		contentPaneAutoExport.add(scrollPaneAutoTxt, BorderLayout.CENTER);
 
-		txtAutoExport = new JEditorPane();
+		txtAutoExport = new JTextPane();
 		txtAutoExport.setEditable(false);
 		txtAutoExport.setContentType("text/html");
+        HTMLEditorKit kit = (HTMLEditorKit) txtAutoExport.getEditorKit();
+        StyleSheet styleSheet = kit.getStyleSheet();
+        // This rule makes <p> tags behave like lines (no extra spacing)
+        styleSheet.addRule("p { margin: 0; padding: 0; }");
 		txtAutoExport.setText("Text");
 		scrollPaneAutoTxt.setViewportView(txtAutoExport);
 
