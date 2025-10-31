@@ -4,16 +4,18 @@ import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URL;
+import java.util.logging.Logger;
 
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 
-/**
- * This is just here for the purposes of IconLoader.class.getResource()
- */
 public class IconLoader {
+    private static final Logger log = Logger.getLogger("file");
+
 	public static ImageIcon getImageIcon(String name) {
-		return new ImageIcon(IconLoader.class.getResource(name));
+        URL icon = IconLoader.class.getResource(name);
+        if (icon == null) return null;
+		return new ImageIcon(icon);
 	}
 
 	public static URL getUrl(String name) {
@@ -22,7 +24,9 @@ public class IconLoader {
 
 	public static ImageIcon getDisabledIcon(String name) {
 		try {
-			BufferedImage img = ImageIO.read(IconLoader.class.getResource(name));
+            URL icon = IconLoader.class.getResource(name);
+            if (icon == null) return null;
+			BufferedImage img = ImageIO.read(icon);
 			int width = img.getWidth();
 			int height = img.getHeight();
 			int[] argbArray = new int[width];
@@ -51,8 +55,8 @@ public class IconLoader {
 			return new ImageIcon(img);
 		} catch (IOException e) {
 			assert false;
-			e.printStackTrace();
-			return new ImageIcon(IconLoader.class.getResource(name));
+			log.warning("Failed to load disabled icon: " + name);
+			return getImageIcon(name);
 		}
 	}
 }

@@ -140,7 +140,7 @@ import info.clearthought.layout.TableLayoutConstants;
 import net.miginfocom.swing.MigLayout;
 
 public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompileConstants {
-	private static final Logger log = Logger.getLogger("file");
+	private static final Logger log = Logger.getLogger("view");
 
     private boolean uiEnabled = true;
     private boolean sourceChangeEnabled = true;
@@ -240,7 +240,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private JButton playButton;
 	private JButton stopButton;
 	private JSlider volumeSlider;
-	private JSlider panSlider;
+	private JSlider stereoSlider;
 	private SongPositionLabel midiPositionLabel;
 	private SongPositionLabel abcPositionLabel;
 	private BarNumberLabel midiBarLabel;
@@ -1000,10 +1000,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			setVolume(volumeSlider.getValue());
 		});
 
-		panSlider = new JSlider(0, 100, getPan());
-		panSlider.setFocusable(false);
-		panSlider.addChangeListener(e -> {
-			setPan(panSlider.getValue());
+		stereoSlider = new JSlider(0, 100, getPan());
+		stereoSlider.setFocusable(false);
+		stereoSlider.addChangeListener(e -> {
+			setPan(stereoSlider.getValue());
 		});
 
 		midiPositionLabel = new SongPositionLabel(sequencer, "000:00/000:00");
@@ -1050,7 +1050,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		//play
 		//stop
 		playControlPanel.add(new JLabel("Stereo:"), "alignx right");
-		playControlPanel.add(panSlider);
+		playControlPanel.add(stereoSlider);
 		//note
 		playControlPanel.add(midiBarLabel);
 		playControlPanel.add(abcBarLabel);
@@ -1762,7 +1762,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 
         volumeSlider.setEnabled(uiEnabled);
-        panSlider.setEnabled(uiEnabled);
+        stereoSlider.setEnabled(uiEnabled);
 
 		playButton.setEnabled(midiLoaded && uiEnabled);
 		midiModeRadioButton.setEnabled((midiLoaded || hasAbcNotes) && uiEnabled);
