@@ -571,23 +571,23 @@ public class AbcExporter {
 		long L = (qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? 16L : 8L;
 		long Q = qtm.getPrimaryExportTempoBPM();
 		
-		// One whole abc note is this many microseconds:
+		// One whole abc note is this many microseconds
+        // This we will use as denominator for full precision
 		int oneMicro = (int)(qtm.getMeter().denominator * TimingInfo.ONE_SECOND_MICROS * 60L / (Q * L));
 		
 		int milli2micro = 100;
 		
 		// One whole abc note is this many milliseconds
-		// This we will use as denominator
-		int oneMilli = oneMicro/milli2micro;
-		
-		// 1 (milli) in numerator is really this many micros
-		int milliFactor = oneMicro/oneMilli;
-		
+		// This we will use as denominator for reduced precision
+		int oneMilli = (int) Math.ceilDiv(oneMicro, milli2micro);
+
 		long minimumMicro = AbcConstants.getShortestNoteMicros((int)Q);
-		int minimumMilli = (int) Math.ceilDiv(minimumMicro, milliFactor);
+
+        //minimum numerator for reduced precision:
+        int minimumMilli = microToMilliCeil(minimumMicro, oneMicro, oneMilli);
 		
-		assert minimumMilli/(double)oneMilli >= minimumMicro/(double)oneMicro;
-		
+		assert minimumMilli/(double)oneMilli >= minimumMicro/(double)oneMicro:"reduced min="+(minimumMilli/(double)oneMilli)+" min="+(minimumMicro/(double)oneMicro);
+
 		final int BAR_LENGTH = 120;
 		final long songStartMicros = qtm.tickToMicrosABCOrganic(exportStartTick);
 		int curExportTempoBPM = (int)Q;
@@ -635,10 +635,10 @@ public class AbcExporter {
             if (countInMicros > AbcConstants.LONGEST_COUNT_IN_MICROS) {
                 countInMicros = 0;
                 countIn = null;
-                logPreview.warning("Count-in for ABC: count-in longer than 12 seconds, cancelling count-in.");
+                logAbc.warning("Count-in for ABC: count-in longer than 12 seconds, cancelling count-in.");
                 ProjectFrame.feed("Warning: Count-in cancelled, it's too long.", "Reduce to at/under 12 seconds.");
             } else {
-                logPreview.info("Count-in for ABC: total count-in. micros = " + countInMicros + " bars = " + countIn.barCount);
+                logAbc.info("Count-in for ABC: total count-in. micros = " + countInMicros + " bars = " + countIn.barCount);
             }
         }
 		
@@ -652,8 +652,10 @@ public class AbcExporter {
                 countInMicros = 0L;
                 if (hitMicros < minimumMicro) {
                     countIn = null;//cancel, since count-in is too short
-                    logPreview.warning("Count-in for ABC: hitMicros shorter than 60 ms, cancelling count-in.");
+                    logAbc.warning("Count-in for ABC: hitMicros shorter than 60 ms, cancelling count-in.");
                     ProjectFrame.feed("Warning: Count-in cancelled, it's too short.", "Expand so each drum hit is more than 60 ms apart.");
+                } else {
+                    logAbc.info("Count-in for ABC: going forward.");
                 }
             } else if (countIn != null) {
                 int hits = countIn.pattern.dynamics.length;
@@ -661,6 +663,7 @@ public class AbcExporter {
                 if (hitMicros < minimumMicro) {
                     countInMicros = 0L;
                 }
+                logAbc.info("Count-in for ABC: not this part. hit="+hitMicros+" total="+countInMicros);
             }
 
 			// the 100 is so the delay is always larger than 60 ms, even if its 0 ms.
@@ -682,7 +685,10 @@ public class AbcExporter {
             }
 
 			out.print("z" + delayMicro + "/" + oneMicro2);
-            if (delayMicro2 > 0) out.print(" z" + delayMicro2 + "/" + oneMicro2);
+            if (delayMicro2 > 0) {
+                out.print(" z" + delayMicro2 + "/" + oneMicro2);
+                logAbc.info("Delaying by " + delayMicro2 + " micros.");
+            }
             out.println(" | ");
             if (countIn != null && countIn.part == part) {
                 /*
@@ -691,14 +697,14 @@ public class AbcExporter {
                  count-in will also be delayed.
                  */
 
-                logPreview.info("Count-in for ABC: hitMicros: "+hitMicros);
+                logAbc.info("Count-in for ABC: hitMicros: "+hitMicros);
                 for (CountIn.CountInDynamics dyn : countIn.pattern.dynamics) {
                     Dynamics volume = dyn.dynamics;
                     bar.append('+').append(volume).append("+ ");
                     bar.append(countIn.hit.note.abc);
                     bar.append(hitMicros).append("/").append(oneMicro2);
 
-                    logPreview.info("Count-in for ABC: added a count-in hit: "+countIn.hit.name+" velocity = "+volume.midiVol);
+                    logAbc.info("Count-in for ABC: added a count-in hit: "+countIn.hit.name+" velocity = "+volume.midiVol);
                 }
             }
 		}
@@ -711,9 +717,11 @@ public class AbcExporter {
 		boolean useMicroAccuracy = useRestsInChords;//pair.second;
 		
 		if (useMicroAccuracy) {
+            //logAbc.warning("ABC part organic export: using micro accuracy.");
 			logAbc.info("ABC part organic export: Q="+Q+", L=1/"+L+", 1 numerator=1 us, denom="+oneMicro+", minimum="+(minimumMicro)+" μs.");
 		} else {
-			logAbc.info("ABC part organic export: Q="+Q+", L=1/"+L+", 1 numerator="+milliFactor+" us, denom="+oneMilli+", minimum="+(minimumMilli*milliFactor)+" μs.");
+            //logAbc.warning("ABC part organic export: using reduced accuracy.");
+			logAbc.info("ABC part organic export: Q="+Q+", L=1/"+L+", 1 numerator="+milli2micro+" us, denom="+oneMilli+", minimum="+milliToMicro(minimumMilli, oneMicro, oneMilli)+" μs.");
 		}
 		
 		for (Chord c : chords) {
@@ -808,7 +816,7 @@ public class AbcExporter {
 			
 			//must not become shorter than the micros,
 			//as then long notes can overlap proceeding note with same pitch.
-			int chordMilli = Math.ceilDiv(chordMicro, milliFactor);
+			int chordMilli = microToMilliCeil(chordMicro, oneMicro, oneMilli);
 			
 			assert !c.isUneven() || useRestsInChords;
 			
@@ -818,7 +826,7 @@ public class AbcExporter {
 				
 				int minAdjust = 0;
 				if (chordMicro < minimumMicro) {
-					logAbc.finest("Increased chord from "+chordMicro+" to "+minimumMicro+" micros.");
+					logAbc.finest("Increased chord from "+chordMicro+" to "+milliToMicro(minimumMilli, oneMicro, oneMilli)+" micros.");
 					minAdjust = (int)minimumMicro - chordMicro;
 					chordMicro = (int)minimumMicro;
 				}
@@ -830,36 +838,39 @@ public class AbcExporter {
 				}
 				
 				long driftChordMicros = currentMicro - cStartMicro;
-								
+
 				if (Math.abs(driftChordMicros) > Math.abs(largestDriftMicros)) {
 					largestDriftMicros = driftChordMicros;
 					
-					if ((Math.abs(driftChordMicros) > 10000 && diff != Integer.MIN_VALUE)) {
+					if ((Math.abs(driftChordMicros) > 10000L && diff != Integer.MIN_VALUE)) {
 						long postDiff = (currentMicro + chordMicro) - cEndMicro;
-						logAbc.severe("Start driftMicros="+driftChordMicros+". End adjustment was "+(-diff+minAdjust)
-								+", ideal adjustment would have been "+(-diff)+", resultDiff="+(-postDiff)+" μs. ("+part.getTitle()+")");
-						logAbc.severe("Adjustment main="+(-diff)+" extra="+minAdjust);
-						logAbc.severe("Chord "+(cEndMicro-cStartMicro));
+						logAbc.warning("chordStart-driftMicros="+driftChordMicros+". End adjustment was "+(-diff+minAdjust)
+								+", ideal end adjustment would have been "+(-diff)+", chordEnd-driftMicros="+(-postDiff)+" μs. ("+part.getTitle()+")"
+						        +"\nChord should be "+(cEndMicro-cStartMicro)+" but ended as "+chordMicro);
 					}
 				}
 			} else {
-				long diff = (currentMicro + chordMilli*milliFactor) - cEndMicro;
-				if (diff != 0) {
+                int oldChordMilli = chordMilli;
+                long chordMilliInMicros = milliToMicro(chordMilli, oneMicro, oneMilli);
+                long diffMicros = (currentMicro + chordMilliInMicros) - cEndMicro;
+				if (diffMicros != 0) {
 					// After a series of chords, we might start to drift due to conversions vs. keeping lotro limits.
 					// When the drift magnitude gets larger than milliFactor, we adjust.
 					
 					// diff is how much the note ending will have drifted in micros
-					
-					if (c.isUneven() || passingNoteEndMilli > currentMilli + chordMilli - (diff/milliFactor)) {
+
+                    int diffInMillis = microToMilliRound(diffMicros, oneMicro, oneMilli);
+
+					if (c.isUneven() || passingNoteEndMilli > currentMilli + chordMilli - diffInMillis) {
 						// allow only positive adjustment
 						// this is needed, but it makes poly 6+ drift too much,
 						// so we use micro accuracy for poly 6+.
-						diff = Math.min(0, diff);
+						diffMicros = Math.min(0, diffMicros);
 					}
 					
-					// adjust the note duration by the drift if it it larger magnitude than milliFactor 
-					chordMilli -= (int)(diff/milliFactor);
-				} else diff = Integer.MIN_VALUE;
+					// adjust the note duration by the drift
+                    chordMilli -= microToMilliRound(diffMicros, oneMicro, oneMilli);
+				} else diffMicros = Long.MIN_VALUE;
 				
 				long minAdjust = 0L;
 				if (chordMilli < minimumMilli) {
@@ -867,25 +878,28 @@ public class AbcExporter {
 					minAdjust = minimumMilli - chordMilli;
 					chordMilli = minimumMilli;
 				}
-				
-				if (chordMilli*milliFactor > AbcConstants.LONGEST_NOTE_MICROS) {
+                chordMilliInMicros = milliToMicro(chordMilli, oneMicro, oneMilli);
+				if (chordMilliInMicros > AbcConstants.LONGEST_NOTE_MICROS) {
 					// should never happen
-					logAbc.severe(part.getTitle() +": chord is "+(chordMilli*milliFactor)+" μs, drone="+isDrone(part, c.get(0)));
-					chordMilli = (int)(AbcConstants.LONGEST_NOTE_MICROS/milli2micro-1L);
-					assert chordMilli*milliFactor <= AbcConstants.LONGEST_NOTE_MICROS;
+					logAbc.severe(part.getTitle() +": chord is "+chordMilliInMicros+" μs, drone="+isDrone(part, c.get(0)));
+                    chordMilli = microToMilliFloor(AbcConstants.LONGEST_NOTE_MICROS, oneMicro, oneMilli) - 1;
+                    chordMilliInMicros = milliToMicro(chordMilli, oneMicro, oneMilli);
+					assert chordMilliInMicros <= AbcConstants.LONGEST_NOTE_MICROS;
 				}
 				
-				chordMicro = chordMilli * milliFactor;
+				chordMicro = (int)chordMilliInMicros;
 				
 				long driftMicros = currentMicro - cStartMicro;
 				if (Math.abs(driftMicros) > Math.abs(largestDriftMicros)) {
-					if ((Math.abs(driftMicros) > 10000 && diff != Integer.MIN_VALUE)) {
-						long postDiff = (currentMicro + chordMilli*milliFactor) - cEndMicro;
-						logAbc.severe("\nHigh drift in "+part.getAbcSong().getTitle()
-                                +"\nStart driftMicros="+driftMicros+". End adjustment was "+(milliFactor*(-diff/milliFactor+minAdjust))
-								+", ideal adjustment would have been "+(-diff)+", resultDiff="+(-postDiff)+" μs. ("+part.getTitle()+")"
-                                +"\nAdjustment main="+(milliFactor*(-diff/milliFactor))+" extra="+(milliFactor*(minAdjust))
-                                +"\nChord dura "+(cEndMicro-cStartMicro));
+					if ((Math.abs(driftMicros) > 10000 && diffMicros != Long.MIN_VALUE)) {
+                        long chordEndDiff = (currentMicro + chordMicro) - cEndMicro;
+                        long adjustmentMicros = milliToMicro(chordMilli-oldChordMilli,oneMicro,oneMilli);//milliToMicro(microToMilliRound(-diff, oneMicro, oneMilli) + (int)minAdjust, oneMicro, oneMilli);
+                        long idealAdjustment = -diffMicros;
+                        logAbc.warning("\nHigh drift in "+part.getAbcSong().getTitle()
+                                +"\nstartChord-driftMicros="+driftMicros+". End adjustment was "+adjustmentMicros
+                                +", ideal end adjustment would have been "+idealAdjustment+", endChord-driftMicros="+(-chordEndDiff)+" μs. ("+part.getTitle()+")"
+                                +"\nChord dura should have been "+(cEndMicro-cStartMicro)+", but is now "+chordMicro);
+
 					}
 					largestDriftMicros = driftMicros;
 				}
@@ -953,7 +967,7 @@ public class AbcExporter {
 					}
 					denominator = oneMicro;
 				} else {
-					int noteMilli = Math.floorDiv(noteMicro, milliFactor);
+					int noteMilli = microToMilliFloor(noteMicro, oneMicro, oneMilli);
 					if (nEndMicro == cEndMicro) {
 						noteMilli = chordMilli;
 					} else {
@@ -965,22 +979,22 @@ public class AbcExporter {
 						// earlier, the long note might overlap it, making entire part silent.
 						// Similar if this chord starts while there a long note from previous
 						// chord still playing, a shortening might cascade in similar manner. 
-						long diffMicros = (currentMicro + noteMilli*milliFactor) - nEndMicro;
-												
-						noteMilli -= (int)(diffMicros/milliFactor);
-						noteMilli = Math.max(noteMilli, chordMilli);
-					
+                        long noteMilliInMicros = milliToMicro(noteMilli, oneMicro, oneMilli);
+                        long diffMicros = (currentMicro + noteMilliInMicros) - nEndMicro;
+
+                        noteMilli -= microToMilliRound(diffMicros,oneMicro,oneMilli);
+
 						if (noteMilli < minimumMilli) {
 							noteMilli = minimumMilli;
 						}
 						if (noteMilli < chordMilli) {
 							noteMilli = chordMilli;
 						}
-						if (noteMilli*milliFactor > AbcConstants.LONGEST_NOTE_MICROS) {
+						if (milliToMicro(noteMilli, oneMicro, oneMilli) > AbcConstants.LONGEST_NOTE_MICROS) {
 							// should never happen
-							logAbc.severe(part.getTitle() +": note is "+(noteMilli*milliFactor)+" μs, drone="+isDrone(part, evt));
-							noteMilli = (int)(AbcConstants.LONGEST_NOTE_MICROS/milli2micro-1L);
-							assert noteMilli*milliFactor <= AbcConstants.LONGEST_NOTE_MICROS;
+							logAbc.severe(part.getTitle() +": note is "+milliToMicro(noteMilli, oneMicro, oneMilli)+" μs, drone="+isDrone(part, evt));
+                            noteMilli = microToMilliFloor(AbcConstants.LONGEST_NOTE_MICROS, oneMicro, oneMilli) - 1;
+							assert milliToMicro(noteMilli, oneMicro, oneMilli) <= AbcConstants.LONGEST_NOTE_MICROS;
 						}
 					}
 					
@@ -1056,6 +1070,36 @@ public class AbcExporter {
 		out.println();
 	}
 
+    /**
+     * Converts a reduced precision numerator over oneMilli back to the micro duration, rounding to the nearest micro.
+     */
+    private long milliToMicro(int millis, int oneMicro, int oneMilli) {
+        return (long) Math.round((millis / (double) oneMilli) * oneMicro);
+    }
+
+    /**
+     * Converts a micro duration to reduced precision numerator, rounding up.
+     * Ensure the numerator is not accidentally shortened.
+     */
+    private int microToMilliCeil(long micros, int oneMicro, int oneMilli) {
+        return (int) Math.ceil((micros / (double) oneMicro) * oneMilli);
+    }
+
+    /**
+     * Converts a micro duration to reduced precision numerator, rounding to the nearest reduced unit.
+     * Used for calculating drift
+     */
+    private int microToMilliRound(long micros, int oneMicro, int oneMilli) {
+        return (int) Math.round((micros / (double) oneMicro) * oneMilli);
+    }
+
+    /**
+     * Converts a micro duration to reduced precision, rounding down.
+     */
+    private int microToMilliFloor(long micros, int oneMicro, int oneMilli) {
+        return (int) Math.floor((micros / (double) oneMicro) * oneMilli);
+    }
+
 	private void exportPartToAbc(AbcPart part, PrintStream out,
 			boolean delayEnabled, PolyphonyHistogram histogram) throws AbcConversionException {
 		List<Chord> chords = combineAndQuantize(part, false, histogram);
@@ -1122,10 +1166,10 @@ public class AbcExporter {
             if (countInMicros > AbcConstants.LONGEST_COUNT_IN_MICROS) {
                 countInMicros = 0;
                 countIn = null;
-                logPreview.warning("Count-in for ABC: count-in longer than 12 seconds, cancelling count-in.");
+                logAbc.warning("Count-in for ABC: count-in longer than 12 seconds, cancelling count-in.");
                 ProjectFrame.feed("Warning: Count-in cancelled, it's too long.", "Reduce to at/under 12 seconds.");
             } else {
-                logPreview.info("Count-in for ABC: total count-in. micros = " + countInMicros + " bars = " + countIn.barCount);
+                logAbc.info("Count-in for ABC: total count-in. micros = " + countInMicros + " bars = " + countIn.barCount);
             }
         }
 
@@ -1139,7 +1183,7 @@ public class AbcExporter {
                 countInMicros = 0L;
                 if (hitMicros < minimumMicro) {
                     countIn = null;//cancel, since count-in is too short
-                    logPreview.warning("Count-in for ABC: hitMicros shorter than 60 ms, cancelling count-in.");
+                    logAbc.warning("Count-in for ABC: hitMicros shorter than 60 ms, cancelling count-in.");
                     ProjectFrame.feed("Warning: Count-in cancelled, it's too short.", "Expand so each drum hit is more than 60 ms apart.");
                 }
             } else if (countIn != null) {
@@ -1182,15 +1226,15 @@ public class AbcExporter {
                  If it's the count-in drum itself that are delayed,
                  count-in will also be delayed.
                  */
-                
-                logPreview.info("Count-in for ABC: hitMicros: "+hitMicros);
+
+                logAbc.info("Count-in for ABC: hitMicros: "+hitMicros);
                 for (CountIn.CountInDynamics dyn : countIn.pattern.dynamics) {
                     Dynamics volume = dyn.dynamics;
                     bar.append('+').append(volume).append("+ ");
                     bar.append(countIn.hit.note.abc);
                     bar.append(hitMicros).append("/").append(oneMicro).append(" |");
 
-                    logPreview.info("Count-in for ABC: added a count-in hit: "+countIn.hit.name+" velocity = "+volume.midiVol);
+                    logAbc.info("Count-in for ABC: added a count-in hit: "+countIn.hit.name+" velocity = "+volume.midiVol);
                 }
             }
 		}
@@ -3353,13 +3397,16 @@ public class AbcExporter {
 	            totalWeight += line.weight;
 	        }
 	        long micros = weightedSum / totalWeight;// average weighted micros
-	        if (firstCluster && cluster.getFirst().micros == 0L) {
+	        if (firstCluster && cluster.getFirst().micros == getExportStartMicros()) {
 	        	/*
-	        	 * When first note start is close to zero so a rest was inserted (which might be too short),
+	        	 * Test for equality because the first note will not start sooner
+	        	 * and an inserted initial rest will start exactly at that time.
+	        	 *
+	        	 * When the first note starts is close to zero so a rest was inserted (which might be too short),
 	        	 * or a note starts at zero, we here make sure the weights don't move the zero gridline.
 	        	 * This is mostly relevant for not removing initial silence.
 	        	 */
-	        	micros = 0L;
+	        	micros = getExportStartMicros();
 	        }
 	        firstCluster = false;
 	        GridLine currAverage = new GridLine(micros, type, totalWeight);
@@ -4967,11 +5014,13 @@ public class AbcExporter {
 		if (endTick == Long.MIN_VALUE)
 			endTick = 0L;
 
-        startTickForCountIn = startTick;
+        startTickForCountIn = startTick;// the bar duration at this place is what we use for calculating count-in time.
 
 		if (organic) {
 			// TODO: We start 80 ms before first note to be sure preview plays first note.
 			//       Its not related to the 100 ms used in delay parts.
+            //       Multi-stage (organic2) needed this to not drift,
+            //       because its grid was anchored at 0, not startTick, should be fixed now.
 			//startTick = Math.max(0L, qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(startTick)-80000L));
 			return new Pair<>(startTick, endTick);
 		}
