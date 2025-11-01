@@ -842,10 +842,10 @@ public class AbcExporter {
 				if (Math.abs(driftChordMicros) > Math.abs(largestDriftMicros)) {
 					largestDriftMicros = driftChordMicros;
 					
-					if ((Math.abs(driftChordMicros) > 10000L && diff != Integer.MIN_VALUE)) {
-						long postDiff = (currentMicro + chordMicro) - cEndMicro;
+					if (Math.abs(driftChordMicros) > 10000L) {
+						long chordEndDiff = (currentMicro + chordMicro) - cEndMicro;
 						logAbc.warning("chordStart-driftMicros="+driftChordMicros+". End adjustment was "+(-diff+minAdjust)
-								+", ideal end adjustment would have been "+(-diff)+", chordEnd-driftMicros="+(-postDiff)+" μs. ("+part.getTitle()+")"
+								+", ideal end adjustment would have been "+(-diff)+", chordEnd-driftMicros="+chordEndDiff+" μs. ("+part.getTitle()+")"
 						        +"\nChord should be "+(cEndMicro-cStartMicro)+" but ended as "+chordMicro);
 					}
 				}
@@ -889,19 +889,20 @@ public class AbcExporter {
 				
 				chordMicro = (int)chordMilliInMicros;
 				
-				long driftMicros = currentMicro - cStartMicro;
-				if (Math.abs(driftMicros) > Math.abs(largestDriftMicros)) {
-					if ((Math.abs(driftMicros) > 10000 && diffMicros != Long.MIN_VALUE)) {
+				long chordStartDiff = currentMicro - cStartMicro;
+				if (Math.abs(chordStartDiff) > Math.abs(largestDriftMicros)) {
+					if ((Math.abs(chordStartDiff) > 6000L && diffMicros != Long.MIN_VALUE)) {
+                        // 10 ms is known to be what a human expert musicians ear can pick up.
                         long chordEndDiff = (currentMicro + chordMicro) - cEndMicro;
                         long adjustmentMicros = milliToMicro(chordMilli-oldChordMilli,oneMicro,oneMilli);//milliToMicro(microToMilliRound(-diff, oneMicro, oneMilli) + (int)minAdjust, oneMicro, oneMilli);
                         long idealAdjustment = -diffMicros;
                         logAbc.warning("\nHigh drift in "+part.getAbcSong().getTitle()
-                                +"\nstartChord-driftMicros="+driftMicros+". End adjustment was "+adjustmentMicros
-                                +", ideal end adjustment would have been "+idealAdjustment+", endChord-driftMicros="+(-chordEndDiff)+" μs. ("+part.getTitle()+")"
+                                +"\nstartChord-driftMicros="+chordStartDiff+". End adjustment was "+adjustmentMicros
+                                +", ideal end adjustment would have been "+idealAdjustment+", endChord-driftMicros="+chordEndDiff+" μs. ("+part.getTitle()+")"
                                 +"\nChord dura should have been "+(cEndMicro-cStartMicro)+", but is now "+chordMicro);
 
 					}
-					largestDriftMicros = driftMicros;
+					largestDriftMicros = chordStartDiff;
 				}
 			}
 			
