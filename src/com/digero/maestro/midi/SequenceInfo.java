@@ -26,7 +26,6 @@ import com.digero.common.midi.MidiStandard;
 import com.digero.common.midi.MidiUtils;
 import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.midi.TimeSignature;
-import com.digero.common.util.Pair;
 import com.digero.common.util.ParseException;
 import com.digero.common.util.Triple;
 import com.digero.common.util.Util;
@@ -56,9 +55,13 @@ public class SequenceInfo implements MidiConstants {
 	private ArrayList<TreeMap<Long, Boolean>> mmaDrumSwitches = null;// Which channel/tick GM2 switches to drums outside
 																		// of designated drum channels
 	private int primaryTempoMPQ;
-	private final List<TrackInfo> trackInfoList;
 	private final TreeMap<Integer, Integer> portMap = new TreeMap<>();
+
+	// these two should not be confused with each other
+	// TODO: rename one or both of them
+	private final List<TrackInfo> trackInfoList;
 	private List<ExportTrackInfo> lastTrackInfos = null;
+
 	public long realDuraTicks;
     public final PolyphonyHistogram histogram;
 
@@ -66,19 +69,13 @@ public class SequenceInfo implements MidiConstants {
 
 	/**
 	 * Create instance of this class while creating MIDI sequence from abc file.
-	 * 
-	 * @param params
-	 * @param miscSettings
-	 * @return instance of SequenceInfo
-	 * @throws InvalidMidiDataException
-	 * @throws ParseException
 	 */
 	public static SequenceInfo fromAbc(AbcToMidi.Params params, MiscSettings miscSettings, boolean oldVelocities, boolean ignoreMidiText)
 			throws InvalidMidiDataException, ParseException {
 		if (params.abcInfo == null)
 			params.abcInfo = new AbcInfo();
 		SequenceInfo sequenceInfo = new SequenceInfo(params.filesData.getFirst().file.getName(), AbcToMidi.convert(params),
-				-1, miscSettings, oldVelocities, true, false, ignoreMidiText);
+				-1, miscSettings, oldVelocities, true, false, ignoreMidiText, params.abcInfo);
 		sequenceInfo.title = params.abcInfo.getTitle();
 		sequenceInfo.composer = params.abcInfo.getComposer();
 		sequenceInfo.primaryTempoMPQ = (int) Math.round(MidiUtils.convertTempo(params.abcInfo.getPrimaryTempoBPM()));
@@ -87,13 +84,6 @@ public class SequenceInfo implements MidiConstants {
 
 	/**
 	 * Create instance of this class while creating sequence from MIDI file
-	 * 
-	 * @param midiFile
-	 * @param miscSettings
-	 * @return
-	 * @throws InvalidMidiDataException
-	 * @throws IOException
-	 * @throws ParseException
 	 */
 	public static SequenceInfo fromMidi(File midiFile, MiscSettings miscSettings, boolean oldVelocities, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume, boolean ignoreMidiText)
 			throws InvalidMidiDataException, IOException, ParseException {
@@ -103,18 +93,12 @@ public class SequenceInfo implements MidiConstants {
             MidiFileFormat midiFileFormat = MidiSystem.getMidiFileFormat(is2);
             return new SequenceInfo(midiFile.getName(), ConvertPPQ.convert(sequence),
                     midiFileFormat.getType(), miscSettings, oldVelocities, onlyFirstTrackTempos, ignoreZeroChannelVolume,
-                    ignoreMidiText);
+                    ignoreMidiText, null);
         }
 	}
 
 	/**
 	 * Create instance of this class while creating preview MIDI file
-	 * 
-	 * @param abcExporter
-	 * @param useLotroInstruments
-	 * @return
-	 * @throws InvalidMidiDataException
-	 * @throws AbcConversionException
 	 */
 	public static SequenceInfo fromAbcParts(AbcExporter abcExporter, boolean useLotroInstruments, boolean oldVelocities)
 			throws InvalidMidiDataException, AbcConversionException {
@@ -137,12 +121,13 @@ public class SequenceInfo implements MidiConstants {
         }
     }
 
-	private SequenceInfo(String fileName, Sequence sequence, int type, MiscSettings miscSettings, boolean oldVelocities, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume, boolean ignoreMidiText)
+	private SequenceInfo(String fileName, Sequence sequence, int type, MiscSettings miscSettings, boolean oldVelocities, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume, boolean ignoreMidiText, AbcInfo abcInfo)
 			throws InvalidMidiDataException, ParseException {
 		this.fileName = fileName;
 		this.sequence = sequence;
 		this.midiType = type;
         this.histogram = null;
+        this.lastTrackInfos = abcInfo==null?null:abcInfo.abcTrackInfos;
 		log.info("Importing (Type "+type+"): "+fileName);
 
 		determineStandard(sequence, fileName);
@@ -200,11 +185,6 @@ public class SequenceInfo implements MidiConstants {
 
 	/**
 	 * This constructor ignores most of the data, as preview is only used for playback
-	 * 
-	 * @param abcExporter
-	 * @param useLotroInstruments
-	 * @throws InvalidMidiDataException
-	 * @throws AbcConversionException
 	 */
 	private SequenceInfo(AbcExporter abcExporter, boolean useLotroInstruments)
 			throws InvalidMidiDataException, AbcConversionException {
@@ -215,8 +195,8 @@ public class SequenceInfo implements MidiConstants {
 
 		Triple<List<ExportTrackInfo>, Sequence, PolyphonyHistogram> result = abcExporter.exportToPreview(useLotroInstruments);
 
-		sequence = result.second;
-		lastTrackInfos = result.first;
+        lastTrackInfos = result.first;
+        sequence = result.second;
         histogram = result.third;
 		standard = MidiStandard.PREVIEW;
 		sequenceCache = new SequenceDataCache(sequence, standard, null, null, null, null, portMap, true, false, true);
@@ -341,9 +321,6 @@ public class SequenceInfo implements MidiConstants {
 	 * 
 	 * Also figure out which channels GS, GM2 or XG has marked as drum channels. And if there are switches to drums in
 	 * middle of some tracks.
-	 * 
-	 * @param seq
-	 * @param fileName
 	 */
 	private void determineStandard(Sequence seq, String fileName) {
 

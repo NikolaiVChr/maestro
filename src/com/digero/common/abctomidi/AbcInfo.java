@@ -22,6 +22,7 @@ import com.digero.common.midi.IBarNumberCache;
 import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.TimeSignature;
 import com.digero.common.util.Util;
+import com.digero.maestro.abc.AbcExporter;
 
 import javax.sound.midi.MidiEvent;
 import javax.swing.*;
@@ -67,6 +68,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 	private String abcCreator = null;
 	private TimeSignature timeSignature = TimeSignature.FOUR_FOUR;
 	private KeySignature keySignature = KeySignature.C_MAJOR;
+    public List<AbcExporter.ExportTrackInfo> abcTrackInfos;
 
 	void reset() {
 		empty = true;

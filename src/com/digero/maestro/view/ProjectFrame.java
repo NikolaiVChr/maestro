@@ -721,7 +721,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         timingCombo.addActionListener(e -> {
             TimingEnum enm = ((TimingEnum) Objects.requireNonNull(timingCombo.getSelectedItem()));
             timingCombo.setToolTipText(enm.getTooltip());
-            System.out.println("Combobox: reacting to " + enm);
 
             enm.action(abcSong);
 
@@ -2171,7 +2170,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		tempoSpinner.setValue(MidiConstants.DEFAULT_TEMPO_BPM);
 		keySignatureField.setValue(KeySignature.C_MAJOR);
 		timeSignatureField.setValue(TimeSignature.FOUR_FOUR);
-        timingCombo.setSelectedItem(TimingEnum.MIX);
+        timingCombo.getModel().setSelectedItem(TimingEnum.MIX);
         dynaCombo.setSelectedItem(AbcSong.dynamicsMethodDefault);
         tempoOnlyFirstCheckBox.setSelected(false);
 		midiBarLabel.setBarNumberCache(null);
@@ -2278,6 +2277,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 			SequenceInfo sequenceInfo = abcSong.getSequenceInfo();
 			sequencer.setSequence(sequenceInfo.getSequence());
+            // TODO: should we not have sequencer be a LotroSeqWrapper when loading from abc?
+            //       in which case we should here call seq.setCurrentTrackInfos(sequenceInfo.getLastTrackInfos());
+            //       else its only abc player that can play abc files with more then 15 parts.
+            //       Haven't checked how easy it is to do. NoteFilterSequencerWrapper differs in some ways.
 			sequencer.setRealDura(sequenceInfo.realDuraTicks);
 			
 			firstMidiNoteTick = sequenceInfo.calcFirstNoteTick();

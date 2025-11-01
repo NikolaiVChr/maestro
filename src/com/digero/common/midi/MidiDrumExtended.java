@@ -54,7 +54,7 @@ public class MidiDrumExtended {
 	
 	private void parse(String fileName) {
 		try {
-			InputStream in = instance.getClass().getResourceAsStream(fileName);
+			InputStream in = getClass().getResourceAsStream(fileName);
 			if (in == null) {
 				System.err.println(fileName + " not readable.");
 				return;

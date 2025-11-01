@@ -31,7 +31,6 @@ import com.digero.common.util.LotroParseException;
 import com.digero.common.util.ParseException;
 import com.digero.common.util.Triple;
 import com.digero.maestro.abc.AbcExporter.ExportTrackInfo;
-import com.digero.maestro.midi.SequenceInfo;
 
 public class AbcToMidi {
 	private static final Logger log = Logger.getLogger("import.abc");
@@ -136,7 +135,7 @@ public class AbcToMidi {
 		List<Triple<Integer, Double, String>> notesOn = new ArrayList<>();
 
 		int lineNumberForRegions = -1;
-		SequenceInfo.lastTrackInfos = new ArrayList<>();
+        abcInfo.abcTrackInfos = new ArrayList<>();
 		for (FileAndData fileAndData : filesData) {
 			track = null;
 			String fileName = fileAndData.file.getName();
@@ -314,8 +313,7 @@ public class AbcToMidi {
 						}
 						track = seq.createTrack();
 						track.add(MidiFactory.createLotroChangeEvent(info.getInstrument().midi.id(), channel, 0));
-						SequenceInfo.lastTrackInfos
-								.add(new ExportTrackInfo(0, null, null, channel, info.getInstrument().midi.id(),Long.MAX_VALUE));
+                        abcInfo.abcTrackInfos.add(new ExportTrackInfo(0, null, null, channel, info.getInstrument().midi.id(),Long.MAX_VALUE));
 						if (useLotroInstruments) {
 							track.add(MidiFactory.createChannelVolumeEvent(MidiConstants.MAX_VOLUME, channel, 1));
 							track.add(MidiFactory.createReverbControlEvent(AbcConstants.MIDI_REVERB, channel, 1));

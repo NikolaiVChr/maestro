@@ -1405,6 +1405,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 
 		try {
 			sequencer.setSequence(song);
+            ((LotroSequencerWrapper)sequencer).setCurrentTrackInfos(info.abcTrackInfos);
 		} catch (InvalidMidiDataException e) {
 			JOptionPane.showMessageDialog(this, e.getMessage(), "MIDI error", JOptionPane.ERROR_MESSAGE);
 			return false;
@@ -1522,6 +1523,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		try {
 			sequencer.reset(false);
 			sequencer.setSequence(song);
+            ((LotroSequencerWrapper)sequencer).setCurrentTrackInfos(info.abcTrackInfos);
 			sequencer.setPosition(position);
 			sequencer.setRunning(running);
 		} catch (InvalidMidiDataException e) {
@@ -1640,6 +1642,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			boolean running = sequencer.isRunning();
 			sequencer.reset(false);
 			sequencer.setSequence(song);
+            ((LotroSequencerWrapper)sequencer).setCurrentTrackInfos(abcInfo.abcTrackInfos);
 			sequencer.setPosition(position);
 			sequencer.setRunning(running);
 		} catch (InvalidMidiDataException e) {

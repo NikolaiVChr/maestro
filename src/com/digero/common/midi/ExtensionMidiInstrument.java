@@ -122,7 +122,7 @@ public class ExtensionMidiInstrument {
 	private void parse(MidiStandard extension, byte theByte, String fileName, boolean firstColumnPatch,
 			boolean theByteIsLSB) {
 		try {
-			InputStream in = instance.getClass().getResourceAsStream(fileName);
+			InputStream in = getClass().getResourceAsStream(fileName);
 			if (in == null) {
 				log.severe(fileName + " not readable.");
 				return;

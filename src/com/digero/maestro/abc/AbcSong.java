@@ -522,6 +522,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         return fileVersion.compareTo(SONG_FILE_VERSION) > 0;
     }
 
+    /**
+     * Load the source file of a project
+     */
 	private void tryToLoadFromFile(FileResolver fileResolver, boolean isAbc, MiscSettings miscSettings) {
 		if (newSourceFile == null) newSourceFile = sourceFile;
 		try {
@@ -1337,7 +1340,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 		if (abcExporter.isOrganic() != organic)
 			abcExporter.setOrganic(organic);
-		
+
 		if (abcExporter.isOrganic2() != organic2)
 			abcExporter.setOrganic2(organic2);
 
