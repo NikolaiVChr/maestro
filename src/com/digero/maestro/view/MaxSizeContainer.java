@@ -10,7 +10,7 @@ import javax.swing.JPanel;
  * Returns a preferred size that's no larger than the specified max size, since TableLayout only uses preferred size,
  * ignoring maximum size.
  */
-@SuppressWarnings("serial")
+@Deprecated
 public class MaxSizeContainer extends JPanel {
 	public MaxSizeContainer(Component element, int maxWidth) {
 		this(element, new Dimension(maxWidth, Integer.MAX_VALUE));

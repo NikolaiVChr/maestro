@@ -10,7 +10,6 @@ import java.util.List;
 
 import javax.swing.JLabel;
 
-@SuppressWarnings("serial")
 public class LinkButton extends JLabel {
 	private List<ActionListener> listeners = null;
 

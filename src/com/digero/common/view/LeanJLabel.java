@@ -3,10 +3,19 @@ package com.digero.common.view;
 import java.awt.Dimension;
 import java.awt.FontMetrics;
 import java.awt.Insets;
+import java.io.Serial;
 import javax.swing.JLabel;
 
+/**
+ * Avoid propagating revalidate to parents, which can cause flickering of other components.
+ * Especially drag'n'drop cursor.
+ * Meant for jLabels that's updated often and never displays text that is wider than
+ * the text supplied in the constructor.
+ * Call forceRevalidate() if really need to revalidate it.
+**/
 public class LeanJLabel extends JLabel {
-	private static final long serialVersionUID = 4028224577557000571L;
+	@Serial
+    private static final long serialVersionUID = 4028224577557000571L;
 	private int maxTextWidth = 0;
 
     public LeanJLabel(String text) {
