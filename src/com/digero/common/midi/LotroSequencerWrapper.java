@@ -17,6 +17,7 @@ public class LotroSequencerWrapper extends NoteFilterSequencerWrapper {
 	private static Synthesizer lotroSynth;
 	private static String loadLotroSynthError;
 	private long startTick = 0L;
+    private List<ExportTrackInfo> currentTrackInfos = null;
 
 	static {
 		try {
@@ -31,6 +32,10 @@ public class LotroSequencerWrapper extends NoteFilterSequencerWrapper {
         abcSeq = sequencer;
 	}
 
+    public void setCurrentTrackInfos(List<ExportTrackInfo> trackInfos) {
+        this.currentTrackInfos = trackInfos;
+    }
+
 	/**
 	 * Only affects channels larger than 16.
 	 * Will stop all active notes. And then inject a patch change to each channel
@@ -39,7 +44,7 @@ public class LotroSequencerWrapper extends NoteFilterSequencerWrapper {
 	 * @param doControllers Stop all midi controllers also
 	 */
 	public void injectPatchChanges(boolean doControllers) {
-		List<ExportTrackInfo> infos = SequenceInfo.lastTrackInfos;
+		List<ExportTrackInfo> infos = currentTrackInfos;
 		if (infos != null && infos.size() > MidiConstants.CHANNEL_COUNT-1) {
 			for (ExportTrackInfo info : infos) {
 					receiver.send(MidiFactory.createAllNotesOff(info.channel), -1L);

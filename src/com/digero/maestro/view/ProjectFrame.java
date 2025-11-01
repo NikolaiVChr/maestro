@@ -2608,6 +2608,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         }
         try {
             abcSequencer.setSequence(previewSequenceInfo.getSequence());
+            abcSequencer.setCurrentTrackInfos(previewSequenceInfo.getLastTrackInfos());
             abcSequencer.setStartTick(abcPreviewStartTick);// Needed for MP3 and WAV exports.
 
             long lengthABC = abcSong.getSongLengthMicros();

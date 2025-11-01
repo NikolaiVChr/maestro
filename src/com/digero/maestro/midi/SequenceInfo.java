@@ -58,7 +58,7 @@ public class SequenceInfo implements MidiConstants {
 	private int primaryTempoMPQ;
 	private final List<TrackInfo> trackInfoList;
 	private final TreeMap<Integer, Integer> portMap = new TreeMap<>();
-	public static List<ExportTrackInfo> lastTrackInfos = null;
+	private List<ExportTrackInfo> lastTrackInfos = null;
 	public long realDuraTicks;
     public final PolyphonyHistogram histogram;
 
@@ -132,7 +132,7 @@ public class SequenceInfo implements MidiConstants {
             throws InvalidMidiDataException, AbcConversionException {
         synchronized (PREVIEW_EXPORT_LOCK) {
             AbcExporter exportCopy = abcSong.getAbcExporter();
-            // lock so ProjectFrame don't go in here before previous is finished
+            // lock so ProjectFrame worker threads don't go in here before previous is finished
             return new SequenceInfo(exportCopy, useLotroInstruments);
         }
     }
@@ -225,6 +225,10 @@ public class SequenceInfo implements MidiConstants {
 		this.trackInfoList = null;
 
 	}
+
+    public List<ExportTrackInfo> getLastTrackInfos() {
+        return lastTrackInfos;
+    }
 
 	public String getFileName() {
 		return fileName;
