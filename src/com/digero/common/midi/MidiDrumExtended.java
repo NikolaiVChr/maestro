@@ -13,32 +13,31 @@ import java.util.regex.Pattern;
 
 import com.digero.common.util.Pair;
 
+/**
+ * Threadsafe
+ */
 public class MidiDrumExtended {
 	private static final Logger log = Logger.getLogger("import.midi");
 	
-	private static MidiDrumExtended instance = null;
-	private static final HashMap<String, String> map = new HashMap<>();
+	private static MidiDrumExtended instance = new MidiDrumExtended();
+	private final HashMap<String, String> map = new HashMap<>();
 
-	public static MidiDrumExtended getInstance() {
-		if (instance != null) {
-			return instance;
-		}
+	private MidiDrumExtended() {
 
-		instance = new MidiDrumExtended();
-		
-		parse("kitSounds.txt");
+        parse("kitSounds.txt");
 		
 		/*
 		for (int i =27;i< 87;i++) {
 			System.out.println(i+" "+MidiDrum.fromId(i).toString());
 		}
 		*/
-		
+    }
 
+    public static MidiDrumExtended getInstance() {
 		return instance;
 	}
 
-	public static String fromId(int drumId, String kit, MidiStandard standard) {
+	public String fromId(int drumId, String kit, MidiStandard standard) {
 		String key = String.format("%s:%s%03d", standard, kit, drumId);
 		String hit = map.get(key);
 		if (hit == null) {
@@ -53,7 +52,7 @@ public class MidiDrumExtended {
 		return MidiDrum.fromId(drumId).toString();
 	}
 	
-	private static void parse(String fileName) {
+	private void parse(String fileName) {
 		try {
 			InputStream in = instance.getClass().getResourceAsStream(fileName);
 			if (in == null) {
@@ -71,7 +70,7 @@ public class MidiDrumExtended {
 		}
 	}
 
-	private static void readLines(String fileName, BufferedReader theFileReader, String line) throws IOException {
+	private void readLines(String fileName, BufferedReader theFileReader, String line) throws IOException {
 		MidiStandard std = null;
 		String patch = null;
 		while (line != null) {
@@ -106,7 +105,7 @@ public class MidiDrumExtended {
 		}
 	}	
 
-	public static Pair<Integer, String> getHit(String input) {
+	private Pair<Integer, String> getHit(String input) {
         Pattern pattern = Pattern.compile("^(\\d+)\\s+(.+)$");
         Matcher matcher = pattern.matcher(input);
 
@@ -123,7 +122,7 @@ public class MidiDrumExtended {
         }
     }
 
-	private static void addHit(MidiStandard std, String patch, int first, String second) {
+	private void addHit(MidiStandard std, String patch, int first, String second) {
 		String key = String.format("%s:%s%03d", std, patch, first);
 		map.put(key, second);
 	}	

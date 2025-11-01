@@ -10,6 +10,9 @@ import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.logging.Logger;
 
+/**
+ * Threadsafe
+ */
 public class ExtensionMidiInstrument {
 	private static final Logger log = Logger.getLogger("file");
 
@@ -18,38 +21,36 @@ public class ExtensionMidiInstrument {
 	public static final String TRACK_NAME_DRUM_XG = "XG Drums";
 	public static final String TRACK_NAME_DRUM_GM2 = "GM2 Drums";
 
-	private static ExtensionMidiInstrument instance = null;
-	private static final HashMap<String, String> mapxg = new HashMap<>();
-	private static final HashMap<String, String> mapgs = new HashMap<>();
-	private static final HashMap<String, String> mapgm2 = new HashMap<>();
+	private static final ExtensionMidiInstrument instance = new ExtensionMidiInstrument();
 
-	public static ExtensionMidiInstrument getInstance() {
-		if (instance != null) {
-			return instance;
-		}
+	private final HashMap<String, String> mapxg = new HashMap<>();
+	private final HashMap<String, String> mapgs = new HashMap<>();
+	private final HashMap<String, String> mapgm2 = new HashMap<>();
 
-		instance = new ExtensionMidiInstrument();
+	private ExtensionMidiInstrument() {
 
-		parse(MidiStandard.XG, (byte) 0, "xg.txt", true, false);
-		parse(MidiStandard.GS, (byte) 0, "gs.txt", true, true);
-		parse(MidiStandard.GS, (byte) 120, "gsKits.txt", false, false);
-		parse(MidiStandard.GM2, (byte) 121, "gm2.txt", true, false);
-		parse(MidiStandard.GM2, (byte) 120, "gm2-120.txt", false, false);
-		parse(MidiStandard.XG, (byte) 127, "xg127.txt", false, false);
-		parse(MidiStandard.XG, (byte) 126, "xg126.txt", false, false);
-		parse(MidiStandard.XG, (byte) 64, "xg64.txt", false, false);
+        parse(MidiStandard.XG, (byte) 0, "xg.txt", true, false);
+        parse(MidiStandard.GS, (byte) 0, "gs.txt", true, true);
+        parse(MidiStandard.GS, (byte) 120, "gsKits.txt", false, false);
+        parse(MidiStandard.GM2, (byte) 121, "gm2.txt", true, false);
+        parse(MidiStandard.GM2, (byte) 120, "gm2-120.txt", false, false);
+        parse(MidiStandard.XG, (byte) 127, "xg127.txt", false, false);
+        parse(MidiStandard.XG, (byte) 126, "xg126.txt", false, false);
+        parse(MidiStandard.XG, (byte) 64, "xg64.txt", false, false);
 
-		/*
-		 * GM voices: 129 GS voices: 1170 XG voices: 1011 GM2 voices: 136 Total : 2446
-		 */
+        /*
+         * GM voices: 129 GS voices: 1170 XG voices: 1011 GM2 voices: 136 Total : 2446
+         */
 
-		/*
-		 * System.out.println("GM  voices: 129"); System.out.println("GS  voices: "+(mapgs.size()-129));
-		 * System.out.println("XG  voices: "+(mapxg.size()-129));
-		 * System.out.println("GM2 voices: "+(mapgm2.size()-129));
-		 * System.out.println("Total     : "+(mapgm2.size()-129+mapxg.size()-129+mapgs. size()-129+129));
-		 */
+        /*
+         * System.out.println("GM  voices: 129"); System.out.println("GS  voices: "+(mapgs.size()-129));
+         * System.out.println("XG  voices: "+(mapxg.size()-129));
+         * System.out.println("GM2 voices: "+(mapgm2.size()-129));
+         * System.out.println("Total     : "+(mapgm2.size()-129+mapxg.size()-129+mapgs. size()-129+129));
+         */
+    }
 
+    public static ExtensionMidiInstrument getInstance() {
 		return instance;
 	}
 
@@ -118,7 +119,7 @@ public class ExtensionMidiInstrument {
 		return instrName;
 	}
 
-	private static void parse(MidiStandard extension, byte theByte, String fileName, boolean firstColumnPatch,
+	private void parse(MidiStandard extension, byte theByte, String fileName, boolean firstColumnPatch,
 			boolean theByteIsLSB) {
 		try {
 			InputStream in = instance.getClass().getResourceAsStream(fileName);
@@ -143,7 +144,7 @@ public class ExtensionMidiInstrument {
 		}
 	}
 
-	private static void readLines(MidiStandard extension, byte theByte, String fileName, boolean firstColumnPatch,
+	private void readLines(MidiStandard extension, byte theByte, String fileName, boolean firstColumnPatch,
 			boolean theByteIsLSB, BufferedReader theFileReader, String line, int lastPatch, int lookupByte,
 			String regex) throws IOException {
 		while (line != null) {
@@ -175,7 +176,7 @@ public class ExtensionMidiInstrument {
 		}
 	}
 
-	private static void addInstruments(MidiStandard extension, byte theByte, boolean firstColumnPatch,
+	private void addInstruments(MidiStandard extension, byte theByte, boolean firstColumnPatch,
 			boolean theByteIsLSB, int lastPatch, int lookupByte, String[] splits) {
 		if (theByteIsLSB) {
 			if (firstColumnPatch) {
@@ -192,7 +193,7 @@ public class ExtensionMidiInstrument {
 		}
 	}
 
-	private static void addInstrument(MidiStandard extension, byte MSB, byte LSB, byte patch, String name) {
+	private void addInstrument(MidiStandard extension, byte MSB, byte LSB, byte patch, String name) {
 		// System.err.println(" addInstrument "+name+" ("+MSB+", "+LSB+", "+patch+")");
 		String key = String.format("%03d%03d%03d", MSB, LSB, patch);
 		if (extension == MidiStandard.XG) {
