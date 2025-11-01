@@ -4,7 +4,7 @@ import java.util.EventObject;
 
 public class AbcPartEvent extends EventObject {
 	public enum AbcPartProperty {
-		TITLE(false), //
+		TITLE(true), // true cause can enter stereo position in title
 		PART_NUMBER(false), //
 		ENABLED, //
 		INSTRUMENT, //
@@ -18,7 +18,7 @@ public class AbcPartEvent extends EventObject {
 		DELAY_EDIT(true), //
 		TRACK_PRIORITY, //
 		MAX_EDIT(true), //
-		FX(true), //TODO: rename to FX
+		FX(true), //
 		CONCLUSION_FERMATA_EDIT(true),
         PART_NUMBER_MANUAL(false); //
 
