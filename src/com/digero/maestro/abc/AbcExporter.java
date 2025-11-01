@@ -881,11 +881,11 @@ public class AbcExporter {
 				if (Math.abs(driftMicros) > Math.abs(largestDriftMicros)) {
 					if ((Math.abs(driftMicros) > 10000 && diff != Integer.MIN_VALUE)) {
 						long postDiff = (currentMicro + chordMilli*milliFactor) - cEndMicro;
-						logAbc.severe("High drift in "+part.getAbcSong().getTitle());
-						logAbc.severe("Start driftMicros="+driftMicros+". End adjustment was "+(milliFactor*(-diff/milliFactor+minAdjust))
-								+", ideal adjustment would have been "+(-diff)+", resultDiff="+(-postDiff)+" μs. ("+part.getTitle()+")");
-						logAbc.severe("Adjustment main="+(milliFactor*(-diff/milliFactor))+" extra="+(milliFactor*(minAdjust)));
-						logAbc.severe("Chord "+(cEndMicro-cStartMicro));
+						logAbc.severe("\nHigh drift in "+part.getAbcSong().getTitle()
+                                +"\nStart driftMicros="+driftMicros+". End adjustment was "+(milliFactor*(-diff/milliFactor+minAdjust))
+								+", ideal adjustment would have been "+(-diff)+", resultDiff="+(-postDiff)+" μs. ("+part.getTitle()+")"
+                                +"\nAdjustment main="+(milliFactor*(-diff/milliFactor))+" extra="+(milliFactor*(minAdjust))
+                                +"\nChord dura "+(cEndMicro-cStartMicro));
 					}
 					largestDriftMicros = driftMicros;
 				}

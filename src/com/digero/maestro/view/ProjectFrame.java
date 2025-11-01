@@ -278,8 +278,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
     private boolean fireMeterListeners = true;
     private boolean fireTempoListeners = true;
     private boolean fireDynaListeners = true;
-    private boolean fireTimingListeners = true;
-    private boolean updateTimingUIControl = true;
     private JMenuItem openItem;
 
 	public ProjectFrame() {
@@ -723,12 +721,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         timingCombo.addActionListener(e -> {
             TimingEnum enm = ((TimingEnum) Objects.requireNonNull(timingCombo.getSelectedItem()));
             timingCombo.setToolTipText(enm.getTooltip());
+            System.out.println("Combobox: reacting to " + enm);
 
-            if (fireTimingListeners) {
-                updateTimingUIControl = false;
-                enm.action(abcSong);
-                updateTimingUIControl = true;
-            }
+            enm.action(abcSong);
+
             refreshPreviewSequence(false);
         });
 		
@@ -1890,17 +1886,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             break;
         case TIMINGS_MULTI:
             // one or more timing settings were change in abc song
-            if (updateTimingUIControl) {
-                // the change originated from the song
-                // so we update the combo box, but do
-                // not let it propagate back to song
-                fireTimingListeners = false;
-                timingCombo.setSelectedItem(TimingEnum.getInstance(abcSong.isOrganic(), abcSong.isOrganic2(), abcSong.isMixTiming(), abcSong.isTripletTiming(), abcSong.isPriorityActive()));
-                fireTimingListeners = true;
-            } else {
-                // the change originated from the combo box,
-                // so we should not set it again
-            }
+
+            // setting on model dont fire action listener
+            timingCombo.getModel().setSelectedItem(TimingEnum.getInstance(abcSong.isOrganic(), abcSong.isOrganic2(), abcSong.isMixTiming(), abcSong.isTripletTiming(), abcSong.isPriorityActive()));
+
 			updateButtons(false);
 			break;
 		case CALC_DYNAMICS:
@@ -2281,9 +2270,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			setTempo(abcSong.getTempoBPM());
 			keySignatureField.setValue(abcSong.getKeySignature());
 			setMeter(abcSong.getTimeSignature());
-            fireTimingListeners = true;
-            timingCombo.setSelectedItem(TimingEnum.getInstance(abcSong.isOrganic(),abcSong.isOrganic2(),abcSong.isMixTiming(),abcSong.isTripletTiming(),abcSong.isPriorityActive()));
-            fireTimingListeners = false;
+
+            // setting on model dont fire action listener
+            timingCombo.getModel().setSelectedItem(TimingEnum.getInstance(abcSong.isOrganic(),abcSong.isOrganic2(),abcSong.isMixTiming(),abcSong.isTripletTiming(),abcSong.isPriorityActive()));
 
             tempoOnlyFirstCheckBox.setSelected(abcSong.isUsingOldTempos());
 
@@ -2621,10 +2610,12 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             abcSequencer.setSequence(previewSequenceInfo.getSequence());
             abcSequencer.setStartTick(abcPreviewStartTick);// Needed for MP3 and WAV exports.
 
+            long lengthABC = abcSong.getSongLengthMicros();
+
             log.info("A new preview was generated");
             log.info("Duration MIDI:    " + Util.formatDurationM(sequencer.getLength()));
             log.info("Duration Preview: " + Util.formatDurationM(abcSequencer.getLength() - abcSequencer.tickToMicros(abcPreviewStartTick)) + ", rounded up: " + Util.formatDuration(abcSequencer.getLength() - abcSequencer.tickToMicros(abcPreviewStartTick)));
-            log.info("Duration ABC:     " + Util.formatDurationM(abcSong.getSongLengthMicros()) + ", rounded up: " + Util.formatDuration(abcSong.getSongLengthMicros()));
+            log.info("Duration ABC:     " + Util.formatDurationM(lengthABC) + ", rounded up: " + Util.formatDuration(lengthABC));
 
             /*
             if (tick < abcPreviewStartTick)
