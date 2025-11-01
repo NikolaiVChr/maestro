@@ -3397,7 +3397,7 @@ public class AbcExporter {
 	            totalWeight += line.weight;
 	        }
 	        long micros = weightedSum / totalWeight;// average weighted micros
-	        if (firstCluster && cluster.getFirst().micros == getExportStartMicros()) {
+	        if (firstCluster && cluster.getFirst().micros == getExportStartMicrosABC()) {
 	        	/*
 	        	 * Test for equality because the first note will not start sooner
 	        	 * and an inserted initial rest will start exactly at that time.
@@ -3406,7 +3406,7 @@ public class AbcExporter {
 	        	 * or a note starts at zero, we here make sure the weights don't move the zero gridline.
 	        	 * This is mostly relevant for not removing initial silence.
 	        	 */
-	        	micros = getExportStartMicros();
+	        	micros = cluster.getFirst().micros;
 	        }
 	        firstCluster = false;
 	        GridLine currAverage = new GridLine(micros, type, totalWeight);
@@ -5121,6 +5121,14 @@ public class AbcExporter {
 			return qtm.tickToMicros(getExportStartTick());
 		}
 	}
+
+    public long getExportStartMicrosABC() {
+        if (organic) {
+            return qtm.tickToMicrosABCOrganic(getExportStartTick());
+        } else {
+            return qtm.tickToMicrosABC(getExportStartTick());
+        }
+    }
 	
 	/**
 	 * Returns the final song duration.
