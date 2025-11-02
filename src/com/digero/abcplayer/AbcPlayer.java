@@ -688,17 +688,21 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			genreLabel.setVisible(false);
 			return;
 		}
-		
+
+		String issue = abcInfo.getIssue();
+		if (!issue.isEmpty()) {
+			issue = "\nPotential corrupted ABC from " + abcInfo.getAbcCreator() + ":\n" + issue;
+		}
 		String title = abcInfo.getTitle();
 		String artist = abcInfo.getComposer_MaybeNull();
 		String transcriber = abcInfo.getTranscriber_MaybeNull();
 
 		titleLabel.setText(title);
-		titleLabel.setToolTipText("Song Title: " + title);
+		titleLabel.setToolTipText("Song Title: " + title + issue);
 
 		if (artist != null) {
 			composerLabel.setText(artist);
-			composerLabel.setToolTipText("Artist: " + artist);
+			composerLabel.setToolTipText("Artist: " + artist + issue);
 			composerLabel.setVisible(true);
 		} else {
 			composerLabel.setVisible(false);
@@ -706,7 +710,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 
 		if (transcriber != null) {
 			transcriberLabel.setText(transcriber);
-			transcriberLabel.setToolTipText("Transcriber: " + transcriber);
+			transcriberLabel.setToolTipText("Transcriber: " + transcriber + issue);
 			transcriberLabel.setVisible(true);
 		} else {
 			transcriberLabel.setVisible(false);

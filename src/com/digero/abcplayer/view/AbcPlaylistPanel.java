@@ -456,6 +456,10 @@ public class AbcPlaylistPanel extends JPanel {
 						}
 						txt = txt + inf.getPartFullName(i + 1);
 					}
+					String issue = inf.getIssue();
+					if (!issue.isEmpty()) {
+						txt = txt + "\nPotential corrupted ABC from " + inf.getAbcCreator() + ":\n" + issue;
+					}
 				}
 				return txt;
 			}

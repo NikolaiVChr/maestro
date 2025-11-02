@@ -4,14 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.util.prefs.Preferences;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JDialog;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JTabbedPane;
+import javax.swing.*;
 
 import com.digero.common.util.Themer;
 
@@ -100,6 +93,12 @@ public class AbcPlayerSettingsDialog extends JDialog implements TableLayoutConst
 			fontBox.addItem(Integer.toString(i));
 		}
 		fontBox.setSelectedItem(Integer.toString(prefs.getInt("fontSize", Themer.DEFAULT_FONT_SIZE)));
+
+		final JCheckBox flawedMaestroCheckbox = new JCheckBox("Enable popup warning for ABCs exported from flawed Maestro versions");
+		flawedMaestroCheckbox.setSelected(prefs.getBoolean("flawedMaestroPopup", true));
+		flawedMaestroCheckbox.addActionListener(e-> {
+			prefs.putBoolean("flawedMaestroPopup", flawedMaestroCheckbox.isSelected());
+		});
 		
 		TableLayout layout = new TableLayout();
 		layout.insertColumn(0, FILL);
@@ -121,6 +120,9 @@ public class AbcPlayerSettingsDialog extends JDialog implements TableLayoutConst
 		
 		layout.insertRow(++row, PREFERRED);
 		panel.add(fontBox, "0, " + row);
+
+		layout.insertRow(++row, PREFERRED);
+		panel.add(flawedMaestroCheckbox, "0, " + row);
 		
 		return panel;
 	}
