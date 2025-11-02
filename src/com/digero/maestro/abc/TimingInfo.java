@@ -23,11 +23,11 @@ public class TimingInfo {
 											// 3s)/6s = 10.5
 											// -> 10  */
 
-	private final int tempoMPQ;
 	private final int resolutionPPQ;
-	
-	private final int newTempo;
-	private final int origTempo;
+
+    private final int tempoMPQ;//MPQ for this event (source time, not abc export time)
+	private final int newTempo;//newMainBPM
+	private final int origTempo;//origMainBPM
 
 	private final TimeSignature meter;
 
@@ -54,8 +54,15 @@ public class TimingInfo {
 		return str;
 	}
 
+    /**
+     * A single tempo change.
+     * This is the class that computes and keeps the grid for the following tempo section
+     * for legacy and mix timings.
+     *
+     * It also computes the tempo BPM written in mix and legacy every 10 lines or so.
+     */
 	TimingInfo(int tempoMPQ, int resolutionPPQ, int newTempo, int origTempo, TimeSignature meter, boolean useTripletTiming,
-			int abcSongBPM, boolean organic) throws AbcConversionException {
+			boolean organic) throws AbcConversionException {
 		// Compute the export tempo and round it to a whole-number BPM
 		double exportTempoMPQ = roundTempoMPQ((double) tempoMPQ *origTempo/newTempo);
 
@@ -70,8 +77,10 @@ public class TimingInfo {
 		this.useTripletTiming = useTripletTiming;
 		this.organic = organic;
 
-		final long SHORTEST_NOTE_TICKS = (long) Math
-				.ceil((AbcConstants.getShortestNoteMicros(abcSongBPM) * resolutionPPQ) / exportTempoMPQ);
+
+        long minimalNoteMicros = AbcConstants.getShortestNoteMicros(newTempo);
+
+		final long SHORTEST_NOTE_TICKS = (long) Math.ceil((minimalNoteMicros * resolutionPPQ) / exportTempoMPQ);
 		final long LONGEST_NOTE_TICKS = (long) Math.floor((LONGEST_NOTE_MICROS * resolutionPPQ) / exportTempoMPQ);
 
 		final int exportTempoBPM = (int) Math.round(MidiUtils.convertTempo(exportTempoMPQ));
@@ -154,6 +163,10 @@ public class TimingInfo {
 		return resolutionPPQ;
 	}
 
+    /**
+     * Get abc export tempo for this event.
+     * Used to make preview midi.
+     */
 	public int getExportTempoMPQ() {
 		return tempoMPQ * origTempo/newTempo;
 	}

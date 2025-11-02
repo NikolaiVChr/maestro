@@ -55,7 +55,7 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 															// Since old projects will have 4 saved in msx.
 
 	public QuantizedTimingInfo(SequenceInfo source, int newTempo, int origTempo, TimeSignature meter,
-			boolean useTripletTiming, int abcSongBPM, AbcSong song, boolean oddsAndEnds, int mixVersion, boolean organic)
+			boolean useTripletTiming, AbcSong song, boolean oddsAndEnds, int mixVersion, boolean organic)
 			throws AbcConversionException {
 
 		double exportPrimaryTempoMPQ = TimingInfo.roundTempoMPQ(source.getPrimaryTempoMPQ()*origTempo/newTempo);
@@ -72,15 +72,15 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 
 		if (!organic) {
 			TimingInfo defaultTiming = new TimingInfo(source.getPrimaryTempoMPQ(), resolution, newTempo, origTempo, meter,
-					useTripletTiming, abcSongBPM, false);
+					useTripletTiming, false);
 			TimingInfo defaultOddTiming = new TimingInfo(source.getPrimaryTempoMPQ(), resolution, newTempo, origTempo, meter,
-					!useTripletTiming, abcSongBPM, false);
+					!useTripletTiming, false);
 			TimingInfoEvent defaultEvent = new TimingInfoEvent(0, 0, 0, defaultTiming, defaultOddTiming);
 			timingInfoByTick.put(0L, defaultEvent);
 		}
 		
 		TimingInfo defaultTimingOrg = new TimingInfo(source.getPrimaryTempoMPQ(), resolution, newTempo, origTempo, meter,
-				false, abcSongBPM, true);
+				false, true);
 		TimingInfoEvent defaultEventOrg = new TimingInfoEvent(0, 0, 0, defaultTimingOrg, null);
 		timingInfoByTickOrganic.put(0L, defaultEventOrg);
 		
@@ -161,7 +161,7 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		 */
 		LinkedList<SequenceDataCache.TempoEvent> linker = new LinkedList<>(combinedTempos);
         for (TempoEvent currMidiTempoEvent : linker) {
-            TimingInfo infoOrganic = new TimingInfo(currMidiTempoEvent.tempoMPQ, resolution, newTempo, origTempo, meter, false, abcSongBPM, true);
+            TimingInfo infoOrganic = new TimingInfo(currMidiTempoEvent.tempoMPQ, resolution, newTempo, origTempo, meter, false, true);
             TimingInfoEvent abcTempoEventOrganic = new TimingInfoEvent(currMidiTempoEvent.tick, currMidiTempoEvent.micros, 0, infoOrganic, null);
             timingInfoByTickOrganic.put(currMidiTempoEvent.tick, abcTempoEventOrganic);
             if (!organic) {
@@ -169,9 +169,9 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
                 long micros = 0L;
                 double barNumber = 0;
                 TimingInfo info = new TimingInfo(currMidiTempoEvent.tempoMPQ, resolution, newTempo, origTempo, meter,
-                        useTripletTiming, abcSongBPM, false);
+                        useTripletTiming, false);
                 TimingInfo infoOdd = new TimingInfo(currMidiTempoEvent.tempoMPQ, resolution, newTempo, origTempo, meter,
-                        !useTripletTiming, abcSongBPM, false);
+                        !useTripletTiming, false);
 
                 //System.out.println("\nstarting "+info.getTempoBPM()+" tick="+sourceEvent.tick+"    min="+info.getMinNoteLengthTicks());
 

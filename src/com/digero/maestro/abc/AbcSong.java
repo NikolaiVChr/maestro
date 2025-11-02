@@ -1027,6 +1027,11 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		return tempoFactor;
 	}
 
+    /**
+     * ProjectFrame spinner sets new tempo here.
+     * When loading a file, tempo also get set here.
+     * The tempos are in BPM units.
+     */
 	public void setTempoFactor(int newTempo, int origTempo) {
 		float tempoFactor = (float) newTempo/origTempo;
 		if (this.newTempo != newTempo || this.origTempo != origTempo) {
@@ -1311,8 +1316,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				|| timingInfo.isOrganic() != isOrganic() //
 				|| isMixDirty()) {
 			setMixDirty(false);
-			timingInfo = new QuantizedTimingInfo(sequenceInfo, newTempo, origTempo, getTimeSignature(), isTripletTiming(),
-					getTempoBPM(), this, isMixTiming(), getMixVersion(), isOrganic());
+			timingInfo = new QuantizedTimingInfo(sequenceInfo, newTempo, origTempo, getTimeSignature(), isTripletTiming(), this, isMixTiming(), getMixVersion(), isOrganic());
 		}
 
 		return timingInfo;
