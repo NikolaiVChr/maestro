@@ -766,6 +766,7 @@ public class AbcExporter {
 		long currentMicro = 0L;
 		long currentMilli = 0L;
 		long passingNoteEndMilli = 0L;
+        long passingNoteEndMicro = 0L;
 		long largestDriftMicros = 0L;
 		for (Chord ch : chords) {
 			if (ch.size() == 0) {
@@ -974,13 +975,18 @@ public class AbcExporter {
 				
 				long nEndMicro;
 				nEndMicro = evt.endABCMicros - songStartMicros;
+
+                assert nEndMicro >= cEndMicro;// if this fails, a bug is in one of the proceeding methods.
 				
 				int numerator;
 				int denominator;
 				
 				if (useMicroAccuracy) {
 					if (nEndMicro == cEndMicro) {
-						numerator = chordMicro;
+                        numerator = chordMicro;
+                    } else if (nEndMicro < cEndMicro) {
+                        numerator = chordMicro;
+                        assert false:"corrupt chord";
 					} else {
 						long diff = (currentMicro + noteMicro) - nEndMicro;
 						noteMicro -= (int) diff;
@@ -998,6 +1004,13 @@ public class AbcExporter {
 						
 						numerator = noteMicro;
 					}
+
+                    if (useRestsInChords) {
+                        if (currentMicro + numerator > passingNoteEndMicro){
+                            passingNoteEndMicro = currentMicro + numerator;
+                        }
+                    }
+
 					denominator = oneMicro;
 				} else {
 					int noteMilli = microToMilliFloor(noteMicro, oneMicro, oneMilli);
@@ -1030,10 +1043,12 @@ public class AbcExporter {
 							assert milliToMicro(noteMilli, oneMicro, oneMilli) <= AbcConstants.LONGEST_NOTE_MICROS;
 						}
 					}
-					
-					if (useRestsInChords && currentMilli + noteMilli > passingNoteEndMilli) {
-						passingNoteEndMilli = currentMilli + noteMilli;
-					}
+
+                    if (useRestsInChords) {
+                        if (currentMilli + noteMilli > passingNoteEndMilli){
+                            passingNoteEndMilli = currentMilli + noteMilli;
+                        }
+                    }
 					
 					numerator = noteMilli;
 					denominator = oneMilli;
@@ -3105,43 +3120,45 @@ public class AbcExporter {
 			Long lastEnd = null;
 			for (ChordOrganic chord : chords) {
 
+                chord.recalcEndMicros();
+
                 assert lastEnd == null || chord.getStartMicros() == lastEnd :"Gap between chords1. Start micros (second):"+chord.getStartMicros();
-				
+
+                List<AbcNoteEvent> notesOff = new ArrayList<>();
+                for (AbcNoteEvent ne : notesOn) {
+                    if (ne.endABCMicros <= chord.getStartMicros()) {
+                        notesOff.add(ne);
+                    }
+                }
+                notesOn.removeAll(notesOff);
+
 				for (AbcNoteEvent curr : chord.getNotes()) {
 					for (AbcNoteEvent pre : notesOn) {
 						if (pre.note == curr.note) {
 							assert curr.endABCMicros > pre.endABCMicros;
-							assert pre.note != Note.REST;
 							pre.endABCMicros = curr.startABCMicros;
 							if (pre.tiesTo == null) {
 								// I suspect lotro internally can
 								// have rounding errors.
 								// So we shorten a slight bit.
-								pre.endABCMicros--;
+								//pre.endABCMicros--;//this can cause it to end before its chord
 							}
 							pre.setEndTick(qtm.microsToTickABCOrganic(curr.startABCMicros));
 							logNotes.fine(part.getTitle()+": normalizing note!1! tied="+(pre.tiesTo != null));
 						}
 					}
 				}
-				List<AbcNoteEvent> longerNotes = new ArrayList<>();				
+				List<AbcNoteEvent> longerNotes = new ArrayList<>();
 				for (AbcNoteEvent ne : chord.getNotes()) {
 					if (ne.endABCMicros > chord.getEndMicros()) {
+                        assert ne.note != Note.REST;
 						longerNotes.add(ne);
 					}
 				}
-				List<AbcNoteEvent> notesOff = new ArrayList<>();
-				for (AbcNoteEvent ne : notesOn) {
-					if (ne.endABCMicros <= chord.getEndMicros()) {
-						notesOff.add(ne);
-					}
-				}
-				notesOn.removeAll(notesOff);
-				notesOn.addAll(longerNotes);
-				
+                notesOn.addAll(longerNotes);
+
+
 				lastEnd = chord.getEndMicros();
-				
-				if (assertionsEnabled) assertSoftDura(chord, minimumMicros*99/100);
 			}
 		} else if (assertionsEnabled) {
 			ChordOrganic preChord = null;
@@ -3948,7 +3965,7 @@ public class AbcExporter {
 								// I suspect lotro internally can
 								// have rounding errors.
 								// So we shorten a slight bit.
-								pre.endABCMicros--;
+                                //pre.endABCMicros--;//this can cause it to end before its chord
 							}
 							assert curr.endABCMicros > pre.endABCMicros;
 							assert pre.note != Note.REST;
