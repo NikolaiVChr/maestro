@@ -12,8 +12,8 @@ import com.digero.maestro.abc.QuantizedTimingInfo;
  * Only used by organic output
  */
 public class ChordOrganic extends Chord {	
-	private long startMicros = -1;
-	private long endMicros = -1;
+	private long startMicros = -1L;
+	private long endMicros = -1L;
 	public Long early = null; // organic
 	public boolean dontMove1 = false;
 	public boolean dontMove2 = false;
@@ -41,19 +41,17 @@ public class ChordOrganic extends Chord {
 	}
 	
 	public void recalcEndMicros() {
+        endMicros = Long.MAX_VALUE;
 		if (!notes.isEmpty()) {
-			endMicros = notes.getFirst().endABCMicros;
-			for (int k = 1; k < notes.size(); k++) {
-				AbcNoteEvent note = notes.get(k);
-				if (note.endABCMicros < endMicros) {
-					endMicros = note.endABCMicros;
-				}
+			for (AbcNoteEvent note : notes) {
+                endMicros = Math.min(endMicros, note.endABCMicros);
+                assert note.startABCMicros == startMicros;
 				note.setStartTick(qtm.microsToTickABCOrganic(note.startABCMicros));
 				note.setEndTick(qtm.microsToTickABCOrganic(note.endABCMicros));
 			}
-		} else {
-			endMicros = startMicros;
 		}
+        if (endMicros == Long.MAX_VALUE) endMicros = startMicros;
+        assert endMicros > -1L && startMicros > -1L;
 		recalcEndTick();
 	}
 	
