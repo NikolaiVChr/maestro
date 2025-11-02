@@ -1803,6 +1803,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		return maxPoly;		
 	}
 
+    public AbcPart origPart = this;//copy constructor will set this.
+
     /**
      * Copy constructor for threaded worker.
      */
@@ -1938,5 +1940,6 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
                 this.sectionsModified.set(i, origArray.clone());
             }
         }
+        this.origPart = orig;
     }
 }

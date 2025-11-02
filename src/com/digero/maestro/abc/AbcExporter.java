@@ -285,7 +285,7 @@ public class AbcExporter {
 		}
 		*/
 
-		return new ExportTrackInfo(trackNumber.first, part, null /* noteEvents */, trackNumber.second,
+		return new ExportTrackInfo(trackNumber.first, part.origPart, null /* noteEvents */, trackNumber.second,
 				part.getInstrument().midi.id(), trackNumber.third);
 	}
 
@@ -293,7 +293,7 @@ public class AbcExporter {
                                                             boolean useLotroInstruments, CountIn countIn) {
         part.numberOfExportedNotes = 0;
         int trackNumber = out.getTracks().length;
-        part.setPreviewSequenceTrackNumber(trackNumber);
+        //part.setPreviewSequenceTrackNumber(trackNumber);//since part is here a copy for threaded reasons, we set this in projectFrame now.
 
         int channel = lastChannelUsedInPreview + 1;
 
@@ -3201,6 +3201,10 @@ public class AbcExporter {
 		assert neDura == 0L || neDura >= minimum:neDura+" < "+minimum;
 	}
 
+    /**
+     * Assign musically importance value to a chord
+     * Part of single-stage organic
+     */
 	private int calcValue(ChordOrganic c, boolean sustained) {
 		// weakness: this favors curChord if starting tick of next
 		//           chord is not exact aligned.
@@ -4793,6 +4797,9 @@ public class AbcExporter {
 		}
 	}
 
+    /**
+     * Add tempo events to midi meta track.
+     */
 	private void addMidiTempoEvents(Track track0, long end) {
 		NavigableMap<Long, TimingInfoEvent> timings = qtm.getTimingInfoByTick();
 		if (organic) {
