@@ -690,12 +690,12 @@ public class AbcToMidi {
 							for (Triple<Integer,Double, String> soundingNote : notesOn) {
 								if (lotroNoteId == soundingNote.first && chordStartTick + 0.0001d < soundingNote.second && enableLotroErrors) {
 									// 0.0001 is for rounding errors
-                                    double lengthSeconds = info.getWholeNoteTime() * (numerator_abc / (double) denominator_abc);
+                                    double lengthSeconds = info.getWholeNoteTime() * (numerator_abc / (double) denominator_abc);// the overlapping note duration
 									log.warning(fileName+": Overlapping note "+soundingNote.third+", lotro might not play part "
 											+info.getPartNumber()+" correctly. Overlap ticks="+(soundingNote.second-chordStartTick)+" "+soundingNote.second+" - "+chordStartTick+" "+noteEndTick+ " "+lengthSeconds+"s");
 									// This should maybe give a warning instead, not catastrophic failure
 									throw new LotroParseException("Overlapping note, lotro might not play part "
-											+info.getPartNumber()+" correctly. "+(soundingNote.second-chordStartTick), fileName, lineNumber, m.start());
+											+info.getPartNumber()+" correctly.", fileName, lineNumber, m.start());
 								}
 							}
 

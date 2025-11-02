@@ -74,11 +74,11 @@ class TuneInfo {
 	}
 
 	public double getWholeNoteTime() {
-		if (this.noteDivisor > 0.0) {
-			return (60.0 / this.primaryTempoBPM) * this.meterDenominator * this.noteDivisor;
+		if (this.noteDivisor > 0.0d) {
+			return (60.0d / this.primaryTempoBPM) * this.meterDenominator * this.noteDivisor;
 		} else {
-			return (60.0 / this.primaryTempoBPM) * this.meterDenominator
-					* ((this.meterNumerator / (double) this.meterDenominator) < 0.75 ? 1d / 16 : 1d / 8);
+            double L = ((this.meterNumerator / (double) this.meterDenominator) < 0.75d ? 1d / 16 : 1d / 8);
+			return this.meterDenominator * L * (60.0d / this.primaryTempoBPM);
 		}
 	}
 
