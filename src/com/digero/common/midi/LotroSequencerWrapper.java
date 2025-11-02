@@ -11,13 +11,13 @@ import javax.sound.midi.Synthesizer;
 import javax.sound.midi.VoiceStatus;
 
 import com.digero.maestro.abc.AbcExporter.ExportTrackInfo;
-import com.digero.maestro.midi.SequenceInfo;
 
 public class LotroSequencerWrapper extends NoteFilterSequencerWrapper {
 	private static Synthesizer lotroSynth;
 	private static String loadLotroSynthError;
 	private long startTick = 0L;
     private List<ExportTrackInfo> currentTrackInfos = null;
+    protected long countInMicros = 0L;
 
 	static {
 		try {
@@ -29,7 +29,7 @@ public class LotroSequencerWrapper extends NoteFilterSequencerWrapper {
 	
 	public LotroSequencerWrapper() throws MidiUnavailableException {
 		super();
-        abcSeq = sequencer;
+        abcSeq = this;
 	}
 
     public void setCurrentTrackInfos(List<ExportTrackInfo> trackInfos) {
@@ -127,4 +127,12 @@ public class LotroSequencerWrapper extends NoteFilterSequencerWrapper {
 	public void setStartTick(long startTick) {
 		this.startTick = startTick;
 	}
+
+    public void setCountInMicros(long countInMicros) {
+        this.countInMicros = countInMicros;
+    }
+
+    public long getCountInMicros() {
+        return countInMicros;
+    }
 }

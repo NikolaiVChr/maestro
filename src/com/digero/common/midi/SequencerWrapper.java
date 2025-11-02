@@ -32,7 +32,7 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 	public static final int UPDATE_FREQUENCY_MILLIS = 50;
 	public static final long UPDATE_FREQUENCY_MICROS = UPDATE_FREQUENCY_MILLIS * 1000L;
 
-    protected static Sequencer abcSeq = null;// is set only by LotroSequencer
+    protected static LotroSequencerWrapper abcSeq = null;// is set only by LotroSequencer
 	protected Sequencer sequencer;
 	protected Receiver receiver;
 	private Transmitter transmitter;
@@ -302,6 +302,7 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
              * tempo changes or main tempo change.
              */
             micros -= SynthesizerFactory.PLAYBACK_LATENCY_MICROS;
+            micros -= abcSeq.getCountInMicros();
             micros = Math.max(0L, micros);
         }
 

@@ -2001,7 +2001,17 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			break;
         case COUNT_IN:
             setAbcSongModified(true);
-            refreshPreviewSequence(false);
+
+            //must be true so countin props get set on actual abcSong, not a copy:
+            refreshPreviewSequence(true);
+
+            if (abcSong != null) {
+                if (abcSong.getCountIn() != null) {
+                    abcSequencer.setCountInMicros(abcSong.getCountIn().micros);
+                    break;
+                }
+            }
+            abcSequencer.setCountInMicros(0L);
             break;
 		case EXPORT_FILE:
 			// Don't care
