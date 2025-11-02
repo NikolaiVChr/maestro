@@ -574,8 +574,40 @@ public class AbcExporter {
 		// One whole abc note is this many microseconds
         // This we will use as denominator for full precision
 		int oneMicro = (int)(qtm.getMeter().denominator * TimingInfo.ONE_SECOND_MICROS * 60L / (Q * L));
-		
-		int milli2micro = 100;
+
+        /*
+         Trade-off between filesize and drift when many minimum notes
+         in succesion can make the drift not ideal.
+         At milli2micro at 100 the worst drift I saw from running 900 various
+         songs through this with reduced accuracy was in a 19 minute song
+         where the drift somewhere in one of the parts was almost 9 millisecs.
+         10 ms is kinda the fastest a human expert musicians ear can pick up.
+         But! GCD also reduces the fractions, and most often using 10 instead
+         of 100 will result in same reduced fraction.
+         And with 10 as value, the drift is so small that is not worth
+         thinking about.
+         For reference, the real reason for drift at all is that the note
+         processing algorithms use 60000 or 60001 as minimum since that's what
+         lotro accept. But for example for using 100, a 60000 minimum all of a
+         sudden can be up to 60099. And then a lot of minimum notes after each
+         other and the drift can accumulate until a longer note/rest saves the day
+         by getting drift corrected and the timeline gets back on track.
+         TODO: Could change all the note processing methods in this class
+               to use a modified minimum, they will elongate, move and cut rests
+               and also delete notes to make it all fit. But I think the 10
+               compromise is rather nice. Basically no drift, and still reduced
+               filesize with at least 2 digits per chord.
+         PS. With 100, the 900 songs takes up 86.963.288 bytes (max 9 ms drift)
+             With  10, they take up           98.252.641 bytes (max 0.6 ms drift)
+             That was with multi-stage, poly6+ off. So a bit more than 10% larger.
+             Single-stage, poly6+ off:
+             85.898.803 bytes (0.9 ms drift) vs 96.873.151 bytes (less than 0.2 ms drift)
+             The more drift in multi-stage comes from its fitting, it not as
+             an aggressive fitting algorithm as single-stage.
+             The code is more neat and maintainable in multistage though.
+             Anyway, the drift is completely neglectable for both organics now.
+        */
+        int milli2micro = 10;
 		
 		// One whole abc note is this many milliseconds
 		// This we will use as denominator for reduced precision
@@ -891,7 +923,7 @@ public class AbcExporter {
 				
 				long chordStartDiff = currentMicro - cStartMicro;
 				if (Math.abs(chordStartDiff) > Math.abs(largestDriftMicros)) {
-					if ((Math.abs(chordStartDiff) > 6000L && diffMicros != Long.MIN_VALUE)) {
+					if ((Math.abs(chordStartDiff) > 10000L && diffMicros != Long.MIN_VALUE)) {
                         // 10 ms is known to be what a human expert musicians ear can pick up.
                         long chordEndDiff = (currentMicro + chordMicro) - cEndMicro;
                         long adjustmentMicros = milliToMicro(chordMilli-oldChordMilli,oneMicro,oneMilli);//milliToMicro(microToMilliRound(-diff, oneMicro, oneMilli) + (int)minAdjust, oneMicro, oneMilli);
@@ -969,7 +1001,7 @@ public class AbcExporter {
 					denominator = oneMicro;
 				} else {
 					int noteMilli = microToMilliFloor(noteMicro, oneMicro, oneMilli);
-					if (nEndMicro == cEndMicro) {
+					if (nEndMicro == cEndMicro || !useRestsInChords) {
 						noteMilli = chordMilli;
 					} else {
 						
@@ -999,7 +1031,7 @@ public class AbcExporter {
 						}
 					}
 					
-					if (currentMilli + noteMilli > passingNoteEndMilli) {
+					if (useRestsInChords && currentMilli + noteMilli > passingNoteEndMilli) {
 						passingNoteEndMilli = currentMilli + noteMilli;
 					}
 					
@@ -3137,7 +3169,7 @@ public class AbcExporter {
 		long chordDura = qtm.tickToMicrosABCOrganic(chord.getEndTick())-qtm.tickToMicrosABCOrganic(chord.getStartTick());
 		long maxEndTick = qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(chord.getStartTick()) + minimum);
 		long maxEndMicros = chord.getStartMicros() + minimum;
-		long tickMicro = qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(chord.getEndTick()) + 10000)-chord.getEndTick();
+		long tickMicro = qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(chord.getEndTick()) + 10000L)-chord.getEndTick();
 		if (chordDura > 0L && chordDura < minimum) {
 			// we dont assert due to tick resolution might be so coarse that its within margin
 			logNotes.fine(chordDura+" < "+minimum+" dontMove2="+chord.dontMove2+" delete="+chord.delete
