@@ -1583,10 +1583,20 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	}
 
 	public void setFX(int track, boolean enabled) {
-		if (fx[track] == null || fx[track] != enabled) {
+		if ((fx[track] == null || fx[track] != enabled)) {
+            boolean wasNull = fx[track] == null;
 			fx[track] = enabled;
 			abcSong.setMixDirty(true);
-			fireChangeEvent(AbcPartProperty.FX, track);
+            if (!wasNull) fireChangeEvent(AbcPartProperty.FX, track);
+            // if was null it means the track is probably not enabled yet
+            // and this call is just to initialize it.
+            // In the case of changing instrument or enabling track
+            // there will be other change events flowing around, so this is
+            // not need also. If this condition is missing then
+            // loading a project with jaunty or student and just selecting
+            // the part will mark the project as modified.
+            // There is some bad design choices in the way this works.
+            // But its also an evolving system from seperate student instruments.
 		}
 	}
 	
