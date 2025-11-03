@@ -1590,13 +1590,13 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
             if (!wasNull) fireChangeEvent(AbcPartProperty.FX, track);
             // if was null it means the track is probably not enabled yet
             // and this call is just to initialize it.
-            // In the case of changing instrument or enabling track
+            // In the case of a changing instrument or enabling the track,
             // there will be other change events flowing around, so this is
-            // not need also. If this condition is missing then
+            // not needed also. If this condition is missing, then
             // loading a project with jaunty or student and just selecting
             // the part will mark the project as modified.
-            // There is some bad design choices in the way this works.
-            // But its also an evolving system from seperate student instruments.
+            // There are some bad design choices in the way this works.
+            // But it's also an evolving system from separate student instruments.
 		}
 	}
 	

@@ -937,7 +937,8 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		}
 		
 		boolean showDrumPanelsPrev = showDrumPanels;
-		showDrumPanels = !abcPart.isChromatic(trackInfo.getTrackNumber()) && trackEnabled;
+
+		showDrumPanels = trackEnabled && !abcPart.isChromatic(trackInfo.getTrackNumber());
 
 		if (showDrumPanels != showDrumPanelsPrev) {
 			if (showDrumPanels) {
