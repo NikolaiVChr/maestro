@@ -91,6 +91,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private boolean priorityActive = false;
 	private boolean skipSilenceAtStart = true;
 	private boolean deleteMinimalNotes = false;
+    private boolean reducedFilesize = true;
 	// private boolean showPruned = false;
 	public NavigableMap<Float, TuneLine> tuneBars = null;
 	public boolean[] tuneBarsModified = null;
@@ -1184,6 +1185,15 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			fireChangeEvent(AbcSongProperty.SKIP_SILENCE_AT_START);
 		}
 	}
+
+    public boolean isReducedFilesize() {
+        return reducedFilesize;
+    }
+
+    public void setReducedFilesize(boolean reduced) {
+        // do not need change event as it's a setting, not a song property
+        this.reducedFilesize = reduced;
+    }
 	
 	public boolean isDeleteMinimalNotes() {
 		return deleteMinimalNotes;
@@ -1358,6 +1368,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 		if (abcExporter.isUseRestsInChords() != saveAndExportSettings.useRestsInChords)
 			abcExporter.setUseRestsInChords(saveAndExportSettings.useRestsInChords);
+
+        abcExporter.reducedFilesize = reducedFilesize;
 
         /*
         Current:
@@ -1756,6 +1768,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         this.priorityActive = other.priorityActive;
         this.skipSilenceAtStart = other.skipSilenceAtStart;
         this.deleteMinimalNotes = other.deleteMinimalNotes;
+        this.reducedFilesize = other.reducedFilesize;
         this.firstBar = other.firstBar;
         this.lastBar = other.lastBar;
         this.firstBarTick = other.firstBarTick;

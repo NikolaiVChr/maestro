@@ -1455,6 +1455,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		if (abcSong != null) {
 			abcSong.setSkipSilenceAtStart(saveSettings.skipSilenceAtStart);
 			abcSong.setDeleteMinimalNotes(saveSettings.deleteMinimalNotes);
+            abcSong.setReducedFilesize(saveSettings.reducedFilesize);
 		}
 
 		// if (abcSong != null)
@@ -2329,6 +2330,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 			abcSong.setSkipSilenceAtStart(saveSettings.skipSilenceAtStart);
 			abcSong.setDeleteMinimalNotes(saveSettings.deleteMinimalNotes);
+            abcSong.setReducedFilesize(saveSettings.reducedFilesize);
+
 			
 			// abcSong.setShowPruned(saveSettings.showPruned);
 
@@ -2698,6 +2701,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             try {
                 abcSong.setSkipSilenceAtStart(saveSettings.skipSilenceAtStart);
                 abcSong.setDeleteMinimalNotes(saveSettings.deleteMinimalNotes);
+                abcSong.setReducedFilesize(saveSettings.reducedFilesize);
                 // abcSong.setShowPruned(saveSettings.showPruned);
                 previewWorker = new PreviewExportWorker(abcSong, !failedToLoadLotroInstruments, false, prefs.getInt("stereoPan", 100));
                 setSourceChangeEnabled(false);
@@ -2728,6 +2732,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
             abcSong.setSkipSilenceAtStart(saveSettings.skipSilenceAtStart);
             abcSong.setDeleteMinimalNotes(saveSettings.deleteMinimalNotes);
+            abcSong.setReducedFilesize(saveSettings.reducedFilesize);
             // abcSong.setShowPruned(saveSettings.showPruned);
             AbcExporter exporter = abcSong.getAbcExporter();
             exporter.stereoPan = prefs.getInt("stereoPan", 100);

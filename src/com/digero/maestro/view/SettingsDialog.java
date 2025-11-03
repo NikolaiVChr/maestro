@@ -908,6 +908,13 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
         warnSamePartsCheckBox.addActionListener(
                 e -> saveSettings.warnOnExportOfSamePartNames = warnSamePartsCheckBox.isSelected());
 
+        final JCheckBox reduceFileSizeCheckBox = new JCheckBox(
+                "Reduce exported ABC file size");
+        reduceFileSizeCheckBox.setToolTipText("When enabled, might export with slightly inaudible reduced precision and without time and bar number markers.");
+        reduceFileSizeCheckBox.setSelected(saveSettings.reducedFilesize);
+        reduceFileSizeCheckBox.addActionListener(
+                e -> saveSettings.reducedFilesize = reduceFileSizeCheckBox.isSelected());
+
 		TableLayout layout = new TableLayout();
 		layout.insertColumn(0, PREFERRED);
 //		layout.insertColumn(1, FILL);
@@ -947,6 +954,9 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 
         layout.insertRow(++row, PREFERRED);
         panel.add(warnSamePartsCheckBox, "0, " + row);
+
+        layout.insertRow(++row, PREFERRED);
+        panel.add(reduceFileSizeCheckBox, "0, " + row);
 
 		return panel;
 	}

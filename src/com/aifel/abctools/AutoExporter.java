@@ -573,6 +573,7 @@ public class AutoExporter {
 		
 		abcSong.storeNewExportFile = frame.getSaveMSXabcSelected();
 		abcSong.setSkipSilenceAtStart(saveSettings.skipSilenceAtStart);
+        abcSong.setReducedFilesize(saveSettings.reducedFilesize);
 		abcSong.setDeleteMinimalNotes(saveSettings.deleteMinimalNotes);
 		abcSong.setBadger(miscSettings.showBadger);
 

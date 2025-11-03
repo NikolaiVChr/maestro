@@ -84,8 +84,8 @@ public class AbcExporter {
 	private static final Logger logNotes = Logger.getLogger("export.notes");//processing and fitting of notes to lotros abc format
 	private static final Logger logAbc = Logger.getLogger("export.abc");//creation of abc
 	private static final Logger logPreview = Logger.getLogger("export.preview");//creation of preview midi
-	
-	private boolean organic = false;
+
+    private boolean organic = false;
 	private boolean organic2 = false;
 	private static final int MAX_RAID = 24; // Max number of parts that in any case can be played in lotro
 
@@ -97,6 +97,7 @@ public class AbcExporter {
 	private boolean skipSilenceAtStart;
 	private boolean deleteMinimalNotes;
 	private boolean useRestsInChords;
+    public boolean reducedFilesize = true;
 	// private boolean showPruned;
 	private long exportStartTick;
 	private long exportEndTick;
@@ -746,7 +747,7 @@ public class AbcExporter {
 		List<Chord> chords = pair.first;
 		
 		// changed this due to best to have either full precision or not on all parts:
-		boolean useMicroAccuracy = useRestsInChords;//pair.second;
+		boolean useMicroAccuracy = useRestsInChords || !reducedFilesize;//pair.second;
 		
 		if (useMicroAccuracy) {
             //logAbc.warning("ABC part organic export: using micro accuracy.");
@@ -793,8 +794,10 @@ public class AbcExporter {
 					out.println(" |");
 					bar.setLength(0);
 				}
-				long micros = (qtm.tickToMicrosABCOrganic(c.getStartTick()) - songStartMicros);
-				out.printf(Locale.US, "%%  (%s) bar %.1f\n", Util.formatDuration(micros), part.getSequenceInfo().getDataCache().tickToBarNumberFloat(c.getStartTick()));
+                if (!reducedFilesize) {
+                    long micros = (qtm.tickToMicrosABCOrganic(c.getStartTick()) - songStartMicros);
+                    out.printf(Locale.US, "%%  (%s) bar %.1f\n", Util.formatDuration(micros), part.getSequenceInfo().getDataCache().tickToBarNumberFloat(c.getStartTick()));
+                }
 
 				Arrays.fill(sharps, false);
 				Arrays.fill(flats, false);
@@ -1317,7 +1320,7 @@ public class AbcExporter {
 				curBarNumber = barNumber;
 
 				int exportBarNumber = curBarNumber - firstBarNumber;
-				if ((exportBarNumber + 1) % 10 == 0) {
+				if (!reducedFilesize && (exportBarNumber + 1) % 10 == 0) {
 					long micros = qtm.divideByExportTempoFactor(qtm.barNumberToMicrosecond(curBarNumber) - songStartMicros);
 					out.println("% Bar " + (exportBarNumber + 1) + " (" + Util.formatDuration(micros) + ")");
 				}
@@ -1453,6 +1456,10 @@ public class AbcExporter {
 		out.println(AbcField.MADE_FOR + part.getInstrument().friendlyName.trim());
 
 		if (metadata != null) {
+            // We output these even with reduced file size enabled.
+            // They are redundant as this info is in the main file header
+            // Is really just needed when outputting each part to its own file.
+            // But songbook indexers use them
 			if (!metadata.getComposer().isEmpty())
 				out.println("C: " + StringCleaner.cleanForABC(metadata.getComposer()));
 

@@ -12,15 +12,16 @@ public class SaveAndExportSettings {
 	public boolean deleteMinimalNotes = false;
 	public boolean useRestsInChords = false;
     public boolean warnOnExportOfSamePartNames = true;
+    public boolean reducedFilesize = true;
 	public String defaultTiming = TIMING_CHOICES[2];
 	// public boolean showPruned = false;
 	public boolean convertABCStringsToBasicAscii = true;
 
 	private final Preferences prefs;
 
-	
 
-	public SaveAndExportSettings(Preferences prefs) {
+
+    public SaveAndExportSettings(Preferences prefs) {
 		this.prefs = prefs;
 		promptSaveNewSong = prefs.getBoolean("promptSaveNewSong", promptSaveNewSong);
 		showExportFileChooser = prefs.getBoolean("showExportFileChooser", showExportFileChooser);
@@ -32,6 +33,7 @@ public class SaveAndExportSettings {
 		// showPruned = prefs.getBoolean("showPruned", showPruned);
 		convertABCStringsToBasicAscii = prefs.getBoolean("convertABCStringsToBasicAscii",
 				convertABCStringsToBasicAscii);
+        reducedFilesize = prefs.getBoolean("reducedFilesize", reducedFilesize);
 	}
 
 	public SaveAndExportSettings(SaveAndExportSettings that) {
@@ -49,6 +51,7 @@ public class SaveAndExportSettings {
         warnOnExportOfSamePartNames = that.warnOnExportOfSamePartNames;
 		// showPruned = that.showPruned;
 		convertABCStringsToBasicAscii = that.convertABCStringsToBasicAscii;
+        reducedFilesize = that.reducedFilesize;
 	}
 
 	public void saveToPrefs() {
@@ -61,6 +64,7 @@ public class SaveAndExportSettings {
 		prefs.putBoolean("useRestsInChords", useRestsInChords);
 		// prefs.putBoolean("showPruned", showPruned);
 		prefs.putBoolean("convertABCStringsToBasicAscii", convertABCStringsToBasicAscii);
+        prefs.putBoolean("reducedFilesize", reducedFilesize);
 	}
 
 	public void restoreDefaults() {

@@ -43,15 +43,17 @@ Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 
 Version 4.5.6
 - Play-head follow feature no longer jitters.
-- Offload Maestro ABC exporting to a non-UI thread.
+- Offloaded Maestro ABC exporting to a non-UI thread.
 - Various internal event optimizations.
-- Offload Maestro ABC preview generating to a non-UI thread.
+- Offloaded Maestro ABC preview generating to a non-UI thread.
 - Increased max number of sections in section-editor to 150.
 - Auto-exporter is now threaded, expect a speed-up of 3 to 12 times.
-- A bit better handling of multi-stage initial silence.
+- Organic multi-stage now handles initial silence a bit better.
 - Make play-head sync with count-in (when playback in progress).
 - Add option in AbcPlayer "More Options" menu to disable ABC potential corruption popup messages
 - The potential corrupt ABC message can be viewed by hovering over the ABC title, or the playlist lines
+- Fixed that play-head when count-in were enabled would not show actual song playback position.
+- Added option for reduced exported abc file size. No bar or time progress will be embedded in the notes when enabled.
 
 Version 4.4.6
 - Removed warnings for bad Jaunty notes.
