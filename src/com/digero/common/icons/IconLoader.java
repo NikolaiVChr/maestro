@@ -3,6 +3,7 @@ package com.digero.common.icons;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.util.logging.Logger;
 
@@ -17,6 +18,14 @@ public class IconLoader {
         if (icon == null) return null;
 		return new ImageIcon(icon);
 	}
+
+    public static BufferedImage getImage(String name) throws IOException {
+        InputStream url = IconLoader.class.getResourceAsStream(name);
+        if (url == null) {
+            throw new IOException("Resource not found: " + name);
+        }
+        return ImageIO.read(url);
+    }
 
 	public static URL getUrl(String name) {
 		return IconLoader.class.getResource(name);

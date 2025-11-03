@@ -37,9 +37,10 @@ import java.util.Properties;
 import java.util.Queue;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
-import javax.imageio.ImageIO;
 import javax.sound.midi.*;
 import javax.swing.*;
 import javax.swing.event.MenuEvent;
@@ -80,6 +81,8 @@ import info.clearthought.layout.TableLayoutConstants;
 import net.miginfocom.swing.MigLayout;
 
 public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConstants, TrackListPanelCallback {
+    private static final Logger log = Logger.getLogger("view");
+
 	private static final ExtensionFileFilter ABC_FILE_FILTER = new ExtensionFileFilter("ABC Files and Playlists", Util.ABC_FILE_EXTENSION_NO_DOT, Util.TXT_FILE_EXTENSION_NO_DOT, Util.ABCP_FILE_EXTENSION_NO_DOT);
 	public static final String APP_NAME = "ABC Player";
 	private static final String APP_NAME_LONG = APP_NAME + " for The Lord of the Rings Online";
@@ -281,11 +284,11 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 
 		try {
 			List<Image> icons = new ArrayList<>();
-			icons.add(ImageIO.read(IconLoader.class.getResourceAsStream("abcplayer_16.png")));
-			icons.add(ImageIO.read(IconLoader.class.getResourceAsStream("abcplayer_32.png")));
+			icons.add(IconLoader.getImage("abcplayer_16.png"));
+			icons.add(IconLoader.getImage("abcplayer_32.png"));
 			setIconImages(icons);
 		} catch (Exception ex) {
-			// Ignore
+			log.log(Level.WARNING, "Exception when loading icon", ex);
 		}
 
 		dropListener = new FileFilterDropListener(true, Util.ABC_FILE_EXTENSION_NO_DOT, Util.TXT_FILE_EXTENSION_NO_DOT, Util.ABCP_FILE_EXTENSION_NO_DOT);
@@ -1722,8 +1725,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 
 	private static void sendArgsToPort(final String[] args) {
 		if (args == null || args.length == 0 || args[0].length() < 3) {
-			// System.out.println("AbcPlayer already running. No filepath detected.
-			// Closing.");
+			// System.out.println("AbcPlayer already running. No filepath detected. Closing.");
 			return;
 		}
 		try {

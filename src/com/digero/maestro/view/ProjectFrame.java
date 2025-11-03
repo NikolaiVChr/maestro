@@ -16,6 +16,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
@@ -37,7 +38,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
-import javax.imageio.ImageIO;
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.MidiUnavailableException;
@@ -1050,14 +1050,14 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		try {
             // 15, 32, 48 and 256 are the most common used icon sizes that a modern Windows uses
 			List<Image> icons = new ArrayList<>();
-            InputStream icon16 = IconLoader.class.getResourceAsStream("maestro_16.png");
-            InputStream icon32 = IconLoader.class.getResourceAsStream("maestro_32.png");
-            InputStream icon48 = IconLoader.class.getResourceAsStream("maestro_48.png");
-            InputStream icon256 = IconLoader.class.getResourceAsStream("maestro_256.png");
-			if (icon16 != null) icons.add(ImageIO.read(icon16));
-            if (icon32 != null) icons.add(ImageIO.read(icon32));
-            if (icon48 != null) icons.add(ImageIO.read(icon48));
-            if (icon256 != null) icons.add(ImageIO.read(icon256));
+            BufferedImage icon16 = IconLoader.getImage("maestro_16.png");
+            BufferedImage icon32 = IconLoader.getImage("maestro_32.png");
+            BufferedImage icon48 = IconLoader.getImage("maestro_48.png");
+            BufferedImage icon256 = IconLoader.getImage("maestro_256.png");
+			if (icon16 != null) icons.add(icon16);
+            if (icon32 != null) icons.add(icon32);
+            if (icon48 != null) icons.add(icon48);
+            if (icon256 != null) icons.add(icon256);
 			setIconImages(icons);
 		} catch (Exception ex) {
 			// Ignore

@@ -8,8 +8,9 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryUsage;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -21,13 +22,15 @@ import com.digero.common.util.Util;
 import com.digero.common.util.Version;
 
 public final class AboutDialog {
+    private static final Logger log = Logger.getLogger("view");
+
 	public static void show(JFrame parent, final String appName, final Version appVersion, final String appUrl,
 			final String iconName) {
 		ImageIcon aboutIcon;
 		try {
-			aboutIcon = new ImageIcon(ImageIO.read(IconLoader.class.getResourceAsStream(iconName)));
+			aboutIcon = new ImageIcon(IconLoader.getImage(iconName));
 		} catch (IOException e1) {
-			e1.printStackTrace();
+			log.log(Level.WARNING, "Error loading icon", e1);
 			aboutIcon = null;
 		}
 
