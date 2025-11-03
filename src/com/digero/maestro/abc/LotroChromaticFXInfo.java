@@ -53,7 +53,7 @@ public class LotroChromaticFXInfo extends LotroEventInfo<LotroChromaticFXInfo> {
 
     public static List<LotroChromaticFXInfo> getRange(LotroInstrument lotroInstrument) {
         return switch (lotroInstrument) {
-            case LotroInstrument.JAUNTY_HAND_KNELLS -> JAUNTY_FX;
+            case JAUNTY_HAND_KNELLS -> JAUNTY_FX;
             default -> null;
         };
     }
@@ -64,7 +64,7 @@ public class LotroChromaticFXInfo extends LotroEventInfo<LotroChromaticFXInfo> {
 
 	public static LotroChromaticFXInfo getById(LotroInstrument instrument, int noteId) {
 		return switch (instrument) {
-            case LotroInstrument.JAUNTY_HAND_KNELLS -> JAUNTY_BY_ID.get(noteId);
+            case JAUNTY_HAND_KNELLS -> JAUNTY_BY_ID.get(noteId);
             default -> null;
         };
 	}

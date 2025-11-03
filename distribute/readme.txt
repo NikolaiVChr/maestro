@@ -50,6 +50,8 @@ Version 4.5.5
 - Auto-exporter is now threaded, expect a speed-up of 3 to 12 times.
 - A bit better handling of multi-stage initial silence.
 - Make play-head sync with count-in (when playback in progress).
+- Add option in AbcPlayer "More Options" menu to disable ABC potential corruption popup messages
+- The potential corrupt ABC message can be viewed by hovering over the ABC title, or the playlist lines
 
 Version 4.4.6
 - Removed warnings for bad Jaunty notes.

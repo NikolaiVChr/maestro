@@ -12,8 +12,10 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.prefs.Preferences;
 import java.util.regex.Pattern;
 
+import com.digero.abcplayer.AbcPlayer;
 import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.AbcField;
 import com.digero.common.abc.LotroInstrument;
@@ -235,6 +237,8 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		return info.instrumentIsFromMadeFor;
 	}
 
+	public String getIssue() { return Util.emptyIfNull(issue); }
+
 	public int getPartCount() {
 		return partInfoByIndex.size();
 	}
@@ -436,9 +440,11 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 			if (issue != null) {
 				String title = songTitle != null ? songTitle: "";
 				log.warning("Potential corrupted ABC. "+title+" ABC was exported with a flawed Maestro: "+issue);
-                SwingUtilities.invokeLater(() -> {
-                    JOptionPane.showMessageDialog(null, title+" ABC was exported with a flawed Maestro: "+issue, "Potential corrupted ABC from "+abcCreator, JOptionPane.WARNING_MESSAGE);
-                });
+				if (Preferences.userNodeForPackage(AbcPlayer.class).node("miscSettings").getBoolean("flawedMaestroPopup", true)) {
+					SwingUtilities.invokeLater(() -> {
+						JOptionPane.showMessageDialog(null, title+" ABC was exported with a flawed Maestro: "+issue, "Potential corrupted ABC from "+abcCreator, JOptionPane.WARNING_MESSAGE);
+					});
+				}
 			}
 			break;
 		case ABC_VERSION:
