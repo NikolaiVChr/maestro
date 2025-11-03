@@ -2625,6 +2625,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             if (previewSequenceInfo.getLastTrackInfos() != null) {
                 for (AbcExporter.ExportTrackInfo trackInfo : previewSequenceInfo.getLastTrackInfos()) {
                     trackInfo.part.setPreviewSequenceTrackNumber(trackInfo.trackNumber);
+                    trackInfo.part.numberOfExportedNotes = trackInfo.numberOfExportedNotes;//threadsafe to do it here
                 }
             }
             abcSequencer.setStartTick(abcPreviewStartTick);// Needed for MP3 and WAV exports.

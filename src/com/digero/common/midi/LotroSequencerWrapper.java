@@ -103,6 +103,7 @@ public class LotroSequencerWrapper extends NoteFilterSequencerWrapper {
 		return (lotroSynth != null) ? lotroSynth.getReceiver() : MidiSystem.getReceiver();
 	}
 
+    @Deprecated
 	public static int getNoteCount() {
 		if (lotroSynth == null)
 			return 0;

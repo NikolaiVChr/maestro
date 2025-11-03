@@ -286,7 +286,7 @@ public class AbcExporter {
 		*/
 
 		return new ExportTrackInfo(trackNumber.first, part.origPart, null /* noteEvents */, trackNumber.second,
-				part.getInstrument().midi.id(), trackNumber.third);
+				part.getInstrument().midi.id(), trackNumber.third, part.numberOfExportedNotes);
 	}
 
 	private Triple<Integer, Integer, Long> exportPartToMidi(AbcPart part, Sequence out, List<Chord> chords, int pan,
@@ -5220,6 +5220,7 @@ public class AbcExporter {
 	public static class ExportTrackInfo {
 		public final int trackNumber;
 		public final AbcPart part;
+        public final int numberOfExportedNotes;
 		
 		//not sure what this used to be used for
 		//public final List<AbcNoteEvent> noteEvents;
@@ -5228,10 +5229,11 @@ public class AbcExporter {
 		public final Integer patch;
 		public final long endOfTrack;
 
-		public ExportTrackInfo(int trackNumber, AbcPart part, List<AbcNoteEvent> noteEvents, Integer channel, int patch, long endOfTrack) {
+		public ExportTrackInfo(int trackNumber, AbcPart part, List<AbcNoteEvent> noteEvents, Integer channel, int patch, long endOfTrack, int numberOfExportedNotes) {
 			this.trackNumber = trackNumber;
 			this.part = part;
-			//this.noteEvents = noteEvents;
+            this.numberOfExportedNotes = numberOfExportedNotes;
+            //this.noteEvents = noteEvents;
 			this.channel = channel;
 			this.patch = patch;
 			this.endOfTrack = endOfTrack;
