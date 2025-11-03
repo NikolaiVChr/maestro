@@ -41,7 +41,7 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
-Version 4.5.5
+Version 4.5.6
 - Play-head follow feature no longer jitters.
 - Offload Maestro ABC exporting to a non-UI thread.
 - Various internal event optimizations.
