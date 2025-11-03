@@ -41,7 +41,6 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 	private final long songLengthTicks;
 	private final int tickResolution;
 
-	private final int primaryTempoMPQ;
 	//private final float exportTempoFactor;
 	private final int newTempo;
 	private final int origTempo;
@@ -58,8 +57,19 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 			boolean useTripletTiming, AbcSong song, boolean oddsAndEnds, int mixVersion, boolean organic)
 			throws AbcConversionException {
 
+        /*
 		double exportPrimaryTempoMPQ = TimingInfo.roundTempoMPQ(source.getPrimaryTempoMPQ()*origTempo/newTempo);
 		this.primaryTempoMPQ = (int) Math.round(exportPrimaryTempoMPQ * newTempo/origTempo);
+
+        Why not instead do:
+        primaryTempoMPQ = (int) Math.round(MidiUtils.convertTempo(newTempo));
+
+        and fix getPrimaryExportTempoBPM() to return newTempo
+
+        Edit: fixed it, leaving this comment in here for a while
+         */
+
+
 		this.newTempo = newTempo;
 		this.origTempo = origTempo;
 		this.meter = meter;
@@ -700,27 +710,10 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 
 	/**
 	 * 
-	 * @return source main tempo MPQ
-	 */
-	public int getPrimaryTempoMPQ() {
-		return primaryTempoMPQ;
-	}
-
-	/**
-	 * 
-	 * @return source main tempo BPM
-	 */
-	public int getPrimaryTempoBPM() {
-		return (int) Math.round(MidiUtils.convertTempo(getPrimaryTempoMPQ()));
-	}
-
-	/**
-	 * 
 	 * @return export ABC main tempo BPM
 	 */
 	public int getPrimaryExportTempoBPM() {
-		// TODO: should we not just return newTempo?
-		return (int) Math.round(MidiUtils.convertTempo((double) primaryTempoMPQ *origTempo/newTempo));
+		return newTempo;//(int) Math.round(MidiUtils.convertTempo((double) primaryTempoMPQ *origTempo/newTempo));
 	}
 
 	public float getExportTempoFactord() {
@@ -1143,7 +1136,9 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 	}
 
 	/**
-	 * Only used by tempopanel
+	 * Only used by TempoPanel
+     * The method name is semi-misleading as changes in the main tempo are not included.
+     * Tune-editor changes are included, though.
      */
 	public int getAbcTempoMPQForTick(long thumbTick) {
 		TimingInfoEvent entry;

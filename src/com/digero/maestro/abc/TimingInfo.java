@@ -11,7 +11,6 @@ public class TimingInfo {
 	
 	public static final long ONE_SECOND_MICROS = 1000000;
 	public static final long ONE_MINUTE_MICROS = 60 * ONE_SECOND_MICROS;
-	// public static final long SHORTEST_NOTE_MICROS = 60001;
 	public static final long LONGEST_NOTE_MICROS = ONE_MINUTE_MICROS / 12;// reduced to 5s from 6s due to some samples
 																			// are shorter than 6s.
 	public static final int MAX_TEMPO_BPM = 10000;//(int) (ONE_MINUTE_MICROS / AbcConstants.getShortestNoteMicros(125));// Maximum 1000 bpm
@@ -36,23 +35,7 @@ public class TimingInfo {
 	private final long minNoteLengthTicks;
 	private final long maxNoteLengthTicks;
 	private final boolean useTripletTiming;
-	private boolean organic = false;
-
-	@Override
-	public String toString() {
-		String str = "  TimingInfo:\n";
-		str += "meter "+meter.toString() + "\n";
-		str += "resolutionPPQ "+resolutionPPQ + "\n";
-		str += "tempoMPQ "+tempoMPQ + " (source)\n";
-		str += "exportTempoFactor "+(newTempo/(float)origTempo) + "\n";
-		str += "defaultDivisor "+defaultDivisor + "\n";
-		str += "minNoteDivisor "+minNoteDivisor + "\n";
-		str += "minNoteLengthTicks "+minNoteLengthTicks + "\n";
-		str += "swing "+useTripletTiming + "\n";
-		str += "tempo "+MidiUtils.convertTempo(roundTempoMPQ((double) tempoMPQ *origTempo/newTempo)) + " BPM\n";
-		str += "minDuration "+ (MidiUtils.ticks2microsec(minNoteLengthTicks, tempoMPQ, resolutionPPQ)) *origTempo/ (newTempo*1000L) + " ms\n";
-		return str;
-	}
+	private final boolean organic;
 
     /**
      * A single tempo change.
@@ -60,14 +43,32 @@ public class TimingInfo {
      * for legacy and mix timings.
      *
      * It also computes the tempo BPM written in mix and legacy every 10 lines or so.
+     *
+     * TODO:
+     *   Rename this to ABCTempoChange  (although it can also mean grid change in mix timings)
+     *   Rename SequenceDataCache.TempoEvent to SequenceDataCache.MidiTempoEvent
+     *   Rename QuantizedTimingInfo.TimingInfoEvent to QuantizedTimingInfo.AbcTempoEvent
      */
 	TimingInfo(int tempoMPQ, int resolutionPPQ, int newTempo, int origTempo, TimeSignature meter, boolean useTripletTiming,
 			boolean organic) throws AbcConversionException {
-		// Compute the export tempo and round it to a whole-number BPM
-		double exportTempoMPQ = roundTempoMPQ((double) tempoMPQ *origTempo/newTempo);
 
-		// Now adjust the tempoMPQ by however much we just rounded the export tempo
-		if (!organic) tempoMPQ = (int) Math.round(exportTempoMPQ * newTempo/origTempo);
+        // Compute the export ABC tempo
+		double exportTempoMPQ = (double) tempoMPQ *origTempo/newTempo;
+
+        // For backwards compat we still do this outside the condition.
+        // For organic its only use is to determine if min and max
+        // is exceeded.
+        exportTempoMPQ = roundTempoMPQ(exportTempoMPQ);
+
+		if (!organic) {
+            // Round it to a whole-number BPM. By not doing this for organic outputs,
+            // we basically allow its tempo changes to have floating point BPM.
+            // So if the default main tempo is 60, and the user sets it to 61. And later is
+            // a tempo change to 90, organic will effectively use 91.5 BPM instead of 92.
+
+            // Adjust the tempoMPQ by however much we just rounded the export tempo
+            tempoMPQ = (int) Math.round(exportTempoMPQ * newTempo/origTempo);
+        }
 
 		this.tempoMPQ = tempoMPQ;
 		this.resolutionPPQ = resolutionPPQ;
@@ -79,9 +80,6 @@ public class TimingInfo {
 
 
         long minimalNoteMicros = AbcConstants.getShortestNoteMicros(newTempo);
-
-		final long SHORTEST_NOTE_TICKS = (long) Math.ceil((minimalNoteMicros * resolutionPPQ) / exportTempoMPQ);
-		final long LONGEST_NOTE_TICKS = (long) Math.floor((LONGEST_NOTE_MICROS * resolutionPPQ) / exportTempoMPQ);
 
 		final int exportTempoBPM = (int) Math.round(MidiUtils.convertTempo(exportTempoMPQ));
 
@@ -105,6 +103,9 @@ public class TimingInfo {
 			this.maxNoteLengthTicks = 1;
 			return;
 		}
+
+        final long SHORTEST_NOTE_TICKS = (long) Math.ceil((minimalNoteMicros * resolutionPPQ) / exportTempoMPQ);
+        final long LONGEST_NOTE_TICKS = (long) Math.floor((LONGEST_NOTE_MICROS * resolutionPPQ) / exportTempoMPQ);
 		
 		// Calculate min note length
 		{
@@ -214,4 +215,24 @@ public class TimingInfo {
 	public boolean isUseTripletTiming() {
 		return useTripletTiming;
 	}
+
+    @Override
+    public String toString() {
+        String str = "  TimingInfo:\n";
+        str += "meter "+meter.toString() + "\n";
+        str += "resolutionPPQ "+resolutionPPQ + "\n";
+        str += "exportTempoFactor "+(newTempo/(float)origTempo) + "\n";
+        str += "tempoMPQ "+tempoMPQ + " (source)\n";
+        if (!organic) {
+            str += "defaultDivisor " + defaultDivisor + "\n";
+            str += "minNoteDivisor " + minNoteDivisor + "\n";
+            str += "swing "+useTripletTiming + "\n";
+            str += "minNoteLengthTicks "+minNoteLengthTicks + "\n";
+            str += "tempoBPM "+MidiUtils.convertTempo(roundTempoMPQ((double) tempoMPQ *origTempo/newTempo));
+            str += "minDuration "+ (MidiUtils.ticks2microsec(minNoteLengthTicks, tempoMPQ, resolutionPPQ)) *origTempo/ (newTempo*1000L) + " ms\n";
+        } else {
+            str += "tempoBPM "+MidiUtils.convertTempo((double) tempoMPQ *origTempo/newTempo);
+        }
+        return str;
+    }
 }

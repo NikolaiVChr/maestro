@@ -206,6 +206,7 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
 				mpq = mpqAbc;
 			}
 		}
+        //TODO: replace with abcSong.getAbcTimingInfo().multiplyByExportTempoFactor():
 		int bpm = (int) Math.round(MidiUtils.convertTempo(mpq) * getCurrentTempoFactor());
 		if (bpm != lastRenderedBPM) {
 			currentTempoLabel.setText(bpm + " BPM ");
@@ -224,6 +225,7 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
 	private int tempoToNoteId(int tempoMPQ, int minBPM, int maxBPM) {
 		int bpm = (int) Math.round(MidiUtils.convertTempo(tempoMPQ));
 
+        // TODO: abcSong.getAbcTimingInfo().multiplyByExportTempoFactor():
 		float tempoFactor = getCurrentTempoFactor();
 		minBPM = Math.round(minBPM * tempoFactor);
 		maxBPM = Math.round(maxBPM * tempoFactor);
