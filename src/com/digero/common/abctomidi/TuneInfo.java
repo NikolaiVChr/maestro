@@ -164,18 +164,6 @@ class TuneInfo {
 		return allPartsTempoMap;
 	}
 
-	/*
-	 * private int parseDivisor(String str) { String[] parts = str.trim().split("[/:| ]"); if (parts.length != 2) {
-	 * throw new IllegalArgumentException("\"" + str + "\" is not a valid note length" +
-	 * " (example of valid note length: 1/4)"); } int numerator = Integer.parseInt(parts[0]); int denominator =
-	 * Integer.parseInt(parts[1]); if (numerator != 1) { throw new
-	 * IllegalArgumentException("The numerator of the note length must be 1" + " (example of valid note length: 1/4)");
-	 * } if (denominator < 1) { throw new IllegalArgumentException("The denominator of the note length must be positive"
-	 * + " (example of valid note length: 1/4)"); }
-	 * 
-	 * return denominator; }
-	 */
-
 	private double parseNoteDivisor(String str) {
 		String[] parts = str.trim().split("[/:| ]");
 		if (parts.length != 2) {
@@ -184,10 +172,7 @@ class TuneInfo {
 		}
 		int numerator = Integer.parseInt(parts[0]);
 		int denominator = Integer.parseInt(parts[1]);
-		/*
-		 * if (numerator != 1) { throw new IllegalArgumentException("The numerator of the note length must be 1" +
-		 * " (example of valid note length: 1/4)"); }
-		 **/
+
 		if (numerator < 1) {
 			throw new IllegalArgumentException(
 					"The numerator of the note length must be positive" + " (example of valid note length: 3/8)");

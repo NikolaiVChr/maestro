@@ -198,7 +198,7 @@ public class TimingInfo {
 
 	/*
 	 * Used by ABC exporter and ABC preview bar label. 
-	 * This is not used by UI to draw bar lines. And not by section and tune editor to edit song.
+	 * UI does not use this to draw bar lines. And not by section and tune editor to edit song.
 	 * 
 	 * Makes no guarantee for this duration to fit on this TimingInfo's quantization. (due to the division)
 	 * 

@@ -1107,11 +1107,8 @@ public class AbcExporter {
 
 			bar.append(' ');
 		}
-		//Drift is mostly caused by inaccuracies between micro and tick conversions,
-		//when try to keep to lotros limits, this will amplify those inaccuracies.
+
 		//The tolerance is 10 ms. But should best be under 1 ms.
-		//Since we now round to 0.1 millis instead of micros in organic when poly 6+ is disabled,
-		//drift is a real thing, and we log it:
 		logAbc.info("Largest drift was "+largestDriftMicros+" μs. ("+part.getTitle()+")");
 		logAbc.fine(part.getTitle()+" EXPORT: ends at "+Util.formatDurationM(currentMicro)+" - micro:"+currentMicro);
 
