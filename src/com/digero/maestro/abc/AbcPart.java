@@ -77,8 +77,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
     private final JauntyHandKnellsFXNoteMap[] jauntyHandKnellsFXNoteMap;
 	private BitSet[] drumsEnabled;
 	private BitSet[] cowbellsEnabled;
-	private BitSet[] fxEnabled;//TODO: not sure if good idea that this is shared with jaunty
-	private final Boolean[] fx;
+	private BitSet[] fxEnabled;//If specific FX sound is enabled. TODO: not sure if good idea that this is shared with jaunty
+	private final boolean[] fx;//If FX checkbox is enabled
     /**
      * If this is enabled, the lowest student note allowable is including fx
      */
@@ -132,30 +132,30 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		this.instrNameSettings = abcSong.getInstrNameSettings();
 		this.title = this.instrNameSettings.getInstrNick(instrument);
 
-		int t = getTrackCount();
-		this.trackTranspose = new int[t];
-		this.trackEnabled = new boolean[t];
-		this.trackPriority = new boolean[t];
-		this.playLeft = new boolean[t];
-		this.playCenter = new boolean[t];
-		this.playRight = new boolean[t];
-		this.fx = new Boolean[t];
+		int trackCount = getTrackCount();
+		this.trackTranspose = new int[trackCount];
+		this.trackEnabled = new boolean[trackCount];
+		this.trackPriority = new boolean[trackCount];
+		this.playLeft = new boolean[trackCount];
+		this.playCenter = new boolean[trackCount];
+		this.playRight = new boolean[trackCount];
+		this.fx = new boolean[trackCount];
 
-		this.trackVolumeAdjust = new int[t];
-		this.drumNoteMap = new DrumNoteMap[t];
-		this.studentFxNoteMap = new StudentFXNoteMap[t];
-        this.jauntyHandKnellsFXNoteMap = new JauntyHandKnellsFXNoteMap[t];
+		this.trackVolumeAdjust = new int[trackCount];
+		this.drumNoteMap = new DrumNoteMap[trackCount];
+		this.studentFxNoteMap = new StudentFXNoteMap[trackCount];
+        this.jauntyHandKnellsFXNoteMap = new JauntyHandKnellsFXNoteMap[trackCount];
 		this.sections = new ArrayList<>();
 		this.nonSection = new ArrayList<>();
 		this.sectionsModified = new ArrayList<>();
-		for (int i = 0; i < t; i++) {
+		for (int track = 0; track < trackCount; track++) {
 			this.sections.add(null);
 			this.nonSection.add(null);
 			this.sectionsModified.add(null);
-			this.playLeft[i] = true;
-			this.playCenter[i] = true;
-			this.playRight[i] = true;
-			this.fx[i] = null;
+			this.playLeft[track] = true;
+			this.playCenter[track] = true;
+			this.playRight[track] = true;
+			this.fx[track] = isDrumTrack(track);
 		}
 	}
 
@@ -1432,15 +1432,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			trackEnabled[track] = enabled;
 			enabledTrackCount += enabled ? 1 : -1;
 			abcSong.setMixDirty(true);
-			boolean fx_also = false;
-			if (fx[track] == null) {
-                // by default we enable FX on drum tracks
-				fx[track] = isDrumTrack(track);
-				fx_also = true;
-			}
 			fireChangeEvent(AbcPartProperty.TRACK_ENABLED, track);
-			if (fx_also)
-				fireChangeEvent(AbcPartProperty.FX, track);
 		}
 	}
 
@@ -1560,9 +1552,6 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	@SuppressWarnings("BooleanMethodIsAlwaysInverted")
 	public boolean isChromatic(int track) {
 		if (isStudentPart() || isJauntyHandKnellsPart()) {
-			if (fx[track] == null) {
-				setFX(track, isDrumTrack(track));
-			}
 			return !fx[track] || isStudentFromABC();
 		}
 		return !isPercussionPart();
@@ -1574,29 +1563,17 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
      */
 	public boolean isFX(int track) {
 		if (isStudentFromABC()) return false;
-		if ((isStudentPart() || isJauntyHandKnellsPart()) && fx[track] == null) {
-			setFX(track, isDrumTrack(track));
-		} else if (!isStudentPart() && !isJauntyHandKnellsPart()) {
-			return false;//avoid setting studentFX to non-null unless we are sure it has been assigned a track
+		if (!isStudentPart() && !isJauntyHandKnellsPart()) {
+			return false;
 		}
 		return fx[track];
 	}
 
 	public void setFX(int track, boolean enabled) {
-		if ((fx[track] == null || fx[track] != enabled)) {
-            boolean wasNull = fx[track] == null;
+		if (fx[track] != enabled) {
 			fx[track] = enabled;
 			abcSong.setMixDirty(true);
-            if (!wasNull) fireChangeEvent(AbcPartProperty.FX, track);
-            // if was null it means the track is probably not enabled yet
-            // and this call is just to initialize it.
-            // In the case of a changing instrument or enabling the track,
-            // there will be other change events flowing around, so this is
-            // not needed also. If this condition is missing, then
-            // loading a project with jaunty or student and just selecting
-            // the part will mark the project as modified.
-            // There are some bad design choices in the way this works.
-            // But it's also an evolving system from separate student instruments.
+            fireChangeEvent(AbcPartProperty.FX, track);
 		}
 	}
 	
