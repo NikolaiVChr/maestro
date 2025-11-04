@@ -26,7 +26,8 @@ public class AbcSongEvent extends EventObject {
 		MIX_TIMING_COMBINE_PRIORITIES,
 		// SHOW_PRUNED, //
 		TUNE_EDIT, SONG_CLOSING, DELETE_MINIMAL_NOTES, HIDE_EDITS_UPDATE, ORGANIC, BADGER, COUNT_IN, CALC_DYNAMICS,
-        TIMINGS_MULTI,// more than 1 timings changed at once
+        TIMINGS_MULTI, // more than 1 timings changed at once
+        AFTER_PART_REMOVED,
 	}
 
 	private final AbcSongProperty property;

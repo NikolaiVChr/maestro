@@ -879,6 +879,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		if (sorted) parts.sort(partAutoNumberer.getComparator());
 		fireChangeEvent(AbcSongProperty.PART_LIST_ORDER, part);
         if (removedCountIn) fireChangeEvent(AbcSongProperty.COUNT_IN);
+        fireChangeEvent(AbcSongProperty.AFTER_PART_REMOVED, part);
 	}
 
 	public String getTitle() {

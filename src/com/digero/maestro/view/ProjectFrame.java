@@ -1799,7 +1799,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
 	private final Listener<AbcPartEvent> abcPartListener = e -> {
-        //log.warning(this.getClass().getTypeName()+" AbcPartEvent: "+e.getProperty());
+        log.warning(this.getClass().getTypeName()+" AbcPartEvent: "+e.getProperty());
 		if (e.getProperty() == AbcPartProperty.TRACK_ENABLED)
 			updateButtons(false);
 
@@ -1835,7 +1835,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		int idx;
         boolean modified = true;
 
-        //log.warning(this.getClass().getTypeName()+" AbcSongEvent: "+e.getProperty());
+        log.warning(this.getClass().getTypeName()+" AbcSongEvent: "+e.getProperty());
 
 		switch (e.getProperty()) {
 		case TITLE:
@@ -1943,13 +1943,12 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 						"Click the " + newPartButton.getText() + " button to add a new part."));
 			}
 
-			if (abcPreviewMode)
-				refreshPreviewSequence(false);
-
 			partsList.repaint();
 			updateButtons(false);
 			break;
-
+        case AFTER_PART_REMOVED:
+            refreshPreviewSequence(false);
+            break;
 		case PART_LIST_ORDER:
             partsList.updateParts();//important to run before the below code
             partsList.selectPart(abcSong.getParts().indexOf(arrangementView.getAbcPart()));
