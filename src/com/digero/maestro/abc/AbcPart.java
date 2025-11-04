@@ -628,7 +628,13 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		}
 		if (e.getProperty() == AbcSongProperty.MIX_TIMING_COMBINE_PRIORITIES
 				|| e.getProperty() == AbcSongProperty.MIX_TIMING) {
-			fireChangeEvent(AbcPartProperty.TRACK_PRIORITY);
+            // TODO: Perhaps we should consider deleting this call
+            //       I might be missing something, but I do not think
+            //       it is needed. For example when open new project,
+            //       this gets fired once per part, even though the
+            //       track priorities themselves don't change.
+            //       For now I just set previewRelated to false.
+			fireChangeEvent(AbcPartProperty.TRACK_PRIORITY, false);
 		}
 	};
 

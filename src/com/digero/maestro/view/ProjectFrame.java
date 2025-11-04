@@ -462,6 +462,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		transcriberField.getDocument().addDocumentListener(new SimpleDocumentListener() {
 			@Override
 			public void changedUpdate(DocumentEvent e) {
+                // It's not a big deal, but when programmatically setting
+                // the text, removeUpdate and insertUpdate will both
+                // call this method, so it gets called twice.
 				if (abcSong != null)
 					abcSong.setTranscriber(transcriberField.getText());
 			}
@@ -1799,7 +1802,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
 	private final Listener<AbcPartEvent> abcPartListener = e -> {
-        log.warning(this.getClass().getTypeName()+" AbcPartEvent: "+e.getProperty());
+        //log.warning(this.getClass().getTypeName()+" AbcPartEvent: "+e.getProperty());
+
 		if (e.getProperty() == AbcPartProperty.TRACK_ENABLED)
 			updateButtons(false);
 
@@ -1835,7 +1839,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		int idx;
         boolean modified = true;
 
-        log.warning(this.getClass().getTypeName()+" AbcSongEvent: "+e.getProperty());
+        //log.warning(this.getClass().getTypeName()+" AbcSongEvent: "+e.getProperty());
 
 		switch (e.getProperty()) {
 		case TITLE:
