@@ -219,8 +219,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		composer = sequenceInfo.getComposer();
 		if (sequenceInfo.getDataCache() != null) {
 			copyright = sequenceInfo.getDataCache().getCopyright();
-			if (miscSettings.importLyrics) lyrics = sequenceInfo.getDataCache().getLyrics();
-            else lyrics = "Lyrics is disabled in options!";
+			lyrics = sequenceInfo.getDataCache().getLyrics();
 			genre = sequenceInfo.getDataCache().getGenre();
 			if (composer == null || composer.isBlank()) composer = sequenceInfo.getDataCache().getComposer(); 
 		} else {
@@ -411,11 +410,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				MaestroMain.setMIDIFileResolved();
 			}
             if (!calledFromTools) {
-                if (miscSettings.importLyrics) {
-                    lyrics = sequenceInfo.getDataCache().getLyrics();
-                } else {
-                    lyrics = "Lyrics is disabled in options!";
-                }
+                lyrics = sequenceInfo.getDataCache().getLyrics();
             }
 			title = SaveUtil.parseValue(songEle, "title", sequenceInfo.getTitle());
 			composer = SaveUtil.parseValue(songEle, "composer", sequenceInfo.getComposer());
