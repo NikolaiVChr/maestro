@@ -74,8 +74,10 @@ public enum ColorTable
     /** Track panels background */
 	PANEL_BACKGROUND_DISABLED(GRAPH_BACKGROUND_DISABLED),
 
-    /** Track panel border color */
+    /** Track panel border color outside */
 	PANEL_BORDER(new Color(0xEEEEEE)),
+	/** Track panel border color inside */
+    PANEL_BORDER_INSIDE(new Color(0x555555)),
 
     /** Track title background color when selected by current part */
 	PANEL_HIGHLIGHT(new Color(0xFFD83C)), //(Color.getHSBColor(0.60f, 0.50f, 1.00f)),
