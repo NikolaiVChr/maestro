@@ -10,7 +10,7 @@ public class MiscSettings {
 	public boolean showMaxPolyphony = true;
 	public boolean ignoreExpressionMessages = false;
 	public boolean showBadger = false;
-	public boolean importLyrics = false;
+	public boolean importLyrics = true;
 	//public boolean allBadger = false;
 	public String theme = "Flat Light";
 	public int fontSize = 12;

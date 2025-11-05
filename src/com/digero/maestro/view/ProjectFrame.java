@@ -84,6 +84,7 @@ import javax.swing.text.BadLocationException;
 import javax.swing.SwingWorker;
 import javax.xml.transform.TransformerException;
 
+import com.digero.common.util.*;
 import com.digero.maestro.midi.SequenceDataCache;
 import org.jetbrains.annotations.Nullable;
 import org.xml.sax.SAXException;
@@ -101,15 +102,6 @@ import com.digero.common.midi.SequencerEvent.SequencerProperty;
 import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.midi.TimeSignature;
 import com.digero.common.midi.VolumeTransceiver;
-import com.digero.common.util.ExtensionFileFilter;
-import com.digero.common.util.FileFilterDropListener;
-import com.digero.common.util.ICompileConstants;
-import com.digero.common.util.IDiscardable;
-import com.digero.common.util.Listener;
-import com.digero.common.util.Pair;
-import com.digero.common.util.ParseException;
-import com.digero.common.util.Util;
-import com.digero.common.util.Version;
 import com.digero.common.view.AboutDialog;
 import com.digero.common.view.AudioExportManager;
 import com.digero.common.view.BarNumberLabel;
@@ -259,7 +251,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private MainSequencerListener mainSequencerListener;
 	private AbcSequencerListener abcSequencerListener;
 	private boolean failedToLoadLotroInstruments = false;
-	private JButton noteButton;
+	private JButton sidepanelButton;
 	private boolean midiResolved = false;
 	
 	private AudioExportManager audioExporter;
@@ -922,10 +914,17 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		abcBarLabel.setToolTipText("ABC Preview Bar number");
 		abcBarLabel.setVisible(!midiBarLabel.isVisible());
 
-		noteButton = new JButton("Note");
-		noteButton.addActionListener(e -> arrangementView.textnoteToggle());
-		noteButton.setToolTipText("<html>Show notepad where custom comments can be entered.<br>"
-				+ "Will be saved in project file.</html>");
+		sidepanelButton = new JButton("");
+        if (Themer.isDarkMode()) {
+            sidepanelButton.setIcon(IconLoader.getImageIcon("sidepanel_dark.png"));
+            sidepanelButton.setDisabledIcon(IconLoader.getDisabledIcon("sidepanel_dark.png"));
+        } else {
+            sidepanelButton.setIcon(IconLoader.getImageIcon("sidepanel.png"));
+            sidepanelButton.setDisabledIcon(IconLoader.getDisabledIcon("sidepanel.png"));
+        }
+		sidepanelButton.addActionListener(e -> arrangementView.sidepanelToggle());
+		sidepanelButton.setToolTipText("<html>Show sidepanel where custom comments can be entered.<br>"
+				+ "Notes will be saved in project file.</html>");
 				
 		feedLabel = new JLabel();
 		feedLabel.addMouseListener(new MouseAdapter() {
@@ -945,7 +944,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		playControlPanel.add(stopButton, "spany 2");
 		playControlPanel.add(new JLabel("Volume:"), "alignx right");
 		playControlPanel.add(volumeSlider);
-		playControlPanel.add(noteButton, "spany 2, center");
+		playControlPanel.add(sidepanelButton, "spany 2, center");
 		playControlPanel.add(midiPositionLabel);
 		playControlPanel.add(abcPositionLabel, "wrap");
 		
@@ -1124,7 +1123,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		discardObject(abcBarLabel);
 
 		arrangementView.setTextnote("");
-		arrangementView.textnoteVisible(false);
+        arrangementView.setLyrics("");
+        arrangementView.setStats("");
+		arrangementView.sidepanelVisible(false);
 
 		super.dispose();
 	}
@@ -1733,7 +1734,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		dynaCombo.setEnabled(midiLoaded && uiEnabled);
         tempoOnlyFirstCheckBox.setEnabled(abcSong != null && abcSong.getSequenceInfo().getDataCache().isTempoInHigherTracks() && uiEnabled);//  && abcSong.getProjectFile() != null
-		noteButton.setEnabled(midiLoaded && uiEnabled);
+		sidepanelButton.setEnabled(midiLoaded && uiEnabled);
 		if (midiLoaded) {
 			midiModeRadioButton.setText("Original ("
 					+ ((abcSong.getSequenceInfo().standard == MidiStandard.GM && abcSong.getSequenceInfo().hasPorts)
@@ -2157,7 +2158,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		arrangementView.setAbcPart(null, false);
 		arrangementView.setTextnote("");
-		arrangementView.textnoteVisible(false);
+        arrangementView.setLyrics("");
+        arrangementView.setStats("");
+		arrangementView.sidepanelVisible(false);
 		arrangementView.unZoom();
 		arrangementView.closeAbcSong();
 		
@@ -2269,15 +2272,27 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				abcSong.setTranscriber(transcriberField.getText());
 			}
 
-			if (abcSong.isFromXmlFile() || miscSettings.importLyrics) {
-				String note = abcSong.getNote();
-				if (note != null) {
-					arrangementView.setTextnote(note);
-					if (!note.isEmpty()) {
-						arrangementView.textnoteVisible(true);
-					}
-				}
-			}
+            arrangementView.sidepanelTab("Notes");
+
+			if (miscSettings.importLyrics) {
+                String lyrics = abcSong.getLyrics();
+                arrangementView.setLyrics(lyrics);
+                if (!lyrics.isEmpty()) {
+                    arrangementView.sidepanelVisible(true);
+                    arrangementView.sidepanelTab("Lyrics");
+                }
+            }
+
+            if (abcSong.isFromXmlFile()) {
+                String note = abcSong.getNote();
+                if (note != null) {
+                    arrangementView.setTextnote(note);
+                    if (!note.isEmpty()) {
+                        arrangementView.sidepanelTab("Notes");
+                        arrangementView.sidepanelVisible(true);
+                    }
+                }
+            }
 
 			setTranspose(abcSong.getTranspose());
 			setTempo(abcSong.getTempoBPM());
@@ -2602,7 +2617,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
                 sequencer.stop();
                 abcSequencer.stop();
-                JOptionPane.showMessageDialog(ProjectFrame.this, e.getMessage(), "Error previewing ABC",
+                JOptionPane.showMessageDialog(ProjectFrame.this, cause.getMessage(), "Error previewing ABC",
                         JOptionPane.WARNING_MESSAGE);
             } finally {
                 setSourceChangeEnabled(true);
@@ -2628,10 +2643,16 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         try {
             abcSequencer.setSequence(previewSequenceInfo.getSequence());
             abcSequencer.setCurrentTrackInfos(previewSequenceInfo.getLastTrackInfos());
+            for(AbcPart p : abcSong.getParts()) {
+                p.numberOfExportedNotes = 0;
+                p.numberOfRemovedNotesForSafety = 0;
+            }
             if (previewSequenceInfo.getLastTrackInfos() != null) {
                 for (AbcExporter.ExportTrackInfo trackInfo : previewSequenceInfo.getLastTrackInfos()) {
+                    //threadsafe to do it here
                     trackInfo.part.setPreviewSequenceTrackNumber(trackInfo.trackNumber);
-                    trackInfo.part.numberOfExportedNotes = trackInfo.numberOfExportedNotes;//threadsafe to do it here
+                    trackInfo.part.numberOfExportedNotes = trackInfo.numberOfExportedNotes;
+                    trackInfo.part.numberOfRemovedNotesForSafety = trackInfo.numberOfRemovedNotesForSafety;
                 }
             }
             abcSequencer.setStartTick(abcPreviewStartTick);// Needed for MP3 and WAV exports.
@@ -2750,7 +2771,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
             sequencer.stop();
             abcSequencer.stop();
-            JOptionPane.showMessageDialog(ProjectFrame.this, e.getMessage(), "Error previewing ABC",
+            JOptionPane.showMessageDialog(ProjectFrame.this, cause.getMessage(), "Error previewing ABC",
                     JOptionPane.WARNING_MESSAGE);
         }
         setSourceChangeEnabled(true);
@@ -2772,16 +2793,16 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	
 	public void compileStats() {
 		if (abcSong == null) {
-			//arrangementView.setNote("No AbcSong");
+			arrangementView.setStats("No AbcSong");
 			return;
 		}
 		String tempNote = "";
 		tempNote += "Main export tempo is " + getTempo()+"\n\n";
-		//tempNote += getTimingStats();
+		tempNote += getTimingStats();
 		tempNote += checkDuplicatePartTitles();
 		tempNote += getNumberOfExportNotes();
 		tempNote += getEmptyParts();
-		//arrangementView.setNote(tempNote);
+		arrangementView.setStats(tempNote);
 		//arrangementView.noteVisible(true);
 	}
 	
@@ -2800,7 +2821,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		for (AbcPart part : abcSong.getParts()) {
 			out.append("Part #").append(part.getPartNumber()).append(" will export ").append(part.numberOfExportedNotes).append(" notes.\n");
 			if (part.numberOfRemovedNotesForSafety > 0) {
-				out.append("  Removed ").append(part.numberOfRemovedNotesForSafety).append(" very short notes.\n");
+				out.append("  Removed ").append(part.numberOfRemovedNotesForSafety).append(" very short notes to reduce undesired dissonance.\n");
 			}
 		}
 		out.append("\n");

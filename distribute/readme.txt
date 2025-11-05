@@ -53,6 +53,7 @@ Version 4.5.8
 - Add option in AbcPlayer "More Options" menu to disable ABC potential corruption popup messages
 - The potential corrupt ABC message can be viewed by hovering over the ABC title, or the playlist lines
 - Added option for reduced exported abc file size. No bar or time progress will be embedded in the notes when enabled.
+- Added tabs to the side-panel in Maestro and made import lyrics default enabled when installing a Maestro for first time.
 
 Version 4.4.6
 - Removed warnings for bad Jaunty notes.

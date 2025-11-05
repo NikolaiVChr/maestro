@@ -251,7 +251,7 @@ public class AbcExporter {
 		*/
 
 		return new ExportTrackInfo(trackNumber.first, part.origPart, null /* noteEvents */, trackNumber.second,
-				part.getInstrument().midi.id(), trackNumber.third, part.numberOfExportedNotes);
+				part.getInstrument().midi.id(), trackNumber.third, part.numberOfExportedNotes, part.numberOfRemovedNotesForSafety);
 	}
 
 	private Triple<Integer, Integer, Long> exportPartToMidi(AbcPart part, Sequence out, List<Chord> chords, int pan,
@@ -1978,6 +1978,7 @@ public class AbcExporter {
 	 * Combine the tracks into one, quantize the note lengths, separate into chords.
 	 */
 	private Pair<List<Chord>, Boolean> combineOrganic(AbcPart part, boolean preview, PolyphonyHistogram histogram) throws AbcConversionException {
+        part.numberOfRemovedNotesForSafety = 0;
 		// Combine the events from the enabled tracks
 		List<AbcNoteEvent> events = new ArrayList<>();
 		for (int t = 0; t < part.getTrackCount(); t++) {
@@ -5215,6 +5216,7 @@ public class AbcExporter {
 		public final int trackNumber;
 		public final AbcPart part;
         public final int numberOfExportedNotes;
+        public final int numberOfRemovedNotesForSafety;
 		
 		//not sure what this used to be used for
 		//public final List<AbcNoteEvent> noteEvents;
@@ -5223,10 +5225,11 @@ public class AbcExporter {
 		public final Integer patch;
 		public final long endOfTrack;
 
-		public ExportTrackInfo(int trackNumber, AbcPart part, List<AbcNoteEvent> noteEvents, Integer channel, int patch, long endOfTrack, int numberOfExportedNotes) {
+		public ExportTrackInfo(int trackNumber, AbcPart part, List<AbcNoteEvent> noteEvents, Integer channel, int patch, long endOfTrack, int numberOfExportedNotes, int numberOfRemovedNotesForSafety) {
 			this.trackNumber = trackNumber;
 			this.part = part;
             this.numberOfExportedNotes = numberOfExportedNotes;
+            this.numberOfRemovedNotesForSafety = numberOfRemovedNotesForSafety;
             //this.noteEvents = noteEvents;
 			this.channel = channel;
 			this.patch = patch;

@@ -76,6 +76,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private String genre = "";
 	private String mood = "";
 	private String note = "";// not continuously updated
+    private String lyrics = "";// not continuously updated
 	private boolean badger = false;
 	private float tempoFactor = 1.0f;
 	private int newTempo = 120;
@@ -217,12 +218,14 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		composer = sequenceInfo.getComposer();
 		if (sequenceInfo.getDataCache() != null) {
 			copyright = sequenceInfo.getDataCache().getCopyright();
-			if (miscSettings.importLyrics) note = sequenceInfo.getDataCache().getLyrics();
+			if (miscSettings.importLyrics) lyrics = sequenceInfo.getDataCache().getLyrics();
+            else lyrics = "Lyrics is disabled in options!";
 			genre = sequenceInfo.getDataCache().getGenre();
 			if (composer == null || composer.isBlank()) composer = sequenceInfo.getDataCache().getComposer(); 
 		} else {
-			note = "";
+			lyrics = "";
 		}
+        note = "";
 		keySignature = (ICompileConstants.SHOW_KEY_FIELD) ? sequenceInfo.getKeySignature() : KeySignature.C_MAJOR;
 		timeSignature = sequenceInfo.getTimeSignature();
 		setTempoFactor(sequenceInfo.getPrimaryTempoBPM(), sequenceInfo.getPrimaryTempoBPM());
@@ -357,7 +360,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		mood = abcInfo.getMood();
 		dynamicsMethod = Chord.CalcDynamics.LOUDEST;
 		setTempoFactor(abcInfo.getPrimaryTempoBPM(), abcInfo.getPrimaryTempoBPM());
-		note = "";
+		lyrics = "";
+        note = "";
 	}
 
 	private void initFromXml(File file, FileResolver fileResolver, MiscSettings miscSettings, boolean calledFromTools)
@@ -405,6 +409,13 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			if (!sourceFile.equals(origSourceFile)) {
 				MaestroMain.setMIDIFileResolved();
 			}
+            if (!calledFromTools) {
+                if (miscSettings.importLyrics) {
+                    lyrics = sequenceInfo.getDataCache().getLyrics();
+                } else {
+                    lyrics = "Lyrics is disabled in options!";
+                }
+            }
 			title = SaveUtil.parseValue(songEle, "title", sequenceInfo.getTitle());
 			composer = SaveUtil.parseValue(songEle, "composer", sequenceInfo.getComposer());
 			transcriber = SaveUtil.parseValue(songEle, "transcriber", transcriber);
@@ -669,10 +680,15 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		}
 	}
 
-	public String getNote() {
-		// Only call this just after loading a msx file.
-		return note;
+	public String getLyrics() {
+		// Only call this just after loading a midi.
+		return lyrics;
 	}
+
+    public String getNote() {
+        // Only call this just after loading a msx file.
+        return note;
+    }
 
 	public void setNote(String note) {
 		// Only call this just before saving a msx file.
@@ -1754,6 +1770,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         this.genre = other.genre;
         this.mood = other.mood;
         this.note = other.note;
+        this.lyrics = other.lyrics;
         this.badger = other.badger;
         this.tempoFactor = other.tempoFactor;
         this.newTempo = other.newTempo;

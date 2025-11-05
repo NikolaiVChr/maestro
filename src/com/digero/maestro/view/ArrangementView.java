@@ -97,8 +97,14 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 	private float hZoom = 1.f;
 	private float vZoom = 1.f;
 	private boolean textnoteVisible = false;
-	private final JTextArea noteContent = new JTextArea();
+    private JTabbedPane sidePanel;
+    private JScrollPane lyricsPanel = null;
+    private JScrollPane statsPanel = null;
 	private JScrollPane notePanel = null;
+    private final JTextArea noteContent = new JTextArea();
+    private final JTextArea statsContent = new JTextArea();
+    private final JTextArea lyricsContent = new JTextArea();
+
 	private boolean syncUpdate = false;
 	private boolean mouseHzooming = false;
 	private Point mousePointTrack = null;
@@ -330,12 +336,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		messageLabel.setForeground(ColorTable.PANEL_TEXT_DISABLED.get());
 		messageLabel.setVisible(false);
 
-		// notePanel is the textfield with project notes
-		notePanel = new JScrollPane(noteContent, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_NEVER);
-		notePanel.setPreferredSize(new Dimension(225, 200));
-		noteContent.setLineWrap(true);
-		noteContent.setWrapStyleWord(true);
-		noteContent.setTabSize(4);
+        createSidePanel();
 
 		add(partSettingsPanel, "0, 0");
 		add(messageLabel, "0, 2, C, C");
@@ -397,6 +398,38 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		setAbcPart(null, false);
 		initialized = true;
 	}
+
+    private void createSidePanel() {
+        sidePanel = new JTabbedPane(JTabbedPane.TOP);
+
+        // lyricsPanel is the textfield with project lyrics
+        lyricsPanel = new JScrollPane(lyricsContent, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_NEVER);
+        lyricsPanel.setPreferredSize(new Dimension(225, 200));
+        lyricsContent.setLineWrap(true);
+        lyricsContent.setWrapStyleWord(true);
+        lyricsContent.setTabSize(4);
+        lyricsContent.setEditable(false);
+
+        // notePanel is the textfield with project notes
+        notePanel = new JScrollPane(noteContent, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_NEVER);
+        notePanel.setPreferredSize(new Dimension(225, 200));
+        noteContent.setLineWrap(true);
+        noteContent.setWrapStyleWord(true);
+        noteContent.setTabSize(4);
+        lyricsContent.setEditable(true);
+
+        // statsPanel is the textfield with project stats
+        statsPanel = new JScrollPane(statsContent, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_NEVER);
+        statsPanel.setPreferredSize(new Dimension(225, 200));
+        statsContent.setLineWrap(true);
+        statsContent.setWrapStyleWord(true);
+        statsContent.setTabSize(4);
+        statsContent.setEditable(false);
+
+        sidePanel.addTab("Lyrics", lyricsPanel);
+        sidePanel.addTab("Notes", notePanel);
+        sidePanel.addTab("Stats", statsPanel);
+    }
 
     public void scrollToTop() {
         noteGraphScrollPane.getVerticalScrollBar().setValue(0);
@@ -724,19 +757,23 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		repaintAfterZoom();
 	}
 
-	public void textnoteToggle() {
-		textnoteVisible(!textnoteVisible);
+	public void sidepanelToggle() {
+		sidepanelVisible(!textnoteVisible);
 	}
 
-	public void textnoteVisible(boolean vis) {
+	public void sidepanelVisible(boolean vis) {
 		textnoteVisible = vis;
 		if (textnoteVisible) {
-			add(notePanel, "1, 0, 1, 2, F, F");
+			add(sidePanel, "1, 0, 1, 2, F, F");
 		} else {
-			remove(notePanel);
+			remove(sidePanel);
 		}
 		revalidate();
 	}
+
+    public void sidepanelTab(String tabName) {
+        sidePanel.setSelectedIndex(sidePanel.indexOfTab(tabName));
+    }
 
 	public String getTextnote() {
 		return noteContent.getText();
@@ -746,6 +783,16 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		noteContent.setText(note);
 		noteContent.setCaretPosition(0);
 	}
+
+    public void setLyrics(String lyrics) {
+        lyricsContent.setText(lyrics);
+        lyricsContent.setCaretPosition(0);
+    }
+
+    public void setStats(String stats) {
+        statsContent.setText(stats);
+        statsContent.setCaretPosition(0);
+    }
 
 	public void setPolyphony(boolean showMaxPolyphony) {
 		this.showMaxPolyphony = showMaxPolyphony;

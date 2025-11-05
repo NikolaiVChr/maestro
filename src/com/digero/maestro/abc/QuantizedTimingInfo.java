@@ -52,6 +52,8 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 	private final boolean organic;
 	public static final int COMBINE_PRIORITY_MULTIPLIER = 4;// Do not change this number without exposing the int in UI.
 															// Since old projects will have 4 saved in msx.
+    private final int tempoSectionsSource;
+    private final int tempoSectionsABC;
 
 	public QuantizedTimingInfo(SequenceInfo source, int newTempo, int origTempo, TimeSignature meter,
 			boolean useTripletTiming, AbcSong song, boolean oddsAndEnds, int mixVersion, boolean organic)
@@ -101,6 +103,8 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 
 		
 		Collection<SequenceDataCache.TempoEvent> origTempos = source.getDataCache().getTempoEvents().values();
+
+        tempoSectionsSource = origTempos.size();
 
 		/*
 		 * Merge the tune editor tempo changes with midi tempos.
@@ -163,6 +167,8 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		};
 		combinedTempos.sort(rator);
 		combinedTempos = calcNewMicros(combinedTempos);
+
+        tempoSectionsABC = combinedTempos.size();
 		
 		/*
 		 * Go through the tempo events from the MIDI file and quantize them so each event starts at an integral multiple
@@ -273,12 +279,15 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		this.oddsAndEndsVersion = mixVersion;
 		if (!oddsAndEnds && !organic) {
 			if (useTripletTiming) {
-				pctStr  = "Mix Timing is off:\n 100% of song is swing/triplet timing.\n";
+				pctStr  = "Legacy Timing:\n 100% of song is swing/triplet timing.\n";
 			} else {
-				pctStr  = "Mix Timing is off:\n 0% of song is swing/triplet timing.\n";
+				pctStr  = "Legacy Timing:\n 0% of song is swing/triplet timing.\n";
 			}
 			return;
-		}
+		} else if (organic) {
+            pctStr  = "Organic:\n song might have swing/triplet sections.\n";
+            return;
+        }
 
 		int startWeight = 12;// Note starts get high weight.
 		int endingWeight = 4;// Note ends get medium weight. This must be divisable by endingSustainedWeightFactor
@@ -306,7 +315,7 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		Long[] partEven = new Long[parts];
 		Long[] partNeutral = new Long[parts];
 		Integer[] partSixgridsCount = new Integer[parts];
-		pctStr  = "Mix Timing:\n";
+		pctStr  = "Mix Timing: song might have triplets and/or swing sections.\n";
 				
 		for (int part = 0; part < parts; part++) {
 			// calculate for all parts
@@ -581,7 +590,7 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 				lastMin = tempo.info.getMinNoteLengthTicks();
 			}
 		}
-		
+		/*
 		for (int v = 0; v < parts; v++) {
 			pctStr  += "\nPart #"+song.getParts().get(v).getPartNumber()+" has "+partSixgridsCount[v]+" segments with note start/endings:\n";
 			long partTotal = partNeutral[v] + partEven[v] + partSwing[v];
@@ -597,6 +606,7 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 			}
 		}
 		pctStr += "\nNote that each segment is divided into smaller cells. A cell is minimum 60 ms\n";
+
 		long totalSwing = 0;
 		long totalEven = 0;
 		long totalNeutral = 0;
@@ -622,6 +632,7 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		} else {
 			pctStr += "No total stats to show.\n";
 		}
+		*/
 	}
 
 	private static long getSixTicks(TimingInfoEvent tempoChange) {
@@ -1129,9 +1140,10 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 
 	public String getTempoStats() {
 		String out = "";
-		
-		out += "Source contains "+getTimingInfoByTick().size()+" tempo sections.\n";
-		
+
+        out += "Source contains " + tempoSectionsSource + " tempo sections.\n";
+        out += "ABC will contain max " + tempoSectionsABC + " tempo sections.\n";
+
 		return out;
 	}
 
