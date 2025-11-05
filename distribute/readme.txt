@@ -50,10 +50,11 @@ Version 4.5.8
 - Make play-head sync with count-in (when playback in progress).
 - Increased max number of sections in section-editor to 150.
 - Organic multi-stage now handles initial silence a bit better.
-- Add option in AbcPlayer "More Options" menu to disable ABC potential corruption popup messages
-- The potential corrupt ABC message can be viewed by hovering over the ABC title, or the playlist lines
+- Add option in AbcPlayer "More Options" menu to disable ABC potential corruption popup messages.
+- The potential corrupt ABC message can be viewed by hovering over the ABC title, or the playlist lines.
 - Added option for reduced exported abc file size. No bar or time progress will be embedded in the notes when enabled.
 - Added tabs to the side-panel in Maestro and made import lyrics default enabled when installing a Maestro for first time.
+- Made the part-editor button green if it has been modified.
 
 Version 4.4.6
 - Removed warnings for bad Jaunty notes.

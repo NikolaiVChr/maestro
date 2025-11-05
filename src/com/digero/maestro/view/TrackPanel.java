@@ -810,9 +810,9 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 				else if (sectionButton != null) {
 					if (this.abcPart.sections.get(trackNumber) == null
 							&& this.abcPart.nonSection.get(trackNumber) == null) {
-						sectionButton.setForeground(new Color(0.5f, 0.5f, 0.5f));
+						sectionButton.setForeground(UIManager.getColor("Button.foreground"));
 					} else {
-						sectionButton.setForeground(new Color(0.2f, 0.8f, 0.2f));
+						sectionButton.setForeground(ColorTable.CONTROLS_EDITED.get());
 					}
 				}
 

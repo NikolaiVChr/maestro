@@ -1535,6 +1535,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         if(tuneBars != null || getFirstBar() != null || getLastBar() != null) {
             str += "\nTune-editor changes in effect.\n";
         }
+        if(isPartEdited()) {
+            str += "\nPart-editor changes in effect.\n";
+        }
         str += "\n";
         return str;
     }
@@ -1723,6 +1726,24 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		}
 		return poly;
 	}
+
+    /**
+     * If part-editor has been modified
+     */
+    public boolean isPartEdited() {
+        boolean edited = false;
+        if (countIn != null && countIn.pattern != CountIn.CountInPattern.OFF) {
+            return true;
+        }
+        for(AbcPart part : parts) {
+            if (part.getEnabledTrackCount() == 0) continue;
+            if (part.delay != 0) return true;
+            if (part.getNoteMax() != 6) return true;
+            if (badger && part.getBadgerPrio() != AbcPart.badgerPrioHighest) return true;
+            if (part.conclusionFermata != 0) return true;
+        }
+        return edited;
+    }
 
     @NotNull
     public List<String> getExportWarnings(PolyphonyHistogram histogram) {

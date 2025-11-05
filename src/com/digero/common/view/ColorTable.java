@@ -102,10 +102,12 @@ public enum ColorTable
     /** Not used */
 	ABC_BORDER_UNSELECTED_OFF(GRAPH_BACKGROUND_OFF),
 
-    /** UI controls foreground */
+    /** track UI controls foreground */
 	CONTROLS_TEXT(Color.WHITE),
-    /** UI controls background */
+    /** track UI controls background */
 	CONTROLS_BACKGROUND(new Color(0x222222)),
+    /** editor edited */
+    CONTROLS_EDITED(new Color(0.2f, 0.8f, 0.2f)),
 
     /** Measure on both sides section-edited */
 	BAR_EDITED(new Color(0,32,0)),

@@ -1742,7 +1742,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		hideEditsCheckbox.setEnabled(midiLoaded && uiEnabled);
 		if (!midiLoaded) hideEditsCheckbox.setSelected(false);
 		if (midiLoaded && (abcSong.tuneBars != null || abcSong.getFirstBar() != null || abcSong.getLastBar() != null)) {
-			tuneEditorButton.setForeground(new Color(0.2f, 0.8f, 0.2f));
+			tuneEditorButton.setForeground(ColorTable.CONTROLS_EDITED.get());
 		} else {
 			Color c = UIManager.getColor("Button.foreground");
 			tuneEditorButton.setForeground(c);
@@ -1783,6 +1783,12 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	};
 
 	public void updatePartEditorButton() {
+        Color c = UIManager.getColor("Button.foreground");
+        if (abcSong != null) {
+            partEditorButton.setForeground(abcSong.isPartEdited() ? ColorTable.CONTROLS_EDITED.get() : c);
+        } else {
+            tuneEditorButton.setForeground(c);
+        }
 		partEditorButton.setEnabled(partsList.getSelectedIndex() != -1 && uiEnabled);
 	}
 	
@@ -2865,6 +2871,17 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             tempNote += histogram.getStats();
         }
 		arrangementView.setStats(tempNote);
+
+        /*
+            TODO:
+                Stats on broken up notes.
+                Stats on bent notes. How many per part, and how many they got expanded to.
+                Stats on removed notes and why. And then enable number of exported notes.
+                Stats on shortest/longest note durations in song.
+                Stats on highest/lowest exported pitch.
+                Number of song section-edits.
+                If part-editor settings is not default.
+         */
 	}
 	
 	private String getTimingStats() {
