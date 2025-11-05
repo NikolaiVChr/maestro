@@ -41,7 +41,7 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
-Version 4.5.6
+Version 4.5.7
 - Offloaded Maestro ABC exporting to a worker thread.
 - Offloaded Maestro ABC preview generating to a worker thread.
 - Auto-exporter is now threaded, expect a speed-up of 3 to 12 times.
