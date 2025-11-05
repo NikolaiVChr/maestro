@@ -1501,6 +1501,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 
 	public void setMuted(boolean muted) {
 		this.muted = muted;
+        fireChangeEvent(AbcPartProperty.EXCLUSION);
 	}
 
 	public boolean isSoloed() {
@@ -1509,6 +1510,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 
 	public void setSoloed(boolean soloed) {
 		this.soloed = soloed;
+        fireChangeEvent(AbcPartProperty.EXCLUSION);
 	}
 	
 	public boolean isActive() {

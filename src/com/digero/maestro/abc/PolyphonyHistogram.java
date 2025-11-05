@@ -22,6 +22,7 @@ public class PolyphonyHistogram   {
 	private TreeMap<Long, Pair<Long,Integer>> sum = new TreeMap<>();// <micros,numberOfNotes>
 	private boolean dirty = false;
 	private int max = 0;
+    private double average = 0;
     private int maxAll = 0;
 	public static boolean enabled = true;// set to true to enable this system, set to false to save cpu power.
 	private final Listener<SequencerEvent> listener = new MyListener();
@@ -34,6 +35,18 @@ public class PolyphonyHistogram   {
 		if (abcSequencer != null) abcSequencer.addChangeListener(listener);
 		abcSeq = abcSequencer;
 	}
+
+    public String getStats() {
+        String str = "";
+        str += "Max polyphony in playing parts = " + max();
+        str += "\nMax export polyphony = " + maxAll();
+        if (enabled) str += "\nAverage export polyphony = %.1f".formatted(average).replace(",",".");
+        return str;
+    }
+
+    public void setDirty() {
+        dirty = true;
+    }
 
     class MyListener implements Listener<SequencerEvent> {
 		@Override
@@ -275,6 +288,7 @@ public class PolyphonyHistogram   {
 	public void sumUp(AbcSong song) {
 		sum = new TreeMap<>();
 		max = 0;
+        average = 0.0d;
         maxAll = 0;
 		Set<Long> partSet = new HashSet<>(histogramData.keySet());
 		List<TreeMap<Long, Pair<Long,Integer>>> treeList = new ArrayList<>();
@@ -348,16 +362,23 @@ public class PolyphonyHistogram   {
         entrySongSet = songMap.entrySet();
         lastTick = -1L;
         lastMicro = -1L;
+        long sumMicros = 0L;
         for (Entry<Long, Pair<Long,Integer>> entry : entrySongSet) {
             // this assert can happen due to converting back and forth is not sure to output original tick, rounding I reckon
             //assert entry.getValue().first >= lastTick:" CAN HAPPEN at "+Util.formatDuration(entry.getKey())+"="+entry.getValue().first+"  "+Util.formatDuration(lastMicro)+"="+lastTick;
+            long lastMicroSection = entry.getKey() - lastMicro;
             lastTick = entry.getValue().first;
             lastMicro = entry.getKey();
             polyphony += entry.getValue().second;
             if (polyphony > maxAll) {
                 maxAll = polyphony;
             }
+            if (polyphony > 0) {
+                sumMicros += lastMicroSection;
+                average += (double) (polyphony * lastMicroSection);
+            }
         }
+        average = average / sumMicros;
 	}
 	
 	/**

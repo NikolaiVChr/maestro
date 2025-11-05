@@ -1805,6 +1805,15 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private final Listener<AbcPartEvent> abcPartListener = e -> {
         //log.warning(this.getClass().getTypeName()+" AbcPartEvent: "+e.getProperty());
 
+        if (e.getProperty() == AbcPartProperty.EXCLUSION) {
+            if (histogram != null) {
+                histogram.setDirty();
+                compileStats();
+            }
+            // This is a runtime event only, so we return
+            return;
+        }
+
 		if (e.getProperty() == AbcPartProperty.TRACK_ENABLED)
 			updateButtons(false);
 
@@ -2625,6 +2634,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         }
     }
 
+    /**
+     * Runs only in Swing Thread
+     */
     private void applyPreview(SequenceInfo previewSequenceInfo, AbcExporter exporter) {
         abcPreviewStartTick = exporter.getExportStartTick();
         abcPreviewTempoFactor = abcSequencer.getTempoFactor();
@@ -2716,6 +2728,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             abcBarLabel.setInitialOffsetTick(abcPreviewStartTick);
             abcPositionLabel.setInitialOffsetTick(abcPreviewStartTick);
             arrangementView.setHistogram(new PolyphonyHistogram());
+            histogram = null;
             updatePreviewMode(false);
             setSourceChangeEnabled(true);
             return false;
@@ -2797,13 +2810,18 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			return;
 		}
 		String tempNote = "";
-		tempNote += "Main export tempo is " + getTempo()+"\n\n";
+		//tempNote += "Main export tempo is " + getTempo()+"\n\n";
 		tempNote += getTimingStats();
 		tempNote += checkDuplicatePartTitles();
 		tempNote += getNumberOfExportNotes();
 		tempNote += getEmptyParts();
+        if (histogram != null) {
+            if (histogram.isDirty()) {
+                histogram.sumUp(abcSong);
+            }
+            tempNote += histogram.getStats();
+        }
 		arrangementView.setStats(tempNote);
-		//arrangementView.noteVisible(true);
 	}
 	
 	private String getTimingStats() {

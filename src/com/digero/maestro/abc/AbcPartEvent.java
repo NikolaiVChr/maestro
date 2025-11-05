@@ -20,7 +20,8 @@ public class AbcPartEvent extends EventObject {
 		MAX_EDIT(true), //
 		FX(true), //
 		CONCLUSION_FERMATA_EDIT(true),
-        PART_NUMBER_MANUAL(false); //
+        PART_NUMBER_MANUAL(false),
+        EXCLUSION(false); //
 
 		private final boolean renderRelated;
 
