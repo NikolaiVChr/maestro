@@ -43,42 +43,6 @@ import com.digero.maestro.midi.TrackInfo;
 import com.digero.maestro.view.CountIn;
 import com.digero.maestro.view.ProjectFrame;
 
-/*
-TODO:
-Offload preview midi generation to non-swing thread:
-
-Method that needs to be put on different thread: AbcExporter.exportToPreview()
-
-Main classes needed for generation:
-AbcSong
- AbcPart
-SequenceInfo
- SequenceDataCache
- TrackInfo
-QuantizedTimingInfo
- TimingInfo
-
-In each of those there is fields (many which are collections
-of collections full with objects) that needs to be accessed
-that might change during the generation process. :(
-
-Could make a full copy of all of them. But takes time and
-consumes memory, plus it increases load on garbage collector.
-
-Then when generation is done, it need to set new midi sequence
-on LotroSequenceWrapper instance in ProjectFrame. And
-update PolyphonyHistogram.
-
-Consider also if generation gets requested while one is already
-in progress. It should then queue it, and skip setting new midi
-sequence on the wrapper until last job in queue is done.
-
-Could cheat and enableUI(false) in ProjectFrame while generation is
-in progress, and just access the objects directly from worker thread.
-That would solve many headaches.
-
- */
-
 @SuppressWarnings({"AssertWithSideEffects"})
 public class AbcExporter {
 	private static final Logger logNotes = Logger.getLogger("export.notes");//processing and fitting of notes to lotros abc format
@@ -817,6 +781,32 @@ public class AbcExporter {
 					bar.append("\t");
 					out.print("\t");
 				}
+
+                /*
+                    The reason we don't output this in organic is
+                    that AbcToMidi assume legacy grid layout
+                    when it loads the abc, hence it applies
+                    whatever tempo changes currently are read from
+                    abc to a note duration. The problem is with mix
+                    and organics timings, when it gets to a
+                    following part and that has a tempo change
+                    in a slightly different position timewise
+                    that gets added to the midi. The endTick of
+                    the note in previous part will now in the midi
+                    be affected by inserting tempo change in the middle
+                    of the note, so when reading the midi to export
+                    new abc, the endtick is not in the correct time.
+                    Of course could fix AbcToMidi, that's a major thing
+                    though. And the bottom line is people ought to use
+                    projects, not export with abc as a source.
+                    If really serious about fixing this, then best do it
+                    like this:
+                    At the top of the abc before the first part, add
+                    comment with ALL the tempo changes in the song.
+                    Each one of them with a timestamp.
+                    Then edit AbcToMidi to understand it and put
+                    start and end tick independently onto the track.
+                 */
 
 				out.println("%%Q: " + curExportTempoBPM);
 			}
