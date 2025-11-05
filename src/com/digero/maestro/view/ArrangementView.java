@@ -416,7 +416,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
         noteContent.setLineWrap(true);
         noteContent.setWrapStyleWord(true);
         noteContent.setTabSize(4);
-        lyricsContent.setEditable(true);
+        noteContent.setEditable(true);
 
         // statsPanel is the textfield with project stats
         statsPanel = new JScrollPane(statsContent, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_NEVER);

@@ -1456,10 +1456,20 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		
 		updateExportOrExportAsButton();
 
+        boolean needRefresh = false;
+
 		if (abcSong != null) {
+            if (abcSong.isSkipSilenceAtStart() != saveSettings.skipSilenceAtStart
+                    || abcSong.isDeleteMinimalNotes() != saveSettings.deleteMinimalNotes
+                    || abcSong.isUseRestsInChords() != saveSettings.useRestsInChords) {
+                // we do it here instead of in the song listener,
+                // so we don't get nested calls to refresh.
+                needRefresh = true;
+            }
 			abcSong.setSkipSilenceAtStart(saveSettings.skipSilenceAtStart);
 			abcSong.setDeleteMinimalNotes(saveSettings.deleteMinimalNotes);
             abcSong.setReducedFilesize(saveSettings.reducedFilesize);
+            abcSong.setUseRestsInChords(saveSettings.useRestsInChords);
 		}
 
 		// if (abcSong != null)
@@ -1479,6 +1489,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			if (running) sequencer.setRunning(true); 
 		}
 		updateButtons(false);
+        if (needRefresh) refreshPreviewSequence(false);
 	}
 	
 	private void updateExportOrExportAsButton() {
@@ -1979,26 +1990,26 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		case SKIP_SILENCE_AT_START:
 			if (saveSettings.skipSilenceAtStart != abcSong.isSkipSilenceAtStart()) {
-                // not sure that this is sane
-                // skip is not a song property it's a setting
-                // it's only in abcSong for convenience
-                // I cannot think of a case where setting it on abcsong
-                // should propagate to settings.
-				saveSettings.skipSilenceAtStart = abcSong.isSkipSilenceAtStart();
-				saveSettings.saveToPrefs();
+                /*
+                 not sure that this is sane
+                 skip is not a song property it's a setting
+                 it's only in abcSong for convenience
+                 I cannot think of a case where setting it on abcsong
+                 should propagate to settings.
+                 Same for DELETE_MINIMAL_NOTES.
+                 So commented out.
+                */
+
+				//saveSettings.skipSilenceAtStart = abcSong.isSkipSilenceAtStart();
+				//saveSettings.saveToPrefs();
 			}
             modified = false;
 			break;
 		case DELETE_MINIMAL_NOTES:
 			if (saveSettings.deleteMinimalNotes != abcSong.isDeleteMinimalNotes()) {
-				saveSettings.deleteMinimalNotes = abcSong.isDeleteMinimalNotes();
-				saveSettings.saveToPrefs();
-				
-				// having this outside the condition will trigger refreshPreviewSequence()
-				// from inside refreshPreviewSequence()
-				if (abcPreviewMode)
-					refreshPreviewSequence(false);
-			}
+				//saveSettings.deleteMinimalNotes = abcSong.isDeleteMinimalNotes();
+				//saveSettings.saveToPrefs();
+            }
             modified = false;
 			break;
 		case GENRE:
@@ -2358,6 +2369,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			abcSong.setSkipSilenceAtStart(saveSettings.skipSilenceAtStart);
 			abcSong.setDeleteMinimalNotes(saveSettings.deleteMinimalNotes);
             abcSong.setReducedFilesize(saveSettings.reducedFilesize);
+            abcSong.setUseRestsInChords(saveSettings.useRestsInChords);
 
 			
 			// abcSong.setShowPruned(saveSettings.showPruned);
@@ -2739,6 +2751,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 abcSong.setSkipSilenceAtStart(saveSettings.skipSilenceAtStart);
                 abcSong.setDeleteMinimalNotes(saveSettings.deleteMinimalNotes);
                 abcSong.setReducedFilesize(saveSettings.reducedFilesize);
+                abcSong.setUseRestsInChords(saveSettings.useRestsInChords);
                 // abcSong.setShowPruned(saveSettings.showPruned);
                 previewWorker = new PreviewExportWorker(abcSong, !failedToLoadLotroInstruments, false, prefs.getInt("stereoPan", 100));
                 setSourceChangeEnabled(false);
@@ -2770,6 +2783,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             abcSong.setSkipSilenceAtStart(saveSettings.skipSilenceAtStart);
             abcSong.setDeleteMinimalNotes(saveSettings.deleteMinimalNotes);
             abcSong.setReducedFilesize(saveSettings.reducedFilesize);
+            abcSong.setUseRestsInChords(saveSettings.useRestsInChords);
             // abcSong.setShowPruned(saveSettings.showPruned);
             AbcExporter exporter = abcSong.getAbcExporter();
             exporter.stereoPan = prefs.getInt("stereoPan", 100);
@@ -2805,8 +2819,17 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 	
 	public void compileStats() {
-		if (abcSong == null) {
-			arrangementView.setStats("No AbcSong");
+        boolean hasAbcNotes = false;
+        if (abcSong != null) {
+            for (AbcPart part : abcSong.getParts()) {
+                if (part.getEnabledTrackCount() > 0) {
+                    hasAbcNotes = true;
+                    break;
+                }
+            }
+        }
+		if (abcSong == null || !hasAbcNotes) {
+			arrangementView.setStats("No stats available");
 			return;
 		}
 		String tempNote = "";
@@ -2817,6 +2840,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		tempNote += getEmptyParts();
         if (histogram != null) {
             if (histogram.isDirty()) {
+                // important for solo/mute parts
                 histogram.sumUp(abcSong);
             }
             tempNote += histogram.getStats();
@@ -2836,12 +2860,26 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	
 	private String getNumberOfExportNotes() {
 		StringBuilder out = new StringBuilder();
+        int songNotes = 0;
 		for (AbcPart part : abcSong.getParts()) {
 			out.append("Part #").append(part.getPartNumber()).append(" will export ").append(part.numberOfExportedNotes).append(" notes.\n");
-			if (part.numberOfRemovedNotesForSafety > 0) {
-				out.append("  Removed ").append(part.numberOfRemovedNotesForSafety).append(" very short notes to reduce undesired dissonance.\n");
-			}
+            songNotes += part.numberOfExportedNotes;
 		}
+        out.append("\nSong").append(" will export ").append(songNotes).append(" notes.\n");
+        if (saveSettings.deleteMinimalNotes && !abcSong.isOrganic()) {
+            out.append("\n");
+            out.append("Delete minimal notes:\n");
+            boolean active = false;
+            for (AbcPart part : abcSong.getParts()) {
+                if (part.numberOfRemovedNotesForSafety > 0) {
+                    out.append("Part #").append(part.getPartNumber()).append(" removed ").append(part.numberOfRemovedNotesForSafety).append(" very short notes to reduce undesired dissonance.\n");
+                    active = true;
+                }
+            }
+            if (!active) {
+                out.append(" None were deleted.\n");
+            }
+        }
 		out.append("\n");
 		return out.toString();
 	}

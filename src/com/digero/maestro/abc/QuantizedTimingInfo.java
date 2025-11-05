@@ -279,13 +279,13 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		this.oddsAndEndsVersion = mixVersion;
 		if (!oddsAndEnds && !organic) {
 			if (useTripletTiming) {
-				pctStr  = "Legacy Timing:\n 100% of song is swing/triplet timing.\n";
+				pctStr  = "Legacy Timing:\n Entire song will export in swing/triplet timing.\n";
 			} else {
-				pctStr  = "Legacy Timing:\n 0% of song is swing/triplet timing.\n";
+				pctStr  = "Legacy Timing:\n None of the song will export in swing/triplet timing.\n";
 			}
 			return;
 		} else if (organic) {
-            pctStr  = "Organic:\n song might have swing/triplet sections.\n";
+            pctStr  = "Organic: Song might export swing/triplet sections.\n";
             return;
         }
 
@@ -315,7 +315,7 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		Long[] partEven = new Long[parts];
 		Long[] partNeutral = new Long[parts];
 		Integer[] partSixgridsCount = new Integer[parts];
-		pctStr  = "Mix Timing: song might have triplets and/or swing sections.\n";
+		pctStr  = "Mix Timing: Song might export triplets and/or swing sections.\n";
 				
 		for (int part = 0; part < parts; part++) {
 			// calculate for all parts

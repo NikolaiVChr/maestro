@@ -575,6 +575,7 @@ public class AutoExporter {
 		abcSong.setSkipSilenceAtStart(saveSettings.skipSilenceAtStart);
         abcSong.setReducedFilesize(saveSettings.reducedFilesize);
 		abcSong.setDeleteMinimalNotes(saveSettings.deleteMinimalNotes);
+        abcSong.setUseRestsInChords(saveSettings.useRestsInChords);
 		abcSong.setBadger(miscSettings.showBadger);
 
 		File exportFile = abcSong.getExportFile();
