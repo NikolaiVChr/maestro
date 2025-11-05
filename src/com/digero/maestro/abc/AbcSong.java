@@ -1531,6 +1531,19 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		return organic2;		
 	}
 
+    public String getStats() {
+        String str = "";
+        if (firstExportTime != null && firstExportTime.getTime() != 0L) {
+            // note that auto-exporting without saving the project won't set this
+            str += "Project first exported:\n" + firstExportTime + "\n";
+        }
+        if(tuneBars != null || getFirstBar() != null || getLastBar() != null) {
+            str += "\nTune-editor changes in effect.\n";
+        }
+        str += "\n";
+        return str;
+    }
+
 	public void tuneEdited() {
 		convertTunelinesToLongs();
 		setMixDirty(true); // Tempo might have changed, in which case the mixTimings need to be recomputed

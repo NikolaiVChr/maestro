@@ -2836,8 +2836,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		//tempNote += "Main export tempo is " + getTempo()+"\n\n";
 		tempNote += getTimingStats();
 		tempNote += checkDuplicatePartTitles();
-		tempNote += getNumberOfExportNotes();
+		//tempNote += getNumberOfExportNotes(); // if enable this, then also output why notes got deleted, else confusing.
 		tempNote += getEmptyParts();
+        tempNote += abcSong.getStats();
         if (histogram != null) {
             if (histogram.isDirty()) {
                 // important for solo/mute parts
