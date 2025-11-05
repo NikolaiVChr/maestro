@@ -2685,6 +2685,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             for(AbcPart p : abcSong.getParts()) {
                 p.numberOfExportedNotes = 0;
                 p.numberOfRemovedNotesForSafety = 0;
+                p.setMaxPoly(0);
             }
             if (previewSequenceInfo.getLastTrackInfos() != null) {
                 for (AbcExporter.ExportTrackInfo trackInfo : previewSequenceInfo.getLastTrackInfos()) {
@@ -2692,6 +2693,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                     trackInfo.part.setPreviewSequenceTrackNumber(trackInfo.trackNumber);
                     trackInfo.part.numberOfExportedNotes = trackInfo.numberOfExportedNotes;
                     trackInfo.part.numberOfRemovedNotesForSafety = trackInfo.numberOfRemovedNotesForSafety;
+                    trackInfo.part.setMaxPoly(trackInfo.maxPoly);
                 }
             }
             abcSequencer.setStartTick(abcPreviewStartTick);// Needed for MP3 and WAV exports.
@@ -2852,6 +2854,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		tempNote += getTimingStats();
 		tempNote += checkDuplicatePartTitles();
 		//tempNote += getNumberOfExportNotes(); // if enable this, then also output why notes got deleted, else confusing.
+        tempNote += getPoly6plusStats();
 		tempNote += getEmptyParts();
         tempNote += abcSong.getStats();
         if (histogram != null) {
@@ -2899,7 +2902,22 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		out.append("\n");
 		return out.toString();
 	}
-	
+
+    private String getPoly6plusStats() {
+        StringBuilder out = new StringBuilder();
+        if (abcSong != null && abcSong.isOrganic() && abcSong.isUseRestsInChords()) {
+            // expensive to compute, so we only do it for poly 6+
+            out.append("\n");
+            out.append("Part polyphony:\n");
+            for (AbcPart part : abcSong.getParts()) {
+                out.append("Part #").append(part.getPartNumber()).append(" has max ");
+                out.append(part.getMaxPoly()).append("\n");
+            }
+            out.append("\n");
+        }
+        return out.toString();
+    }
+
 	private String getEmptyParts() {
 		StringBuilder out = new StringBuilder();
 		for (AbcPart part : abcSong.getParts()) {

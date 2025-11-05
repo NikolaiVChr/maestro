@@ -285,7 +285,7 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 			}
 			return;
 		} else if (organic) {
-            pctStr  = "Organic: Song might export swing/triplet sections.\n";
+            pctStr  = "Organic will export swing/triplet sections as needed.\n";
             return;
         }
 
@@ -315,7 +315,7 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		Long[] partEven = new Long[parts];
 		Long[] partNeutral = new Long[parts];
 		Integer[] partSixgridsCount = new Integer[parts];
-		pctStr  = "Mix Timing: Song might export triplets and/or swing sections.\n";
+		pctStr  = "Mix Timing will export triplets and/or swing notes as needed.\n";
 				
 		for (int part = 0; part < parts; part++) {
 			// calculate for all parts

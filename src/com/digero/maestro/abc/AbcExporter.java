@@ -251,7 +251,7 @@ public class AbcExporter {
 		*/
 
 		return new ExportTrackInfo(trackNumber.first, part.origPart, null /* noteEvents */, trackNumber.second,
-				part.getInstrument().midi.id(), trackNumber.third, part.numberOfExportedNotes, part.numberOfRemovedNotesForSafety);
+				part.getInstrument().midi.id(), trackNumber.third, part.numberOfExportedNotes, part.numberOfRemovedNotesForSafety, part.getMaxPoly());
 	}
 
 	private Triple<Integer, Integer, Long> exportPartToMidi(AbcPart part, Sequence out, List<Chord> chords, int pan,
@@ -2158,7 +2158,7 @@ public class AbcExporter {
 				part.setMaxPoly(max);
 			} else {
 				logNotes.finer(" pass "+part.getAbcSong().getTitle()+" ("+part.getTitle()+"): poly okay");
-				part.setMaxPoly(6);
+				part.setMaxPoly(max);
 			}
 		} else {
 			//System.out.println(" pass "+part.getAbcSong().getTitle()+" ("+part.getTitle()+"): poly off");
@@ -5224,8 +5224,9 @@ public class AbcExporter {
 		public final Integer channel;
 		public final Integer patch;
 		public final long endOfTrack;
+        public int maxPoly;
 
-		public ExportTrackInfo(int trackNumber, AbcPart part, List<AbcNoteEvent> noteEvents, Integer channel, int patch, long endOfTrack, int numberOfExportedNotes, int numberOfRemovedNotesForSafety) {
+        public ExportTrackInfo(int trackNumber, AbcPart part, List<AbcNoteEvent> noteEvents, Integer channel, int patch, long endOfTrack, int numberOfExportedNotes, int numberOfRemovedNotesForSafety, int maxPoly) {
 			this.trackNumber = trackNumber;
 			this.part = part;
             this.numberOfExportedNotes = numberOfExportedNotes;
@@ -5234,6 +5235,7 @@ public class AbcExporter {
 			this.channel = channel;
 			this.patch = patch;
 			this.endOfTrack = endOfTrack;
+            this.maxPoly = maxPoly;
 		}
 	}
 
