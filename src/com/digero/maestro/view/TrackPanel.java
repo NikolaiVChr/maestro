@@ -332,7 +332,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		sectionButton = new JButton();
 		sectionButton.setPreferredSize(new Dimension(SECTIONBUTTON_WIDTH, SECTIONBUTTON_WIDTH));
 		sectionButton.setMargin(new Insets(5, 5, 5, 5));
-		sectionButton.setText("s");
+		sectionButton.setText("S");
 		sectionButton.setToolTipText(
 				"<html><b> Edit sections of this track </b><br> Use the bar counter in lower right corner to find your sections. </html>");
 		sectionButton.addActionListener(e -> {
