@@ -2642,7 +2642,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 return;
             }
             try {
-                applyPreview(get(), myExporter);
+                // This check is to guard against preview generated on worker thread,
+                // but while that happens, the user sends a new file to Maestro via Windows
+                // explorer. So we check if the abcSong matches.
+                if (abcSong == mySong.origSong) applyPreview(get(), myExporter);
             } catch (ExecutionException e) {
                 Throwable cause = e.getCause() != null ? e.getCause() : e;
                 log.log(Level.WARNING, "Error exporting preview", cause);

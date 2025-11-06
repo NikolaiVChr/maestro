@@ -1743,6 +1743,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         if (changed) fireChangeEvent(AbcSongProperty.COUNT_IN);
     }
 
+    public AbcSong origSong = this;
+
     /**
      * Copy constructor for creating a thread-safe snapshot for worker threads.
      */
@@ -1838,6 +1840,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         // Fields not needed by worker
         this.projectFile = null;
         this.exportFile = null;
+
+        this.origSong = other;
     }
 
     public AbcPart getPartFromID(long ID) {
