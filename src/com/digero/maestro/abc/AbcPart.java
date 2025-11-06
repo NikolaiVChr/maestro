@@ -4,14 +4,8 @@ import static com.digero.maestro.abc.AbcHelper.matchNick;
 import static java.awt.Frame.getFrames;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.List;
-import java.util.ListIterator;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.NavigableMap;
-import java.util.SortedSet;
-import java.util.TreeMap;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 import java.util.regex.MatchResult;
@@ -1738,6 +1732,24 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			fireChangeEvent(AbcPartProperty.DRUM_ENABLED);
 		}
 	}
+
+    /**
+     * If any section-editors have been edited on active tracks.
+     */
+    public boolean isSectionsEdited() {
+        for (int i = 0; i < getTrackCount(); i++) {
+            if (!isTrackEnabled(i)) continue;
+            if (!playCenter[i] || !playRight[i] || !playLeft[i]) return true;
+            if (nonSection.get(i) != null && nonSection.get(i).isEdited()) return true;
+            if (sections.get(i) != null) {
+                Collection<PartSection> sects = sections.get(i).values();
+                for (PartSection ps : sects) {
+                    if (ps.isEdited()) return true;
+                }
+            }
+        }
+        return false;
+    }
 
 	public void sectionEdited(int track) {
 		convertSectionsToLongTrees();

@@ -45,4 +45,19 @@ public class PartSection implements Comparable<PartSection> {
 	public int compareTo(@NotNull PartSection that) {
 		return Float.compare(this.startBar, that.startBar);
 	}
+
+    public boolean isEdited() {
+        if (startBar < endBar) {
+            return fromPitch != AbcPart.minDefault
+                    || toPitch != Note.MAX
+                    || doubling[0] || doubling[1] || doubling[2] || doubling[3]
+                    || legato
+                    || silence
+                    || resetVelocities
+                    || fade != 0
+                    || volumeStep != 0
+                    || octaveStep != 0;
+        }
+        return false;
+    }
 }

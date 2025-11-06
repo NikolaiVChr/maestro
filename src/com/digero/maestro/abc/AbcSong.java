@@ -1470,6 +1470,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         if(isPartEdited()) {
             str += "\nPart-editor changes in effect.\n";
         }
+        if(isSectionsEdited()) {
+            str += "\nSection-editor changes in effect.\n";
+        }
         str += "\n";
         return str;
     }
@@ -1673,6 +1676,17 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
             if (part.getNoteMax() != 6) return true;
             if (badger && part.getBadgerPrio() != AbcPart.badgerPrioHighest) return true;
             if (part.conclusionFermata != 0) return true;
+        }
+        return edited;
+    }
+
+    /**
+     * If any section-editors has been modified
+     */
+    public boolean isSectionsEdited() {
+        boolean edited = false;
+        for(AbcPart part : parts) {
+            if (part.isSectionsEdited()) return true;
         }
         return edited;
     }

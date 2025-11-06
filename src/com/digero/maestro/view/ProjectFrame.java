@@ -2880,7 +2880,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 Stats on shortest/longest note durations in song.
                 Stats on highest/lowest exported pitch.
                 Number of song section-edits.
-                If part-editor settings is not default.
          */
 	}
 	
