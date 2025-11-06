@@ -3514,30 +3514,42 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
     public enum TimingEnum {
-        ORGANIC_MULTISTAGE ("Organic Multi-stage",true, true, false,false,false),
-        ORGANIC_SINGLESTAGE ("Organic Single-stage", true, false, false,false,false),
-        MIX ("Mix Timings", false, false, true,false,false),
-        MIX_SWING ("Mix Timings, Swing", false, false, true,true,false),
-        MIX_PRIO ("Mix Timings, Combine Priorities", false, false, true,false,true),
-        MIX_SWING_PRIO ("Mix Timings, Swing, Combine Priorities", false, false, true,true,true),
-        LEGACY ("Legacy Timings", false, false, false,false,false),
-        LEGACY_SWING ("Legacy Timings, Swing", false, false, false,true,false),
+        ORGANIC_MULTISTAGE ("Organic Multi-stage",true, true, false,false,false,"Organic Multistage"),
+        ORGANIC_SINGLESTAGE ("Organic Single-stage", true, false, false,false,false,"Organic Singlestage"),
+        MIX ("Mix Timings", false, false, true,false,false,"Mix Timings"),
+        MIX_SWING ("Mix Timings, Swing", false, false, true,true,false,"Mix Timings Swing/Triplet"),
+        MIX_PRIO ("Mix Timings, Combine Priorities", false, false, true,false,true,"Mix Timings Combine Priorities"),
+        MIX_SWING_PRIO ("Mix Timings, Swing, Combine Priorities", false, false, true,true,true,"Mix Timings Swing/Triplet Combine Priorities"),
+        LEGACY ("Legacy Timings", false, false, false,false,false,"Legacy"),
+        LEGACY_SWING ("Legacy Timings, Swing", false, false, false,true,false,"Legacy Swing/Triplet"),
         ;
-
+        {}
         public final boolean organic;
         public final boolean multistage;
         public final boolean mixTimings;
         public final boolean swing;
         public final boolean priority;
         public final String info;
+        public final String settingsString;// use this for settings prefs. And never change the strings.
 
-        TimingEnum(String info, boolean organic, boolean multistage, boolean mixTimings, boolean swing, boolean priority) {
+        TimingEnum(String info, boolean organic, boolean multistage, boolean mixTimings, boolean swing, boolean priority, String settings) {
             this.info = info;
             this.organic = organic;
             this.multistage = multistage;
             this.mixTimings = mixTimings;
             this.swing = swing;
             this.priority = priority;
+            this.settingsString = settings;
+        }
+
+        public static TimingEnum getFromSettings(String defaultTiming) {
+            Objects.requireNonNull(defaultTiming);
+            for (TimingEnum timing : TimingEnum.values()) {
+                if (timing.settingsString.equals(defaultTiming)) {
+                    return timing;
+                }
+            }
+            return MIX;
         }
 
         public void action(@Nullable AbcSong abcSong) {

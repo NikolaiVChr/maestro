@@ -32,7 +32,7 @@ import javax.xml.xpath.XPathExpressionException;
 
 import com.digero.common.abc.VersionsWithIssues;
 import com.digero.common.util.*;
-import com.digero.maestro.view.CountIn;
+import com.digero.maestro.view.*;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -57,9 +57,6 @@ import com.digero.maestro.util.FileResolver;
 import com.digero.maestro.util.ListModelWrapper;
 import com.digero.maestro.util.SaveUtil;
 import com.digero.maestro.util.XmlUtil;
-import com.digero.maestro.view.InstrNameSettings;
-import com.digero.maestro.view.MiscSettings;
-import com.digero.maestro.view.SaveAndExportSettings;
 
 public class AbcSong implements IDiscardable, AbcMetadataSource {
 	protected static final Logger log = Logger.getLogger("song");
@@ -213,7 +210,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			throws IOException, InvalidMidiDataException, ParseException {
 		sourceFile = file;
 		usingOldVelocities = miscSettings.ignoreExpressionMessages;
-		setDefaultTiming (saveSettings.defaultTiming);
+		ProjectFrame.TimingEnum.getFromSettings(saveSettings.defaultTiming).action(this);
 		sequenceInfo = SequenceInfo.fromMidi(file, miscSettings, usingOldVelocities, usingOldTempos, false, false);
 		title = sequenceInfo.getTitle();
 		composer = sequenceInfo.getComposer();
@@ -229,71 +226,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		keySignature = (ICompileConstants.SHOW_KEY_FIELD) ? sequenceInfo.getKeySignature() : KeySignature.C_MAJOR;
 		timeSignature = sequenceInfo.getTimeSignature();
 		setTempoFactor(sequenceInfo.getPrimaryTempoBPM(), sequenceInfo.getPrimaryTempoBPM());
-	}
-	
-	public void setDefaultTiming (String str) {
-		switch (str) {
-		case "Legacy":
-			mixTiming = false;
-			tripletTiming = false;
-			organic = false;
-			organic2 = false;
-			break;
-		case "Legacy Swing/Triplet":
-			mixTiming = false;
-			tripletTiming = true;
-			organic = false;
-			organic2 = false;
-			break;
-		case "Mix Timings":
-			mixTiming = true;
-			tripletTiming = false;
-			organic = false;
-			organic2 = false;
-            priorityActive = false;
-			break;
-		case "Mix Timings Swing/Triplet":
-			mixTiming = true;
-			tripletTiming = true;
-			organic2 = false;
-            priorityActive = false;
-			break;
-        case "Mix Timings Combine Priorities":
-            mixTiming = true;
-            tripletTiming = false;
-            organic = false;
-            organic2 = false;
-            priorityActive = true;
-            break;
-        case "Mix Timings Swing/Triplet Combine Priorities":
-            mixTiming = true;
-            tripletTiming = true;
-            organic2 = false;
-            priorityActive = true;
-            break;
-		case "Organic Singlestage":
-			mixTiming = true;
-			tripletTiming = false;
-			organic = true;
-			organic2 = false;
-			break;
-		case "Organic Multistage":
-			mixTiming = true;
-			tripletTiming = false;
-			organic = true;
-			organic2 = true;
-			break;
-		default:
-			mixTiming = true;
-			tripletTiming = false;
-			organic = false;
-			organic2 = false;
-		}
-		fireChangeEvent(AbcSongProperty.TRIPLET_TIMING);
-		fireChangeEvent(AbcSongProperty.MIX_TIMING);
-        fireChangeEvent(AbcSongProperty.MIX_TIMING_COMBINE_PRIORITIES);
-		fireChangeEvent(AbcSongProperty.ORGANIC);
-        fireChangeEvent(AbcSongProperty.TIMINGS_MULTI);
 	}
 
 	private void initFromAbc(File file, MiscSettings miscSettings)

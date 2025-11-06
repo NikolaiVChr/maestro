@@ -4,8 +4,7 @@ import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 public class SaveAndExportSettings {
-	public static final String[] TIMING_CHOICES = {"Legacy","Legacy Swing/Triplet","Mix Timings","Mix Timings Swing/Triplet","Mix Timings Combine Priorities","Mix Timings Swing/Triplet Combine Priorities","Organic Singlestage","Organic Multistage"};
-	
+
 	public boolean promptSaveNewSong = true;
 	public boolean showExportFileChooser = false;
 	public boolean skipSilenceAtStart = true;
@@ -13,7 +12,7 @@ public class SaveAndExportSettings {
 	public boolean useRestsInChords = false;
     public boolean warnOnExportOfSamePartNames = true;
     public boolean reducedFilesize = true;
-	public String defaultTiming = TIMING_CHOICES[2];
+	public String defaultTiming = ProjectFrame.TimingEnum.MIX.settingsString;
 	// public boolean showPruned = false;
 	public boolean convertABCStringsToBasicAscii = true;
 

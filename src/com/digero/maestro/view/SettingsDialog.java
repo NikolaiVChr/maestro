@@ -878,20 +878,20 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 				e -> saveSettings.convertABCStringsToBasicAscii = convertABCStringsToBasicAsciiCheckBox.isSelected());
 		
 		final JLabel defaultTimingText = new JLabel("Default timing:");
-		final JComboBox<String> defaultTimingComboBox = new JComboBox<>();
+		final JComboBox<ProjectFrame.TimingEnum> defaultTimingComboBox = new JComboBox<>();
 		defaultTimingComboBox.setToolTipText(
 				"<html>Select default timing for new projects from midi.</html>");
-		for (String choice : SaveAndExportSettings.TIMING_CHOICES) {
+		for (ProjectFrame.TimingEnum choice : ProjectFrame.TimingEnum.values()) {
 			defaultTimingComboBox.addItem(choice);
 		}
 		defaultTimingComboBox.setEditable(false);
 		defaultTimingComboBox.addActionListener(e -> {
 			try {
-				saveSettings.defaultTiming = (String) defaultTimingComboBox.getSelectedItem();
-			} catch (Exception ex) {
+				saveSettings.defaultTiming = ((ProjectFrame.TimingEnum) Objects.requireNonNull(defaultTimingComboBox.getSelectedItem())).settingsString;
+			} catch (Exception ignored) {
 			}
 		});
-		defaultTimingComboBox.setSelectedItem(saveSettings.defaultTiming);
+		defaultTimingComboBox.setSelectedItem(ProjectFrame.TimingEnum.getFromSettings(saveSettings.defaultTiming));
 		
 		final JCheckBox exceed6CheckBox = new JCheckBox(
 				"Allow more than 6 note polyphony in parts (organic only)");
