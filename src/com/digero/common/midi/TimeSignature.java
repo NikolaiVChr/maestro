@@ -87,33 +87,42 @@ public class TimeSignature implements MidiConstants {
 		}
 	}
 
-	public TimeSignature(String str) {
-		str = str.trim();
-		if (str.equals("C")) {
-			this.numerator = 4;
-			this.denominator = 4;
-		} else if (str.equals("C|")) {
-			this.numerator = 2;
-			this.denominator = 2;
-		} else {
-			String[] parts = str.split("[/:| ]");
-			if (parts.length != 2) {
-				throw new IllegalArgumentException(
-						"The string: \"" + str + "\" is not a valid time signature (expected format: 4/4)");
-			}
-			if (Integer.parseInt(parts[1]) > MAX_DENOMINATOR) {
-				this.numerator = 4;
-				this.denominator = 4;
-			} else {
-				this.numerator = Integer.parseInt(parts[0]);
-				this.denominator = Integer.parseInt(parts[1]);
-			}
-		}
+    public TimeSignature(String str) {
+        this(str, false);
+    }
 
-		verifyData(this.numerator, this.denominator);
+    /**
+     * Parses a time signature string.
+     * If it's invalid, it throws an IllegalArgumentException if strict is true.
+     * If strict is false, it might make a 4/4 signature.
+     */
+	public TimeSignature(String str, boolean strict) {
+        str = str.trim();
+        if (str.equals("C")) {
+            this.numerator = 4;
+            this.denominator = 4;
+        } else if (str.equals("C|")) {
+            this.numerator = 2;
+            this.denominator = 2;
+        } else {
+            String[] parts = str.split("[/:| ]");
+            if (parts.length != 2) {
+                throw new IllegalArgumentException(
+                        "The string: \"" + str + "\" is not a valid time signature (expected format: 4/4)");
+            }
+            if (!strict && Integer.parseInt(parts[1]) > MAX_DENOMINATOR) {
+                this.numerator = 4;
+                this.denominator = 4;
+            } else {
+                this.numerator = Integer.parseInt(parts[0]);
+                this.denominator = Integer.parseInt(parts[1]);
+            }
+        }
 
-		this.metronome = 24;
-		this.thirtySecondNotes = 8;
+        verifyData(this.numerator, this.denominator);
+
+        this.metronome = 24;
+        this.thirtySecondNotes = 8;
 	}
 
 	/**

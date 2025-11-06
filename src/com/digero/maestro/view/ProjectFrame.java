@@ -42,37 +42,7 @@ import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.MidiUnavailableException;
 import javax.sound.midi.Sequence;
-import javax.swing.BorderFactory;
-import javax.swing.ButtonGroup;
-import javax.swing.Icon;
-import javax.swing.InputMap;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JFileChooser;
-import javax.swing.JFormattedTextField;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JRadioButton;
-import javax.swing.JScrollPane;
-import javax.swing.JSlider;
-import javax.swing.JSpinner;
-import javax.swing.JSplitPane;
-import javax.swing.JTextField;
-import javax.swing.JToggleButton;
-import javax.swing.KeyStroke;
-import javax.swing.SpinnerNumberModel;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
-import javax.swing.Timer;
-import javax.swing.ToolTipManager;
-import javax.swing.UIManager;
+import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.DocumentEvent;
@@ -81,7 +51,6 @@ import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.text.BadLocationException;
-import javax.swing.SwingWorker;
 import javax.xml.transform.TransformerException;
 
 import com.digero.common.util.*;
@@ -675,28 +644,22 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			tempoSpinner.requestFocus();
 		});
 
-		timeSignatureField = new MyFormattedTextField(TimeSignature.FOUR_FOUR, 5);
+		timeSignatureField = new TimeSignatureTextField(TimeSignature.FOUR_FOUR, 5);
 		timeSignatureField.setToolTipText("<html>Adjust the time signature of the ABC file.<br><br>"
 				+ "This mainly affects the display only, but can affect long notes slightly.<br>"
 				+ "Examples: 4/4, 3/4, 3/8, 2/2, 2/4, 6/8</html>");
+        // Tell the field to revert to the last valid value if the user enters invalid text
+        timeSignatureField.setFocusLostBehavior(JFormattedTextField.COMMIT_OR_REVERT);
 		timeSignatureField.addPropertyChangeListener("value", evt -> {
+            if (evt.getOldValue() != null && evt.getOldValue().equals(evt.getNewValue())) {
+                return;
+            }
+
 			if (abcSong != null && fireMeterListeners)
 				abcSong.setTimeSignature((TimeSignature) timeSignatureField.getValue());
 
             // Breaking up of long notes can depend on time signature for bar lines.
             refreshPreviewSequence(false);
-		});
-		timeSignatureField.addActionListener(e -> {
-			// This is for when pressing enter on an illegal time signature
-            // This listener will not run when setting value programmatically.
-			// To update the UI back to the meter of last legal from AbcSong.
-			// This is ran after propertychange above. (hopefully always)
-			// TODO: This ugly hack could be done better
-			if (abcSong != null) {
-				if (!abcSong.getTimeSignature().toString().equals(timeSignatureField.getText())) {
-					timeSignatureField.setValue(abcSong.getTimeSignature());
-				}
-			}
 		});
 
 		keySignatureField = new MyFormattedTextField(KeySignature.C_MAJOR, 5);
@@ -3430,23 +3393,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 
 		return true;
-	}
-
-	/**
-	 * Slight modification to JFormattedTextField to select the contents when it receives focus.
-	 */
-	private static class MyFormattedTextField extends JFormattedTextField {
-		public MyFormattedTextField(Object value, int columns) {
-			super(value);
-			setColumns(columns);
-		}
-
-		@Override
-		protected void processFocusEvent(FocusEvent e) {
-			super.processFocusEvent(e);
-			if (e.getID() == FocusEvent.FOCUS_GAINED)
-				selectAll();
-		}
 	}
 
 	/**
