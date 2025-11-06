@@ -1462,7 +1462,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         String str = "";
         if (firstExportTime != null && firstExportTime.getTime() != 0L) {
             // note that auto-exporting without saving the project won't set this
-            str += "Project first exported:\n" + firstExportTime + "\n";
+            str += "Project first exported by Maestro:\n" + firstExportTime + "\n";
+        } else if (firstExportTime != null) {
+            str += "Project first exported by Maestro:\nA long time ago (date not available)\n";
         }
         if(tuneBars != null || getFirstBar() != null || getLastBar() != null) {
             str += "\nTune-editor changes in effect.\n";
