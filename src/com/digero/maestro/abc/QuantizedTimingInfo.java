@@ -636,24 +636,10 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 	}
 
 	private static long getSixTicks(TimingInfoEvent tempoChange) {
-		long sixTicks = 0;
-		boolean evenShortest = tempoChange.info.getMinNoteLengthTicks() < tempoChange.infoOdd
-				.getMinNoteLengthTicks();
-		int loopCount = 1;
-		long longest = 0;
-		long shortest = 0;
-		if (evenShortest) {
-			shortest = tempoChange.info.getMinNoteLengthTicks();
-			longest = tempoChange.infoOdd.getMinNoteLengthTicks();
-		} else {
-			shortest = tempoChange.infoOdd.getMinNoteLengthTicks();
-			longest = tempoChange.info.getMinNoteLengthTicks();
-		}
-		sixTicks = longest;
-		while (sixTicks % shortest != 0 && loopCount < shortest) {
-			sixTicks += longest;
-			loopCount++;
-		}
+		long sixTicks = Util.lcm(
+                tempoChange.info.getMinNoteLengthTicks(),
+                tempoChange.infoOdd.getMinNoteLengthTicks()
+        );
 
 		assert sixTicks % tempoChange.info.getMinNoteLengthTicks() == 0;
 		assert sixTicks % tempoChange.infoOdd.getMinNoteLengthTicks() == 0;

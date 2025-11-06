@@ -30,6 +30,7 @@ import javax.swing.SwingUtilities;
 import com.digero.maestro.MaestroMain;
 import com.digero.maestro.view.ProjectFrame;
 
+import org.jetbrains.annotations.Range;
 import sun.awt.shell.ShellFolder;
 
 public final class Util {
@@ -322,8 +323,8 @@ public final class Util {
 		return (a / gcd(a, b)) * b;
 	}
 
-	/** Least Common Multiple */
-	public static long lcm(long a, long b) {
+	/** Least Common Multiple for positive numbers */
+	public static long lcm(@Range(from = 1, to = 100000000L) long a, @Range(from = 1, to = 100000000L) long b) {
 		return (a / gcd(a, b)) * b;
 	}
 
