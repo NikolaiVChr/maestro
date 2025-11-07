@@ -45,7 +45,10 @@ public interface AbcConstants {
 	int STUDENT_FIDDLE_LAST_FLUB_NOTE_ID = Note.Fs2.id;
 
     static long getShortestNoteMicros(int bpm) {
-		int[] strangeBPM = {9, 11, 13, 15, 18, 22, 26, 30, 36, 37, 43, 44, 45, 51, 52, 60, 72, 74, 86, 88, 90, 102, 104, 120, 144, 148, 172, 176, 180, 204, 208, 240, 288, 296, 344, 352, 360, 408, 416, 480, 576, 592, 688, 704, 720};
+		int[] strangeBPM = {9, 11, 13, 15, 18, 22, 26, 30, 36, 37, 43, 44, 45,
+                51, 52, 60, 72, 74, 86, 88, 90, 102, 104, 120, 144, 148, 172,
+                176, 180, 204, 208, 240, 288, 296, 344, 352, 360, 408, 416, 480,
+                576, 592, 688, 704, 720};
 		for (int strange : strangeBPM) {
 			if (strange == bpm) {
 				return 60001L;
