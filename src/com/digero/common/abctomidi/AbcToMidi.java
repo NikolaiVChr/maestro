@@ -592,7 +592,7 @@ public class AbcToMidi {
 						}
 
 						double noteEndTick = chordStartTick
-								+ DEFAULT_NOTE_TICKS * (double) numerator / (double) denominator;
+								+ info.getTickFactor() * DEFAULT_NOTE_TICKS * numerator * info.getLNum() / ((double) denominator * info.getLDenom());
                         log.finer("noteEndTick="+noteEndTick);
 						// A chord is as long as its shortest note
 						if (chordEndTick == chordStartTick || noteEndTick < chordEndTick) {

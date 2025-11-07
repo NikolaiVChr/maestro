@@ -25,22 +25,25 @@ class TuneInfo {
 	private boolean compoundMeter;
 	private int meterNumerator;
 	private int meterDenominator;
-	private double noteDivisor;
+    private int noteDivisorNum;
+    private int noteDivisorDenom;
+    private int tickFactor = 16;
 
-	public TuneInfo() {
+    public TuneInfo() {
 		partNumber = 0;
 		title = "";
 		titleIsFromExtendedInfo = false;
 		key = KeySignature.C_MAJOR;
 		meterNumerator = 4;
 		meterDenominator = 4;
-		ppqn = 8 * AbcToMidi.DEFAULT_NOTE_TICKS / meterDenominator;
 		primaryTempoBPM = 120;
 		instrument = LotroInstrument.DEFAULT_INSTRUMENT;
 		instrumentSet = false;
 		dynamics = Dynamics.mf;
 		compoundMeter = false;
-		noteDivisor = -1.0;
+        noteDivisorNum = -1;
+        noteDivisorDenom = 1;
+        calcPPQN();
 	}
 
 	public void newPart(int partNumber) {
@@ -65,17 +68,36 @@ class TuneInfo {
 	}
 
 	public void setNoteDivisor(String str) {
-		this.noteDivisor = parseNoteDivisor(str);
+		parseNoteDivisor(str);
 		calcPPQN();
 	}
 
+    public int getLNum() {
+        if (noteDivisorNum < 0) return 1;
+        return noteDivisorNum;
+    }
+
+    public int getLDenom() {
+        if (noteDivisorNum < 0) return (4 * meterNumerator / meterDenominator) < 3 ? 16 : 8;
+        return noteDivisorDenom;
+    }
+
 	private void calcPPQN() {
-		this.ppqn = (long) (AbcToMidi.DEFAULT_NOTE_TICKS / (this.meterDenominator * this.noteDivisor));
+        //if (getLDenom() <= 16)
+        //    tickFactor = getLDenom();
+        //else
+            tickFactor = 16;//must be same for all parts
+		this.ppqn = AbcToMidi.DEFAULT_NOTE_TICKS * tickFactor / this.meterDenominator;
+        //System.out.println("Note divisor: 1/" + getLDenom() + " -> " + this.ppqn + " PPQ");
 	}
 
+    public int getTickFactor() {
+        return tickFactor;
+    }
+
 	public double getWholeNoteTime() {
-		if (this.noteDivisor > 0.0d) {
-			return (60.0d / this.primaryTempoBPM) * this.meterDenominator * this.noteDivisor;
+		if (this.noteDivisorNum > 0) {
+			return (60.0d / (this.primaryTempoBPM * this.noteDivisorDenom)) * this.meterDenominator * this.noteDivisorNum;
 		} else {
             double L = ((this.meterNumerator / (double) this.meterDenominator) < 0.75d ? 1d / 16 : 1d / 8);
 			return this.meterDenominator * L * (60.0d / this.primaryTempoBPM);
@@ -100,12 +122,7 @@ class TuneInfo {
 			meterDenominator = Integer.parseInt(parts[1]);
 		}
 
-		if (this.noteDivisor < 0) {
-			this.ppqn = ((4 * meterNumerator / meterDenominator) < 3 ? 16 : 8) * AbcToMidi.DEFAULT_NOTE_TICKS
-					/ meterDenominator;
-		} else {
-			calcPPQN();
-		}
+		calcPPQN();
 		this.compoundMeter = (meterNumerator % 3) == 0;
 	}
 
@@ -181,6 +198,9 @@ class TuneInfo {
 			throw new IllegalArgumentException(
 					"The denominator of the note length must be positive" + " (example of valid note length: 3/8)");
 		}
+
+        this.noteDivisorNum = numerator;
+        this.noteDivisorDenom = denominator;
 
 		return numerator / (double) denominator;
 	}
