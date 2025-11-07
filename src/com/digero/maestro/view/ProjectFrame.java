@@ -52,6 +52,7 @@ import javax.swing.filechooser.FileFilter;
 import javax.swing.text.BadLocationException;
 import javax.xml.transform.TransformerException;
 
+import com.digero.common.abc.AbcConstants;
 import com.digero.common.util.*;
 import com.digero.maestro.midi.SequenceDataCache;
 import org.jetbrains.annotations.Nullable;
@@ -2801,8 +2802,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			tempoSpinner.commitEdit();
 			timeSignatureField.commitEdit();
 			keySignatureField.commitEdit();
-		} catch (java.text.ParseException e) {
-			// Ignore
+		} catch (java.text.ParseException ignore) {
 		}
 	}
 	
@@ -2821,7 +2821,13 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			return;
 		}
 		String tempNote = "";
-		//tempNote += "Main export tempo is " + getTempo()+"\n\n";
+        /*
+		tempNote += "Main export tempo will be " + getTempo()
+                    + "\nThis means that minimum note/rest duration must be "
+                    + (AbcConstants.isStrangeBPM(getTempo())?
+                     " greater than 60 ms.\n"
+                    :" equal to, or greater than 60 ms.\n");
+         */
 		tempNote += getTimingStats();
 		tempNote += checkDuplicatePartTitles();
 		//tempNote += getNumberOfExportNotes(); // if enable this, then also output why notes got deleted, else confusing.

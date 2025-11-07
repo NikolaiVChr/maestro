@@ -23,7 +23,7 @@ public class CountIn {
     public final CountInPattern pattern;
     public final AbcPart part;
     public final LotroDrumInfo hit;
-    public long micros;// set by abcExporter
+    public long micros;// in abc export time. set by abcExporter
 
     public CountIn(CountInPattern pattern, float barCount, AbcPart part, LotroDrumInfo hit) {
         this.pattern = pattern;

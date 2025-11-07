@@ -138,14 +138,7 @@ public class AbcExporter {
             if (one != null) {
                 countIn = one.getAbcSong().getCountIn();
                 if (countIn != null) {
-                    TimingInfoEvent info;
-                    if (organic) {
-                        info = qtm.getTimingEventForTickOrganic(startTickForCountIn);
-                    } else {
-                        info = qtm.getTimingEventForTick(startTickForCountIn);
-                    }
-                    long countInTicks = (long)(countIn.barCount*info.info().getBarLengthTicks());
-                    long countInMicros = MidiUtils.ticks2microsec(countInTicks, info.info().getTempoMPQ(), info.info().getResolutionPPQ());
+                    long countInMicros = calculateCountInTotalMicrosABC(countIn, qtm);
                     long hitMicros = countInMicros/countIn.pattern.dynamics.length;
                     if (countInMicros > AbcConstants.LONGEST_COUNT_IN_MICROS) {
                         countInMicros = 0L;
@@ -291,14 +284,7 @@ public class AbcExporter {
         long countInMicros = 0L;//all track notes will be delayed by this
         if (countIn != null) {
             long minimumMicro = AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM());
-            TimingInfoEvent info;
-            if (organic) {
-                info = qtm.getTimingEventForTickOrganic(startTickForCountIn);
-            } else {
-                info = qtm.getTimingEventForTick(startTickForCountIn);
-            }
-            long countInTicks = (long) (countIn.barCount * info.info().getBarLengthTicks());
-            countInMicros = MidiUtils.ticks2microsec(countInTicks, info.info().getTempoMPQ(), info.info().getResolutionPPQ());
+            countInMicros = calculateCountInTotalMicrosABC(countIn, qtm);
             if (countInMicros > AbcConstants.LONGEST_COUNT_IN_MICROS) {
                 // 12 seconds is max
                 countInMicros = 0;
@@ -621,14 +607,7 @@ public class AbcExporter {
         CountIn countIn = null;
         if (part.getAbcSong().getCountIn() != null) {
             countIn = part.getAbcSong().getCountIn();
-            TimingInfoEvent info;
-            if (organic) {
-                info = qtm.getTimingEventForTickOrganic(startTickForCountIn);
-            } else {
-                info = qtm.getTimingEventForTick(startTickForCountIn);
-            }
-            long countInTicks = (long)(countIn.barCount*info.info().getBarLengthTicks());
-            countInMicros = MidiUtils.ticks2microsec(countInTicks, info.info().getTempoMPQ(), info.info().getResolutionPPQ());
+            countInMicros = calculateCountInTotalMicrosABC(countIn, qtm);
             if (countInMicros > AbcConstants.LONGEST_COUNT_IN_MICROS) {
                 countInMicros = 0;
                 countIn = null;
@@ -1193,14 +1172,7 @@ public class AbcExporter {
         CountIn countIn = null;
         if (part.getAbcSong().getCountIn() != null) {
             countIn = part.getAbcSong().getCountIn();
-            TimingInfoEvent info;
-            if (organic) {
-                info = qtm.getTimingEventForTickOrganic(startTickForCountIn);
-            } else {
-                info = qtm.getTimingEventForTick(startTickForCountIn);
-            }
-            long countInTicks = (long)(countIn.barCount*info.info().getBarLengthTicks());
-            countInMicros = MidiUtils.ticks2microsec(countInTicks, info.info().getTempoMPQ(), info.info().getResolutionPPQ());
+            countInMicros = calculateCountInTotalMicrosABC(countIn, qtm);
             if (countInMicros > AbcConstants.LONGEST_COUNT_IN_MICROS) {
                 countInMicros = 0;
                 countIn = null;
@@ -1426,7 +1398,20 @@ public class AbcExporter {
 		out.println();
 	}
 
-	private void exportPartHeaderToAbc(AbcPart part, PrintStream out) {
+    private long calculateCountInTotalMicrosABC(CountIn countIn, QuantizedTimingInfo qtm) {
+        TimingInfoEvent info;
+        if (organic) {
+            info = qtm.getTimingEventForTickOrganic(startTickForCountIn);
+        } else {
+            info = qtm.getTimingEventForTick(startTickForCountIn);
+        }
+        long countInTicks = (long)(countIn.barCount*(double)info.info().getBarLengthTicks());//can overflow at extreme lengths, so casting to double
+        long countInMicros = MidiUtils.ticks2microsec(countInTicks, info.info().getTempoMPQ(), info.info().getResolutionPPQ());
+        countInMicros = qtm.divideByExportTempoFactor(countInMicros);
+        return countInMicros;
+    }
+
+    private void exportPartHeaderToAbc(AbcPart part, PrintStream out) {
 		out.println();
 		out.println("X: " + part.getPartNumber());
 		if (metadata != null) {
