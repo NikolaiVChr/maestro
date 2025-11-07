@@ -55,6 +55,7 @@ Version 4.5.9
 - Added option for reduced exported abc file size. No bar or time progress will be embedded in the notes when enabled.
 - Added tabs to the side-panel in Maestro and made import lyrics default enabled when installing a Maestro for first time.
 - Made the part-editor button green if it has been modified.
+- Fixed that count-in did not account for user changes to the main tempo in the correct way.
 
 Version 4.4.6
 - Removed warnings for bad Jaunty notes.
