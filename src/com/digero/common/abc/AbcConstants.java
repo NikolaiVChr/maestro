@@ -77,6 +77,7 @@ public interface AbcConstants {
         return 60000L;
     }
 
+    @Deprecated
     static long getShortestNoteMicros(int bpm, boolean reducedPrecision) {
 
         if (isStrangeBPM(bpm)) {

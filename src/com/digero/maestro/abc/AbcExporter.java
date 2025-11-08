@@ -1117,6 +1117,36 @@ public class AbcExporter {
         return (int) Math.floor((micros / (double) oneMicro) * oneMilli);
     }
 
+    /**
+     * Minimum note/rest duration
+     * The result will be in micros, so that if exported with
+     * reduced precision, it is the absolute lowest number that lotro
+     * will accept given the denominator we plan to provide.
+     *
+     * We don't use this value all places, only for the fitting algorithms.
+     * So that the fitting of too small numerators takes places where we do stuff
+     * about it, and less so during output.
+     */
+    private long minimumQuantifiedMicros(boolean reduced) {
+        int Q = qtm.getPrimaryExportTempoBPM();
+        if (!reduced) return AbcConstants.getShortestNoteMicros(Q);
+        int L = (qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? 16 : 8;
+        int oneMicro = (int)(qtm.getMeter().denominator * TimingInfo.ONE_SECOND_MICROS * 60L / (Q * L));
+        int milli2micro = 10;
+        int oneMilli = Math.ceilDiv(oneMicro, milli2micro);
+        boolean strange = AbcConstants.isStrangeBPM(Q);
+        int minimumMilli = microToMilliCeil(60000L, oneMicro, oneMilli);
+        double fraction = qtm.getMeter().denominator*minimumMilli*60d/(L*Q*oneMilli);
+        long result = (long) Math.ceil((minimumMilli / (double) oneMilli) * oneMicro);
+        if (strange) {
+            int oneMilliNumerator = microToMilliCeil(1L, oneMicro, oneMilli);
+            if (fraction == 0.06d) {
+                result += oneMilliNumerator;
+            }
+        }
+        return result;
+    }
+
 	private void exportPartToAbc(AbcPart part, PrintStream out,
 			boolean delayEnabled, PolyphonyHistogram histogram) throws AbcConversionException {
 		List<Chord> chords = combineAndQuantize(part, false, histogram);
@@ -2181,7 +2211,7 @@ public class AbcExporter {
 		List<ChordOrganic> chords = new ArrayList<>(events.size() / 2);
 		List<AbcNoteEvent> tmpEvents = new ArrayList<>();
 
-		long minimumMicros = AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM(), !useRestsInChords && reducedFilesize);
+		long minimumMicros = minimumQuantifiedMicros(!useRestsInChords && reducedFilesize);
 		
 		// Combine notes that play at the same time into chords
 		
@@ -3252,8 +3282,8 @@ public class AbcExporter {
 	 */
 	private List<Chord> processOrganic2(AbcPart part, List<AbcNoteEvent> events, boolean useRestToShortenChords) {	
 	
-		final long minimumMicros = AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM(), !useRestsInChords && reducedFilesize);
-		
+		final long minimumMicros = minimumQuantifiedMicros(!useRestsInChords && reducedFilesize);
+
 		NavigableSet<Long> grid = createGrid(events, minimumMicros, part, useRestToShortenChords);
 		
 		events = snapNotesToGrid(events, grid, minimumMicros);
