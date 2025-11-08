@@ -105,6 +105,18 @@ public class ChordOrganic extends Chord {
 		startTick = qtm.microsToTickABCOrganic(early);
 		early = null;
 	}
+
+    /**
+     * Goes into effect immediately
+     */
+    public void setForceEarlyStartMicros(long stMicros, long stTick) {
+        for (AbcNoteEvent note : notes) {
+            note.startABCMicros = stMicros;
+            note.setStartTick(stTick);
+        }
+        startMicros = stMicros;
+        startTick = stTick;
+    }
 	
 	public boolean add(AbcNoteEvent ne) {
 		super.add(ne);

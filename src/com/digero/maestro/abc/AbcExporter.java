@@ -2174,6 +2174,7 @@ public class AbcExporter {
             note.startABCMicros = qtm.tickToMicrosABCOrganic(note.getStartTick());
             note.endABCMicros = qtm.tickToMicrosABCOrganic(note.getEndTick());
         }
+        final long songStartMicros = getExportStartMicrosABC();
 
 		breakLongNotesOrganic(part, events);
 
@@ -2866,7 +2867,7 @@ public class AbcExporter {
 					assert endCur == curChord.getEndMicros():"endMicros was not synced with chord content in "+curChord.toStringDuraMicros();
 					
 					/*
-					 * realCurChord is last non-deleted chord in chords.
+					 * realCurChord is the last non-deleted chord in chords.
 					 */
 					ChordOrganic realCurChord = null;
 					boolean found = false;
@@ -2988,8 +2989,8 @@ public class AbcExporter {
 					if (jne.endABCMicros > targetEndMicros) {
 						long noteEndMicro = jne.endABCMicros;
 						if (noteEndMicro-curEndMicro < minimumMicros/2 && jne.tiesTo == null) {
-							// note ends approx same time as end of chord
-							// we make it end same time as shortest note in chord,
+							// note ends approx same time as the end of chord
+							// we make it end same time as the shortest note in chord,
 							// chord might become slightly longer later.
 							jne.endABCMicros = curChord.getEndMicros();
 							jne.setEndTick(qtm.microsToTickABCOrganic(curChord.getEndMicros()));
@@ -3091,10 +3092,10 @@ public class AbcExporter {
 		if (useRestToShortenChords) {
 			/*
 			 * It can happen that a note that is longer than the chord
-			 * is also present in next chord. And if there is a
-			 * volume difference between the chord, lotro will
-			 * silence entire part. So to prevent that, we shorten
-			 * some notes to be same dura as the chord.
+			 * is also present in the next chord. And if there is a
+			 * volume difference between the chords, lotro will
+			 * silence the entire part. So to prevent that, we shorten
+			 * some notes to be the same dura as the chord.
 			 */
 			List<AbcNoteEvent> notesOn = new ArrayList<>();
 			Long lastEnd = null;
@@ -3154,7 +3155,34 @@ public class AbcExporter {
 				assertSoftDura(chord, minimumMicros*99/100);
 			}
 		}
-		
+		if (!chords.isEmpty() && chords.getFirst().getNotes().getFirst().startABCMicros != songStartMicros) {
+            // This is an extra safety check for the first chord being aligned perfectly with
+            // initial silence start time, should normally not happen
+            boolean fixable = true;
+            if (chords.getFirst().getNotes().getFirst().startABCMicros > songStartMicros) {
+                for (AbcNoteEvent evt : chords.getFirst().getNotes()) {
+                    if (evt.endABCMicros - songStartMicros > AbcConstants.LONGEST_NOTE_MICROS) {
+                        logNotes.severe(part.getAbcSong().getTitle()+": Song start micros: "+songStartMicros+" != "+chords.getFirst().getNotes().getFirst().startABCMicros+" (too long to fix)");
+                        fixable = false;
+                        break;
+                    }
+                }
+            } else {
+                for (AbcNoteEvent evt : chords.getFirst().getNotes()) {
+                    if (evt.endABCMicros - songStartMicros < minimumMicros) {
+                        logNotes.severe(part.getAbcSong().getTitle()+": Song start micros: "+songStartMicros+" != "+chords.getFirst().getNotes().getFirst().startABCMicros+" (too short to fix)");
+                        fixable = false;
+                        break;
+                    }
+                }
+            }
+            if (fixable) {
+                chords.getFirst().setForceEarlyStartMicros(songStartMicros, exportStartTick);
+                logNotes.warning(part.getAbcSong().getTitle()+": Fixed song start micros.");
+            } else {
+                assert false:"Please notify Aifel that this occurred, thanks.";
+            }
+        }
 		List<Chord> returnList = new ArrayList<>(chords.size());
 		returnList.addAll(chords);
 		return returnList;
@@ -3182,15 +3210,16 @@ public class AbcExporter {
 	}
 
     /**
-     * Assign musically importance value to a chord
+     * Assign musical importance value to a chord
      * Part of single-stage organic
      */
 	private int calcValue(ChordOrganic c, boolean sustained) {
 		// weakness: this favors curChord if starting tick of next
-		//           chord is not exact aligned.
+		//           chord is not exactly aligned.
 		int value = -1;
 		value += c.sizeReal();
-		if (sustained) {
+        if (value == -1) value = -32;// this way rests gets assigned value only by duration
+		if (sustained || value == -32) {
 			long start = c.getStartMicros();
 			long end = c.getLongestEndMicros();
 			long dura = end - start;
