@@ -625,7 +625,7 @@ public class AutoExporter {
 
 		abcSong.exportAbc(exportFile, AbcTools.APP_NAME);
 		int maxPoly = abcSong.getMaxPartPoly();
-		if (maxPoly > 6) pInfo.appendText += "<p></p><p><font color='orange'>&nbsp;&nbsp;part polyphony max was "+maxPoly+".</font></p>";
+		if (maxPoly > 6) pInfo.appendText += "<p><font color='orange'>&nbsp;&nbsp;part polyphony max was "+maxPoly+".</font></p>";
 		if ((abcSong.getExportFile() == null || exportFile.compareTo(abcSong.getExportFile()) != 0) && frame.getSaveMSXabcSelected()) {
 			pInfo.projectModified = true;
 		}
@@ -641,12 +641,12 @@ public class AutoExporter {
 		if (timingModified || ( pInfo.projectModified && (frame.getSaveMSXSelected() || frame.getSaveMSXabcSelected()) )) {
 			try {
 				XmlUtil.saveDocument(abcSong.saveToXml(), abcSong.getProjectFile());
-                pInfo.appendText += "<p></p><p>&nbsp;&nbsp;msx saved.</p>";
+                pInfo.appendText += "<p>&nbsp;&nbsp;msx saved.</p>";
 			} catch (FileNotFoundException e) {
-                pInfo.appendText += "<p></p><p><font color='red'>&nbsp;&nbsp;msx saving failed.</font></p>";
+                pInfo.appendText += "<p><font color='red'>&nbsp;&nbsp;msx saving failed.</font></p>";
 			} catch (IOException | TransformerException e) {
-                pInfo.appendText += "<p></p><p><font color='red'>&nbsp;&nbsp;msx saving failed.</font></p>";
-			}				
+                pInfo.appendText += "<p><font color='red'>&nbsp;&nbsp;msx saving failed.</font></p>";
+			}
 		}
 		
 		if (testIfOutputIsValid) {
