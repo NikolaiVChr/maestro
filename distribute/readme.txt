@@ -41,7 +41,7 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
-Version 4.5.9
+Version 4.5.10
 - Offloaded Maestro ABC exporting to a worker thread.
 - Offloaded Maestro ABC preview generating to a worker thread.
 - Auto-exporter is now threaded, expect a speed-up of 3 to 12 times.
@@ -50,9 +50,9 @@ Version 4.5.9
 - Make play-head sync with count-in (when playback in progress).
 - Increased max number of sections in section-editor to 150.
 - Organic multi-stage now handles initial silence a bit better.
-- Add option in AbcPlayer "More Options" menu to disable ABC potential corruption popup messages.
+- Added option in AbcPlayer "More Options" menu to disable ABC potential corruption popup messages.
 - The potential corrupt ABC message can be viewed by hovering over the ABC title, or the playlist lines.
-- Added option for reduced exported abc file size. No bar or time progress will be embedded in the notes when enabled.
+- Added option for reduced exported abc file size. No bar or time progress output when enabled.
 - Added tabs to the side-panel in Maestro and made import lyrics default enabled when installing a Maestro for first time.
 - Made the part-editor button green if it has been modified.
 - Fixed that count-in did not account for user changes to the main tempo in the correct way.
