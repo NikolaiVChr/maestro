@@ -2181,7 +2181,7 @@ public class AbcExporter {
 		List<ChordOrganic> chords = new ArrayList<>(events.size() / 2);
 		List<AbcNoteEvent> tmpEvents = new ArrayList<>();
 
-		long minimumMicros = AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM());
+		long minimumMicros = AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM(), !useRestsInChords && reducedFilesize);
 		
 		// Combine notes that play at the same time into chords
 		
@@ -2666,7 +2666,7 @@ public class AbcExporter {
 										// as one with same pitch is there already
 										
 										if (ne1Micros < minimumMicros*3L/2L || part.getInstrument().isPercussion) {
-											// next chord will be short is short, we remove next note
+											// the next chord will be too short; we remove it
 											
 											if (ne.tiesTo != null) {
 												if (!part.getInstrument().sustainable) {
@@ -2989,7 +2989,7 @@ public class AbcExporter {
 					if (jne.endABCMicros > targetEndMicros) {
 						long noteEndMicro = jne.endABCMicros;
 						if (noteEndMicro-curEndMicro < minimumMicros/2 && jne.tiesTo == null) {
-							// note ends approx same time as the end of chord
+							// note ends approx the same time as the end of chord
 							// we make it end same time as the shortest note in chord,
 							// chord might become slightly longer later.
 							jne.endABCMicros = curChord.getEndMicros();
@@ -3252,7 +3252,7 @@ public class AbcExporter {
 	 */
 	private List<Chord> processOrganic2(AbcPart part, List<AbcNoteEvent> events, boolean useRestToShortenChords) {	
 	
-		final long minimumMicros = AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM());
+		final long minimumMicros = AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM(), !useRestsInChords && reducedFilesize);
 		
 		NavigableSet<Long> grid = createGrid(events, minimumMicros, part, useRestToShortenChords);
 		
@@ -3631,8 +3631,8 @@ public class AbcExporter {
 	private long getMaxStartShiftMicros(long noteDuration, long minimumMicros) {
 		// If start is needed to be moved more than this return value then note will be deleted
 		long minimums = noteDuration/minimumMicros;
-		if (minimums < 1L) return minimumMicros*3L/5L;// Very short note we wont move the start more than 36 ms
-		if (minimums <= 2L) return minimumMicros*3L/4L;// Short note we also wont move the start more than 45 ms
+		if (minimums < 1L) return 36L*1000L;// Very short note we wont move the start more than 36 ms
+		if (minimums <= 2L) return 45L*1000L;// Short note we also wont move the start more than 45 ms
 		return minimumMicros;// Longer note we wont move the start more than 60 ms
 	}
 	

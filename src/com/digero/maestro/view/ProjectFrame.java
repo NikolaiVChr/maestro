@@ -2821,13 +2821,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			return;
 		}
 		String tempNote = "";
-        /*
-		tempNote += "Main export tempo will be " + getTempo()
-                    + "\nThis means that minimum note/rest duration must be "
-                    + (AbcConstants.isStrangeBPM(getTempo())?
-                     " greater than 60 ms.\n"
-                    :" equal to, or greater than 60 ms.\n");
-         */
 		tempNote += getTimingStats();
 		tempNote += checkDuplicatePartTitles();
 		//tempNote += getNumberOfExportNotes(); // if enable this, then also output why notes got deleted, else confusing.
@@ -2841,6 +2834,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             }
             tempNote += histogram.getStats();
         }
+        tempNote += "Main export tempo will be " + getTempo()
+                + "\nAll exported note/rest durations will be "
+                + (AbcConstants.isStrangeBPM(getTempo())?
+                " greater than 60 ms.\n"
+                :" equal to, or greater than 60 ms.\n");
 		arrangementView.setStats(tempNote);
 
         /*

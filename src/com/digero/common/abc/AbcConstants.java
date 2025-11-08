@@ -76,4 +76,17 @@ public interface AbcConstants {
 
         return 60000L;
     }
+
+    static long getShortestNoteMicros(int bpm, boolean reducedPrecision) {
+
+        if (isStrangeBPM(bpm)) {
+            if (reducedPrecision) {
+                // fewer digits outputted, so process organic notes with that in mind.
+                return 60010L;
+            }
+            return 60001L;
+        }
+
+        return 60000L;
+    }
 }
