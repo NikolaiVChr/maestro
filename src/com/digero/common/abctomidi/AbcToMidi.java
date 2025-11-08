@@ -886,7 +886,7 @@ public class AbcToMidi {
 		if (enableLotroErrors && ((float) lengthSeconds) < ((float) AbcConstants.SHORTEST_NOTE_SECONDS)) {
 			throw new LotroParseException("Rest's duration is too short (" + String.format(Locale.US, "%.3f", lengthSeconds)
 					+ "s)(" + noteLetter + " " + abcNoteL + ")", fileName, lineNumber, m.start());
-		} else if (enableLotroErrors && AbcConstants.getShortestNoteMicros(bpm) == 60001L && ((float) lengthSeconds) == ((float) AbcConstants.SHORTEST_NOTE_SECONDS)) {
+		} else if (enableLotroErrors && AbcConstants.getShortestNoteMicros(bpm) > 60000L && ((float) lengthSeconds) == ((float) AbcConstants.SHORTEST_NOTE_SECONDS)) {
 			throw new LotroParseException("Rest's duration is too short (" + String.format(Locale.US, "%.3f", lengthSeconds)
 						+ "s)(" + noteLetter + " " + abcNoteL + ")", fileName, lineNumber, m.start());
 		} else if (enableLotroErrors && lengthSeconds > AbcConstants.LONGEST_NOTE_SECONDS) {
@@ -905,7 +905,7 @@ public class AbcToMidi {
 					"Note's duration is too short (" + String.format(Locale.US, "%.3f", lengthSeconds) + "s)(" + abcNoteAcc
 							+ noteLetter + octaveStr + abcNoteL + addGroup(m, shouldAddGroup) + ")",
 					fileName, lineNumber, m.start());
-		} else if (enableLotroErrors && AbcConstants.getShortestNoteMicros(bpm) == 60001L && ((float) lengthSeconds) == ((float) AbcConstants.SHORTEST_NOTE_SECONDS)) {
+		} else if (enableLotroErrors && AbcConstants.getShortestNoteMicros(bpm) > 60000L && ((float) lengthSeconds) == ((float) AbcConstants.SHORTEST_NOTE_SECONDS)) {
 			throw new LotroParseException(
 					"Note's duration is too short (" + String.format(Locale.US, "%.3f", lengthSeconds) + "s)(" + abcNoteAcc
 							+ noteLetter + octaveStr + abcNoteL + addGroup(m, shouldAddGroup) + ")",
