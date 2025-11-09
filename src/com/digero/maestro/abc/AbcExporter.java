@@ -3,6 +3,8 @@ package com.digero.maestro.abc;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -77,6 +79,9 @@ public class AbcExporter {
 
 	private int lastChannelUsedInPreview = -1;
     private long startTickForCountIn = 0L;
+
+    // reduced precision factor
+    private final int milli2micro = 100;
 
     public AbcExporter(List<AbcPart> parts, QuantizedTimingInfo timingInfo, KeySignature keySignature,
 			AbcMetadataSource metadata, boolean skipSilenceAtStart, boolean organic) throws AbcConversionException {
@@ -192,10 +197,12 @@ public class AbcExporter {
      */
 	private void exportForPreviewChords(Map<AbcPart, List<Chord>> chordsMade, PolyphonyHistogram histogram)
 			throws AbcConversionException {
+        boolean useMicroAccuracy = useRestsInChords || !reducedFilesize;
+        int[] quanFractions = minimumQuantifiedMicros(!useMicroAccuracy);
 		for (AbcPart part : parts) {
 			if (part.getEnabledTrackCount() > 0) {
 				if (organic) {
-					Pair<List<Chord>,Boolean> chords = combineOrganic(part, true, histogram);
+					Pair<List<Chord>,Boolean> chords = combineOrganic(part, true, histogram, quanFractions);
 					chordsMade.put(part, chords.first);
 				} else {
 					List<Chord> chords = combineAndQuantize(part, true, histogram);
@@ -510,8 +517,19 @@ public class AbcExporter {
 	
 	private void exportPartToAbcOrganic(AbcPart part, PrintStream out,
 			boolean delayEnabled, PolyphonyHistogram histogram) throws AbcConversionException {
-		
-		exportPartHeaderToAbc(part, out);
+
+        boolean useMicroAccuracy = useRestsInChords || !reducedFilesize;
+
+        int[] quanFractions = minimumQuantifiedMicros(!useMicroAccuracy);
+
+        //long L = (qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? 16L : 8L;
+        long Q = qtm.getPrimaryExportTempoBPM();
+
+        // One whole abc note is this many microseconds
+        // This we will use as denominator for full precision
+        int oneMicro = (int)(qtm.getMeter().denominator * TimingInfo.ONE_SECOND_MICROS * 60L  * quanFractions[0] / (Q * quanFractions[1]));
+
+		exportPartHeaderToAbc(part, out, quanFractions, useMicroAccuracy?1:(int)milliToMicro(1,oneMicro,quanFractions[4]));
 		
 		// Keep track of which notes have been sharped or flatted so
 		// we can naturalize them the next time they show up.
@@ -519,12 +537,7 @@ public class AbcExporter {
 		boolean[] flats = new boolean[Note.MAX_PLAYABLE.id + 1];
 
 		// Write out ABC notation
-		long L = (qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? 16L : 8L;
-		long Q = qtm.getPrimaryExportTempoBPM();
-		
-		// One whole abc note is this many microseconds
-        // This we will use as denominator for full precision
-		int oneMicro = (int)(qtm.getMeter().denominator * TimingInfo.ONE_SECOND_MICROS * 60L / (Q * L));
+
 
         /*
          Trade-off between filesize and drift when many minimum notes
@@ -558,16 +571,17 @@ public class AbcExporter {
              The code is more neat and maintainable in multistage though.
              Anyway, the drift is completely neglectable for both organics now.
         */
-        int milli2micro = 10;
+
 		
 		// One whole abc note is this many milliseconds
 		// This we will use as denominator for reduced precision
-		int oneMilli = (int) Math.ceilDiv(oneMicro, milli2micro);
+		int oneMilli = quanFractions[4];
 
-		long minimumMicro = AbcConstants.getShortestNoteMicros((int)Q);
+		long minimumMicro = quanFractions[2];
 
         //minimum numerator for reduced precision:
         int minimumMilli = microToMilliCeil(minimumMicro, oneMicro, oneMilli);
+        int maximumMilli = microToMilliFloor(AbcConstants.LONGEST_NOTE_MICROS, oneMicro, oneMilli);
 		
 		assert minimumMilli/(double)oneMilli >= minimumMicro/(double)oneMicro:"reduced min="+(minimumMilli/(double)oneMilli)+" min="+(minimumMicro/(double)oneMicro);
 
@@ -644,15 +658,7 @@ public class AbcExporter {
 
 			// the 100 is so the delay is always larger than 60 ms, even if its 0 ms.
 			int delayMicro = (part.delay+100)*1000 + (int) countInMicros;
-			int oneMicro2 = oneMicro;
 			
-			// we never reduce delay, that way we can see the parts oneMilli easy in the abc.
-			/*
-			// Reduce the fraction
-			int gcd = Util.gcd(delayMilli, oneMilli2);
-			delayMilli /= gcd;
-			oneMilli2 /= gcd;
-			*/
 			int delayMicro2 = 0;
             if (delayMicro > 7 * AbcConstants.ONE_SECOND_MICROS) {
                 delayMicro2 = delayMicro;
@@ -660,9 +666,11 @@ public class AbcExporter {
                 delayMicro2 = delayMicro2 - delayMicro;
             }
 
-			out.print("z" + delayMicro + "/" + oneMicro2);
+			if (useMicroAccuracy) out.print("z" + delayMicro);
+            else out.print("z" + microToMilliCeil(delayMicro,oneMicro,oneMilli));
             if (delayMicro2 > 0) {
-                out.print(" z" + delayMicro2 + "/" + oneMicro2);
+                if (useMicroAccuracy) out.print("z" + delayMicro2);
+                else out.print("z" + microToMilliCeil(delayMicro2,oneMicro,oneMilli));
                 logAbc.info("Delaying by " + delayMicro2 + " micros.");
             }
             out.println(" | ");
@@ -678,26 +686,24 @@ public class AbcExporter {
                     Dynamics volume = dyn.dynamics;
                     bar.append('+').append(volume).append("+ ");
                     bar.append(countIn.hit.note.abc);
-                    bar.append(hitMicros).append("/").append(oneMicro2);
+                    if (useMicroAccuracy) bar.append(hitMicros);
+                    else bar.append(microToMilliCeil(hitMicros,oneMicro,oneMilli));
 
                     logAbc.info("Count-in for ABC: added a count-in hit: "+countIn.hit.name+" velocity = "+volume.midiVol);
                 }
             }
 		}
 		
-		Pair<List<Chord>, Boolean> pair = combineOrganic(part, false, histogram);
+		Pair<List<Chord>, Boolean> pair = combineOrganic(part, false, histogram, quanFractions);
 		 
 		List<Chord> chords = pair.first;
 		
-		// changed this due to best to have either full precision or not on all parts:
-		boolean useMicroAccuracy = useRestsInChords || !reducedFilesize;//pair.second;
-		
 		if (useMicroAccuracy) {
             //logAbc.warning("ABC part organic export: using micro accuracy.");
-			logAbc.info("ABC part organic export: Q="+Q+", L=1/"+L+", 1 numerator=1 us, denom="+oneMicro+", minimum="+(minimumMicro)+" μs.");
+			logAbc.info("ABC part organic export: Q="+Q+", L="+quanFractions[5]+"/"+quanFractions[6]+", 1 numerator=1 us, minimum="+(minimumMicro)+" μs.");
 		} else {
             //logAbc.warning("ABC part organic export: using reduced accuracy.");
-			logAbc.info("ABC part organic export: Q="+Q+", L=1/"+L+", 1 numerator="+milli2micro+" us, denom="+oneMilli+", minimum="+milliToMicro(minimumMilli, oneMicro, oneMilli)+" μs.");
+			logAbc.info("ABC part organic export: Q="+Q+", L="+quanFractions[5]+"/"+quanFractions[6]+", 1 numerator="+milli2micro+" μs, minimum="+quanFractions[2]+" μs.");
 		}
 		
 		for (Chord c : chords) {
@@ -870,11 +876,12 @@ public class AbcExporter {
 						// allow only positive adjustment
 						// this is needed, but it makes poly 6+ drift too much,
 						// so we use micro accuracy for poly 6+.
-						diffMicros = Math.min(0, diffMicros);
+                        diffInMillis = Math.min(0, diffInMillis);
+                        assert false:"At the time, this should not run";
 					}
 					
 					// adjust the note duration by the drift
-                    chordMilli -= microToMilliRound(diffMicros, oneMicro, oneMilli);
+                    chordMilli -= diffInMillis;
 				} else diffMicros = Long.MIN_VALUE;
 				
 				long minAdjust = 0L;
@@ -883,20 +890,19 @@ public class AbcExporter {
 					minAdjust = minimumMilli - chordMilli;
 					chordMilli = minimumMilli;
 				}
-                chordMilliInMicros = milliToMicro(chordMilli, oneMicro, oneMilli);
-				if (chordMilliInMicros > AbcConstants.LONGEST_NOTE_MICROS) {
+                if (chordMilli > maximumMilli) {
 					// should never happen
-					logAbc.severe(part.getTitle() +": chord is "+chordMilliInMicros+" μs, drone="+isDrone(part, c.get(0)));
-                    chordMilli = microToMilliFloor(AbcConstants.LONGEST_NOTE_MICROS, oneMicro, oneMilli) - 1;
-                    chordMilliInMicros = milliToMicro(chordMilli, oneMicro, oneMilli);
-					assert chordMilliInMicros <= AbcConstants.LONGEST_NOTE_MICROS;
-				}
+                    logAbc.severe(part.getTitle() +": chord is "+milliToMicro(chordMilli, oneMicro, oneMilli)+" μs, drone="+isDrone(part, c.get(0)));
+                    chordMilli = maximumMilli;
+                }
+
+                chordMilliInMicros = milliToMicro(chordMilli, oneMicro, oneMilli);
 				
 				chordMicro = (int)chordMilliInMicros;
 				
 				long chordStartDiff = currentMicro - cStartMicro;
-				if (Math.abs(chordStartDiff) > Math.abs(largestDriftMicros)) {
-					if ((Math.abs(chordStartDiff) > 10000L && diffMicros != Long.MIN_VALUE)) {
+                if (Math.abs(chordStartDiff) > Math.abs(largestDriftMicros) && diffMicros != Long.MIN_VALUE) {
+                    if (Math.abs(chordStartDiff) > 10000L) {
                         // 10 ms is known to be what a human expert musicians ear can pick up.
                         long chordEndDiff = (currentMicro + chordMicro) - cEndMicro;
                         long adjustmentMicros = milliToMicro(chordMilli-oldChordMilli,oneMicro,oneMilli);//milliToMicro(microToMilliRound(-diff, oneMicro, oneMilli) + (int)minAdjust, oneMicro, oneMilli);
@@ -983,7 +989,7 @@ public class AbcExporter {
                         }
                     }
 
-					denominator = oneMicro;
+					denominator = 1;
 				} else {
 					int noteMilli = microToMilliFloor(noteMicro, oneMicro, oneMilli);
 					if (nEndMicro == cEndMicro || !useRestsInChords) {
@@ -1008,12 +1014,11 @@ public class AbcExporter {
 						if (noteMilli < chordMilli) {
 							noteMilli = chordMilli;
 						}
-						if (milliToMicro(noteMilli, oneMicro, oneMilli) > AbcConstants.LONGEST_NOTE_MICROS) {
-							// should never happen
-							logAbc.severe(part.getTitle() +": note is "+milliToMicro(noteMilli, oneMicro, oneMilli)+" μs, drone="+isDrone(part, evt));
-                            noteMilli = microToMilliFloor(AbcConstants.LONGEST_NOTE_MICROS, oneMicro, oneMilli) - 1;
-							assert milliToMicro(noteMilli, oneMicro, oneMilli) <= AbcConstants.LONGEST_NOTE_MICROS;
-						}
+                        if (noteMilli > maximumMilli) {
+                            // should not happen
+                            logAbc.severe(part.getTitle() +": note is "+milliToMicro(noteMilli, oneMicro, oneMilli)+" μs, drone="+isDrone(part, evt));
+                            noteMilli = maximumMilli;
+                        }
 					}
 
                     if (useRestsInChords) {
@@ -1023,7 +1028,7 @@ public class AbcExporter {
                     }
 					
 					numerator = noteMilli;
-					denominator = oneMilli;
+					denominator = 1;
 				}
 				
 				// Apply tempo
@@ -1031,12 +1036,12 @@ public class AbcExporter {
 					numerator *= (int) Q;
 					denominator *= curExportTempoBPM;
 				}
-
+                /*
 				// Reduce the fraction
 				int gcdNote = Util.gcd(numerator, denominator);
 				numerator /= gcdNote;
 				denominator /= gcdNote;
-
+                */
 				if (numerator == 1 && denominator == 2) {
 					bar.append('/');
 				} else if (numerator == 1 && denominator == 4) {
@@ -1119,7 +1124,7 @@ public class AbcExporter {
 
     /**
      * Minimum note/rest duration
-     * The result will be in micros, so that if exported with
+     * The result will be in micros, so that if exporting with
      * reduced precision, it is the absolute lowest number that lotro
      * will accept given the denominator we plan to provide.
      *
@@ -1127,31 +1132,101 @@ public class AbcExporter {
      * So that the fitting of too small numerators takes places where we do stuff
      * about it, and less so during output.
      */
-    private long minimumQuantifiedMicros(boolean reduced) {
+    private int[] minimumQuantifiedMicros(boolean reduced) {
         int Q = qtm.getPrimaryExportTempoBPM();
-        if (!reduced) return AbcConstants.getShortestNoteMicros(Q);
-        int L = (qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? 16 : 8;
-        int oneMicro = (int)(qtm.getMeter().denominator * TimingInfo.ONE_SECOND_MICROS * 60L / (Q * L));
-        int milli2micro = 10;
-        int oneMilli = Math.ceilDiv(oneMicro, milli2micro);
+        int idealMinimum = (int)AbcConstants.getShortestNoteMicros(Q);
+        int[] quanFractions;
+        if (!reduced) {
+            int oneMicro = (int) (qtm.getMeter().denominator * TimingInfo.ONE_SECOND_MICROS * 60L / Q);
+            //double dura = qtm.getMeter().denominator*60*idealMinimum/(double)(oneMicro*Q);
+            quanFractions = new int[]{1,1,idealMinimum,Integer.toString(oneMicro).length()-1,oneMicro,1,oneMicro};
+            logNotes.info("Not reducing filesize. Fraction setup is L="+quanFractions[0]+"/"+quanFractions[1]+" micros="+quanFractions[2]+" digits="+quanFractions[3]+" denom="+quanFractions[4]+"| result L:"+quanFractions[5]+"/"+quanFractions[6]);
+            return quanFractions;
+        }
+        quanFractions = new int[]{};//Lnum, Ldenom, micros, digits, denom, final Lnum, final Ldenom
         boolean strange = AbcConstants.isStrangeBPM(Q);
-        int minimumMilli = microToMilliCeil(60000L, oneMicro, oneMilli);
-        double fraction = qtm.getMeter().denominator*minimumMilli*60d/(L*Q*oneMilli);
-        long result = (long) Math.ceil((minimumMilli / (double) oneMilli) * oneMicro);
-        if (strange) {
-            int oneMilliNumerator = microToMilliCeil(1L, oneMicro, oneMilli);
-            if (fraction == 0.06d) {
-                result += oneMilliNumerator;
+        outer:for (int Ldenom = 1; Ldenom <= 99; Ldenom++) {
+            for (int Lnum = 1; Lnum <= 999; Lnum++) {
+                int [] suggest = suggestion(Lnum,Ldenom,strange,Q);
+
+                if (suggest != null && (quanFractions.length == 0 || suggest[2] <= quanFractions[2]) && suggest[3] >= 4) {
+                    // it has potential. Not too many significant digits. At least as good as previous best.
+                    boolean good = staysWithinSixSignificantDigits(suggest[5],suggest[6]);
+                    boolean prevGood = quanFractions.length != 0 && quanFractions[7] == 1;
+                    if (quanFractions.length == 0
+                            || suggest[2] < quanFractions[2]
+                            || (Lnum+Ldenom < quanFractions[0]+quanFractions[1] && prevGood == good)
+                            || (good && !prevGood)
+                            ) {
+                        // I like the smaller numbers, or it fit into a C++ float. Or its result is closer to minimum.
+                        // or its resultant 'grid' will be finer.
+                        quanFractions = suggest;
+                        quanFractions[7] = good?1:0;
+                        if (!strange && suggest[2] == idealMinimum && good) break outer;
+                    }
+                }
             }
         }
-        return result;
+        if (quanFractions.length == 0) {
+            int L = (qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? 16 : 8;
+            quanFractions = suggestion(1,L,strange,Q);
+            logNotes.info("No best fraction setup found.");
+        }
+
+        logNotes.info("Reduced file size. Optimal fraction setup is L="+quanFractions[0]+"/"+quanFractions[1]+" micros="+quanFractions[2]+" digits="+quanFractions[3]+" denom="+quanFractions[4]+"| result L:"+quanFractions[5]+"/"+quanFractions[6]+" fits="+quanFractions[7]+" strange="+strange);
+        return quanFractions;
+    }
+
+    private int[] suggestion (int Lnum, int Ldenom, boolean strange, int Q) {
+        long oneMicro = qtm.getMeter().denominator * TimingInfo.ONE_SECOND_MICROS * 60L * Lnum / (Q * Ldenom);
+        if (oneMicro > Integer.MAX_VALUE) return null;
+        int oneMilli = Math.ceilDiv((int) oneMicro, milli2micro);
+        if (oneMilli == 0) return null;
+        int minimumMilli = microToMilliCeil(60000L, (int)oneMicro, oneMilli);
+        double fraction = qtm.getMeter().denominator * 60d * minimumMilli * Lnum / (Ldenom * (long)Q * oneMilli);
+        long result = (long) Math.ceil((minimumMilli / (double) oneMilli) * oneMicro);
+        if (strange) {
+            int oneMilliNumerator = microToMilliCeil(1L, (int)oneMicro, oneMilli);
+            if (fraction == 0.06d) {
+                result += oneMilliNumerator;
+            } else if (fraction < 0.06d) {
+                logNotes.severe("Fraction error: "+fraction+" lnum="+Lnum+" ldenom="+Ldenom+" Q="+Q+" denominator="+qtm.getMeter().denominator+" oneMicro="+oneMicro+" oneMilli="+oneMilli+" minimumMilli="+minimumMilli+" minimumMicro="+result);
+                assert false : "Fraction error: "+fraction;
+                return null;
+            }
+        }
+        int gcd = Util.gcd(Lnum, Ldenom);
+        Lnum /= gcd;
+        Ldenom /= gcd;
+        gcd = Util.gcd(Lnum, Ldenom*oneMilli);
+        int finalLnum = Lnum / gcd;
+        int finalLdenom = Ldenom * oneMilli / gcd;
+        return new int[]{Lnum, Ldenom, (int) result, Integer.toString(finalLdenom).length()-Integer.toString(finalLnum).length(),oneMilli,finalLnum,finalLdenom,-1};
+    }
+
+    /**
+     * In case lotro use a float point for representing L
+     * We test if a float can handle it.
+     */
+    public boolean staysWithinSixSignificantDigits(int numerator, int denominator) {
+        BigDecimal n = BigDecimal.valueOf(numerator);
+        BigDecimal d = BigDecimal.valueOf(denominator);
+
+        try {
+            BigDecimal result = n.divide(d,9, RoundingMode.UNNECESSARY);
+            return result.precision() <= 6;
+
+        } catch (ArithmeticException e) {
+            // infinite significant digits.
+            return false;
+        }
     }
 
 	private void exportPartToAbc(AbcPart part, PrintStream out,
 			boolean delayEnabled, PolyphonyHistogram histogram) throws AbcConversionException {
 		List<Chord> chords = combineAndQuantize(part, false, histogram);
 
-		exportPartHeaderToAbc(part, out);
+		exportPartHeaderToAbc(part, out, null, 0);
 
 		// Keep track of which notes have been sharped or flatted so
 		// we can naturalize them the next time they show up.
@@ -1441,7 +1516,7 @@ public class AbcExporter {
         return countInMicros;
     }
 
-    private void exportPartHeaderToAbc(AbcPart part, PrintStream out) {
+    private void exportPartHeaderToAbc(AbcPart part, PrintStream out, int[] quanFractions, int oneNoteIs) {
 		out.println();
 		out.println("X: " + part.getPartNumber());
 		if (metadata != null) {
@@ -1456,6 +1531,10 @@ public class AbcExporter {
 		// we add this so can choose the right instrument in abcPlayer and maestro when
 		// loading abc.
 		out.println(AbcField.MADE_FOR + part.getInstrument().friendlyName.trim());
+
+        if (organic) {
+            out.println("%% 1 note is approx "+oneNoteIs+" μs");
+        }
 
 		if (metadata != null) {
             // We output these even with reduced file size enabled.
@@ -1472,7 +1551,11 @@ public class AbcExporter {
 		out.println("M: " + qtm.getMeter());
 		out.println("Q: " + qtm.getPrimaryExportTempoBPM());
 		out.println("K: " + keySignature);
-		out.println("L: " + ((qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? "1/16" : "1/8"));
+		if (organic) {
+            out.println("L: " + quanFractions[5]+"/"+quanFractions[6]);
+        } else {
+            out.println("L: " + ((qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? "1/16" : "1/8"));
+        }
 		out.println();
 	}
 
@@ -1992,7 +2075,7 @@ public class AbcExporter {
 	/**
 	 * Combine the tracks into one, quantize the note lengths, separate into chords.
 	 */
-	private Pair<List<Chord>, Boolean> combineOrganic(AbcPart part, boolean preview, PolyphonyHistogram histogram) throws AbcConversionException {
+	private Pair<List<Chord>, Boolean> combineOrganic(AbcPart part, boolean preview, PolyphonyHistogram histogram, int quanFractions[]) throws AbcConversionException {
         part.numberOfRemovedNotesForSafety = 0;
 		// Combine the events from the enabled tracks
 		List<AbcNoteEvent> events = new ArrayList<>();
@@ -2154,8 +2237,8 @@ public class AbcExporter {
 		for (AbcNoteEvent n : events) {
 			eventsCopy.add(n.copy());
 		}
-		if (organic2) chords = processOrganic2(part, events, useRestToShortenChords);
-		else chords = processOrganic(part, events, useRestToShortenChords);
+		if (organic2) chords = processOrganic2(part, events, useRestToShortenChords, quanFractions);
+		else chords = processOrganic(part, events, useRestToShortenChords, quanFractions);
 		if (useRestToShortenChords) {
 			int max = 0;
 			try {
@@ -2166,8 +2249,8 @@ public class AbcExporter {
 			if (max == 6) {
 				logNotes.info(" ---- "+part.getAbcSong().getTitle()+" ("+part.getTitle()+"): poly restore");
 				useRestToShortenChords = false;
-				if (organic2) chords = processOrganic2(part, eventsCopy, useRestToShortenChords);
-				else  chords = processOrganic(part, eventsCopy, useRestToShortenChords);
+				if (organic2) chords = processOrganic2(part, eventsCopy, useRestToShortenChords, quanFractions);
+				else  chords = processOrganic(part, eventsCopy, useRestToShortenChords, quanFractions);
 				part.setMaxPoly(6);
 			} else if (max > 6) {
 				part.setMaxPoly(max);
@@ -2196,7 +2279,7 @@ public class AbcExporter {
 	/**
 	 * process the notes using single-stage organic output
 	 */
-	private List<Chord> processOrganic(AbcPart part, List<AbcNoteEvent> events, boolean useRestToShortenChords) {
+	private List<Chord> processOrganic(AbcPart part, List<AbcNoteEvent> events, boolean useRestToShortenChords, int[] quanFractions) {
 		boolean assertionsEnabled = false;
 		assert assertionsEnabled = true;
 
@@ -2211,7 +2294,7 @@ public class AbcExporter {
 		List<ChordOrganic> chords = new ArrayList<>(events.size() / 2);
 		List<AbcNoteEvent> tmpEvents = new ArrayList<>();
 
-		long minimumMicros = minimumQuantifiedMicros(!useRestsInChords && reducedFilesize);
+		long minimumMicros = quanFractions[2];
 		
 		// Combine notes that play at the same time into chords
 		
@@ -3280,9 +3363,9 @@ public class AbcExporter {
 	 * The single-stage is full of nested conditions.
 	 * 
 	 */
-	private List<Chord> processOrganic2(AbcPart part, List<AbcNoteEvent> events, boolean useRestToShortenChords) {	
+	private List<Chord> processOrganic2(AbcPart part, List<AbcNoteEvent> events, boolean useRestToShortenChords, int[] quanFractions) {
 	
-		final long minimumMicros = minimumQuantifiedMicros(!useRestsInChords && reducedFilesize);
+		final long minimumMicros = quanFractions[2];
 
 		NavigableSet<Long> grid = createGrid(events, minimumMicros, part, useRestToShortenChords);
 		
