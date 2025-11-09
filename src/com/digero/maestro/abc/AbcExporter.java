@@ -23,6 +23,7 @@ import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.Sequence;
@@ -469,6 +470,7 @@ public class AbcExporter {
 				} else {
 					out.println(AbcField.SWING_RHYTHM + Boolean.toString(false));
 					out.println(AbcField.MIX_TIMINGS + Boolean.toString(false));
+                    out.println("%%Reduced file size " + Boolean.toString(reducedFilesize && !useRestsInChords));
 				}
 				out.println(AbcField.ORGANIC + Boolean.toString(organic));
 				out.println(AbcField.ORGANIC_MULTI_STAGE + Boolean.toString(organic && organic2));
@@ -514,6 +516,17 @@ public class AbcExporter {
 			}
 		}
 	}
+
+    private int reducer;
+    private int reducerCheck(int number) {
+        if (reducer > 1 && number % reducer != 0) {
+            reducer /= 10;
+            if (reducer > 1 && number % reducer != 0) {
+                reducer /= 10;
+            }
+        }
+        return number;
+    }
 	
 	private void exportPartToAbcOrganic(AbcPart part, PrintStream out,
 			boolean delayEnabled, PolyphonyHistogram histogram) throws AbcConversionException {
@@ -527,10 +540,17 @@ public class AbcExporter {
 
         // One whole abc note is this many microseconds
         // This we will use as denominator for full precision
-        int oneMicro = (int)(qtm.getMeter().denominator * TimingInfo.ONE_SECOND_MICROS * 60L  * quanFractions[0] / (Q * quanFractions[1]));
+        int oneMicro = (int)(qtm.getMeter().denominator * TimingInfo.ONE_SECOND_MICROS * 60L / Q);
 
-		exportPartHeaderToAbc(part, out, quanFractions, useMicroAccuracy?1:(int)milliToMicro(1,oneMicro,quanFractions[4]));
-		
+        reducer = useMicroAccuracy?100:1;// see comment lower down for why..
+
+		StringBuilder head = exportPartHeaderToAbc(part, quanFractions, useMicroAccuracy?1:(int)milliToMicro(1,oneMicro,quanFractions[4]));
+
+        List<StringBuilder> builders = new ArrayList<>();
+        builders.add(head);
+
+        reducerCheck(quanFractions[6]);
+
 		// Keep track of which notes have been sharped or flatted so
 		// we can naturalize them the next time they show up.
 		boolean[] sharps = new boolean[Note.MAX_PLAYABLE.id + 1];
@@ -575,19 +595,29 @@ public class AbcExporter {
 		
 		// One whole abc note is this many milliseconds
 		// This we will use as denominator for reduced precision
-		int oneMilli = quanFractions[4];
+		double oneMilli = quanFractions[4]*quanFractions[1]/(double)quanFractions[0];
 
-		long minimumMicro = quanFractions[2];
+		long minimumMicro = AbcConstants.getShortestNoteMicros((int)Q);
 
         //minimum numerator for reduced precision:
-        int minimumMilli = microToMilliCeil(minimumMicro, oneMicro, oneMilli);
+        int minimumMilli = quanFractions[8];//microToMilliCeil(minimumMicro, oneMicro, oneMilli);
         int maximumMilli = microToMilliFloor(AbcConstants.LONGEST_NOTE_MICROS, oneMicro, oneMilli);
-		
-		assert minimumMilli/(double)oneMilli >= minimumMicro/(double)oneMicro:"reduced min="+(minimumMilli/(double)oneMilli)+" min="+(minimumMicro/(double)oneMicro);
 
-		final int BAR_LENGTH = 120;
+        if (minimumMilli/(double)oneMilli < minimumMicro/(double)oneMicro) {
+            // a bit complex, but the reducer can change the resultant
+            // numbers so that the lotro calculated note time gets to be
+            // 0.0599999 despite our calculation since we will divide
+            // note and L denominator by either 100 or 10, sometimes.
+            // In other words, strange bpm still haunts.
+            //minimumMilli++;
+            // disabled reducer for now, and therefore commented this code out,
+            // and disabled the assert below.
+            logAbc.info("minimumMicro=" + minimumMicro + ", minimumMilli++=" + minimumMilli);
+        }
+		//assert minimumMilli/(double)oneMilli >= minimumMicro/(double)oneMicro:"reduced min="+(minimumMilli/(double)oneMilli)+" min="+(minimumMicro/(double)oneMicro);
+
 		final long songStartMicros = qtm.tickToMicrosABCOrganic(exportStartTick);
-		int curExportTempoBPM = (int)Q;
+
 		Dynamics curDyn = null;
 		Dynamics initDyn = null;
 		
@@ -604,17 +634,6 @@ public class AbcExporter {
 			while (Character.isWhitespace(bar.charAt(length - 1)))
 				length--;
 			bar.setLength(length);
-
-			// Insert line breaks inside very long bars
-			for (int i = BAR_LENGTH; i < bar.length(); i += BAR_LENGTH) {
-				for (int j = 0; j < BAR_LENGTH - 1; j++, i--) {
-					if (bar.charAt(i) == ' ') {
-						bar.replace(i, i + 1, "\r\n\t");
-						i += "\r\n\t".length() - 1;
-						break;
-					}
-				}
-			}
 		};
 
         long countInMicros = 0L;//all non-count-in track notes will be delayed by this
@@ -631,7 +650,7 @@ public class AbcExporter {
                 logAbc.info("Count-in for ABC: total count-in. micros = " + countInMicros + " bars = " + countIn.barCount);
             }
         }
-		
+		StringBuilder delayed = new StringBuilder();
 		if (delayEnabled || countIn != null) {
 
             long hitMicros = 0L;
@@ -644,6 +663,10 @@ public class AbcExporter {
                     countIn = null;//cancel, since count-in is too short
                     logAbc.warning("Count-in for ABC: hitMicros shorter than 60 ms, cancelling count-in.");
                     ProjectFrame.feed("Warning: Count-in cancelled, it's too short.", "Expand so each drum hit is more than 60 ms apart.");
+                } else if (!useMicroAccuracy && microToMilliCeil(hitMicros,oneMicro,oneMilli) < minimumMilli) {
+                    countIn = null;//cancel, since count-in is too short
+                    logAbc.warning("Count-in for ABC: hitMicros shorter than 60 ms, cancelling count-in.");
+                    ProjectFrame.feed("Warning: Count-in cancelled, it's too short.", "Expand so each drum hit is more than 60 ms apart.");
                 } else {
                     logAbc.info("Count-in for ABC: going forward.");
                 }
@@ -651,6 +674,8 @@ public class AbcExporter {
                 int hits = countIn.pattern.dynamics.length;
                 hitMicros = countInMicros / hits;
                 if (hitMicros < minimumMicro) {
+                    countInMicros = 0L;
+                } else if (!useMicroAccuracy && microToMilliCeil(hitMicros,oneMicro,oneMilli) < minimumMilli) {
                     countInMicros = 0L;
                 }
                 logAbc.info("Count-in for ABC: not this part. hit="+hitMicros+" total="+countInMicros);
@@ -666,14 +691,14 @@ public class AbcExporter {
                 delayMicro2 = delayMicro2 - delayMicro;
             }
 
-			if (useMicroAccuracy) out.print("z" + delayMicro);
-            else out.print("z" + microToMilliCeil(delayMicro,oneMicro,oneMilli));
+			if (useMicroAccuracy) delayed.append("z" + reducerCheck(delayMicro));
+            else delayed.append("z" + reducerCheck(microToMilliCeil(delayMicro,oneMicro,oneMilli)));
             if (delayMicro2 > 0) {
-                if (useMicroAccuracy) out.print("z" + delayMicro2);
-                else out.print("z" + microToMilliCeil(delayMicro2,oneMicro,oneMilli));
+                if (useMicroAccuracy) delayed.append("z" + reducerCheck(delayMicro2));
+                else delayed.append("z" + reducerCheck(microToMilliCeil(delayMicro2,oneMicro,oneMilli)));
                 logAbc.info("Delaying by " + delayMicro2 + " micros.");
             }
-            out.println(" | ");
+            delayed.append(" | \n");
             if (countIn != null && countIn.part == part) {
                 /*
                  Count-in on songs where the first note is delayed,
@@ -686,13 +711,14 @@ public class AbcExporter {
                     Dynamics volume = dyn.dynamics;
                     bar.append('+').append(volume).append("+ ");
                     bar.append(countIn.hit.note.abc);
-                    if (useMicroAccuracy) bar.append(hitMicros);
-                    else bar.append(microToMilliCeil(hitMicros,oneMicro,oneMilli));
+                    if (useMicroAccuracy) bar.append(reducerCheck((int)hitMicros));
+                    else bar.append(reducerCheck(microToMilliCeil(hitMicros,oneMicro,oneMilli)));
 
                     logAbc.info("Count-in for ABC: added a count-in hit: "+countIn.hit.name+" velocity = "+volume.midiVol);
                 }
             }
 		}
+        builders.add(delayed);
 		
 		Pair<List<Chord>, Boolean> pair = combineOrganic(part, false, histogram, quanFractions);
 		 
@@ -738,14 +764,12 @@ public class AbcExporter {
 			if (countChords % 8 == 0) {
 				// Print at every 8th chord
 				if (!bar.isEmpty()) {
-					addLineBreaks.run();
-					out.print(bar);
-					out.println(" |");
-					bar.setLength(0);
-				}
-                if (!reducedFilesize) {
-                    long micros = (qtm.tickToMicrosABCOrganic(c.getStartTick()) - songStartMicros);
-                    out.printf(Locale.US, "%%  (%s) bar %.1f\n", Util.formatDuration(micros), part.getSequenceInfo().getDataCache().tickToBarNumberFloat(c.getStartTick()));
+                    addLineBreaks.run();
+                    bar.append(" |\n");
+                    if (!reducedFilesize) {
+                        long micros = (qtm.tickToMicrosABCOrganic(c.getStartTick()) - songStartMicros);
+                        bar.append(String.format(Locale.US, "%%  (%s) bar %.1f\n", Util.formatDuration(micros), part.getSequenceInfo().getDataCache().tickToBarNumberFloat(c.getStartTick())));
+                    }
                 }
 
 				Arrays.fill(sharps, false);
@@ -755,47 +779,6 @@ public class AbcExporter {
 						 
 			// Is this the start of a new tempo?
 			TimingInfo tm = qtm.getTimingInfoOrganic(c.getStartTick());
-			if (exportTempos && curExportTempoBPM != tm.getExportTempoBPM()) {
-				curExportTempoBPM = tm.getExportTempoBPM();
-
-				// Print the partial bar
-				if (!bar.isEmpty()) {
-					addLineBreaks.run();
-					out.println(bar);
-					bar.setLength(0);
-					bar.append("\t");
-					out.print("\t");
-				}
-
-                /*
-                    The reason we don't output this in organic is
-                    that AbcToMidi assume legacy grid layout
-                    when it loads the abc, hence it applies
-                    whatever tempo changes currently are read from
-                    abc to a note duration. The problem is with mix
-                    and organics timings, when it gets to a
-                    following part and that has a tempo change
-                    in a slightly different position timewise
-                    that gets added to the midi. The endTick of
-                    the note in previous part will now in the midi
-                    be affected by inserting tempo change in the middle
-                    of the note, so when reading the midi to export
-                    new abc, the endtick is not in the correct time.
-                    Of course could fix AbcToMidi, that's a major thing
-                    though. And the bottom line is people ought to use
-                    projects, not export with abc as a source.
-                    If really serious about fixing this, then best do it
-                    like this:
-                    At the top of the abc before the first part, add
-                    comment with ALL the tempo changes in the song.
-                    Each one of them with a timestamp.
-                    Then edit AbcToMidi to understand it and put
-                    start and end tick independently onto the track.
-                 */
-
-				out.println("%%Q: " + curExportTempoBPM);
-			}
-			
 
 			Dynamics newDyn = (initDyn != null) ? initDyn : c.calcDynamics(part.getAbcSong().dynamicsMethod);
 			initDyn = null;
@@ -902,19 +885,26 @@ public class AbcExporter {
 				
 				long chordStartDiff = currentMicro - cStartMicro;
                 if (Math.abs(chordStartDiff) > Math.abs(largestDriftMicros) && diffMicros != Long.MIN_VALUE) {
-                    if (Math.abs(chordStartDiff) > 10000L) {
+                    if (Math.abs(chordStartDiff) > 500L) {
                         // 10 ms is known to be what a human expert musicians ear can pick up.
                         long chordEndDiff = (currentMicro + chordMicro) - cEndMicro;
                         long adjustmentMicros = milliToMicro(chordMilli-oldChordMilli,oneMicro,oneMilli);//milliToMicro(microToMilliRound(-diff, oneMicro, oneMilli) + (int)minAdjust, oneMicro, oneMilli);
                         long idealAdjustment = -diffMicros;
+
+
                         logAbc.warning("\nHigh drift in "+part.getAbcSong().getTitle()
                                 +"\nstartChord-driftMicros="+chordStartDiff+". End adjustment was "+adjustmentMicros
                                 +", ideal end adjustment would have been "+idealAdjustment+", endChord-driftMicros="+chordEndDiff+" μs. ("+part.getTitle()+")"
                                 +"\nChord dura should have been "+(cEndMicro-cStartMicro)+", but is now "+chordMicro);
 
+
+
 					}
+                    //System.out.println("Dura="+(cEndMicro-cStartMicro)+", diff="+(chordMicro-(cEndMicro-cStartMicro))+" startdrift="+chordStartDiff+" enddrift="+((currentMicro+chordMicro)-cEndMicro));
 					largestDriftMicros = chordStartDiff;
-				}
+				} else if (Math.abs((currentMicro+chordMicro)-cEndMicro) > 10L) {
+                    //System.out.println("Dura="+(cEndMicro-cStartMicro)+", diff="+(chordMicro-(cEndMicro-cStartMicro))+" startdrift="+chordStartDiff+" enddrift="+((currentMicro+chordMicro)-cEndMicro));
+                }
 			}
 			
 			int notesWritten = 0;			
@@ -1030,18 +1020,7 @@ public class AbcExporter {
 					numerator = noteMilli;
 					denominator = 1;
 				}
-				
-				// Apply tempo
-				if (exportTempos && curExportTempoBPM != Q) {
-					numerator *= (int) Q;
-					denominator *= curExportTempoBPM;
-				}
-                /*
-				// Reduce the fraction
-				int gcdNote = Util.gcd(numerator, denominator);
-				numerator /= gcdNote;
-				denominator /= gcdNote;
-                */
+
 				if (numerator == 1 && denominator == 2) {
 					bar.append('/');
 				} else if (numerator == 1 && denominator == 4) {
@@ -1052,7 +1031,7 @@ public class AbcExporter {
 								 + " note=" + noteAbc);
 					}
 					if (numerator != 1)
-						bar.append(numerator);
+						bar.append(reducerCheck(numerator));
 					if (denominator != 1)
 						bar.append('/').append(denominator);
 				}
@@ -1087,7 +1066,31 @@ public class AbcExporter {
 		logAbc.fine(part.getTitle()+" EXPORT: ends at "+Util.formatDurationM(currentMicro)+" - micro:"+currentMicro);
 
 		addLineBreaks.run();
-		out.print(bar);
+        builders.add(bar);
+
+        Pattern pattern = Pattern.compile("\\d+");
+        boolean header = true;
+        int reducerN = reducer==100?2:reducer==10?1:0;
+        //System.out.println("reducerN="+reducerN);
+        if (!useMicroAccuracy && reducerN > 0) {
+            for (StringBuilder b : builders) {
+                if (header) {
+                    header = false;
+                    out.print(b.toString().replace("L: "+quanFractions[5]+"/"+quanFractions[6], "L: "+quanFractions[5]+"/"+(quanFractions[6]/reducer)));
+                    continue;
+                }
+
+                String result = pattern.matcher(b).replaceAll(match -> {
+                    String numberStr = match.group();
+                    return numberStr.substring(0, numberStr.length() - reducerN);
+                });
+                out.print(result);
+            }
+        } else {
+            for (StringBuilder b : builders) {
+                out.print(b);
+            }
+        }
 		out.println(" |]");
 		out.println();
 	}
@@ -1123,6 +1126,36 @@ public class AbcExporter {
     }
 
     /**
+     * Converts a reduced precision numerator over oneMilli back to the micro duration, rounding to the nearest micro.
+     */
+    private long milliToMicro(int millis, int oneMicro, double oneMilli) {
+        return (long) Math.round((millis / (double) oneMilli) * oneMicro);
+    }
+
+    /**
+     * Converts a micro duration to reduced precision numerator, rounding up.
+     * Ensure the numerator is not accidentally shortened.
+     */
+    private int microToMilliCeil(long micros, int oneMicro, double oneMilli) {
+        return (int) Math.ceil((micros / (double) oneMicro) * oneMilli);
+    }
+
+    /**
+     * Converts a micro duration to reduced precision numerator, rounding to the nearest reduced unit.
+     * Used for calculating drift
+     */
+    private int microToMilliRound(long micros, int oneMicro, double oneMilli) {
+        return (int) Math.round((micros / (double) oneMicro) * oneMilli);
+    }
+
+    /**
+     * Converts a micro duration to reduced precision, rounding down.
+     */
+    private int microToMilliFloor(long micros, int oneMicro, double oneMilli) {
+        return (int) Math.floor((micros / (double) oneMicro) * oneMilli);
+    }
+
+    /**
      * Minimum note/rest duration
      * The result will be in micros, so that if exporting with
      * reduced precision, it is the absolute lowest number that lotro
@@ -1139,11 +1172,11 @@ public class AbcExporter {
         if (!reduced) {
             int oneMicro = (int) (qtm.getMeter().denominator * TimingInfo.ONE_SECOND_MICROS * 60L / Q);
             //double dura = qtm.getMeter().denominator*60*idealMinimum/(double)(oneMicro*Q);
-            quanFractions = new int[]{1,1,idealMinimum,Integer.toString(oneMicro).length()-1,oneMicro,1,oneMicro};
-            logNotes.info("Not reducing filesize. Fraction setup is L="+quanFractions[0]+"/"+quanFractions[1]+" micros="+quanFractions[2]+" digits="+quanFractions[3]+" denom="+quanFractions[4]+"| result L:"+quanFractions[5]+"/"+quanFractions[6]);
+            quanFractions = new int[]{1,1,idealMinimum,Integer.toString(oneMicro).length()-1,oneMicro,1,oneMicro, 0, 0};
+            logNotes.info("Not reducing file size. Fraction setup is L="+quanFractions[0]+"/"+quanFractions[1]+" micros="+quanFractions[2]+" digits="+quanFractions[3]+" denom="+quanFractions[4]+"| result L:"+quanFractions[5]+"/"+quanFractions[6]);
             return quanFractions;
         }
-        quanFractions = new int[]{};//Lnum, Ldenom, micros, digits, denom, final Lnum, final Ldenom
+        quanFractions = new int[]{};//Lnum, Ldenom, micros, digits, denom (wont be used directly), final Lnum, final Ldenom, floatOk, minimumNumeratorForReduced
         boolean strange = AbcConstants.isStrangeBPM(Q);
         outer:for (int Ldenom = 1; Ldenom <= 99; Ldenom++) {
             for (int Lnum = 1; Lnum <= 999; Lnum++) {
@@ -1154,14 +1187,20 @@ public class AbcExporter {
                     boolean good = staysWithinSixSignificantDigits(suggest[5],suggest[6]);
                     boolean prevGood = quanFractions.length != 0 && quanFractions[7] == 1;
                     if (quanFractions.length == 0
-                            || suggest[2] < quanFractions[2]
-                            || (Lnum+Ldenom < quanFractions[0]+quanFractions[1] && prevGood == good)
-                            || (good && !prevGood)
+                                || suggest[2] < quanFractions[2]
+                                || (Lnum+Ldenom < quanFractions[0]+quanFractions[1] && prevGood == good)
+                                || (good && !prevGood)
                             ) {
-                        // I like the smaller numbers, or it fit into a C++ float. Or its result is closer to minimum.
+                        // Either smaller numbers, or it fit into a C++ float. Or its result is closer to minimum.
                         // or its resultant 'grid' will be finer.
                         quanFractions = suggest;
                         quanFractions[7] = good?1:0;
+                        /*
+                        System.out.println(" Optimal fraction setup is L="+quanFractions[0]+"/"+quanFractions[1]+" Q="+Q
+                                +" micros="+quanFractions[2]+" digits="+quanFractions[3]+" denom="+quanFractions[4]
+                                +"| result L:"+quanFractions[5]+"/"+quanFractions[6]+" fits="+quanFractions[7]+" strange="+strange);
+                        System.out.println("  prevGood="+prevGood);
+                         */
                         if (!strange && suggest[2] == idealMinimum && good) break outer;
                     }
                 }
@@ -1173,27 +1212,36 @@ public class AbcExporter {
             logNotes.info("No best fraction setup found.");
         }
 
-        logNotes.info("Reduced file size. Optimal fraction setup is L="+quanFractions[0]+"/"+quanFractions[1]+" micros="+quanFractions[2]+" digits="+quanFractions[3]+" denom="+quanFractions[4]+"| result L:"+quanFractions[5]+"/"+quanFractions[6]+" fits="+quanFractions[7]+" strange="+strange);
+        logNotes.info("Reduced file size. Optimal fraction setup is L="+quanFractions[0]+"/"+quanFractions[1]+" Q="+Q+" micros="+quanFractions[2]+" digits="+quanFractions[3]+" denom="+quanFractions[4]+"| result L:"+quanFractions[5]+"/"+quanFractions[6]+" fits="+quanFractions[7]+" strange="+strange);
         return quanFractions;
     }
 
     private int[] suggestion (int Lnum, int Ldenom, boolean strange, int Q) {
-        long oneMicro = qtm.getMeter().denominator * TimingInfo.ONE_SECOND_MICROS * 60L * Lnum / (Q * Ldenom);
+        long oneMicro = qtm.getMeter().denominator * TimingInfo.ONE_SECOND_MICROS * 60L / Q;
         if (oneMicro > Integer.MAX_VALUE) return null;
-        int oneMilli = Math.ceilDiv((int) oneMicro, milli2micro);
+        int oneMilli = Math.ceilDiv((int) oneMicro, milli2micro);//milli2micro = 10,100 or 1000.
         if (oneMilli == 0) return null;
-        int minimumMilli = microToMilliCeil(60000L, (int)oneMicro, oneMilli);
-        double fraction = qtm.getMeter().denominator * 60d * minimumMilli * Lnum / (Ldenom * (long)Q * oneMilli);
-        long result = (long) Math.ceil((minimumMilli / (double) oneMilli) * oneMicro);
-        if (strange) {
-            int oneMilliNumerator = microToMilliCeil(1L, (int)oneMicro, oneMilli);
-            if (fraction == 0.06d) {
-                result += oneMilliNumerator;
-            } else if (fraction < 0.06d) {
-                logNotes.severe("Fraction error: "+fraction+" lnum="+Lnum+" ldenom="+Ldenom+" Q="+Q+" denominator="+qtm.getMeter().denominator+" oneMicro="+oneMicro+" oneMilli="+oneMilli+" minimumMilli="+minimumMilli+" minimumMicro="+result);
-                assert false : "Fraction error: "+fraction;
-                return null;
-            }
+        double oneMilliEffect = oneMilli * Ldenom / (double)Lnum;
+        //int minimumMilli = microToMilliCeil(60000L, (int)oneMicro, oneMilliEffect);
+        //double fraction = qtm.getMeter().denominator * 60d * minimumMilli / (Q * oneMilliEffect);
+        // account for lotro use of floats:
+        double wholeNoteImpreciseSecs = (double)oneMicro / AbcConstants.ONE_SECOND_MICROS;
+        double milliLImprecise = wholeNoteImpreciseSecs / oneMilliEffect;
+        int minimumMilli = (int) Math.ceil(0.06d / milliLImprecise);
+        double fraction = minimumMilli*milliLImprecise;
+        if (fraction < 0.06d) {
+            //int oneMilliNumerator = microToMilliCeil(1L, (int)oneMicro, oneMilliEffect);
+            //result += oneMilliNumerator;
+            minimumMilli++;
+            fraction = minimumMilli*milliLImprecise;
+        }
+        int fittingMinimum = (int) Math.ceil((minimumMilli / oneMilliEffect) * oneMicro);
+        if (fraction < 0.05999999999999d) {
+            // less than 0.06 for a double
+            // but larger than a c++ float 0.0599999
+            logNotes.severe("Fraction error: "+fraction+" lnum="+Lnum+" ldenom="+Ldenom+" Q="+Q+" denominator="+qtm.getMeter().denominator+" oneMicro="+oneMicro+" oneMilli="+oneMilli+" minimumMilli="+minimumMilli+" fittingMinimumMicro="+fittingMinimum);
+            assert false : "Fraction error: "+fraction;
+            return null;
         }
         int gcd = Util.gcd(Lnum, Ldenom);
         Lnum /= gcd;
@@ -1201,7 +1249,15 @@ public class AbcExporter {
         gcd = Util.gcd(Lnum, Ldenom*oneMilli);
         int finalLnum = Lnum / gcd;
         int finalLdenom = Ldenom * oneMilli / gcd;
-        return new int[]{Lnum, Ldenom, (int) result, Integer.toString(finalLdenom).length()-Integer.toString(finalLnum).length(),oneMilli,finalLnum,finalLdenom,-1};
+
+        // Lnum, Ldenom: not used in the output.
+        // fittingMinimum: used to constrain notes during note fitting, before outputting.
+        // digit: approx number of digits used to divide the number we supply after each note,
+        // to get a feel for how granular the final 'grid' can be. 4 or 5 required.
+        // oneMilli: Lnum/(Ldenom*oneMilli) will be final L, if this result wins.
+        // final Lnum/Ldenom: final L suggestion.
+        // -1: will later be 1 if L can be stored in a c++ float
+        return new int[]{Lnum, Ldenom, fittingMinimum, Integer.toString(finalLdenom).length()-Integer.toString(finalLnum).length(),oneMilli,finalLnum,finalLdenom,-1, minimumMilli};
     }
 
     /**
@@ -1226,7 +1282,8 @@ public class AbcExporter {
 			boolean delayEnabled, PolyphonyHistogram histogram) throws AbcConversionException {
 		List<Chord> chords = combineAndQuantize(part, false, histogram);
 
-		exportPartHeaderToAbc(part, out, null, 0);
+		StringBuilder outBuilder = exportPartHeaderToAbc(part, null, 0);
+        out.print(outBuilder);
 
 		// Keep track of which notes have been sharped or flatted so
 		// we can naturalize them the next time they show up.
@@ -1516,25 +1573,28 @@ public class AbcExporter {
         return countInMicros;
     }
 
-    private void exportPartHeaderToAbc(AbcPart part, PrintStream out, int[] quanFractions, int oneNoteIs) {
-		out.println();
-		out.println("X: " + part.getPartNumber());
+    private StringBuilder exportPartHeaderToAbc(AbcPart part, int[] quanFractions, int oneNoteIs) {
+        StringBuilder out = new StringBuilder();
+        out.append("\n");
+		out.append("X: " + part.getPartNumber()).append("\n");
 		if (metadata != null) {
-			out.println("T: " + StringCleaner.cleanForABC(metadata.getPartName(part)));
+			out.append("T: " + StringCleaner.cleanForABC(metadata.getPartName(part))).append("\n");
 		} else {
-			out.println("T: " + StringCleaner.cleanForABC(part.getTitle()));
+			out.append("T: " + StringCleaner.cleanForABC(part.getTitle())).append("\n");
 		}
 
-		out.println(AbcField.PART_NAME + StringCleaner.cleanForABC(part.getTitle()));
+		out.append(AbcField.PART_NAME + StringCleaner.cleanForABC(part.getTitle())).append("\n");
 
 		// Since people might not use the instrument-name when they name a part,
 		// we add this so can choose the right instrument in abcPlayer and maestro when
 		// loading abc.
-		out.println(AbcField.MADE_FOR + part.getInstrument().friendlyName.trim());
+		out.append(AbcField.MADE_FOR + part.getInstrument().friendlyName.trim()).append("\n");
 
+        /*
         if (organic) {
-            out.println("%% 1 note is approx "+oneNoteIs+" μs");
+            out.append("%% 1 note is approx "+oneNoteIs+" μs").append("\n");
         }
+        */
 
 		if (metadata != null) {
             // We output these even with reduced file size enabled.
@@ -1542,21 +1602,23 @@ public class AbcExporter {
             // Is really just needed when outputting each part to its own file.
             // But songbook indexers use them
 			if (!metadata.getComposer().isEmpty())
-				out.println("C: " + StringCleaner.cleanForABC(metadata.getComposer()));
+				out.append("C: " + StringCleaner.cleanForABC(metadata.getComposer())).append("\n");
 
 			if (!metadata.getTranscriber().isEmpty())
-				out.println("Z: " + StringCleaner.cleanForABC(metadata.getTranscriber()));
+				out.append("Z: " + StringCleaner.cleanForABC(metadata.getTranscriber())).append("\n");
 		}
 
-		out.println("M: " + qtm.getMeter());
-		out.println("Q: " + qtm.getPrimaryExportTempoBPM());
-		out.println("K: " + keySignature);
+		out.append("M: " + qtm.getMeter()).append("\n");
+		out.append("Q: " + qtm.getPrimaryExportTempoBPM()).append("\n");
+		out.append("K: " + keySignature).append("\n");
 		if (organic) {
-            out.println("L: " + quanFractions[5]+"/"+quanFractions[6]);
+            out.append("L: " + quanFractions[5]+"/"+quanFractions[6]).append("\n");
         } else {
-            out.println("L: " + ((qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? "1/16" : "1/8"));
+            out.append("L: " + ((qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? "1/16" : "1/8"));
+            out.append("\n");
         }
-		out.println();
+		out.append("\n");
+        return out;
 	}
 
 	/**
