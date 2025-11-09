@@ -132,7 +132,6 @@ public class TimingInfo {
 			}
 
 			if (meter.denominator > minNoteDivisor) {
-				// TODO: We should ignore this if organic output is enabled
 				if (minNoteDivisor == 0) throw new AbcConversionException("The tempo is too high."); 
 				int maximumDenominator = (1 << TimeSignature.floorLog2(minNoteDivisor));
 				throw new AbcConversionException(
