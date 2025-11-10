@@ -95,12 +95,12 @@ class TuneInfo {
         return tickFactor;
     }
 
-	public double getWholeNoteTime() {
+	public float getWholeNoteTime() {
 		if (this.noteDivisorNum > 0) {
-			return (this.meterDenominator * this.noteDivisorNum * 60.0d / (this.primaryTempoBPM * this.noteDivisorDenom));
+			return (this.meterDenominator * this.noteDivisorNum * 60.0f / (this.primaryTempoBPM * this.noteDivisorDenom));
 		} else {
-            double L = ((this.meterNumerator / (double) this.meterDenominator) < 0.75d ? 1d / 16 : 1d / 8);
-			return (this.meterDenominator * L * 60.0d) / this.primaryTempoBPM;
+            float L = ((this.meterNumerator / (float)this.meterDenominator) < 0.75f ? 1f / 16 : 1f / 8);
+			return (this.meterDenominator * L * 60.0f) / this.primaryTempoBPM;
 		}
 	}
 

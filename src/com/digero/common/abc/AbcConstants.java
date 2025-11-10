@@ -13,6 +13,7 @@ public interface AbcConstants {
 	long LONGEST_NOTE_MICROS = 8L * ONE_SECOND_MICROS;
     long LONGEST_COUNT_IN_MICROS = ONE_SECOND_MICROS * 12L;
 	double SHORTEST_NOTE_SECONDS = 0.06d;// LOTRO will accept this short note duration except at 30, 60, 90 and 120 bpm.
+    double SHORTEST_NOTE_SECONDS_FLOAT = 0.06f;
 	double LONGEST_NOTE_SECONDS = 8.0d;// This limits goes for rests also
 	long LONGEST_NOTE_MICROS_WORST_CASE = (2L * SHORTEST_NOTE_MICROS - 1L)
 			* (LONGEST_NOTE_MICROS / (2L * SHORTEST_NOTE_MICROS - 1L));
