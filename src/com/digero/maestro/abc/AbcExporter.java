@@ -885,7 +885,7 @@ public class AbcExporter {
 				
 				long chordStartDiff = currentMicro - cStartMicro;
                 if (Math.abs(chordStartDiff) > Math.abs(largestDriftMicros) && diffMicros != Long.MIN_VALUE) {
-                    if (Math.abs(chordStartDiff) > 500L) {
+                    if (Math.abs(chordStartDiff) > 10000L) {
                         // 10 ms is known to be what a human expert musicians ear can pick up.
                         long chordEndDiff = (currentMicro + chordMicro) - cEndMicro;
                         long adjustmentMicros = milliToMicro(chordMilli-oldChordMilli,oneMicro,oneMilli);//milliToMicro(microToMilliRound(-diff, oneMicro, oneMilli) + (int)minAdjust, oneMicro, oneMilli);
