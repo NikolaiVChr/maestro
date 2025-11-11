@@ -338,7 +338,7 @@ public class AutoExporter {
         if (!skippedProjects.isEmpty()) {
             appendToField("<p></p><p>Skipped/failed " + skippedProjects.size() + " project files:</p>");
             for (File f : skippedProjects) {
-                appendToField("<p></p><p><font color='orange'>" + f.getParent() + File.separator + f.getName()+"</font></p>");
+                appendToField("<p><font color='orange'>" + f.getParent() + File.separator + f.getName()+"</font></p>");
             }
         }
         /*
@@ -651,7 +651,12 @@ public class AutoExporter {
             finalFolder.mkdirs();// for recursive exporting we need the folders to exist.
         }
 
-		abcSong.exportAbc(exportFile, AbcTools.APP_NAME);
+        try {
+            abcSong.exportAbc(exportFile, AbcTools.APP_NAME);
+        } catch (Throwable t) {
+            exportFile.delete();
+            throw t;
+        }
 		int maxPoly = abcSong.getMaxPartPoly();
 		if (maxPoly > 6) pInfo.appendText += "<p><font color='orange'>&nbsp;&nbsp;part polyphony max was "+maxPoly+".</font></p>";
 		if ((abcSong.getExportFile() == null || exportFile.compareTo(abcSong.getExportFile()) != 0) && frame.getSaveMSXabcSelected()) {
@@ -690,7 +695,7 @@ public class AutoExporter {
 				params.abcInfo = info;
 				params.enableLotroErrors = true;
 				params.stereo = 0;
-				params.generateRegions = true;
+				params.generateRegions = false;//only needed in abc player
 				AbcToMidi.convert(params);
 			} catch (LotroParseException e) {
 				JOptionPane.showMessageDialog(frame, e.getMessage(), exportFile.getName()+": Error parsing ABC", JOptionPane.ERROR_MESSAGE);
