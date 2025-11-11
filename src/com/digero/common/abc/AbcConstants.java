@@ -78,6 +78,16 @@ public interface AbcConstants {
         return 60000L;
     }
 
+    /**
+     * If using this for anything, you must do the c++ float
+     * checks yourself, as some M, L, Q and note fraction
+     * combis for 0.06 s might produce 0.0599999 seconds and lotro
+     * will refuse to play it.
+     */
+    static long getShortestNoteMicros() {
+        return 60000L;
+    }
+
     @Deprecated
     static long getShortestNoteMicros(int bpm, boolean reducedPrecision) {
 

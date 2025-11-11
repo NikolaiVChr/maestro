@@ -484,10 +484,12 @@ public class AbcExporter {
 				outputBadger(out);
 			}
 	        PolyphonyHistogram histogram = new PolyphonyHistogram();
+            boolean useMicroAccuracy = useRestsInChords || !reducedFilesize;
+            int[] quanFractions = minimumQuantifiedMicros(!useMicroAccuracy);
 			for (AbcPart part : parts) {
 				if (part.getEnabledTrackCount() > 0 || (part.getAbcSong().getCountIn() != null && part.getAbcSong().getCountIn().micros > 0L && part.getAbcSong().getCountIn().part == part)) {
 					if (organic) {
-						exportPartToAbcOrganic(part, out, delayEnabled, histogram);
+						exportPartToAbcOrganic(part, out, delayEnabled, histogram, quanFractions);
 					} else {
 						exportPartToAbc(part, out, delayEnabled, histogram);
 					}
@@ -530,11 +532,7 @@ public class AbcExporter {
     }
 	
 	private void exportPartToAbcOrganic(AbcPart part, PrintStream out,
-			boolean delayEnabled, PolyphonyHistogram histogram) throws AbcConversionException {
-
-        boolean useMicroAccuracy = useRestsInChords || !reducedFilesize;
-
-        int[] quanFractions = minimumQuantifiedMicros(!useMicroAccuracy);
+			boolean delayEnabled, PolyphonyHistogram histogram, int[] quanFractions) throws AbcConversionException {
 
         //long L = (qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? 16L : 8L;
         long Q = qtm.getPrimaryExportTempoBPM();
@@ -543,6 +541,7 @@ public class AbcExporter {
         // This we will use as denominator for full precision
         int oneMicro = (int)(qtm.getMeter().denominator * TimingInfo.ONE_SECOND_MICROS * 60L / Q);
 
+        boolean useMicroAccuracy = useRestsInChords || !reducedFilesize;
         reducer = useMicroAccuracy?100:1;// see comment lower down for why..
 
 		StringBuilder head = exportPartHeaderToAbc(part, quanFractions, useMicroAccuracy?1:(int)milliToMicro(1,oneMicro,quanFractions[4]));
@@ -598,7 +597,7 @@ public class AbcExporter {
 		// This we will use as denominator for reduced precision
 		double oneMilli = quanFractions[4]*quanFractions[1]/(double)quanFractions[0];
 
-		long minimumMicro = AbcConstants.getShortestNoteMicros((int)Q);
+		long minimumMicro = quanFractions[2];
 
         //minimum numerator for reduced precision:
         int minimumMilli = quanFractions[8];//microToMilliCeil(minimumMicro, oneMicro, oneMilli);
@@ -1168,15 +1167,34 @@ public class AbcExporter {
      */
     private int[] minimumQuantifiedMicros(boolean reduced) {
         int Q = qtm.getPrimaryExportTempoBPM();
-        int idealMinimum = (int)AbcConstants.getShortestNoteMicros(Q);
+        int M = qtm.getMeter().denominator;
+        int idealMinimum = (int)AbcConstants.getShortestNoteMicros();
         int[] quanFractions;
         if (!reduced) {
-            int oneMicro = (int) (qtm.getMeter().denominator * TimingInfo.ONE_SECOND_MICROS * 60L / Q);
-            //double dura = qtm.getMeter().denominator*60*idealMinimum/(double)(oneMicro*Q);
+            int oneMicro = (int) (M * TimingInfo.ONE_SECOND_MICROS * 60L / Q);
+
+            float time = ((M*60.0f * idealMinimum)/((float)oneMicro*Q));
+            if (time < 0.06f) {
+                if (!AbcConstants.isStrangeBPM(Q)) {
+                    //System.out.println(parts.getFirst().getAbcSong().getTitle()+": Ideal minimum is "+idealMinimum+" micros (not strange)");
+                } else {
+                    // we now ONLY use 60001 if its strange BPM and the float calc failed.
+                    // that will allow more songs to use 60 ms, and so far it has
+                    // worked, but more testing is needed.
+                    idealMinimum++;
+                }
+                //throw new RuntimeException("skipping file");
+            } else if (AbcConstants.isStrangeBPM(Q)) {
+                // despite it being a strange bpm, we allow 60000
+                //System.out.println(parts.getFirst().getAbcSong().getTitle()+": Ideal minimum is "+idealMinimum+" micros (strange)");
+            } else {
+                //throw new RuntimeException("skipping file");
+            }
             quanFractions = new int[]{1,1,idealMinimum,Integer.toString(oneMicro).length()-1,oneMicro,1,oneMicro, 0, 0};
             logNotes.info("Not reducing file size. Fraction setup is L="+quanFractions[0]+"/"+quanFractions[1]+" micros="+quanFractions[2]+" digits="+quanFractions[3]+" denom="+quanFractions[4]+"| result L:"+quanFractions[5]+"/"+quanFractions[6]);
             return quanFractions;
         }
+        idealMinimum = (int)AbcConstants.getShortestNoteMicros();
         quanFractions = new int[]{};//Lnum, Ldenom, micros, digits, denom (wont be used directly), final Lnum, final Ldenom, floatOk, minimumNumeratorForReduced
         boolean strange = AbcConstants.isStrangeBPM(Q);
         outer:for (int Ldenom = 1; Ldenom <= 99; Ldenom++) {
@@ -1258,6 +1276,7 @@ public class AbcExporter {
         // oneMilli: Lnum/(Ldenom*oneMilli) will be final L, if this result wins.
         // final Lnum/Ldenom: final L suggestion.
         // -1: will later be 1 if L can be stored in a c++ float
+        // minimum allowed reduced numerator
         return new int[]{Lnum, Ldenom, fittingMinimum, Integer.toString(finalLdenom).length()-Integer.toString(finalLnum).length(),oneMilli,finalLnum,finalLdenom,-1, minimumMilli};
     }
 
