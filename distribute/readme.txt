@@ -43,8 +43,9 @@ Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 
 Version 4.5.12
 - Each note in abc output is no longer written as a fraction. This reduces file size.
+- Added note counts to stats.
 
-Version 4.5.10
+Version 4.5.11
 - Offloaded Maestro ABC exporting to a worker thread.
 - Offloaded Maestro ABC preview generating to a worker thread.
 - Auto-exporter is now threaded, expect a speed-up of 3 to 12 times.

@@ -252,7 +252,8 @@ public class AbcExporter {
 		*/
 
 		return new ExportTrackInfo(trackNumber.first, part.origPart, null /* noteEvents */, trackNumber.second,
-				part.getInstrument().midi.id(), trackNumber.third, part.numberOfExportedNotes, part.numberOfRemovedNotesForSafety, part.getMaxPoly());
+				part.getInstrument().midi.id(), trackNumber.third, part.numberOfExportedNotes, part.numberOfRemovedNotesForSafety,
+                part.getMaxPoly(), part.numberOfRemovedNotesFromFitting, part.numberOfRemovedNotesZeros, part.numberOfRemovedNotesFromPruning);
 	}
 
 	private Triple<Integer, Integer, Long> exportPartToMidi(AbcPart part, Sequence out, List<Chord> chords, int pan,
@@ -1625,6 +1626,7 @@ public class AbcExporter {
 	 * Combine the tracks into one, quantize the note lengths, separate into chords.
 	 */
 	private List<Chord> combineAndQuantize(AbcPart part, boolean preview, PolyphonyHistogram histogram) throws AbcConversionException {
+        part.numberOfRemovedNotesFromPruning = 0;
 		// Combine the events from the enabled tracks
 		List<AbcNoteEvent> events = new ArrayList<>();
 		for (int t = 0; t < part.getTrackCount(); t++) {
@@ -1828,6 +1830,7 @@ public class AbcExporter {
 		// Combine notes that play at the same time into chords
 		Chord curChord = new Chord(events.getFirst());
 		chords.add(curChord);
+        int prunedNotes = 0;
 		for (int i = 1; i < events.size(); i++) {
 			AbcNoteEvent ne = events.get(i);
 
@@ -1839,6 +1842,7 @@ public class AbcExporter {
 				List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
 						part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part);
 				removeNotes(events, deadnotes, part);
+                prunedNotes += deadnotes.size();
 				if (!deadnotes.isEmpty()) {
 					// One of the tiedTo notes that was pruned might be the events.get(i) note,
 					// so we go one step back and re-process events.get(i)
@@ -1913,6 +1917,7 @@ public class AbcExporter {
 			List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
 					part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part);
 			removeNotes(events, deadnotes, part);// we need to set the pruned flag for last chord too.
+            prunedNotes += deadnotes.size();
 			curChord.recalcEndTick();
 			long targetEndTick = curChord.getEndTick();
 
@@ -1949,7 +1954,7 @@ public class AbcExporter {
 				throw new AbcConversionException("Failed to read instrument sample durations.", e);
 			}
 		}
-		
+        part.numberOfRemovedNotesFromPruning = prunedNotes;
 		return chords;
 	}
 
@@ -2135,7 +2140,7 @@ public class AbcExporter {
 	}
 	
 	/**
-	 * Combine the tracks into one, quantize the note lengths, separate into chords.
+	 * Combine the tracks into one, separate into chords.
 	 */
 	private Pair<List<Chord>, Boolean> combineOrganic(AbcPart part, boolean preview, PolyphonyHistogram histogram, int quanFractions[]) throws AbcConversionException {
         part.numberOfRemovedNotesForSafety = 0;
@@ -2229,7 +2234,7 @@ public class AbcExporter {
 			AbcNoteEvent ne = events.get(cc);
 			assert ne.note != Note.REST : "Rest detected!";
 			if (cc == events.size()-1) {
-				logNotes.finer(part.getTitle()+": ends at micro "+qtm.tickToMicrosABCOrganic(ne.getEndTick())+" (before subdiving bends)");
+				logNotes.finer(part.getTitle()+": ends at micro "+qtm.tickToMicrosABCOrganic(ne.getEndTick())+" (before subdividing bends)");
 			}
 			long oldStart = ne.getStartTick();
 			long oldEnd = ne.getEndTick();
@@ -2345,6 +2350,10 @@ public class AbcExporter {
 		boolean assertionsEnabled = false;
 		assert assertionsEnabled = true;
 
+        part.numberOfRemovedNotesFromPruning = 0;
+        part.numberOfRemovedNotesFromFitting = 0;
+        part.numberOfRemovedNotesZeros = 0;
+
         for (AbcNoteEvent note : events) {
             note.startABCMicros = qtm.tickToMicrosABCOrganic(note.getStartTick());
             note.endABCMicros = qtm.tickToMicrosABCOrganic(note.getEndTick());
@@ -2388,6 +2397,7 @@ public class AbcExporter {
 						if (jne.endABCMicros == jne.startABCMicros) {
 							// this note is zero duration and others in the chord is not
 							curChord.remove(jne);
+                            part.numberOfRemovedNotesZeros++;
 							logNotes.finer(part.getTitle()+" Removed zero dura note ("+jne.note.abc+")");
 							if (jne.tiesFrom != null) {
 								jne.tiesFrom.tiesTo = null;
@@ -2418,6 +2428,8 @@ public class AbcExporter {
 						part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion,
 						part, useRestToShortenChords);
 				removeNotes(events, deadnotes, part);
+                part.numberOfRemovedNotesFromPruning += deadnotes.size();
+
 				if (!deadnotes.isEmpty()) {
 					// One of the tiedTo notes that was pruned might be ne note,
 					// so we go one step back and re-process events.get(i)
@@ -2806,7 +2818,7 @@ public class AbcExporter {
 								//       Deleting a short note might not even allow curChord to exist anyway
 								//       As the ne after ne might be longer and should not be deleted.
 								events.remove(ne);
-								
+                                part.numberOfRemovedNotesFromFitting++;
 								// TODO: these ties should perhaps prevent it from being removed, TBD
 								if (ne.tiesFrom != null) {
 									ne.tiesFrom.tiesTo = null;
@@ -2910,6 +2922,7 @@ public class AbcExporter {
 							// give up and schedule curr chord for deletion, it likely contains a grace note
 							curChord.setEndMicrosRetract(curChord.getStartMicros());
 							curChord.delete = true;
+                            part.numberOfRemovedNotesFromFitting += curChord.sizeReal();
 							logNotes.finer(part.getTitle()+": Removed short dura chord with "+curChord.size()+" notes. "+Util.formatDurationM(curChord.getStartMicros()));
 							
 						} else {
@@ -3005,6 +3018,7 @@ public class AbcExporter {
 							if (same != null) {
 								// delete note in curChord that has same pitch as ne
 								curChord.remove(same);
+                                part.numberOfRemovedNotesFromFitting++;
 								if (same.tiesFrom != null && same.tiesTo == ne) {
 									ne.tiesFrom = same.tiesFrom;
 									same.tiesFrom.tiesTo = ne;
@@ -3125,6 +3139,7 @@ public class AbcExporter {
 					if (jne.endABCMicros == jne.startABCMicros) {
 						// this note is zero duration and others in the chord is not
 						curChord.remove(jne);
+                        part.numberOfRemovedNotesZeros++;
 						logNotes.finest("Last chord: remove a zero dura note");
 						if (jne.tiesFrom != null) {
 							jne.tiesFrom.tiesTo = null;
@@ -3144,6 +3159,7 @@ public class AbcExporter {
 			List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
 					part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part);
 			removeNotes(events, deadnotes, part);// we need to set the pruned flag for last chord too.
+            part.numberOfRemovedNotesFromPruning += deadnotes.size();
 			curChord.recalcEndMicros();
 			
 			logNotes.fine(part.getTitle()+" final note ends at "+Util.formatDurationM(curChord.getEndMicros()-qtm.tickToMicrosABCOrganic(exportStartTick)));
@@ -3431,7 +3447,7 @@ public class AbcExporter {
 
 		NavigableSet<Long> grid = createGrid(events, minimumMicros, part, useRestToShortenChords);
 		
-		events = snapNotesToGrid(events, grid, minimumMicros);
+		events = snapNotesToGrid(events, grid, minimumMicros, part);
 		
 		List<Chord> chords = chordifyOrganic(events, grid, part, useRestToShortenChords);
 		
@@ -3816,7 +3832,7 @@ public class AbcExporter {
 	 * Part of multi-stage organic path
 	 * 
 	 */
-	public List<AbcNoteEvent> snapNotesToGrid(List<AbcNoteEvent> notes, NavigableSet<Long> grid, long minimumMicros) {
+	public List<AbcNoteEvent> snapNotesToGrid(List<AbcNoteEvent> notes, NavigableSet<Long> grid, long minimumMicros, AbcPart part) {
 				
 		List<AbcNoteEvent> snappedNotes = new ArrayList<>(notes.size());
 		
@@ -3829,7 +3845,8 @@ public class AbcExporter {
 			}
 			logNotes.finest(str.toString());
 		}
-		
+        part.numberOfRemovedNotesFromFitting = 0;
+		int gridDeletion = 0;
 	    for (AbcNoteEvent note : notes) {
 
 	        Long floor = grid.floor(note.startABCMicros);
@@ -3856,6 +3873,7 @@ public class AbcExporter {
 	        // Check that the shift does not exceed max relative to the original start.
 	        if (Math.abs(candidateStart - note.startABCMicros) > getMaxStartShiftMicros(note.endABCMicros-note.startABCMicros, minimumMicros)) {
 	        	logNotes.finer("dropping1 "+Util.formatDurationM(note.startABCMicros)+" - "+Util.formatDurationM(note.endABCMicros));
+                gridDeletion++;
 	            continue;
 	        }
 	        note.setStartTick(qtm.microsToTickABCOrganic(candidateStart));
@@ -3868,6 +3886,7 @@ public class AbcExporter {
 	        Long candidateEnd;
 	        if (ceiling != null && candidateStart == ceiling) {
 	        	logNotes.finer("dropping2 "+Util.formatDurationM(note.startABCMicros)+" - "+Util.formatDurationM(note.endABCMicros));
+                gridDeletion++;
 	        	continue;
 	        } else if (floor == null || floor == candidateStart) {
 	        	candidateEnd = ceiling;
@@ -3888,6 +3907,7 @@ public class AbcExporter {
 	        if (candidateEnd == null) {
 	        	// ceiling == null and ( floor == null or taken by start )
 	        	logNotes.finer("dropping3 "+Util.formatDurationM(note.startABCMicros)+" - "+Util.formatDurationM(note.endABCMicros));
+                gridDeletion++;
 	        	continue;
 	        }
 	        
@@ -3895,6 +3915,7 @@ public class AbcExporter {
 	        if (Math.abs(candidateEnd - note.endABCMicros) > minimumMicros * 3L/2L) {//90 ms
 	        	//System.out.println(parts.get(0).getAbcSong().getTitle()+": End grid was too far from note end:"+(Math.abs(candidateEnd - note.origEndABCMicros)/(double)minimumMicros));
 	        	logNotes.finer("dropping4 "+Util.formatDurationM(note.startABCMicros)+" - "+Util.formatDurationM(note.endABCMicros));
+                gridDeletion++;
 	            continue;
 	        }
 
@@ -3903,11 +3924,13 @@ public class AbcExporter {
 	        
 	        if (note.endABCMicros - note.startABCMicros <= 0L || note.getEndTick() - note.getStartTick() <= 0L) {
 	        	logNotes.finer("dropping5 "+Util.formatDurationM(note.startABCMicros)+" - "+Util.formatDurationM(note.endABCMicros));
+                gridDeletion++;
 	        	continue;
 	        }
 	        assert note.endABCMicros - note.startABCMicros > 0;
 	        snappedNotes.add(note);
 	    }
+        part.numberOfRemovedNotesFromFitting = gridDeletion;
 	    return snappedNotes;
 	}
 	
@@ -3917,7 +3940,8 @@ public class AbcExporter {
 	 * 
 	 */
 	public List<Chord> chordifyOrganic(List<AbcNoteEvent> events, NavigableSet<Long> grid, AbcPart part, boolean useRestToShortenChords) {
-  
+        part.numberOfRemovedNotesFromPruning = 0;
+
 		boolean assertionsEnabled = false;
 		assert assertionsEnabled = true;
 		
@@ -4066,6 +4090,7 @@ public class AbcExporter {
 		//
 		//  Now put the notes and rests into chords
 		//
+        int notesPruned = 0;
 	    ChordOrganic curChord = null;
 	    AbcNoteEvent prevNote = null;
 	    int startI = 0;
@@ -4096,6 +4121,7 @@ public class AbcExporter {
 						part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part, useRestToShortenChords);
 				breakTies(deadnotes);
 				eventSegments.removeAll(deadnotes);
+                notesPruned += deadnotes.size();
 				
 				if (!deadnotes.isEmpty()) {
 					// we go steps back and re-process
@@ -4119,7 +4145,10 @@ public class AbcExporter {
 					part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part);
 	    	breakTies(deadnotes);
 	    	eventSegments.removeAll(deadnotes);
+            notesPruned += deadnotes.size();
 		}
+
+        part.numberOfRemovedNotesFromPruning = notesPruned;
 	    
 	    if (assertionsEnabled) {
 	    	ChordOrganic prev = null;
@@ -4191,7 +4220,7 @@ public class AbcExporter {
 	 */
 	private boolean unmixRestAndNotes(AbcPart part, List<AbcNoteEvent> eventSegments, Chord curChord, boolean useRestToShortenChords) {
 		// make sure chord does not contain both rest and notes
-		// Also make sure there is not duplicates in it
+		// Also make sure there are no duplicates in it
 		List<AbcNoteEvent> tmp = new ArrayList<>(curChord.getNotes());
 		boolean both = curChord.hasRestAndNotes();
 		boolean removedStuff = false;
@@ -4243,6 +4272,7 @@ public class AbcExporter {
 						breakTies(firstList);
 						eventSegments.remove(note);
 					}
+                    part.numberOfRemovedNotesFromFitting++;
 					removedStuff = true;
 				}
 			}
@@ -5406,6 +5436,9 @@ public class AbcExporter {
 		public final AbcPart part;
         public final int numberOfExportedNotes;
         public final int numberOfRemovedNotesForSafety;
+        public final int numberOfRemovedNotesFromFitting;
+        public final int numberOfRemovedNotesZeros;
+        public final int numberOfRemovedNotesFromPruning;
 		
 		//not sure what this used to be used for
 		//public final List<AbcNoteEvent> noteEvents;
@@ -5415,7 +5448,9 @@ public class AbcExporter {
 		public final long endOfTrack;
         public int maxPoly;
 
-        public ExportTrackInfo(int trackNumber, AbcPart part, List<AbcNoteEvent> noteEvents, Integer channel, int patch, long endOfTrack, int numberOfExportedNotes, int numberOfRemovedNotesForSafety, int maxPoly) {
+        public ExportTrackInfo(int trackNumber, AbcPart part, List<AbcNoteEvent> noteEvents, Integer channel, int patch, long endOfTrack,
+                               int numberOfExportedNotes, int numberOfRemovedNotesForSafety, int maxPoly,
+                               int numberOfRemovedNotesFromFitting, int numberOfRemovedNotesZeros, int numberOfRemovedNotesFromPruning) {
 			this.trackNumber = trackNumber;
 			this.part = part;
             this.numberOfExportedNotes = numberOfExportedNotes;
@@ -5425,6 +5460,9 @@ public class AbcExporter {
 			this.patch = patch;
 			this.endOfTrack = endOfTrack;
             this.maxPoly = maxPoly;
+            this.numberOfRemovedNotesFromFitting = numberOfRemovedNotesFromFitting;
+            this.numberOfRemovedNotesZeros = numberOfRemovedNotesZeros;
+            this.numberOfRemovedNotesFromPruning = numberOfRemovedNotesFromPruning;
 		}
 	}
 

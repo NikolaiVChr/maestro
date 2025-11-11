@@ -279,9 +279,9 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		this.oddsAndEndsVersion = mixVersion;
 		if (!oddsAndEnds && !organic) {
 			if (useTripletTiming) {
-				pctStr  = "Legacy Timing:\n Entire song will export in swing/triplet timing.\n";
+				pctStr  = "Legacy Timing: Entire song will export in swing/triplet timing.\n";
 			} else {
-				pctStr  = "Legacy Timing:\n None of the song will export in swing/triplet timing.\n";
+				pctStr  = "Legacy Timing: None of the song will export in swing/triplet timing.\n";
 			}
 			return;
 		} else if (organic) {

@@ -102,9 +102,13 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	private final InstrNameSettings instrNameSettings;
 	private boolean muted = false;
 	private boolean soloed = false;
-	
+
+    // stats:
 	public int numberOfExportedNotes = 0;
 	public int numberOfRemovedNotesForSafety = 0;
+    public int numberOfRemovedNotesFromPruning = 0;
+    public int numberOfRemovedNotesFromFitting = 0;
+    public int numberOfRemovedNotesZeros = 0;
 	private int maxPoly = 0;
 	
 	public boolean discarded = false;
@@ -1836,6 +1840,9 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
         this.muted = orig.muted;
         this.soloed = orig.soloed;
         this.numberOfExportedNotes = orig.numberOfExportedNotes;
+        this.numberOfRemovedNotesFromPruning = orig.numberOfRemovedNotesFromPruning;
+        this.numberOfRemovedNotesZeros = orig.numberOfRemovedNotesZeros;
+        this.numberOfRemovedNotesFromFitting = orig.numberOfRemovedNotesFromFitting;
         this.numberOfRemovedNotesForSafety = orig.numberOfRemovedNotesForSafety;
         this.maxPoly = orig.maxPoly;
         // discarded remains false

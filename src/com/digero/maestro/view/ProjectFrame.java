@@ -2657,6 +2657,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             for(AbcPart p : abcSong.getParts()) {
                 p.numberOfExportedNotes = 0;
                 p.numberOfRemovedNotesForSafety = 0;
+                p.numberOfRemovedNotesFromPruning = 0;
+                p.numberOfRemovedNotesZeros = 0;
+                p.numberOfRemovedNotesFromFitting = 0;
                 p.setMaxPoly(0);
             }
             if (previewSequenceInfo.getLastTrackInfos() != null) {
@@ -2665,6 +2668,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                     trackInfo.part.setPreviewSequenceTrackNumber(trackInfo.trackNumber);
                     trackInfo.part.numberOfExportedNotes = trackInfo.numberOfExportedNotes;
                     trackInfo.part.numberOfRemovedNotesForSafety = trackInfo.numberOfRemovedNotesForSafety;
+                    trackInfo.part.numberOfRemovedNotesFromPruning = trackInfo.numberOfRemovedNotesFromPruning;
+                    trackInfo.part.numberOfRemovedNotesZeros = trackInfo.numberOfRemovedNotesZeros;
+                    trackInfo.part.numberOfRemovedNotesFromFitting = trackInfo.numberOfRemovedNotesFromFitting;
                     trackInfo.part.setMaxPoly(trackInfo.maxPoly);
                 }
             }
@@ -2823,7 +2829,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		String tempNote = "";
 		tempNote += getTimingStats();
 		tempNote += checkDuplicatePartTitles();
-		//tempNote += getNumberOfExportNotes(); // if enable this, then also output why notes got deleted, else confusing.
+		tempNote += getNumberOfExportNotes();
         tempNote += getPoly6plusStats();
 		tempNote += getEmptyParts();
         tempNote += abcSong.getStats();
@@ -2834,11 +2840,12 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             }
             tempNote += histogram.getStats();
         }
-        tempNote += "Main export tempo will be " + getTempo()
-                + "\nAll exported note/rest durations will be "
-                + (AbcConstants.isStrangeBPM(getTempo())?
-                " greater than 60 ms.\n"
-                :" equal to, or greater than 60 ms.\n");
+        tempNote += "\nMain export tempo will be " + getTempo() + ".\n"
+                + (AbcConstants.isStrangeBPM(getTempo())?(
+                "Recommendation: To ease output of fractions"
+                +" without repeating decimals, Maestro recommend"
+                +" to decrease the tempo to "
+                +(AbcConstants.isStrangeBPM(getTempo()-1)?getTempo()-2:getTempo()-1)):"");
 		arrangementView.setStats(tempNote);
 
         /*
@@ -2863,27 +2870,60 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 	
 	private String getNumberOfExportNotes() {
-		StringBuilder out = new StringBuilder();
+        StringBuilder out = new StringBuilder();
         int songNotes = 0;
-		for (AbcPart part : abcSong.getParts()) {
-			out.append("Part #").append(part.getPartNumber()).append(" will export ").append(part.numberOfExportedNotes).append(" notes.\n");
+        for (AbcPart part : abcSong.getParts()) {
+            out.append("Part #").append(part.getPartNumber()).append(" will export ").append(part.numberOfExportedNotes).append(" notes.\n");
             songNotes += part.numberOfExportedNotes;
-		}
+        }
         out.append("\nSong").append(" will export ").append(songNotes).append(" notes.\n");
         if (saveSettings.deleteMinimalNotes && !abcSong.isOrganic()) {
             out.append("\n");
-            out.append("Delete minimal notes:\n");
+            out.append("Delete minimal (extremely short) notes that due to slight fitting might produce undesired dissonance:\n");
             boolean active = false;
             for (AbcPart part : abcSong.getParts()) {
                 if (part.numberOfRemovedNotesForSafety > 0) {
-                    out.append("Part #").append(part.getPartNumber()).append(" removed ").append(part.numberOfRemovedNotesForSafety).append(" very short notes to reduce undesired dissonance.\n");
+                    out.append("Part #").append(part.getPartNumber()).append(" removed ").append(part.numberOfRemovedNotesForSafety).append("\n");
                     active = true;
                 }
             }
             if (!active) {
-                out.append(" None were deleted.\n");
+                out.append(" None.\n");
             }
         }
+        out.append("\nDeletion of notes (or partial notes) that start at same time and exceeded max poly for a part:\n");
+        int sum = 0;
+        for (AbcPart part : abcSong.getParts()) {
+            if (part.numberOfRemovedNotesFromPruning > 0) {
+                sum += part.numberOfRemovedNotesFromPruning;
+                out.append("Part #").append(part.getPartNumber()).append(" removed ").append(part.numberOfRemovedNotesFromPruning).append("\n");
+            }
+        }
+        if (sum == 0) out.append("None.\n");
+        if (abcSong.isOrganic()) {
+            out.append("\nDeletion of notes (or partial notes) that didn't fit into timeline, considering lotro constraints:\n");
+            sum = 0;
+            for (AbcPart part : abcSong.getParts()) {
+                if (part.numberOfRemovedNotesFromFitting > 0) {
+                    sum += part.numberOfRemovedNotesFromFitting;
+                    out.append("Part #").append(part.getPartNumber()).append(" removed ").append(part.numberOfRemovedNotesFromFitting).append("\n");
+                }
+            }
+            if (sum == 0) out.append("None.\n");
+        }
+        if (abcSong.isOrganic() && !abcSong.isOrganic2()) {
+            out.append("\nDeletion of notes that had zero duration in source midi:\n");
+            sum = 0;
+            for (AbcPart part : abcSong.getParts()) {
+                if (part.numberOfRemovedNotesZeros > 0) {
+                    sum += part.numberOfRemovedNotesZeros;
+                    out.append("Part #").append(part.getPartNumber()).append(" removed ").append(part.numberOfRemovedNotesZeros).append("\n");
+                }
+            }
+            if (sum == 0) out.append("None.\n");
+        }
+        out.append("\nBeside the above deletions, export counts can differ due to the way bent notes are subdivided," +
+                " how arpeggios are handled and how long notes are being interrupted. Also note that some deletions are of partial notes.\n");
 		out.append("\n");
 		return out.toString();
 	}

@@ -38,9 +38,11 @@ public class PolyphonyHistogram   {
 
     public String getStats() {
         String str = "";
-        str += "Max polyphony in playing parts = " + max();
-        str += "\nMax export polyphony = " + maxAll();
-        if (enabled) str += "\nAverage export polyphony = %.1f".formatted(average).replace(",",".");
+        if (enabled) {
+            str += "Max polyphony in active parts = " + max();
+            str += "\nMax export polyphony = " + maxAll();
+            str += "\nAverage export polyphony = %.1f".formatted(average).replace(",", ".") + "\n";
+        }
         return str;
     }
 
