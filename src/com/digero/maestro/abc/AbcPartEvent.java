@@ -4,7 +4,7 @@ import java.util.EventObject;
 
 public class AbcPartEvent extends EventObject {
 	public enum AbcPartProperty {
-		TITLE(true), // true cause can enter stereo position in title
+		TITLE(false), // true cause can enter stereo position in title
 		PART_NUMBER(false), //
 		ENABLED, //
 		INSTRUMENT, //

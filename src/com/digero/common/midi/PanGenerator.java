@@ -31,9 +31,9 @@ public class PanGenerator {
 		sum = 0;
 	}
 
-	static final Pattern leftRegex = Pattern.compile("\\b(left|links|gauche)\\b");
-	static final Pattern rightRegex = Pattern.compile("\\b(right|rechts|droite)\\b");
-	static final Pattern centerRegex = Pattern.compile("\\b(middle|center|zentrum|mitte|centre)\\b");
+	public static final Pattern leftRegex = Pattern.compile("\\b(left|links|gauche)\\b");
+    public static final Pattern rightRegex = Pattern.compile("\\b(right|rechts|droite)\\b");
+    public static final Pattern centerRegex = Pattern.compile("\\b(middle|center|zentrum|mitte|centre)\\b");
 
 	public int get(LotroInstrument instrument, String partTitle) {
 		int pan = get(instrument);

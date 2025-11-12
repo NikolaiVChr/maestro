@@ -65,6 +65,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	public boolean[] playLeft;
 	public boolean[] playCenter;
 	public boolean[] playRight;
+    public Integer userPan = null;//-1 = left, 0 = center, 1 = right, null = no user pan
 	private final int[] trackVolumeAdjust;
 	private final DrumNoteMap[] drumNoteMap;
 	private final StudentFXNoteMap[] studentFxNoteMap;
