@@ -23,7 +23,6 @@ import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.regex.Pattern;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.Sequence;
@@ -520,17 +519,6 @@ public class AbcExporter {
 		}
 	}
 
-    private int reducer;
-    private int reducerCheck(int number) {
-        if (reducer > 1 && number % reducer != 0) {
-            reducer /= 10;
-            if (reducer > 1 && number % reducer != 0) {
-                reducer /= 10;
-            }
-        }
-        return number;
-    }
-	
 	private void exportPartToAbcOrganic(AbcPart part, PrintStream out,
 			boolean delayEnabled, PolyphonyHistogram histogram, int[] quanFractions) throws AbcConversionException {
 
@@ -542,14 +530,11 @@ public class AbcExporter {
         int oneMicro = (int)(qtm.getMeter().denominator * TimingInfo.ONE_SECOND_MICROS * 60L / Q);
 
         boolean useMicroAccuracy = useRestsInChords || !reducedFilesize;
-        reducer = useMicroAccuracy?100:1;// see comment lower down for why..
 
 		StringBuilder head = exportPartHeaderToAbc(part, quanFractions, useMicroAccuracy?1:(int)milliToMicro(1,oneMicro,quanFractions[4]));
 
         List<StringBuilder> builders = new ArrayList<>();
         builders.add(head);
-
-        reducerCheck(quanFractions[6]);
 
 		// Keep track of which notes have been sharped or flatted so
 		// we can naturalize them the next time they show up.
@@ -691,11 +676,11 @@ public class AbcExporter {
                 delayMicro2 = delayMicro2 - delayMicro;
             }
 
-			if (useMicroAccuracy) delayed.append("z" + reducerCheck(delayMicro));
-            else delayed.append("z" + reducerCheck(microToMilliCeil(delayMicro,oneMicro,oneMilli)));
+			if (useMicroAccuracy) delayed.append("z" + delayMicro);
+            else delayed.append("z" + microToMilliCeil(delayMicro,oneMicro,oneMilli));
             if (delayMicro2 > 0) {
-                if (useMicroAccuracy) delayed.append("z" + reducerCheck(delayMicro2));
-                else delayed.append("z" + reducerCheck(microToMilliCeil(delayMicro2,oneMicro,oneMilli)));
+                if (useMicroAccuracy) delayed.append("z" + delayMicro2);
+                else delayed.append("z" + microToMilliCeil(delayMicro2,oneMicro,oneMilli));
                 logAbc.info("Delaying by " + delayMicro2 + " micros.");
             }
             delayed.append(" | \n");
@@ -711,8 +696,8 @@ public class AbcExporter {
                     Dynamics volume = dyn.dynamics;
                     bar.append('+').append(volume).append("+ ");
                     bar.append(countIn.hit.note.abc);
-                    if (useMicroAccuracy) bar.append(reducerCheck((int)hitMicros));
-                    else bar.append(reducerCheck(microToMilliCeil(hitMicros,oneMicro,oneMilli)));
+                    if (useMicroAccuracy) bar.append((int)hitMicros);
+                    else bar.append(microToMilliCeil(hitMicros,oneMicro,oneMilli));
 
                     logAbc.info("Count-in for ABC: added a count-in hit: "+countIn.hit.name+" velocity = "+volume.midiVol);
                 }
@@ -1031,7 +1016,7 @@ public class AbcExporter {
 								 + " note=" + noteAbc);
 					}
 					if (numerator != 1)
-						bar.append(reducerCheck(numerator));
+						bar.append(numerator);
 					if (denominator != 1)
 						bar.append('/').append(denominator);
 				}
@@ -1068,28 +1053,8 @@ public class AbcExporter {
 		addLineBreaks.run();
         builders.add(bar);
 
-        Pattern pattern = Pattern.compile("\\d+");
-        boolean header = true;
-        int reducerN = reducer==100?2:reducer==10?1:0;
-        //System.out.println("reducerN="+reducerN);
-        if (!useMicroAccuracy && reducerN > 0) {
-            for (StringBuilder b : builders) {
-                if (header) {
-                    header = false;
-                    out.print(b.toString().replace("L: "+quanFractions[5]+"/"+quanFractions[6], "L: "+quanFractions[5]+"/"+(quanFractions[6]/reducer)));
-                    continue;
-                }
-
-                String result = pattern.matcher(b).replaceAll(match -> {
-                    String numberStr = match.group();
-                    return numberStr.substring(0, numberStr.length() - reducerN);
-                });
-                out.print(result);
-            }
-        } else {
-            for (StringBuilder b : builders) {
-                out.print(b);
-            }
+        for (StringBuilder b : builders) {
+            out.print(b);
         }
 		out.println(" |]");
 		out.println();
@@ -1177,16 +1142,21 @@ public class AbcExporter {
             if (time < 0.06f) {
                 if (!AbcConstants.isStrangeBPM(Q)) {
                     //System.out.println(parts.getFirst().getAbcSong().getTitle()+": Ideal minimum is "+idealMinimum+" micros (not strange)");
+                    //idealMinimum++;
+                    // Of the 900 songs I tested, none came into this condition.
                 } else {
-                    // we now ONLY use 60001 if its strange BPM and the float calc failed.
+                    // we now only use 60001 if its strange BPM and the float calc failed.
                     // that will allow more songs to use 60 ms, and so far it has
                     // worked, but more testing is needed.
                     idealMinimum++;
+                    //throw new RuntimeException("skipping file");
                 }
-                //throw new RuntimeException("skipping file");
             } else if (AbcConstants.isStrangeBPM(Q)) {
-                // despite it being a strange bpm, we allow 60000
+                // despite it being a strange bpm, we allow 60000. Edit: nope, we don't.
                 //System.out.println(parts.getFirst().getAbcSong().getTitle()+": Ideal minimum is "+idealMinimum+" micros (strange)");
+                idealMinimum++;
+                // tested it, and without this at least 1 song did not play. (ConcertViolinsLuteContinuo2nd-Vivaldi, 30 bpm) [and it didn't use regex reducer]
+                //throw new RuntimeException("skipping file");
             } else {
                 //throw new RuntimeException("skipping file");
             }
@@ -1230,7 +1200,7 @@ public class AbcExporter {
             quanFractions = suggestion(1,L,strange,Q);
             logNotes.info("No best fraction setup found.");
         }
-
+        //if (!(strange && quanFractions[2] == 60000)) throw new RuntimeException("skipping file");
         logNotes.info("Reduced file size. Optimal fraction setup is L="+quanFractions[0]+"/"+quanFractions[1]+" Q="+Q+" micros="+quanFractions[2]+" digits="+quanFractions[3]+" denom="+quanFractions[4]+"| result L:"+quanFractions[5]+"/"+quanFractions[6]+" fits="+quanFractions[7]+" strange="+strange);
         return quanFractions;
     }
