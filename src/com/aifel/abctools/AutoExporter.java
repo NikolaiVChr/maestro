@@ -42,6 +42,7 @@ import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.abc.ExportFilenameTemplate;
 import com.digero.maestro.abc.PartAutoNumberer;
 import com.digero.maestro.abc.PartNameTemplate;
+import com.digero.maestro.midi.Chord;
 import com.digero.maestro.util.FileResolver;
 import com.digero.maestro.util.XmlUtil;
 import com.digero.maestro.view.InstrNameSettings;
@@ -130,6 +131,7 @@ public class AutoExporter {
 			destFolderAuto = new File(myHome);
 		
 		SwingUtilities.invokeLater(() -> {
+            frame.setVolumeMethodEnabled(false);
 			frame.getBtnStartExport().addActionListener(getStartExportActionListener());
 			frame.getBtnCancelExport().addActionListener(getCancelExportActionListener());
 			frame.getBtnDestAuto().addActionListener(getDestAutoActionListener());
@@ -139,6 +141,7 @@ public class AutoExporter {
             frame.addForceOrganic2ActionListener(getOrganicActionListener());
             frame.addForceMixActionListener(getOrganicActionListener());
             frame.addForceLegacyActionListener(getOrganicActionListener());
+            frame.addForceVolumeMethodListener(getVolumeActionListener());
 			refreshAuto();
 		});		
 	}
@@ -163,6 +166,7 @@ public class AutoExporter {
 						frame.setSaveMSXEnabled(true);
 						frame.setSaveMSXtimingEnabled(true);
 						frame.setSaveMSXabcEnabled(true);
+                        frame.setSaveMSXvolumeEnabled(true);
 						frame.setTabsEnabled(true);
 						frame.setRecursiveCheckBoxEnabled(true);
 					});
@@ -194,12 +198,15 @@ public class AutoExporter {
             frame.setForceLegacyTimingEnabled(false);
 			frame.setForceOrganicEnabled(false);
 			frame.setForceOrganic2Enabled(false);
+            frame.setForceVolumeMethodEnabled(false);
+            frame.setVolumeMethodEnabled(false);
 			frame.setBtnDestAutoEnabled(false);
 			frame.setBtnMIDIEnabled(false);
 			frame.setBtnSourceAutoEnabled(false);
 			frame.setSaveMSXEnabled(false);
 			frame.setSaveMSXtimingEnabled(false);
 			frame.setSaveMSXabcEnabled(false);
+            frame.setSaveMSXvolumeEnabled(false);
 			frame.setTabsEnabled(false);
 			frame.setRecursiveCheckBoxEnabled(false);
 		});
@@ -222,6 +229,7 @@ public class AutoExporter {
 				frame.setSaveMSXEnabled(true);
 				frame.setSaveMSXabcEnabled(true);
 				frame.setSaveMSXtimingEnabled(true);
+                frame.setSaveMSXvolumeEnabled(true);
 				frame.setTabsEnabled(true);
 				frame.setRecursiveCheckBoxEnabled(true);
 			});
@@ -368,6 +376,7 @@ public class AutoExporter {
 			frame.setSaveMSXEnabled(true);
 			frame.setSaveMSXabcEnabled(true);
 			frame.setSaveMSXtimingEnabled(true);
+            frame.setSaveMSXvolumeEnabled(true);
 			frame.setTabsEnabled(true);
 			frame.setRecursiveCheckBoxEnabled(true);
 		});
@@ -578,9 +587,11 @@ public class AutoExporter {
      */
 
 		boolean timingModified = false;
+        boolean dynaModified = false;
 		boolean oldMix = abcSong.isMixTiming();
 		boolean oldOrganic = abcSong.isOrganic();
 		boolean oldOrganic2 = abcSong.isOrganic2();
+        Chord.CalcDynamics oldDyna = abcSong.dynamicsMethod;
         if (frame.getForceLegacyTimingSelected()) {
             if (oldMix || oldOrganic) timingModified = frame.getSaveMSXtimingSelected();
             abcSong.setMixTiming(false);
@@ -598,6 +609,12 @@ public class AutoExporter {
             abcSong.setOrganic(true);
 			abcSong.setOrganic2(true);
 		}
+        if (frame.getForceVolumeMethodSelected()) {
+            if (oldDyna != frame.getVolumeMethodSelected()) {
+                dynaModified = frame.isSaveMSXvolumeSelected();
+            }
+            abcSong.dynamicsMethod = frame.getVolumeMethodSelected();
+        }
 		
 		abcSong.storeNewExportFile = frame.getSaveMSXabcSelected();
 		abcSong.setSkipSilenceAtStart(saveSettings.skipSilenceAtStart);
@@ -670,8 +687,13 @@ public class AutoExporter {
 			abcSong.setOrganic(oldOrganic);
 			abcSong.setOrganic2(oldOrganic2);
 		}
+
+        if (pInfo.projectModified && !frame.isSaveMSXvolumeSelected()) {
+            // Don't save forced dynamics to project file
+            abcSong.dynamicsMethod = oldDyna;
+        }
 		
-		if (timingModified || ( pInfo.projectModified && (frame.getSaveMSXSelected() || frame.getSaveMSXabcSelected()) )) {
+		if (dynaModified || timingModified || ( pInfo.projectModified && (frame.getSaveMSXSelected() || frame.getSaveMSXabcSelected()) )) {
 			try {
 				XmlUtil.saveDocument(abcSong.saveToXml(), abcSong.getProjectFile());
                 pInfo.appendText += "<p>&nbsp;&nbsp;msx saved.</p>";
@@ -816,6 +838,15 @@ public class AutoExporter {
 		};
 	}
 
+    private ActionListener getVolumeActionListener() {
+        return new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                enableForceCheckBoxes();
+            }
+        };
+    }
+
     private void enableForceCheckBoxes() {
         if (inProgress) return;
         if (frame.getForceOrganicSelected()) {
@@ -844,6 +875,8 @@ public class AutoExporter {
             frame.setForceLegacyTimingEnabled(true);
             frame.setForceOrganic2Enabled(true);
         }
+        frame.setVolumeMethodEnabled(frame.getForceVolumeMethodSelected());
+        frame.setForceVolumeMethodEnabled(true);
     }
 
 	private ActionListener getDestAutoActionListener() {

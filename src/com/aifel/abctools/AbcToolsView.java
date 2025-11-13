@@ -1,5 +1,7 @@
 package com.aifel.abctools;
 
+import com.digero.maestro.midi.Chord;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.html.HTMLEditorKit;
@@ -39,6 +41,8 @@ public class AbcToolsView extends JFrame {
 	private JCheckBox forceMixTiming;
 	private JCheckBox forceOrganic;
 	private JCheckBox forceOrganic2;
+    private JCheckBox forceVolumeMethod;
+    private JComboBox<Chord.CalcDynamics> volumeMethod;
 	private JScrollPane scrollPaneAutoTxt;
 	private JTextPane txtAutoExport;
 	private JLabel lblMidiAuto;
@@ -49,6 +53,7 @@ public class AbcToolsView extends JFrame {
 	private JCheckBox saveMSX;
 	private JCheckBox saveMSXabc;
 	private JCheckBox saveMSXtiming;
+    private JCheckBox saveMSXvolume;
 	private JProgressBar progressBar;
 	private JCheckBox recursiveCheckBox;
 
@@ -59,7 +64,7 @@ public class AbcToolsView extends JFrame {
 		setTitle("ABC Tools");
 		setMinimumSize(new Dimension(800, 450));
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 500, 450);
+		setBounds(100, 100, 500, 525);
 		contentPane = new JPanel();
 
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -222,9 +227,22 @@ public class AbcToolsView extends JFrame {
 
         forceLegacyTiming = new JCheckBox("Force Legacy Timings");
         forceLegacyTiming.setSelected(false);
-        forceLegacyTiming.setToolTipText("Force lagacy timings even if a project do not have it enabled.");
+        forceLegacyTiming.setToolTipText("Force legacy timings even if a project do not have it enabled.");
         forceLegacyTiming.setAlignmentX(Component.CENTER_ALIGNMENT);
         panelAuto.add(forceLegacyTiming);
+
+        forceVolumeMethod = new JCheckBox("Force Volume method");
+        forceVolumeMethod.setSelected(false);
+        forceVolumeMethod.setToolTipText("Force a volume method even if a project use another method.");
+        forceVolumeMethod.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelAuto.add(forceVolumeMethod);
+
+        volumeMethod = new JComboBox<>(Chord.CalcDynamics.values());
+        volumeMethod.setEditable(false);
+        volumeMethod.setSelectedItem(Chord.CalcDynamics.LOUDEST);
+        volumeMethod.setAlignmentX(Component.CENTER_ALIGNMENT);
+        volumeMethod.setMaximumSize(volumeMethod.getPreferredSize());
+        panelAuto.add(volumeMethod);
 
 		recursiveCheckBox = new JCheckBox("Recursive");
 		recursiveCheckBox.setToolTipText("Go through sub folders and create a similar output folder tree");
@@ -256,6 +274,12 @@ public class AbcToolsView extends JFrame {
 		saveMSXtiming.setToolTipText("Save project files if timing changed due to forcing.");
 		saveMSXtiming.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(saveMSXtiming);
+
+        saveMSXvolume = new JCheckBox("At volume change");
+        saveMSXvolume.setToolTipText("Save project files if volume method changed due to forcing.");
+        saveMSXvolume.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelAuto.add(saveMSXvolume);
+
 		panelAuto.add(new JSeparator(JSeparator.HORIZONTAL));
 
 		scrollPaneAutoTxt = new JScrollPane();
@@ -356,6 +380,22 @@ public class AbcToolsView extends JFrame {
 
     public void setForceLegacyTimingEnabled(boolean enabled) {
         forceLegacyTiming.setEnabled(enabled);
+    }
+
+    public boolean getForceVolumeMethodSelected() {
+        return forceVolumeMethod.isSelected();
+    }
+
+    public void setForceVolumeMethodEnabled(boolean enabled) {
+        forceVolumeMethod.setEnabled(enabled);
+    }
+
+    public Chord.CalcDynamics getVolumeMethodSelected() {
+        return (Chord.CalcDynamics) volumeMethod.getSelectedItem();
+    }
+
+    public void setVolumeMethodEnabled(boolean enabled) {
+        volumeMethod.setEnabled(enabled);
     }
 	
 	public boolean getForceOrganicSelected() {
@@ -518,6 +558,14 @@ public class AbcToolsView extends JFrame {
 		saveMSXtiming.setEnabled(enabled_6);
 	}
 
+    public boolean isSaveMSXvolumeSelected() {
+        return saveMSXvolume.isSelected();
+    }
+
+    public void setSaveMSXvolumeEnabled(boolean on) {
+        saveMSXvolume.setEnabled(on);
+    }
+
 	public boolean getTabsEnabled() {
 		return tabs.isEnabled();
 	}
@@ -557,6 +605,9 @@ public class AbcToolsView extends JFrame {
     }
     public void addForceLegacyActionListener(ActionListener l) {
         forceLegacyTiming.addActionListener(l);
+    }
+    public void addForceVolumeMethodListener(ActionListener l) {
+        forceVolumeMethod.addActionListener(l);
     }
     public void addForceMixActionListener(ActionListener l) {
         forceMixTiming.addActionListener(l);

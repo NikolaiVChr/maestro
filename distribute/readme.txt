@@ -41,7 +41,7 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
-Version 4.5.12
+Version 4.5.13
 - Each note in abc output is no longer written as a fraction. This reduces file size.
 - Added note counts to stats.
 - Prevent preview generation each time a user changes part title, unless the user pan actually changed.

@@ -1846,6 +1846,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
         this.numberOfRemovedNotesFromFitting = orig.numberOfRemovedNotesFromFitting;
         this.numberOfRemovedNotesForSafety = orig.numberOfRemovedNotesForSafety;
         this.maxPoly = orig.maxPoly;
+        this.userPan = orig.userPan;
         // discarded remains false
         // abcSong, instrNameSettings, songListener, drumPrefs,
         // listeners and drumMapChangeListener are set by this(abcSongCopy).
