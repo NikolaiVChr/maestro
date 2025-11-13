@@ -681,14 +681,14 @@ public class AutoExporter {
 		}
 		abcSong.setExportFile(exportFile);
 		
-		if (pInfo.projectModified && !frame.getSaveMSXtimingSelected()) {
+		if (!frame.getSaveMSXtimingSelected()) {
 			// Don't save forced timing changes to project file
 			abcSong.setMixTiming(oldMix);
 			abcSong.setOrganic(oldOrganic);
 			abcSong.setOrganic2(oldOrganic2);
 		}
 
-        if (pInfo.projectModified && !frame.isSaveMSXvolumeSelected()) {
+        if (!frame.isSaveMSXvolumeSelected()) {
             // Don't save forced dynamics to project file
             abcSong.dynamicsMethod = oldDyna;
         }
