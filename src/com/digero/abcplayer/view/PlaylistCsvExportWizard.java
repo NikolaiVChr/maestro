@@ -54,6 +54,7 @@ public class PlaylistCsvExportWizard extends JDialog {
 			} else {
 				statusLabel.setText("Export succeeded.");
 				settings.save();
+				settings.saveCsvExportSettings();
 			}
 		});
 
@@ -188,7 +189,7 @@ public class PlaylistCsvExportWizard extends JDialog {
 		}
 		csvFilename = csvFilename + ".csv";
 
-		File chooserFile = Paths.get(settings.getOutputDirectory(), csvFilename).toFile();
+		File chooserFile = Paths.get(settings.getCsvExportOutputDirectory(), csvFilename).toFile();
 
 		JFileChooser chooser = new JFileChooser();
 		chooser.setFileFilter(new ExtensionFileFilter("CSV files (*.csv, *.txt)", "csv", "txt"));
@@ -204,12 +205,12 @@ public class PlaylistCsvExportWizard extends JDialog {
 		if (selectedFile.exists()) {
 			int res = JOptionPane.showConfirmDialog(this,
 					"File \"" + selectedFile.toString() + "\" already exists.\n" + "Do you want to replace it?",
-					"Confirm Replace File", JOptionPane.YES_NO_CANCEL_OPTION);
+					"Confirm Replace File", JOptionPane.OK_CANCEL_OPTION);
 			if (res == JOptionPane.CANCEL_OPTION || res == JOptionPane.CLOSED_OPTION)
 				return false;
 		}
 
-		settings.setOutputDirectory(selectedFile.getParent().toString());
+		settings.setCsvExportOutputDirectory(selectedFile.getParent().toString());
 
 		try {
 			Path csvPath = selectedFile.toPath();

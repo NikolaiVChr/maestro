@@ -68,6 +68,9 @@ public class PlaylistSetExportWizard extends JDialog {
 		private boolean exportVisibleColumns;
 		private HashMap<String, Boolean> csvColumnsEnabled;
 
+		// CSV Export Wizard - reuses many of same settings
+		private String csvExportOutputDirectory;
+
 		private final Preferences prefs;
 
 		public SetExportSettings(Preferences prefs) {
@@ -97,6 +100,8 @@ public class PlaylistSetExportWizard extends JDialog {
 				String prefName = columnNameToCsvPrefKey(col);
 				csvColumnsEnabled.put(prefName, prefs.getBoolean(prefName, def));
 			}
+
+			csvExportOutputDirectory = prefs.get("csvExportOutputDirectory", outputDirectory);
 		}
 		
 		public static String columnNameToCsvPrefKey(String columnName) {
@@ -123,6 +128,10 @@ public class PlaylistSetExportWizard extends JDialog {
 			for (String key : csvColumnsEnabled.keySet()) {
 				prefs.putBoolean(key, csvColumnsEnabled.get(key));
 			}
+		}
+
+		public void saveCsvExportSettings() {
+			prefs.put("csvExportOutputDirectory", csvExportOutputDirectory);
 		}
 
 		private void copyFrom(SetExportSettings source) {
@@ -221,6 +230,14 @@ public class PlaylistSetExportWizard extends JDialog {
 		public void setCsvColumnEnabled(String columnName, boolean enabled) {
 			String columnPrefName = columnNameToCsvPrefKey(columnName);
 			csvColumnsEnabled.put(columnPrefName, enabled);
+		}
+
+		public String getCsvExportOutputDirectory() {
+			return csvExportOutputDirectory;
+		}
+
+		public void setCsvExportOutputDirectory(String dir) {
+			csvExportOutputDirectory = dir;
 		}
 
 		public void restoreDefaults() {
