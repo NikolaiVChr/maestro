@@ -92,7 +92,7 @@ public class AutoExporter {
 	
 	// For testing:
 	private static final boolean neverLocateMidi = false;// for testing
-	private static final boolean testIfOutputIsValid = false;// makes it slower
+	private static final boolean testIfOutputIsValid = true;// makes it slower
 	
 	AutoExporter (AbcToolsView frame, String myHome, AbcTools main, Preferences autoPrefs) {
 		this.frame = frame;
