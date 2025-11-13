@@ -1,12 +1,6 @@
 package com.digero.abcplayer.view;
 
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Font;
-import java.awt.KeyboardFocusManager;
-import java.awt.Point;
-import java.awt.Rectangle;
+import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
@@ -34,33 +28,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import javax.swing.BorderFactory;
-import javax.swing.ButtonGroup;
-import javax.swing.DropMode;
-import javax.swing.JButton;
-import javax.swing.JCheckBoxMenuItem;
-import javax.swing.JComponent;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JMenu;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
-import javax.swing.JRadioButtonMenuItem;
-import javax.swing.JScrollPane;
-import javax.swing.JSplitPane;
-import javax.swing.JTable;
-import javax.swing.JTextField;
-import javax.swing.JTree;
-import javax.swing.KeyStroke;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
-import javax.swing.SwingWorker;
-import javax.swing.ToolTipManager;
-import javax.swing.TransferHandler;
-import javax.swing.UIManager;
+import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.event.*;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -159,6 +127,7 @@ public class AbcPlaylistPanel extends JPanel {
 	private JCheckBoxMenuItem playbackDelayMenuItem;
 	private JCheckBoxMenuItem expandSearchMenuItem;
 	private JMenuItem exportSetMenuItem;
+	private JMenuItem exportCsvMenuItem;
 	
 	private JFileChooser openPlaylistChooser = null;
 	private JFileChooser savePlaylistChooser = null;
@@ -904,6 +873,7 @@ public class AbcPlaylistPanel extends JPanel {
 				}
 			}
 		});
+		playlistMenu.addSeparator();
 		exportSetMenuItem = playlistMenu.add(new JMenuItem("Export Playlist as Set..."));
 		exportSetMenuItem.addActionListener(e -> {
 			TableColumnModel cm = playlistTable.getColumnModel();
@@ -912,6 +882,21 @@ public class AbcPlaylistPanel extends JPanel {
 				visibleColumns.add((String)cm.getColumn(i).getHeaderValue());
 			}
 			PlaylistSetExportWizard wiz = new PlaylistSetExportWizard(
+					(JFrame)SwingUtilities.getWindowAncestor(this),
+					prefs.node("setExport"),
+					playlistFile,
+					tableModel.getTableData(),
+					visibleColumns);
+			wiz.setVisible(true);
+		});
+		exportCsvMenuItem = playlistMenu.add(new JMenuItem("Export Playlist to CSV Sheet..."));
+		exportCsvMenuItem.addActionListener(e -> {
+			TableColumnModel cm = playlistTable.getColumnModel();
+			ArrayList<String> visibleColumns = new ArrayList<>(cm.getColumnCount());
+			for (int i = 0; i < cm.getColumnCount(); i++) {
+				visibleColumns.add((String)cm.getColumn(i).getHeaderValue());
+			}
+			PlaylistCsvExportWizard wiz = new PlaylistCsvExportWizard(
 					(JFrame)SwingUtilities.getWindowAncestor(this),
 					prefs.node("setExport"),
 					playlistFile,
@@ -1254,22 +1239,24 @@ public class AbcPlaylistPanel extends JPanel {
 	}
 	
 	public void handleMissingPlaylistFiles(List<Integer> missingSongs, List<AbcInfo> songs) {
-		String confirmDialogStr = "Some abc files couldn't be found:\n";
-		for (int i = 0; i < Math.max(5, missingSongs.size()); i++) {
+		JTextPane notifPane = new JTextPane();
+		notifPane.setEditable(false);
+		notifPane.setContentType("text/html");
+		String confirmDialogStr = "<html><b>Some abc files couldn't be found. Would you like to search for them?<br>" + missingSongs.size() + " Missing File" + (missingSongs.size() == 1? ":</b><br>" : "s:</b><br>");
+		for (int i = 0; i < missingSongs.size(); i++) {
 			AbcInfo inf = songs.get(missingSongs.get(i));
-			confirmDialogStr += inf.getSourceFiles().get(0).getName() + "\n";
+			confirmDialogStr += inf.getSourceFiles().get(0).toString() + "<br>";
 		}
-		if (missingSongs.size() > 5) {
-			confirmDialogStr += (missingSongs.size() - 5) + " more...\n";
-		}
-		confirmDialogStr += "Would you like to recursively search for them?";
-		int result = JOptionPane.showConfirmDialog(
-				this,
-				confirmDialogStr,
-				"Missing Songs",
-				JOptionPane.YES_NO_OPTION);
+		confirmDialogStr += "</html>";
+		notifPane.setText(confirmDialogStr);
+		notifPane.setCaretPosition(0);
+		JScrollPane scrollPane = new JScrollPane(notifPane);
+		scrollPane.setPreferredSize(new Dimension(800, 100));
+		scrollPane.getVerticalScrollBar().setValue(0);
+		int result = JOptionPane.showConfirmDialog(this, scrollPane, "Missing Songs", JOptionPane.YES_NO_OPTION);
 		
 		if (result == JOptionPane.NO_OPTION) {
+			JOptionPane.showMessageDialog(this, "The " + missingSongs.size() + " missing song" + (missingSongs.size() == 1? "" : "s") + " will be removed from the playlist the next time you save.", "No Search Done", JOptionPane.INFORMATION_MESSAGE);
 			for (int i = missingSongs.size() - 1; i >= 0; i--) {
 				int idx = missingSongs.get(i);
 				songs.remove(idx);
@@ -1284,8 +1271,9 @@ public class AbcPlaylistPanel extends JPanel {
 		folderChooser.setCurrentDirectory(new File(folder));
 		folderChooser.setMultiSelectionEnabled(false);
 		folderChooser.setDialogTitle("Choose Search Folder");
-		folderChooser.showOpenDialog(this);
+		result = folderChooser.showOpenDialog(this);
 		if (result != JFileChooser.APPROVE_OPTION) {
+			JOptionPane.showMessageDialog(this, "The " + missingSongs.size() + " missing song" + (missingSongs.size() == 1? "" : "s") + " will be removed from the playlist the next time you save.", "No Search Done", JOptionPane.INFORMATION_MESSAGE);
 			for (int i = missingSongs.size() - 1; i >= 0; i--) {
 				int idx = missingSongs.get(i);
 				songs.remove(idx);
@@ -1348,13 +1336,13 @@ public class AbcPlaylistPanel extends JPanel {
 		if (nameToIdx.isEmpty()) {
 			JOptionPane.showMessageDialog(this, "Found all missing files!", "Search Complete", JOptionPane.INFORMATION_MESSAGE);
 		} else if (nameToIdx.size() == missingSongs.size()) {
-			JOptionPane.showMessageDialog(this, "No missing files were found in the selected folder.", "Search Complete", JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(this, "No missing files were found in the selected folder. The " + missingSongs.size() + " missing song" + (missingSongs.size() == 1? "" : "s") + " will be removed from the playlist the next time you save.", "Search Complete", JOptionPane.INFORMATION_MESSAGE);
 		} else {
 			String fileReportStr = "Found files:\n";
 			for (int i = 0; i < foundFiles.size(); i++ ) {
 				fileReportStr += foundFiles.get(i) + "\n";
 			}
-			fileReportStr += "Still missing " + nameToIdx.size() + " files.";
+			fileReportStr += "Still missing " + nameToIdx.size() + " files. The " + nameToIdx.size() + " missing song" + (nameToIdx.size() == 1? "" : "s") + " will be removed from the playlist the next time you save.";
 			JOptionPane.showMessageDialog(this, fileReportStr, "Search Complete", JOptionPane.INFORMATION_MESSAGE);
 		}
 		
