@@ -70,7 +70,7 @@ public class PlaylistSetExportWizard extends JDialog {
 
 		private final Preferences prefs;
 
-		private SetExportSettings(Preferences prefs) {
+		public SetExportSettings(Preferences prefs) {
 			this.prefs = prefs;
 			// General settings
 			outputDirectory = prefs.get("outputDirectory", Util.getLotroMusicPath(false).getAbsolutePath());
@@ -108,7 +108,7 @@ public class PlaylistSetExportWizard extends JDialog {
 			copyFrom(source);
 		}
 
-		private void save() {
+		public void save() {
 			prefs.put("outputDirectory", outputDirectory);
 			prefs.putBoolean("renameAbcFiles", renameAbcFiles);
 			prefs.putBoolean("exportAsZip", exportAsZip);
