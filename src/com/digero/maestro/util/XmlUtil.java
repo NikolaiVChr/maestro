@@ -13,6 +13,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.AbstractList;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -42,6 +46,11 @@ import org.xml.sax.SAXParseException;
 import org.xml.sax.helpers.DefaultHandler;
 
 public class XmlUtil {
+    private static final Logger log = Logger.getLogger("import.xml");
+
+    private static final Pattern ILLEGAL_CHAR_REF_PATTERN =
+            Pattern.compile("&#(x?)([0-9a-fA-F]+);");
+
 	private XmlUtil() {
 	}
 
@@ -182,17 +191,8 @@ public class XmlUtil {
 	    return false;
 	}
 
-	@Deprecated
-	private static boolean isValidXmlCharacter(char c) {
-	    return (c == 0x09 || c == 0x0A || c == 0x0D) || 
-	           (c >= 0x20 && c <= 0xD7FF) ||
-	           (c >= 0xE000 && c <= 0xFFFD) ||
-	           (c >= 0x10000 && c <= 0x10FFFF);
-	}
-
 	public static Document openDocument(InputStream stream) throws SAXException, IOException {
-		try {
-			BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
 	        StringBuilder xmlBuilder = new StringBuilder();
 	        String line;
 	        
@@ -203,16 +203,42 @@ public class XmlUtil {
 	            xmlBuilder.append(sanitizeXmlStringForLoading(line)).append("\n"); 
 	        }
 
-	        String sanitizedXml = xmlBuilder.toString(); // Final sanitized XML string
+	        String semiSanitizedXml = xmlBuilder.toString(); // Final sanitized XML string
+
+            Matcher matcher = ILLEGAL_CHAR_REF_PATTERN.matcher(semiSanitizedXml);
+
+            StringBuffer sanitizedXml = new StringBuffer();
+
+            // some chars might be stored in the xml as char refs.
+            // we need to replace those also:
+            while (matcher.find()) {
+                try {
+                    String hexPrefix = matcher.group(1);
+                    String number = matcher.group(2);
+
+                    int radix = "x".equalsIgnoreCase(hexPrefix) ? 16 : 10;
+                    int codePoint = Integer.parseInt(number, radix);
+
+                    if (!isValidXml11Literal(codePoint)) {
+                        // Replace the illegal reference with a space
+                        matcher.appendReplacement(sanitizedXml, " ");
+                    } else {
+                        // Keep as is
+                        matcher.appendReplacement(sanitizedXml, matcher.group(0));
+                    }
+                } catch (NumberFormatException e) {
+                    matcher.appendReplacement(sanitizedXml, matcher.group(0));
+                }
+            }
+            matcher.appendTail(sanitizedXml);
 
 	        // Convert sanitized XML string back to an InputStream
-	        InputStream sanitizedStream = new ByteArrayInputStream(sanitizedXml.getBytes(StandardCharsets.UTF_8));
+	        InputStream sanitizedStream = new ByteArrayInputStream(sanitizedXml.toString().getBytes(StandardCharsets.UTF_8));
 			LineNumberHandler handler = new LineNumberHandler();
 			SAXParserFactory.newInstance().newSAXParser().parse(sanitizedStream, handler);
 			return handler.getDocument();
 		} catch (ParserConfigurationException e) {
-			// How can a vanilla instance throw a configuration exception?
-			e.printStackTrace();
+            log.log(Level.SEVERE, "Error parsing XML", e);
 			assert false : e.getMessage();
 			throw new RuntimeException(e);
 		}
