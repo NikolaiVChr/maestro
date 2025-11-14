@@ -47,7 +47,7 @@ import com.digero.common.util.ICompileConstants;
 import com.digero.common.util.IDiscardable;
 import com.digero.common.util.Listener;
 import com.digero.common.util.Pair;
-import com.digero.common.util.ParseException;
+import com.digero.common.util.FileParseException;
 import com.digero.common.util.Util;
 import com.digero.common.view.ColorTable;
 import com.digero.maestro.abc.AbcPart;
@@ -1080,7 +1080,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 		try {
 			abcPart.getDrumMap(trackInfo.getTrackNumber()).load(loadFile);
-		} catch (IOException | ParseException e) {
+		} catch (IOException | FileParseException e) {
 			JOptionPane.showMessageDialog(this, "Failed to load drum map:\n\n" + e.getMessage(),
 					"Failed to load drum map", JOptionPane.ERROR_MESSAGE);
 			return false;

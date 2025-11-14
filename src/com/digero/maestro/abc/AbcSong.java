@@ -143,7 +143,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
     public AbcSong(File file, PartAutoNumberer partAutoNumberer, PartNameTemplate partNameTemplate,
 			ExportFilenameTemplate exportFilenameTemplate, InstrNameSettings instrNameSettings,
 			FileResolver fileResolver, MiscSettings miscSettings, SaveAndExportSettings saveAndExportSettings)
-			throws IOException, InvalidMidiDataException, ParseException, SAXException {
+			throws IOException, InvalidMidiDataException, FileParseException, SAXException {
 		this(file, partAutoNumberer, partNameTemplate, exportFilenameTemplate, instrNameSettings,
 				fileResolver, miscSettings, true, saveAndExportSettings, false, null);
 	}
@@ -152,7 +152,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			ExportFilenameTemplate exportFilenameTemplate, InstrNameSettings instrNameSettings,
 			FileResolver fileResolver, MiscSettings miscSettings, boolean saveMSXwhenSourceChange,
 			SaveAndExportSettings saveAndExportSettings, boolean ignoreMidiText, WarningHandler warningHandler)
-			throws IOException, InvalidMidiDataException, ParseException, SAXException {
+			throws IOException, InvalidMidiDataException, FileParseException, SAXException {
 
         parts = new ListModelWrapper<>(new DefaultListModel<>());
 
@@ -212,7 +212,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	}
 
 	private void initFromMidi(File file, MiscSettings miscSettings, SaveAndExportSettings saveSettings)
-			throws IOException, InvalidMidiDataException, ParseException {
+			throws IOException, InvalidMidiDataException, FileParseException {
 		sourceFile = file;
 		usingOldVelocities = miscSettings.ignoreExpressionMessages;
 		ProjectFrame.TimingEnum.getFromSettings(saveSettings.defaultTiming).action(this);
@@ -234,7 +234,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	}
 
 	private void initFromAbc(File file, MiscSettings miscSettings)
-			throws IOException, InvalidMidiDataException, ParseException {
+			throws IOException, InvalidMidiDataException, FileParseException {
 		AbcInfo abcInfo = new AbcInfo();
 		sourceFile = file;
 		AbcToMidi.Params params = new AbcToMidi.Params(file);
@@ -303,13 +303,13 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 	private void initFromXml(File file, FileResolver fileResolver, MiscSettings miscSettings, boolean calledFromTools,
                              WarningHandler warningHandler)
-			throws SAXException, IOException, ParseException {
+			throws SAXException, IOException, FileParseException {
 		try {
 			projectFile = file;
 			Document doc = XmlUtil.openDocument(projectFile);
 			Element songEle = XmlUtil.selectSingleElement(doc, "song");
 			if (songEle == null) {
-				throw new ParseException("Does not appear to be a valid Maestro file. Missing <song> root element.",
+				throw new FileParseException("Does not appear to be a valid Maestro file. Missing <song> root element.",
 						projectFile.getName());
 			}
 			Version fileVersion = SaveUtil.parseValue(songEle, "@fileVersion", SONG_FILE_VERSION);
@@ -323,7 +323,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
                             NEWER_VERSION_WARNING_ID, "Newer Project Version", message);
 
                     if (action == WarningHandler.WarningAction.SKIP_FILE) {
-                        throw new ParseException("Skipped file (newer version) by user request.", null);
+                        throw new FileParseException("Skipped file (newer version) by user request.", projectFile.getName());
                     }
                 } else if (getFrames().length > 0) {
                     JOptionPane.showMessageDialog(getFrames()[0],
@@ -353,7 +353,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				tryToLoadFromFile(fileResolver, isAbc, miscSettings, warningHandler);
 
 				if (newSourceFile == null)
-					throw new ParseException("Failed to load file", name);
+					throw new FileParseException("Failed to load file", name);
 			}
 
 			if (!sourceFile.equals(origSourceFile)) {
@@ -441,7 +441,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
                         WarningHandler.WarningAction action = warningHandler.handleWarning(
                                 KNOWN_ISSUE_WARNING_ID, "Known Issue Version", message);
                         if (action == WarningHandler.WarningAction.SKIP_FILE) {
-                            throw new ParseException("Skipped file (known issue version) by user request.", null);
+                            throw new FileParseException("Skipped file (known issue version) by user request.", projectFile.getName());
                         }
                     } else {
                         JOptionPane.showMessageDialog(null,
@@ -463,7 +463,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
                     WarningHandler.WarningAction action = warningHandler.handleWarning(
                             TEMPO_ISSUE_WARNING_ID, "Important question", message);
                     if (action == WarningHandler.WarningAction.SKIP_FILE) {
-                        throw new ParseException("Skipped file (tempo issue) by user request. Project needs to be reviewed in Maestro.", null);
+                        throw new FileParseException("Skipped file (tempo issue) by user request. Project needs to be reviewed in Maestro.", projectFile.getName());
                     }
                 } else {
                     JOptionPane.showMessageDialog(null,
@@ -475,7 +475,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
             }
 		} catch (XPathExpressionException e) {
 			log.log(Level.SEVERE, "XPath error", e);
-			throw new ParseException("XPath error: " + e.getMessage(), null);
+			throw new FileParseException("XPath error: " + e.getMessage(), file == null?null:file.getName());
 		}
 	}
 
@@ -530,7 +530,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		} catch (FileNotFoundException e) {
 			String msg = "Could not find the file used to create this song:\n" + newSourceFile;
 			newSourceFile = fileResolver.locateFile(newSourceFile, msg);
-		} catch (InvalidMidiDataException | IOException | ParseException e) {
+		} catch (InvalidMidiDataException | IOException | FileParseException e) {
 			String msg = "Could not load the file used to create this song:\n" + newSourceFile + "\n\n" + e.getMessage();
 			newSourceFile = fileResolver.resolveFile(newSourceFile, msg);
 		}
@@ -573,7 +573,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	 * Loading tuneline from xml
 	 *
      */
-	private void handleTuneSections(Element songElement, Version fileVersion) throws XPathExpressionException, ParseException {
+	private void handleTuneSections(Element songElement, Version fileVersion) throws XPathExpressionException, FileParseException {
 		float lastEnd = 0;
 		for (Element tuneEle : XmlUtil.selectElements(songElement, "tuneSection")) {
 			TuneLine tl = new TuneLine();
@@ -616,7 +616,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	}
 
 	private void loadPartsFromXML(Element songEle, Version fileVersion, boolean autoSorted)
-			throws XPathExpressionException, ParseException {
+			throws XPathExpressionException, FileParseException {
 		for (Element ele : XmlUtil.selectElements(songEle, "part")) {
 			AbcPart part = AbcPart.loadFromXml(this, ele, fileVersion);
 			

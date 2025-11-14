@@ -13,7 +13,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import com.digero.common.abctomidi.AbcInfo;
-import com.digero.common.util.ParseException;
+import com.digero.common.util.FileParseException;
 import com.digero.common.util.Version;
 import com.digero.maestro.util.SaveUtil;
 import com.digero.maestro.util.XmlUtil;
@@ -41,14 +41,14 @@ public class AbcPlaylistXmlCoder {
 		return doc;
 	}
 	
-	public static List<List<File>> loadPlaylist(File playlistPath) throws ParseException {
+	public static List<List<File>> loadPlaylist(File playlistPath) throws FileParseException {
 		List<List<File>> files = new ArrayList<List<File>>();
 		
 		try {
 			Document doc = XmlUtil.openDocument(playlistPath);
 			Element playlistEle = XmlUtil.selectSingleElement(doc, "playlist");
 			if (playlistEle == null) {
-				throw new ParseException("Does not appear to be a valid AbcPlayer playlist.",
+				throw new FileParseException("Does not appear to be a valid AbcPlayer playlist.",
 						playlistPath.getName());
 			}
 			Version fileVersion = SaveUtil.parseValue(playlistEle, "@fileVersion", ABC_PLAYLIST_VERSION);
@@ -61,7 +61,7 @@ public class AbcPlaylistXmlCoder {
 			
 			Element trackListEle = XmlUtil.selectSingleElement(playlistEle, "trackList");
 			if (trackListEle == null) {
-				throw new ParseException("Does not appear to be a valid AbcPlayer playlist.",
+				throw new FileParseException("Does not appear to be a valid AbcPlayer playlist.",
 						playlistPath.getName());
 			}
 			
@@ -76,7 +76,7 @@ public class AbcPlaylistXmlCoder {
 				}
 			}
 		} catch (Exception e) {
-			throw new ParseException ("Failed to parse AbcPlayer playlist file.", playlistPath.getName());
+			throw new FileParseException("Failed to parse AbcPlayer playlist file.", playlistPath.getName());
 		}
 		
 		return files;

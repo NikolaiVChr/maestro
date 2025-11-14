@@ -12,7 +12,7 @@ import java.util.Map.Entry;
 import java.util.StringTokenizer;
 
 import com.digero.common.abc.LotroInstrument;
-import com.digero.common.util.ParseException;
+import com.digero.common.util.FileParseException;
 import com.digero.maestro.MaestroMain;
 
 public class PartNumberingConfig {
@@ -51,7 +51,7 @@ public class PartNumberingConfig {
 		out.close();
 	}
 
-	public void load(File inputFile) throws IOException, ParseException {
+	public void load(File inputFile) throws IOException, FileParseException {
 		String fn = inputFile.getName();
 		FileInputStream inputStream = new FileInputStream(inputFile);
 		String line;
@@ -74,7 +74,7 @@ public class PartNumberingConfig {
 				String key = tokenizer.nextToken();
 				String value = tokenizer.nextToken();
 				if (tokenizer.hasMoreTokens()) {
-					throw new ParseException("Invalid line (too many tokens)", fn, lineNo);
+					throw new FileParseException("Invalid line (too many tokens)", fn, lineNo);
 				}
 
 				LotroInstrument instrument = null;
@@ -88,38 +88,38 @@ public class PartNumberingConfig {
 					try {
 						map.put(instrument, Integer.parseInt(value));
 					} catch (NumberFormatException nfe) {
-						throw new ParseException("Invalid value " + value + ". Should be a number", fn,
+						throw new FileParseException("Invalid value " + value + ". Should be a number", fn,
 								lineNo);
 					}
 				} else if (key.equals("INCREMENT")) {
 					try {
 						increment = Integer.parseInt(value);
 					} catch (NumberFormatException nfe) {
-						throw new ParseException("Invalid value of INCREMENT " + value + ". Should be 1 or 10", fn,
+						throw new FileParseException("Invalid value of INCREMENT " + value + ". Should be 1 or 10", fn,
 								lineNo);
 					}
 					if (increment != 10 && increment != 1) {
-						throw new ParseException("Invalid value of INCREMENT " + increment + ". Should be 1 or 10", fn,
+						throw new FileParseException("Invalid value of INCREMENT " + increment + ". Should be 1 or 10", fn,
 								lineNo);
 					}
 				} else if (key.equals("ORDERING")) {
                     try {
                         orderOption = PartAutoNumberer.OrderOption.fromString(value);
                     } catch (IllegalArgumentException nfe) {
-                        throw new ParseException("Invalid value of ORDERING " + value + ". Should be CLUSTER_SIMILAR or PART_NUMBER", fn,
+                        throw new FileParseException("Invalid value of ORDERING " + value + ". Should be CLUSTER_SIMILAR or PART_NUMBER", fn,
                                 lineNo);
                     }
                 }
 			}
 
 			if (increment == -1) {
-				throw new ParseException("No INCREMENT value was found in config.", fn);
+				throw new FileParseException("No INCREMENT value was found in config.", fn);
 			}
 
 			for (Entry<LotroInstrument, Integer> entry : map.entrySet()) {
 				int val = entry.getValue();
 				if ((increment == 10 && (val < 0 || val > 10)) || (increment == 1 && (val < 0 || val > 999))) {
-					throw new ParseException(
+					throw new FileParseException(
 							"Instrument " + entry.getKey().name() + " has an out-of-range first part number " + val,
 							fn);
 				}

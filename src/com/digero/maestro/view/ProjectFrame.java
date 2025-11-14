@@ -2396,7 +2396,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 			arrangementView.showInfoMessage(formatErrorMessage("Could not open " + file.getName(), message));
 			midiResolved = false;
-		} catch (InvalidMidiDataException | IOException | ParseException | SAXException e) {
+		} catch (InvalidMidiDataException | IOException | FileParseException | SAXException e) {
 			arrangementView.showInfoMessage(formatErrorMessage("Could not open " + file.getName(), e.getMessage()));
 			midiResolved = false;
 		}

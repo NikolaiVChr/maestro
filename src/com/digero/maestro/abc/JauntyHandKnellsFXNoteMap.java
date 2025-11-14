@@ -2,7 +2,7 @@ package com.digero.maestro.abc;
 
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.midi.MidiConstants;
-import com.digero.common.util.ParseException;
+import com.digero.common.util.FileParseException;
 import com.digero.common.util.Version;
 import org.w3c.dom.Element;
 
@@ -127,7 +127,7 @@ public class JauntyHandKnellsFXNoteMap extends DrumNoteMap {
 		}
 	}
 
-	public static JauntyHandKnellsFXNoteMap loadFromXml(Element ele, Version fileVersion) throws ParseException {
+	public static JauntyHandKnellsFXNoteMap loadFromXml(Element ele, Version fileVersion) throws FileParseException {
 		try {
 			JauntyHandKnellsFXNoteMap retVal = new JauntyHandKnellsFXNoteMap();
 			retVal.loadFromXmlInternal(ele, fileVersion, LotroInstrument.JAUNTY_HAND_KNELLS);

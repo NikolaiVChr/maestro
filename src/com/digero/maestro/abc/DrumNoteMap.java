@@ -25,7 +25,7 @@ import com.digero.common.midi.MidiConstants;
 import com.digero.common.midi.MidiDrum;
 import com.digero.common.midi.Note;
 import com.digero.common.util.IDiscardable;
-import com.digero.common.util.ParseException;
+import com.digero.common.util.FileParseException;
 import com.digero.common.util.Version;
 import com.digero.maestro.MaestroMain;
 import com.digero.maestro.util.SaveUtil;
@@ -226,17 +226,17 @@ public class DrumNoteMap implements IDiscardable {
 		}
 	}
 
-	public void load(File inputFile) throws IOException, ParseException {
+	public void load(File inputFile) throws IOException, FileParseException {
 		try (FileInputStream inputStream = new FileInputStream(inputFile)) {
 			load(inputStream, inputFile.getName());
 		}
 	}
 
-	public void load(InputStream inputStream) throws IOException, ParseException {
+	public void load(InputStream inputStream) throws IOException, FileParseException {
 		load(inputStream, null);
 	}
 
-	private void load(InputStream inputStream, String inputFileName) throws IOException, ParseException {
+	private void load(InputStream inputStream, String inputFileName) throws IOException, FileParseException {
 		if (map == null)
 			map = new byte[MidiConstants.NOTE_COUNT];
 
@@ -263,19 +263,19 @@ public class DrumNoteMap implements IDiscardable {
 				midiNote = Byte.parseByte(tokenizer.nextToken());
 				lotroNote = Byte.parseByte(tokenizer.nextToken());
 				if (tokenizer.hasMoreTokens()) {
-					throw new ParseException("Invalid line (too many tokens)", inputFileName, lineNumber);
+					throw new FileParseException("Invalid line (too many tokens)", inputFileName, lineNumber);
 				}
 			} catch (NoSuchElementException nse) {
-				throw new ParseException("Invalid line (too few tokens)", inputFileName, lineNumber);
+				throw new FileParseException("Invalid line (too few tokens)", inputFileName, lineNumber);
 			} catch (NumberFormatException nfe) {
-				throw new ParseException("Invalid note ID", inputFileName, lineNumber);
+				throw new FileParseException("Invalid note ID", inputFileName, lineNumber);
 			}
 
 			if (midiNote < MidiConstants.LOWEST_NOTE_ID || midiNote > MidiConstants.HIGHEST_NOTE_ID) {
-				throw new ParseException("MIDI note is invalid", inputFileName, lineNumber);
+				throw new FileParseException("MIDI note is invalid", inputFileName, lineNumber);
 			}
 			if (lotroNote != DISABLED_NOTE_ID && !LotroInstrument.BASIC_DRUM.isPlayable(lotroNote)) {
-				throw new ParseException("ABC note is invalid", inputFileName, lineNumber);
+				throw new FileParseException("ABC note is invalid", inputFileName, lineNumber);
 			}
 
 			map[midiNote] = lotroNote;
@@ -300,7 +300,7 @@ public class DrumNoteMap implements IDiscardable {
 		}
 	}
 
-	public static DrumNoteMap loadFromXml(Element ele, Version fileVersion) throws ParseException {
+	public static DrumNoteMap loadFromXml(Element ele, Version fileVersion) throws FileParseException {
 		try {
 			boolean isPassthrough = SaveUtil.parseValue(ele, "@isPassthrough", false);
 			DrumNoteMap retVal = isPassthrough ? new PassThroughDrumNoteMap() : new DrumNoteMap();
@@ -312,7 +312,7 @@ public class DrumNoteMap implements IDiscardable {
 	}
 
 	protected void loadFromXmlInternal(Element ele, Version fileVersion, LotroInstrument lotroInstrument)
-			throws ParseException, XPathExpressionException {
+			throws FileParseException, XPathExpressionException {
 		if (map == null)
 			map = new byte[MidiConstants.NOTE_COUNT];
 

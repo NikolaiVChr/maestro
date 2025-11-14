@@ -20,7 +20,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import com.digero.common.util.Listener;
-import com.digero.common.util.ParseException;
+import com.digero.common.util.FileParseException;
 import com.digero.common.view.PatchedJScrollPane;
 import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.abc.AbcSongEvent;
@@ -74,7 +74,7 @@ public class TuneEditor {
 			
 			private final JButton add1 = new JButton("Add");
 
-			public TuneDialog(JFrame jf, String title, boolean modal, AbcSong abcSong) throws ParseException {
+			public TuneDialog(JFrame jf, String title, boolean modal, AbcSong abcSong) throws FileParseException {
 				super(jf, title, modal);
 				this.abcSong = abcSong;
 
@@ -496,7 +496,7 @@ public class TuneEditor {
 				return lastEnd;
 			}
 
-			private void processTree(SortedMap<Float, TuneLine> tree) throws ParseException {
+			private void processTree(SortedMap<Float, TuneLine> tree) throws FileParseException {
 				int number = 0;
 				int highestNumber = 0;
 				boolean useDialogLineNumbers = true;
@@ -547,7 +547,7 @@ public class TuneEditor {
 
 		try {
 			openDialog = new TuneDialog(jf, "Tune editor", false, abcSong);
-		} catch (ParseException e) {
+		} catch (FileParseException e) {
 			e.printStackTrace();
 		}
 	}

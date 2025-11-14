@@ -13,7 +13,7 @@ import org.w3c.dom.NodeList;
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.TimeSignature;
-import com.digero.common.util.ParseException;
+import com.digero.common.util.FileParseException;
 import com.digero.common.util.Version;
 
 public class SaveUtil {
@@ -35,7 +35,7 @@ public class SaveUtil {
 	}
 
 	public static int parseValue(Node parent, String xpath, int defaultValue)
-			throws ParseException, XPathExpressionException {
+			throws FileParseException, XPathExpressionException {
 		Node node = XmlUtil.selectSingleNode(parent, xpath);
 		if (node == null)
 			return defaultValue;
@@ -48,7 +48,7 @@ public class SaveUtil {
 	}
 
 	public static byte parseValue(Node parent, String xpath, byte defaultValue)
-			throws ParseException, XPathExpressionException {
+			throws FileParseException, XPathExpressionException {
 		Node node = XmlUtil.selectSingleNode(parent, xpath);
 		if (node == null)
 			return defaultValue;
@@ -61,7 +61,7 @@ public class SaveUtil {
 	}
 
 	public static float parseValue(Node parent, String xpath, float defaultValue)
-			throws ParseException, XPathExpressionException {
+			throws FileParseException, XPathExpressionException {
 		Node node = XmlUtil.selectSingleNode(parent, xpath);
 		if (node == null)
 			return defaultValue;
@@ -74,7 +74,7 @@ public class SaveUtil {
 	}
 
 	public static boolean parseValue(Node parent, String xpath, boolean defaultValue)
-			throws ParseException, XPathExpressionException {
+			throws FileParseException, XPathExpressionException {
 		Node node = XmlUtil.selectSingleNode(parent, xpath);
 		if (node == null)
 			return defaultValue;
@@ -89,7 +89,7 @@ public class SaveUtil {
 	}
 
 	public static TimeSignature parseValue(Node parent, String xpath, TimeSignature defaultValue)
-			throws ParseException, XPathExpressionException {
+			throws FileParseException, XPathExpressionException {
 		Node node = XmlUtil.selectSingleNode(parent, xpath);
 		if (node == null)
 			return defaultValue;
@@ -102,7 +102,7 @@ public class SaveUtil {
 	}
 
 	public static KeySignature parseValue(Node parent, String xpath, KeySignature defaultValue)
-			throws ParseException, XPathExpressionException {
+			throws FileParseException, XPathExpressionException {
 		Node node = XmlUtil.selectSingleNode(parent, xpath);
 		if (node == null)
 			return defaultValue;
@@ -115,7 +115,7 @@ public class SaveUtil {
 	}
 
 	public static LotroInstrument parseValue(Node parent, String xpath, LotroInstrument defaultValue)
-			throws ParseException, XPathExpressionException {
+			throws FileParseException, XPathExpressionException {
 		Node node = XmlUtil.selectSingleNode(parent, xpath);
 		if (node == null)
 			return defaultValue;
@@ -128,7 +128,7 @@ public class SaveUtil {
 	}
 
 	public static Version parseValue(Node parent, String xpath, Version defaultValue)
-			throws ParseException, XPathExpressionException {
+			throws FileParseException, XPathExpressionException {
 		Node node = XmlUtil.selectSingleNode(parent, xpath);
 		if (node == null)
 			return defaultValue;
@@ -140,7 +140,7 @@ public class SaveUtil {
 	}
 
 	public static byte[] parseValue(Node parent, String xpath, byte[] defaultValue)
-			throws ParseException, XPathExpressionException {
+			throws FileParseException, XPathExpressionException {
 		Node node = XmlUtil.selectSingleNode(parent, xpath);
 		if (node == null)
 			return defaultValue;
@@ -164,13 +164,13 @@ public class SaveUtil {
 		return new File(node.getTextContent());
 	}
 
-	public static ParseException invalidTrackException(Node node, String message) {
+	public static FileParseException invalidTrackException(Node node, String message) {
 		File f = XmlUtil.getDocumentFile(node.getOwnerDocument());
 		String fileName = (f == null) ? null : f.getName();
-		return new ParseException(message, fileName, XmlUtil.getLineNumber(node));
+		return new FileParseException(message, fileName, XmlUtil.getLineNumber(node));
 	}
 
-	public static ParseException invalidValueException(Node node, String message) {
+	public static FileParseException invalidValueException(Node node, String message) {
 		SaveUtil.clean(node);
 		String msg = "Invalid value \"" + node.getTextContent() + "\" for " + node.getNodeName();
 		if (message != null && !message.isEmpty())
@@ -178,7 +178,7 @@ public class SaveUtil {
 
 		File f = XmlUtil.getDocumentFile(node.getOwnerDocument());
 		String fileName = (f == null) ? null : f.getName();
-		return new ParseException(msg, fileName, XmlUtil.getLineNumber(node));
+		return new FileParseException(msg, fileName, XmlUtil.getLineNumber(node));
 	}
 
 	private static void clean(Node node) {
@@ -201,10 +201,10 @@ public class SaveUtil {
 		}
 	}
 
-	public static ParseException missingValueException(Node node, String xpath) {
+	public static FileParseException missingValueException(Node node, String xpath) {
 		String msg = "Missing required value \"" + xpath + "\" for <" + node.getNodeName() + "> element";
 		File f = XmlUtil.getDocumentFile(node.getOwnerDocument());
 		String fileName = (f == null) ? null : f.getName();
-		return new ParseException(msg, fileName, XmlUtil.getLineNumber(node));
+		return new FileParseException(msg, fileName, XmlUtil.getLineNumber(node));
 	}
 }

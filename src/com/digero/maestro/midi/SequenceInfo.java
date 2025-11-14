@@ -26,7 +26,7 @@ import com.digero.common.midi.MidiStandard;
 import com.digero.common.midi.MidiUtils;
 import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.midi.TimeSignature;
-import com.digero.common.util.ParseException;
+import com.digero.common.util.FileParseException;
 import com.digero.common.util.Triple;
 import com.digero.common.util.Util;
 import com.digero.maestro.abc.*;
@@ -71,7 +71,7 @@ public class SequenceInfo implements MidiConstants {
 	 * Create instance of this class while creating MIDI sequence from abc file.
 	 */
 	public static SequenceInfo fromAbc(AbcToMidi.Params params, MiscSettings miscSettings, boolean oldVelocities, boolean ignoreMidiText)
-			throws InvalidMidiDataException, ParseException {
+			throws InvalidMidiDataException, FileParseException {
 		if (params.abcInfo == null)
 			params.abcInfo = new AbcInfo();
 		SequenceInfo sequenceInfo = new SequenceInfo(params.filesData.getFirst().file.getName(), AbcToMidi.convert(params),
@@ -86,7 +86,7 @@ public class SequenceInfo implements MidiConstants {
 	 * Create instance of this class while creating sequence from MIDI file
 	 */
 	public static SequenceInfo fromMidi(File midiFile, MiscSettings miscSettings, boolean oldVelocities, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume, boolean ignoreMidiText)
-			throws InvalidMidiDataException, IOException, ParseException {
+			throws InvalidMidiDataException, IOException, FileParseException {
         try (InputStream is1 = new BufferedInputStream(new FileInputStream(midiFile));
              InputStream is2 = new BufferedInputStream(new FileInputStream(midiFile))) {
             Sequence sequence = MidiSystem.getSequence(is1);
@@ -122,7 +122,7 @@ public class SequenceInfo implements MidiConstants {
     }
 
 	private SequenceInfo(String fileName, Sequence sequence, int type, MiscSettings miscSettings, boolean oldVelocities, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume, boolean ignoreMidiText, AbcInfo abcInfo)
-			throws InvalidMidiDataException, ParseException {
+			throws InvalidMidiDataException, FileParseException {
 		this.fileName = fileName;
 		this.sequence = sequence;
 		this.midiType = type;

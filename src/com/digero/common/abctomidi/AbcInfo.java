@@ -23,7 +23,7 @@ import com.digero.common.abc.VersionsWithIssues;
 import com.digero.common.midi.IBarNumberCache;
 import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.TimeSignature;
-import com.digero.common.util.ParseException;
+import com.digero.common.util.FileParseException;
 import com.digero.common.util.Util;
 import com.digero.common.util.WarningHandler;
 import com.digero.maestro.abc.AbcExporter;
@@ -410,7 +410,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		partSetups.add(partList);
 	}
 
-	void setExtendedMetadata(AbcField field, String value) throws ParseException {
+	void setExtendedMetadata(AbcField field, String value) throws FileParseException {
 		switch (field) {
 		case SONG_TITLE:
 			songTitle = value.trim();
@@ -454,7 +454,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
                             CORRUPT_ABC_WARNING_ID, "Potential corrupted ABC from "+abcCreator, message);
 
                     if (action == WarningHandler.WarningAction.SKIP_FILE) {
-                        throw new ParseException("Skipped file (possible corrupt abc source) by user request.", null);
+                        throw new FileParseException("Skipped file (possible corrupt abc source) by user request.", null);
                     }
                 } else if (Preferences.userNodeForPackage(AbcPlayer.class).node("miscSettings")
                         .getBoolean("flawedMaestroPopup", true)) {
@@ -620,7 +620,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
             inf.setExtendedMetadata(AbcField.SONG_TITLE, "Example Title");
             inf.setExtendedMetadata(AbcField.SONG_COMPOSER, "Example Composer");
             inf.setExtendedMetadata(AbcField.SONG_TRANSCRIBER, "Your Name Here");
-        } catch (ParseException ignore) {
+        } catch (FileParseException ignore) {
         }
 		for (int i = 0; i < 5; i++) {
 			inf.partInfoByIndex.put(i, new PartInfo());

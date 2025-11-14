@@ -35,8 +35,8 @@ import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.abctomidi.AbcToMidi;
 import com.digero.common.abctomidi.FileAndData;
 import com.digero.common.util.ExtensionFileFilter;
-import com.digero.common.util.LotroParseException;
-import com.digero.common.util.ParseException;
+import com.digero.common.util.LotroFileParseException;
+import com.digero.common.util.FileParseException;
 import com.digero.common.util.Util;
 import com.digero.common.util.WarningHandler;
 import com.digero.maestro.MaestroMain;
@@ -728,9 +728,9 @@ public class AutoExporter implements WarningHandler {
 				params.stereo = 0;
 				params.generateRegions = false;//only needed in abc player
 				AbcToMidi.convert(params);
-			} catch (LotroParseException e) {
+			} catch (LotroFileParseException e) {
 				JOptionPane.showMessageDialog(frame, e.getMessage(), exportFile.getName()+": Error parsing ABC", JOptionPane.ERROR_MESSAGE);
-			} catch (ParseException e) {
+			} catch (FileParseException e) {
 				JOptionPane.showMessageDialog(frame, e.getMessage(), exportFile.getName()+": Error reading ABC", JOptionPane.ERROR_MESSAGE);
 			}
 		}

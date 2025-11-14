@@ -63,8 +63,8 @@ import com.digero.common.util.ExtensionFileFilter;
 import com.digero.common.util.FileFilterDropListener;
 import com.digero.common.util.Listener;
 import com.digero.common.util.Logging;
-import com.digero.common.util.LotroParseException;
-import com.digero.common.util.ParseException;
+import com.digero.common.util.LotroFileParseException;
+import com.digero.common.util.FileParseException;
 import com.digero.common.util.Themer;
 import com.digero.common.util.Util;
 import com.digero.common.util.Version;
@@ -1350,7 +1350,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		return appendSong(data);
 	}
 
-	private boolean onLotroParseError(LotroParseException lpe) {
+	private boolean onLotroParseError(LotroFileParseException lpe) {
 		JCheckBox checkBox = new JCheckBox("Ignore LOTRO-specific errors");
 		Object[] message = new Object[] { lpe.getMessage(), checkBox };
 		JOptionPane.showMessageDialog(this, message, "Error reading ABC file", JOptionPane.WARNING_MESSAGE);
@@ -1389,13 +1389,13 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 				params.stereo = stereoMenuItem.getValue();
 				params.generateRegions = true;
 				song = AbcToMidi.convert(params);
-			} catch (LotroParseException e) {
+			} catch (LotroFileParseException e) {
 				if (onLotroParseError(e)) {
 					retry = lotroErrorsMenuItem.isSelected();
 				} else {
 					return false;
 				}
-			} catch (ParseException e) {
+			} catch (FileParseException e) {
 				JOptionPane.showMessageDialog(this, e.getMessage(), "Error reading ABC", JOptionPane.ERROR_MESSAGE);
 				return false;
 			}
@@ -1500,13 +1500,13 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 				params.stereo = stereoMenuItem.getValue();
 				params.generateRegions = true;
 				song = AbcToMidi.convert(params);
-			} catch (LotroParseException e) {
+			} catch (LotroFileParseException e) {
 				if (onLotroParseError(e)) {
 					retry = lotroErrorsMenuItem.isSelected();
 				} else {
 					return false;
 				}
-			} catch (ParseException e) {
+			} catch (FileParseException e) {
 				String thisFile = appendData.size() == 1 ? "this file" : "these files";
 				String msg = e.getMessage() + "\n\nWould you like to close the current song and retry opening "
 						+ thisFile + "?";
@@ -1640,7 +1640,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			params.enableLotroErrors = false;
 			params.stereo = stereoMenuItem.getValue();
 			song = AbcToMidi.convert(params);
-		} catch (ParseException e) {
+		} catch (FileParseException e) {
 			JOptionPane.showMessageDialog(this, e.getMessage(), "Error changing instrument", JOptionPane.ERROR_MESSAGE);
 			return;
 		}

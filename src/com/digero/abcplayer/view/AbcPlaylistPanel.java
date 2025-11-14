@@ -47,7 +47,7 @@ import com.digero.common.util.AbcFileTreeModel;
 import com.digero.common.util.AbcFileTreeModel.AbcSongFileNode;
 import com.digero.common.util.ExtensionFileFilter;
 import com.digero.common.util.Listener;
-import com.digero.common.util.ParseException;
+import com.digero.common.util.FileParseException;
 import com.digero.common.util.Util;
 import com.digero.common.view.AbcPlaylistTreeCellRenderer;
 import com.digero.common.view.HintTextField;
@@ -1175,7 +1175,7 @@ public class AbcPlaylistPanel extends JPanel {
 		List<List<File>> songs = null;
 		try {
 			songs = AbcPlaylistXmlCoder.loadPlaylist(file);
-		} catch (ParseException e) {
+		} catch (FileParseException e) {
 			JOptionPane.showMessageDialog(this, e.getMessage(), "Failed to load playlist", JOptionPane.ERROR_MESSAGE);
 			return;
 		}
@@ -1305,7 +1305,7 @@ public class AbcPlaylistPanel extends JPanel {
 						try {
 							fad.add(new FileAndData(f, AbcToMidi.readLines(f)));
 							inf = AbcToMidi.parseAbcMetadata(fad);
-						} catch (IOException | ParseException e) {
+						} catch (IOException | FileParseException e) {
 							e.printStackTrace();
 							return FileVisitResult.CONTINUE;
 						}

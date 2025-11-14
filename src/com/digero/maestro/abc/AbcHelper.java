@@ -7,7 +7,7 @@ import javax.xml.xpath.XPathExpressionException;
 import org.w3c.dom.Element;
 
 import com.digero.common.midi.Note;
-import com.digero.common.util.ParseException;
+import com.digero.common.util.FileParseException;
 import com.digero.common.util.Version;
 import com.digero.maestro.util.SaveUtil;
 
@@ -22,7 +22,7 @@ public class AbcHelper {
 		return null;
 	}
 
-	static PartSection loadPartSectionFromXML(Element sectionEle, Version fileVersion) throws ParseException, XPathExpressionException {
+	static PartSection loadPartSectionFromXML(Element sectionEle, Version fileVersion) throws FileParseException, XPathExpressionException {
 		PartSection ps = new PartSection();
 		if (fileVersion.compareTo(new Version(3, 3, 4, 300)) < 0) {
 			ps.startBar = (float)SaveUtil.parseValue(sectionEle, "startBar", 0);

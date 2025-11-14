@@ -9,7 +9,7 @@ import org.w3c.dom.Element;
 
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.midi.MidiConstants;
-import com.digero.common.util.ParseException;
+import com.digero.common.util.FileParseException;
 import com.digero.common.util.Version;
 import com.digero.maestro.util.SaveUtil;
 
@@ -112,7 +112,7 @@ public class StudentFXNoteMap extends DrumNoteMap {
 		}
 	}
 
-	public static StudentFXNoteMap loadFromXml(Element ele, Version fileVersion) throws ParseException {
+	public static StudentFXNoteMap loadFromXml(Element ele, Version fileVersion) throws FileParseException {
 		try {
 			boolean isPassthrough = SaveUtil.parseValue(ele, "@isPassthrough", false);
 			StudentFXNoteMap retVal = isPassthrough ? new PassThroughFXNoteMap() : new StudentFXNoteMap();

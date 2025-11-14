@@ -374,13 +374,13 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		}
 	}
 
-	public static AbcPart loadFromXml(AbcSong abcSong, Element ele, Version fileVersion) throws ParseException {
+	public static AbcPart loadFromXml(AbcSong abcSong, Element ele, Version fileVersion) throws FileParseException {
 		AbcPart part = new AbcPart(abcSong);
 		part.initFromXml(ele, fileVersion);
 		return part;
 	}
 
-	private void initFromXml(Element ele, Version fileVersion) throws ParseException {
+	private void initFromXml(Element ele, Version fileVersion) throws FileParseException {
 		try {
 			partNumber = SaveUtil.parseValue(ele, "@id", partNumber);
             String lock = SaveUtil.parseValue(ele, "@userAssignedId", "null");
@@ -535,7 +535,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
                 }
 			}
 		} catch (XPathExpressionException e) {
-			throw new ParseException("XPath error: " + e.getMessage(), null);
+			throw new FileParseException("XPath error: " + e.getMessage(), null);
 		}
 	}
 
@@ -543,7 +543,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
      * Load from xml the drummap and list of enabled drum hits
      */
 	private void loadDrumHitsFromXML(Version fileVersion, Element trackEle, int t)
-			throws XPathExpressionException, ParseException {
+			throws XPathExpressionException, FileParseException {
 		Element drumsEle = XmlUtil.selectSingleElement(trackEle, "drumsEnabled");
 		if (drumsEle != null) {
 			loadEnabledSetFromXML(t, drumsEle);
@@ -572,7 +572,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
     /**
      * Load enabled drum hits from XML
      */
-	private void loadEnabledSetFromXML(int t, Element drumsEle) throws ParseException, XPathExpressionException {
+	private void loadEnabledSetFromXML(int t, Element drumsEle) throws FileParseException, XPathExpressionException {
 		boolean defaultEnabled = SaveUtil.parseValue(drumsEle, "@defaultEnabled", !isCowbellPart());
 
 		BitSet[] enabledSet;
