@@ -22,6 +22,7 @@ import java.util.SortedMap;
 import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.Map.Entry;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.NavigableMap;
 
@@ -66,6 +67,10 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public static final Version SONG_FILE_VERSION = new Version(4, 4, 5, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
+
+    public static final String NEWER_VERSION_WARNING_ID = "NEWER_VERSION";
+    public static final String KNOWN_ISSUE_WARNING_ID = "KNOWN_ISSUE";
+    public static final String TEMPO_ISSUE_WARNING_ID = "TEMPO_ISSUE";
 
 	private String title = "";
 	private String composer = "";
@@ -140,13 +145,13 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			FileResolver fileResolver, MiscSettings miscSettings, SaveAndExportSettings saveAndExportSettings)
 			throws IOException, InvalidMidiDataException, ParseException, SAXException {
 		this(file, partAutoNumberer, partNameTemplate, exportFilenameTemplate, instrNameSettings,
-				fileResolver, miscSettings, true, saveAndExportSettings, false);
+				fileResolver, miscSettings, true, saveAndExportSettings, false, null);
 	}
 	
 	public AbcSong(File file, PartAutoNumberer partAutoNumberer, PartNameTemplate partNameTemplate,
 			ExportFilenameTemplate exportFilenameTemplate, InstrNameSettings instrNameSettings,
 			FileResolver fileResolver, MiscSettings miscSettings, boolean saveMSXwhenSourceChange,
-			SaveAndExportSettings saveAndExportSettings, boolean ignoreMidiText)
+			SaveAndExportSettings saveAndExportSettings, boolean ignoreMidiText, WarningHandler warningHandler)
 			throws IOException, InvalidMidiDataException, ParseException, SAXException {
 
         parts = new ListModelWrapper<>(new DefaultListModel<>());
@@ -169,7 +174,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		fromAbcFile = fileName.endsWith(Util.ABC_FILE_EXTENSION) || fileName.endsWith(Util.TXT_FILE_EXTENSION);
 
 		if (fromXmlFile)
-			initFromXml(file, fileResolver, miscSettings, ignoreMidiText);
+			initFromXml(file, fileResolver, miscSettings, ignoreMidiText, warningHandler);
 		else if (fromAbcFile)
 			initFromAbc(file, miscSettings);
 		else
@@ -296,7 +301,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         note = "";
 	}
 
-	private void initFromXml(File file, FileResolver fileResolver, MiscSettings miscSettings, boolean calledFromTools)
+	private void initFromXml(File file, FileResolver fileResolver, MiscSettings miscSettings, boolean calledFromTools,
+                             WarningHandler warningHandler)
 			throws SAXException, IOException, ParseException {
 		try {
 			projectFile = file;
@@ -308,10 +314,22 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			}
 			Version fileVersion = SaveUtil.parseValue(songEle, "@fileVersion", SONG_FILE_VERSION);
 
-			if (isFileNewer(fileVersion) && getFrames().length > 0) {
-				JOptionPane.showMessageDialog(getFrames()[0],
-						"This project may contain new features that this Maestro cannot use. It is suggested to upgrade this Maestro to load this project.",
-						"Warning", JOptionPane.WARNING_MESSAGE);
+			if (isFileNewer(fileVersion)) {
+                if (warningHandler != null) {
+                    String message = "Project '" + projectFile.getName() + "' was saved with a newer version of Maestro.\n"
+                            + "It may contain new features that this app cannot use.";
+
+                    WarningHandler.WarningAction action = warningHandler.handleWarning(
+                            NEWER_VERSION_WARNING_ID, "Newer Project Version", message);
+
+                    if (action == WarningHandler.WarningAction.SKIP_FILE) {
+                        throw new ParseException("Skipped file (newer version) by user request.", null);
+                    }
+                } else if (getFrames().length > 0) {
+                    JOptionPane.showMessageDialog(getFrames()[0],
+                            "This project may contain new features that this Maestro cannot use. It is suggested to upgrade this Maestro to load this project.",
+                            "Warning", JOptionPane.WARNING_MESSAGE);
+                }
 			}
 
 			dynamicsMethod = Chord.CalcDynamics.fromString(SaveUtil.parseValue(songEle, "exportSettings/@calcDynamics", Chord.CalcDynamics.LOUDEST.name()));
@@ -417,39 +435,46 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			Version maestroVersion = SaveUtil.parseValue(songEle, "@maestroVersion", def);
 			if (!def.equals(maestroVersion)) {
 				String issue = VersionsWithIssues.checkProject(maestroVersion);
-				if (issue != null) {
-					JOptionPane.showMessageDialog(null,
-							"Project was saved with Maestro version " + maestroVersion + " which had this issue: " + issue,
-							"Warning for "+file.getName(), JOptionPane.WARNING_MESSAGE);
-				}
+                if (issue != null) {
+                    if (warningHandler != null) {
+                        String message = "Project '" + file.getName() + "' was saved with Maestro version " + maestroVersion + " which had this issue:\n" + issue;
+                        WarningHandler.WarningAction action = warningHandler.handleWarning(
+                                KNOWN_ISSUE_WARNING_ID, "Known Issue Version", message);
+                        if (action == WarningHandler.WarningAction.SKIP_FILE) {
+                            throw new ParseException("Skipped file (known issue version) by user request.", null);
+                        }
+                    } else {
+                        JOptionPane.showMessageDialog(null,
+                                "Project was saved with Maestro version " + maestroVersion + " which had this issue: " + issue,
+                                "Warning for "+file.getName(), JOptionPane.WARNING_MESSAGE);
+                    }
+                }
 			}
             if (sequenceInfo.getDataCache().isTempoInHigherTracks()
                     && !usingOldTempos && !maestroVersion.equals(def)
                     && maestroVersion.compareTo(new Version(4, 3, 9)) < 0) {
                 log.warning("Warning!! Tempos in " + file.getName() + " project has been fixed for potential problems. User needs to review the edits.");
                 temposWereFixed = true;
-                if (!calledFromTools) {
+                if (warningHandler != null) {
+                    String message = "Warning!!\nTempos in " + file.getName() + " project should be fixed for potential problems." +
+                            " This means main tempo might change and section/tune edits might have to be redone" +
+                            " as bar lines in theory can be affected too." +
+                            "\nIt is recommended to skip it for now and then open project in Maestro to check.";
+                    WarningHandler.WarningAction action = warningHandler.handleWarning(
+                            TEMPO_ISSUE_WARNING_ID, "Important question", message);
+                    if (action == WarningHandler.WarningAction.SKIP_FILE) {
+                        throw new ParseException("Skipped file (tempo issue) by user request. Project needs to be reviewed in Maestro.", null);
+                    }
+                } else {
                     JOptionPane.showMessageDialog(null,
                             "Warning!!\nTempos in " + file.getName() + " project has been fixed for potential problems." +
                                     " This means main tempo might have changed and section/tune edits might have to be redone" +
                                     " as bar lines in theory can have been affected too.",
                             "Warning for " + file.getName(), JOptionPane.WARNING_MESSAGE);
-                } else {
-                    int option = JOptionPane.showOptionDialog(null,
-                            "Warning!!\nTempos in " + file.getName() + " project should be fixed for potential problems." +
-                                    " This means main tempo might change and section/tune edits might have to be redone" +
-                                    " as bar lines in theory can be affected too." +
-                                    "\nIt is recommended to skip it for now and then open project in Maestro to check.",
-                            "Important question for " + file.getName(), JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE,
-                            null, new String[] {"Export anyway (Not recommended!)", "Skip project"}, 1);
-
-                    if (option == 1 || option == JOptionPane.CLOSED_OPTION) {
-                        throw new ParseException("Project needs to be reviewed in Maestro.", null);
-                    }
                 }
             }
 		} catch (XPathExpressionException e) {
-			e.printStackTrace();
+			log.log(Level.SEVERE, "XPath error", e);
 			throw new ParseException("XPath error: " + e.getMessage(), null);
 		}
 	}

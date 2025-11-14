@@ -15,12 +15,12 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.Timer;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
-import javax.swing.JFileChooser;
-import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Element;
 import javax.swing.text.html.HTMLDocument;
@@ -37,6 +37,7 @@ import com.digero.common.util.ExtensionFileFilter;
 import com.digero.common.util.LotroParseException;
 import com.digero.common.util.ParseException;
 import com.digero.common.util.Util;
+import com.digero.common.util.WarningHandler;
 import com.digero.maestro.MaestroMain;
 import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.abc.ExportFilenameTemplate;
@@ -50,7 +51,7 @@ import com.digero.maestro.view.MiscSettings;
 import com.digero.maestro.view.SaveAndExportSettings;
 import org.jetbrains.annotations.NotNull;
 
-public class AutoExporter {
+public class AutoExporter implements WarningHandler {
 	private static final Logger log = Logger.getLogger("util");
 	
 	volatile File sourceFolderAuto;
@@ -90,6 +91,8 @@ public class AutoExporter {
 	InstrNameSettings instrNameSettings;
 	SaveAndExportSettings saveSettings;
 	MiscSettings miscSettings;
+
+    private final Map<String, Boolean> proceedAllWarningMap = Collections.synchronizedMap(new HashMap<>());
 	
 	// For testing:
 	private static final boolean neverLocateMidi = false;// for testing
@@ -190,6 +193,7 @@ public class AutoExporter {
 
 	private void autoExport() throws Exception {
         inProgress = true;
+        proceedAllWarningMap.clear();
 		SwingUtilities.invokeAndWait(() -> {
 			refreshAuto();
 			frame.getBtnStartExport().setEnabled(false);
@@ -578,7 +582,7 @@ public class AutoExporter {
         openFileResolver.pInfo = pInfo;
 
 		AbcSong abcSong = new AbcSong(project, partAutoNumberer, partNameTemplate, exportFilenameTemplate,
-				instrNameSettings, openFileResolver, miscSettings, frame.getSaveMSXSelected(), saveSettings, true);
+				instrNameSettings, openFileResolver, miscSettings, frame.getSaveMSXSelected(), saveSettings, true, this);
     /*
         if (abcSong.highCandidate) {
             highCandidates.add(project);
@@ -1014,4 +1018,54 @@ public class AutoExporter {
 		autoPrefs.put(DIR_AUTO_MIDI, midiFolderAuto.getAbsolutePath());
 		autoPrefs.put(DIR_AUTO_DEST, destFolderAuto.getAbsolutePath());
 	}
+
+    @Override
+    public synchronized WarningAction handleWarning(String warningId, String title, String message) {
+
+        if (proceedAllWarningMap.getOrDefault(warningId, false)) {
+            return WarningAction.PROCEED;
+        }
+
+        if (this.cancel) {
+            return WarningAction.SKIP_FILE;
+        }
+
+        // these are in arrays to be able to make them final while still mutable
+        final int[] userChoice = new int[1];
+        final boolean[] proceedForAll = new boolean[1];
+
+        try {
+            SwingUtilities.invokeAndWait(() -> {
+                String fullMessage = message + "\n\nWhat would you like to do?";
+                String[] options = {"Proceed", "Skip", "Cancel"};
+                JCheckBox proceedForAllCheckbox = new JCheckBox("Apply choice to all '" + title + "' warnings");
+
+                Object[] params = {fullMessage, proceedForAllCheckbox};
+
+                userChoice[0] = JOptionPane.showOptionDialog(frame, params, title, JOptionPane.DEFAULT_OPTION,
+                        JOptionPane.WARNING_MESSAGE, null, options, options[0]
+                );
+                proceedForAll[0] = proceedForAllCheckbox.isSelected();
+            });
+        } catch (InvocationTargetException | InterruptedException ex) {
+            log.log(Level.WARNING, "Error showing warning dialog", ex);
+            this.cancel = true;
+            return WarningAction.SKIP_FILE;
+        }
+
+        return switch (userChoice[0]) {
+            case 0 -> {
+                if (proceedForAll[0]) {
+                    proceedAllWarningMap.put(warningId, true);
+                }
+                yield WarningAction.PROCEED;
+            }
+            case 1 -> WarningAction.SKIP_FILE;// Cancel All
+
+            default -> {
+                this.cancel = true;
+                yield WarningAction.SKIP_FILE;
+            }
+        };
+    }
 }
