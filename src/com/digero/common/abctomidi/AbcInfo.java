@@ -23,13 +23,17 @@ import com.digero.common.abc.VersionsWithIssues;
 import com.digero.common.midi.IBarNumberCache;
 import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.TimeSignature;
+import com.digero.common.util.ParseException;
 import com.digero.common.util.Util;
+import com.digero.common.util.WarningHandler;
 import com.digero.maestro.abc.AbcExporter;
 
 import javax.sound.midi.MidiEvent;
 import javax.swing.*;
 
 public class AbcInfo implements AbcConstants, IBarNumberCache {
+
+    private static final String CORRUPT_ABC_WARNING_ID = "Possible corrupt ABC";
 
     private static class PartInfo {
         private MidiEvent panEvent = null;
@@ -71,8 +75,10 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 	private TimeSignature timeSignature = TimeSignature.FOUR_FOUR;
 	private KeySignature keySignature = KeySignature.C_MAJOR;
     public List<AbcExporter.ExportTrackInfo> abcTrackInfos;
+    public WarningHandler warningHandler;
 
 	void reset() {
+        warningHandler = null;
 		empty = true;
 		abcFiles = null;
 		titlePrefix = null;
@@ -404,7 +410,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		partSetups.add(partList);
 	}
 
-	void setExtendedMetadata(AbcField field, String value) {
+	void setExtendedMetadata(AbcField field, String value) throws ParseException {
 		switch (field) {
 		case SONG_TITLE:
 			songTitle = value.trim();
@@ -440,9 +446,24 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 			if (issue != null) {
 				String title = songTitle != null ? songTitle: "";
 				log.warning("Potential corrupted ABC. "+title+" ABC was exported with a flawed Maestro: "+issue);
-				if (Preferences.userNodeForPackage(AbcPlayer.class).node("miscSettings").getBoolean("flawedMaestroPopup", true)) {
+                if (warningHandler != null) {
+                    // for now only Abc Tools use this. Happens when loading a project that uses abc as a source.
+                    String message = "project uses "+title + " ABC, which was exported with a flawed Maestro: "+issue;
+
+                    WarningHandler.WarningAction action = warningHandler.handleWarning(
+                            CORRUPT_ABC_WARNING_ID, "Potential corrupted ABC from "+abcCreator, message);
+
+                    if (action == WarningHandler.WarningAction.SKIP_FILE) {
+                        throw new ParseException("Skipped file (possible corrupt abc source) by user request.", null);
+                    }
+                } else if (Preferences.userNodeForPackage(AbcPlayer.class).node("miscSettings")
+                        .getBoolean("flawedMaestroPopup", true)) {
+                    //TODO: When Maestro project uses abc as source, it should always get in here, despite abc players setting.
+                    //      Not sure how best to implement that..
 					SwingUtilities.invokeLater(() -> {
-						JOptionPane.showMessageDialog(null, title+" ABC was exported with a flawed Maestro: "+issue, "Potential corrupted ABC from "+abcCreator, JOptionPane.WARNING_MESSAGE);
+						JOptionPane.showMessageDialog(null,
+                                title+" ABC was exported with a flawed Maestro: "+issue,
+                                "Potential corrupted ABC from "+abcCreator, JOptionPane.WARNING_MESSAGE);
 					});
 				}
 			}
@@ -594,10 +615,13 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 	// used for set exporter
 	public static AbcInfo getDummyAbcInfo() {
 		AbcInfo inf = new AbcInfo();
-		inf.setExtendedMetadata(AbcField.SONG_DURATION, "3:14");
-		inf.setExtendedMetadata(AbcField.SONG_TITLE, "Example Title");
-		inf.setExtendedMetadata(AbcField.SONG_COMPOSER, "Example Composer");
-		inf.setExtendedMetadata(AbcField.SONG_TRANSCRIBER, "Your Name Here");
+        try {
+            inf.setExtendedMetadata(AbcField.SONG_DURATION, "3:14");
+            inf.setExtendedMetadata(AbcField.SONG_TITLE, "Example Title");
+            inf.setExtendedMetadata(AbcField.SONG_COMPOSER, "Example Composer");
+            inf.setExtendedMetadata(AbcField.SONG_TRANSCRIBER, "Your Name Here");
+        } catch (ParseException ignore) {
+        }
 		for (int i = 0; i < 5; i++) {
 			inf.partInfoByIndex.put(i, new PartInfo());
 		}

@@ -68,9 +68,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 																				// Maestro releases know msx is
 																				// made by newer version.
 
-    public static final String NEWER_VERSION_WARNING_ID = "NEWER_VERSION";
-    public static final String KNOWN_ISSUE_WARNING_ID = "KNOWN_ISSUE";
-    public static final String TEMPO_ISSUE_WARNING_ID = "TEMPO_ISSUE";
+    public static final String NEWER_VERSION_WARNING_ID = "Never Version";
+    public static final String KNOWN_ISSUE_WARNING_ID = "Known Issue";
+    public static final String TEMPO_ISSUE_WARNING_ID = "Tempo Issue";
 
 	private String title = "";
 	private String composer = "";
@@ -350,7 +350,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			String name = sourceFile.getName().toLowerCase();
 			boolean isAbc = name.endsWith(Util.ABC_FILE_EXTENSION) || name.endsWith(Util.TXT_FILE_EXTENSION);
 			while (sequenceInfo == null) {
-				tryToLoadFromFile(fileResolver, isAbc, miscSettings);
+				tryToLoadFromFile(fileResolver, isAbc, miscSettings, warningHandler);
 
 				if (newSourceFile == null)
 					throw new ParseException("Failed to load file", name);
@@ -490,7 +490,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
     /**
      * Load the source file of a project
      */
-	private void tryToLoadFromFile(FileResolver fileResolver, boolean isAbc, MiscSettings miscSettings) {
+	private void tryToLoadFromFile(FileResolver fileResolver, boolean isAbc, MiscSettings miscSettings, WarningHandler warningHandler) {
 		if (newSourceFile == null) newSourceFile = sourceFile;
 		try {
 			File sourceInCurrentDir = new File(projectFile.getParentFile(), newSourceFile.getName());
@@ -504,6 +504,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				AbcToMidi.Params params = new AbcToMidi.Params(newSourceFile);
 				params.abcInfo = abcInfo;
 				params.useLotroInstruments = false;
+                params.warningHandler = warningHandler;
 				// params.stereo = false;
 				usingOldVelocities = true;// The abc volumes are tuned to old volume scheme
 				usingOldTempos = true;

@@ -30,6 +30,7 @@ import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.util.LotroParseException;
 import com.digero.common.util.ParseException;
 import com.digero.common.util.Triple;
+import com.digero.common.util.WarningHandler;
 import com.digero.maestro.abc.AbcExporter.ExportTrackInfo;
 
 public class AbcToMidi {
@@ -48,8 +49,9 @@ public class AbcToMidi {
 		public int stereo = 100;
 		public boolean generateRegions = false;
 		public AbcInfo abcInfo = null;
+        public WarningHandler warningHandler;
 
-		public Params(File file) throws IOException {
+        public Params(File file) throws IOException {
 			this.filesData = new ArrayList<>();
 			this.filesData.add(new FileAndData(file, readLines(file)));
 		}
@@ -102,16 +104,18 @@ public class AbcToMidi {
 
 	public static Sequence convert(Params params) throws ParseException {
 		return convert(params.filesData, params.useLotroInstruments, params.instrumentOverrideMap, params.abcInfo,
-				params.enableLotroErrors, params.stereo, params.generateRegions);
+				params.enableLotroErrors, params.stereo, params.generateRegions, params.warningHandler);
 	}
 
 	private static Sequence convert(List<FileAndData> filesData, boolean useLotroInstruments,
 			Map<Integer, LotroInstrument> instrumentOverrideMap, AbcInfo abcInfo, final boolean enableLotroErrors,
-			final int stereo, final boolean generateRegions) throws ParseException {
+			final int stereo, final boolean generateRegions, WarningHandler warningHandler) throws ParseException {
 		if (abcInfo == null)
 			abcInfo = new AbcInfo();
 		else
 			abcInfo.reset();
+
+        abcInfo.warningHandler = warningHandler;
 
 		TuneInfo info = new TuneInfo();
 		Sequence seq = null;

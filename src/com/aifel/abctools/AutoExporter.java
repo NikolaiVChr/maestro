@@ -17,6 +17,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.Timer;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
@@ -93,6 +94,9 @@ public class AutoExporter implements WarningHandler {
 	MiscSettings miscSettings;
 
     private final Map<String, Boolean> proceedAllWarningMap = Collections.synchronizedMap(new HashMap<>());
+    private final AtomicReference<FileResolverAsync.MissingFileDecision> missingFileDecision =
+            new AtomicReference<>(FileResolverAsync.MissingFileDecision.ASK);
+    private final Object modalLock = new Object();
 	
 	// For testing:
 	private static final boolean neverLocateMidi = false;// for testing
@@ -194,6 +198,7 @@ public class AutoExporter implements WarningHandler {
 	private void autoExport() throws Exception {
         inProgress = true;
         proceedAllWarningMap.clear();
+        missingFileDecision.set(FileResolverAsync.MissingFileDecision.ASK);
 		SwingUtilities.invokeAndWait(() -> {
 			refreshAuto();
 			frame.getBtnStartExport().setEnabled(false);
@@ -962,55 +967,100 @@ public class AutoExporter implements WarningHandler {
 		}
 
 		private File resolveHelper(File original, String message) {
-			try {
-				SwingUtilities.invokeAndWait(() -> {
-					result = JOptionPane.showConfirmDialog(frame, message, "Failed to open file",
-							JOptionPane.YES_NO_CANCEL_OPTION);
-				});
-	
-				File alternateFile = null;
-				if (result == JOptionPane.YES_OPTION) {
-					JFileChooser jfc = new JFileChooser();
-					jfc.setDialogTitle("Open missing MIDI/ABC");
-                    jfc.addChoosableFileFilter(
-                            new ExtensionFileFilter("MIDI",
-                                    Util.MID_FILE_EXTENSION_NO_DOT,
-                                    Util.MIDI_FILE_EXTENSION_NO_DOT, Util.KAR_FILE_EXTENSION_NO_DOT));
-                    jfc.addChoosableFileFilter(
-                            new ExtensionFileFilter("ABC",
-                                    Util.ABC_FILE_EXTENSION_NO_DOT,
-                                    Util.TXT_FILE_EXTENSION_NO_DOT));
-					jfc.setFileFilter(new ExtensionFileFilter("MIDI and ABC files",
-							Util.ABC_FILE_EXTENSION_NO_DOT,Util.TXT_FILE_EXTENSION_NO_DOT,
-							Util.MID_FILE_EXTENSION_NO_DOT,Util.MIDI_FILE_EXTENSION_NO_DOT,
-							Util.KAR_FILE_EXTENSION_NO_DOT));
-                    jfc.setAcceptAllFileFilterUsed(false);
-					if (original != null)
-						jfc.setSelectedFile(original);
-		
-					try {
-						SwingUtilities.invokeAndWait(() -> {
-							result = jfc.showOpenDialog(frame);
-						});
-					} catch (Exception e) {
-						log.severe(e.toString());
-                        pInfo.appendText += "<p></p><p><font color='red'>"+e.toString()+"</font></p>";
-					}
-					if (result == JFileChooser.APPROVE_OPTION) {
-						alternateFile = jfc.getSelectedFile();
-                        pInfo.projectModified = true;
-					}
-				} else if (result == JOptionPane.CANCEL_OPTION || result == JOptionPane.CLOSED_OPTION) {
-					cancel = true;
-				}
-		
-				return alternateFile;
-			} catch (InvocationTargetException | InterruptedException e) {
-				log.severe(e.toString());
-                pInfo.appendText += "<p></p><p><font color='red'>"+e.toString()+"</font></p>";
-			}
-			return null;
+            synchronized(modalLock) {
+                if (missingFileDecision.get() == MissingFileDecision.SKIP_ALL) {
+                    return null;
+                }
+                if (missingFileDecision.get() == MissingFileDecision.CANCEL_ALL) {
+                    cancel = true;
+                    return null;
+                }
+                if (cancel) {
+                    return null;
+                }
+
+                final int[] userChoice = new int[1];
+                final boolean[] applyToAll = new boolean[1];
+
+                try {
+                    SwingUtilities.invokeAndWait(() -> {
+                        String[] options = {"Locate File...", "Skip", "Cancel"};
+                        JCheckBox skipAllCheckbox = new JCheckBox("Skip all missing files");
+                        Object[] params = {message, skipAllCheckbox};
+                        userChoice[0] = JOptionPane.showOptionDialog(
+                                frame, params, "Failed to open file",
+                                JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE,
+                                null, options, options[0]
+                        );
+                        if (userChoice[0] == 1) { // skip
+                            applyToAll[0] = skipAllCheckbox.isSelected();
+                        } else {
+                            applyToAll[0] = false;
+                        }
+                    });
+                } catch (InvocationTargetException | InterruptedException e) {
+                    log.log(Level.SEVERE, "Something went wrong when asking user about locate midi", e);
+                    pInfo.appendText += "<p><font color='red'>" + e.toString() + "</font></p>";
+                }
+
+                File alternateFile = null;
+                switch (userChoice[0]) {
+                    case 0:
+                        JFileChooser jfc = new JFileChooser();
+                        jfc.setDialogTitle("Open missing MIDI/ABC");
+                        jfc.addChoosableFileFilter(
+                                new ExtensionFileFilter("MIDI",
+                                        Util.MID_FILE_EXTENSION_NO_DOT,
+                                        Util.MIDI_FILE_EXTENSION_NO_DOT, Util.KAR_FILE_EXTENSION_NO_DOT));
+                        jfc.addChoosableFileFilter(
+                                new ExtensionFileFilter("ABC",
+                                        Util.ABC_FILE_EXTENSION_NO_DOT,
+                                        Util.TXT_FILE_EXTENSION_NO_DOT));
+                        jfc.setFileFilter(new ExtensionFileFilter("MIDI and ABC files",
+                                Util.ABC_FILE_EXTENSION_NO_DOT, Util.TXT_FILE_EXTENSION_NO_DOT,
+                                Util.MID_FILE_EXTENSION_NO_DOT, Util.MIDI_FILE_EXTENSION_NO_DOT,
+                                Util.KAR_FILE_EXTENSION_NO_DOT));
+                        jfc.setAcceptAllFileFilterUsed(false);
+                        if (original != null)
+                            jfc.setSelectedFile(original);
+
+                        try {
+                            SwingUtilities.invokeAndWait(() -> {
+                                result = jfc.showOpenDialog(frame);
+                            });
+                        } catch (InvocationTargetException | InterruptedException e) {
+                            log.log(Level.SEVERE, "Something went wrong when asking user to locate midi", e);
+                            pInfo.appendText += "<p><font color='red'>" + e.toString() + "</font></p>";
+                        }
+                        if (result == JFileChooser.APPROVE_OPTION) {
+                            alternateFile = jfc.getSelectedFile();
+                            pInfo.projectModified = true;
+                        }
+                        break;
+                    case 1: // Skip
+                        if (applyToAll[0]) {
+                            missingFileDecision.set(MissingFileDecision.SKIP_ALL);
+                        }
+                        // alternateFile is null
+                        break;
+                    case 2: // Cancel
+                    case JOptionPane.CLOSED_OPTION:
+                    default:
+                        cancel = true;
+                        missingFileDecision.set(MissingFileDecision.CANCEL_ALL);
+                        // alternateFile is null
+                        break;
+                }
+
+                return alternateFile;
+            }
 		}
+
+        private static enum MissingFileDecision {
+            ASK,
+            SKIP_ALL,
+            CANCEL_ALL
+        }
 	}
 	
 	void flushPrefs () {
@@ -1020,52 +1070,55 @@ public class AutoExporter implements WarningHandler {
 	}
 
     @Override
-    public synchronized WarningAction handleWarning(String warningId, String title, String message) {
+    public WarningAction handleWarning(String warningId, String title, String message) {
 
-        if (proceedAllWarningMap.getOrDefault(warningId, false)) {
-            return WarningAction.PROCEED;
-        }
+        synchronized(modalLock) {
 
-        if (this.cancel) {
-            return WarningAction.SKIP_FILE;
-        }
-
-        // these are in arrays to be able to make them final while still mutable
-        final int[] userChoice = new int[1];
-        final boolean[] proceedForAll = new boolean[1];
-
-        try {
-            SwingUtilities.invokeAndWait(() -> {
-                String fullMessage = message + "\n\nWhat would you like to do?";
-                String[] options = {"Proceed", "Skip", "Cancel"};
-                JCheckBox proceedForAllCheckbox = new JCheckBox("Apply choice to all '" + title + "' warnings");
-
-                Object[] params = {fullMessage, proceedForAllCheckbox};
-
-                userChoice[0] = JOptionPane.showOptionDialog(frame, params, title, JOptionPane.DEFAULT_OPTION,
-                        JOptionPane.WARNING_MESSAGE, null, options, options[0]
-                );
-                proceedForAll[0] = proceedForAllCheckbox.isSelected();
-            });
-        } catch (InvocationTargetException | InterruptedException ex) {
-            log.log(Level.WARNING, "Error showing warning dialog", ex);
-            this.cancel = true;
-            return WarningAction.SKIP_FILE;
-        }
-
-        return switch (userChoice[0]) {
-            case 0 -> {
-                if (proceedForAll[0]) {
-                    proceedAllWarningMap.put(warningId, true);
-                }
-                yield WarningAction.PROCEED;
+            if (proceedAllWarningMap.getOrDefault(warningId, false)) {
+                return WarningAction.PROCEED;
             }
-            case 1 -> WarningAction.SKIP_FILE;// Cancel All
 
-            default -> {
+            if (this.cancel) {
+                return WarningAction.SKIP_FILE;
+            }
+
+            // these are in arrays to be able to make them final while still mutable
+            final int[] userChoice = new int[1];
+            final boolean[] proceedForAll = new boolean[1];
+
+            try {
+                SwingUtilities.invokeAndWait(() -> {
+                    String fullMessage = message + "\n\nWhat would you like to do?";
+                    String[] options = {"Proceed", "Skip", "Cancel"};
+                    JCheckBox proceedForAllCheckbox = new JCheckBox("Apply choice to all '" + warningId + "' warnings");
+
+                    Object[] params = {fullMessage, proceedForAllCheckbox};
+
+                    userChoice[0] = JOptionPane.showOptionDialog(frame, params, title, JOptionPane.DEFAULT_OPTION,
+                            JOptionPane.WARNING_MESSAGE, null, options, options[0]
+                    );
+                    proceedForAll[0] = proceedForAllCheckbox.isSelected();
+                });
+            } catch (InvocationTargetException | InterruptedException ex) {
+                log.log(Level.WARNING, "Error showing warning dialog", ex);
                 this.cancel = true;
-                yield WarningAction.SKIP_FILE;
+                return WarningAction.SKIP_FILE;
             }
-        };
+
+            return switch (userChoice[0]) {
+                case 0 -> {
+                    if (proceedForAll[0]) {
+                        proceedAllWarningMap.put(warningId, true);
+                    }
+                    yield WarningAction.PROCEED;
+                }
+                case 1 -> WarningAction.SKIP_FILE;// Cancel All
+
+                default -> {
+                    this.cancel = true;
+                    yield WarningAction.SKIP_FILE;
+                }
+            };
+        }
     }
 }
