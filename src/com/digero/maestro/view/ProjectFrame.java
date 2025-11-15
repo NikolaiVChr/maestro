@@ -2687,6 +2687,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 p.setMaxPoly(0);
             }
             if (previewSequenceInfo.getLastTrackInfos() != null) {
+                //System.out.println("\nApply preview:");
                 for (AbcExporter.ExportTrackInfo trackInfo : previewSequenceInfo.getLastTrackInfos()) {
                     //threadsafe to do it here
                     trackInfo.part.setPreviewSequenceTrackNumber(trackInfo.trackNumber);
@@ -2696,6 +2697,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                     trackInfo.part.numberOfRemovedNotesZeros = trackInfo.numberOfRemovedNotesZeros;
                     trackInfo.part.numberOfRemovedNotesFromFitting = trackInfo.numberOfRemovedNotesFromFitting;
                     trackInfo.part.setMaxPoly(trackInfo.maxPoly);
+                    //System.out.println(trackInfo);
                 }
             }
             abcSequencer.setStartTick(abcPreviewStartTick);// Needed for MP3 and WAV exports.

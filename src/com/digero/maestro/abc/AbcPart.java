@@ -1457,7 +1457,10 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	}
 
 	public void setPreviewSequenceTrackNumber(int previewSequenceTrackNumber) {
-		this.previewSequenceTrackNumber = previewSequenceTrackNumber;
+	    if (this.previewSequenceTrackNumber != previewSequenceTrackNumber) {
+		    this.previewSequenceTrackNumber = previewSequenceTrackNumber;
+            fireChangeEvent(AbcPartProperty.PREVIEW_TRACK_NUMBER);
+        }
 	}
 
 	public int getPreviewSequenceTrackNumber() {

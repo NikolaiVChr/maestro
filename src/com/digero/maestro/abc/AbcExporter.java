@@ -5453,6 +5453,13 @@ public class AbcExporter {
             this.numberOfRemovedNotesZeros = numberOfRemovedNotesZeros;
             this.numberOfRemovedNotesFromPruning = numberOfRemovedNotesFromPruning;
 		}
+
+        @Override
+        public String toString() {
+            String str = "";
+            str = part.getTitle()+": preview track number "+trackNumber;
+            return str;
+        }
 	}
 
 	public void setOrganic(boolean org) {
