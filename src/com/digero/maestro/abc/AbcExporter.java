@@ -161,7 +161,7 @@ public class AbcExporter {
 			for (AbcPart part : parts) {
 				
 				if (part.getEnabledTrackCount() > 0 || (countIn != null && countIn.micros > 0L && countIn.part == part)) {
-					int pan = (parts.size() > 1) ? panner.get(part.getInstrument(), part.getTitle(), stereoPan)
+					int pan = (parts.size() > 1) ? panner.get(part, stereoPan)
 							: PanGenerator.CENTER;
 					
 					ExportTrackInfo inf = exportPartToPreview(part, sequence, pan,
@@ -1579,6 +1579,7 @@ public class AbcExporter {
 		// we add this so can choose the right instrument in abcPlayer and maestro when
 		// loading abc.
 		out.append(AbcField.MADE_FOR + part.getInstrument().friendlyName.trim()).append("\n");
+        if (part.getUserPan() != null) out.append(AbcField.USER_PAN + part.getUserPan().toString()).append("\n");
 
         /*
         if (organic) {

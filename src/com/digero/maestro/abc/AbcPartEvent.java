@@ -21,7 +21,9 @@ public class AbcPartEvent extends EventObject {
 		FX(true), //
 		CONCLUSION_FERMATA_EDIT(true),
         PART_NUMBER_MANUAL(false),
-        EXCLUSION(false), PREVIEW_TRACK_NUMBER (false); //
+        EXCLUSION(false),
+        PREVIEW_TRACK_NUMBER (false),
+        USER_PAN(true); //
 
 		private final boolean renderRelated;
 

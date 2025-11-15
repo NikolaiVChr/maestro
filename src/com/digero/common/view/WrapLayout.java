@@ -23,11 +23,11 @@ public class WrapLayout extends FlowLayout
 	}
 
 	/**
-	* Constructs a new <code>FlowLayout</code> with the specified
+	* Constructs a new <code>WrapLayout</code> with the specified
 	* alignment and a default 5-unit horizontal and vertical gap.
 	* The value of the alignment argument must be one of
-	* <code>WrapLayout</code>, <code>WrapLayout</code>,
-	* or <code>WrapLayout</code>.
+	* <code>FlowLayout.LEFT</code>, <code>FlowLayout.CENTER</code>,
+	* or <code>FlowLayout.RIGHT</code>.
 	* @param align the alignment value
 	*/
 	public WrapLayout(int align)
@@ -36,12 +36,12 @@ public class WrapLayout extends FlowLayout
 	}
 
 	/**
-	* Creates a new flow layout manager with the indicated alignment
+	* Creates a new wrap layout manager with the indicated alignment
 	* and the indicated horizontal and vertical gaps.
 	* <p>
-	* The value of the alignment argument must be one of
-	* <code>WrapLayout</code>, <code>WrapLayout</code>,
-	* or <code>WrapLayout</code>.
+     * The value of the alignment argument must be one of
+     * <code>FlowLayout.LEFT</code>, <code>FlowLayout.CENTER</code>,
+     * or <code>FlowLayout.RIGHT</code>.
 	* @param align the alignment value
 	* @param hgap the horizontal gap between components
 	* @param vgap the vertical gap between components
@@ -91,19 +91,17 @@ public class WrapLayout extends FlowLayout
 	{
 	synchronized (target.getTreeLock())
 	{
-		//  Each row must fit with the width allocated to the containter.
+		//  Each row must fit with the width allocated to the container.
 		//  When the container width = 0, the preferred width of the container
 		//  has not yet been calculated so lets ask for the maximum.
 
-		int targetWidth = target.getSize().width;
-		Container container = target;
+        int targetWidth = target.getSize().width;
 
-		while (container.getSize().width == 0 && container.getParent() != null)
-		{
-			container = container.getParent();
-		}
-
-		targetWidth = container.getSize().width;
+        Container parent = target.getParent();
+        if (parent instanceof javax.swing.JViewport)
+        {
+            targetWidth = parent.getSize().width;
+        }
 
 		if (targetWidth == 0)
 			targetWidth = Integer.MAX_VALUE;

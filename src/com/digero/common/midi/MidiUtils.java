@@ -184,6 +184,7 @@ public class MidiUtils {
 		return (msg[5] & 0xFF) | ((msg[4] & 0xFF) << 8) | ((msg[3] & 0xFF) << 16);
 	}
 
+    @Deprecated
     public static MidiEvent replacePanningEvent (Track track, LotroInstrument instrument, String partName, MidiEvent prevPanEvent, int panModifier) {
         PanGenerator pan = new PanGenerator();
         ShortMessage panMsg = (ShortMessage) prevPanEvent.getMessage();

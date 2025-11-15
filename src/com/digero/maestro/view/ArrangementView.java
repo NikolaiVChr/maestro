@@ -8,6 +8,8 @@ import java.awt.MouseInfo;
 import java.awt.Point;
 import java.awt.PointerInfo;
 import java.awt.event.ActionListener;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
@@ -23,6 +25,7 @@ import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.icons.IconLoader;
 import com.digero.common.midi.NoteFilterSequencerWrapper;
+import com.digero.common.midi.PanGenerator;
 import com.digero.common.midi.SequencerEvent.SequencerProperty;
 import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.util.ICompileConstants;
@@ -55,6 +58,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 
 	private static final int HGAP = 4;
 	private static final int VGAP = 4;
+    private final JSlider panSlider;
 
     private AbcPart abcPart;// The currently selected abcPart in left PartsList
 	private final PartAutoNumberer partAutoNumberer;
@@ -111,15 +115,19 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 	private Point mousePointView = null;
 	private double sequenceProgress = 0.0d;
 
+    private boolean firePanListener = true;
+
 	public ArrangementView(NoteFilterSequencerWrapper sequencer, PartAutoNumberer partAutoNumberer,
                            SequencerWrapper abcSequencer, boolean showMaxPolyphony) {
-		super(new TableLayout(//
-				new double[] { FILL, PREFERRED },  // x  tracks, note
-				new double[] { PREFERRED, PREFERRED, FILL }));// y  part-header, zoom, tracks
+		super();// y  part-header, zoom, tracks
+        TableLayout mainLayout = new TableLayout(//layout
+                new double[]{FILL, PREFERRED},  // x  tracks, note
+                new double[]{PREFERRED, FILL});
 
-		TableLayout layout = (TableLayout) getLayout();
-		layout.setHGap(HGAP);
-		layout.setVGap(VGAP);
+        mainLayout.setHGap(HGAP);
+        mainLayout.setVGap(VGAP);
+        setLayout(mainLayout);
+
 
 		setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()));
         setOpaque(true);
@@ -155,7 +163,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		numberSettingsButton.setToolTipText("Automatic part numbering options");
 		numberSettingsButton.setVisible(false);
 
-		nameTextField = new JTextField(32);
+		nameTextField = new JTextField(24);
 		nameTextField.getDocument().addDocumentListener(new DocumentListener() {
 			@Override
 			public void removeUpdate(DocumentEvent e) {
@@ -189,6 +197,20 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		});
 		
 		JPanel partSettingsPanel = new JPanel(new WrapLayout(FlowLayout.LEFT, HGAP, 0));
+        partSettingsPanel.addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                Component panel = e.getComponent();
+                Dimension newPreferredSize = panel.getPreferredSize();
+                Dimension currentSize = panel.getSize();
+
+                if (newPreferredSize.height != currentSize.height)
+                {
+                    panel.getParent().revalidate();
+                }
+            }
+        });
+        add(partSettingsPanel, "0, 0, 1, 0, f, f");//layout
 
 		// We never support a zoom max of less than 6x
 		final float maxHZoomBase = 6.f;
@@ -247,7 +269,38 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		partNamePanel.add(new JLabel("Part name:"));
 		partNamePanel.add(nameTextField);
 		partSettingsPanel.add(partNamePanel);
-		
+
+        JPanel partPanPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, HGAP, 0));
+        partPanPanel.add(new JLabel("Pan part:"));
+        panSlider = new JSlider(PanGenerator.LEFT, PanGenerator.RIGHT+1, 0);
+        panSlider.setFocusable(false);
+        panSlider.setMajorTickSpacing(PanGenerator.CENTER);
+        panSlider.setPaintLabels(false);
+        panSlider.setPaintTicks(true);
+        panSlider.setSnapToTicks(false);
+        panSlider.setToolTipText("<html>Right-click to reset to automatic pan.<br>Middle-click to center.</html>");
+        panSlider.addMouseListener(new MouseAdapter() {
+            public void mousePressed(MouseEvent e) {
+                if (e.getButton() == MouseEvent.BUTTON3) {
+                    if(abcPart != null) {
+                        abcPart.setUserPan(null);
+                    }
+                } else if (e.getButton() == MouseEvent.BUTTON2) {
+                    if(abcPart != null) {
+                        abcPart.setUserPan(PanGenerator.CENTER);
+                    }
+                }
+            }
+        });
+        panSlider.addChangeListener(e -> {
+            if (firePanListener) {
+                setPan(panSlider.getValue());
+                setPanSlider();
+            }
+        });
+        partPanPanel.add(panSlider);
+        partSettingsPanel.add(partPanPanel);
+
 		JPanel zoomPanel = new JPanel(new WrapLayout(FlowLayout.LEFT, HGAP, 0));
 		zoomPanel.add(hZoomLabel);
 		zoomPanel.add(hZoomSlider);
@@ -262,7 +315,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		splitPanel.setBackground(ColorTable.PANEL_BACKGROUND_DISABLED.get());
 		
 		noteGraphPanel = new JPanel();
-		noteGraphScrollPane = new PatchedJScrollPane(noteGraphPanel, VERTICAL_SCROLLBAR_ALWAYS, HORIZONTAL_SCROLLBAR_AS_NEEDED);
+		noteGraphScrollPane = new PatchedJScrollPane(noteGraphPanel, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
 
 		controlLayout = new ControlLayout(TrackPanel.calculateTrackDims().rowHeight + 1, noteGraphPanel);
@@ -338,10 +391,10 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 
         createSidePanel();
 
-		add(partSettingsPanel, "0, 0");
-		add(messageLabel, "0, 2, C, C");
-		add(splitPanel, "0, 2");
-		
+
+		add(messageLabel, "0, 1, C, C");
+		add(splitPanel, "0, 1");
+
 		// For follow support
 		sequencer.addChangeListener(e -> {
 			if (!followCheckBox.isSelected()) {
@@ -401,10 +454,11 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 
     private void createSidePanel() {
         sidePanel = new JTabbedPane(JTabbedPane.TOP);
+        sidePanel.setPreferredSize(new Dimension(225, 20000));
+        //sidePanel.setMinimumSize(new Dimension(225, 200));
 
         // lyricsPanel is the textfield with project lyrics
         lyricsPanel = new JScrollPane(lyricsContent, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_NEVER);
-        lyricsPanel.setPreferredSize(new Dimension(225, 200));
         lyricsContent.setLineWrap(true);
         lyricsContent.setWrapStyleWord(true);
         lyricsContent.setTabSize(4);
@@ -412,7 +466,6 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 
         // notePanel is the textfield with project notes
         notePanel = new JScrollPane(noteContent, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_NEVER);
-        notePanel.setPreferredSize(new Dimension(225, 200));
         noteContent.setLineWrap(true);
         noteContent.setWrapStyleWord(true);
         noteContent.setTabSize(4);
@@ -420,7 +473,6 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 
         // statsPanel is the textfield with project stats
         statsPanel = new JScrollPane(statsContent, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_NEVER);
-        statsPanel.setPreferredSize(new Dimension(225, 200));
         statsContent.setLineWrap(true);
         statsContent.setWrapStyleWord(true);
         statsContent.setTabSize(4);
@@ -517,12 +569,44 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 			setAbcPart(abcPart, true); // Revalidate layout
         } else if (e.getProperty() == AbcPartProperty.PART_NUMBER_MANUAL) {
             numberLockedCheckBox.setSelected(abcPart.isPartNumberManuallyAssigned());
+        } else if (e.getProperty() == AbcPartProperty.USER_PAN) {
+            setPanSlider();
+            setPanSliderColor();
         }
         if(e.isAbcPreviewRelated()) {
             //not needed, we update panel from ProjectFrame, when setting new histogram
             //histogramPanel.updateCountLabel();
         }
 	};
+
+    /**
+     * Set userPan on abcPart
+     * This will disable auto-pan.
+     */
+    private void setPan(int value) {
+        if (abcPart != null) {
+            abcPart.setUserPan(Math.clamp(value, PanGenerator.LEFT, PanGenerator.RIGHT));
+        }
+    }
+
+    private void setPanSlider() {
+        int value = (abcPart == null)?64:(abcPart.getUserPan() == null?64:abcPart.getUserPan());
+        firePanListener = false;
+        panSlider.setValue(value);
+        firePanListener = true;
+    }
+
+    private void setPanSliderColor() {
+        if (abcPart != null) {
+            if (abcPart.getUserPan() == null) {
+                panSlider.setBackground(UIManager.getColor("Slider.highlight"));
+            } else {
+                panSlider.setBackground(ColorTable.CONTROLS_EDITED.get());
+            }
+        } else {
+            panSlider.setBackground(UIManager.getColor("Slider.highlight"));
+        }
+    }
 
 	public void settingsChanged() {
 		numberSpinnerModel.setStepSize(partAutoNumberer.getIncrement());
@@ -564,7 +648,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
             numberLockedCheckBox.setSelected(false);
 			nameTextField.setText("");
 			instrumentComboBox.setSelectedItem(LotroInstrument.DEFAULT_INSTRUMENT);
-
+            panSlider.setEnabled(false);
 			clearTrackListPanel(true);
 		} else {
 			numberSpinner.setEnabled(true);
@@ -579,6 +663,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
             numberLockedCheckBox.setSelected(abcPart.isPartNumberManuallyAssigned());
 			nameTextField.setText(abcPart.getTitle());
 			instrumentComboBox.setSelectedItem(abcPart.getInstrument());
+            panSlider.setEnabled(true);
 
 			clearTrackListPanel(false);
 
@@ -672,7 +757,8 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		if (this.abcPart != null) {
 			this.abcPart.addAbcListener(abcPartListener);
 		}
-
+        setPanSlider();
+        setPanSliderColor();
 		//updateTracksVisible();
 
 		revalidate();
@@ -764,11 +850,12 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 	public void sidepanelVisible(boolean vis) {
 		textnoteVisible = vis;
 		if (textnoteVisible) {
-			add(sidePanel, "1, 0, 1, 2, F, F");
+			add(sidePanel, "1, 1");//layout
 		} else {
 			remove(sidePanel);
 		}
 		revalidate();
+        repaint();
 	}
 
     public void sidepanelTab(String tabName) {

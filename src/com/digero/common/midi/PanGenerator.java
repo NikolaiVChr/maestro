@@ -4,9 +4,12 @@ import java.util.Arrays;
 import java.util.regex.Pattern;
 
 import com.digero.common.abc.LotroInstrument;
+import com.digero.maestro.abc.AbcPart;
 
 public class PanGenerator {
 	public static final int CENTER = 64;
+    public static final int LEFT = 0;
+    public static final int RIGHT = 127;
 	
 	public static final int MAX_NARROW = 15;
 	public static final int VERY_NARROW = 20;
@@ -35,6 +38,7 @@ public class PanGenerator {
     public static final Pattern rightRegex = Pattern.compile("\\b(right|rechts|droite)\\b");
     public static final Pattern centerRegex = Pattern.compile("\\b(middle|center|zentrum|mitte|centre)\\b");
 
+    @Deprecated
 	public int get(LotroInstrument instrument, String partTitle) {
 		int pan = get(instrument);
 
@@ -49,6 +53,37 @@ public class PanGenerator {
 		sum += pan - CENTER;
 		return pan;
 	}
+
+    public int get(AbcPart part, int panModifier) {
+        if (part == null) {
+            return CENTER;
+        }
+        int pan = get(part.getInstrument());
+
+        if (part.getUserPan() != null) {
+            pan = part.getUserPan();
+        }
+
+        if (panModifier != 100) {
+            pan = pan - CENTER;
+            pan = (int) (pan * (float) panModifier * 0.01f);
+            pan = pan + CENTER;
+        }
+
+        return pan;
+    }
+
+    public int get(LotroInstrument instrument, String partTitle, int panModifier, Integer pan) {
+        if (pan == null) return get(instrument, partTitle, panModifier);
+
+        if (panModifier != 100) {
+            pan = pan - CENTER;
+            pan = (int) (pan * (float) panModifier * 0.01f);
+            pan = pan + CENTER;
+        }
+
+        return pan;
+    }
 
 	public int get(LotroInstrument instrument, String partTitle, int panModifier) {
 		int pan = get(instrument);

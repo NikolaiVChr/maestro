@@ -176,13 +176,28 @@ public class AbcToMidi {
 								if (!info.isInstrumentDefinitiveSet() && instrument != null)
 									info.setInstrument(instrument, false);
 							}
+                            if (abcInfo.getUserPan(trackNumber) == null) {
+                                Integer titlePan = null;
+                                String titleLower = value.toLowerCase();
+                                if (PanGenerator.leftRegex.matcher(titleLower).find())
+                                    titlePan = 0+14;//The odd numbers are for backwards compat
+                                else if (PanGenerator.rightRegex.matcher(titleLower).find())
+                                    titlePan = 127-13;//The odd numbers are for backwards compat
+                                else if (PanGenerator.centerRegex.matcher(titleLower).find())
+                                    titlePan = 64;
+
+                                if (titlePan != null) abcInfo.setPartPan(trackNumber, titlePan);
+                            }
 						} else if (field == AbcField.MADE_FOR) {
 							if (instrumentOverrideMap == null || !instrumentOverrideMap.containsKey(trackNumber)) {
 								LotroInstrument instrument = LotroInstrument.findInstrumentName(value, null);
 								if (instrument != null)
 									info.setInstrument(instrument, true);
 							}
-						}
+						} else if (field == AbcField.USER_PAN) {
+                            int pan = Math.clamp(Integer.parseInt(value.trim()),0,127);
+                            abcInfo.setPartPan(trackNumber, pan);
+                        }
 					}
 
 					continue;
@@ -814,7 +829,7 @@ public class AbcToMidi {
 
 			int panAmount = PanGenerator.CENTER;
 			if (pan != null)
-				panAmount = pan.get(abcInfo.getPartInstrument(i), abcInfo.getPartName(i), stereo);
+				panAmount = pan.get(abcInfo.getPartInstrument(i), abcInfo.getPartName(i), stereo, abcInfo.getUserPan(i));
             MidiEvent panEvent = MidiFactory.createPanEvent(panAmount, getTrackChannel(i));
 			tracks[i].add(panEvent);
             abcInfo.setPanEvent(panEvent, i);

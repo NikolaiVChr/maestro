@@ -1819,30 +1819,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		setAbcSongModified(true);
 
-        boolean panChanged = false;
-        if (e.getProperty() == AbcPartProperty.TITLE) {
-            AbcPart part = e.getSource();
-            if (part != null) {
-                // this prevents preview generation each time a user changes
-                // part title, unless the user pan changed.
-                Integer oldPan = part.userPan;
-                Integer newPan = null;
-                String titleLower = part.getTitle().toLowerCase();
-                if (PanGenerator.leftRegex.matcher(titleLower).find())
-                    newPan = -1;
-                else if (PanGenerator.rightRegex.matcher(titleLower).find())
-                    newPan = 1;
-                else if (PanGenerator.centerRegex.matcher(titleLower).find())
-                    newPan = 0;
-
-                if (!Objects.equals(newPan, oldPan)) {
-                    panChanged = true;
-                }
-                part.userPan = newPan;
-            }
-        }
-
-		if (e.isAbcPreviewRelated() || panChanged) {
+		if (e.isAbcPreviewRelated()) {
             // must be immediate since song.parts can change in subsequent
             // part listeners and generate preview now runs on a different thread
             // update: since it now uses copy of abcsong, non-immediate is ok.

@@ -1666,6 +1666,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
      *
      * @param panModifier 0 to 100, 0 is mono, 100 is full stereo
      */
+    @Deprecated
     private void updateStereo (int panModifier) {
         if (sequencer != null && sequencer.getSequence() != null && abcInfo != null) {
             Sequence seq = sequencer.getSequence();

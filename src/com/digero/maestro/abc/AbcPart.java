@@ -17,6 +17,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.xml.xpath.XPathExpressionException;
 
+import com.digero.common.midi.PanGenerator;
 import com.digero.common.util.*;
 import com.digero.maestro.view.CountIn;
 import org.jetbrains.annotations.NotNull;
@@ -65,7 +66,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	public boolean[] playLeft;
 	public boolean[] playCenter;
 	public boolean[] playRight;
-    public Integer userPan = null;//-1 = left, 0 = center, 1 = right, null = no user pan
+    private Integer userPan = null;//null = no user pan
 	private final int[] trackVolumeAdjust;
 	private final DrumNoteMap[] drumNoteMap;
 	private final StudentFXNoteMap[] studentFxNoteMap;
@@ -221,6 +222,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		ele.setAttribute("id", String.valueOf(partNumber));
         ele.setAttribute("userAssignedId", String.valueOf(partNumberManuallyModified));
 		ele.setAttribute("badgerPriority", String.valueOf(badgerPrio));
+        if (userPan != null) ele.setAttribute("pan", String.valueOf(userPan));
 		SaveUtil.appendChildTextElement(ele, "title", String.valueOf(title));
 		SaveUtil.appendChildTextElement(ele, "instrument", String.valueOf(instrument));
 		if (delay != 0) {
@@ -397,6 +399,22 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				badgerPrio = 10-badgerPrio;
 			}
 			title = SaveUtil.parseValue(ele, "title", title);
+
+            if (new Version(4, 5, 15).compareTo(fileVersion) > 0) {
+                //old backwards compat for pan:
+                String titleLower = title.toLowerCase();
+                if (PanGenerator.leftRegex.matcher(titleLower).find())
+                    userPan = 0;
+                else if (PanGenerator.rightRegex.matcher(titleLower).find())
+                    userPan = 127;
+                else if (PanGenerator.centerRegex.matcher(titleLower).find())
+                    userPan = 64;
+            }
+            //new pan data:
+            int xmlPan = SaveUtil.parseValue(ele, "@pan", Integer.MAX_VALUE);
+            if (xmlPan != Integer.MAX_VALUE) {
+                userPan = xmlPan;
+            }
 			instrument = SaveUtil.parseValue(ele, "instrument", instrument);
 			typeNumber = getTypeNumberMatchingTitle();// must be after instr and title
 			delay = SaveUtil.parseValue(ele, "delay", 0);
@@ -1817,6 +1835,17 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	public int getMaxPoly() {
 		return maxPoly;		
 	}
+
+    public Integer getUserPan() {
+        return userPan;
+    }
+
+    public void setUserPan(Integer pan) {
+        if (!Objects.equals(pan, userPan)) {
+            userPan = pan;
+            fireChangeEvent(AbcPartProperty.USER_PAN);
+        }
+    }
 
     public AbcPart origPart = this;//copy constructor will set this.
 

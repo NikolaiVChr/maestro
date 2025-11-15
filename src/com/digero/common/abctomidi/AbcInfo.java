@@ -46,6 +46,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		private boolean nameIsFromExtendedInfo = false;
 		private int startLine = 0;
 		private int endLine = 0;
+        private Integer userPan = null;
 	}
 
 	private static final Logger log = Logger.getLogger("import.abc");
@@ -243,6 +244,13 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 			return false;
 		return info.instrumentIsFromMadeFor;
 	}
+
+    public Integer getUserPan(int trackIndex) {
+        AbcInfo.PartInfo info = partInfoByIndex.get(trackIndex);
+        if (info == null)
+            return null;
+        return info.userPan;
+    }
 
 	public String getIssue() { return Util.emptyIfNull(issue); }
 
@@ -502,6 +510,15 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		info.instrument = partInstrument;
 		info.instrumentIsFromMadeFor = madeFor;
 	}
+
+    void setPartPan(int trackIndex, int pan) {
+        AbcInfo.PartInfo info = partInfoByIndex.get(trackIndex);
+
+        if (info == null)
+            partInfoByIndex.put(trackIndex, info = new PartInfo());
+
+        info.userPan = pan;
+    }
 
 	void setPartName(int trackIndex, String partName, boolean fromExtendedInfo) {
 		AbcInfo.PartInfo info = partInfoByIndex.get(trackIndex);
