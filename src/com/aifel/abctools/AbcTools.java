@@ -10,6 +10,7 @@ import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 import javax.swing.SwingUtilities;
 
+import com.digero.common.util.AppInfo;
 import com.digero.common.util.Logging;
 import com.digero.common.util.Themer;
 import com.digero.common.util.Util;
@@ -31,6 +32,8 @@ public class AbcTools {
 	private final MergeTool mergeInstance;
 	
 	public static void main(String[] args) throws IOException {
+        AppInfo.abcTools = true;
+        AppInfo.APP_NAME = APP_NAME;
 		Logging.configure(APP_NAME);
 		try {
 			SwingUtilities.invokeAndWait(() -> {

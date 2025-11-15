@@ -19,6 +19,7 @@ import java.util.prefs.Preferences;
 
 import javax.swing.SwingUtilities;
 
+import com.digero.common.util.AppInfo;
 import com.digero.common.util.Logging;
 import com.digero.common.util.Themer;
 import com.digero.common.util.Util;
@@ -53,6 +54,8 @@ public class MaestroMain {
 	}
 
 	public static void main(final String[] args) throws Exception {
+        AppInfo.maestro = true;
+        AppInfo.APP_NAME = APP_NAME;
 		Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
 			log.log(Level.SEVERE, throwable.toString(), throwable);
 		    ProjectFrame.feed("ERROR: exception in thread " + thread.getName() + ": " + throwable+". Please notify the devs.", getFirstLines(throwable));

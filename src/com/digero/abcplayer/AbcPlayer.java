@@ -59,6 +59,7 @@ import com.digero.common.abctomidi.FileAndData;
 import com.digero.common.icons.IconLoader;
 import com.digero.common.midi.*;
 import com.digero.common.midi.SequencerEvent.SequencerProperty;
+import com.digero.common.util.AppInfo;
 import com.digero.common.util.ExtensionFileFilter;
 import com.digero.common.util.FileFilterDropListener;
 import com.digero.common.util.Listener;
@@ -100,7 +101,8 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 	private static ServerSocket serverSocket;
 
 	public static void main(String[] args) throws IOException {
-		
+        AppInfo.abcPLayer = true;
+        AppInfo.APP_NAME = APP_NAME;
 		try {
 			Properties props = new Properties();
 			props.load(AbcPlayer.class.getResourceAsStream("version.properties"));

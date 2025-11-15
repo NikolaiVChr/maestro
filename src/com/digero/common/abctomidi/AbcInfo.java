@@ -23,6 +23,7 @@ import com.digero.common.abc.VersionsWithIssues;
 import com.digero.common.midi.IBarNumberCache;
 import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.TimeSignature;
+import com.digero.common.util.AppInfo;
 import com.digero.common.util.FileParseException;
 import com.digero.common.util.Util;
 import com.digero.common.util.WarningHandler;
@@ -456,10 +457,8 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
                     if (action == WarningHandler.WarningAction.SKIP_FILE) {
                         throw new FileParseException("Skipped file (possible corrupt abc source) by user request.", null);
                     }
-                } else if (Preferences.userNodeForPackage(AbcPlayer.class).node("miscSettings")
+                } else if (AppInfo.maestro || Preferences.userNodeForPackage(AbcPlayer.class).node("miscSettings")
                         .getBoolean("flawedMaestroPopup", true)) {
-                    //TODO: When Maestro project uses abc as source, it should always get in here, despite abc players setting.
-                    //      Not sure how best to implement that..
 					SwingUtilities.invokeLater(() -> {
 						JOptionPane.showMessageDialog(null,
                                 title+" ABC was exported with a flawed Maestro: "+issue,
