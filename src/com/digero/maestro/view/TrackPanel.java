@@ -69,7 +69,6 @@ import info.clearthought.layout.TableLayoutConstants;
 import info.clearthought.layout.TableLayoutConstraints;
 import net.miginfocom.swing.MigLayout;
 
-@SuppressWarnings("serial")
 public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConstants, ICompileConstants, ArrangementViewItem {
 
 	private static final String DRUM_NOTE_MAP_DIR_PREF_KEY = "DrumNoteMap.directory";

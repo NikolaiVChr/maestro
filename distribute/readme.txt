@@ -49,6 +49,7 @@ Version 4.5.15
 - Prevent preview generation each time a user changes part title, unless the user pan actually changed.
 - Added option to auto-exporter to force a volume method upon all exported abc.
 - Added a part pan slider to control stereo manually, in future using hints in part name will not work.
+- Added button to jump to highest polyphony peak.
 
 Version 4.5.11
 - Offloaded Maestro ABC exporting to a worker thread.

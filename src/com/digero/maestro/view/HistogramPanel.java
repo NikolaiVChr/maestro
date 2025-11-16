@@ -10,9 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 
-import javax.swing.BorderFactory;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
+import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 
 import com.digero.common.midi.Note;
@@ -31,7 +29,6 @@ import com.digero.maestro.midi.SequenceDataCache;
 import com.digero.maestro.midi.SequenceInfo;
 import com.digero.maestro.view.TrackPanel.TrackDimensions;
 
-@SuppressWarnings("serial")
 public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutConstants, ArrangementViewItem {
 	// 0 1 2 3
 	// +---+-------------------+-----------+---------------------+
@@ -44,6 +41,7 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 	static final int TITLE_COLUMN = 1;
 	static final int COUNT_COLUMN = 2;
 	static final int GRAPH_COLUMN = 3;
+    static final int BUTTON_COLUMN = 3;
 	
 	public static final int CLIP_MAX_NOTES = 80;// Show from 0 to 80 notes
 	public static final int ORANGE_NOTES   = 45;// Over or equal to 45 and they go orange color. The limit is 64, but emotes and dances also fill.
@@ -53,10 +51,11 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 
 	private static final int GUTTER_WIDTH = TrackPanel.GUTTER_WIDTH;
 	private static final int TITLE_WIDTH = TrackPanel.TITLE_WIDTH_DEFAULT + TrackPanel.HGAP
-			+ TrackPanel.PRIORITY_WIDTH_DEFAULT-EXTRA_COUNT_COLUMN_WIDTH;
+			-EXTRA_COUNT_COLUMN_WIDTH;
 	private static final int COUNT_WIDTH = TrackPanel.CONTROL_WIDTH_DEFAULT+EXTRA_COUNT_COLUMN_WIDTH;
+    private static final int BUTTON_WIDTH = TrackPanel.PRIORITY_WIDTH_DEFAULT;
 
-	private static double[] LAYOUT_COLS = new double[] { GUTTER_WIDTH, TITLE_WIDTH, COUNT_WIDTH/*, FILL*/ };
+	private static double[] LAYOUT_COLS = new double[] { GUTTER_WIDTH, TITLE_WIDTH, COUNT_WIDTH, BUTTON_WIDTH };
 	private static double[] LAYOUT_ROWS = new double[] { HISTOGRAM_HEIGHT };
 
 	private final SequencerWrapper sequencer;
@@ -65,7 +64,8 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
     private boolean abcPreviewMode = false;
 
 	private HistogramNoteGraph histoGraph;
-	private LeanJLabel currentCountLabel;
+	private final LeanJLabel currentCountLabel;
+    private final JButton peakButton;
 
 	private AbcSong abcSong;
     private PolyphonyHistogram histogram = null;
@@ -79,7 +79,7 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 		tableLayout.setHGap(TrackPanel.HGAP);
 
 		TrackDimensions dims = TrackPanel.calculateTrackDims();
-		LAYOUT_COLS[1] = dims.titleWidth + TrackPanel.HGAP * 2 + dims.priorityWidth - EXTRA_COUNT_COLUMN_WIDTH;
+		LAYOUT_COLS[1] = dims.titleWidth + TrackPanel.HGAP * 2 - EXTRA_COUNT_COLUMN_WIDTH;
 		LAYOUT_COLS[2] = dims.controlWidth + EXTRA_COUNT_COLUMN_WIDTH;
 		tableLayout.setColumn(LAYOUT_COLS);
 
@@ -109,12 +109,23 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 		currentCountLabel.setForeground(ColorTable.PANEL_TEXT_DISABLED.get());
 		currentCountLabel.setToolTipText("Number of concurrent playing notes.\nThis is useful due to lotro's limitation of 64 sounds, including dance footsteps and emotes.\nGreen sections have under 45 notes at once, and shouldn't have note loss.\nYellow sections have 45+ notes, and red sections have 64+ notes.");
 		currentCountLabel.setHorizontalAlignment(JLabel.RIGHT);
+
+        peakButton = new JButton("P");
+        peakButton.setToolTipText("Jump to highest peak");
+        peakButton.addActionListener(a -> {
+            if (histogram != null) {
+                long tick = histogram.getPeakTick();
+                sequencer.setTickPosition(tick);
+            }
+        });
 		
 		updateCountLabel();
 
 		add(gutter, GUTTER_COLUMN + ", 0");
 		add(titleLabel, TITLE_COLUMN + ", 0");
 		add(currentCountLabel, COUNT_COLUMN + ", 0, R, C");
+        add(peakButton, BUTTON_COLUMN + ", 0, R, C");
+
 //		add(tempoGraph, GRAPH_COLUMN + ", 0");
 
 		sequencer.addChangeListener(sequencerListener);

@@ -24,6 +24,8 @@ public class PolyphonyHistogram   {
 	private int max = 0;
     private double average = 0;
     private int maxAll = 0;
+
+    private long peakTick = 0L;
 	public static boolean enabled = true;// set to true to enable this system, set to false to save cpu power.
 	private final Listener<SequencerEvent> listener = new MyListener();
 	private LotroSequencerWrapper abcSeq = null;
@@ -292,6 +294,7 @@ public class PolyphonyHistogram   {
 		max = 0;
         average = 0.0d;
         maxAll = 0;
+        peakTick = 0L;
 		Set<Long> partSet = new HashSet<>(histogramData.keySet());
 		List<TreeMap<Long, Pair<Long,Integer>>> treeList = new ArrayList<>();
         List<TreeMap<Long, Pair<Long,Integer>>> treeListMuted = new ArrayList<>();
@@ -338,6 +341,7 @@ public class PolyphonyHistogram   {
 			sum.put(entry.getKey(), new Pair<>(entry.getValue().first, polyphony));
 			if (polyphony > max) {
 				max = polyphony;
+                peakTick = entry.getValue().first;
 			}
 		}
 		assert polyphony == 0;
@@ -374,6 +378,7 @@ public class PolyphonyHistogram   {
             polyphony += entry.getValue().second;
             if (polyphony > maxAll) {
                 maxAll = polyphony;
+                peakTick = entry.getValue().first;
             }
             if (polyphony > 0) {
                 sumMicros += lastMicroSection;
@@ -440,5 +445,10 @@ public class PolyphonyHistogram   {
     public int maxAll() {
         if (!enabled) return 0;
         return maxAll;
+    }
+
+    public long getPeakTick() {
+        if (!enabled) return 0L;
+        return peakTick;
     }
 }
