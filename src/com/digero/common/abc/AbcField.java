@@ -24,7 +24,8 @@ public enum AbcField {
 	ORGANIC,
 	ORGANIC_MULTI_STAGE,
 	ORGANIC_POLY_6_PLUS,
-	USER_PAN;
+	USER_PAN,
+    REDUCED_FILE_SIZE;
 
 	private static class MetaData {
 		private static Map<String, Integer> longestByPrefix = new HashMap<>();

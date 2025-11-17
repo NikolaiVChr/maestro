@@ -467,10 +467,11 @@ public class AbcExporter {
 				if (!organic) {
 					out.println(AbcField.SWING_RHYTHM + Boolean.toString(qtm.isTripletTiming()));
 					out.println(AbcField.MIX_TIMINGS + Boolean.toString(qtm.isMixTiming()));
+                    out.println(AbcField.REDUCED_FILE_SIZE + Boolean.toString(reducedFilesize));
 				} else {
 					out.println(AbcField.SWING_RHYTHM + Boolean.toString(false));
 					out.println(AbcField.MIX_TIMINGS + Boolean.toString(false));
-                    out.println("%%Reduced file size " + Boolean.toString(reducedFilesize && !useRestsInChords));
+                    out.println(AbcField.REDUCED_FILE_SIZE + Boolean.toString(reducedFilesize && !useRestsInChords));
 				}
 				out.println(AbcField.ORGANIC + Boolean.toString(organic));
 				out.println(AbcField.ORGANIC_MULTI_STAGE + Boolean.toString(organic && organic2));
