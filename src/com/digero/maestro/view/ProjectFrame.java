@@ -1520,11 +1520,12 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             int panModifier = prefs.getInt("stereoPan", 100);
             Sequence seq = sequencer.getSequence();
             Track[] tracks = seq.getTracks();
+            PanGenerator panner = new PanGenerator();
             for (AbcPart part : abcSong.getParts()) {
                 MidiEvent prevEvent = part.getPanEvent();
                 if (prevEvent == null) continue;
                 Track track = seq.getTracks()[part.getPreviewSequenceTrackNumber()];
-                MidiEvent newPanEvent = MidiUtils.replacePanningEvent(track, part.getInstrument(), part.getTitle(), prevEvent, panModifier, part.getUserPan());
+                MidiEvent newPanEvent = MidiUtils.replacePanningEvent(track, part.getInstrument(), part.getTitle(), prevEvent, panModifier, part.getUserPan(), panner);
                 part.setPanEvent(newPanEvent);
                 abcSequencer.injectPanEvents(newPanEvent);
             }
@@ -1982,7 +1983,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 // might be null shortly after loading from midi
                 arrangementView.setAbcPart(partsList.getSelectedPart(), true);
             }
-
+            refreshPreviewSequence(false);// autoPan depend on part order
 			partsList.repaint();
 			partEditor.repaint();
 			updateButtons(false);

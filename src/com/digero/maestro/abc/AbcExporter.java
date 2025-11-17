@@ -162,9 +162,7 @@ public class AbcExporter {
 			for (AbcPart part : parts) {
 				
 				if (part.getEnabledTrackCount() > 0 || (countIn != null && countIn.micros > 0L && countIn.part == part)) {
-					int pan = (parts.size() > 1) ? panner.get(part, stereoPan)
-							: PanGenerator.CENTER;
-					
+					int pan = (parts.size() > 1) ? panner.get(part, stereoPan) : PanGenerator.CENTER;
 					ExportTrackInfo inf = exportPartToPreview(part, sequence, pan,
 							useLotroInstruments, chordsMade, countIn);
 					infoList.add(inf);

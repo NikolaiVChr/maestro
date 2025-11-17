@@ -188,10 +188,9 @@ public class MidiUtils {
      * Remove a pan event from a track, and replace it with a newly calculated pan event.
      * Returns the new event.
      */
-    public static MidiEvent replacePanningEvent (Track track, LotroInstrument instrument, String partName, MidiEvent prevPanEvent, int panModifier, Integer value) {
-        PanGenerator pan = new PanGenerator();
+    public static MidiEvent replacePanningEvent (Track track, LotroInstrument instrument, String partName, MidiEvent prevPanEvent, int panModifier, Integer value, PanGenerator panner) {
         ShortMessage panMsg = (ShortMessage) prevPanEvent.getMessage();
-        int panAmount = pan.get(instrument, partName, panModifier, value);
+        int panAmount = panner.get(instrument, partName, panModifier, value);
         MidiEvent panEvent = MidiFactory.createPanEvent(panAmount, panMsg.getChannel());
         track.remove(prevPanEvent);
         track.add(panEvent);
