@@ -57,14 +57,27 @@ public class LotroSequencerWrapper extends NoteFilterSequencerWrapper {
 					}
 					receiver.send(MidiFactory.createLotroChangeEvent(info.patch, info.channel, sequencer.getTickPosition())
 							.getMessage(), -1L);
+                if (info.part != null && info.part.getPanEvent() != null) {
+                    // when the user skips in song, javas midi player doesn't re-read the initial pan message at
+                    // tick zero. So we inject pan event at every change.
+                    injectPanEvent(info.part.getPanEvent());
+                }
 			}
-		}
+		} else if (infos != null) {
+            for (ExportTrackInfo info : infos) {
+                if (info.part != null && info.part.getPanEvent() != null) {
+                    // when the user skips in song, javas midi player doesn't re-read the initial pan message at
+                    // tick zero. So we inject pan event at every change.
+                    injectPanEvent(info.part.getPanEvent());
+                }
+            }
+        }
 	}
 
     /**
      * Inject real-time a pan event into a channel
      */
-    public void injectPanEvents(MidiEvent newPanEvent) {
+    public void injectPanEvent(MidiEvent newPanEvent) {
         MidiMessage msg = newPanEvent.getMessage();
         receiver.send(msg, -1L);
     }

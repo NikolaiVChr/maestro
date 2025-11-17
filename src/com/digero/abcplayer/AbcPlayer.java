@@ -1671,7 +1671,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
                 MidiEvent prevEvent = abcInfo.getPartPanEvent(i);
                 MidiEvent newPanEvent = MidiUtils.replacePanningEvent(tracks[i], abcInfo.getPartInstrument(i), abcInfo.getPartFullName(i), prevEvent, panModifier, abcInfo.getUserPan(i), panner);
                 abcInfo.setPanEvent(newPanEvent, i);
-                if (wrapper != null) wrapper.injectPanEvents(newPanEvent);
+                if (wrapper != null) wrapper.injectPanEvent(newPanEvent);
             }
         }
     }

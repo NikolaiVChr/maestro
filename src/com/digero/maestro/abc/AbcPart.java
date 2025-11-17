@@ -1196,7 +1196,10 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 					break;
 				}
 			}
-			fireChangeEvent(AbcPartProperty.INSTRUMENT, false);// false because the line next will recompute preview anyway.
+            // false because the line next will recompute preview anyway.
+            // If changing instrument will change the order,
+            // it will also produce yet another preview generation (in addition to the fermata one) after sorting:
+			fireChangeEvent(AbcPartProperty.INSTRUMENT, false);
 			fireChangeEvent(AbcPartProperty.CONCLUSION_FERMATA_EDIT);// to make sure song end tick get recalculated in case we switch between sustain and not.
 		}
 	}

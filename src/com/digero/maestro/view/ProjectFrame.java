@@ -1527,7 +1527,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 Track track = seq.getTracks()[part.getPreviewSequenceTrackNumber()];
                 MidiEvent newPanEvent = MidiUtils.replacePanningEvent(track, part.getInstrument(), part.getTitle(), prevEvent, panModifier, part.getUserPan(), panner);
                 part.setPanEvent(newPanEvent);
-                abcSequencer.injectPanEvents(newPanEvent);
+                abcSequencer.injectPanEvent(newPanEvent);
             }
         }
     }
