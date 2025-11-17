@@ -195,8 +195,16 @@ public class AbcToMidi {
 									info.setInstrument(instrument, true);
 							}
 						} else if (field == AbcField.USER_PAN) {
-                            int pan = Math.clamp(Integer.parseInt(value.trim()),0,127);
-                            abcInfo.setPartPan(trackNumber, pan);
+                            if ("auto".equalsIgnoreCase(value.trim())) {
+                                abcInfo.setPartPan(trackNumber, null);
+                            } else {
+                                try {
+                                    int pan = Math.clamp(Integer.parseInt(value.trim()), 0, 127);
+                                    abcInfo.setPartPan(trackNumber, pan);
+                                } catch (NumberFormatException nfe) {
+                                    abcInfo.setPartPan(trackNumber, null);
+                                }
+                            }
                         }
 					}
 

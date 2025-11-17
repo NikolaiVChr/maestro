@@ -41,7 +41,7 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
-Version 4.5.15
+Version 4.5.16
 - Fixed a bug where playlists with files which had been moved/renamed wouldn't load.
 - Added an "Export Playlist to CSV Sheet..." option in the playlist menu in AbcPlayer, to export a CSV sheet only without also exporting a set
 - Each note in abc output is no longer written as a fraction. This reduces file size.
@@ -50,6 +50,8 @@ Version 4.5.15
 - Added option to auto-exporter to force a volume method upon all exported abc.
 - Added a part pan slider to control stereo manually, in future using hints in part name will not work.
 - Added button to jump to highest polyphony peak.
+- Fixed that solo/muting could in some circumstances solo/mute the wrong parts.
+- Fixed that auto-exporter could bring up multiple windows asking choices at the same time.
 
 Version 4.5.11
 - Offloaded Maestro ABC exporting to a worker thread.

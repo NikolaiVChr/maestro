@@ -1580,6 +1580,7 @@ public class AbcExporter {
 		// loading abc.
 		out.append(AbcField.MADE_FOR + part.getInstrument().friendlyName.trim()).append("\n");
         if (part.getUserPan() != null) out.append(AbcField.USER_PAN + part.getUserPan().toString()).append("\n");
+        else out.append(AbcField.USER_PAN + "auto").append("\n");
 
         /*
         if (organic) {

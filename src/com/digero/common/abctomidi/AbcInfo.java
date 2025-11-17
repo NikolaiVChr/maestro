@@ -511,7 +511,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		info.instrumentIsFromMadeFor = madeFor;
 	}
 
-    void setPartPan(int trackIndex, int pan) {
+    void setPartPan(int trackIndex, Integer pan) {
         AbcInfo.PartInfo info = partInfoByIndex.get(trackIndex);
 
         if (info == null)
