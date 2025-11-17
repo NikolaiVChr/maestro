@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.List;
 
 import javax.sound.midi.InvalidMidiDataException;
+import javax.sound.midi.MidiEvent;
+import javax.sound.midi.MidiMessage;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.MidiUnavailableException;
 import javax.sound.midi.Receiver;
@@ -58,6 +60,14 @@ public class LotroSequencerWrapper extends NoteFilterSequencerWrapper {
 			}
 		}
 	}
+
+    /**
+     * Inject real-time a pan event into a channel
+     */
+    public void injectPanEvents(MidiEvent newPanEvent) {
+        MidiMessage msg = newPanEvent.getMessage();
+        receiver.send(msg, -1L);
+    }
 
 	@Override
 	public void setRunning(boolean isRunning) {

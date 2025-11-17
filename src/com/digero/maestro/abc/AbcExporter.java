@@ -25,6 +25,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import javax.sound.midi.InvalidMidiDataException;
+import javax.sound.midi.MidiEvent;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Track;
 
@@ -252,7 +253,8 @@ public class AbcExporter {
 
 		return new ExportTrackInfo(trackNumber.first, part.origPart, null /* noteEvents */, trackNumber.second,
 				part.getInstrument().midi.id(), trackNumber.third, part.numberOfExportedNotes, part.numberOfRemovedNotesForSafety,
-                part.getMaxPoly(), part.numberOfRemovedNotesFromFitting, part.numberOfRemovedNotesZeros, part.numberOfRemovedNotesFromPruning);
+                part.getMaxPoly(), part.numberOfRemovedNotesFromFitting, part.numberOfRemovedNotesZeros, part.numberOfRemovedNotesFromPruning,
+                part.getPanEvent());
 	}
 
 	private Triple<Integer, Integer, Long> exportPartToMidi(AbcPart part, Sequence out, List<Chord> chords, int pan,
@@ -285,7 +287,8 @@ public class AbcExporter {
             track.add(MidiFactory.createChorusControlEvent(AbcConstants.MIDI_CHORUS, channel, 1));
             track.add(MidiFactory.createExpressionEvent(MidiConstants.MAX_EXPRESSION, channel, 1));
         }
-        track.add(MidiFactory.createPanEvent(pan, channel));
+        part.setPanEvent(MidiFactory.createPanEvent(pan, channel));
+        track.add(part.getPanEvent());
 
         long lastEnd = 0L;
 
@@ -5439,10 +5442,12 @@ public class AbcExporter {
 		public final Integer patch;
 		public final long endOfTrack;
         public int maxPoly;
+        public final MidiEvent panEvent;
 
         public ExportTrackInfo(int trackNumber, AbcPart part, List<AbcNoteEvent> noteEvents, Integer channel, int patch, long endOfTrack,
                                int numberOfExportedNotes, int numberOfRemovedNotesForSafety, int maxPoly,
-                               int numberOfRemovedNotesFromFitting, int numberOfRemovedNotesZeros, int numberOfRemovedNotesFromPruning) {
+                               int numberOfRemovedNotesFromFitting, int numberOfRemovedNotesZeros, int numberOfRemovedNotesFromPruning,
+                               MidiEvent panEvent) {
 			this.trackNumber = trackNumber;
 			this.part = part;
             this.numberOfExportedNotes = numberOfExportedNotes;
@@ -5455,6 +5460,7 @@ public class AbcExporter {
             this.numberOfRemovedNotesFromFitting = numberOfRemovedNotesFromFitting;
             this.numberOfRemovedNotesZeros = numberOfRemovedNotesZeros;
             this.numberOfRemovedNotesFromPruning = numberOfRemovedNotesFromPruning;
+            this.panEvent = panEvent;
 		}
 
         @Override

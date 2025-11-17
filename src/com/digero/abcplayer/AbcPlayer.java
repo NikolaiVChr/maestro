@@ -940,13 +940,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		stereoMenuItem.setValue(prefs.getInt("stereoSliderMenuItem", oldStereo?100:0));
 		stereoMenuItem.addChangeListener(e -> {
 			prefs.putInt("stereoSliderMenuItem", stereoMenuItem.getValue());
-			refreshSequence();
-            /*
-            boolean isRunning = sequencer.isRunning();
-            if (isRunning) sequencer.stop();
             updateStereo(stereoMenuItem.getValue());
-            if (isRunning) sequencer.start();
-             */
 		});
 		
 		toolsMenu.add(countdownMenuItem = new JCheckBoxMenuItem("Countdown instead of up"));
@@ -1666,16 +1660,17 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
      *
      * @param panModifier 0 to 100, 0 is mono, 100 is full stereo
      */
-    @Deprecated
     private void updateStereo (int panModifier) {
         if (sequencer != null && sequencer.getSequence() != null && abcInfo != null) {
             Sequence seq = sequencer.getSequence();
             Track[] tracks = seq.getTracks();
+            LotroSequencerWrapper wrapper = useLotroInstruments?(LotroSequencerWrapper)sequencer:null;
             int partCount = abcInfo.getPartCount();
             for (int i = 1; i < partCount; i++) {
                 MidiEvent prevEvent = abcInfo.getPartPanEvent(i);
-                MidiEvent newPanEvent = MidiUtils.replacePanningEvent(tracks[i], abcInfo.getPartInstrument(i), abcInfo.getPartFullName(i), prevEvent, panModifier);
+                MidiEvent newPanEvent = MidiUtils.replacePanningEvent(tracks[i], abcInfo.getPartInstrument(i), abcInfo.getPartFullName(i), prevEvent, panModifier, abcInfo.getUserPan(i));
                 abcInfo.setPanEvent(newPanEvent, i);
+                if (wrapper != null) wrapper.injectPanEvents(newPanEvent);
             }
         }
     }

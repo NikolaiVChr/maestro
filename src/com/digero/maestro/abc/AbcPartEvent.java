@@ -23,7 +23,7 @@ public class AbcPartEvent extends EventObject {
         PART_NUMBER_MANUAL(false),
         EXCLUSION(false),
         PREVIEW_TRACK_NUMBER (false),
-        USER_PAN(true); //
+        USER_PAN(false); // we no longer rebuild sequence when pan changes, see ProjectFrame.updateStereo()
 
 		private final boolean renderRelated;
 

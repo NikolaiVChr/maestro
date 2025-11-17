@@ -38,9 +38,11 @@ import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
 import javax.sound.midi.InvalidMidiDataException;
+import javax.sound.midi.MidiEvent;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.MidiUnavailableException;
 import javax.sound.midi.Sequence;
+import javax.sound.midi.Track;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -53,6 +55,7 @@ import javax.swing.text.BadLocationException;
 import javax.xml.transform.TransformerException;
 
 import com.digero.common.abc.AbcConstants;
+import com.digero.common.midi.MidiUtils;
 import com.digero.common.midi.PanGenerator;
 import com.digero.common.util.*;
 import com.digero.maestro.midi.SequenceDataCache;
@@ -1499,21 +1502,34 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	public void setPan(int pan) {
 		if (pan != prefs.getInt("stereoPan", 100)) {
 			prefs.putInt("stereoPan", pan);
-			SequencerWrapper curSequencer = abcPreviewMode ? abcSequencer : sequencer;
-
-			boolean running = curSequencer.isRunning();
-			if (abcPreviewMode && running) {
-				// curSequencer.setRunning(false);
-				refreshPreviewSequence(true);
-				// curSequencer.setRunning(true);
-			}
 			saveSettings.saveToPrefs();
+            updateStereo();
 		}
 	}
 	
 	public int getPan() {
 		return prefs.getInt("stereoPan", 100);
 	}
+
+    /**
+     * Change stereo rendition
+     *
+     */
+    private void updateStereo () {
+        if (abcSequencer != null && abcSequencer.getSequence() != null && abcSong != null) {
+            int panModifier = prefs.getInt("stereoPan", 100);
+            Sequence seq = sequencer.getSequence();
+            Track[] tracks = seq.getTracks();
+            for (AbcPart part : abcSong.getParts()) {
+                MidiEvent prevEvent = part.getPanEvent();
+                if (prevEvent == null) continue;
+                Track track = seq.getTracks()[part.getPreviewSequenceTrackNumber()];
+                MidiEvent newPanEvent = MidiUtils.replacePanningEvent(track, part.getInstrument(), part.getTitle(), prevEvent, panModifier, part.getUserPan());
+                part.setPanEvent(newPanEvent);
+                abcSequencer.injectPanEvents(newPanEvent);
+            }
+        }
+    }
 
 	private class MainSequencerListener implements Listener<SequencerEvent> {
 		@Override
@@ -1813,6 +1829,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
         if (e.getProperty() == AbcPartProperty.PART_NUMBER_MANUAL)
             partAutoNumberer.renumberAllParts(abcSong.getParts());
+
+        if (e.getProperty() == AbcPartProperty.USER_PAN) {
+            updateStereo();
+        }
 
 		partsList.repaint();
 		partEditor.repaint();
@@ -2661,6 +2681,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 p.numberOfRemovedNotesFromPruning = 0;
                 p.numberOfRemovedNotesZeros = 0;
                 p.numberOfRemovedNotesFromFitting = 0;
+                p.setPanEvent(null);
                 p.setMaxPoly(0);
             }
             if (previewSequenceInfo.getLastTrackInfos() != null) {
@@ -2674,6 +2695,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                     trackInfo.part.numberOfRemovedNotesZeros = trackInfo.numberOfRemovedNotesZeros;
                     trackInfo.part.numberOfRemovedNotesFromFitting = trackInfo.numberOfRemovedNotesFromFitting;
                     trackInfo.part.setMaxPoly(trackInfo.maxPoly);
+                    trackInfo.part.setPanEvent(trackInfo.panEvent);
                     //System.out.println(trackInfo);
                 }
             }

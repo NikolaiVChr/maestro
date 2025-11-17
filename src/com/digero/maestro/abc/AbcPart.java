@@ -12,6 +12,7 @@ import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.sound.midi.MidiEvent;
 import javax.swing.JOptionPane;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -67,6 +68,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	public boolean[] playCenter;
 	public boolean[] playRight;
     private Integer userPan = null;//null = no user pan
+    private MidiEvent panEvent = null;
 	private final int[] trackVolumeAdjust;
 	private final DrumNoteMap[] drumNoteMap;
 	private final StudentFXNoteMap[] studentFxNoteMap;
@@ -119,7 +121,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 
     public final long uniqueID;//shared with any copies
 
-	public AbcPart(AbcSong abcSong) {
+    public AbcPart(AbcSong abcSong) {
         this(abcSong, System.nanoTime());
     }
 
@@ -1989,5 +1991,19 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
             }
         }
         this.origPart = orig;
+    }
+
+    /**
+     * Store the pan event used in the preview sequence, so we can replace it without rebuilding the entire sequence.
+     */
+    public void setPanEvent(MidiEvent newPanEvent) {
+        this.panEvent = newPanEvent;
+    }
+
+    /**
+     * Get the pan event used in the preview sequence.
+     */
+    public MidiEvent getPanEvent() {
+        return panEvent;
     }
 }
