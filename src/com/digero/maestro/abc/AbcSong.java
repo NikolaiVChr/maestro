@@ -644,9 +644,11 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         return note;
     }
 
-	public void setNote(String note) {
-		// Only call this just before saving a msx file.
+	public void setNote(String note, boolean fireListener) {
 		this.note = note;
+        if (fireListener) {
+            fireChangeEvent(AbcSongProperty.USER_NOTE);
+        }
 	}
 
 	public Document saveToXml() {

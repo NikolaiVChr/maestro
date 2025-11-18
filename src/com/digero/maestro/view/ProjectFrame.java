@@ -2056,6 +2056,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			// Don't care
             modified = false;
 			break;
+        case USER_NOTE:
+            break;
 		}
 
 		updateExportOrExportAsButton();
@@ -2097,7 +2099,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
 	private boolean isAbcSongModified() {
-		return abcSong != null && (abcSongModified || !arrangementView.getTextnote().equals(abcSong.getNote()));
+		return abcSong != null && abcSongModified;
 	}
 
 	public int getTranspose() {
@@ -2835,7 +2837,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	private void commitAllFields() {
 		try {
-			abcSong.setNote(arrangementView.getTextnote());
+			abcSong.setNote(arrangementView.getTextnote(), false);
 			arrangementView.commitAllFields();
 			transposeSpinner.commitEdit();
 			tempoSpinner.commitEdit();

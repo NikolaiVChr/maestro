@@ -108,6 +108,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
     private final JTextArea noteContent = new JTextArea();
     private final JTextArea statsContent = new JTextArea();
     private final JTextArea lyricsContent = new JTextArea();
+    private boolean userEdit = true;
 
 	private boolean syncUpdate = false;
 	private boolean mouseHzooming = false;
@@ -473,6 +474,23 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
         noteContent.setWrapStyleWord(true);
         noteContent.setTabSize(4);
         noteContent.setEditable(true);
+        noteContent.getDocument().addDocumentListener(new DocumentListener() {
+            private void handleUserEdit(DocumentEvent e) {
+                if (abcPart == null) return;
+                if (userEdit) {
+                    abcPart.getAbcSong().setNote(noteContent.getText(), true);
+                }
+            }
+
+            @Override
+            public void insertUpdate(DocumentEvent e) { handleUserEdit(e); }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) { handleUserEdit(e); }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) { handleUserEdit(e); }
+        });
 
         // statsPanel is the textfield with project stats
         statsPanel = new JScrollPane(statsContent, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_NEVER);
@@ -870,8 +888,10 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 	}
 
 	public void setTextnote(String note) {
+        userEdit = false;
 		noteContent.setText(note);
 		noteContent.setCaretPosition(0);
+        userEdit = true;
 	}
 
     public void setLyrics(String lyrics) {
