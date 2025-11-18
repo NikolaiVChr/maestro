@@ -1524,7 +1524,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             for (AbcPart part : abcSong.getParts()) {
                 MidiEvent prevEvent = part.getPanEvent();
                 if (prevEvent == null) continue;
-                if (part.getPreviewSequenceTrackNumber() > seq.getTracks().length - 1) {
+                if (part.getPreviewSequenceTrackNumber() > tracks.length - 1) {
                     log.warning("updateStereo: sequence vs. part preview track-number mismatch. tracks="+tracks.length+" part="+part.getPreviewSequenceTrackNumber());
                     break;
                 }
