@@ -304,6 +304,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
         partSettingsPanel.add(partPanPanel);
 
 		JPanel zoomPanel = new JPanel(new WrapLayout(FlowLayout.LEFT, HGAP, 0));
+        zoomPanel.setBorder(BorderFactory.createTitledBorder(""));
 		zoomPanel.add(hZoomLabel);
 		zoomPanel.add(hZoomSlider);
 		zoomPanel.add(vZoomLabel);
