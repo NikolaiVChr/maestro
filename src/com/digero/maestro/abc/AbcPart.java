@@ -402,7 +402,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			}
 			title = SaveUtil.parseValue(ele, "title", title);
 
-            if (new Version(4, 5, 15).compareTo(fileVersion) > 0) {
+            userPan = null;
+            if (new Version(4, 5, 15, 300).compareTo(fileVersion) > 0) {
                 //old backwards compat for pan:
                 String titleLower = title.toLowerCase();
                 if (PanGenerator.leftRegex.matcher(titleLower).find())
