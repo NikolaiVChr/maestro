@@ -280,7 +280,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
         panSlider.setSnapToTicks(false);
         panSlider.setToolTipText("<html>Right-click to reset to automatic pan.<br>Middle-click to center." +
                 "<br><br>This panning is for preview playback only. To get panning in lotro" +
-                "you must position bandmembers manually.</html>");
+                " you must position bandmembers manually.</html>");
         panSlider.addMouseListener(new MouseAdapter() {
             public void mousePressed(MouseEvent e) {
                 if (e.getButton() == MouseEvent.BUTTON3) {
