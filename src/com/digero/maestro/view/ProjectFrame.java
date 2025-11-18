@@ -1819,6 +1819,13 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 compileStats();
             }
             // This is a runtime event only, so we return
+            // so that the project doesn't get marked modified
+            return;
+        }
+
+        if (e.getProperty() == AbcPartProperty.PREVIEW_TRACK_NUMBER) {
+            // This is a runtime event only, so we return
+            // so that the project doesn't get marked modified
             return;
         }
 
