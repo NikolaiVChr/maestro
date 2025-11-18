@@ -1518,13 +1518,17 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
     private void updateStereo () {
         if (abcSequencer != null && abcSequencer.getSequence() != null && abcSong != null) {
             int panModifier = prefs.getInt("stereoPan", 100);
-            Sequence seq = sequencer.getSequence();
+            Sequence seq = abcSequencer.getSequence();
             Track[] tracks = seq.getTracks();
             PanGenerator panner = new PanGenerator();
             for (AbcPart part : abcSong.getParts()) {
                 MidiEvent prevEvent = part.getPanEvent();
                 if (prevEvent == null) continue;
-                Track track = seq.getTracks()[part.getPreviewSequenceTrackNumber()];
+                if (part.getPreviewSequenceTrackNumber() > seq.getTracks().length - 1) {
+                    log.warning("updateStereo: sequence vs. part preview track-number mismatch. tracks="+tracks.length+" part="+part.getPreviewSequenceTrackNumber());
+                    break;
+                }
+                Track track = tracks[part.getPreviewSequenceTrackNumber()];
                 MidiEvent newPanEvent = MidiUtils.replacePanningEvent(track, part.getInstrument(), part.getTitle(), prevEvent, panModifier, part.getUserPan(), panner);
                 part.setPanEvent(newPanEvent);
                 abcSequencer.injectPanEvent(newPanEvent);

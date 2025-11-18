@@ -249,7 +249,7 @@ public class AbcExporter {
 		}
 		*/
 
-		return new ExportTrackInfo(trackNumber.first, part.origPart, null /* noteEvents */, trackNumber.second,
+		return new ExportTrackInfo(trackNumber.first, part.origPart, null, trackNumber.second,
 				part.getInstrument().midi.id(), trackNumber.third, part.numberOfExportedNotes, part.numberOfRemovedNotesForSafety,
                 part.getMaxPoly(), part.numberOfRemovedNotesFromFitting, part.numberOfRemovedNotesZeros, part.numberOfRemovedNotesFromPruning,
                 part.getPanEvent());
