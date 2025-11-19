@@ -815,9 +815,7 @@ public class AbcToMidi {
 
 		abcInfo.setPartEndLine(trackNumber, lineNumberForRegions);
 
-		PanGenerator panner = null;
-		if (stereo > 0 && trackNumber > 1)
-            panner = new PanGenerator();
+		PanGenerator panner = new PanGenerator();
 
 		Track[] tracks = seq.getTracks();
 

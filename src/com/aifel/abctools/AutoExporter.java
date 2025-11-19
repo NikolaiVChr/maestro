@@ -309,7 +309,7 @@ public class AutoExporter implements WarningHandler {
                         // thread-safe
                         exportProject(file.toFile());
                     } catch (Exception e) {
-                        log.warning(file.getFileName() + ": " + e.getMessage());
+                        log.log(Level.WARNING, file.getFileName().toString(), e);
 
                         skippedProjects.add(file.toFile());
 
@@ -344,7 +344,7 @@ public class AutoExporter implements WarningHandler {
                     // exportProject is thread-safe
                     exportProject(file.toFile());
                 } catch (Exception e) {
-                    log.warning(file.getFileName() + ": " + e.getMessage());
+                    log.log(Level.WARNING, file.getFileName().toString(), e);
                     skippedProjects.add(file.toFile());
                     appendToField("<p><font color='red'>" + e.toString() + "</font></p>");
                 }
