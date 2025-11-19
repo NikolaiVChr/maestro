@@ -1667,7 +1667,14 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
             LotroSequencerWrapper wrapper = useLotroInstruments?(LotroSequencerWrapper)sequencer:null;
             int partCount = abcInfo.getPartCount();
             PanGenerator panner = new PanGenerator();
+            List<Object[]> panSortedParts = new ArrayList<>();
             for (int i = 1; i < partCount; i++) {
+                panSortedParts.add(new Object[]{i, abcInfo.getPartInstrument(i)});
+            }
+            panner.sortInstruments(panSortedParts);
+
+            for (Object[] obj : panSortedParts) {
+                int i = (int) obj[0];
                 MidiEvent prevEvent = abcInfo.getPartPanEvent(i);
                 MidiEvent newPanEvent = MidiUtils.replacePanningEvent(tracks[i], abcInfo.getPartInstrument(i), abcInfo.getPartFullName(i), prevEvent, panModifier, abcInfo.getUserPan(i), panner);
                 abcInfo.setPanEvent(newPanEvent, i);

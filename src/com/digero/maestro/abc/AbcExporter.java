@@ -156,13 +156,17 @@ public class AbcExporter {
             }
 
 			PanGenerator panner = new PanGenerator();
-			
+
+            List<AbcPart> panSortedParts = new ArrayList<>(parts);
+            panner.sortParts(panSortedParts);
+            //System.out.println("\nDoing stereo spread");
 			lastChannelUsedInPreview = -1;			
 			long lastEnd = 0L;
-			for (AbcPart part : parts) {
+			for (AbcPart part : panSortedParts) {
 				
 				if (part.getEnabledTrackCount() > 0 || (countIn != null && countIn.micros > 0L && countIn.part == part)) {
-					int pan = (parts.size() > 1) ? panner.get(part, stereoPan) : PanGenerator.CENTER;
+					int pan = panner.get(part.getInstrument(), stereoPan, part.getUserPan());
+                    //System.out.println(part.getInstrument()+" -> "+(pan-64));
 					ExportTrackInfo inf = exportPartToPreview(part, sequence, pan,
 							useLotroInstruments, chordsMade, countIn);
 					infoList.add(inf);

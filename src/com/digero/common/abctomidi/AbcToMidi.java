@@ -815,9 +815,9 @@ public class AbcToMidi {
 
 		abcInfo.setPartEndLine(trackNumber, lineNumberForRegions);
 
-		PanGenerator pan = null;
+		PanGenerator panner = null;
 		if (stereo > 0 && trackNumber > 1)
-			pan = new PanGenerator();
+            panner = new PanGenerator();
 
 		Track[] tracks = seq.getTracks();
 
@@ -830,14 +830,19 @@ public class AbcToMidi {
 		}
         tracks[0].add(MidiFactory.createEndOfTrackEvent(Objects.requireNonNullElse(tick, 1L)));
 
+        List<Object[]> panSortedParts = new ArrayList<>();
+        for (int i = 1; i <= trackNumber; i++) {
+            panSortedParts.add(new Object[]{i, abcInfo.getPartInstrument(i)});
+        }
+        panner.sortInstruments(panSortedParts);
+
 		// Add name and pan events
 		tracks[0].add(MidiFactory.createTrackNameEvent(abcInfo.getTitle()));
-		for (int i = 1; i <= trackNumber; i++) {
+		for (Object[] obj : panSortedParts) {
+            int i = (int) obj[0];
 			tracks[i].add(MidiFactory.createTrackNameEvent(abcInfo.getPartName(i)));
 
-			int panAmount = PanGenerator.CENTER;
-			if (pan != null)
-				panAmount = pan.get(abcInfo.getPartInstrument(i), abcInfo.getPartName(i), stereo, abcInfo.getUserPan(i));
+			int panAmount = panner.get(abcInfo.getPartInstrument(i), stereo, abcInfo.getUserPan(i));
             MidiEvent panEvent = MidiFactory.createPanEvent(panAmount, getTrackChannel(i));
 			tracks[i].add(panEvent);
             abcInfo.setPanEvent(panEvent, i);

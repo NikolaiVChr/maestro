@@ -1521,7 +1521,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             Sequence seq = abcSequencer.getSequence();
             Track[] tracks = seq.getTracks();
             PanGenerator panner = new PanGenerator();
-            for (AbcPart part : abcSong.getParts()) {
+            List<AbcPart> panSortedParts = new ArrayList<>(abcSong.getParts());
+            panner.sortParts(panSortedParts);
+            for (AbcPart part : panSortedParts) {
                 MidiEvent prevEvent = part.getPanEvent();
                 if (prevEvent == null) continue;
                 if (part.getPreviewSequenceTrackNumber() > tracks.length - 1) {

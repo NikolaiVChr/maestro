@@ -41,7 +41,7 @@ public class LotroSequencerWrapper extends NoteFilterSequencerWrapper {
 	/**
 	 * Only affects channels larger than 16.
 	 * Will stop all active notes. And then inject a patch change to each channel
-	 * since java don't do that properly with 16+ channels.
+	 * since java doesn't do that properly with 16+ channels.
 	 * 
 	 * @param doControllers Stop all midi controllers also
 	 */

@@ -47,7 +47,7 @@ public class Logging {
 			//important that we dont write windows username to log:
 			root.config("Starting logging to files. "+"Documents/"+logFolder+"/"+app+"-%u-%g.log");
 		} else if (home != null) {
-			root.severe("Logging to file disabled as folder dont exist: "+(new File(home, logFolder).toString()));
+			root.warning("Logging to file disabled as folder don't exist: "+(new File(home, logFolder).toString()));
 		}
 		
 		// these dont work: parents always override their setting
