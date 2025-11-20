@@ -21,6 +21,7 @@ import javax.xml.xpath.XPathExpressionException;
 import com.digero.common.midi.PanGenerator;
 import com.digero.common.util.*;
 import com.digero.maestro.view.CountIn;
+import com.digero.maestro.view.PanVisualizerPanel;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.*;
 

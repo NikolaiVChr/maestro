@@ -840,7 +840,7 @@ public class AbcToMidi {
             int i = (int) obj[0];
 			tracks[i].add(MidiFactory.createTrackNameEvent(abcInfo.getPartName(i)));
 
-			int panAmount = panner.get(abcInfo.getPartInstrument(i), stereo, abcInfo.getUserPan(i));
+			int panAmount = panner.get(abcInfo.getPartInstrument(i), stereo, abcInfo.getUserPan(i), -1);
             MidiEvent panEvent = MidiFactory.createPanEvent(panAmount, getTrackChannel(i));
 			tracks[i].add(panEvent);
             abcInfo.setPanEvent(panEvent, i);

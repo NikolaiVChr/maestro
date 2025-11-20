@@ -111,6 +111,12 @@ public enum ColorTable
     /** editor edited */
     CONTROLS_EDITED(new Color(0.2f, 0.8f, 0.2f)),
 
+    PAN_USER(new Color(255, 215, 0)),       // Bright Yellow (Gold)
+    PAN_AUTO(new Color(120, 120, 120, 150)), // Dull Grey (Auto)
+    PAN_TEXT(Color.WHITE),
+    PAN_TEXT_ACTIVE(Color.BLACK),
+    PAN_STEM(new Color(255, 255, 255, 50)), // Connector line color
+
     /** Measure on both sides section-edited */
 	BAR_EDITED(new Color(0,32,0)),
     /** Section-edited */

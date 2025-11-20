@@ -1515,14 +1515,15 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
      * Change stereo rendition
      *
      */
-    private void updateStereo () {
+    private void updateStereo() {
         if (abcSequencer != null && abcSequencer.getSequence() != null && abcSong != null) {
             int panModifier = prefs.getInt("stereoPan", 100);
             Sequence seq = abcSequencer.getSequence();
             Track[] tracks = seq.getTracks();
             PanGenerator panner = new PanGenerator();
             List<AbcPart> panSortedParts = new ArrayList<>(abcSong.getParts());
-            panner.sortParts(panSortedParts);
+            abcSong.allPans = new ArrayList<>();
+            panner.sortParts(panSortedParts, abcSong.allPans);
             for (AbcPart part : panSortedParts) {
                 MidiEvent prevEvent = part.getPanEvent();
                 if (prevEvent == null) continue;
@@ -1531,7 +1532,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                     break;
                 }
                 Track track = tracks[part.getPreviewSequenceTrackNumber()];
-                MidiEvent newPanEvent = MidiUtils.replacePanningEvent(track, part.getInstrument(), part.getTitle(), prevEvent, panModifier, part.getUserPan(), panner);
+                MidiEvent newPanEvent = MidiUtils.replacePanningEvent(track, part.getInstrument(), part.getTitle(), prevEvent, panModifier, part.getUserPan(), panner, part.getPartNumber());
                 part.setPanEvent(newPanEvent);
                 abcSequencer.injectPanEvent(newPanEvent);
             }
@@ -2742,6 +2743,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             previewSequenceInfo.histogram.setSequencer(abcSequencer);
             arrangementView.setHistogram(previewSequenceInfo.histogram);
             histogram = previewSequenceInfo.histogram;
+            updateStereo();// we call this here to benefit PanVisualizerPanel
         } catch (InvalidMidiDataException e) {
             log.log(Level.WARNING, "Error after exporting preview", e);
             sequencer.stop();

@@ -10,6 +10,7 @@ import java.util.regex.Pattern;
 
 import com.digero.common.abc.LotroInstrument;
 import com.digero.maestro.abc.AbcPart;
+import com.digero.maestro.view.PanVisualizerPanel;
 
 /**
  * Factors that influence the final panning position of a part:
@@ -54,6 +55,7 @@ public class PanGenerator {
     private int globalBalance = 0;
 
     private int totalParts = 0;
+    private List<PanVisualizerPanel.PartInfo> allPans;
 
     public PanGenerator() {
         count = new int[LotroInstrument.values().length];
@@ -75,13 +77,15 @@ public class PanGenerator {
      * 2. Mid-Freq (Octave 1, 0) -> Process Next -> Fill Mid
      * 3. Low Freq (Octave -1) -> Process Last -> Fill Center
      */
-    public void sortParts(List<AbcPart> parts) {
+    public void sortParts(List<AbcPart> parts, List<PanVisualizerPanel.PartInfo> allPans) {
         this.totalParts = parts.size();
+        this.allPans = allPans;
         parts.sort(Comparator.comparingInt(p -> getPriority(p.getInstrument())));
     }
 
     public void sortInstruments(List<Object[]> instr) {
         this.totalParts = instr.size();
+        this.allPans = null;
         instr.sort(Comparator.comparingInt(p -> getPriority((LotroInstrument) p[1])));
     }
 
@@ -117,30 +121,43 @@ public class PanGenerator {
      * @param requestedPan User-defined override (0-127). If null, auto-positioning is used.
      * @return A unique MIDI pan value (0-127).
      */
-    public int get(LotroInstrument instrument, int panModifier, Integer requestedPan) {
+    public int get(LotroInstrument instrument, int panModifier, Integer requestedPan, int partNumber) {
         int targetPan;
+        boolean userPanned;
 
         if (requestedPan != null) {
             // --- MANUAL MODE ---
-            // 1. Respect user position, but apply Global Width Slider
-            targetPan = applyModifier(requestedPan, panModifier);
+            // Respect user position, but apply Global Width Slider
+            userPanned = true;
 
-            // 2. Update Global Balance so AUTO instruments can compensate
+            targetPan = requestedPan;
+
+            // Update Global Balance so AUTO instruments can compensate
             // If the user forces Left, balance goes negative, pushing the next auto instrument Right.
             if (targetPan > CENTER) globalBalance++;
             else if (targetPan < CENTER) globalBalance--;
 
         } else {
             // --- AUTO MODE ---
-            targetPan = computeAutoPan(instrument, panModifier);
+            targetPan = computeAutoPan(instrument);
+            userPanned = false;
         }
 
-        // 3. Mark this spot as taken (Collision Avoidance)
-        // Even for manual pans, we mark it so auto-instruments don't sit on top of it.
+        if (allPans != null) {
+            allPans.add(new PanVisualizerPanel.PartInfo(targetPan, Integer.toString(partNumber), userPanned));
+        }
+
+        targetPan = applyModifier(targetPan, panModifier);
+
         // If requestedPan causes a collision with another requestedPan, we allow it (user intent).
         if (requestedPan == null) {
             targetPan = findClosestAvailable(targetPan);
         }
+
+        targetPan = Math.clamp(targetPan, 0, 127);
+
+        // Mark this spot as taken (Collision Avoidance)
+        // Even for manual pans, we mark it so auto-instruments don't sit on top of it.
         usedPanPositions.set(targetPan);
 
         return targetPan;
@@ -160,7 +177,7 @@ public class PanGenerator {
         return CENTER + (int) (offset * (modifier / 100.0f));
     }
 
-    private int computeAutoPan(LotroInstrument instrument, int panModifier) {
+    private int computeAutoPan(LotroInstrument instrument) {
         // 0. Calculate the "Small Band Correction" to prevent holes in the stereo spread
         float stageScalar = getStageSizeScalar();
 
@@ -200,15 +217,8 @@ public class PanGenerator {
 
         // 4. Calculate
         float rawOffset = idealWidth * decay * direction * stageScalar;
-        // Combine User Slider * Stage Correction
-        float scalar = panModifier / 100.0f;
-        int targetPan = CENTER + (int) (rawOffset * scalar);
 
-        // 5. Collision Avoidance
-        targetPan = findClosestAvailable(targetPan);
-        usedPanPositions.set(targetPan);
-
-        return targetPan;
+        return CENTER + (int) rawOffset;
     }
 
     private int getIdealWidth(LotroInstrument i) {

@@ -14,6 +14,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Logger;
 
@@ -59,6 +60,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 	private static final int HGAP = 4;
 	private static final int VGAP = 4;
     private final JSlider panSlider;
+    private final PanVisualizerPanel panPanel;
 
     private AbcPart abcPart;// The currently selected abcPart in left PartsList
 	private final PartAutoNumberer partAutoNumberer;
@@ -282,16 +284,19 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
         panSlider.setToolTipText("<html>Right-click to reset to automatic pan.<br>Middle-click to center." +
                 "<br><br>This panning is for preview playback only. To get panning in lotro" +
                 " you must position bandmembers manually.</html>");
+        panPanel = new PanVisualizerPanel();
+        PanController panWindow = new PanController(panSlider, panPanel);
         panSlider.addMouseListener(new MouseAdapter() {
             public void mousePressed(MouseEvent e) {
                 if (e.getButton() == MouseEvent.BUTTON3) {
                     if(abcPart != null) {
+                        panPanel.clearState(null);
                         abcPart.setUserPan(null);
                     }
                 } else if (e.getButton() == MouseEvent.BUTTON2) {
-                    if(abcPart != null) {
-                        abcPart.setUserPan(PanGenerator.CENTER);
-                    }
+                    setPan(PanGenerator.CENTER);
+                } else if (e.getButton() == MouseEvent.BUTTON1) {
+                    if (abcPart != null) panPanel.updateState(panSlider.getValue(), Integer.toString(abcPart.getPartNumber()), abcPart.getAbcSong().allPans);
                 }
             }
         });
@@ -608,6 +613,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
         if (abcPart != null) {
             abcPart.setUserPan(Math.clamp(value, PanGenerator.LEFT, PanGenerator.RIGHT));
         }
+        if (abcPart != null) panPanel.updateState(value, Integer.toString(abcPart.getPartNumber()), abcPart.getAbcSong().allPans);
     }
 
     private void setPanSlider() {

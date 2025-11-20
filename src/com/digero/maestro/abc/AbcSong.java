@@ -1825,6 +1825,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         this.storeNewExportFile = other.storeNewExportFile;
         this.suppressPartSort = other.suppressPartSort;
         this.newSourceFile = other.newSourceFile;
+        this.allPans = other.allPans;//pointer copy
 
         // read-only/shared services.
         this.sequenceInfo = other.sequenceInfo;// lets assume the midi don't change while we work, then this is immutable
@@ -1882,4 +1883,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         }
         return null;
     }
+
+    public List<PanVisualizerPanel.PartInfo> allPans = new ArrayList<>();
 }
