@@ -182,6 +182,28 @@ public class AbcExporter {
 			 * if (exportStartTick > 0) { track0.add(MidiFactory.createNoteOnEventEx(40,9,100,0L));
 			 * track0.add(MidiFactory.createNoteOffEventEx(40,9,0,100L)); }
 			 */
+
+            /*
+            // debug output the preview sequence as midi
+            try {
+                java.io.File file = new java.io.File("debug_output.mid");
+                int counter = 1;
+                while (file.exists()) file = new java.io.File("debug_output-" + (counter++) + ".mid");
+                javax.sound.midi.MidiSystem.write(sequence, 1, file);
+                System.out.println("Dumped MIDI to: " + file.getAbsolutePath());
+            } catch (IOException ignored) {}
+            */
+            /*
+            if (organic) {
+                // first notes/rest have been relying on getExportStartMicrosABC() to get its starttick.
+                // so when doing preview we have to convert that back to tick to make sure get the
+                // first start note included. That might move the tick due to rounding errors,
+                // and thereby include first note/rest which start has also been converted to tick.
+                //System.out.println("Export start tick for organic: " + exportStartTick +" -> "+qtm.microsToTickABCOrganic(exportStartTick)+" micros="+getExportStartMicrosABC());
+                //exportStartTick = Math.max(0L,qtm.microsToTickABCOrganic(getExportStartMicrosABC()));
+                //disabled for now, have clamped all note ON to be after exportstarttick instead.
+            }
+            */
 			
 			return new Triple<>(infoList, sequence, histogram);
 		} catch (RuntimeException e) {
@@ -418,13 +440,30 @@ public class AbcExporter {
                         ne = new AbcNoteEvent(ne.note, ne.velocity, ne.getStartTick(), endTick, qtm, ne.origNote);
                     }
 
+                    long onTick;
                     if (organic) {
-                        track.add(MidiFactory.createNoteOnEventEx(ne.note.id + noteDelta, channel,
-                                dynamics.getVol(useLotroInstruments), qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(ne.getStartTick()) + delayMicros)));
+                        if (delayMicros > 0L) {
+                            onTick = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(ne.getStartTick()) + delayMicros);
+                        } else {
+                            onTick = ne.getStartTick();
+                        }
                     } else {
-                        track.add(MidiFactory.createNoteOnEventEx(ne.note.id + noteDelta, channel,
-                                dynamics.getVol(useLotroInstruments), qtm.microsToTick(qtm.tickToMicros(ne.getStartTick()) + delayMicros)));
+                        if (delayMicros > 0L) {
+                            onTick = qtm.microsToTick(qtm.tickToMicros(ne.getStartTick()) + delayMicros);
+                        } else {
+                            onTick = ne.getStartTick();
+                        }
                     }
+                    /*
+                     The math.max is due to process of notes assumed start of midi-exportstarttick converted to
+                     abc-micros, and they final ON time was converted back to midi-tick
+                     (if with delay then using midi-micros, not abc-micros even) and might not match exact with
+                     midi-exportstarttick anymore. If they are before exportstarttick then ABC preview would not
+                     play the first note(s).
+                     */
+                    onTick = Math.max(onTick, exportStartTick);
+                    track.add(MidiFactory.createNoteOnEventEx(ne.note.id + noteDelta, channel,
+                            dynamics.getVol(useLotroInstruments), onTick));
                     notesOn.add(ne);
                     part.numberOfExportedNotes++;
                 }

@@ -66,7 +66,7 @@ public class LotroSequencerWrapper extends NoteFilterSequencerWrapper {
 		} else if (infos != null) {
             for (ExportTrackInfo info : infos) {
                 if (info.part != null && info.part.getPanEvent() != null) {
-                    // when the user skips in song, javas midi player doesn't re-read the initial pan message at
+                    // when the user skips in song, java's midi player doesn't re-read the initial pan message at
                     // tick zero. So we inject pan event at every change.
                     injectPanEvent(info.part.getPanEvent());
                 }

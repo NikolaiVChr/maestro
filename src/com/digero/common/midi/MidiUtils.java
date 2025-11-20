@@ -280,83 +280,93 @@ public class MidiUtils {
     public static String midiEventToShortString(MidiEvent evt) {
     	String str = "";
     	MidiMessage m = evt.getMessage();
-    	if (m instanceof ShortMessage shorty) {
-            int command = shorty.getCommand();
-    		switch (command) {
-    			case ShortMessage.NOTE_ON:
-    				str += "Note ON, Velocity="+shorty.getData2(); break;
-    			case ShortMessage.NOTE_OFF:
-    				str += "Note OFF"; break;
-    			case ShortMessage.CHANNEL_PRESSURE:
-    				str += "Aftertouch"; break;
-    			case ShortMessage.POLY_PRESSURE:
-    				str += "Aftertouch (poly)"; break;
-    			case ShortMessage.CONTROL_CHANGE:
-    				str += "Control Change"; break;
-    			case ShortMessage.PITCH_BEND:
-    				str += "Pitch Bend"; break;
-    		}
-        	str += ", Channel="+shorty.getChannel();
-    	} else if (m instanceof SysexMessage sysex) {
-            str += "Sysex";
-    		if (sysex.getMessage()[1] == MidiConstants.SYSEX_UNIVERSAL_REALTIME) {
-    			str += ", Realtime";
-    		} else if (sysex.getMessage()[1] == MidiConstants.SYSEX_UNIVERSAL_NON_REALTIME) {
-    			str += ", Non-Realtime";
-    		}
-    		if (isSysexLyrics(sysex.getMessage())) {
-    			str += ", Lyrics";
-    		}
-    		if (SequenceInfo.isResetGM(sysex.getMessage())) {
-    			str += ", GM Reset";
-    		} else if (SequenceInfo.isResetGS(sysex.getMessage())) {
-    			str += ", GS Reset";
-    		} else if (SequenceInfo.isResetXG(sysex.getMessage())) {
-    			str += ", XG Reset";
-    		} else if (SequenceInfo.isResetGM2(sysex.getMessage())) {
-    			str += ", GM2 Reset";	
-    		} else {
-    			// take note of difference of midi (7 bit unsigned) vs. java (8 bit signed):
-    			str += ", "+formatBytesHexOnly(sysex.getMessage());
-    		}
-    	} else if (m instanceof MetaMessage meta) {
-            str += "Meta";
-    		if (isMetaTempo(m)) {
-    			str += ", Tempo";
-    		} else if (isMetaEndOfTrack(m)) {
-    			str += ", EndOfTrack";
-    		} else if (meta.getType() == MidiConstants.META_TIME_SIGNATURE) {
-    			str += ", Time Signature";
-    		} else if (meta.getType() == MidiConstants.META_PORT_CHANGE) {
-    			str += ", Port change";
-    		} else if (meta.getType() == MidiConstants.META_PORT_NAME) {
-    			str += ", Port name";
-    		} else if (meta.getType() == MidiConstants.META_COPYRIGHT) {
-    			str += ", Copyright";
-    		} else if (meta.getType() == MidiConstants.META_TRACK_NAME) {
-    			str += ", Track Name";
-    		} else if (meta.getType() == MidiConstants.META_TEXT) {
-    			str += ", Text";
-    		} else if (meta.getType() == MidiConstants.META_LYRIC) {
-    			str += ", Lyric";
-    		} else if (meta.getType() == MidiConstants.META_CUE_POINT) {
-    			str += ", Cue Point";
-    		} else if (meta.getType() == MidiConstants.META_SMPTE_OFFSET) {
-    			str += ", SMPTE Offset";
-    		} else if (meta.getType() == MidiConstants.META_PROGRAM_NAME) {
-    			str += ", Program Change";
-    		} else if (meta.getType() == MidiConstants.META_KEY_SIGNATURE) {
-    			str += ", Key Signature";
-    		} else if (meta.getType() == MidiConstants.META_INSTRUMENT_NAME) {
-    			str += ", Instrument name";
-    		} else if (meta.getType() == MidiConstants.META_MARKER) {
-    			str += ", Marker";
-    		} else if (meta.getType() == MidiConstants.META_M_LIVE) {
-    			str += ", M-Live";
-    		}
-    	}
-    	str += ", Tick="+evt.getTick();
+        str = midiMessageToShortString(m);
+        str += ", Tick="+evt.getTick();
     	return str;
+    }
+
+    public static String midiMessageToShortString(MidiMessage m) {
+        String str = "";
+        if (m instanceof ShortMessage shorty) {
+            int command = shorty.getCommand();
+            switch (command) {
+                case ShortMessage.NOTE_ON:
+                    str += "Note ON, Velocity="+shorty.getData2(); break;
+                case ShortMessage.NOTE_OFF:
+                    str += "Note OFF"; break;
+                case ShortMessage.CHANNEL_PRESSURE:
+                    str += "Aftertouch"; break;
+                case ShortMessage.POLY_PRESSURE:
+                    str += "Aftertouch (poly)"; break;
+                case ShortMessage.CONTROL_CHANGE:
+                    str += "Control Change"; break;
+                case ShortMessage.PITCH_BEND:
+                    str += "Pitch Bend"; break;
+                default:
+                    return str;
+            }
+            str += ", Channel="+shorty.getChannel();
+        } else if (m instanceof SysexMessage sysex) {
+            str += "Sysex";
+            if (sysex.getMessage()[1] == MidiConstants.SYSEX_UNIVERSAL_REALTIME) {
+                str += ", Realtime";
+            } else if (sysex.getMessage()[1] == MidiConstants.SYSEX_UNIVERSAL_NON_REALTIME) {
+                str += ", Non-Realtime";
+            }
+            if (isSysexLyrics(sysex.getMessage())) {
+                str += ", Lyrics";
+            }
+            if (SequenceInfo.isResetGM(sysex.getMessage())) {
+                str += ", GM Reset";
+            } else if (SequenceInfo.isResetGS(sysex.getMessage())) {
+                str += ", GS Reset";
+            } else if (SequenceInfo.isResetXG(sysex.getMessage())) {
+                str += ", XG Reset";
+            } else if (SequenceInfo.isResetGM2(sysex.getMessage())) {
+                str += ", GM2 Reset";
+            } else {
+                // take note of difference of midi (7 bit unsigned) vs. java (8 bit signed):
+                str += ", "+formatBytesHexOnly(sysex.getMessage());
+            }
+        } else if (m instanceof MetaMessage meta) {
+            str += "Meta";
+            if (isMetaTempo(m)) {
+                str += ", Tempo";
+            } else if (isMetaEndOfTrack(m)) {
+                str += ", EndOfTrack";
+            } else if (meta.getType() == MidiConstants.META_TIME_SIGNATURE) {
+                str += ", Time Signature";
+            } else if (meta.getType() == MidiConstants.META_PORT_CHANGE) {
+                str += ", Port change";
+            } else if (meta.getType() == MidiConstants.META_PORT_NAME) {
+                str += ", Port name";
+            } else if (meta.getType() == MidiConstants.META_COPYRIGHT) {
+                str += ", Copyright";
+            } else if (meta.getType() == MidiConstants.META_TRACK_NAME) {
+                str += ", Track Name";
+            } else if (meta.getType() == MidiConstants.META_TEXT) {
+                str += ", Text";
+            } else if (meta.getType() == MidiConstants.META_LYRIC) {
+                str += ", Lyric";
+            } else if (meta.getType() == MidiConstants.META_CUE_POINT) {
+                str += ", Cue Point";
+            } else if (meta.getType() == MidiConstants.META_SMPTE_OFFSET) {
+                str += ", SMPTE Offset";
+            } else if (meta.getType() == MidiConstants.META_PROGRAM_NAME) {
+                str += ", Program Change";
+            } else if (meta.getType() == MidiConstants.META_KEY_SIGNATURE) {
+                str += ", Key Signature";
+            } else if (meta.getType() == MidiConstants.META_INSTRUMENT_NAME) {
+                str += ", Instrument name";
+            } else if (meta.getType() == MidiConstants.META_MARKER) {
+                str += ", Marker";
+            } else if (meta.getType() == MidiConstants.META_M_LIVE) {
+                str += ", M-Live";
+            } else {
+                return str;
+            }
+        }
+        return str;
     }
 
 	public static boolean isSysexLyrics(byte[] message) {

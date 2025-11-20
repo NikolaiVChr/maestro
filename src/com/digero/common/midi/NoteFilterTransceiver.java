@@ -130,7 +130,7 @@ public class NoteFilterTransceiver implements Transceiver, MidiConstants, ICompi
 					setNoteOn(c, noteId, false);
 			}
 		}
-		
+        //System.out.println(MidiUtils.midiMessageToShortString(message));
 		receiver.send(message, timeStamp);
 	}
 }
