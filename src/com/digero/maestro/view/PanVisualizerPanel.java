@@ -45,6 +45,10 @@ public class PanVisualizerPanel extends JPanel {
         this.activePan = activePan;
     }
 
+    public void setOthers(List<PartInfo> others) {
+        this.otherParts = others;
+    }
+
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -99,6 +103,7 @@ public class PanVisualizerPanel extends JPanel {
         // 5. Draw Background Parts
         for (DrawCmd cmd : drawList) {
             Color c = cmd.part.userPanned() ? COL_USER : COL_AUTO;
+            if (cmd.part.label().equals(activeLabel) && activePan == null) c = COL_AUTO;
             int radius = BASE_RADIUS + (cmd.stackLevel * STACK_STEP);
 
             drawPartCircle(g2, cx, cy, cmd.part.pan(), cmd.part.label(), c, false, radius);

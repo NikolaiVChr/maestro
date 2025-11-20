@@ -10,11 +10,11 @@ import java.awt.PointerInfo;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.event.InputEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
 import java.text.ParseException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.logging.Logger;
 
@@ -59,8 +59,10 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 
 	private static final int HGAP = 4;
 	private static final int VGAP = 4;
+
     private final JSlider panSlider;
     private final PanVisualizerPanel panPanel;
+    private boolean suppressPanEvents = false;
 
     private AbcPart abcPart;// The currently selected abcPart in left PartsList
 	private final PartAutoNumberer partAutoNumberer;
@@ -285,25 +287,60 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
                 "<br><br>This panning is for preview playback only. To get panning in lotro" +
                 " you must position bandmembers manually.</html>");
         panPanel = new PanVisualizerPanel();
-        PanController panWindow = new PanController(panSlider, panPanel);
+        PanController panWindow = new PanController(panSlider, panPanel);//also adds mouse-listener
         panSlider.addMouseListener(new MouseAdapter() {
             public void mousePressed(MouseEvent e) {
                 if (e.getButton() == MouseEvent.BUTTON3) {
                     if(abcPart != null) {
-                        panPanel.clearState(null);
+                        //System.out.println("Resetting pan to automatic 1");
+                        if ((e.getModifiersEx() & InputEvent.BUTTON1_DOWN_MASK) != 0) {
+                            // right mouse clicked while mouse left is held down
+                            suppressPanEvents = true;
+                        }
                         abcPart.setUserPan(null);
+                        panPanel.setOthers(abcPart.getAbcSong().allPans);
+
+                        // Slider to center
+                        // temporarily disable firePanListener to move the knob without triggering logic
+                        firePanListener = false;
+                        panSlider.setValue(64);
+                        firePanListener = true;
+
+                        setPanSliderColor();
+                        panPanel.repaint();
+                        //System.out.println("Resetting pan to automatic 2");
                     }
                 } else if (e.getButton() == MouseEvent.BUTTON2) {
+                    //System.out.println("Resetting pan to center 1");
                     setPan(PanGenerator.CENTER);
+                    //System.out.println("Resetting pan to center 2");
                 } else if (e.getButton() == MouseEvent.BUTTON1) {
-                    if (abcPart != null) panPanel.updateState(panSlider.getValue(), Integer.toString(abcPart.getPartNumber()), abcPart.getAbcSong().allPans);
+                    if (abcPart != null) {
+                        // This is for when initially pressing mouse before dragging slider,
+                        // that should already update the panPanel.
+                        //System.out.println("Pressed mouse 1");
+                        panPanel.updateState(panSlider.getValue(), Integer.toString(abcPart.getPartNumber()), abcPart.getAbcSong().allPans);
+                        //System.out.println("Pressed mouse 2");
+                    }
                 }
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                if (e.getButton() == MouseEvent.BUTTON1) {
+                    suppressPanEvents = false;
+                }
+                panPanel.repaint();
             }
         });
         panSlider.addChangeListener(e -> {
-            if (firePanListener) {
+            if (firePanListener && !suppressPanEvents) {
+                //System.out.println("Pan action 1");
                 setPan(panSlider.getValue());
-                setPanSlider();
+                setPanSliderColor();
+                //System.out.println("Pan action 2");
+            } else {
+                //System.out.println("No pan action");
             }
         });
         partPanPanel.add(panSlider);
@@ -611,15 +648,20 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
      */
     private void setPan(int value) {
         if (abcPart != null) {
+            //System.out.println("setPan on abcPart: " + value);
             abcPart.setUserPan(Math.clamp(value, PanGenerator.LEFT, PanGenerator.RIGHT));
+            panPanel.updateState(value, Integer.toString(abcPart.getPartNumber()), abcPart.getAbcSong().allPans);
+            //System.out.println("setPan updateState done");
         }
-        if (abcPart != null) panPanel.updateState(value, Integer.toString(abcPart.getPartNumber()), abcPart.getAbcSong().allPans);
     }
 
     private void setPanSlider() {
+        // called from abcPartListener and when changing part
         int value = (abcPart == null)?64:(abcPart.getUserPan() == null?64:abcPart.getUserPan());
         firePanListener = false;
+        //System.out.println("setPanSlider 1: " + value);
         panSlider.setValue(value);
+        //System.out.println("setPanSlider 2");
         firePanListener = true;
     }
 
