@@ -34,7 +34,7 @@ public class PanController {
                     Window owner = SwingUtilities.getWindowAncestor(slider);
                     popupWindow = new JWindow(owner);
                     popupWindow.add(visualizer);
-                    popupWindow.setSize(240, 150);
+                    popupWindow.setSize(290, 150);
                     popupWindow.setOpacity(1.0f);
                 }
 
