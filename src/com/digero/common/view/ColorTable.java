@@ -116,6 +116,9 @@ public enum ColorTable
     PAN_TEXT(Color.WHITE),
     PAN_TEXT_ACTIVE(Color.BLACK),
     PAN_STEM(new Color(255, 255, 255, 50)), // Connector line color
+    PAN_ARC(new Color(60, 60, 60, 100)), //
+    PAN_SHADOW(new Color(0, 0, 0, 60)), //
+    PAN_BORDER(new Color(0, 0, 0, 50)), //
 
     /** Measure on both sides section-edited */
 	BAR_EDITED(new Color(0,32,0)),

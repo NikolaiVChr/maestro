@@ -285,7 +285,9 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
         panSlider.setSnapToTicks(false);
         panSlider.setToolTipText("<html>Right-click to reset to automatic pan.<br>Middle-click to center." +
                 "<br><br>This panning is for preview playback only. To get panning in lotro" +
-                " you must position bandmembers manually.</html>");
+                " you must position bandmembers manually." +
+                "<br><br>Graphics explainer: The numbers are part numbers. Green is the part you are setting the pan for," +
+                "yellow is other parts you have set a pan on. Grey is auto panned.</html>");
         panPanel = new PanVisualizerPanel();
         PanController panWindow = new PanController(panSlider, panPanel);//also adds mouse-listener
         panSlider.addMouseListener(new MouseAdapter() {
@@ -649,7 +651,8 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
     private void setPan(int value) {
         if (abcPart != null) {
             //System.out.println("setPan on abcPart: " + value);
-            abcPart.setUserPan(Math.clamp(value, PanGenerator.LEFT, PanGenerator.RIGHT));
+            value = Math.clamp(value, PanGenerator.LEFT, PanGenerator.RIGHT);//important as slider goes to 128
+            abcPart.setUserPan(value);
             panPanel.updateState(value, Integer.toString(abcPart.getPartNumber()), abcPart.getAbcSong().allPans);
             //System.out.println("setPan updateState done");
         }

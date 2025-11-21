@@ -50,7 +50,7 @@ Version 4.5.18
 - Added option to auto-exporter to force a volume method upon all exported abc.
 - Added a part pan slider to control stereo manually, in future using hints in part name will not work.
 - Added button to jump to highest polyphony peak.
-- Fixed that solo/muting could in some circumstances solo/mute the wrong parts.
+- Fixed that solo/muting could in some circumstances solo/mute the wrong parts in v4.5.11.
 - Fixed that auto-exporter could bring up multiple windows asking choices at the same time.
 - Changing stereo slider or part pan will no longer produce stutters in the playback.
 - Update of auto-panning, it now uses many more factors into deciding where to place a part in the stereo field.

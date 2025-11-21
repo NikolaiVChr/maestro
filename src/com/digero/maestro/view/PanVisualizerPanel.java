@@ -23,6 +23,9 @@ public class PanVisualizerPanel extends JPanel {
     private static final Color COL_TEXT   = ColorTable.PAN_TEXT.get();
     private static final Color COL_TEXT_ACTIVE = ColorTable.PAN_TEXT_ACTIVE.get();
     private static final Color COL_STEM   = ColorTable.PAN_STEM.get(); // Connector line color
+    private static final Color COL_ARC   = ColorTable.PAN_ARC.get();
+    private static final Color COL_SHADOW   = ColorTable.PAN_SHADOW.get();
+    private static final Color COL_BORDER   = ColorTable.PAN_BORDER.get();
 
     // State
     private Integer activePan = null;
@@ -59,7 +62,7 @@ public class PanVisualizerPanel extends JPanel {
         int cy = getHeight() - 20;
 
         // 1. Draw Arc Track
-        g2.setColor(new Color(60, 60, 60, 100));
+        g2.setColor(COL_ARC);
         g2.setStroke(new BasicStroke(4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         g2.drawArc(cx - BASE_RADIUS, cy - BASE_RADIUS, BASE_RADIUS * 2, BASE_RADIUS * 2, 15, 150);
 
@@ -139,7 +142,7 @@ public class PanVisualizerPanel extends JPanel {
 
         // Draw Shadow/Glow if active
         if (isActive) {
-            g2.setColor(new Color(0, 0, 0, 60));
+            g2.setColor(COL_SHADOW);
             g2.fillOval(x - offset + 3, y - offset + 3, size, size);
         }
 
@@ -149,7 +152,7 @@ public class PanVisualizerPanel extends JPanel {
 
         // Draw Border
         if (!isActive) {
-            g2.setColor(new Color(0, 0, 0, 50));
+            g2.setColor(COL_BORDER);
             g2.setStroke(new BasicStroke(1f));
             g2.drawOval(x - offset, y - offset, size, size);
         }
