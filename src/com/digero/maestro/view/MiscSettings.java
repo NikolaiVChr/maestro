@@ -10,7 +10,6 @@ public class MiscSettings {
 	public boolean showMaxPolyphony = true;
 	public boolean ignoreExpressionMessages = false;
 	public boolean showBadger = false;
-	public boolean importLyrics = true;
 	//public boolean allBadger = false;
 	public String theme = "Flat Light";
 	public int fontSize = 12;
@@ -50,7 +49,6 @@ public class MiscSettings {
 		if (maxRangeForNewBendMethod == 24) maxRangeForNewBendMethod = 16;// Due to student fiddle we can't go to 24.
 		autoplayOnOpen = prefs.getBoolean("autoplayOnOpen", autoplayOnOpen);
 		checkForUpdates = prefs.getBoolean("checkForUpdates", checkForUpdates);
-		importLyrics = prefs.getBoolean("importLyrics", importLyrics);
 	}
 
 	public MiscSettings(MiscSettings that) {
@@ -68,7 +66,6 @@ public class MiscSettings {
 		maxRangeForNewBendMethod = that.maxRangeForNewBendMethod;
 		autoplayOnOpen = that.autoplayOnOpen;
 		checkForUpdates = that.checkForUpdates;
-		importLyrics = that.importLyrics;
 	}
 
 	public void saveToPrefs() {
@@ -81,7 +78,6 @@ public class MiscSettings {
 		prefs.putInt("maxRangeForNewBendMethod", maxRangeForNewBendMethod);
 		prefs.putBoolean("autoplayOnOpen", autoplayOnOpen);
 		prefs.putBoolean("checkForUpdates", checkForUpdates);
-		prefs.putBoolean("importLyrics", importLyrics);
 	}
 
 	public void restoreDefaults() {

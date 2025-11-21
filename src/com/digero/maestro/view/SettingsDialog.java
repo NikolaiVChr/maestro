@@ -1014,12 +1014,6 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		autoplayOnOpenCheckBox.setSelected(miscSettings.autoplayOnOpen);
 		autoplayOnOpenCheckBox.addActionListener(e -> miscSettings.autoplayOnOpen = autoplayOnOpenCheckBox.isSelected());
 
-		final JCheckBox lyricsCheckBox = new JCheckBox("Import lyrics");
-		lyricsCheckBox.setToolTipText("<html>When opening a MIDI file, import the lyrics as well.");
-		lyricsCheckBox.setSelected(miscSettings.importLyrics);
-		lyricsCheckBox.addActionListener(e -> miscSettings.importLyrics = lyricsCheckBox.isSelected());
-
-		
 		final String defaultStr = "Default";
 		
 		final JLabel deviceText = new JLabel("Preferred MIDI out device:");
@@ -1202,9 +1196,6 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		panel.add(bendLabel, "0, " + row);
 		layout.insertRow(++row, PREFERRED);
 		panel.add(bendBox, "0, " + row);
-		
-		layout.insertRow(++row, PREFERRED);
-		panel.add(lyricsCheckBox, "0, " + row);
 
 		layout.insertRow(++row, PREFERRED);
 		panel.add(exportPrefs, "0, " + row);

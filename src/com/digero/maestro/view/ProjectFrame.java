@@ -1447,16 +1447,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			abcSong.setBadger(miscSettings.showBadger);
 		}
 
-        if (abcSong != null && miscSettings.importLyrics) {
-            String lyrics = abcSong.getLyrics();
-            if (lyrics.isBlank()) {
-                lyrics = "Contains no lyrics";
-            }
-            arrangementView.setLyrics(lyrics);
-        } else {
-            arrangementView.setLyrics("Lyrics is disabled in options!");
-        }
-
 		String wantedDevice = NoteFilterSequencerWrapper.prefs.get(NoteFilterSequencerWrapper.prefMIDISelect, null);
 		if ((NoteFilterSequencerWrapper.deviceInUse != null && !NoteFilterSequencerWrapper.deviceInUse.equals(wantedDevice)) || (NoteFilterSequencerWrapper.deviceInUse == null && wantedDevice != null)) {
 			long tick = sequencer.getTickPosition();
@@ -2311,19 +2301,15 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
             arrangementView.sidepanelTab("Notes");
 
-			if (miscSettings.importLyrics) {
-                String lyrics = abcSong.getLyrics();
-                if (!lyrics.isEmpty()) {
-                    arrangementView.sidepanelVisible(true);
-                    arrangementView.sidepanelTab("Lyrics");
-                }
-                if (lyrics.isBlank()) {
-                    lyrics = "Contains no lyrics";
-                }
-                arrangementView.setLyrics(lyrics);
-            } else {
-                arrangementView.setLyrics("Lyrics is disabled in options!");
+            String lyrics = abcSong.getLyrics();
+            if (!lyrics.isEmpty()) {
+                arrangementView.sidepanelVisible(true);
+                arrangementView.sidepanelTab("Lyrics");
             }
+            if (lyrics.isBlank()) {
+                lyrics = "Contains no lyrics";
+            }
+            arrangementView.setLyrics(lyrics);
 
             if (abcSong.isFromXmlFile()) {
                 String note = abcSong.getNote();

@@ -25,7 +25,6 @@ public class PanController {
             }
         });
 
-        // Attach Listeners
         slider.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
