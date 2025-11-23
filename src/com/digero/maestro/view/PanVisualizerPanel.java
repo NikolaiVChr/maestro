@@ -13,8 +13,11 @@ public class PanVisualizerPanel extends JPanel {
 
     // Visual Config
     private static final int BASE_RADIUS = 80;
-    private static final int DOT_SIZE = 24;
-    private static final int STACK_STEP = 26; // How much to move out per overlap
+    private static final int PART_DIAM = 24;
+    private static final int ACTIVE_DIAM = PART_DIAM + 6;
+    private static final int BOTTOM_BORDER = 20;
+    private static final int HEAD_DIAM = 20;
+    private static final int STACK_STEP = PART_DIAM + 2; // How much to move out per overlap
 
     // Color Palette
     private static final Color COL_ACTIVE = ColorTable.CONTROLS_EDITED.get();     // Light Green (Manual)
@@ -29,7 +32,7 @@ public class PanVisualizerPanel extends JPanel {
 
     // State
     private Integer activePan = null;
-    private String activeLabel = "1";
+    private String activeLabel = "-1";
     private List<PartInfo> otherParts;
 
     public PanVisualizerPanel() {
@@ -59,7 +62,7 @@ public class PanVisualizerPanel extends JPanel {
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
         int cx = getWidth() / 2;
-        int cy = getHeight() - 20;
+        int cy = getHeight() - BOTTOM_BORDER;
 
         // 1. Draw Arc Track
         g2.setColor(COL_ARC);
@@ -68,7 +71,7 @@ public class PanVisualizerPanel extends JPanel {
 
         // 2. Draw Listener Head
         g2.setColor(Color.LIGHT_GRAY);
-        g2.fillOval(cx - 10, cy - 10, 20, 20);
+        g2.fillOval(cx - HEAD_DIAM/2, cy - HEAD_DIAM/2, HEAD_DIAM, HEAD_DIAM);
 
         // 3. Prepare and Sort Background Parts
         List<DrawCmd> drawList = new ArrayList<>();
@@ -137,7 +140,7 @@ public class PanVisualizerPanel extends JPanel {
             g2.drawLine(baseX, baseY, x, y);
         }
 
-        int size = isActive ? DOT_SIZE + 6 : DOT_SIZE;
+        int size = isActive ? ACTIVE_DIAM : PART_DIAM;
         int offset = size / 2;
 
         // Draw Shadow/Glow if active

@@ -33,7 +33,15 @@ public class PanController {
                     Window owner = SwingUtilities.getWindowAncestor(slider);
                     popupWindow = new JWindow(owner);
                     popupWindow.add(visualizer);
-                    popupWindow.setSize(290, 150);
+                    /*
+                        parts = 25 diam
+                        track = 80 radius
+                        bottom = 20 buffer
+                        Vertical: room for 4 parts stacked means 3.5 at top + buffer + track_radius
+                        Horiz:   room for 4 parts stacked on each side means 7 parts + track_diam
+                        7 x 25 + 80 x 2 = 335 wide. 80 + 3.5 x 25 + 20 = 188 high.
+                     */
+                    popupWindow.setSize(335, 200);
                     popupWindow.setOpacity(1.0f);
                 }
 
