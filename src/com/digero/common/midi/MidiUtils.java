@@ -21,97 +21,57 @@ public class MidiUtils {
 	public static final int META_TEMPO_TYPE = 0x51;
 
 	/**
-	 * Given a microsecond time, convert to tick. returns tempo at the given time in cache.getCurrTempoMPQ
+	 * Given a microsecond time, convert to tick.
 	 */
-	public static long microsecond2tick(Sequence seq, long micros, TempoCacheSlow cache) {
-		if (seq.getDivisionType() != Sequence.PPQ) {
-			double dTick = (((double) micros) * ((double) seq.getDivisionType()) * ((double) seq.getResolution()))
-					/ ((double) 1000000);
-			long tick = (long) dTick;
-			if (cache != null) {
-				cache.currTempo = (int) cache.getTempoMPQAt(tick);
-			}
-			return tick;
-		}
+    public static long microsecond2tick(Sequence seq, long micros, TempoCacheSlow cache) {
+        if (seq.getDivisionType() != Sequence.PPQ) {
+            double dTick = (((double) micros) * ((double) seq.getDivisionType()) * ((double) seq.getResolution()))
+                    / ((double) 1000000);
+            return (long) dTick;
+        }
 
-		if (cache == null) {
-			cache = new TempoCacheSlow(seq);
-		}
-		long[] ticks = cache.ticks;
-		int[] tempos = cache.tempos; // in MPQ
-		int cacheCount = tempos.length;
+        if (cache == null) {
+            cache = new TempoCacheSlow(seq);
+        }
 
-		int resolution = seq.getResolution();
+        int index = java.util.Arrays.binarySearch(cache.micros, micros);
+        if (index < 0) {
+            index = -(index + 1) - 1;
+        }
 
-		long us = 0;
-		long tick = 0;
-		int newReadPos = 0;
-		int i = 1;
+        if (index < 0) index = 0;
+        if (index >= cache.micros.length) index = cache.micros.length - 1;
 
-		// walk through all tempo changes and add time for the respective blocks
-		// to find the right tick
-		if (micros > 0 && cacheCount > 0) {
-			// this loop requires that the first tempo Event is at time 0
-			while (i < cacheCount) {
-				long nextTime = us + ticks2microsec(ticks[i] - ticks[i - 1], tempos[i - 1], resolution);
-				if (nextTime > micros) {
-					break;
-				}
-				us = nextTime;
-				i++;
-			}
-			tick = ticks[i - 1] + microsec2ticks(micros - us, tempos[i - 1], resolution);
-		}
-		cache.currTempo = tempos[i - 1];
-		return tick;
-	}
+        long microsFromBase = micros - cache.micros[index];
+        return cache.ticks[index] + microsec2ticks(microsFromBase, cache.tempos[index], seq.getResolution());
+    }
 
 	/**
 	 * Given a tick, convert to microsecond
 	 * 
 	 * @param cache tempo info and current tempo
 	 */
-	public static long tick2microsecond(Sequence seq, long tick, TempoCacheSlow cache) {
-		if (seq.getDivisionType() != Sequence.PPQ) {
-			double seconds = ((double) tick / (double) (seq.getDivisionType() * seq.getResolution()));
-			return (long) (1000000 * seconds);
-		}
+    public static long tick2microsecond(Sequence seq, long tick, TempoCacheSlow cache) {
+        if (seq.getDivisionType() != Sequence.PPQ) {
+            double seconds = ((double) tick / (double) (seq.getDivisionType() * seq.getResolution()));
+            return (long) (1000000 * seconds);
+        }
 
-		if (cache == null) {
-			cache = new TempoCacheSlow(seq);
-		}
+        if (cache == null) {
+            cache = new TempoCacheSlow(seq);
+        }
 
-		int resolution = seq.getResolution();
+        int index = java.util.Arrays.binarySearch(cache.ticks, tick);
+        if (index < 0) {
+            index = -(index + 1) - 1;
+        }
 
-		long[] ticks = cache.ticks;
-		int[] tempos = cache.tempos; // in MPQ
-		int cacheCount = tempos.length;
+        if (index < 0) index = 0;
+        if (index >= cache.ticks.length) index = cache.ticks.length - 1;
 
-		// optimization to not always go through entire list of tempo events
-		int snapshotIndex = cache.snapshotIndex;
-		long snapshotMicro = cache.snapshotMicro;
-
-		// walk through all tempo changes and add time for the respective blocks
-		long us = 0L; // microsecond
-
-		if (snapshotIndex <= 0 || snapshotIndex >= cacheCount || ticks[snapshotIndex] > tick) {
-			snapshotMicro = 0L;
-			snapshotIndex = 0;
-		}
-		if (cacheCount > 0) {
-			// this implementation needs a tempo event at tick 0!
-			int i = snapshotIndex + 1;
-			while (i < cacheCount && ticks[i] <= tick) {
-				snapshotMicro += ticks2microsec(ticks[i] - ticks[i - 1], tempos[i - 1], resolution);
-				snapshotIndex = i;
-				i++;
-			}
-			us = snapshotMicro + ticks2microsec(tick - ticks[snapshotIndex], tempos[snapshotIndex], resolution);
-		}
-		cache.snapshotIndex = snapshotIndex;
-		cache.snapshotMicro = snapshotMicro;
-		return us;
-	}
+        long ticksFromBase = tick - cache.ticks[index];
+        return cache.micros[index] + ticks2microsec(ticksFromBase, cache.tempos[index], seq.getResolution());
+    }
 
 	/**
 	 * convert tick to microsecond with given tempo. Does not take tempo changes into account. Does not work for SMPTE
