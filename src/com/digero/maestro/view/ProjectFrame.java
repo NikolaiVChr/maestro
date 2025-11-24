@@ -23,9 +23,12 @@ import java.lang.management.ThreadMXBean;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -3482,56 +3485,58 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 		return threadDump.toString();
 	}
-	
-	private void checkVersionCompare() {
-		if(future == null || future.isDone()) {
-			future = CompletableFuture.runAsync(() -> {
-				try {
-					String fileUrl = "https://raw.githubusercontent.com/NikolaiVChr/mver/refs/heads/main/main";
-					URI uri = new URI(fileUrl);
-					URL url = uri.toURL();
-					HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-					connection.setConnectTimeout(4000);
-					connection.setReadTimeout(6000);
-					connection.setRequestMethod("GET");
-					try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-						String line;
-						while ((line = reader.readLine()) != null) {
-							latestVer = Version.parseVersion(line);
-							Version myVersion = MaestroMain.APP_VERSION;
-							if (latestVer != null && myVersion.compareTo(latestVer) < 0) {
-								SwingUtilities.invokeLater(() -> {
-									int result = JOptionPane.showConfirmDialog(ProjectFrame.this, "Version "+latestVer+" is available, do you want to close and download it?", "Version check",
-											JOptionPane.YES_NO_OPTION);
-										if (result == JOptionPane.YES_OPTION) {
-											URI uriDownload;
-											try {
-												uriDownload = new URI(MaestroMain.DOWNLOAD_URL);											
-												if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-													if (closeSong()) {
-														Desktop.getDesktop().browse(uriDownload);
-														System.exit(0);
-													}
-												}
-											} catch (URISyntaxException | IOException e) {
-												log.log(Level.WARNING, "Failed to open browser", e);
-											}
-										}
-									}
-								);
-								break;
-							}
-						}
-					} catch (Exception io) {
-                        log.log(Level.WARNING, "Failed to read current version string from HTTP", io);
-					}
-					connection.disconnect();
-				} catch (Throwable e) {
-                    log.log(Level.WARNING, "Failed to connect to github to read current version string", e);
-				}
-			});
-		}
-	}
+
+    private void checkVersionCompare() {
+        if (future == null || future.isDone()) {
+            future = CompletableFuture.runAsync(() -> {
+                try {
+                    try (var client = HttpClient.newBuilder()
+                            .connectTimeout(Duration.ofSeconds(4))
+                            .build()) {
+
+                        var request = HttpRequest.newBuilder()
+                                .uri(new URI("https://raw.githubusercontent.com/NikolaiVChr/mver/refs/heads/main/main"))
+                                .timeout(Duration.ofSeconds(10))
+                                .GET()
+                                .build();
+
+                        var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+                        if (response.statusCode() == HttpURLConnection.HTTP_OK) {
+                            String line = response.body().lines().findFirst().orElse("");
+                            latestVer = Version.parseVersion(line);
+                            Version myVersion = MaestroMain.APP_VERSION;
+                            if (latestVer != null && myVersion.compareTo(latestVer) < 0) {
+                                SwingUtilities.invokeLater(() -> {
+                                        int result = JOptionPane.showConfirmDialog(ProjectFrame.this, "Version "+latestVer+" is available, do you want to close and download it?", "Version check",
+                                                JOptionPane.YES_NO_OPTION);
+                                        if (result == JOptionPane.YES_OPTION) {
+                                            URI uriDownload;
+                                            try {
+                                                uriDownload = new URI(MaestroMain.DOWNLOAD_URL);
+                                                if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                                                    if (closeSong()) {
+                                                        Desktop.getDesktop().browse(uriDownload);
+                                                        System.exit(0);
+                                                    }
+                                                }
+                                            } catch (URISyntaxException | IOException e) {
+                                                log.log(Level.WARNING, "Failed to open browser", e);
+                                            }
+                                        }
+                                    }
+                                );
+                            }
+                        } else {
+                            log.warning("Failed to read current version string from HTTPS. Response: " + response.statusCode());
+                        }
+                    }
+                } catch (Exception e) {
+                    log.log(Level.WARNING, "Failed to connect to github for version check", e);
+                }
+            });
+        }
+    }
 
     public enum TimingEnum {
         ORGANIC_MULTISTAGE ("Organic Multi-stage",true, true, false,false,false,"Organic Multistage"),
