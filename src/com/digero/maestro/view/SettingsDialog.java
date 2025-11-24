@@ -12,27 +12,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
-import javax.swing.AbstractAction;
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JComponent;
-import javax.swing.JDialog;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JSpinner;
-import javax.swing.JTabbedPane;
-import javax.swing.JTextField;
-import javax.swing.KeyStroke;
-import javax.swing.SpinnerNumberModel;
+import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.event.DocumentEvent;
@@ -1122,6 +1107,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		
 		final JButton importPrefs = new JButton("Import all settings and exit Maestro");
 		importPrefs.addActionListener(a -> {
+            importPrefs.setEnabled(false);
 			try {
 				if(((ProjectFrame)(own)).closeSong()) {
 					JFileChooser jfc = new JFileChooser();
@@ -1129,18 +1115,32 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 					jfc.setFileFilter(filter);
 					int returnVal = jfc.showOpenDialog(this);
 					if(returnVal == JFileChooser.APPROVE_OPTION) {
-						FileInputStream fis = new FileInputStream(jfc.getSelectedFile());
-						Preferences.importPreferences(fis);
-						fis.close();
-						//((ProjectFrame)(own)).sync();
-						System.out.println("Backup loaded successfully from "+jfc.getSelectedFile());
-						this.setVisible(false);
-						System.exit(0);
-				    }
+                        // Offload I/O to Virtual Thread
+                        Thread.ofVirtual().start(() -> {
+                            try (FileInputStream fis = new FileInputStream(jfc.getSelectedFile())) {
+                                Preferences.importPreferences(fis);
+                                SwingUtilities.invokeLater(() -> {
+                                    log.info("Backup loaded successfully from "+jfc.getSelectedFile());
+                                    this.setVisible(false);
+                                    System.exit(0);
+                                });
+                            } catch (Exception e) {
+                                log.log(Level.SEVERE, "Failed to load settings backup", e);
+                                SwingUtilities.invokeLater(() -> {
+                                        JOptionPane.showMessageDialog(this, "Settings failed opening. " + e);
+                                        importPrefs.setEnabled(true);
+                                    }
+                                );
+                            }
+                        });
+				    } else {
+                        importPrefs.setEnabled(true);
+                    }
 				}
 			} catch (Exception e) {
-				e.printStackTrace();
+                log.log(Level.SEVERE, "Failed to import settings backup", e);
 				JOptionPane.showMessageDialog(this, "Settings failed opening. "+e.toString());
+                importPrefs.setEnabled(true);
 			}
 		});
 		
