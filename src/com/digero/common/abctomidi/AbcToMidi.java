@@ -1,10 +1,10 @@
 package com.digero.common.abctomidi;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -88,19 +88,26 @@ public class AbcToMidi {
 	// Lots of prime factors for divisibility goodness
 	static final long DEFAULT_NOTE_TICKS = (2 * 2 * 2 * 2 * 2 * 2) * (3 * 3) * 5;
 
-	public static List<String> readLines(File inputFile) throws IOException {
-		try (FileInputStream fileInputStream = new FileInputStream(inputFile);
-				InputStreamReader inputStreamReader = new InputStreamReader(fileInputStream);
-				BufferedReader bufferedReader = new BufferedReader(inputStreamReader)) {
-
-			String line;
-			ArrayList<String> lines = new ArrayList<>();
-			while ((line = bufferedReader.readLine()) != null) {
-				lines.add(line);
-			}
-			return lines;
-		}
-	}
+    public static List<String> readLines(File inputFile) throws IOException {
+        // Note: ABC files are technically ISO-8859-1 by standard, but often UTF-8 in practice.
+        // Java 18+ defaults to UTF-8. To be safe given the international user base:
+        try {
+            // 1. Try UTF-8 first.
+            // This works for:
+            // - Files created on Linux
+            // - Files created on Java 18+
+            // - Files explicitly saved as UTF-8
+            // If the file contains invalid UTF-8 byte sequences (like a legacy Windows file might),
+            // this throws MalformedInputException.
+            return Files.readAllLines(inputFile.toPath(), StandardCharsets.UTF_8);
+        } catch (java.nio.charset.MalformedInputException e) {
+            // 2. Fallback: Windows-1252 ("ANSI")
+            // This covers the vast majority of legacy Windows files (Windows 7/10/11 with Java 8/11/17).
+            // It is a superset of ISO-8859-1, so it correctly handles standard Western characters
+            // PLUS Windows specific chars like smart quotes and euro signs.
+            return Files.readAllLines(inputFile.toPath(), Charset.forName("windows-1252"));
+        }
+    }
 
 	public static Sequence convert(Params params) throws FileParseException {
 		return convert(params.filesData, params.useLotroInstruments, params.instrumentOverrideMap, params.abcInfo,
