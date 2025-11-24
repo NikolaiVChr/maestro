@@ -10,8 +10,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.UserDefinedFileAttributeView;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -19,7 +21,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
-import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.Map.Entry;
 import java.util.logging.Level;
@@ -133,7 +134,11 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 	private ListenerList<AbcSongEvent> listeners = new ListenerList<>();
 	boolean mixDirty = true;
+
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
+            .withZone(ZoneId.of("GMT"));
 	private Date firstExportTime = null;// UTC date and time for the first time this project was exported to abc.
+
 	public boolean storeNewSourceFile = true;
 	public boolean storeNewExportFile = true;
 	private String copyright = "";
@@ -373,12 +378,11 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			
 			String exportTimeStr = SaveUtil.parseValue(songEle, "firstExportTime", "");
 			if (!exportTimeStr.isEmpty()) {
-				DateFormat df = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-				df.setTimeZone(TimeZone.getTimeZone("GMT"));
-				try {
-					firstExportTime = df.parse(exportTimeStr);
-				} catch (java.text.ParseException ignored) {
-				}
+               try {
+                    Instant instant = Instant.from(DATE_TIME_FORMATTER.parse(exportTimeStr));
+                    firstExportTime = Date.from(instant);
+                } catch (java.time.format.DateTimeParseException ignored) {
+                }
 			} else if (exportFile != null) {
 				// Project has been saved before, but we don't know when.
 				firstExportTime = new Date(0);// 1970-01-01-00:00:00
@@ -674,9 +678,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		if (!note.isEmpty())
 			SaveUtil.appendChildTextElement(songEle, "note", note);
 		if (firstExportTime != null && firstExportTime.getTime() != 0L) {
-			DateFormat df = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-			df.setTimeZone(TimeZone.getTimeZone("GMT"));
-			SaveUtil.appendChildTextElement(songEle, "firstExportTime", df.format(firstExportTime));
+			SaveUtil.appendChildTextElement(songEle, "firstExportTime", DATE_TIME_FORMATTER.format(firstExportTime.toInstant()));
 		}
 		SaveUtil.appendChildTextElement(songEle, "autoSortedParts", String.valueOf(sorted));
 
