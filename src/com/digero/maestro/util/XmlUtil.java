@@ -63,7 +63,7 @@ public class XmlUtil {
 			return DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
 		} catch (ParserConfigurationException e) {
 			// How can a vanilla instance throw a configuration exception?
-			e.printStackTrace();
+			log.log(Level.SEVERE, "Error creating XML document", e);
 			assert false : e.getMessage();
 			throw new RuntimeException(e);
 		}
@@ -207,7 +207,7 @@ public class XmlUtil {
 
             Matcher matcher = ILLEGAL_CHAR_REF_PATTERN.matcher(semiSanitizedXml);
 
-            StringBuffer sanitizedXml = new StringBuffer();
+            StringBuilder sanitizedXml = new StringBuilder();
 
             // some chars might be stored in the xml as char refs.
             // we need to replace those also:
@@ -254,7 +254,7 @@ public class XmlUtil {
 		}
 	}
 
-	public static void saveDocument(Document document, OutputStream stream) throws TransformerException, IOException {
+	public static void saveDocument(Document document, OutputStream stream) throws TransformerException {
 		try {
 			Transformer transformer = TransformerFactory.newInstance().newTransformer();
 			transformer.setOutputProperty(OutputKeys.INDENT, "yes");
@@ -266,7 +266,7 @@ public class XmlUtil {
 			transformer.transform(new DOMSource(document), new StreamResult(stream));
 		} catch (TransformerConfigurationException | TransformerFactoryConfigurationError e) {
 			// How can a vanilla instance throw a configuration exception?
-			e.printStackTrace();
+			log.log(Level.SEVERE, "Error saving XML", e);
 			assert false : e.getMessage();
 			throw new RuntimeException(e);
 		}
@@ -292,13 +292,13 @@ public class XmlUtil {
 		}
 
 		@Override
-		public void startDocument() throws SAXException {
+		public void startDocument() {
 			doc = createDocument();
 			stack.push(doc);
 		}
 
 		@Override
-		public void endDocument() throws SAXException {
+		public void endDocument() {
 			stack.pop();
 		}
 
@@ -308,8 +308,7 @@ public class XmlUtil {
 		}
 
 		@Override
-		public void startElement(String uri, String localName, String qName, Attributes attributes)
-				throws SAXException {
+		public void startElement(String uri, String localName, String qName, Attributes attributes) {
 			appendText();
 			Element ele = doc.createElement(qName);
 			stack.push(ele);
@@ -320,14 +319,14 @@ public class XmlUtil {
 		}
 
 		@Override
-		public void endElement(String uri, String localName, String qName) throws SAXException {
+		public void endElement(String uri, String localName, String qName) {
 			appendText();
 			Node node = stack.pop();
 			stack.peek().appendChild(node);
 		}
 
 		@Override
-		public void characters(char[] ch, int start, int length) throws SAXException {
+		public void characters(char[] ch, int start, int length) {
 			text.append(ch, start, length);
 		}
 	}
@@ -378,28 +377,125 @@ public class XmlUtil {
 		}
 	}
 
-	//
-	// XPath
-	//
+    public static Node selectSingleNode(Node fromNode, String xpathString) throws XPathExpressionException {
+        if (isSimpleTagName(xpathString)) {
+            NodeList list = fromNode.getChildNodes();
+            for (int i = 0; i < list.getLength(); i++) {
+                Node n = list.item(i);
+                if (n.getNodeType() == Node.ELEMENT_NODE && n.getNodeName().equals(xpathString)) {
+                    return n;
+                }
+            }
+            return null;
+        }
 
-	private static final XPath xpath = XPathFactory.newInstance().newXPath();
+        // Thread-safe fallback
+        XPath localXPath = XPathFactory.newInstance().newXPath();
+        return (Node) localXPath.evaluate(xpathString, fromNode, XPathConstants.NODE);
+    }
 
-	public static Node selectSingleNode(Node fromNode, String xpathString) throws XPathExpressionException {
-		return (Node) xpath.evaluate(xpathString, fromNode, XPathConstants.NODE);
-	}
+    public static Element selectSingleElement(Node fromNode, String tagName) throws XPathExpressionException {
+        if (isSimpleTagName(tagName)) {
+            NodeList list = fromNode.getChildNodes();
+            for (int i = 0; i < list.getLength(); i++) {
+                Node n = list.item(i);
+                if (n.getNodeType() == Node.ELEMENT_NODE && n.getNodeName().equals(tagName)) {
+                    return (Element) n;
+                }
+            }
+            return null;
+        }
 
-	public static Element selectSingleElement(Node fromNode, String xpathString) throws XPathExpressionException {
-		return (Element) xpath.evaluate(xpathString, fromNode, XPathConstants.NODE);
-	}
+        XPath localXPath = XPathFactory.newInstance().newXPath();
+        return (Element) localXPath.evaluate(tagName, fromNode, XPathConstants.NODE);
+    }
 
-	public static NodeListWrapper<Node> selectNodes(Node fromNode, String xpathString) throws XPathExpressionException {
-		return new NodeListWrapper<>((NodeList) xpath.evaluate(xpathString, fromNode, XPathConstants.NODESET));
-	}
+    public static NodeListWrapper<Node> selectNodes(Node fromNode, String xpathString) throws XPathExpressionException {
+        if (isSimpleTagName(xpathString)) {
+            // reuse the raw NodeList generator
+            return new NodeListWrapper<>(getNodesByTagNameRaw(fromNode, xpathString));
+        }
 
-	public static NodeListWrapper<Element> selectElements(Node fromNode, String xpathString)
-			throws XPathExpressionException {
-		return new NodeListWrapper<>((NodeList) xpath.evaluate(xpathString, fromNode, XPathConstants.NODESET));
-	}
+        // Thread-safe fallback
+        XPath localXPath = XPathFactory.newInstance().newXPath();
+        return new NodeListWrapper<>((NodeList) localXPath.evaluate(xpathString, fromNode, XPathConstants.NODESET));
+    }
+
+    public static NodeListWrapper<Element> selectElements(Node fromNode, String tagName) throws XPathExpressionException {
+        // Optimization: If the selector is just a simple tag name (no / or [ or @),
+        // we manually iterate children. This is MUCH faster than XPath.
+        if (isSimpleTagName(tagName)) {
+            return getChildrenByTagName(fromNode, tagName);
+        }
+
+        // Fallback for complex queries (e.g. "part[@id='1']")
+
+        // Create a NEW XPath instance per call for thread safety
+        XPath localXPath = XPathFactory.newInstance().newXPath();
+        return new NodeListWrapper<>((NodeList) localXPath.evaluate(tagName, fromNode, XPathConstants.NODESET));
+    }
+
+    /**
+     * Returns true if the string contains only alphanumeric/underscores/hyphens
+     * and NO special XPath chars like slash, square brackets or at sign.
+     * If the string is empty, it also returns false.
+     */
+    static boolean isSimpleTagName(String query) {
+        for (int i = 0; i < query.length(); i++) {
+            char c = query.charAt(i);
+            if (!Character.isLetterOrDigit(c) && c != '_' && c != '-' && c != '.') {
+                return false;
+            }
+        }
+        return !query.isEmpty();
+    }
+
+    private static NodeListWrapper<Element> getChildrenByTagName(Node parent, String tagName) {
+        // We create a custom NodeList implementation to wrap our results
+        java.util.List<Node> nodes = new java.util.ArrayList<>();
+        NodeList children = parent.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            Node n = children.item(i);
+            if (n.getNodeType() == Node.ELEMENT_NODE && n.getNodeName().equals(tagName)) {
+                nodes.add(n);
+            }
+        }
+
+        // Return anonymous NodeList implementation
+        NodeList staticList = new NodeList() {
+            @Override
+            public Node item(int index) {
+                return (index >= 0 && index < nodes.size()) ? nodes.get(index) : null;
+            }
+            @Override
+            public int getLength() {
+                return nodes.size();
+            }
+        };
+        return new NodeListWrapper<>(staticList);
+    }
+
+    private static NodeList getNodesByTagNameRaw(Node parent, String tagName) {
+        java.util.List<Node> nodes = new java.util.ArrayList<>();
+        NodeList children = parent.getChildNodes();
+        for (int i = 0; i < children.getLength(); i++) {
+            Node n = children.item(i);
+            if (n.getNodeType() == Node.ELEMENT_NODE && n.getNodeName().equals(tagName)) {
+                nodes.add(n);
+            }
+        }
+
+        return new NodeList() {
+            @Override
+            public Node item(int index) {
+                return (index >= 0 && index < nodes.size()) ? nodes.get(index) : null;
+            }
+            @Override
+            public int getLength() {
+                return nodes.size();
+            }
+        };
+    }
 
 	//
 	// Exceptions
