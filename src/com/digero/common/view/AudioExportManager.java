@@ -71,7 +71,7 @@ public class AudioExportManager {
 
 			JDialog waitFrame = new WaitDialog(parentWindow, saveFile);
 			waitFrame.setVisible(true);
-			new Thread(new ExportWavTask(sequencer.getSequence(), saveFile, waitFrame, sequencer.getStartTick())).start();
+            Thread.ofVirtual().start(new ExportWavTask(sequencer.getSequence(), saveFile, waitFrame, sequencer.getStartTick()));
 		}
 	}
 	
@@ -83,7 +83,7 @@ public class AudioExportManager {
 			ExportMp3Dialog dialog = (ExportMp3Dialog) e.getSource();
 			JDialog waitFrame = new WaitDialog(parentWindow, dialog.getSaveFile());
 			waitFrame.setVisible(true);
-			new Thread(new ExportMp3BuiltinTask(sequencer.getSequence(), dialog, waitFrame, sequencer.getStartTick())).start();
+            Thread.ofVirtual().start(new ExportMp3BuiltinTask(sequencer.getSequence(), dialog, waitFrame, sequencer.getStartTick()));
 		});
 		mp3Dialog.setVisible(true);
 	}
