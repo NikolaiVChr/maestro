@@ -255,16 +255,10 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 							if (MidiStandard.XG == standard && !"".equals(bank) && message[5] < 16 && message[5] >= 0
 									&& message[7] < 128 && message[7] >= 0) {
 								switch (bank) {
-								case "MSB":
-									// XG Drum Part Protect Mode does not apply to sysex bank changes.
-									mapMSB.put((int) message[5], tick, (int) message[7]);
-									break;
-								case "Patch":
-									mapPatch.put((int) message[5], tick, (int) message[7]);
-									break;
-								case "LSB":
-									mapLSB.put((int) message[5], tick, (int) message[7]);
-									break;
+                                    // XG Drum Part Protect Mode does not apply to sysex bank changes.
+                                    case "MSB" -> mapMSB.put((int) message[5], tick, (int) message[7]);
+                                    case "Patch" -> mapPatch.put((int) message[5], tick, (int) message[7]);
+                                    case "LSB" -> mapLSB.put((int) message[5], tick, (int) message[7]);
 								}
 							}
 						} else if (!ignoreMidiText) {
