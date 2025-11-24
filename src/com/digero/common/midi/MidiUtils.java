@@ -289,22 +289,15 @@ public class MidiUtils {
         String str = "";
         if (m instanceof ShortMessage shorty) {
             int command = shorty.getCommand();
-            switch (command) {
-                case ShortMessage.NOTE_ON:
-                    str += "Note ON, Velocity="+shorty.getData2(); break;
-                case ShortMessage.NOTE_OFF:
-                    str += "Note OFF"; break;
-                case ShortMessage.CHANNEL_PRESSURE:
-                    str += "Aftertouch"; break;
-                case ShortMessage.POLY_PRESSURE:
-                    str += "Aftertouch (poly)"; break;
-                case ShortMessage.CONTROL_CHANGE:
-                    str += "Control Change"; break;
-                case ShortMessage.PITCH_BEND:
-                    str += "Pitch Bend"; break;
-                default:
-                    return str;
-            }
+            str += switch (command) {
+                case ShortMessage.NOTE_ON -> "Note ON, Velocity="+shorty.getData2();
+                case ShortMessage.NOTE_OFF -> "Note OFF";
+                case ShortMessage.CHANNEL_PRESSURE -> "Aftertouch";
+                case ShortMessage.POLY_PRESSURE -> "Aftertouch (poly)";
+                case ShortMessage.CONTROL_CHANGE -> "Control Change";
+                case ShortMessage.PITCH_BEND -> "Pitch Bend";
+                default -> "";
+            };
             str += ", Channel="+shorty.getChannel();
         } else if (m instanceof SysexMessage sysex) {
             str += "Sysex";
