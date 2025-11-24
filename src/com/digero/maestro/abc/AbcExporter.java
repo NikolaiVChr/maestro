@@ -5,12 +5,13 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.text.SimpleDateFormat;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -494,8 +495,12 @@ public class AbcExporter {
 		Pair<Long, Long> startEnd = getSongStartEndTick(false, true);
 		exportStartTick = startEnd.first;
 		exportEndTick = startEnd.second;
-		
-		try (PrintStream out = new PrintStream(os)) {
+
+        try (PrintStream out = new PrintStream(os, false, StandardCharsets.UTF_8)) {
+            // Lotro uses Windows-1252 code page to decipher ABC files, but its more safe
+            // to rely on UTF-8 for export, especially for abc player,
+            // it will just show as garbled chars in lotro
+            // when playing. It will still work.
 			if (!parts.isEmpty()) {
 				out.println("%abc-2.1");
 				out.println(AbcField.SONG_TITLE + StringCleaner.cleanForABC(metadata.getSongTitle()));
@@ -507,7 +512,7 @@ public class AbcExporter {
 					out.println(AbcField.SONG_TRANSCRIBER + StringCleaner.cleanForABC(metadata.getTranscriber()));
 				}
 				out.println(AbcField.ABC_CREATOR + appName + " v" + MaestroMain.APP_VERSION);
-				out.println(AbcField.EXPORT_TIMESTAMP + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+				out.println(AbcField.EXPORT_TIMESTAMP + DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.now()));
 				if (!organic) {
 					out.println(AbcField.SWING_RHYTHM + Boolean.toString(qtm.isTripletTiming()));
 					out.println(AbcField.MIX_TIMINGS + Boolean.toString(qtm.isMixTiming()));
