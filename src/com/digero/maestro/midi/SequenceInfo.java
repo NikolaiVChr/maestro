@@ -137,16 +137,16 @@ public class SequenceInfo implements MidiConstants {
 		// Aifel: changed order so that XG drums in middle of a track from a type 0 gets separated out
 		boolean wasType0 = convertToType1(sequence);
 
-        this.sequence = separateDrumTracks(sequence);
+        this.sequence = separateDrumTracks(sequence);// Beware: Do not refer to param sequence after this line
 
-		realDuraTicks = fixupTrackLength(sequence);
+		realDuraTicks = fixupTrackLength(this.sequence);
 
-		Track[] tracks = sequence.getTracks();
+		Track[] tracks = this.sequence.getTracks();
 		if (tracks.length == 0) {
 			throw new InvalidMidiDataException("The MIDI file doesn't have any tracks");
 		}
 
-		sequenceCache = new SequenceDataCache(sequence, standard, rolandDrumChannels, yamahaDrumSwitches,
+		sequenceCache = new SequenceDataCache(this.sequence, standard, rolandDrumChannels, yamahaDrumSwitches,
 				yamahaDrumChannels, mmaDrumSwitches, portMap, onlyFirstTrackTempos, ignoreZeroChannelVolume, ignoreMidiText);
 		hasPorts = sequenceCache.hasPorts;
 		primaryTempoMPQ = sequenceCache.getPrimaryTempoMPQ();
@@ -824,23 +824,23 @@ public class SequenceInfo implements MidiConstants {
                     if (drumsGM == 1) {
                         drumTrack = newSeq.createTrack();
                         drumTrack.add(MidiFactory.createTrackNameEvent(ExtensionMidiInstrument.TRACK_NAME_DRUM_GM));
-                        // System.err.println("Drum and Chromatic notes in same track. Create ch10 GM Drum track. From "+i);
+                        //System.err.println("Drum and Chromatic notes in same track. Create ch10 GM Drum track. From "+i);
                     }
                     if (notes10 + notesX > 1) {
                         noteTrack = newSeq.createTrack();
                         noteTrack.add(MidiFactory.createTrackNameEvent("Track " + i + "+"));
-                        // System.err.println("Chromatic notes in channel 10. Create chromatic ch10 track. From " + i);
+                        //System.err.println("Chromatic notes in channel 10. Create chromatic ch10 track. From " + i);
                     }
                     if (drumsXG + drumsGS + drumsGM2 > 0) {
                         brandDrumTrack = createBrandDrumTrack(drumsGS, drumsXG, drumsGM2, newSeq);
-                        // System.err.println("Drum and Chromatic notes in same track. Create EXT Drum track. From "+i);
+                        //System.err.println("Drum and Chromatic notes in same track. Create EXT Drum track. From "+i);
                     }
                 } else {
                     // Only drum notes in this track
                     if (drumsExt10 == 1) {
                         // Maestro v2.5.0 would have separated these, so we do the same.
                         brandDrumTrack = createBrandDrumTrack(drumsGS, drumsXG, drumsGM2, newSeq);
-                        // System.err.println("EXT Drum notes in ch10 and in other channels. Create EXT Drum track. From "+i);
+                        //System.err.println("EXT Drum notes in ch10 and in other channels. Create EXT Drum track. From "+i);
                     }
                     assert drumsGM == 0;
                 }
@@ -905,7 +905,9 @@ public class SequenceInfo implements MidiConstants {
             }
         }
 
-        if (modified) return newSeq;
+        if (modified) {
+            return newSeq;
+        }
         return song;
 	}
 
