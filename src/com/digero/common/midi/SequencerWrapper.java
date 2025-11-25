@@ -3,6 +3,7 @@ package com.digero.common.midi;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -428,12 +429,12 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 			tempos = new int[size];
             micros = new long[size];
 			int e = 0;
-            long currentMicros = 0;
+            long currentMicros = 0L;
 			if (firstTempoIsFake) {
-				// add tempo 120 at beginning
-				ticks[0] = 0;
+				// add tempo 120 at the beginning
+				ticks[0] = 0L;
 				tempos[0] = MidiUtils.DEFAULT_TEMPO_MPQ;
-                micros[0] = 0;
+                micros[0] = 0L;
 				e++;
 			}
 			for (MidiEvent evt : list.values()) {
@@ -449,7 +450,7 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 		}
 
         float getTempoMPQAt(long tick) {
-            int index = java.util.Arrays.binarySearch(ticks, tick);
+            int index = Arrays.binarySearch(ticks, tick);
 
             // not found
             if (index < 0) {

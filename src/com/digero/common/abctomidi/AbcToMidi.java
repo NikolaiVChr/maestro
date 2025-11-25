@@ -3,6 +3,7 @@ package com.digero.common.abctomidi;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.MalformedInputException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
@@ -100,11 +101,11 @@ public class AbcToMidi {
             // If the file contains invalid UTF-8 byte sequences (like a legacy Windows file might),
             // this throws MalformedInputException.
             return Files.readAllLines(inputFile.toPath(), StandardCharsets.UTF_8);
-        } catch (java.nio.charset.MalformedInputException e) {
+        } catch (MalformedInputException e) {
             // 2. Fallback: Windows-1252 ("ANSI")
             // This covers the vast majority of legacy Windows files (Windows 7/10/11 with Java 8/11/17).
             // It is a superset of ISO-8859-1, so it correctly handles standard Western characters
-            // PLUS Windows specific chars like smart quotes and euro signs.
+            // Plus Windows specific chars like smart quotes and euro signs.
             return Files.readAllLines(inputFile.toPath(), Charset.forName("windows-1252"));
         }
     }

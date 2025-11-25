@@ -1,6 +1,7 @@
 package com.digero.common.midi;
 
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.logging.Logger;
 
 import javax.sound.midi.*;
@@ -34,7 +35,7 @@ public class MidiUtils {
             cache = new TempoCacheSlow(seq);
         }
 
-        int index = java.util.Arrays.binarySearch(cache.micros, micros);
+        int index = Arrays.binarySearch(cache.micros, micros);
         if (index < 0) {
             index = -(index + 1) - 1;
         }
@@ -61,7 +62,7 @@ public class MidiUtils {
             cache = new TempoCacheSlow(seq);
         }
 
-        int index = java.util.Arrays.binarySearch(cache.ticks, tick);
+        int index = Arrays.binarySearch(cache.ticks, tick);
         if (index < 0) {
             index = -(index + 1) - 1;
         }
@@ -118,30 +119,26 @@ public class MidiUtils {
 	}
 
 	/** return if the given message is a meta tempo message */
-	public static boolean isMetaTempo(MidiMessage midiMsg) {
-		// first check if it is a META message at all
-		if (midiMsg.getLength() != 6 || midiMsg.getStatus() != MetaMessage.META) {
-			return false;
-		}
-		// now get message and check for tempo
-		byte[] msg = midiMsg.getMessage();
-		// meta type must be 0x51, and data length must be 3
-		return ((msg[1] & 0xFF) == META_TEMPO_TYPE) && (msg[2] == 3);
-	}
+    public static boolean isMetaTempo(MidiMessage midiMsg) {
+        // avoid byte[] allocation via getMessage()
+        if (midiMsg instanceof MetaMessage meta) {
+            // Check type (0x51) and total length (6 bytes -> 3 bytes data)
+            return meta.getType() == META_TEMPO_TYPE && meta.getLength() == 6;
+        }
+        return false;
+    }
 
 	/**
 	 * parses this message for a META tempo message and returns the tempo in MPQ, or -1 if this isn't a tempo message
 	 */
 	public static int getTempoMPQ(MidiMessage midiMsg) {
-		// first check if it is a META message at all
-		if (midiMsg.getLength() != 6 || midiMsg.getStatus() != MetaMessage.META) {
-			return -1;
-		}
-		byte[] msg = midiMsg.getMessage();
-		if (((msg[1] & 0xFF) != META_TEMPO_TYPE) || (msg[2] != 3)) {
-			return -1;
-		}
-		return (msg[5] & 0xFF) | ((msg[4] & 0xFF) << 8) | ((msg[3] & 0xFF) << 16);
+        if (!isMetaTempo(midiMsg)) {
+            return -1;
+        }
+        MetaMessage meta = (MetaMessage) midiMsg;
+		byte[] data = meta.getData();//getData() allocates less than getMessage()
+
+        return (data[2] & 0xFF) | ((data[1] & 0xFF) << 8) | ((data[0] & 0xFF) << 16);
 	}
 
     /**
@@ -159,14 +156,12 @@ public class MidiUtils {
 
 	/** return true if the passed message is Meta End Of Track */
 	public static boolean isMetaEndOfTrack(MidiMessage midiMsg) {
-		// first check if it is a META message at all
-		if (midiMsg.getLength() != 3 || midiMsg.getStatus() != MetaMessage.META) {
-			return false;
-		}
-		// now get message and check for end of track
-		byte[] msg = midiMsg.getMessage();
-		return ((msg[1] & 0xFF) == META_END_OF_TRACK_TYPE) && (msg[2] == 0);
-	}
+        if (midiMsg instanceof MetaMessage meta) {
+            // Type 0x2F, Total Length 3 (Status + Type + Len(0)) => Data Length 0
+            return meta.getType() == META_END_OF_TRACK_TYPE && meta.getLength() == 3;
+        }
+        return false;
+    }
 	
 	public static String decodeMidiText(byte[] data) {
         if (data == null || data.length == 0) {
