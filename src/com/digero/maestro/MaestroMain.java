@@ -198,14 +198,17 @@ public class MaestroMain {
 			return false;
 		}
 		//log.finer("Made port");
-		(new Thread(() -> {
-			try {
-				while (true) {
-					try (Socket socket = serverSocket.accept();BufferedReader in = new BufferedReader(
-                            new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_16))) {
-                        //log.finer("Accepted");
+		Thread waitForOtherMaestrosThread = new Thread(() -> {
+            while (!serverSocket.isClosed()) {
+				try (Socket socket = serverSocket.accept()) {
+                    //log.finer("Accepted");
 
-                        // while (socket.isConnected()) {
+                    // If readLine() takes longer than this, it throws SocketTimeoutException
+                    socket.setSoTimeout(2000);
+
+                    try (BufferedReader in = new BufferedReader(
+                            new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_16))) {
+
                         String data = in.readLine();
 
                         if (data != null
@@ -216,17 +219,24 @@ public class MaestroMain {
                                         || Util.stringEndsWithIgnoreCase(data, Util.MSX_FILE_EXTENSION)
                                         || Util.stringEndsWithIgnoreCase(data, Util.KAR_FILE_EXTENSION))) {
                             //log.finer("Received "+data);
-                            String[] datas = { data };
-                            activate(datas);
+                            String[] dataArray = { data };
+                            activate(dataArray);
                         } else {
                             //log.fine("Received nothing: "+data);
                         }
 					}
-				}
-			} catch (IOException ignored) {
-				// ignored.printStackTrace();
+                } catch (IOException e) {
+                    //log.log(Level.FINE, "Error while waiting for another maestro process", e);
+                    if (serverSocket.isClosed()) break;
+                }
 			}
-		})).start();
+		});
+        //for debugging:
+        waitForOtherMaestrosThread.setName("listen-for-maestros");
+        //so java knows this thread can safely be deleted when stopping maestro:
+        waitForOtherMaestrosThread.setDaemon(true);
+        waitForOtherMaestrosThread.start();
+
 		return true;
 	}
 
