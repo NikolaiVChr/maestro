@@ -1100,7 +1100,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 					}
 				}
 			} catch (Exception e) {
-				e.printStackTrace();
+                log.log(Level.SEVERE, "Failed to export settings backup", e);
 				JOptionPane.showMessageDialog(this, "Settings failed saving. "+e.toString());
 			}
 		});
@@ -1124,7 +1124,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
                                     this.setVisible(false);
                                     System.exit(0);
                                 });
-                            } catch (Exception e) {
+                            } catch (Throwable e) {
                                 log.log(Level.SEVERE, "Failed to load settings backup", e);
                                 SwingUtilities.invokeLater(() -> {
                                         JOptionPane.showMessageDialog(this, "Settings failed opening. " + e);
@@ -1133,15 +1133,14 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
                                 );
                             }
                         });
-				    } else {
-                        importPrefs.setEnabled(true);
-                    }
+                        return;//return so we don't re-enable the button (thread does that)
+				    }
 				}
 			} catch (Exception e) {
                 log.log(Level.SEVERE, "Failed to import settings backup", e);
 				JOptionPane.showMessageDialog(this, "Settings failed opening. "+e.toString());
-                importPrefs.setEnabled(true);
 			}
+            importPrefs.setEnabled(true);
 		});
 		
 		TableLayout layout = new TableLayout();
