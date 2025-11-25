@@ -286,17 +286,19 @@ public class TrackInfo implements MidiConstants {
 					for (int ch = 0; ch < MidiConstants.CHANNEL_COUNT; ch++) {
 						for (int pitch = 0 ; pitch < 128 ; pitch++) {
                             MidiNoteEvent ne = activeNotes[ch][pitch];
-                            activeNotes[ch][pitch] = null;
-                            ne.setEndTick(tick);
-                            if (tick == ne.getStartTick()) {
-                                // Illegal zero duration note terminated, so Maestro don't have to process it and discard it in the abc export anyway.
-                                //
-                                noteEvents.remove(ne);
-                                zeroNotesRemoved++;
+                            if (ne != null) {
+                                activeNotes[ch][pitch] = null;
+                                ne.setEndTick(tick);
+                                if (tick == ne.getStartTick()) {
+                                    // Illegal zero duration note terminated, so Maestro don't have to process it and discard it in the abc export anyway.
+                                    //
+                                    noteEvents.remove(ne);
+                                    zeroNotesRemoved++;
 
-                                log.fine(name + " Removing zero note (EOT), tick:" + tick + " file:" + sequenceInfo.getFileName() + " track:" + trackNumber + " time:" + Util.formatDurationM(sequenceCache.tickToMicros(tick)));
-                            } else {
-                                log.info(sequenceInfo.getFileName() + ": Keeping note ending by EOT instead of Note OFF. Tick " + tick + ", track " + trackNumber);
+                                    log.fine(name + " Removing zero note (EOT), tick:" + tick + " file:" + sequenceInfo.getFileName() + " track:" + trackNumber + " time:" + Util.formatDurationM(sequenceCache.tickToMicros(tick)));
+                                } else {
+                                    log.info(sequenceInfo.getFileName() + ": Keeping note ending by EOT instead of Note OFF. Tick " + tick + ", track " + trackNumber);
+                                }
                             }
                         }
 					}
