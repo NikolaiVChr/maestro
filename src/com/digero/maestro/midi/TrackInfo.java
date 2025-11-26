@@ -361,6 +361,9 @@ public class TrackInfo implements MidiConstants {
 				// be.getMinBend())+")");
 			}
 		}
+
+        // adding bent sub-notes can have changed the order
+        Collections.sort(noteEvents);
 		
 		for (MidiNoteEvent ne : noteEvents) {
 			// We do it here due to the above split might have removed or added notes
