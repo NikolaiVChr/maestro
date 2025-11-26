@@ -65,7 +65,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	
 	public static final String MSX_FILE_DESCRIPTION = MaestroMain.APP_NAME + " Project";
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = MaestroMain.APP_NAME + " Projects";
-	public static final Version SONG_FILE_VERSION = new Version(4, 5, 15, 300);// Keep build above 117 to make earlier
+	public static final Version SONG_FILE_VERSION = new Version(4, 5, 19, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
 
@@ -91,6 +91,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private boolean mixTiming = true;
 	private boolean organic = false;
 	private boolean organic2 = false;
+    private boolean upgraded = false;
 	private int mixVersion = 2;// TODO: make UI?
 	private boolean priorityActive = false;
 	private boolean skipSilenceAtStart = true;
@@ -413,6 +414,13 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			
 			organic = SaveUtil.parseValue(songEle, "exportSettings/@organic", false);
 			organic2 = SaveUtil.parseValue(songEle, "exportSettings/@organic-multi-stage", false);
+            int orgVersion = SaveUtil.parseValue(songEle, "exportSettings/@organic-version", 1);
+            if (organic && organic2) {
+                if (orgVersion == 2) upgraded = true;
+                else upgraded = false;
+            } else {
+                upgraded = false;
+            }
 			tripletTiming = SaveUtil.parseValue(songEle, "exportSettings/@tripletTiming", tripletTiming);
 
 			mixTiming = SaveUtil.parseValue(songEle, "exportSettings/@mixTiming", false);// default false as old
@@ -723,6 +731,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		exportSettingsEle.setAttribute("mixTiming", String.valueOf(mixTiming));
 		exportSettingsEle.setAttribute("organic", String.valueOf(organic));
 		exportSettingsEle.setAttribute("organic-multi-stage", String.valueOf(organic2));
+        if (organic && organic2 && upgraded) {
+            exportSettingsEle.setAttribute("organic-version", String.valueOf(2));
+        }
 		if (mixTiming) {
 			exportSettingsEle.setAttribute("combinePriorities", String.valueOf(priorityActive));
 			// exportSettingsEle.setAttribute("mixVersion", String.valueOf(mixVersion));
@@ -1117,7 +1128,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
      * This will decrease number of preview generations done.
      * And also less property change events in some cases.
      */
-    public void setTimings(boolean org, boolean org2, boolean mix, boolean swing, boolean prio) {
+    public void setTimings(boolean org, boolean org2, boolean mix, boolean swing, boolean prio, boolean upgr) {
         boolean changed = false;
         if (this.tripletTiming != swing) {
             this.tripletTiming = swing;
@@ -1143,6 +1154,11 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         }
         if (organic2 != org2) {
             organic2 = org2;
+            orgChanged = true;
+            changed = true;
+        }
+        if (upgraded != upgr) {
+            upgraded = upgr;
             orgChanged = true;
             changed = true;
         }
@@ -1341,6 +1357,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		if (abcExporter.isOrganic2() != organic2)
 			abcExporter.setOrganic2(organic2);
 
+        if (abcExporter.isUpgraded() != upgraded)
+            abcExporter.setUpgraded(upgraded);
+
         // from settings:
 
         if (abcExporter.isSkipSilenceAtStart() != skipSilenceAtStart)
@@ -1487,6 +1506,10 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public boolean isOrganic2() {
 		return organic2;		
 	}
+
+    public boolean isUpgraded() {
+        return upgraded;
+    }
 
     public String getStats() {
         String str = "";

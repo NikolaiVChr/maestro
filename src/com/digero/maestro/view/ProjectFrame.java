@@ -1921,7 +1921,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             // one or more timing settings were change in abc song
 
             // setting on model dont fire action listener
-            timingCombo.getModel().setSelectedItem(TimingEnum.getInstance(abcSong.isOrganic(), abcSong.isOrganic2(), abcSong.isMixTiming(), abcSong.isTripletTiming(), abcSong.isPriorityActive()));
+            timingCombo.getModel().setSelectedItem(TimingEnum.getInstance(abcSong.isOrganic(), abcSong.isOrganic2(), abcSong.isMixTiming(), abcSong.isTripletTiming(), abcSong.isPriorityActive(), abcSong.isUpgraded()));
 
 			updateButtons(false);
 			break;
@@ -2336,7 +2336,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			setMeter(abcSong.getTimeSignature());
 
             // setting on model dont fire action listener
-            timingCombo.getModel().setSelectedItem(TimingEnum.getInstance(abcSong.isOrganic(),abcSong.isOrganic2(),abcSong.isMixTiming(),abcSong.isTripletTiming(),abcSong.isPriorityActive()));
+            timingCombo.getModel().setSelectedItem(TimingEnum.getInstance(abcSong.isOrganic(),abcSong.isOrganic2(),abcSong.isMixTiming(),abcSong.isTripletTiming(),abcSong.isPriorityActive(), abcSong.isUpgraded()));
 
             tempoOnlyFirstCheckBox.setSelected(abcSong.isUsingOldTempos());
 
@@ -3544,14 +3544,15 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
     }
 
     public enum TimingEnum {
-        ORGANIC_MULTISTAGE ("Organic Multi-stage",true, true, false,false,false,"Organic Multistage"),
-        ORGANIC_SINGLESTAGE ("Organic Single-stage", true, false, false,false,false,"Organic Singlestage"),
-        MIX ("Mix Timings", false, false, true,false,false,"Mix Timings"),
-        MIX_SWING ("Mix Timings, Swing", false, false, true,true,false,"Mix Timings Swing/Triplet"),
-        MIX_PRIO ("Mix Timings, Combine Priorities", false, false, true,false,true,"Mix Timings Combine Priorities"),
-        MIX_SWING_PRIO ("Mix Timings, Swing, Combine Priorities", false, false, true,true,true,"Mix Timings Swing/Triplet Combine Priorities"),
-        LEGACY ("Legacy Timings", false, false, false,false,false,"Legacy"),
-        LEGACY_SWING ("Legacy Timings, Swing", false, false, false,true,false,"Legacy Swing/Triplet"),
+        ORGANIC_MULTISTAGE2 ("Organic Multi-stage 2",true, true, false,false,false,"Organic Multistage 2", true),
+        ORGANIC_MULTISTAGE ("Organic Multi-stage",true, true, false,false,false,"Organic Multistage", false),
+        ORGANIC_SINGLESTAGE ("Organic Single-stage", true, false, false,false,false,"Organic Singlestage", false),
+        MIX ("Mix Timings", false, false, true,false,false,"Mix Timings", false),
+        MIX_SWING ("Mix Timings, Swing", false, false, true,true,false,"Mix Timings Swing/Triplet", false),
+        MIX_PRIO ("Mix Timings, Combine Priorities", false, false, true,false,true,"Mix Timings Combine Priorities", false),
+        MIX_SWING_PRIO ("Mix Timings, Swing, Combine Priorities", false, false, true,true,true,"Mix Timings Swing/Triplet Combine Priorities", false),
+        LEGACY ("Legacy Timings", false, false, false,false,false,"Legacy", false),
+        LEGACY_SWING ("Legacy Timings, Swing", false, false, false,true,false,"Legacy Swing/Triplet", false),
         ;
         {}
         public final boolean organic;
@@ -3561,8 +3562,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         public final boolean priority;
         public final String info;
         public final String settingsString;// use this for settings prefs. And never change the strings.
+        public final boolean upgraded;
 
-        TimingEnum(String info, boolean organic, boolean multistage, boolean mixTimings, boolean swing, boolean priority, String settings) {
+        TimingEnum(String info, boolean organic, boolean multistage, boolean mixTimings, boolean swing, boolean priority, String settings, boolean upgraded) {
             this.info = info;
             this.organic = organic;
             this.multistage = multistage;
@@ -3570,6 +3572,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             this.swing = swing;
             this.priority = priority;
             this.settingsString = settings;
+            this.upgraded = upgraded;
         }
 
         public static TimingEnum getFromSettings(String defaultTiming) {
@@ -3584,12 +3587,14 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
         public void action(@Nullable AbcSong abcSong) {
             if (abcSong != null) {
-                abcSong.setTimings(organic, multistage, mixTimings, swing, priority);
+                abcSong.setTimings(organic, multistage, mixTimings, swing, priority, upgraded);
             }
         }
 
         String getTooltip() {
             return switch (this) {
+                case ORGANIC_MULTISTAGE2 -> "<html>Different approach to exporting fluid timings.<br>"
+                        + "This is a beta feature, use on own risk.</html>";
                 case ORGANIC_MULTISTAGE -> "<html>Different approach to exporting fluid timings.<br>"
                         + "This is a beta feature, use on own risk.</html>";
                 case ORGANIC_SINGLESTAGE -> "<html>Export more fluid timings.<br>"
@@ -3627,9 +3632,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             };
         }
 
-        static TimingEnum getInstance(boolean organic, boolean multistage, boolean mixTimings, boolean swing, boolean priority) {
+        static TimingEnum getInstance(boolean organic, boolean multistage, boolean mixTimings, boolean swing, boolean priority, boolean upgraded) {
             if (organic) {
-                if (multistage) return ORGANIC_MULTISTAGE;
+                if (multistage) {
+                    return upgraded?ORGANIC_MULTISTAGE2:ORGANIC_MULTISTAGE;
+                }
                 else return ORGANIC_SINGLESTAGE;
             } else if (mixTimings) {
                 if (swing) {
