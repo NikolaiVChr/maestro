@@ -959,21 +959,17 @@ public class SequenceInfo implements MidiConstants {
 		
 		@SuppressWarnings("unchecked")
 		List<MidiEvent>[] suspectEvents = new List[tracks.length];
-		
-		TreeSet<MidiEvent> allEvents = new TreeSet<>(new Comparator<>() {
-            @Override
-            public int compare(MidiEvent o1, MidiEvent o2) {
-                return Long.compare(o1.getTick(), o2.getTick());
-            }
-        });
-		
+
+        List<MidiEvent> allEvents = new ArrayList<>();
+
 		// populate allEvents with events from all tracks
         for (Track track : tracks) {
-            for (int j = track.size() - 1; j >= 0; --j) {
-                MidiEvent evt = track.get(j);
-                allEvents.add(evt);
+            for (int j = 0; j < track.size(); j++) {
+                allEvents.add(track.get(j));
             }
         }
+
+        allEvents.sort(Comparator.comparingLong(MidiEvent::getTick));
 		
 		long earlyEndTick = 0L;
 		long maxEmpty = Math.max(song.getTickLength()/4L, MidiUtils.microsecond2tick(song, 20L*AbcConstants.ONE_SECOND_MICROS, tempoCache));
