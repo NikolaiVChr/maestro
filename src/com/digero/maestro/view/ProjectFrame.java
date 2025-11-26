@@ -2233,6 +2233,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 	
 	public void openFile(File file) {
+        if (!uiEnabled || (audioExporter != null && audioExporter.isExporting())) {
+            Toolkit.getDefaultToolkit().beep();
+            return;
+        }
+
 		openFile(file, true);
 	}
 	
