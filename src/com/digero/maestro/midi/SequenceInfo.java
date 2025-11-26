@@ -1076,10 +1076,12 @@ public class SequenceInfo implements MidiConstants {
 		// remove all events after earlyEndTick
 		// isn't this a risk to remove tracknames etc.?
         for (Track track : tracks) {
-            for (int j = 0; j < track.size(); j++) {
+            for (int j = track.size()-1; j >= 0; j--) {
                 MidiEvent evt = track.get(j);
                 if (evt.getTick() > earlyEndTick + 1L) {
                     track.remove(evt);
+                } else {
+                    break;
                 }
             }
         }
