@@ -41,6 +41,8 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
+Version 4.5.19
+
 Version 4.5.18
 - Fixed a bug where playlists with files which had been moved/renamed wouldn't load.
 - Added an "Export Playlist to CSV Sheet..." option in the playlist menu in AbcPlayer, to export a CSV sheet only without also exporting a set

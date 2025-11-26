@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
+import com.digero.common.abc.AbcConstants;
 import com.digero.maestro.MaestroMain;
 import com.digero.maestro.view.ProjectFrame;
 
@@ -254,33 +255,21 @@ public final class Util {
 		return docs;
 	}
 
-	public static int clamp(int value, int min, int max) {
-		assert min <= max;
-		if (value < min)
-			return min;
-		return Math.min(value, max);
-	}
+    public static int clamp(int value, int min, int max) {
+        return Math.clamp(value, min, max);
+    }
 
-	public static long clamp(long value, long min, long max) {
-		assert min <= max;
-		if (value < min)
-			return min;
-		return Math.min(value, max);
-	}
+    public static long clamp(long value, long min, long max) {
+        return Math.clamp(value, min, max);
+    }
 
-	public static double clamp(double value, double min, double max) {
-		assert min <= max;
-		if (value < min)
-			return min;
-		return Math.min(value, max);
-	}
+    public static double clamp(double value, double min, double max) {
+        return Math.clamp(value, min, max);
+    }
 
-	public static float clamp(float value, float min, float max) {
-		assert min <= max;
-		if (value < min)
-			return min;
-		return Math.min(value, max);
-	}
+    public static float clamp(float value, float min, float max) {
+        return Math.clamp(value, min, max);
+    }
 
 	public static int valueOf(Integer val, int defaultIfNull) {
 		return (val != null) ? val : defaultIfNull;
@@ -471,23 +460,19 @@ public final class Util {
 	}
 
 	public static String formatDuration(long micros, long maxMicros, char separator) {
-		if (maxMicros < micros)
-			maxMicros = micros;
+        maxMicros = Math.max(micros, maxMicros);
 
 		StringBuilder s = new StringBuilder(5);
 
-		int t = (int) (micros / (1000 * 1000));
-		// Round up
-		if (micros % (1000 * 1000) != 0) {
-			t += 1;
-		}
+		int t = (int) Math.ceilDiv(micros, AbcConstants.ONE_SECOND_MICROS);
+
 		int hr = t / (60 * 60);
 		t %= 60 * 60;
 		int min = t / 60;
 		t %= 60;
 		int sec = t;
 
-		int tMax = (int) (maxMicros / (1000 * 1000));
+		int tMax = (int) Math.ceilDiv(maxMicros, AbcConstants.ONE_SECOND_MICROS);
 		int hrMax = tMax / (60 * 60);
 		tMax %= 60 * 60;
 		int minMax = tMax / 60;
@@ -510,8 +495,7 @@ public final class Util {
 	}
 	
 	public static String formatDurationM(long micros, long maxMicros, char separator) {
-		if (maxMicros < micros)
-			maxMicros = micros;
+        maxMicros = Math.max(micros, maxMicros);
 
 		StringBuilder s = new StringBuilder(5);
 

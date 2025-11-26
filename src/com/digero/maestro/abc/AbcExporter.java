@@ -5,18 +5,21 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.text.SimpleDateFormat;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.NavigableMap;
@@ -54,6 +57,7 @@ public class AbcExporter {
 
     private boolean organic = false;
 	private boolean organic2 = false;
+    private boolean upgraded = false;
 	private static final int MAX_RAID = 24; // Max number of parts that in any case can be played in lotro
 
 	private final List<AbcPart> parts;
@@ -494,8 +498,12 @@ public class AbcExporter {
 		Pair<Long, Long> startEnd = getSongStartEndTick(false, true);
 		exportStartTick = startEnd.first;
 		exportEndTick = startEnd.second;
-		
-		try (PrintStream out = new PrintStream(os)) {
+
+        try (PrintStream out = new PrintStream(os, false, StandardCharsets.UTF_8)) {
+            // Lotro uses Windows-1252 code page to decipher ABC files, but its more safe
+            // to rely on UTF-8 for export, especially for abc player,
+            // it will just show as garbled chars in lotro
+            // when playing. It will still work.
 			if (!parts.isEmpty()) {
 				out.println("%abc-2.1");
 				out.println(AbcField.SONG_TITLE + StringCleaner.cleanForABC(metadata.getSongTitle()));
@@ -507,7 +515,7 @@ public class AbcExporter {
 					out.println(AbcField.SONG_TRANSCRIBER + StringCleaner.cleanForABC(metadata.getTranscriber()));
 				}
 				out.println(AbcField.ABC_CREATOR + appName + " v" + MaestroMain.APP_VERSION);
-				out.println(AbcField.EXPORT_TIMESTAMP + new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+				out.println(AbcField.EXPORT_TIMESTAMP + DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(LocalDateTime.now()));
 				if (!organic) {
 					out.println(AbcField.SWING_RHYTHM + Boolean.toString(qtm.isTripletTiming()));
 					out.println(AbcField.MIX_TIMINGS + Boolean.toString(qtm.isMixTiming()));
@@ -3481,7 +3489,7 @@ public class AbcExporter {
 	
 		final long minimumMicros = quanFractions[2];
 
-		NavigableSet<Long> grid = createGrid(events, minimumMicros, part, useRestToShortenChords);
+		NavigableSet<Long> grid = upgraded?createGridVersion2(events, minimumMicros, part):createGrid(events, minimumMicros, part, useRestToShortenChords);
 		
 		events = snapNotesToGrid(events, grid, minimumMicros, part);
 		
@@ -3497,10 +3505,7 @@ public class AbcExporter {
 	 */
 	NavigableSet<Long> createGrid(List<AbcNoteEvent> events, long minimumMicros, AbcPart part, boolean useRestToShortenChords) {
 		// create a non-uniform organic grid
-		
-		long debugStart = 0;//71950000;
-		long debugEnd   = 0;//72100000;
-		
+
 		final int startWeightLongNote = 3;
 		final int startWeightShortNote = 9;
 		final long thresholdShortNoteMicros = minimumMicros*2;
@@ -3516,8 +3521,8 @@ public class AbcExporter {
 		
 		class GridLine {
 		    long micros;
-		    int type;
-		    int weight;
+		    final int type;
+		    final int weight;
 		    long firstMicros;
 		    long lastMicros;
 		    
@@ -3595,7 +3600,7 @@ public class AbcExporter {
 					List<GridLine> list = microsWeights.get(keys[i]);
 					microsWeights.remove(keys[i]);
 					long newMicros = nextStart.micros - minimumMicros;
-					if (list.getFirst().micros > debugStart && list.getFirst().micros < debugEnd) logNotes.finest("Moving lines earlier "+Util.formatDurationM(list.getFirst().micros)+" to "+Util.formatDurationM(newMicros));
+
 					for (GridLine line : list) {
 						line.micros = newMicros;
 					}
@@ -3612,7 +3617,7 @@ public class AbcExporter {
 					List<GridLine> list = microsWeights.get(keys[i]);
 					microsWeights.remove(keys[i]);
 					long newMicros = prevStart.micros + minimumMicros;
-					if (list.getFirst().micros > debugStart && list.getFirst().micros < debugEnd) logNotes.finest("Moving lines later "+Util.formatDurationM(list.getFirst().micros)+" to "+Util.formatDurationM(newMicros));
+
 					for (GridLine line : list) {
 						line.micros = newMicros;
 					}
@@ -3675,14 +3680,14 @@ public class AbcExporter {
 	            if (line.type == START) {
 	            	type = START;
 	            	firstStartMicros = line.micros;
-	            	if (firstStartMicros > debugStart && firstStartMicros < debugEnd) logNotes.finest("Starts weighs only "+Util.formatDurationM(firstStartMicros));
+
 	            	break;
 	            }
 	        }
 	        for (GridLine line : cluster) {
 	        	// If there is start present, ignore weight of ends:
 	        	if (endsShouldHaveNoSwayOverStartWeights && type == START && line.type == END) continue;
-	        	if (line.micros > debugStart && line.micros < debugEnd) logNotes.finest("Weight of "+Util.formatDurationM(line.micros)+" is "+line.weight);
+
 	            weightedSum += line.micros * line.weight;
 	            totalWeight += line.weight;
 	        }
@@ -3777,7 +3782,6 @@ public class AbcExporter {
 	        
 	        if (curr.micros - prev.micros < minimumMicros) {
 	        	if (curr.weight > prev.weight && prev.micros != 0L) {
-	        		if (prev.micros > debugStart && prev.micros < debugEnd) logNotes.finest("Too close gridlines, removing "+Util.formatDurationM(prev.micros)+", adding "+Util.formatDurationM(curr.micros));
 	        		refinedGrid.remove(prev);
 	        		refinedGrid.add(curr);
 	        		prev = curr;
@@ -3824,6 +3828,288 @@ public class AbcExporter {
 	    
 	    return gridTimes;
 	}
+
+    /**
+     *
+     * Used by createGridVersion2() of multi-stage organic path
+     *
+     */
+    private record GridPoint(long micros, boolean isBounce, int weight) implements Comparable<GridPoint> {
+        @Override
+        public int compareTo(GridPoint o) {
+            return Long.compare(this.micros, o.micros);
+        }
+    }
+
+    record Candidate(long micros, int type, int weight, AbcNoteEvent note) {}
+
+    /**
+     *
+     * Part of multi-stage organic path
+     *
+     */
+    private NavigableSet<Long> createGridVersion2(List<AbcNoteEvent> events, long minimumMicros, AbcPart part) {
+
+        final int WEIGHT_SOLO = 10;  // Fast notes
+        final int WEIGHT_LONG = 10;  // Sustained notes
+        final int WEIGHT_GRACE = 5;  // Ornaments
+        final int WEIGHT_END = 1;    // Note endings
+
+        final long GRACE_THRESHOLD = 50_000L; // 50ms
+        final long SHORT_NOTE_THRESHOLD = minimumMicros * 3;
+
+        final int TYPE_START = 1;
+        final int TYPE_END = 2;
+
+        long minTail = minimumMicros * 2;// when cutting up too long notes, this is the minimum buffer
+
+
+        /*
+            If two note starts are 30 to 60 ms apart (arpeggio), keep the arpeggio instead of forcing them into
+            block chord as createGrid() would do. The new arpegio will be 60 ms instead, but thats barely noticable.
+            However only do it if there is not another note start within first note + 120 ms.
+         */
+        final boolean bouncingEnabled = true;
+
+
+        // Using maps first to sum weights of coincident events
+        Map<Long, Integer> startWeightMap = new HashMap<>();
+        Map<Long, Integer> endWeightMap = new HashMap<>();
+
+        for (AbcNoteEvent note : events) {
+
+            note.startABCMicros = qtm.tickToMicrosABCOrganic(note.getStartTick());
+            long rawEndMicros = qtm.tickToMicrosABCOrganic(note.getEndTick());
+            long rawDuration = rawEndMicros - note.startABCMicros;
+
+            int sWeight;
+            if (rawDuration < GRACE_THRESHOLD && !part.getInstrument().isPercussion) {
+                sWeight = WEIGHT_GRACE;
+            } else if (rawDuration <= SHORT_NOTE_THRESHOLD) {
+                sWeight = WEIGHT_SOLO;
+            } else {
+                sWeight = WEIGHT_LONG;
+            }
+
+            note.endABCMicros = rawEndMicros;
+            if (!part.getInstrument().sustainable) {
+                note.endABCMicros = Math.max(note.endABCMicros, note.startABCMicros + minimumMicros);
+            }
+            note.endABCMicros = Math.max(note.endABCMicros, note.startABCMicros + minimumMicros);
+
+            startWeightMap.merge(note.startABCMicros, sWeight, Integer::sum);
+            endWeightMap.merge(note.endABCMicros, WEIGHT_END, Integer::sum);
+        }
+
+        List<Candidate> candidates = new ArrayList<>();
+        for (AbcNoteEvent note : events) {
+            int w = startWeightMap.getOrDefault(note.startABCMicros, 0);
+            candidates.add(new Candidate(note.startABCMicros, TYPE_START, w, note));
+        }
+        Set<Long> endTimes = new HashSet<>();
+        for (AbcNoteEvent note : events) {
+            endTimes.add(note.endABCMicros);
+        }
+        for (Long t : endTimes) {
+            int w = endWeightMap.getOrDefault(t, 0);
+            candidates.add(new Candidate(t, TYPE_END, w, null));
+        }
+
+        // 3. Sort (Solo > Long > Grace > End)
+        candidates.sort(Comparator
+                .comparingInt(Candidate::weight).reversed()
+                .thenComparingInt(Candidate::type)
+                .thenComparingLong(Candidate::micros));
+
+        TreeSet<GridPoint> grid = new TreeSet<>();
+        grid.add(new GridPoint(getExportStartMicrosABC(), false, Integer.MAX_VALUE));
+
+        for (Candidate c : candidates) {
+            long time = c.micros;
+
+            GridPoint searchKey = new GridPoint(time, false, 0);
+            GridPoint floor = grid.floor(searchKey);
+            GridPoint ceil = grid.ceiling(searchKey);
+
+            boolean floorConflict = (floor != null && Math.abs(time - floor.micros()) < minimumMicros);
+            boolean ceilConflict = (ceil != null && Math.abs(ceil.micros() - time) < minimumMicros);
+            boolean isTaken = (ceil != null && time == ceil.micros()) || (floor != null && time == floor.micros());
+
+            if (!floorConflict && !ceilConflict && !isTaken) {
+                grid.add(new GridPoint(time, false, c.weight()));
+            } else if (bouncingEnabled && c.type == TYPE_START && !isTaken) {
+
+                if (c.weight >= WEIGHT_SOLO && floor != null && floorConflict) {
+                    // Forward bounce (solos/arpeggios)
+
+                    boolean isOkToBounce = floor.micros() + minimumMicros / 2 < time;
+                    long bounceTime = floor.micros() + minimumMicros;
+                    if (isOkToBounce && isValidBounce(bounceTime, time, minimumMicros, grid, c.weight, true)) {
+                        applyBounce(grid, bounceTime, c, minimumMicros);
+                    } else {
+                        // Snap to floor (block Chord)
+                        if (c.note() != null) {
+                            long duration = c.note().endABCMicros - c.note().startABCMicros;
+                            c.note().startABCMicros = floor.micros();
+                            c.note().endABCMicros = floor.micros() + duration;
+                        }
+                    }
+                } else if (c.weight == WEIGHT_GRACE && ceil != null && ceilConflict) {
+                    // Backward bounce (grace notes)
+
+                    long bounceTime = ceil.micros() - minimumMicros;
+
+                    if (isValidBounce(bounceTime, time, minimumMicros, grid, c.weight, false)) {
+                        applyBounce(grid, bounceTime, c, minimumMicros);
+                    } else {
+                        // mark it for deletion by moving it to negative infinity.
+                        if (c.note() != null) {
+                            c.note().startABCMicros = -Long.MAX_VALUE / 2;
+                            if (logNotes.isLoggable(Level.FINEST)) {
+                                logNotes.finest("Deleted grace note at " + Util.formatDurationM(time) + " (No space available)");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        NavigableSet<Long> finalGrid = new TreeSet<>();
+        if (grid.isEmpty()) return finalGrid;
+
+        Iterator<GridPoint> it = grid.iterator();
+        long prev = it.next().micros();
+        finalGrid.add(prev);
+
+        // ensure we don't have silence longer than 5s
+        while (it.hasNext()) {
+            long curr = it.next().micros();
+            long diff = curr - prev;
+
+            if (diff > TimingInfo.LONGEST_NOTE_MICROS) {
+
+                // The grid segments might be larger than 5.0 seconds
+                // Cut it up
+                while (diff > TimingInfo.LONGEST_NOTE_MICROS) {
+                    long candidateTime;
+                    if (diff < TimingInfo.LONGEST_NOTE_MICROS * 2 - 500) {
+                        // this prevents restarting into short bursts
+                        candidateTime = prev + diff / 2;
+
+                        // min and max points to prevent any segment to be longer than 5 secs
+                        long minMicros = curr - TimingInfo.LONGEST_NOTE_MICROS;
+                        long maxMicros = prev + TimingInfo.LONGEST_NOTE_MICROS;
+
+                        candidateTime = closestBarMicrosABC(part, candidateTime,
+                                Math.min(candidateTime - minMicros, TimingInfo.ONE_SECOND_MICROS),
+                                Math.min(maxMicros - candidateTime, TimingInfo.ONE_SECOND_MICROS));
+                    } else {
+                        candidateTime = closestBarMicrosABC(part, prev + TimingInfo.LONGEST_NOTE_MICROS,
+                                (TimingInfo.ONE_SECOND_MICROS/2L), 0L);
+                    }
+
+                    if (curr - candidateTime < minTail) {
+                        break;
+                    } else {
+                        finalGrid.add(candidateTime);
+                        prev = candidateTime;
+                        diff = curr - prev;
+                    }
+                }
+
+                finalGrid.add(curr);
+                prev = curr;
+            } else if (diff < minimumMicros) {
+                // should normally not come in here
+            } else {
+                finalGrid.add(curr);
+                prev = curr;
+            }
+        }
+
+        boolean assertionsEnabled = false;
+        assert assertionsEnabled = true;
+
+        if (assertionsEnabled) {
+            // TODO: comment out when system more solid
+            Long lastLine = null;
+            for (Long line : finalGrid) {
+                if (lastLine != null) {
+                    assert line >= lastLine + minimumMicros : part.getTitle() + ": " + (line - lastLine) + " micros";
+                    assert line <= lastLine + TimingInfo.LONGEST_NOTE_MICROS + minTail : part.getTitle() + ": " + ((line - lastLine) / 1000) + "ms " + line;
+                }
+                lastLine = line;
+            }
+        }
+
+        return finalGrid;
+    }
+
+    private boolean isValidBounce(long bounceTime, long originalTime, long minimumMicros, TreeSet<GridPoint> grid, int weight, boolean forward) {
+        boolean directionOk = forward ? (bounceTime >= originalTime) : (bounceTime <= originalTime);
+        boolean reasonable = Math.abs(bounceTime - originalTime) < (3 * minimumMicros / 2);
+
+        GridPoint key = new GridPoint(bounceTime, false, 0);
+        GridPoint neighbor = forward ? grid.ceiling(key) : grid.floor(key);
+
+        boolean spaceSafe = neighbor == null
+                || Math.abs(neighbor.micros() - bounceTime) >= minimumMicros
+                || neighbor.micros() == bounceTime;
+
+        // Can we overwrite a weak neighbor?
+        int neighborWeight = (neighbor == null) ? 0 : neighbor.weight();
+        boolean weightSafe = neighborWeight < weight;
+
+        return directionOk && reasonable && (spaceSafe || weightSafe);
+    }
+
+    private void applyBounce(TreeSet<GridPoint> grid, long time, Candidate c, long minimumMicros) {
+
+        // We check the immediate neighbors. If they are too close we remove them.
+
+        GridPoint key = new GridPoint(time, false, 0);
+
+        GridPoint ceil = grid.ceiling(key);
+        if (ceil != null) {
+            if (ceil.micros() == time) {
+                if (ceil.weight() < c.weight) {
+                    grid.remove(ceil);
+                    if (logNotes.isLoggable(Level.FINEST)) {
+                        logNotes.finest("Overwriting weak grid line at " + Util.formatDurationM(ceil.micros()));
+                    }
+                } else {
+                    if (c.note != null) {
+                        long duration = c.note().endABCMicros - c.note().startABCMicros;
+                        c.note().startABCMicros = time;
+                        c.note().endABCMicros = time + duration;
+                    }
+                    return;
+                }
+            } else if (Math.abs(ceil.micros() - time) < minimumMicros) {
+                grid.remove(ceil);
+                if (logNotes.isLoggable(Level.FINEST)) {
+                    logNotes.finest("Overwriting weak grid line at " + Util.formatDurationM(ceil.micros()));
+                }
+            }
+        }
+
+        GridPoint floor = grid.floor(key);
+        if (floor != null && Math.abs(time - floor.micros()) < minimumMicros && floor.micros() != time) {
+            grid.remove(floor);
+        }
+
+        grid.add(new GridPoint(time, true, c.weight));
+
+        if (c.note != null) {
+            long duration = c.note().endABCMicros - c.note().startABCMicros;
+            c.note().startABCMicros = time;
+            c.note().endABCMicros = time + duration;
+        }
+
+        if (logNotes.isLoggable(Level.FINEST)) {
+            logNotes.finest("Bounced " + Util.formatDurationM(time));
+        }
+    }
 
     /**
      * Part of multi-stage organic path
@@ -5527,6 +5813,14 @@ public class AbcExporter {
 	public boolean isOrganic2() {		
 		return organic2;
 	}
+
+    public boolean isUpgraded() {
+        return upgraded;
+    }
+
+    public void setUpgraded(boolean upgraded) {
+        this.upgraded = upgraded;
+    }
 
 	public boolean isUseRestsInChords() {
 		return useRestsInChords;

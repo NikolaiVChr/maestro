@@ -1,9 +1,8 @@
 package com.digero.maestro.util;
 
 import java.io.File;
+import java.util.HexFormat;
 
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 import javax.xml.xpath.XPathExpressionException;
 
 import org.w3c.dom.Element;
@@ -26,161 +25,165 @@ public class SaveUtil {
 		parent.appendChild(child);
 	}
 
-	public static String parseValue(Node parent, String xpath, String defaultValue) throws XPathExpressionException {
-		Node node = XmlUtil.selectSingleNode(parent, xpath);
-		if (node == null)
-			return defaultValue;
+    public static String parseValue(Node parent, String xpath, String defaultValue) throws XPathExpressionException {
+        String val = getNodeContent(parent, xpath);
+        return (val == null) ? defaultValue : val;
+    }
 
-		return node.getTextContent();
-	}
+    /**
+     * Helper to retrieve a node or attribute value string.
+     * Optimization: Handles '@attribute' selector directly to avoid XPath overhead.
+     */
+    private static String getNodeContent(Node parent, String xpath) throws XPathExpressionException {
+        if (xpath.startsWith("@") && parent instanceof Element) {
+            String attrName = xpath.substring(1);
+            if (((Element) parent).hasAttribute(attrName)) {
+                return ((Element) parent).getAttribute(attrName);
+            }
+            return null; // Simulate XPath "not found" behavior
+        }
 
-	public static int parseValue(Node parent, String xpath, int defaultValue)
-			throws FileParseException, XPathExpressionException {
-		Node node = XmlUtil.selectSingleNode(parent, xpath);
-		if (node == null)
-			return defaultValue;
+        // Optimization: Path/Attribute combination (e.g. "exportSettings/@transpose")
+        // We can split simple paths to avoid XPath if it's just child/@attr
+        int slashIndex = xpath.lastIndexOf("/@");
+        if (slashIndex > 0) {
+            String childName = xpath.substring(0, slashIndex);
+            String attrName = xpath.substring(slashIndex + 2);
 
-		try {
-			return Integer.parseInt(node.getTextContent());
-		} catch (NumberFormatException e) {
-			throw invalidValueException(node, e.getMessage());
-		}
-	}
+            // Ensure no other complex XPath syntax exists in the child part
+            if (XmlUtil.isSimpleTagName(childName)) {
+                Node child = XmlUtil.selectSingleNode(parent, childName);
+                if (child instanceof Element && ((Element) child).hasAttribute(attrName)) {
+                    return ((Element) child).getAttribute(attrName);
+                }
+                return null;
+            }
+        }
 
-	public static byte parseValue(Node parent, String xpath, byte defaultValue)
-			throws FileParseException, XPathExpressionException {
-		Node node = XmlUtil.selectSingleNode(parent, xpath);
-		if (node == null)
-			return defaultValue;
+        // Standard Element lookup
+        Node node = XmlUtil.selectSingleNode(parent, xpath);
+        return (node == null) ? null : node.getTextContent();
+    }
 
-		try {
-			return Byte.parseByte(node.getTextContent());
-		} catch (NumberFormatException e) {
-			throw invalidValueException(node, e.getMessage());
-		}
-	}
+    public static int parseValue(Node parent, String xpath, int defaultValue)
+            throws FileParseException, XPathExpressionException {
+        String val = getNodeContent(parent, xpath);
+        if (val == null) return defaultValue;
 
-	public static float parseValue(Node parent, String xpath, float defaultValue)
-			throws FileParseException, XPathExpressionException {
-		Node node = XmlUtil.selectSingleNode(parent, xpath);
-		if (node == null)
-			return defaultValue;
+        try {
+            return Integer.parseInt(val);
+        } catch (NumberFormatException e) {
+            throw createInvalidValueException(parent, xpath, val, e.getMessage());
+        }
+    }
 
-		try {
-			return Float.parseFloat(node.getTextContent());
-		} catch (NumberFormatException e) {
-			throw invalidValueException(node, e.getMessage());
-		}
-	}
+    public static byte parseValue(Node parent, String xpath, byte defaultValue)
+            throws FileParseException, XPathExpressionException {
+        String val = getNodeContent(parent, xpath);
+        if (val == null) return defaultValue;
 
-	public static boolean parseValue(Node parent, String xpath, boolean defaultValue)
-			throws FileParseException, XPathExpressionException {
-		Node node = XmlUtil.selectSingleNode(parent, xpath);
-		if (node == null)
-			return defaultValue;
+        try {
+            return Byte.parseByte(val);
+        } catch (NumberFormatException e) {
+            throw createInvalidValueException(parent, xpath, val, e.getMessage());
+        }
+    }
 
-		String value = node.getTextContent().toLowerCase();
-		if (value.equals("true") || value.equals("1"))
-			return true;
-		if (value.equals("false") || value.equals("0"))
-			return false;
+    public static float parseValue(Node parent, String xpath, float defaultValue)
+            throws FileParseException, XPathExpressionException {
+        String val = getNodeContent(parent, xpath);
+        if (val == null) return defaultValue;
 
-		throw invalidValueException(node, "Value must be 'true' or 'false'");
-	}
+        try {
+            return Float.parseFloat(val);
+        } catch (NumberFormatException e) {
+            throw createInvalidValueException(parent, xpath, val, e.getMessage());
+        }
+    }
 
-	public static TimeSignature parseValue(Node parent, String xpath, TimeSignature defaultValue)
-			throws FileParseException, XPathExpressionException {
-		Node node = XmlUtil.selectSingleNode(parent, xpath);
-		if (node == null)
-			return defaultValue;
+    public static boolean parseValue(Node parent, String xpath, boolean defaultValue)
+            throws FileParseException, XPathExpressionException {
+        String val = getNodeContent(parent, xpath);
+        if (val == null) return defaultValue;
 
-		try {
-			return new TimeSignature(node.getTextContent());
-		} catch (IllegalArgumentException e) {
-			throw invalidValueException(node, e.getMessage());
-		}
-	}
+        String lower = val.toLowerCase();
+        if (lower.equals("true") || lower.equals("1")) return true;
+        if (lower.equals("false") || lower.equals("0")) return false;
 
-	public static KeySignature parseValue(Node parent, String xpath, KeySignature defaultValue)
-			throws FileParseException, XPathExpressionException {
-		Node node = XmlUtil.selectSingleNode(parent, xpath);
-		if (node == null)
-			return defaultValue;
+        throw createInvalidValueException(parent, xpath, val, "Value must be 'true' or 'false'");
+    }
 
-		try {
-			return new KeySignature(node.getTextContent());
-		} catch (IllegalArgumentException e) {
-			throw invalidValueException(node, e.getMessage());
-		}
-	}
+    public static TimeSignature parseValue(Node parent, String xpath, TimeSignature defaultValue)
+            throws FileParseException, XPathExpressionException {
+        String val = getNodeContent(parent, xpath);
+        if (val == null) return defaultValue;
 
-	public static LotroInstrument parseValue(Node parent, String xpath, LotroInstrument defaultValue)
-			throws FileParseException, XPathExpressionException {
-		Node node = XmlUtil.selectSingleNode(parent, xpath);
-		if (node == null)
-			return defaultValue;
+        try {
+            return new TimeSignature(val);
+        } catch (IllegalArgumentException e) {
+            throw createInvalidValueException(parent, xpath, val, e.getMessage());
+        }
+    }
 
-		LotroInstrument instrument = LotroInstrument.findInstrumentName(node.getTextContent(), null);
-		if (instrument == null)
-			throw invalidValueException(node, "Could not parse instrument name: " + node.getTextContent());
+    public static KeySignature parseValue(Node parent, String xpath, KeySignature defaultValue)
+            throws FileParseException, XPathExpressionException {
+        String val = getNodeContent(parent, xpath);
+        if (val == null) return defaultValue;
 
-		return instrument;
-	}
+        try {
+            return new KeySignature(val);
+        } catch (IllegalArgumentException e) {
+            throw createInvalidValueException(parent, xpath, val, e.getMessage());
+        }
+    }
 
-	public static Version parseValue(Node parent, String xpath, Version defaultValue)
-			throws FileParseException, XPathExpressionException {
-		Node node = XmlUtil.selectSingleNode(parent, xpath);
-		if (node == null)
-			return defaultValue;
+    public static LotroInstrument parseValue(Node parent, String xpath, LotroInstrument defaultValue)
+            throws FileParseException, XPathExpressionException {
+        String val = getNodeContent(parent, xpath);
+        if (val == null) return defaultValue;
 
-		Version version = Version.parseVersion(node.getTextContent());
-		if (version == null)
-			version = defaultValue;
-		return version;
-	}
+        LotroInstrument instrument = LotroInstrument.findInstrumentName(val, null);
+        if (instrument == null)
+            throw createInvalidValueException(parent, xpath, val, "Could not parse instrument name: " + val);
 
-	public static byte[] parseValue(Node parent, String xpath, byte[] defaultValue)
-			throws FileParseException, XPathExpressionException {
-		Node node = XmlUtil.selectSingleNode(parent, xpath);
-		if (node == null)
-			return defaultValue;
+        return instrument;
+    }
 
-		String text = node.getTextContent();
-		if (text == null || text.isEmpty())
-			return defaultValue;
+    public static Version parseValue(Node parent, String xpath, Version defaultValue)
+            throws XPathExpressionException {
+        String val = getNodeContent(parent, xpath);
+        if (val == null) return defaultValue;
 
-		try {
-			return Hex.decodeHex(text);
-		} catch (IllegalArgumentException | DecoderException e) {
-			throw invalidValueException(node, e.getMessage());
-		}
-	}
+        Version version = Version.parseVersion(val);
+        return (version == null) ? defaultValue : version;
+    }
 
-	public static File parseValue(Node parent, String xpath, File defaultValue) throws XPathExpressionException {
-		Node node = XmlUtil.selectSingleNode(parent, xpath);
-		if (node == null)
-			return defaultValue;
+    public static byte[] parseValue(Node parent, String xpath, byte[] defaultValue)
+            throws FileParseException, XPathExpressionException {
+        String val = getNodeContent(parent, xpath);
+        if (val == null || val.isEmpty()) return defaultValue;
 
-		return new File(node.getTextContent());
-	}
+        try {
+            return HexFormat.of().parseHex(val);
+        } catch (IllegalArgumentException e) {
+            throw createInvalidValueException(parent, xpath, val, e.getMessage());
+        }
+    }
 
-	public static FileParseException invalidTrackException(Node node, String message) {
-		File f = XmlUtil.getDocumentFile(node.getOwnerDocument());
-		String fileName = (f == null) ? null : f.getName();
-		return new FileParseException(message, fileName, XmlUtil.getLineNumber(node));
-	}
+    public static File parseValue(Node parent, String xpath, File defaultValue) throws XPathExpressionException {
+        String val = getNodeContent(parent, xpath);
+        if (val == null) return defaultValue;
 
-	public static FileParseException invalidValueException(Node node, String message) {
-		SaveUtil.clean(node);
-		String msg = "Invalid value \"" + node.getTextContent() + "\" for " + node.getNodeName();
-		if (message != null && !message.isEmpty())
-			msg += ": " + message;
+        return new File(val);
+    }
 
-		File f = XmlUtil.getDocumentFile(node.getOwnerDocument());
-		String fileName = (f == null) ? null : f.getName();
-		return new FileParseException(msg, fileName, XmlUtil.getLineNumber(node));
-	}
+    public static FileParseException invalidTrackException(Node node, String message) {
+        File f = XmlUtil.getDocumentFile(node.getOwnerDocument());
+        String fileName = (f == null) ? null : f.getName();
+        return new FileParseException(message, fileName, XmlUtil.getLineNumber(node));
+    }
 
+    @Deprecated
 	private static void clean(Node node) {
 		NodeList childNodes = node.getChildNodes();
 
@@ -201,10 +204,23 @@ public class SaveUtil {
 		}
 	}
 
-	public static FileParseException missingValueException(Node node, String xpath) {
-		String msg = "Missing required value \"" + xpath + "\" for <" + node.getNodeName() + "> element";
-		File f = XmlUtil.getDocumentFile(node.getOwnerDocument());
-		String fileName = (f == null) ? null : f.getName();
-		return new FileParseException(msg, fileName, XmlUtil.getLineNumber(node));
-	}
+    public static FileParseException missingValueException(Node node, String xpath) {
+        String msg = "Missing required value \"" + xpath + "\" for <" + node.getNodeName() + "> element";
+        File f = XmlUtil.getDocumentFile(node.getOwnerDocument());
+        String fileName = (f == null) ? null : f.getName();
+        return new FileParseException(msg, fileName, XmlUtil.getLineNumber(node));
+    }
+
+    /**
+     * helper that doesn't require a Node object if we parsed an attribute string directly
+     */
+    private static FileParseException createInvalidValueException(Node parent, String xpath, String value, String message) {
+        String msg = "Invalid value \"" + value + "\" for " + xpath;
+        if (message != null && !message.isEmpty())
+            msg += ": " + message;
+
+        File f = XmlUtil.getDocumentFile(parent.getOwnerDocument());
+        String fileName = (f == null) ? null : f.getName();
+        return new FileParseException(msg, fileName, XmlUtil.getLineNumber(parent));
+    }
 }

@@ -3,6 +3,7 @@ package com.digero.common.midi;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -274,7 +275,7 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 			return 0L;
 		// if (hoursPlus > 0 && getSequence() != null) {
 		long tick = sequencer.getTickPosition();
-		return tick2microsecondSlow(getSequence(), tick);
+		return MidiUtils.tick2microsecond(getSequence(), tick, tempoCache);
 		// }
 		// return sequencer.getMicrosecondPosition();
 	}
@@ -343,7 +344,7 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 		if (sequence == null)
 			return 0L;
 
-		return tick2microsecondSlow(sequence, tick);
+		return MidiUtils.tick2microsecond(sequence, tick, tempoCache);
 	}
 
 	/**
@@ -356,7 +357,7 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 		if (sequ != null) {
 			// this can handle midis that has hours long duration.
 			// Sequencer.getMicrosecondLength cannot.
-			l = tick2microsecondSlow(sequ, Math.min(realDuraTicks, sequencer.getTickLength()));
+			l = MidiUtils.tick2microsecond(sequ, Math.min(realDuraTicks, sequencer.getTickLength()), tempoCache);
 		}
 		return l;
 	}
@@ -370,22 +371,14 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 	public static final class TempoCacheSlow {
 		long[] ticks;
 		int[] tempos; // in MPQ
-		// index in ticks/tempos at the snapshot
-		int snapshotIndex = 0;
-		// microsecond at the snapshot
-		long snapshotMicro = 0;
-
-		int currTempo; // MPQ, used as return value for microsecond2tick
-
-		private boolean firstTempoIsFake = false;
+        long[] micros;
 
 		public TempoCacheSlow() {
-			// just some defaults, to prevents weird stuff
+			// just some defaults to prevent weird stuff
 			ticks = new long[1];
 			tempos = new int[1];
 			tempos[0] = MidiUtils.DEFAULT_TEMPO_MPQ;
-			snapshotIndex = 0;
-			snapshotMicro = 0;
+            micros = new long[1];
 		}
 
 		public TempoCacheSlow(Sequence seq) {
@@ -393,7 +386,7 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 			refresh(seq);
 		}
 
-		public synchronized void refresh(Sequence seq) {
+		public void refresh(Sequence seq) {
             NavigableMap<Long, MidiEvent> list = new TreeMap<>();
 			Track[] tracks = seq.getTracks();
 			if (tracks.length > 0) {
@@ -426,7 +419,7 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 			}
 
 			int size = list.size() + 1;
-			firstTempoIsFake = true;
+			boolean firstTempoIsFake = true;
 			if (list.get(0L) != null) {
 				// do not need to add an initial tempo event at the beginning
 				size--;
@@ -434,95 +427,45 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 			}
 			ticks = new long[size];
 			tempos = new int[size];
+            micros = new long[size];
 			int e = 0;
+            long currentMicros = 0L;
 			if (firstTempoIsFake) {
-				// add tempo 120 at beginning
-				ticks[0] = 0;
+				// add tempo 120 at the beginning
+				ticks[0] = 0L;
 				tempos[0] = MidiUtils.DEFAULT_TEMPO_MPQ;
+                micros[0] = 0L;
 				e++;
 			}
 			for (MidiEvent evt : list.values()) {
 				ticks[e] = evt.getTick();
 				tempos[e] = MidiUtils.getTempoMPQ(evt.getMessage());
+                if (e > 0) {
+                    long deltaTick = ticks[e] - ticks[e-1];
+                    currentMicros += MidiUtils.ticks2microsec(deltaTick, tempos[e-1], seq.getResolution());
+                }
+                micros[e] = currentMicros;
                 e++;
 			}
-			snapshotIndex = 0;
-			snapshotMicro = 0;
 		}
 
-		public int getCurrTempoMPQ() {
-			return currTempo;
-		}
+        float getTempoMPQAt(long tick) {
+            int index = Arrays.binarySearch(ticks, tick);
 
-		float getTempoMPQAt(long tick) {
-			return getTempoMPQAt(tick, -1.0f);
-		}
+            // not found
+            if (index < 0) {
+                // The insertion point is the index of the first element > the key
+                // We want the element before that
+                index = -(index + 1) - 1;
+            }
 
-		synchronized float getTempoMPQAt(long tick, float startTempoMPQ) {
-			for (int i = 0; i < ticks.length; i++) {
-				if (ticks[i] > tick) {
-					if (i > 0)
-						i--;
-					if (startTempoMPQ > 0 && i == 0 && firstTempoIsFake) {
-						return startTempoMPQ;
-					}
-					return (float) tempos[i];
-				}
-			}
-			return tempos[tempos.length - 1];
-		}
+            if (index < 0) index = 0;
+            if (index >= ticks.length) index = ticks.length - 1;
+
+            return (float) tempos[index];
+        }
 	}
 
-	/**
-	 * Given a tick, convert to microsecond
-	 */
-	private long tick2microsecondSlow(Sequence seq, long tick) {
-		if (seq.getDivisionType() != Sequence.PPQ) {
-			double seconds = ((double) tick / (double) (seq.getDivisionType() * seq.getResolution()));
-			// System.out.println("Divisiontype != PPQ");
-			return (long) (1000000 * seconds);
-		}
-
-		boolean firstTime = false;
-		if (cache == null) {
-			cache = new TempoCacheSlow(seq);
-			firstTime = true;
-		}
-
-		int resolution = seq.getResolution();
-
-		long[] ticks = cache.ticks;
-		int[] tempos = cache.tempos; // in MPQ
-		int cacheCount = tempos.length;
-
-		// optimization to not always go through entire list of tempo events
-		int snapshotIndex = cache.snapshotIndex;
-		long snapshotMicro = cache.snapshotMicro;
-
-		// walk through all tempo changes and add time for the respective blocks
-		long us = 0; // microsecond
-
-		if (firstTime || snapshotIndex <= 0 || snapshotIndex >= cacheCount || ticks[snapshotIndex] > tick) {
-			snapshotMicro = 0;
-			snapshotIndex = 0;
-		}
-		if (cacheCount > 0) {
-			// this implementation needs a tempo event at tick 0!
-			int i = snapshotIndex + 1;
-			while (i < cacheCount && ticks[i] <= tick) {
-				long usPlus = MidiUtils.ticks2microsec(ticks[i] - ticks[i - 1], tempos[i - 1], resolution);
-				snapshotMicro += usPlus;
-				snapshotIndex = i;
-				i++;
-			}
-			us = snapshotMicro
-					+ MidiUtils.ticks2microsec(tick - ticks[snapshotIndex], tempos[snapshotIndex], resolution);
-		}
-		cache.snapshotIndex = snapshotIndex;
-		cache.snapshotMicro = snapshotMicro;
-		return us;
-	}
-	
 	@Deprecated
 	private long checkForSuperLongDurationOld(long l) {
 		// this also works, but the new way is better 
@@ -540,7 +483,7 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 			}
 			if (lastTick > 0L) {
 				//System.out.println("lastTick="+lastTick+" us="+tick2microsecondSlow(seq, lastTick));
-				long hours = tick2microsecondSlow(seq, lastTick)/3600000000L;
+				long hours = MidiUtils.tick2microsecond(seq, lastTick, tempoCache)/3600000000L;
 				System.out.println("This midi is over "+hours+" hours long. But do not worry :)");
 				l = -l+3600000000L*hours;
 				hoursPlus = hours;

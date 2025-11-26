@@ -1,6 +1,7 @@
 package com.digero.common.midi;
 
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.logging.Logger;
 
 import javax.sound.midi.*;
@@ -21,97 +22,57 @@ public class MidiUtils {
 	public static final int META_TEMPO_TYPE = 0x51;
 
 	/**
-	 * Given a microsecond time, convert to tick. returns tempo at the given time in cache.getCurrTempoMPQ
+	 * Given a microsecond time, convert to tick.
 	 */
-	public static long microsecond2tick(Sequence seq, long micros, TempoCacheSlow cache) {
-		if (seq.getDivisionType() != Sequence.PPQ) {
-			double dTick = (((double) micros) * ((double) seq.getDivisionType()) * ((double) seq.getResolution()))
-					/ ((double) 1000000);
-			long tick = (long) dTick;
-			if (cache != null) {
-				cache.currTempo = (int) cache.getTempoMPQAt(tick);
-			}
-			return tick;
-		}
+    public static long microsecond2tick(Sequence seq, long micros, TempoCacheSlow cache) {
+        if (seq.getDivisionType() != Sequence.PPQ) {
+            double dTick = (((double) micros) * ((double) seq.getDivisionType()) * ((double) seq.getResolution()))
+                    / ((double) 1000000);
+            return (long) dTick;
+        }
 
-		if (cache == null) {
-			cache = new TempoCacheSlow(seq);
-		}
-		long[] ticks = cache.ticks;
-		int[] tempos = cache.tempos; // in MPQ
-		int cacheCount = tempos.length;
+        if (cache == null) {
+            cache = new TempoCacheSlow(seq);
+        }
 
-		int resolution = seq.getResolution();
+        int index = Arrays.binarySearch(cache.micros, micros);
+        if (index < 0) {
+            index = -(index + 1) - 1;
+        }
 
-		long us = 0;
-		long tick = 0;
-		int newReadPos = 0;
-		int i = 1;
+        if (index < 0) index = 0;
+        if (index >= cache.micros.length) index = cache.micros.length - 1;
 
-		// walk through all tempo changes and add time for the respective blocks
-		// to find the right tick
-		if (micros > 0 && cacheCount > 0) {
-			// this loop requires that the first tempo Event is at time 0
-			while (i < cacheCount) {
-				long nextTime = us + ticks2microsec(ticks[i] - ticks[i - 1], tempos[i - 1], resolution);
-				if (nextTime > micros) {
-					break;
-				}
-				us = nextTime;
-				i++;
-			}
-			tick = ticks[i - 1] + microsec2ticks(micros - us, tempos[i - 1], resolution);
-		}
-		cache.currTempo = tempos[i - 1];
-		return tick;
-	}
+        long microsFromBase = micros - cache.micros[index];
+        return cache.ticks[index] + microsec2ticks(microsFromBase, cache.tempos[index], seq.getResolution());
+    }
 
 	/**
 	 * Given a tick, convert to microsecond
 	 * 
 	 * @param cache tempo info and current tempo
 	 */
-	public static long tick2microsecond(Sequence seq, long tick, TempoCacheSlow cache) {
-		if (seq.getDivisionType() != Sequence.PPQ) {
-			double seconds = ((double) tick / (double) (seq.getDivisionType() * seq.getResolution()));
-			return (long) (1000000 * seconds);
-		}
+    public static long tick2microsecond(Sequence seq, long tick, TempoCacheSlow cache) {
+        if (seq.getDivisionType() != Sequence.PPQ) {
+            double seconds = ((double) tick / (double) (seq.getDivisionType() * seq.getResolution()));
+            return (long) (1000000 * seconds);
+        }
 
-		if (cache == null) {
-			cache = new TempoCacheSlow(seq);
-		}
+        if (cache == null) {
+            cache = new TempoCacheSlow(seq);
+        }
 
-		int resolution = seq.getResolution();
+        int index = Arrays.binarySearch(cache.ticks, tick);
+        if (index < 0) {
+            index = -(index + 1) - 1;
+        }
 
-		long[] ticks = cache.ticks;
-		int[] tempos = cache.tempos; // in MPQ
-		int cacheCount = tempos.length;
+        if (index < 0) index = 0;
+        if (index >= cache.ticks.length) index = cache.ticks.length - 1;
 
-		// optimization to not always go through entire list of tempo events
-		int snapshotIndex = cache.snapshotIndex;
-		long snapshotMicro = cache.snapshotMicro;
-
-		// walk through all tempo changes and add time for the respective blocks
-		long us = 0L; // microsecond
-
-		if (snapshotIndex <= 0 || snapshotIndex >= cacheCount || ticks[snapshotIndex] > tick) {
-			snapshotMicro = 0L;
-			snapshotIndex = 0;
-		}
-		if (cacheCount > 0) {
-			// this implementation needs a tempo event at tick 0!
-			int i = snapshotIndex + 1;
-			while (i < cacheCount && ticks[i] <= tick) {
-				snapshotMicro += ticks2microsec(ticks[i] - ticks[i - 1], tempos[i - 1], resolution);
-				snapshotIndex = i;
-				i++;
-			}
-			us = snapshotMicro + ticks2microsec(tick - ticks[snapshotIndex], tempos[snapshotIndex], resolution);
-		}
-		cache.snapshotIndex = snapshotIndex;
-		cache.snapshotMicro = snapshotMicro;
-		return us;
-	}
+        long ticksFromBase = tick - cache.ticks[index];
+        return cache.micros[index] + ticks2microsec(ticksFromBase, cache.tempos[index], seq.getResolution());
+    }
 
 	/**
 	 * convert tick to microsecond with given tempo. Does not take tempo changes into account. Does not work for SMPTE
@@ -158,30 +119,26 @@ public class MidiUtils {
 	}
 
 	/** return if the given message is a meta tempo message */
-	public static boolean isMetaTempo(MidiMessage midiMsg) {
-		// first check if it is a META message at all
-		if (midiMsg.getLength() != 6 || midiMsg.getStatus() != MetaMessage.META) {
-			return false;
-		}
-		// now get message and check for tempo
-		byte[] msg = midiMsg.getMessage();
-		// meta type must be 0x51, and data length must be 3
-		return ((msg[1] & 0xFF) == META_TEMPO_TYPE) && (msg[2] == 3);
-	}
+    public static boolean isMetaTempo(MidiMessage midiMsg) {
+        // avoid byte[] allocation via getMessage()
+        if (midiMsg instanceof MetaMessage meta) {
+            // Check type (0x51) and total length (6 bytes -> 3 bytes data)
+            return meta.getType() == META_TEMPO_TYPE && meta.getLength() == 6;
+        }
+        return false;
+    }
 
 	/**
 	 * parses this message for a META tempo message and returns the tempo in MPQ, or -1 if this isn't a tempo message
 	 */
 	public static int getTempoMPQ(MidiMessage midiMsg) {
-		// first check if it is a META message at all
-		if (midiMsg.getLength() != 6 || midiMsg.getStatus() != MetaMessage.META) {
-			return -1;
-		}
-		byte[] msg = midiMsg.getMessage();
-		if (((msg[1] & 0xFF) != META_TEMPO_TYPE) || (msg[2] != 3)) {
-			return -1;
-		}
-		return (msg[5] & 0xFF) | ((msg[4] & 0xFF) << 8) | ((msg[3] & 0xFF) << 16);
+        if (!isMetaTempo(midiMsg)) {
+            return -1;
+        }
+        MetaMessage meta = (MetaMessage) midiMsg;
+		byte[] data = meta.getData();//getData() allocates less than getMessage()
+
+        return (data[2] & 0xFF) | ((data[1] & 0xFF) << 8) | ((data[0] & 0xFF) << 16);
 	}
 
     /**
@@ -199,14 +156,12 @@ public class MidiUtils {
 
 	/** return true if the passed message is Meta End Of Track */
 	public static boolean isMetaEndOfTrack(MidiMessage midiMsg) {
-		// first check if it is a META message at all
-		if (midiMsg.getLength() != 3 || midiMsg.getStatus() != MetaMessage.META) {
-			return false;
-		}
-		// now get message and check for end of track
-		byte[] msg = midiMsg.getMessage();
-		return ((msg[1] & 0xFF) == META_END_OF_TRACK_TYPE) && (msg[2] == 0);
-	}
+        if (midiMsg instanceof MetaMessage meta) {
+            // Type 0x2F, Total Length 3 (Status + Type + Len(0)) => Data Length 0
+            return meta.getType() == META_END_OF_TRACK_TYPE && meta.getLength() == 3;
+        }
+        return false;
+    }
 	
 	public static String decodeMidiText(byte[] data) {
         if (data == null || data.length == 0) {
@@ -289,22 +244,15 @@ public class MidiUtils {
         String str = "";
         if (m instanceof ShortMessage shorty) {
             int command = shorty.getCommand();
-            switch (command) {
-                case ShortMessage.NOTE_ON:
-                    str += "Note ON, Velocity="+shorty.getData2(); break;
-                case ShortMessage.NOTE_OFF:
-                    str += "Note OFF"; break;
-                case ShortMessage.CHANNEL_PRESSURE:
-                    str += "Aftertouch"; break;
-                case ShortMessage.POLY_PRESSURE:
-                    str += "Aftertouch (poly)"; break;
-                case ShortMessage.CONTROL_CHANGE:
-                    str += "Control Change"; break;
-                case ShortMessage.PITCH_BEND:
-                    str += "Pitch Bend"; break;
-                default:
-                    return str;
-            }
+            str += switch (command) {
+                case ShortMessage.NOTE_ON -> "Note ON, Velocity="+shorty.getData2();
+                case ShortMessage.NOTE_OFF -> "Note OFF";
+                case ShortMessage.CHANNEL_PRESSURE -> "Aftertouch";
+                case ShortMessage.POLY_PRESSURE -> "Aftertouch (poly)";
+                case ShortMessage.CONTROL_CHANGE -> "Control Change";
+                case ShortMessage.PITCH_BEND -> "Pitch Bend";
+                default -> "";
+            };
             str += ", Channel="+shorty.getChannel();
         } else if (m instanceof SysexMessage sysex) {
             str += "Sysex";

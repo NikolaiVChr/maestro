@@ -23,9 +23,12 @@ import java.lang.management.ThreadMXBean;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -1918,7 +1921,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             // one or more timing settings were change in abc song
 
             // setting on model dont fire action listener
-            timingCombo.getModel().setSelectedItem(TimingEnum.getInstance(abcSong.isOrganic(), abcSong.isOrganic2(), abcSong.isMixTiming(), abcSong.isTripletTiming(), abcSong.isPriorityActive()));
+            timingCombo.getModel().setSelectedItem(TimingEnum.getInstance(abcSong.isOrganic(), abcSong.isOrganic2(), abcSong.isMixTiming(), abcSong.isTripletTiming(), abcSong.isPriorityActive(), abcSong.isUpgraded()));
 
 			updateButtons(false);
 			break;
@@ -2230,6 +2233,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 	
 	public void openFile(File file) {
+        if (!uiEnabled || (audioExporter != null && audioExporter.isExporting())) {
+            Toolkit.getDefaultToolkit().beep();
+            return;
+        }
+
 		openFile(file, true);
 	}
 	
@@ -2328,7 +2336,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			setMeter(abcSong.getTimeSignature());
 
             // setting on model dont fire action listener
-            timingCombo.getModel().setSelectedItem(TimingEnum.getInstance(abcSong.isOrganic(),abcSong.isOrganic2(),abcSong.isMixTiming(),abcSong.isTripletTiming(),abcSong.isPriorityActive()));
+            timingCombo.getModel().setSelectedItem(TimingEnum.getInstance(abcSong.isOrganic(),abcSong.isOrganic2(),abcSong.isMixTiming(),abcSong.isTripletTiming(),abcSong.isPriorityActive(), abcSong.isUpgraded()));
 
             tempoOnlyFirstCheckBox.setSelected(abcSong.isUsingOldTempos());
 
@@ -3482,66 +3490,69 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 		return threadDump.toString();
 	}
-	
-	private void checkVersionCompare() {
-		if(future == null || future.isDone()) {
-			future = CompletableFuture.runAsync(() -> {
-				try {
-					String fileUrl = "https://raw.githubusercontent.com/NikolaiVChr/mver/refs/heads/main/main";
-					URI uri = new URI(fileUrl);
-					URL url = uri.toURL();
-					HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-					connection.setConnectTimeout(4000);
-					connection.setReadTimeout(6000);
-					connection.setRequestMethod("GET");
-					try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-						String line;
-						while ((line = reader.readLine()) != null) {
-							latestVer = Version.parseVersion(line);
-							Version myVersion = MaestroMain.APP_VERSION;
-							if (latestVer != null && myVersion.compareTo(latestVer) < 0) {
-								SwingUtilities.invokeLater(() -> {
-									int result = JOptionPane.showConfirmDialog(ProjectFrame.this, "Version "+latestVer+" is available, do you want to close and download it?", "Version check",
-											JOptionPane.YES_NO_OPTION);
-										if (result == JOptionPane.YES_OPTION) {
-											URI uriDownload;
-											try {
-												uriDownload = new URI(MaestroMain.DOWNLOAD_URL);											
-												if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-													if (closeSong()) {
-														Desktop.getDesktop().browse(uriDownload);
-														System.exit(0);
-													}
-												}
-											} catch (URISyntaxException | IOException e) {
-												log.log(Level.WARNING, "Failed to open browser", e);
-											}
-										}
-									}
-								);
-								break;
-							}
-						}
-					} catch (Exception io) {
-                        log.log(Level.WARNING, "Failed to read current version string from HTTP", io);
-					}
-					connection.disconnect();
-				} catch (Throwable e) {
-                    log.log(Level.WARNING, "Failed to connect to github to read current version string", e);
-				}
-			});
-		}
-	}
+
+    private void checkVersionCompare() {
+        if (future == null || future.isDone()) {
+            future = CompletableFuture.runAsync(() -> {
+                try {
+                    try (var client = HttpClient.newBuilder()
+                            .connectTimeout(Duration.ofSeconds(4))
+                            .build()) {
+
+                        var request = HttpRequest.newBuilder()
+                                .uri(new URI("https://raw.githubusercontent.com/NikolaiVChr/mver/refs/heads/main/main"))
+                                .timeout(Duration.ofSeconds(10))
+                                .GET()
+                                .build();
+
+                        var response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+                        if (response.statusCode() == HttpURLConnection.HTTP_OK) {
+                            String line = response.body().lines().findFirst().orElse("");
+                            latestVer = Version.parseVersion(line);
+                            Version myVersion = MaestroMain.APP_VERSION;
+                            if (latestVer != null && myVersion.compareTo(latestVer) < 0) {
+                                SwingUtilities.invokeLater(() -> {
+                                        int result = JOptionPane.showConfirmDialog(ProjectFrame.this, "Version "+latestVer+" is available, do you want to close and download it?", "Version check",
+                                                JOptionPane.YES_NO_OPTION);
+                                        if (result == JOptionPane.YES_OPTION) {
+                                            URI uriDownload;
+                                            try {
+                                                uriDownload = new URI(MaestroMain.DOWNLOAD_URL);
+                                                if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
+                                                    if (closeSong()) {
+                                                        Desktop.getDesktop().browse(uriDownload);
+                                                        System.exit(0);
+                                                    }
+                                                }
+                                            } catch (URISyntaxException | IOException e) {
+                                                log.log(Level.WARNING, "Failed to open browser", e);
+                                            }
+                                        }
+                                    }
+                                );
+                            }
+                        } else {
+                            log.warning("Failed to read current version string from HTTPS. Response: " + response.statusCode());
+                        }
+                    }
+                } catch (Exception e) {
+                    log.log(Level.WARNING, "Failed to connect to github for version check", e);
+                }
+            });
+        }
+    }
 
     public enum TimingEnum {
-        ORGANIC_MULTISTAGE ("Organic Multi-stage",true, true, false,false,false,"Organic Multistage"),
-        ORGANIC_SINGLESTAGE ("Organic Single-stage", true, false, false,false,false,"Organic Singlestage"),
-        MIX ("Mix Timings", false, false, true,false,false,"Mix Timings"),
-        MIX_SWING ("Mix Timings, Swing", false, false, true,true,false,"Mix Timings Swing/Triplet"),
-        MIX_PRIO ("Mix Timings, Combine Priorities", false, false, true,false,true,"Mix Timings Combine Priorities"),
-        MIX_SWING_PRIO ("Mix Timings, Swing, Combine Priorities", false, false, true,true,true,"Mix Timings Swing/Triplet Combine Priorities"),
-        LEGACY ("Legacy Timings", false, false, false,false,false,"Legacy"),
-        LEGACY_SWING ("Legacy Timings, Swing", false, false, false,true,false,"Legacy Swing/Triplet"),
+//        ORGANIC_MULTISTAGE2 ("Organic Multi-stage 2",true, true, false,false,false,"Organic Multistage 2", true),
+        ORGANIC_MULTISTAGE ("Organic Multi-stage",true, true, false,false,false,"Organic Multistage", false),
+        ORGANIC_SINGLESTAGE ("Organic Single-stage", true, false, false,false,false,"Organic Singlestage", false),
+        MIX ("Mix Timings", false, false, true,false,false,"Mix Timings", false),
+        MIX_SWING ("Mix Timings, Swing", false, false, true,true,false,"Mix Timings Swing/Triplet", false),
+        MIX_PRIO ("Mix Timings, Combine Priorities", false, false, true,false,true,"Mix Timings Combine Priorities", false),
+        MIX_SWING_PRIO ("Mix Timings, Swing, Combine Priorities", false, false, true,true,true,"Mix Timings Swing/Triplet Combine Priorities", false),
+        LEGACY ("Legacy Timings", false, false, false,false,false,"Legacy", false),
+        LEGACY_SWING ("Legacy Timings, Swing", false, false, false,true,false,"Legacy Swing/Triplet", false),
         ;
         {}
         public final boolean organic;
@@ -3551,8 +3562,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         public final boolean priority;
         public final String info;
         public final String settingsString;// use this for settings prefs. And never change the strings.
+        public final boolean upgraded;
 
-        TimingEnum(String info, boolean organic, boolean multistage, boolean mixTimings, boolean swing, boolean priority, String settings) {
+        TimingEnum(String info, boolean organic, boolean multistage, boolean mixTimings, boolean swing, boolean priority, String settings, boolean upgraded) {
             this.info = info;
             this.organic = organic;
             this.multistage = multistage;
@@ -3560,6 +3572,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             this.swing = swing;
             this.priority = priority;
             this.settingsString = settings;
+            this.upgraded = upgraded;
         }
 
         public static TimingEnum getFromSettings(String defaultTiming) {
@@ -3574,12 +3587,14 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
         public void action(@Nullable AbcSong abcSong) {
             if (abcSong != null) {
-                abcSong.setTimings(organic, multistage, mixTimings, swing, priority);
+                abcSong.setTimings(organic, multistage, mixTimings, swing, priority, upgraded);
             }
         }
 
         String getTooltip() {
             return switch (this) {
+//                case ORGANIC_MULTISTAGE2 -> "<html>Different approach to exporting fluid timings.<br>"
+//                        + "This is a beta feature, use on own risk.</html>";
                 case ORGANIC_MULTISTAGE -> "<html>Different approach to exporting fluid timings.<br>"
                         + "This is a beta feature, use on own risk.</html>";
                 case ORGANIC_SINGLESTAGE -> "<html>Export more fluid timings.<br>"
@@ -3617,9 +3632,12 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             };
         }
 
-        static TimingEnum getInstance(boolean organic, boolean multistage, boolean mixTimings, boolean swing, boolean priority) {
+        static TimingEnum getInstance(boolean organic, boolean multistage, boolean mixTimings, boolean swing, boolean priority, boolean upgraded) {
             if (organic) {
-                if (multistage) return ORGANIC_MULTISTAGE;
+                if (multistage) {
+//                    if (upgraded) return ORGANIC_MULTISTAGE2;
+                    return ORGANIC_MULTISTAGE;
+                }
                 else return ORGANIC_SINGLESTAGE;
             } else if (mixTimings) {
                 if (swing) {

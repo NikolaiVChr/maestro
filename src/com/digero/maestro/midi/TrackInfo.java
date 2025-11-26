@@ -83,7 +83,7 @@ public class TrackInfo implements MidiConstants {
 		instrumentExtensions = new HashSet<>();
 		noteEvents = new ArrayList<>();
 		notesInUse = new TreeSet<>();
-		List<MidiNoteEvent>[] notesOn = new List[CHANNEL_COUNT_ABC];
+        MidiNoteEvent[][] activeNotes = new MidiNoteEvent[CHANNEL_COUNT_ABC][128];
 		int zeroNotesRemoved = 0;
 
 		int minVelocity = Integer.MAX_VALUE;
@@ -117,29 +117,27 @@ public class TrackInfo implements MidiConstants {
 						int bend = entry.getValue();
 						long bendTick = entry.getKey();
 						if (bend != pitchBend[ch]) {
-							List<MidiNoteEvent> bentNotes = new ArrayList<>();
-							if (notesOn[ch] != null) {
-								for (MidiNoteEvent ne : notesOn[ch]) {
-									if (!(ne instanceof BentMidiNoteEvent) && bend != 0) {
-										// This note is playing while this bend happens
-										// Lets convert it to a BentNoteEvent
-										BentMidiNoteEvent be = new BentMidiNoteEvent(ne.note, ne.velocity, ne.getStartTick(),
-												ne.getEndTick(), ne.getTempoCache(), ne.midiPan);
-										allBentNotes.add(be);
-										be.addBend(ne.getStartTick(), 0);// we need this initial bend in NoteGraph class
-										noteEvents.remove(ne);
-										noteEvents.add(be);
-										ne = be;
-									}
-									if (ne instanceof BentMidiNoteEvent && ((BentMidiNoteEvent) ne).getBend(bendTick) != bend) {
-										// The if statement prevents double bend commands,
-										// which will make an extra split.
-										((BentMidiNoteEvent) ne).addBend(bendTick, bend);
-									}
-									bentNotes.add(ne);
-								}
-								notesOn[ch] = bentNotes;
-							}
+                            for (MidiNoteEvent ne : activeNotes[ch]) {
+                                if (ne != null) {
+                                    if (!(ne instanceof BentMidiNoteEvent) && bend != 0) {
+                                        // This note is playing while this bend happens
+                                        // Lets convert it to a BentNoteEvent
+                                        BentMidiNoteEvent be = new BentMidiNoteEvent(ne.note, ne.velocity, ne.getStartTick(),
+                                                ne.getEndTick(), ne.getTempoCache(), ne.midiPan);
+                                        allBentNotes.add(be);
+                                        be.addBend(ne.getStartTick(), 0);// we need this initial bend in NoteGraph class
+                                        noteEvents.remove(ne);
+                                        noteEvents.add(be);
+                                        activeNotes[ch][ne.note.id] = be;
+                                        ne = be;
+                                    }
+                                    if (ne instanceof BentMidiNoteEvent be && be.getBend(bendTick) != bend) {
+                                        // The if statement prevents double bend commands,
+                                        // which will make an extra split.
+                                        be.addBend(bendTick, bend);
+                                    }
+                                }
+                            }
 							pitchBend[ch] = bend;
 						}
 					}
@@ -161,8 +159,6 @@ public class TrackInfo implements MidiConstants {
 				 * && cmd == ShortMessage.NOTE_ON)
 				 * System.err.println("Track "+trackNumber+" contains both notes and drums.."+(name!=null?name:""));
 				 */
-				if (notesOn[ch] == null)
-					notesOn[ch] = new ArrayList<>();
 
 				if (cmd == ShortMessage.NOTE_ON || cmd == ShortMessage.NOTE_OFF) {
 					int noteId = m.getData1();
@@ -195,33 +191,26 @@ public class TrackInfo implements MidiConstants {
 					 */
 
 					// If this is a Note ON and was preceded by a similar Note ON without a Note OFF, lets turn the preceding note off
-					// If this is a Note OFF lets do same, but also delete the preceding note if it has zero duration.
-					boolean turnedNoteOff = false;
-					Iterator<MidiNoteEvent> iter = notesOn[ch].iterator();
-					while (iter.hasNext()) {
-						MidiNoteEvent ne = iter.next();
-						if (ne.note.id == noteId) {
-							iter.remove();
-							ne.setEndTick(tick);
-							turnedNoteOff = true;
-							if (tick == ne.getStartTick() && (cmd == ShortMessage.NOTE_ON && velocity > 0)) {
-								// Illegal zero duration note terminated, so Maestro don't have to process it and discard it in the abc export anyway.
-								// 
-								// If the current message is a note ON with velocity (which is what I observe most) then
-								// it would not be possible to keep it anyway, as next note will start with this pitch immediately.
-								// If current message is note OFF we keep it though, and give it a small duration in AbcExporter.
-								//   (even though thats against MIDI standard, but some MIDI files are meant for them to be played)
-								
-								noteEvents.remove(ne);
-								zeroNotesRemoved++;
-								
-								log.fine(name+" Removing zero note (OFF), tick:"+tick+" file:"+sequenceInfo.getFileName()+" track:"+trackNumber+" time:"+Util.formatDurationM(sequenceCache.tickToMicros(tick)));
-							}
-							break;
-						}
-					}
-					
-					if ((cmd == ShortMessage.NOTE_OFF || (cmd == ShortMessage.NOTE_ON && velocity == 0)) && !turnedNoteOff) {
+					// If this is a Note OFF, let's do same, but also delete the preceding note if it has zero duration.
+                    MidiNoteEvent active = activeNotes[ch][noteId];
+                    if (active != null) {
+                        active.setEndTick(tick);
+                        activeNotes[ch][noteId] = null;
+                        if (tick == active.getStartTick() && (cmd == ShortMessage.NOTE_ON && velocity > 0)) {
+                            // Illegal zero duration note terminated, so Maestro don't have to process it and discard it in the abc export anyway.
+                            //
+                            // If the current message is a note ON with velocity (which is what I observe most), then
+                            // it would not be possible to keep it anyway, as the next note will start with this pitch immediately.
+                            // If the current message is note OFF, we will keep it though, and give it a small duration in AbcExporter.
+                            //   (even though that's against MIDI standard, but some MIDI files are meant for them to be played)
+
+                            log.fine(name+" Removing zero note (OFF), tick:"+tick+" file:"+sequenceInfo.getFileName()+" track:"+trackNumber+" time:"+Util.formatDurationM(sequenceCache.tickToMicros(tick)));
+                            noteEvents.remove(active);
+                            zeroNotesRemoved++;
+                        }
+                    }
+
+					if ((cmd == ShortMessage.NOTE_OFF || (cmd == ShortMessage.NOTE_ON && velocity == 0)) && active == null) {
 						// note OFF event, but no notes to turn off.
 						// events like this can make a midi appear longer than they are,
 						// so we remove the event.
@@ -259,7 +248,7 @@ public class TrackInfo implements MidiConstants {
 						}
 						noteEvents.add(ne);
 						//notesInUse.add(ne.note.id);
-						notesOn[ch].add(ne);
+                        activeNotes[ch][noteId] = ne;
 					}
 				}
 			} else if (msg instanceof MetaMessage m) {
@@ -295,24 +284,23 @@ public class TrackInfo implements MidiConstants {
 					}
 					// turn off all notes, but keep them instead of discarding them like old days.
 					for (int ch = 0; ch < MidiConstants.CHANNEL_COUNT; ch++) {
-						if (notesOn[ch] != null) {
-							Iterator<MidiNoteEvent> iter = notesOn[ch].iterator();
-							while (iter.hasNext()) {
-								MidiNoteEvent ne = iter.next();
-								iter.remove();
-								ne.setEndTick(tick);
-								if (tick == ne.getStartTick()) {
-									// Illegal zero duration note terminated, so Maestro don't have to process it and discard it in the abc export anyway.
-									// 								
-									noteEvents.remove(ne);
-									zeroNotesRemoved++;
-									
-									log.fine(name+" Removing zero note (EOT), tick:"+tick+" file:"+sequenceInfo.getFileName()+" track:"+trackNumber+" time:"+Util.formatDurationM(sequenceCache.tickToMicros(tick)));
-								} else {
-									log.info(sequenceInfo.getFileName()+": Keeping note ending by EOT instead of Note OFF. Tick "+tick+", track "+trackNumber);
-								}
-							}
-						}
+						for (int pitch = 0 ; pitch < 128 ; pitch++) {
+                            MidiNoteEvent ne = activeNotes[ch][pitch];
+                            if (ne != null) {
+                                activeNotes[ch][pitch] = null;
+                                ne.setEndTick(tick);
+                                if (tick == ne.getStartTick()) {
+                                    // Illegal zero duration note terminated, so Maestro don't have to process it and discard it in the abc export anyway.
+                                    //
+                                    noteEvents.remove(ne);
+                                    zeroNotesRemoved++;
+
+                                    log.fine(name + " Removing zero note (EOT), tick:" + tick + " file:" + sequenceInfo.getFileName() + " track:" + trackNumber + " time:" + Util.formatDurationM(sequenceCache.tickToMicros(tick)));
+                                } else {
+                                    log.info(sequenceInfo.getFileName() + ": Keeping note ending by EOT instead of Note OFF. Tick " + tick + ", track " + trackNumber);
+                                }
+                            }
+                        }
 					}
 					// We keep iterating, perhaps there is track-name after EOT
 				} else {
@@ -373,6 +361,9 @@ public class TrackInfo implements MidiConstants {
 				// be.getMinBend())+")");
 			}
 		}
+
+        // adding bent sub-notes can have changed the order
+        Collections.sort(noteEvents);
 		
 		for (MidiNoteEvent ne : noteEvents) {
 			// We do it here due to the above split might have removed or added notes
@@ -380,19 +371,19 @@ public class TrackInfo implements MidiConstants {
 		}
 
 		// Turn off notes that are on at the end of the song. This shouldn't happen...
-		int ctNotesOn = 0;
-		for (List<MidiNoteEvent> notesOnChannel : notesOn) {
-			if (notesOnChannel != null)
-				ctNotesOn += notesOnChannel.size();
-		}
-		if (ctNotesOn > 0) {
-			log.info("Deleting "+(ctNotesOn) + " note(s) not turned off at the end of the track.");
-
-			for (List<MidiNoteEvent> notesOnChannel : notesOn) {
-				if (notesOnChannel != null)
-					noteEvents.removeAll(notesOnChannel);
-			}
-		}
+        List<MidiNoteEvent> dangling = new ArrayList<>();
+        for (int ch = 0; ch < CHANNEL_COUNT_ABC; ch++) {
+            for (int pitch = 0; pitch < 128; pitch++) {
+                MidiNoteEvent ne = activeNotes[ch][pitch];
+                if (ne != null) {
+                    dangling.add(ne);
+                }
+            }
+        }
+        if (!dangling.isEmpty()) {
+            log.info("Deleting " + dangling.size() + " note(s) not turned off at the end of the track.");
+            noteEvents.removeAll(dangling);
+        }
 		
 		if (zeroNotesRemoved > 0) {
 			//System.err.println(zeroNotesRemoved + " note(s) removed due to being zero duration in midi file "+sequenceInfo.getFileName()+" track:"+trackNumber);

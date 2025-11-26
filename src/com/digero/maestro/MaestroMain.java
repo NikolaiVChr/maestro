@@ -49,7 +49,7 @@ public class MaestroMain {
 			String versionString = props.getProperty("version.Maestro");
 			if (versionString != null)
 				APP_VERSION = Version.parseVersion(versionString);
-		} catch (IOException ex) {
+		} catch (IOException ignored) {
 		}
 	}
 
@@ -69,19 +69,6 @@ public class MaestroMain {
 		    	});
 		    }
 		});
-		SwingUtilities.invokeLater(() -> {
-			Thread.currentThread().setUncaughtExceptionHandler((thread, throwable) -> {
-                log.log(Level.SEVERE, throwable.toString(), throwable);
-			    try {
-				    ProjectFrame.feed("ERROR: exception in thread " + thread.getName() + ": " + throwable+". Please notify the devs..", getFirstLines(throwable));
-				    if (mainWindow != null) {
-				    	mainWindow.showFeed();
-				    }
-			    } catch (Exception e) {
-                    log.log(Level.SEVERE, e.toString(), e);
-				}
-			});
-		});
 
 		try {
 			Properties props = new Properties();
@@ -89,7 +76,7 @@ public class MaestroMain {
 			String versionString = props.getProperty("version.Maestro");
 			if (versionString != null)
 				APP_VERSION = Version.parseVersion(versionString);
-		} catch (IOException ex) {
+		} catch (IOException ignore) {
 		}
 		
 		if (args != null) {
@@ -211,36 +198,45 @@ public class MaestroMain {
 			return false;
 		}
 		//log.finer("Made port");
-		(new Thread(() -> {
-			try {
-				while (true) {
-					Socket socket = serverSocket.accept();
-					//log.finer("Accepted");
-					BufferedReader in = new BufferedReader(
-							new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_16));
-					// while (socket.isConnected()) {
-					String data = in.readLine();
+		Thread waitForOtherMaestrosThread = new Thread(() -> {
+            while (!serverSocket.isClosed()) {
+				try (Socket socket = serverSocket.accept()) {
+                    //log.finer("Accepted");
 
-					if (data != null
-							&& (Util.stringEndsWithIgnoreCase(data, Util.MID_FILE_EXTENSION)
-									|| Util.stringEndsWithIgnoreCase(data, Util.MIDI_FILE_EXTENSION)
-									|| Util.stringEndsWithIgnoreCase(data, Util.ABC_FILE_EXTENSION)
-									|| Util.stringEndsWithIgnoreCase(data, Util.TXT_FILE_EXTENSION)
-									|| Util.stringEndsWithIgnoreCase(data, Util.MSX_FILE_EXTENSION)
-									|| Util.stringEndsWithIgnoreCase(data, Util.KAR_FILE_EXTENSION))) {
-						//log.finer("Received "+data);
-						String[] datas = { data };
-						activate(datas);
-					} else {
-						//log.fine("Received nothing: "+data);
+                    // If readLine() takes longer than this, it throws SocketTimeoutException
+                    socket.setSoTimeout(2000);
+
+                    try (BufferedReader in = new BufferedReader(
+                            new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_16))) {
+
+                        String data = in.readLine();
+
+                        if (data != null
+                                && (Util.stringEndsWithIgnoreCase(data, Util.MID_FILE_EXTENSION)
+                                        || Util.stringEndsWithIgnoreCase(data, Util.MIDI_FILE_EXTENSION)
+                                        || Util.stringEndsWithIgnoreCase(data, Util.ABC_FILE_EXTENSION)
+                                        || Util.stringEndsWithIgnoreCase(data, Util.TXT_FILE_EXTENSION)
+                                        || Util.stringEndsWithIgnoreCase(data, Util.MSX_FILE_EXTENSION)
+                                        || Util.stringEndsWithIgnoreCase(data, Util.KAR_FILE_EXTENSION))) {
+                            //log.finer("Received "+data);
+                            String[] dataArray = { data };
+                            activate(dataArray);
+                        } else {
+                            //log.fine("Received nothing: "+data);
+                        }
 					}
-					// }
-					socket.close();
-				}
-			} catch (IOException e) {
-				// e.printStackTrace();
+                } catch (IOException e) {
+                    //log.log(Level.FINE, "Error while waiting for another maestro process", e);
+                    if (serverSocket.isClosed()) break;
+                }
 			}
-		})).start();
+		});
+        //for debugging:
+        waitForOtherMaestrosThread.setName("listen-for-maestros");
+        //so java knows this thread can safely be deleted when stopping maestro:
+        waitForOtherMaestrosThread.setDaemon(true);
+        waitForOtherMaestrosThread.start();
+
 		return true;
 	}
 

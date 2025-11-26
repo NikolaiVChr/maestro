@@ -124,7 +124,7 @@ public class SequenceInfo implements MidiConstants {
 	private SequenceInfo(String fileName, Sequence sequence, int type, MiscSettings miscSettings, boolean oldVelocities, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume, boolean ignoreMidiText, AbcInfo abcInfo)
 			throws InvalidMidiDataException, FileParseException {
 		this.fileName = fileName;
-		this.sequence = sequence;
+
 		this.midiType = type;
         this.histogram = null;
         this.lastTrackInfos = abcInfo==null?null:abcInfo.abcTrackInfos;
@@ -137,16 +137,16 @@ public class SequenceInfo implements MidiConstants {
 		// Aifel: changed order so that XG drums in middle of a track from a type 0 gets separated out
 		boolean wasType0 = convertToType1(sequence);
 
-		separateDrumTracks(sequence);
+        this.sequence = separateDrumTracks(sequence);// Beware: Do not refer to param sequence after this line
 
-		realDuraTicks = fixupTrackLength(sequence);
+		realDuraTicks = fixupTrackLength(this.sequence);
 
-		Track[] tracks = sequence.getTracks();
+		Track[] tracks = this.sequence.getTracks();
 		if (tracks.length == 0) {
 			throw new InvalidMidiDataException("The MIDI file doesn't have any tracks");
 		}
 
-		sequenceCache = new SequenceDataCache(sequence, standard, rolandDrumChannels, yamahaDrumSwitches,
+		sequenceCache = new SequenceDataCache(this.sequence, standard, rolandDrumChannels, yamahaDrumSwitches,
 				yamahaDrumChannels, mmaDrumSwitches, portMap, onlyFirstTrackTempos, ignoreZeroChannelVolume, ignoreMidiText);
 		hasPorts = sequenceCache.hasPorts;
 		primaryTempoMPQ = sequenceCache.getPrimaryTempoMPQ();
@@ -722,166 +722,193 @@ public class SequenceInfo implements MidiConstants {
 	/**
 	 * Ensures that there are no tracks with both drums and notes.
 	 */
-	public void separateDrumTracks(Sequence song) {
-		Track[] tracks = song.getTracks();
+	public Sequence separateDrumTracks(Sequence song) {
 
 		if (MidiStandard.ABC == standard) {// || tracks.length <= 1
-			return;
+			return song;
 		}
 
-		for (int i = 0; i < tracks.length; i++) {
-			Track track = tracks[i];
+        // Create new Sequence to avoid O(N^2) removal
+        Sequence newSeq;
+        try {
+            newSeq = new Sequence(song.getDivisionType(), song.getResolution());
+        } catch (InvalidMidiDataException e) {
+            return song;
+        }
 
-			
-			int drumsGS  = 0;
-			int drumsXG  = 0;
-			int drumsGM2 = 0;
-			int drumsGM  = 0; 
-			
-			int drumsExt10 = 0;// Extension drum notes on default-drum-channel
-			int drumsExtX = 0;// Extension drum notes on non-default-drum-channel
-						
-			int notes  = 0;// Chromatic notes
-			int notes10 = 0;// Chromatic notes on default-drum-channel
-			int notesX = 0;// Chromatic notes on non-default-drum-channel
+        Track[] oldTracks = song.getTracks();
 
-			for (int j = 0; j < track.size(); j++) {
-				MidiEvent evt = track.get(j);
-				MidiMessage msg = evt.getMessage();
-				
-				if (!(msg instanceof ShortMessage m)) {
-					continue;
-				}
+        Track[] newMainTracks = new Track[oldTracks.length];
+        for (int i = 0; i < oldTracks.length; i++) {
+            newMainTracks[i] = newSeq.createTrack();
+        }
+
+        boolean modified = false;
+
+		for (int i = 0; i < oldTracks.length; i++) {
+            Track oldTrack = oldTracks[i];
+            Track mainTrack = newMainTracks[i];
+
+            int drumsGS = 0;
+            int drumsXG = 0;
+            int drumsGM2 = 0;
+            int drumsGM = 0;
+
+            int drumsExt10 = 0;// Extension drum notes on default-drum-channel
+            int drumsExtX = 0;// Extension drum notes on non-default-drum-channel
+
+            int notes = 0;// Chromatic notes
+            int notes10 = 0;// Chromatic notes on default-drum-channel
+            int notesX = 0;// Chromatic notes on non-default-drum-channel
+
+            for (int j = 0; j < oldTrack.size(); j++) {
+                MidiEvent evt = oldTrack.get(j);
+                MidiMessage msg = evt.getMessage();
+
+                if (!(msg instanceof ShortMessage m)) {
+                    continue;
+                }
 
                 int chan = m.getChannel();
 
-				if (m.getCommand() != ShortMessage.NOTE_ON) {
-					continue;
-				}
-				  
-				if (isDrumGM(chan)) {
-					drumsGM = 1;
-				} else if (isDrumGS(chan)) {
-					drumsGS = 1;
-				} else if (isDrumXG(evt, chan)) {
-					drumsXG = 1;
-				} else if (isDrumGM2(evt, chan)) {
-					drumsGM2 = 1;
-				} else {
-					notes = 1;
-					if (chan == DRUM_CHANNEL)
-						notes10 = 1;
-					else
-						notesX = 1;
-				}
-				
-				if (drumsGS + drumsXG + drumsGM2 > 0) {
-					if (chan == DRUM_CHANNEL) drumsExt10 = 1;
-					else drumsExtX = 1;
-				}
-			}
-			
-			
-			/*
-			 * I had to design this carefully in high degree to not mess up v2.5.0 Projects too much.
-			 * 
-			 * If channel 10 drums plus brand drums. Then v2.5.0 would have made new track for channel 10. So in that
-			 * case if no real melodic notes make brand drums stay and funnel channel 10 into new channel even if
-			 * standard is not GM.
-			 * 
-			 * If notes+channel 10 drums+brand drums, make notes stay, funnel the others into own 2 tracks. channel 10
-			 * drums before brand.
-			 * 
-			 * If notes on channel 10 and notes that are not channel 10, then separate them also, to keep backwards compat
-			 * with v2.5.0 projects.
-			 * 
-			 */
-			if (drumsGS + drumsXG + drumsGM2 + notes + drumsGM > 1 || (drumsExt10 + drumsExtX > 1) || (notes10 + notesX > 1)) {
-				Track drumTrack = null;
-				Track noteTrack = null;
-				Track brandDrumTrack = null;
-				if (notes == 1) {
-					if (drumsGM == 1) {
-						drumTrack = song.createTrack();
-						drumTrack.add(MidiFactory.createTrackNameEvent(ExtensionMidiInstrument.TRACK_NAME_DRUM_GM));
-						// System.err.println("Drum and Chromatic notes in same track. Create ch10 GM Drum track. From "+i);
-					}
-					if (notes10 + notesX > 1) {
-						noteTrack = song.createTrack();
-						noteTrack.add(MidiFactory.createTrackNameEvent("Track " + i + "+"));
-						// System.err.println("Chromatic notes in channel 10. Create chromatic ch10 track. From " + i);
-					}
-					if (drumsXG + drumsGS + drumsGM2 > 0) {
-						brandDrumTrack = createBrandDrumTrack(drumsGS, drumsXG, drumsGM2, song);
-						// System.err.println("Drum and Chromatic notes in same track. Create EXT Drum track. From "+i);
-					}
-				} else {
-					// Only drum notes in this track
-					if (drumsExt10 == 1) {
-						// Maestro v2.5.0 would have separated these, so we do the same.
-						brandDrumTrack = createBrandDrumTrack(drumsGS, drumsXG, drumsGM2, song);
-						// System.err.println("EXT Drum notes in ch10 and in other channels. Create EXT Drum track. From "+i);
-					}
-					assert drumsGM == 0;
-				}
-				// Mixed track:
-				for (int j = 0; j < track.size(); j++) {
-					MidiEvent evt = track.get(j);
-					MidiMessage msg = evt.getMessage();
-					if (msg instanceof ShortMessage smsg) {
-                        int chan = smsg.getChannel();
-						if (drumTrack != null && drumsGM == 1 && chan == DRUM_CHANNEL) {
-							// GM drum note split into new track
-							drumTrack.add(evt);
-							if (track.remove(evt))
-								j--;
-						} else if (brandDrumTrack != null && drumsGS == 1 && (notes == 1 || chan == DRUM_CHANNEL)
-								&& rolandDrumChannels[chan]) {
-							// GS drum note split into new track because either:
-							// - to avoid mixing with chromatics.
-							// - its on ch10, which v2.5.0 would also have split into new track.
-							brandDrumTrack.add(evt);
-							if (track.remove(evt))
-								j--;
-						} else if (brandDrumTrack != null && drumsXG == 1 && (notes == 1 || chan == DRUM_CHANNEL)
-								&& yamahaDrumSwitches.get(chan).floorEntry(evt.getTick()) != null
-								&& yamahaDrumSwitches.get(chan).floorEntry(evt.getTick()).getValue()) {
-							// XG drum note split into new track because either:
-							// - to avoid mixing with chromatics.
-							// - its on ch10, which v2.5.0 would also have split into new track.
-							brandDrumTrack.add(evt);
-							if (track.remove(evt))
-								j--;
-						} else if (brandDrumTrack != null && drumsGM2 == 1 && (notes == 1 || chan == DRUM_CHANNEL)
-								&& mmaDrumSwitches.get(chan).floorEntry(evt.getTick()) != null
-								&& mmaDrumSwitches.get(chan).floorEntry(evt.getTick()).getValue()) {
-							// GM2 drum note split into new track because either:
-							// - to avoid mixing with chromatics.
-							// - its on ch10, which v2.5.0 would also have split into new track.
-							brandDrumTrack.add(evt);
-							if (track.remove(evt))
-								j--;
-						} else if ((drumsGS == 1 && rolandDrumChannels[chan])
-								|| (drumsXG == 1 && yamahaDrumSwitches.get(chan).floorEntry(evt.getTick()) != null
-										&& yamahaDrumSwitches.get(chan).floorEntry(evt.getTick()).getValue())
-								|| (drumsGM2 == 1 && mmaDrumSwitches.get(chan).floorEntry(evt.getTick()) != null
-										&& mmaDrumSwitches.get(chan).floorEntry(evt.getTick()).getValue())) {
-							// These non-channel-10 GS/XG/GM2 drum notes stay in the track.
-							// The chromatic notes will never enter here as
-							// 'notes' will be 1 when they are there
-							// and therefore no drum notes will reach last IF statement.
-							assert chan != DRUM_CHANNEL : "Ch10 extension drum note refuse to leave track!";
-						} else if (noteTrack != null && chan == DRUM_CHANNEL) {
-							// Chromatic note on ch10. Split it into new track.
-							noteTrack.add(evt);
-							if (track.remove(evt))
-								j--;
-							assert drumsGM == 1 : "GM drum note snuck into ch10 chromatic track!";
-						}
-					}
-				}
-			}
-		}
+                if (m.getCommand() != ShortMessage.NOTE_ON) {
+                    continue;
+                }
+
+                if (isDrumGM(chan)) {
+                    drumsGM = 1;
+                } else if (isDrumGS(chan)) {
+                    drumsGS = 1;
+                } else if (isDrumXG(evt, chan)) {
+                    drumsXG = 1;
+                } else if (isDrumGM2(evt, chan)) {
+                    drumsGM2 = 1;
+                } else {
+                    notes = 1;
+                    if (chan == DRUM_CHANNEL)
+                        notes10 = 1;
+                    else
+                        notesX = 1;
+                }
+
+                if (drumsGS + drumsXG + drumsGM2 > 0) {
+                    if (chan == DRUM_CHANNEL) drumsExt10 = 1;
+                    else drumsExtX = 1;
+                }
+            }
+
+
+            /*
+             * I had to design this carefully in high degree to not mess up v2.5.0 Projects too much.
+             *
+             * If channel 10 drums plus brand drums. Then v2.5.0 would have made new track for channel 10. So in that
+             * case if no real melodic notes make brand drums stay and funnel channel 10 into new channel even if
+             * standard is not GM.
+             *
+             * If notes+channel 10 drums+brand drums, make notes stay, funnel the others into own 2 tracks. channel 10
+             * drums before brand.
+             *
+             * If notes on channel 10 and notes that are not channel 10, then separate them also, to keep backwards compat
+             * with v2.5.0 projects.
+             *
+             */
+
+            Track drumTrack = null;
+            Track noteTrack = null;
+            Track brandDrumTrack = null;
+
+            if (drumsGS + drumsXG + drumsGM2 + notes + drumsGM > 1 || (drumsExt10 + drumsExtX > 1) || (notes10 + notesX > 1)) {
+                modified = true;
+
+                if (notes == 1) {
+                    if (drumsGM == 1) {
+                        drumTrack = newSeq.createTrack();
+                        drumTrack.add(MidiFactory.createTrackNameEvent(ExtensionMidiInstrument.TRACK_NAME_DRUM_GM));
+                        //System.err.println("Drum and Chromatic notes in same track. Create ch10 GM Drum track. From "+i);
+                    }
+                    if (notes10 + notesX > 1) {
+                        noteTrack = newSeq.createTrack();
+                        noteTrack.add(MidiFactory.createTrackNameEvent("Track " + i + "+"));
+                        //System.err.println("Chromatic notes in channel 10. Create chromatic ch10 track. From " + i);
+                    }
+                    if (drumsXG + drumsGS + drumsGM2 > 0) {
+                        brandDrumTrack = createBrandDrumTrack(drumsGS, drumsXG, drumsGM2, newSeq);
+                        //System.err.println("Drum and Chromatic notes in same track. Create EXT Drum track. From "+i);
+                    }
+                } else {
+                    // Only drum notes in this track
+                    if (drumsExt10 == 1) {
+                        // Maestro v2.5.0 would have separated these, so we do the same.
+                        brandDrumTrack = createBrandDrumTrack(drumsGS, drumsXG, drumsGM2, newSeq);
+                        //System.err.println("EXT Drum notes in ch10 and in other channels. Create EXT Drum track. From "+i);
+                    }
+                    assert drumsGM == 0;
+                }
+            }
+
+            // Mixed track:
+            for (int j = 0; j < oldTrack.size(); j++) {
+                MidiEvent evt = oldTrack.get(j);
+                MidiMessage msg = evt.getMessage();
+                boolean moved = false;
+
+                if (msg instanceof ShortMessage smsg && modified) {
+                    int chan = smsg.getChannel();
+                    if (drumTrack != null && drumsGM == 1 && chan == DRUM_CHANNEL) {
+                        // GM drum note split into new track
+                        drumTrack.add(evt);
+                        moved = true;
+                    } else if (brandDrumTrack != null && drumsGS == 1 && (notes == 1 || chan == DRUM_CHANNEL)
+                            && rolandDrumChannels[chan]) {
+                        // GS drum note split into new track because either:
+                        // - to avoid mixing with chromatics.
+                        // - its on ch10, which v2.5.0 would also have split into new track.
+                        brandDrumTrack.add(evt);
+                        moved = true;
+                    } else if (brandDrumTrack != null && drumsXG == 1 && (notes == 1 || chan == DRUM_CHANNEL)
+                            && yamahaDrumSwitches.get(chan).floorEntry(evt.getTick()) != null
+                            && yamahaDrumSwitches.get(chan).floorEntry(evt.getTick()).getValue()) {
+                        // XG drum note split into new track because either:
+                        // - to avoid mixing with chromatics.
+                        // - its on ch10, which v2.5.0 would also have split into new track.
+                        brandDrumTrack.add(evt);
+                        moved = true;
+                    } else if (brandDrumTrack != null && drumsGM2 == 1 && (notes == 1 || chan == DRUM_CHANNEL)
+                            && mmaDrumSwitches.get(chan).floorEntry(evt.getTick()) != null
+                            && mmaDrumSwitches.get(chan).floorEntry(evt.getTick()).getValue()) {
+                        // GM2 drum note split into new track because either:
+                        // - to avoid mixing with chromatics.
+                        // - its on ch10, which v2.5.0 would also have split into new track.
+                        brandDrumTrack.add(evt);
+                        moved = true;
+                    } else if ((drumsGS == 1 && rolandDrumChannels[chan])
+                            || (drumsXG == 1 && yamahaDrumSwitches.get(chan).floorEntry(evt.getTick()) != null
+                            && yamahaDrumSwitches.get(chan).floorEntry(evt.getTick()).getValue())
+                            || (drumsGM2 == 1 && mmaDrumSwitches.get(chan).floorEntry(evt.getTick()) != null
+                            && mmaDrumSwitches.get(chan).floorEntry(evt.getTick()).getValue())) {
+                        // These non-channel-10 GS/XG/GM2 drum notes stay in the track.
+                        // The chromatic notes will never enter here as
+                        // 'notes' will be 1 when they are there
+                        // and therefore no drum notes will reach last IF statement.
+                        assert chan != DRUM_CHANNEL : "Ch10 extension drum note refuse to leave track!";
+                    } else if (noteTrack != null && chan == DRUM_CHANNEL) {
+                        // Chromatic note on ch10. Split it into new track.
+                        noteTrack.add(evt);
+                        moved = true;
+                        assert drumsGM == 1 : "GM drum note snuck into ch10 chromatic track!";
+                    }
+                }
+
+                if (!moved) {
+                    mainTrack.add(evt);
+                }
+            }
+        }
+
+        if (modified) {
+            return newSeq;
+        }
+        return song;
 	}
 
 	private Track createBrandDrumTrack(int drumsGS, int drumsXG, int drumsGM2, Sequence song) {
@@ -932,21 +959,17 @@ public class SequenceInfo implements MidiConstants {
 		
 		@SuppressWarnings("unchecked")
 		List<MidiEvent>[] suspectEvents = new List[tracks.length];
-		
-		TreeSet<MidiEvent> allEvents = new TreeSet<>(new Comparator<>() {
-            @Override
-            public int compare(MidiEvent o1, MidiEvent o2) {
-                return Long.compare(o1.getTick(), o2.getTick());
-            }
-        });
-		
+
+        List<MidiEvent> allEvents = new ArrayList<>();
+
 		// populate allEvents with events from all tracks
         for (Track track : tracks) {
-            for (int j = track.size() - 1; j >= 0; --j) {
-                MidiEvent evt = track.get(j);
-                allEvents.add(evt);
+            for (int j = 0; j < track.size(); j++) {
+                allEvents.add(track.get(j));
             }
         }
+
+        allEvents.sort(Comparator.comparingLong(MidiEvent::getTick));
 		
 		long earlyEndTick = 0L;
 		long maxEmpty = Math.max(song.getTickLength()/4L, MidiUtils.microsecond2tick(song, 20L*AbcConstants.ONE_SECOND_MICROS, tempoCache));
@@ -1049,10 +1072,12 @@ public class SequenceInfo implements MidiConstants {
 		// remove all events after earlyEndTick
 		// isn't this a risk to remove tracknames etc.?
         for (Track track : tracks) {
-            for (int j = 0; j < track.size(); j++) {
+            for (int j = track.size()-1; j >= 0; j--) {
                 MidiEvent evt = track.get(j);
                 if (evt.getTick() > earlyEndTick + 1L) {
                     track.remove(evt);
+                } else {
+                    break;
                 }
             }
         }
