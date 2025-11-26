@@ -29,7 +29,7 @@ public class AudioExportManager {
 		
 	private final JFrame parentWindow;
 	private JFileChooser exportFileDialog;
-	private boolean isExporting = false;
+	private volatile boolean isExporting = false;// prevents win file explorer from opening files while exporting
 	private final Preferences prefs;
 	
 	private final String encodedBy;
@@ -71,6 +71,7 @@ public class AudioExportManager {
 
 			JDialog waitFrame = new WaitDialog(parentWindow, saveFile);
 			waitFrame.setVisible(true);
+            isExporting = true;
             Thread.ofVirtual().start(new ExportWavTask(sequencer.getSequence(), saveFile, waitFrame, sequencer.getStartTick()));
 		}
 	}
@@ -83,6 +84,7 @@ public class AudioExportManager {
 			ExportMp3Dialog dialog = (ExportMp3Dialog) e.getSource();
 			JDialog waitFrame = new WaitDialog(parentWindow, dialog.getSaveFile());
 			waitFrame.setVisible(true);
+            isExporting = true;
             Thread.ofVirtual().start(new ExportMp3BuiltinTask(sequencer.getSequence(), dialog, waitFrame, sequencer.getStartTick()));
 		});
 		mp3Dialog.setVisible(true);
@@ -103,7 +105,6 @@ public class AudioExportManager {
 
 		@Override
 		public void run() {
-			isExporting = true;
 			Exception error = null;
 			try {
 				File wavFile = File.createTempFile("Abc-", ".wav");
@@ -165,7 +166,6 @@ public class AudioExportManager {
 
 		@Override
 		public void run() {
-			isExporting = true;
 			Exception error = null;
 			try {
 				try (FileOutputStream fos = new FileOutputStream(file)) {
