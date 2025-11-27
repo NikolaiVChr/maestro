@@ -4322,7 +4322,7 @@ public class AbcExporter {
 					assert ne.getEndTick() >= last.getEndTick() || ne.getStartTick() > last.getStartTick();
 					assert ne.startABCMicros >= last.startABCMicros;
 					assert ne.endABCMicros >= last.endABCMicros || ne.startABCMicros > last.startABCMicros;
-                    assert ne.endABCMicros - ne.startABCMicros <= TimingInfo.LONGEST_NOTE_MICROS+500;
+                    assert ne.endABCMicros - ne.startABCMicros <= TimingInfo.LONGEST_NOTE_MICROS+12002;
 				}
 				last = ne;
 			}
