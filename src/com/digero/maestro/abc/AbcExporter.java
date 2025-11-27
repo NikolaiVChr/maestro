@@ -3992,29 +3992,50 @@ public class AbcExporter {
                 // Cut it up
                 while (diff > TimingInfo.LONGEST_NOTE_MICROS) {
                     long candidateTime;
-                    if (diff < TimingInfo.LONGEST_NOTE_MICROS * 2 - 500) {
-                        // this prevents restarting into short bursts
-                        candidateTime = prev + diff / 2;
 
-                        // min and max points to prevent any segment to be longer than 5 secs
-                        long minMicros = curr - TimingInfo.LONGEST_NOTE_MICROS;
-                        long maxMicros = prev + TimingInfo.LONGEST_NOTE_MICROS;
+                    // gap just slightly too large (5s to 9.9995s)
+                    if (diff < TimingInfo.LONGEST_NOTE_MICROS * 2L - 500L) {
+                        long midpoint = prev + diff / 2L;
 
-                        candidateTime = closestBarMicrosABC(part, candidateTime,
-                                Math.min(candidateTime - minMicros, TimingInfo.ONE_SECOND_MICROS),
-                                Math.min(maxMicros - candidateTime, TimingInfo.ONE_SECOND_MICROS));
+                        // limits
+                        long engineLowerBound = curr - TimingInfo.LONGEST_NOTE_MICROS;
+                        long engineUpperBound = prev + TimingInfo.LONGEST_NOTE_MICROS;
+
+                        // musical Limits (Segments must be >= 2s)
+                        long minSegmentLen = 2L * TimingInfo.ONE_SECOND_MICROS;
+
+                        long musicalLowerBound = prev + minSegmentLen;
+                        long musicalUpperBound = curr - minSegmentLen;
+
+                        // Intersect to find the safe zone
+                        long safeMin = Math.max(engineLowerBound, musicalLowerBound);
+                        long safeMax = Math.min(engineUpperBound, musicalUpperBound);
+
+                        if (safeMin <= midpoint && safeMax >= midpoint) {
+                            // Search for a bar line within the safe zone
+                            candidateTime = closestBarMicrosABC(part, midpoint,
+                                    midpoint - safeMin,
+                                    safeMax - midpoint);
+                        } else {
+                            // Constraints are impossible
+                            // Fallback to midpoint
+                            candidateTime = midpoint;
+                        }
                     } else {
+                        // big gap (> 9.9995s). slice off 5s chunks.
                         candidateTime = closestBarMicrosABC(part, prev + TimingInfo.LONGEST_NOTE_MICROS,
-                                (TimingInfo.ONE_SECOND_MICROS/2L), 0L);
+                                TimingInfo.ONE_SECOND_MICROS, 0L);
                     }
 
                     if (curr - candidateTime < minTail) {
+                        // we allow to go minTail over LONGEST_NOTE_MICROS
                         break;
-                    } else {
-                        finalGrid.add(candidateTime);
-                        prev = candidateTime;
-                        diff = curr - prev;
                     }
+
+                    finalGrid.add(candidateTime);
+                    assert candidateTime > prev;
+                    prev = candidateTime;
+                    diff = curr - prev;
                 }
 
                 finalGrid.add(curr);
@@ -4115,25 +4136,43 @@ public class AbcExporter {
      * Part of multi-stage organic path
      *
      * @param part abc part
-     * @param micros origin point
+     * @param idealMicros origin point
      * @param maxDistanceDown max distance down in micros from origin point
      * @param maxDistanceUp max distance up in micros from origin point
      * @return nearest midi bar line in micros
      */
-    private long closestBarMicrosABC(AbcPart part, long micros, long maxDistanceDown, long maxDistanceUp) {
-        long tick = qtm.microsToTickABCOrganic(micros);
+    private long closestBarMicrosABC(AbcPart part, long idealMicros, long maxDistanceDown, long maxDistanceUp) {
+        assert idealMicros > 0L && maxDistanceDown >= 0L && maxDistanceUp >= 0L && idealMicros - maxDistanceDown >= 0L;
+        long tick = qtm.microsToTickABCOrganic(idealMicros);
         long barTicks = part.getAbcSong().getSequenceInfo().getDataCache().getBarLengthTicks();
         long down = (tick / barTicks) * barTicks;
         long up = down + barTicks;
-        long closestBarTick = tick-down < up - tick ? down : up;
-        long closestBarMicros = qtm.tickToMicrosABCOrganic(closestBarTick);
-        if (micros - closestBarMicros > maxDistanceDown) {
-            return micros;
+        long middle = down + barTicks / 2;
+        boolean downClosest = tick - down < up - tick;
+
+        long upBarMicros = qtm.tickToMicrosABCOrganic(up);
+        long downBarMicros = qtm.tickToMicrosABCOrganic(down);
+        long middleBarMicros = qtm.tickToMicrosABCOrganic(middle);
+
+        boolean upWithin = upBarMicros <= idealMicros + maxDistanceUp;
+        boolean downWithin = downBarMicros >= idealMicros - maxDistanceDown;
+        boolean middleWithin = (middleBarMicros >= idealMicros - maxDistanceDown) && (middleBarMicros <= idealMicros + maxDistanceUp);
+
+        if (upWithin && downWithin) {
+            //System.err.println("closestBarMicrosABC: &&");
+            return downClosest ? downBarMicros : upBarMicros;
+        } else if (upWithin) {
+            //System.err.println("closestBarMicrosABC: upWithin");
+            return upBarMicros;
+        } else if (downWithin) {
+            //System.err.println("closestBarMicrosABC: downWithin");
+            return downBarMicros;
+        } else if (middleWithin) {
+            //System.err.println("closestBarMicrosABC: middleWithin");
+            return middleBarMicros;
         }
-        if (closestBarMicros - micros > maxDistanceUp) {
-            return micros;
-        }
-        return closestBarMicros;
+        //System.err.println("closestBarMicrosABC: ideal");
+        return idealMicros;
     }
 	
 	/**
@@ -4157,16 +4196,7 @@ public class AbcExporter {
 	public List<AbcNoteEvent> snapNotesToGrid(List<AbcNoteEvent> notes, NavigableSet<Long> grid, long minimumMicros, AbcPart part) {
 				
 		List<AbcNoteEvent> snappedNotes = new ArrayList<>(notes.size());
-		
-		if (logNotes.getLevel() == Level.FINEST) {
-			StringBuilder str = new StringBuilder();
-			for (Long microGridLine : grid) {
-				if (microGridLine > 70000000L && microGridLine < 74000000) {
-					str.append(Util.formatDurationM(microGridLine)).append(", ");
-				}
-			}
-			logNotes.finest(str.toString());
-		}
+
         part.numberOfRemovedNotesFromFitting = 0;
 		int gridDeletion = 0;
 	    for (AbcNoteEvent note : notes) {
@@ -4178,10 +4208,10 @@ public class AbcExporter {
 	        if (floor == null && ceiling == null) {
 	        	continue; // fallback: no grid available
 	        } else if (floor == null) {
-	        	logNotes.finer("Start at ceiling (floor null) "+Util.formatDurationM(ceiling)+" for "+Util.formatDurationM(note.startABCMicros));
+	        	if (logNotes.isLoggable(Level.FINER)) logNotes.finer("Start at ceiling (floor null) "+Util.formatDurationM(ceiling)+" for "+Util.formatDurationM(note.startABCMicros));
 	            candidateStart = ceiling;
 	        } else if (ceiling == null) {
-	        	logNotes.finer("Start at floor (ceil null) "+Util.formatDurationM(floor)+" for "+Util.formatDurationM(note.startABCMicros));
+                if (logNotes.isLoggable(Level.FINER)) logNotes.finer("Start at floor (ceil null) "+Util.formatDurationM(floor)+" for "+Util.formatDurationM(note.startABCMicros));
 	            candidateStart = floor;
 	        } else {
 	            if (Math.abs(note.startABCMicros - floor) <= Math.abs(note.startABCMicros - ceiling)) {
@@ -4194,7 +4224,7 @@ public class AbcExporter {
 	        }
 	        // Check that the shift does not exceed max relative to the original start.
 	        if (Math.abs(candidateStart - note.startABCMicros) > getMaxStartShiftMicros(note.endABCMicros-note.startABCMicros, minimumMicros)) {
-	        	logNotes.finer("dropping1 "+Util.formatDurationM(note.startABCMicros)+" - "+Util.formatDurationM(note.endABCMicros));
+                if (logNotes.isLoggable(Level.FINER)) logNotes.finer("dropping1 "+Util.formatDurationM(note.startABCMicros)+" - "+Util.formatDurationM(note.endABCMicros));
                 gridDeletion++;
 	            continue;
 	        }
@@ -4207,7 +4237,7 @@ public class AbcExporter {
 	        ceiling = grid.ceiling(note.endABCMicros);
 	        Long candidateEnd;
 	        if (ceiling != null && candidateStart == ceiling) {
-	        	logNotes.finer("dropping2 "+Util.formatDurationM(note.startABCMicros)+" - "+Util.formatDurationM(note.endABCMicros));
+                if (logNotes.isLoggable(Level.FINER)) logNotes.finer("dropping2 "+Util.formatDurationM(note.startABCMicros)+" - "+Util.formatDurationM(note.endABCMicros));
                 gridDeletion++;
 	        	continue;
 	        } else if (floor == null || floor == candidateStart) {
@@ -4228,7 +4258,7 @@ public class AbcExporter {
 	        
 	        if (candidateEnd == null) {
 	        	// ceiling == null and ( floor == null or taken by start )
-	        	logNotes.finer("dropping3 "+Util.formatDurationM(note.startABCMicros)+" - "+Util.formatDurationM(note.endABCMicros));
+                if (logNotes.isLoggable(Level.FINER)) logNotes.finer("dropping3 "+Util.formatDurationM(note.startABCMicros)+" - "+Util.formatDurationM(note.endABCMicros));
                 gridDeletion++;
 	        	continue;
 	        }
@@ -4236,7 +4266,7 @@ public class AbcExporter {
 	        //	Check that the shift does not exceed max relative to the original end.
 	        if (Math.abs(candidateEnd - note.endABCMicros) > minimumMicros * 3L/2L) {//90 ms
 	        	//System.out.println(parts.get(0).getAbcSong().getTitle()+": End grid was too far from note end:"+(Math.abs(candidateEnd - note.origEndABCMicros)/(double)minimumMicros));
-	        	logNotes.finer("dropping4 "+Util.formatDurationM(note.startABCMicros)+" - "+Util.formatDurationM(note.endABCMicros));
+                if (logNotes.isLoggable(Level.FINER)) logNotes.finer("dropping4 "+Util.formatDurationM(note.startABCMicros)+" - "+Util.formatDurationM(note.endABCMicros));
                 gridDeletion++;
 	            continue;
 	        }
@@ -4245,7 +4275,7 @@ public class AbcExporter {
 	        note.endABCMicros = candidateEnd;
 	        
 	        if (note.endABCMicros - note.startABCMicros <= 0L || note.getEndTick() - note.getStartTick() <= 0L) {
-	        	logNotes.finer("dropping5 "+Util.formatDurationM(note.startABCMicros)+" - "+Util.formatDurationM(note.endABCMicros));
+                if (logNotes.isLoggable(Level.FINER)) logNotes.finer("dropping5 "+Util.formatDurationM(note.startABCMicros)+" - "+Util.formatDurationM(note.endABCMicros));
                 gridDeletion++;
 	        	continue;
 	        }
@@ -4292,6 +4322,7 @@ public class AbcExporter {
 					assert ne.getEndTick() >= last.getEndTick() || ne.getStartTick() > last.getStartTick();
 					assert ne.startABCMicros >= last.startABCMicros;
 					assert ne.endABCMicros >= last.endABCMicros || ne.startABCMicros > last.startABCMicros;
+                    assert ne.endABCMicros - ne.startABCMicros <= TimingInfo.LONGEST_NOTE_MICROS+500;
 				}
 				last = ne;
 			}
