@@ -1851,6 +1851,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         this.suppressPartSort = other.suppressPartSort;
         this.newSourceFile = other.newSourceFile;
         this.allPans = other.allPans;//pointer copy
+        this.upgraded = other.upgraded;
 
         // read-only/shared services.
         this.sequenceInfo = other.sequenceInfo;// lets assume the midi don't change while we work, then this is immutable
