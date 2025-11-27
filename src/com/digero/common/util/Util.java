@@ -155,7 +155,7 @@ public final class Util {
     }
     
     private static String expandEnvironmentVariables(String text) {
-        Pattern pattern = Pattern.compile("%(\\w+)%");
+        Pattern pattern = Pattern.compile("%([^%]+)%");
         Matcher matcher = pattern.matcher(text);
         StringBuilder sb = new StringBuilder();
         while (matcher.find()) {
