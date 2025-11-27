@@ -42,6 +42,8 @@ Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
 Version 4.5.19
+- Fixed a bug in splitting of long notes in organic multi-stage.
+- Various minor optimizations.
 
 Version 4.5.18
 - Fixed a bug where playlists with files which had been moved/renamed wouldn't load.

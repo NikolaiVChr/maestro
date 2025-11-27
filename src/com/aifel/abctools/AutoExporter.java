@@ -289,38 +289,13 @@ public class AutoExporter implements WarningHandler {
         //highCandidates = new ArrayList<>();
 		setProgress(0);
 		cancel = false;
-		if (!frame.getRecursiveCheckBoxSelected()) {
-			File[] projects = sourceFolderAuto.listFiles(new MsxFileFilter());
-            if (projects != null) {
-                List<Path> filesToProcess = Arrays.stream(projects)
-                        .map(File::toPath).toList();
-
-                appendToField("<p>Found " + projects.length + " project files.</p><p></p>");
-
-                progressFactor = 1000.0d / projects.length;
-                exportCount.set(0);
-
-                filesToProcess.parallelStream().forEach(file -> {
-                    if (cancel) {
-                        return;
-                    }
-
-                    try {
-                        // thread-safe
-                        exportProject(file.toFile());
-                    } catch (Exception e) {
-                        log.log(Level.WARNING, file.getFileName().toString(), e);
-
-                        skippedProjects.add(file.toFile());
-
-                        appendToField("<p></p><p><font color='red'>" + e.toString() + "</font></p>");
-                    }
-
-                    setProgress((int) (exportCount.incrementAndGet() * progressFactor));
-                });
-            }
+        List<Path> filesToProcess;
+        if (!frame.getRecursiveCheckBoxSelected()) {
+            File[] projects = sourceFolderAuto.listFiles(new MsxFileFilter());
+            filesToProcess = (projects != null)
+                    ? Arrays.stream(projects).map(File::toPath).toList()
+                    : List.of();
         } else {
-            List<Path> filesToProcess;
             try (var paths = Files.walk(sourceFolderAuto.toPath())) {
                 filesToProcess = paths
                         .filter(path -> !path.getFileName().toString().startsWith("."))
@@ -328,11 +303,12 @@ public class AutoExporter implements WarningHandler {
                         .filter(path -> new MsxFileFilter().accept(path.toFile()))
                         .toList();
             }
+        }
+		if (!filesToProcess.isEmpty()) {
+            int total = filesToProcess.size();
+            appendToField("<p>Found " + total + " project files.</p><p></p>");
 
-            totalExportCount = filesToProcess.size();
-            appendToField("<p>Found " + totalExportCount + " project files.<p>");
-
-            progressFactor = 1000.0d / totalExportCount;
+            progressFactor = 1000.0d / total;
             exportCount.set(0);
 
             filesToProcess.parallelStream().forEach(file -> {
@@ -341,17 +317,19 @@ public class AutoExporter implements WarningHandler {
                 }
 
                 try {
-                    // exportProject is thread-safe
+                    // thread-safe
                     exportProject(file.toFile());
-                } catch (Exception e) {
+                } catch (Throwable e) {
                     log.log(Level.WARNING, file.getFileName().toString(), e);
+
                     skippedProjects.add(file.toFile());
+
                     appendToField("<p><font color='red'>" + e.toString() + "</font></p>");
                 }
 
                 setProgress((int) (exportCount.incrementAndGet() * progressFactor));
             });
-		}
+        }
         if (!skippedProjects.isEmpty()) {
             appendToField("<p></p><p>Skipped/failed " + skippedProjects.size() + " project files:</p>");
             for (File f : skippedProjects) {
