@@ -4598,9 +4598,13 @@ public class AbcExporter {
 
 					long first = note.getTieEnd().getEndTick();
 					long second = note2.getTieEnd().getEndTick();
-					if (first >= second) {
+
+                    boolean isRest = note.note == Note.REST;
+
+                    if ((first >= second && !isRest) || (isRest && first < second)) {
+                        // remove second
 						logNotes.finer("Remove dupli-secnd "+Util.formatDurationM(note2.startABCMicros)+" - "+Util.formatDurationM(note2.endABCMicros));
-						if (curChord.isShortest(note2)) {
+						if (curChord.isShortest(note2) && !isRest) {
 							AbcNoteEvent replacement = new AbcNoteEvent(Note.REST,64,note2.getStartTick(),note2.getEndTick(),qtm,null);
 							replacement.startABCMicros = note2.startABCMicros;
 							replacement.endABCMicros = note2.endABCMicros;
@@ -4609,11 +4613,12 @@ public class AbcExporter {
 							eventSegments.add(index, replacement);
 						}
 						curChord.remove(note2);
-						breakTies(secondList);		
+						breakTies(secondList);
 						eventSegments.remove(note2);
 					} else {
+                        // remove first
 						logNotes.finer("Remove dupli-first "+Util.formatDurationM(note.startABCMicros)+" - "+Util.formatDurationM(note.endABCMicros));
-						if (curChord.isShortest(note)) {
+						if (curChord.isShortest(note) && !isRest) {
 							AbcNoteEvent replacement = new AbcNoteEvent(Note.REST,64,note.getStartTick(),note.getEndTick(),qtm,null);
 							replacement.startABCMicros = note.startABCMicros;
 							replacement.endABCMicros = note.endABCMicros;
@@ -4633,122 +4638,139 @@ public class AbcExporter {
 		return removedStuff;
 	}
 
-	/**
-	 * 
-	 * Part of multi-stage organic path
-	 * 
-	 */
-	private List<AbcNoteEvent> splitToGrid(AbcNoteEvent ne, TreeMap<Long,Long> gridTicks, AbcPart part, boolean useRestToShortenChords) {
-				
-		List<AbcNoteEvent> segments = new ArrayList<>();
-		segments.add(ne);
-		
-		Entry<Long, Long> ceil = gridTicks.ceilingEntry(ne.startABCMicros+1L);
-		Long restartMicros = ne.startABCMicros;
-		Long restartTick = ne.getStartTick();
-		Long ceilMicros = ceil == null?null:ceil.getKey();
-		Long ceilTick   = ceil == null?null:ceil.getValue();
-		
-		long endMicros = ne.endABCMicros;
-		boolean drone = isDrone(part,ne);
-		boolean rest = ne.note == Note.REST;
-		long lastSplitTick = ne.getStartTick();
-		long lastSplitMicros = ne.startABCMicros;
-		while (ceil != null && ceilMicros < endMicros && ceilTick < ne.getEndTick()) {
-			// As long as there is another ceiling within the note duration
-			if (ne.getStartTick() < ceilTick) {//rounding error guard
-				AbcNoteEvent ne2;
-				long microsFullDura = ne.endABCMicros-ne.startABCMicros;
-				boolean sustained = part.getInstrument().sustainable;
-				//Entry<Long, Long> ceilNext = gridTicks.ceilingEntry(ceilMicros+1L);
-				//Long ceilNextMicros = ceilNext == null?null:ceilNext.getKey();
-				if (useRestToShortenChords && sustained
-						&& !rest && microsFullDura < TimingInfo.LONGEST_NOTE_MICROS
-						) {//&& ceilNextMicros != null && ceilNextMicros+60000 < ne.origEndABCMicros
-					
-					// insert rest to shorten chord and keep long note
-					//
-					// Note that this will potentially insert many rests into chords.
-					// But prune will get rid of all but the shortest.
-					
-					AbcNoteEvent restShorter = new AbcNoteEvent(Note.REST, 4, ne.getStartTick(), ceilTick, qtm, null);
-					restShorter.startABCMicros = ne.startABCMicros;
-					restShorter.endABCMicros = ceilMicros;
-					assert restShorter.endABCMicros - restShorter.startABCMicros < TimingInfo.LONGEST_NOTE_MICROS + 120002 : ((ne.endABCMicros - ne.startABCMicros)/1000) +" ms";
-					segments.add(restShorter);
-					logNotes.fine("Add rest into chord starting at "+Util.formatDurationM(restShorter.startABCMicros));
-					break;
-				} else if (!rest && (drone || (restartMicros + TimingInfo.LONGEST_NOTE_MICROS -1 > ceilMicros))) {
-					
-					// split and tie
-					//
-					// rests dont come in here, they need restart.
-					// all drones go here.
-					
-					
-					// TODO: comment out when system more solid
-					assert ne.startABCMicros < ceilMicros;
-					assert ne.getStartTick() < ceilTick:ne.getStartTick()+" < "+ceilTick;
-					assert ne.endABCMicros > ceilMicros:ne.endABCMicros+" > "+ceilMicros;
-					assert ne.getEndTick() > ceilTick:ne.getEndTick()+" > "+ceilTick;
-					
-					ne2 = ne.splitWithTieAtTick(ceilTick, ceilMicros);
-					
-					segments.add(ne2);
-				} else {
-					
-					// restart
-					// 
-					// all rests come in here, drones do not
-					// 
-					
-					ne2 = new AbcNoteEvent(ne.note, ne.velocity, ceilTick, ne.getEndTick(), qtm, ne.origNote);
-					ne2.startABCMicros = ceilMicros;
-					ne2.endABCMicros = ne.endABCMicros;
-					ne.endABCMicros = ceilMicros;
-					ne.setEndTick(ceilTick);
-					assert ne.endABCMicros - ne.startABCMicros < TimingInfo.LONGEST_NOTE_MICROS + 120002 : ((ne.endABCMicros - ne.startABCMicros)) +" us";
-					segments.add(ne2);
-					restartMicros = ceilMicros;
-					restartTick = ceilTick;
-				}
-				// TODO: comment out when system more solid
-				
-				assert ne.startABCMicros < ne.endABCMicros;
-				assert ne.startABCMicros + TimingInfo.LONGEST_NOTE_MICROS + 120002 >= ne.endABCMicros;
-				assert ne2.startABCMicros < ne2.endABCMicros;
-				assert ne.getStartTick() < ne.getEndTick();
-				assert ne2.getStartTick() < ne2.getEndTick();
-				
-				
-				ne = ne2;
-				lastSplitTick = ceilTick;
-				lastSplitMicros = ceilMicros;
-			} else {
-				logNotes.warning((gridTicks.floorKey(ceilMicros-1)/1000)+" < "+(ceilMicros/1000));
-				//assert false;
-			}
-			ceil = gridTicks.ceilingEntry(ceilMicros+1L);
-			ceilMicros = ceil == null?null:ceil.getKey();
-			ceilTick   = ceil == null?null:ceil.getValue();
-		}
-		
-		boolean assertionsEnabled = false;
-		assert assertionsEnabled = true;
-		if (assertionsEnabled) {
-			Collections.sort(segments);
-			AbcNoteEvent prev = null;
-			for (AbcNoteEvent segment : segments) {
-				long microsDura = segment.endABCMicros-segment.startABCMicros;
-				assert microsDura <= TimingInfo.LONGEST_NOTE_MICROS + 120002: segment.note+" vel="+segment.velocity+"  "+((ne.endABCMicros - ne.startABCMicros)/1000) +" ms";
-				if (prev != null) {
-					
-				}
-				prev = segment;
-			}
-		}
-		return segments;
-	}
+    /**
+     *
+     * Part of multi-stage organic path
+     *
+     */
+    private List<AbcNoteEvent> splitToGrid(AbcNoteEvent ne, TreeMap<Long,Long> gridTicks, AbcPart part, boolean useRestToShortenChords) {
+
+        boolean sustained = part.getInstrument().sustainable;
+
+        List<AbcNoteEvent> segments = new ArrayList<>();
+        segments.add(ne);
+
+        Entry<Long, Long> ceil = gridTicks.ceilingEntry(ne.startABCMicros+1L);
+        Long restartMicros = ne.startABCMicros;
+        Long restartTick = ne.getStartTick();
+        Long ceilMicros = ceil == null?null:ceil.getKey();
+        Long ceilTick   = ceil == null?null:ceil.getValue();
+
+        Entry<Long, Long> ceilFuture = ceil==null?null:gridTicks.ceilingEntry(ceilMicros+1L);
+        Long ceilFutureMicros = ceilFuture == null?null:ceilFuture.getKey();
+        Long ceilFutureTick   = ceilFuture == null?null:ceilFuture.getValue();
+
+        long endMicros = ne.endABCMicros;
+        boolean drone = isDrone(part,ne);
+        boolean rest = ne.note == Note.REST;
+        while (ceil != null && ceilMicros < endMicros && ceilTick < ne.getEndTick()) {
+            // As long as there is another ceiling within the note duration
+            if (ne.getStartTick() < ceilTick) {//rounding error guard
+                AbcNoteEvent ne2;
+                long microsFullDura = ne.endABCMicros-ne.startABCMicros;
+
+                boolean canReachFuture = ceilFuture != null && ceilFutureMicros <= endMicros
+                        && ceilFutureMicros - restartMicros < TimingInfo.LONGEST_NOTE_MICROS + 12002L;
+
+                if (useRestToShortenChords && sustained	&& !rest
+                        && canReachFuture
+                        ) {
+
+                    // insert rest to shorten chord and keep long note
+                    //
+                    // Note that this will potentially insert many rests into chords.
+                    // But prune will get rid of all but the shortest.
+
+                    AbcNoteEvent restShorter = new AbcNoteEvent(Note.REST, 4, ne.getStartTick(), ceilTick, qtm, null);
+                    restShorter.startABCMicros = ne.startABCMicros;
+                    restShorter.endABCMicros = ceilMicros;
+                    assert restShorter.endABCMicros - restShorter.startABCMicros < TimingInfo.LONGEST_NOTE_MICROS + 120002 : ((ne.endABCMicros - ne.startABCMicros)/1000) +" ms";
+                    segments.add(restShorter);
+                    logNotes.fine("Add rest into chord starting at "+Util.formatDurationM(restShorter.startABCMicros));
+                    if (microsFullDura < TimingInfo.LONGEST_NOTE_MICROS + 12002L) {
+                        break;
+                    } else {
+                        ne2 = ne;
+                    }
+                } else if (!rest && (drone || canReachFuture)) {
+
+                    // split and tie
+                    //
+                    // rests dont come in here, they need restart.
+                    // all drones go here.
+
+
+                    // TODO: comment out when system more solid
+                    assert ne.startABCMicros < ceilMicros;
+                    assert ne.getStartTick() < ceilTick:ne.getStartTick()+" < "+ceilTick;
+                    assert ne.endABCMicros > ceilMicros:ne.endABCMicros+" > "+ceilMicros;
+                    assert ne.getEndTick() > ceilTick:ne.getEndTick()+" > "+ceilTick;
+
+                    //System.err.println("TIE ceilMicros = "+Util.formatDurationM(ceilMicros));
+
+                    ne2 = ne.splitWithTieAtTick(ceilTick, ceilMicros);
+
+                    segments.add(ne2);
+                } else {
+
+                    // restart
+                    //
+                    // all rests come in here, drones do not
+                    //
+
+                    ne2 = new AbcNoteEvent(ne.note, ne.velocity, ceilTick, ne.getEndTick(), qtm, ne.origNote);
+                    ne2.startABCMicros = ceilMicros;
+                    ne2.endABCMicros = ne.endABCMicros;
+                    ne.endABCMicros = ceilMicros;
+                    ne.setEndTick(ceilTick);
+
+                    //System.err.println("RST ceilMicros = "+Util.formatDurationM(ceilMicros));
+
+                    assert ne.endABCMicros - ne.startABCMicros < TimingInfo.LONGEST_NOTE_MICROS + 120002 : ((ne.endABCMicros - ne.startABCMicros)) +" us";
+                    segments.add(ne2);
+                    restartMicros = ceilMicros;
+                    restartTick = ceilTick;
+                }
+                // TODO: comment out when system more solid
+
+                assert ne.startABCMicros < ne.endABCMicros;
+                assert ne2.startABCMicros < ne2.endABCMicros;
+
+                //assert ne.startABCMicros + TimingInfo.LONGEST_NOTE_MICROS + 120002 >= ne.endABCMicros;
+
+                assert ne.getStartTick() < ne.getEndTick();
+                assert ne2.getStartTick() < ne2.getEndTick();
+
+
+                ne = ne2;
+            } else {
+                logNotes.warning((gridTicks.floorKey(ceilMicros-1)/1000)+" < "+(ceilMicros/1000));
+                //assert false;
+            }
+            ceil = gridTicks.ceilingEntry(ceilMicros+1L);
+            ceilMicros = ceil == null?null:ceil.getKey();
+            ceilTick   = ceil == null?null:ceil.getValue();
+            ceilFuture = ceil==null?null:gridTicks.ceilingEntry(ceilMicros+1L);
+            ceilFutureMicros = ceilFuture == null?null:ceilFuture.getKey();
+            ceilFutureTick   = ceilFuture == null?null:ceilFuture.getValue();
+        }
+
+        boolean assertionsEnabled = false;
+        assert assertionsEnabled = true;
+        if (assertionsEnabled) {
+            Collections.sort(segments);
+            AbcNoteEvent prev = null;
+            for (AbcNoteEvent segment : segments) {
+                long microsDura = segment.endABCMicros-segment.startABCMicros;
+                assert microsDura <= TimingInfo.LONGEST_NOTE_MICROS + 120002: segment.note+" vel="+segment.velocity+"  "+((ne.endABCMicros - ne.startABCMicros)/1000) +" ms";
+                if (prev != null) {
+
+                }
+                prev = segment;
+            }
+        }
+        return segments;
+    }
 	
 	private boolean deprecated1(AbcPart part, List<AbcNoteEvent> events, long minimumMicros,
 			boolean removeGliss, ChordOrganic curChord, AbcNoteEvent ne, long microsTillNext, long microsTillNext2,
