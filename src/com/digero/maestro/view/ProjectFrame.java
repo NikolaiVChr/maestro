@@ -2694,6 +2694,14 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 p.numberOfRemovedNotesFromFitting = 0;
                 p.setPanEvent(null);
                 p.setMaxPoly(0);
+
+                // Resetting to -1 is important, else when part A
+                // disables all its tracks, it still keeps its preview-track
+                // number from previous preview. Another part B might have
+                // gotten the same preview track number in the meantime,
+                // so when part A toggles mute or solo, it will affect
+                // the wrong part.
+                p.setPreviewSequenceTrackNumber(-1);
             }
             if (previewSequenceInfo.getLastTrackInfos() != null) {
                 //System.out.println("\nApply preview:");
