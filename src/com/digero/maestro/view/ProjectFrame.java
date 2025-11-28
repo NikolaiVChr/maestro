@@ -2310,12 +2310,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             arrangementView.sidepanelTab("Notes");
 
             String lyrics = abcSong.getLyrics();
-            if (!lyrics.isEmpty()) {
-                arrangementView.sidepanelVisible(true);
-                arrangementView.sidepanelTab("Lyrics");
-            }
             if (lyrics.isBlank()) {
                 lyrics = "Contains no lyrics";
+            } else {
+                arrangementView.sidepanelVisible(true);
+                arrangementView.sidepanelTab("Lyrics");
             }
             arrangementView.setLyrics(lyrics);
 
