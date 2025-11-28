@@ -12,7 +12,28 @@ public class LotroInstrumentSampleDuration {
 	private static final Logger log = Logger.getLogger("file");
 	private static LotroInstrumentSampleDuration instance = null;
 	private static Map<String, Map<Integer, Long>> db = null;
-	
+
+    public static long getSafeDuration(LotroInstrument instrument) {
+        return switch (instrument) {
+            // These have a safety buffer of around 0.5 seconds
+            // to force them to be split before they fade out too much:
+            case LONELY_MOUNTAIN_FIDDLE -> 7_600_000L;
+            case BASIC_FIDDLE -> 6_500_000L;
+            case STUDENT_FIDDLE -> 6_500_000L;
+            case BASIC_BAGPIPE -> 6_000_000L;
+            case BASIC_HORN -> 5_750_000L;
+            case BARDIC_FIDDLE -> 5_500_000L;
+            case BASIC_PIBGORN -> 5_500_000L;
+            case BASIC_BASSOON -> 5_000_000L;
+            case BASIC_CLARINET -> 5_000_000L;
+
+            // These two are right on the edge of their minimum sample lengths:
+            case LONELY_MOUNTAIN_BASSOON -> 5_000_000L;
+            case BASIC_FLUTE -> 5_000_000L;
+            default -> 7_500_000L;// for rests
+        };
+    }
+
 	/**
 	 * Get duration of particular lotro instrument sample.
 	 * 

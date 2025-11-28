@@ -3493,7 +3493,7 @@ public class AbcExporter {
 		
 		events = snapNotesToGrid(events, grid, minimumMicros, part);
 		
-		List<Chord> chords = chordifyOrganic(events, grid, part, useRestToShortenChords);
+		List<Chord> chords = chordifyOrganic(events, grid, part, useRestToShortenChords, minimumMicros);
 		
 		return chords;
 	}
@@ -3512,6 +3512,12 @@ public class AbcExporter {
 		final int endWeight = 1;
 		final boolean endsShouldHaveNoSwayOverStartOfCluster = false;//Fernando sounds better with this false :(
 		final boolean endsShouldHaveNoSwayOverStartWeights = true;
+
+        // when cutting up too long notes, this is the minimum buffer they are allowed to exceed max with.
+        long maxSustainBuffer = minimumMicros * 2;
+        long maxSustain = LotroInstrumentSampleDuration.getSafeDuration(part.getInstrument());
+        long minPreferredSustain = 4L * TimingInfo.ONE_SECOND_MICROS;
+        long minSustain = 2L * TimingInfo.ONE_SECOND_MICROS;
 		
 		// types
 		final int INITIAL = 0;
@@ -3742,9 +3748,7 @@ public class AbcExporter {
 	    if (grid.isEmpty()) return new TreeSet<>();
 	    
 	    
-    
-	    long minTail = minimumMicros * 2;
-	    Iterator<GridLine> gridIter = grid.iterator();
+        Iterator<GridLine> gridIter = grid.iterator();
 	    GridLine prev = gridIter.next();
 	    
 	    NavigableSet<GridLine> refinedGrid = new TreeSet<>(gridLineComparator);
@@ -3754,25 +3758,25 @@ public class AbcExporter {
 	        
 	        // The grid segments might be larger than 5.0 seconds
 		    // Cut it up
-	        while (curr.micros - prev.micros > TimingInfo.LONGEST_NOTE_MICROS) {
+	        while (curr.micros - prev.micros > maxSustain) {
                 long candidateTime;
-                if (curr.micros - prev.micros < TimingInfo.LONGEST_NOTE_MICROS * 2 - 500) {
+                if (curr.micros - prev.micros < maxSustain * 2 - 500) {
                     // this prevents restarting into short bursts
                     candidateTime = prev.micros + (curr.micros - prev.micros) / 2;
 
                     // min and max points to prevent any segment to be longer than 5 secs
-                    long minMicros = curr.micros - TimingInfo.LONGEST_NOTE_MICROS;
-                    long maxMicros = prev.micros + TimingInfo.LONGEST_NOTE_MICROS;
+                    long minMicros = curr.micros - maxSustain;
+                    long maxMicros = prev.micros + maxSustain;
 
                     candidateTime = closestBarMicrosABC(part, candidateTime,
                             Math.min(candidateTime - minMicros, TimingInfo.ONE_SECOND_MICROS),
                             Math.min(maxMicros - candidateTime, TimingInfo.ONE_SECOND_MICROS));
                 } else {
-                    candidateTime = closestBarMicrosABC(part, prev.micros + TimingInfo.LONGEST_NOTE_MICROS,
-                            (TimingInfo.ONE_SECOND_MICROS/2L), 0L);
+                    candidateTime = closestBarMicrosABC(part, prev.micros + maxSustain,
+                            maxSustain-minPreferredSustain, 0L);
                 }
 	            GridLine candidate = new GridLine(candidateTime, GENERAL, 0);
-	            if (curr.micros - candidate.micros < minTail) {
+	            if (curr.micros - candidate.micros < maxSustainBuffer) {
 	                break;
 	            } else {
 	                refinedGrid.add(candidate);
@@ -3819,7 +3823,7 @@ public class AbcExporter {
 	        if (assertionsEnabled && lastLine != null) {
 	        	// TODO: comment out when system more solid
 	        	assert line.micros >= lastLine+minimumMicros:part.getTitle()+": "+lastType+" "+(line.micros - lastLine)+" micros  "+line.type;
-	        	assert line.micros <= lastLine+TimingInfo.LONGEST_NOTE_MICROS+minTail:part.getTitle()+": "+lastType+" "+((line.micros - lastLine)/1000)+"ms "+line.type;
+	        	assert line.micros <= lastLine+maxSustain+maxSustainBuffer:part.getTitle()+": "+lastType+" "+((line.micros - lastLine)/1000)+"ms "+line.type;
 	        }
 	        lastType = line.type;
 	        lastLine = line.micros;
@@ -3861,8 +3865,12 @@ public class AbcExporter {
         final int TYPE_START = 1;
         final int TYPE_END = 2;
 
-        long minTail = minimumMicros * 2;// when cutting up too long notes, this is the minimum buffer
-
+        // when cutting up too long notes, this is the minimum buffer they are allowed to exceed max with.
+        long maxSustainBuffer = minimumMicros * 2;
+        long maxSustain = LotroInstrumentSampleDuration.getSafeDuration(part.getInstrument());
+        long minPreferredSustain = 4L * TimingInfo.ONE_SECOND_MICROS;
+        long minSustain = 2L * TimingInfo.ONE_SECOND_MICROS;
+        boolean sustained = part.getInstrument().sustainable;
 
         /*
             If two note starts are 30 to 60 ms apart (arpeggio), keep the arpeggio instead of forcing them into
@@ -3892,7 +3900,7 @@ public class AbcExporter {
             }
 
             note.endABCMicros = rawEndMicros;
-            if (!part.getInstrument().sustainable) {
+            if (!sustained) {
                 note.endABCMicros = Math.max(note.endABCMicros, note.startABCMicros + minimumMicros);
             }
             note.endABCMicros = Math.max(note.endABCMicros, note.startABCMicros + minimumMicros);
@@ -3986,30 +3994,30 @@ public class AbcExporter {
             long curr = it.next().micros();
             long diff = curr - prev;
 
-            if (diff > TimingInfo.LONGEST_NOTE_MICROS) {
+            if (diff > maxSustain) {
 
                 // The grid segments might be larger than 5.0 seconds
                 // Cut it up
-                while (diff > TimingInfo.LONGEST_NOTE_MICROS) {
+                while (diff > maxSustain) {
                     long candidateTime;
 
                     // gap just slightly too large (5s to 9.9995s)
-                    if (diff < TimingInfo.LONGEST_NOTE_MICROS * 2L - 500L) {
+                    if (diff < maxSustain * 2L - 500L) {
                         long midpoint = prev + diff / 2L;
 
                         // limits
-                        long engineLowerBound = curr - TimingInfo.LONGEST_NOTE_MICROS;
-                        long engineUpperBound = prev + TimingInfo.LONGEST_NOTE_MICROS;
+                        long lowerBound = curr - maxSustain;
+                        long upperBound = prev + maxSustain;
 
                         // musical Limits (Segments must be >= 2s)
-                        long minSegmentLen = 2L * TimingInfo.ONE_SECOND_MICROS;
+                        long minSegmentLen = minSustain;
 
                         long musicalLowerBound = prev + minSegmentLen;
                         long musicalUpperBound = curr - minSegmentLen;
 
                         // Intersect to find the safe zone
-                        long safeMin = Math.max(engineLowerBound, musicalLowerBound);
-                        long safeMax = Math.min(engineUpperBound, musicalUpperBound);
+                        long safeMin = Math.max(lowerBound, musicalLowerBound);
+                        long safeMax = Math.min(upperBound, musicalUpperBound);
 
                         if (safeMin <= midpoint && safeMax >= midpoint) {
                             // Search for a bar line within the safe zone
@@ -4023,12 +4031,12 @@ public class AbcExporter {
                         }
                     } else {
                         // big gap (> 9.9995s). slice off 5s chunks.
-                        candidateTime = closestBarMicrosABC(part, prev + TimingInfo.LONGEST_NOTE_MICROS,
-                                TimingInfo.ONE_SECOND_MICROS, 0L);
+                        candidateTime = closestBarMicrosABC(part, prev + maxSustain,
+                                maxSustain-minPreferredSustain, 0L);
                     }
 
-                    if (curr - candidateTime < minTail) {
-                        // we allow to go minTail over LONGEST_NOTE_MICROS
+                    if (curr - candidateTime < maxSustainBuffer) {
+                        // we allow to go maxSustainBuffer over LONGEST_NOTE_MICROS
                         break;
                     }
 
@@ -4057,7 +4065,7 @@ public class AbcExporter {
             for (Long line : finalGrid) {
                 if (lastLine != null) {
                     assert line >= lastLine + minimumMicros : part.getTitle() + ": " + (line - lastLine) + " micros";
-                    assert line <= lastLine + TimingInfo.LONGEST_NOTE_MICROS + minTail : part.getTitle() + ": " + ((line - lastLine) / 1000) + "ms " + line;
+                    assert line <= lastLine + maxSustain + maxSustainBuffer : part.getTitle() + ": " + ((line - lastLine) / 1000) + "ms " + line;
                 }
                 lastLine = line;
             }
@@ -4142,7 +4150,8 @@ public class AbcExporter {
      * @return nearest midi bar line in micros
      */
     private long closestBarMicrosABC(AbcPart part, long idealMicros, long maxDistanceDown, long maxDistanceUp) {
-        assert idealMicros > 0L && maxDistanceDown >= 0L && maxDistanceUp >= 0L && idealMicros - maxDistanceDown >= 0L;
+        assert idealMicros > 0L && maxDistanceDown >= 0L && maxDistanceUp >= 0L && idealMicros - maxDistanceDown >= 0L
+                :"idealMicros=" + idealMicros + ", maxDistanceDown=" + maxDistanceDown + ", maxDistanceUp=" + maxDistanceUp+" idealMicros-maxDistanceDown="+(idealMicros - maxDistanceDown);
         long tick = qtm.microsToTickABCOrganic(idealMicros);
         long barTicks = part.getAbcSong().getSequenceInfo().getDataCache().getBarLengthTicks();
         long down = (tick / barTicks) * barTicks;
@@ -4291,8 +4300,12 @@ public class AbcExporter {
 	 * Part of multi-stage organic path
 	 * 
 	 */
-	public List<Chord> chordifyOrganic(List<AbcNoteEvent> events, NavigableSet<Long> grid, AbcPart part, boolean useRestToShortenChords) {
+	public List<Chord> chordifyOrganic(List<AbcNoteEvent> events, NavigableSet<Long> grid, AbcPart part, boolean useRestToShortenChords, long minimumMicros) {
         part.numberOfRemovedNotesFromPruning = 0;
+
+        // when cutting up too long notes, this is the minimum buffer they are allowed to exceed max with.
+        long maxSustainBuffer = minimumMicros * 2;
+        long maxSustain = LotroInstrumentSampleDuration.getSafeDuration(part.getInstrument());
 
 		boolean assertionsEnabled = false;
 		assert assertionsEnabled = true;
@@ -4308,7 +4321,7 @@ public class AbcExporter {
 		
 		List<AbcNoteEvent> eventSegments = new ArrayList<>(events.size());
 		for (AbcNoteEvent ne : events) {
-	    	List<AbcNoteEvent> segments = splitToGrid(ne, gridTicks, part, useRestToShortenChords);
+	    	List<AbcNoteEvent> segments = splitToGrid(ne, gridTicks, part, useRestToShortenChords, minimumMicros);
 	    	eventSegments.addAll(segments);
 		}
 		
@@ -4322,7 +4335,7 @@ public class AbcExporter {
 					assert ne.getEndTick() >= last.getEndTick() || ne.getStartTick() > last.getStartTick();
 					assert ne.startABCMicros >= last.startABCMicros;
 					assert ne.endABCMicros >= last.endABCMicros || ne.startABCMicros > last.startABCMicros;
-                    assert ne.endABCMicros - ne.startABCMicros <= TimingInfo.LONGEST_NOTE_MICROS+12002;
+                    assert ne.endABCMicros - ne.startABCMicros <= maxSustain + maxSustainBuffer;
 				}
 				last = ne;
 			}
@@ -4354,7 +4367,7 @@ public class AbcExporter {
                         AbcNoteEvent rest = new AbcNoteEvent(Note.REST, 64, lastEndNote.getEndTick(), noteSegment.getStartTick(), qtm, null);
                         rest.startABCMicros = lastEndNote.endABCMicros;
                         rest.endABCMicros = noteSegment.startABCMicros;
-                        List<AbcNoteEvent> segments = splitToGrid(rest, gridTicks, part, useRestToShortenChords);
+                        List<AbcNoteEvent> segments = splitToGrid(rest, gridTicks, part, useRestToShortenChords, minimumMicros);
                         rests.addAll(segments);
                     } else if (prevChordsShortest != lastEndNote && lastEndNote != null && noteSegment.startABCMicros == lastEndNote.endABCMicros) {
                         // prev chord had a shortest actual note and that note ends when this starts,
@@ -4368,7 +4381,7 @@ public class AbcExporter {
                         AbcNoteEvent rest = new AbcNoteEvent(Note.REST, 64, lastEndTick, noteSegment.getStartTick(), qtm, null);
                         rest.startABCMicros = lastEndMicros;
                         rest.endABCMicros = noteSegment.startABCMicros;
-                        List<AbcNoteEvent> segments = splitToGrid(rest, gridTicks, part, useRestToShortenChords);
+                        List<AbcNoteEvent> segments = splitToGrid(rest, gridTicks, part, useRestToShortenChords, minimumMicros);
                         rests.addAll(segments);
 
                     } else {
@@ -4643,8 +4656,11 @@ public class AbcExporter {
      * Part of multi-stage organic path
      *
      */
-    private List<AbcNoteEvent> splitToGrid(AbcNoteEvent ne, TreeMap<Long,Long> gridTicks, AbcPart part, boolean useRestToShortenChords) {
+    private List<AbcNoteEvent> splitToGrid(AbcNoteEvent ne, TreeMap<Long,Long> gridTicks, AbcPart part, boolean useRestToShortenChords, long minimumMicros) {
 
+        // when cutting up too long notes, this is the minimum buffer they are allowed to exceed max with.
+        long maxSustainBuffer = minimumMicros * 2;
+        long maxSustain = LotroInstrumentSampleDuration.getSafeDuration(part.getInstrument());
         boolean sustained = part.getInstrument().sustainable;
 
         List<AbcNoteEvent> segments = new ArrayList<>();
@@ -4670,7 +4686,7 @@ public class AbcExporter {
                 long microsFullDura = ne.endABCMicros-ne.startABCMicros;
 
                 boolean canReachFuture = ceilFuture != null && ceilFutureMicros <= endMicros
-                        && ceilFutureMicros - restartMicros < TimingInfo.LONGEST_NOTE_MICROS + 12002L;
+                        && ceilFutureMicros - restartMicros <= maxSustain + maxSustainBuffer;
 
                 if (useRestToShortenChords && sustained	&& !rest
                         && canReachFuture
@@ -4684,10 +4700,10 @@ public class AbcExporter {
                     AbcNoteEvent restShorter = new AbcNoteEvent(Note.REST, 4, ne.getStartTick(), ceilTick, qtm, null);
                     restShorter.startABCMicros = ne.startABCMicros;
                     restShorter.endABCMicros = ceilMicros;
-                    assert restShorter.endABCMicros - restShorter.startABCMicros < TimingInfo.LONGEST_NOTE_MICROS + 120002 : ((ne.endABCMicros - ne.startABCMicros)/1000) +" ms";
+                    assert restShorter.endABCMicros - restShorter.startABCMicros <= maxSustain+maxSustainBuffer : ((ne.endABCMicros - ne.startABCMicros)/1000) +" ms";
                     segments.add(restShorter);
                     logNotes.fine("Add rest into chord starting at "+Util.formatDurationM(restShorter.startABCMicros));
-                    if (microsFullDura < TimingInfo.LONGEST_NOTE_MICROS + 12002L) {
+                    if (microsFullDura < maxSustain + maxSustainBuffer) {
                         break;
                     } else {
                         ne2 = ne;
@@ -4726,7 +4742,7 @@ public class AbcExporter {
 
                     //System.err.println("RST ceilMicros = "+Util.formatDurationM(ceilMicros));
 
-                    assert ne.endABCMicros - ne.startABCMicros < TimingInfo.LONGEST_NOTE_MICROS + 120002 : ((ne.endABCMicros - ne.startABCMicros)) +" us";
+                    assert ne.endABCMicros - ne.startABCMicros < maxSustain+maxSustainBuffer : ((ne.endABCMicros - ne.startABCMicros)) +" us";
                     segments.add(ne2);
                     restartMicros = ceilMicros;
                     restartTick = ceilTick;
@@ -4735,8 +4751,6 @@ public class AbcExporter {
 
                 assert ne.startABCMicros < ne.endABCMicros;
                 assert ne2.startABCMicros < ne2.endABCMicros;
-
-                //assert ne.startABCMicros + TimingInfo.LONGEST_NOTE_MICROS + 120002 >= ne.endABCMicros;
 
                 assert ne.getStartTick() < ne.getEndTick();
                 assert ne2.getStartTick() < ne2.getEndTick();
@@ -4762,7 +4776,7 @@ public class AbcExporter {
             AbcNoteEvent prev = null;
             for (AbcNoteEvent segment : segments) {
                 long microsDura = segment.endABCMicros-segment.startABCMicros;
-                assert microsDura <= TimingInfo.LONGEST_NOTE_MICROS + 120002: segment.note+" vel="+segment.velocity+"  "+((ne.endABCMicros - ne.startABCMicros)/1000) +" ms";
+                assert microsDura <= maxSustain+maxSustainBuffer: segment.note+" vel="+segment.velocity+"  "+((ne.endABCMicros - ne.startABCMicros)/1000) +" ms";
                 if (prev != null) {
 
                 }
@@ -4771,7 +4785,8 @@ public class AbcExporter {
         }
         return segments;
     }
-	
+
+    @Deprecated
 	private boolean deprecated1(AbcPart part, List<AbcNoteEvent> events, long minimumMicros,
 			boolean removeGliss, ChordOrganic curChord, AbcNoteEvent ne, long microsTillNext, long microsTillNext2,
 			long neMicros, long ne2Micros) {
@@ -4820,6 +4835,7 @@ public class AbcExporter {
 		return false;
 	}
 
+    @Deprecated
 	private boolean deprecated2(AbcPart part, List<AbcNoteEvent> events, long minimumMicros, ChordOrganic curChord,
 			int i, AbcNoteEvent ne, AbcNoteEvent ne1, AbcNoteEvent ne2, long microsTillNext2, long neMicros,
 			long minEndMicro, long curMinEndTick, long neMicroStart) {
