@@ -42,7 +42,10 @@ Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
 Version 4.5.19
-- Fixed a bug in splitting of long notes in organic multi-stage.
+- Fixed a bug in splitting of long notes in organic multi-stage and made it slightly smarter.
+- Fixed another solo/mute issue.
+- Allowed some instruments to have longer notes than 5 seconds in organic multi-stage.
+- Made the pan window slightly larger to show 4 stacked parts.
 - Various minor optimizations.
 
 Version 4.5.18

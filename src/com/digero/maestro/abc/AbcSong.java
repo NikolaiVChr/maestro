@@ -1511,6 +1511,14 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         return upgraded;
     }
 
+    public void setUpgraded(boolean upgr) {
+        if (upgraded != upgr) {
+            upgraded = upgr;
+            fireChangeEvent(AbcSongProperty.ORGANIC);
+            fireChangeEvent(AbcSongProperty.TIMINGS_MULTI);
+        }
+    }
+
     public String getStats() {
         String str = "";
         if (firstExportTime != null && firstExportTime.getTime() != 0L) {
