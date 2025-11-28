@@ -74,7 +74,7 @@ public class AbcNoteEvent extends NoteEvent {
 		AbcNoteEvent next = new AbcNoteEvent(note, velocity, splitPointTick, endTick, tempoCache, this.origNote);
 		setEndTick(splitPointTick);
 		
-		if (splitPointMicros != -1) {
+		if (splitPointMicros != -1L) {
 			next.startABCMicros = splitPointMicros;
 			next.endABCMicros = endABCMicros;
 			endABCMicros = splitPointMicros;

@@ -4679,88 +4679,83 @@ public class AbcExporter {
         long endMicros = ne.endABCMicros;
         boolean drone = isDrone(part,ne);
         boolean rest = ne.note == Note.REST;
-        while (ceil != null && ceilMicros < endMicros && ceilTick < ne.getEndTick()) {
+        while (ceil != null && ceilMicros < endMicros) {
             // As long as there is another ceiling within the note duration
-            if (ne.getStartTick() < ceilTick) {//rounding error guard
-                AbcNoteEvent ne2;
-                long microsFullDura = ne.endABCMicros-ne.startABCMicros;
+            AbcNoteEvent ne2;
+            long microsFullDura = ne.endABCMicros-ne.startABCMicros;
 
-                boolean canReachFuture = ceilFuture != null && ceilFutureMicros <= endMicros
-                        && ceilFutureMicros - restartMicros <= maxSustain + maxSustainBuffer;
+            boolean canReachFuture = ceilFuture != null && ceilFutureMicros <= endMicros
+                    && ceilFutureMicros - restartMicros <= maxSustain + maxSustainBuffer;
 
-                if (useRestToShortenChords && sustained	&& !rest
-                        && canReachFuture
-                        ) {
+            if (useRestToShortenChords && sustained	&& !rest
+                    && canReachFuture
+                    ) {
 
-                    // insert rest to shorten chord and keep long note
-                    //
-                    // Note that this will potentially insert many rests into chords.
-                    // But prune will get rid of all but the shortest.
+                // insert rest to shorten chord and keep long note
+                //
+                // Note that this will potentially insert many rests into chords.
+                // But prune will get rid of all but the shortest.
 
-                    AbcNoteEvent restShorter = new AbcNoteEvent(Note.REST, 4, ne.getStartTick(), ceilTick, qtm, null);
-                    restShorter.startABCMicros = ne.startABCMicros;
-                    restShorter.endABCMicros = ceilMicros;
-                    assert restShorter.endABCMicros - restShorter.startABCMicros <= maxSustain+maxSustainBuffer : ((ne.endABCMicros - ne.startABCMicros)/1000) +" ms";
-                    segments.add(restShorter);
-                    logNotes.fine("Add rest into chord starting at "+Util.formatDurationM(restShorter.startABCMicros));
-                    if (microsFullDura < maxSustain + maxSustainBuffer) {
-                        break;
-                    } else {
-                        ne2 = ne;
-                    }
-                } else if (!rest && (drone || canReachFuture)) {
-
-                    // split and tie
-                    //
-                    // rests dont come in here, they need restart.
-                    // all drones go here.
-
-
-                    // TODO: comment out when system more solid
-                    assert ne.startABCMicros < ceilMicros;
-                    assert ne.getStartTick() < ceilTick:ne.getStartTick()+" < "+ceilTick;
-                    assert ne.endABCMicros > ceilMicros:ne.endABCMicros+" > "+ceilMicros;
-                    assert ne.getEndTick() > ceilTick:ne.getEndTick()+" > "+ceilTick;
-
-                    //System.err.println("TIE ceilMicros = "+Util.formatDurationM(ceilMicros));
-
-                    ne2 = ne.splitWithTieAtTick(ceilTick, ceilMicros);
-
-                    segments.add(ne2);
+                AbcNoteEvent restShorter = new AbcNoteEvent(Note.REST, 4, ne.getStartTick(), ceilTick, qtm, null);
+                restShorter.startABCMicros = ne.startABCMicros;
+                restShorter.endABCMicros = ceilMicros;
+                assert restShorter.endABCMicros - restShorter.startABCMicros <= maxSustain+maxSustainBuffer : ((ne.endABCMicros - ne.startABCMicros)/1000) +" ms";
+                segments.add(restShorter);
+                logNotes.fine("Add rest into chord starting at "+Util.formatDurationM(restShorter.startABCMicros));
+                if (microsFullDura < maxSustain + maxSustainBuffer) {
+                    break;
                 } else {
-
-                    // restart
-                    //
-                    // all rests come in here, drones do not
-                    //
-
-                    ne2 = new AbcNoteEvent(ne.note, ne.velocity, ceilTick, ne.getEndTick(), qtm, ne.origNote);
-                    ne2.startABCMicros = ceilMicros;
-                    ne2.endABCMicros = ne.endABCMicros;
-                    ne.endABCMicros = ceilMicros;
-                    ne.setEndTick(ceilTick);
-
-                    //System.err.println("RST ceilMicros = "+Util.formatDurationM(ceilMicros));
-
-                    assert ne.endABCMicros - ne.startABCMicros < maxSustain+maxSustainBuffer : ((ne.endABCMicros - ne.startABCMicros)) +" us";
-                    segments.add(ne2);
-                    restartMicros = ceilMicros;
-                    restartTick = ceilTick;
+                    ne2 = ne;
                 }
+            } else if (!rest && (drone || canReachFuture)) {
+
+                // split and tie
+                //
+                // rests dont come in here, they need restart.
+                // all drones go here.
+
+
                 // TODO: comment out when system more solid
+                assert ne.startABCMicros < ceilMicros;
+                assert ne.getStartTick() < ceilTick:ne.getStartTick()+" < "+ceilTick;
+                assert ne.endABCMicros > ceilMicros:ne.endABCMicros+" > "+ceilMicros;
+                assert ne.getEndTick() > ceilTick:ne.getEndTick()+" > "+ceilTick;
 
-                assert ne.startABCMicros < ne.endABCMicros;
-                assert ne2.startABCMicros < ne2.endABCMicros;
+                //System.err.println("TIE ceilMicros = "+Util.formatDurationM(ceilMicros));
 
-                assert ne.getStartTick() < ne.getEndTick();
-                assert ne2.getStartTick() < ne2.getEndTick();
+                ne2 = ne.splitWithTieAtTick(ceilTick, ceilMicros);
 
-
-                ne = ne2;
+                segments.add(ne2);
             } else {
-                logNotes.warning((gridTicks.floorKey(ceilMicros-1)/1000)+" < "+(ceilMicros/1000));
-                //assert false;
+
+                // restart
+                //
+                // all rests come in here, drones do not
+                //
+
+                ne2 = new AbcNoteEvent(ne.note, ne.velocity, ceilTick, ne.getEndTick(), qtm, ne.origNote);
+                ne2.startABCMicros = ceilMicros;
+                ne2.endABCMicros = ne.endABCMicros;
+                ne.endABCMicros = ceilMicros;
+                ne.setEndTick(ceilTick);
+
+                //System.err.println("RST ceilMicros = "+Util.formatDurationM(ceilMicros));
+
+                assert ne.endABCMicros - ne.startABCMicros < maxSustain+maxSustainBuffer : ((ne.endABCMicros - ne.startABCMicros)) +" us";
+                segments.add(ne2);
+                restartMicros = ceilMicros;
+                restartTick = ceilTick;
             }
+
+            // TODO: comment out when system more solid
+            assert ne.startABCMicros < ne.endABCMicros;
+            assert ne2.startABCMicros < ne2.endABCMicros;
+            assert ne.getStartTick() < ne.getEndTick();
+            assert ne2.getStartTick() < ne2.getEndTick();
+
+
+            ne = ne2;
+
             ceil = gridTicks.ceilingEntry(ceilMicros+1L);
             ceilMicros = ceil == null?null:ceil.getKey();
             ceilTick   = ceil == null?null:ceil.getValue();
