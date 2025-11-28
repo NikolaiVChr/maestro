@@ -16,6 +16,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.Timer;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -311,10 +312,12 @@ public class AutoExporter implements WarningHandler {
             progressFactor = 1000.0d / total;
             exportCount.set(0);
 
-            filesToProcess.parallelStream().forEach(file -> {
-                if (cancel) {
-                    return;
-                }
+            try (ForkJoinPool customPool = new ForkJoinPool(8)) {
+                customPool.submit(() -> {
+                    filesToProcess.parallelStream().forEach(file -> {
+                        if (cancel) {
+                            return;
+                        }
 
                 try {
                     // thread-safe
@@ -327,8 +330,13 @@ public class AutoExporter implements WarningHandler {
                     appendToField("<p><font color='red'>" + e.toString() + "</font></p>");
                 }
 
-                setProgress((int) (exportCount.incrementAndGet() * progressFactor));
-            });
+                        setProgress((int) (exportCount.incrementAndGet() * progressFactor));
+                    });
+                }).get(); // Wait for completion
+            } catch (Throwable e) {
+                log.log(Level.WARNING, "Parallel export failed", e);
+                appendToField("<p></p><p>An error cancelled exporting: "+e+"</p>");
+            }
         }
         if (!skippedProjects.isEmpty()) {
             appendToField("<p></p><p>Skipped/failed " + skippedProjects.size() + " project files:</p>");
