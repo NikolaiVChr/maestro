@@ -3552,7 +3552,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
     }
 
     public enum TimingEnum {
-//        ORGANIC_MULTISTAGE2 ("Organic Multi-stage 2",true, true, false,false,false,"Organic Multistage 2", true),
+        ORGANIC_MULTISTAGE2 ("Organic Multi-stage 2",true, true, false,false,false,"Organic Multistage 2", true),
         ORGANIC_MULTISTAGE ("Organic Multi-stage",true, true, false,false,false,"Organic Multistage", false),
         ORGANIC_SINGLESTAGE ("Organic Single-stage", true, false, false,false,false,"Organic Singlestage", false),
         MIX ("Mix Timings", false, false, true,false,false,"Mix Timings", false),
@@ -3562,7 +3562,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         LEGACY ("Legacy Timings", false, false, false,false,false,"Legacy", false),
         LEGACY_SWING ("Legacy Timings, Swing", false, false, false,true,false,"Legacy Swing/Triplet", false),
         ;
-        {}
+
         public final boolean organic;
         public final boolean multistage;
         public final boolean mixTimings;
@@ -3601,8 +3601,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
         String getTooltip() {
             return switch (this) {
-//                case ORGANIC_MULTISTAGE2 -> "<html>Different approach to exporting fluid timings.<br>"
-//                        + "This is a beta feature, use on own risk.</html>";
+                case ORGANIC_MULTISTAGE2 -> "<html>Different approach to exporting fluid timings.<br>"
+                        + "This is a beta feature, use on own risk.</html>";
                 case ORGANIC_MULTISTAGE -> "<html>Different approach to exporting fluid timings.<br>"
                         + "This is a beta feature, use on own risk.</html>";
                 case ORGANIC_SINGLESTAGE -> "<html>Export more fluid timings.<br>"
@@ -3643,7 +3643,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         static TimingEnum getInstance(boolean organic, boolean multistage, boolean mixTimings, boolean swing, boolean priority, boolean upgraded) {
             if (organic) {
                 if (multistage) {
-//                    if (upgraded) return ORGANIC_MULTISTAGE2;
+                    if (upgraded) return ORGANIC_MULTISTAGE2;
                     return ORGANIC_MULTISTAGE;
                 }
                 else return ORGANIC_SINGLESTAGE;
