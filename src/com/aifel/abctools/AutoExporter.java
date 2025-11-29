@@ -314,7 +314,10 @@ public class AutoExporter implements WarningHandler {
             progressFactor = 1000.0d / total;
             exportCount.set(0);
 
-            try (ForkJoinPool customPool = new ForkJoinPool(8)) {
+            int cores = Runtime.getRuntime().availableProcessors();
+            int parallelism = Math.clamp(cores - 1, 1, 8);
+
+            try (ForkJoinPool customPool = new ForkJoinPool(parallelism)) {
                 customPool.submit(() -> {
                     filesToProcess.parallelStream().forEach(file -> {
                         if (cancel) {
