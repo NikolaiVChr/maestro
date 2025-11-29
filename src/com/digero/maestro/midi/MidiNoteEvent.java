@@ -17,7 +17,7 @@ public class MidiNoteEvent extends NoteEvent {
 	public MidiNoteEvent(Note note, int velocity, long startTick, long endTick, ITempoCache tempoCache, int pan) {
 		super(note, velocity, startTick, endTick, tempoCache);
 		this.midiPan = pan;
-		assert tempoCache instanceof SequenceDataCache;
+		if (tempoCache != null) assert tempoCache instanceof SequenceDataCache;
 	}
 	
 	@Override

@@ -23,6 +23,7 @@ public class MiscSettings {
 	public MiscSettings(Preferences prefs, boolean checkFallback) {
 		this.prefs = prefs;
 		boolean useFallback = false;
+        if (prefs == null) return;//for unit-testing
 		Preferences saveExportNode = prefs.parent().node("saveAndExportSettings");
 		if (checkFallback) {
 			try {

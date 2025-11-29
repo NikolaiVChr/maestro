@@ -106,6 +106,14 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 
         tempoSectionsSource = origTempos.size();
 
+        if (song == null) {
+            //for unit-testing only:
+            this.oddsAndEnds = oddsAndEnds;
+            oddsAndEndsVersion = mixVersion;
+            tempoSectionsABC = 0;
+            return;
+        }
+
 		/*
 		 * Merge the tune editor tempo changes with midi tempos.
 		 * Note that changes to tempo spinner is not applied at this stage, so the offsets and accelerandos
@@ -761,7 +769,22 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		}
 		return quan;
 	}
-	
+
+    /**
+     * Quantize down to the nearest grid line for this specific part.
+     * Unlike quantizeDown(), this obeys the part's specific Mix Timing rules
+     * instead of finding a common denominator.
+     */
+    public long quantizeFloor(long tick, AbcPart part) {
+        TimingInfoEvent e = getTimingEventForTick(tick, part);
+        // Since e.tick is the start of the region, flooring relative to it
+        // ensures we never drop below e.tick, so we stay within the valid region.
+        return e.tick + Util.floorGrid(tick - e.tick, e.info.getMinNoteLengthTicks());
+    }
+
+    /**
+     * Quantize up to nearest grid that coincides with both swing and regular grid.
+     */
 	public long quantizeUp(long tick) {
 		// exportEndTick, not really needed for end, but lets do it for good measure.
 		TimingInfoEvent e = getTimingEventForTick(tick);
