@@ -41,6 +41,7 @@ public class AbcToolsView extends JFrame {
 	private JCheckBox forceMixTiming;
 	private JCheckBox forceOrganic;
 	private JCheckBox forceOrganic2;
+    private JCheckBox forceOrganic2v2;
     private JCheckBox forceVolumeMethod;
     private JComboBox<Chord.CalcDynamics> volumeMethod;
 	private JScrollPane scrollPaneAutoTxt;
@@ -64,7 +65,7 @@ public class AbcToolsView extends JFrame {
 		setTitle("ABC Tools");
 		setMinimumSize(new Dimension(800, 450));
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 500, 525);
+		setBounds(100, 100, 500, 550);
 		contentPane = new JPanel();
 
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -218,6 +219,12 @@ public class AbcToolsView extends JFrame {
         forceOrganic2.setToolTipText("Force organic multi-stage even if a project do not have it enabled.");
 		forceOrganic2.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(forceOrganic2);
+
+        forceOrganic2v2 = new JCheckBox("Force Org. Multi-stage 2");
+        forceOrganic2v2.setSelected(false);
+        forceOrganic2v2.setToolTipText("Force organic multi-stage 2 even if a project do not have it enabled.");
+        forceOrganic2v2.setAlignmentX(Component.CENTER_ALIGNMENT);
+        panelAuto.add(forceOrganic2v2);
 
 		forceMixTiming = new JCheckBox("Force Mix Timings");
 		forceMixTiming.setSelected(false);
@@ -414,6 +421,14 @@ public class AbcToolsView extends JFrame {
 		forceOrganic2.setSelected(selected);
 	}
 
+    public boolean getForceOrganic2v2Selected() {
+        return forceOrganic2v2.isSelected();
+    }
+
+    public void setForceOrganic2v2Selected(boolean selected) {
+        forceOrganic2v2.setSelected(selected);
+    }
+
 	public JButton getBtnStartExport() {
 		return btnStart;
 	}
@@ -485,6 +500,14 @@ public class AbcToolsView extends JFrame {
 	public void setForceOrganic2Enabled(boolean enabled_2) {
 		forceOrganic2.setEnabled(enabled_2);
 	}
+
+    public boolean getForceOrganic2v2Enabled() {
+        return forceOrganic2v2.isEnabled();
+    }
+
+    public void setForceOrganic2v2Enabled(boolean enabled_2) {
+        forceOrganic2v2.setEnabled(enabled_2);
+    }
 
 	public boolean getBtnSourceAutoEnabled() {
 		return btnSourceAuto.isEnabled();
@@ -602,6 +625,9 @@ public class AbcToolsView extends JFrame {
 	}
     public void addForceOrganic2ActionListener(ActionListener l) {
         forceOrganic2.addActionListener(l);
+    }
+    public void addForceOrganic2v2ActionListener(ActionListener l) {
+        forceOrganic2v2.addActionListener(l);
     }
     public void addForceLegacyActionListener(ActionListener l) {
         forceLegacyTiming.addActionListener(l);

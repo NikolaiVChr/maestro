@@ -101,7 +101,7 @@ public class AutoExporter implements WarningHandler {
 	
 	// For testing:
 	private static final boolean neverLocateMidi = false;// for testing
-	private static final boolean testIfOutputIsValid = true;// makes it slower
+	private static final boolean testIfOutputIsValid = false;// makes it slower
 	
 	AutoExporter (AbcToolsView frame, String myHome, AbcTools main, Preferences autoPrefs) {
 		this.frame = frame;
@@ -147,6 +147,7 @@ public class AutoExporter implements WarningHandler {
 			frame.getBtnSourceAuto().addActionListener(getSourceAutoActionListener());
 			frame.addForceOrganicActionListener(getOrganicActionListener());
             frame.addForceOrganic2ActionListener(getOrganicActionListener());
+            frame.addForceOrganic2v2ActionListener(getOrganicActionListener());
             frame.addForceMixActionListener(getOrganicActionListener());
             frame.addForceLegacyActionListener(getOrganicActionListener());
             frame.addForceVolumeMethodListener(getVolumeActionListener());
@@ -208,6 +209,7 @@ public class AutoExporter implements WarningHandler {
             frame.setForceLegacyTimingEnabled(false);
 			frame.setForceOrganicEnabled(false);
 			frame.setForceOrganic2Enabled(false);
+            frame.setForceOrganic2v2Enabled(false);
             frame.setForceVolumeMethodEnabled(false);
             frame.setVolumeMethodEnabled(false);
 			frame.setBtnDestAutoEnabled(false);
@@ -312,23 +314,26 @@ public class AutoExporter implements WarningHandler {
             progressFactor = 1000.0d / total;
             exportCount.set(0);
 
-            try (ForkJoinPool customPool = new ForkJoinPool(8)) {
+            int cores = Runtime.getRuntime().availableProcessors();
+            int parallelism = Math.clamp(cores - 1, 1, 8);
+
+            try (ForkJoinPool customPool = new ForkJoinPool(parallelism)) {
                 customPool.submit(() -> {
                     filesToProcess.parallelStream().forEach(file -> {
                         if (cancel) {
                             return;
                         }
 
-                try {
-                    // thread-safe
-                    exportProject(file.toFile());
-                } catch (Throwable e) {
-                    log.log(Level.WARNING, file.getFileName().toString(), e);
+                        try {
+                            // thread-safe
+                            exportProject(file.toFile());
+                        } catch (Throwable e) {
+                            log.log(Level.WARNING, file.getFileName().toString(), e);
 
-                    skippedProjects.add(file.toFile());
+                            skippedProjects.add(file.toFile());
 
-                    appendToField("<p><font color='red'>" + e.toString() + "</font></p>");
-                }
+                            appendToField("<p><font color='red'>" + e.toString() + "</font></p>");
+                        }
 
                         setProgress((int) (exportCount.incrementAndGet() * progressFactor));
                     });
@@ -586,6 +591,7 @@ public class AutoExporter implements WarningHandler {
 		boolean oldMix = abcSong.isMixTiming();
 		boolean oldOrganic = abcSong.isOrganic();
 		boolean oldOrganic2 = abcSong.isOrganic2();
+        boolean oldOrganic2v2 = abcSong.isUpgraded();
         Chord.CalcDynamics oldDyna = abcSong.dynamicsMethod;
         if (frame.getForceLegacyTimingSelected()) {
             if (oldMix || oldOrganic) timingModified = frame.getSaveMSXtimingSelected();
@@ -600,10 +606,16 @@ public class AutoExporter implements WarningHandler {
 			abcSong.setOrganic(true);
             abcSong.setOrganic2(false);
 		} else if (frame.getForceOrganic2Selected()) {
-			if (!oldOrganic || !oldOrganic2) timingModified = frame.getSaveMSXtimingSelected();
+			if (!oldOrganic || !oldOrganic2 || oldOrganic2v2) timingModified = frame.getSaveMSXtimingSelected();
             abcSong.setOrganic(true);
 			abcSong.setOrganic2(true);
-		}
+            abcSong.setUpgraded(false);
+		} else if (frame.getForceOrganic2v2Selected()) {
+            if (!oldOrganic || !oldOrganic2 || !oldOrganic2v2) timingModified = frame.getSaveMSXtimingSelected();
+            abcSong.setOrganic(true);
+            abcSong.setOrganic2(true);
+            abcSong.setUpgraded(true);
+        }
         if (frame.getForceVolumeMethodSelected()) {
             if (oldDyna != frame.getVolumeMethodSelected()) {
                 dynaModified = frame.isSaveMSXvolumeSelected();
@@ -681,6 +693,7 @@ public class AutoExporter implements WarningHandler {
 			abcSong.setMixTiming(oldMix);
 			abcSong.setOrganic(oldOrganic);
 			abcSong.setOrganic2(oldOrganic2);
+            abcSong.setUpgraded(oldOrganic2v2);
 		}
 
         if (!frame.isSaveMSXvolumeSelected()) {
@@ -848,27 +861,38 @@ public class AutoExporter implements WarningHandler {
             frame.setForceMixTimingEnabled(false);
             frame.setForceLegacyTimingEnabled(false);
             frame.setForceOrganic2Enabled(false);
+            frame.setForceOrganic2v2Enabled(false);
             frame.setForceOrganicEnabled(true);
         } else if (frame.getForceOrganic2Selected()) {
             frame.setForceMixTimingEnabled(false);
             frame.setForceLegacyTimingEnabled(false);
             frame.setForceOrganicEnabled(false);
             frame.setForceOrganic2Enabled(true);
+            frame.setForceOrganic2v2Enabled(false);
+        } else if (frame.getForceOrganic2v2Selected()) {
+            frame.setForceMixTimingEnabled(false);
+            frame.setForceLegacyTimingEnabled(false);
+            frame.setForceOrganicEnabled(false);
+            frame.setForceOrganic2Enabled(false);
+            frame.setForceOrganic2v2Enabled(true);
         } else if (frame.getForceMixTimingSelected()) {
             frame.setForceOrganicEnabled(false);
             frame.setForceLegacyTimingEnabled(false);
             frame.setForceOrganic2Enabled(false);
+            frame.setForceOrganic2v2Enabled(false);
             frame.setForceMixTimingEnabled(true);
         } else if (frame.getForceLegacyTimingSelected()) {
             frame.setForceOrganicEnabled(false);
             frame.setForceMixTimingEnabled(false);
             frame.setForceOrganic2Enabled(false);
+            frame.setForceOrganic2v2Enabled(false);
             frame.setForceLegacyTimingEnabled(true);
         } else {
             frame.setForceOrganicEnabled(true);
             frame.setForceMixTimingEnabled(true);
             frame.setForceLegacyTimingEnabled(true);
             frame.setForceOrganic2Enabled(true);
+            frame.setForceOrganic2v2Enabled(true);
         }
         frame.setVolumeMethodEnabled(frame.getForceVolumeMethodSelected());
         frame.setForceVolumeMethodEnabled(true);

@@ -527,6 +527,7 @@ public class AbcExporter {
 				}
 				out.println(AbcField.ORGANIC + Boolean.toString(organic));
 				out.println(AbcField.ORGANIC_MULTI_STAGE + Boolean.toString(organic && organic2));
+                out.println(AbcField.ORGANIC_VERSION + Integer.toString((organic && organic2 && upgraded)?2:1));
 				out.println(AbcField.ORGANIC_POLY_6_PLUS + Boolean.toString(organic && useRestsInChords));
 				out.println(AbcField.SKIP_SILENCE_AT_START + Boolean.toString(skipSilenceAtStart));
 				out.println(AbcField.DELETE_MINIMAL_NOTES + Boolean.toString(deleteMinimalNotes && !organic));
@@ -2289,7 +2290,7 @@ public class AbcExporter {
 			}
 			
 
-			List<AbcNoteEvent> bentNotes = expandPitchBendsOrganic(part, ne);
+			List<AbcNoteEvent> bentNotes = expandPitchBendsOrganicImproved(ne);
 			
 			if (bentNotes != null) {
 				assert !bentNotes.contains(ne);
@@ -5420,85 +5421,96 @@ public class AbcExporter {
 		}
 	}
 
-	/**
-	 * Split all BentNoteEvents into multiple quantized NoteEvents
-	 * 
-	 * @param part Abc Part
-	 * @param ne   The note event to be processed
-	 * @return List of multiple NoteEvents
-	 */
-	private List<AbcNoteEvent> expandPitchBends(AbcPart part, AbcNoteEvent ne) {
-		// Handle pitch bend by subdividing tone into shorter quantized notes.
-		// By the time this method is ran, start and end tick of the bent tone is already quantized.
-		if (ne instanceof BentAbcNoteEvent be) {
-            int noteID = be.note.id;
-			assert be.note != Note.REST;
-			int startPitch = noteID;
-			List<AbcNoteEvent> benders = new ArrayList<>();
-			AbcNoteEvent current = null;
-			boolean changeAtLastGrid = true;
-			long lastGridTick = 0L;
-			for (long t = be.getStartTick(); t < be.getEndTick(); t++) {
-				Integer entry = be.getBend(t);
-                if (entry == null) {
-                    // Since all bent notes have a bend at start tick,
-                    // and that start tick might have been quantized to lower tick.
-                    // Make sure we grab that initial value here.
-                    entry = be.bends.firstEntry().getValue();
+    /**
+     * Split all BentNoteEvents into multiple quantized NoteEvents
+     *
+     * @param part Abc Part
+     * @param ne   The note event to be processed
+     * @return List of multiple NoteEvents
+     */
+    private List<AbcNoteEvent> expandPitchBends(AbcPart part, AbcNoteEvent ne) {
+        if (!(ne instanceof BentAbcNoteEvent be)) return null;
+        assert be.note != Note.REST;
+
+        int startPitch = be.note.id;
+
+        // Collect transition points
+        // Key: Tick (quantized), value: Pitch
+        TreeMap<Long, Integer> splitPoints = new TreeMap<>();
+
+        Integer initialBend = be.getBend(be.getStartTick());
+        if (initialBend == null) initialBend = be.bends.firstEntry().getValue();
+        splitPoints.put(be.getStartTick(), startPitch + initialBend);
+
+        NavigableMap<Long, Integer> bends = be.bends.subMap(be.getStartTick(), false, be.getEndTick(), false);
+
+        for (Map.Entry<Long, Integer> entry : bends.entrySet()) {
+            long t = entry.getKey();
+            int bend = entry.getValue();
+            int noteID = startPitch + bend;
+
+            long floorGrid = qtm.quantizeFloor(t, part);
+            long gridLen = qtm.getGridSizeTicks(t, part);
+
+            long targetTick;
+
+            if (t == floorGrid) {
+                // Exact match, split here
+                targetTick = t;
+            } else if (gridLen >= 3 && t < floorGrid + gridLen / 3L) {
+                // Early bend -> Snap back to floor
+                targetTick = floorGrid;
+            } else {
+                // Late bend -> Push forward to next grid
+                targetTick = floorGrid + gridLen;
+            }
+
+            if (targetTick < be.getStartTick()) targetTick = be.getStartTick();
+            if (targetTick >= be.getEndTick()) continue;
+
+            // Add or overwrite the split point
+            // If multiple bends map to the same grid line, the latest one wins
+            splitPoints.put(targetTick, noteID);
+        }
+
+        // Build Segments from Map
+        List<AbcNoteEvent> benders = new ArrayList<>();
+        Map.Entry<Long, Integer> currentEntry = splitPoints.firstEntry();
+
+        while (true) {
+            long startTick = currentEntry.getKey();
+            int pitch = currentEntry.getValue();
+
+            // Find next transition
+            Map.Entry<Long, Integer> nextEntry = splitPoints.higherEntry(startTick);
+            long endTick = (nextEntry != null) ? nextEntry.getKey() : be.getEndTick();
+
+            Note newNote = Note.fromId(pitch);
+            if (newNote == null || newNote == Note.REST) {
+                // Pitch out of range
+                return new ArrayList<>();
+            } else {
+                // Only create if length > 0 (TreeMap ensures start < nextStart)
+                if (endTick > startTick) {
+                    // Check for redundant splits (same pitch)
+                    if (!benders.isEmpty() && benders.getLast().note.id == pitch && benders.getLast().getEndTick() == startTick) {
+                        // Merge with previous
+                        benders.getLast().setEndTick(endTick);
+                    } else {
+                        // New segment
+                        AbcNoteEvent sub = new AbcNoteEvent(newNote, be.velocity, startTick, endTick, be.getTempoCache(), be.origNote);
+                        sub.setOrigBend(pitch-startPitch);
+                        benders.add(sub);
+                    }
                 }
-                noteID = startPitch + entry;
-                if (current == null) {
-					current = createBentSubNote(be, noteID, current, t, entry);
-					if (current == null)
-						return new ArrayList<>();
-					benders.add(current);
-					lastGridTick = t;
-					changeAtLastGrid = true;
-				} else {
-					long qTick = qtm.quantize(t, part);
-					if (t == qTick) {
-						// this tick is on the grid
-						if (current.note.id != noteID) {
-							current = createBentSubNote(be, noteID, current, t, entry);
-							if (current == null)
-								return new ArrayList<>();
-							benders.add(current);
-							changeAtLastGrid = true;
-						} else {
-							changeAtLastGrid = false;
-						}
-						lastGridTick = t;
-					} else if (!changeAtLastGrid && entry != null && current.note.id != noteID) {
-						long grid = qtm.getGridSizeTicks(t, part);
-						if (grid >= 3 && t < lastGridTick + grid / 3L) {
-							/*
-							 * We have a pitch change, and we are less than a 3rd of a gridlength from last gridpoint.
-							 * Last grid point there was no pitch changes. So we round this pitch change back to last
-							 * gridpoint.
-							 */
-							current = createBentSubNote(be, noteID, current, lastGridTick, entry);
-							if (current == null)
-								return new ArrayList<>();
-							benders.add(current);
-							changeAtLastGrid = true;
-						}
-					}
-				}
-			}
-			//double dura = be.getLengthMicros() / 1000.0d;
-			//System.out.println(dura+" Note split into "+benders.size()+" bends");
-			//if (be.getStartTick() != benders.get(0).getStartTick() || be.getEndTick() != benders.get(benders.size()-1).getEndTick()) {
-			//	System.out.println("\nNote split wrongly "+be.getStartTick()+" to "+be.getEndTick());
-			//	System.out.println("        == "+benders.get(0).getStartTick()+" to "+benders.get(benders.size()-1).getEndTick());
-			//}
-			//if (benders.size() == 0) {
-			//	System.out.println(" empty benders");
-			//}
-			return benders;
-		} else {
-			return null;
-		}
-	}
+            }
+
+            if (nextEntry == null) break;
+            currentEntry = nextEntry;
+        }
+
+        return benders;
+    }
 	
 	/**
 	 * Split all BentNoteEvents into multiple quantized NoteEvents
@@ -5553,6 +5565,209 @@ public class AbcExporter {
 			return null;
 		}
 	}
+
+    /**
+     * Split all BentNoteEvents into multiple NoteEvents
+     *
+     * @param ne   The note event to be processed
+     * @return List of multiple NoteEvents
+     */
+    private List<AbcNoteEvent> expandPitchBendsOrganicImproved(AbcNoteEvent ne) {
+        if (!(ne instanceof BentAbcNoteEvent be)) {
+            return null;
+        }
+        assert be.note != Note.REST;
+
+        int startPitch = be.note.id;
+        List<AbcNoteEvent> benders = new ArrayList<>();
+        AbcNoteEvent current = null;
+
+        // minimum with safety margin to handle rounding jitter
+        long safetyMarginMicros = 65_000L;// 65 ms is a fine buffer even if minimum is slightly larger than 60 ms
+        long stabilityThreshold = safetyMarginMicros / 2;// Threshold for a "Stable" note
+        long finaleMinimum = safetyMarginMicros;// if the note ends with a bend that is shorter than this, we disregard it.
+
+        long tick = be.getStartTick();
+        long endTick = be.getEndTick();
+        long validPitchEndTick = qtm.microsToTickABCOrganic(
+                qtm.tickToMicrosABCOrganic(endTick) - finaleMinimum);
+
+        Integer bend = be.getBend(tick);
+        if (bend == null) bend = be.bends.firstEntry().getValue();
+
+        current = createBentSubNote(be, startPitch + bend, null, tick, bend);
+        if (current == null) return new ArrayList<>();
+        benders.add(current);
+
+        while (tick < endTick) {
+            // Calculate earliest split
+            long safeSplitTick = qtm.microsToTickABCOrganicRoundUp(
+                    qtm.tickToMicrosABCOrganic(tick) + safetyMarginMicros);
+
+            if (safeSplitTick <= tick) safeSplitTick = tick + 1;//should never happen
+
+            int dominantBend = getDominantBend(be, tick, safeSplitTick);
+
+            // Determine split
+            if (dominantBend != bend) {
+                // The pitch changes within the safety window.
+
+                if (tick == current.getStartTick()) {
+                    // happens between current's start and end of this window: Overwrite
+                    benders.remove(current);
+                    current = createBentSubNote(be, startPitch+dominantBend, null, tick, dominantBend);
+                } else {
+                    // Happened only in this window: Split previous note here
+                    current = createBentSubNote(be, startPitch+dominantBend, current, tick, dominantBend);
+                }
+                if (current == null) {
+                    return new ArrayList<>();
+                }
+                benders.add(current);
+                bend = dominantBend;
+            }
+
+            // Determine next split point
+            long nextTick;
+            int nextBend;
+
+            if (safeSplitTick >= endTick) {
+                nextBend = bend;
+                nextTick = endTick;
+            } else {
+                // If we fixed a transient, dominant might differ from map data at tick.
+                // And getNextBend might return safeSplitTick immediately.
+                // Inside the condition below handle this by forcing extension.
+
+                nextTick = be.getNextBend(safeSplitTick, bend);
+
+                if (nextTick < endTick) {
+                    Integer b = be.getBend(nextTick);
+                    nextBend = (b != null) ? b : 0;// null should not happen
+                } else {
+                    nextBend = bend;
+                }
+            }
+
+            // Safety checks...
+            if (nextTick <= tick) nextTick = endTick;
+            if (nextTick > endTick) nextTick = endTick;
+
+            // finale check...
+            if (nextTick > validPitchEndTick) {
+                nextTick = endTick;
+            }
+
+            // Apply split (With stability scan)
+            current.setEndTick(nextTick);
+
+            if (nextTick < endTick) {
+                int candidateBend = nextBend;
+
+                // stability scan
+                // Check if the pitch at nextTick is transient
+                // We scan the window [nextTick, nextTick + 65ms] for a stable plateau.
+                long scanEnd = qtm.microsToTickABCOrganicRoundUp(
+                        qtm.tickToMicrosABCOrganic(nextTick) + safetyMarginMicros);
+
+                // Don't scan into the trash tail
+                if (scanEnd > validPitchEndTick) scanEnd = validPitchEndTick;
+                if (scanEnd <= nextTick) scanEnd = nextTick; // Safety
+
+                if (scanEnd > nextTick) {
+                    long checkTick = nextTick;
+
+                    // Loop through bends inside the safety window
+                    while (checkTick < scanEnd) {
+                        Integer currentVal = be.getBend(checkTick);
+                        // Find when this value changes
+                        long nextChange = be.getNextBend(checkTick + 1, currentVal);
+                        long changeTick = Math.min(nextChange, scanEnd);
+
+                        long durationMicros = qtm.tickToMicrosABCOrganic(changeTick) - qtm.tickToMicrosABCOrganic(checkTick);
+
+                        if (durationMicros >= stabilityThreshold) {
+                            // Found a stable plateau. Using this bend to override any preceding transient.
+                            candidateBend = currentVal;
+                            break;
+                        }
+
+                        checkTick = nextChange;
+                        if (checkTick >= endTick) break;
+                    }
+
+                    // Logic:
+                    // transsient detected, we skip to candidateBend.
+                    // slide, we stick with original nextBend.
+                }
+
+                if (candidateBend != bend) {
+                    current = createBentSubNote(be, startPitch+candidateBend, current, nextTick, candidateBend);
+                    if (current == null) {
+                        return new ArrayList<>();
+                    }
+                    benders.add(current);
+                    bend = candidateBend;
+                } else {
+                    // bend matches current (merge).
+                    // Update state for next iteration.
+                    bend = candidateBend;
+                }
+            }
+            tick = nextTick;
+        }
+
+        return benders;
+    }
+
+    /**
+     * Scans a time window to find the pitch bend that occupies the most time.
+     * Used to filter out initial transients in short windows.
+     */
+    private int getDominantBend(BentAbcNoteEvent be, long start, long end) {
+        // Ensure we don't try to scan past the end of the note.
+        // If end (safeSplitTick) is beyond the note's end, getNextBend will
+        // never return a value large enough to satisfy the loop condition,
+        // and the while will continue forever.
+        if (end > be.getEndTick()) end = be.getEndTick();
+
+        if (start >= end) {
+            Integer b = be.getBend(start);
+            return b != null ? b : 0;
+        }
+
+        Map<Integer, Long> durationMap = new HashMap<>();
+        long curr = start;
+        Integer currentBend = be.getBend(start);
+        if (currentBend == null) currentBend = be.bends.firstEntry().getValue();
+
+        while (curr < end) {
+            long nextChange = be.getNextBend(curr + 1, currentBend);
+            long segmentEnd = Math.min(nextChange, end);
+
+            assert segmentEnd > curr;
+
+            long dur = qtm.tickToMicrosABCOrganic(segmentEnd) - qtm.tickToMicrosABCOrganic(curr);
+            durationMap.merge(currentBend, dur, Long::sum);
+
+            curr = segmentEnd;
+            if (curr < end) {
+                currentBend = be.getBend(curr);
+                if (currentBend == null) currentBend = 0;
+            }
+        }
+
+        int bestBend = currentBend;
+        long maxDur = -1L;
+
+        for (Map.Entry<Integer, Long> entry : durationMap.entrySet()) {
+            if (entry.getValue() > maxDur) {
+                maxDur = entry.getValue();
+                bestBend = entry.getKey();
+            }
+        }
+        return bestBend;
+    }
 
 	private AbcNoteEvent createBentSubNote(BentAbcNoteEvent be, int noteID, AbcNoteEvent current, long tick, int bend) {
 		if (current != null) {

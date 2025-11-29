@@ -65,7 +65,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	
 	public static final String MSX_FILE_DESCRIPTION = MaestroMain.APP_NAME + " Project";
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = MaestroMain.APP_NAME + " Projects";
-	public static final Version SONG_FILE_VERSION = new Version(4, 5, 15, 300);// Keep build above 117 to make earlier
+	public static final Version SONG_FILE_VERSION = new Version(4, 5, 19, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
 
@@ -297,6 +297,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		mixTiming = abcInfo.hasMixTimings();
 		organic = abcInfo.isOrganic();
 		organic2 = abcInfo.isOrganic2();
+        upgraded = abcInfo.isOrganicV2();
 		priorityActive = false;
 		transcriber = abcInfo.getTranscriber();
 		genre = abcInfo.getGenre();
@@ -524,6 +525,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 				organic = abcInfo.isOrganic();
 				organic2 = abcInfo.isOrganic2();
+                upgraded = abcInfo.isOrganicV2();
 				tripletTiming = abcInfo.hasTriplets();
 				mixTiming = abcInfo.hasMixTimings();
 				priorityActive = false;

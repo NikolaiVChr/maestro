@@ -47,6 +47,7 @@ Version 4.5.19
 - Allowed some instruments to have longer notes than 5 seconds in organic multi-stage.
 - Made the pan window slightly larger to show 4 stacked parts.
 - Various minor optimizations.
+- Organic multi-stage 2
 
 Version 4.5.18
 - Fixed a bug where playlists with files which had been moved/renamed wouldn't load.

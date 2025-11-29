@@ -28,7 +28,7 @@ public class AbcNoteEvent extends NoteEvent {
 	public AbcNoteEvent(Note note, int velocity, long startTick, long endTick, ITempoCache tempoCache, MidiNoteEvent origNote) {
 		super(note, velocity, startTick, endTick, tempoCache);
 		this.origNote = origNote;
-		assert tempoCache instanceof QuantizedTimingInfo;
+		if (tempoCache != null) assert tempoCache instanceof QuantizedTimingInfo;
 	}
 	
 	public AbcNoteEvent getTieStart() {

@@ -97,6 +97,15 @@ public class SequenceInfo implements MidiConstants {
         }
 	}
 
+    /**
+     * Create instance of this class for unti-testing
+     */
+    public static SequenceInfo fromSequence(Sequence seq, MiscSettings miscSettings)
+            throws InvalidMidiDataException, FileParseException {
+        return new SequenceInfo("unit-test", seq,
+                1, miscSettings, false, true, true, true, null);
+    }
+
 	/**
 	 * Create instance of this class while creating preview MIDI file
 	 */
@@ -128,7 +137,7 @@ public class SequenceInfo implements MidiConstants {
 		this.midiType = type;
         this.histogram = null;
         this.lastTrackInfos = abcInfo==null?null:abcInfo.abcTrackInfos;
-		log.info("Importing (Type "+type+"): "+fileName);
+		log.fine("Importing (Type "+type+"): "+fileName);
 
 		determineStandard(sequence, fileName);
 
