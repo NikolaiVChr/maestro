@@ -5519,6 +5519,7 @@ public class AbcExporter {
 	 * @param ne   The note event to be processed
 	 * @return List of multiple NoteEvents
 	 */
+    @Deprecated
 	private List<AbcNoteEvent> expandPitchBendsOrganic(AbcPart part, AbcNoteEvent ne) {
 		// Handle pitch bend by subdividing tone into shorter notes.
 		if (ne instanceof BentAbcNoteEvent be) {
@@ -5573,6 +5574,16 @@ public class AbcExporter {
      * @return List of multiple NoteEvents
      */
     private List<AbcNoteEvent> expandPitchBendsOrganicImproved(AbcNoteEvent ne) {
+        /*
+            Stuff this method does
+            ---
+            Split a note with pitch bend into discrete semi-note sub-notes.
+            Adhere to lotro's minimum duration with a buffer guard against tick/micros rounding
+            Detect and ignore fast transient bends.
+            Handle slides, they basically get sampled.
+            Sudden pitch-bends (at the end of notes) will be smoothed out.
+            This method has a unit-test
+        */
         if (!(ne instanceof BentAbcNoteEvent be)) {
             return null;
         }
@@ -5600,7 +5611,27 @@ public class AbcExporter {
         benders.add(current);
 
         while (tick < endTick) {
-            // Calculate earliest split
+            /*
+            This loop has a part A, B and C.
+
+            A:
+            Skip minimum 65 ms forward and check which bend dominates what we skipped over.
+            If needed, create/change the current subnote to match.
+
+            B:
+            Determine when and what bend the skipped minimum should end on
+            Also if the that ending from minimum region just continues with same bend,
+            then extend nextTick as far as we can before bend changes,
+            because once we change, we again have to skip minimum.
+
+            C:
+            Check to see if we can go even further. Tests 65 ms forward.
+            Plus checks for short transients in that region that should be ignored.
+
+             */
+
+
+            // Part A: Calculate earliest split
             long safeSplitTick = qtm.microsToTickABCOrganicRoundUp(
                     qtm.tickToMicrosABCOrganic(tick) + safetyMarginMicros);
 
@@ -5608,26 +5639,37 @@ public class AbcExporter {
 
             int dominantBend = getDominantBend(be, tick, safeSplitTick);
 
-            // Determine split
+            // Determine the dominant bend inside the window we had to skip over
             if (dominantBend != bend) {
                 // The pitch changes within the safety window.
 
                 if (tick == current.getStartTick()) {
-                    // happens between current's start and end of this window: Overwrite
+                    // happens between the current's start and end of this window: Overwrite
                     benders.remove(current);
-                    current = createBentSubNote(be, startPitch+dominantBend, null, tick, dominantBend);
-                } else {
+
+                    // Check if we can merge with the previous note instead of creating new
+                    if (!benders.isEmpty() && benders.getLast().note.id == startPitch + dominantBend
+                            && benders.getLast().getEndTick() == tick) {
+                        // Merge with previous
+                        current = benders.getLast();
+                        current.setEndTick(endTick);
+                    } else {
+                        current = createBentSubNote(be, startPitch + dominantBend, null, tick, dominantBend);
+                        if (current == null) return new ArrayList<>();
+                        benders.add(current);
+                    }
+                } else if (current.note.id != startPitch+dominantBend) {
                     // Happened only in this window: Split previous note here
                     current = createBentSubNote(be, startPitch+dominantBend, current, tick, dominantBend);
+                    if (current == null) {
+                        return new ArrayList<>();
+                    }
+                    benders.add(current);
                 }
-                if (current == null) {
-                    return new ArrayList<>();
-                }
-                benders.add(current);
                 bend = dominantBend;
             }
 
-            // Determine next split point
+            // Part B: Determine when and what bend the window should end on
             long nextTick;
             int nextBend;
 
@@ -5658,7 +5700,7 @@ public class AbcExporter {
                 nextTick = endTick;
             }
 
-            // Apply split (With stability scan)
+            // Part B: Apply split
             current.setEndTick(nextTick);
 
             if (nextTick < endTick) {
@@ -5670,8 +5712,7 @@ public class AbcExporter {
                 long scanEnd = qtm.microsToTickABCOrganicRoundUp(
                         qtm.tickToMicrosABCOrganic(nextTick) + safetyMarginMicros);
 
-                // Don't scan into the trash tail
-                if (scanEnd > validPitchEndTick) scanEnd = validPitchEndTick;
+                if (scanEnd > validPitchEndTick) scanEnd = endTick;
                 if (scanEnd <= nextTick) scanEnd = nextTick; // Safety
 
                 if (scanEnd > nextTick) {
@@ -5697,8 +5738,8 @@ public class AbcExporter {
                     }
 
                     // Logic:
-                    // transsient detected, we skip to candidateBend.
-                    // slide, we stick with original nextBend.
+                    // transient detected, we skip to candidateBend.
+                    // slide, we stick with the original nextBend.
                 }
 
                 if (candidateBend != bend) {
@@ -5710,7 +5751,7 @@ public class AbcExporter {
                     bend = candidateBend;
                 } else {
                     // bend matches current (merge).
-                    // Update state for next iteration.
+                    // Update state for the next iteration.
                     bend = candidateBend;
                 }
             }
