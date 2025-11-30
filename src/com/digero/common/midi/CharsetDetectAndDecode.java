@@ -238,7 +238,7 @@ public class CharsetDetectAndDecode {
     
     static List<Charset> candidates = Arrays.asList(
         // order matters only if tie in scoring
-		Charset.forName("x-MacRoman"),     // Classic Mac OS Roman (legacy Mac text)
+		Charset.forName("MacRoman"),       // Classic Mac OS Roman (legacy Mac text)
 		Charset.forName("CP437"),          // OEM US (IBM PC DOS US)
 		Charset.forName("CP850"),          // OEM Multilingual Latin I (DOS Western Europe)
 		StandardCharsets.ISO_8859_1,       // ISO Latin-1 (Western Europe)
@@ -749,14 +749,14 @@ public class CharsetDetectAndDecode {
         return result;
     }
 
-    // Place this helper somewhere in the same class:
     private static int getWesternPriority(String csName) {
+        // csName will be lowercase
         // lower is better; 0 means "top Western choice"
         return switch (csName) {
             case "iso-8859-1" -> 0;
             case "iso-8859-15" -> 1;
             case "windows-1250" -> 2;
-            case "x-MacRoman" -> 3;
+            case "x-macroman", "macroman" -> 3;//jdk 24 (and likely 21) needs the 'x-'
             case "windows-1252" -> 4;
             default -> 10;
         };
