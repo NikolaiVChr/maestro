@@ -1196,6 +1196,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		exportMp3MenuItem.addActionListener(e -> {
 			if (!abcSequencer.isLoaded() || abcSong == null || audioExporter.isExporting()) {
 				Toolkit.getDefaultToolkit().beep();
+                log.warning("Cannot export audio. abcSequencer.isLoaded()"+abcSequencer.isLoaded()+" abcSong != null "+(abcSong != null)+" audioExporter.isExporting()"+audioExporter.isExporting());
 				return;
 			}
 			audioExporter.exportMp3Builtin(abcSequencer, getAbcExportFile(), abcSong.getTitle(), abcSong.getComposer());
@@ -1205,6 +1206,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		exportWavMenuItem.addActionListener(e -> {
 			if (!abcSequencer.isLoaded() || abcSong == null || audioExporter.isExporting()) {
 				Toolkit.getDefaultToolkit().beep();
+                log.warning("Cannot export audio. abcSequencer.isLoaded()"+abcSequencer.isLoaded()+" abcSong != null "+(abcSong != null)+" audioExporter.isExporting()"+audioExporter.isExporting());
 				return;
 			}
 			refreshPreviewSequence(true);//important, so last edits gets written
@@ -2234,6 +2236,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	
 	public void openFile(File file) {
         if (!uiEnabled || (audioExporter != null && audioExporter.isExporting())) {
+            log.warning("Cannot open file. uiEnabled="+uiEnabled+" audioExporter.isExporting()="+(audioExporter != null && audioExporter.isExporting()));
             Toolkit.getDefaultToolkit().beep();
             return;
         }
