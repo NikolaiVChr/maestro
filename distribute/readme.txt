@@ -48,7 +48,8 @@ Version 4.5.20
 - Made the pan window slightly larger to show 4 stacked parts.
 - Various minor optimizations.
 - Organic multi-stage 2
-- Made pitch bend handling for organic smarter.
+- Made pitch bend handling for organic much smarter.
+- Made pitch bend handling for large range pitch bends slightly smarter.
 
 Version 4.5.18
 - Fixed a bug where playlists with files which had been moved/renamed wouldn't load.
