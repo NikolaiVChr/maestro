@@ -406,7 +406,7 @@
 		</exec>
 	</target>
 
-	<target name="ZipFile" depends="Build,JPackageAppImages" description="Make ZIP file">
+	<target name="ZipFile" depends="Build,JPackageAppImages,Unmark-readonly" description="Make ZIP file">
 		<mkdir dir="${output}" />
 		<zip destfile="${output}/${basename.Maestro}_v${version.Maestro}.zip" basedir="${build}">
 			<zipfileset file="${build}/Maestro.exe" fullpath="Maestro.exe" />
@@ -423,6 +423,16 @@
 			<zipfileset file="launch_abctools.sh" fullpath="linux_or_mac/mac_abctools.command" filemode="755" />
 		</zip>
 	</target>
+
+    <target name="Unmark-readonly" if="isWindows" description="Unmark folder read-only (Windows)">
+        <!--
+         Jdk 25 jpackage will make the exe files read-only, which is annoying for the zip and for cleanup.
+         This will unset the flag.
+         -->
+        <exec executable="attrib" osfamily="windows" failonerror="false">
+            <arg line="-r -s -h /s /d &quot;${jpackage}\*&quot;"/>
+        </exec>
+    </target>
 
 	<target name="Distribute" depends="Installer,ZipFile" description="Make final ZIP and MSI files">
 		<delete dir="${build}/runtime" />
