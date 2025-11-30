@@ -279,4 +279,19 @@ class AbcExporterTest {
         assertEquals(1, result.size());
         assertSegment(result.get(0), 0, 1000, 1);
     }
+
+    @Test
+    @DisplayName("Scenario 10: Loop test")
+    void testScenario11() throws Exception {
+        BentAbcNoteEvent note = createNote(1000, 1,
+                2,2, 65,3, 140,4, 141,5, 142,4, 206,7, 207,4, 272,6);
+        List<AbcNoteEvent> result = runTest(note);
+        printSegments(result);
+
+        assertEquals(4, result.size());
+        assertSegment(result.get(0), 0, 65, 2);//65
+        assertSegment(result.get(1), 65, 140, 3);//75
+        assertSegment(result.get(2), 140, 272, 4);//66
+        assertSegment(result.get(3), 272, 1000, 6);
+    }
 }

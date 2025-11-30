@@ -5519,6 +5519,7 @@ public class AbcExporter {
 	 * @param ne   The note event to be processed
 	 * @return List of multiple NoteEvents
 	 */
+    @Deprecated
 	private List<AbcNoteEvent> expandPitchBendsOrganic(AbcPart part, AbcNoteEvent ne) {
 		// Handle pitch bend by subdividing tone into shorter notes.
 		if (ne instanceof BentAbcNoteEvent be) {
@@ -5614,13 +5615,14 @@ public class AbcExporter {
             This loop has a part A, B and C.
 
             A:
-            Skip 65 ms forward and check which bend dominates that minimum we skipped over.
+            Skip minimum 65 ms forward and check which bend dominates what we skipped over.
             If needed, create/change the current subnote to match.
 
             B:
-            Determine when and what bend the minimum should end on
+            Determine when and what bend the skipped minimum should end on
             Also if the that ending from minimum region just continues with same bend,
-            then extend nextTick as far as we can before bend changes.
+            then extend nextTick as far as we can before bend changes,
+            because once we change, we again have to skip minimum.
 
             C:
             Check to see if we can go even further. Tests 65 ms forward.
