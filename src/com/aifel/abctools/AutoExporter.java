@@ -271,6 +271,7 @@ public class AutoExporter implements WarningHandler {
         if (!frame.getForceLegacyTimingSelected() && !frame.getForceOrganicSelected() && !frame.getForceOrganic2Selected()) {
             appendToField("<p>Mix timings allowed to delete minimal notes: "+Boolean.toString(saveSettings.deleteMinimalNotes)+"</p>");
         }
+        appendToField("<p>Pitch bend range cutoff for switching method is: "+Integer.toString(miscSettings.maxRangeForNewBendMethod)+"</p>");
         appendToField("<p>Output extended songbook metainfo: "+Boolean.toString(miscSettings.showBadger)+"</p>");
         boolean pattern = false;
         if (exportFilenameTemplate.shouldRegenerateFilename()) {
