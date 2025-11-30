@@ -471,7 +471,7 @@ public class CharsetDetectAndDecode {
 	
 	private static final Pattern VIET_WORDS = Pattern.compile(
 	    "\\b(?:không|yêu|nhớ|người|tình|trời|đời|đừng|có lẽ|đã|của|muốn|đêm|ngày|tôi)\\b",
-	    Pattern.CASE_INSENSITIVE
+	    Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE
 	);
     
     public static Pair<String, Charset> detectAndDecode(byte[] data, int minConfidence) {
