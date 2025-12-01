@@ -54,6 +54,14 @@ public class MaestroMain {
 	}
 
 	public static void main(final String[] args) throws Exception {
+        /*
+        System.out.println("Charset -> Aliases");
+        System.out.println("==================");
+        for (Charset cs : Charset.availableCharsets().values()) {
+            System.out.println(cs.name() + " -> " + cs.aliases());
+        }
+        */
+
         AppInfo.maestro = true;
         AppInfo.APP_NAME = APP_NAME;
 		Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {

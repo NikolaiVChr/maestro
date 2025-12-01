@@ -76,6 +76,20 @@
 		</copy>-->
 	</target>
 
+    <target name="check-jar-dependencies" description="Check which java modules jlink is gonna need">
+        <!-- some modules like charset used by lyrics and management used by about-dialog will
+             not be listed, as they are used by introspection -->
+        <echo>Used modules in Maestro jar:</echo>
+        <exec executable="${env.JAVA_HOME}/bin/jdeps.exe" failonerror="true">
+            <arg value="--print-module-deps"/>
+            <arg value="-R"/>
+            <arg value="--ignore-missing-deps"/>
+            <arg value="--multi-release"/>
+            <arg value="21"/>
+            <arg value="${target}/Maestro.jar"/>
+        </exec>
+    </target>
+
 	<target name="GenerateSoundFontInfo.CheckUpToDate" description="Test if LotroInstruments.txt needs making">
 		<uptodate property="GenerateSoundFontInfo.uptodate" value="true" targetfile="${basedir}/${audio}/LotroInstruments/LotroInstruments.txt">
 			<srcfiles dir="${src}/com/digero/tools/soundfont/" />
@@ -155,6 +169,8 @@
 			<arg value="com.digero.abcplayer.AbcPlayer"/>
 			<arg value="--main-jar"/>
 			<arg value="AbcPlayer.jar"/>
+            <arg value="--add-modules"/>
+            <arg value="java.base,java.desktop,java.logging,java.prefs,jdk.charsets,java.sql,java.management,java.xml,java.net.http"/>
 		</exec>
 		<!-- Abc Tools -->
 		<exec executable="${env.JAVA_HOME}/bin/jpackage.exe" failonerror="true">
@@ -185,6 +201,8 @@
 			<arg value="com.aifel.abctools.AbcTools"/>
 			<arg value="--main-jar"/>
 			<arg value="AbcTools.jar"/>
+            <arg value="--add-modules"/>
+            <arg value="java.base,java.desktop,java.logging,java.prefs,jdk.charsets,java.sql,java.management,java.xml,java.net.http"/>
 		</exec>
 		<!-- Copy assets for final app/ folder -->
 		<copy file="${build}/LotroInstruments.sf2" todir="${staging}" />
@@ -221,6 +239,8 @@
 			<arg value="com.digero.maestro.MaestroMain"/>
 			<arg value="--main-jar"/>
 			<arg value="Maestro.jar"/>
+            <arg value="--add-modules"/>
+            <arg value="java.base,java.desktop,java.logging,java.prefs,jdk.charsets,java.sql,java.management,java.xml,java.net.http"/>
 		</exec>
 		<copy file="${jpackage}/AbcPlayer/app/AbcPlayer.cfg" tofile="${jpackage}/Maestro/app/AbcPlayer.cfg" />
 		<copy file="${jpackage}/AbcTools/app/AbcTools.cfg" tofile="${jpackage}/Maestro/app/AbcTools.cfg" />
@@ -406,7 +426,7 @@
 		</exec>
 	</target>
 
-	<target name="ZipFile" depends="Build,JPackageAppImages" description="Make ZIP file">
+	<target name="ZipFile" depends="Build,JPackageAppImages,Unmark-readonly" description="Make ZIP file">
 		<mkdir dir="${output}" />
 		<zip destfile="${output}/${basename.Maestro}_v${version.Maestro}.zip" basedir="${build}">
 			<zipfileset file="${build}/Maestro.exe" fullpath="Maestro.exe" />
@@ -423,6 +443,16 @@
 			<zipfileset file="launch_abctools.sh" fullpath="linux_or_mac/mac_abctools.command" filemode="755" />
 		</zip>
 	</target>
+
+    <target name="Unmark-readonly" if="isWindows" description="Unmark folder read-only (Windows)">
+        <!--
+         Jdk 25 jpackage will make the exe files read-only, which is annoying for the zip and for cleanup.
+         This will unset the flag.
+         -->
+        <exec executable="attrib" osfamily="windows" failonerror="false">
+            <arg line="-r -s -h /s /d &quot;${jpackage}\*&quot;"/>
+        </exec>
+    </target>
 
 	<target name="Distribute" depends="Installer,ZipFile" description="Make final ZIP and MSI files">
 		<delete dir="${build}/runtime" />
