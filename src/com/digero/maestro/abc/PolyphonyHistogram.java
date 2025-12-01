@@ -243,28 +243,9 @@ public class PolyphonyHistogram   {
 			}
 		}
 			
-		TreeMap<Long, Pair<Long,Integer>> songMap = new TreeMap<>();
-
-		Set<Entry<Long, Pair<Long,Integer>>> entrySet = partMap.entrySet();
-		long lastTick = -1L;
-		for (Entry<Long, Pair<Long,Integer>> entry : entrySet) {
-			long micros = entry.getKey();//micros
-			int noteStarts = entry.getValue().second;//number of notes
-			long tick = entry.getValue().first;
-			//assert tick >= lastTick:"HISTO OOPS 3";
-			lastTick = tick;
-					
-			Pair<Long,Integer> oldValue = songMap.get(micros);
-			if (oldValue == null) {
-				oldValue = new Pair<>(tick, 0);
-			}
-			oldValue.second += noteStarts;
-			songMap.put(micros, oldValue);
-		}
-			
 		int polyphony = 0;
-		Set<Entry<Long, Pair<Long,Integer>>> entrySongSet = songMap.entrySet();
-		lastTick = -1L;
+		Set<Entry<Long, Pair<Long,Integer>>> entrySongSet = partMap.entrySet();
+		long lastTick = -1L;
 		long lastMicro = -1L;
 		int maximum = 0;
 		for (Entry<Long, Pair<Long,Integer>> entry : entrySongSet) {
@@ -373,16 +354,18 @@ public class PolyphonyHistogram   {
             // this assert can happen due to converting back and forth is not sure to output original tick, rounding I reckon
             //assert entry.getValue().first >= lastTick:" CAN HAPPEN at "+Util.formatDuration(entry.getKey())+"="+entry.getValue().first+"  "+Util.formatDuration(lastMicro)+"="+lastTick;
             long lastMicroSection = entry.getKey() - lastMicro;
+
+            if (polyphony > 0 && lastMicro != -1L) {
+                sumMicros += lastMicroSection;
+                average += (double) (polyphony * lastMicroSection);
+            }
+
             lastTick = entry.getValue().first;
             lastMicro = entry.getKey();
             polyphony += entry.getValue().second;
             if (polyphony > maxAll) {
                 maxAll = polyphony;
                 peakTick = entry.getValue().first;
-            }
-            if (polyphony > 0) {
-                sumMicros += lastMicroSection;
-                average += (double) (polyphony * lastMicroSection);
             }
         }
         average = average / sumMicros;
