@@ -762,6 +762,9 @@ public class AbcExporter {
 		Pair<List<Chord>, Boolean> pair = combineOrganic(part, false, histogram, quanFractions);
 		 
 		List<Chord> chords = pair.first;
+
+        // check that last notes is not tied. Could have impact on drone-bug if fails.
+        //assert chords.isEmpty() || chords.getLast().getNotes().stream().allMatch(note -> note.tiesTo == null);
 		
 		if (useMicroAccuracy) {
             //logAbc.warning("ABC part organic export: using micro accuracy.");
@@ -1109,6 +1112,11 @@ public class AbcExporter {
 
         for (StringBuilder b : builders) {
             out.print(b);
+        }
+        if (part.getInstrument() == LotroInstrument.BASIC_BAGPIPE) {
+            // Attempt to fix drone-bug (aka. horn bug)
+            if (useMicroAccuracy) delayed.append("x" + 500_000);
+            else delayed.append("x" + microToMilliCeil(500_000,oneMicro,oneMilli));
         }
 		out.println(" |]");
 		out.println();
