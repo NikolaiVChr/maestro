@@ -2924,9 +2924,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             songNotes += part.numberOfExportedNotes;
         }
         out.append("\nSong").append(" will export ").append(songNotes).append(" notes.\n");
-        if (saveSettings.deleteMinimalNotes && !abcSong.isOrganic()) {
+        if ((saveSettings.deleteMinimalNotes && !abcSong.isOrganic()) || (abcSong.isOrganic() && abcSong.isOrganic2())) {
             out.append("\n");
-            out.append("Delete minimal (extremely short) notes that due to slight fitting might produce undesired dissonance:\n");
+            if (abcSong.isOrganic()) out.append("Delete short notes that became dissonant due to fitting:\n");
+            else out.append("Delete minimal (very short) notes that due to slight fitting might produce undesired dissonance:\n");
             boolean active = false;
             for (AbcPart part : abcSong.getParts()) {
                 if (part.numberOfRemovedNotesForSafety > 0) {

@@ -3501,7 +3501,9 @@ public class AbcExporter {
 		NavigableSet<Long> grid = upgraded?createGridVersion2(events, minimumMicros, part, part.getAbcSong().getSequenceInfo().getDataCache().getBarLengthTicks()):createGrid(events, minimumMicros, part, useRestToShortenChords);
 		
 		events = snapNotesToGrid(events, grid, minimumMicros, part);
-		
+
+        events = removeCollapsedDissonance(events, part);
+
 		List<Chord> chords = chordifyOrganic(events, grid, part, useRestToShortenChords, minimumMicros);
 		
 		return chords;
@@ -4391,8 +4393,104 @@ public class AbcExporter {
         part.numberOfRemovedNotesFromFitting = gridDeletion;
 	    return snappedNotes;
 	}
-	
-	/**
+
+    /**
+     * Filters out notes that have "collapsed" onto the same grid line
+     * and create unwanted dissonance (e.g. chromatic slides crushed into chords).
+     */
+    private List<AbcNoteEvent> removeCollapsedDissonance(List<AbcNoteEvent> events, AbcPart part) {
+        part.numberOfRemovedNotesForSafety = 0;
+        List<AbcNoteEvent> cleaned = new ArrayList<>();
+        // Group notes by their new snapped start time
+        Map<Long, List<AbcNoteEvent>> groups = new HashMap<>();
+
+        for (AbcNoteEvent ne : events) {
+            if (ne.note == Note.REST) {
+                cleaned.add(ne);
+                continue;
+            }
+            groups.computeIfAbsent(ne.getStartTick(), k -> new ArrayList<>()).add(ne);
+        }
+
+        for (List<AbcNoteEvent> cluster : groups.values()) {
+            if (cluster.size() < 2) {
+                cleaned.addAll(cluster);
+                continue;
+            }
+
+            // Sort by original importance (length/velocity) so we drop the weak ones
+            cluster.sort(Comparator.comparingLong((AbcNoteEvent e) -> e.endABCMicros - e.startABCMicros)
+                    .thenComparingInt(AbcNoteEvent::getVelocity).reversed());
+
+            List<AbcNoteEvent> survivors = new ArrayList<>();
+
+            for (AbcNoteEvent candidate : cluster) {
+                if (candidate.getOrigBend() != null || (candidate.origNote instanceof BentMidiNoteEvent) || candidate.origNote == null) {
+                    survivors.add(candidate);
+                    continue;
+                }
+
+                boolean keepCandidate = true;
+                for (AbcNoteEvent survivor : survivors) {
+                    if (survivor.getOrigBend() != null || survivor.origNote instanceof BentMidiNoteEvent || survivor.origNote == null) {
+                        continue;
+                    }
+
+                    // Check if they were originally sequential
+                    long overlapMicros = getOrigOverlap(candidate, survivor);
+
+                    // If they overlapped significantly in the original, they are intended harmony/dissonance.
+                    if (overlapMicros > 20_000L) {
+                        continue; // Keep both, don't check for dissonance
+                    }
+
+                    // Check for dissonance
+                    int interval = Math.abs(candidate.note.id - survivor.note.id);
+                    if (interval <= 2 && interval > 0) { // Major 2nd or minor 2nd
+
+                        long durCandidate = candidate.endABCMicros - candidate.startABCMicros;
+                        long durSurvivor = survivor.endABCMicros - survivor.startABCMicros;
+
+                        if (durCandidate > 100_000L && durSurvivor > 100_000L) {
+                            continue; // Keep both
+                        }
+
+                        // They crashed into each other and sound bad.
+                        // Since we sorted by velocity/importance, survivor is better.
+                        // Drop candidate.
+                        keepCandidate = false;
+                        part.numberOfRemovedNotesForSafety++;
+                        break;
+                    }
+                }
+                if (keepCandidate) {
+                    survivors.add(candidate);
+                }
+            }
+            cleaned.addAll(survivors);
+        }
+
+        Collections.sort(cleaned);
+        return cleaned;
+    }
+
+    private long getOrigOverlap(AbcNoteEvent candidate, AbcNoteEvent survivor) {
+        long startC = candidate.origNote.getStartMicros();//relying on its datacache to be a SequenceDataCache,
+        long endC   = candidate.origNote.getEndMicros();//  which it is for MidiNoteEvents.
+
+        long startS = survivor.origNote.getStartMicros();
+        long endS   = survivor.origNote.getEndMicros();
+
+        long overlap = 0;
+        if (startC < startS) {
+            overlap = endC - startS; // Candidate started first
+        } else {
+            overlap = endS - startC; // Survivor started first
+        }
+        return overlap;
+    }
+
+    /**
 	 * 
 	 * Part of multi-stage organic path
 	 * 
