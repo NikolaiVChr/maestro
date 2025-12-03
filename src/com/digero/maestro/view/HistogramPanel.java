@@ -33,6 +33,7 @@ import com.digero.maestro.midi.NoteEvent;
 import com.digero.maestro.midi.SequenceDataCache;
 import com.digero.maestro.midi.SequenceInfo;
 import com.digero.maestro.view.TrackPanel.TrackDimensions;
+import org.jetbrains.annotations.NotNull;
 
 public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutConstants, ArrangementViewItem {
 	// 0 1 2 3
@@ -239,7 +240,8 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
             if (histogram != null) {
                 int x = event.getX();
                 if (x == lastX && histogram == lastHistogram) return lastStr;
-                // Convert mouse X coordinate to tick position
+
+                // Convert mouse X coordinate to midi-micros position
                 AffineTransform xForm = getTransform();
                 Point2D.Double pt = new Point2D.Double(x, 0);
                 try {
@@ -251,15 +253,16 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
                     return null;
                 }
                 StringBuilder tooltip = new StringBuilder();
-                tooltip.append("Part polyphony:");
+                tooltip.append("<html>Part polyphony:");
                 for (AbcPart part : abcSong.getParts()) {
                     int notesPart = histogram.get((long) pt.x, part);
                     if (notesPart == 0) continue;
-                    tooltip.append("\n")
-                            .append(part.getTitle())
-                            .append(":  ")
+                    tooltip.append("<br>")
+                            .append(escapeHtml(part.getTitle()))
+                            .append(":&nbsp;&nbsp;")
                             .append(notesPart);
                 }
+                tooltip.append("</html>");
                 lastX = x;
                 lastStr = tooltip.toString();
                 lastHistogram = histogram;
@@ -269,6 +272,37 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
             lastStr = "Polyphony";
             lastHistogram = null;
             return null;
+        }
+
+        private String escapeHtml(@NotNull String text) {
+
+            int len = text.length();
+            int i = 0;
+
+            for (; i < len; i++) {
+                char c = text.charAt(i);
+                if (c == '&' || c == '<' || c == '>' || c == '"' || c == '\'') {
+                    break;
+                }
+            }
+
+            if (i == len) return text;
+
+            StringBuilder b = new StringBuilder(len + 16);
+            b.append(text, 0, i); // append the clean part
+
+            for (; i < len; i++) {
+                char c = text.charAt(i);
+                switch (c) {
+                    case '&' -> b.append("&amp;");
+                    case '<' -> b.append("&lt;");
+                    case '>' -> b.append("&gt;");
+                    case '"' -> b.append("&quot;");
+                    case '\'' -> b.append("&#39;");
+                    default -> b.append(c);
+                }
+            }
+            return b.toString();
         }
 
 		private void recalcPolyphonyEvents() {
