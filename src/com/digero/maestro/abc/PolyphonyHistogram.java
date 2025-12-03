@@ -13,13 +13,19 @@ import com.digero.common.midi.Note;
 import com.digero.common.midi.SequencerEvent;
 import com.digero.common.util.Listener;
 import com.digero.common.util.Pair;
+import com.digero.common.util.Triple;
 import com.digero.maestro.midi.AbcNoteEvent;
 import com.digero.maestro.midi.Chord;
 
 public class PolyphonyHistogram   {
 
-	private final Map<Long, TreeMap<Long, Pair<Long,Integer>>> histogramData = new HashMap<>();
-	private TreeMap<Long, Pair<Long,Integer>> sum = new TreeMap<>();// <micros,numberOfNotes>
+    /** partID -> abcMicros -> (tick, numberOfNotes) */
+	private final Map<Long, TreeMap<Long, Triple<Long,Integer,Long>>> histogramData = new HashMap<>();
+    /** abcMicros -> tick,numberOfNotes */
+	private TreeMap<Long, Pair<Long,Integer>> sum = new TreeMap<>();
+    /** partID -> midiMicros,numberOfNotes */
+    private Map<Long, NavigableMap<Long, Integer>> partSum = new HashMap<>();
+
 	private boolean dirty = false;
 	private int max = 0;
     private double average = 0;
@@ -80,7 +86,7 @@ public class PolyphonyHistogram   {
 	public void count(AbcPart part, List<Chord> chords, boolean organic, QuantizedTimingInfo qtm) throws IOException {
 		if (!enabled) return;
 		
-		TreeMap<Long, Pair<Long,Integer>> partMap = new TreeMap<>();
+		TreeMap<Long, Triple<Long,Integer,Long>> partMap = new TreeMap<>();
 		List<AbcNoteEvent> done = new ArrayList<>();
 		for (Chord chord : chords) {
 			for (AbcNoteEvent event : chord.getNotes()) {
@@ -132,17 +138,17 @@ public class PolyphonyHistogram   {
                     endTick   = qtm.microsToTickABC(endMicros);
                 }
                 if (endMicros == startMicros) continue;
-								
-				Pair<Long,Integer> oldStart = partMap.get(startMicros);
+
+                Triple<Long,Integer,Long> oldStart = partMap.get(startMicros);
 				if (oldStart == null) {
-					oldStart = new Pair<>(event.getStartTick(), 0);
+					oldStart = new Triple<>(event.getStartTick(), 0, part.getAbcSong().getSequenceInfo().getDataCache().tickToMicros(event.getStartTick()));
 				}
 				oldStart.second += 1;
 				partMap.put(startMicros, oldStart);
 				
-				Pair<Long,Integer> oldEnd = partMap.get(endMicros);
+				Triple<Long,Integer,Long> oldEnd = partMap.get(endMicros);
 				if (oldEnd == null) {
-					oldEnd = new Pair<>(endTick, 0);
+					oldEnd = new Triple<>(endTick, 0, part.getAbcSong().getSequenceInfo().getDataCache().tickToMicros(endTick));
 				}
 				oldEnd.second -= 1;
 				partMap.put(endMicros, oldEnd);
@@ -277,8 +283,8 @@ public class PolyphonyHistogram   {
         maxAll = 0;
         peakTick = 0L;
 		Set<Long> partSet = new HashSet<>(histogramData.keySet());
-		List<TreeMap<Long, Pair<Long,Integer>>> treeList = new ArrayList<>();
-        List<TreeMap<Long, Pair<Long,Integer>>> treeListMuted = new ArrayList<>();
+		List<TreeMap<Long, Triple<Long,Integer,Long>>> treeList = new ArrayList<>();
+        List<TreeMap<Long, Triple<Long,Integer,Long>>> treeListMuted = new ArrayList<>();
 		for (Long uniqueID : partSet) {
             AbcPart part = song.getPartFromID(uniqueID);
 			if (part == null || part.discarded) {
@@ -290,10 +296,10 @@ public class PolyphonyHistogram   {
             }
 		}
 		TreeMap<Long, Pair<Long,Integer>> songMap = new TreeMap<>();
-		for (TreeMap<Long, Pair<Long,Integer>> partMap : treeList) {
-			Set<Entry<Long, Pair<Long,Integer>>> entrySet = partMap.entrySet();
+		for (TreeMap<Long, Triple<Long,Integer,Long>> partMap : treeList) {
+			Set<Entry<Long, Triple<Long, Integer, Long>>> entrySet = partMap.entrySet();
 			long lastTick = -1L;
-			for (Entry<Long, Pair<Long,Integer>> entry : entrySet) {
+			for (Entry<Long, Triple<Long, Integer, Long>> entry : entrySet) {
 				long micros = entry.getKey();//micros
 				int noteStarts = entry.getValue().second;//number of notes
 				long tick = entry.getValue().first;
@@ -328,10 +334,10 @@ public class PolyphonyHistogram   {
 		assert polyphony == 0;
 
         // now add the muted parts
-        for (TreeMap<Long, Pair<Long,Integer>> partMap : treeListMuted) {
-            Set<Entry<Long, Pair<Long,Integer>>> entrySet = partMap.entrySet();
+        for (TreeMap<Long, Triple<Long,Integer,Long>> partMap : treeListMuted) {
+            Set<Entry<Long, Triple<Long, Integer, Long>>> entrySet = partMap.entrySet();
             lastTick = -1L;
-            for (Entry<Long, Pair<Long,Integer>> entry : entrySet) {
+            for (Entry<Long, Triple<Long, Integer, Long>> entry : entrySet) {
                 long micros = entry.getKey();//micros
                 int noteStarts = entry.getValue().second;//number of notes
                 long tick = entry.getValue().first;
@@ -369,13 +375,37 @@ public class PolyphonyHistogram   {
             }
         }
         average = average / sumMicros;
+
+        //part specific sum:
+        partSum = new HashMap<>();// partID -> tick, part-polyphony, midi-micros
+
+        for (Entry<Long, TreeMap<Long, Triple<Long, Integer,Long>>> entry : histogramData.entrySet()) {
+            long partID = entry.getKey();
+            NavigableMap<Long, Integer> partPolyMap = new TreeMap<>();
+            partSum.put(partID, partPolyMap);
+            polyphony = 0;
+            lastTick = -1L;
+            lastMicro = -1L;
+            for (Entry<Long, Triple<Long, Integer,Long>> a: entry.getValue().entrySet()) {
+                long tick = a.getValue().first;
+                long microsABC = a.getKey();
+                long microsMIDI = a.getValue().third;
+                int noteStarts = a.getValue().second;
+
+                polyphony += noteStarts;
+                partPolyMap.put(microsMIDI, polyphony);
+
+                lastTick = tick;
+                lastMicro = microsABC;
+            }
+        }
 	}
 	
 	/**
 	 * Request the number of concurrently playing notes.
 	 * Be sure to call sumUp first if is dirty.
 	 * 
-	 * @param microsecond Time of request
+	 * @param microsecond Time of request in ABC time
 	 * @return Number of notes being played at this time
 	 */
 	public int get(long microsecond) {
@@ -386,6 +416,29 @@ public class PolyphonyHistogram   {
 		}
 		return sum.get(key).second;
 	}
+
+    /**
+     * Request the number of concurrently playing notes in a specific part.
+     * Be sure to call sumUp first if is dirty.
+     *
+     * @param micros Micros of request in orig midi time
+     * @return Number of notes being played at this time
+     */
+    public int get(long micros, AbcPart part) {
+        if (!enabled) return 0;
+
+        NavigableMap<Long, Integer> key = partSum.get(part.uniqueID);
+        if (key == null) {
+            return 0;
+        }
+
+        Entry<Long, Integer> entry = key.floorEntry(micros);
+        if (entry == null) {
+            return 0;
+        }
+
+        return entry.getValue();
+    }
 	
 	/**
 	 * Request the number of concurrently playing notes.

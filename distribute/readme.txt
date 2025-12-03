@@ -50,6 +50,7 @@ Version 4.5.20
 - Organic multi-stage 2
 - Made pitch bend handling for organic much smarter.
 - Made pitch bend handling for large range pitch bends slightly smarter.
+- Added polyphony graph tooltip.
 
 Version 4.5.18
 - Fixed a bug where playlists with files which had been moved/renamed wouldn't load.
