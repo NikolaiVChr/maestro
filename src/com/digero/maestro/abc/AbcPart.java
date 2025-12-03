@@ -130,12 +130,15 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
         this.uniqueID = uniqueID;
 		this.abcSong = abcSong;
         listeners = new ListenerList<>();
-		abcSong.addSongListener(songListener);
+        if (abcSong != null) {
+            // can be null if unit testing
+            abcSong.addSongListener(songListener);
+        }
 		this.instrument = LotroInstrument.DEFAULT_INSTRUMENT;
-		this.instrNameSettings = abcSong.getInstrNameSettings();
-		this.title = this.instrNameSettings.getInstrNick(instrument);
+		this.instrNameSettings = abcSong == null?null:abcSong.getInstrNameSettings();
+		this.title = abcSong == null?"myUnitTestPart":this.instrNameSettings.getInstrNick(instrument);
 
-		int trackCount = getTrackCount();
+		int trackCount = abcSong == null?1:getTrackCount();
 		this.trackTranspose = new int[trackCount];
 		this.trackEnabled = new boolean[trackCount];
 		this.trackPriority = new boolean[trackCount];
@@ -158,7 +161,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			this.playLeft[track] = true;
 			this.playCenter[track] = true;
 			this.playRight[track] = true;
-			this.fx[track] = isDrumTrack(track);
+			this.fx[track] = abcSong == null?false:isDrumTrack(track);
 		}
 	}
 

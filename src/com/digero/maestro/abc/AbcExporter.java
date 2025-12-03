@@ -762,6 +762,9 @@ public class AbcExporter {
 		Pair<List<Chord>, Boolean> pair = combineOrganic(part, false, histogram, quanFractions);
 		 
 		List<Chord> chords = pair.first;
+
+        // check that last notes is not tied. Could have impact on drone-bug if fails.
+        //assert chords.isEmpty() || chords.getLast().getNotes().stream().allMatch(note -> note.tiesTo == null);
 		
 		if (useMicroAccuracy) {
             //logAbc.warning("ABC part organic export: using micro accuracy.");
@@ -1109,6 +1112,11 @@ public class AbcExporter {
 
         for (StringBuilder b : builders) {
             out.print(b);
+        }
+        if (part.getInstrument() == LotroInstrument.BASIC_BAGPIPE) {
+            // Attempt to fix drone-bug (aka. horn bug)
+            if (useMicroAccuracy) delayed.append("x" + 500_000);
+            else delayed.append("x" + microToMilliCeil(500_000,oneMicro,oneMilli));
         }
 		out.println(" |]");
 		out.println();
@@ -3490,7 +3498,7 @@ public class AbcExporter {
 	
 		final long minimumMicros = quanFractions[2];
 
-		NavigableSet<Long> grid = upgraded?createGridVersion2(events, minimumMicros, part):createGrid(events, minimumMicros, part, useRestToShortenChords);
+		NavigableSet<Long> grid = upgraded?createGridVersion2(events, minimumMicros, part, part.getAbcSong().getSequenceInfo().getDataCache().getBarLengthTicks()):createGrid(events, minimumMicros, part, useRestToShortenChords);
 		
 		events = snapNotesToGrid(events, grid, minimumMicros, part);
 		
@@ -3754,6 +3762,8 @@ public class AbcExporter {
 	    
 	    NavigableSet<GridLine> refinedGrid = new TreeSet<>(gridLineComparator);
 	    refinedGrid.add(prev);
+
+        long barTicks = part.getAbcSong().getSequenceInfo().getDataCache().getBarLengthTicks();
 	    while (gridIter.hasNext()) {
 	        GridLine curr = gridIter.next();
 	        
@@ -3769,11 +3779,11 @@ public class AbcExporter {
                     long minMicros = curr.micros - maxSustain;
                     long maxMicros = prev.micros + maxSustain;
 
-                    candidateTime = closestBarMicrosABC(part, candidateTime,
+                    candidateTime = closestBarMicrosABC(barTicks, candidateTime,
                             Math.min(candidateTime - minMicros, TimingInfo.ONE_SECOND_MICROS),
                             Math.min(maxMicros - candidateTime, TimingInfo.ONE_SECOND_MICROS));
                 } else {
-                    candidateTime = closestBarMicrosABC(part, prev.micros + maxSustain,
+                    candidateTime = closestBarMicrosABC(barTicks, prev.micros + maxSustain,
                             maxSustain-minPreferredSustain, 0L);
                 }
 	            GridLine candidate = new GridLine(candidateTime, GENERAL, 0);
@@ -3853,7 +3863,7 @@ public class AbcExporter {
      * Part of multi-stage organic path
      *
      */
-    private NavigableSet<Long> createGridVersion2(List<AbcNoteEvent> events, long minimumMicros, AbcPart part) {
+    private NavigableSet<Long> createGridVersion2(List<AbcNoteEvent> events, long minimumMicros, AbcPart part, long barTicks) {
 
         final int WEIGHT_SOLO = 10;  // Fast notes
         final int WEIGHT_LONG = 10;  // Sustained notes
@@ -3872,6 +3882,8 @@ public class AbcExporter {
         long minPreferredSustain = 4L * TimingInfo.ONE_SECOND_MICROS;
         long minSustain = 2L * TimingInfo.ONE_SECOND_MICROS;
         boolean sustained = part.getInstrument().sustainable;
+
+        //System.err.println("createGridVersion2: maxSustainBuffer="+maxSustainBuffer+" maxSustain="+maxSustain+" minPreferredSustain="+minPreferredSustain+" minSustain="+minSustain+" sustained="+sustained);
 
         /*
             If two note starts are 30 to 60 ms apart (arpeggio), keep the arpeggio instead of forcing them into
@@ -3951,7 +3963,9 @@ public class AbcExporter {
                 if (c.weight >= WEIGHT_SOLO && floor != null && floorConflict) {
                     // Forward bounce (solos/arpeggios)
 
-                    boolean isOkToBounce = floor.micros() + minimumMicros / 2 < time;
+                    // If the previous grid point was a bounce, we assume we are in a run/arpeggio chain
+                    // and should continue bouncing to preserve separation, even if the gap is small.
+                    boolean isOkToBounce = floor.isBounce() || floor.micros() + minimumMicros / 2 < time;
                     long bounceTime = floor.micros() + minimumMicros;
                     if (isOkToBounce && isValidBounce(bounceTime, time, minimumMicros, grid, c.weight, true)) {
                         applyBounce(grid, bounceTime, c, minimumMicros);
@@ -3978,6 +3992,43 @@ public class AbcExporter {
                                 logNotes.finest("Deleted grace note at " + Util.formatDurationM(time) + " (No space available)");
                             }
                         }
+                    }
+                }
+            } else if (c.type == TYPE_END && !isTaken) {
+                GridPoint blocker = null;
+                if (floorConflict) blocker = floor;
+                if (ceilConflict) blocker = ceil;
+
+                if (floorConflict && ceilConflict) {
+                    // pick the closest blocker
+                    blocker = (Math.abs(time - floor.micros()) < Math.abs(time - ceil.micros())) ? floor : ceil;
+                }
+
+                boolean added = false;
+                if (blocker.weight() < c.weight()) {
+                    // Overwrite weak blocker (it's guaranteed to also be an end)
+                    grid.remove(blocker);
+                    grid.add(new GridPoint(time, false, c.weight()));
+                    added = true;
+                }
+
+                // Fallback for rejected end candidates
+                // If we couldn't place the end line due to a floor conflict (too close to start?),
+                // and there is no ceiling nearby to snap to, we risk the note being deleted.
+                // We insert a safety end at exactly minimumMicros after the floor.
+                if (!added && floorConflict && !ceilConflict) {
+                    long safetyTime = floor.micros() + minimumMicros;
+
+                    // Verify safetyTime doesn't conflict with ceiling
+                    // (It effectively steals space from the gap)
+                    boolean safetyConflict = (ceil != null && Math.abs(ceil.micros() - safetyTime) < minimumMicros);
+
+                    // Also ensure we aren't adding a duplicate
+                    boolean safetyExists = (ceil != null && ceil.micros() == safetyTime);
+
+                    if (!safetyConflict && !safetyExists) {
+                        // Add the safety line with low weight (it's a fallback)
+                        grid.add(new GridPoint(safetyTime, false, WEIGHT_END));
                     }
                 }
             }
@@ -4022,7 +4073,7 @@ public class AbcExporter {
 
                         if (safeMin <= midpoint && safeMax >= midpoint) {
                             // Search for a bar line within the safe zone
-                            candidateTime = closestBarMicrosABC(part, midpoint,
+                            candidateTime = closestBarMicrosABC(barTicks, midpoint,
                                     midpoint - safeMin,
                                     safeMax - midpoint);
                         } else {
@@ -4032,7 +4083,7 @@ public class AbcExporter {
                         }
                     } else {
                         // big gap (> 9.9995s). slice off 5s chunks.
-                        candidateTime = closestBarMicrosABC(part, prev + maxSustain,
+                        candidateTime = closestBarMicrosABC(barTicks, prev + maxSustain,
                                 maxSustain-minPreferredSustain, 0L);
                     }
 
@@ -4095,7 +4146,7 @@ public class AbcExporter {
 
     private void applyBounce(TreeSet<GridPoint> grid, long time, Candidate c, long minimumMicros) {
 
-        // We check the immediate neighbors. If they are too close we remove them.
+        // Clean up Neighbors (Make space for the Start)
 
         GridPoint key = new GridPoint(time, false, 0);
 
@@ -4108,53 +4159,98 @@ public class AbcExporter {
                         logNotes.finest("Overwriting weak grid line at " + Util.formatDurationM(ceil.micros()));
                     }
                 } else {
-                    if (c.note != null) {
-                        long duration = c.note().endABCMicros - c.note().startABCMicros;
-                        c.note().startABCMicros = time;
-                        c.note().endABCMicros = time + duration;
-                    }
+                    // Strong exact match: We cannot bounce "over" it.
+                    // Instead, we snap to this existing line.
+                    // We must still update the note and handle the end time here.
+                    updateNoteAndGridEnd(grid, time, c, minimumMicros);
                     return;
                 }
             } else if (Math.abs(ceil.micros() - time) < minimumMicros) {
-                grid.remove(ceil);
-                if (logNotes.isLoggable(Level.FINEST)) {
-                    logNotes.finest("Overwriting weak grid line at " + Util.formatDurationM(ceil.micros()));
+                // Close neighbor: Check weight
+                if (ceil.weight() < c.weight) {
+                    grid.remove(ceil);
+                    if (logNotes.isLoggable(Level.FINEST)) logNotes.finest("Overwriting weak grid line at " + Util.formatDurationM(ceil.micros()));
+                } else {
+                    // Neighbor is strong. Snap to it instead of creating new bounce.
+                    updateNoteAndGridEnd(grid, ceil.micros(), c, minimumMicros);
+                    return;
                 }
             }
         }
 
         GridPoint floor = grid.floor(key);
         if (floor != null && Math.abs(time - floor.micros()) < minimumMicros && floor.micros() != time) {
-            grid.remove(floor);
+            if (floor.weight() < c.weight) {
+                grid.remove(floor);
+            } else {
+                // Neighbor is strong. Snap to it.
+                updateNoteAndGridEnd(grid, floor.micros(), c, minimumMicros);
+                return;
+            }
         }
 
         grid.add(new GridPoint(time, true, c.weight));
 
-        if (c.note != null) {
-            long duration = c.note().endABCMicros - c.note().startABCMicros;
-            c.note().startABCMicros = time;
-            c.note().endABCMicros = time + duration;
-        }
+        updateNoteAndGridEnd(grid, time, c, minimumMicros);
 
         if (logNotes.isLoggable(Level.FINEST)) {
             logNotes.finest("Bounced " + Util.formatDurationM(time));
         }
     }
 
+    private void updateNoteAndGridEnd(TreeSet<GridPoint> grid, long time, Candidate c, long minimumMicros) {
+        if (c.note == null) return;
+
+        long duration = c.note().endABCMicros - c.note().startABCMicros;
+        long originalStart = c.note().startABCMicros;
+
+        // Update note
+        c.note().startABCMicros = time;
+        c.note().endABCMicros = time + duration;
+
+        // Only add the New End if we moved FORWARD (Delay).
+        // Forward bounce risks making the note too short if we don't move the end line.
+        if (time > originalStart) {
+            long newEnd = c.note().endABCMicros;
+            GridPoint endKey = new GridPoint(newEnd, false, 0);
+
+            // A. Check Ceiling (Future Neighbor) for the END
+            // If a grid line exists shortly after our new end, snap to it.
+            GridPoint ceil = grid.ceiling(endKey);
+            if (ceil != null && Math.abs(ceil.micros() - newEnd) < minimumMicros) {
+                c.note().endABCMicros = ceil.micros();
+                return; // Snapped to existing. Done.
+            }
+
+            // B. Check Floor (Past Neighbor / Ghost End) for the END
+            // If a grid line exists shortly before our new end, it's a conflict.
+            GridPoint floor = grid.floor(endKey);
+            if (floor != null && Math.abs(newEnd - floor.micros()) < minimumMicros) {
+                if (floor.weight() < 2) {
+                    grid.remove(floor); // Remove weak neighbor (e.g. the Ghost Old End)
+                } else {
+                    return; // Neighbor is strong. We can't add our end. Snap will handle it later.
+                }
+            }
+
+            // C. Add the New End (Weight 2 to beat remaining Ghosts)
+            grid.add(new GridPoint(newEnd, false, 2));
+        }
+    }
+
     /**
      * Part of multi-stage organic path
      *
-     * @param part abc part
+     * @param barTicks bar tick duration
      * @param idealMicros origin point
      * @param maxDistanceDown max distance down in micros from origin point
      * @param maxDistanceUp max distance up in micros from origin point
      * @return nearest midi bar line in micros
      */
-    private long closestBarMicrosABC(AbcPart part, long idealMicros, long maxDistanceDown, long maxDistanceUp) {
+    private long closestBarMicrosABC(long barTicks, long idealMicros, long maxDistanceDown, long maxDistanceUp) {
         assert idealMicros > 0L && maxDistanceDown >= 0L && maxDistanceUp >= 0L && idealMicros - maxDistanceDown >= 0L
                 :"idealMicros=" + idealMicros + ", maxDistanceDown=" + maxDistanceDown + ", maxDistanceUp=" + maxDistanceUp+" idealMicros-maxDistanceDown="+(idealMicros - maxDistanceDown);
         long tick = qtm.microsToTickABCOrganic(idealMicros);
-        long barTicks = part.getAbcSong().getSequenceInfo().getDataCache().getBarLengthTicks();
         long down = (tick / barTicks) * barTicks;
         long up = down + barTicks;
         long middle = down + barTicks / 2;
@@ -4203,7 +4299,7 @@ public class AbcExporter {
 	 * Part of multi-stage organic path
 	 * 
 	 */
-	public List<AbcNoteEvent> snapNotesToGrid(List<AbcNoteEvent> notes, NavigableSet<Long> grid, long minimumMicros, AbcPart part) {
+	private List<AbcNoteEvent> snapNotesToGrid(List<AbcNoteEvent> notes, NavigableSet<Long> grid, long minimumMicros, AbcPart part) {
 				
 		List<AbcNoteEvent> snappedNotes = new ArrayList<>(notes.size());
 

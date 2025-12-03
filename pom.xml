@@ -46,6 +46,8 @@
 					<includes>
 						<include>**/*Test.java</include>
 					</includes>
+                    <useFile>false</useFile>
+                    <trimStackTrace>false</trimStackTrace>
 				</configuration>
 			</plugin>
 			<plugin>
