@@ -4400,6 +4400,11 @@ public class AbcExporter {
      */
     private List<AbcNoteEvent> removeCollapsedDissonance(List<AbcNoteEvent> events, AbcPart part) {
         part.numberOfRemovedNotesForSafety = 0;
+
+        if (part.getInstrument() == LotroInstrument.BASIC_DRUM) return events;
+
+        // TODO: Handle if notes were zero duration in midi file. Its mostly drums this happens for, but not always.
+
         List<AbcNoteEvent> cleaned = new ArrayList<>();
         // Group notes by their new snapped start time
         Map<Long, List<AbcNoteEvent>> groups = new HashMap<>();
