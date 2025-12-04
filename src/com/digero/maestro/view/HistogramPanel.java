@@ -252,16 +252,20 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
                     lastHistogram = null;
                     return null;
                 }
+                int total = 0;
                 StringBuilder tooltip = new StringBuilder();
                 tooltip.append("<html>Part polyphony:");
                 for (AbcPart part : abcSong.getParts()) {
                     int notesPart = histogram.get((long) pt.x, part);
                     if (notesPart == 0) continue;
+                    total += notesPart;
                     tooltip.append("<br>")
                             .append(escapeHtml(part.getTitle()))
                             .append(":&nbsp;&nbsp;")
                             .append(notesPart);
                 }
+                tooltip.append("<br>Total:&nbsp;&nbsp;");
+                tooltip.append(total);
                 tooltip.append("</html>");
                 lastX = x;
                 lastStr = tooltip.toString();
