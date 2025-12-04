@@ -98,6 +98,8 @@ public class TrackInfo implements MidiConstants {
 		MidiEvent EOTevt = null;
 		long lastValidEvent = 0L;
 
+        Set<MidiNoteEvent> toBeRemoved = new HashSet<>(50);
+
 		long tick = -10000000;
 		for (int j = 0, sz = track.size(); j < sz; j++) {
 			MidiEvent evt = track.get(j);
@@ -126,7 +128,7 @@ public class TrackInfo implements MidiConstants {
                                                 ne.getEndTick(), ne.getTempoCache(), ne.midiPan);
                                         allBentNotes.add(be);
                                         be.addBend(ne.getStartTick(), 0);// we need this initial bend in NoteGraph class
-                                        noteEvents.remove(ne);
+                                        toBeRemoved.add(ne);
                                         noteEvents.add(be);
                                         activeNotes[ch][ne.note.id] = be;
                                         ne = be;
@@ -205,7 +207,7 @@ public class TrackInfo implements MidiConstants {
                             //   (even though that's against MIDI standard, but some MIDI files are meant for them to be played)
 
                             log.fine(name+" Removing zero note (OFF), tick:"+tick+" file:"+sequenceInfo.getFileName()+" track:"+trackNumber+" time:"+Util.formatDurationM(sequenceCache.tickToMicros(tick)));
-                            noteEvents.remove(active);
+                            toBeRemoved.add(active);
                             zeroNotesRemoved++;
                         }
                     }
@@ -292,7 +294,7 @@ public class TrackInfo implements MidiConstants {
                                 if (tick == ne.getStartTick()) {
                                     // Illegal zero duration note terminated, so Maestro don't have to process it and discard it in the abc export anyway.
                                     //
-                                    noteEvents.remove(ne);
+                                    toBeRemoved.add(ne);
                                     zeroNotesRemoved++;
 
                                     log.fine(name + " Removing zero note (EOT), tick:" + tick + " file:" + sequenceInfo.getFileName() + " track:" + trackNumber + " time:" + Util.formatDurationM(sequenceCache.tickToMicros(tick)));
@@ -310,7 +312,8 @@ public class TrackInfo implements MidiConstants {
 				//SysEx
 			}
 		}
-		
+
+
 		// this compliments SequenceInfo.fixupTrackLength(),
 		// here we have better knowledge of note OFFs that
 		// does nothing.
@@ -354,13 +357,15 @@ public class TrackInfo implements MidiConstants {
 			if (Math.abs(be.getMaxBend() - be.getMinBend()) > miscSettings.maxRangeForNewBendMethod) {
 				List<MidiNoteEvent> prematureSplit = be.split();
 				noteEvents.addAll(prematureSplit);
-				noteEvents.remove(be);
+                toBeRemoved.add(be);
 			} else {
 				// System.err.println(trackNumber+": Delay split on "+be.getMinBend()+"<>"+be.getMaxBend()+"
 				// ("+Math.abs(be.getMaxBend() -
 				// be.getMinBend())+")");
 			}
 		}
+
+        noteEvents.removeAll(toBeRemoved);//much faster to do it here than in the loops
 
         // adding bent sub-notes can have changed the order
         Collections.sort(noteEvents);
@@ -469,7 +474,7 @@ public class TrackInfo implements MidiConstants {
 
 			for (String i : instrumentExtensions) {
 				if (i == null)
-					break;
+					continue;//should not be possible
 				if (!first)
 					names.append(", ");
 				else
@@ -497,7 +502,7 @@ public class TrackInfo implements MidiConstants {
 						// for GM.
 			for (String i : instrumentExtensions) {
 				if (i == null)
-					break;
+                    continue;//should not be possible
 				if (!first)
 					names.append(", ");
 				else
