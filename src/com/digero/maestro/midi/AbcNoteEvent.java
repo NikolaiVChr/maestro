@@ -30,6 +30,8 @@ public class AbcNoteEvent extends NoteEvent {
 		this.origNote = origNote;
 		if (tempoCache != null) assert tempoCache instanceof QuantizedTimingInfo;
 	}
+
+    public int getVelocity() { return velocity; }
 	
 	public AbcNoteEvent getTieStart() {
 		if (tiesFrom == null)

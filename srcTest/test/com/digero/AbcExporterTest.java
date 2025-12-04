@@ -529,6 +529,86 @@ class AbcExporterTest {
         assertEquals(1010, snapped.get(0).getEndTick(), "Note A should extend to meet Note B");
     }
 
+    @Test
+    @DisplayName("Notes: Multi")
+    void testChordMulti() throws Exception {
+        long minMicros = 60000;
+
+        var events = createNotes(
+                //Arpeggio
+                new NoteDef(1000, 2000, Note.C4),
+                new NoteDef(1040, 2000, Note.D4),
+                new NoteDef(1080, 2000, Note.E2),
+                new NoteDef(1120, 2000, Note.F2),
+                new NoteDef(1160, 2000, Note.G2),
+
+                // slide
+                new NoteDef(2000, 2060, Note.C4),
+                new NoteDef(2030, 2090, Note.D4),
+                new NoteDef(2060, 2120, Note.E4),
+                new NoteDef(2090, 2150, Note.F4),
+                new NoteDef(2120, 2180, Note.G4),
+                new NoteDef(2150, 2200, Note.A4),
+                new NoteDef(2180, 2500, Note.B4),
+
+                // Grace note
+                new NoteDef(3000, 3040, Note.C4),
+                new NoteDef(3040, 3250, Note.E4),
+                new NoteDef(3040, 3270, Note.D4),
+                new NoteDef(3040, 3290, Note.E4),
+                new NoteDef(3040, 3310, Note.F4),
+
+                // Overlaps
+                new NoteDef(4000, 4100, Note.C4),
+                new NoteDef(4080, 4180, Note.D4),
+                new NoteDef(4160, 4260, Note.E4),
+                new NoteDef(4240, 4340, Note.F4),
+                new NoteDef(4320, 4420, Note.G4)
+        );
+
+        NavigableSet<Long> grid = invokeCreateGrid(events, minMicros, barTicks);
+        List<AbcNoteEvent> snapped = invokeSnapGrid(events, minMicros, grid);
+
+        System.out.println("testChordMulti result:");
+        for (var note : snapped) {
+            System.out.println(note.note+": "+note.startABCMicros+" to "+note.endABCMicros);
+        }
+
+        // --- 1. Arpeggio (Cascading Bounce) ---
+        // The chain reaction pushes these apart by 60ms each
+        assertEquals(1000, snapped.get(0).getStartTick(), "Arp 1 (Anchor)");
+        assertEquals(1060, snapped.get(1).getStartTick(), "Arp 2 (Bounce)");
+        assertEquals(1120, snapped.get(2).getStartTick(), "Arp 3 (Cascade)");
+        assertEquals(1120, snapped.get(3).getStartTick(), "Arp 4 (Cascade)");
+        assertEquals(1180, snapped.get(4).getStartTick(), "Arp 5 (Cascade)");
+
+        // --- 2. Slide (Pairwise Snapping) ---
+        // 30ms gaps are too tight to bounce, so they snap to the nearest bin
+        assertEquals(2000, snapped.get(5).getStartTick(), "Slide 1");
+        assertEquals(2000, snapped.get(6).getStartTick(), "Slide 2 (Snap to 2000)");
+        assertEquals(2080, snapped.get(7).getStartTick(), "Slide 3");
+        assertEquals(2140, snapped.get(8).getStartTick(), "Slide 4");
+        assertEquals(2140, snapped.get(9).getStartTick(), "Slide 5");
+        assertEquals(2200, snapped.get(10).getStartTick(), "Slide 6");
+        assertEquals(2200, snapped.get(11).getStartTick(), "Slide 7");
+
+        // --- 3. Grace Note (Backward Bounce) ---
+        // The grace note (3000) is pushed back by the strong chord at 3040
+        assertEquals(2980, snapped.get(12).getStartTick(), "Grace Note (Bounced Back)");
+        assertEquals(3040, snapped.get(13).getStartTick(), "Chord Note 1 (Anchor)");
+        assertEquals(3040, snapped.get(14).getStartTick(), "Chord Note 2");
+        assertEquals(3040, snapped.get(15).getStartTick(), "Chord Note 3");
+        assertEquals(3040, snapped.get(16).getStartTick(), "Chord Note 4");
+
+        // --- 4. Overlaps (Clean Grid) ---
+        // 80ms spacing is sufficient; no quantization needed
+        assertEquals(4000, snapped.get(17).getStartTick(), "Overlap 1");
+        assertEquals(4080, snapped.get(18).getStartTick(), "Overlap 2");
+        assertEquals(4160, snapped.get(19).getStartTick(), "Overlap 3");
+        assertEquals(4240, snapped.get(20).getStartTick(), "Overlap 4");
+        assertEquals(4320, snapped.get(21).getStartTick(), "Overlap 5");
+    }
+
     // ==================================================================================
     //                              ORGANIC PITCH BEND TESTS
     // ==================================================================================

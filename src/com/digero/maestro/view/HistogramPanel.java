@@ -1,11 +1,16 @@
 package com.digero.maestro.view;
 
+import com.digero.maestro.abc.AbcPart;
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
 
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.event.MouseEvent;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.NoninvertibleTransformException;
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -28,6 +33,7 @@ import com.digero.maestro.midi.NoteEvent;
 import com.digero.maestro.midi.SequenceDataCache;
 import com.digero.maestro.midi.SequenceInfo;
 import com.digero.maestro.view.TrackPanel.TrackDimensions;
+import org.jetbrains.annotations.NotNull;
 
 public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutConstants, ArrangementViewItem {
 	// 0 1 2 3
@@ -222,7 +228,86 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 			setNoteOnColor(ColorTable.NOTE_POLYPHONY_ON);
 			setNoteOnExtraHeightPix(0);
 			setNoteOnOutlineWidthPix(0);
+            setToolTipText("Polyphony");
 		}
+
+        private int lastX = -1;
+        private String lastStr = "Polyphony";
+        private PolyphonyHistogram lastHistogram = null;
+
+        @Override
+        public String getToolTipText(MouseEvent event) {
+            if (histogram != null) {
+                int x = event.getX();
+                if (x == lastX && histogram == lastHistogram) return lastStr;
+
+                // Convert mouse X coordinate to midi-micros position
+                AffineTransform xForm = getTransform();
+                Point2D.Double pt = new Point2D.Double(x, 0);
+                try {
+                    xForm.inverseTransform(pt, pt);
+                } catch (NoninvertibleTransformException e) {
+                    lastX = -1;
+                    lastStr = "Polyphony";
+                    lastHistogram = null;
+                    return null;
+                }
+                int total = 0;
+                StringBuilder tooltip = new StringBuilder();
+                tooltip.append("<html>Part polyphony:");
+                for (AbcPart part : abcSong.getParts()) {
+                    int notesPart = histogram.get((long) pt.x, part);
+                    if (notesPart == 0) continue;
+                    total += notesPart;
+                    tooltip.append("<br>")
+                            .append(escapeHtml(part.getTitle()))
+                            .append(":&nbsp;&nbsp;")
+                            .append(notesPart);
+                }
+                tooltip.append("<br>Total:&nbsp;&nbsp;");
+                tooltip.append(total);
+                tooltip.append("</html>");
+                lastX = x;
+                lastStr = tooltip.toString();
+                lastHistogram = histogram;
+                return lastStr;
+            }
+            lastX = -1;
+            lastStr = "Polyphony";
+            lastHistogram = null;
+            return null;
+        }
+
+        private String escapeHtml(@NotNull String text) {
+
+            int len = text.length();
+            int i = 0;
+
+            for (; i < len; i++) {
+                char c = text.charAt(i);
+                if (c == '&' || c == '<' || c == '>' || c == '"' || c == '\'') {
+                    break;
+                }
+            }
+
+            if (i == len) return text;
+
+            StringBuilder b = new StringBuilder(len + 16);
+            b.append(text, 0, i); // append the clean part
+
+            for (; i < len; i++) {
+                char c = text.charAt(i);
+                switch (c) {
+                    case '&' -> b.append("&amp;");
+                    case '<' -> b.append("&lt;");
+                    case '>' -> b.append("&gt;");
+                    case '"' -> b.append("&quot;");
+                    case '\'' -> b.append("&#39;");
+                    default -> b.append(c);
+                }
+            }
+            return b.toString();
+        }
 
 		private void recalcPolyphonyEvents() {
 			// Make fake note events for every count event
