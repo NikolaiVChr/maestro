@@ -1,5 +1,6 @@
 package com.digero.maestro.view;
 
+import com.digero.common.midi.PanGenerator;
 import com.digero.common.view.ColorTable;
 
 import javax.swing.*;
@@ -13,11 +14,14 @@ public class PanVisualizerPanel extends JPanel {
 
     // Visual Config
     private static final int BASE_RADIUS = 80;
+    private static final int BASE_TOTAL_ANGLE = 150;
+    private static final float BASE_STROKE_WIDTH = 4.0f;
     private static final int PART_DIAM = 24;
     private static final int ACTIVE_DIAM = PART_DIAM + 6;
     private static final int BOTTOM_BORDER = 20;
     private static final int HEAD_DIAM = 20;
     private static final int STACK_STEP = PART_DIAM + 2; // How much to move out per overlap
+    private static final int PAN_OVERLAP_DISTANCE = 8;// how close their pan should be before its considered overlap
 
     // Color Palette
     private static final Color COL_ACTIVE = ColorTable.CONTROLS_EDITED.get();     // Light Green (Manual)
@@ -66,8 +70,8 @@ public class PanVisualizerPanel extends JPanel {
 
         // 1. Draw Arc Track
         g2.setColor(COL_ARC);
-        g2.setStroke(new BasicStroke(4f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
-        g2.drawArc(cx - BASE_RADIUS, cy - BASE_RADIUS, BASE_RADIUS * 2, BASE_RADIUS * 2, 15, 150);
+        g2.setStroke(new BasicStroke(BASE_STROKE_WIDTH, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g2.drawArc(cx - BASE_RADIUS, cy - BASE_RADIUS, BASE_RADIUS * 2, BASE_RADIUS * 2, (180-BASE_TOTAL_ANGLE)/2, BASE_TOTAL_ANGLE);
 
         // 2. Draw Listener Head
         g2.setColor(Color.LIGHT_GRAY);
@@ -99,7 +103,7 @@ public class PanVisualizerPanel extends JPanel {
                 // Threshold: If within ~8 pan units, they visually overlap
                 int dist = Math.abs(current.part.pan - prev.part.pan);
 
-                if (dist < 8) {
+                if (dist < PAN_OVERLAP_DISTANCE) {
                     // Collision! Stack on top of the neighbor
                     current.stackLevel = prev.stackLevel + 1;
                 }
@@ -119,11 +123,18 @@ public class PanVisualizerPanel extends JPanel {
         if (activePan != null) {
             drawPartCircle(g2, cx, cy, activePan, activeLabel, COL_ACTIVE, true, BASE_RADIUS);
         }
+
+        // 7. Draw Pan Position
+        g2.setColor(COL_TEXT_ACTIVE);
+        g2.setFont(new Font("MonoSpaced", Font.BOLD, 14));
+        String panText = (activePan == null) ? "Auto" : String.format("%+d", activePan - PanGenerator.CENTER);
+        FontMetrics fm = g2.getFontMetrics();
+        g2.drawString(panText, cx - (fm.stringWidth(panText) / 2), cy - HEAD_DIAM - 5);
     }
 
     private void drawPartCircle(Graphics2D g2, int cx, int cy, int pan, String label, Color color, boolean isActive, int radius) {
         // Map Pan (0-127) to Angle (165 to 15 degrees)
-        double angleDeg = 165.0 - (pan * (150.0 / 127.0));
+        double angleDeg = 90+BASE_TOTAL_ANGLE/2.0d - (pan * (BASE_TOTAL_ANGLE / 127.0d));
         double angleRad = Math.toRadians(angleDeg);
 
         // Calculate Position
