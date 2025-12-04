@@ -682,7 +682,10 @@ public class SequenceInfo implements MidiConstants {
 	public boolean convertToType1(Sequence song) {
 		if (song.getTracks().length == 1 && MidiStandard.ABC != standard) {
 			Track track0 = song.getTracks()[0];
-			Track[] tracks = new Track[CHANNEL_COUNT];
+			Track[] tracks = new Track[CHANNEL_COUNT+1];
+
+            Track newTrack0 = song.createTrack();
+            tracks[0] = newTrack0;
 
 			MidiEvent endOfTrack = null;
 			int j = track0.size() - 1;
@@ -696,7 +699,8 @@ public class SequenceInfo implements MidiConstants {
 				}
 				j--;
 			}
-			if (endOfTrack == null) {
+            boolean eotWasMissing = endOfTrack == null;
+			if (eotWasMissing) {
 				// This midi has no EOT, which is in violation of midi standard, so we make one at last tick.
 				endOfTrack = MidiFactory.createEndOfTrackEvent(track0.get(track0.size() - 1).getTick());
 			}
@@ -707,22 +711,31 @@ public class SequenceInfo implements MidiConstants {
 				MidiEvent evt = track0.get(i);
 				if (evt.getMessage() instanceof ShortMessage) {
 					int chan = ((ShortMessage) evt.getMessage()).getChannel();
-					if (tracks[chan] == null) {
-						tracks[chan] = song.createTrack();
+					if (tracks[chan+1] == null) {
+						tracks[chan+1] = song.createTrack();
 
-						tracks[chan].add(endOfTrack);
+                        // so that track don't share EOT event so TrackInfo cannot manipulate them
+                        // individually, we create a new EOT event for each track.
+                        MidiEvent newEOT = new MidiEvent(endOfTrack.getMessage(), endOfTrack.getTick());
+                        tracks[chan+1].add(newEOT);
 
 						String trackName = "Track " + trackNumber;
  
 						trackNumber++;
-						tracks[chan].add(MidiFactory.createTrackNameEvent(trackName));
+						tracks[chan+1].add(MidiFactory.createTrackNameEvent(trackName));
 					}
-					tracks[chan].add(evt);
-					if (track0.remove(evt))
-						continue;
-				}
+					tracks[chan+1].add(evt);
+				} else {
+                    newTrack0.add(evt);
+                }
 				i++;
 			}
+
+            if (eotWasMissing) {
+                newTrack0.add(endOfTrack);
+            }
+
+            song.deleteTrack(track0);
 			return true;
 		}
 		return false;
@@ -1040,24 +1053,26 @@ public class SequenceInfo implements MidiConstants {
 
 		for (int i = 0; i < tracks.length; i++) {
 			Track track = tracks[i];
-			
-			for (MidiEvent evt : suspectEvents[i].reversed()) {
-				if (evt.getTick() > endTick) {
-					track.remove(evt);
-					
-					log.finer("Moving event from "
-							+ Util.formatDurationM(MidiUtils.tick2microsecond(song, evt.getTick(), tempoCache)) + " to "
-							+ Util.formatDurationM(MidiUtils.tick2microsecond(song, endTick, tempoCache)));
-					
-					// Why do we do this, events after endTick don't affect song,
-					// so why keep them? (unless its a EOT)
-					// I guess in theory it could be trackname or something like that,
-					// so for now we keep doing this.
-					
-					evt.setTick(endTick);
-					track.add(evt);
-				}
-			}
+
+            if (suspectEvents[i] == null) {
+                for (MidiEvent evt : suspectEvents[i].reversed()) {
+                    if (evt.getTick() > endTick) {
+                        track.remove(evt);
+
+                        log.finer("Moving event from "
+                                + Util.formatDurationM(MidiUtils.tick2microsecond(song, evt.getTick(), tempoCache)) + " to "
+                                + Util.formatDurationM(MidiUtils.tick2microsecond(song, endTick, tempoCache)));
+
+                        // Why do we do this, events after endTick don't affect song,
+                        // so why keep them? (unless its a EOT)
+                        // I guess in theory it could be trackname or something like that,
+                        // so for now we keep doing this.
+
+                        evt.setTick(endTick);
+                        track.add(evt);
+                    }
+                }
+            }
 
 			// insert any missing end of track events
 			boolean okay = false;
