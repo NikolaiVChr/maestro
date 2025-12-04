@@ -40,6 +40,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	private final int primaryTempoMPQ;
 	private final TimeSignature timeSignature;
 	private final NavigableMap<Long, TempoEvent> tempo = new TreeMap<>();
+    private final NavigableMap<Long, TempoEvent> tempoByMicros = new TreeMap<>();
 
 	private final long songLengthTicks;
 	private static final int NO_RESULT = -250;
@@ -404,6 +405,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
                 tempoLengths.put(prevTempoEvent.tempoMPQ, elapsedMicros + Util.valueOf(tempoLengths.get(prevTempoEvent.tempoMPQ), 0));
                 tempoEvent.micros = prevTempoEvent.micros + elapsedMicros;
             }
+            tempoByMicros.put(tempoEvent.micros, tempoEvent);//for fast micros lookup
             prevTempoEvent = tempoEvent;
         }
 
@@ -523,6 +525,13 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		return pitchBendRangeCoarse.get(channel, tick) + (pitchBendRangeFine.get(channel, tick) / 100.0);
 	}
 
+    /**
+     * Return the duration of the sequence in ticks.
+     * NOTE: TrackInfo might have shortened the sequence,
+     *       so this value might be significantly longer than
+     *       the actual sequence we work with.
+     *       If that's an issue, use SequenceInfo.getSequence().getTickLength()
+     */
 	public long getSongLengthTicks() {
 		return songLengthTicks;
 	}
@@ -665,13 +674,11 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	}
 
 	public TempoEvent getTempoEventForMicros(long micros) {
-		TempoEvent prev = TempoEvent.DEFAULT_TEMPO;
-		for (Entry<Long, TempoEvent> entry : tempo.entrySet()) {
-			if (entry.getValue().micros == micros) return entry.getValue();
-			if (entry.getValue().micros > micros) return prev;
-			prev = entry.getValue();
-		}
-		return prev;
+        Entry<Long, TempoEvent> entry = tempoByMicros.floorEntry(micros);
+        if (entry != null)
+            return entry.getValue();
+
+		return TempoEvent.DEFAULT_TEMPO;
 	}
 
 	protected MapByChannel getBendMap() {
