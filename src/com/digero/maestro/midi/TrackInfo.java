@@ -347,7 +347,8 @@ public class TrackInfo implements MidiConstants {
 		
 		for (MidiEvent evt : danglingEvents.reversed()) {
 			track.remove(evt);
-			MidiEvent nw = new MidiEvent(evt.getMessage(), lastValidEvent);
+            boolean isEOT = MidiUtils.isMetaEndOfTrack(evt.getMessage());
+            MidiEvent nw = new MidiEvent(evt.getMessage(), lastValidEvent+1+(isEOT?1:0));
 			track.add(nw);
 		}
 		
