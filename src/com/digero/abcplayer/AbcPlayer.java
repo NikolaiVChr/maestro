@@ -1752,21 +1752,14 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			// System.out.println("AbcPlayer already running. No filepath detected. Closing.");
 			return;
 		}
-		try {
-			Socket clientSocket = new Socket("localhost", 9000 + APP_VERSION.getBuild());
-			OutputStreamWriter os = new OutputStreamWriter(clientSocket.getOutputStream(), StandardCharsets.UTF_16);// NTFS
-																													// uses
-																													// UTF16
-																													// for
-																													// filenames
-			// for (String arg : args) {
-			os.write(args[0]);
-			os.close();// Must be here to flush to stream
-			// System.out.println("AbcPlayer already running. Sending file path
-			// ("+args[0].length()+" chars) to port
-			// "+(9000+APP_VERSION.getBuild())+":\n"+args[0]);
-			// }
-			clientSocket.close();
+        try (Socket clientSocket = new Socket(InetAddress.getLoopbackAddress(), 9000 + APP_VERSION.getBuild());
+                // NTFS uses UTF16 for filenames
+                OutputStreamWriter os = new OutputStreamWriter(clientSocket.getOutputStream(), StandardCharsets.UTF_16)) {
+
+            os.write(args[0]);
+
+            // System.out.println("AbcPlayer already running. Sending file path ("+args[0].length()+" chars) to port "+(9000+APP_VERSION.getBuild())+":\n"+args[0]);
+
 		} catch (IOException e) {
 			// e.printStackTrace();
 		}

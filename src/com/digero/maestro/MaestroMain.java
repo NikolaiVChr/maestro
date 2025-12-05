@@ -261,20 +261,15 @@ public class MaestroMain {
 		if (args == null || args.length == 0 || args[0].length() < 3) {
 			return;
 		}
-		try {
-			Socket clientSocket = new Socket("localhost", 8000 + APP_VERSION.getBuild());
-			OutputStreamWriter os = new OutputStreamWriter(clientSocket.getOutputStream(), StandardCharsets.UTF_16);// NTFS
-																													// uses
-																													// UTF16
-																													// for
-																													// filenames
-			// for (String arg : args) {
+        try (Socket clientSocket = new Socket(InetAddress.getLoopbackAddress(), 8000 + APP_VERSION.getBuild());
+                // NTFS uses UTF16 for filenames
+                OutputStreamWriter os = new OutputStreamWriter(clientSocket.getOutputStream(), StandardCharsets.UTF_16)) {
+
 			os.write(args[0]);
-			os.close();// Must be here to flush to stream
+
 			// Path path = Paths.get(args[0]);
-			// System.out.println("Wrote "+args[0]+" to 8001 ("+Files.exists(path)+")");
-			// }
-			clientSocket.close();
+			// System.out.println("Wrote "+args[0]+" to 8300 ("+Files.exists(path)+")");
+
 		} catch (IOException e) {
 			// e.printStackTrace();
 		}
