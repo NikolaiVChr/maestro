@@ -9,6 +9,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -196,7 +197,9 @@ public class MaestroMain {
 	private static boolean openPort() {
 
 		try {
-			serverSocket = new ServerSocket(8000 + APP_VERSION.getBuild());
+            // InetAddress.getLoopbackAddress() means only local connections (127.0.0.1)
+            // Backlog of 3 in case the user clicks fast on files in the file-explorer.
+			serverSocket = new ServerSocket(8000 + APP_VERSION.getBuild(), 3, InetAddress.getLoopbackAddress());
 			if (serverSocket.getLocalPort() != 8000 + APP_VERSION.getBuild()) {
 				//log.fine("Port is "+serverSocket.getLocalPort());
 				return false;
@@ -210,6 +213,12 @@ public class MaestroMain {
             while (!serverSocket.isClosed()) {
 				try (Socket socket = serverSocket.accept()) {
                     //log.finer("Accepted");
+
+                    if (!socket.getInetAddress().isLoopbackAddress()) {
+                        // extra guard for making sure it is only locally running Maestros
+                        socket.close();
+                        continue;
+                    }
 
                     // If readLine() takes longer than this, it throws SocketTimeoutException
                     socket.setSoTimeout(2000);
@@ -234,7 +243,7 @@ public class MaestroMain {
                         }
 					}
                 } catch (IOException e) {
-                    //log.log(Level.FINE, "Error while waiting for another maestro process", e);
+                    //log.log(Level.FINE, "Error while waiting for another abc player process", e);
                     if (serverSocket.isClosed()) break;
                 }
 			}
