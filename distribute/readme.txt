@@ -41,16 +41,17 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
-Version 4.5.20
+Version 4.5.22
 - Fixed a bug in splitting of long notes in organic multi-stage and made it slightly smarter.
 - Fixed another solo/mute issue.
 - Allowed some instruments to have longer notes than 5 seconds in organic multi-stage.
 - Made the pan window slightly larger to show 4 stacked parts.
-- Various minor optimizations.
+- Various optimizations.
 - Organic multi-stage 2
 - Made pitch bend handling for organic much smarter.
 - Made pitch bend handling for large range pitch bends slightly smarter.
 - Added polyphony graph tooltip.
+- Added number in pan window showing pan position.
 
 Version 4.5.18
 - Fixed a bug where playlists with files which had been moved/renamed wouldn't load.
