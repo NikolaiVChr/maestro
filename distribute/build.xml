@@ -43,6 +43,23 @@
 		<delete dir="${build}" />
 	</target>
 
+    <target name="CompilePatches" description="Compile patched JDK classes">
+        <mkdir dir="../classes_patch" />
+
+        <javac srcdir="../patches/java.desktop"
+               destdir="../classes_patch"
+               fork="true"
+               executable="${env.JAVA_HOME}/bin/javac"
+               includeantruntime="false"
+               failonerror="true">
+
+            <compilerarg value="--patch-module" />
+            <compilerarg value="java.desktop=../patches/java.desktop" />
+        </javac>
+
+        <jar destfile="${build}/java.midi.patch.jar" basedir="../classes_patch" />
+    </target>
+
 	<target name="CopyThings" depends="mvn_windows, mvn_unix" description="Copy icons,jars and txt files to build folder">
 		<mkdir dir="${build}" />
 		<delete>
@@ -128,7 +145,7 @@
 		<copy file="LotroInstruments.sf2" todir="${build}" overwrite="true" failonerror="true"/>
 	</target>
 
-	<target name="Build" depends="CopyThings,LotroInstruments" description="Make all except ZIP and MSI files"/>
+	<target name="Build" depends="CopyThings,LotroInstruments,CompilePatches" description="Make all except ZIP and MSI files"/>
 
 	
 	
