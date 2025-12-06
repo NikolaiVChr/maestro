@@ -1,6 +1,7 @@
 package com.digero.maestro.view;
 
 import com.digero.common.midi.PanGenerator;
+import com.digero.common.util.Themer;
 import com.digero.common.view.ColorTable;
 
 import javax.swing.*;
@@ -28,6 +29,7 @@ public class PanVisualizerPanel extends JPanel {
     private static final Color COL_USER   = ColorTable.PAN_USER.get();       // Bright Yellow (Gold)
     private static final Color COL_AUTO   = ColorTable.PAN_AUTO.get(); // Dull Grey (Auto)
     private static final Color COL_TEXT   = ColorTable.PAN_TEXT.get();
+    private static final Color COL_TEXT_DIGITS = Themer.isDarkMode()?ColorTable.PAN_TEXT_ON_DARK.get():ColorTable.PAN_TEXT_ON_LIGHT.get();
     private static final Color COL_TEXT_ACTIVE = ColorTable.PAN_TEXT_ACTIVE.get();
     private static final Color COL_STEM   = ColorTable.PAN_STEM.get(); // Connector line color
     private static final Color COL_ARC   = ColorTable.PAN_ARC.get();
@@ -125,7 +127,7 @@ public class PanVisualizerPanel extends JPanel {
         }
 
         // 7. Draw Pan Position
-        g2.setColor(COL_TEXT_ACTIVE);
+        g2.setColor(COL_TEXT_DIGITS);
         g2.setFont(new Font("MonoSpaced", Font.BOLD, 14));
         String panText = (activePan == null) ? "Auto" : String.format("%+d", activePan - PanGenerator.CENTER);
         FontMetrics fm = g2.getFontMetrics();
