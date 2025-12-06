@@ -7,6 +7,7 @@ import java.awt.event.*;
 import java.util.*;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.logging.Logger;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -30,6 +31,7 @@ import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
 
 public class TuneEditor {
+    protected static final Logger log = Logger.getLogger("view");
 
 	private static Point lastLocation = null;
 	private static JDialog openDialog = null;
@@ -276,6 +278,11 @@ public class TuneEditor {
 						TuneDialog.this.abcSong.tuneBarsModified = null;
 					} else {
 						TuneDialog.this.abcSong.tuneBars = tm;
+
+                        if (lastEnd > 200_000f) { // Limit to 200k bars to prevent OOM
+                            log.warning("Section endBar too large: " + lastEnd + ". Clamping to 200,000.");
+                            lastEnd = 200_000f;
+                        }
 
 						boolean[] booleanArray = new boolean[(int)(lastEnd) + 1];
 						for (int m = 0; m < (int)(lastEnd) + 1; m++) {

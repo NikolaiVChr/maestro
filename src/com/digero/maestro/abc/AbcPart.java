@@ -3,8 +3,10 @@ package com.digero.maestro.abc;
 import static com.digero.maestro.abc.AbcHelper.matchNick;
 import static java.awt.Frame.getFrames;
 
+import java.awt.*;
 import java.io.IOException;
 import java.util.*;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
@@ -476,7 +478,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				}
 				trackNames.set(t, xmlTrackName);
 				if (!abcSong.getSequenceInfo().getTrackInfo(t).hasEvents()) {
-					JOptionPane.showMessageDialog(getFrames()[0],
+                    Component parent = (getFrames().length > 0) ? getFrames()[0] : null;
+					JOptionPane.showMessageDialog(parent,
 							title+": has a midi track (Track "+t+") selected that has no notes. This project was made with a different midi.",
 							"Warning for "+abcSong.getTitle(), JOptionPane.WARNING_MESSAGE);
 				}
@@ -497,6 +500,10 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 						
 					}
 				}
+                if (lastEnd > 200_000f) { // Limit to 200k bars to prevent OOM
+                    log.warning("Section endBar too large: " + lastEnd + ". Clamping to 200,000.");
+                    lastEnd = 200_000f;
+                }
 				boolean[] booleanArray = new boolean[(int)(lastEnd) + 1];
 				if (tree != null) {
 					for (int i = 0; i < (int)(lastEnd) + 1; i++) {
@@ -518,8 +525,10 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 					ps.doubling[1] = SaveUtil.parseValue(nonSectionEle, "double1OctDown", false);
 					ps.doubling[2] = SaveUtil.parseValue(nonSectionEle, "double1OctUp", false);
 					ps.doubling[3] = SaveUtil.parseValue(nonSectionEle, "double2OctUp", false);
-					ps.fromPitch = Note.fromId(SaveUtil.parseValue(nonSectionEle, "fromPitch", minDefault.id));
+                    ps.fromPitch = Note.fromId(SaveUtil.parseValue(nonSectionEle, "fromPitch", minDefault.id));
+                    if (ps.fromPitch == null) ps.fromPitch = minDefault;
 					ps.toPitch = Note.fromId(SaveUtil.parseValue(nonSectionEle, "toPitch", Note.MAX.id));
+                    if (ps.toPitch == null) ps.toPitch = Note.MAX;
 					nonSection.set(t, ps);
 				}
 				
@@ -1649,6 +1658,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	}
 
 	public DrumNoteMap getDrumMap(int track) {
+        if (discarded) return new PassThroughDrumNoteMap();
 		if (drumNoteMap[track] == null) {
 			// For non-drum tracks, just use a straight pass-through
 			if (!abcSong.getSequenceInfo().getTrackInfo(track).isDrumTrack()) {
@@ -1663,6 +1673,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	}
 
 	public StudentFXNoteMap getFXMap(int track) {
+        if (discarded) return new PassThroughFXNoteMap();
 		if (studentFxNoteMap[track] == null) {
 			// For non-drum tracks, just use a straight pass-through
 			// if (!abcSong.getSequenceInfo().getTrackInfo(track).isDrumTrack())
@@ -1680,6 +1691,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	}
 
     public JauntyHandKnellsFXNoteMap getJauntyHandKnellsFXMap(int track) {
+        if (discarded) return new JauntyHandKnellsFXNoteMap();
         if (jauntyHandKnellsFXNoteMap[track] == null) {
             jauntyHandKnellsFXNoteMap[track] = new JauntyHandKnellsFXNoteMap();
             jauntyHandKnellsFXNoteMap[track].addChangeListener(drumMapChangeListener);

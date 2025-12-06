@@ -7,6 +7,7 @@ import java.awt.event.*;
 import java.util.*;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.logging.Logger;
 
 import javax.swing.BorderFactory;
 import javax.swing.ButtonModel;
@@ -37,6 +38,7 @@ import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstraints;
 
 public class SectionEditor {
+    protected static final Logger log = Logger.getLogger("view");
 
 	private static Point lastLocation = null;
 	
@@ -395,6 +397,12 @@ public class SectionEditor {
 						SectionDialog.this.abcPart.sectionsModified.set(SectionDialog.this.track, null);
 					} else {
 						SectionDialog.this.abcPart.sections.set(SectionDialog.this.track, tm);
+
+                        if (lastEnd > 200_000f) { // Limit to 200k bars to prevent OOM
+                            log.warning("Section endBar too large: " + lastEnd + ". Clamping to 200,000.");
+                            lastEnd = 200_000f;
+                        }
+
 						boolean[] booleanArray = new boolean[(int)(lastEnd) + 1];
 						
 						for (int m = 0; m < (int)(lastEnd) + 1; m++) {
