@@ -427,69 +427,72 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 
 	void setExtendedMetadata(AbcField field, String value) throws FileParseException {
 		switch (field) {
-		case SONG_TITLE:
-			songTitle = value.trim();
-			break;
-		case SONG_COMPOSER:
-			songComposer = value.trim();
-			break;
-		case SONG_TRANSCRIBER:
-			songTranscriber = value.trim();
-			break;
-		case SWING_RHYTHM:
-			hasTriplets = Boolean.parseBoolean(value.trim());
-			hasTripletsSet = true;
-			break;
-		case MIX_TIMINGS:
-			hasMixTimings = Boolean.parseBoolean(value.trim());
-			break;
-		case ORGANIC:
-			isOrganic = Boolean.parseBoolean(value.trim());
-			break;
-		case ORGANIC_MULTI_STAGE:
-			isOrganic2 = Boolean.parseBoolean(value.trim());
-			break;
-        case ORGANIC_VERSION:
-            isV2 = Integer.parseInt(value.trim()) == 2;
-            break;
-		case SONG_DURATION:
-			songDuration = value.trim();
-			break;
-		case EXPORT_TIMESTAMP:
-			exportTimestamp = value.trim();
-			break;
-		case ABC_CREATOR:
-			abcCreator = value.trim();
-			issue = VersionsWithIssues.check(abcCreator);
-			if (issue != null) {
-				String title = songTitle != null ? songTitle: "";
-				log.warning("Potential corrupted ABC. "+title+" ABC was exported with a flawed Maestro: "+issue);
-                if (warningHandler != null) {
-                    // for now only Abc Tools use this. Happens when loading a project that uses abc as a source.
-                    String message = "project uses "+title + " ABC, which was exported with a flawed Maestro: "+issue;
+            case SONG_TITLE:
+                songTitle = value.trim();
+                break;
+            case SONG_COMPOSER:
+                songComposer = value.trim();
+                break;
+            case SONG_TRANSCRIBER:
+                songTranscriber = value.trim();
+                break;
+            case SWING_RHYTHM:
+                hasTriplets = Boolean.parseBoolean(value.trim());
+                hasTripletsSet = true;
+                break;
+            case MIX_TIMINGS:
+                hasMixTimings = Boolean.parseBoolean(value.trim());
+                break;
+            case ORGANIC:
+                isOrganic = Boolean.parseBoolean(value.trim());
+                break;
+            case ORGANIC_MULTI_STAGE:
+                isOrganic2 = Boolean.parseBoolean(value.trim());
+                break;
+            case ORGANIC_VERSION:
+                isV2 = Integer.parseInt(value.trim()) == 2;
+                break;
+            case SONG_DURATION:
+                songDuration = value.trim();
+                break;
+            case EXPORT_TIMESTAMP:
+                exportTimestamp = value.trim();
+                break;
+            case ABC_CREATOR:
+                abcCreator = value.trim();
+                issue = VersionsWithIssues.check(abcCreator);
+                if (issue != null) {
+                    String title = songTitle != null ? songTitle: "";
+                    log.warning("Potential corrupted ABC. "+title+" ABC was exported with a flawed Maestro: "+issue);
+                    if (warningHandler != null) {
+                        // for now only Abc Tools use this. Happens when loading a project that uses abc as a source.
+                        String message = "project uses "+title + " ABC, which was exported with a flawed Maestro: "+issue;
 
-                    WarningHandler.WarningAction action = warningHandler.handleWarning(
-                            CORRUPT_ABC_WARNING_ID, "Potential corrupted ABC from "+abcCreator, message);
+                        WarningHandler.WarningAction action = warningHandler.handleWarning(
+                                CORRUPT_ABC_WARNING_ID, "Potential corrupted ABC from "+abcCreator, message);
 
-                    if (action == WarningHandler.WarningAction.SKIP_FILE) {
-                        throw new FileParseException("Skipped file (possible corrupt abc source) by user request.", null);
+                        if (action == WarningHandler.WarningAction.SKIP_FILE) {
+                            throw new FileParseException("Skipped file (possible corrupt abc source) by user request.", null);
+                        }
+                    } else if (AppInfo.maestro || Preferences.userNodeForPackage(AbcPlayer.class).node("miscSettings")
+                            .getBoolean("flawedMaestroPopup", true)) {
+                        SwingUtilities.invokeLater(() -> {
+                            JOptionPane.showMessageDialog(null,
+                                    title+" ABC was exported with a flawed Maestro: "+issue,
+                                    "Potential corrupted ABC from "+abcCreator, JOptionPane.WARNING_MESSAGE);
+                        });
                     }
-                } else if (AppInfo.maestro || Preferences.userNodeForPackage(AbcPlayer.class).node("miscSettings")
-                        .getBoolean("flawedMaestroPopup", true)) {
-					SwingUtilities.invokeLater(() -> {
-						JOptionPane.showMessageDialog(null,
-                                title+" ABC was exported with a flawed Maestro: "+issue,
-                                "Potential corrupted ABC from "+abcCreator, JOptionPane.WARNING_MESSAGE);
-					});
-				}
-			}
-			break;
-		case ABC_VERSION:
-		case PART_NAME:
-		case MADE_FOR:
-		case TEMPO:
-		case DELETE_MINIMAL_NOTES:
-		case SKIP_SILENCE_AT_START:
+                }
+                break;
+            case ABC_VERSION:
+            case PART_NAME:
+            case MADE_FOR:
+            case TEMPO:
+            case DELETE_MINIMAL_NOTES:
+            case SKIP_SILENCE_AT_START:
+            case ORGANIC_POLY_6_PLUS:
+            case REDUCED_FILE_SIZE:
+            case USER_PAN:
 			// Ignore
 			break;
 		}

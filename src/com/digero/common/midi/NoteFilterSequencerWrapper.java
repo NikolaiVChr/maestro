@@ -125,6 +125,9 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 
 		closeDevice();
 
+        // TODO: AbcPlayer uses a class that inherit from this and this method
+        //       is overridden. However its still not smart to have this method
+        //       use a Maestro specific class like ProjectFrame.
 		if (preferred == null) {
 			log.fine("Default MIDI out selected");
 			deviceInUse = null;

@@ -32,24 +32,28 @@ public class MidiToWav {
 
 		Map<String, Object> synthInfo = SynthesizerFactory.setupSynthesizerPropertyInfo();
 
-		AudioInputStream stream = synth.openStream(null, synthInfo);
-		SynthesizerFactory.initAudioSynthesizer(synth);
+		try (AudioInputStream stream = synth.openStream(null, synthInfo)) {
+            SynthesizerFactory.initAudioSynthesizer(synth);
 
-		// Play Sequence into AudioSynthesizer Receiver.
-		double total = send(sequence, synth.getReceiver(), startTick);
+            // Play Sequence into AudioSynthesizer Receiver.
+            double total = send(sequence, synth.getReceiver(), startTick);
 
-		// Calculate how long the WAVE file needs to be.
-		long len = (long) (stream.getFormat().getFrameRate() * (total + 1));
-		stream = new AudioInputStream(stream, stream.getFormat(), len);
+            // Calculate how long the WAVE file needs to be.
+            long len = (long) (stream.getFormat().getFrameRate() * (total + 1));
 
-		// Write WAVE file to disk.
-		AudioSystem.write(stream, AudioFileFormat.Type.WAVE, out);
+            try (AudioInputStream streamWithLength = new AudioInputStream(stream, stream.getFormat(), len)) {
+                // Write WAVE file to disk.
+                AudioSystem.write(streamWithLength, AudioFileFormat.Type.WAVE, out);
+            }
+        } finally {
+            synth.close();
 
-		// We are finished, close synthesizer.
-		synth.close();
-
-		if (opened)
-			synth.open();
+            if (opened) {
+                // some synths cannot be reopened
+                // but the one in java we use for this can
+                synth.open();
+            }
+        }
 	}
 
 	/**

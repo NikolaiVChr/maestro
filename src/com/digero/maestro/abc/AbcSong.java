@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
@@ -617,6 +618,10 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				tuneBars.put(tl.startBar, tl);
 			}
 		}
+        if (lastEnd > 200_000f) { // Limit to 200k bars to prevent OOM
+            log.warning("Tune section endBar too large: " + lastEnd + ". Clamping to 200,000.");
+            lastEnd = 200_000f;
+        }
 		boolean[] booleanArray = new boolean[(int)(lastEnd) + 1];
 		if (tuneBars != null) {
 			for (int i = 0; i < (int)(lastEnd) + 1; i++) {
@@ -1775,20 +1780,14 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
             return false;
         }
 
-        for (int i = 0; i < parts.size(); i++) {
-            if (parts.get(i).getEnabledTrackCount() == 0) continue;
-            String title1 = parts.get(i).getTitle();
+        Set<String> titles = new HashSet<>();
+        for (AbcPart part : parts) {
+            if (part.getEnabledTrackCount() == 0) continue;
 
-            for (int j = i + 1; j < parts.size(); j++) {
-                if (parts.get(j).getEnabledTrackCount() == 0) continue;
-                String title2 = parts.get(j).getTitle();
-
-                if (title1.equals(title2)) {
-                    return true;
-                }
+            if (!titles.add(part.getTitle())) {
+                return true;
             }
         }
-
         return false;
     }
 

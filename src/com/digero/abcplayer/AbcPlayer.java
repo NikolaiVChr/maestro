@@ -21,6 +21,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintStream;
 import java.lang.reflect.InvocationTargetException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -1686,46 +1687,63 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 	private static boolean openPort() {
 
 		try {
-			serverSocket = new ServerSocket(9000 + APP_VERSION.getBuild());
-			if (serverSocket.getLocalPort() != 9000 + APP_VERSION.getBuild()) {
-				// System.out.println("Port is "+serverSocket.getLocalPort());
-				return false;
-			}
-		} catch (IOException e) {
-			// e.printStackTrace();
-			return false;
-		}
+            // InetAddress.getLoopbackAddress() means only local connections (127.0.0.1)
+            // Backlog of 3 in case the user clicks fast on files in the file-explorer.
+            serverSocket = new ServerSocket(9000 + APP_VERSION.getBuild(), 3, InetAddress.getLoopbackAddress());
+            if (serverSocket.getLocalPort() != 9000 + APP_VERSION.getBuild()) {
+                //log.fine("Port is "+serverSocket.getLocalPort());
+                return false;
+            }
+        } catch (IOException e) {
+            // e.printStackTrace();
+            return false;
+        }
 		// System.out.println("Made port");
-		(new Thread(() -> {
-			try {
-				while (true) {
-					Socket socket = serverSocket.accept();
-					// System.out.println("Accepted");
-					BufferedReader in = new BufferedReader(
-							new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_16));
+        Thread waitForOtherAbcPlayersThread = new Thread(() -> {
+            while (!serverSocket.isClosed()) {
+                try (Socket socket = serverSocket.accept()) {
+                    //log.finer("Accepted");
 
-					// while (socket.isConnected()) {
-					String data = in.readLine();
+                    if (!socket.getInetAddress().isLoopbackAddress()) {
+                        // extra guard for making sure it is only locally running Abc Players
+                        socket.close();
+                        continue;
+                    }
 
-					if (data != null
-							&& (Util.stringEndsWithIgnoreCase(data, Util.ABC_FILE_EXTENSION)
-							 || Util.stringEndsWithIgnoreCase(data, Util.ABCP_FILE_EXTENSION))) {// &&
-																							// !data.substring(0,3).equalsIgnoreCase("GET")
-																							// &&
-						// System.out.println("Receiving file path ("+data.length()+" chars) from port
-						// "+(9000+APP_VERSION.getBuild())+":\n"+data);
-						String[] datas = { data };
-						activate(datas);
-					} else {
-						// System.out.println("Received nothing");
-					}
-					// }
-					socket.close();
-				}
-			} catch (IOException e) {
-				// e.printStackTrace();
+                    // If readLine() takes longer than this, it throws SocketTimeoutException
+                    socket.setSoTimeout(2000);
+
+                    try (BufferedReader in = new BufferedReader(
+                            new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_16))) {
+
+                        String data = in.readLine();
+
+                        if (data != null
+                                && (Util.stringEndsWithIgnoreCase(data, Util.ABC_FILE_EXTENSION)
+                                 || Util.stringEndsWithIgnoreCase(data, Util.ABCP_FILE_EXTENSION))) {// &&
+                                                                                                // !data.substring(0,3).equalsIgnoreCase("GET")
+                                                                                                // &&
+                            // System.out.println("Receiving file path ("+data.length()+" chars) from port
+                            // "+(9000+APP_VERSION.getBuild())+":\n"+data);
+                            String[] dataArray = { data };
+                            activate(dataArray);
+                        } else {
+                            // System.out.println("Received nothing");
+                        }
+                    }
+				} catch (IOException e) {
+                    // e.printStackTrace();
+                    if (serverSocket.isClosed()) break;
+                }
 			}
-		})).start();
+		});
+        //for debugging:
+        waitForOtherAbcPlayersThread.setName("listen-for-abc-players");
+
+        //so java knows this thread can safely be deleted when stopping abc player:
+        waitForOtherAbcPlayersThread.setDaemon(true);
+
+        waitForOtherAbcPlayersThread.start();
 		return true;
 	}
 
@@ -1734,21 +1752,14 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			// System.out.println("AbcPlayer already running. No filepath detected. Closing.");
 			return;
 		}
-		try {
-			Socket clientSocket = new Socket("localhost", 9000 + APP_VERSION.getBuild());
-			OutputStreamWriter os = new OutputStreamWriter(clientSocket.getOutputStream(), StandardCharsets.UTF_16);// NTFS
-																													// uses
-																													// UTF16
-																													// for
-																													// filenames
-			// for (String arg : args) {
-			os.write(args[0]);
-			os.close();// Must be here to flush to stream
-			// System.out.println("AbcPlayer already running. Sending file path
-			// ("+args[0].length()+" chars) to port
-			// "+(9000+APP_VERSION.getBuild())+":\n"+args[0]);
-			// }
-			clientSocket.close();
+        try (Socket clientSocket = new Socket(InetAddress.getLoopbackAddress(), 9000 + APP_VERSION.getBuild());
+                // NTFS uses UTF16 for filenames
+                OutputStreamWriter os = new OutputStreamWriter(clientSocket.getOutputStream(), StandardCharsets.UTF_16)) {
+
+            os.write(args[0]);
+
+            // System.out.println("AbcPlayer already running. Sending file path ("+args[0].length()+" chars) to port "+(9000+APP_VERSION.getBuild())+":\n"+args[0]);
+
 		} catch (IOException e) {
 			// e.printStackTrace();
 		}
