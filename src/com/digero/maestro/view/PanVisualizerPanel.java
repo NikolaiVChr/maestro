@@ -46,7 +46,7 @@ public class PanVisualizerPanel extends JPanel {
         setPreferredSize(new Dimension(220, 120));
     }
 
-    public void updateState(int currentPan, String label, List<PartInfo> others) {
+    public void updateState(Integer currentPan, String label, List<PartInfo> others) {
         this.activePan = currentPan;
         this.activeLabel = label;
         this.otherParts = others;

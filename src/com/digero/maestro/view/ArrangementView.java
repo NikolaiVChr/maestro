@@ -832,6 +832,14 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
         setPanSlider();
         setPanSliderColor();
 		//updateTracksVisible();
+        if (this.abcPart != null) {
+            Integer userPan = this.abcPart.getUserPan();
+            panPanel.updateState(
+                    userPan,
+                    Integer.toString(this.abcPart.getPartNumber()),
+                    this.abcPart.getAbcSong().allPans
+            );
+        }
 
 		revalidate();
 		repaint();
