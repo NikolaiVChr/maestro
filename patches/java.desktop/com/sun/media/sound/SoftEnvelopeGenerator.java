@@ -148,17 +148,29 @@ public final class SoftEnvelopeGenerator implements SoftProcess {
                             stage[i] = EG_END;
                             continue;
                         }
+                        // force 200ms release duration
+                        // Original code used this.release[i][0] (exponential timecents)
+                        double durationSeconds = 0.200;
+                        stage_count[i] = (int)(durationSeconds / control_time);
 
-                        stage_count[i] = (int)(Math.pow(2,
-                                this.release[i][0] / 1200.0) / control_time);
-                        stage_count[i]
-                                += (int)(this.release2[i][0]/(control_time * 1000));
+                        //stage_count[i] = (int)(Math.pow(2,
+                        //        this.release[i][0] / 1200.0) / control_time);
+                        //stage_count[i]
+                         //       += (int)(this.release2[i][0]/(control_time * 1000));
                         if (stage_count[i] < 0)
                             stage_count[i] = 0;
                         // stage_v[i] = out[i][0];
                         stage_ix[i] = 0;
 
-                        double m = 1 - out[i][0];
+                        // calc start point of release
+                        // We need to join the new curve smoothly at the current volume level.
+                        // New Curve: out = sqrt(1 - m)
+                        // Inverse:   m = 1 - out^2
+
+                        double currentOut = out[i][0];
+                        double m = 1.0 - Math.pow(currentOut, 10.0d);
+
+                        //double m = 1 - out[i][0];
                         stage_ix[i] = (int)(stage_count[i] * m);
 
                         stage[i] = EG_RELEASE;
@@ -255,7 +267,9 @@ public final class SoftEnvelopeGenerator implements SoftProcess {
                     stage[i] = EG_END;
                 } else {
                     double m = ((double)stage_ix[i]) / ((double)stage_count[i]);
-                    out[i][0] = (1 - m); // *stage_v[i];
+
+                    out[i][0] = Math.pow(1.0d - m, 0.1d);
+                    //out[i][0] = (1 - m); // *stage_v[i];
 
                     if (on[i][0] < -0.5) {
                         stage_count[i] = (int)(Math.pow(2,

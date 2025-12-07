@@ -174,6 +174,10 @@
 			<arg value="--enable-native-access=ALL-UNNAMED"/>
 			<arg value="--java-options"/>
 			<arg value="--add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED"/>
+            <arg value="--java-options"/>
+            <arg value="--patch-module"/>
+            <arg value="--java-options"/>
+            <arg value="java.desktop=$APPDIR/java.midi.patch.jar"/>
 <!--			<arg value="&#45;&#45;java-options"/>-->
 <!--			<arg value="-Dsun.java2d.opengl=True"/>-->
 			<arg value="--dest"/>
@@ -206,6 +210,10 @@
 			<arg value="--enable-native-access=ALL-UNNAMED"/>
 			<arg value="--java-options"/>
 			<arg value="--add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED"/>
+            <arg value="--java-options"/>
+            <arg value="--patch-module"/>
+            <arg value="--java-options"/>
+            <arg value="java.desktop=$APPDIR/java.midi.patch.jar"/>
 <!--			<arg value="&#45;&#45;java-options"/>-->
 <!--			<arg value="-Dsun.java2d.opengl=True"/>-->
 			<arg value="--dest"/>
@@ -244,6 +252,10 @@
 			<arg value="--enable-native-access=ALL-UNNAMED"/>
 			<arg value="--java-options"/>
 			<arg value="--add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED"/>
+            <arg value="--java-options"/>
+            <arg value="--patch-module"/>
+            <arg value="--java-options"/>
+            <arg value="java.desktop=$APPDIR/java.midi.patch.jar"/>
 <!--			<arg value="&#45;&#45;java-options"/>-->
 <!--			<arg value="-Dsun.java2d.opengl=True"/>-->
 			<arg value="--dest"/>
@@ -270,115 +282,10 @@
 		<copy todir="${build}/runtime">
 			<fileset dir="${jpackage}/Maestro/runtime" />
 		</copy>
+        <copy file="${build}/java.midi.patch.jar" tofile="${build}/app/java.midi.patch.jar" />
 <!--		<delete dir="${jpackage}" />-->
 	</target>
-	
-	
-	
-	<target name="BetaToolsMSI" depends="Build" description="Make Beta MSI for AbcTools">
-		<mkdir dir="${jpackageBetaTools}" />
-		<copy file="readme.txt" todir="${jpackageBetaTools}" />
-		<copy file="${build}/AbcTools.jar" todir="${jpackageBetaTools}" />
-	    <exec executable="${env.JAVA_HOME}/bin/jpackage.exe" failonerror="true">
-	    	<env key="PATH" path="${tools}/wix"/>
-	    	<arg value="--type"/>
-	    	<arg value="msi"/>
-	    	<arg value="--app-version"/>
-	    	<arg value="${version.AbcTools}"/>
-	    	<arg value="--description"/>
-    		<arg value="ABC tools to merge abc files or auto export abc"/>
-	    	<arg value="--vendor"/>
-	    	<arg value="Aifel and Elamond"/>
-    		<arg value="--icon"/>
-    		<arg value="abctools.ico"/>
-	    	<arg value="--java-options"/>
-	    	<arg value="--enable-native-access=ALL-UNNAMED"/>
-	    	<arg value="--java-options"/>
-	    	<arg value="--add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED"/>
-    		<arg value="--dest"/>
-	    	<arg value="${output}"/>
-	    	<arg value="--input"/>
-	    	<arg value="${jpackageBetaTools}"/>
-	    	<arg value="--name"/>
-	    	<arg value="AbcTools-BETA"/>
-	    	<arg value="--main-class"/>
-	    	<arg value="com.aifel.abctools.AbcTools"/>
-	    	<arg value="--main-jar"/>
-	    	<arg value="AbcTools.jar"/>
-	    </exec>
-		<delete dir="${jpackageBetaTools}" />
-	</target>
-	
-	<target name="BetaPlayerMSI" depends="Build" description="Make Beta MSI for Abc Player">
-		<mkdir dir="${jpackageBetaPlayer}" />
-		<copy file="readme.txt" todir="${jpackageBetaPlayer}" />
-		<copy file="${build}/AbcPlayer.jar" todir="${jpackageBetaPlayer}" />
-		<copy file="${build}/LotroInstruments.sf2" todir="${jpackageBetaPlayer}" />
-	    <exec executable="${env.JAVA_HOME}/bin/jpackage.exe" failonerror="true">
-	    	<env key="PATH" path="${tools}/wix"/>
-	    	<arg value="--type"/>
-	    	<arg value="msi"/>
-	    	<arg value="--app-version"/>
-	    	<arg value="${version.AbcPlayer}"/>
-	    	<arg value="--description"/>
-    		<arg value="ABC Player for the Lord of the Rings Online"/>
-	    	<arg value="--vendor"/>
-	    	<arg value="Elamond and Aifel"/>
-    		<arg value="--icon"/>
-    		<arg value="abcplayer.ico"/>
-	    	<arg value="--java-options"/>
-	    	<arg value="--enable-native-access=ALL-UNNAMED"/>
-	    	<arg value="--java-options"/>
-	    	<arg value="--add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED"/>
-    		<arg value="--dest"/>
-	    	<arg value="${output}"/>
-	    	<arg value="--input"/>
-	    	<arg value="${jpackageBetaPlayer}"/>
-	    	<arg value="--name"/>
-	    	<arg value="AbcPlayer-BETA"/>
-	    	<arg value="--main-class"/>
-	    	<arg value="com.digero.abcplayer.AbcPlayer"/>
-	    	<arg value="--main-jar"/>
-	    	<arg value="AbcPlayer.jar"/>
-	    </exec>
-		<delete dir="${jpackageBetaPlayer}" />
-	</target>
-	
-	<target name="BetaMaestroMSI" depends="Build" description="Make Beta MSI for Maestro">
-		<mkdir dir="${jpackageBetaMaestro}" />
-		<copy file="readme.txt" todir="${jpackageBetaMaestro}" />
-		<copy file="${build}/Maestro.jar" todir="${jpackageBetaMaestro}" />
-		<copy file="${build}/LotroInstruments.sf2" todir="${jpackageBetaMaestro}" />
-	    <exec executable="${env.JAVA_HOME}/bin/jpackage.exe" failonerror="true">
-	    	<env key="PATH" path="${tools}/wix"/>
-	    	<arg value="--type"/>
-	    	<arg value="msi"/> <!-- "app-image" for just making a folder with the exe -->
-	    	<arg value="--win-console"/><!-- with this, it outputs to console if started from that -->
-	    	<arg value="--app-version"/>
-	    	<arg value="${version.Maestro}"/>
-	    	<arg value="--description"/>
-    		<arg value="Maestro MIDI to ABC converter"/>
-	    	<arg value="--vendor"/>
-	    	<arg value="Aifel and Elamond"/>
-    		<arg value="--icon"/>
-    		<arg value="maestro.ico"/>
-	    	<arg value="--java-options"/>
-	    	<arg value="--enable-native-access=ALL-UNNAMED"/>
-	    	<arg value="--java-options"/>
-	    	<arg value="--add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED"/>
-    		<arg value="--dest"/>
-	    	<arg value="${output}"/>
-	    	<arg value="--input"/>
-	    	<arg value="${jpackageBetaMaestro}"/>
-	    	<arg value="--name"/>
-	    	<arg value="Maestro-BETA"/>
-	    	<arg value="--main-class"/>
-	    	<arg value="com.digero.maestro.MaestroMain"/>
-	    	<arg value="--main-jar"/>
-	    	<arg value="Maestro.jar"/>
-	    </exec>
-		<delete dir="${jpackageBetaMaestro}" />
-	</target>
+
 	
 	<target name="Wix-Cop" description="Runs WiX cop to fix errors in wix project">
 	    <exec executable="${tools}/wix/WixCop.exe" failonerror="false">

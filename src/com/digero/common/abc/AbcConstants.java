@@ -22,10 +22,10 @@ public interface AbcConstants {
 
 	// Modifications to the ABC note lengths to sound more like the instruments in the game
 	double NON_SUSTAINED_NOTE_HOLD_SECONDS = 1.5d;
-	double SUSTAINED_NOTE_HOLD_SECONDS = 0.075d;// A little hold to get the release to sound more like lotros linear.
+	double SUSTAINED_NOTE_HOLD_SECONDS = 0.0d;// A little hold to get the release to sound more like lotros linear.
 												// Lowered to 0.075s from 0.1s in
 												// 2.5.0
-	double NOTE_RELEASE_SECONDS = 0.625d;// Sadly this is linear 0.5s dB release, not linear 0.2s power release like in
+	double NOTE_RELEASE_SECONDS = 0.2d;// Sadly this is linear 0.5s dB release, not linear 0.2s power release like in
 										// lotro. In Gervill the release ends at -60 dB, assuming java8 kept same: 
 										// So choosing 75 ms hold and 625 ms will give
 										// -2.5 dB at 100 ms, -7.2 dB at 150 ms, -12 dB at 200 ms.

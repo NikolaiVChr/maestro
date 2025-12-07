@@ -431,12 +431,14 @@ public class AbcExporter {
                             // This is to not stop plucked/drum note before it has played out
                             extraSeconds = AbcConstants.NON_SUSTAINED_NOTE_HOLD_SECONDS;
                         }
-                        if (organic) {
-                            endTick = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(endTick)
-                                    + qtm.multiplyByExportTempoFactor((long) (extraSeconds * TimingInfo.ONE_SECOND_MICROS)));
-                        } else {
-                            endTick = qtm.microsToTick(qtm.tickToMicros(endTick)
-                                    + qtm.multiplyByExportTempoFactor((long) (extraSeconds * TimingInfo.ONE_SECOND_MICROS)));
+                        if (extraSeconds > 0.0d) {
+                            if (organic) {
+                                endTick = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(endTick)
+                                        + qtm.multiplyByExportTempoFactor((long) (extraSeconds * TimingInfo.ONE_SECOND_MICROS)));
+                            } else {
+                                endTick = qtm.microsToTick(qtm.tickToMicros(endTick)
+                                        + qtm.multiplyByExportTempoFactor((long) (extraSeconds * TimingInfo.ONE_SECOND_MICROS)));
+                            }
                         }
                     }
 
