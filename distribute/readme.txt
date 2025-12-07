@@ -50,10 +50,11 @@ Version 4.5.22
 - Organic multi-stage 2.
 - Made pitch bend handling for organic much smarter.
 - Made pitch bend handling for large range pitch bends slightly smarter.
+- MSI and ZIP is now smaller in size.
 - Added polyphony graph tooltip.
 - Added number in pan window showing pan position.
 - Preview notes release curves is now linear decreasing amplitudes to match lotro.
-- MSI and ZIP is now smaller in size.
+- A possible fix for "horn bug".
 
 Version 4.5.18
 - Fixed a bug where playlists with files which had been moved/renamed wouldn't load.
