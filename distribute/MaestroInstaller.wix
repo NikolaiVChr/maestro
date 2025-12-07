@@ -89,6 +89,9 @@
                             <File Source="$(var.build)/app/AbcTools.jar" />
                             <File Source="$(var.build)/app/AbcTools.cfg" />
                         </Component>
+                        <Component Id="PatchJar" Guid="{D7D09422-B3FF-4A44-848C-1FD08EFBDEE1}">
+                            <File Source="$(var.build)/app/java.midi.patch.jar" />
+                        </Component>
                     </Directory>
                     <Directory Id="RuntimeDir" Name="runtime" />
                     <Component Id="aifel_changelog.txt" Guid="{46B882CB-E9A8-4A1E-A92C-C5717FDECECB}">
@@ -228,6 +231,7 @@
         <Feature Id="Common" Level="1" ConfigurableDirectory="APPLICATIONFOLDER" Absent="disallow" AllowAdvertise="no" Title="Common files" Description="Files required by both $(var.MaestroAppName) and $(var.AbcPlayerAppName).">
             <ComponentRef Id="Assets" />
             <ComponentRef Id="aifel_changelog.txt" />
+            <ComponentRef Id="PatchJar" />
             <ComponentGroupRef Id="j24RuntimeComponentGroup" />
         </Feature>
         <Feature Id="Maestro" Level="1" ConfigurableDirectory="APPLICATIONFOLDER" AllowAdvertise="no" Title="$(var.MaestroAppName)" Description="$(var.MaestroAppName) is a MIDI to ABC converter. Arrange multipart ABC files from MIDI source files.">

@@ -115,6 +115,8 @@ public enum ColorTable
     PAN_AUTO(new Color(120, 120, 120, 150)), // Dull Grey (Auto)
     PAN_TEXT(Color.WHITE),
     PAN_TEXT_ACTIVE(Color.BLACK),
+    PAN_TEXT_ON_DARK(new Color(200, 200, 200)),
+    PAN_TEXT_ON_LIGHT(new Color(55, 55, 55)),
     PAN_STEM(new Color(255, 255, 255, 50)), // Connector line color
     PAN_ARC(new Color(60, 60, 60, 100)), //
     PAN_SHADOW(new Color(0, 0, 0, 60)), //

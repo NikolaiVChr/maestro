@@ -431,12 +431,14 @@ public class AbcExporter {
                             // This is to not stop plucked/drum note before it has played out
                             extraSeconds = AbcConstants.NON_SUSTAINED_NOTE_HOLD_SECONDS;
                         }
-                        if (organic) {
-                            endTick = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(endTick)
-                                    + qtm.multiplyByExportTempoFactor((long) (extraSeconds * TimingInfo.ONE_SECOND_MICROS)));
-                        } else {
-                            endTick = qtm.microsToTick(qtm.tickToMicros(endTick)
-                                    + qtm.multiplyByExportTempoFactor((long) (extraSeconds * TimingInfo.ONE_SECOND_MICROS)));
+                        if (extraSeconds > 0.0d) {
+                            if (organic) {
+                                endTick = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(endTick)
+                                        + qtm.multiplyByExportTempoFactor((long) (extraSeconds * TimingInfo.ONE_SECOND_MICROS)));
+                            } else {
+                                endTick = qtm.microsToTick(qtm.tickToMicros(endTick)
+                                        + qtm.multiplyByExportTempoFactor((long) (extraSeconds * TimingInfo.ONE_SECOND_MICROS)));
+                            }
                         }
                     }
 
@@ -1115,8 +1117,8 @@ public class AbcExporter {
         }
         if (part.getInstrument() == LotroInstrument.BASIC_BAGPIPE) {
             // Attempt to fix drone-bug (aka. horn bug)
-            if (useMicroAccuracy) delayed.append("x" + 500_000);
-            else delayed.append("x" + microToMilliCeil(500_000,oneMicro,oneMilli));
+            if (useMicroAccuracy) out.print(" x500000");
+            else out.print(" x" + microToMilliCeil(500_000,oneMicro,oneMilli));
         }
 		out.println(" |]");
 		out.println();
@@ -1397,6 +1399,11 @@ public class AbcExporter {
             }
         }
 
+        long L = (qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? 16L : 8L;
+
+        // One whole abc note is this many microseconds:
+        int oneMicro = (int)(qtm.getMeter().denominator * TimingInfo.ONE_SECOND_MICROS * 60L / (qtm.getPrimaryExportTempoBPM() * L));
+
 		if (delayEnabled || countIn != null) {
 
             long hitMicros = 0L;
@@ -1418,11 +1425,8 @@ public class AbcExporter {
                     countIn = null;
                 }
             }
-
-			long L = (qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? 16L : 8L;
 			
-			// One whole abc note is this many microseconds:
-			int oneMicro = (int)(qtm.getMeter().denominator * TimingInfo.ONE_SECOND_MICROS * 60L / (qtm.getPrimaryExportTempoBPM() * L));
+
 
 			// the 100 is so the delay is always larger than 60 ms, even if its 0 ms.
 			int delayMicro = (part.delay+100)*1000 + (int) countInMicros;
@@ -1608,6 +1612,10 @@ public class AbcExporter {
 
 		addLineBreaks.run();
 		out.print(bar);
+        if (part.getInstrument() == LotroInstrument.BASIC_BAGPIPE) {
+            // Attempt to fix drone-bug (aka. horn bug)
+            out.print(" x500000/"+oneMicro);
+        }
 		out.println(" |]");
 		out.println();
 	}
