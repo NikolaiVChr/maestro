@@ -46,10 +46,10 @@ Version 4.5.22
 - Fixed another solo/mute issue.
 - Allowed some instruments to have longer notes than 5 seconds in organic multi-stage.
 - Made the pan window slightly larger to show 4 stacked parts.
-- Various performance optimizations.
+- Many various performance optimizations.
 - Organic multi-stage 2.
 - Made pitch bend handling for organic much smarter.
-- Made pitch bend handling for large range pitch bends slightly smarter.
+- Made pitch bend handling for large pitch range pitch bends slightly smarter.
 - MSI and ZIP is now smaller in size.
 - Added polyphony graph tooltip.
 - Added number in pan window showing pan position.
