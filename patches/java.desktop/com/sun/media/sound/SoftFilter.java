@@ -130,20 +130,22 @@ public final class SoftFilter {
     }
 
     public void processAudio(SoftAudioBuffer sbuffer) {
-        if (filtertype == FILTERTYPE_LP6)
-            filter1(sbuffer);
-        if (filtertype == FILTERTYPE_LP12)
-            filter2(sbuffer);
-        if (filtertype == FILTERTYPE_HP12)
-            filter2(sbuffer);
-        if (filtertype == FILTERTYPE_BP12)
-            filter2(sbuffer);
-        if (filtertype == FILTERTYPE_NP12)
-            filter2(sbuffer);
-        if (filtertype == FILTERTYPE_LP24)
-            filter4(sbuffer);
-        if (filtertype == FILTERTYPE_HP24)
-            filter4(sbuffer);
+        if (false) {
+            if (filtertype == FILTERTYPE_LP6)
+                filter1(sbuffer);
+            if (filtertype == FILTERTYPE_LP12)
+                filter2(sbuffer);
+            if (filtertype == FILTERTYPE_HP12)
+                filter2(sbuffer);
+            if (filtertype == FILTERTYPE_BP12)
+                filter2(sbuffer);
+            if (filtertype == FILTERTYPE_NP12)
+                filter2(sbuffer);
+            if (filtertype == FILTERTYPE_LP24)
+                filter4(sbuffer);
+            if (filtertype == FILTERTYPE_HP24)
+                filter4(sbuffer);
+        }
     }
 
     public void filter4(SoftAudioBuffer sbuffer) {
