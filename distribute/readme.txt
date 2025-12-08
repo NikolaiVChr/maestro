@@ -54,6 +54,9 @@ Version 4.5.23
 - Added polyphony graph tooltip.
 - Added number in pan window showing pan position.
 - Preview notes release curves is now linear decreasing amplitudes to match lotro.
+- Removed the 6.8 ms attack on all notes, this fix can make the clarinet clicking be more audible in maestro.
+- Stopped filtering of all notes, the HP cutoff was really high, but it might have distorted slightly.
+- Fixed that Student's Fiddle notes sounded different than basic fiddles.
 - A possible fix for "horn bug". Don't get your hope up though, probably wont work.
 
 Version 4.5.18
