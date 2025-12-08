@@ -41,7 +41,7 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
-Version 4.5.22
+Version 4.5.23
 - Fixed a bug in splitting of long notes in organic multi-stage and made it slightly smarter.
 - Fixed another solo/mute issue.
 - Allowed some instruments to have longer notes than 5 seconds in organic multi-stage.
@@ -54,7 +54,7 @@ Version 4.5.22
 - Added polyphony graph tooltip.
 - Added number in pan window showing pan position.
 - Preview notes release curves is now linear decreasing amplitudes to match lotro.
-- A possible fix for "horn bug".
+- A possible fix for "horn bug". Don't get your hope up though, probably wont work.
 
 Version 4.5.18
 - Fixed a bug where playlists with files which had been moved/renamed wouldn't load.
