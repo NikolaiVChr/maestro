@@ -135,39 +135,47 @@ public final class SF2Instrument extends ModelInstrument {
 
     @Override
     public ModelPerformer[] getPerformers() {
-        int performercount = 0;
-        for (SF2InstrumentRegion presetzone : regions)
-            performercount += presetzone.getLayer().getRegions().size();
-        ModelPerformer[] performers = new ModelPerformer[performercount];
-        int pi = 0;
+        List<ModelPerformer> performerList = new ArrayList<>();
 
         SF2GlobalRegion presetglobal = globalregion;
         for (SF2InstrumentRegion presetzone : regions) {
             Map<Integer, Short> pgenerators = new HashMap<>();
-            pgenerators.putAll(presetzone.getGenerators());
             if (presetglobal != null)
                 pgenerators.putAll(presetglobal.getGenerators());
+            pgenerators.putAll(presetzone.getGenerators());
 
             SF2Layer layer = presetzone.getLayer();
             SF2GlobalRegion layerglobal = layer.getGlobalRegion();
             for (SF2LayerRegion layerzone : layer.getRegions()) {
-                ModelPerformer performer = new ModelPerformer();
-                if (layerzone.getSample() != null)
-                    performer.setName(layerzone.getSample().getName());
-                else
-                    performer.setName(layer.getName());
-
-                performers[pi++] = performer;
+                Map<Integer, Short> generators = new HashMap<>();
+                if (layerglobal != null)
+                    generators.putAll(layerglobal.getGenerators());
+                generators.putAll(layerzone.getGenerators());
+                for (Map.Entry<Integer, Short> gen : pgenerators.entrySet()) {
+                    int id = gen.getKey();
+                    // Ignore generators that are defined as Instrument-Only by SF2 Spec
+                    // Summing these breaks functionality (e.g. 1+1=2 breaks Looping)
+                    if (id == SF2Region.GENERATOR_SCALETUNING ||
+                            id == SF2Region.GENERATOR_SAMPLEMODES ||
+                            id == SF2Region.GENERATOR_EXCLUSIVECLASS ||
+                            id == SF2Region.GENERATOR_OVERRIDINGROOTKEY ||
+                            id == SF2Region.GENERATOR_KEYNUM ||
+                            id == SF2Region.GENERATOR_VELOCITY) {
+                        generators.put(id, gen.getValue());
+                        continue;
+                    }
+                    short val;
+                    if (!generators.containsKey(id)) val = layerzone.getShort(id);
+                    else val = generators.get(id);
+                    val += gen.getValue();
+                    generators.put(id, val);
+                }
 
                 int keyfrom = 0;
                 int keyto = 127;
                 int velfrom = 0;
                 int velto = 127;
 
-                if (layerzone.contains(SF2Region.GENERATOR_EXCLUSIVECLASS)) {
-                    performer.setExclusiveClass(layerzone.getInteger(
-                            SF2Region.GENERATOR_EXCLUSIVECLASS));
-                }
                 if (layerzone.contains(SF2Region.GENERATOR_KEYRANGE)) {
                     byte[] bytes = layerzone.getBytes(
                             SF2Region.GENERATOR_KEYRANGE);
@@ -204,10 +212,24 @@ public final class SF2Instrument extends ModelInstrument {
                     if (bytes[1] < velto)
                         velto = bytes[1];
                 }
+
+                if (keyfrom > keyto || velfrom > velto) {
+                    continue;
+                }
+
+                ModelPerformer performer = new ModelPerformer();
+                performer.setName(layerzone.getSample() != null ?
+                    layerzone.getSample().getName() : layer.getName());
+
                 performer.setKeyFrom(keyfrom);
                 performer.setKeyTo(keyto);
                 performer.setVelFrom(velfrom);
                 performer.setVelTo(velto);
+
+                if (layerzone.contains(SF2Region.GENERATOR_EXCLUSIVECLASS)) {
+                    performer.setExclusiveClass(layerzone.getInteger(
+                            SF2Region.GENERATOR_EXCLUSIVECLASS));
+                }
 
                 int startAddrsOffset = layerzone.getShort(
                         SF2Region.GENERATOR_STARTADDRSOFFSET);
@@ -231,9 +253,9 @@ public final class SF2Instrument extends ModelInstrument {
 
                 SF2Sample sample = layerzone.getSample();
                 int rootkey = sample.originalPitch;
-                if (layerzone.getShort(SF2Region.GENERATOR_OVERRIDINGROOTKEY) != -1) {
-                    rootkey = layerzone.getShort(
-                            SF2Region.GENERATOR_OVERRIDINGROOTKEY);
+                if (generators.containsKey(SF2Region.GENERATOR_OVERRIDINGROOTKEY)) {
+                    short val = generators.get(SF2Region.GENERATOR_OVERRIDINGROOTKEY);
+                    if (val != -1) rootkey = val;
                 }
                 float pitchcorrection = (-rootkey * 100) + sample.pitchCorrection;
                 ModelByteBuffer buff = sample.getDataBuffer();
@@ -272,19 +294,6 @@ public final class SF2Instrument extends ModelInstrument {
                 if (buff24 != null)
                     osc.set8BitExtensionBuffer(buff24);
 
-                Map<Integer, Short> generators = new HashMap<>();
-                if (layerglobal != null)
-                    generators.putAll(layerglobal.getGenerators());
-                generators.putAll(layerzone.getGenerators());
-                for (Map.Entry<Integer, Short> gen : pgenerators.entrySet()) {
-                    short val;
-                    if (!generators.containsKey(gen.getKey()))
-                        val = layerzone.getShort(gen.getKey());
-                    else
-                        val = generators.get(gen.getKey());
-                    val += gen.getValue();
-                    generators.put(gen.getKey(), val);
-                }
 
                 // SampleMode:
                 // 0 indicates a sound reproduced with no loop
@@ -655,9 +664,10 @@ public final class SF2Instrument extends ModelInstrument {
                 for (SF2Modulator modulator : presetzone.getModulators())
                     convertModulator(performer, modulator);
 
+                performerList.add(performer);
             }
         }
-        return performers;
+        return performerList.toArray(new ModelPerformer[0]);
     }
 
     private void convertModulator(ModelPerformer performer,
