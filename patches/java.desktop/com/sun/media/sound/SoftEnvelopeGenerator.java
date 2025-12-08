@@ -194,8 +194,12 @@ public final class SoftEnvelopeGenerator implements SoftProcess {
                     double attack = this.attack[i][0];
                     double attack2 = this.attack2[i][0];
 
-                    if (attack2 < 0.000001
-                            && (attack < 0 && Double.isInfinite(attack))) {
+                    int attack_counts = (int)(Math.pow(2, attack / 1200.0) / control_time);
+                    attack_counts += (int)(attack2 / (control_time * 1000));
+
+                    if ((attack2 < 0.000001
+                            && (attack < 0 && Double.isInfinite(attack)))
+                            || attack_counts <= 0) {
                         out[i][0] = 1;
                         stage[i] = EG_HOLD;
                         stage_count[i] = (int)(Math.pow(2,
@@ -203,9 +207,7 @@ public final class SoftEnvelopeGenerator implements SoftProcess {
                         stage_ix[i] = 0;
                     } else {
                         stage[i] = EG_ATTACK;
-                        stage_count[i] = (int)(Math.pow(2,
-                                attack / 1200.0) / control_time);
-                        stage_count[i] += (int)(attack2 / (control_time * 1000));
+                        stage_count[i] = attack_counts;
                         if (stage_count[i] < 0)
                             stage_count[i] = 0;
                         stage_ix[i] = 0;
