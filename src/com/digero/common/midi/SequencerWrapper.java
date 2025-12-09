@@ -355,7 +355,7 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 		Sequence sequ = sequencer.getSequence();
 		long l = 0L;
 		if (sequ != null) {
-			// this can handle midis that has hours long duration.
+			// this can handle midis that have hours-long duration.
 			// Sequencer.getMicrosecondLength cannot.
 			l = MidiUtils.tick2microsecond(sequ, Math.min(realDuraTicks, sequencer.getTickLength()), tempoCache);
 		}

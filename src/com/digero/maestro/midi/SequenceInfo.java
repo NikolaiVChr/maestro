@@ -1054,7 +1054,7 @@ public class SequenceInfo implements MidiConstants {
 		for (int i = 0; i < tracks.length; i++) {
 			Track track = tracks[i];
 
-            if (suspectEvents[i] == null) {
+            if (suspectEvents[i] != null) {
                 for (MidiEvent evt : suspectEvents[i].reversed()) {
                     if (evt.getTick() > endTick) {
                         track.remove(evt);
@@ -1067,14 +1067,16 @@ public class SequenceInfo implements MidiConstants {
                         // so why keep them? (unless its a EOT)
                         // I guess in theory it could be trackname or something like that,
                         // so for now we keep doing this.
-
-                        evt.setTick(endTick);
-                        track.add(evt);
+                        if (!MidiUtils.isMetaTempo(evt.getMessage())) {
+                            // tempo events after endTick we don't re-add.
+                            evt.setTick(endTick);
+                            track.add(evt);
+                        }
                     }
                 }
             }
 
-			// insert any missing end of track events
+			// insert any missing end-of-track events
 			boolean okay = false;
 			for (int e = track.size() - 1; e >= 0; e--) {
 				MidiEvent evt = track.get(e);
