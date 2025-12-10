@@ -52,6 +52,7 @@ Version 4.5.23
 - Made pitch bend handling for large pitch range pitch bends slightly smarter.
 - MSI and ZIP is now smaller in size.
 - Added polyphony graph tooltip.
+- Added dissonance graph option.
 - Added number in pan window showing pan position.
 - Preview notes release curves is now linear decreasing amplitudes to match lotro.
 - Removed the 6.8 ms attack on all notes, this fix can make the clarinet clicking be more audible in maestro.

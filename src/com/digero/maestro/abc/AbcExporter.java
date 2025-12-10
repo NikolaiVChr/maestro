@@ -35,6 +35,7 @@ import javax.sound.midi.Track;
 import com.digero.common.abc.*;
 import com.digero.common.midi.*;
 import com.digero.common.util.Pair;
+import com.digero.common.util.Quad;
 import com.digero.common.util.Triple;
 import com.digero.common.util.Util;
 import com.digero.maestro.MaestroMain;
@@ -47,6 +48,7 @@ import com.digero.maestro.midi.ChordOrganic;
 import com.digero.maestro.midi.MidiNoteEvent;
 import com.digero.maestro.midi.TrackInfo;
 import com.digero.maestro.view.CountIn;
+import com.digero.maestro.view.MiscSettings;
 import com.digero.maestro.view.ProjectFrame;
 
 @SuppressWarnings({"AssertWithSideEffects"})
@@ -84,6 +86,7 @@ public class AbcExporter {
 
 	private int lastChannelUsedInPreview = -1;
     private long startTickForCountIn = 0L;
+    public MiscSettings dissonancePrefs = null;
 
     // reduced precision factor
     private final int milli2micro = 100;
@@ -102,10 +105,11 @@ public class AbcExporter {
 		exportEndTick = startEndTick.second;
 	}
 
-	public Triple<List<ExportTrackInfo>, Sequence, PolyphonyHistogram> exportToPreview(boolean useLotroInstruments)
+	public Quad<List<ExportTrackInfo>, Sequence, PolyphonyHistogram, DissonanceDetector> exportToPreview(boolean useLotroInstruments)
 			throws AbcConversionException, InvalidMidiDataException {
 		try {
             PolyphonyHistogram histogram = new PolyphonyHistogram();
+            DissonanceDetector dissonanceDetector = new DissonanceDetector(dissonancePrefs);
 			Pair<Long, Long> startEndTick = getSongStartEndTick(false, true);
 			exportStartTick = startEndTick.first;
 			exportEndTick = startEndTick.second;
@@ -126,13 +130,13 @@ public class AbcExporter {
 						throw new AbcConversionException("Failed to read instrument sample durations.", e);
 					}
 				}
-				return new Triple<>(infoList, new Sequence(Sequence.PPQ, 96),histogram);
+				return new Quad<>(infoList, new Sequence(Sequence.PPQ, 96), histogram, dissonanceDetector);
 			}
 			if (parts.size() > MAX_RAID) {
 				throw new AbcConversionException("Songs with more than " + MAX_RAID + " parts can never be previewed.\n"
 						+ "This song currently has " + parts.size() + " parts and failed to preview.");
 			}
-			exportForPreviewChords(chordsMade, histogram);// export the chords here early, as we possibly
+			exportForPreviewChords(chordsMade, histogram, dissonanceDetector);// export the chords here early, as we possibly
 																		// need to process them for sharing.
 			
 			
@@ -208,8 +212,7 @@ public class AbcExporter {
                 //disabled for now, have clamped all note ON to be after exportstarttick instead.
             }
             */
-			
-			return new Triple<>(infoList, sequence, histogram);
+			return new Quad<>(infoList, sequence, histogram, dissonanceDetector);
 		} catch (RuntimeException e) {
 			// Unpack the InvalidMidiDataException if it was the cause
 			if (e.getCause() instanceof InvalidMidiDataException)
@@ -220,11 +223,12 @@ public class AbcExporter {
 	}
 
 	/**
-	 * Build all the preview chords here.
-	 * 
-	 * @param chordsMade      the map of lists of chord that need to be filled.
+     * Build all the preview chords here.
+     *
+     * @param chordsMade         the map of lists of chord that need to be filled.
+     * @param dissonanceDetector
      */
-	private void exportForPreviewChords(Map<AbcPart, List<Chord>> chordsMade, PolyphonyHistogram histogram)
+	private void exportForPreviewChords(Map<AbcPart, List<Chord>> chordsMade, PolyphonyHistogram histogram, DissonanceDetector dissonanceDetector)
 			throws AbcConversionException {
         boolean useMicroAccuracy = useRestsInChords || !reducedFilesize;
         int[] quanFractions = minimumQuantifiedMicros(!useMicroAccuracy);
@@ -233,9 +237,11 @@ public class AbcExporter {
 				if (organic) {
 					Pair<List<Chord>,Boolean> chords = combineOrganic(part, true, histogram, quanFractions);
 					chordsMade.put(part, chords.first);
+                    dissonanceDetector.submitPart(part, chords.first);
 				} else {
 					List<Chord> chords = combineAndQuantize(part, true, histogram);
 					chordsMade.put(part, chords);
+                    dissonanceDetector.submitPart(part, chords);
 				}
 			} else {
 				try {

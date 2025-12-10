@@ -18,9 +18,23 @@ public class MiscSettings {
 
 	private final Preferences prefs;
 	public boolean checkForUpdates = true;
-	
 
-	public MiscSettings(Preferences prefs, boolean checkFallback) {
+    // dissonance settings
+    public boolean dissModified = false;// not persistent
+
+    public boolean dissEnabled = false;
+    public int min2factor = 1;
+    public int maj2factor = 1;
+    public int maj7factor = 1;
+    public int min7factor = 0;
+    public int trifactor = 0;
+    public int min2threshold = 1;
+    public int min2penalty = 10;
+    public int maj2threshold = 1;
+    public int maj2penalty = 0;
+
+
+    public MiscSettings(Preferences prefs, boolean checkFallback) {
 		this.prefs = prefs;
 		boolean useFallback = false;
         if (prefs == null) return;//for unit-testing
@@ -50,6 +64,16 @@ public class MiscSettings {
 		if (maxRangeForNewBendMethod == 24) maxRangeForNewBendMethod = 16;// Due to student fiddle we can't go to 24.
 		autoplayOnOpen = prefs.getBoolean("autoplayOnOpen", autoplayOnOpen);
 		checkForUpdates = prefs.getBoolean("checkForUpdates", checkForUpdates);
+        min2factor = prefs.getInt("min2factor", min2factor);
+        maj2factor = prefs.getInt("maj2factor", maj2factor);
+        trifactor = prefs.getInt("trifactor", trifactor);
+        maj7factor = prefs.getInt("maj7factor", maj7factor);
+        min7factor = prefs.getInt("min7factor", min7factor);
+        min2threshold = prefs.getInt("min2threshold", min2threshold);
+        min2penalty = prefs.getInt("min2penalty", min2penalty);
+        maj2threshold = prefs.getInt("maj2threshold", maj2threshold);
+        maj2penalty = prefs.getInt("maj2penalty", maj2penalty);
+        dissEnabled = prefs.getBoolean("dissonanceGraphEnabled", dissEnabled);
 	}
 
 	public MiscSettings(MiscSettings that) {
@@ -67,6 +91,17 @@ public class MiscSettings {
 		maxRangeForNewBendMethod = that.maxRangeForNewBendMethod;
 		autoplayOnOpen = that.autoplayOnOpen;
 		checkForUpdates = that.checkForUpdates;
+        min2factor = that.min2factor;
+        maj2factor = that.maj2factor;
+        trifactor = that.trifactor;
+        maj7factor = that.maj7factor;
+        min7factor = that.min7factor;
+        min2threshold = that.min2threshold;
+        min2penalty = that.min2penalty;
+        maj2threshold = that.maj2threshold;
+        maj2penalty = that.maj2penalty;
+        dissEnabled = that.dissEnabled;
+        dissModified = that.dissModified;
 	}
 
 	public void saveToPrefs() {
@@ -79,6 +114,16 @@ public class MiscSettings {
 		prefs.putInt("maxRangeForNewBendMethod", maxRangeForNewBendMethod);
 		prefs.putBoolean("autoplayOnOpen", autoplayOnOpen);
 		prefs.putBoolean("checkForUpdates", checkForUpdates);
+        prefs.putInt("min2factor", min2factor);
+        prefs.putInt("maj2factor", maj2factor);
+        prefs.putInt("trifactor", trifactor);
+        prefs.putInt("maj7factor", maj7factor);
+        prefs.putInt("min7factor", min7factor);
+        prefs.putInt("min2threshold", min2threshold);
+        prefs.putInt("min2penalty", min2penalty);
+        prefs.putInt("maj2threshold", maj2threshold);
+        prefs.putInt("maj2penalty", maj2penalty);
+        prefs.putBoolean("dissonanceGraphEnabled", dissEnabled);
 	}
 
 	public void restoreDefaults() {

@@ -52,7 +52,7 @@ import com.digero.maestro.midi.SequenceInfo;
 import com.digero.maestro.midi.TrackInfo;
 
 @SuppressWarnings("serial")
-public class NoteGraph extends JPanel implements Listener<SequencerEvent>, IDiscardable {
+public abstract class NoteGraph extends JPanel implements Listener<SequencerEvent>, IDiscardable {
 	protected final SequencerWrapper sequencer;
 	protected SequenceInfo sequenceInfo;
 	protected TrackInfo trackInfo;
@@ -155,7 +155,15 @@ public class NoteGraph extends JPanel implements Listener<SequencerEvent>, IDisc
 		return true;
 	}
 
-	protected boolean isNotePlayable(NoteEvent ne, int addition) {
+    public int getLowThreshold() {
+        return 0;
+    }
+
+    public int getHighThreshold() {
+        return 0;
+    }
+
+    protected boolean isNotePlayable(NoteEvent ne, int addition) {
 		return true;
 	}
 	
@@ -463,8 +471,12 @@ public class NoteGraph extends JPanel implements Listener<SequencerEvent>, IDisc
 		} else {
 			double width = Math.max(minWidth, ne.getLengthMicros());
 			double y = Util.clamp(noteId, MIN_RENDERED, MAX_RENDERED);
-			rectTmp.setRect(ne.getStartMicros() - extraWidth, y - extraHeight, width + 2 * extraWidth,
-					height + 2 * extraHeight);
+            if (isBars()) {
+                rectTmp.setRect(ne.getStartMicros() - extraWidth, MIN_RENDERED, width + 2 * extraWidth, y-MIN_RENDERED);
+            } else {
+                rectTmp.setRect(ne.getStartMicros() - extraWidth, y - extraHeight, width + 2 * extraWidth,
+                        height + 2 * extraHeight);
+            }
 			g2.fill(rectTmp);
 		}
 	}
@@ -685,8 +697,8 @@ public class NoteGraph extends JPanel implements Listener<SequencerEvent>, IDisc
 			double lineHeight = Math.abs(1 / xform.getScaleY());
 			g2.setColor(ColorTable.OCTAVE_LINE.get());
 
-			double y1 = Util.clamp(HistogramPanel.ORANGE_NOTES, MIN_RENDERED, MAX_RENDERED);
-			double y2 = Util.clamp(HistogramPanel.RED_NOTES, MIN_RENDERED, MAX_RENDERED);
+			double y1 = Util.clamp(getLowThreshold(), MIN_RENDERED, MAX_RENDERED);
+			double y2 = Util.clamp(getHighThreshold(), MIN_RENDERED, MAX_RENDERED);
 			rectTmp.setRect(0, y1, sequencer.getLength(), lineHeight);
 			g2.fill(rectTmp);
 			rectTmp.setRect(0, y2, sequencer.getLength(), lineHeight);
@@ -1123,4 +1135,8 @@ public class NoteGraph extends JPanel implements Listener<SequencerEvent>, IDisc
 	protected boolean isActiveTrack() {
 		return false;
 	}
+
+    protected boolean isBars() {
+        return false;
+    }
 }

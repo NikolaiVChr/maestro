@@ -27,6 +27,7 @@ import com.digero.common.midi.MidiUtils;
 import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.midi.TimeSignature;
 import com.digero.common.util.FileParseException;
+import com.digero.common.util.Quad;
 import com.digero.common.util.Triple;
 import com.digero.common.util.Util;
 import com.digero.maestro.abc.*;
@@ -64,6 +65,7 @@ public class SequenceInfo implements MidiConstants {
 
 	public long realDuraTicks;
     public final PolyphonyHistogram histogram;
+    public final DissonanceDetector dissonance;
 
     private static final Object PREVIEW_EXPORT_LOCK = new Object();
 
@@ -136,6 +138,7 @@ public class SequenceInfo implements MidiConstants {
 
 		this.midiType = type;
         this.histogram = null;
+        this.dissonance = null;
         this.lastTrackInfos = abcInfo==null?null:abcInfo.abcTrackInfos;
 		log.fine("Importing (Type "+type+"): "+fileName);
 
@@ -202,11 +205,12 @@ public class SequenceInfo implements MidiConstants {
 		this.composer = metadata.getComposer();
 		this.title = metadata.getSongTitle();
 
-		Triple<List<ExportTrackInfo>, Sequence, PolyphonyHistogram> result = abcExporter.exportToPreview(useLotroInstruments);
+		Quad<List<ExportTrackInfo>, Sequence, PolyphonyHistogram, DissonanceDetector> result = abcExporter.exportToPreview(useLotroInstruments);
 
         lastTrackInfos = result.first;
         sequence = result.second;
         histogram = result.third;
+        dissonance = result.fourth;
 		standard = MidiStandard.PREVIEW;
 		sequenceCache = new SequenceDataCache(sequence, standard, null, null, null, null, portMap, true, false, true);
 		primaryTempoMPQ = sequenceCache.getPrimaryTempoMPQ();

@@ -1142,6 +1142,16 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 			}
             importPrefs.setEnabled(true);
 		});
+
+        final JButton dissButton = new JButton("Dissonance graph");
+        dissButton.addActionListener(a -> {
+            DissonanceSettingsDialog dlg = new DissonanceSettingsDialog(SettingsDialog.this, miscSettings);
+            dlg.setVisible(true);
+            if (dlg.wasSuccess()) {
+                // Settings are already saved to miscSettings and Preferences
+                miscSettings.dissModified = true;
+            }
+        });
 		
 		TableLayout layout = new TableLayout();
 		layout.insertColumn(0, FILL);
@@ -1177,30 +1187,33 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		panel.add(autoplayOnOpenCheckBox, "0, " + row);
 		
 		layout.insertRow(++row, PREFERRED);
-		panel.add(deviceText, "0, " + row);
+		panel.add(deviceText, "0, " + row+", L, C");
 		layout.insertRow(++row, PREFERRED);
-		panel.add(deviceBox, "0, " + row);
+		panel.add(deviceBox, "0, " + row+", L, C");
 
 		layout.insertRow(++row, PREFERRED);
-		panel.add(themeText, "0, " + row);
+		panel.add(themeText, "0, " + row+", L, C");
 		layout.insertRow(++row, PREFERRED);
-		panel.add(themeBox, "0, " + row);
+		panel.add(themeBox, "0, " + row+", L, C");
 
 		layout.insertRow(++row, PREFERRED);
-		panel.add(fontSizeLabel, "0, " + row);
+		panel.add(fontSizeLabel, "0, " + row+", L, C");
 		layout.insertRow(++row, PREFERRED);
-		panel.add(fontBox, "0, " + row);
+		panel.add(fontBox, "0, " + row+", L, C");
 
 		layout.insertRow(++row, PREFERRED);
-		panel.add(bendLabel, "0, " + row);
+		panel.add(bendLabel, "0, " + row+", L, C");
 		layout.insertRow(++row, PREFERRED);
-		panel.add(bendBox, "0, " + row);
+		panel.add(bendBox, "0, " + row+", L, C");
 
 		layout.insertRow(++row, PREFERRED);
-		panel.add(exportPrefs, "0, " + row);
+		panel.add(exportPrefs, "0, " + row+", L, C");
 		
 		layout.insertRow(++row, PREFERRED);
-		panel.add(importPrefs, "0, " + row);		
+		panel.add(importPrefs, "0, " + row+", L, C");
+
+        layout.insertRow(++row, PREFERRED);
+        panel.add(dissButton, "0, " + row+", L, C");
 
 		return panel;
 	}
