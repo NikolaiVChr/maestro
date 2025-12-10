@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
+import com.digero.common.abc.LotroInstrument;
+import com.digero.common.abc.LotroInstrumentSampleDuration;
 import com.digero.common.midi.LotroSequencerWrapper;
 import com.digero.common.midi.Note;
 import com.digero.common.midi.SequencerEvent;
@@ -43,12 +45,26 @@ public class DissonanceDetector {
             return;
         }
 
+        SequenceDataCache cache = part.getAbcSong().getSequenceInfo().getDataCache();
+
         for (Chord chord : chords) {
             for (AbcNoteEvent evt : chord.getNotes()) {
                 if (evt.note == Note.REST || evt.tiesFrom != null) continue;
+                if (part.isStudentPart() && evt.note.id < LotroInstrument.STUDENT_CHROMATIC_LOWEST.id) continue;
                 Note note = Note.fromId(evt.note.id + part.getInstrument().octaveDelta * 12);
                 if (note != null) {
-                    partData.add(new AbcNoteEvent(note, evt.getVelocity(), evt.getStartTick(), evt.getTieEnd().getEndTick(), null, null));
+                    long noteEnd = evt.getTieEnd().getEndTick();
+                    if (!part.getInstrument().isSustainable(evt.note.id)) {
+                        long dura = 500_000L;
+                        try {
+                            dura = LotroInstrumentSampleDuration.getDura(part.getInstrument().friendlyName, evt.note.id);
+                        } catch (Throwable ignore) {
+                        }
+                        dura /= 2L;// they decay fairly fast, no reason to check the almost silent tail.
+                        dura = ((QuantizedTimingInfo)evt.getTempoCache()).multiplyByExportTempoFactor(dura);
+                        noteEnd = cache.microsToTick(cache.tickToMicros(evt.getStartTick()) + dura);
+                    }
+                    partData.add(new AbcNoteEvent(note, evt.getVelocity(), evt.getStartTick(), noteEnd, null, null));
                 }
             }
         }
@@ -156,7 +172,7 @@ public class DissonanceDetector {
                 long overlapEnd   = Math.min(endA, endB);
                 long trueDuration = overlapEnd - overlapStart;
 
-                if (trueDuration <= 61_000L) continue;
+                //if (trueDuration <= 61_000L) continue;
 
                 int id1 = notes.get(i).note.id;
                 int id2 = notes.get(j).note.id;
