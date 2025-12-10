@@ -41,7 +41,7 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
-Version 4.5.23
+Version 4.5.24
 - Fixed a bug in splitting of long notes in organic multi-stage and made it slightly smarter.
 - Fixed another solo/mute issue.
 - Allowed some instruments to have longer notes than 5 seconds in organic multi-stage.
