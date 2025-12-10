@@ -54,16 +54,12 @@ public class PolyphonyHistogram   {
         return str;
     }
 
-    public void setDirty() {
-        dirty = true;
-    }
-
     class MyListener implements Listener<SequencerEvent> {
 		@Override
 		public void onEvent(SequencerEvent e) {
 			switch (e.getProperty()) {
 				case TRACK_ACTIVE:
-					dirty = true;
+					setDirty();
 					break;
 				case DRAG_POSITION:
 				case IS_DRAGGING:
@@ -473,6 +469,10 @@ public class PolyphonyHistogram   {
 	public void setClean() {
 		dirty = false;
 	}
+
+    public void setDirty() {
+        dirty = true;
+    }
 
     /**
      * Peak notes during song

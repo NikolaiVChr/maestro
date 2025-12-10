@@ -61,6 +61,7 @@ import com.digero.common.abc.AbcConstants;
 import com.digero.common.midi.MidiUtils;
 import com.digero.common.midi.PanGenerator;
 import com.digero.common.util.*;
+import com.digero.maestro.abc.DissonanceDetector;
 import com.digero.maestro.midi.SequenceDataCache;
 import org.jetbrains.annotations.Nullable;
 import org.xml.sax.SAXException;
@@ -804,7 +805,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
 	private void generateMidiPartsAndControlsPanel() {
-		arrangementView = new ArrangementView(sequencer, partAutoNumberer, abcSequencer, miscSettings.showMaxPolyphony);
+		arrangementView = new ArrangementView(sequencer, partAutoNumberer, abcSequencer, miscSettings.showMaxPolyphony, miscSettings.dissEnabled);
 		arrangementView.addSettingsActionListener(e -> doSettingsDialog(SettingsDialog.NUMBERING_TAB));
 
 		tuneEditorButton = new JButton();
@@ -1433,10 +1434,12 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		if (abcSong != null) {
             if (abcSong.isSkipSilenceAtStart() != saveSettings.skipSilenceAtStart
                     || abcSong.isDeleteMinimalNotes() != saveSettings.deleteMinimalNotes
-                    || abcSong.isUseRestsInChords() != saveSettings.useRestsInChords) {
+                    || abcSong.isUseRestsInChords() != saveSettings.useRestsInChords
+            || miscSettings.dissModified) {
                 // we do it here instead of in the song listener,
                 // so we don't get nested calls to refresh.
                 needRefresh = true;
+                miscSettings.dissModified = false;
             }
 			abcSong.setSkipSilenceAtStart(saveSettings.skipSilenceAtStart);
 			abcSong.setDeleteMinimalNotes(saveSettings.deleteMinimalNotes);
@@ -1448,6 +1451,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		// abcSong.setShowPruned(saveSettings.showPruned);
 
 		arrangementView.setPolyphony(miscSettings.showMaxPolyphony);
+        arrangementView.setDissonanceEnabled(miscSettings.dissEnabled);
 		if (abcSong != null) {
 			abcSong.setBadger(miscSettings.showBadger);
 		}
@@ -2745,7 +2749,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             abcSequencer.setTickPosition(tick);
             abcSequencer.setRunning(abcRunning);
             previewSequenceInfo.histogram.setSequencer(abcSequencer);
+            if (previewSequenceInfo.dissonance != null) previewSequenceInfo.dissonance.setSequencer(abcSequencer);
             arrangementView.setHistogram(previewSequenceInfo.histogram);
+            arrangementView.setDissonance(previewSequenceInfo.dissonance);
             histogram = previewSequenceInfo.histogram;
             updateStereo();// we call this here to benefit PanVisualizerPanel
         } catch (InvalidMidiDataException e) {
@@ -2753,6 +2759,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             sequencer.stop();
             abcSequencer.stop();
             arrangementView.setHistogram(null);
+            arrangementView.setDissonance(null);
             histogram = null;
             JOptionPane.showMessageDialog(ProjectFrame.this, e.getMessage(), "Error previewing ABC",
                     JOptionPane.WARNING_MESSAGE);
@@ -2782,6 +2789,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             abcBarLabel.setInitialOffsetTick(abcPreviewStartTick);
             abcPositionLabel.setInitialOffsetTick(abcPreviewStartTick);
             arrangementView.setHistogram(new PolyphonyHistogram());
+            arrangementView.setDissonance(new DissonanceDetector(null));
             histogram = null;
             updatePreviewMode(false);
             setSourceChangeEnabled(true);

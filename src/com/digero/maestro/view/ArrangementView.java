@@ -40,6 +40,7 @@ import com.digero.common.view.WrapLayout;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcPartEvent;
 import com.digero.maestro.abc.AbcPartEvent.AbcPartProperty;
+import com.digero.maestro.abc.DissonanceDetector;
 import com.digero.maestro.abc.PartAutoNumberer;
 import com.digero.maestro.abc.PolyphonyHistogram;
 import com.digero.maestro.midi.TrackInfo;
@@ -70,6 +71,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 	private final SequencerWrapper abcSequencer;
 	private boolean isAbcPreviewMode = false;
 	private boolean showMaxPolyphony = false;
+    private boolean showDissonance = false;
 
 	private JSpinner numberSpinner;
 	private final SpinnerNumberModel numberSpinnerModel;
@@ -94,6 +96,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 	
 	// Note graphs
 	HistogramPanel histogramPanel;
+    DissonancePanel dissonancePanel;
 	TempoPanel tempoPanel;
 	HashMap<Integer, TrackPanel> trackPanels = new HashMap<>();
 	
@@ -122,8 +125,8 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 
     private boolean firePanListener = true;
 
-	public ArrangementView(NoteFilterSequencerWrapper sequencer, PartAutoNumberer partAutoNumberer,
-                           SequencerWrapper abcSequencer, boolean showMaxPolyphony) {
+    public ArrangementView(NoteFilterSequencerWrapper sequencer, PartAutoNumberer partAutoNumberer,
+                           SequencerWrapper abcSequencer, boolean showMaxPolyphony, boolean showDissonance) {
 		super();// y  part-header, zoom, tracks
         TableLayout mainLayout = new TableLayout(//layout
                 new double[]{FILL, PREFERRED},  // x  tracks, note
@@ -138,6 +141,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
         setOpaque(true);
 		
 		this.showMaxPolyphony = showMaxPolyphony;
+        this.showDissonance = showDissonance;
 
 		this.sequencer = sequencer;
 		this.abcSequencer = abcSequencer;
@@ -366,7 +370,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		noteGraphScrollPane = new PatchedJScrollPane(noteGraphPanel, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
 
-		controlLayout = new ControlLayout(TrackPanel.calculateTrackDims().rowHeight + 1, noteGraphPanel);
+		controlLayout = new ControlLayout(32+1, noteGraphPanel);
 		controlPanel = new JPanel(controlLayout) {
             @Override
             public boolean isValidateRoot() {
@@ -687,6 +691,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 	public void closeAbcSong() {
 		clearTrackListPanel(true);
 		histogramPanel = null;
+        dissonancePanel = null;
 		tempoPanel = null;
 		trackPanels.clear();
 		abcPart = null;
@@ -762,6 +767,19 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 			
 			controlPanel.add(histogramPanel,"x");
 			noteGraphPanel.add(histogramPanel.getNoteGraph(),"x");
+
+            // Add the dissonance panel
+            if (dissonancePanel == null) {
+                dissonancePanel = new DissonancePanel(abcPart.getSequenceInfo(), sequencer, abcSequencer,
+                        abcPart.getAbcSong());
+            }
+            dissonancePanel.setAbcPreviewMode(isAbcPreviewMode);
+            dissonancePanel.setShowPanel(showDissonance);
+            dissonancePanel.revalidate();
+            controlPanel.add(dissonancePanel,"x");
+            noteGraphPanel.add(dissonancePanel.getNoteGraph(),"x");
+
+
 			
 
 			// Add the tracks and note graphs
@@ -862,7 +880,10 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 				} else if (child instanceof HistogramPanel) {
 					((HistogramPanel) child).setAbcPreviewMode(isAbcPreviewMode);
                     ((HistogramPanel) child).setShowPanel(showMaxPolyphony);
-				}
+				} else if (child instanceof DissonancePanel) {
+                    ((DissonancePanel) child).setAbcPreviewMode(isAbcPreviewMode);
+                    ((DissonancePanel) child).setShowPanel(showDissonance);
+                }
 			}
 		//}
 	}
@@ -968,6 +989,11 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		setAbcPreviewMode(isAbcPreviewMode());
 	}
 
+    public void setDissonanceEnabled(boolean enabled) {
+        this.showDissonance = enabled;
+        setAbcPreviewMode(isAbcPreviewMode());
+    }
+
     @Override
     public boolean isValidateRoot() {
         return true;
@@ -975,5 +1001,9 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 
     public void setHistogram(PolyphonyHistogram histogram) {
         if (histogramPanel != null) histogramPanel.setHistogram(histogram);
+    }
+
+    public void setDissonance(DissonanceDetector dissonanceDetector) {
+        if (dissonancePanel != null) dissonancePanel.setDissonance(dissonanceDetector);
     }
 }

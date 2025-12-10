@@ -1,12 +1,25 @@
 package com.digero.maestro.view;
 
-import com.digero.maestro.abc.AbcPart;
+import com.digero.common.midi.Note;
+import com.digero.common.midi.SequencerEvent;
+import com.digero.common.midi.SequencerWrapper;
+import com.digero.common.util.IDiscardable;
+import com.digero.common.util.Listener;
+import com.digero.common.view.ColorTable;
+import com.digero.common.view.LeanJLabel;
+import com.digero.maestro.abc.AbcSong;
+import com.digero.maestro.abc.DissonanceDetector;
+import com.digero.maestro.midi.FakeNoteEvent;
+import com.digero.maestro.midi.NoteEvent;
+import com.digero.maestro.midi.SequenceDataCache;
+import com.digero.maestro.midi.SequenceInfo;
+import com.digero.maestro.view.TrackPanel.TrackDimensions;
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
 
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
+import javax.swing.*;
+import javax.swing.border.CompoundBorder;
+import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.NoninvertibleTransformException;
@@ -15,31 +28,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
 
-import javax.swing.*;
-import javax.swing.border.CompoundBorder;
-
-import com.digero.common.midi.Note;
-import com.digero.common.midi.SequencerEvent;
-import com.digero.common.midi.SequencerWrapper;
-import com.digero.common.util.IDiscardable;
-import com.digero.common.util.Listener;
-import com.digero.common.util.Pair;
-import com.digero.common.view.ColorTable;
-import com.digero.common.view.LeanJLabel;
-import com.digero.maestro.abc.AbcSong;
-import com.digero.maestro.abc.PolyphonyHistogram;
-import com.digero.maestro.midi.FakeNoteEvent;
-import com.digero.maestro.midi.NoteEvent;
-import com.digero.maestro.midi.SequenceDataCache;
-import com.digero.maestro.midi.SequenceInfo;
-import com.digero.maestro.view.TrackPanel.TrackDimensions;
-import org.jetbrains.annotations.NotNull;
-
-public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutConstants, ArrangementViewItem {
+public class DissonancePanel extends JPanel implements IDiscardable, TableLayoutConstants, ArrangementViewItem {
 	// 0 1 2 3
 	// +---+-------------------+-----------+---------------------+
 	// | | | | +---------------+ |
-	// 0 | | Poly   | 32 notes | | (histogram)                 | |
+	// 0 | | Disso  | 32 notes | | (histogram)                 | |
 	// | | | | +---------------+ |
 	// +---+-------------------+-----------+---------------------+
 
@@ -48,12 +41,12 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 	static final int COUNT_COLUMN = 2;
 	static final int GRAPH_COLUMN = 3;
     static final int BUTTON_COLUMN = 3;
-	
-	public static final int CLIP_MAX_NOTES = 80;// Show from 0 to 80 notes
-	public static final int ORANGE_NOTES   = 45;// Over or equal to 45 and they go orange color. The limit is 64, but emotes and dances also fill.
-	public static final int RED_NOTES      = 64;//Over or equal to 64, notes become red.
+
+	public static final int CLIP_MAX_NOTES = 50;
+    public static final int RED_NOTES      = 35;//Over or equal to
+    public static final int ORANGE_NOTES   = 20;// Over or equal to
 	static final int EXTRA_COUNT_COLUMN_WIDTH = 50;
-	static final int HISTOGRAM_HEIGHT = 64;
+	static final int HISTOGRAM_HEIGHT = 32;
 
 	private static final int GUTTER_WIDTH = TrackPanel.GUTTER_WIDTH;
 	private static final int TITLE_WIDTH = TrackPanel.TITLE_WIDTH_DEFAULT + TrackPanel.HGAP
@@ -61,23 +54,23 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 	private static final int COUNT_WIDTH = TrackPanel.CONTROL_WIDTH_DEFAULT+EXTRA_COUNT_COLUMN_WIDTH;
     private static final int BUTTON_WIDTH = TrackPanel.PRIORITY_WIDTH_DEFAULT;
 
-	private static double[] LAYOUT_COLS = new double[] { GUTTER_WIDTH, TITLE_WIDTH, COUNT_WIDTH, BUTTON_WIDTH };
-	private static double[] LAYOUT_ROWS = new double[] { HISTOGRAM_HEIGHT };
+	private static final double[] LAYOUT_COLS = new double[] { GUTTER_WIDTH, TITLE_WIDTH, COUNT_WIDTH, BUTTON_WIDTH };
+	private static final double[] LAYOUT_ROWS = new double[] { HISTOGRAM_HEIGHT, TableLayoutConstants.FILL};
 
 	private final SequencerWrapper sequencer;
 	private final SequencerWrapper abcSequencer;
     private boolean show = false;
     private boolean abcPreviewMode = false;
 
-	private HistogramNoteGraph histoGraph;
+	private DissonanceNoteGraph dissoGraph;
 	private final LeanJLabel currentCountLabel;
     private final JButton peakButton;
 
-	private AbcSong abcSong;
-    private PolyphonyHistogram histogram = null;
+	private final AbcSong abcSong;
+    private DissonanceDetector dissonanceDetector = null;
 
-    public HistogramPanel(SequenceInfo sequenceInfo, SequencerWrapper sequencer, SequencerWrapper abcSequencer,
-			AbcSong abcSong) {
+    public DissonancePanel(SequenceInfo sequenceInfo, SequencerWrapper sequencer, SequencerWrapper abcSequencer,
+                           AbcSong abcSong) {
 		super(new TableLayout(LAYOUT_COLS, LAYOUT_ROWS));
 		this.abcSong = abcSong;
 		
@@ -100,34 +93,34 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 		gutter.setOpaque(true);
 		gutter.setBackground(ColorTable.PANEL_HIGHLIGHT_OTHER_PART.get());
 
-		this.histoGraph = new HistogramNoteGraph(sequenceInfo, sequencer);
-		histoGraph.setBackground(ColorTable.GRAPH_BACKGROUND_DISABLED.get());
-		histoGraph.setPreferredSize(new Dimension(histoGraph.getPreferredSize().width, getPreferredSize().height));
-		histoGraph.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()));
+		this.dissoGraph = new DissonanceNoteGraph(sequenceInfo, sequencer);
+		dissoGraph.setBackground(ColorTable.GRAPH_BACKGROUND_DISABLED.get());
+		dissoGraph.setPreferredSize(new Dimension(dissoGraph.getPreferredSize().width, getPreferredSize().height));
+		dissoGraph.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()));
 		setBackground(ColorTable.GRAPH_BACKGROUND_DISABLED.get());
 
-		JLabel titleLabel = new JLabel("Polyphony");
+		JLabel titleLabel = new JLabel("Dissonance");
 		titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
 		titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD));
 		titleLabel.setForeground(ColorTable.PANEL_TEXT_DISABLED.get());
 
-		currentCountLabel = new LeanJLabel("128 notes (Peak: 128)");
+		currentCountLabel = new LeanJLabel("128 score (Peak: 128)");
 		currentCountLabel.setForeground(ColorTable.PANEL_TEXT_DISABLED.get());
-		currentCountLabel.setToolTipText("Number of concurrent playing notes.\nThis is useful due to lotro's limitation of 64 sounds, including dance footsteps and emotes.\nGreen sections have under 45 notes at once, and shouldn't have note loss.\nYellow sections have 45+ notes, and red sections have 64+ notes.");
+		currentCountLabel.setToolTipText("Dissonance score");
 		currentCountLabel.setHorizontalAlignment(JLabel.RIGHT);
 
         peakButton = new JButton("P");
         peakButton.setToolTipText("Jump to highest peak");
         peakButton.addActionListener(a -> {
-            if (histogram != null) {
-                long tick = histogram.getPeakTick();
+            if (dissonanceDetector != null) {
+                long tick = dissonanceDetector.getPeakTick(abcSong);
                 sequencer.setTickPosition(tick);
             }
         });
 		
 		updateCountLabel();
 
-		add(gutter, GUTTER_COLUMN + ", 0");
+		add(gutter, GUTTER_COLUMN + ", 0, "+GUTTER_COLUMN + ", 1, F, F");
 		add(titleLabel, TITLE_COLUMN + ", 0");
 		add(currentCountLabel, COUNT_COLUMN + ", 0, R, C");
         add(peakButton, BUTTON_COLUMN + ", 0, R, C");
@@ -139,8 +132,8 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 	}
 	
 	@Override
-	public HistogramNoteGraph getNoteGraph() {
-		return histoGraph;
+	public DissonanceNoteGraph getNoteGraph() {
+		return dissoGraph;
 	}
 
 	@Override
@@ -158,15 +151,14 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 
     private void updateVisibility() {
         setVisible(abcPreviewMode && show);
-        histoGraph.setVisible(abcPreviewMode && show);
+        dissoGraph.setVisible(abcPreviewMode && show);
         if (abcPreviewMode && show) {
             setMaximumSize(null);
-            histoGraph.setMaximumSize(null);
+            dissoGraph.setMaximumSize(null);
         } else {
             setMaximumSize(new Dimension(0,0));
-            histoGraph.setMaximumSize(new Dimension(0,0));
+            dissoGraph.setMaximumSize(new Dimension(0,0));
         }
-        PolyphonyHistogram.enabled = show;//TODO
     }
 
     @Override
@@ -188,36 +180,32 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
      * Called by sequencer updates, abcPart updates and preview mode toggle.
      */
 	public void updateCountLabel() {
-        if (histogram != null) {
-            if (histogram.isDirty()) {
-                histogram.sumUp(abcSong);
-            }
-            int notes = histogram.get(abcSequencer.getThumbPosition());// Must be abcSeq, due to tuneeditor can change micros from this call
-            currentCountLabel.setText(notes + " notes (Peak: " + histogram.max() + ")");
+        if (dissonanceDetector != null) {
+            int notes = dissonanceDetector.get(abcSequencer.getThumbTick(), abcSong).getTotalScore();// Must be abcSeq, due to tuneeditor can change micros from this call
+            currentCountLabel.setText(notes + " score (Peak: " + dissonanceDetector.max(abcSong) + ")");
         } else {
             currentCountLabel.setText("No preview data");
         }
 	}
 
-	private Listener<SequencerEvent> sequencerListener = e -> {
+	private final Listener<SequencerEvent> sequencerListener = e -> {
 		
-		histoGraph.repaint();
-		
-		//if (e.getProperty().isInMask(SequencerProperty.THUMB_POSITION_MASK)) {
-			updateCountLabel();
-		//}
+		dissoGraph.repaint();
+
+        updateCountLabel();
 	};
 
-    public void setHistogram(PolyphonyHistogram histogram) {
-        this.histogram = histogram;
-        histoGraph.repaint();
+    public void setDissonance(DissonanceDetector dissonanceDetector) {
+        this.dissonanceDetector = dissonanceDetector;
+        dissoGraph.recalcPolyphonyEvents();
+        dissoGraph.repaint();
         updateCountLabel();
     }
 
-    public class HistogramNoteGraph extends NoteGraph {
+    public class DissonanceNoteGraph extends NoteGraph {
 		private List<NoteEvent> events = new ArrayList<>();
 
-		public HistogramNoteGraph(SequenceInfo sequenceInfo, SequencerWrapper sequencer) {
+		public DissonanceNoteGraph(SequenceInfo sequenceInfo, SequencerWrapper sequencer) {
 			super(sequencer, sequenceInfo, null, 0, CLIP_MAX_NOTES, 1, 2);
 			
 			setOctaveLinesVisible(false);
@@ -242,14 +230,14 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
         }
 
         private int lastX = -1;
-        private String lastStr = "Polyphony";
-        private PolyphonyHistogram lastHistogram = null;
+        private String lastStr = "Dissonance";
+        private DissonanceDetector lastDissonance = null;
 
         @Override
         public String getToolTipText(MouseEvent event) {
-            if (histogram != null) {
+            if (dissonanceDetector != null) {
                 int x = event.getX();
-                if (x == lastX && histogram == lastHistogram) return lastStr;
+                if (x == lastX && dissonanceDetector == lastDissonance) return lastStr;
 
                 // Convert mouse X coordinate to midi-micros position
                 AffineTransform xForm = getTransform();
@@ -258,98 +246,49 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
                     xForm.inverseTransform(pt, pt);
                 } catch (NoninvertibleTransformException e) {
                     lastX = -1;
-                    lastStr = "Polyphony";
-                    lastHistogram = null;
+                    lastStr = "Dissonance";
+                    lastDissonance = null;
                     return null;
                 }
-                int total = 0;
-                StringBuilder tooltip = new StringBuilder();
-                tooltip.append("<html>Part polyphony:");
-                for (AbcPart part : abcSong.getParts()) {
-                    int notesPart = histogram.get((long) pt.x, part);
-                    if (notesPart == 0) continue;
-                    total += notesPart;
-                    tooltip.append("<br>")
-                            .append(escapeHtml(part.getTitle()))
-                            .append(":&nbsp;&nbsp;")
-                            .append(notesPart);
-                }
-                tooltip.append("<br>Total:&nbsp;&nbsp;");
-                tooltip.append(total);
-                tooltip.append("</html>");
+
+                DissonanceDetector.DissonanceEvent notesPart = dissonanceDetector.get(sequenceInfo.getDataCache ().microsToTick((long) pt.x), abcSong);
+                String tooltip = notesPart ==null?"":notesPart.getTooltipHtml();
+
                 lastX = x;
-                lastStr = tooltip.toString();
-                lastHistogram = histogram;
+                lastStr = tooltip;
+                lastDissonance = dissonanceDetector;
                 return lastStr;
             }
             lastX = -1;
-            lastStr = "Polyphony";
-            lastHistogram = null;
+            lastStr = "Dissonance";
+            lastDissonance = null;
             return null;
-        }
-
-        private String escapeHtml(@NotNull String text) {
-
-            int len = text.length();
-            int i = 0;
-
-            for (; i < len; i++) {
-                char c = text.charAt(i);
-                if (c == '&' || c == '<' || c == '>' || c == '"' || c == '\'') {
-                    break;
-                }
-            }
-
-            if (i == len) return text;
-
-            StringBuilder b = new StringBuilder(len + 16);
-            b.append(text, 0, i); // append the clean part
-
-            for (; i < len; i++) {
-                char c = text.charAt(i);
-                switch (c) {
-                    case '&' -> b.append("&amp;");
-                    case '<' -> b.append("&lt;");
-                    case '>' -> b.append("&gt;");
-                    case '"' -> b.append("&quot;");
-                    case '\'' -> b.append("&#39;");
-                    default -> b.append(c);
-                }
-            }
-            return b.toString();
         }
 
 		private void recalcPolyphonyEvents() {
 			// Make fake note events for every count event
 			events = new ArrayList<>();
 			if (abcSong.getQTM() == null) return;
-			
-			Entry<Long, Pair<Long,Integer>> prevEvent = null;
 
-            if (histogram != null) {
-                histogram.sumUp(abcSong);
-                histogram.setClean();
-            }
+            Entry<Long, DissonanceDetector.DissonanceEvent> prevEvent = null;
 
 			SequenceDataCache dataCache = sequenceInfo.getDataCache();
-			long prevTick = 0L;
-            if (histogram != null) {
-                for (Entry<Long, Pair<Long, Integer>> event : histogram.getAll()) {
+
+            if (dissonanceDetector != null) {
+                for (Entry<Long, DissonanceDetector.DissonanceEvent> event : dissonanceDetector.getResults(abcSong).entrySet()) {
 
                     if (prevEvent != null) {
-                        //assert prevTick >= event.getValue().first : "OOPS HISTO";
-                        int id = Math.min(CLIP_MAX_NOTES, prevEvent.getValue().second);
-                        events.add(new FakeNoteEvent(Note.fromId(id), prevEvent.getValue().first, event.getValue().first, dataCache));
+                        int id = Math.min(CLIP_MAX_NOTES, prevEvent.getValue().getTotalScore());
+                        events.add(new FakeNoteEvent(Note.fromId(id), prevEvent.getValue().tick, event.getValue().tick, dataCache));
                     }
                     prevEvent = event;
-                    prevTick = event.getValue().first;
                 }
             }
 
 			if (prevEvent != null) {
-				int id = Math.min(CLIP_MAX_NOTES,prevEvent.getValue().second);
+				int id = Math.min(CLIP_MAX_NOTES,prevEvent.getValue().getTotalScore());
 				events.add(
-						new FakeNoteEvent(Note.fromId(id), prevEvent.getValue().first, dataCache.getSongLengthTicks(), dataCache));
+						new FakeNoteEvent(Note.fromId(id), prevEvent.getValue().tick, dataCache.getSongLengthTicks(), dataCache));
 			} else {
 				int id = 0;
 				events.add(new FakeNoteEvent(Note.fromId(id), 0, dataCache.getSongLengthTicks(), dataCache));
@@ -373,22 +312,23 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 
 		@Override
 		protected List<NoteEvent> getEvents() {
-			if (histogram == null || histogram.isDirty() || events.isEmpty())
+			if (dissonanceDetector == null || events.isEmpty() || dissonanceDetector.isDirty())
 				recalcPolyphonyEvents();
 			return events;
 		}
 
 		@Override
 		protected boolean[] getSectionsModified() {
-			//if (abcSong == null) {
-				return null;
-			//}
-			//return abcSong.tuneBarsModified;
+			return null;
 		}
+
+        protected boolean isBars() {
+            return true;
+        }
 	}
 
 	@Override
 	public boolean isVerticalZoomForbidden() {
-		return true;
+		return false;
 	}
 }

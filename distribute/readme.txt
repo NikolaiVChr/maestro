@@ -41,20 +41,24 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
-Version 4.5.22
+Version 4.5.23
 - Fixed a bug in splitting of long notes in organic multi-stage and made it slightly smarter.
 - Fixed another solo/mute issue.
 - Allowed some instruments to have longer notes than 5 seconds in organic multi-stage.
 - Made the pan window slightly larger to show 4 stacked parts.
-- Various performance optimizations.
+- Many various performance optimizations.
 - Organic multi-stage 2.
 - Made pitch bend handling for organic much smarter.
-- Made pitch bend handling for large range pitch bends slightly smarter.
+- Made pitch bend handling for large pitch range pitch bends slightly smarter.
 - MSI and ZIP is now smaller in size.
 - Added polyphony graph tooltip.
+- Added dissonance graph option.
 - Added number in pan window showing pan position.
 - Preview notes release curves is now linear decreasing amplitudes to match lotro.
-- A possible fix for "horn bug".
+- Removed the 6.8 ms attack on all notes, this fix can make the clarinet clicking be more audible in maestro.
+- Stopped filtering of all notes, the HP cutoff was really high, but it might have distorted slightly.
+- Fixed that Student's Fiddle notes sounded different than basic fiddles.
+- A possible fix for "horn bug". Don't get your hope up though, probably wont work.
 
 Version 4.5.18
 - Fixed a bug where playlists with files which had been moved/renamed wouldn't load.
