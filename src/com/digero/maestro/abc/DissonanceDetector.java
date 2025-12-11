@@ -187,7 +187,7 @@ public class DissonanceDetector {
                 int id2 = notes.get(j).note.id;
                 int interval = Math.abs(id1 - id2);
 
-                if (interval == 0) continue; // Unison
+                if (interval == 0 || interval > 13) continue; // Unison or far enough apart to not sound jarring
 
                 int semitones = interval % 12;
 
