@@ -56,7 +56,7 @@ public class DissonanceDetector {
                 if (note != null) {
                     long noteEnd = evt.getTieEnd().getEndTick();
                     if (!part.getInstrument().isSustainable(evt.note.id)) {
-                        long dura = 500_000L;
+                        long dura = 450_000L;
                         try {
                             dura = LotroInstrumentSampleDuration.getDura(part.getInstrument().friendlyName, evt.note.id);
                         } catch (Throwable ignore) {
@@ -304,13 +304,16 @@ public class DissonanceDetector {
         private Integer cache = null;
 
         public boolean isDissonant() {
-            return minorSecondCount > 0 || tritoneCount > 0 || majorSeventhCount > 0 || minorSeventhCount > 0 || majorSecondCount > 0 || bassMudCount > 0;// || majorSecondCount14 > 0 || minorSecondCount13 > 0;
+            return minorSecondCount > 0 || tritoneCount > 0 || majorSeventhCount > 0
+                    || minorSeventhCount > 0 || majorSecondCount > 0 || bassMudCount > 0;// || majorSecondCount14 > 0 || minorSecondCount13 > 0;
         }
 
         public int getTotalScore() {
             if (cache != null) return cache;
             if (prefs == null) return 0;
-            int count = prefs.min2factor * minorSecondCount + prefs.maj2factor * majorSecondCount + prefs.trifactor * tritoneCount + prefs.maj7factor * majorSeventhCount + prefs.min7factor * minorSeventhCount + prefs.mudfactor * bassMudCount;
+            int count = prefs.min2factor * minorSecondCount + prefs.maj2factor * majorSecondCount
+                        + prefs.trifactor * tritoneCount + prefs.maj7factor * majorSeventhCount
+                        + prefs.min7factor * minorSeventhCount + prefs.mudfactor * bassMudCount;
             int penalty = 0;
             if (minorSecondCount > prefs.min2threshold) {
                 penalty += prefs.min2penalty * (minorSecondCount - prefs.min2threshold);
@@ -325,6 +328,7 @@ public class DissonanceDetector {
         }
 
         private int getTotalCollisions() {
+            // we don't count bass mud in this
             return minorSecondCount + majorSecondCount + tritoneCount + majorSeventhCount + minorSeventhCount;
         }
 

@@ -50,6 +50,9 @@ public class LotroInstrumentSampleDuration {
         if (instr == null) {
             return null;
         }
+		if (friendlyName.equals(LotroInstrument.BASIC_COWBELL.friendlyName) || friendlyName.equals(LotroInstrument.MOOR_COWBELL.friendlyName)) {
+			note = AbcConstants.COWBELL_NOTE_ID;// 71
+		}
 		Long dura = instr.get(note);
 		return dura;
 	}
@@ -82,7 +85,7 @@ public class LotroInstrumentSampleDuration {
 	private static void readLines(String fileName, BufferedReader theFileReader) throws IOException {
 		String line = theFileReader.readLine();
 		while (line != null) {
-			if (line.isEmpty()) {
+			if (line.isBlank() || line.startsWith("#")) {
 				line = theFileReader.readLine();
 				continue;
 			}
@@ -98,8 +101,8 @@ public class LotroInstrumentSampleDuration {
 			long dura = Long.parseLong(splits[2].trim());
             Map<Integer, Long> instrMap = db.computeIfAbsent(instr, k -> new HashMap<>());
             instrMap.put(note, dura);
-			if (instr.equals(LotroInstrument.BASIC_FIDDLE.friendlyName) && note > 42) {
-				// Student fiddle need the basic fiddle notes also above 42.
+			if (instr.equals(LotroInstrument.BASIC_FIDDLE.friendlyName) && note >= LotroInstrument.STUDENT_CHROMATIC_LOWEST.id) {
+				// Student fiddle needs the basic fiddle notes also above 42.
                 Map<Integer, Long> instrMap2 = db.computeIfAbsent(LotroInstrument.STUDENT_FIDDLE.friendlyName, k -> new HashMap<>());
                 instrMap2.put(note, dura);
 			}

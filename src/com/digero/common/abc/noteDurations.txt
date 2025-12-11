@@ -1,3 +1,6 @@
+#
+# Durations are in micro seconds
+#
 Basic Bagpipe,36,2919410
 Basic Bagpipe,37,2919410
 Basic Bagpipe,38,2919410
