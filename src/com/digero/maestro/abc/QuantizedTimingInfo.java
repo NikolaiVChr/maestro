@@ -721,15 +721,21 @@ public class QuantizedTimingInfo implements ITempoCache, IBarNumberCache {
 		return newTempo;//(int) Math.round(MidiUtils.convertTempo((double) primaryTempoMPQ *origTempo/newTempo));
 	}
 
+	/**
+	 * If orig midi tempo is 60, and user set it to 120,
+	 * then this return 2.0
+	 */
 	public float getExportTempoFactord() {
 		return newTempo/(float)origTempo;
 	}
-	
+
 	public long divideByExportTempoFactor(long number) {
+		if (newTempo == origTempo) return number;
 		return number*origTempo/newTempo;
 	}
 	
 	public long multiplyByExportTempoFactor(long number) {
+		if (newTempo == origTempo) return number;
 		return number*newTempo/origTempo;
 	}
 

@@ -23,6 +23,7 @@ public class MiscSettings {
     public boolean dissModified = false;// not persistent
 
     public boolean dissEnabled = false;
+	public boolean excludeShortestNotes = true;
     public int min2factor = 1;
     public int maj2factor = 1;
     public int maj7factor = 1;
@@ -74,6 +75,7 @@ public class MiscSettings {
         maj2threshold = prefs.getInt("maj2threshold", maj2threshold);
         maj2penalty = prefs.getInt("maj2penalty", maj2penalty);
         dissEnabled = prefs.getBoolean("dissonanceGraphEnabled", dissEnabled);
+		excludeShortestNotes = prefs.getBoolean("excludeShortestNotes", excludeShortestNotes);
 	}
 
 	public MiscSettings(MiscSettings that) {
@@ -102,6 +104,7 @@ public class MiscSettings {
         maj2penalty = that.maj2penalty;
         dissEnabled = that.dissEnabled;
         dissModified = that.dissModified;
+		excludeShortestNotes = that.excludeShortestNotes;
 	}
 
 	public void saveToPrefs() {
@@ -124,6 +127,7 @@ public class MiscSettings {
         prefs.putInt("maj2threshold", maj2threshold);
         prefs.putInt("maj2penalty", maj2penalty);
         prefs.putBoolean("dissonanceGraphEnabled", dissEnabled);
+		prefs.putBoolean("excludeShortestNotes", excludeShortestNotes);
 	}
 
 	public void restoreDefaults() {

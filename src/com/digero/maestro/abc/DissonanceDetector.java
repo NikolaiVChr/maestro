@@ -28,6 +28,7 @@ public class DissonanceDetector {
     private final Listener<SequencerEvent> listener = new DissonanceDetector.MyListener();
     private LotroSequencerWrapper abcSeq = null;
     private final Map<Long, List<AbcNoteEvent>> dissonanceData = new HashMap<>();
+    private QuantizedTimingInfo qtm = null;
 
     public DissonanceDetector(MiscSettings dissonancePrefs) {
         this.prefs = dissonancePrefs;
@@ -61,7 +62,10 @@ public class DissonanceDetector {
                         } catch (Throwable ignore) {
                         }
                         dura /= 2L;// they decay fairly fast, no reason to check the almost silent tail.
-                        dura = ((QuantizedTimingInfo)evt.getTempoCache()).multiplyByExportTempoFactor(dura);
+                        if (qtm == null) {
+                            qtm = (QuantizedTimingInfo) evt.getTempoCache();
+                        }
+                        if (qtm != null) dura = qtm.multiplyByExportTempoFactor(dura);
                         noteEnd = cache.microsToTick(cache.tickToMicros(evt.getStartTick()) + dura);
                     }
                     partData.add(new AbcNoteEvent(note, evt.getVelocity(), evt.getStartTick(), noteEnd, null, null));
@@ -161,18 +165,23 @@ public class DissonanceDetector {
 
         for (int i = 0; i < notes.size(); i++) {
             for (int j = i + 1; j < notes.size(); j++) {
-                // Calculate how long these two notes
-                // overlap in orig midi time.
-                long startA = cache.tickToMicros(notes.get(i).getStartTick());
-                long endA   = cache.tickToMicros(notes.get(i).getEndTick());
-                long startB = cache.tickToMicros(notes.get(j).getStartTick());
-                long endB   = cache.tickToMicros(notes.get(j).getEndTick());
+                if (prefs.excludeShortestNotes) {
+                    // Calculate how long these two notes
+                    // overlap in orig midi time.
+                    long startA = cache.tickToMicros(notes.get(i).getStartTick());
+                    long endA = cache.tickToMicros(notes.get(i).getEndTick());
+                    long startB = cache.tickToMicros(notes.get(j).getStartTick());
+                    long endB = cache.tickToMicros(notes.get(j).getEndTick());
 
-                long overlapStart = Math.max(startA, startB);
-                long overlapEnd   = Math.min(endA, endB);
-                long trueDuration = overlapEnd - overlapStart;
+                    // because we use cache to calc micros, tune-editor tempo changes
+                    // are not factored in, can live with that.
 
-                //if (trueDuration <= 61_000L) continue;
+                    long overlapStart = Math.max(startA, startB);
+                    long overlapEnd = Math.min(endA, endB);
+                    long trueDuration = overlapEnd - overlapStart;
+                    if (qtm != null) trueDuration = qtm.divideByExportTempoFactor(trueDuration);
+                    if (trueDuration <= 62_000L) continue;
+                }
 
                 int id1 = notes.get(i).note.id;
                 int id2 = notes.get(j).note.id;

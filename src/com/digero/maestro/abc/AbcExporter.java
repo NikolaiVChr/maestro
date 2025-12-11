@@ -4415,7 +4415,7 @@ public class AbcExporter {
     private List<AbcNoteEvent> removeCollapsedDissonance(List<AbcNoteEvent> events, AbcPart part) {
         part.numberOfRemovedNotesForSafety = 0;
 
-        if (part.getInstrument() == LotroInstrument.BASIC_DRUM) return events;
+        if (part.getInstrument().isPercussion) return events;//drums and cowbells only
 
         // TODO: Handle if notes were zero duration in midi file. Its mostly drums this happens for, but not always.
 

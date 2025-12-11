@@ -17,6 +17,7 @@ public class DissonanceSettingsDialog extends JDialog {
     private boolean success = false;
 
     private final JCheckBox chkEnabled;
+    private final JCheckBox chkExcludeShorts;
     private final JSpinner spinMin2Factor;
     private final JSpinner spinMaj2Factor;
     private final JSpinner spinMaj7Factor;
@@ -52,6 +53,11 @@ public class DissonanceSettingsDialog extends JDialog {
         c.gridx = 0; c.gridy = row++; c.gridwidth = 2;
         formPanel.add(chkEnabled, c);
         c.gridwidth = 1;
+
+        chkExcludeShorts = new JCheckBox("Exclude ultra short overlaps");
+        chkExcludeShorts.setSelected(settings.excludeShortestNotes); // Default to true, or load from settings if you add the field
+        c.gridy = row++; c.gridwidth = 2;
+        formPanel.add(chkExcludeShorts, c);
 
         // Weights / Factors Section
         addHeader(formPanel, "Interval Weights (Count Multipliers)", row++);
@@ -152,6 +158,7 @@ public class DissonanceSettingsDialog extends JDialog {
         spinMin2Penalty.setEnabled(enabled);
         spinMaj2Threshold.setEnabled(enabled);
         spinMaj2Penalty.setEnabled(enabled);
+        chkExcludeShorts.setEnabled(enabled);
     }
 
     private void saveSettings() {
@@ -167,6 +174,8 @@ public class DissonanceSettingsDialog extends JDialog {
         settings.min2penalty   = (Integer) spinMin2Penalty.getValue();
         settings.maj2threshold = (Integer) spinMaj2Threshold.getValue();
         settings.maj2penalty   = (Integer) spinMaj2Penalty.getValue();
+
+        settings.excludeShortestNotes = chkExcludeShorts.isSelected();
         
         settings.saveToPrefs();
     }
