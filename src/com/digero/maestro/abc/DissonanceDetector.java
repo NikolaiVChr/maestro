@@ -186,10 +186,21 @@ public class DissonanceDetector {
                 int id1 = notes.get(i).note.id;
                 int id2 = notes.get(j).note.id;
                 int interval = Math.abs(id1 - id2);
+                int lowNote = Math.min(id1, id2);
 
                 if (interval == 0 || interval > 13) continue; // Unison or far enough apart to not sound jarring
 
                 int semitones = interval % 12;
+
+                if (lowNote < Note.C3.id) {
+                    boolean isSafe = semitones == 7 || semitones == 5 || semitones == 10;
+                    // We only check for mud within the first octave (interval < 12).
+                    // Wider bass intervals (like 10ths, spacing > 13) are usually clear enough.
+                    if (!isSafe && interval < 12) {
+                        dissonanceEvent.bassMudCount++;
+                        hasDissonance = true;
+                    }
+                }
 
                 if (semitones == 1) {
                     dissonanceEvent.minorSecondCount++;
@@ -272,6 +283,7 @@ public class DissonanceDetector {
             existing.tritoneCount     += newEvent.tritoneCount;
             existing.majorSeventhCount += newEvent.majorSeventhCount;
             existing.minorSeventhCount += newEvent.minorSeventhCount;
+            existing.bassMudCount      += newEvent.bassMudCount;
         }
     }
 
@@ -287,24 +299,27 @@ public class DissonanceDetector {
         public int tritoneCount;
         public int majorSeventhCount;
         public int minorSeventhCount;
+        public int bassMudCount;
 
         private Integer cache = null;
 
         public boolean isDissonant() {
-            return minorSecondCount > 0 || tritoneCount > 0 || majorSeventhCount > 0 || minorSeventhCount > 0 || majorSecondCount > 0;// || majorSecondCount14 > 0 || minorSecondCount13 > 0;
+            return minorSecondCount > 0 || tritoneCount > 0 || majorSeventhCount > 0 || minorSeventhCount > 0 || majorSecondCount > 0 || bassMudCount > 0;// || majorSecondCount14 > 0 || minorSecondCount13 > 0;
         }
 
         public int getTotalScore() {
             if (cache != null) return cache;
             if (prefs == null) return 0;
-            int count = prefs.min2factor * minorSecondCount + prefs.maj2factor * majorSecondCount + prefs.trifactor * tritoneCount + prefs.maj7factor * majorSeventhCount + prefs.min7factor * minorSeventhCount;
+            int count = prefs.min2factor * minorSecondCount + prefs.maj2factor * majorSecondCount + prefs.trifactor * tritoneCount + prefs.maj7factor * majorSeventhCount + prefs.min7factor * minorSeventhCount + prefs.mudfactor * bassMudCount;
             int penalty = 0;
             if (minorSecondCount > prefs.min2threshold) {
                 penalty += prefs.min2penalty * (minorSecondCount - prefs.min2threshold);
             }
+            /*
             if (majorSecondCount > prefs.maj2threshold) {
                 penalty += prefs.maj2penalty * (majorSecondCount - prefs.maj2threshold);
             }
+            */
             cache = count + penalty;
             return cache;
         }
@@ -329,19 +344,20 @@ public class DissonanceDetector {
                     .append(":&nbsp;&nbsp;")
                     .append(tritoneCount);
             tooltip.append("<br>")
-                    .append("Major second")
-                    .append(":&nbsp;&nbsp;")
-                    .append(majorSecondCount);
-            tooltip.append("<br>")
                     .append("Minor seventh")
                     .append(":&nbsp;&nbsp;")
                     .append(minorSeventhCount);
-
+            tooltip.append("<br>")
+                    .append("Major second")
+                    .append(":&nbsp;&nbsp;")
+                    .append(majorSecondCount);
             tooltip.append("<br>Total:&nbsp;&nbsp;");
             tooltip.append(getTotalCollisions());
-            tooltip.append("<br><br>Value:&nbsp;&nbsp;");
+            tooltip.append("<br><br>Bass mud:&nbsp;&nbsp;")
+                    .append(bassMudCount);
+            tooltip.append("<br><br><b>Value:&nbsp;&nbsp;");
             tooltip.append(getTotalScore());
-            tooltip.append("</html>");
+            tooltip.append("</b></html>");
             return tooltip.toString();
         }
     }

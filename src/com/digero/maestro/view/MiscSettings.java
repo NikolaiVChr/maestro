@@ -25,14 +25,15 @@ public class MiscSettings {
     public boolean dissEnabled = false;
 	public boolean excludeShortestNotes = true;
     public int min2factor = 1;
-    public int maj2factor = 1;
+    public int maj2factor = 0;
     public int maj7factor = 1;
     public int min7factor = 0;
     public int trifactor = 0;
+	public int mudfactor = 0;
     public int min2threshold = 1;
     public int min2penalty = 10;
-    public int maj2threshold = 1;
-    public int maj2penalty = 0;
+    //public int maj2threshold = 1;
+    //public int maj2penalty = 0;
 
 
     public MiscSettings(Preferences prefs, boolean checkFallback) {
@@ -70,10 +71,11 @@ public class MiscSettings {
         trifactor = prefs.getInt("trifactor", trifactor);
         maj7factor = prefs.getInt("maj7factor", maj7factor);
         min7factor = prefs.getInt("min7factor", min7factor);
+		mudfactor = prefs.getInt("mudfactor", mudfactor);
         min2threshold = prefs.getInt("min2threshold", min2threshold);
         min2penalty = prefs.getInt("min2penalty", min2penalty);
-        maj2threshold = prefs.getInt("maj2threshold", maj2threshold);
-        maj2penalty = prefs.getInt("maj2penalty", maj2penalty);
+        //maj2threshold = prefs.getInt("maj2threshold", maj2threshold);
+        //maj2penalty = prefs.getInt("maj2penalty", maj2penalty);
         dissEnabled = prefs.getBoolean("dissonanceGraphEnabled", dissEnabled);
 		excludeShortestNotes = prefs.getBoolean("excludeShortestNotes", excludeShortestNotes);
 	}
@@ -98,10 +100,11 @@ public class MiscSettings {
         trifactor = that.trifactor;
         maj7factor = that.maj7factor;
         min7factor = that.min7factor;
+		mudfactor = that.mudfactor;
         min2threshold = that.min2threshold;
         min2penalty = that.min2penalty;
-        maj2threshold = that.maj2threshold;
-        maj2penalty = that.maj2penalty;
+        //maj2threshold = that.maj2threshold;
+        //maj2penalty = that.maj2penalty;
         dissEnabled = that.dissEnabled;
         dissModified = that.dissModified;
 		excludeShortestNotes = that.excludeShortestNotes;
@@ -122,10 +125,11 @@ public class MiscSettings {
         prefs.putInt("trifactor", trifactor);
         prefs.putInt("maj7factor", maj7factor);
         prefs.putInt("min7factor", min7factor);
+		prefs.putInt("mudfactor", mudfactor);
         prefs.putInt("min2threshold", min2threshold);
         prefs.putInt("min2penalty", min2penalty);
-        prefs.putInt("maj2threshold", maj2threshold);
-        prefs.putInt("maj2penalty", maj2penalty);
+        //prefs.putInt("maj2threshold", maj2threshold);
+        //prefs.putInt("maj2penalty", maj2penalty);
         prefs.putBoolean("dissonanceGraphEnabled", dissEnabled);
 		prefs.putBoolean("excludeShortestNotes", excludeShortestNotes);
 	}
