@@ -171,6 +171,11 @@
 			<arg value="Elamond and Aifel"/>
 			<arg value="--icon"/>
 			<arg value="abcplayer.ico"/>
+			<!--
+				Native access is needed by flatLaf to get the title bar dark also
+				else must use System.setProperty("flatlaf.useNativeLibrary", "false");
+				before using flatLaf.
+			 -->
 			<arg value="--java-options"/>
 			<arg value="--enable-native-access=ALL-UNNAMED"/>
 			<arg value="--java-options"/>
