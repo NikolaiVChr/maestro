@@ -274,6 +274,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			newPart.setPartNumber(abcInfo.getPartNumber(t));
             newPart.setPartNumberManuallyAssigned(true, true);// what is loaded from abc we consider manually assigned numbers
 			newPart.setTrackEnabled(t, true);
+			newPart.setUserPan(abcInfo.getUserPan(t));
 
 			Set<Integer> midiInstruments = trackInfo.getInstruments();
 			for (LotroInstrument lotroInst : LotroInstrument.values()) {

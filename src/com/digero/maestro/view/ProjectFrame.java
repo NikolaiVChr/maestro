@@ -3614,10 +3614,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             return switch (this) {
                 case ORGANIC_MULTISTAGE2 -> "<html>Different approach to exporting fluid timings.<br>"
                         + "This is a beta feature, use on own risk.</html>";
-                case ORGANIC_MULTISTAGE -> "<html>Different approach to exporting fluid timings.<br>"
-                        + "This is a beta feature, use on own risk.</html>";
-                case ORGANIC_SINGLESTAGE -> "<html>Export more fluid timings.<br>"
-                        + "This is a beta feature, use on own risk.</html>";
+                case ORGANIC_MULTISTAGE -> "<html>Different approach to exporting fluid timings.</html>";
+                case ORGANIC_SINGLESTAGE -> "<html>Export more fluid timings.</html>";
                 case LEGACY -> "<html>Export whole song in the same fixed timing grid.<html>";
                 case LEGACY_SWING -> "<html>Export whole song in the same fixed timing grid." +
                         "<br>Will setup the grid for triplets or a swing rhythm.<br><br>"
