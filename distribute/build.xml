@@ -51,7 +51,8 @@
                fork="true"
                executable="${env.JAVA_HOME}/bin/javac"
                includeantruntime="false"
-               failonerror="true">
+               failonerror="true"
+			   release="21">
 
             <compilerarg value="--patch-module" />
             <compilerarg value="java.desktop=../patches/java.desktop" />
