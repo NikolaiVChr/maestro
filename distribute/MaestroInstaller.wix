@@ -13,7 +13,7 @@
     <?define AbcToolsAppUserModelId=Aifel.AbcTools?>
     <?define ApplicationFolderName=Maestro?>
     <Product Id="*" UpgradeCode="{CCA9F6BF-F1FB-4D8E-8892-3AFE3CE6F4B7}" Name="$(var.MaestroAppName)" Manufacturer="Digero And Aifel" Version="$(var.MaestroVersion)" Language="1033">
-        <Package Id="*" Description="Maestro MIDI to ABC converter and ABC Player for The Lord of the Rings Online" Languages="1033" Compressed="yes" SummaryCodepage="1252" />
+        <Package Id="*" Description="Maestro MIDI to ABC converter and ABC Player for The Lord of the Rings Online" Languages="1033" Compressed="yes" SummaryCodepage="1252" InstallScope="perUser" InstallPrivileges="limited"/>
         <Media Id="1" Cabinet="Maestro.cab" EmbedCab="yes" />
         <!-- Expose defines as properties for the MaestroInstallerStrings.wxl -->
         <Property Id="MaestroAppName">$(var.MaestroAppName)</Property>
@@ -33,8 +33,8 @@
         <WixVariable Id="WixUIDialogBmp" Value="MaestroInstaller-dialog.bmp" />
         <Property Id="ApplicationFolderName" Value="$(var.ApplicationFolderName)" />
         <Property Id="WIXUI_INSTALLDIR" Value="APPLICATIONFOLDER" />
-        <Property Id="WixAppFolder" Value="WixPerMachineFolder" />
-        <WixVariable Id="WixUISupportPerUser" Value="0" />
+        <Property Id="WixAppFolder" Value="WixPerUserFolder" />
+        <WixVariable Id="WixUISupportPerUser" Value="1" />
         <!-- Uninstall old versions of Maestro -->
         <Upgrade Id="{CCA9F6BF-F1FB-4D8E-8892-3AFE3CE6F4B7}">
             <UpgradeVersion Property="NEWERFOUND" OnlyDetect="no" Minimum="$(var.MaestroVersion)" IncludeMinimum="no" />
@@ -64,11 +64,15 @@
         <!-- File System -->
         <Directory Id="TARGETDIR" Name="SourceDir">
             <!-- Program Files -->
-            <Directory Id="ProgramFiles64Folder">
+            <Directory Id="LocalAppDataFolder">
                 <Directory Id="APPLICATIONFOLDER" Name="$(var.ApplicationFolderName)">
                     <Directory Id="AppDir" Name="app">
                         <Component Id="Assets" Guid="{F81F2BC4-906C-46B1-B3B4-14B69EF256E1}">
-                            <File Source="LotroInstruments.sf2" KeyPath="yes" />
+                            <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\Maestro\Install" Name="AssetsReg" Type="string" Value="1" KeyPath="yes" />
+                            <RemoveFolder Id="Remove_AppDir" Directory="AppDir" On="uninstall" />
+                            <RemoveFolder Id="Remove_RuntimeDir" Directory="RuntimeDir" On="uninstall" />
+                            <RemoveFolder Id="Remove_APPLICATIONFOLDER" Directory="APPLICATIONFOLDER" On="uninstall" />
+                            <File Source="LotroInstruments.sf2" />
                             <File Id="file.maestro.ico" Source="maestro.ico" />
                             <File Id="file.midifile.ico" Source="midifile.ico" />
                             <File Id="file.msxfile.ico" Source="msxfile.ico" />
@@ -78,28 +82,35 @@
                             <File Id="file.abctools.ico" Source="abctools.ico" />
                         </Component>
                         <Component Id="MaestroJar" Guid="{1DE9C474-25AF-42E3-BEB3-5513E2FC9A49}">
+                            <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\Maestro\Install" Name="MaestroJarReg" Type="string" Value="1" KeyPath="yes" />
                             <File Source="$(var.build)/app/Maestro.jar" />
                             <File Source="$(var.build)/app/Maestro.cfg" />
                         </Component>
                         <Component Id="AbcPlayerJar" Guid="{7FFC7B30-4EA1-4D64-9551-938488C2BC2C}">
+                            <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\Maestro\Install" Name="AbcPlayerJarReg" Type="string" Value="1" KeyPath="yes" />
                             <File Source="$(var.build)/app/AbcPlayer.jar" />
                             <File Source="$(var.build)/app/AbcPlayer.cfg" />
                         </Component>
                         <Component Id="AbcToolsJar" Guid="{8A77AE10-DB66-44DA-AA44-C96FAEA3E227}">
+                            <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\Maestro\Install" Name="AbcToolsJarReg" Type="string" Value="1" KeyPath="yes" />
                             <File Source="$(var.build)/app/AbcTools.jar" />
                             <File Source="$(var.build)/app/AbcTools.cfg" />
                         </Component>
                         <Component Id="PatchJar" Guid="{D7D09422-B3FF-4A44-848C-1FD08EFBDEE1}">
+                            <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\Maestro\Install" Name="PatchJarReg" Type="string" Value="1" KeyPath="yes" />
                             <File Source="$(var.build)/app/java.midi.patch.jar" />
                         </Component>
                     </Directory>
-                    <Directory Id="RuntimeDir" Name="runtime" />
+                    <Directory Id="RuntimeDir" Name="runtime" >
+                    </Directory>
                     <Component Id="aifel_changelog.txt" Guid="{46B882CB-E9A8-4A1E-A92C-C5717FDECECB}">
-                        <File Id="aifel_changelog.txt" Source="readme.txt" KeyPath="yes" />
+                        <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\Maestro\Install" Name="aifel_changelog_txtReg" Type="string" Value="1" KeyPath="yes" />
+                        <File Id="aifel_changelog.txt" Source="readme.txt" />
                     </Component>
                     <Component Id="MaestroExecutable" Guid="{A20EBF40-4857-46C3-8B6C-CF3CBF64A824}">
-                        <File Source="$(var.build)/Maestro.exe" KeyPath="yes">
-                            <Shortcut Id="Maestro.lnk" Name="$(var.MaestroAppName)" Description="$(var.MaestroDescription)" WorkingDirectory="APPLICATIONFOLDER" Directory="MaestroStartMenuFolder" Icon="maestro.ico" IconIndex="0" Advertise="yes">
+                        <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\Maestro\Install" Name="MaestroExecutableReg" Type="string" Value="1" KeyPath="yes" />
+                        <File Source="$(var.build)/Maestro.exe" >
+                            <Shortcut Id="Maestro.lnk" Name="$(var.MaestroAppName)" Description="$(var.MaestroDescription)" WorkingDirectory="APPLICATIONFOLDER" Directory="MaestroStartMenuFolder" Icon="maestro.ico" IconIndex="0" Advertise="no">
                                 <!-- App user model ID guid (https://learn.microsoft.com/en-us/windows/win32/properties/props-system-appusermodel-id) -->
                                 <!-- Allows for taskbar pinning -->
                                 <ShortcutProperty Key="{9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3}, 5" Value="$(var.MaestroAppUserModelId)" />
@@ -124,52 +135,53 @@
                             </Extension>
                         </ProgId>
                         <!-- Support Set Program Access and Defaults -->
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities" Type="string" Name="ApplicationName" Value="$(var.MaestroAppName)" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities" Type="string" Name="ApplicationDescription" Value="$(var.MaestroDescriptionLong)" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities" Type="string" Name="ApplicationIcon" Value="[APPLICATIONFOLDER]app\maestro.ico,0" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\DefaultIcon" Type="string" Value="[APPLICATIONFOLDER]app\maestro.ico,0" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\FileAssociations" Type="string" Name=".abc" Value="Maestro.AssocFile.ABC" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\FileAssociations" Type="string" Name=".mid" Value="Maestro.AssocFile.MIDI" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\FileAssociations" Type="string" Name=".kar" Value="Maestro.AssocFile.MIDI" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\FileAssociations" Type="string" Name=".midi" Value="Maestro.AssocFile.MIDI" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\FileAssociations" Type="string" Name=".msx" Value="Maestro.AssocFile.MSX" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\MIMEAssociations" Type="string" Name="text/plain" Value="Maestro.AssocFile.ABC" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\MIMEAssociations" Type="string" Name="audio/mid" Value="Maestro.AssocFile.MIDI" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\MIMEAssociations" Type="string" Name="audio/midi" Value="Maestro.AssocFile.MIDI" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\MIMEAssociations" Type="string" Name="midi/mid" Value="Maestro.AssocFile.MIDI" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\MIMEAssociations" Type="string" Name="application/vnd.digero-maestro+xml" Value="Maestro.AssocFile.MSX" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\shell\edit" Type="string" Value="&amp;Edit with $(var.MaestroAppName)" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\shell\edit\command" Type="string" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\RegisteredApplications" Type="string" Name="Digero.Maestro.exe" Value="SOFTWARE\[Manufacturer]\Maestro\Capabilities" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities" Type="string" Name="ApplicationName" Value="$(var.MaestroAppName)" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities" Type="string" Name="ApplicationDescription" Value="$(var.MaestroDescriptionLong)" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities" Type="string" Name="ApplicationIcon" Value="[APPLICATIONFOLDER]app\maestro.ico,0" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\DefaultIcon" Type="string" Value="[APPLICATIONFOLDER]app\maestro.ico,0" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\FileAssociations" Type="string" Name=".abc" Value="Maestro.AssocFile.ABC" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\FileAssociations" Type="string" Name=".mid" Value="Maestro.AssocFile.MIDI" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\FileAssociations" Type="string" Name=".kar" Value="Maestro.AssocFile.MIDI" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\FileAssociations" Type="string" Name=".midi" Value="Maestro.AssocFile.MIDI" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\FileAssociations" Type="string" Name=".msx" Value="Maestro.AssocFile.MSX" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\MIMEAssociations" Type="string" Name="text/plain" Value="Maestro.AssocFile.ABC" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\MIMEAssociations" Type="string" Name="audio/mid" Value="Maestro.AssocFile.MIDI" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\MIMEAssociations" Type="string" Name="audio/midi" Value="Maestro.AssocFile.MIDI" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\MIMEAssociations" Type="string" Name="midi/mid" Value="Maestro.AssocFile.MIDI" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\MIMEAssociations" Type="string" Name="application/vnd.digero-maestro+xml" Value="Maestro.AssocFile.MSX" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\shell\edit" Type="string" Value="&amp;Edit with $(var.MaestroAppName)" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities\shell\edit\command" Type="string" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\RegisteredApplications" Type="string" Name="Digero.Maestro.exe" Value="SOFTWARE\[Manufacturer]\Maestro\Capabilities" />
                         <!-- Support Start/Run "Start Maestro.bat" -->
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Maestro.exe" Type="string" Value="[#Maestro.exe]" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Maestro.exe" Type="string" Name="Path" Value="[APPLICATIONFOLDER]" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Maestro.exe" Type="string" Value="[#Maestro.exe]" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\Maestro.exe" Type="string" Name="Path" Value="[APPLICATIONFOLDER]" />
                         <!-- Add to "Open With" menu -->
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\Applications\Maestro.exe" Type="string" Name="FriendlyAppName" Value="$(var.MaestroAppName)" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\Applications\Maestro.exe\SupportedTypes" Type="string" Name=".abc" Value="" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\Applications\Maestro.exe\SupportedTypes" Type="string" Name=".mid" Value="" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\Applications\Maestro.exe\SupportedTypes" Type="string" Name=".kar" Value="" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\Applications\Maestro.exe\SupportedTypes" Type="string" Name=".midi" Value="" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\Applications\Maestro.exe\SupportedTypes" Type="string" Name=".msx" Value="" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\Applications\Maestro.exe\shell\edit" Type="string" Value="&amp;Edit with $(var.MaestroAppName)" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\Applications\Maestro.exe\shell\edit\command" Type="string" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\Applications\Maestro.exe" Type="string" Name="FriendlyAppName" Value="$(var.MaestroAppName)" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\Applications\Maestro.exe\SupportedTypes" Type="string" Name=".abc" Value="" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\Applications\Maestro.exe\SupportedTypes" Type="string" Name=".mid" Value="" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\Applications\Maestro.exe\SupportedTypes" Type="string" Name=".kar" Value="" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\Applications\Maestro.exe\SupportedTypes" Type="string" Name=".midi" Value="" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\Applications\Maestro.exe\SupportedTypes" Type="string" Name=".msx" Value="" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\Applications\Maestro.exe\shell\edit" Type="string" Value="&amp;Edit with $(var.MaestroAppName)" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\Applications\Maestro.exe\shell\edit\command" Type="string" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" />
                         <!-- Add entry to right-click context menu regardless of if Maestro is the default editor -->
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.abc\Shell\Maestro.Edit" Value="&amp;Edit with Maestro" Type="string" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.abc\Shell\Maestro.Edit" Name="Icon" Value="[APPLICATIONFOLDER]app\maestro.ico,0" Type="string" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.abc\Shell\Maestro.Edit\command" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" Type="string" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.mid\Shell\Maestro.Edit" Value="&amp;Edit with Maestro" Type="string" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.mid\Shell\Maestro.Edit" Name="Icon" Value="[APPLICATIONFOLDER]app\maestro.ico,0" Type="string" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.mid\Shell\Maestro.Edit\command" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" Type="string" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.kar\Shell\Maestro.Edit" Value="&amp;Edit with Maestro" Type="string" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.kar\Shell\Maestro.Edit" Name="Icon" Value="[APPLICATIONFOLDER]app\maestro.ico,0" Type="string" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.kar\Shell\Maestro.Edit\command" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" Type="string" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.midi\Shell\Maestro.Edit" Value="&amp;Edit with Maestro" Type="string" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.midi\Shell\Maestro.Edit" Name="Icon" Value="[APPLICATIONFOLDER]app\maestro.ico,0" Type="string" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\SystemFileAssociations\.midi\Shell\Maestro.Edit\command" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" Type="string" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\SystemFileAssociations\.abc\Shell\Maestro.Edit" Value="&amp;Edit with Maestro" Type="string" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\SystemFileAssociations\.abc\Shell\Maestro.Edit" Name="Icon" Value="[APPLICATIONFOLDER]app\maestro.ico,0" Type="string" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\SystemFileAssociations\.abc\Shell\Maestro.Edit\command" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" Type="string" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\SystemFileAssociations\.mid\Shell\Maestro.Edit" Value="&amp;Edit with Maestro" Type="string" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\SystemFileAssociations\.mid\Shell\Maestro.Edit" Name="Icon" Value="[APPLICATIONFOLDER]app\maestro.ico,0" Type="string" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\SystemFileAssociations\.mid\Shell\Maestro.Edit\command" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" Type="string" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\SystemFileAssociations\.kar\Shell\Maestro.Edit" Value="&amp;Edit with Maestro" Type="string" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\SystemFileAssociations\.kar\Shell\Maestro.Edit" Name="Icon" Value="[APPLICATIONFOLDER]app\maestro.ico,0" Type="string" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\SystemFileAssociations\.kar\Shell\Maestro.Edit\command" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" Type="string" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\SystemFileAssociations\.midi\Shell\Maestro.Edit" Value="&amp;Edit with Maestro" Type="string" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\SystemFileAssociations\.midi\Shell\Maestro.Edit" Name="Icon" Value="[APPLICATIONFOLDER]app\maestro.ico,0" Type="string" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\SystemFileAssociations\.midi\Shell\Maestro.Edit\command" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" Type="string" />
                     </Component>
                     <Component Id="AbcPlayerExecutable" Guid="{0C212398-7A1E-40D8-BEDD-2F341AC20FEB}">
-                        <File Source="$(var.build)/AbcPlayer.exe" KeyPath="yes">
-                            <Shortcut Id="AbcPlayer64.lnk" Name="$(var.AbcPlayerAppName)" Description="$(var.AbcPlayerDescription)" WorkingDirectory="APPLICATIONFOLDER" Directory="MaestroStartMenuFolder" Icon="abcplayer.ico" IconIndex="0" Advertise="yes">
+                        <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\Maestro\Install" Name="AbcPlayerExecutableReg" Type="string" Value="1" KeyPath="yes" />
+                        <File Source="$(var.build)/AbcPlayer.exe" >
+                            <Shortcut Id="AbcPlayer64.lnk" Name="$(var.AbcPlayerAppName)" Description="$(var.AbcPlayerDescription)" WorkingDirectory="APPLICATIONFOLDER" Directory="MaestroStartMenuFolder" Icon="abcplayer.ico" IconIndex="0" Advertise="no">
                                 <!-- App user model ID guid (https://learn.microsoft.com/en-us/windows/win32/properties/props-system-appusermodel-id) -->
                                 <ShortcutProperty Key="{9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3}, 5" Value="$(var.AbcPlayerAppUserModelId)" />
                             </Shortcut>
@@ -187,29 +199,30 @@
                             </Extension>
                         </ProgId>
                         <!-- Support Set Program Access and Defaults -->
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities" Type="string" Name="ApplicationName" Value="$(var.AbcPlayerAppName)" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities" Type="string" Name="ApplicationDescription" Value="$(var.AbcPlayerDescriptionLong)" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities" Type="string" Name="ApplicationIcon" Value="[APPLICATIONFOLDER]app\abcplayer.ico,0" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities\DefaultIcon" Type="string" Value="[#file.abcfile.ico],0" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities\FileAssociations" Type="string" Name=".abc" Value="AbcPlayer.AssocFile.ABC" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities\FileAssociations" Type="string" Name=".abcp" Value="AbcPlayer.AssocFile.ABCP" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities\MIMEAssociations" Type="string" Name="text/plain" Value="AbcPlayer.AssocFile.ABC" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities\shell" Type="string" Value="open" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities\shell\open\command" Type="string" Value="&quot;[#AbcPlayer.exe]&quot; &quot;%1&quot;" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\RegisteredApplications" Type="string" Name="Digero.AbcPlayer64.exe" Value="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities" Type="string" Name="ApplicationName" Value="$(var.AbcPlayerAppName)" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities" Type="string" Name="ApplicationDescription" Value="$(var.AbcPlayerDescriptionLong)" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities" Type="string" Name="ApplicationIcon" Value="[APPLICATIONFOLDER]app\abcplayer.ico,0" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities\DefaultIcon" Type="string" Value="[#file.abcfile.ico],0" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities\FileAssociations" Type="string" Name=".abc" Value="AbcPlayer.AssocFile.ABC" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities\FileAssociations" Type="string" Name=".abcp" Value="AbcPlayer.AssocFile.ABCP" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities\MIMEAssociations" Type="string" Name="text/plain" Value="AbcPlayer.AssocFile.ABC" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities\shell" Type="string" Value="open" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities\shell\open\command" Type="string" Value="&quot;[#AbcPlayer.exe]&quot; &quot;%1&quot;" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\RegisteredApplications" Type="string" Name="Digero.AbcPlayer64.exe" Value="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities" />
                         <!-- Support Start/Run "AbcPlayer.exe" -->
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\AbcPlayer64.exe" Type="string" Value="[#AbcPlayer.exe]" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\AbcPlayer64.exe" Type="string" Name="Path" Value="[APPLICATIONFOLDER]" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\AbcPlayer64.exe" Type="string" Value="[#AbcPlayer.exe]" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\AbcPlayer64.exe" Type="string" Name="Path" Value="[APPLICATIONFOLDER]" />
                         <!-- Add to "Open With" menu -->
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\Applications\AbcPlayer.exe" Type="string" Name="FriendlyAppName" Value="$(var.AbcPlayerAppName)" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\Applications\AbcPlayer.exe\SupportedTypes" Type="string" Name=".abc" Value="" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\Applications\AbcPlayer.exe\SupportedTypes" Type="string" Name=".abcp" Value="" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\Applications\AbcPlayer.exe\shell" Type="string" Value="open" />
-                        <RegistryValue Root="HKLM" Key="SOFTWARE\Classes\Applications\AbcPlayer.exe\shell\open\command" Type="string" Value="&quot;[#AbcPlayer.exe]&quot; &quot;%1&quot;" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\Applications\AbcPlayer.exe" Type="string" Name="FriendlyAppName" Value="$(var.AbcPlayerAppName)" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\Applications\AbcPlayer.exe\SupportedTypes" Type="string" Name=".abc" Value="" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\Applications\AbcPlayer.exe\SupportedTypes" Type="string" Name=".abcp" Value="" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\Applications\AbcPlayer.exe\shell" Type="string" Value="open" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\Applications\AbcPlayer.exe\shell\open\command" Type="string" Value="&quot;[#AbcPlayer.exe]&quot; &quot;%1&quot;" />
                     </Component>
                     <Component Id="AbcToolsExecutable" Guid="{D6F78C2D-DE65-4BD0-92F6-64E46779F449}">
-                        <File Source="$(var.build)/AbcTools.exe" KeyPath="yes">
-                            <Shortcut Id="AbcTools.lnk" Name="$(var.AbcToolsAppName)" Description="$(var.AbcToolsDescription)" WorkingDirectory="APPLICATIONFOLDER" Directory="MaestroStartMenuFolder" Icon="abctools.ico" IconIndex="0" Advertise="yes">
+                        <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\Maestro\Install" Name="AbcToolsExecutableReg" Type="string" Value="1" KeyPath="yes" />
+                        <File Source="$(var.build)/AbcTools.exe" >
+                            <Shortcut Id="AbcTools.lnk" Name="$(var.AbcToolsAppName)" Description="$(var.AbcToolsDescription)" WorkingDirectory="APPLICATIONFOLDER" Directory="MaestroStartMenuFolder" Icon="abctools.ico" IconIndex="0" Advertise="no">
                                 <!-- App user model ID guid (https://learn.microsoft.com/en-us/windows/win32/properties/props-system-appusermodel-id) -->
                                 <ShortcutProperty Key="{9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3}, 5" Value="$(var.AbcToolsAppUserModelId)" />
                             </Shortcut>

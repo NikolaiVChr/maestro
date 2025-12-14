@@ -309,6 +309,8 @@
 			<arg value="-gg"/> <!-- generate GUIDs -->
 			<arg value="-sreg"/> <!-- don't harvest DLL info from registry -->
 			<arg value="-scom"/> <!-- don't harvest COM info from registry -->
+			<arg value="-t"/>
+			<arg value="AddPerUserReg.xslt"/><!-- Add per user reg entries for each file -->
 			<arg value="-out"/>  <!-- Specifies the output file where harvested WiX XML will be stored -->
 			<arg value="runtime.wxs"/>  <!-- Saves the harvested files as "runtime.wxs" -->
 		</exec>
