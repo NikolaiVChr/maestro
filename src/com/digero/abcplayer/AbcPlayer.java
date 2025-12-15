@@ -67,6 +67,7 @@ import com.digero.common.util.Listener;
 import com.digero.common.util.Logging;
 import com.digero.common.util.LotroFileParseException;
 import com.digero.common.util.FileParseException;
+import com.digero.common.util.SoundFontDownloader;
 import com.digero.common.util.Themer;
 import com.digero.common.util.Util;
 import com.digero.common.util.Version;
@@ -83,7 +84,7 @@ import info.clearthought.layout.TableLayoutConstants;
 import net.miginfocom.swing.MigLayout;
 
 public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConstants, TrackListPanelCallback {
-    private static final Logger log = Logger.getLogger("view");
+    private static Logger log;
 
 	private static final ExtensionFileFilter ABC_FILE_FILTER = new ExtensionFileFilter("ABC Files and Playlists", Util.ABC_FILE_EXTENSION_NO_DOT, Util.TXT_FILE_EXTENSION_NO_DOT, Util.ABCP_FILE_EXTENSION_NO_DOT);
 	public static final String APP_NAME = "ABC Player";
@@ -132,6 +133,15 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		}
 		
 		if (!tools) Logging.configure(APP_NAME);
+		log = Logger.getLogger("view");
+
+		File sf2 = SoundFontDownloader.ensureSoundFontExists();
+
+		if (sf2 == null) {
+			log.info("Proceeding without soundfont in shared location.");
+		} else {
+			SynthesizerFactory.setSoundbank(sf2);
+		}
 
 		//System.setProperty("sun.sound.useNewAudioEngine", "true");
 		

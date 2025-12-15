@@ -66,7 +66,7 @@
                             <RemoveFolder Id="Remove_AppDir" Directory="AppDir" On="uninstall" />
                             <RemoveFolder Id="Remove_RuntimeDir" Directory="RuntimeDir" On="uninstall" />
                             <RemoveFolder Id="Remove_APPLICATIONFOLDER" Directory="APPLICATIONFOLDER" On="uninstall" />
-                            <File Source="LotroInstruments.sf2" />
+                            <!--File Source="LotroInstruments.sf2" /-->
                             <File Id="file.maestro.ico" Source="maestro.ico" />
                             <File Id="file.midifile.ico" Source="midifile.ico" />
                             <File Id="file.msxfile.ico" Source="msxfile.ico" />

@@ -41,10 +41,10 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
-Version 4.5.25
-- The apps now installs to "AppData/Local" instead of "Program Files" this means it no longer needs admin right to install.
+- The MSI now installs to "AppData/Local" instead of "Program Files". This means it no longer needs admin right to install.
+- The soundfont that make the instruments sound like lotro is now downloaded when the app is started. 240 MB approx.
 - Please remove old maestro from your windows manually. (search "Add or remove programs" in windows and remove "Maestro")
-
+    This only needs to be done once.
 Version 4.5.24
 - Fixed a bug in splitting of long notes in organic multi-stage and made it slightly smarter.
 - Fixed another solo/mute issue.

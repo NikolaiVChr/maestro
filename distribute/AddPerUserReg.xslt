@@ -55,7 +55,8 @@
             <xsl:call-template name="GenerateRemoveFolder">
                 <xsl:with-param name="DirId" select="$ParentId" />
                 <xsl:with-param name="CompId" select="$CompId" />
-                <xsl:with-param name="Level" select="$Level + 1" /> </xsl:call-template>
+                <xsl:with-param name="Level" select="$Level + 1" />
+            </xsl:call-template>
         </xsl:if>
     </xsl:template>
 

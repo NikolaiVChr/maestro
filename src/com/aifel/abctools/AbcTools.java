@@ -6,18 +6,22 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.logging.Logger;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 import javax.swing.SwingUtilities;
 
+import com.digero.common.midi.SynthesizerFactory;
 import com.digero.common.util.AppInfo;
 import com.digero.common.util.Logging;
+import com.digero.common.util.SoundFontDownloader;
 import com.digero.common.util.Themer;
 import com.digero.common.util.Util;
 import com.digero.maestro.MaestroMain;
 import com.digero.maestro.view.MiscSettings;
 
 public class AbcTools {
+	private static Logger log;
 
     public static final String APP_NAME = "ABC Tools";
 	private final Preferences toolsPrefs = Preferences.userNodeForPackage(AbcTools.class);
@@ -35,6 +39,16 @@ public class AbcTools {
         AppInfo.abcTools = true;
         AppInfo.APP_NAME = APP_NAME;
 		Logging.configure(APP_NAME);
+		log = Logger.getLogger("view");
+
+		File sf2 = SoundFontDownloader.ensureSoundFontExists();
+
+		if (sf2 == null) {
+			log.info("Proceeding without soundfont in shared location.");
+		} else {
+			SynthesizerFactory.setSoundbank(sf2);
+		}
+
 		try {
 			SwingUtilities.invokeAndWait(() -> {
 				try {

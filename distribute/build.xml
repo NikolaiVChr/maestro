@@ -142,7 +142,7 @@
 	
 	<target name="LotroInstruments" description="Copy SF2 file">
         <delete file="${build}/LotroInstruments.sf2" />
-		<copy file="LotroInstruments.sf2" todir="${build}" overwrite="true" failonerror="true"/>
+		<!--copy file="LotroInstruments.sf2" todir="${build}" overwrite="true" failonerror="true"/-->
 	</target>
 
 	<target name="Build" depends="CopyThings,LotroInstruments,CompilePatches" description="Make all except ZIP and MSI files"/>
@@ -230,7 +230,7 @@
             <arg value="java.base,java.desktop,java.logging,java.prefs,jdk.charsets,java.sql,java.management,java.xml,java.net.http"/>
 		</exec>
 		<!-- Copy assets for final app/ folder -->
-		<copy file="${build}/LotroInstruments.sf2" todir="${staging}" />
+		<!--copy file="${build}/LotroInstruments.sf2" todir="${staging}" /-->
 		<copy file="${build}/abcfile.ico" todir="${staging}" />
 		<copy file="${build}/abcplaylist.ico" todir="${staging}" />
 		<copy file="${build}/midifile.ico" todir="${staging}" />

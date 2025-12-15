@@ -177,4 +177,12 @@ public class SynthesizerFactory {
 		log.severe("No audio synth found");
 		return null;
 	}
+
+	public static boolean userOwnSoundFontExist() {
+        return soundFontFile != null && soundFontFile.exists();
+    }
+
+	public static void setSoundbank(File sf2) {
+		soundFontFile = sf2;
+	}
 }
