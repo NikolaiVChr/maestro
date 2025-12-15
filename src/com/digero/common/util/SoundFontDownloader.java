@@ -27,6 +27,7 @@ public class SoundFontDownloader {
     protected static final Logger log = Logger.getLogger("misc.SoundFontDownloader");
 
     // Update URL and SHA256 if you release a new version of the soundfont
+    // Do not download sha256 dynamically for security reasons, keep it hardcoded.
     private static final String SF2_URL = "https://github.com/NikolaiVChr/mver/releases/download/v4.5.24/LotroInstruments.sf2";
     private static final String EXPECTED_SHA256 = "3b2ef0407e3219f92a379dc8c60ec4aa1d91e532e9646a59f01b1c79e54678af";
 
@@ -64,7 +65,7 @@ public class SoundFontDownloader {
     /**
      * Determines the cross-platform central storage directory.
      * Windows: %LocalAppData%/MaestroCommon
-     * Linux:   ~/.local/share/digero-common
+     * Linux:   ~/.local/share/maestro-common
      * Mac:     ~/Library/Application Support/MaestroCommon
      */
     public static File getCommonDataDirectory() {
@@ -97,7 +98,7 @@ public class SoundFontDownloader {
     }
 
     private static boolean showDownloadDialog(File targetFile) {
-        JDialog dialog = new JDialog((Frame) null, "Downloading soundbank", true);
+        JDialog dialog = new JDialog((Frame) null, "Lotro soundbank", true);
         dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         dialog.setLayout(new BorderLayout(10, 10));
         dialog.setLocationRelativeTo(null); // Center on screen
@@ -107,7 +108,7 @@ public class SoundFontDownloader {
         statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
         JProgressBar progressBar = new JProgressBar(0, 100);
-        progressBar.setPreferredSize(new Dimension(300, 40));
+        progressBar.setMinimumSize(new Dimension(300, 40));
         progressBar.setStringPainted(true);
         progressBar.setIndeterminate(false);
         progressBar.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
