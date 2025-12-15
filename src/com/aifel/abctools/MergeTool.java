@@ -311,6 +311,7 @@ public class MergeTool {
 				e.printStackTrace();
 			}
 		});
+		playerThread.setDaemon(true);
 		playerThread.start();
 	}
 

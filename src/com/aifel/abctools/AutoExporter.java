@@ -157,7 +157,7 @@ public class AutoExporter implements WarningHandler {
 	
 	private ActionListener getStartExportActionListener() {
 		return e -> {
-			(new Thread(() -> {
+			Thread t = new Thread(() -> {
 				try {
 					autoExport();
 				} catch (Exception ioe) {
@@ -180,7 +180,9 @@ public class AutoExporter implements WarningHandler {
 						frame.setRecursiveCheckBoxEnabled(true);
 					});
 				}
-			})).start();
+			});
+			t.setDaemon(true);
+			t.start();
 		};
 	}
 	
