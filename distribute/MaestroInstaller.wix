@@ -12,7 +12,7 @@
     <?define AbcToolsDescription=ABC tools to merge abc files or auto export abc?>
     <?define AbcToolsAppUserModelId=Aifel.AbcTools?>
     <?define ApplicationFolderName=Maestro?>
-    <Product Id="*" UpgradeCode="{CCA9F6BF-F1FB-4D8E-8892-3AFE3CE6F4B7}" Name="$(var.MaestroAppName)" Manufacturer="Digero And Aifel" Version="$(var.MaestroVersion)" Language="1033">
+    <Product Id="*" UpgradeCode="{6AA5E0BF-7CA7-4D11-9687-28751293C91A}" Name="Maestro and ABC Player" Manufacturer="Digero, Aifel and Elamond" Version="$(var.MaestroVersion)" Language="1033">
         <Package Id="*" Description="Maestro MIDI to ABC converter and ABC Player for The Lord of the Rings Online" Languages="1033" Compressed="yes" SummaryCodepage="1252" InstallScope="perUser" InstallPrivileges="limited"/>
         <Media Id="1" Cabinet="Maestro.cab" EmbedCab="yes" />
         <!-- Expose defines as properties for the MaestroInstallerStrings.wxl -->
@@ -36,16 +36,10 @@
         <Property Id="WixAppFolder" Value="WixPerUserFolder" />
         <WixVariable Id="WixUISupportPerUser" Value="1" />
         <!-- Uninstall old versions of Maestro -->
-        <Upgrade Id="{CCA9F6BF-F1FB-4D8E-8892-3AFE3CE6F4B7}">
+        <Upgrade Id="{6AA5E0BF-7CA7-4D11-9687-28751293C91A}">
             <UpgradeVersion Property="NEWERFOUND" OnlyDetect="no" Minimum="$(var.MaestroVersion)" IncludeMinimum="no" />
             <UpgradeVersion Property="SELFFOUND" OnlyDetect="no" Minimum="$(var.MaestroVersion)" IncludeMinimum="yes" Maximum="$(var.MaestroVersion)" IncludeMaximum="yes" />
             <UpgradeVersion Property="PREVIOUSFOUND" OnlyDetect="no" Maximum="$(var.MaestroVersion)" IncludeMaximum="no" />
-        </Upgrade>
-        <!-- Uninstall old versions of ABC Player -->
-        <Upgrade Id="{D19BF8C3-D40A-482B-9252-063991A80A64}">
-            <UpgradeVersion Property="OLDABCPLAYERFOUND" OnlyDetect="no" Maximum="$(var.AbcPlayerVersion)" IncludeMaximum="yes" />
-            <!-- For now, we don't do anything if we detect a newer version of ABC Player -->
-            <UpgradeVersion Property="NEWABCPLAYERFOUND" OnlyDetect="yes" Minimum="$(var.AbcPlayerVersion)" IncludeMinimum="no" />
         </Upgrade>
         <!-- Warn user if a newer version is installed. -->
         <!--CustomAction Id="NoDowngrade" Error="A newer version of [ProductName] is already installed." /-->
@@ -109,7 +103,8 @@
                     </Component>
                     <Component Id="MaestroExecutable" Guid="{A20EBF40-4857-46C3-8B6C-CF3CBF64A824}">
                         <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\Maestro\Install" Name="MaestroExecutableReg" Type="string" Value="1" KeyPath="yes" />
-                        <File Source="$(var.build)/Maestro.exe" >
+                        <CreateFolder Directory="MaestroStartMenuFolder" />
+                        <File Id="Maestro.exe" Source="$(var.build)/Maestro.exe" >
                             <Shortcut Id="Maestro.lnk" Name="$(var.MaestroAppName)" Description="$(var.MaestroDescription)" WorkingDirectory="APPLICATIONFOLDER" Directory="MaestroStartMenuFolder" Icon="maestro.ico" IconIndex="0" Advertise="no">
                                 <!-- App user model ID guid (https://learn.microsoft.com/en-us/windows/win32/properties/props-system-appusermodel-id) -->
                                 <!-- Allows for taskbar pinning -->
@@ -122,18 +117,22 @@
                                 <Verb Id="edit" Command="&amp;Edit" TargetFile="Maestro.exe" Argument="&quot;%1&quot;" />
                             </Extension>
                         </ProgId>
-                        <ProgId Id="Maestro.AssocFile.MIDI" Description="MIDI Sequence" Icon="file.midifile.ico" IconIndex="0">
+                        <ProgId Id="Maestro.AssocFile.MIDI" Description="MIDI Sequence">
                             <Extension Id="mid" ContentType="audio/mid">
                                 <Verb Id="edit" Command="&amp;Edit" TargetFile="Maestro.exe" Argument="&quot;%1&quot;" />
                             </Extension>
                             <Extension Id="midi" ContentType="audio/mid" />
                             <Extension Id="kar" ContentType="audio/mid" />
                         </ProgId>
-                        <ProgId Id="Maestro.AssocFile.MSX" Description="Maestro Song" Icon="file.msxfile.ico" IconIndex="0">
+                        <ProgId Id="Maestro.AssocFile.MSX" Description="Maestro Song">
                             <Extension Id="msx" ContentType="application/vnd.digero-maestro+xml">
                                 <Verb Id="edit" Command="&amp;Edit with $(var.MaestroAppName)" TargetFile="Maestro.exe" Argument="&quot;%1&quot;" />
                             </Extension>
                         </ProgId>
+                        <!-- file associations icons -->
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\Maestro.AssocFile.MIDI\DefaultIcon" Value="[#file.midifile.ico],0" Type="string" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\Maestro.AssocFile.MSX\DefaultIcon" Value="[#file.msxfile.ico],0" Type="string" />
+                        <!--RegistryValue Root="HKCU" Key="SOFTWARE\Classes\Maestro.AssocFile.ABC\DefaultIcon" Value="[#file.maestro.ico],0" Type="string" /-->
                         <!-- Support Set Program Access and Defaults -->
                         <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities" Type="string" Name="ApplicationName" Value="$(var.MaestroAppName)" />
                         <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\Maestro\Capabilities" Type="string" Name="ApplicationDescription" Value="$(var.MaestroDescriptionLong)" />
@@ -180,24 +179,28 @@
                     </Component>
                     <Component Id="AbcPlayerExecutable" Guid="{0C212398-7A1E-40D8-BEDD-2F341AC20FEB}">
                         <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\Maestro\Install" Name="AbcPlayerExecutableReg" Type="string" Value="1" KeyPath="yes" />
-                        <File Source="$(var.build)/AbcPlayer.exe" >
+                        <CreateFolder Directory="MaestroStartMenuFolder" />
+                        <File Id="AbcPlayer.exe" Source="$(var.build)/AbcPlayer.exe" >
                             <Shortcut Id="AbcPlayer64.lnk" Name="$(var.AbcPlayerAppName)" Description="$(var.AbcPlayerDescription)" WorkingDirectory="APPLICATIONFOLDER" Directory="MaestroStartMenuFolder" Icon="abcplayer.ico" IconIndex="0" Advertise="no">
                                 <!-- App user model ID guid (https://learn.microsoft.com/en-us/windows/win32/properties/props-system-appusermodel-id) -->
                                 <ShortcutProperty Key="{9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3}, 5" Value="$(var.AbcPlayerAppUserModelId)" />
                             </Shortcut>
                         </File>
                         <!-- Define ProgID for ABC file type -->
-                        <ProgId Id="AbcPlayer.AssocFile.ABC" Description="ABC Song" Icon="file.abcfile.ico" IconIndex="0">
+                        <ProgId Id="AbcPlayer.AssocFile.ABC" Description="ABC Song">
                             <Extension Id="abc" ContentType="text/plain">
                                 <Verb Id="play" TargetFile="AbcPlayer.exe" Argument="&quot;%1&quot;" />
                             </Extension>
                         </ProgId>
                         <!-- Define ProgID for ABCP file type -->
-                        <ProgId Id="AbcPlayer.AssocFile.ABCP" Description="ABC Playlist" Icon="file.abcplaylist.ico" IconIndex="0">
+                        <ProgId Id="AbcPlayer.AssocFile.ABCP" Description="ABC Playlist">
                             <Extension Id="abcp" ContentType="text/plain">
                                 <Verb Id="play" TargetFile="AbcPlayer.exe" Argument="&quot;%1&quot;" />
                             </Extension>
                         </ProgId>
+                        <!-- file associations icons -->
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\AbcPlayer.AssocFile.ABC\DefaultIcon" Value="[#file.abcfile.ico],0" Type="string" />
+                        <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\AbcPlayer.AssocFile.ABCP\DefaultIcon" Value="[#file.abcplaylist.ico],0" Type="string" />
                         <!-- Support Set Program Access and Defaults -->
                         <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities" Type="string" Name="ApplicationName" Value="$(var.AbcPlayerAppName)" />
                         <RegistryValue Root="HKCU" Key="SOFTWARE\[Manufacturer]\AbcPlayer\Capabilities" Type="string" Name="ApplicationDescription" Value="$(var.AbcPlayerDescriptionLong)" />
@@ -221,7 +224,8 @@
                     </Component>
                     <Component Id="AbcToolsExecutable" Guid="{D6F78C2D-DE65-4BD0-92F6-64E46779F449}">
                         <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\Maestro\Install" Name="AbcToolsExecutableReg" Type="string" Value="1" KeyPath="yes" />
-                        <File Source="$(var.build)/AbcTools.exe" >
+                        <CreateFolder Directory="MaestroStartMenuFolder" />
+                        <File Id="AbcTools.exe" Source="$(var.build)/AbcTools.exe" >
                             <Shortcut Id="AbcTools.lnk" Name="$(var.AbcToolsAppName)" Description="$(var.AbcToolsDescription)" WorkingDirectory="APPLICATIONFOLDER" Directory="MaestroStartMenuFolder" Icon="abctools.ico" IconIndex="0" Advertise="no">
                                 <!-- App user model ID guid (https://learn.microsoft.com/en-us/windows/win32/properties/props-system-appusermodel-id) -->
                                 <ShortcutProperty Key="{9F4C2855-9F79-4B39-A8D0-E1D42DE1D5F3}, 5" Value="$(var.AbcToolsAppUserModelId)" />
