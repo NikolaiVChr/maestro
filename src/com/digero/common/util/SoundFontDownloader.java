@@ -48,14 +48,14 @@ public class SoundFontDownloader {
         if (dataDir == null) return null;
         File sf2File = new File(dataDir, SF2_FILENAME);
 
-        // Check if file exists and has correct size (fast check)
+        // Check if the file exists and has the correct size (fast check)
         if (sf2File.exists() && sf2File.length() > 0) {
-            // relying on the filename (which contains the hash) + file existence should be enough check.
+            // relying on the filename (which contains the hash) + file existence should be enough.
             return sf2File;
         }
 
         if (showDownloadDialog(sf2File)) {
-            // Not found. Show UI and Download
+            // Not found. Show UI and download
             return sf2File;
         }
         return null;
@@ -97,7 +97,6 @@ public class SoundFontDownloader {
     }
 
     private static boolean showDownloadDialog(File targetFile) {
-        // Create Modal Dialog
         JDialog dialog = new JDialog((Frame) null, "Downloading soundbank", true);
         dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         dialog.setLayout(new BorderLayout(10, 10));
@@ -121,10 +120,10 @@ public class SoundFontDownloader {
         dialog.add(progressBar, BorderLayout.CENTER);
         dialog.add(btnPanel, BorderLayout.SOUTH);
 
-        // State object to hold result
+        // State object to hold the result
         var result = new Object() { boolean success = false; };
 
-        // Use temporary file to prevent corruption of existing file on partial download
+        // Use temporary file to prevent corruption of an existing file on partial download
         File tempFile = new File(targetFile.getAbsolutePath() + ".tmp");
 
         Thread[] downloadThread = new Thread[1];
@@ -147,7 +146,7 @@ public class SoundFontDownloader {
             onCancel.run();
         });
 
-        // Background Worker Thread
+        // Background worker thread
         downloadThread[0] = new Thread(() -> {
             boolean keepTrying = true;
             while (keepTrying) {
@@ -223,65 +222,66 @@ public class SoundFontDownloader {
     }
 
     private static void downloadFile(String url, File tempFile, JProgressBar progressBar, JLabel statusLabel) throws IOException, InterruptedException {
-        HttpClient client = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(10))
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .build();
+        try (HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(10))
+                    .followRedirects(HttpClient.Redirect.NORMAL)
+                    .build();) {
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .GET()
-                .build();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .GET()
+                    .build();
 
-        // Send request header first to get size
-        HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+            // Send a request header first to get size
+            HttpResponse<InputStream> response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
 
-        if (response.statusCode() != 200) {
-            throw new IOException("Server returned HTTP " + response.statusCode());
-        }
+            if (response.statusCode() != 200) {
+                throw new IOException("Server returned HTTP " + response.statusCode());
+            }
 
-        // Captive Portal (public Wifi) returning 200 OK but sending HTML login page
-        String contentType = response.headers().firstValue("content-type").orElse("").toLowerCase();
-        if (contentType.contains("text/html")) {
-            throw new IOException("Invalid Content-Type (HTML). You may be behind a web portal.");
-        }
+            // Captive Portal (public Wifi) returning 200 OK but sending HTML login page
+            String contentType = response.headers().firstValue("content-type").orElse("").toLowerCase();
+            if (contentType.contains("text/html")) {
+                throw new IOException("Invalid Content-Type (HTML). You may be behind a web portal.");
+            }
 
-        long totalSize = response.headers().firstValueAsLong("content-length").orElse(-1L);
-        Files.createDirectories(tempFile.getParentFile().toPath());
+            long totalSize = response.headers().firstValueAsLong("content-length").orElse(-1L);
+            Files.createDirectories(tempFile.getParentFile().toPath());
 
-        try (InputStream in = response.body();
-             OutputStream out = new FileOutputStream(tempFile)) {
+            try (InputStream in = response.body();
+                 OutputStream out = new FileOutputStream(tempFile)) {
 
-            byte[] buffer = new byte[8192];
-            long downloaded = 0;
-            int bytesRead;
-            long lastUpdate = 0;
+                byte[] buffer = new byte[8192];
+                long downloaded = 0;
+                int bytesRead;
+                long lastUpdate = 0;
 
-            while ((bytesRead = in.read(buffer)) != -1) {
-                if (Thread.currentThread().isInterrupted()) throw new InterruptedIOException("User cancelled");
-                
-                out.write(buffer, 0, bytesRead);
-                downloaded += bytesRead;
+                while ((bytesRead = in.read(buffer)) != -1) {
+                    if (Thread.currentThread().isInterrupted()) throw new InterruptedIOException("User cancelled");
 
-                if (downloaded > 500 * 1024 * 1024) { // Limit to 500 MB for security reasons
-                    throw new IOException("File too large (exceeded 500 MB limit)");
-                }
+                    out.write(buffer, 0, bytesRead);
+                    downloaded += bytesRead;
 
-                // Throttle UI updates to every 100ms to avoid freezing Swing
-                long now = System.currentTimeMillis();
-                if (now - lastUpdate > 100 || downloaded == totalSize) {
-                    final long current = downloaded;
-                    final long total = totalSize;
-                    SwingUtilities.invokeLater(() -> {
-                        if (total > 0) {
-                            int percent = (int) ((current * 100) / total);
-                            progressBar.setValue(percent);
-                            progressBar.setString(percent + "% (" + (current / 1024 / 1024) + " MB)");
-                        } else {
-                            progressBar.setIndeterminate(true);
-                        }
-                    });
-                    lastUpdate = now;
+                    if (downloaded > 500 * 1024 * 1024) { // Limit to 500 MB for security reasons
+                        throw new IOException("File too large (exceeded 500 MB limit)");
+                    }
+
+                    // Throttle UI updates to every 100ms to avoid freezing Swing
+                    long now = System.currentTimeMillis();
+                    if (now - lastUpdate > 100 || downloaded == totalSize) {
+                        final long current = downloaded;
+                        final long total = totalSize;
+                        SwingUtilities.invokeLater(() -> {
+                            if (total > 0) {
+                                int percent = (int) ((current * 100) / total);
+                                progressBar.setValue(percent);
+                                progressBar.setString(percent + "% (" + (current / 1024 / 1024) + " MB)");
+                            } else {
+                                progressBar.setIndeterminate(true);
+                            }
+                        });
+                        lastUpdate = now;
+                    }
                 }
             }
         }
@@ -294,7 +294,7 @@ public class SoundFontDownloader {
             try (InputStream fis = Files.newInputStream(file);
                  DigestInputStream dis = new DigestInputStream(fis, digest)) {
 
-                // Transfer all bytes to the "null" output
+                // Transfer all bytes to the null-output
                 // This triggers the DigestInputStream to process every byte automatically.
                 dis.transferTo(OutputStream.nullOutputStream());
             }
