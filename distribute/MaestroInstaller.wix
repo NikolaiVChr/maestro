@@ -12,8 +12,8 @@
     <?define AbcToolsDescription=ABC tools to merge abc files or auto export abc?>
     <?define AbcToolsAppUserModelId=Aifel.AbcTools?>
     <?define ApplicationFolderName=Maestro?>
-    <Product Id="*" UpgradeCode="{6AA5E0BF-7CA7-4D11-9687-28751293C91A}" Name="Maestro and ABC Player" Manufacturer="Digero, Aifel and Elamond" Version="$(var.MaestroVersion)" Language="1033">
-        <Package Id="*" Description="Maestro MIDI to ABC converter and ABC Player for The Lord of the Rings Online" Languages="1033" Compressed="yes" SummaryCodepage="1252" InstallScope="perUser" InstallPrivileges="limited"/>
+    <Product Id="*" UpgradeCode="{6AA5E0BF-7CA7-4D11-9687-28751293C91A}" Name="Maestro and ABC Player" Manufacturer="DigeroAifelElamond" Version="$(var.MaestroVersion)" Language="1033">
+        <Package Id="*" Description="!(loc.Package_Description)" Languages="1033" Compressed="yes" SummaryCodepage="1252" InstallScope="perUser" InstallPrivileges="limited"/>
         <Media Id="1" Cabinet="Maestro.cab" EmbedCab="yes" />
         <!-- Expose defines as properties for the MaestroInstallerStrings.wxl -->
         <Property Id="MaestroAppName">$(var.MaestroAppName)</Property>
@@ -35,6 +35,23 @@
         <Property Id="WIXUI_INSTALLDIR" Value="APPLICATIONFOLDER" />
         <Property Id="WixAppFolder" Value="WixPerUserFolder" />
         <WixVariable Id="WixUISupportPerUser" Value="1" />
+
+        <!-- check for old per machine install of Maestro. If found, display message and quit. Is important so will display in german and french too. -->
+        <Upgrade Id="{CCA9F6BF-F1FB-4D8E-8892-3AFE3CE6F4B7}">
+            <UpgradeVersion Property="OLD_PER_MACHINE_FOUND"
+                            Minimum="0.0.0.0"
+                            IncludeMinimum="yes"
+                            OnlyDetect="yes" />
+        </Upgrade>
+        <Condition Message="!(loc.OldVersionError_FR)">
+            <![CDATA[NOT OLD_PER_MACHINE_FOUND OR UserLanguageID <> 1036]]>
+        </Condition>
+        <Condition Message="!(loc.OldVersionError_DE)">
+            <![CDATA[NOT OLD_PER_MACHINE_FOUND OR UserLanguageID <> 1031]]>
+        </Condition>
+        <Condition Message="!(loc.OldVersionError_EN)">
+            <![CDATA[NOT OLD_PER_MACHINE_FOUND OR (UserLanguageID = 1036 OR UserLanguageID = 1031)]]>
+        </Condition>
         <!-- Uninstall old versions of Maestro -->
         <Upgrade Id="{6AA5E0BF-7CA7-4D11-9687-28751293C91A}">
             <UpgradeVersion Property="NEWERFOUND" OnlyDetect="no" Minimum="$(var.MaestroVersion)" IncludeMinimum="no" />
@@ -54,18 +71,40 @@
         <Icon Id="abcplayer.ico" SourceFile="abcplayer.ico" />
         <Icon Id="abctools.ico" SourceFile="abctools.ico" />
         <Property Id="ARPPRODUCTICON" Value="maestro.ico" />
+        <!-- find where last Maestro was installed -->
+        <Property Id="APPLICATIONFOLDER">
+            <RegistrySearch Id="FindInstallLocation"
+                            Root="HKCU"
+                            Key="Software\[Manufacturer]\Maestro"
+                            Name="InstallLocation"
+                            Type="raw" />
+        </Property>
         <!-- Add/Remove Programs icon -->
         <!-- File System -->
         <Directory Id="TARGETDIR" Name="SourceDir">
             <!-- Program Files -->
             <Directory Id="LocalAppDataFolder">
                 <Directory Id="APPLICATIONFOLDER" Name="$(var.ApplicationFolderName)">
+                    <Component Id="ApplicationFolderCleanup" Guid="{6999F0FB-F82B-41C1-9009-A33BB6EEEC6E}">
+                        <!--RegistryValue Root="HKCU" Key="Software\[Manufacturer]\Maestro\Install" Name="RootCleanup" Type="string" Value="1" KeyPath="yes" /-->
+                        <RegistryValue Root="HKCU"
+                                           Key="Software\[Manufacturer]\Maestro"
+                                           Name="InstallLocation"
+                                           Type="string"
+                                           Value="[APPLICATIONFOLDER]"
+                                           KeyPath="yes" />
+
+                        <RegistryValue Root="HKCU"
+                                       Key="Software\[Manufacturer]\Maestro"
+                                       Name="RootCleanup"
+                                       Type="string"
+                                       Value="1" />
+                        <RemoveFolder Id="Remove_APPLICATIONFOLDER" On="uninstall" />
+                    </Component>
                     <Directory Id="AppDir" Name="app">
-                        <Component Id="Assets" Guid="{F81F2BC4-906C-46B1-B3B4-14B69EF256E1}">
+                        <Component Id="Assets" Guid="{FA9EB453-5DE0-40FA-AD8E-37A98D97FA4E}">
                             <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\Maestro\Install" Name="AssetsReg" Type="string" Value="1" KeyPath="yes" />
-                            <RemoveFolder Id="Remove_AppDir" Directory="AppDir" On="uninstall" />
-                            <RemoveFolder Id="Remove_RuntimeDir" Directory="RuntimeDir" On="uninstall" />
-                            <RemoveFolder Id="Remove_APPLICATIONFOLDER" Directory="APPLICATIONFOLDER" On="uninstall" />
+                            <RemoveFolder Id="Remove_AppDir" On="uninstall" />
                             <!--File Source="LotroInstruments.sf2" /-->
                             <File Id="file.maestro.ico" Source="maestro.ico" />
                             <File Id="file.midifile.ico" Source="midifile.ico" />
@@ -75,33 +114,45 @@
                             <File Id="file.abcplaylist.ico" Source="abcplaylist.ico" />
                             <File Id="file.abctools.ico" Source="abctools.ico" />
                         </Component>
-                        <Component Id="MaestroJar" Guid="{1DE9C474-25AF-42E3-BEB3-5513E2FC9A49}">
+                        <Component Id="MaestroJar" Guid="{D3680C55-4169-40B8-BE50-66BF3157563A}">
                             <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\Maestro\Install" Name="MaestroJarReg" Type="string" Value="1" KeyPath="yes" />
+
+                            <RemoveFolder Id="Remove_AppDir_MaestroJar" Directory="AppDir" On="uninstall" />
+
                             <File Source="$(var.build)/app/Maestro.jar" />
                             <File Source="$(var.build)/app/Maestro.cfg" />
                         </Component>
-                        <Component Id="AbcPlayerJar" Guid="{7FFC7B30-4EA1-4D64-9551-938488C2BC2C}">
+                        <Component Id="AbcPlayerJar" Guid="{F04A2784-CA2F-4045-8AF4-30CF4B915E11}">
                             <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\Maestro\Install" Name="AbcPlayerJarReg" Type="string" Value="1" KeyPath="yes" />
+
+                            <RemoveFolder Id="Remove_AppDir_PlayerJar" Directory="AppDir" On="uninstall" />
+
                             <File Source="$(var.build)/app/AbcPlayer.jar" />
                             <File Source="$(var.build)/app/AbcPlayer.cfg" />
                         </Component>
-                        <Component Id="AbcToolsJar" Guid="{8A77AE10-DB66-44DA-AA44-C96FAEA3E227}">
+                        <Component Id="AbcToolsJar" Guid="{3205ECE3-FF2F-42F4-8BB8-E771C44AE948}">
                             <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\Maestro\Install" Name="AbcToolsJarReg" Type="string" Value="1" KeyPath="yes" />
+
+                            <RemoveFolder Id="Remove_AppDir_ToolsJar" Directory="AppDir" On="uninstall" />
+
                             <File Source="$(var.build)/app/AbcTools.jar" />
                             <File Source="$(var.build)/app/AbcTools.cfg" />
                         </Component>
-                        <Component Id="PatchJar" Guid="{D7D09422-B3FF-4A44-848C-1FD08EFBDEE1}">
+                        <Component Id="PatchJar" Guid="{871DB040-38B5-4DF2-A98D-36E97CDBC6EE}">
                             <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\Maestro\Install" Name="PatchJarReg" Type="string" Value="1" KeyPath="yes" />
+
+                            <RemoveFolder Id="Remove_AppDir_PatchJar" Directory="AppDir" On="uninstall" />
+
                             <File Source="$(var.build)/app/java.midi.patch.jar" />
                         </Component>
                     </Directory>
                     <Directory Id="RuntimeDir" Name="runtime" >
                     </Directory>
-                    <Component Id="aifel_changelog.txt" Guid="{46B882CB-E9A8-4A1E-A92C-C5717FDECECB}">
+                    <Component Id="aifel_changelog.txt" Guid="{EB2AA314-6451-4626-893B-7688AD63291A}">
                         <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\Maestro\Install" Name="aifel_changelog_txtReg" Type="string" Value="1" KeyPath="yes" />
                         <File Id="aifel_changelog.txt" Source="readme.txt" />
                     </Component>
-                    <Component Id="MaestroExecutable" Guid="{A20EBF40-4857-46C3-8B6C-CF3CBF64A824}">
+                    <Component Id="MaestroExecutable" Guid="{1F6DBC83-47FC-4972-9232-A98BA49678FF}">
                         <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\Maestro\Install" Name="MaestroExecutableReg" Type="string" Value="1" KeyPath="yes" />
                         <CreateFolder Directory="MaestroStartMenuFolder" />
                         <File Id="Maestro.exe" Source="$(var.build)/Maestro.exe" >
@@ -177,7 +228,7 @@
                         <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\SystemFileAssociations\.midi\Shell\Maestro.Edit" Name="Icon" Value="[APPLICATIONFOLDER]app\maestro.ico,0" Type="string" />
                         <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\SystemFileAssociations\.midi\Shell\Maestro.Edit\command" Value="&quot;[#Maestro.exe]&quot; &quot;%1&quot;" Type="string" />
                     </Component>
-                    <Component Id="AbcPlayerExecutable" Guid="{0C212398-7A1E-40D8-BEDD-2F341AC20FEB}">
+                    <Component Id="AbcPlayerExecutable" Guid="{07AC436E-234B-4EE1-A685-E5BDC8822362}">
                         <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\Maestro\Install" Name="AbcPlayerExecutableReg" Type="string" Value="1" KeyPath="yes" />
                         <CreateFolder Directory="MaestroStartMenuFolder" />
                         <File Id="AbcPlayer.exe" Source="$(var.build)/AbcPlayer.exe" >
@@ -222,7 +273,7 @@
                         <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\Applications\AbcPlayer.exe\shell" Type="string" Value="open" />
                         <RegistryValue Root="HKCU" Key="SOFTWARE\Classes\Applications\AbcPlayer.exe\shell\open\command" Type="string" Value="&quot;[#AbcPlayer.exe]&quot; &quot;%1&quot;" />
                     </Component>
-                    <Component Id="AbcToolsExecutable" Guid="{D6F78C2D-DE65-4BD0-92F6-64E46779F449}">
+                    <Component Id="AbcToolsExecutable" Guid="{A12B5DDE-AD4A-4B69-A5B8-3641F7854DDB}">
                         <RegistryValue Root="HKCU" Key="Software\[Manufacturer]\Maestro\Install" Name="AbcToolsExecutableReg" Type="string" Value="1" KeyPath="yes" />
                         <CreateFolder Directory="MaestroStartMenuFolder" />
                         <File Id="AbcTools.exe" Source="$(var.build)/AbcTools.exe" >
@@ -250,6 +301,7 @@
             <ComponentRef Id="aifel_changelog.txt" />
             <ComponentRef Id="PatchJar" />
             <ComponentGroupRef Id="j24RuntimeComponentGroup" />
+            <ComponentRef Id="ApplicationFolderCleanup" />
         </Feature>
         <Feature Id="Maestro" Level="1" ConfigurableDirectory="APPLICATIONFOLDER" AllowAdvertise="no" Title="$(var.MaestroAppName)" Description="$(var.MaestroAppName) is a MIDI to ABC converter. Arrange multipart ABC files from MIDI source files.">
             <ComponentRef Id="Assets" />
