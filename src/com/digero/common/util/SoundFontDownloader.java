@@ -230,6 +230,7 @@ public class SoundFontDownloader {
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(url))
+                    .timeout(Duration.ofSeconds(30)) // Add read timeout
                     .GET()
                     .build();
 
