@@ -20,8 +20,10 @@ import java.util.prefs.Preferences;
 
 import javax.swing.SwingUtilities;
 
+import com.digero.common.midi.SynthesizerFactory;
 import com.digero.common.util.AppInfo;
 import com.digero.common.util.Logging;
+import com.digero.common.util.SoundFontDownloader;
 import com.digero.common.util.Themer;
 import com.digero.common.util.Util;
 import com.digero.common.util.Version;
@@ -106,7 +108,16 @@ public class MaestroMain {
 		}
 
         Logging.configure(APP_NAME);//should be after "return" so that each instance that just sends a file to running maestro, dont create new log file.
-        log = Logger.getLogger("");//must be after configure
+        log = Logger.getLogger("");//must be after configure()
+
+
+		File sf2 = SoundFontDownloader.ensureSoundFontExists();
+
+		if (sf2 == null) {
+			log.info("Proceeding without soundfont in shared location.");
+		} else {
+			SynthesizerFactory.setSoundbank(sf2);
+		}
 
 		//System.setProperty("sun.sound.useNewAudioEngine", "true");
 		

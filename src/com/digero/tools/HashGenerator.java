@@ -270,8 +270,10 @@ public class HashGenerator {
 		} else {
 			try {
 				Thread[] threads = new Thread[8];
-				for (int i = 0; i < threads.length; i++)
+				for (int i = 0; i < threads.length; i++) {
 					threads[i] = new Thread(new HashTask(state));
+					threads[i].setDaemon(true);
+				}
 
 				for (Thread thread : threads)
 					thread.start();

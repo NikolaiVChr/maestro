@@ -66,7 +66,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	
 	public static final String MSX_FILE_DESCRIPTION = MaestroMain.APP_NAME + " Project";
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = MaestroMain.APP_NAME + " Projects";
-	public static final Version SONG_FILE_VERSION = new Version(4, 5, 19, 300);// Keep build above 117 to make earlier
+	public static final Version SONG_FILE_VERSION = new Version(4, 6, 0, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
 
@@ -81,6 +81,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private String mood = "";
 	private String note = "";// not continuously updated
     private String lyrics = "";// not continuously updated
+	private List<LyricLine> lyricLines = null;// not continuously updated
 	private boolean badger = false;
 	private float tempoFactor = 1.0f;
 	private int newTempo = 120;
@@ -213,6 +214,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		hideEdits = false;
 		ignoreMidiText = false;
 
+		lyricLines = null;
+
         CountIn.setLastCountIn(null);
 
 		/*
@@ -232,10 +235,12 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		if (sequenceInfo.getDataCache() != null) {
 			copyright = sequenceInfo.getDataCache().getCopyright();
 			lyrics = sequenceInfo.getDataCache().getLyrics();
+			// lyricLines = sequenceInfo.getDataCache().getLyricLines(); done in ProjectFrame
 			genre = sequenceInfo.getDataCache().getGenre();
 			if (composer == null || composer.isBlank()) composer = sequenceInfo.getDataCache().getComposer(); 
 		} else {
 			lyrics = "";
+			//lyricLines = null;
 		}
         note = "";
 		keySignature = (ICompileConstants.SHOW_KEY_FIELD) ? sequenceInfo.getKeySignature() : KeySignature.C_MAJOR;
@@ -310,6 +315,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		dynamicsMethod = Chord.CalcDynamics.LOUDEST;
 		setTempoFactor(abcInfo.getPrimaryTempoBPM(), abcInfo.getPrimaryTempoBPM());
 		lyrics = "";
+		lyricLines = null;
         note = "";
 	}
 
@@ -373,6 +379,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			}
             if (!calledFromTools) {
                 lyrics = sequenceInfo.getDataCache().getLyrics();
+				//lyricLines = sequenceInfo.getDataCache().getLyricLines();
             }
 			title = SaveUtil.parseValue(songEle, "title", sequenceInfo.getTitle());
 			composer = SaveUtil.parseValue(songEle, "composer", sequenceInfo.getComposer());
@@ -491,6 +498,20 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
                             "Warning for " + file.getName(), JOptionPane.WARNING_MESSAGE);
                 }
             }
+			Element lyricsContainer = XmlUtil.selectSingleElement(songEle, "lyrics");
+			if (lyricsContainer != null) {
+				List<LyricLine> loadedLyrics = new ArrayList<>();
+				SequenceDataCache data = sequenceInfo.getDataCache();
+
+				for (Element lineEle : XmlUtil.selectElements(lyricsContainer, "line")) {
+					float bar = SaveUtil.parseValue(lineEle, "@bar", 0.0f);
+					String text = lineEle.getTextContent();
+
+					long tick = data.barFloatToTick(bar);
+					loadedLyrics.add(new LyricLine(tick, text));
+				}
+				if (!loadedLyrics.isEmpty()) lyricLines = loadedLyrics;
+			}
 		} catch (XPathExpressionException e) {
 			log.log(Level.SEVERE, "XPath error", e);
 			throw new FileParseException("XPath error: " + e.getMessage(), file == null?null:file.getName());
@@ -662,6 +683,23 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		return lyrics;
 	}
 
+	public void notifyLyricLinesModified() {
+		fireChangeEvent(AbcSongProperty.USER_LYRICS);
+	}
+
+	public List<LyricLine> getLyricLines() {
+		// Only call this just after loading a midi.
+		return lyricLines;
+	}
+
+	public void setLyricLines(List<LyricLine> lines, boolean fireListener) {
+		// Only call this just after loading a midi.
+		lyricLines = lines;
+		if (fireListener) {
+			fireChangeEvent(AbcSongProperty.USER_LYRICS);
+		}
+	}
+
     public String getNote() {
         // Only call this just after loading a msx file.
         return note;
@@ -720,6 +758,18 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 		for (AbcPart part : parts) {
 			part.saveToXml((Element) songEle.appendChild(doc.createElement("part")));
+		}
+
+		if (lyricLines != null && !lyricLines.isEmpty()) {
+			Element lyricsEle = (Element) songEle.appendChild(doc.createElement("lyrics"));
+			SequenceDataCache data = sequenceInfo.getDataCache();
+
+			for (LyricLine line : lyricLines) {
+				Element lineEle = (Element) lyricsEle.appendChild(doc.createElement("line"));
+				float bar = data.tickToBarNumberFloat(line.tick());
+				lineEle.setAttribute("bar", String.valueOf(bar));
+				lineEle.setTextContent(XmlUtil.sanitizeStringForXMLSaving(line.text()));
+			}
 		}
 
 		return doc;
@@ -1305,6 +1355,22 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		}
 	}
 
+	/**
+	 * Careful! This method WILL recalculate start and end tick in abcExporter!
+	 */
+	public long getSongStartMicrosABC() {
+		if (parts.isEmpty() || sequenceInfo == null)
+			return 0L;
+
+		try {
+			AbcExporter exporter = getAbcExporter();
+			exporter.calcSongStartEndTicks();
+			return timingInfo.divideByExportTempoFactor(exporter.getExportStartMicros());
+		} catch (AbcConversionException e) {
+			return 0L;
+		}
+	}
+
 	public ListModelWrapper<AbcPart> getParts() {
 		return parts;
 	}
@@ -1826,6 +1892,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         this.mood = other.mood;
         this.note = other.note;
         this.lyrics = other.lyrics;
+		this.lyricLines = other.lyricLines;
         this.badger = other.badger;
         this.tempoFactor = other.tempoFactor;
         this.newTempo = other.newTempo;

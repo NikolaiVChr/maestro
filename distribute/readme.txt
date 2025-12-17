@@ -43,6 +43,15 @@ Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 
 Version 4.5.25
 - Fix that would not run on Linux.
+- The MSI now installs to per-user "AppData/Local" instead of global "Program Files".
+    This also means it no longer asks for admin privilege when it install and uninstall.
+- The soundfont that make the instruments sound like lotro is now downloaded when the app is started. 240 MB approx.
+    The soundfont don't get updated often, so when installing a new maestro version,
+    most of the time it will just use one from a previous Maestro.
+- Before installing this, please remove old maestro from your windows manually.
+    (search "Add or remove programs" in windows and remove "Maestro")
+    This only needs to be done once, next versions will just update the previous version automatically again.
+- Allow editing of lyrics and to copy them to Poetical with timestamps.
 
 Version 4.5.24
 - Fixed a bug in splitting of long notes in organic multi-stage and made it slightly smarter.

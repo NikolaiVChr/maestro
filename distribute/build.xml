@@ -143,7 +143,7 @@
 	
 	<target name="LotroInstruments" description="Copy SF2 file">
         <delete file="${build}/LotroInstruments.sf2" />
-		<copy file="LotroInstruments.sf2" todir="${build}" overwrite="true" failonerror="true"/>
+		<!--copy file="LotroInstruments.sf2" todir="${build}" overwrite="true" failonerror="true"/-->
 	</target>
 
 	<target name="Build" depends="CopyThings,LotroInstruments,CompilePatches" description="Make all except ZIP and MSI files"/>
@@ -236,7 +236,7 @@
             <arg value="java.base,java.desktop,java.logging,java.prefs,jdk.charsets,java.sql,java.management,java.xml,java.net.http"/>
 		</exec>
 		<!-- Copy assets for final app/ folder -->
-		<copy file="${build}/LotroInstruments.sf2" todir="${staging}" />
+		<!--copy file="${build}/LotroInstruments.sf2" todir="${staging}" /-->
 		<copy file="${build}/abcfile.ico" todir="${staging}" />
 		<copy file="${build}/abcplaylist.ico" todir="${staging}" />
 		<copy file="${build}/midifile.ico" todir="${staging}" />
@@ -315,6 +315,8 @@
 			<arg value="-gg"/> <!-- generate GUIDs -->
 			<arg value="-sreg"/> <!-- don't harvest DLL info from registry -->
 			<arg value="-scom"/> <!-- don't harvest COM info from registry -->
+			<arg value="-t"/>
+			<arg value="AddPerUserReg.xslt"/><!-- Add per user reg entries for each file -->
 			<arg value="-out"/>  <!-- Specifies the output file where harvested WiX XML will be stored -->
 			<arg value="runtime.wxs"/>  <!-- Saves the harvested files as "runtime.wxs" -->
 		</exec>

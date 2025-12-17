@@ -29,6 +29,7 @@ import com.digero.common.midi.MidiStandard;
 import com.digero.common.midi.MidiUtils;
 import com.digero.common.midi.ITempoCache;
 import com.digero.common.midi.TimeSignature;
+import com.digero.common.util.LyricLine;
 import com.digero.common.util.Triple;
 import com.digero.common.util.Util;
 import com.digero.maestro.abc.TimingInfo;
@@ -697,8 +698,18 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		this.copyright = copyright;
 	}
 	
-	public String getLyrics() {
+	/**
+	 * Never call this when app is Abc Tools
+	 */
+	 public String getLyrics() {
 		return midiText.getText();
+	}
+
+	/**
+	 * Never call this when app is Abc Tools
+	 */
+	public List<LyricLine> getLyricLines() {
+		return midiText.getStructuredLyrics();
 	}
 	
 	public String getGenre() {

@@ -281,6 +281,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 						seq.setTrackSolo(soloMidiTrack, true);
 					}
 				}
+				getRootPane().requestFocus();
 			}
 
 			@Override

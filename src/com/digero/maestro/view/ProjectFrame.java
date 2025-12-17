@@ -261,6 +261,14 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             // return;
         }
 
+		setRootPane(new JRootPane() {
+			@Override
+			public void requestFocus() {
+				super.requestFocus();
+				if (arrangementView != null) arrangementView.stopEditingLyrics();
+			}
+		});
+
         setMinimumSize(new Dimension(512, 384));
         Util.initWinBounds(this, prefs.node("window"), 800, 600);
 
@@ -400,7 +408,20 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             }
         };
         addMouseListener(listenForFocus);
+		content.addMouseListener(listenForFocus);
 
+		// Add to main structural panels that might capture clicks
+		if (songInfoPanel != null) songInfoPanel.addMouseListener(listenForFocus);
+		if (settingsPanel != null) settingsPanel.addMouseListener(listenForFocus);
+		if (partsListPanel != null) partsListPanel.addMouseListener(listenForFocus);
+		if (midiPartsAndControls != null) midiPartsAndControls.addMouseListener(listenForFocus);
+		if (playControlPanel != null) playControlPanel.addMouseListener(listenForFocus);
+		if (arrangementView != null) arrangementView.addMouseListener(listenForFocus);
+
+		// Make sure content is capable of taking focus if RootPane refuses
+		content.setFocusable(true);
+		getRootPane().setFocusable(true);
+		arrangementView.setFocusable(true);
     }
 
     private void generateSongInfoPanel() {
@@ -572,6 +593,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				getRootPane().requestFocus();
+				arrangementView.stopEditingLyrics();
 			}
 		});
 		
@@ -1095,6 +1117,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		arrangementView.setTextnote("");
         arrangementView.setLyrics("");
+		arrangementView.setLyricLines(null, false);
         arrangementView.setStats("");
 		arrangementView.sidepanelVisible(false);
 
@@ -1877,193 +1900,195 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         //log.warning(this.getClass().getTypeName()+" AbcSongEvent: "+e.getProperty());
 
 		switch (e.getProperty()) {
-		case TITLE:
-			if (!songTitleField.getText().equals(abcSong.getTitle())) {
-				songTitleField.setText(abcSong.getTitle());
-				songTitleField.select(0, 0);
-			}
-			break;
-		case COMPOSER:
-			if (!composerField.getText().equals(abcSong.getComposer())) {
-				composerField.setText(abcSong.getComposer());
-				composerField.select(0, 0);
-			}
-			break;
-		case TRANSCRIBER:
-			if (!transcriberField.getText().equals(abcSong.getTranscriber())) {
-				transcriberFieldListener.setIgnoreChanges(true);
-				transcriberField.setText(abcSong.getTranscriber());
-				transcriberField.select(0, 0);
-				transcriberFieldListener.setIgnoreChanges(false);
-			}
-			break;
+			case TITLE:
+				if (!songTitleField.getText().equals(abcSong.getTitle())) {
+					songTitleField.setText(abcSong.getTitle());
+					songTitleField.select(0, 0);
+				}
+				break;
+			case COMPOSER:
+				if (!composerField.getText().equals(abcSong.getComposer())) {
+					composerField.setText(abcSong.getComposer());
+					composerField.select(0, 0);
+				}
+				break;
+			case TRANSCRIBER:
+				if (!transcriberField.getText().equals(abcSong.getTranscriber())) {
+					transcriberFieldListener.setIgnoreChanges(true);
+					transcriberField.setText(abcSong.getTranscriber());
+					transcriberField.select(0, 0);
+					transcriberFieldListener.setIgnoreChanges(false);
+				}
+				break;
 
-		case TEMPO_FACTOR:
-			if (getTempo() != abcSong.getTempoBPM())
-				setTempo(abcSong.getTempoBPM());
+			case TEMPO_FACTOR:
+				if (getTempo() != abcSong.getTempoBPM())
+					setTempo(abcSong.getTempoBPM());
 
-            //not needed as listeners on spinner will refresh
-			//refreshPreviewSequence(false);
+				//not needed as listeners on spinner will refresh
+				//refreshPreviewSequence(false);
 
-			break;
-		case TRANSPOSE:
-			setTranspose(abcSong.getTranspose());
-			break;
-		case KEY_SIGNATURE:
-			if (SHOW_KEY_FIELD) {
-				if (!keySignatureField.getValue().equals(abcSong.getKeySignature()))
-					keySignatureField.setValue(abcSong.getKeySignature());
-			}
-			break;
-		case TIME_SIGNATURE:
-			setMeter(abcSong.getTimeSignature());
-			break;
-		case ORGANIC:
-        case TRIPLET_TIMING:
-        case MIX_TIMING:
-        case MIX_TIMING_COMBINE_PRIORITIES:
-            break;
-        case TIMINGS_MULTI:
-            // one or more timing settings were change in abc song
+				break;
+			case TRANSPOSE:
+				setTranspose(abcSong.getTranspose());
+				break;
+			case KEY_SIGNATURE:
+				if (SHOW_KEY_FIELD) {
+					if (!keySignatureField.getValue().equals(abcSong.getKeySignature()))
+						keySignatureField.setValue(abcSong.getKeySignature());
+				}
+				break;
+			case TIME_SIGNATURE:
+				setMeter(abcSong.getTimeSignature());
+				break;
+			case ORGANIC:
+			case TRIPLET_TIMING:
+			case MIX_TIMING:
+			case MIX_TIMING_COMBINE_PRIORITIES:
+				break;
+			case TIMINGS_MULTI:
+				// one or more timing settings were change in abc song
 
-            // setting on model dont fire action listener
-            timingCombo.getModel().setSelectedItem(TimingEnum.getInstance(abcSong.isOrganic(), abcSong.isOrganic2(), abcSong.isMixTiming(), abcSong.isTripletTiming(), abcSong.isPriorityActive(), abcSong.isUpgraded()));
+				// setting on model dont fire action listener
+				timingCombo.getModel().setSelectedItem(TimingEnum.getInstance(abcSong.isOrganic(), abcSong.isOrganic2(), abcSong.isMixTiming(), abcSong.isTripletTiming(), abcSong.isPriorityActive(), abcSong.isUpgraded()));
 
-			updateButtons(false);
-			break;
-		case CALC_DYNAMICS:
-			setDyna(abcSong.dynamicsMethod);
-			break;
-		case PART_ADDED:
-			e.getPart().addAbcListener(abcPartListener);
+				updateButtons(false);
+				break;
+			case CALC_DYNAMICS:
+				setDyna(abcSong.dynamicsMethod);
+				break;
+			case PART_ADDED:
+				e.getPart().addAbcListener(abcPartListener);
 
-			idx = abcSong.getParts().indexOf(e.getPart());
-			partsList.selectPart(idx);
-			partsList.ensureIndexIsVisible(idx);
-			partsList.repaint();
-			partEditor.repaint();
-			updateButtons(false);
-			compileStats();
-			break;
-		case BADGER:
-			AbcPart ap = partsList.getSelectedPart();
-			partsList.updateParts();
-			idx = abcSong.getParts().indexOf(ap);
-			partsList.selectPart(idx);
-			partsList.ensureIndexIsVisible(idx);
-			partsList.repaint();
-			partEditor.updateParts();
-			partEditor.repaint();
-			updateButtons(false);
-			break;
-		case TUNE_EDIT:
-			updateButtons(false);
-			if (partsList.getSelectedPart() != null) {
-				// We do this to show the tempo panel if the tune editor has changed something
-				arrangementView.setAbcPart(partsList.getSelectedPart(), true);
-			}
-            if (abcPreviewMode)
-                refreshPreviewSequence(false);
-			break;
+				idx = abcSong.getParts().indexOf(e.getPart());
+				partsList.selectPart(idx);
+				partsList.ensureIndexIsVisible(idx);
+				partsList.repaint();
+				partEditor.repaint();
+				updateButtons(false);
+				compileStats();
+				break;
+			case BADGER:
+				AbcPart ap = partsList.getSelectedPart();
+				partsList.updateParts();
+				idx = abcSong.getParts().indexOf(ap);
+				partsList.selectPart(idx);
+				partsList.ensureIndexIsVisible(idx);
+				partsList.repaint();
+				partEditor.updateParts();
+				partEditor.repaint();
+				updateButtons(false);
+				break;
+			case TUNE_EDIT:
+				updateButtons(false);
+				if (partsList.getSelectedPart() != null) {
+					// We do this to show the tempo panel if the tune editor has changed something
+					arrangementView.setAbcPart(partsList.getSelectedPart(), true);
+				}
+				if (abcPreviewMode)
+					refreshPreviewSequence(false);
+				break;
 
-		case BEFORE_PART_REMOVED:
-			e.getPart().removeAbcListener(abcPartListener);
+			case BEFORE_PART_REMOVED:
+				e.getPart().removeAbcListener(abcPartListener);
 
-			idx = abcSong.getParts().indexOf(e.getPart());
-			if (idx > 0)
-				partsList.selectPart(idx - 1);
-			else if (abcSong.getParts().size() > 1) {
-				partsList.selectPart(1);
-			}
+				idx = abcSong.getParts().indexOf(e.getPart());
+				if (idx > 0)
+					partsList.selectPart(idx - 1);
+				else if (abcSong.getParts().size() > 1) {
+					partsList.selectPart(1);
+				}
 
-			if (abcSong.getParts().isEmpty()) {
-				sequencer.stop();
-				arrangementView.showInfoMessage(formatInfoMessage("Add a part", "This ABC song has no parts.\n" + //
-						"Click the " + newPartButton.getText() + " button to add a new part."));
-			}
+				if (abcSong.getParts().isEmpty()) {
+					sequencer.stop();
+					arrangementView.showInfoMessage(formatInfoMessage("Add a part", "This ABC song has no parts.\n" + //
+							"Click the " + newPartButton.getText() + " button to add a new part."));
+				}
 
-			partsList.repaint();
-			updateButtons(false);
-			break;
-        case AFTER_PART_REMOVED:
-            refreshPreviewSequence(false);
-            break;
-		case PART_LIST_ORDER:
-            partsList.updateParts();//important to run before the below code
-            partsList.selectPart(abcSong.getParts().indexOf(arrangementView.getAbcPart()));
-            // this is important, else after a deletion, the tracklist might be in the wrong state:
-            if (partsList.getSelectedPart() != null) {
-                // might be null shortly after loading from midi
-                arrangementView.setAbcPart(partsList.getSelectedPart(), true);
-            }
-            refreshPreviewSequence(false);// autoPan depend on part order
-			partsList.repaint();
-			partEditor.repaint();
-			updateButtons(false);
-			break;
+				partsList.repaint();
+				updateButtons(false);
+				break;
+			case AFTER_PART_REMOVED:
+				refreshPreviewSequence(false);
+				break;
+			case PART_LIST_ORDER:
+				partsList.updateParts();//important to run before the below code
+				partsList.selectPart(abcSong.getParts().indexOf(arrangementView.getAbcPart()));
+				// this is important, else after a deletion, the tracklist might be in the wrong state:
+				if (partsList.getSelectedPart() != null) {
+					// might be null shortly after loading from midi
+					arrangementView.setAbcPart(partsList.getSelectedPart(), true);
+				}
+				refreshPreviewSequence(false);// autoPan depend on part order
+				partsList.repaint();
+				partEditor.repaint();
+				updateButtons(false);
+				break;
 
-		case SKIP_SILENCE_AT_START:
-			if (saveSettings.skipSilenceAtStart != abcSong.isSkipSilenceAtStart()) {
-                /*
-                 not sure that this is sane
-                 skip is not a song property it's a setting
-                 it's only in abcSong for convenience
-                 I cannot think of a case where setting it on abcsong
-                 should propagate to settings.
-                 Same for DELETE_MINIMAL_NOTES.
-                 So commented out.
-                */
+			case SKIP_SILENCE_AT_START:
+				if (saveSettings.skipSilenceAtStart != abcSong.isSkipSilenceAtStart()) {
+					/*
+					 not sure that this is sane
+					 skip is not a song property it's a setting
+					 it's only in abcSong for convenience
+					 I cannot think of a case where setting it on abcsong
+					 should propagate to settings.
+					 Same for DELETE_MINIMAL_NOTES.
+					 So commented out.
+					*/
 
-				//saveSettings.skipSilenceAtStart = abcSong.isSkipSilenceAtStart();
-				//saveSettings.saveToPrefs();
-			}
-            modified = false;
-			break;
-		case DELETE_MINIMAL_NOTES:
-			if (saveSettings.deleteMinimalNotes != abcSong.isDeleteMinimalNotes()) {
-				//saveSettings.deleteMinimalNotes = abcSong.isDeleteMinimalNotes();
-				//saveSettings.saveToPrefs();
-            }
-            modified = false;
-			break;
-		case GENRE:
-			if (!genreField.getText().equals(abcSong.getGenre())) {
-				genreField.setText(abcSong.getGenre());
-				genreField.select(0, 0);
-			}
-			break;
-		case MOOD:
-			if (!moodField.getText().equals(abcSong.getMood())) {
-				moodField.setText(abcSong.getMood());
-				moodField.select(0, 0);
-			}
-			break;
-        case COUNT_IN:
-            setAbcSongModified(true);
+					//saveSettings.skipSilenceAtStart = abcSong.isSkipSilenceAtStart();
+					//saveSettings.saveToPrefs();
+				}
+				modified = false;
+				break;
+			case DELETE_MINIMAL_NOTES:
+				if (saveSettings.deleteMinimalNotes != abcSong.isDeleteMinimalNotes()) {
+					//saveSettings.deleteMinimalNotes = abcSong.isDeleteMinimalNotes();
+					//saveSettings.saveToPrefs();
+				}
+				modified = false;
+				break;
+			case GENRE:
+				if (!genreField.getText().equals(abcSong.getGenre())) {
+					genreField.setText(abcSong.getGenre());
+					genreField.select(0, 0);
+				}
+				break;
+			case MOOD:
+				if (!moodField.getText().equals(abcSong.getMood())) {
+					moodField.setText(abcSong.getMood());
+					moodField.select(0, 0);
+				}
+				break;
+			case COUNT_IN:
+				setAbcSongModified(true);
 
-            //must be true so countin props get set on actual abcSong, not a copy:
-            refreshPreviewSequence(true);
+				//must be true so countin props get set on actual abcSong, not a copy:
+				refreshPreviewSequence(true);
 
-            if (abcSong != null) {
-                if (abcSong.getCountIn() != null) {
-                    abcSequencer.setCountInMicros(abcSong.getCountIn().micros);
-                    break;
-                }
-            }
-            abcSequencer.setCountInMicros(0L);
-            break;
-		case EXPORT_FILE:
-			// Don't care
-			break;
-		case SONG_CLOSING:
-			// Don't care
-			break;
-		case HIDE_EDITS_UPDATE:
-			// Don't care
-            modified = false;
-			break;
-        case USER_NOTE:
-            break;
+				if (abcSong != null) {
+					if (abcSong.getCountIn() != null) {
+						abcSequencer.setCountInMicros(abcSong.getCountIn().micros);
+						break;
+					}
+				}
+				abcSequencer.setCountInMicros(0L);
+				break;
+			case EXPORT_FILE:
+				// Don't care
+				break;
+			case SONG_CLOSING:
+				// Don't care
+				break;
+			case HIDE_EDITS_UPDATE:
+				// Don't care
+				modified = false;
+				break;
+			case USER_NOTE:
+				break;
+			case USER_LYRICS:
+				break;
 		}
 
 		updateExportOrExportAsButton();
@@ -2195,6 +2220,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		arrangementView.setAbcPart(null, false);
 		arrangementView.setTextnote("");
         arrangementView.setLyrics("");
+		arrangementView.setLyricLines(null, false);
         arrangementView.setStats("");
 		arrangementView.sidepanelVisible(false);
 		arrangementView.unZoom();
@@ -2322,12 +2348,18 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             } else if (!abcSong.isFromXmlFile()) {
                 arrangementView.sidepanelVisible(true);
                 arrangementView.sidepanelTab("Lyrics");
-            }
+            } else {
+				arrangementView.sidepanelTab("Lyrics");
+			}
             arrangementView.setLyrics(lyrics);
+			if (abcSong.getLyricLines() != null) arrangementView.setLyricLines(abcSong.getLyricLines(), true);
+			else arrangementView.setLyricLines(abcSong.getSequenceInfo().getDataCache().getLyricLines(), false);
 
             if (abcSong.isFromXmlFile()) {
                 String note = abcSong.getNote();
-                if (note != null) {
+                if (note != null && !note.equals(lyrics)) {
+                	// the check for note==lyrics is to clear userNote if it's an old project and
+                	// lyrics were saved unchanged in the note.
                     arrangementView.setTextnote(note);
                     if (!note.isEmpty()) {
                         arrangementView.sidepanelTab("Notes");
@@ -2858,6 +2890,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private void commitAllFields() {
 		try {
 			abcSong.setNote(arrangementView.getTextnote(), false);
+			if (arrangementView.isLyricsModified()) abcSong.setLyricLines(arrangementView.getLyricLines(), false);
+			else abcSong.setLyricLines(null, false);
 			arrangementView.commitAllFields();
 			transposeSpinner.commitEdit();
 			tempoSpinner.commitEdit();

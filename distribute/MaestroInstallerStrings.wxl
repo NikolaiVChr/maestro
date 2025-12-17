@@ -11,11 +11,17 @@
 		Click Next to continue or Cancel to exit the Setup Wizard.
 	</String>
 
+	<String Id="Package_Description">Maestro MIDI to ABC converter and ABC Player for The Lord of the Rings Online</String>
+
 	<String Id="ExitDialogDescription">
 		Installation was successful! You can find [MaestroAppName], [AbcToolsAppName] and [AbcPlayerAppName] in the Start menu.
 
 
 		Click the Finish button to exit the Setup Wizard.
 	</String>
+
+	<String Id="OldVersionError_EN">A previous version of Maestro is installed on this machine. Please uninstall it manually from 'Installed apps' before installing this new version.</String>
+    <String Id="OldVersionError_FR">Une version précédente de Maestro est installée. Veuillez la désinstaller manuellement via 'Applications installées' avant d'installer cette nouvelle version.</String>
+    <String Id="OldVersionError_DE">Eine frühere Version von Maestro ist bereits installiert. Bitte deinstallieren Sie diese manuell über 'Installierte Apps', bevor Sie die neue Version installieren.</String>
 
 </WixLocalization>
