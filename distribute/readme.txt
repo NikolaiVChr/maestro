@@ -44,14 +44,18 @@ Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 Version 4.6.0
 - Fix that would not run on Linux.
 - The MSI now installs to per-user "AppData/Local" instead of global "Program Files".
-    This also means it no longer asks for admin privilege when it install and uninstall.
+    This also means it no longer need admin privilege when it install and uninstall,
+    and therefore is also not able to be installed in "C:\Program Files", so don't attempt that.
 - The soundfont that make the instruments sound like lotro is now downloaded when the app is started. 240 MB approx.
     The soundfont don't get updated often, so when installing a new maestro version,
     most of the time it will just use one from a previous Maestro.
+    The download location on Windows is C:\Users\[username]\AppData\Local\MaestroCommon
+    If you use from ZIP then you have option to manually use your own soundfont by putting
+    it into the app folder with the name "LotroInstruments.sf2". Then it will not attempt to download one.
 - Before installing this, please remove old maestro from your windows manually.
     (search "Add or remove programs" in windows and remove "Maestro")
     This only needs to be done once, next versions will just update the previous version automatically again.
-- Allow editing of lyrics and to copy them to Poetical with timestamps.
+- Allow editing of lyrics and to copy them for Poetical with timestamps.
 
 Version 4.5.24
 - Fixed a bug in splitting of long notes in organic multi-stage and made it slightly smarter.
