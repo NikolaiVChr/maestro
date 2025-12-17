@@ -22,7 +22,8 @@ public class LyricEditorPanel extends JPanel {
     private final LyricTableModel model;
     private int highlightedRow = -1;
     private static final Color HIGHLIGHT_COLOR = Themer.isDarkMode()?ColorTable.LYRICS_HIGHLIGHT_DARK.get():ColorTable.LYRICS_HIGHLIGHT_LIGHT.get();
-    public boolean modified = false;
+    private static final Color BACKGROUND_COLOR = new JTextArea().getBackground();
+    public boolean modified = false;// If lyrics have been modified since they were read from the midi source file.
     public AbcSong abcSong = null;
 
     public LyricEditorPanel() {
@@ -32,7 +33,7 @@ public class LyricEditorPanel extends JPanel {
         table = new LyricTable(model);
 
         JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.getViewport().setBackground(new JTextArea().getBackground()); // Match text area look
+        scrollPane.getViewport().setBackground(BACKGROUND_COLOR); // Match text area look
         add(scrollPane, BorderLayout.CENTER);
     }
 
@@ -108,7 +109,7 @@ public class LyricEditorPanel extends JPanel {
                     if (editingRow == highlightedRow) {
                         editorText.setBackground(HIGHLIGHT_COLOR);
                     } else {
-                        editorText.setBackground(new JTextArea().getBackground());
+                        editorText.setBackground(BACKGROUND_COLOR);
                     }
                 }
             }
@@ -335,7 +336,7 @@ public class LyricEditorPanel extends JPanel {
             if (row == highlightedRow) {
                 textArea.setBackground(HIGHLIGHT_COLOR);
             } else {
-                textArea.setBackground(new JTextArea().getBackground());
+                textArea.setBackground(BACKGROUND_COLOR);
             }
 
             return scrollPane;
