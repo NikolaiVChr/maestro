@@ -49,6 +49,7 @@ Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 - Before installing this, please remove old maestro from your windows manually.
     (search "Add or remove programs" in windows and remove "Maestro")
     This only needs to be done once, next versions will just update the previous version automatically again.
+- Allow editing of lyrics and to copy them to Poetical with timestamps.
 
 Version 4.5.24
 - Fixed a bug in splitting of long notes in organic multi-stage and made it slightly smarter.

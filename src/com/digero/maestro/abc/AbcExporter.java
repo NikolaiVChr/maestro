@@ -6229,6 +6229,12 @@ public class AbcExporter {
 		return metadata;
 	}
 
+    public void calcSongStartEndTicks() {
+        Pair<Long, Long> limits = getSongStartEndTick(false, true);
+        exportStartTick = limits.first;
+        exportEndTick = limits.second;
+    }
+
 	public long getExportStartTick() {
 		return exportStartTick;
 	}

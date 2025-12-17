@@ -14,6 +14,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.digero.common.midi.MidiUtils;
+import com.digero.common.util.LyricLine;
 import com.digero.common.util.Pair;
 import com.digero.common.midi.MidiConstants;
 import com.digero.maestro.midi.MidiText.TextFragment.Source;
@@ -479,7 +480,150 @@ public class MidiText {
 		str.append(cleanSyllable(decode(bytes.toByteArray())));
 		return str.toString();
 	}
-	
+
+	public List<LyricLine> getStructuredLyrics() {
+		List<LyricLine> lines = new ArrayList<>();
+		if (text.isEmpty()) {
+			return lines;
+		}
+
+		int mainTrack = calcWinningTrack();
+		ByteArrayOutputStream lineBytes = new ByteArrayOutputStream();
+		long currentLineTick = -1;
+
+		// Container for metadata to be added at the top
+		StringBuilder metaBlock = new StringBuilder();
+
+		Reaction prev = null;
+
+		String metaLine = "";
+		String metaLinePrev = "";
+		for (TextFragment fraction : text) {
+			// Collect metadata
+			if (isMetadata(fraction.reaction)) {
+                metaLine = switch (fraction.reaction) {
+                    case TITLE -> "Title: " + decode(fraction.sylineBytes);
+                    case LANGUAGE -> "Language: " + decode(fraction.sylineBytes);
+                    case INFO -> "Info: " + decode(fraction.sylineBytes);
+                    case META_LINE -> fraction.prefix + decode(fraction.sylineBytes);
+                    case RIGHTS -> "Rights: " + decode(fraction.sylineBytes);
+					default -> "";
+                };
+
+				if (!metaLine.isBlank() && !metaLinePrev.equals(metaLine)) {
+					//the prev check is for the same meta in different tracks
+					if (!metaBlock.isEmpty()) metaBlock.append("\n");
+					metaBlock.append(metaLine);
+				}
+				metaLinePrev = metaLine;
+				continue;
+			}
+
+			if (fraction.track != mainTrack) continue;
+
+			boolean isNewlineBefore = false;
+			boolean isNewlineAfter = false;
+			boolean processContent = false;
+
+			switch (fraction.reaction) {
+				case LINE:
+				case FIRST:
+				case SECOND:
+				case THIRD:
+				case FOURTH:
+					isNewlineBefore = true;
+					processContent = true;
+					break;
+				case SYLLABLE:
+					processContent = true;
+					break;
+				case NEWLINE_OLD:
+				case NEWLINE_NEW:
+					if (prev != Reaction.CLEAR_NEW && prev != Reaction.CLEAR_OLD) {
+						isNewlineBefore = true;
+					}
+					processContent = true;
+					break;
+				case NEWLINE_AFTER:
+					processContent = true;
+					isNewlineAfter = true;
+					break;
+				case CLEAR_NEW:
+				case CLEAR_OLD:
+					isNewlineBefore = true;
+					processContent = true;
+					break;
+				default:
+					break;
+			}
+
+			// flush previous line (Allow empty lines)
+			if (isNewlineBefore) {
+				// If we are flushing, and lineBytes is empty, it's an empty line.
+				// We use the currentLineTick if set, otherwise the fraction's tick (for blank lines).
+				long tick = (currentLineTick != -1) ? currentLineTick : fraction.tick;
+
+				String decodedLine = cleanSyllable(decode(lineBytes.toByteArray()));
+				lines.add(new LyricLine(tick, decodedLine.trim()));
+
+				lineBytes.reset();
+				currentLineTick = -1;
+			}
+
+			// Check effective length (ignoring null terminators)
+			int effectiveLength = 0;
+			if (fraction.sylineBytes != null) {
+				effectiveLength = fraction.sylineBytes.length;
+				while (effectiveLength > 0 && fraction.sylineBytes[effectiveLength - 1] == 0) {
+					effectiveLength--;
+				}
+			}
+
+			// Capture tick for new line
+			if (currentLineTick == -1 && processContent && effectiveLength > 0) {
+				currentLineTick = fraction.tick;
+			}
+
+			// Append content
+			if (processContent && effectiveLength > 0) {
+				writeTrimmed(lineBytes, fraction.sylineBytes);
+			}
+
+			// Flush immediately if newline is AFTER
+			if (isNewlineAfter) {
+				long tick = (currentLineTick != -1) ? currentLineTick : fraction.tick;
+				String decodedLine = cleanSyllable(decode(lineBytes.toByteArray()));
+				lines.add(new LyricLine(tick, decodedLine.trim()));
+
+				lineBytes.reset();
+				currentLineTick = -1;
+			}
+
+			prev = fraction.reaction;
+		}
+
+		// Flush remaining buffer
+		if (lineBytes.size() > 0) {
+			String decodedLine = cleanSyllable(decode(lineBytes.toByteArray()));
+			// Allow last line to be added even if effectively empty, to match file structure
+			lines.add(new LyricLine(Math.max(0, currentLineTick), decodedLine.trim()));
+		}
+
+		if (!metaBlock.isEmpty()) {
+			lines.addFirst(new LyricLine(0, metaBlock.toString()));
+		} else {
+			//make sure there always is a meta block in first slot.
+			lines.addFirst(new LyricLine(0, ""));
+		}
+
+		return lines;
+	}
+
+	private boolean isMetadata(Reaction r) {
+		return r == Reaction.TITLE || r == Reaction.RIGHTS || r == Reaction.LANGUAGE ||
+				r == Reaction.INFO || r == Reaction.META_LINE || r == Reaction.VERSION;
+	}
+
 	/**
 	 * Call me after decoding syllable/line
 	 *

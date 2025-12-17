@@ -1066,6 +1066,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 		        barIndicator.show(NoteGraph.this, e.getX(), e.getY());
 		        barIndicator.setVisible(true);
 			}
+			getRootPane().requestFocus();
 		}
 
 		@Override

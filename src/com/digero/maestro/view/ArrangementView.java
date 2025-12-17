@@ -1,21 +1,18 @@
 package com.digero.maestro.view;
 
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.FlowLayout;
-import java.awt.Insets;
-import java.awt.MouseInfo;
-import java.awt.Point;
-import java.awt.PointerInfo;
+import java.awt.*;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.InputEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.event.MouseWheelEvent;
 import java.text.ParseException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.logging.Logger;
 
 import javax.swing.*;
@@ -32,6 +29,7 @@ import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.util.ICompileConstants;
 import com.digero.common.util.IDiscardable;
 import com.digero.common.util.Listener;
+import com.digero.common.util.LyricLine;
 import com.digero.common.util.Util;
 import com.digero.common.view.ColorTable;
 import com.digero.common.view.InstrumentComboBox;
@@ -115,6 +113,8 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
     private final JTextArea noteContent = new JTextArea();
     private final JTextArea statsContent = new JTextArea();
     private final JTextArea lyricsContent = new JTextArea();
+	private final LyricEditorPanel lyricLinesContent = new LyricEditorPanel();
+	private boolean countUp = true;
     private boolean userEdit = true;
 
 	private boolean syncUpdate = false;
@@ -449,6 +449,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 
 		// For follow support
 		sequencer.addChangeListener(e -> {
+			lyricLinesContent.setTick(sequencer.getTickPosition());
 			if (!followCheckBox.isSelected()) {
 				return;
 			}
@@ -506,7 +507,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 
     private void createSidePanel() {
         sidePanel = new JTabbedPane(JTabbedPane.TOP);
-        sidePanel.setPreferredSize(new Dimension(225, 20000));
+        sidePanel.setPreferredSize(new Dimension(250, 20000));
         //sidePanel.setMinimumSize(new Dimension(225, 200));
 
         // lyricsPanel is the textfield with project lyrics
@@ -515,6 +516,58 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
         lyricsContent.setWrapStyleWord(true);
         lyricsContent.setTabSize(4);
         lyricsContent.setEditable(false);
+
+		JPanel lyricsTabContainer = new JPanel(new BorderLayout());
+		lyricsTabContainer.add(lyricLinesContent, BorderLayout.CENTER);
+		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
+
+		JButton copyButton = new JButton("Copy");
+		copyButton.setToolTipText("Copy lyrics to clipboard in Poetical friendly format");
+		copyButton.addActionListener(e -> {
+			if (abcPart == null) return;
+			String text = lyricLinesContent.getPoeticalLyrics(abcPart.getAbcSong().getQTM(), abcPart.getAbcSong().isOrganic(), abcPart, countUp);
+
+			if (text != null) {
+				StringSelection selection = new StringSelection(text);
+				Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
+			}
+		});
+
+		JButton revertButton = new JButton("Revert");
+		revertButton.setToolTipText("Reload lyrics from MIDI source (discards edits)");
+		revertButton.addActionListener(e -> {
+			if (abcPart != null) {
+				// Fetch original MIDI/project text
+				List<LyricLine> lines = abcPart.getSequenceInfo().getDataCache().getLyricLines();
+
+				int result = JOptionPane.showConfirmDialog(
+						SwingUtilities.getWindowAncestor(revertButton),
+						lines.isEmpty()
+								?"Source contains no lyrics, do you want to delete all lyrics?"
+								:"Are you sure you want to revert lyrics to MIDI source?",
+						"Delete and revert lyrics",
+						JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
+				if (result == JOptionPane.YES_OPTION) {
+					lyricLinesContent.setFromLyricLines(lines);
+					abcPart.getAbcSong().notifyLyricLinesModified();
+					lyricLinesContent.modified = false;
+				}
+			}
+		});
+
+		JCheckBox countDir = new JCheckBox("Up");
+		countDir.setToolTipText("Count up timestamps instead of down");
+		countDir.setSelected(countUp);
+		countDir.addActionListener(e -> {countUp = countDir.isSelected();});
+
+		buttonPanel.add(countDir);
+		buttonPanel.add(copyButton);
+		buttonPanel.add(revertButton);
+
+
+		// Add buttons to the bottom
+		lyricsTabContainer.add(buttonPanel, BorderLayout.SOUTH);
 
         // notePanel is the textfield with project notes
         notePanel = new JScrollPane(noteContent, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_NEVER);
@@ -547,7 +600,8 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
         statsContent.setTabSize(4);
         statsContent.setEditable(false);
 
-        sidePanel.addTab("Lyrics", lyricsPanel);
+        //sidePanel.addTab("Lyrics", lyricsPanel);
+		sidePanel.addTab("Lyrics", lyricsTabContainer);
         sidePanel.addTab("Notes", notePanel);
         sidePanel.addTab("Stats", statsPanel);
     }
@@ -626,6 +680,13 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 	public void addSettingsActionListener(ActionListener listener) {
 		numberSettingsButton.addActionListener(listener);
 		numberSettingsButton.setVisible(true);
+	}
+
+	@Override
+	public void addMouseListener(MouseListener ml) {
+		super.addMouseListener(ml);
+		controlPanel.addMouseListener(ml);
+		noteGraphPanel.addMouseListener(ml);
 	}
 
 	private final Listener<AbcPartEvent> abcPartListener = e -> {
@@ -728,6 +789,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
             panSlider.setEnabled(false);
 			clearTrackListPanel(true);
 		} else {
+			lyricLinesContent.abcSong = abcPart.getAbcSong();
 			numberSpinner.setEnabled(true);
             numberLockedCheckBox.setEnabled(true);
 			nameTextField.setEnabled(true);
@@ -978,6 +1040,24 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
         lyricsContent.setText(lyrics);
         lyricsContent.setCaretPosition(0);
     }
+
+	public void setLyricLines(List<LyricLine> lyrics, boolean modified) {
+		lyricLinesContent.setFromLyricLines(lyrics);
+		lyricLinesContent.modified = modified;
+		//lyricLinesContent.setCaretPosition(0);
+	}
+
+	public void stopEditingLyrics() {
+		lyricLinesContent.stopEditing();
+	}
+
+	public boolean isLyricsModified() {
+		return lyricLinesContent.modified;
+	}
+
+	public List<LyricLine> getLyricLines() {
+		return lyricLinesContent.getLyricLines();
+	}
 
     public void setStats(String stats) {
         statsContent.setText(stats);
