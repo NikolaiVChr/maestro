@@ -41,7 +41,7 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
-Version 4.5.25
+Version 4.6.0
 - Fix that would not run on Linux.
 - The MSI now installs to per-user "AppData/Local" instead of global "Program Files".
     This also means it no longer asks for admin privilege when it install and uninstall.
