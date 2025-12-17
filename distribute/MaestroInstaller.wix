@@ -12,8 +12,12 @@
     <?define AbcToolsDescription=ABC tools to merge abc files or auto export abc?>
     <?define AbcToolsAppUserModelId=Aifel.AbcTools?>
     <?define ApplicationFolderName=Maestro?>
-    <Product Id="*" UpgradeCode="{6AA5E0BF-7CA7-4D11-9687-28751293C91A}" Name="Maestro and ABC Player" Manufacturer="DigeroAifelElamond" Version="$(var.MaestroVersion)" Language="1033">
-        <Package Id="*" Description="!(loc.Package_Description)" Languages="1033" Compressed="yes" SummaryCodepage="1252" InstallScope="perUser" InstallPrivileges="limited"/>
+    <Product Id="*" UpgradeCode="{6AA5E0BF-7CA7-4D11-9687-28751293C91A}"
+            Name="Maestro and ABC Player" Manufacturer="Digero Aifel Elamond"
+            Version="$(var.MaestroVersion)" Language="1033">
+        <Package Id="*" Description="!(loc.Package_Description)" Languages="1033" Compressed="yes"
+                 SummaryCodepage="1252" InstallScope="perUser" InstallPrivileges="limited"
+                 Comments="Maestro and ABC Player are Java based apps to edit Lotro ABC song files."/>
         <Media Id="1" Cabinet="Maestro.cab" EmbedCab="yes" />
         <!-- Expose defines as properties for the MaestroInstallerStrings.wxl -->
         <Property Id="MaestroAppName">$(var.MaestroAppName)</Property>
@@ -73,6 +77,7 @@
         <Property Id="ARPPRODUCTICON" Value="maestro.ico" />
         <!-- find where last Maestro was installed -->
         <Property Id="APPLICATIONFOLDER">
+            <!-- Find where prev installed maestro were installed, and set the APPLICATIONFOLDER to that -->
             <RegistrySearch Id="FindInstallLocation"
                             Root="HKCU"
                             Key="Software\[Manufacturer]\Maestro"
