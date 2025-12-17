@@ -1,6 +1,7 @@
 package com.digero.maestro.view;
 
 import com.digero.common.util.LyricLine;
+import com.digero.common.util.Themer;
 import com.digero.common.util.Util;
 import com.digero.common.view.ColorTable;
 import com.digero.maestro.abc.AbcPart;
@@ -20,7 +21,7 @@ public class LyricEditorPanel extends JPanel {
     private final LyricTable table;
     private final LyricTableModel model;
     private int highlightedRow = -1;
-    private static final Color HIGHLIGHT_COLOR = ColorTable.PANEL_HIGHLIGHT.get();
+    private static final Color HIGHLIGHT_COLOR = Themer.isDarkMode()?ColorTable.LYRICS_HIGHLIGHT_DARK.get():ColorTable.LYRICS_HIGHLIGHT_LIGHT.get();
     public boolean modified = false;
     public AbcSong abcSong = null;
 

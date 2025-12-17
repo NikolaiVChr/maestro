@@ -41,8 +41,9 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
-Version 4.6.0
+Version 4.6.1
 - Fix that would not run on Linux.
+- When loading abc file into maestro also set the user pan on a new project.
 - The MSI now installs to per-user "AppData/Local" instead of global "Program Files".
     This also means it no longer need admin privilege when it install and uninstall,
     and therefore is also not able to be installed in "C:\Program Files", so don't attempt that.

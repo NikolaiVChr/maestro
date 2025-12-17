@@ -95,6 +95,11 @@ public enum ColorTable
     /** Not used */
 	PANEL_LINK(Color.getHSBColor(0.60f, 0.70f, 1.00f)),
 
+	/** currently playing lyrics highlight color, light mode */
+	LYRICS_HIGHLIGHT_LIGHT(new Color(0xFFD83C)),
+	/** currently playing lyrics highlight color, dark mode */
+	LYRICS_HIGHLIGHT_DARK (new Color(100,170,100)),
+
     /** Not used */
     ABC_BORDER_SELECTED_ENABLED(PANEL_TEXT_ENABLED),
     /** Not used */
