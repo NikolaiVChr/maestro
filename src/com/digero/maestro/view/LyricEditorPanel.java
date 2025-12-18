@@ -9,12 +9,18 @@ import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.abc.QuantizedTimingInfo;
 import com.digero.maestro.midi.MidiText;
 import javax.swing.*;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 public class LyricEditorPanel extends JPanel {
@@ -25,6 +31,7 @@ public class LyricEditorPanel extends JPanel {
     private static final Color BACKGROUND_COLOR = new JTextArea().getBackground();
     public boolean modified = false;// If lyrics have been modified since they were read from the midi source file.
     public AbcSong abcSong = null;
+    private final JScrollPane scrollPane;
 
     public LyricEditorPanel() {
         setLayout(new BorderLayout());
@@ -32,7 +39,7 @@ public class LyricEditorPanel extends JPanel {
         model = new LyricTableModel();
         table = new LyricTable(model);
 
-        JScrollPane scrollPane = new JScrollPane(table);
+        scrollPane = new JScrollPane(table);
         scrollPane.getViewport().setBackground(BACKGROUND_COLOR); // Match text area look
         add(scrollPane, BorderLayout.CENTER);
     }
@@ -117,9 +124,29 @@ public class LyricEditorPanel extends JPanel {
             // Auto-scroll logic: Only scroll if the user isn't actively interacting
             // (Standard behavior: always scroll to keep playback in view)
             if (highlightedRow != -1 && !table.isEditing()) {
-                table.scrollRectToVisible(table.getCellRect(highlightedRow, 0, true));
+                //keep it in view
+                //table.scrollRectToVisible(table.getCellRect(highlightedRow, 0, true));
+
+                //keep it in center
+                scrollToCenter(table, highlightedRow, 1);
             }
         }
+    }
+
+    private void scrollToCenter(JTable table, int rowIndex, int colIndex) {
+        if (!(table.getParent() instanceof JViewport)) return;
+
+        JViewport viewport = (JViewport) table.getParent();
+        Rectangle rect = table.getCellRect(rowIndex, colIndex, true);
+        Rectangle viewRect = viewport.getViewRect();
+
+        // Calculate y to center the row
+        int y = rect.y - (viewRect.height / 2) + (rect.height / 2);
+
+        // Clamp to valid range
+        y = Math.max(0, Math.min(y, table.getHeight() - viewRect.height));
+
+        viewport.setViewPosition(new Point(viewRect.x, y));
     }
 
     public void setFromLyricLines(List<LyricLine> lines) {
@@ -138,7 +165,8 @@ public class LyricEditorPanel extends JPanel {
         long tickPrev = Long.MIN_VALUE;
         long songStartMicros = part.getAbcSong().getSongStartMicrosABC();
         for (LyricLine line : model.getLines()) {
-            if (first) {
+            if (first && !modified) {
+                // We know it is the meta-info block if it's the first and lyrics not modified.
                 if (!line.text().isBlank()) sb.append("% ").append(line.text().replace("\n","\n%")).append('\n');
             } else {
                 long tick = line.tick();
@@ -191,16 +219,180 @@ public class LyricEditorPanel extends JPanel {
             getColumnModel().getColumn(0).setMaxWidth(0);
             getColumnModel().getColumn(0).setWidth(0);
 
-            // Set Custom Renderer and Editor for the text column
-            getColumnModel().getColumn(1).setCellRenderer(new TextAreaRenderer());
-            getColumnModel().getColumn(1).setCellEditor(new TextAreaEditor());
-
             // Recalculate heights when data changes
             model.addTableModelListener(e -> SwingUtilities.invokeLater(this::updateRowHeights));
 
             // Configure the dummy used for height calculations
             dummyEditor.setLineWrap(true);
             dummyEditor.setWrapStyleWord(true);
+
+            // --- Context Menu ---
+            JPopupMenu popup = new JPopupMenu();
+
+            // Listener to stop editing when menu opens
+            popup.addPopupMenuListener(new PopupMenuListener() {
+                @Override
+                public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+                    // Commit any active edits immediately
+                    stopEditing();
+
+                    // Select the row under the mouse pointer
+                    Point p = getMousePosition();
+                    if (p != null) {
+                        int row = rowAtPoint(p);
+                        if (row != -1 && !isRowSelected(row)) {
+                            setRowSelectionInterval(row, row);
+                        }
+                    }
+                }
+
+                @Override
+                public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {}
+
+                @Override
+                public void popupMenuCanceled(PopupMenuEvent e) {}
+            });
+
+            JMenuItem insertItem = new JMenuItem("Insert Line...");
+            insertItem.addActionListener(e -> showInsertDialog());
+            popup.add(insertItem);
+
+            JMenuItem deleteItem = new JMenuItem("Delete Line");
+            deleteItem.addActionListener(e -> deleteSelectedLine());
+            popup.add(deleteItem);
+
+            JMenuItem changeItem = new JMenuItem("Change Line Timing");
+            changeItem.addActionListener(e -> changeSelectedLine());
+            popup.add(changeItem);
+
+            setComponentPopupMenu(popup);
+
+            // Set Custom Renderer and Editor for the text column
+            getColumnModel().getColumn(1).setCellRenderer(new TextAreaRenderer());
+            getColumnModel().getColumn(1).setCellEditor(new TextAreaEditor(this, popup));
+        }
+
+        private void showInsertDialog() {
+            if (abcSong == null) return;
+
+            // Use the currently selected row's bar as default, or 0.0
+            float defaultBar = 0.0f;
+            int selectedRow = getSelectedRow();
+            if (selectedRow >= 0) {
+                long tick = (Long) getValueAt(selectedRow, 0);
+                defaultBar = abcSong.getSequenceInfo().getDataCache().tickToBarNumberFloat(tick);
+            }
+
+            // Create UI inputs
+            JTextField barField = new JTextField(String.valueOf(defaultBar).replace(",","."));
+
+            barField.addMouseListener(new MouseAdapter() {
+                public void mouseClicked(MouseEvent e) {
+                    if (e.getButton() == MouseEvent.BUTTON3) {
+                        Window window = SwingUtilities.getWindowAncestor(LyricEditorPanel.this);
+                        if (window instanceof ProjectFrame projectFrame) {
+                            barField.setText(String.format(Locale.US, "%.3f", projectFrame.getSourcePlayHeadBar()));
+                        }
+                    }
+                }
+            });
+
+            JTextArea textField = new JTextArea(3, 20);
+            textField.setLineWrap(true);
+            textField.setWrapStyleWord(true);
+            JScrollPane textScroll = new JScrollPane(textField);
+
+            JPanel panel = new JPanel(new GridBagLayout());
+            GridBagConstraints c = new GridBagConstraints();
+            c.insets = new Insets(5, 5, 5, 5);
+            c.fill = GridBagConstraints.HORIZONTAL;
+
+            c.gridx = 0; c.gridy = 0;
+            panel.add(new JLabel("Bar Number:"), c);
+
+            c.gridx = 1; c.weightx = 1.0;
+            panel.add(barField, c);
+
+            c.gridx = 0; c.gridy = 1; c.weightx = 0.0; c.anchor = GridBagConstraints.NORTHWEST;
+            panel.add(new JLabel("Text:"), c);
+
+            c.gridx = 1; c.weightx = 1.0; c.weighty = 1.0; c.fill = GridBagConstraints.BOTH;
+            panel.add(textScroll, c);
+
+            int result = JOptionPane.showConfirmDialog(scrollPane, panel, "Insert New Lyric Line", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+
+            if (result == JOptionPane.OK_OPTION) {
+                try {
+                    float bar = Float.parseFloat(barField.getText().replace(",","."));
+                    String text = textField.getText().trim();
+                    if (!text.isEmpty()) {
+                        long tick = abcSong.getSequenceInfo().getDataCache().barFloatToTick(bar);
+                        model.addLine(new LyricLine(tick, text));
+                    }
+                } catch (NumberFormatException ex) {
+                    JOptionPane.showMessageDialog(scrollPane, "Invalid bar number.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }
+
+        private void changeSelectedLine() {
+            int row = getSelectedRow();
+            if (row >= 0 && abcSong != null) {
+                // Get current data
+                long currentTick = (Long) getValueAt(row, 0);
+                float currentBar = abcSong.getSequenceInfo().getDataCache().tickToBarNumberFloat(currentTick);
+
+                // Create the text field manually so we can add listeners
+                JTextField barField = new JTextField(String.valueOf(currentBar).replace(",","."));
+
+                barField.addMouseListener(new MouseAdapter() {
+                    public void mouseClicked(MouseEvent e) {
+                        if (e.getButton() == MouseEvent.BUTTON3) {
+                            Window window = SwingUtilities.getWindowAncestor(LyricEditorPanel.this);
+                            if (window instanceof ProjectFrame projectFrame) {
+                                barField.setText(String.format(Locale.US, "%.3f", projectFrame.getSourcePlayHeadBar()));
+                            }
+                        }
+                    }
+                });
+
+                int result = JOptionPane.showConfirmDialog(scrollPane,
+                        new Object[] { "Enter new bar number for this lyrics line:", barField },
+                        "Move Line",
+                        JOptionPane.OK_CANCEL_OPTION,
+                        JOptionPane.PLAIN_MESSAGE);
+
+                if (result == JOptionPane.OK_OPTION) {
+                    try {
+                        float newBar = Float.parseFloat(barField.getText().replace(",","."));
+                        long newTick = abcSong.getSequenceInfo().getDataCache().barFloatToTick(newBar);
+                        model.moveLine(row, newTick);
+                        restoreSelection(newTick);
+                    } catch (NumberFormatException ex) {
+                        JOptionPane.showMessageDialog(scrollPane, "Invalid bar number format.", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            }
+        }
+
+        private void restoreSelection(long targetTick) {
+            for (int i = 0; i < getRowCount(); i++) {
+                if ((long) getValueAt(i, 0) == targetTick) {
+                    setRowSelectionInterval(i, i);
+                    scrollRectToVisible(getCellRect(i, 0, true));
+                    break;
+                }
+            }
+        }
+
+        private void deleteSelectedLine() {
+            int row = getSelectedRow();
+            if (row >= 0) {
+                int res = JOptionPane.showConfirmDialog(scrollPane, "Delete selected line?", "Confirm Delete", JOptionPane.YES_NO_OPTION);
+                if (res == JOptionPane.YES_OPTION) {
+                    model.removeLine(row);
+                }
+            }
         }
 
         @Override
@@ -243,28 +435,6 @@ public class LyricEditorPanel extends JPanel {
                 }
             }
         }
-
-        private void updateRowHeightsOld() {
-            if (getColumnModel().getColumnCount() < 2) return;
-
-            int width = getColumnModel().getColumn(1).getWidth();
-            if (width <= 0) return;
-
-            dummyEditor.setFont(getFont());
-            dummyEditor.setSize(width, Short.MAX_VALUE);
-
-            for (int row = 0; row < getRowCount(); row++) {
-                String text = (String) getValueAt(row, 1);
-                dummyEditor.setText(text);
-
-                int prefHeight = dummyEditor.getPreferredSize().height;
-                int targetHeight = Math.max(prefHeight + 4, 16); // +4 padding, min 16px
-
-                if (getRowHeight(row) != targetHeight) {
-                    setRowHeight(row, targetHeight);
-                }
-            }
-        }
     }
 
     // Renders the cell as a wrapping JTextArea
@@ -279,17 +449,17 @@ public class LyricEditorPanel extends JPanel {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value,
                                                        boolean isSelected, boolean hasFocus, int row, int column) {
-            // Priority 1: Selection (user clicked)
+            // Prio 1: Selection (user clicked)
             if (isSelected) {
                 setForeground(table.getSelectionForeground());
                 setBackground(table.getSelectionBackground());
             }
-            // Priority 2: Highlight (playback position)
+            // Prio 2: Highlight (playback position)
             else if (row == highlightedRow) {
                 setForeground(table.getForeground());
                 setBackground(HIGHLIGHT_COLOR);
             }
-            // Priority 3: Default
+            // Prio 3: Default
             else {
                 setForeground(table.getForeground());
                 setBackground(table.getBackground());
@@ -307,7 +477,7 @@ public class LyricEditorPanel extends JPanel {
         private final JTextArea textArea;
         private final JScrollPane scrollPane;
 
-        public TextAreaEditor() {
+        public TextAreaEditor(JTable table, JPopupMenu popup) {
             textArea = new JTextArea();
             textArea.setLineWrap(true);
             textArea.setWrapStyleWord(true);
@@ -318,6 +488,43 @@ public class LyricEditorPanel extends JPanel {
             scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
             scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
             scrollPane.setBorder(BorderFactory.createEmptyBorder());
+
+            // Catch right-clicks on the active editor, stop editing,
+            // and forward the popup to the table.
+            MouseAdapter rightClickForwarder = new MouseAdapter() {
+                @Override
+                public void mousePressed(MouseEvent e) {
+                    if (e.isPopupTrigger()) doPopup(e);
+                }
+                @Override
+                public void mouseReleased(MouseEvent e) {
+                    if (e.isPopupTrigger()) doPopup(e);
+                }
+
+                private void doPopup(MouseEvent e) {
+                    // Calculate where the click happened relative to the TABLE
+                    Point editorPt = e.getPoint();
+                    Point tablePt = SwingUtilities.convertPoint(e.getComponent(), editorPt, table);
+
+                    // Stop editing immediately (this removes the editor)
+                    stopEditing();
+                    // Note: 'stopEditing()' calls fireEditingStopped, which updates the model.
+
+                    // Ensure the row under the mouse is selected
+                    // (The popup menu listener would do this, but the click event
+                    // might not bubble up perfectly after component removal, so we force it)
+                    int row = table.rowAtPoint(tablePt);
+                    if (row != -1 && !table.isRowSelected(row)) {
+                        table.setRowSelectionInterval(row, row);
+                    }
+
+                    // Show the Table's popup at the correct location
+                    popup.show(table, tablePt.x, tablePt.y);
+                }
+            };
+
+            textArea.addMouseListener(rightClickForwarder);
+            scrollPane.addMouseListener(rightClickForwarder); // Catch clicks on empty space/scrollbar
         }
 
         @Override
@@ -355,6 +562,45 @@ public class LyricEditorPanel extends JPanel {
 
         public List<LyricLine> getLines() {
             return lines;
+        }
+
+        public void addLine(LyricLine line) {
+            lines.add(line);
+            // Sort by tick to ensure the correct playback order
+            lines.sort(Comparator.comparingLong(LyricLine::tick));
+            fireTableDataChanged();
+            pushChangesToSong();
+        }
+
+        public void moveLine(int row, long newTick) {
+            if (row >= 0 && row < lines.size()) {
+                LyricLine oldLine = lines.get(row);
+
+                if (oldLine.tick() != newTick) {
+                    // Create new record with updated tick but same text
+                    LyricLine newLine = new LyricLine(newTick, oldLine.text());
+
+                    lines.set(row, newLine);
+
+                    // Re-sort to maintain chronological order
+                    lines.sort(Comparator.comparingLong(LyricLine::tick));
+
+                    fireTableDataChanged();
+                    pushChangesToSong();
+                }
+            }
+        }
+
+        public void removeLine(int row) {
+            if (row >= 0 && row < lines.size()) {
+                lines.remove(row);
+                fireTableDataChanged();
+                pushChangesToSong();
+            }
+        }
+
+        private void pushChangesToSong() {
+            modified = true;
         }
 
         public String getTextAt(int row) {

@@ -557,7 +557,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		});
 
 		JCheckBox countDir = new JCheckBox("Up");
-		countDir.setToolTipText("Count up timestamps instead of down");
+		countDir.setToolTipText("Count-up timestamps instead of count-down");
 		countDir.setSelected(countUp);
 		countDir.addActionListener(e -> {countUp = countDir.isSelected();});
 
@@ -569,7 +569,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		// Add buttons to the bottom
 		lyricsTabContainer.add(buttonPanel, BorderLayout.SOUTH);
 
-        // notePanel is the textfield with project notes
+        // notePanel is the text field with project notes
         notePanel = new JScrollPane(noteContent, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_NEVER);
         noteContent.setLineWrap(true);
         noteContent.setWrapStyleWord(true);
