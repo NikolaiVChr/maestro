@@ -599,6 +599,9 @@ public class LyricEditorPanel extends JPanel {
 
         private void pushChangesToSong() {
             modified = true;
+
+            // notify abcSong so the project can get the modified flag set:
+            if (abcSong != null) abcSong.notifyLyricLinesModified();
         }
 
         public String getTextAt(int row) {
@@ -632,11 +635,10 @@ public class LyricEditorPanel extends JPanel {
                 LyricLine old = lines.get(rowIndex);
                 String newText = (String) aValue;
                 if (!old.text().equals(newText)) {
-                    modified = true;
-                    if (abcSong != null) abcSong.notifyLyricLinesModified();
                     // Create new record with same tick, updated text
                     lines.set(rowIndex, new LyricLine(old.tick(), newText));
                     fireTableCellUpdated(rowIndex, columnIndex);
+                    pushChangesToSong();
                 }
             }
         }
