@@ -632,20 +632,30 @@ public class MidiText {
 		str = str.replace("STARTAKKORD", "");
 		str = str.replace("|C:|", "");//chorus start
 		str = str.replace("|:C|", "");//chorus end (normally in later syllable than start)
+
+		// Split by whitespace to handle words individually.
+		// We use a regex lookaround to keep the delimiters so we can reconstruct the spacing perfectly.
+		// ((?<=\s)|(?=\s)) splits *around* whitespace but keeps the whitespace as tokens.
+		String[] tokens = str.split("((?<=\\s)|(?=\\s))");
+
 		StringBuilder sb = new StringBuilder();
-		// split on zero-width boundaries so we get the whole string even if no spaces
-		for (String token : str.split("(?<=\\s)|(?=\\s)")) {
-		    if (token.contains("://")) {
-		        // looks like a URL or URI scheme: leave it alone
-		        sb.append(token);
-		    } else {
-		    	//newline command in middle of text (modern kar)
-		        // replace all other slashes with newlines
-		        sb.append(token.replace("/", "\n"));
-		    }
+		for (String token : tokens) {
+			// If the token is just whitespace, preserve it
+			if (token.isBlank()) {
+				sb.append(token);
+				continue;
+			}
+
+			// Check if this specific word looks like a URL
+			if (token.contains("://")) {
+				// It is a URL, append as is
+				sb.append(token);
+			} else {
+				// It is normal text, replace all slashes with newlines
+				sb.append(token.replace("/", "\n"));
+			}
 		}
-		str = sb.toString();
-		return str;
+		return sb.toString();
 	}
 	
 	private static void writeTrimmed(ByteArrayOutputStream out, byte[] data) {
