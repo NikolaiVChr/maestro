@@ -261,7 +261,7 @@ public class LyricEditorPanel extends JPanel {
             deleteItem.addActionListener(e -> deleteSelectedLine());
             popup.add(deleteItem);
 
-            JMenuItem changeItem = new JMenuItem("Change Line Timing");
+            JMenuItem changeItem = new JMenuItem("Change Line Timing...");
             changeItem.addActionListener(e -> changeSelectedLine());
             popup.add(changeItem);
 
@@ -325,10 +325,8 @@ public class LyricEditorPanel extends JPanel {
                 try {
                     float bar = Float.parseFloat(barField.getText().replace(",","."));
                     String text = textField.getText().trim();
-                    if (!text.isEmpty()) {
-                        long tick = abcSong.getSequenceInfo().getDataCache().barFloatToTick(bar);
-                        model.addLine(new LyricLine(tick, text));
-                    }
+                    long tick = abcSong.getSequenceInfo().getDataCache().barFloatToTick(bar);
+                    model.addLine(new LyricLine(tick, text));
                 } catch (NumberFormatException ex) {
                     JOptionPane.showMessageDialog(scrollPane, "Invalid bar number.", "Error", JOptionPane.ERROR_MESSAGE);
                 }
