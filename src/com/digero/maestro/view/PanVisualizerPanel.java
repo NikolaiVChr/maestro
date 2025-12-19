@@ -24,18 +24,6 @@ public class PanVisualizerPanel extends JPanel {
     private static final int STACK_STEP = PART_DIAM + 2; // How much to move out per overlap
     private static final int PAN_OVERLAP_DISTANCE = 8;// how close their pan should be before its considered overlap
 
-    // Color Palette
-    private static final Color COL_ACTIVE = ColorTable.CONTROLS_EDITED.get();     // Light Green (Manual)
-    private static final Color COL_USER   = ColorTable.PAN_USER.get();       // Bright Yellow (Gold)
-    private static final Color COL_AUTO   = ColorTable.PAN_AUTO.get(); // Dull Grey (Auto)
-    private static final Color COL_TEXT   = ColorTable.PAN_TEXT.get();
-    private static final Color COL_TEXT_DIGITS = Themer.isDarkMode()?ColorTable.PAN_TEXT_ON_DARK.get():ColorTable.PAN_TEXT_ON_LIGHT.get();
-    private static final Color COL_TEXT_ACTIVE = ColorTable.PAN_TEXT_ACTIVE.get();
-    private static final Color COL_STEM   = ColorTable.PAN_STEM.get(); // Connector line color
-    private static final Color COL_ARC   = ColorTable.PAN_ARC.get();
-    private static final Color COL_SHADOW   = ColorTable.PAN_SHADOW.get();
-    private static final Color COL_BORDER   = ColorTable.PAN_BORDER.get();
-
     // State
     private Integer activePan = null;
     private String activeLabel = "-1";
@@ -71,7 +59,7 @@ public class PanVisualizerPanel extends JPanel {
         int cy = getHeight() - BOTTOM_BORDER;
 
         // 1. Draw Arc Track
-        g2.setColor(COL_ARC);
+        g2.setColor(ColorTable.PAN_ARC.get());
         g2.setStroke(new BasicStroke(BASE_STROKE_WIDTH, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
         g2.drawArc(cx - BASE_RADIUS, cy - BASE_RADIUS, BASE_RADIUS * 2, BASE_RADIUS * 2, (180-BASE_TOTAL_ANGLE)/2, BASE_TOTAL_ANGLE);
 
@@ -114,8 +102,8 @@ public class PanVisualizerPanel extends JPanel {
 
         // 5. Draw Background Parts
         for (DrawCmd cmd : drawList) {
-            Color c = cmd.part.userPanned() ? COL_USER : COL_AUTO;
-            if (cmd.part.label().equals(activeLabel) && activePan == null) c = COL_AUTO;
+            Color c = cmd.part.userPanned() ? ColorTable.PAN_USER.get() : ColorTable.PAN_AUTO.get();
+            if (cmd.part.label().equals(activeLabel) && activePan == null) c = ColorTable.PAN_AUTO.get();
             int radius = BASE_RADIUS + (cmd.stackLevel * STACK_STEP);
 
             drawPartCircle(g2, cx, cy, cmd.part.pan(), cmd.part.label(), c, false, radius);
@@ -123,11 +111,11 @@ public class PanVisualizerPanel extends JPanel {
 
         // 6. Draw Active Part (Always on top, always on the main track)
         if (activePan != null) {
-            drawPartCircle(g2, cx, cy, activePan, activeLabel, COL_ACTIVE, true, BASE_RADIUS);
+            drawPartCircle(g2, cx, cy, activePan, activeLabel, ColorTable.PAN_ACTIVE.get(), true, BASE_RADIUS);
         }
 
         // 7. Draw Pan Position
-        g2.setColor(COL_TEXT_DIGITS);
+        g2.setColor(Themer.isDarkMode()?ColorTable.PAN_TEXT_ON_DARK.get():ColorTable.PAN_TEXT_ON_LIGHT.get());
         g2.setFont(new Font("MonoSpaced", Font.BOLD, 14));
         String panText = (activePan == null) ? "Auto" : String.format("%+d", activePan - PanGenerator.CENTER);
         FontMetrics fm = g2.getFontMetrics();
@@ -148,7 +136,7 @@ public class PanVisualizerPanel extends JPanel {
             int baseX = cx + (int) (Math.cos(angleRad) * BASE_RADIUS);
             int baseY = cy - (int) (Math.sin(angleRad) * BASE_RADIUS);
 
-            g2.setColor(COL_STEM);
+            g2.setColor(ColorTable.PAN_STEM.get());
             g2.setStroke(new BasicStroke(1f));
             g2.drawLine(baseX, baseY, x, y);
         }
@@ -158,7 +146,7 @@ public class PanVisualizerPanel extends JPanel {
 
         // Draw Shadow/Glow if active
         if (isActive) {
-            g2.setColor(COL_SHADOW);
+            g2.setColor(ColorTable.PAN_SHADOW.get());
             g2.fillOval(x - offset + 3, y - offset + 3, size, size);
         }
 
@@ -168,13 +156,13 @@ public class PanVisualizerPanel extends JPanel {
 
         // Draw Border
         if (!isActive) {
-            g2.setColor(COL_BORDER);
+            g2.setColor(ColorTable.PAN_BORDER.get());
             g2.setStroke(new BasicStroke(1f));
             g2.drawOval(x - offset, y - offset, size, size);
         }
 
         // Draw Text
-        g2.setColor(isActive ? COL_TEXT_ACTIVE : COL_TEXT);
+        g2.setColor(isActive ? ColorTable.PAN_TEXT_ACTIVE.get() : ColorTable.PAN_TEXT.get());
         g2.setFont(new Font("SansSerif", Font.BOLD, isActive ? 11 : 10));
         FontMetrics fm = g2.getFontMetrics();
         int tx = x - (fm.stringWidth(label) / 2);

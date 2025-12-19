@@ -27,7 +27,6 @@ public class LyricEditorPanel extends JPanel {
     private final LyricTable table;
     private final LyricTableModel model;
     private int highlightedRow = -1;
-    private static final Color HIGHLIGHT_COLOR = Themer.isDarkMode()?ColorTable.LYRICS_HIGHLIGHT_DARK.get():ColorTable.LYRICS_HIGHLIGHT_LIGHT.get();
     private static final Color BACKGROUND_COLOR = new JTextArea().getBackground();
     public boolean modified = false;// If lyrics have been modified since they were read from the midi source file.
     public AbcSong abcSong = null;
@@ -114,7 +113,7 @@ public class LyricEditorPanel extends JPanel {
                     // Extract the JTextArea from the ScrollPane wrapper
                     JTextArea editorText = (JTextArea) ((JScrollPane) editorComp).getViewport().getView();
                     if (editingRow == highlightedRow) {
-                        editorText.setBackground(HIGHLIGHT_COLOR);
+                        editorText.setBackground(Themer.isDarkMode()?ColorTable.LYRICS_HIGHLIGHT_DARK.get():ColorTable.LYRICS_HIGHLIGHT_LIGHT.get());
                     } else {
                         editorText.setBackground(BACKGROUND_COLOR);
                     }
@@ -455,7 +454,7 @@ public class LyricEditorPanel extends JPanel {
             // Prio 2: Highlight (playback position)
             else if (row == highlightedRow) {
                 setForeground(table.getForeground());
-                setBackground(HIGHLIGHT_COLOR);
+                setBackground(Themer.isDarkMode()?ColorTable.LYRICS_HIGHLIGHT_DARK.get():ColorTable.LYRICS_HIGHLIGHT_LIGHT.get());
             }
             // Prio 3: Default
             else {
@@ -539,7 +538,7 @@ public class LyricEditorPanel extends JPanel {
 
             // Apply background color logic to the editor as well
             if (row == highlightedRow) {
-                textArea.setBackground(HIGHLIGHT_COLOR);
+                textArea.setBackground(Themer.isDarkMode()?ColorTable.LYRICS_HIGHLIGHT_DARK.get():ColorTable.LYRICS_HIGHLIGHT_LIGHT.get());
             } else {
                 textArea.setBackground(BACKGROUND_COLOR);
             }
