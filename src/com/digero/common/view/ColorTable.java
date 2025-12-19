@@ -75,7 +75,7 @@ public enum ColorTable {
 
     /**  */
 	GRAPH_BACKGROUND_ENABLED(Color.BLACK,
-			"Note graph background"),
+			"Note graph background when selected by current part"),
     /**  */
 	GRAPH_BACKGROUND_SOLO(new Color(0x181818),
 			"Note graph background soloed"),
@@ -85,9 +85,8 @@ public enum ColorTable {
     /**  */
 	GRAPH_BACKGROUND_OFF(new Color(0x222222),
 			"Note graph background when no abc part has it selected"),
-
 	/** Measure on both sides section-edited */
-	GRAPH_EDITED(new Color(0,32,0),
+	GRAPH_BACKGROUND_EDITED(new Color(0,32,0),
 			"Section edited background"),
 	/** Section-edited */
 	GRAPH_BAR_LINE_EDITED(new Color(30,75,30),
@@ -143,12 +142,6 @@ public enum ColorTable {
 	PANEL_LINK(Color.getHSBColor(0.60f, 0.70f, 1.00f),
 			"Not used"),
 
-	/**  */
-	LYRICS_HIGHLIGHT_LIGHT(new Color(0xFFD83C),
-			"currently playing lyrics highlight color, light mode"),
-	/**  */
-	LYRICS_HIGHLIGHT_DARK (new Color(100,170,100),
-			"currently playing lyrics highlight color, dark mode"),
 
     /** Not used */
     ABC_BORDER_SELECTED_ENABLED(PANEL_TEXT_ENABLED,
@@ -173,13 +166,14 @@ public enum ColorTable {
     CONTROLS_EDITED(new Color(0.2f, 0.8f, 0.2f),
 			"Tune/section/part/pan editors edited text on buttons/slider"),
 
+
 	PARTS_LIST_DND_LINE(Color.LIGHT_GRAY,
 			"Parts list drag'n'drop divider line"),
-
 	PARTS_LIST_MUTE(Color.decode("#ff7777"),
 			"Parts list mute"),
 	PARTS_LIST_SOLO(Color.decode("#7e7eff"),
 			"Parts list solo"),
+
 
 	PAN_LISTENER(Color.LIGHT_GRAY,
 			"Pan listener head"),
@@ -206,8 +200,6 @@ public enum ColorTable {
     PAN_BORDER(new Color(0, 0, 0, 50),
 			"Current pan disc border"), //
 
-
-
     /** Standard poly color */
 	NOTE_POLYPHONY         (new Color(100,170,100),
 			"Standard poly color"),
@@ -229,6 +221,13 @@ public enum ColorTable {
 			"Dissonance very high"),
 	DISSONANCE_ON      (new Color(0xF2F2F2),
 			"Dissonance being played"),
+
+	/**  */
+	LYRICS_HIGHLIGHT_LIGHT(new Color(0xFFD83C),
+			"currently playing lyrics highlight color, light mode"),
+	/**  */
+	LYRICS_HIGHLIGHT_DARK (new Color(100,170,100),
+			"currently playing lyrics highlight color, dark mode"),
 	;
 
 	//NOTE_PRUNED (new Color(1f,1f,0f));

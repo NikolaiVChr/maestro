@@ -623,7 +623,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 						double w = Math.min(finish, pair.second) - x;
 						if (w > 0.0d) {
 							rectTmp.setRect(x, MIN_RENDERED - 1, w,	MAX_RENDERED - MIN_RENDERED + 2);
-							g2.setColor(ColorTable.GRAPH_EDITED.get());
+							g2.setColor(ColorTable.GRAPH_BACKGROUND_EDITED.get());
 							g2.fill(rectTmp);
 							barEdited = true;
 							start = x + w;
