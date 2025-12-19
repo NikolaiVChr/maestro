@@ -84,7 +84,7 @@ public class DissonancePanel extends JPanel implements IDiscardable, TableLayout
 
 		setBorder(new CompoundBorder(
 				BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()),
-				BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(0x555555))));
+				BorderFactory.createMatteBorder(0, 0, 0, 1, ColorTable.PANEL_BORDER_INSIDE.get())));
 
 		this.sequencer = sequencer;
 		this.abcSequencer = abcSequencer;

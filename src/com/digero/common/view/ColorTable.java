@@ -163,6 +163,16 @@ public enum ColorTable {
     CONTROLS_EDITED(new Color(0.2f, 0.8f, 0.2f),
 			"Tune/section/part/pan editors edited text on buttons/slider"),
 
+	PARTS_LIST_DND_LINE(Color.LIGHT_GRAY,
+			"Parts list drag'n'drop divider line"),
+
+	PARTS_LIST_MUTE(Color.decode("#ff7777"),
+			"Parts list mute"),
+	PARTS_LIST_SOLO(Color.decode("#7e7eff"),
+			"Parts list solo"),
+
+	PAN_LISTENER(Color.LIGHT_GRAY,
+			"Pan listener head"),
 	PAN_ACTIVE(new Color(0.2f, 0.8f, 0.2f),
 			"Current part pan disc"),
     PAN_USER(new Color(255, 215, 0),
@@ -207,7 +217,17 @@ public enum ColorTable {
 			"Poly being high"),
     /** Poly more notes than lotro can handle */
 	NOTE_POLYPHONY_OVER    (Color.getHSBColor(0f, 1.00f, 1.00f),
-			"Poly more notes than lotro can handle");
+			"Poly more notes than lotro can handle"),
+
+	DISSONANCE_FEW         (new Color(100,170,100),
+			"Dissonance color"),
+	DISSONANCE_WARNING (new Color(0xFECE19),
+			"Dissonance high"),
+	DISSONANCE_SEVERE    (Color.getHSBColor(0f, 1.00f, 1.00f),
+			"Dissonance very high"),
+	DISSONANCE_ON      (new Color(0xF2F2F2),
+			"Dissonance being played"),
+	;
 
 	//NOTE_PRUNED (new Color(1f,1f,0f));
 

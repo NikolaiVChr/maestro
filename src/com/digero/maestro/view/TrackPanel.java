@@ -167,7 +167,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 		setBorder(new CompoundBorder(
 					BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()),
-					BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(0x555555))));
+					BorderFactory.createMatteBorder(0, 0, 0, 1, ColorTable.PANEL_BORDER_INSIDE.get())));
 
 		this.trackInfo = info;
 		this.seq = sequencer;

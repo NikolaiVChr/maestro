@@ -21,6 +21,7 @@ import javax.swing.TransferHandler;
 
 import com.digero.common.util.IDiscardable;
 import com.digero.common.util.Listener;
+import com.digero.common.view.ColorTable;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcPartMetadataSource;
 
@@ -139,7 +140,7 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 		});
 		
 		String soloText = part.isSoloed() ? "<html><b>S</b></html>" : "<html>S</html>";
-		Color soloColor = part.isSoloed() ? Color.decode("#7e7eff") : new JButton().getBackground();
+		Color soloColor = part.isSoloed() ? ColorTable.PARTS_LIST_SOLO.get() : new JButton().getBackground();
 		soloButton = new JButton(soloText);
 		soloButton.setToolTipText("Solo/Unsolo Part");
 		soloButton.setBackground(soloColor);
@@ -156,7 +157,7 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 		});
 
 		String muteText = part.isMuted() ? "<html><b>M</b></html>" : "<html>M</html>";
-		Color muteColor = part.isMuted() ? Color.decode("#ff7777") : new JButton().getBackground();
+		Color muteColor = part.isMuted() ? ColorTable.PARTS_LIST_MUTE.get() : new JButton().getBackground();
 		muteButton = new JButton(muteText);
 		muteButton.setToolTipText("Mute/Unmute Part");
 		muteButton.setBackground(muteColor);
@@ -249,13 +250,13 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 	
 	public void setSolo(boolean solo) {
 		part.setSoloed(solo);
-		soloButton.setBackground(solo ? Color.decode("#7e7eff") : new JButton().getBackground());
+		soloButton.setBackground(solo ? ColorTable.PARTS_LIST_SOLO.get() : new JButton().getBackground());
 		soloButton.setText(solo ? "<html><b>S</b></html>" : "<html>S</html>");
 	}
 	
 	public void setMute(boolean mute) {
 		part.setMuted(mute);
-		muteButton.setBackground(mute ? Color.decode("#ff7777") : new JButton().getBackground());
+		muteButton.setBackground(mute ? ColorTable.PARTS_LIST_MUTE.get() : new JButton().getBackground());
 		muteButton.setText(mute ? "<html><b>M</b></html>" : "<html>M</html>");
 	}
 	

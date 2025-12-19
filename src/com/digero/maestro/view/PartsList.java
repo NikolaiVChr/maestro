@@ -37,6 +37,7 @@ import com.digero.common.midi.SequencerEvent.SequencerProperty;
 import com.digero.common.util.IDiscardable;
 import com.digero.common.util.Listener;
 import com.digero.common.util.Pair;
+import com.digero.common.view.ColorTable;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcPartEvent;
 import com.digero.maestro.abc.AbcPartMetadataSource;
@@ -557,7 +558,7 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 
 	        float[] dash = {4f, 4f};
 	        g2.setStroke(new BasicStroke(2f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 1f, dash, 0f));
-	        g2.setColor(Color.LIGHT_GRAY);
+	        g2.setColor(ColorTable.PARTS_LIST_DND_LINE.get());
 
 	        int y = 0;
 	        if (dropInsertIndex < getComponentCount()) {

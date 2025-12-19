@@ -64,7 +64,7 @@ public class PanVisualizerPanel extends JPanel {
         g2.drawArc(cx - BASE_RADIUS, cy - BASE_RADIUS, BASE_RADIUS * 2, BASE_RADIUS * 2, (180-BASE_TOTAL_ANGLE)/2, BASE_TOTAL_ANGLE);
 
         // 2. Draw Listener Head
-        g2.setColor(Color.LIGHT_GRAY);
+        g2.setColor(ColorTable.PAN_LISTENER.get());
         g2.fillOval(cx - HEAD_DIAM/2, cy - HEAD_DIAM/2, HEAD_DIAM, HEAD_DIAM);
 
         // 3. Prepare and Sort Background Parts

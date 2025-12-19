@@ -91,7 +91,7 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 
 		setBorder(new CompoundBorder(
 				BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()),
-				BorderFactory.createMatteBorder(0, 0, 0, 1, new Color(0x555555))));
+				BorderFactory.createMatteBorder(0, 0, 0, 1, ColorTable.PANEL_BORDER_INSIDE.get())));
 
 		this.sequencer = sequencer;
 		this.abcSequencer = abcSequencer;
@@ -222,10 +222,10 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 			
 			setOctaveLinesVisible(false);
 			setHistogramThresholdLinesVisible(true);
-			setNoteColor(ColorTable.NOTE_POLYPHONY);
-			setBadNoteColor(ColorTable.NOTE_POLYPHONY_WARNING);
-			setExtraBadNoteColor(ColorTable.NOTE_POLYPHONY_OVER);
-			setNoteOnColor(ColorTable.NOTE_POLYPHONY_ON);
+			setNoteColor(ColorTable.DISSONANCE_FEW);
+			setBadNoteColor(ColorTable.DISSONANCE_WARNING);
+			setExtraBadNoteColor(ColorTable.DISSONANCE_SEVERE);
+			setNoteOnColor(ColorTable.DISSONANCE_ON);
 			setNoteOnExtraHeightPix(0);
 			setNoteOnOutlineWidthPix(0);
             setToolTipText("Polyphony");
