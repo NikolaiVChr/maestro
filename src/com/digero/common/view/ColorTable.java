@@ -57,10 +57,10 @@ public enum ColorTable {
 			"Not used"),
 
     /** Tempo graph foreground color */
-	NOTE_TEMPO       (new Color(0x999999),
+	TEMPO       (new Color(0x999999),
 			"Tempo graph color"),
     /** Tempo graph foreground color when song position line is playing in it */
-	NOTE_TEMPO_ON    (new Color(0xF2F2F2),
+	TEMPO_ON    (new Color(0xF2F2F2),
 			"Tempo graph color when song position line is playing in it"),
 
     /** Drum note color when track is enabled in current abc part */
@@ -85,6 +85,16 @@ public enum ColorTable {
     /**  */
 	GRAPH_BACKGROUND_OFF(new Color(0x222222),
 			"Note graph background when no abc part has it selected"),
+
+	/** Measure on both sides section-edited */
+	GRAPH_EDITED(new Color(0,32,0),
+			"Section edited background"),
+	/** Section-edited */
+	GRAPH_BAR_LINE_EDITED(new Color(30,75,30),
+			"Bar line when section-edited on both sides"),
+	/** Section-edit silenced */
+	GRAPH_SILENCED(new Color(32,0,0),
+			"Section/tune-edit silenced"),
 
     /**  */
 	GRAPH_BORDER_ENABLED(Color.DARK_GRAY,
@@ -196,15 +206,7 @@ public enum ColorTable {
     PAN_BORDER(new Color(0, 0, 0, 50),
 			"Current pan disc border"), //
 
-    /** Measure on both sides section-edited */
-	BAR_EDITED(new Color(0,32,0),
-			"Section edited"),
-    /** Section-edited */
-	BAR_LINE_EDITED(new Color(30,75,30),
-			"Bar line when section-edited on both sides"),
-    /** Section-edit silenced */
-	BAR_SILENCED(new Color(32,0,0),
-			"Section/tune-edit silenced"),
+
 
     /** Standard poly color */
 	NOTE_POLYPHONY         (new Color(100,170,100),

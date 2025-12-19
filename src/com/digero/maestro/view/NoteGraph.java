@@ -623,7 +623,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 						double w = Math.min(finish, pair.second) - x;
 						if (w > 0.0d) {
 							rectTmp.setRect(x, MIN_RENDERED - 1, w,	MAX_RENDERED - MIN_RENDERED + 2);
-							g2.setColor(ColorTable.BAR_EDITED.get());
+							g2.setColor(ColorTable.GRAPH_EDITED.get());
 							g2.fill(rectTmp);
 							barEdited = true;
 							start = x + w;
@@ -634,13 +634,13 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 					// whole bar is red
 					rectTmp.setRect(barMicros + lineWidth, MIN_RENDERED - 1, barTempMicros - barMicros - lineWidth,
 							MAX_RENDERED - MIN_RENDERED + 2);
-					g2.setColor(ColorTable.BAR_SILENCED.get());
+					g2.setColor(ColorTable.GRAPH_SILENCED.get());
 					g2.fill(rectTmp);
 				} else if (getLastBar() != null && barCount >= Math.ceil(getLastBar())) {
 					// whole bar is red
 					rectTmp.setRect(barMicros + lineWidth, MIN_RENDERED - 1, barTempMicros - barMicros - lineWidth,
 							MAX_RENDERED - MIN_RENDERED + 2);
-					g2.setColor(ColorTable.BAR_SILENCED.get());
+					g2.setColor(ColorTable.GRAPH_SILENCED.get());
 					g2.fill(rectTmp);
 				} else {
 					if (getFirstBar() != null && barCount < Math.ceil(getFirstBar())) {
@@ -649,7 +649,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 						long lateStart = data.tickToMicros(getFirstBarTick());					
 						rectTmp.setRect(barMicros + lineWidth, MIN_RENDERED - 1, Math.min(lateStart, barTempMicros) - barMicros - lineWidth,
 								MAX_RENDERED - MIN_RENDERED + 2);
-						g2.setColor(ColorTable.BAR_SILENCED.get());
+						g2.setColor(ColorTable.GRAPH_SILENCED.get());
 						g2.fill(rectTmp);
 					}
 					if (getLastBar() != null && barCount >= Math.floor(getLastBar())) {
@@ -658,7 +658,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 						long earlyEnd = data.tickToMicros(getLastBarTick());					
 						rectTmp.setRect(Math.max(earlyEnd, barMicros + lineWidth), MIN_RENDERED - 1, barTempMicros - barMicros - lineWidth,
 								MAX_RENDERED - MIN_RENDERED + 2);
-						g2.setColor(ColorTable.BAR_SILENCED.get());
+						g2.setColor(ColorTable.GRAPH_SILENCED.get());
 						g2.fill(rectTmp);
 					}
 				}
@@ -673,7 +673,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 						barBothEdited = true;
 					}
 				}
-				g2.setColor(barBothEdited ? ColorTable.BAR_LINE_EDITED.get() : ColorTable.BAR_LINE.get());
+				g2.setColor(barBothEdited ? ColorTable.GRAPH_BAR_LINE_EDITED.get() : ColorTable.BAR_LINE.get());
 				g2.fill(rectTmp);
 			}
 		}

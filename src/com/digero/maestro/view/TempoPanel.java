@@ -3,7 +3,6 @@ package com.digero.maestro.view;
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
 
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.util.ArrayList;
@@ -242,8 +241,8 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
 					Note.MAX.id + (Note.MIN.id + Note.MAX.id) / 4);
 
 			setOctaveLinesVisible(false);
-			setNoteColor(ColorTable.NOTE_TEMPO);
-			setNoteOnColor(ColorTable.NOTE_TEMPO_ON);
+			setNoteColor(ColorTable.TEMPO);
+			setNoteOnColor(ColorTable.TEMPO_ON);
 			setNoteOnExtraHeightPix(0);
 			setNoteOnOutlineWidthPix(0);
 		}
