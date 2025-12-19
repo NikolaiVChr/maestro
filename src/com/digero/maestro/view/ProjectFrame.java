@@ -61,6 +61,7 @@ import com.digero.common.abc.AbcConstants;
 import com.digero.common.midi.MidiUtils;
 import com.digero.common.midi.PanGenerator;
 import com.digero.common.util.*;
+import com.digero.common.view.ColorSelector;
 import com.digero.maestro.abc.DissonanceDetector;
 import com.digero.maestro.midi.SequenceDataCache;
 import org.jetbrains.annotations.Nullable;
@@ -191,6 +192,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private PartEditor partEditor;
 
 	private JPanel settingsPanel;
+	private JDialog themeEditorDialog;
 
 	private ArrangementView arrangementView;
 
@@ -383,6 +385,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         audioExporter = new AudioExportManager(this, MaestroMain.APP_NAME + " " + MaestroMain.APP_VERSION, prefs);
 
         initMenu();
+		initTheme();
         onSaveAndExportSettingsChanged();
         arrangementView.showInfoMessage(welcomeMessage);
         updateButtons(false);//must be false since we are not in AWT thread now.
@@ -1311,6 +1314,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		settingsItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T, CTRL_DOWN_MASK));
 		settingsItem.addActionListener(e -> doSettingsDialog());
 
+		JMenuItem themeItem = toolsMenu.add(new JMenuItem("Color Theme"));
+		themeItem.setMnemonic('C');
+		themeItem.addActionListener(e -> showThemeEditor());
+
 		toolsMenu.addSeparator();
 		
 		JMenuItem helpItem = toolsMenu.add(new JMenuItem("Help (Opens in browser)"));
@@ -1334,6 +1341,42 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		aboutItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0));
 		aboutItem.addActionListener(e -> AboutDialog.show(ProjectFrame.this, MaestroMain.APP_NAME,
 				MaestroMain.APP_VERSION, MaestroMain.WIKI_URL, "maestro_64.png"));
+	}
+
+	private void initTheme() {
+		themeEditorDialog = new JDialog(this, "Theme Editor", false); // false = non-modal
+
+		ColorSelector selector = new ColorSelector();
+
+		themeEditorDialog.setContentPane(selector);
+		//themeEditorDialog.setSize(550, 700);
+		themeEditorDialog.setMinimumSize(new Dimension(450, 400));
+
+		themeEditorDialog.pack();
+		themeEditorDialog.setLocationRelativeTo(this);
+	}
+
+	private void showThemeEditor() {
+		if (!themeEditorDialog.isVisible()) {
+			themeEditorDialog.setVisible(true);
+		} else {
+			themeEditorDialog.toFront();
+		}
+	}
+
+	public void themeUiEnabled(boolean on) {
+		if (themeEditorDialog != null) {
+			Component glassPane = themeEditorDialog.getGlassPane();
+			if (!on) {
+				themeEditorDialog.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+				glassPane.addMouseListener(blocker);
+				glassPane.setVisible(true);
+			} else {
+				glassPane.setVisible(false);
+				glassPane.removeMouseListener(blocker);
+				themeEditorDialog.setCursor(Cursor.getDefaultCursor());
+			}
+		}
 	}
 	
 	private void updateOpenRecentMenu() {
@@ -3333,6 +3376,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         partEditor.uiEnabled(on);
         SectionEditor.uiEnabled(on);
         TuneEditor.uiEnabled(on);
+		themeUiEnabled(on);
     }
 
 	private boolean saveAs() {

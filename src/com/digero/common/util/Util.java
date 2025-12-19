@@ -42,6 +42,7 @@ public final class Util {
 	public static final String MID_FILE_EXTENSION_NO_DOT = "mid";
 	public static final String KAR_FILE_EXTENSION_NO_DOT = "kar";
 	public static final String MIDI_FILE_EXTENSION_NO_DOT = "midi";
+	public static final String THEME_FILE_EXTENSION_NO_DOT = "maestrotheme.xml";
 	public static final String MSX_FILE_EXTENSION = "." + MSX_FILE_EXTENSION_NO_DOT;
 	public static final String ABC_FILE_EXTENSION = "." + ABC_FILE_EXTENSION_NO_DOT;
 	public static final String ABCP_FILE_EXTENSION = "." + ABCP_FILE_EXTENSION_NO_DOT;
@@ -49,6 +50,7 @@ public final class Util {
 	public static final String MID_FILE_EXTENSION = "." + MID_FILE_EXTENSION_NO_DOT;
 	public static final String MIDI_FILE_EXTENSION = "." + MIDI_FILE_EXTENSION_NO_DOT;
 	public static final String KAR_FILE_EXTENSION = "." + KAR_FILE_EXTENSION_NO_DOT;
+	public static final String THEME_FILE_EXTENSION = "." + THEME_FILE_EXTENSION_NO_DOT;
 	
 
 	private Util() {
