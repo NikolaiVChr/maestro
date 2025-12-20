@@ -123,9 +123,9 @@ public class ColorSelector extends JPanel {
         previewLabel = new JLabel("Preview Text: The quick hobbit eats the whole pie", SwingConstants.CENTER) {
             @Override
             protected void paintComponent (Graphics g){
-                // If the color is transparent, fill with grey
+                // If the bg color is transparent, fill with white
                 if (getBackground().getAlpha() < 255) {
-                    g.setColor(Color.LIGHT_GRAY);
+                    g.setColor(Color.WHITE);//I'm too lazy to make a checkerboard pattern
                     g.fillRect(0, 0, getWidth(), getHeight());
                 }
 
@@ -177,20 +177,20 @@ public class ColorSelector extends JPanel {
 
             c.gridy = rowIdx++;
             
-            c.gridx = 0; c.weightx = 0;
+            c.gridx = 0; c.weightx = 0d;
             list.add(row.editColorButton, c);
             
-            c.gridx = 1; c.weightx = 1.0;
+            c.gridx = 1; c.weightx = 1.0d;
             list.add(row.label, c);
             
-            c.gridx = 2; c.weightx = 0;
+            c.gridx = 2; c.weightx = 0d;
             list.add(row.resetBtn, c);
         }
         
         // Push everything up
         GridBagConstraints filler = new GridBagConstraints();
         filler.gridy = rowIdx;
-        filler.weighty = 1.0;
+        filler.weighty = 1.0d;
         list.add(new JPanel(), filler);
         
         return list;
@@ -212,33 +212,51 @@ public class ColorSelector extends JPanel {
         //String ratioStr = String.format("%.2f", ratio);
         
         String grading = " (Poor)";
-        if (ratio >= 7.0) grading = " (High)";
-        else if (ratio >= 4.5) grading = " (Good)";
-        else if (ratio >= 3.0) grading = " (Pass)";
+        if (ratio >= 7.0d) grading = " (High)";
+        else if (ratio >= 4.5d) grading = " (Good)";
+        else if (ratio >= 3.0d) grading = " (Pass)";
         
         ratioLabel.setText("Contrast: " + grading);
         
-        if (ratio >= 4.5) ratioLabel.setForeground(new Color(0, 128, 0));
-        else if (ratio >= 3.0) ratioLabel.setForeground(new Color(150, 100, 0));
+        if (ratio >= 4.5d) ratioLabel.setForeground(new Color(0, 128, 0));
+        else if (ratio >= 3.0d) ratioLabel.setForeground(new Color(150, 100, 0));
         else ratioLabel.setForeground(Color.RED);
     }
 
     private static double getLuminance(Color color) {
-        double r = color.getRed() / 255.0;
-        double g = color.getGreen() / 255.0;
-        double b = color.getBlue() / 255.0;
+        double r = color.getRed() / 255.0d;
+        double g = color.getGreen() / 255.0d;
+        double b = color.getBlue() / 255.0d;
 
-        r = (r <= 0.03928) ? r / 12.92 : Math.pow((r + 0.055) / 1.055, 2.4);
-        g = (g <= 0.03928) ? g / 12.92 : Math.pow((g + 0.055) / 1.055, 2.4);
-        b = (b <= 0.03928) ? b / 12.92 : Math.pow((b + 0.055) / 1.055, 2.4);
+        r = (r <= 0.03928d) ? r / 12.92d : Math.pow((r + 0.055d) / 1.055d, 2.4d);
+        g = (g <= 0.03928d) ? g / 12.92d : Math.pow((g + 0.055d) / 1.055d, 2.4d);
+        b = (b <= 0.03928d) ? b / 12.92d : Math.pow((b + 0.055d) / 1.055d, 2.4d);
 
-        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+        return 0.2126d * r + 0.7152d * g + 0.0722d * b;
     }
 
-    private static double calculateContrastRatio(Color c1, Color c2) {
-        double l1 = getLuminance(c1);
-        double l2 = getLuminance(c2);
-        return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+    /**
+     * Apply the alpha to the foreground so that the contrast ratio considers alpha also.
+     */
+    private static Color blend(Color fg, Color bg) {
+        double alpha = fg.getAlpha() / 255.0d;
+        double invAlpha = 1.0d - alpha;
+
+        int r = (int) ((fg.getRed() * alpha) + (bg.getRed() * invAlpha));
+        int g = (int) ((fg.getGreen() * alpha) + (bg.getGreen() * invAlpha));
+        int b = (int) ((fg.getBlue() * alpha) + (bg.getBlue() * invAlpha));
+
+        return new Color(r, g, b);
+    }
+
+    private static double calculateContrastRatio(Color fg, Color bg) {
+        // If the background itself is transparent, assume it sits on White
+        Color solidBg = (bg.getAlpha() < 255) ? blend(bg, Color.WHITE) : bg;
+        Color solidFg = blend(fg, solidBg);
+
+        double l1 = getLuminance(solidFg);
+        double l2 = getLuminance(solidBg);
+        return (Math.max(l1, l2) + 0.05d) / (Math.min(l1, l2) + 0.05d);
     }
 
     public void cancel() {
@@ -370,6 +388,7 @@ public class ColorSelector extends JPanel {
         final JButton editColorButton;
         final JLabel label;
         final JButton resetBtn;
+        final String text;
 
         ColorRow(ColorTable enumVal) {
             this.enumVal = enumVal;
@@ -396,14 +415,15 @@ public class ColorSelector extends JPanel {
                 }
             });
 
-            String text = enumVal.name();
+
             if (enumVal.getInfo() != null && !enumVal.getInfo().isEmpty()) {
-                text += " ~ "+enumVal.getInfo();
+                text = enumVal.name()+" ~ "+enumVal.getInfo();
+            } else {
+                text = enumVal.name();
             }
-            
-            label = new JLabel(text);
+            label = new JLabel();
             label.setToolTipText(text);
-            
+
             resetBtn = new JButton("Set default");
             resetBtn.setMargin(new Insets(2, 5, 2, 5));
             resetBtn.setFont(resetBtn.getFont().deriveFont(10f));
@@ -420,6 +440,20 @@ public class ColorSelector extends JPanel {
             Color c = enumVal.get();
             editColorButton.setBackground(c);
             resetBtn.setVisible(!c.equals(enumVal.getDefaultValue()));
+
+            int alpha = c.getAlpha();
+            Font font;
+            String labelTxt = text;
+            if (alpha < 255) {
+                int percent = (int)((alpha / 255.0d) * 100);
+
+                labelTxt = String.format("%s (Alpha: %d%%)", text, percent);
+                font = label.getFont().deriveFont(Font.ITALIC);
+            } else {
+                font = label.getFont().deriveFont(Font.PLAIN);
+            }
+            label.setText(labelTxt);
+            label.setFont(font);
         }
     }
 }
