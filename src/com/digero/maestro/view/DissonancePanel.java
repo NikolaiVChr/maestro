@@ -39,7 +39,6 @@ public class DissonancePanel extends JPanel implements IDiscardable, TableLayout
 	static final int GUTTER_COLUMN = 0;
 	static final int TITLE_COLUMN = 1;
 	static final int COUNT_COLUMN = 2;
-	static final int GRAPH_COLUMN = 3;
     static final int BUTTON_COLUMN = 3;
 
 	public static final int CLIP_MAX_NOTES = 50;
@@ -124,8 +123,6 @@ public class DissonancePanel extends JPanel implements IDiscardable, TableLayout
 		add(titleLabel, TITLE_COLUMN + ", 0");
 		add(currentCountLabel, COUNT_COLUMN + ", 0, R, C");
         add(peakButton, BUTTON_COLUMN + ", 0, R, C");
-
-//		add(tempoGraph, GRAPH_COLUMN + ", 0");
 
 		sequencer.addChangeListener(sequencerListener);
 		abcSequencer.addChangeListener(sequencerListener);
