@@ -57,6 +57,7 @@ Version 4.6.1
     (search "Add or remove programs" in windows and remove "Maestro")
     This only needs to be done once, next versions will just update the previous version automatically again.
 - Allow editing of lyrics and to copy them for Poetical with timestamps.
+- Allow changing colors of Maestro. Note that most colors are dictated by dark and light themes and can't be changed.
 
 Version 4.5.24
 - Fixed a bug in splitting of long notes in organic multi-stage and made it slightly smarter.
