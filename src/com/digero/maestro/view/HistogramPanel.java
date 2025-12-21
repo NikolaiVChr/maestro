@@ -214,6 +214,10 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
         updateCountLabel();
     }
 
+    public PolyphonyHistogram getHistogram() {
+        return histogram;
+    }
+
     public class HistogramNoteGraph extends NoteGraph {
 		private List<NoteEvent> events = new ArrayList<>();
 

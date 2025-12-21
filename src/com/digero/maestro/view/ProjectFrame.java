@@ -1347,7 +1347,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private void initTheme() {
 		themeEditorDialog = new JDialog(this, "Theme Editor", false); // false = non-modal
 
-		ColorSelector selector = new ColorSelector();
+		ColorSelector selector = new ColorSelector(arrangementView);
 
 		themeEditorDialog.setContentPane(selector);
 		//themeEditorDialog.setSize(550, 700);

@@ -202,6 +202,10 @@ public class DissonancePanel extends JPanel implements IDiscardable, TableLayout
         updateCountLabel();
     }
 
+	public DissonanceDetector getDissonance() {
+		return dissonanceDetector;
+	}
+
     public class DissonanceNoteGraph extends NoteGraph {
 		private List<NoteEvent> events = new ArrayList<>();
 

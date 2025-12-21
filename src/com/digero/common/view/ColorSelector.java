@@ -25,6 +25,7 @@ import javax.swing.SwingUtilities;
 import javax.xml.transform.TransformerException;
 
 import com.digero.common.util.Util;
+import com.digero.maestro.view.ArrangementView;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -47,16 +48,16 @@ public class ColorSelector extends JPanel {
     private JComboBox<ColorTable> fgCombo;
     private JLabel previewLabel;
     private JLabel ratioLabel;
-
+    private ArrangementView tracks = null;
     private File lastDir = Util.getDocumentsDir();
 
-    public ColorSelector() {
+    public ColorSelector(ArrangementView tracks) {
         super(new BorderLayout());
 
         setPreferredSize(new Dimension(900, 700));
         setMinimumSize(new Dimension(300, 300));
 
-        
+        this.tracks = tracks;
 
 
         JScrollPane scrollPane = new JScrollPane(createListPanel());
@@ -264,6 +265,7 @@ public class ColorSelector extends JPanel {
             entry.getKey().set(entry.getValue());
         }
         refreshUI();
+        refreshAppColors();
     }
     
     public void resetToDefaults() {
@@ -271,6 +273,7 @@ public class ColorSelector extends JPanel {
             ct.set(ct.getDefaultValue());
         }
         refreshUI();
+        refreshAppColors();
     }
 
     public void refreshUI() {
@@ -279,6 +282,18 @@ public class ColorSelector extends JPanel {
         }
         updateContrastPreview();
         repaint();
+    }
+
+    private void refreshAppColors() {
+        // Repaint the the dialog
+        SwingUtilities.getWindowAncestor(ColorSelector.this).repaint();
+
+        if (tracks != null) tracks.rebuildPanels();
+
+        // Repaint maestro
+        for (Window w : Window.getWindows()) {
+            w.repaint();
+        }
     }
 
     private void exportTheme() {
@@ -381,6 +396,7 @@ public class ColorSelector extends JPanel {
             }
         }
         refreshUI();
+        refreshAppColors();
     }
 
     private class ColorRow {
@@ -405,13 +421,7 @@ public class ColorSelector extends JPanel {
                     updateFromEnum();
                     updateContrastPreview();
 
-                    // Repaint the the dialog
-                    SwingUtilities.getWindowAncestor(ColorSelector.this).repaint();
-
-                    // Repaint maestro
-                    for (Window w : Window.getWindows()) {
-                        w.repaint();
-                    }
+                    refreshAppColors();
                 }
             });
 
@@ -431,6 +441,7 @@ public class ColorSelector extends JPanel {
                 enumVal.set(enumVal.getDefaultValue());
                 updateFromEnum();
                 updateContrastPreview();
+                refreshAppColors();
             });
             
             updateFromEnum();

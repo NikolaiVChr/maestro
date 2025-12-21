@@ -752,6 +752,24 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		abcPart = null;
 	}
 
+	/**
+	 * Call this when any colors have changed
+	 */
+	public void rebuildPanels() {
+		AbcPart oldPart = abcPart;
+		PolyphonyHistogram oldHistogram = histogramPanel.getHistogram();
+		DissonanceDetector oldDissonance = dissonancePanel.getDissonance();
+		clearTrackListPanel(true);
+		histogramPanel = null;
+		dissonancePanel = null;
+		tempoPanel = null;
+		trackPanels.clear();
+		abcPart = null;
+		setAbcPart(oldPart, true);//this call will remake the panels
+		if (histogramPanel != null) histogramPanel.setHistogram(oldHistogram);
+		if (dissonancePanel != null) dissonancePanel.setDissonance(oldDissonance);
+	}
+
 	public void setAbcPart(AbcPart abcPart, boolean force) {
 		messageLabel.setVisible(false);
 
