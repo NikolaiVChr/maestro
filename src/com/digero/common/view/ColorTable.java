@@ -38,7 +38,7 @@ public enum ColorTable {
 			"Note color when track is not enabled in any abc part"),
     /** Note out of range color when track is enabled in current abc part */
 	NOTE_BAD_ENABLED (Color.getHSBColor(0.05f, 1.00f, 1.00f),
-			"Note out of range color when track is enabled in current abc part"),
+			"Note out of range color when track is enabled in current abc part. Also drum notes with sound set to None."),
     /** Note out of range color when track is not enabled in current abc part */
 	NOTE_BAD_DISABLED(Color.getHSBColor(0.95f, 0.65f, 0.75f),
 			"Note out of range color when track is not enabled in current abc part"),
@@ -65,26 +65,26 @@ public enum ColorTable {
 
     /** Drum note color when track is enabled in current abc part */
 	NOTE_DRUM_ENABLED(NOTE_ENABLED,
-			"Drum note color when track is enabled in current abc part"),
+			"Drum note color"),
     /** Not used */
 	NOTE_DRUM_DISABLED(NOTE_DISABLED,
 			"Not used"),
     /** Drum note color when track is not enabled in any abc part */
 	NOTE_DRUM_OFF(NOTE_OFF,
-			"Drum note color when track is not enabled in any abc part"),
+			"Drum note color when drum sound disabled"),
 
     /**  */
 	GRAPH_BACKGROUND_ENABLED(Color.BLACK,
 			"Note graph background when selected by current part"),
     /**  */
 	GRAPH_BACKGROUND_SOLO(new Color(0x181818),
-			"Note graph background soloed"),
+			"Note graph background soloed when not selected by current part"),
     /**  */
 	GRAPH_BACKGROUND_DISABLED(new Color(0x222222),
-			"Note graph background when current abc part don't have it selected"),
+			"Polyphony, tempo and dissonance graph background"),
     /**  */
 	GRAPH_BACKGROUND_OFF(new Color(0x222222),
-			"Note graph background when no abc part has it selected"),
+			"Note graph background when no abc part has it selected. Also drum note background when drum sound disabled."),
 	/** Measure on both sides section-edited */
 	GRAPH_BACKGROUND_EDITED(new Color(0,32,0),
 			"Section edited background"),
@@ -95,9 +95,9 @@ public enum ColorTable {
 	GRAPH_SILENCED(new Color(32,0,0),
 			"Section/tune-edit silenced"),
 
-    /**  */
+    /** Note graph border color when current abc part has it enabled */
 	GRAPH_BORDER_ENABLED(Color.DARK_GRAY,
-			"Note graph border color when current abc part has it enabled"),
+			"Not used"),
     /**  */
 	GRAPH_BORDER_DISABLED(Color.DARK_GRAY,
 			"Not used"),
@@ -110,7 +110,7 @@ public enum ColorTable {
 			"Not used"),
     /** Track panels background */
 	PANEL_BACKGROUND_DISABLED(GRAPH_BACKGROUND_DISABLED,
-			"Not used"),
+			"Small space under lowest track"),
 
     /**  */
 	PANEL_BORDER(new Color(0xEEEEEE),
@@ -121,10 +121,10 @@ public enum ColorTable {
 
     /**  */
 	PANEL_HIGHLIGHT(new Color(0xFFD83C),
-			"Track title background color when selected by current part"), //(Color.getHSBColor(0.60f, 0.50f, 1.00f)),
+			"Track gutter color when selected by current part"), //(Color.getHSBColor(0.60f, 0.50f, 1.00f)),
     /**  */
 	PANEL_HIGHLIGHT_OTHER_PART(new Color(0xDDDDDD),
-			"Track title background color when selected but not by current part"),
+			"Track gutter color when selected but not by current part"),
 
     /**  */
 	PANEL_TEXT_ENABLED(new Color(0xFFD83C),
@@ -158,10 +158,10 @@ public enum ColorTable {
 
     /** track UI controls foreground */
 	CONTROLS_TEXT(Color.WHITE,
-			"Track UI controls text"),
+			"Not used"),
     /** track UI controls background */
 	CONTROLS_BACKGROUND(new Color(0x222222),
-			"Track UI controls background"),
+			"Not used"),
     /**  */
     CONTROLS_EDITED(new Color(0.2f, 0.8f, 0.2f),
 			"Tune/section/part/pan editors edited text on buttons/slider"),
@@ -203,15 +203,15 @@ public enum ColorTable {
     /** Standard poly color */
 	NOTE_POLYPHONY         (new Color(100,170,100),
 			"Standard poly color"),
-    /** Poly being played */
-	NOTE_POLYPHONY_ON      (new Color(0xF2F2F2),
-			"Poly being played"),
     /** Poly being high */
 	NOTE_POLYPHONY_WARNING (new Color(0xFECE19),
 			"Poly being high"),
     /** Poly more notes than lotro can handle */
 	NOTE_POLYPHONY_OVER    (Color.getHSBColor(0f, 1.00f, 1.00f),
 			"Poly more notes than lotro can handle"),
+	/** Poly being played */
+	NOTE_POLYPHONY_ON      (new Color(0xF2F2F2),
+			"Poly being played"),
 
 	DISSONANCE_FEW         (new Color(100,170,100),
 			"Dissonance color"),
