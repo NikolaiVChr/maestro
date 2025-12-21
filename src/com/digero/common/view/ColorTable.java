@@ -110,7 +110,7 @@ public enum ColorTable {
 			"Not used"),
     /** Track panels background */
 	PANEL_BACKGROUND_DISABLED(GRAPH_BACKGROUND_DISABLED,
-			"Small space under lowest track"),
+			"Area under lowest track, and center area background in Maestro when no song is loaded."),
 
     /**  */
 	PANEL_BORDER(new Color(0xEEEEEE),

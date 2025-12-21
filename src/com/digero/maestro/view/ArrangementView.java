@@ -757,8 +757,8 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 	 */
 	public void rebuildPanels() {
 		AbcPart oldPart = abcPart;
-		PolyphonyHistogram oldHistogram = histogramPanel.getHistogram();
-		DissonanceDetector oldDissonance = dissonancePanel.getDissonance();
+		PolyphonyHistogram oldHistogram = histogramPanel == null?null:histogramPanel.getHistogram();
+		DissonanceDetector oldDissonance = dissonancePanel == null?null:dissonancePanel.getDissonance();
 		clearTrackListPanel(true);
 		histogramPanel = null;
 		dissonancePanel = null;
@@ -768,6 +768,9 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		setAbcPart(oldPart, true);//this call will remake the panels
 		if (histogramPanel != null) histogramPanel.setHistogram(oldHistogram);
 		if (dissonancePanel != null) dissonancePanel.setDissonance(oldDissonance);
+		splitPanel.setBackground(ColorTable.PANEL_BACKGROUND_DISABLED.get());
+		controlPanel.setBackground(ColorTable.PANEL_BACKGROUND_DISABLED.get());
+		noteGraphPanel.setBackground(ColorTable.PANEL_BACKGROUND_DISABLED.get());
 	}
 
 	public void setAbcPart(AbcPart abcPart, boolean force) {
