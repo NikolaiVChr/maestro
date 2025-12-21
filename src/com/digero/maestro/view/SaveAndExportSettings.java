@@ -15,6 +15,7 @@ public class SaveAndExportSettings {
 	public String defaultTiming = ProjectFrame.TimingEnum.MIX.settingsString;
 	// public boolean showPruned = false;
 	public boolean convertABCStringsToBasicAscii = true;
+	public boolean countUpLyrics = false;
 
 	private final Preferences prefs;
 
@@ -33,6 +34,7 @@ public class SaveAndExportSettings {
 		convertABCStringsToBasicAscii = prefs.getBoolean("convertABCStringsToBasicAscii",
 				convertABCStringsToBasicAscii);
         reducedFilesize = prefs.getBoolean("reducedFilesize", reducedFilesize);
+		countUpLyrics = prefs.getBoolean("countUpLyrics", countUpLyrics);
 	}
 
 	public SaveAndExportSettings(SaveAndExportSettings that) {
@@ -51,6 +53,7 @@ public class SaveAndExportSettings {
 		// showPruned = that.showPruned;
 		convertABCStringsToBasicAscii = that.convertABCStringsToBasicAscii;
         reducedFilesize = that.reducedFilesize;
+		countUpLyrics = that.countUpLyrics;
 	}
 
 	public void saveToPrefs() {
@@ -64,6 +67,7 @@ public class SaveAndExportSettings {
 		// prefs.putBoolean("showPruned", showPruned);
 		prefs.putBoolean("convertABCStringsToBasicAscii", convertABCStringsToBasicAscii);
         prefs.putBoolean("reducedFilesize", reducedFilesize);
+		prefs.putBoolean("countUpLyrics", countUpLyrics);
 	}
 
 	public void restoreDefaults() {

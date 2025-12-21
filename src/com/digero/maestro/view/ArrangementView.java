@@ -556,12 +556,6 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 			}
 		});
 
-		JCheckBox countDir = new JCheckBox("Up");
-		countDir.setToolTipText("Count-up timestamps instead of count-down");
-		countDir.setSelected(countUp);
-		countDir.addActionListener(e -> {countUp = countDir.isSelected();});
-
-		buttonPanel.add(countDir);
 		buttonPanel.add(copyButton);
 		buttonPanel.add(revertButton);
 
@@ -1057,6 +1051,14 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 
 	public List<LyricLine> getLyricLines() {
 		return lyricLinesContent.getLyricLines();
+	}
+
+	/**
+	 * If true, the copied lyrics timestamp will count up.
+	 * If false, they will count down.
+	 */
+	public void setPoeticalLyricsAdvancement(boolean up) {
+		countUp = up;
 	}
 
     public void setStats(String stats) {

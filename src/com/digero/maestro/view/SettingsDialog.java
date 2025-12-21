@@ -900,6 +900,13 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
         reduceFileSizeCheckBox.addActionListener(
                 e -> saveSettings.reducedFilesize = reduceFileSizeCheckBox.isSelected());
 
+		final JCheckBox countUpLyricsCheckBox = new JCheckBox(
+				"Count-up lyrics timestamps");
+		countUpLyricsCheckBox.setToolTipText("When copying lyrics for Poetical this will make them count-up instead of count-down.");
+		countUpLyricsCheckBox.setSelected(saveSettings.countUpLyrics);
+		countUpLyricsCheckBox.addActionListener(
+				e -> saveSettings.countUpLyrics = countUpLyricsCheckBox.isSelected());
+
 		TableLayout layout = new TableLayout();
 		layout.insertColumn(0, PREFERRED);
 //		layout.insertColumn(1, FILL);
@@ -942,6 +949,9 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 
         layout.insertRow(++row, PREFERRED);
         panel.add(reduceFileSizeCheckBox, "0, " + row);
+
+		layout.insertRow(++row, PREFERRED);
+		panel.add(countUpLyricsCheckBox, "0, " + row);
 
 		return panel;
 	}

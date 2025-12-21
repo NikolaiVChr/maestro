@@ -831,6 +831,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	private void generateMidiPartsAndControlsPanel() {
 		arrangementView = new ArrangementView(sequencer, partAutoNumberer, abcSequencer, miscSettings.showMaxPolyphony, miscSettings.dissEnabled);
+		arrangementView.setPoeticalLyricsAdvancement(saveSettings.countUpLyrics);
 		arrangementView.addSettingsActionListener(e -> doSettingsDialog(SettingsDialog.NUMBERING_TAB));
 
 		tuneEditorButton = new JButton();
@@ -1518,6 +1519,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		arrangementView.setPolyphony(miscSettings.showMaxPolyphony);
         arrangementView.setDissonanceEnabled(miscSettings.dissEnabled);
+		arrangementView.setPoeticalLyricsAdvancement(saveSettings.countUpLyrics);
 		if (abcSong != null) {
 			abcSong.setBadger(miscSettings.showBadger);
 		}
