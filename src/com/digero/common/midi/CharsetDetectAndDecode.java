@@ -646,7 +646,12 @@ public class CharsetDetectAndDecode {
                neutral++;
                continue;
             }
-            if (script == Script.EASTERN) System.out.println(block);
+            if (script == Script.EASTERN) {
+                //System.out.println(block);
+                // power_of_goodbye5.mid is the only file I have seen going into this condition.
+                // output was: LATIN_EXTENDED_B
+                // The midi has no lyrics, and the track-names ended up decoded as Cyrillic, which appears to be correct.
+            }
             
             prevCp = cp;// should also be before other returns but will be mess
             // everything else we treat as "other" (counts below)
