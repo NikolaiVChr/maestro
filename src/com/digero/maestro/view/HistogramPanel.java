@@ -99,10 +99,10 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 		gutter.setBackground(ColorTable.PANEL_HIGHLIGHT_OTHER_PART.get());
 
 		this.histoGraph = new HistogramNoteGraph(sequenceInfo, sequencer);
-		histoGraph.setBackground(ColorTable.GRAPH_BACKGROUND_DISABLED.get());
+		histoGraph.setBackground(ColorTable.NOTE_POLYPHONY_BACKGROUND.get());
 		histoGraph.setPreferredSize(new Dimension(histoGraph.getPreferredSize().width, getPreferredSize().height));
 		histoGraph.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()));
-		setBackground(ColorTable.GRAPH_BACKGROUND_DISABLED.get());
+		setBackground(ColorTable.NOTE_POLYPHONY_BACKGROUND.get());
 
 		JLabel titleLabel = new JLabel("Polyphony");
 		titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));

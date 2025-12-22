@@ -100,10 +100,10 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
 		gutter.setBackground(ColorTable.PANEL_HIGHLIGHT_OTHER_PART.get());
 
 		this.tempoGraph = new TempoNoteGraph(sequenceInfo, sequencer);
-		tempoGraph.setBackground(ColorTable.GRAPH_BACKGROUND_DISABLED.get());
+		tempoGraph.setBackground(ColorTable.TEMPO_BACKGROUND.get());
 		tempoGraph.setPreferredSize(new Dimension(tempoGraph.getPreferredSize().width, getPreferredSize().height));
 		tempoGraph.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()));
-		setBackground(ColorTable.GRAPH_BACKGROUND_DISABLED.get());
+		setBackground(ColorTable.TEMPO_BACKGROUND.get());
 
 		JLabel titleLabel = new JLabel("Tempo");
 		titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));

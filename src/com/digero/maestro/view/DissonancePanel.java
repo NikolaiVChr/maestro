@@ -93,10 +93,10 @@ public class DissonancePanel extends JPanel implements IDiscardable, TableLayout
 		gutter.setBackground(ColorTable.PANEL_HIGHLIGHT_OTHER_PART.get());
 
 		this.dissoGraph = new DissonanceNoteGraph(sequenceInfo, sequencer);
-		dissoGraph.setBackground(ColorTable.GRAPH_BACKGROUND_DISABLED.get());
+		dissoGraph.setBackground(ColorTable.DISSONANCE_BACKGROUND.get());
 		dissoGraph.setPreferredSize(new Dimension(dissoGraph.getPreferredSize().width, getPreferredSize().height));
 		dissoGraph.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()));
-		setBackground(ColorTable.GRAPH_BACKGROUND_DISABLED.get());
+		setBackground(ColorTable.DISSONANCE_BACKGROUND.get());
 
 		JLabel titleLabel = new JLabel("Dissonance");
 		titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));

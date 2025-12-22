@@ -28,6 +28,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.ParseException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -55,6 +56,7 @@ import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.text.BadLocationException;
+import javax.swing.text.Document;
 import javax.xml.transform.TransformerException;
 
 import com.digero.common.abc.AbcConstants;
@@ -278,8 +280,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
         disableSpaceFocus();
 
-        String welcomeMessage = formatInfoMessage("Hello Maestro",
-                "Drag and drop a MIDI or ABC file to open it.\n" + "Or use File > Open.");
+
 
         partAutoNumberer = new PartAutoNumberer(prefs.node("partAutoNumberer"));
         partNameTemplate = new PartNameTemplate(prefs.node("partNameTemplate"));
@@ -294,6 +295,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
         if (miscSettings.checkForUpdates) checkVersionCompare();
 
+		String welcomeMessageTitle = "Hello Maestro";
+		String welcomeMessage =	"Drag and drop a MIDI or ABC file to open it.\n" + "Or use File > Open.";
+
         checkVolumeTransceiver();
 
         try {
@@ -306,10 +310,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 abcSequencer.addTransceiver(abcVolumeTransceiver);
 
             if (LotroSequencerWrapper.getLoadLotroSynthError() != null) {
-                welcomeMessage = formatErrorMessage("Could not load LOTRO instrument sounds",
-                        "ABC Preview will use standard MIDI instruments instead\n"
+                welcomeMessageTitle = "Could not load LOTRO instrument sounds";
+				welcomeMessage = "ABC Preview will use standard MIDI instruments instead\n"
                                 + "(drums do not sound good in this mode).\n\n" + "Error details:\n"
-                                + LotroSequencerWrapper.getLoadLotroSynthError());
+                                + LotroSequencerWrapper.getLoadLotroSynthError();
                 failedToLoadLotroInstruments = true;
             }
 
@@ -356,6 +360,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
         generateMidiPartsAndControlsPanel();
 
+		initTheme();//after arrangementView is defined, but before welcome message is set.
+
         if (!SHOW_TEMPO_SPINNER)
             tempoSpinner.setEnabled(false);
         if (!SHOW_METER_TEXTBOX)
@@ -385,9 +391,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         audioExporter = new AudioExportManager(this, MaestroMain.APP_NAME + " " + MaestroMain.APP_VERSION, prefs);
 
         initMenu();
-		initTheme();
         onSaveAndExportSettingsChanged();
-        arrangementView.showInfoMessage(welcomeMessage);
+        arrangementView.showInfoMessage(formatInfoMessage(welcomeMessageTitle, welcomeMessage, getHTMLFontSizeNormal()));
         updateButtons(false);//must be false since we are not in AWT thread now.
 
         // Add support for using spacebar for pause/play.
@@ -1685,7 +1690,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			this.ignoreChanges = ignoringChanges;
 		}
 
-		private void updatePrefs(javax.swing.text.Document doc) {
+		private void updatePrefs(Document doc) {
 			if (ignoreChanges)
 				return;
 
@@ -2047,7 +2052,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				if (abcSong.getParts().isEmpty()) {
 					sequencer.stop();
 					arrangementView.showInfoMessage(formatInfoMessage("Add a part", "This ABC song has no parts.\n" + //
-							"Click the " + newPartButton.getText() + " button to add a new part."));
+							"Click the " + newPartButton.getText() + " button to add a new part.",getHTMLFontSizeNormal()));
 				}
 
 				partsList.repaint();
@@ -2485,10 +2490,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 					message += ", column " + e.getColumnNumber();
 			}
 
-			arrangementView.showInfoMessage(formatErrorMessage("Could not open " + file.getName(), message));
+			arrangementView.showInfoMessage(formatErrorMessage("Could not open " + file.getName(), message, getHTMLFontSizeNormal()));
 			midiResolved = false;
 		} catch (InvalidMidiDataException | IOException | FileParseException | SAXException e) {
-			arrangementView.showInfoMessage(formatErrorMessage("Could not open " + file.getName(), e.getMessage()));
+			arrangementView.showInfoMessage(formatErrorMessage("Could not open " + file.getName(), e.getMessage(), getHTMLFontSizeNormal()));
 			midiResolved = false;
 		}
 		
@@ -2598,14 +2603,32 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 	};
 
-	private static String formatInfoMessage(String title, String message) {
-		return "<html><h3>" + Util.htmlEscape(title) + "</h3>" + Util.htmlEscape(message).replace("\n", "<br>")
-				+ "<h3>&nbsp;</h3></html>";
+	private static String formatInfoMessage(String title, String message, int fontSize) {
+		int fontSizeHeader = Math.min(7, fontSize + 2);
+		return "<html><font size='"+fontSizeHeader+"' color=\"" + ColorTable.PANEL_TEXT_NO_ERROR.getHtml()+ "\"><b>" + Util.htmlEscape(title)
+				+ "<br></b></font><font size='"+fontSize+"' color=\"" + ColorTable.PANEL_TEXT_NO_ERROR.getHtml()+ "\">"
+				+ Util.htmlEscape(message).replace("\n", "<br>")
+				+ "</font><h3>&nbsp;</h3></html>";
 	}
 
-	private static String formatErrorMessage(String title, String message) {
-		return "<html><h3><font color=\"" + ColorTable.PANEL_TEXT_ERROR.getHtml() + "\">" + Util.htmlEscape(title)
-				+ "</font></h3>" + Util.htmlEscape(message).replace("\n", "<br>") + "<h3>&nbsp;</h3></html>";
+	private static String formatErrorMessage(String title, String message, int fontSize) {
+		int fontSizeHeader = Math.min(7, fontSize + 2);
+		return "<html><font size='"+fontSizeHeader+"' color=\"" + ColorTable.PANEL_TEXT_ERROR.getHtml() + "\"><b>" + Util.htmlEscape(title)
+				+ "<br></b></font><font size='"+fontSize+"' color=\"" + ColorTable.PANEL_TEXT_NO_ERROR.getHtml()+ "\">"
+				+ Util.htmlEscape(message).replace("\n", "<br>")
+				+ "</font><h3>&nbsp;</h3></html>";
+	}
+
+	private int getHTMLFontSizeNormal() {
+		return switch ((Integer)miscSettings.fontSize) {
+			case Integer i when i < 7  -> 1; // approx 8pt
+			case Integer i when i < 9  -> 2; // approx 10pt
+			case Integer i when i < 11 -> 3; // approx 12pt (Standard)
+			case Integer i when i < 13 -> 4; // approx 14pt
+			case Integer i when i < 15 -> 5; // approx 18pt
+			case Integer i when i < 19 -> 6; // approx 24pt
+			default                    -> 7; // 36pt+
+        };
 	}
 
     public float getSourcePlayHeadBar() {
@@ -2942,7 +2965,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			tempoSpinner.commitEdit();
 			timeSignatureField.commitEdit();
 			keySignatureField.commitEdit();
-		} catch (java.text.ParseException ignore) {
+		} catch (ParseException ignore) {
 		}
 	}
 	

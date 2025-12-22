@@ -859,7 +859,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		} else if (!trackActive) {
 			noteGraph.setNoteColor(ColorTable.NOTE_OFF);
 			noteGraph.setBadNoteColor(ColorTable.NOTE_BAD_OFF);
-		} else // disabled (lighter colored) notes for playing tracks not in the current par
+		} else // disabled (lighter colored) notes for playing tracks not in the current part
 		{
 			boolean pseudoOff = !abcPreviewMode && (abcPart.isPercussionPart() != trackInfo.isDrumTrack());
 			noteGraph.setNoteColor(pseudoOff ? ColorTable.NOTE_OFF : ColorTable.NOTE_DISABLED);
@@ -942,7 +942,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 		if (showDrumPanels != showDrumPanelsPrev) {
 			if (showDrumPanels) {
-				System.out.println("Enabling drum panels on a track");
+				//System.out.println("Enabling drum panels on a track");
 
 				initDrumPanels();
 
@@ -974,7 +974,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 				drumMapMenu.setVisible(showDrumPanels && abcPart.isDrumPart());
 			}
 			else { // Don't show drum panels
-				System.out.println("Disabling drum panels on a track");
+				//System.out.println("Disabling drum panels on a track");
 				for (int i = getComponentCount() - 1; i >= 0; --i) {
 					Component child = getComponent(i);
 					if (child instanceof DrumPanel) {

@@ -368,7 +368,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 
 		if (evt.getProperty() == SequencerProperty.IS_DRAGGING) {
 			indicatorLine.setBackground(
-					sequencer.isDragging() ? ColorTable.INDICATOR_ACTIVE.get() : ColorTable.INDICATOR.get());
+					sequencer.isDragging() ? ColorTable.INDICATOR_DRAGGING.get() : ColorTable.INDICATOR.get());
 		}
 
 		// Repaint the parts that need it
@@ -673,7 +673,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 						barBothEdited = true;
 					}
 				}
-				g2.setColor(barBothEdited ? ColorTable.GRAPH_BAR_LINE_EDITED.get() : ColorTable.BAR_LINE.get());
+				g2.setColor(barBothEdited ? ColorTable.BAR_LINE_EDITED.get() : ColorTable.BAR_LINE.get());
 				g2.fill(rectTmp);
 			}
 		}

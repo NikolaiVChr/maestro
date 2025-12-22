@@ -347,13 +347,13 @@ public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardab
 			noteGraph.setNoteColor(ColorTable.NOTE_DRUM_OFF);
 			noteGraph.setBadNoteColor(ColorTable.NOTE_BAD_OFF);
 			
-			setBackground(ColorTable.GRAPH_BACKGROUND_OFF.get());
-			noteGraph.setBackground(ColorTable.GRAPH_BACKGROUND_OFF.get());
+			setBackground(ColorTable.NOTE_DRUM_OFF_BACKGROUND.get());
+			noteGraph.setBackground(ColorTable.NOTE_DRUM_OFF_BACKGROUND.get());
 			checkBox.setForeground(ColorTable.PANEL_TEXT_OFF.get());
 		} else if (trackEnabled && noteEnabled) {
 			// enabled
 			noteGraph.setNoteColor(ColorTable.NOTE_DRUM_ENABLED);
-			noteGraph.setBadNoteColor(ColorTable.NOTE_BAD_ENABLED);
+			noteGraph.setBadNoteColor(ColorTable.NOTE_DRUM_DISABLED);
 
 			setBackground(ColorTable.GRAPH_BACKGROUND_ENABLED.get());
 			noteGraph.setBackground(ColorTable.GRAPH_BACKGROUND_ENABLED.get());
@@ -363,8 +363,8 @@ public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardab
 			noteGraph.setNoteColor(ColorTable.NOTE_DRUM_OFF);
 			noteGraph.setBadNoteColor(ColorTable.NOTE_BAD_OFF);
 
-			setBackground(ColorTable.GRAPH_BACKGROUND_OFF.get());
-			noteGraph.setBackground(ColorTable.GRAPH_BACKGROUND_OFF.get());
+			setBackground(ColorTable.NOTE_DRUM_OFF_BACKGROUND.get());
+			noteGraph.setBackground(ColorTable.NOTE_DRUM_OFF_BACKGROUND.get());
 			checkBox.setForeground(ColorTable.PANEL_TEXT_OFF.get());
 		}
 	}

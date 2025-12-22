@@ -286,7 +286,8 @@ public class ColorSelector extends JPanel {
 
     private void refreshAppColors() {
         // Repaint the the dialog
-        SwingUtilities.getWindowAncestor(ColorSelector.this).repaint();
+        Window win = SwingUtilities.getWindowAncestor(ColorSelector.this);
+        if (win != null) win.repaint();// important since this method is called before this panel is added to a window.
 
         if (tracks != null) tracks.rebuildPanels();
 
@@ -298,7 +299,7 @@ public class ColorSelector extends JPanel {
 
     private void exportTheme() {
         JFileChooser jfc = new JFileChooser();
-        jfc.setDialogTitle("Export Theme");
+        jfc.setDialogTitle("Export Color Theme");
         ExtensionFileFilter filter = new ExtensionFileFilter("Maestro Theme (*"+Util.THEME_FILE_EXTENSION+")", Util.THEME_FILE_EXTENSION_NO_DOT);
         jfc.setFileFilter(filter);
         jfc.setAcceptAllFileFilterUsed(false);
@@ -332,7 +333,7 @@ public class ColorSelector extends JPanel {
     }
 
     /**
-     * Will overwrite existing file.
+     * Warning: Will overwrite the existing file.
      */
     private void saveTheme(File file) throws TransformerException, IOException {
         Document doc = XmlUtil.createDocument();
@@ -354,7 +355,7 @@ public class ColorSelector extends JPanel {
 
     private void importTheme() {
         JFileChooser jfc = new JFileChooser();
-        jfc.setDialogTitle("Import Theme");
+        jfc.setDialogTitle("Import Color Theme");
         jfc.setFileFilter(new ExtensionFileFilter("Maestro Theme (*"+Util.THEME_FILE_EXTENSION+")", Util.THEME_FILE_EXTENSION_NO_DOT));
         jfc.setAcceptAllFileFilterUsed(false);
         jfc.setCurrentDirectory(lastDir);
@@ -393,6 +394,7 @@ public class ColorSelector extends JPanel {
                 ct.set(new Color(argb, true));
             } catch (Exception ignored) {
                 // Skip invalid colors
+                log.info("Invalid color id or value in theme file: " + id);
             }
         }
         refreshUI();
