@@ -79,7 +79,7 @@ public class ColorSelector extends JPanel {
             try {
                 loadTheme(file);
             } catch (Exception e) {
-                log.info("Failed to load init color theme. Will not attempt again next startup.");
+                log.warning("Failed to load init color theme ("+file.getName()+"). Will not attempt again next startup.");
                 Preferences.userNodeForPackage(ColorTable.class).remove("themeFile");
             }
         }
