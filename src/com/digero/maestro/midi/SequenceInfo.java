@@ -749,6 +749,19 @@ public class SequenceInfo implements MidiConstants {
 	 * Ensures that there are no tracks with both drums and notes.
 	 */
 	public Sequence separateDrumTracks(Sequence song) {
+		/*
+			Since commit 1104b2d9 there have been a bug in this method due to
+			that only 'modified' was used and not 'trackModified'.
+			My analysis of this bug indicates the bug is harmless due to
+			users won't see the assert statement and the notes in
+			question will just stay on their track.
+			So I am fixing the bug for v4.6.2, and this flag can be used if
+			I really want to preserve the bug for projects between that commit
+			and this version. Then it will have to be true to recreate the bug,
+			and it has to be stored in the project file.
+			But for now we keep it false, which will just fix the bug.
+		 */
+		boolean useLegacyLogic = false;
 
 		if (MidiStandard.ABC == standard) {// || tracks.length <= 1
 			return song;
@@ -772,6 +785,8 @@ public class SequenceInfo implements MidiConstants {
         boolean modified = false;
 
 		for (int i = 0; i < oldTracks.length; i++) {
+			boolean trackModified = false;
+
             Track oldTrack = oldTracks[i];
             Track mainTrack = newMainTracks[i];
 
@@ -845,6 +860,7 @@ public class SequenceInfo implements MidiConstants {
 
             if (drumsGS + drumsXG + drumsGM2 + notes + drumsGM > 1 || (drumsExt10 + drumsExtX > 1) || (notes10 + notesX > 1)) {
                 modified = true;
+				trackModified = true;
 
                 if (notes == 1) {
                     if (drumsGM == 1) {
@@ -878,7 +894,7 @@ public class SequenceInfo implements MidiConstants {
                 MidiMessage msg = evt.getMessage();
                 boolean moved = false;
 
-                if (msg instanceof ShortMessage smsg && modified) {
+                if (msg instanceof ShortMessage smsg && (useLegacyLogic && modified || !useLegacyLogic && trackModified)) {
                     int chan = smsg.getChannel();
                     if (drumTrack != null && drumsGM == 1 && chan == DRUM_CHANNEL) {
                         // GM drum note split into new track
@@ -914,9 +930,17 @@ public class SequenceInfo implements MidiConstants {
                             && mmaDrumSwitches.get(chan).floorEntry(evt.getTick()).getValue())) {
                         // These non-channel-10 GS/XG/GM2 drum notes stay in the track.
                         // The chromatic notes will never enter here as
-                        // 'notes' will be 1 when they are there
+                        // 'notes' will be 1 when they are present,
                         // and therefore no drum notes will reach last IF statement.
-                        assert chan != DRUM_CHANNEL : "Ch10 extension drum note refuse to leave track!";
+                        assert useLegacyLogic || chan != DRUM_CHANNEL : "Ch10 extension drum note refuse to leave track!" +
+								"\n drumsGS="+drumsGS+" drumsGM2="+drumsGM2+" drumsXG="+drumsXG+" drumsGM="+drumsGM
+								+"\n notes="+notes+" channel="+chan+" drumsExt10="+drumsExt10+" drumsExtX="+drumsExtX
+								+"\n notes10="+notes10 +" notesX="+ notesX
+								+" isGSDrumChannel="+(rolandDrumChannels[chan])
+								+" isXGdrum="+(yamahaDrumSwitches.get(chan).floorEntry(evt.getTick()) != null
+									&& yamahaDrumSwitches.get(chan).floorEntry(evt.getTick()).getValue())
+								+" isGM2drum="+(mmaDrumSwitches.get(chan).floorEntry(evt.getTick()) != null
+									&& mmaDrumSwitches.get(chan).floorEntry(evt.getTick()).getValue());
                     } else if (noteTrack != null && chan == DRUM_CHANNEL) {
                         // Chromatic note on ch10. Split it into new track.
                         noteTrack.add(evt);
