@@ -13,6 +13,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.digero.common.midi.CharsetDetectAndDecode;
 import com.digero.common.midi.MidiUtils;
 import com.digero.common.util.LyricLine;
 import com.digero.common.util.Pair;
@@ -41,12 +42,20 @@ public class MidiText {
 
 	private Map<Charset,Integer> csStats = new HashMap<>();
 	private int csTotal = 0;
-	
+	private Charset mainCharset = null;
+
 	public MidiText(SequenceDataCache cache) {
 		this.cache = cache;
 	}
-	
+
+	/**
+	 * Autodetect encoding and decode
+	 */
 	private String decode(byte[] data) {
+		return decode(data, false);
+	}
+
+	private String decode(byte[] data, boolean storeCharset) {
 		Pair<String, Charset> result = MidiUtils.decodeMidiText(data, 
 				   "ENGL".equalsIgnoreCase(language)
 				|| "EN".equalsIgnoreCase(language)
@@ -56,7 +65,16 @@ public class MidiText {
 				|| "FR".equalsIgnoreCase(language)
 			);
 		//addToCharsetScore(result.second);
+		if (storeCharset) mainCharset = result.second;
 		return result.first;
+	}
+
+	/**
+	 * Decode with the charset detected from the getText() method.
+	 */
+	private String decodeWith(byte[] data) {
+		if (mainCharset == null) return decode(data);
+        return CharsetDetectAndDecode.decodeMidiData(data, mainCharset);
 	}
 	
 	void collectTxt(long tick, byte[] data, int metaType, int track) {
@@ -273,6 +291,16 @@ public class MidiText {
 						}
 						byte[] content = Arrays.copyOfRange(data, offset, end);
 						fragment.sylineBytes = content;
+
+						// Only filter if it came from META_TEXT.
+						// We trust META_LYRIC to be actual words.
+						if (fragment.source == Source.TEXT) {
+							String decodedText = decode(fragment.sylineBytes);
+							if (isChord(decodedText)) {
+								log.fine("Dropped Chord event: " + decodedText);
+								return;
+							}
+						}
 						
 					    if (fragment.reaction == Reaction.LANGUAGE) language = decode(fragment.sylineBytes); 
 					}					
@@ -510,10 +538,13 @@ public class MidiText {
 			}
 			prev = fraction.reaction;
 		}
-		str.append(cleanSyllable(decode(bytes.toByteArray())));
+		str.append(cleanSyllable(decode(bytes.toByteArray(), true)));
 		return str.toString();
 	}
 
+	/**
+	 * Call this after getText, not before.
+	 */
 	public List<LyricLine> getStructuredLyrics() {
 		List<LyricLine> lines = new ArrayList<>();
 		if (text.isEmpty()) {
@@ -600,7 +631,7 @@ public class MidiText {
 				// We use the currentLineTick if set, otherwise the fraction's tick (for blank lines).
 				long tick = (currentLineTick != -1L) ? currentLineTick : fraction.tick;
 				long lastSyllableTick = (endTick != -1) ? endTick : tick;
-				String decodedLine = cleanSyllable(decode(lineBytes.toByteArray()));
+				String decodedLine = cleanSyllable(decodeWith(lineBytes.toByteArray()));
 				lines.add(new LyricLine(tick, decodedLine.trim(), lastSyllableTick));
 				//System.out.println("Newline before: "+decodedLine+" endTick="+endTick+" tick="+tick+" currentLineTick="+currentLineTick+" fraction.tick="+fraction.tick);
 				lineBytes.reset();
@@ -633,7 +664,7 @@ public class MidiText {
 			if (isNewlineAfter) {
 				long tick = (currentLineTick != -1L) ? currentLineTick : fraction.tick;
 				long lastSyllableTick = (endTick != -1L) ? endTick : tick;
-				String decodedLine = cleanSyllable(decode(lineBytes.toByteArray()));
+				String decodedLine = cleanSyllable(decodeWith(lineBytes.toByteArray()));
 				//System.out.println("Newline after: "+decodedLine+" endTick="+endTick+" tick="+tick+" currentLineTick="+currentLineTick+" fraction.tick="+fraction.tick);
 				lines.add(new LyricLine(tick, decodedLine.trim(), lastSyllableTick));
 
@@ -647,9 +678,9 @@ public class MidiText {
 
 		// Flush remaining buffer
 		if (lineBytes.size() > 0) {
-			String decodedLine = cleanSyllable(decode(lineBytes.toByteArray()));
+			String decodedLine = cleanSyllable(decodeWith(lineBytes.toByteArray()));
 			long lastSyllableTick = (endTick != -1L) ? endTick : Math.max(0L, currentLineTick);
-			// Allow last line to be added even if effectively empty, to match file structure
+			// Allow last line to be added even if effectively empty, to match the file structure
 			lines.add(new LyricLine(Math.max(0L, currentLineTick), decodedLine.trim(), lastSyllableTick));
 		}
 
@@ -683,35 +714,14 @@ public class MidiText {
 	/**
 	 * Call me after decoding syllable/line
 	 *
+	 * Will remove some chord symbols.
      */
 	private String cleanSyllable(String str) {
 		str = str.replace("STARTAKKORD", "");
 		str = str.replace("|C:|", "");//chorus start
 		str = str.replace("|:C|", "");//chorus end (normally in later syllable than start)
 
-		// Split by whitespace to handle words individually.
-		// We use a regex lookaround to keep the delimiters so we can reconstruct the spacing perfectly.
-		// ((?<=\s)|(?=\s)) splits *around* whitespace but keeps the whitespace as tokens.
-		String[] tokens = str.split("((?<=\\s)|(?=\\s))");
-
-		StringBuilder sb = new StringBuilder();
-		for (String token : tokens) {
-			// If the token is just whitespace, preserve it
-			if (token.isBlank()) {
-				sb.append(token);
-				continue;
-			}
-
-			// Check if this specific word looks like a URL
-			if (token.contains("://")) {
-				// It is a URL, append as is
-				sb.append(token);
-			} else {
-				// It is normal text, replace all slashes with newlines
-				sb.append(token.replace("/", "\n"));
-			}
-		}
-		return sb.toString();
+		return str;
 	}
 	
 	private static void writeTrimmed(ByteArrayOutputStream out, byte[] data) {
@@ -720,6 +730,41 @@ public class MidiText {
 	        end--;
 	    }
 	    out.write(data, 0, end);
+	}
+
+	private boolean isChord(String text) {
+		if (text == null) return false;
+
+		int originalLength = text.length();
+		String trimmed = text.trim();
+		if (trimmed.isEmpty()) return false;
+
+		// Calculate Padding
+		// We don't return true immediately. We just note that it looks suspicious.
+		boolean padded = (originalLength - trimmed.length() > 2);
+
+		// Matches explicit musical suffix: maj, min, 7, /, etc.
+		// "Am" (I am) is saved because 'm' is not in this specific list.
+		// "A min" is dropped.
+		if (trimmed.matches("(?i)^[A-G][#b]?\\s*(maj|min|dim|aug|sus|add|7|9|11|13|/|_).*$")) {
+			return true;
+		}
+
+		// Drops B, C, D, E, F, G (and their sharps/flats).
+		// Drops A# and Ab.
+		// skips plain "A".
+		if (trimmed.matches("(?i)^([B-G][#b]?|A[#b])$")) {
+			return true;
+		}
+
+		// We already know it's not A#.
+		// So this really just asks: Is it "A" or "a"?
+		// If it is "A", we only drop it if it has the suspicious padding.
+		if (padded && trimmed.equalsIgnoreCase("A")) {
+			return true;
+		}
+
+		return false;
 	}
 
 	public static class TextFragment implements Comparable<TextFragment> {

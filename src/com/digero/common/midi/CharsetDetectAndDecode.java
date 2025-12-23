@@ -23,7 +23,12 @@ import com.ibm.icu.text.CharsetMatch;
 
 public class CharsetDetectAndDecode {
 	private static final Logger log = Logger.getLogger("import.midi.text");
-	
+
+    public static String decodeMidiData(byte[] data, Charset cs) {
+        if (data == null || data.length == 0) return "";
+        return decodeWithReplace(data, cs);
+    }
+
 	public static Pair<String, Charset> decodeMidiData(byte[] data) {
 		return decodeMidiData(data, false);
 	}
