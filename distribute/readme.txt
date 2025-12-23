@@ -42,19 +42,20 @@ Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
 Version 4.6.2
-- Before installing this, please remove old maestro from your windows manually.
+- Before installing this using the MSI installer, please remove old maestro from your windows manually.
     (search "Add or remove programs" in windows and remove "Maestro")
     This only needs to be done once, next versions will just update the previous version automatically again.
 - The MSI now installs to per-user "AppData/Local" instead of global "Program Files".
     This also means it no longer need admin privilege when it install and uninstall,
     and therefore is also not able to be installed in "C:\Program Files", so don't attempt that.
-- The soundfont that make the instruments sound like lotro is now downloaded when the app is started. 240 MB approx.
+- Fixed that when uninstalling in Windows when installed to non-default folder that the folder did not get removed.
+- The soundfont that make the instruments sound like lotro is now downloaded first time the app is started. 240 MB approx.
     The soundfont don't get updated often, so when installing a new maestro version,
     most of the time it will just use one from a previous Maestro.
     The download location on Windows is C:\Users\[username]\AppData\Local\MaestroCommon
     If you use from ZIP then you have option to manually use your own soundfont by putting
     it into the app folder with the name "LotroInstruments.sf2". Then it will not attempt to download one.
-- Fix that v4.5.24 would not run on Linux.
+- Fix that v4.5.24 would not run on Linux with earlier than Java 25 without changing the shell scrips.
 - When loading abc file into maestro also set the user pan on a new project.
 - Allow editing of lyrics and to copy them for Poetical with timestamps.
 - Allow changing colors of Maestro. Note that most colors are dictated by dark and light themes and can't be changed.
