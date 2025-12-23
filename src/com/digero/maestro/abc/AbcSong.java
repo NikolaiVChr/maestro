@@ -505,7 +505,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 				for (Element lineEle : XmlUtil.selectElements(lyricsContainer, "line")) {
 					float bar = SaveUtil.parseValue(lineEle, "@bar", 0.0f);
-					float barEnd = SaveUtil.parseValue(lineEle, "@bar", bar);
+					float barEnd = SaveUtil.parseValue(lineEle, "@barEnd", bar);
 					String text = lineEle.getTextContent();
 
 					long tick = data.barFloatToTick(bar);

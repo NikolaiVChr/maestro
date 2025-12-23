@@ -182,8 +182,14 @@ public class MidiText {
 							fragment.format = fragment.source == Source.TEXT?Format.SOFT_KARAOKE:Format.TUNE1000;
 							break;
 						case 'W':
-							// not 100% sure what the W tag means, so we treat it as I
-							log.info(decode(data));
+						case 'w':
+							// Not officially part of the spec, but used by some
+							// lyrics editors.
+							valid = data.length > 2;
+							offset = 2;
+							fragment.reaction = Reaction.WRITER;
+							fragment.format = fragment.source == Source.TEXT?Format.SOFT_KARAOKE:Format.TUNE1000;
+							break;
 						case 'I':
 						case 'i':
 							valid = data.length > 2;
@@ -249,9 +255,9 @@ public class MidiText {
 						// So if we find the last syllable ended with hyphen,
 						// we assume that a sentence was broken up, and we stitch it.
 
-						// Found hyphen! Stitching them together:
+						// Found hyphen. Stitching them together:
 						if (fragment.sylineBytes != null && fragment.sylineBytes.length > 0) {
-							fragment.reaction = Reaction.SYLLABLE; // Downgrade to simple syllable
+							fragment.reaction = Reaction.SYLLABLE; // Downgrade to a simple syllable
 							log.fine("Merged hyphenated newline (converted to syllable): " + last);
 						}
 					}
@@ -534,7 +540,9 @@ public class MidiText {
                     case LANGUAGE -> "Language: " + decode(fraction.sylineBytes);
                     case INFO -> "Info: " + decode(fraction.sylineBytes);
                     case META_LINE -> fraction.prefix + decode(fraction.sylineBytes);
-                    case RIGHTS -> "Rights: " + decode(fraction.sylineBytes);
+                    case RIGHTS -> "Lyrics Copyrights: " + decode(fraction.sylineBytes);
+					case WRITER -> "Writer: " + decode(fraction.sylineBytes);
+					case VERSION -> "Version: " + decode(fraction.sylineBytes);
 					default -> "";
                 };
 
@@ -657,7 +665,7 @@ public class MidiText {
 
 	private boolean isMetadata(Reaction r) {
 		return r == Reaction.TITLE || r == Reaction.RIGHTS || r == Reaction.LANGUAGE ||
-				r == Reaction.INFO || r == Reaction.META_LINE || r == Reaction.VERSION;
+				r == Reaction.INFO || r == Reaction.META_LINE || r == Reaction.VERSION || r == Reaction.WRITER;
 	}
 
 	private boolean containsVisibleContent(byte[] bytes, int length) {
@@ -737,6 +745,7 @@ public class MidiText {
 			LANGUAGE,
 			INFO,
 			VERSION,
+			WRITER,
 			FIRST,// first full line
 			SECOND,
 			THIRD,
