@@ -505,10 +505,13 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 				for (Element lineEle : XmlUtil.selectElements(lyricsContainer, "line")) {
 					float bar = SaveUtil.parseValue(lineEle, "@bar", 0.0f);
+					float barEnd = SaveUtil.parseValue(lineEle, "@bar", bar);
 					String text = lineEle.getTextContent();
 
 					long tick = data.barFloatToTick(bar);
-					loadedLyrics.add(new LyricLine(tick, text));
+					long tickEnd = data.barFloatToTick(barEnd);
+
+					loadedLyrics.add(new LyricLine(tick, text, tickEnd));
 				}
 				if (!loadedLyrics.isEmpty()) lyricLines = loadedLyrics;
 			}
@@ -767,7 +770,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			for (LyricLine line : lyricLines) {
 				Element lineEle = (Element) lyricsEle.appendChild(doc.createElement("line"));
 				float bar = data.tickToBarNumberFloat(line.tick());
+				float barEnd = data.tickToBarNumberFloat(line.endTick());
 				lineEle.setAttribute("bar", String.valueOf(bar));
+				lineEle.setAttribute("barEnd", String.valueOf(barEnd));
 				lineEle.setTextContent(XmlUtil.sanitizeStringForXMLSaving(line.text()));
 			}
 		}

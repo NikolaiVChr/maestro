@@ -163,23 +163,78 @@ public class LyricEditorPanel extends JPanel {
         boolean first = true;
         long tickPrev = Long.MIN_VALUE;
         long songStartMicros = part.getAbcSong().getSongStartMicrosABC();
+
+        boolean lastWasBlank = true; // Treat start as a new block
+        long prevLineMicros = Long.MIN_VALUE;
+        // If lines start > 6 seconds apart, assume a significant pause/break
+        final long GAP_THRESHOLD = 6_000_000L;
+        final long STANZA_THRESHOLD = 2_000_000L; // 2.0s gap -> Allow Stanza Break (Blank Line)
+        final long INSTRUMENTAL_THRESHOLD = 20_000_000L;
+
+        // Track if we are holding a blank line in suspense
+        boolean pendingStanzaBreak = false;
+
         for (LyricLine line : model.getLines()) {
             if (first && !modified) {
                 // We know it is the meta-info block if it's the first and lyrics not modified.
                 if (!line.text().isBlank()) sb.append("% ").append(line.text().replace("\n","\n%")).append('\n');
+                lastWasBlank = true;
             } else {
                 long tick = line.tick();
                 long micros;
+                long microsEnd;
                 if (organic) {
                     micros = qtm.tickToMicrosABCOrganic(tick)-songStartMicros;
+                    microsEnd = qtm.tickToMicrosABCOrganic(line.endTick())-songStartMicros;
                 } else {
                     micros = qtm.tickToMicrosABC(tick, part)-songStartMicros;
+                    microsEnd = qtm.tickToMicrosABC(line.endTick(), part)-songStartMicros;
                 }
+                long thisLineStartMicros = micros;
+
+                // If the line duration is zero (or very small), estimate a natural singing length.
+                // This prevents zero-length lines from creating fake large gaps after them.
+                long realDuration = Math.abs(microsEnd - micros);
+                if (realDuration < 500_000L && !line.text().isEmpty()) {
+                    // Estimate: 75 ms per character (in case it's rap)
+                    long estimatedDuration = line.text().length() * 75_000L;
+
+                    // Cap the estimate so super long text doesn't eat the whole gap
+                    estimatedDuration = Math.min(estimatedDuration, 5_000_000L);
+
+                    // Ensure the estimation is at least somewhat longer than the tiny duration
+                    if (estimatedDuration > realDuration) {
+                        microsEnd = micros + estimatedDuration;
+                    }
+                }
+
                 if (!countUp) {
                     micros = part.getAbcSong().getSongLengthMicros()-micros;
+                    microsEnd = part.getAbcSong().getSongLengthMicros()-microsEnd;
+                    prevLineMicros = Math.max(micros, prevLineMicros);
+                } else {
+                    prevLineMicros = Math.min(micros, prevLineMicros);
                 }
-                if (!line.text().isBlank()) {
-                    if (tick != tickPrev) {
+
+                if (isRealLyric(line.text())) {
+                    long gap = prevLineMicros == Long.MIN_VALUE ? 0L : Math.abs(micros - prevLineMicros);
+                    if (pendingStanzaBreak) {
+                        // Only print the blank line if there was actual silence
+                        if (gap > STANZA_THRESHOLD || prevLineMicros == Long.MIN_VALUE) {
+                            sb.append('\n');
+                            lastWasBlank = true;
+                        } else {
+                            // Newline or clear screen just for the sake of karaoke display.
+                            // Ignore it, so in effect remove the newline/clear between the lines.
+                            lastWasBlank = false;
+                        }
+                        pendingStanzaBreak = false; // Reset flag
+                    }
+                    boolean hasGap = prevLineMicros != Long.MIN_VALUE && gap > GAP_THRESHOLD;
+                    if (lastWasBlank || (tick != tickPrev && hasGap)) {
+                        if (prevLineMicros != Long.MIN_VALUE && gap > INSTRUMENTAL_THRESHOLD) {
+                            sb.append("\n% Interlude\n\n");
+                        }
                         sb.append("% ");
                         if (micros < 0L) {
                             micros = -micros;
@@ -188,14 +243,34 @@ public class LyricEditorPanel extends JPanel {
                         sb.append(Util.formatDuration(micros)).append("\n");
                     }
                     sb.append(line.text()).append('\n');
+                    //System.out.println(line.text() + ", lastEnd " + Util.formatDuration(prevLineMicros) + " begin " + Util.formatDuration(micros) + ", end " + Util.formatDuration(microsEnd));
+                    prevLineMicros = microsEnd;
+                    lastWasBlank = thisLineStartMicros < 0L;
+                } else if (!line.text().isBlank()) {
+                    sb.append(line.text()).append('\n');
+                    lastWasBlank = true;
                 } else {
-                    sb.append('\n');
+                    // Don't print '\n' yet! We don't know if it's real.
+                    pendingStanzaBreak = true;
+
+                    // Note: We do not update lastWasBlank here yet.
+                    // We wait until the next text line decides the fate of this break.
                 }
                 tickPrev = line.tick();
             }
             first = false;
         }
         return sb.toString();
+    }
+
+    private boolean isRealLyric(String text) {
+        if (text == null || text.isBlank()) return false;
+        for (int i = 0; i < text.length(); i++) {
+            if (Character.isLetterOrDigit(text.charAt(i))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private class LyricTable extends JTable {
@@ -325,7 +400,7 @@ public class LyricEditorPanel extends JPanel {
                     float bar = Float.parseFloat(barField.getText().replace(",","."));
                     String text = textField.getText().trim();
                     long tick = abcSong.getSequenceInfo().getDataCache().barFloatToTick(bar);
-                    model.addLine(new LyricLine(tick, text));
+                    model.addLine(new LyricLine(tick, text, tick));
                 } catch (NumberFormatException ex) {
                     JOptionPane.showMessageDialog(scrollPane, "Invalid bar number.", "Error", JOptionPane.ERROR_MESSAGE);
                 }
@@ -575,7 +650,7 @@ public class LyricEditorPanel extends JPanel {
 
                 if (oldLine.tick() != newTick) {
                     // Create new record with updated tick but same text
-                    LyricLine newLine = new LyricLine(newTick, oldLine.text());
+                    LyricLine newLine = new LyricLine(newTick, oldLine.text(), Math.max(newTick, oldLine.endTick()));
 
                     lines.set(row, newLine);
 
@@ -635,7 +710,7 @@ public class LyricEditorPanel extends JPanel {
                 String newText = (String) aValue;
                 if (!old.text().equals(newText)) {
                     // Create new record with same tick, updated text
-                    lines.set(rowIndex, new LyricLine(old.tick(), newText));
+                    lines.set(rowIndex, new LyricLine(old.tick(), newText, old.endTick()));
                     fireTableCellUpdated(rowIndex, columnIndex);
                     pushChangesToSong();
                 }

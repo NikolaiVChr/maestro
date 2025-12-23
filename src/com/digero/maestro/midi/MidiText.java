@@ -80,6 +80,7 @@ public class MidiText {
 				fragment.source = Source.MLIVE;
 				break;
 		}
+		//System.out.println("tick="+tick+" txt: "+MidiUtils.formatBytesHexOnly(data)+" type="+fragment.source+" track="+track);
 		fragment.track = track;
 		fragment.tick = tick;
 		if (data != null && data.length > 0) {
@@ -147,6 +148,7 @@ public class MidiText {
 				fragment.format = Format.TUNE1000;
 				fragment.reaction = Reaction.NEWLINE_NEW;
 			} else {
+				boolean allowStitch = false;
 				if (data.length >= 2 && data[0] == (byte) '*' && data[1] == (byte) ' ') {
 					valid = true;
 					fragment.reaction = Reaction.INFO;
@@ -207,6 +209,7 @@ public class MidiText {
 					fragment.reaction = Reaction.NEWLINE_OLD;
 					fragment.format = Format.SOFT_KARAOKE;
 					log.finest("Newline: "+MidiUtils.formatBytesHexOnly(Arrays.copyOfRange(data, offset, data.length)));
+					allowStitch = true;
 				} else if (data[0] == (byte) '\\' && fragment.source == Source.TEXT) {
 					valid = true;
 					offset = 1;
@@ -218,6 +221,7 @@ public class MidiText {
 					offset = 1;
 					fragment.reaction = Reaction.NEWLINE_NEW;
 					fragment.format = Format.UNKNOWN;
+					allowStitch = true;
 				} else if (data[0] == (byte) '\\' && fragment.source == Source.LYRIC) {
 					valid = true;
 					offset = 1;
@@ -232,12 +236,34 @@ public class MidiText {
 					lastType = fragment.format;
 					//log.severe("Syllable: "+MidiUtils.formatBytesHexOnly(data));
 				}
+				// Check if this is a Newline_new event
+				// and if the prev fragment ended with a hyphen.
+				if (allowStitch && !text.isEmpty()) {
+					TextFragment last = text.getLast();
+
+					// Check if the last fragment ended with '-' (ASCII 45)
+					if (last.sylineBytes != null && last.sylineBytes.length > 0 &&
+							last.sylineBytes[last.sylineBytes.length - 1] == (byte)'-') {
+						// In old kar files a newline was often inserted to
+						// break long lines so they fit on screen.
+						// So if we find the last syllable ended with hyphen,
+						// we assume that a sentence was broken up, and we stitch it.
+
+						// Found hyphen! Stitching them together:
+						if (fragment.sylineBytes != null && fragment.sylineBytes.length > 0) {
+							fragment.reaction = Reaction.SYLLABLE; // Downgrade to simple syllable
+							log.fine("Merged hyphenated newline (converted to syllable): " + last);
+						}
+					}
+				}
 				if (valid) {
 					if (data.length - offset > 0) {
 						int end = data.length;
 						if (data[data.length-1] == (byte)'\r') {
-							if (fragment.reaction == Reaction.SYLLABLE) fragment.reaction = Reaction.NEWLINE_AFTER;
-							end = Math.max(offset, end-1);
+							if (data.length < 3 || data[data.length-2] != (byte)'-') {
+								if (fragment.reaction == Reaction.SYLLABLE) fragment.reaction = Reaction.NEWLINE_AFTER;
+							}
+							end = Math.max(offset, end - 1);
 						}
 						byte[] content = Arrays.copyOfRange(data, offset, end);
 						fragment.sylineBytes = content;
@@ -247,6 +273,7 @@ public class MidiText {
 				}
 			}
 		}
+
 		if (valid) {
 			// We skip mark and cue as they mostly do not hold lyrics
 			if (fragment.source == Source.CUE || fragment.source == Source.MARK) {
@@ -489,7 +516,8 @@ public class MidiText {
 
 		int mainTrack = calcWinningTrack();
 		ByteArrayOutputStream lineBytes = new ByteArrayOutputStream();
-		long currentLineTick = -1;
+		long currentLineTick = -1L;
+		long endTick = -1L;
 
 		// Container for metadata to be added at the top
 		StringBuilder metaBlock = new StringBuilder();
@@ -525,6 +553,7 @@ public class MidiText {
 			boolean isNewlineAfter = false;
 			boolean processContent = false;
 
+			//System.out.println("Processing fragment: "+fraction.reaction+" bytes="+fraction.sylineBytes.length+" containsVisibleContent="+containsVisibleContent(fraction.sylineBytes, fraction.sylineBytes.length)+" content="+ MidiUtils.formatBytesHexOnly(fraction.sylineBytes)+" tick="+fraction.tick);
 			switch (fraction.reaction) {
 				case LINE:
 				case FIRST:
@@ -561,13 +590,14 @@ public class MidiText {
 			if (isNewlineBefore) {
 				// If we are flushing, and lineBytes is empty, it's an empty line.
 				// We use the currentLineTick if set, otherwise the fraction's tick (for blank lines).
-				long tick = (currentLineTick != -1) ? currentLineTick : fraction.tick;
-
+				long tick = (currentLineTick != -1L) ? currentLineTick : fraction.tick;
+				long lastSyllableTick = (endTick != -1) ? endTick : tick;
 				String decodedLine = cleanSyllable(decode(lineBytes.toByteArray()));
-				lines.add(new LyricLine(tick, decodedLine.trim()));
-
+				lines.add(new LyricLine(tick, decodedLine.trim(), lastSyllableTick));
+				//System.out.println("Newline before: "+decodedLine+" endTick="+endTick+" tick="+tick+" currentLineTick="+currentLineTick+" fraction.tick="+fraction.tick);
 				lineBytes.reset();
-				currentLineTick = -1;
+				endTick = -1L;
+				currentLineTick = -1L;
 			}
 
 			// Check effective length (ignoring null terminators)
@@ -587,16 +617,21 @@ public class MidiText {
 			// Append content
 			if (processContent && effectiveLength > 0) {
 				writeTrimmed(lineBytes, fraction.sylineBytes);
+
+				if (containsVisibleContent(fraction.sylineBytes, fraction.sylineBytes.length)) endTick = fraction.tick;
 			}
 
 			// Flush immediately if newline is AFTER
 			if (isNewlineAfter) {
-				long tick = (currentLineTick != -1) ? currentLineTick : fraction.tick;
+				long tick = (currentLineTick != -1L) ? currentLineTick : fraction.tick;
+				long lastSyllableTick = (endTick != -1L) ? endTick : tick;
 				String decodedLine = cleanSyllable(decode(lineBytes.toByteArray()));
-				lines.add(new LyricLine(tick, decodedLine.trim()));
+				//System.out.println("Newline after: "+decodedLine+" endTick="+endTick+" tick="+tick+" currentLineTick="+currentLineTick+" fraction.tick="+fraction.tick);
+				lines.add(new LyricLine(tick, decodedLine.trim(), lastSyllableTick));
 
 				lineBytes.reset();
-				currentLineTick = -1;
+				endTick = -1L;
+				currentLineTick = -1L;
 			}
 
 			prev = fraction.reaction;
@@ -605,15 +640,16 @@ public class MidiText {
 		// Flush remaining buffer
 		if (lineBytes.size() > 0) {
 			String decodedLine = cleanSyllable(decode(lineBytes.toByteArray()));
+			long lastSyllableTick = (endTick != -1L) ? endTick : Math.max(0L, currentLineTick);
 			// Allow last line to be added even if effectively empty, to match file structure
-			lines.add(new LyricLine(Math.max(0, currentLineTick), decodedLine.trim()));
+			lines.add(new LyricLine(Math.max(0L, currentLineTick), decodedLine.trim(), lastSyllableTick));
 		}
 
 		if (!metaBlock.isEmpty()) {
-			lines.addFirst(new LyricLine(0, metaBlock.toString()));
+			lines.addFirst(new LyricLine(0L, metaBlock.toString(), 0L));
 		} else {
-			//make sure there always is a meta block in first slot.
-			lines.addFirst(new LyricLine(0, ""));
+			//make sure there always is a meta-block in the first slot.
+			lines.addFirst(new LyricLine(0L, "", 0L));
 		}
 
 		return lines;
@@ -622,6 +658,18 @@ public class MidiText {
 	private boolean isMetadata(Reaction r) {
 		return r == Reaction.TITLE || r == Reaction.RIGHTS || r == Reaction.LANGUAGE ||
 				r == Reaction.INFO || r == Reaction.META_LINE || r == Reaction.VERSION;
+	}
+
+	private boolean containsVisibleContent(byte[] bytes, int length) {
+		if (bytes == null || length <= 0) return false;
+		for (int i = 0; i < length; i++) {
+			// Check for chars > 32 (Space).
+			// This filters out spaces, nulls, tabs, and newlines.
+			if ((bytes[i] & 0xFF) > 32) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
