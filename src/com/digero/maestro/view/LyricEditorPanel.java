@@ -411,8 +411,8 @@ public class LyricEditorPanel extends JPanel {
             int row = getSelectedRow();
             if (row >= 0 && abcSong != null) {
                 // Get current data
-                long currentTick = (Long) getValueAt(row, 0);
-                float currentBar = abcSong.getSequenceInfo().getDataCache().tickToBarNumberFloat(currentTick);
+                long currentStartTick = (Long) getValueAt(row, 0);
+                float currentBar = abcSong.getSequenceInfo().getDataCache().tickToBarNumberFloat(currentStartTick);
 
                 // Create the text field manually so we can add listeners
                 JTextField barField = new JTextField(String.valueOf(currentBar).replace(",","."));
@@ -644,13 +644,22 @@ public class LyricEditorPanel extends JPanel {
             pushChangesToSong();
         }
 
-        public void moveLine(int row, long newTick) {
+        public void moveLine(int row, long newStartTick) {
             if (row >= 0 && row < lines.size()) {
                 LyricLine oldLine = lines.get(row);
 
-                if (oldLine.tick() != newTick) {
-                    // Create new record with updated tick but same text
-                    LyricLine newLine = new LyricLine(newTick, oldLine.text(), Math.max(newTick, oldLine.endTick()));
+                if (oldLine.tick() != newStartTick) {
+                    // Create new record with updated tick but same text.
+                    // The end tick we set to start tick if moving backwards,
+                    // and if moving forward, we keep old though not let it be lower than newStartTick.
+                    long newEndTick = Math.max(newStartTick, oldLine.endTick());
+                    if (newStartTick < oldLine.tick()) newEndTick = newStartTick;
+                    // Could also have let the user input a new end tick.
+                    // But don't want to clutter the UI or make it complex,
+                    // plus the endtick should really be the start of the last syllable to adhere to
+                    // how we do it with lyrics from midi.
+
+                    LyricLine newLine = new LyricLine(newStartTick, oldLine.text(), newEndTick);
 
                     lines.set(row, newLine);
 
