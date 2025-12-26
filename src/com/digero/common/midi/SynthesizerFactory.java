@@ -179,7 +179,22 @@ public class SynthesizerFactory {
 	}
 
 	public static boolean userOwnSoundFontExist() {
-        return soundFontFile != null && soundFontFile.exists();
+        if (soundFontFile != null && soundFontFile.exists()) return true;
+		if (!soundFontFile.exists()) {
+			log.log(Level.INFO, "Soundfont file not found, using jar location.");
+			String folder = ".";
+			try {
+				// Find the path to the jar file we are executing in
+				folder = new File(
+						SynthesizerFactory.class.getProtectionDomain().getCodeSource().getLocation().toURI())
+						.getParent();
+			} catch (URISyntaxException e) {
+				log.log(java.util.logging.Level.SEVERE, "Failed to find soundfont", e);
+			}
+			soundFontFile = new File(folder, "LotroInstruments.sf2");
+		}
+		if (soundFontFile != null && soundFontFile.exists()) return true;
+		return false;
     }
 
 	public static void setSoundbank(File sf2) {
