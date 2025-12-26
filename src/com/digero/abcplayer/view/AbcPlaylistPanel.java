@@ -812,7 +812,7 @@ public class AbcPlaylistPanel extends JPanel {
 				playlistPrefs.put("delayInSecs", delayField.getText());
 			}
 		});
-		delayField.setColumns(4);
+		delayField.setColumns(2);//2 gives 3 digits as it scale to "M"
 		
 		bottomControls = new JPanel(new MigLayout("fillx"));
 		bottomControls.add(addToPlaylistButton);
@@ -823,7 +823,7 @@ public class AbcPlaylistPanel extends JPanel {
 		bottomControls.add(moveUpButton);
 		bottomControls.add(moveDownButton);
 		bottomControls.add(delayLabel, "align right");
-		bottomControls.add(delayField, "align center");
+		bottomControls.add(delayField, "align center,wmin pref");
 		bottomControls.add(prevSongButton);
 		bottomControls.add(playPlaylistButton);
 		bottomControls.add(nextSongButton, "sg play");
