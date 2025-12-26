@@ -11,7 +11,7 @@ public enum ColorTable {
 			"Note currently being played"),
     /** Border of note currently being played */
 	NOTE_ON_BORDER(new Color(0xAA000000, true),
-			"Border of note currently being played"),
+			"Border of note/polyphony/tempo/dissonance currently being played"),
     /** Song position line color */
 	INDICATOR(new Color(0x66FFFFFF, true),
 			"Song position line color"),
@@ -27,6 +27,7 @@ public enum ColorTable {
     /** Import/export links color in settings panel */
 	LINK(new Color(0x336699),
 			"Import/export links color in settings panel"),
+
     /** Note color when track is enabled in current abc part */
 	NOTE_ENABLED     (Color.getHSBColor(0.61f, 0.75f, 1.00f),
 			"Note color when track is enabled in current abc part"),
@@ -69,27 +70,29 @@ public enum ColorTable {
 	NOTE_DRUM_OFF_BACKGROUND(new Color(0x222222),
 				"Drum note background color when drum sound disabled."),
 
-    /** Note graph background when selected by current part */
+    /** Note graph background when selected by the current part */
 	GRAPH_BACKGROUND_ENABLED(Color.BLACK,
 			"Note graph background when selected by current part"),
-    /** Note graph background soloed when not selected by current part */
-	GRAPH_BACKGROUND_SOLO(new Color(0x181818),
+	GRAPH_BACKGROUND_ENABLED_SOLO(GRAPH_BACKGROUND_ENABLED,
+			"Note graph background soloed and selected by current part"),
+	/** Note graph background when not selected by the current part */
+	GRAPH_BACKGROUND_OFF(new Color(0x222222),
+			"Note graph background when not selected by current part"),
+	/** Note graph background soloed when not selected by the current part */
+	GRAPH_BACKGROUND_OFF_SOLO(new Color(0x181818),
 			"Note graph background soloed when not selected by current part"),
     /** Drum menu background. Also used by abc player for background when showing ABC. */
 	GRAPH_BACKGROUND_DISABLED(new Color(0x222222),
 			"Drum menu background."),
-    /** Note graph background when no abc part has it selected. */
-	GRAPH_BACKGROUND_OFF(new Color(0x222222),
-			"Note graph background when no abc part has it selected."),
 	/** Section edited background */
 	GRAPH_BACKGROUND_EDITED(new Color(0,32,0),
 			"Section edited background"),
 	/** Bar line when section-edited on both sides */
 	BAR_LINE_EDITED(new Color(30,75,30),
 			"Bar line when section-edited on both sides"),
-	/** Section/tune-edit silenced */
+	/** Note graph background when section/tune-edit silenced */
 	GRAPH_SILENCED(new Color(32,0,0),
-			"Section/tune-edit silenced"),
+			"Note graph background when section/tune-edit silenced"),
 
     /** Not used */
 	GRAPH_BORDER_ENABLED(Color.DARK_GRAY,
@@ -97,23 +100,20 @@ public enum ColorTable {
     /** Not used */
 	GRAPH_BORDER_DISABLED(Color.DARK_GRAY,
 			"Not used"),
-    /** Note graph border color when current abc part do not have it enabled */
+    /** ABC Player's ABC text view uses this as gutter 1px border */
 	GRAPH_BORDER_OFF(Color.DARK_GRAY,
-			"Note graph border color when current abc part do not have it enabled"),
+			"Not used in Maestro"),
 
     /** Not used */
 	PANEL_BACKGROUND_ENABLED(GRAPH_BACKGROUND_ENABLED,
 			"Not used"),
-    /** Track panels background */
-	PANEL_BACKGROUND_DISABLED(GRAPH_BACKGROUND_DISABLED,
-			"Area under lowest track, and center area background in Maestro when no song is loaded."),
 
     /** Track panel border color outside */
-	PANEL_BORDER(new Color(0xEEEEEE),
-			"Track panel border color outside"),
+	PANEL_BORDER_HORIZ(new Color(0xEEEEEE),
+			"Track panel horizontal border"),
 	/** Track panel border color inside */
-    PANEL_BORDER_INSIDE(new Color(0x555555),
-			"Track panel border color inside"),
+    PANEL_BORDER_VERTICAL(new Color(0x555555),
+			"Track panel vertical border"),
 
     /** Track gutter color when selected by current part */
 	PANEL_HIGHLIGHT(new Color(0xFFD83C),
@@ -125,17 +125,22 @@ public enum ColorTable {
     /** Track title, enabled by current part, color */
 	PANEL_TEXT_ENABLED(new Color(0xFFD83C),
 			"Track title, enabled by current part, color"), //(Color.getHSBColor(0.60f, 0.40f, 1.00f)),
-    /** Track title, enabled but not by current part. Also drum menu text. */
+    /** Track title, not current part. Tempo/polyphony/dissonance text. Also drum menu text. */
 	PANEL_TEXT_DISABLED(new Color(0xEEEEEE),
-			"Track title, not current part. Also drum menu text."),
+			"Track title, not current part. Tempo/polyphony/dissonance text. Also drum menu text."),
     /** Track title, not selected by any parts, color */
-	PANEL_TEXT_OFF(new Color(0x777777),
-			"Track title, not current part, drum title if current instrument chromatic, color"),
-    /** Color for error text displayed in center view of maestro */
-	PANEL_TEXT_ERROR(new Color(255, 20, 5),
+	PANEL_TEXT_NO_PERCUSSION_MATCH(new Color(0x777777),
+			"Track title, not current part, drum track title if current instrument not percussion and vice versa"),
+
+	/** Track panels background */
+	CENTER_BACKGROUND(GRAPH_BACKGROUND_DISABLED,
+			"Area under bottom track, and center area background in Maestro when no song is loaded."),
+	CENTER_TEXT(Color.WHITE,
+			"Color for text displayed in center view of maestro"),
+	/** Color for error text displayed in the center view of maestro */
+	CENTER_TEXT_ERROR(new Color(255, 20, 5),
 			"Color for error text title displayed in center view of maestro"),
-	PANEL_TEXT_NO_ERROR(Color.WHITE,
-			"Color for other text displayed in center view of maestro"),
+
     /** Not used */
 	PANEL_LINK(Color.getHSBColor(0.60f, 0.70f, 1.00f),
 			"Not used"),
@@ -162,17 +167,17 @@ public enum ColorTable {
 			"Not used"),
     /** Tune/section/part/pan editors edited text on buttons/slider */
     CONTROLS_EDITED(new Color(0.2f, 0.8f, 0.2f),
-			"Tune/section/part/pan editors edited text on buttons/slider"),
+			"Tune/section/part/pan editors edited text on buttons/slider. Should have contrast to both a dark gray and light gray."),
 
 	/** Parts list drag'n'drop divider line */
 	PARTS_LIST_DND_LINE(Color.LIGHT_GRAY,
-			"Parts list drag'n'drop divider line"),
+			"Parts list drag'n'drop divider line. Should have contrast to both white and dark gray"),
 	/** Parts list mute */
 	PARTS_LIST_MUTE(Color.decode("#ff7777"),
-			"Parts list mute"),
+			"Parts list mute button background. Should have contrast to white, black and mid gray"),
 	/** Parts list solo */
 	PARTS_LIST_SOLO(Color.decode("#7e7eff"),
-			"Parts list solo"),
+			"Parts list solo button background. Should have contrast to white, black and mid gray"),
 
 
 	PAN_LISTENER(Color.LIGHT_GRAY,

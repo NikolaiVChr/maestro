@@ -88,8 +88,8 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 		tableLayout.setColumn(LAYOUT_COLS);
 
 		setBorder(new CompoundBorder(
-				BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()),
-				BorderFactory.createMatteBorder(0, 0, 0, 1, ColorTable.PANEL_BORDER_INSIDE.get())));
+				BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER_HORIZ.get()),
+				BorderFactory.createMatteBorder(0, 0, 0, 1, ColorTable.PANEL_BORDER_VERTICAL.get())));
 
 		this.sequencer = sequencer;
 		this.abcSequencer = abcSequencer;
@@ -101,7 +101,7 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 		this.histoGraph = new HistogramNoteGraph(sequenceInfo, sequencer);
 		histoGraph.setBackground(ColorTable.NOTE_POLYPHONY_BACKGROUND.get());
 		histoGraph.setPreferredSize(new Dimension(histoGraph.getPreferredSize().width, getPreferredSize().height));
-		histoGraph.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()));
+		histoGraph.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER_HORIZ.get()));
 		setBackground(ColorTable.NOTE_POLYPHONY_BACKGROUND.get());
 
 		JLabel titleLabel = new JLabel("Polyphony");

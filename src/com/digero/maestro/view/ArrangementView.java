@@ -137,7 +137,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
         setLayout(mainLayout);
 
 
-		setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()));
+		setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER_HORIZ.get()));
         setOpaque(true);
 		
 		this.showMaxPolyphony = showMaxPolyphony;
@@ -364,7 +364,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		splitPanel = new JPanel(new TableLayout(new double[] { PREFERRED, FILL }, //
 				new double[] { FILL }));
 		splitPanel.setBorder(BorderFactory.createEmptyBorder());
-		splitPanel.setBackground(ColorTable.PANEL_BACKGROUND_DISABLED.get());
+		splitPanel.setBackground(ColorTable.CENTER_BACKGROUND.get());
 		
 		noteGraphPanel = new JPanel();
 		noteGraphScrollPane = new PatchedJScrollPane(noteGraphPanel, VERTICAL_SCROLLBAR_AS_NEEDED, HORIZONTAL_SCROLLBAR_AS_NEEDED);
@@ -413,14 +413,14 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
         controlPanel.addMouseWheelListener(listenForControlFocus);
 
 		controlPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0)); // top, left, bottom, right
-		controlPanel.setBackground(ColorTable.PANEL_BACKGROUND_DISABLED.get());
+		controlPanel.setBackground(ColorTable.CENTER_BACKGROUND.get());
 		
 		graphLayout = new GraphLayout(TrackPanel.calculateTrackDims().rowHeight + 1, controlLayout);
 		graphLayout.setViewport(noteGraphScrollPane.getViewport());
 		noteGraphPanel.setLayout(graphLayout);
 		noteGraphPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0)); // top, left, bottom, right
 
-		noteGraphPanel.setBackground(ColorTable.PANEL_BACKGROUND_DISABLED.get());
+		noteGraphPanel.setBackground(ColorTable.CENTER_BACKGROUND.get());
 		
 		
 		noteGraphScrollPane.setBorder(BorderFactory.createEmptyBorder());
@@ -768,9 +768,9 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		setAbcPart(oldPart, true);//this call will remake the panels
 		if (histogramPanel != null) histogramPanel.setHistogram(oldHistogram);
 		if (dissonancePanel != null) dissonancePanel.setDissonance(oldDissonance);
-		splitPanel.setBackground(ColorTable.PANEL_BACKGROUND_DISABLED.get());
-		controlPanel.setBackground(ColorTable.PANEL_BACKGROUND_DISABLED.get());
-		noteGraphPanel.setBackground(ColorTable.PANEL_BACKGROUND_DISABLED.get());
+		splitPanel.setBackground(ColorTable.CENTER_BACKGROUND.get());
+		controlPanel.setBackground(ColorTable.CENTER_BACKGROUND.get());
+		noteGraphPanel.setBackground(ColorTable.CENTER_BACKGROUND.get());
 	}
 
 	public void setAbcPart(AbcPart abcPart, boolean force) {
@@ -910,13 +910,13 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 			Dummy dummy1 = new Dummy();
 			dummy1.setPreferredSize(new Dimension(100, scrollbarHeight * 2));
 			dummy1.setOpaque(true);
-			dummy1.setBackground(ColorTable.PANEL_BACKGROUND_DISABLED.get());
+			dummy1.setBackground(ColorTable.CENTER_BACKGROUND.get());
 			controlPanel.add(dummy1, "x");
 			
 			JPanel dummy2 = new JPanel();
 			dummy2.setPreferredSize(new Dimension(100, scrollbarHeight * 2));
 			dummy2.setOpaque(true);
-			dummy2.setBackground(ColorTable.PANEL_BACKGROUND_DISABLED.get());
+			dummy2.setBackground(ColorTable.CENTER_BACKGROUND.get());
 			noteGraphPanel.add(dummy2,"x");
 		}
 

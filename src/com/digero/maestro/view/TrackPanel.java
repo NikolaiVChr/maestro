@@ -166,8 +166,8 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		super(new TableLayout(LAYOUT_COLS, LAYOUT_ROWS));
 
 		setBorder(new CompoundBorder(
-					BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()),
-					BorderFactory.createMatteBorder(0, 0, 0, 1, ColorTable.PANEL_BORDER_INSIDE.get())));
+					BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER_HORIZ.get()),
+					BorderFactory.createMatteBorder(0, 0, 0, 1, ColorTable.PANEL_BORDER_VERTICAL.get())));
 
 		this.trackInfo = info;
 		this.seq = sequencer;
@@ -227,7 +227,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		
 		noteGraph = new TrackNoteGraph(seq, trackInfo);
 		noteGraph.setPreferredSize(new Dimension(48, 200));// the Y must be so big that it forces the drumlinePanels to be their minimum sizes. Atm set to 200. ~Aifel
-		noteGraph.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()));
+		noteGraph.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER_HORIZ.get()));
 		noteGraph.addMouseListener(new MouseAdapter() {
 			// soloAbcTracks will contain one track if only right click is used
 			// if ctrl-right click is used, it will contain all abc preview tracks that have the midi track enabled
@@ -843,10 +843,12 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 		noteGraph.setShowingAbcNotesOn(trackActive);
 
-		if (trackEnabled) {
+		if (trackSolo && trackEnabled) {
+			setBackground(ColorTable.GRAPH_BACKGROUND_ENABLED_SOLO.get());
+		} else if (trackEnabled) {
 			setBackground(ColorTable.GRAPH_BACKGROUND_ENABLED.get());
 		} else if (trackSolo) {
-			setBackground(ColorTable.GRAPH_BACKGROUND_SOLO.get());
+			setBackground(ColorTable.GRAPH_BACKGROUND_OFF_SOLO.get());
 		} else {
 			setBackground(ColorTable.GRAPH_BACKGROUND_OFF.get());
 		}
@@ -871,7 +873,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		} else {
 			boolean inputEnabled = abcPart.isPercussionPart() == trackInfo.isDrumTrack();
 			enableTrackCheckBox.setForeground(
-					inputEnabled ? ColorTable.PANEL_TEXT_DISABLED.get() : ColorTable.PANEL_TEXT_OFF.get());
+					inputEnabled ? ColorTable.PANEL_TEXT_DISABLED.get() : ColorTable.PANEL_TEXT_NO_PERCUSSION_MATCH.get());
 		}
 
 		noteGraph.setOctaveLinesVisible(!trackInfo.isDrumTrack()
@@ -968,7 +970,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 					last = drumlinePanel;
 				}
 				last.getNoteGraph().setBorder(BorderFactory.createCompoundBorder(
-						BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()),
+						BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER_HORIZ.get()),
 						BorderFactory.createMatteBorder(1, 0, 0, 0, ColorTable.OCTAVE_LINE.get())));
 				
 				drumMapMenu.setVisible(showDrumPanels && abcPart.isDrumPart());
@@ -989,7 +991,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
                     layout.deleteRow(layout.getNumRow() - 1);
                 }
 
-				noteGraph.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()));
+				noteGraph.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER_HORIZ.get()));
 				noteGraphPanel.add(noteGraph, "grow");
 
 				if (drumControlBar != null) {

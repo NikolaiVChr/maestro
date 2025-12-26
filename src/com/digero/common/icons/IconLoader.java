@@ -14,7 +14,7 @@ public class IconLoader {
     private static final Logger log = Logger.getLogger("file");
 
 	public static ImageIcon getImageIcon(String name) {
-        URL icon = IconLoader.class.getResource(name);
+        URL icon = getUrl(name);
         if (icon == null) return null;
 		return new ImageIcon(icon);
 	}

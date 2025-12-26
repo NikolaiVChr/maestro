@@ -2605,16 +2605,16 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	private static String formatInfoMessage(String title, String message, int fontSize) {
 		int fontSizeHeader = Math.min(7, fontSize + 2);
-		return "<html><font size='"+fontSizeHeader+"' color=\"" + ColorTable.PANEL_TEXT_NO_ERROR.getHtml()+ "\"><b>" + Util.htmlEscape(title)
-				+ "<br></b></font><font size='"+fontSize+"' color=\"" + ColorTable.PANEL_TEXT_NO_ERROR.getHtml()+ "\">"
+		return "<html><font size='"+fontSizeHeader+"' color=\"" + ColorTable.CENTER_TEXT.getHtml()+ "\"><b>" + Util.htmlEscape(title)
+				+ "<br></b></font><font size='"+fontSize+"' color=\"" + ColorTable.CENTER_TEXT.getHtml()+ "\">"
 				+ Util.htmlEscape(message).replace("\n", "<br>")
 				+ "</font><h3>&nbsp;</h3></html>";
 	}
 
 	private static String formatErrorMessage(String title, String message, int fontSize) {
 		int fontSizeHeader = Math.min(7, fontSize + 2);
-		return "<html><font size='"+fontSizeHeader+"' color=\"" + ColorTable.PANEL_TEXT_ERROR.getHtml() + "\"><b>" + Util.htmlEscape(title)
-				+ "<br></b></font><font size='"+fontSize+"' color=\"" + ColorTable.PANEL_TEXT_NO_ERROR.getHtml()+ "\">"
+		return "<html><font size='"+fontSizeHeader+"' color=\"" + ColorTable.CENTER_TEXT_ERROR.getHtml() + "\"><b>" + Util.htmlEscape(title)
+				+ "<br></b></font><font size='"+fontSize+"' color=\"" + ColorTable.CENTER_TEXT.getHtml()+ "\">"
 				+ Util.htmlEscape(message).replace("\n", "<br>")
 				+ "</font><h3>&nbsp;</h3></html>";
 	}

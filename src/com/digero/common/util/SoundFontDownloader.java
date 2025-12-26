@@ -55,8 +55,8 @@ public class SoundFontDownloader {
             return sf2File;
         }
 
+        // Not found. Show UI and download
         if (showDownloadDialog(sf2File)) {
-            // Not found. Show UI and download
             return sf2File;
         }
         return null;
@@ -144,8 +144,11 @@ public class SoundFontDownloader {
         });
 
         cancelButton.addActionListener(e -> {
+            log.info("Cancelling downloading of soundfont");
             onCancel.run();
         });
+
+        log.info("Downloading soundfont to shared location");
 
         // Background worker thread
         downloadThread[0] = new Thread(() -> {
@@ -173,12 +176,14 @@ public class SoundFontDownloader {
                     }
                 } catch (Exception e) {
                     if (e instanceof InterruptedIOException || e instanceof InterruptedException || Thread.currentThread().isInterrupted()) {
+                        log.info("Download soundfont interupted");
                         keepTrying = false; // Exit the loop silently
                         try {
                             Files.deleteIfExists(tempFile.toPath());
                         } catch (IOException ignored) {}
                         return;
                     }
+                    log.info("Downloading soundfont failed");
                     log.log(Level.WARNING, "Download failed", e);
                     try {
                         Files.deleteIfExists(tempFile.toPath());
@@ -197,14 +202,17 @@ public class SoundFontDownloader {
 
                     if (option == 2) {
                         // continue
+                        log.info("Continue without soundfont");
                         keepTrying = false;
                         SwingUtilities.invokeLater(dialog::dispose);
                     } else if (option == 1 || option == JOptionPane.CLOSED_OPTION) {
                         // quit
+                        log.info("Quitting");
                         keepTrying = false;
                         System.exit(0);
                     } else {
                         // retry
+                        log.info("Retrying downloading soundfont to shared location");
                         SwingUtilities.invokeLater(() -> {
                             progressBar.setIndeterminate(false);
                             progressBar.setValue(0);
@@ -218,6 +226,8 @@ public class SoundFontDownloader {
         downloadThread[0].start();
         dialog.pack();
         dialog.setVisible(true); // blocks until dispose()
+
+        log.info("Downloading soundfont success: " + result.success);
 
         return result.success;
     }

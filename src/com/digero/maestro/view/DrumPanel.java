@@ -349,7 +349,7 @@ public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardab
 			
 			setBackground(ColorTable.NOTE_DRUM_OFF_BACKGROUND.get());
 			noteGraph.setBackground(ColorTable.NOTE_DRUM_OFF_BACKGROUND.get());
-			checkBox.setForeground(ColorTable.PANEL_TEXT_OFF.get());
+			checkBox.setForeground(ColorTable.PANEL_TEXT_NO_PERCUSSION_MATCH.get());
 		} else if (trackEnabled && noteEnabled) {
 			// enabled
 			noteGraph.setNoteColor(ColorTable.NOTE_DRUM_ENABLED);
@@ -365,7 +365,7 @@ public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardab
 
 			setBackground(ColorTable.NOTE_DRUM_OFF_BACKGROUND.get());
 			noteGraph.setBackground(ColorTable.NOTE_DRUM_OFF_BACKGROUND.get());
-			checkBox.setForeground(ColorTable.PANEL_TEXT_OFF.get());
+			checkBox.setForeground(ColorTable.PANEL_TEXT_NO_PERCUSSION_MATCH.get());
 		}
 	}
 

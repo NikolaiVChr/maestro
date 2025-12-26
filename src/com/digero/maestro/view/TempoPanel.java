@@ -86,8 +86,8 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
 		tableLayout.setColumn(LAYOUT_COLS);
 
 		setBorder(new CompoundBorder(
-				BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()),
-				BorderFactory.createMatteBorder(0, 0, 0, 1, ColorTable.PANEL_BORDER_INSIDE.get())));
+				BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER_HORIZ.get()),
+				BorderFactory.createMatteBorder(0, 0, 0, 1, ColorTable.PANEL_BORDER_VERTICAL.get())));
 
 		this.sequenceInfo = sequenceInfo;
 		this.sequencer = sequencer;
@@ -102,7 +102,7 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
 		this.tempoGraph = new TempoNoteGraph(sequenceInfo, sequencer);
 		tempoGraph.setBackground(ColorTable.TEMPO_BACKGROUND.get());
 		tempoGraph.setPreferredSize(new Dimension(tempoGraph.getPreferredSize().width, getPreferredSize().height));
-		tempoGraph.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()));
+		tempoGraph.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER_HORIZ.get()));
 		setBackground(ColorTable.TEMPO_BACKGROUND.get());
 
 		JLabel titleLabel = new JLabel("Tempo");

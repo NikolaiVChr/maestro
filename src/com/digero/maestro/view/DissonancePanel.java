@@ -82,8 +82,8 @@ public class DissonancePanel extends JPanel implements IDiscardable, TableLayout
 		tableLayout.setColumn(LAYOUT_COLS);
 
 		setBorder(new CompoundBorder(
-				BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()),
-				BorderFactory.createMatteBorder(0, 0, 0, 1, ColorTable.PANEL_BORDER_INSIDE.get())));
+				BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER_HORIZ.get()),
+				BorderFactory.createMatteBorder(0, 0, 0, 1, ColorTable.PANEL_BORDER_VERTICAL.get())));
 
 		this.sequencer = sequencer;
 		this.abcSequencer = abcSequencer;
@@ -95,7 +95,7 @@ public class DissonancePanel extends JPanel implements IDiscardable, TableLayout
 		this.dissoGraph = new DissonanceNoteGraph(sequenceInfo, sequencer);
 		dissoGraph.setBackground(ColorTable.DISSONANCE_BACKGROUND.get());
 		dissoGraph.setPreferredSize(new Dimension(dissoGraph.getPreferredSize().width, getPreferredSize().height));
-		dissoGraph.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER.get()));
+		dissoGraph.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER_HORIZ.get()));
 		setBackground(ColorTable.DISSONANCE_BACKGROUND.get());
 
 		JLabel titleLabel = new JLabel("Dissonance");
