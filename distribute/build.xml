@@ -70,28 +70,10 @@
 		<copy file="abcplaylist.ico" todir="${build}" />
 		<copy file="midifile.ico" todir="${build}" />
 		<copy file="msxfile.ico" todir="${build}" />
-		<!--<copy file="Start Maestro.bat" todir="${build}" />
-		<copy file="Start AbcPlayer.bat" todir="${build}" />
-		<copy file="Start ABC Tools.bat" todir="${build}" />-->
 		<copy file="readme.txt" todir="${build}" />
 		<copy file="${target}/Maestro.jar" todir="${build}" />
 		<copy file="${target}/AbcPlayer.jar" todir="${build}" />
 		<copy file="${target}/AbcTools.jar" todir="${build}" />
-		<!--copy todir="${build}">
-			<fileset dir="${target}" includes="*.jar" />
-		</copy-->
-		<!--		<copy todir="${target}/com/digero/maestro">
-			<fileset dir="${src}/com/digero/maestro" includes="*.txt" />
-		</copy>
-		<copy todir="${target}/com/digero/common/midi">
-			<fileset dir="${src}/com/digero/common/midi" includes="*.txt" />
-		</copy>
-		<copy todir="${target}/com/digero/abcplayer">
-			<fileset dir="${src}/com/digero/abcplayer" includes="*.txt" />
-		</copy>
-		<copy todir="${target}/com/digero/common/icons">
-			<fileset dir="${src}/com/digero/common/icons" includes="*.png" />
-		</copy>-->
 	</target>
 
     <target name="check-jar-dependencies" description="Check which java modules jlink is gonna need">
@@ -108,39 +90,6 @@
         </exec>
     </target>
 
-	<target name="GenerateSoundFontInfo.CheckUpToDate" description="Test if LotroInstruments.txt needs making">
-		<uptodate property="GenerateSoundFontInfo.uptodate" value="true" targetfile="${basedir}/${audio}/LotroInstruments/LotroInstruments.txt">
-			<srcfiles dir="${src}/com/digero/tools/soundfont/" />
-			<srcfiles file="${src}/com/digero/common/abc/LotroInstrument.java" />
-			<!-- Since classes are rebuilt every run, we check against the src files instead -->
-		</uptodate>
-		<echo message="GenerateSoundFontInfo.uptodate is now ${GenerateSoundFontInfo.uptodate}."/>
-	</target>
-	
-	<target name="GenerateSoundFontInfo" depends="GenerateSoundFontInfo.CheckUpToDate" unless="GenerateSoundFontInfo.uptodate" description="Make LotroInstruments.txt">
-		<java classname="com.digero.tools.soundfont.GenerateSoundFontInfo" classpath="${target}/classes" fork="yes" failonerror="yes">
-			<arg value="${basedir}/${audio}/LotroInstruments" />
-			<arg value="${basedir}/${audio}/LotroInstruments/LotroInstruments.txt" />
-		</java>
-	</target>
-
-	<target name="LotroInstruments.CheckUpToDate" description="Test if SF2 needs making">
-		<uptodate property="LotroInstruments.uptodate" value="true" targetfile="${build}/LotroInstruments.sf2">
-			<srcfiles dir="${basedir}/${audio}/LotroInstruments" />
-		</uptodate>
-		<echo message="LotroInstruments.uptodate is now ${LotroInstruments.uptodate}."/>
-	</target>
-
-	<target name="LotroInstrumentsOld" depends="GenerateSoundFontInfo,LotroInstruments.CheckUpToDate" unless="LotroInstruments.uptodate" description="Make SF2 file">
-		<exec executable="${tools}/sf2comp.exe" failonerror="true"><!--  error="sf2comp_err.txt" output="sf2comp_out.txt" -->
-			<arg value="c" /><!-- compile -->
-			<arg value="-m" /><!-- mute (suppress output) -->
-			<arg value="-i" />
-			<arg value="${audio_backslash}\LotroInstruments\LotroInstruments.txt" />
-			<arg value="${build}\LotroInstruments.sf2" />
-		</exec>
-	</target>
-	
 	<target name="LotroInstruments" description="Copy SF2 file">
         <delete file="${build}/LotroInstruments.sf2" />
 		<!--copy file="LotroInstruments.sf2" todir="${build}" overwrite="true" failonerror="true"/-->
@@ -148,8 +97,6 @@
 
 	<target name="Build" depends="CopyThings,LotroInstruments,CompilePatches" description="Make all except ZIP and MSI files"/>
 
-	
-	
 	<target name="JPackageAppImages" depends="Build" description="Make folders with exe and runtimes for all 3 apps">
 		<echo>JAVA_HOME=${env.JAVA_HOME}</echo>
 		<delete dir="${jpackage}" />
@@ -296,6 +243,7 @@
 	<target name="Wix-Cop" description="Runs WiX cop to fix errors in wix project">
 	    <exec executable="${tools}/wix/WixCop.exe" failonerror="false">
 	    	<arg value="-f"/> <!-- fix errors -->
+			<arg value="-set1wixcop.settings.xml"/>
 	        <arg value="MaestroInstaller.wix"/>
 	    </exec>
 	</target>
