@@ -47,15 +47,9 @@
                             IncludeMinimum="yes"
                             OnlyDetect="yes" />
         </Upgrade>
-        <Condition Message="!(loc.OldVersionError_FR)">
-            <![CDATA[NOT OLD_PER_MACHINE_FOUND OR UserLanguageID <> 1036]]>
-        </Condition>
-        <Condition Message="!(loc.OldVersionError_DE)">
-            <![CDATA[NOT OLD_PER_MACHINE_FOUND OR UserLanguageID <> 1031]]>
-        </Condition>
-        <Condition Message="!(loc.OldVersionError_EN)">
-            <![CDATA[NOT OLD_PER_MACHINE_FOUND OR (UserLanguageID = 1036 OR UserLanguageID = 1031)]]>
-        </Condition>
+        <Condition Message="!(loc.OldVersionError_FR)"><![CDATA[NOT OLD_PER_MACHINE_FOUND OR UserLanguageID <> 1036]]></Condition>
+        <Condition Message="!(loc.OldVersionError_DE)"><![CDATA[NOT OLD_PER_MACHINE_FOUND OR UserLanguageID <> 1031]]></Condition>
+        <Condition Message="!(loc.OldVersionError_EN)"><![CDATA[NOT OLD_PER_MACHINE_FOUND OR (UserLanguageID = 1036 OR UserLanguageID = 1031)]]></Condition>
         <!-- Uninstall old versions of Maestro -->
         <Upgrade Id="{6AA5E0BF-7CA7-4D11-9687-28751293C91A}">
             <UpgradeVersion Property="NEWERFOUND" OnlyDetect="no" Minimum="$(var.MaestroVersion)" IncludeMinimum="no" />
