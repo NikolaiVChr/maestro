@@ -1593,7 +1593,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             Sequence seq = abcSequencer.getSequence();
             Track[] tracks = seq.getTracks();
             PanGenerator panner = new PanGenerator();
-            List<AbcPart> panSortedParts = new ArrayList<>(abcSong.getParts());
+            // explicit copy it, just to be 100% sure it's a shallow copy:
+			List<AbcPart> panSortedParts = new ArrayList<>(abcSong.getParts().size());
+			panSortedParts.addAll(abcSong.getParts());
             abcSong.allPans = new ArrayList<>();
             panner.sortParts(panSortedParts, abcSong.allPans);
             for (AbcPart part : panSortedParts) {
@@ -1931,10 +1933,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             // part listeners and generate preview now runs on a different thread
             // update: since it now uses copy of abcsong, non-immediate is ok.
 			refreshPreviewSequence(false);
-		}
 
-		if (e.isAbcPreviewRelated() && arrangementView != null) {
-			arrangementView.repaint();
+			if (arrangementView != null) {
+				arrangementView.repaint();
+			}
 		}
 		
 		updateExportOrExportAsButton();

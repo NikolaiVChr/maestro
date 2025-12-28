@@ -248,6 +248,7 @@ public class PartAutoNumberer {
                 // sort of a hack, since scheme can be changed between saving and loading project.
                 if (!isFittingInAutoNumberingScheme(part, -1, -1, parts)) {
                     manualAssigned = true;
+					break;
                 } else if (manualAssigned == null) {
                     manualAssigned = false;
                 }

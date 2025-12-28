@@ -1,7 +1,6 @@
 package com.digero.maestro.view;
 
 import java.awt.BasicStroke;
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics;
@@ -339,18 +338,18 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 	public Listener<AbcPartEvent> partListener = e -> {
         //log.warning(this.getClass().getTypeName()+" AbcPartEvent: "+e.getProperty());
 		switch (e.getProperty()) {
-		case TRACK_ENABLED:
-		case INSTRUMENT:
-		case TITLE:
-			updateParts();
-			break;
-        case PREVIEW_TRACK_NUMBER:
-            // The new preview track number gets set after new sequence,
-            // so we listen to it and react as needed.
-            updatePartSoloMute(e.getSource());
-            break;
-		default:
-			break;
+			case TRACK_ENABLED:
+			case INSTRUMENT:
+			case TITLE:
+				updateParts();
+				break;
+			case PREVIEW_TRACK_NUMBER:
+				// The new preview track number gets set after new sequence,
+				// so we listen to it and react as needed.
+				updatePartSoloMute(e.getSource());
+				break;
+			default:
+				break;
 		}
 	};
 
