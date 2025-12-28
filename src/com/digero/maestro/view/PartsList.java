@@ -18,6 +18,7 @@ import java.awt.dnd.DropTargetDropEvent;
 import java.awt.dnd.DropTargetEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.swing.BoxLayout;
@@ -55,7 +56,7 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 	protected int selectedIndex = -1;
 	protected MiscSettings miscSettings;
 
-	private SequencerWrapper abcSequencer;
+	private final SequencerWrapper abcSequencer;
 
 	protected final Dimension rowDimension;
 	private int dropInsertIndex = -1;
@@ -100,8 +101,12 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 		            dtde.acceptDrag(DnDConstants.ACTION_MOVE);
 
 		            Point p = dtde.getLocation();
-		            dropInsertIndex = handler.getDropIndex(dtde.getDropTargetContext().getComponent(), p);
-		            repaint();
+		            int newDropInsertIndex = handler.getDropIndex(dtde.getDropTargetContext().getComponent(), p);
+					if (dropInsertIndex != newDropInsertIndex) {
+						// condition avoids calling the repaint method too often
+						dropInsertIndex = newDropInsertIndex;
+						repaint();
+					}
 		        }
 		        else {
 		            dtde.rejectDrag();
@@ -130,7 +135,7 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 		        	}
 		        } catch (Exception ex) {
 	                dtde.dropComplete(false);
-	                ex.printStackTrace();
+	                log.log(Level.WARNING, "Error dropping part in parts list", ex);
 	            }
 		    }
 		}, true);
