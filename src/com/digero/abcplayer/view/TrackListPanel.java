@@ -34,6 +34,7 @@ import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.util.Listener;
 import com.digero.common.view.InstrumentComboBox;
 
+import com.digero.common.view.UIText;
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
 
@@ -182,13 +183,13 @@ public class TrackListPanel extends JPanel implements Listener<SequencerEvent>, 
 			lineNumberLabel.putClientProperty(TRACK_INDEX_KEY, index);
 			lineNumberLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 			lineNumberLabel.addMouseListener(viewAbcForTrackListener);
-			lineNumberLabel.setToolTipText("<html>Line number<br>Click to view ABC text at this line</html>");
+			lineNumberLabel.setToolTipText(UIText.get("abcplayer.html.line.number.br.click.to.view.abc.text.at.this.line.html"));
 			lineNumberLabel.setBackground(getBackground());
 
-			JToggleButton soloButton = new JToggleButton("S");
+			JToggleButton soloButton = new JToggleButton(UIText.get("abcplayer.solo.letter"));
 			soloButton.setVisible(showSoloButtons);
 			soloButton.setMargin(new Insets(3, 4, 3, 3));
-			soloButton.setToolTipText("Play only this part (Solo)");
+			soloButton.setToolTipText(UIText.get("abcplayer.play.only.this.part.solo"));
 			soloButton.putClientProperty(TRACK_INDEX_KEY, index);
 			soloButton.setBackground(getBackground());
 			soloButton.setSelected(sequencer.getTrackSolo(index));

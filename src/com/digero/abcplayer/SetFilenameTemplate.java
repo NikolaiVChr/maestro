@@ -15,6 +15,7 @@ import com.digero.abcplayer.view.PlaylistSetExportWizard.SetExportSettings;
 import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.util.Pair;
 import com.digero.common.util.Util;
+import com.digero.common.view.UIText;
 import com.digero.maestro.abc.ExportFilenameTemplate;
 
 public class SetFilenameTemplate {
@@ -51,49 +52,49 @@ public class SetFilenameTemplate {
 		
 		variables = new TreeMap<>(caseInsensitiveStringComparator);
 		
-		variables.put("$FileName", new Variable("The song's original filename") {
+		variables.put("$FileName", new Variable(UIText.get("abcplayer.the.song.s.original.filename")) {
 			@Override
 			public String getValue() {
 				return filename.endsWith(Util.ABC_FILE_EXTENSION) ? Util.fileNameWithoutExtension(filename) : filename;
 			}
 		});
 		
-		variables.put("$SongIndex", new Variable("The number position of the song in the setlist") {
+		variables.put("$SongIndex", new Variable(UIText.get("abcplayer.the.number.position.of.the.song.in.the.setlist")) {
 			@Override
 			public String getValue() {
 				return String.format("%03d", index + 1);
 			}
 		});
 		
-		variables.put("$PartCount", new Variable("Number of parts in the ABC file") {
+		variables.put("$PartCount", new Variable(UIText.get("abcplayer.number.of.parts.in.the.abc.file")) {
 			@Override
 			public String getValue() {
 				return String.format("%02d", info.getPartCount());
 			}
 		});
 		
-		variables.put("$SongComposer", new Variable("The song composer/artist, as entered in the \"C:\" field") {
+		variables.put("$SongComposer", new Variable(UIText.get("abcplayer.the.song.composer.artist.as.entered.in.the.c.field")) {
 			@Override
 			public String getValue() {
 				return info.getComposer();
 			}
 		});
 		
-		variables.put("$SongTranscriber", new Variable("The abc transcriber, as entered in the \"Z:\" field") {
+		variables.put("$SongTranscriber", new Variable(UIText.get("abcplayer.the.abc.transcriber.as.entered.in.the.z.field")) {
 			@Override
 			public String getValue() {
 				return info.getTranscriber();
 			}
 		});
 		
-		variables.put("$SongLength", new Variable("The playing time of the song in mm_ss format") {
+		variables.put("$SongLength", new Variable(UIText.get("abcplayer.the.playing.time.of.the.song.in.mm.ss.format")) {
 			@Override
 			public String getValue() {
 				return info.getSongDurationStr().replace(":", "-");
 			}
 		});
 		
-		variables.put("$SongTitle", new Variable("The title of the song, as entered in the \"T:\" field") {
+		variables.put("$SongTitle", new Variable(UIText.get("abcplayer.the.title.of.the.song.as.entered.in.the.t.field")) {
 			@Override
 			public String getValue() {
 				return info.getTitle();

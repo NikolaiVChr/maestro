@@ -23,6 +23,7 @@ import javax.swing.KeyStroke;
 import com.digero.common.util.Listener;
 import com.digero.common.util.FileParseException;
 import com.digero.common.view.PatchedJScrollPane;
+import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.abc.AbcSongEvent;
 import com.digero.maestro.abc.TuneLine;
@@ -68,13 +69,13 @@ public class TuneEditor {
 
 			private final List<TuneEditorLine> tuneInputs = new ArrayList<>(numberOfSections);
 
-			final JButton copySections = new JButton("Copy");
-			final JButton pasteSections = new JButton("Paste");
+			final JButton copySections = new JButton(UIText.get("maestro.tune.copy"));
+			final JButton pasteSections = new JButton(UIText.get("maestro.tune.paste"));
 			
 			private final JPanel miscPanel;
 			private final JPanel tempoPanel;
 			
-			private final JButton add1 = new JButton("Add");
+			private final JButton add1 = new JButton(UIText.get("maestro.tune.add"));
 
 			public TuneDialog(JFrame jf, String title, boolean modal, AbcSong abcSong) throws FileParseException {
 				super(jf, title, modal);
@@ -138,8 +139,8 @@ public class TuneEditor {
 				
 				panel.add(tabPanel, "0, 1, 5, 1, f, f");
 				
-				tabPanel.addTab("Pitch & Vol", miscPanel);
-				tabPanel.addTab("Tempo", tempoPanel);
+				tabPanel.addTab(UIText.get("maestro.tune.pitch.vol"), miscPanel);
+				tabPanel.addTab(UIText.get("maestro.tune.tempo"), tempoPanel);
 				
 				SortedMap<Float, TuneLine> tree = abcSong.tuneBars;
 				if (tree != null) {
@@ -164,7 +165,7 @@ public class TuneEditor {
 					SectionEditor.clipboardArmed = true;
 					pasteSections.setEnabled(true);
 				});
-				copySections.setToolTipText("<html><b> Copy the section starts and ends.</html>");
+				copySections.setToolTipText(UIText.get("maestro.tune.html.b.copy.the.section.starts.and.ends.html"));
 				panel.add(copySections, "1,2,1,2,f,f");
 
 				pasteSections.getModel().addActionListener(e -> {
@@ -187,22 +188,18 @@ public class TuneEditor {
 						tuneInputs.get(i).enable[1].setSelected(false);
 					}
 				});
-				pasteSections.setToolTipText("<html><b> Paste the section starts and ends.</html>");
+				pasteSections.setToolTipText(UIText.get("maestro.tune.html.b.paste.the.section.starts.and.ends.html"));
 				panel.add(pasteSections, "2,2,2,2,f,f");
 				pasteSections.setEnabled(SectionEditor.clipboardArmed);
 
-				JTextField help = new JTextField("Help");
+				JTextField help = new JTextField(UIText.get("maestro.tune.help"));
 				help.setEditable(false);
 				help.setHorizontalAlignment(CENTER);
 				help.setToolTipText(
-						"<html><b>Enabled sections must have no overlap.<br>Bar numbers use original MIDI bars.<br>"
-								+ "Decimal bar numbers allowed.<br>Bar numbers must not be negative.<br>"
-								+ "Bar numbers from are inclusive, to are exclusive.<br>"
-								+ "Clicking APPLY will also disable faulty sections.<br><br>Warning: If 'Remove initial silence' is enabled or the<br>"
-								+ "meter is modified, then the bar counter in lower-right might<br>not match up, unless your preview mode is in 'Original'.</b></html>");
+						UIText.get("maestro.tune.sections"));
 				panel.add(help, "3,2, 3, 2,f,f");
 				
-				add1.setToolTipText("Add 1 section line");
+				add1.setToolTipText(UIText.get("maestro.tune.add.1.section.line"));
 				add1.addActionListener(e -> {
 					addTuneLine(add1);
 				});
@@ -212,9 +209,9 @@ public class TuneEditor {
 				Float firstBar = abcSong.getFirstBar();
 				JTextField startSong = new JTextField(firstBar==null?"0.0":Float.toString(firstBar));
                 attachMouseBarListener(startSong);
-                startSong.setToolTipText("Right mouse-click to fetch current song position.");
-				JLabel startSongLabel = new JLabel("Start song at: ");
-				JCheckBox startSongEnable = new JCheckBox("Start song late");
+                startSong.setToolTipText(UIText.get("maestro.tune.right.mouse.click.to.fetch.current.song.position"));
+				JLabel startSongLabel = new JLabel(UIText.get("maestro.tune.start.song.at"));
+				JCheckBox startSongEnable = new JCheckBox(UIText.get("maestro.tune.start.song.late"));
 				
 				startSong.setHorizontalAlignment(CENTER);
 				
@@ -233,10 +230,10 @@ public class TuneEditor {
 
 				Float lastBar = abcSong.getLastBar();
 				JTextField endSong = new JTextField(lastBar==null?"100000.0":Float.toString(lastBar));
-                endSong.setToolTipText("Right mouse-click to fetch current song position.");
+                endSong.setToolTipText(UIText.get("maestro.tune.right.mouse.click.to.fetch.current.song.position"));
                 attachMouseBarListener(endSong);
-				JLabel endSongLabel = new JLabel("End song at: ");
-				JCheckBox endSongEnable = new JCheckBox("End song early");
+				JLabel endSongLabel = new JLabel(UIText.get("maestro.tune.end.song.at"));
+				JCheckBox endSongEnable = new JCheckBox(UIText.get("maestro.tune.end.song.early"));
 				
 				endSong.setHorizontalAlignment(CENTER);
 				
@@ -256,8 +253,8 @@ public class TuneEditor {
 				/*
 				 * To do sort and pack, best expand SectionEditorLine to be comparable and have 3 JPanels in it.
 				 */
-				JButton sort = new JButton("Sort");
-				sort.setToolTipText("Sort tune lines.");
+				JButton sort = new JButton(UIText.get("maestro.tune.sort"));
+				sort.setToolTipText(UIText.get("maestro.tune.sort.tune.lines"));
 				sort.addActionListener(e -> {
 					Collections.sort(tuneInputs);
 					addTuneLines();
@@ -330,7 +327,7 @@ public class TuneEditor {
 					// System.err.println(Thread.currentThread().getName());
 				});
 				okButton.setToolTipText(
-						"<html><b> Apply the effects. </b><br> Note that non-applied effects will not be remembered when closing dialog.<br> Sections that are not enabled will likewise also not be remembered. </html>");
+						UIText.get("maestro.tune.html.b.apply.the.effects"));
 				panel.add(okButton, "5,2, 5, 2,f,f");
 				
 				PatchedJScrollPane scrollPane = new PatchedJScrollPane(panel);
@@ -443,16 +440,16 @@ public class TuneEditor {
 			
 			private void addTitlesToTabs() {
 				// TODO
-				miscPanel.add(new JLabel("Enable"), "0, 0, c, c");
-				miscPanel.add(new JLabel("From bar"), "1, 0, c, c");
-				miscPanel.add(new JLabel("To bar"), "2, 0, c, c");
-				miscPanel.add(new JLabel("Seminote"), "3, 0, c, c");
-				miscPanel.add(new JLabel("Fade %"), "4, 0, c, c");
-				tempoPanel.add(new JLabel("Enable"), "0, 0, c, c");
-				tempoPanel.add(new JLabel("From bar"), "1, 0, c, c");
-				tempoPanel.add(new JLabel("To bar"), "2, 0, c, c");
-				tempoPanel.add(new JLabel("Offset"), "3, 0, c, c");
-				tempoPanel.add(new JLabel("Accelerando"), "4, 0, c, c");
+				miscPanel.add(new JLabel(UIText.get("maestro.tune.enable")), "0, 0, c, c");
+				miscPanel.add(new JLabel(UIText.get("maestro.tune.from.bar")), "1, 0, c, c");
+				miscPanel.add(new JLabel(UIText.get("maestro.tune.to.bar")), "2, 0, c, c");
+				miscPanel.add(new JLabel(UIText.get("maestro.tune.seminote")), "3, 0, c, c");
+				miscPanel.add(new JLabel(UIText.get("maestro.tune.fade")), "4, 0, c, c");
+				tempoPanel.add(new JLabel(UIText.get("maestro.tune.enable")), "0, 0, c, c");
+				tempoPanel.add(new JLabel(UIText.get("maestro.tune.from.bar")), "1, 0, c, c");
+				tempoPanel.add(new JLabel(UIText.get("maestro.tune.to.bar")), "2, 0, c, c");
+				tempoPanel.add(new JLabel(UIText.get("maestro.tune.offset")), "3, 0, c, c");
+				tempoPanel.add(new JLabel(UIText.get("maestro.tune.accelerando")), "4, 0, c, c");
 			}
 
 
@@ -478,7 +475,7 @@ public class TuneEditor {
 							ps.fade = Integer.parseInt(tuneInputs.get(k).fade.getText());
 							lastEnd = checkForNewLastEnd(tm, lastEnd, k, ps, soFarSoGood(tm, ps));
 						} catch (NumberFormatException nfe) {
-							ProjectFrame.feed("Section(s) disabled, bad number input.", null);
+							ProjectFrame.feed(UIText.get("maestro.tune.section.s.disabled.bad.number.input"), null);
 							TuneDialog.this.tuneInputs.get(k).enable[0].setSelected(false);
 							TuneDialog.this.tuneInputs.get(k).enable[1].setSelected(false);
 						}
@@ -496,7 +493,7 @@ public class TuneEditor {
 						lastEnd = ps.endBar;
 					ps.dialogLine = k;
 				} else {
-					ProjectFrame.feed("Section(s) disabled, bad bar input.", null);
+					ProjectFrame.feed(UIText.get("maestro.tune.section.s.disabled.bad.bar.input"), null);
 					TuneDialog.this.tuneInputs.get(k).enable[0].setSelected(false);
 					TuneDialog.this.tuneInputs.get(k).enable[1].setSelected(false);
 				}
@@ -553,7 +550,7 @@ public class TuneEditor {
 		}
 
 		try {
-			openDialog = new TuneDialog(jf, "Tune editor", false, abcSong);
+			openDialog = new TuneDialog(jf, UIText.get("maestro.tune.tune.editor"), false, abcSong);
 		} catch (FileParseException e) {
 			e.printStackTrace();
 		}

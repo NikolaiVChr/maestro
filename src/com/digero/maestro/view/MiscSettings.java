@@ -12,6 +12,7 @@ public class MiscSettings {
 	public boolean showBadger = false;
 	//public boolean allBadger = false;
 	public String theme = "Flat Light";
+	public String locale = null;
 	public int fontSize = 12;
 	public int maxRangeForNewBendMethod = 12;
 	public boolean autoplayOnOpen = true;
@@ -61,6 +62,7 @@ public class MiscSettings {
 		//allBadger = prefs.getBoolean("allBadger", allBadger);
 		ignoreExpressionMessages = prefs.getBoolean("ignoreExpressionMessages", ignoreExpressionMessages);
 		theme = prefs.get("theme", theme);
+		locale = prefs.get("locale", locale);
 		fontSize = prefs.getInt("fontSize", fontSize);
 		maxRangeForNewBendMethod = prefs.getInt("maxRangeForNewBendMethod", maxRangeForNewBendMethod);
 		if (maxRangeForNewBendMethod == 24) maxRangeForNewBendMethod = 16;// Due to student fiddle we can't go to 24.
@@ -90,6 +92,7 @@ public class MiscSettings {
 		showBadger = that.showBadger;
 		//allBadger = that.allBadger;
 		theme = that.theme;
+		locale = that.locale;
 		fontSize = that.fontSize;
 		ignoreExpressionMessages = that.ignoreExpressionMessages;
 		maxRangeForNewBendMethod = that.maxRangeForNewBendMethod;
@@ -116,6 +119,11 @@ public class MiscSettings {
 		//prefs.putBoolean("allBadger", allBadger);
 		prefs.putBoolean("ignoreExpressionMessages", ignoreExpressionMessages);
 		prefs.put("theme", theme);
+		if (locale == null) {
+			prefs.remove("locale");
+		} else {
+			prefs.put("locale", locale);
+		}
 		prefs.putInt("fontSize", fontSize);
 		prefs.putInt("maxRangeForNewBendMethod", maxRangeForNewBendMethod);
 		prefs.putBoolean("autoplayOnOpen", autoplayOnOpen);

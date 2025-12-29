@@ -1,6 +1,7 @@
 package com.digero.common.abctomidi;
 
 import java.io.File;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +28,7 @@ import com.digero.common.util.AppInfo;
 import com.digero.common.util.FileParseException;
 import com.digero.common.util.Util;
 import com.digero.common.util.WarningHandler;
+import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcExporter;
 
 import javax.sound.midi.MidiEvent;
@@ -34,7 +36,7 @@ import javax.swing.*;
 
 public class AbcInfo implements AbcConstants, IBarNumberCache {
 
-    private static final String CORRUPT_ABC_WARNING_ID = "Possible corrupt ABC";
+    private static final String CORRUPT_ABC_WARNING_ID = UIText.get("common.possible.corrupt.abc");
 
     private static class PartInfo {
         private MidiEvent panEvent = null;
@@ -463,13 +465,13 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
                 issue = VersionsWithIssues.check(abcCreator);
                 if (issue != null) {
                     String title = songTitle != null ? songTitle: "";
-                    log.warning("Potential corrupted ABC. "+title+" ABC was exported with a flawed Maestro: "+issue);
+                    log.warning(MessageFormat.format(UIText.get("common.potential.corrupted.abc.0.abc.was.exported.with.a.flawed.maestro.1"), title,issue));
                     if (warningHandler != null) {
                         // for now only Abc Tools use this. Happens when loading a project that uses abc as a source.
-                        String message = "project uses "+title + " ABC, which was exported with a flawed Maestro: "+issue;
+                        String message = MessageFormat.format(UIText.get("common.project.uses.0.abc.which.was.exported.with.a.flawed.maestro.1"), title,issue);
 
                         WarningHandler.WarningAction action = warningHandler.handleWarning(
-                                CORRUPT_ABC_WARNING_ID, "Potential corrupted ABC from "+abcCreator, message);
+                                CORRUPT_ABC_WARNING_ID, MessageFormat.format(UIText.get("common.potential.corrupted.abc.from.0"), abcCreator), message);
 
                         if (action == WarningHandler.WarningAction.SKIP_FILE) {
                             throw new FileParseException("Skipped file (possible corrupt abc source) by user request.", null);
@@ -478,8 +480,8 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
                             .getBoolean("flawedMaestroPopup", true)) {
                         SwingUtilities.invokeLater(() -> {
                             JOptionPane.showMessageDialog(null,
-                                    title+" ABC was exported with a flawed Maestro: "+issue,
-                                    "Potential corrupted ABC from "+abcCreator, JOptionPane.WARNING_MESSAGE);
+									MessageFormat.format(UIText.get("common.0.abc.was.exported.with.a.flawed.maestro.1"), title,issue),
+									MessageFormat.format(UIText.get("common.potential.corrupted.abc.from.0"), abcCreator), JOptionPane.WARNING_MESSAGE);
                         });
                     }
                 }
@@ -645,9 +647,9 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		AbcInfo inf = new AbcInfo();
         try {
             inf.setExtendedMetadata(AbcField.SONG_DURATION, "3:14");
-            inf.setExtendedMetadata(AbcField.SONG_TITLE, "Example Title");
-            inf.setExtendedMetadata(AbcField.SONG_COMPOSER, "Example Composer");
-            inf.setExtendedMetadata(AbcField.SONG_TRANSCRIBER, "Your Name Here");
+            inf.setExtendedMetadata(AbcField.SONG_TITLE, UIText.get("common.example.title"));
+            inf.setExtendedMetadata(AbcField.SONG_COMPOSER, UIText.get("common.example.composer"));
+            inf.setExtendedMetadata(AbcField.SONG_TRANSCRIBER, UIText.get("common.your.name.here"));
         } catch (FileParseException ignore) {
         }
 		for (int i = 0; i < 5; i++) {

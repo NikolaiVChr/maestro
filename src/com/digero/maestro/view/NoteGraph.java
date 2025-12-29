@@ -18,6 +18,7 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -45,6 +46,7 @@ import com.digero.common.util.Pair;
 import com.digero.common.util.Util;
 import com.digero.common.view.BarNumberLabel;
 import com.digero.common.view.ColorTable;
+import com.digero.common.view.UIText;
 import com.digero.maestro.midi.BentMidiNoteEvent;
 import com.digero.maestro.midi.NoteEvent;
 import com.digero.maestro.midi.SequenceDataCache;
@@ -1058,7 +1060,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 			if (e.getButton() == MouseEvent.BUTTON1 && sequenceInfo != null) {
 				sequencer.setDragging(true);
 				sequencer.setDragPosition(positionFromEvent(e));
-				barLabel = new JLabel("Bar " + BarNumberLabel.getBarStringFloat(sequencer, sequenceInfo.getDataCache()));
+				barLabel = new JLabel(MessageFormat.format(UIText.get("maestro.bar.0"), BarNumberLabel.getBarStringFloat(sequencer, sequenceInfo.getDataCache())));
 				barLabel.setFocusable(false);
 				barLabel.setBorder(BorderFactory.createEmptyBorder(5, 25, 5, 5));
 		        barIndicator = new JPopupMenu();
@@ -1075,7 +1077,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 				if (!isDragCanceled(e)) {
 					sequencer.setDragging(true);
 					sequencer.setDragPosition(positionFromEvent(e));
-					barLabel.setText("Bar " + BarNumberLabel.getBarStringFloat(sequencer, sequenceInfo.getDataCache()));
+					barLabel.setText(MessageFormat.format(UIText.get("maestro.bar.0"), BarNumberLabel.getBarStringFloat(sequencer, sequenceInfo.getDataCache())));
 					barIndicator.show(NoteGraph.this, e.getX(), e.getY());
 				} else {
 					sequencer.setDragging(false);

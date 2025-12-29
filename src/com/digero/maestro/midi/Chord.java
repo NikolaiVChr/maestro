@@ -32,6 +32,7 @@ import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.Dynamics;
 import com.digero.common.midi.ITempoCache;
 import com.digero.common.midi.Note;
+import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcPart;
 
 public class Chord implements AbcConstants, Comparable<Chord> {
@@ -746,11 +747,11 @@ public class Chord implements AbcConstants, Comparable<Chord> {
 		// name() is saved in project files
 		// label is shown in UI
 		
-		LOUDEST("Loudest"),
-		POWER_RMS_DB("Power RMS dB"),
-		POWER_MID_DB("Power mid dB"),
-		WEIGHTED("Weighted"),
-		SOFTEST("Softest");
+		LOUDEST(UIText.get("maestro.dynamics.loudest")),
+		POWER_RMS_DB(UIText.get("maestro.dynamics.power.rms.db")),
+		POWER_MID_DB(UIText.get("maestro.dynamics.power.mid.db")),
+		WEIGHTED(UIText.get("maestro.dynamics.weighted")),
+		SOFTEST(UIText.get("maestro.dynamics.softest"));
 		
 		private final String label;
 		

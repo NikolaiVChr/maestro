@@ -1,5 +1,7 @@
 package com.digero.maestro.view;
 
+import com.digero.common.view.UIText;
+
 import java.awt.*;
 
 import javax.swing.*;
@@ -25,7 +27,7 @@ public class DissonanceSettingsDialog extends JDialog {
     //private final JSpinner spinMaj2Penalty;
 
     public DissonanceSettingsDialog(JDialog parent, MiscSettings settings) {
-        super(parent, "Dissonance Graph Settings", true);
+        super(parent, UIText.get("maestro.dissonance.dissonance.graph.settings"), true);
         this.settings = settings;
 
         JPanel content = new JPanel(new BorderLayout());
@@ -41,7 +43,7 @@ public class DissonanceSettingsDialog extends JDialog {
         int row = 0;
 
         // Enabled Checkbox
-        chkEnabled = new JCheckBox("Enable Dissonance Detection");
+        chkEnabled = new JCheckBox(UIText.get("maestro.dissonance.enable.dissonance.detection"));
         chkEnabled.setSelected(settings.dissEnabled); // Default to true, or load from settings if you add the field
         chkEnabled.addActionListener(e -> updateControls());
         
@@ -49,37 +51,30 @@ public class DissonanceSettingsDialog extends JDialog {
         formPanel.add(chkEnabled, c);
         c.gridwidth = 1;
 
-        chkExcludeShorts = new JCheckBox("Exclude ultra short overlaps");
+        chkExcludeShorts = new JCheckBox(UIText.get("maestro.dissonance.exclude.ultra.short.overlaps"));
         chkExcludeShorts.setSelected(settings.excludeShortestNotes); // Default to true, or load from settings if you add the field
         c.gridy = row++; c.gridwidth = 2;
         formPanel.add(chkExcludeShorts, c);
 
-        JLabel label = new JLabel("<html>Note: Two notes that are not overlapping might still produce dissonance." +
-                                        "<br>For example a 100 ms lute note followed by a clarinet note." +
-                                        "<br>This is due to the lute note will play until its sample runs out" +
-                                        "<br> and that is much longer than 100 ms.");
+        JLabel label = new JLabel(UIText.get("maestro.dissonance.might.still.produce.dissonance"));
         c.gridy = row++; c.gridwidth = 2;
         formPanel.add(label, c);
 
         // Weights / Factors Section
-        addHeader(formPanel, "Interval Weights (Count Multipliers)", row++);
-        spinMin2Factor = addField(formPanel, "Minor 2nd Weight:", row++, settings.min2factor,0);
-        spinMaj7Factor = addField(formPanel, "Major 7th Weight:", row++, settings.maj7factor,0);
-        spinTriFactor  = addField(formPanel, "Tritone Weight:",   row++, settings.trifactor,0);
-        spinMin7Factor = addField(formPanel, "Minor 7th Weight:", row++, settings.min7factor,0);
-        spinMaj2Factor = addField(formPanel, "Major 2nd Weight:", row++, settings.maj2factor,0);
-        spinMudFactor  = addField(formPanel, "Bass Mud Weight:",   row++, settings.mudfactor,0);
+        addHeader(formPanel, UIText.get("maestro.dissonance.interval.weights.count.multipliers"), row++);
+        spinMin2Factor = addField(formPanel, UIText.get("maestro.dissonance.minor.2nd.weight"), row++, settings.min2factor,0);
+        spinMaj7Factor = addField(formPanel, UIText.get("maestro.dissonance.major.7th.weight"), row++, settings.maj7factor,0);
+        spinTriFactor  = addField(formPanel, UIText.get("maestro.dissonance.tritone.weight"),   row++, settings.trifactor,0);
+        spinMin7Factor = addField(formPanel, UIText.get("maestro.dissonance.minor.7th.weight"), row++, settings.min7factor,0);
+        spinMaj2Factor = addField(formPanel, UIText.get("maestro.dissonance.major.2nd.weight"), row++, settings.maj2factor,0);
+        spinMudFactor  = addField(formPanel, UIText.get("maestro.dissonance.bass.mud.weight"),   row++, settings.mudfactor,0);
 
-        spinMudFactor.setToolTipText("<html>When a note lower than C3 have an interval closer than 1 octave" +
-                "<br>and is not unison, perfect fourth/fifth or minor 7th it is considered a bass mud (LIL)." +
-                "<br>Remember that theorbo note samples are longer than 0.5 second, so even sequential notes can create bass mud." +
-                "<br>Note: Sometimes the rumble that bass mud create is desirable." +
-                "<br>Default is 0, change this only if you know what you are doing.</html>");
+        spinMudFactor.setToolTipText(UIText.get("maestro.dissonance.tip.bassmud"));
 
         // Thresholds & Penalties Section
-        addHeader(formPanel, "Swarm Penalties", row++);
-        spinMin2Threshold = addField(formPanel, "Min 2nd count threshold for penalty:", row++, settings.min2threshold,1);
-        spinMin2Penalty   = addField(formPanel, "Min 2nd penalty for each over threshold:",   row++, settings.min2penalty,0);
+        addHeader(formPanel, UIText.get("maestro.dissonance.swarm.penalties"), row++);
+        spinMin2Threshold = addField(formPanel, UIText.get("maestro.dissonance.min.2nd.count.threshold.for.penalty"), row++, settings.min2threshold,1);
+        spinMin2Penalty   = addField(formPanel, UIText.get("maestro.dissonance.min.2nd.penalty.for.each.over.threshold"),   row++, settings.min2penalty,0);
         //spinMaj2Threshold = addField(formPanel, "Maj 2nd count threshold for penalty:", row++, settings.maj2threshold,1);
         //spinMaj2Penalty   = addField(formPanel, "Maj 2nd penalty for each over threshold:",   row++, settings.maj2penalty,0);
 
@@ -88,7 +83,7 @@ public class DissonanceSettingsDialog extends JDialog {
         // --- Button Panel ---
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         JButton btnOk = new JButton("OK");
-        JButton btnCancel = new JButton("Cancel");
+        JButton btnCancel = new JButton(UIText.get("maestro.dissonance.cancel"));
         /*
         JButton btnDefaults = new JButton("Restore Defaults");
 

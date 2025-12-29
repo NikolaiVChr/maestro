@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.Timer;
 import java.util.concurrent.ForkJoinPool;
@@ -40,6 +41,7 @@ import com.digero.common.util.LotroFileParseException;
 import com.digero.common.util.FileParseException;
 import com.digero.common.util.Util;
 import com.digero.common.util.WarningHandler;
+import com.digero.common.view.UIText;
 import com.digero.maestro.MaestroMain;
 import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.abc.ExportFilenameTemplate;
@@ -120,12 +122,7 @@ public class AutoExporter implements WarningHandler {
 				}
 			}
 		}, 250L, 250L);
-		setToField("<p>Start with selecting source, midi and destination folders.</p>"
-				+ "<p>Destination folder must be empty!</p>"
-				+ "<p>MIDI folder is optional. It is used when midi cannot be found,"
-				+ " then it looks in that folder before asking for location.</p>"
-				+ "<p>When exporting it will use your Maestro settings for filename, partname etc etc.</p>"
-				+ "<p>Close Maestro while this app runs.</p>");
+		setToField(UIText.get("abctools.start.with.selecting.source.midi.and.destination.folders"));
 		
 		sourceFolderAuto = new File(autoPrefs.get(DIR_AUTO_SOURCE, myHome));
 		midiFolderAuto = new File(autoPrefs.get(DIR_AUTO_MIDI, myHome));
@@ -193,9 +190,9 @@ public class AutoExporter implements WarningHandler {
 	}
 
 	private void refreshAuto() {
-		frame.setLblSourceAutoText("Source: " + sourceFolderAuto.getAbsolutePath());
-		frame.setLblDestAutoText("Destination: " + destFolderAuto.getAbsolutePath());
-		frame.setLblMidiAutoText("MIDIs: " + midiFolderAuto.getAbsolutePath());
+		frame.setLblSourceAutoText(MessageFormat.format(UIText.get("abctools.source.0"), sourceFolderAuto.getAbsolutePath()));
+		frame.setLblDestAutoText(MessageFormat.format(UIText.get("abctools.destination.0"), destFolderAuto.getAbsolutePath()));
+		frame.setLblMidiAutoText(MessageFormat.format(UIText.get("abctools.midis.0"), midiFolderAuto.getAbsolutePath()));
 		frame.repaint();
 	}
 
@@ -227,12 +224,7 @@ public class AutoExporter implements WarningHandler {
 		// Test if dest is empty
 		if (destFolderAuto.listFiles(new FolderFileFilter()).length != 0) {
             inProgress = false;
-			setToField("<p>Start with selecting source, midi and destination folders.</p><p>"
-					+ "<font color='red'>Destination folder must be empty!</font></p>"
-					+ "<p>MIDI folder is optional. It is used when midi cannot be found,"
-					+ " then it looks in that folder before asking for location.</p>"
-					+ "<p>When exporting it will use your Maestro settings for filename, partname etc etc.</p>"
-					+ "<p>Close Maestro while this app runs.</p>");
+			setToField(UIText.get("abctools.start.with.selecting.source.midi.and.destination.folders.red"));
 			SwingUtilities.invokeLater(() -> {
 				frame.getBtnStartExport().setEnabled(true);
 				frame.getBtnCancelExport().setEnabled(false);
@@ -251,7 +243,7 @@ public class AutoExporter implements WarningHandler {
 			return;
 		}
 		
-		setToField("<p>Keep Maestro closed while this app runs.</p><p></p><p>Exporting in progress</p>");
+		setToField(UIText.get("abctools.p.keep.maestro.closed.while.this.app.runs"));
 
 		partAutoNumberer = new PartAutoNumberer(prefs.node("partAutoNumberer"));
 		partNameTemplate = new PartNameTemplate(prefs.node("partNameTemplate"));
@@ -264,31 +256,31 @@ public class AutoExporter implements WarningHandler {
 
         // Output current Maestro settings that affects abc exporting:
         appendToField("<p></p>");
-        appendToField("<p>Clean output for non-ascii chars: "+Boolean.toString(StringCleaner.cleanABC)+"</p>");
-        appendToField("<p>Remove initial silence: "+Boolean.toString(saveSettings.skipSilenceAtStart)+"</p>");
-        appendToField("<p>Reduced file size: "+Boolean.toString(saveSettings.reducedFilesize)+"</p>");
+        appendToField(MessageFormat.format(UIText.get("abctools.p.clean.output.for.non.ascii.chars.0.p"), Boolean.toString(StringCleaner.cleanABC)));
+        appendToField(MessageFormat.format(UIText.get("abctools.p.remove.initial.silence.0.p"), Boolean.toString(saveSettings.skipSilenceAtStart)));
+        appendToField(MessageFormat.format(UIText.get("abctools.p.reduced.file.size.0.p"), Boolean.toString(saveSettings.reducedFilesize)));
         if (!frame.getForceLegacyTimingSelected() && !frame.getForceMixTimingSelected()) {
-            appendToField("<p>Organic allowed part polyphony above 6: " + Boolean.toString(saveSettings.useRestsInChords) + "</p>");
+            appendToField(MessageFormat.format(UIText.get("abctools.p.organic.allowed.part.polyphony.above.6.0.p"), Boolean.toString(saveSettings.useRestsInChords)));
         }
         if (!frame.getForceLegacyTimingSelected() && !frame.getForceOrganicSelected() && !frame.getForceOrganic2Selected()) {
-            appendToField("<p>Mix timings allowed to delete minimal notes: "+Boolean.toString(saveSettings.deleteMinimalNotes)+"</p>");
+            appendToField(MessageFormat.format(UIText.get("abctools.p.mix.timings.allowed.to.delete.minimal.notes.0.p"), Boolean.toString(saveSettings.deleteMinimalNotes)));
         }
-        appendToField("<p>Pitch bend range cutoff for switching method is: "+Integer.toString(miscSettings.maxRangeForNewBendMethod)+"</p>");
-        appendToField("<p>Output extended songbook metainfo: "+Boolean.toString(miscSettings.showBadger)+"</p>");
+        appendToField(MessageFormat.format(UIText.get("abctools.p.pitch.bend.range.cutoff.for.switching.method.is.0.p"), Integer.toString(miscSettings.maxRangeForNewBendMethod)));
+        appendToField(MessageFormat.format(UIText.get("abctools.p.output.extended.songbook.metainfo.0.p"), Boolean.toString(miscSettings.showBadger)));
         boolean pattern = false;
         if (exportFilenameTemplate.shouldRegenerateFilename()) {
-            appendToField("<p>ABC filenames will all be generated by pattern.</p>");
+            appendToField(UIText.get("abctools.p.abc.filenames.will.all.be.generated.by.pattern.p"));
             pattern = true;
         } else {
             if (prefs.node("exportFilenameTemplate").getBoolean("exportFilenamePatternEnabled", false)) {
-                appendToField("<p>ABC filenames will be last exported filename, if that's not available then generated by pattern.</p>");
+                appendToField(UIText.get("abctools.p.abc.filenames.will.be.last.exported.or.generated.by.pattern.p"));
                 pattern = true;
             } else {
-                appendToField("<p>ABC filenames will be last exported filename, if that's not available then generated from source midi/abc.</p>");
+                appendToField(UIText.get("abctools.abc.filenames.last.exported.or.generated.from.source"));
             }
         }
-        if (pattern) appendToField("<p>&nbsp;&nbsp;The filename pattern is "+prefs.node("exportFilenameTemplate").get("exportFilenamePattern", "$PartCount - $SongTitle")+".abc</p>");
-        appendToField("<p>Part title pattern is "+prefs.node("partNameTemplate").get("partNamePattern", "$SongTitle ($SongLength) - $PartName")+"</p>");
+        if (pattern) appendToField(MessageFormat.format(UIText.get("abctools.p.nbsp.nbsp.the.filename.pattern.is.0.abc.p"), prefs.node("exportFilenameTemplate").get("exportFilenamePattern", "$PartCount - $SongTitle")));
+        appendToField(MessageFormat.format(UIText.get("abctools.p.part.title.pattern.is.0.p"), prefs.node("partNameTemplate").get("partNamePattern", "$SongTitle ($SongLength) - $PartName")));
         appendToField("<p></p>");
 
         skippedProjects.clear();
@@ -312,7 +304,7 @@ public class AutoExporter implements WarningHandler {
         }
 		if (!filesToProcess.isEmpty()) {
             int total = filesToProcess.size();
-            appendToField("<p>Found " + total + " project files.</p><p></p>");
+            appendToField(MessageFormat.format(UIText.get("abctools.p.found.0.project.files.p.p.p"), total));
 
             progressFactor = 1000.0d / total;
             exportCount.set(0);
@@ -343,11 +335,11 @@ public class AutoExporter implements WarningHandler {
                 }).get(); // Wait for completion
             } catch (Throwable e) {
                 log.log(Level.WARNING, "Parallel export failed", e);
-                appendToField("<p></p><p>An error cancelled exporting: "+e+"</p>");
+                appendToField(MessageFormat.format(UIText.get("abctools.p.p.p.an.error.cancelled.exporting.0.p"), e));
             }
         }
         if (!skippedProjects.isEmpty()) {
-            appendToField("<p></p><p>Skipped/failed " + skippedProjects.size() + " project files:</p>");
+            appendToField(MessageFormat.format(UIText.get("abctools.p.p.p.skipped.failed.0.project.files.p"), skippedProjects.size()));
             for (File f : skippedProjects) {
                 appendToField("<p><font color='orange'>" + f.getParent() + File.separator + f.getName()+"</font></p>");
             }
@@ -362,10 +354,10 @@ public class AutoExporter implements WarningHandler {
          */
 		if (!cancel) {
 			setProgress(1000);
-			appendToField("<p></p><p>Exports finished. </p>");//+com.digero.maestro.abc.PolyphonyHistogram.successes
+			appendToField(UIText.get("abctools.p.p.p.exports.finished.p"));//+com.digero.maestro.abc.PolyphonyHistogram.successes
 			log.info("Auto exports finished outputting "+totalExportCount+" files");
 		} else {
-			appendToField("<p></p><p>Exports cancelled.</p>");
+			appendToField(UIText.get("abctools.p.p.p.exports.cancelled.p"));
 			log.info("Auto exports cancelled");
 		}
         inProgress = false;
@@ -575,7 +567,7 @@ public class AutoExporter implements WarningHandler {
         pInfo.newNestedMidi = null;
         pInfo.oldMidi = null;
         pInfo.nestedProject = project;
-        pInfo.appendText = "<p>Exporting " + project.getName()+"</p>";
+        pInfo.appendText = MessageFormat.format(UIText.get("abctools.p.exporting.0.p"), project.getName());
 
         FileResolverAsync openFileResolver = new FileResolverAsync();
         openFileResolver.pInfo = pInfo;
@@ -685,7 +677,7 @@ public class AutoExporter implements WarningHandler {
             throw t;
         }
 		int maxPoly = abcSong.getMaxPartPoly();
-		if (maxPoly > 6) pInfo.appendText += "<p><font color='orange'>&nbsp;&nbsp;part polyphony max was "+maxPoly+".</font></p>";
+		if (maxPoly > 6) pInfo.appendText += MessageFormat.format(UIText.get("abctools.p.font.color.orange.nbsp.nbsp.part.polyphony.max.was.0.font.p"), maxPoly);
 		if ((abcSong.getExportFile() == null || exportFile.compareTo(abcSong.getExportFile()) != 0) && frame.getSaveMSXabcSelected()) {
 			pInfo.projectModified = true;
 		}
@@ -707,11 +699,11 @@ public class AutoExporter implements WarningHandler {
 		if (dynaModified || timingModified || ( pInfo.projectModified && (frame.getSaveMSXSelected() || frame.getSaveMSXabcSelected()) )) {
 			try {
 				XmlUtil.saveDocument(abcSong.saveToXml(), abcSong.getProjectFile());
-                pInfo.appendText += "<p>&nbsp;&nbsp;msx saved.</p>";
+                pInfo.appendText += UIText.get("abctools.p.nbsp.nbsp.msx.saved.p");
 			} catch (FileNotFoundException e) {
-                pInfo.appendText += "<p><font color='red'>&nbsp;&nbsp;msx saving failed.</font></p>";
+                pInfo.appendText += UIText.get("abctools.p.font.color.red.nbsp.nbsp.msx.saving.failed.font.p");
 			} catch (IOException | TransformerException e) {
-                pInfo.appendText += "<p><font color='red'>&nbsp;&nbsp;msx saving failed.</font></p>";
+                pInfo.appendText += UIText.get("abctools.p.font.color.red.nbsp.nbsp.msx.saving.failed.font.p");
 			}
 		}
 		
@@ -731,14 +723,14 @@ public class AutoExporter implements WarningHandler {
 				params.generateRegions = false;//only needed in abc player
 				AbcToMidi.convert(params);
 			} catch (LotroFileParseException e) {
-				JOptionPane.showMessageDialog(frame, e.getMessage(), exportFile.getName()+": Error parsing ABC", JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(frame, e.getMessage(), MessageFormat.format(UIText.get("abctools.0.error.parsing.abc"), exportFile.getName()), JOptionPane.ERROR_MESSAGE);
 			} catch (FileParseException e) {
-				JOptionPane.showMessageDialog(frame, e.getMessage(), exportFile.getName()+": Error reading ABC", JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(frame, e.getMessage(), MessageFormat.format(UIText.get("abctools.0.error.reading.abc"), exportFile.getName()), JOptionPane.ERROR_MESSAGE);
 			}
 		}
 
 
-        pInfo.appendText += "<p>&nbsp;&nbsp;as " + exportFile.getName()+"</p>";
+        pInfo.appendText += MessageFormat.format(UIText.get("abctools.p.nbsp.nbsp.as.0.p"), exportFile.getName());
         appendToField(pInfo.appendText);
 	}
 
@@ -806,7 +798,7 @@ public class AutoExporter implements WarningHandler {
 					openFileChooser.setMultiSelectionEnabled(false);
 					// openFileChooser.setFileFilter(new ExtensionFileFilter("ABC files", "abc", "txt"));
 					openFileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-					openFileChooser.setDialogTitle("Source folder");
+					openFileChooser.setDialogTitle(UIText.get("abctools.source.folder"));
 				}
 				
 				result = openFileChooser.showOpenDialog(frame);
@@ -829,7 +821,7 @@ public class AutoExporter implements WarningHandler {
 					openFileChooser.setMultiSelectionEnabled(false);
 					// openFileChooser.setFileFilter(new ExtensionFileFilter("ABC files", "abc", "txt"));
 					openFileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-					openFileChooser.setDialogTitle("MIDI folder");
+					openFileChooser.setDialogTitle(UIText.get("abctools.midi.folder"));
 				}
 				result = openFileChooser.showOpenDialog(frame);
 				if (result == JFileChooser.APPROVE_OPTION) {
@@ -911,7 +903,7 @@ public class AutoExporter implements WarningHandler {
 					openFileChooser = new JFileChooser(destFolderAuto);
 					openFileChooser.setMultiSelectionEnabled(false);
 					openFileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-					openFileChooser.setDialogTitle("Destination folder");
+					openFileChooser.setDialogTitle(UIText.get("abctools.destination.folder"));
 				}
 				
 				result = openFileChooser.showOpenDialog(frame);
@@ -955,7 +947,7 @@ public class AutoExporter implements WarningHandler {
 			}
 			if (original.equals(pInfo.newNestedMidi)) {
 				if (neverLocateMidi) return null;
-				message += "\n\nWould you like to try to locate the file?";
+				message += UIText.get("abctools.would.you.like.to.try.to.locate.the.file");
 				return resolveHelper(pInfo.oldMidi, message);
 			} else if (original.equals(newMidi)) {
 				if (pInfo.newNestedMidi != null) {
@@ -965,7 +957,7 @@ public class AutoExporter implements WarningHandler {
 				}
 				//System.out.println("newNestedMidi == null");
 				if (neverLocateMidi) return null;
-				message += "\n\nWould you like to try to locate the file?";
+				message += UIText.get("abctools.would.you.like.to.try.to.locate.the.file");
 				return resolveHelper(pInfo.oldMidi, message);
 			}
 			//System.out.println("return newMidi="+newMidi.getPath());
@@ -975,7 +967,7 @@ public class AutoExporter implements WarningHandler {
 
 		@Override
 		public File resolveFile(File original, String message) {
-			message += "\n\nWould you like to pick a different file?";
+			message += UIText.get("abctools.would.you.like.to.pick.a.different.file");
 			return resolveHelper(original, message);
 		}
 
@@ -997,11 +989,11 @@ public class AutoExporter implements WarningHandler {
 
                 try {
                     SwingUtilities.invokeAndWait(() -> {
-                        String[] options = {"Locate File...", "Skip", "Cancel"};
-                        JCheckBox skipAllCheckbox = new JCheckBox("Skip all missing files");
+                        String[] options = {UIText.get("abctools.locate.file"), UIText.get("abctools.skip"), UIText.get("abctools.cancel")};
+                        JCheckBox skipAllCheckbox = new JCheckBox(UIText.get("abctools.skip.all.missing.files"));
                         Object[] params = {message, skipAllCheckbox};
                         userChoice[0] = JOptionPane.showOptionDialog(
-                                frame, params, "Failed to open file",
+                                frame, params, UIText.get("abctools.failed.to.open.file1"),
                                 JOptionPane.DEFAULT_OPTION, JOptionPane.WARNING_MESSAGE,
                                 null, options, options[0]
                         );
@@ -1020,7 +1012,7 @@ public class AutoExporter implements WarningHandler {
                 switch (userChoice[0]) {
                     case 0:
                         JFileChooser jfc = new JFileChooser();
-                        jfc.setDialogTitle("Open missing MIDI/ABC");
+                        jfc.setDialogTitle(UIText.get("abctools.open.missing.midi.abc"));
                         jfc.addChoosableFileFilter(
                                 new ExtensionFileFilter("MIDI",
                                         Util.MID_FILE_EXTENSION_NO_DOT,
@@ -1029,7 +1021,7 @@ public class AutoExporter implements WarningHandler {
                                 new ExtensionFileFilter("ABC",
                                         Util.ABC_FILE_EXTENSION_NO_DOT,
                                         Util.TXT_FILE_EXTENSION_NO_DOT));
-                        jfc.setFileFilter(new ExtensionFileFilter("MIDI and ABC files",
+                        jfc.setFileFilter(new ExtensionFileFilter(UIText.get("abctools.midi.and.abc.files"),
                                 Util.ABC_FILE_EXTENSION_NO_DOT, Util.TXT_FILE_EXTENSION_NO_DOT,
                                 Util.MID_FILE_EXTENSION_NO_DOT, Util.MIDI_FILE_EXTENSION_NO_DOT,
                                 Util.KAR_FILE_EXTENSION_NO_DOT));
@@ -1101,9 +1093,9 @@ public class AutoExporter implements WarningHandler {
 
             try {
                 SwingUtilities.invokeAndWait(() -> {
-                    String fullMessage = message + "\n\nWhat would you like to do?";
-                    String[] options = {"Proceed", "Skip", "Cancel"};
-                    JCheckBox proceedForAllCheckbox = new JCheckBox("Apply choice to all '" + warningId + "' warnings");
+                    String fullMessage = MessageFormat.format(UIText.get("abctools.0.what.would.you.like.to.do"), message);
+                    String[] options = {UIText.get("abctools.proceed"), UIText.get("abctools.skip"), UIText.get("abctools.cancel")};
+                    JCheckBox proceedForAllCheckbox = new JCheckBox(MessageFormat.format(UIText.get("abctools.apply.choice.to.all.0.warnings"), warningId));
 
                     Object[] params = {fullMessage, proceedForAllCheckbox};
 

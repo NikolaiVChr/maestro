@@ -18,6 +18,7 @@ import javax.swing.SwingConstants;
 
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.util.IDiscardable;
+import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcPartMetadataSource;
 
@@ -79,7 +80,7 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		String badgerText = "<html>"+part.getBadgerPrio()+"</html>";
 		Color badgerColor = new JButton().getBackground();
 		badgerButton = new JButton(badgerText);
-		badgerButton.setToolTipText("Songbook setup priority, 1 = must play, 6 = least important");
+		badgerButton.setToolTipText(UIText.get("maestro.songbook.setup.priority.1.must.play.6.least.important"));
 		badgerButton.setBackground(badgerColor);
 		badgerButton.setPreferredSize(buttonSize);
 		badgerButton.setMargin(new Insets(0, 0, 0, 0));
@@ -98,8 +99,7 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		Dimension fieldSize = delayField.getPreferredSize();
 		fieldSize.height = h;
 		delayField.setPreferredSize(fieldSize);
-		delayField.setToolTipText("Put a delay from 0s to 1.00s on a part."
-				+ "\nThe effect wont be shown graphically");
+		delayField.setToolTipText(UIText.get("maestro.put.a.delay"));
 		delayField.addActionListener(e -> {
 			validateDelayInput();
 		});
@@ -115,9 +115,7 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		fieldSize = conclusionFermataField.getPreferredSize();
 		fieldSize.height = h;
 		conclusionFermataField.setPreferredSize(fieldSize);
-		conclusionFermataField.setToolTipText("Put a conclusion fermata from 0s to 5.00s on a part."
-				+ "\nDoes nothing if note not sustained by chosen instrument."
-				+ "\nThe effect wont be shown graphically");
+		conclusionFermataField.setToolTipText(UIText.get("maestro.put.a.conclusion.fermata"));
 		conclusionFermataField.addActionListener(e -> {
 			validateFermataInput();
 		});
@@ -133,8 +131,7 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		fieldSize = maxField.getPreferredSize();
 		fieldSize.height = h;
 		maxField.setPreferredSize(fieldSize);
-		maxField.setToolTipText("Put a max concurrent notes from 1 to 6 on a part."
-				+ "\nThe effect wont be shown graphically");
+		maxField.setToolTipText(UIText.get("maestro.put.a.max.concurrent.notes"));
 		maxField.addActionListener(e -> {
 			validateMaxInput();
 		});
@@ -145,7 +142,7 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 			}
 		});
 
-        countInButton = new JButton("Count-in");
+        countInButton = new JButton(UIText.get("maestro.count.in"));
         countInButton.setSize(new Dimension(countInButton.getPreferredSize().width, getProtoDimension().height));
         countInButton.addActionListener(e -> {
            CountIn result = CountIn.show(this, part, part.getAbcSong().getCountIn());
@@ -166,19 +163,19 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		a.setVisible(false);
 		a.setPreferredSize(horizGapi);
 		add(a, ++col + ", 0");
-		add(new JLabel("Delay"), ++col + ", 0");
+		add(new JLabel(UIText.get("maestro.delay")), ++col + ", 0");
 		add(delayField, ++col + ", 0");
 		JPanel b = new JPanel();
 		b.setVisible(false);
 		b.setPreferredSize(horizGapi);
 		add(b, ++col + ", 0");
-		add(new JLabel("Fermata"), ++col + ", 0");
+		add(new JLabel(UIText.get("maestro.fermata")), ++col + ", 0");
 		add(conclusionFermataField, ++col + ", 0");
 		JPanel c = new JPanel();
 		c.setVisible(false);
 		c.setPreferredSize(horizGapi);
 		add(c, ++col + ", 0");
-		add(new JLabel("Max notes"), ++col + ", 0");
+		add(new JLabel(UIText.get("maestro.max.notes")), ++col + ", 0");
 		add(maxField, ++col + ", 0");
         add(countInButton, ++col + ", 0");
 	}
@@ -221,7 +218,7 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		fieldSize.height = h;
 		maxField.setPreferredSize(fieldSize);
 
-        countInButton = new JButton("Count-in");
+        countInButton = new JButton(UIText.get("maestro.count.in"));
         countInButton.setSize(new Dimension(countInButton.getPreferredSize().width, h));
 
 		int col = -1;
@@ -232,17 +229,17 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		JPanel a = new JPanel();
 		a.setPreferredSize(horizGapi);
 		add(a, ++col + ", 0");
-		add(new JLabel("Delay"), ++col + ", 0");
+		add(new JLabel(UIText.get("maestro.delay")), ++col + ", 0");
 		add(delayField, ++col + ", 0");
 		JPanel b = new JPanel();
 		b.setPreferredSize(horizGapi);
 		add(b, ++col + ", 0");
-		add(new JLabel("Fermata"), ++col + ", 0");
+		add(new JLabel(UIText.get("maestro.fermata")), ++col + ", 0");
 		add(conclusionFermataField, ++col + ", 0");
 		JPanel c = new JPanel();
 		c.setPreferredSize(horizGapi);
 		add(c, ++col + ", 0");
-		add(new JLabel("Max notes"), ++col + ", 0");
+		add(new JLabel(UIText.get("maestro.max.notes")), ++col + ", 0");
 		add(maxField, ++col + ", 0");
         add(countInButton, ++col + ", 0");
 	}

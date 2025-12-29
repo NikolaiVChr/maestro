@@ -1,6 +1,7 @@
 package com.digero.common.util;
 
 import com.digero.common.midi.SynthesizerFactory;
+import com.digero.common.view.UIText;
 
 import javax.swing.*;
 import java.awt.*;
@@ -18,6 +19,7 @@ import java.nio.file.StandardCopyOption;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.text.MessageFormat;
 import java.time.Duration;
 import java.util.HexFormat;
 import java.util.logging.Level;
@@ -98,12 +100,12 @@ public class SoundFontDownloader {
     }
 
     private static boolean showDownloadDialog(File targetFile) {
-        JDialog dialog = new JDialog((Frame) null, "Lotro soundbank", true);
+        JDialog dialog = new JDialog((Frame) null, UIText.get("common.soundfont.lotro.soundbank"), true);
         dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         dialog.setLayout(new BorderLayout(10, 10));
         dialog.setLocationRelativeTo(null); // Center on screen
 
-        JLabel statusLabel = new JLabel("Downloading SoundFont (200+ MB)... please wait.");
+        JLabel statusLabel = new JLabel(UIText.get("common.soundfont.downloading.soundfont.200.mb.please.wait"));
         statusLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 0, 10));
         statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
 
@@ -114,7 +116,7 @@ public class SoundFontDownloader {
         progressBar.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         JPanel btnPanel = new JPanel();
-        JButton cancelButton = new JButton("Cancel");
+        JButton cancelButton = new JButton(UIText.get("common.soundfont.cancel"));
         btnPanel.add(cancelButton);
 
         dialog.add(statusLabel, BorderLayout.NORTH);
@@ -160,8 +162,8 @@ public class SoundFontDownloader {
                     
                     // Verify hash immediately after download
                     SwingUtilities.invokeLater(() -> {
-                        statusLabel.setText("Verifying integrity...");
-                        progressBar.setString("Verifying...");
+                        statusLabel.setText(UIText.get("common.soundfont.verifying.integrity"));
+                        progressBar.setString(UIText.get("common.soundfont.verifying"));
                         progressBar.setIndeterminate(true);
                     });
                     if (verifyChecksum(tempFile.toPath(), EXPECTED_SHA256)) {
@@ -189,11 +191,10 @@ public class SoundFontDownloader {
                         Files.deleteIfExists(tempFile.toPath());
                     } catch (IOException ignored) {
                     }
-                    Object[] options = {"Retry", "Quit", "Continue"};
+                    Object[] options = {UIText.get("common.soundfont.retry"), UIText.get("common.soundfont.quit"), UIText.get("common.soundfont.continue")};
                     int option = JOptionPane.showOptionDialog(dialog,
-                            "Download failed:\n" + e.getMessage() + "\n\n" +
-                                    "You can retry, quit the app, or continue without lotro sounds.",
-                            "Download Error",
+                            MessageFormat.format(UIText.get("common.soundfont.download.failed.0"), e.getMessage()),
+                            UIText.get("common.soundfont.download.error"),
                             JOptionPane.YES_NO_OPTION,
                             JOptionPane.ERROR_MESSAGE,
                             null,
@@ -212,11 +213,11 @@ public class SoundFontDownloader {
                         System.exit(0);
                     } else {
                         // retry
-                        log.info("Retrying downloading soundfont to shared location");
+                        log.info(UIText.get("common.soundfont.retrying.downloading.soundfont.to.shared.location"));
                         SwingUtilities.invokeLater(() -> {
                             progressBar.setIndeterminate(false);
                             progressBar.setValue(0);
-                            statusLabel.setText("Retrying...");
+                            statusLabel.setText(UIText.get("common.soundfont.retrying"));
                         });
                     }
                 }

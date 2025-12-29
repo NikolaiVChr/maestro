@@ -19,6 +19,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
 import com.digero.common.util.Util;
+import com.digero.common.view.UIText;
 
 @SuppressWarnings("serial")
 public class AbcBrowserDirectoryDialog extends JDialog {
@@ -27,13 +28,13 @@ public class AbcBrowserDirectoryDialog extends JDialog {
 	private DefaultListModel<String> model;
 	
 	public AbcBrowserDirectoryDialog(JFrame abcPlayer, List<File> directories) {
-		super(abcPlayer, "ABC Directories", true);
+		super(abcPlayer, UIText.get("abcplayer.abc.directories"), true);
 		
 		JPanel panel = new JPanel(new BorderLayout());
 //		panel.setPreferredSize(new Dimension(500, 200));
 		panel.setMinimumSize(new Dimension(500, 200));
 		
-		JButton remove = new JButton("Remove");
+		JButton remove = new JButton(UIText.get("abcplayer.remove"));
 		remove.setEnabled(false);
 		
 		model = new DefaultListModel<String>();
@@ -63,11 +64,11 @@ public class AbcBrowserDirectoryDialog extends JDialog {
 		JPanel controlsPanel = new JPanel(new FlowLayout());
 		JPanel cancelOkPanel = new JPanel(new FlowLayout());
 		
-		JButton add = new JButton("Add");
+		JButton add = new JButton(UIText.get("abcplayer.add"));
 		add.addActionListener(e -> {
 			JFileChooser chooseDir = new JFileChooser(Util.getLotroMusicPath(true));
 			chooseDir.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-			int res = chooseDir.showDialog(this, "Add");
+			int res = chooseDir.showDialog(this, UIText.get("abcplayer.add"));
 			if (res == JFileChooser.APPROVE_OPTION) {
 				model.addElement(chooseDir.getSelectedFile().getAbsolutePath());
 			}
@@ -79,7 +80,7 @@ public class AbcBrowserDirectoryDialog extends JDialog {
 			}
 		});
 		
-		JButton cancel = new JButton("Cancel");
+		JButton cancel = new JButton(UIText.get("common.cancel"));
 		cancel.addActionListener(e -> {
 			success = false;
 			AbcBrowserDirectoryDialog.this.setVisible(false);

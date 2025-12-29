@@ -22,6 +22,7 @@ import javax.swing.TransferHandler;
 import com.digero.common.util.IDiscardable;
 import com.digero.common.util.Listener;
 import com.digero.common.view.ColorTable;
+import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcPartMetadataSource;
 
@@ -125,7 +126,7 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 		String badgerText = "<html>"+part.getBadgerPrio()+"</html>";
 		Color badgerColor = new JButton().getBackground();
 		badgerButton = new JButton(badgerText);
-		badgerButton.setToolTipText("Songbook setup priority, 1 = must play, 6 = least important");
+		badgerButton.setToolTipText(UIText.get("maestro.songbook.setup.priority.1.must.play.6.least.important"));
 		badgerButton.setBackground(badgerColor);
 		badgerButton.setPreferredSize(buttonSize);
 		badgerButton.setMargin(new Insets(0, 0, 0, 0));
@@ -139,10 +140,10 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 			badgerButton.setText(text);
 		});
 		
-		String soloText = part.isSoloed() ? "<html><b>S</b></html>" : "<html>S</html>";
+		String soloText = part.isSoloed() ? UIText.get("maestro.html.b.solo.b.html") : UIText.get("maestro.html.solo.html");
 		Color soloColor = part.isSoloed() ? ColorTable.PARTS_LIST_SOLO.get() : new JButton().getBackground();
 		soloButton = new JButton(soloText);
-		soloButton.setToolTipText("Solo/Unsolo Part");
+		soloButton.setToolTipText(UIText.get("maestro.solo.unsolo.part"));
 		soloButton.setBackground(soloColor);
 		soloButton.setPreferredSize(buttonSize);
 		soloButton.setMargin(new Insets(0, 0, 0, 0));
@@ -156,10 +157,10 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 			itemListener.onEvent(new PartsListItemEvent(PartsListItem.this, PartsListItemEvent.EventType.SOLO));
 		});
 
-		String muteText = part.isMuted() ? "<html><b>M</b></html>" : "<html>M</html>";
+		String muteText = part.isMuted() ? UIText.get("maestro.html.b.mute.b.html") : UIText.get("maestro.html.mute.html");
 		Color muteColor = part.isMuted() ? ColorTable.PARTS_LIST_MUTE.get() : new JButton().getBackground();
 		muteButton = new JButton(muteText);
-		muteButton.setToolTipText("Mute/Unmute Part");
+		muteButton.setToolTipText(UIText.get("maestro.mute.unmute.part"));
 		muteButton.setBackground(muteColor);
 		muteButton.setPreferredSize(buttonSize);
 		muteButton.setMargin(new Insets(0, 0, 0, 0));
@@ -232,12 +233,12 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 
 		int h = title.getPreferredSize().height + getBuffer();
 		Dimension buttonSize = new Dimension(h, h);
-		soloButton = new JButton("<html><b>S</b></html>");
+		soloButton = new JButton(UIText.get("maestro.html.b.solo.b.html"));
 		soloButton.setPreferredSize(buttonSize);
 		soloButton.setMargin(new Insets(0, 0, 0, 0));
 		soloButton.setFocusable(false);
 
-		muteButton = new JButton("<html><b>M</b></html>");
+		muteButton = new JButton(UIText.get("maestro.html.b.mute.b.html"));
 		muteButton.setPreferredSize(buttonSize);
 		muteButton.setMargin(new Insets(0, 0, 0, 0));
 		muteButton.setFocusable(false);
@@ -251,13 +252,13 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 	public void setSolo(boolean solo) {
 		part.setSoloed(solo);
 		soloButton.setBackground(solo ? ColorTable.PARTS_LIST_SOLO.get() : new JButton().getBackground());
-		soloButton.setText(solo ? "<html><b>S</b></html>" : "<html>S</html>");
+		soloButton.setText(solo ? UIText.get("maestro.html.b.solo.b.html") : UIText.get("maestro.html.solo.html"));
 	}
 	
 	public void setMute(boolean mute) {
 		part.setMuted(mute);
 		muteButton.setBackground(mute ? ColorTable.PARTS_LIST_MUTE.get() : new JButton().getBackground());
-		muteButton.setText(mute ? "<html><b>M</b></html>" : "<html>M</html>");
+		muteButton.setText(mute ? UIText.get("maestro.html.b.mute.b.html") : UIText.get("maestro.html.mute.html"));
 	}
 	
 	public boolean isSoloed() {

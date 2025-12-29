@@ -5,6 +5,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -50,6 +51,7 @@ import com.digero.common.util.Pair;
 import com.digero.common.util.FileParseException;
 import com.digero.common.util.Util;
 import com.digero.common.view.ColorTable;
+import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcPartEvent;
 import com.digero.maestro.abc.AbcPartEvent.AbcPartProperty;
@@ -314,7 +316,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 		int currentTranspose = abcPart.getTrackTranspose(trackInfo.getTrackNumber());
 		transposeSpinner = new JSpinner(new TrackTransposeModel(currentTranspose, -48, 48, 12));
-		transposeSpinner.setToolTipText("Transpose this track by octaves (12 semitones)");
+		transposeSpinner.setToolTipText(UIText.get("maestro.transpose.this.track.by.octaves.12.semitones"));
 
 		transposeSpinner.addChangeListener(e -> {
 			int track = trackInfo.getTrackNumber();
@@ -332,9 +334,9 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		sectionButton = new JButton();
 		sectionButton.setPreferredSize(new Dimension(SECTIONBUTTON_WIDTH, SECTIONBUTTON_WIDTH));
 		sectionButton.setMargin(new Insets(5, 5, 5, 5));
-		sectionButton.setText("S");
+		sectionButton.setText(UIText.get("maestro.sectionedit.button"));
 		sectionButton.setToolTipText(
-				"<html><b> Edit sections of this track </b><br> Use the bar counter in lower right corner to find your sections. </html>");
+				UIText.get("maestro.edit.sections.of.this.track"));
 		sectionButton.addActionListener(e -> {
 			int track = trackInfo.getTrackNumber();
 			SectionEditor.show((JFrame) sectionButton.getTopLevelAncestor(), noteGraph, abcPart, track,
@@ -347,11 +349,11 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 	    	// Set dark theme for PX and P controls on dark background.
 	        UIManager.setLookAndFeel(new FlatMacDarkLaf());
 	        fxBox = new JCheckBox("FX");
-	        priorityBox = new JCheckBox("P");
+	        priorityBox = new JCheckBox(UIText.get("maestro.prio.button"));
 	        UIManager.setLookAndFeel(previousLF);
 	    } catch (UnsupportedLookAndFeelException e) {}	
 		
-		fxBox.setToolTipText("Effect sounds instead of chromatic notes");
+		fxBox.setToolTipText(UIText.get("maestro.effect.sounds.instead.of.chromatic.notes"));
 		fxBox.addActionListener(e -> {
 			int track = trackInfo.getTrackNumber();
 			boolean fx = fxBox.isSelected();
@@ -362,7 +364,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		fxBox.setVisible(false);
 		
 		//priorityBox.setOpaque(false);
-		priorityBox.setToolTipText("Prioritize this tracks rhythm when combining tracks with Mix Timings enabled");
+		priorityBox.setToolTipText(UIText.get("maestro.prioritize.this.tracks.rhythm.when.combining"));
 		priorityBox.addActionListener(e -> {
 			int track = trackInfo.getTrackNumber();
 			boolean prio = priorityBox.isSelected();
@@ -372,7 +374,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		priorityBox.setHorizontalTextPosition(SwingConstants.CENTER);
 
 		trackVolumeBar = new TrackVolumeBar(trackInfo.getMinVelocity(), trackInfo.getMaxVelocity());
-		trackVolumeBar.setToolTipText("Adjust this track's volume");
+		trackVolumeBar.setToolTipText(UIText.get("maestro.adjust.this.track.s.volume"));
 		trackVolumeBar.setDeltaVolume(abcPart.getTrackVolumeAdjust(trackInfo.getTrackNumber()));
 		trackVolumeBar.addActionListener(e -> {
 			// Only update the actual ABC part when the user stops dragging the trackVolumeBar
@@ -554,27 +556,27 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		drumControlBar.setBackground(ColorTable.GRAPH_BACKGROUND_ENABLED.get());
 		drumControlBar.setBorder(BorderFactory.createEmptyBorder());
 		
-		JMenu selectMenu = new JMenu("Select");
-		drumMapMenu = new JMenu("Drum Map");
+		JMenu selectMenu = new JMenu(UIText.get("maestro.drum.menu.select"));
+		drumMapMenu = new JMenu(UIText.get("maestro.drum.menu.drum.map"));
 //		drumMapMenu.setVisible(abcPart.isDrumPart());
 		
 		drumControlBar.add(drumMapMenu);
 		drumControlBar.add(selectMenu);
 
-		JMenuItem importItem = drumMapMenu.add(new JMenuItem("Import..."));
+		JMenuItem importItem = drumMapMenu.add(new JMenuItem(UIText.get("maestro.drum.menu.import")));
 		importItem.addActionListener(e -> {
 			if (!abcPart.isStudentPart() && !abcPart.isJauntyHandKnellsPart()) {
 				loadDrumMapping();
 			}
 		});
-		JMenuItem exportItem = drumMapMenu.add(new JMenuItem("Export..."));
+		JMenuItem exportItem = drumMapMenu.add(new JMenuItem(UIText.get("maestro.drum.menu.export")));
 		exportItem.addActionListener(e -> {
 			if (!abcPart.isStudentPart() && !abcPart.isJauntyHandKnellsPart()) {
 				saveDrumMapping();
 			}
 		});
 		
-		JMenuItem selectAll = selectMenu.add(new JMenuItem("Select All"));
+		JMenuItem selectAll = selectMenu.add(new JMenuItem(UIText.get("maestro.drum.menu.select.all")));
 		selectAll.addActionListener(e -> {
 			if (drumlinePanels == null) {
 				return;
@@ -584,7 +586,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 				dp.repaint();
 			}
 		});
-		JMenuItem selectNone = selectMenu.add(new JMenuItem("Select None"));
+		JMenuItem selectNone = selectMenu.add(new JMenuItem(UIText.get("maestro.drum.menu.select.none")));
 		selectNone.addActionListener(e -> {
 			if (drumlinePanels == null) {
 				return;
@@ -594,7 +596,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 				dp.repaint();
 			}
 		});
-		JMenuItem invertSelection = selectMenu.add(new JMenuItem("Invert Selection"));
+		JMenuItem invertSelection = selectMenu.add(new JMenuItem(UIText.get("maestro.drum.menu.invert.selection")));
 		invertSelection.addActionListener(e -> {
 			if (drumlinePanels == null) {
 				return;
@@ -604,8 +606,8 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 				dp.repaint();
 			}
 		});
-		JMenuItem copySelection = selectMenu.add(new JMenuItem("Copy Selection"));
-		pasteSelection = selectMenu.add(new JMenuItem("Paste Selection"));
+		JMenuItem copySelection = selectMenu.add(new JMenuItem(UIText.get("maestro.drum.menu.copy.selection")));
+		pasteSelection = selectMenu.add(new JMenuItem(UIText.get("maestro.drum.menu.paste.selection")));
 		pasteSelection.setEnabled(drumClipboard != null);
 		pasteSelection.addActionListener(e -> {
 			if (drumlinePanels == null) {
@@ -686,9 +688,9 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 					}
 				}
 				if (g3count == 0) {
-					badString = "</b><br>" + "Bad G3 notes: " + g3count;
+					badString = MessageFormat.format(UIText.get("maestro.b.br.bad.g3.notes.0"), g3count);
 				} else {
-					badString = "</b><br><p style='color:red;'>" + "Bad G3 notes: " + g3count + "</p>";
+					badString = MessageFormat.format(UIText.get("maestro.b.br.p.style.color.red.bad.g3.notes.0.p"), g3count);
 				}
 				break;
 			case BASIC_PIBGORN:
@@ -703,9 +705,9 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 					}
 				}
 				if (acount == 0) {
-					badString = "</b><br>" + "Bad A notes: " + acount;
+					badString = MessageFormat.format(UIText.get("maestro.b.br.bad.a.notes.0"), acount);
 				} else {
-					badString = "</b><br><p style='color:red;'>" + "Bad A notes: " + acount + "</p>";
+					badString = MessageFormat.format(UIText.get("maestro.b.br.p.style.color.red.bad.a.notes.0.p"), acount);
 				}
 				break;
 			case BASIC_HARP:
@@ -719,9 +721,9 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 					}
 				}
 				if (b4count == 0) {
-					badString = "</b><br>" + "Bad B4 notes: " + b4count;
+					badString = MessageFormat.format(UIText.get("maestro.b.br.bad.b4.notes.0"), b4count);
 				} else {
-					badString = "</b><br><p style='color:red;'>" + "Bad B4 notes: " + b4count + "</p>";
+					badString = MessageFormat.format(UIText.get("maestro.b.br.p.style.color.red.bad.b4.notes.0.p"), b4count);
 				}
 				break;
             /*
@@ -1027,7 +1029,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 		JFileChooser fileChooser = new JFileChooser(dir);
 		fileChooser.setFileFilter(
-				new ExtensionFileFilter("Drum Map (*." + DrumNoteMap.FILE_SUFFIX + ")", DrumNoteMap.FILE_SUFFIX));
+				new ExtensionFileFilter(MessageFormat.format(UIText.get("maestro.drum.map.1"), DrumNoteMap.FILE_SUFFIX), DrumNoteMap.FILE_SUFFIX));
 
 		File saveFile;
 		do {
@@ -1042,7 +1044,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 			if (saveFile.exists()) {
 				int result = JOptionPane.showConfirmDialog(this,
-						"File " + saveFile.getName() + " already exists. Overwrite?", "Confirm overwrite",
+						MessageFormat.format(UIText.get("maestro.file.0.already.exists.overwrite"), saveFile.getName()), UIText.get("maestro.confirm.overwrite"),
 						JOptionPane.OK_CANCEL_OPTION);
 				if (result != JOptionPane.OK_OPTION)
 					continue;
@@ -1054,8 +1056,8 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		try {
 			abcPart.getDrumMap(trackInfo.getTrackNumber()).save(saveFile);
 		} catch (IOException e) {
-			JOptionPane.showMessageDialog(this, "Failed to save drum map:\n\n" + e.getMessage(),
-					"Failed to save drum map", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(this, MessageFormat.format(UIText.get("maestro.failed.to.save.drum.map.0"), e.getMessage()),
+					UIText.get("maestro.failed.to.save.drum.map"), JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
 
@@ -1072,7 +1074,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 			dir = Util.getLotroMusicPath(false /* create */);
 
 		JFileChooser fileChooser = new JFileChooser(dir);
-		fileChooser.setFileFilter(new ExtensionFileFilter("Drum Map (*." + DrumNoteMap.FILE_SUFFIX + ")",
+		fileChooser.setFileFilter(new ExtensionFileFilter(MessageFormat.format(UIText.get("maestro.drum.map.0"), DrumNoteMap.FILE_SUFFIX),
 				DrumNoteMap.FILE_SUFFIX, "txt"));
 
 		if (fileChooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION)
@@ -1083,8 +1085,8 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		try {
 			abcPart.getDrumMap(trackInfo.getTrackNumber()).load(loadFile);
 		} catch (IOException | FileParseException e) {
-			JOptionPane.showMessageDialog(this, "Failed to load drum map:\n\n" + e.getMessage(),
-					"Failed to load drum map", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(this, MessageFormat.format(UIText.get("maestro.failed.to.load.drum.map.0"), e.getMessage()),
+					UIText.get("maestro.failed.to.load.drum.map"), JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
 

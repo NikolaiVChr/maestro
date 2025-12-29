@@ -13,10 +13,7 @@ import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
@@ -31,18 +28,21 @@ import com.digero.common.abc.AbcConstants;
 import com.digero.maestro.MaestroMain;
 import com.digero.maestro.view.ProjectFrame;
 
+import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.Range;
 import sun.awt.shell.ShellFolder;
 
 public final class Util {
-	public static final String MSX_FILE_EXTENSION_NO_DOT = "msx";
-	public static final String ABC_FILE_EXTENSION_NO_DOT = "abc";
-	public static final String ABCP_FILE_EXTENSION_NO_DOT = "abcp";
-	public static final String TXT_FILE_EXTENSION_NO_DOT = "txt";
-	public static final String MID_FILE_EXTENSION_NO_DOT = "mid";
-	public static final String KAR_FILE_EXTENSION_NO_DOT = "kar";
-	public static final String MIDI_FILE_EXTENSION_NO_DOT = "midi";
-	public static final String THEME_FILE_EXTENSION_NO_DOT = "maestrotheme.xml";
+	public static final @NonNls String MSX_FILE_EXTENSION_NO_DOT = "msx";
+	public static final @NonNls String ABC_FILE_EXTENSION_NO_DOT = "abc";
+	public static final @NonNls String ABCP_FILE_EXTENSION_NO_DOT = "abcp";
+	public static final @NonNls String TXT_FILE_EXTENSION_NO_DOT = "txt";
+	public static final @NonNls String MID_FILE_EXTENSION_NO_DOT = "mid";
+	public static final @NonNls String KAR_FILE_EXTENSION_NO_DOT = "kar";
+	public static final @NonNls String MIDI_FILE_EXTENSION_NO_DOT = "midi";
+	public static final @NonNls String THEME_FILE_EXTENSION_NO_DOT = "maestrotheme.xml";
+	public static final @NonNls String OPTIONS_BACKUP_FILE_EXTENSION_NO_DOT = "msbk";
+	public static final @NonNls String PARTS_CONFIG_FILE_EXTENSION_NO_DOT = "partsconfig.txt";
 	public static final String MSX_FILE_EXTENSION = "." + MSX_FILE_EXTENSION_NO_DOT;
 	public static final String ABC_FILE_EXTENSION = "." + ABC_FILE_EXTENSION_NO_DOT;
 	public static final String ABCP_FILE_EXTENSION = "." + ABCP_FILE_EXTENSION_NO_DOT;
@@ -51,6 +51,8 @@ public final class Util {
 	public static final String MIDI_FILE_EXTENSION = "." + MIDI_FILE_EXTENSION_NO_DOT;
 	public static final String KAR_FILE_EXTENSION = "." + KAR_FILE_EXTENSION_NO_DOT;
 	public static final String THEME_FILE_EXTENSION = "." + THEME_FILE_EXTENSION_NO_DOT;
+	public static final String OPTIONS_BACKUP_FILE_EXTENSION = "." + OPTIONS_BACKUP_FILE_EXTENSION_NO_DOT;
+	public static final String PARTS_CONFIG_FILE_EXTENSION = "." + PARTS_CONFIG_FILE_EXTENSION_NO_DOT;
 	
 
 	private Util() {

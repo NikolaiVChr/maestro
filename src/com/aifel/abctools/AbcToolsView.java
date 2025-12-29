@@ -1,5 +1,6 @@
 package com.aifel.abctools;
 
+import com.digero.common.view.UIText;
 import com.digero.maestro.midi.Chord;
 
 import javax.swing.*;
@@ -92,7 +93,7 @@ public class AbcToolsView extends JFrame {
 		JPanel panel_1 = new JPanel();
 		contentPaneMerge.add(panel_1, BorderLayout.NORTH);
 
-		JLabel lblNewLabel = new JLabel("Convert single part abc files into multi part abc files");
+		JLabel lblNewLabel = new JLabel(UIText.get("abctools.convert.single.part.abc.files.into.multi.part.abc.files"));
 		panel_1.add(lblNewLabel);
 
 		JPanel south = new JPanel();
@@ -102,13 +103,13 @@ public class AbcToolsView extends JFrame {
 		JSplitPane splitPane = new JSplitPane();
 		south.add(splitPane, BorderLayout.SOUTH);
 
-		btnSource = new JButton("Select folder with single part files");
-		btnSource.setToolTipText("This is the folder where the old ABC files are.");
+		btnSource = new JButton(UIText.get("abctools.select.folder.with.single.part.files"));
+		btnSource.setToolTipText(UIText.get("abctools.this.is.the.folder.where.the.old.abc.files.are"));
 		splitPane.setLeftComponent(btnSource);
 
-		btnDest = new JButton("Select multi part destination folder");
+		btnDest = new JButton(UIText.get("abctools.select.multi.part.destination.folder"));
 		btnDest.setToolTipText(
-				"This is the folder where you want the new ABC files to be. Its recommended that it is empty.");
+				UIText.get("abctools.folder.where.you.want.the.new.abc.files.to.be"));
 		btnDest.addActionListener(arg0 -> {
 		});
 		splitPane.setRightComponent(btnDest);
@@ -117,23 +118,23 @@ public class AbcToolsView extends JFrame {
 		south.add(folderPanel, BorderLayout.NORTH);
 		folderPanel.setLayout(new BorderLayout(0, 0));
 
-		lblSource = new JLabel("Source:");
+		lblSource = new JLabel(UIText.get("abctools.source"));
 		folderPanel.add(lblSource, BorderLayout.NORTH);
 
-		lblDest = new JLabel("Dest:");
+		lblDest = new JLabel(UIText.get("abctools.dest"));
 		folderPanel.add(lblDest, BorderLayout.SOUTH);
 
 		JPanel panel = new JPanel();
 		contentPaneMerge.add(panel, BorderLayout.EAST);
 		panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
-		btnJoin = new JButton("Join & save");
-		btnJoin.setToolTipText("Join the selected ABC files into 1 ABC song and then save it.");
+		btnJoin = new JButton(UIText.get("abctools.join.save"));
+		btnJoin.setToolTipText(UIText.get("abctools.join.the.selected.abc.files.into.1.abc.song.and.then.save.it"));
 		btnJoin.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panel.add(btnJoin);
 
-		btnTest = new JButton("Test");
-		btnTest.setToolTipText("Open this song in Abc Player");
+		btnTest = new JButton(UIText.get("abctools.test"));
+		btnTest.setToolTipText(UIText.get("abctools.open.this.song.in.abc.player"));
 		btnTest.setAlignmentX(Component.CENTER_ALIGNMENT);
 		btnTest.addActionListener(arg0 -> {
 		});
@@ -149,7 +150,7 @@ public class AbcToolsView extends JFrame {
 		txtArea.setEditable(false);
 		txtArea.setWrapStyleWord(true);
 		txtArea.setText(
-				"Start by selecting BOTH folders.\r\nThen mark 2 or more abc part files.\r\nThen click Join.\r\nThen repeat for other songs.\r\n\r\nBEWARE: It will overwrite files in destination folder, so best to start with a empty destination folder.");
+				UIText.get("abctools.start.by"));
 		txtArea.setLineWrap(true);
 		txtArea.setColumns(10);
 		txtAreaScroll.setViewportView(txtArea);
@@ -158,7 +159,7 @@ public class AbcToolsView extends JFrame {
 		contentPaneAutoExport = new JPanel();
 		contentPaneAutoExport.setBorder(new EmptyBorder(5, 5, 5, 5));
 		contentPaneAutoExport.setLayout(new BorderLayout(0, 0));
-		tabs.addTab("Auto ABC export", contentPaneAutoExport);
+		tabs.addTab(UIText.get("abctools.auto.abc.export"), contentPaneAutoExport);
 
 		folderPanelAuto = new JPanel();
 
@@ -168,29 +169,29 @@ public class AbcToolsView extends JFrame {
 		southAuto.add(folderPanelAuto, BorderLayout.NORTH);
 		folderPanelAuto.setLayout(new BorderLayout(0, 0));
 
-		lblSourceAuto = new JLabel("Source:");
+		lblSourceAuto = new JLabel(UIText.get("abctools.source"));
 		folderPanelAuto.add(lblSourceAuto, BorderLayout.NORTH);
 
-		lblDestAuto = new JLabel("Dest:");
+		lblDestAuto = new JLabel(UIText.get("abctools.dest"));
 		folderPanelAuto.add(lblDestAuto, BorderLayout.SOUTH);
 
-		lblMidiAuto = new JLabel("MIDIs:");
+		lblMidiAuto = new JLabel(UIText.get("abctools.midis"));
 		folderPanelAuto.add(lblMidiAuto, BorderLayout.CENTER);
 
 		JPanel splitPaneAuto = new JPanel();
 		southAuto.add(splitPaneAuto, BorderLayout.SOUTH);
 
-		btnSourceAuto = new JButton("Select folder with MSX Project files");
-		btnSourceAuto.setToolTipText("This is the folder where the project files are.");
+		btnSourceAuto = new JButton(UIText.get("abctools.select.folder.with.msx.project.files"));
+		btnSourceAuto.setToolTipText(UIText.get("abctools.this.is.the.folder.where.the.project.files.are"));
 		splitPaneAuto.add(btnSourceAuto);
 
-		btnDestAuto = new JButton("Select ABC destination folder");
+		btnDestAuto = new JButton(UIText.get("abctools.select.abc.destination.folder"));
 		btnDestAuto.setToolTipText(
-				"This is the folder where you want the exported ABC files to be. Its recommended that it is empty.");
+				UIText.get("abctools.folder.where.you.want.the.exported.abc.files.to.be"));
 		btnDestAuto.addActionListener(arg0 -> {
 		});
 
-		btnMIDI = new JButton("Select folder with MIDIs");
+		btnMIDI = new JButton(UIText.get("abctools.select.folder.with.midis"));
 		splitPaneAuto.add(btnMIDI);
 		splitPaneAuto.add(btnDestAuto);
 
@@ -203,44 +204,44 @@ public class AbcToolsView extends JFrame {
 		contentPaneAutoExport.add(panelAuto, BorderLayout.WEST);
 		panelAuto.setLayout(new BoxLayout(panelAuto, BoxLayout.Y_AXIS));
 
-		btnStart = new JButton("Start Exporting");
-		btnStart.setToolTipText("Export all project files in source folder to abc files in destination folder.");
+		btnStart = new JButton(UIText.get("abctools.start.exporting"));
+		btnStart.setToolTipText(UIText.get("abctools.export.all.project.files"));
 		btnStart.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(btnStart);
 		
-		forceOrganic = new JCheckBox("Force Org. Single-stage");
+		forceOrganic = new JCheckBox(UIText.get("abctools.force.org.single.stage"));
 		forceOrganic.setSelected(false);
-		forceOrganic.setToolTipText("Force organic single-stage even if a project do not have it enabled.");
+		forceOrganic.setToolTipText(UIText.get("abctools.force.organic.single.stage.even.if.a.project.do.not.have.it.enabled"));
 		forceOrganic.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(forceOrganic);
 		
-		forceOrganic2 = new JCheckBox("Force Org. Multi-stage");
+		forceOrganic2 = new JCheckBox(UIText.get("abctools.force.org.multi.stage"));
 		forceOrganic2.setSelected(false);
-        forceOrganic2.setToolTipText("Force organic multi-stage even if a project do not have it enabled.");
+        forceOrganic2.setToolTipText(UIText.get("abctools.force.organic.multi.stage.even.if.a.project.do.not.have.it.enabled"));
 		forceOrganic2.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(forceOrganic2);
 
-        forceOrganic2v2 = new JCheckBox("Force Org. Multi-stage 2");
+        forceOrganic2v2 = new JCheckBox(UIText.get("abctools.force.org.multi.stage.2"));
         forceOrganic2v2.setSelected(false);
-        forceOrganic2v2.setToolTipText("Force organic multi-stage 2 even if a project do not have it enabled.");
+        forceOrganic2v2.setToolTipText(UIText.get("abctools.force.organic.multi.stage.2.even.if.a.project.do.not.have.it.enabled"));
         forceOrganic2v2.setAlignmentX(Component.CENTER_ALIGNMENT);
         panelAuto.add(forceOrganic2v2);
 
-		forceMixTiming = new JCheckBox("Force Mix Timings");
+		forceMixTiming = new JCheckBox(UIText.get("abctools.force.mix.timings"));
 		forceMixTiming.setSelected(false);
-        forceMixTiming.setToolTipText("Force mix timings even if a project do not have it enabled.");
+        forceMixTiming.setToolTipText(UIText.get("abctools.force.mix.timings.even.if.a.project.do.not.have.it.enabled"));
 		forceMixTiming.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(forceMixTiming);
 
-        forceLegacyTiming = new JCheckBox("Force Legacy Timings");
+        forceLegacyTiming = new JCheckBox(UIText.get("abctools.force.legacy.timings"));
         forceLegacyTiming.setSelected(false);
-        forceLegacyTiming.setToolTipText("Force legacy timings even if a project do not have it enabled.");
+        forceLegacyTiming.setToolTipText(UIText.get("abctools.force.legacy.timings.even.if.a.project.do.not.have.it.enabled"));
         forceLegacyTiming.setAlignmentX(Component.CENTER_ALIGNMENT);
         panelAuto.add(forceLegacyTiming);
 
-        forceVolumeMethod = new JCheckBox("Force Volume method");
+        forceVolumeMethod = new JCheckBox(UIText.get("abctools.force.volume.method"));
         forceVolumeMethod.setSelected(false);
-        forceVolumeMethod.setToolTipText("Force a volume method even if a project use another method.");
+        forceVolumeMethod.setToolTipText(UIText.get("abctools.force.a.volume.method.even.if.a.project.use.another.method"));
         forceVolumeMethod.setAlignmentX(Component.CENTER_ALIGNMENT);
         panelAuto.add(forceVolumeMethod);
 
@@ -251,39 +252,39 @@ public class AbcToolsView extends JFrame {
         volumeMethod.setMaximumSize(volumeMethod.getPreferredSize());
         panelAuto.add(volumeMethod);
 
-		recursiveCheckBox = new JCheckBox("Recursive");
-		recursiveCheckBox.setToolTipText("Go through sub folders and create a similar output folder tree");
+		recursiveCheckBox = new JCheckBox(UIText.get("abctools.recursive"));
+		recursiveCheckBox.setToolTipText(UIText.get("abctools.go.through.sub.folders.and.create.a.similar.output.folder.tree"));
 		recursiveCheckBox.setAlignmentX(0.5f);
 		panelAuto.add(recursiveCheckBox);
 		
-		btnCancel = new JButton("Cancel");
-		btnCancel.setToolTipText("Cancel Exporting");
+		btnCancel = new JButton(UIText.get("abctools.cancel"));
+		btnCancel.setToolTipText(UIText.get("abctools.cancel.exporting"));
 		btnCancel.setEnabled(false);
 		btnCancel.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(btnCancel);
 		
 		panelAuto.add(new JSeparator(JSeparator.HORIZONTAL));
-		lblSaveMsx = new JLabel("Save project if needed:");
+		lblSaveMsx = new JLabel(UIText.get("abctools.save.project.if.needed"));
 		lblSaveMsx.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(lblSaveMsx);
 		
-		saveMSX = new JCheckBox("At source path change");
-		saveMSX.setToolTipText("Save project files and include new midi path if changed.");
+		saveMSX = new JCheckBox(UIText.get("abctools.at.source.path.change"));
+		saveMSX.setToolTipText(UIText.get("abctools.save.project.files.and.include.new.midi.path.if.changed"));
 		saveMSX.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(saveMSX);
 		
-		saveMSXabc = new JCheckBox("At abc path change");
-		saveMSXabc.setToolTipText("Save project files and include exporter abc path if changed.");
+		saveMSXabc = new JCheckBox(UIText.get("abctools.at.abc.path.change"));
+		saveMSXabc.setToolTipText(UIText.get("abctools.save.project.files.and.include.exporter.abc.path.if.changed"));
 		saveMSXabc.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(saveMSXabc);
 		
-		saveMSXtiming = new JCheckBox("At timing change");
-		saveMSXtiming.setToolTipText("Save project files if timing changed due to forcing.");
+		saveMSXtiming = new JCheckBox(UIText.get("abctools.at.timing.change"));
+		saveMSXtiming.setToolTipText(UIText.get("abctools.save.project.files.if.timing.changed.due.to.forcing"));
 		saveMSXtiming.setAlignmentX(Component.CENTER_ALIGNMENT);
 		panelAuto.add(saveMSXtiming);
 
-        saveMSXvolume = new JCheckBox("At volume change");
-        saveMSXvolume.setToolTipText("Save project files if volume method changed due to forcing.");
+        saveMSXvolume = new JCheckBox(UIText.get("abctools.at.volume.change"));
+        saveMSXvolume.setToolTipText(UIText.get("abctools.save.project.files.if.volume.method.changed.due.to.forcing"));
         saveMSXvolume.setAlignmentX(Component.CENTER_ALIGNMENT);
         panelAuto.add(saveMSXvolume);
 
@@ -305,7 +306,7 @@ public class AbcToolsView extends JFrame {
 		panel_2 = new JPanel();
 		contentPaneAutoExport.add(panel_2, BorderLayout.NORTH);
 
-		lblNewLabel_2 = new JLabel("Auto multi export msx project files");
+		lblNewLabel_2 = new JLabel(UIText.get("abctools.auto.multi.export.msx.project.files"));
 		panel_2.add(lblNewLabel_2);
 	}
 

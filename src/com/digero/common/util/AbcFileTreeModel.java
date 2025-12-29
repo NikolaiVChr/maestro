@@ -1,5 +1,7 @@
 package com.digero.common.util;
 
+import com.digero.common.view.UIText;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -33,7 +35,7 @@ public class AbcFileTreeModel implements TreeModel {
 
 	private ArrayList<TreeModelListener> listeners = new ArrayList<TreeModelListener>();
 	private AbcSongFileNode rootNode;
-	private static ExtensionFileFilter abcFilter = new ExtensionFileFilter("ABC Files and Playlists",
+	private static ExtensionFileFilter abcFilter = new ExtensionFileFilter(UIText.get("common.abc.files.and.playlists"),
 			Util.ABC_FILE_EXTENSION_NO_DOT, Util.TXT_FILE_EXTENSION_NO_DOT, Util.ABCP_FILE_EXTENSION_NO_DOT); 
 	
 	public AbcFileTreeModel(List<File> directories) {

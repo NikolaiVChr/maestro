@@ -2,6 +2,7 @@ package com.digero.maestro.view;
 
 import com.digero.common.abc.Dynamics;
 import com.digero.common.midi.Note;
+import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.LotroCombiDrumInfo;
 import com.digero.maestro.abc.LotroDrumInfo;
@@ -11,6 +12,7 @@ import javax.swing.*;
 
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -59,7 +61,7 @@ public class CountIn {
     }
 
     public enum CountInPattern {
-        OFF ("Off",
+        OFF (UIText.get("maestro.countin.off"),
                 "",
                 //new TimeSignature(4,4),
                 1,
@@ -69,7 +71,7 @@ public class CountIn {
                 //new TimeSignature(4,4),
                 1,
                 new CountInDynamics[]{ACCENTED,STANDARD,STANDARD,STANDARD}),
-        ONE_AND_TWO_AND_THREE_AND_FOUR_AND ("1 and 2 and 3 and 4 and",
+        ONE_AND_TWO_AND_THREE_AND_FOUR_AND (UIText.get("maestro.countin.1.and.2.and.3.and.4.and"),
                 "(4/4, 2/2, 12/8)",
                 //new TimeSignature(4,4),
                 1,
@@ -79,7 +81,7 @@ public class CountIn {
                 //new TimeSignature(4,4),
                 2,
                 new CountInDynamics[]{ACCENTED,STANDARD,STANDARD,STANDARD,ACCENTED,STANDARD,STANDARD,STANDARD}),
-        ONE_AND_TWO_AND_THREE_AND_FOUR_AND_2 ("1 and 2 and 3 and 4 | 1 and 2 and 3 and 4",
+        ONE_AND_TWO_AND_THREE_AND_FOUR_AND_2 (UIText.get("maestro.countin.1.and.2.and.3.and.4.1.and.2.and.3.and.4"),
                 "(4/4, 2/2, 12/8)",
                 //new TimeSignature(4,4),
                 2,
@@ -92,7 +94,7 @@ public class CountIn {
                 //new TimeSignature(3,4),
                 1,
                 new CountInDynamics[]{ACCENTED,STANDARD,STANDARD}),
-        ONE_AND_TWO_AND_THREE_AND ("1 and 2 and 3 and",
+        ONE_AND_TWO_AND_THREE_AND (UIText.get("maestro.countin.1.and.2.and.3.and"),
                 "(3/4, 6/8)",
                 //new TimeSignature(3,4),
                 1,
@@ -102,7 +104,7 @@ public class CountIn {
                 //new TimeSignature(3,4),
                 2,
                 new CountInDynamics[]{ACCENTED,STANDARD,STANDARD,ACCENTED,STANDARD,STANDARD}),
-        ONE_AND_TWO_AND_THREE_AND_2 ("1 and 2 and 3 and | 1 and 2 and 3 and",
+        ONE_AND_TWO_AND_THREE_AND_2 (UIText.get("maestro.countin.1.and.2.and.3.and.1.and.2.and.3.and"),
                 "(3/4, 6/8)",
                 //new TimeSignature(3,4),
                 2,
@@ -111,21 +113,21 @@ public class CountIn {
                         STANDARD,SOFT,STANDARD,SOFT,STANDARD,SOFT
                         }),
         ONE_TWO ("1 2",
-                "(2/4, 2/2, 4/4, 6/8 dotted)",
+                UIText.get("maestro.countin.2.4.2.2.4.4.6.8.dotted"),
                 //new TimeSignature(2,4),
                 1,
                 new CountInDynamics[]{ACCENTED,STANDARD}),
-        ONE_AND_TWO_AND ("1 and 2 and",
+        ONE_AND_TWO_AND (UIText.get("maestro.countin.1.and.2.and"),
                 "(2/4)",
                 //new TimeSignature(2,4),
                 1,
                 new CountInDynamics[]{STANDARD,SOFT,STANDARD,SOFT}),
         ONE_TWO_2 ("1 2 | 1 2",
-                "(2/4, 2/2, 6/8 dotted)",
+                UIText.get("maestro.countin.2.4.2.2.6.8.dotted"),
                 //new TimeSignature(2,4),
                 2,
                 new CountInDynamics[]{ACCENTED,STANDARD,ACCENTED,STANDARD}),
-        ONE_AND_TWO_AND_2 ("1 and 2 and | 1 and 2 and",
+        ONE_AND_TWO_AND_2 (UIText.get("maestro.countin.1.and.2.and.1.and.2.and"),
                 "(2/4)",
                 //new TimeSignature(2,4),
                 2,
@@ -150,28 +152,28 @@ public class CountIn {
                 //new TimeSignature(7,8),
                 1,
                 new CountInDynamics[]{ACCENTED,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD,STANDARD}),
-        ONE_AND_A_TWO_AND_A ("1 and a 2 and a",
-                "(6/8 jig, 12/8 compound)",
+        ONE_AND_A_TWO_AND_A (UIText.get("maestro.countin.1.and.a.2.and.a"),
+                UIText.get("maestro.countin.6.8.jig.12.8.compound"),
                 //new TimeSignature(6,8),
                 1,
                 new CountInDynamics[]{STANDARD,SOFT,SOFT,STANDARD,SOFT,SOFT}),
-        FOUR_TRIPLETS ("1-trip-let 2-trip-let 3-trip-let 4-trip-let",
-                "(4/4 swing)",
+        FOUR_TRIPLETS (UIText.get("maestro.countin.1.trip.let.2.trip.let.3.trip.let.4.trip.let"),
+                UIText.get("maestro.countin.4.4.swing"),
                 //new TimeSignature(4,4),
                 1,
                 new CountInDynamics[]{
                         ACCENTED_TRIPLET,STANDARD,STANDARD,ACCENTED_TRIPLET,STANDARD,STANDARD,
                         ACCENTED_TRIPLET,STANDARD,STANDARD,ACCENTED_TRIPLET,STANDARD,STANDARD
                         }),
-        THREE_TRIPLETS ("1-trip-let 2-trip-let 3-trip-let",
-                "(3/4 jazz waltz)",
+        THREE_TRIPLETS (UIText.get("maestro.countin.1.trip.let.2.trip.let.3.trip.let"),
+                UIText.get("maestro.countin.3.4.jazz.waltz"),
                 //new TimeSignature(3,4),
                 1,
                 new CountInDynamics[]{ACCENTED_TRIPLET,STANDARD,STANDARD,ACCENTED_TRIPLET,STANDARD,STANDARD,
                             ACCENTED_TRIPLET,STANDARD,STANDARD
                             }),
-        TWO_TRIPLETS ("1-trip-let 2-trip-let",
-                "(6/8, 12/8, 4/4 swing, 3/4 swing)",
+        TWO_TRIPLETS (UIText.get("maestro.countin.1.trip.let.2.trip.let"),
+                UIText.get("maestro.countin.6.8.12.8.4.4.swing.3.4.swing"),
                 //new TimeSignature(6,8),
                 1,
                 new CountInDynamics[]{ACCENTED_TRIPLET,STANDARD,STANDARD,ACCENTED_TRIPLET,STANDARD,STANDARD}),
@@ -318,7 +320,7 @@ public class CountIn {
     public static CountIn show(Component parent, AbcPart part, CountIn lastCountIn) {
         if (dialog == null) {
             dialog = new JDialog();
-            dialog.setTitle("Count-in");
+            dialog.setTitle(UIText.get("maestro.countin.count.in"));
             dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
             GridBagLayout layout = new GridBagLayout();
             dialog.setLayout(layout);
@@ -344,23 +346,18 @@ public class CountIn {
             JComboBox<LotroDrumInfo> hitBox = new JComboBox<>(usableDIs.toArray(new LotroDrumInfo[]{}));
             hitBox.setEditable(false);
 
-            JLabel barText = new JLabel("Bars");
+            JLabel barText = new JLabel(UIText.get("maestro.countin.bars"));
             barText.setHorizontalAlignment(SwingConstants.RIGHT);
             barText.setAlignmentX(Component.RIGHT_ALIGNMENT);
 
             JTextField barField = new JTextField(String.format(Locale.US, "%.2f", 1.0f));
             barField.setHorizontalAlignment(SwingConstants.CENTER);
 
-            String toolTipText = "Resulting count-in must not be longer than 12 seconds," +
-                    "\nand must not be overly fast." +
-                    "\n\nWhen a count-in is active," +
-                    "\nthe play-head will be ahead of" +
-                    "\nactual song rendering for technical reasons.";
+            String toolTipText = UIText.get("maestro.countin.rules");
 
             barText.setToolTipText(toolTipText);
             barField.setToolTipText(toolTipText);
-            patternBox.setToolTipText("If this count-in is activated then any count-in" +
-                    "\non other drum parts will be cancelled.");
+            patternBox.setToolTipText(UIText.get("maestro.countin.if.this.count.in.is.activated.then"));
 
             if (lastCountIn != null) {
                 patternBox.setSelectedItem(lastCountIn.pattern);

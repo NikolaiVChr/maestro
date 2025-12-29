@@ -13,6 +13,7 @@ import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -35,6 +36,7 @@ import com.aifel.abctools.AbcTools.AbcFileFilter;
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.midi.SynthesizerFactory;
 import com.digero.common.util.Util;
+import com.digero.common.view.UIText;
 
 public class MergeTool {
 	private static final Logger log = Logger.getLogger("util");
@@ -101,8 +103,8 @@ public class MergeTool {
 	
 	private void refreshMerge() {
 		Component c = getGui(sourceFolder.listFiles(new AbcFileFilter()), false);
-		frame.setLblSourceText("Source: " + sourceFolder.getAbsolutePath());
-		frame.setLblDestText("Destination: " + destFolder.getAbsolutePath());
+		frame.setLblSourceText(MessageFormat.format(UIText.get("abctools.source.0"), sourceFolder.getAbsolutePath()));
+		frame.setLblDestText(MessageFormat.format(UIText.get("abctools.destination.0"), destFolder.getAbsolutePath()));
 		frame.getScrollPane().setViewportView(c);
 		frame.setBtnJoinEnabled(c != null);
 		refreshTest();
@@ -195,14 +197,14 @@ public class MergeTool {
 
 			if (mismatch) {
 				int misresult = JOptionPane.showConfirmDialog(frame,
-						"All these files do not seem to belong to same song. Continue with merge?", "Tempo mismatch",
+						UIText.get("abctools.all.these.files.do.not.seem.to.belong"), UIText.get("abctools.tempo.mismatch"),
 						JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 
 				switch (misresult) {
 				case JOptionPane.YES_OPTION:
 					break;
 				case JOptionPane.NO_OPTION, JOptionPane.CANCEL_OPTION, JOptionPane.CLOSED_OPTION:
-					frame.setTextFieldText("Cancelled merge.");
+					frame.setTextFieldText(UIText.get("abctools.cancelled.merge"));
 					lastExport = null;
 					refreshTest();
 					return;
@@ -227,20 +229,20 @@ public class MergeTool {
 			boolean success = false;
 			if (newFile.exists()) {
 				int result = JOptionPane.showConfirmDialog(frame,
-						"The file " + newFile.getAbsolutePath() + " exist already. Do you want to overwrite it?",
-						"Overwrite", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+						MessageFormat.format(UIText.get("abctools.the.file.0.exist.already.do.you.want.to.overwrite.it"), newFile.getAbsolutePath()),
+						UIText.get("abctools.overwrite"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 
 				switch (result) {
 				case JOptionPane.YES_OPTION:
 					success = true;
 					break;
 				case JOptionPane.NO_OPTION:
-					frame.setTextFieldText("Cancelled save.");
+					frame.setTextFieldText(UIText.get("abctools.cancelled.save"));
 					lastExport = null;
 					refreshTest();
 					return;
 				case JOptionPane.CANCEL_OPTION, JOptionPane.CLOSED_OPTION:
-					frame.setTextFieldText("Cancelled save.");
+					frame.setTextFieldText(UIText.get("abctools.cancelled.save"));
 					lastExport = null;
 					refreshTest();
 					return;
@@ -254,9 +256,8 @@ public class MergeTool {
 				FileWriter writer = new FileWriter(newFile);
 	
 				frame.setTextFieldText(
-						"Writing new file:\n " + newFile.getAbsolutePath() + "\n\n The song has " + (x - 1) + " parts.");
-				StringBuilder info = new StringBuilder("Writing new file:\n " + newFile.getAbsolutePath()
-						+ "\n\n The song has " + (x - 1) + " parts.\n\n");
+						MessageFormat.format(UIText.get("abctools.writing.new.file.0.the.song.has.1.parts2"), newFile.getAbsolutePath(), x - 1));
+				StringBuilder info = new StringBuilder(MessageFormat.format(UIText.get("abctools.writing.new.file.0.the.song.has.1.parts"), newFile.getAbsolutePath(), x - 1));
 				for (String line : newContent) {
 					writer.write(line + System.lineSeparator());
 					info.append(System.lineSeparator()).append(line);
@@ -267,10 +268,10 @@ public class MergeTool {
 				frame.setTextFieldText(info.toString());
 				log.info("Created merged "+lastExport);
 			} else {
-				frame.setTextFieldText("Failed to write merged file " + newFile.getAbsolutePath());
+				frame.setTextFieldText(MessageFormat.format(UIText.get("abctools.failed.to.write.merged.file.0"), newFile.getAbsolutePath()));
 			}
 		} else {
-			frame.setTextFieldText("Please select at least 2 abc files..");
+			frame.setTextFieldText(UIText.get("abctools.please.select.at.least.2.abc.files"));
 			lastExport = null;
 			refreshTest();
 		}
@@ -432,7 +433,7 @@ public class MergeTool {
 					openFileChooser.setMultiSelectionEnabled(false);
 					// openFileChooser.setFileFilter(new ExtensionFileFilter("ABC files", "abc", "txt"));
 					openFileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-					openFileChooser.setDialogTitle("Source folder");
+					openFileChooser.setDialogTitle(UIText.get("abctools.source.folder"));
 				}
 
 				int result = openFileChooser.showOpenDialog(frame);
@@ -456,7 +457,7 @@ public class MergeTool {
 					openFileChooser = new JFileChooser(destFolder);
 					openFileChooser.setMultiSelectionEnabled(false);
 					openFileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-					openFileChooser.setDialogTitle("Destination folder");
+					openFileChooser.setDialogTitle(UIText.get("abctools.destination.folder"));
 				}
 
 				int result = openFileChooser.showOpenDialog(frame);
@@ -474,7 +475,7 @@ public class MergeTool {
 				join();
 			} catch (IOException e1) {
 				e1.printStackTrace();
-				frame.setTextFieldText("An error occured:\n\n" + e1);
+				frame.setTextFieldText(MessageFormat.format(UIText.get("abctools.an.error.occured.1"), e1));
 				lastExport = null;
 				refreshTest();
 			}
@@ -487,7 +488,7 @@ public class MergeTool {
 				test();
 			} catch (IOException e1) {
 				e1.printStackTrace();
-				frame.setTextFieldText("An error occured:\n\n" + e1);
+				frame.setTextFieldText(MessageFormat.format(UIText.get("abctools.an.error.occured.0"), e1));
 			}
 		};
 	}

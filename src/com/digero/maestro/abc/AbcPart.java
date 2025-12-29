@@ -5,6 +5,7 @@ import static java.awt.Frame.getFrames;
 
 import java.awt.*;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.List;
 import java.util.Map.Entry;
@@ -22,6 +23,7 @@ import javax.xml.xpath.XPathExpressionException;
 
 import com.digero.common.midi.PanGenerator;
 import com.digero.common.util.*;
+import com.digero.common.view.UIText;
 import com.digero.maestro.view.CountIn;
 import com.digero.maestro.view.PanVisualizerPanel;
 import org.jetbrains.annotations.NotNull;
@@ -480,8 +482,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				if (!abcSong.getSequenceInfo().getTrackInfo(t).hasEvents()) {
                     Component parent = (getFrames().length > 0) ? getFrames()[0] : null;
 					JOptionPane.showMessageDialog(parent,
-							title+": has a midi track (Track "+t+") selected that has no notes. This project was made with a different midi.",
-							"Warning for "+abcSong.getTitle(), JOptionPane.WARNING_MESSAGE);
+							MessageFormat.format(UIText.get("maestro.0.has.a.midi.track.track.1.selected.that.has.no.notes"), title, t),
+							MessageFormat.format(UIText.get("maestro.warning.for.0"), abcSong.getTitle()), JOptionPane.WARNING_MESSAGE);
 				}
 
 				TreeMap<Float, PartSection> tree = sections.get(t);

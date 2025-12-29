@@ -9,6 +9,7 @@ import java.util.List;
 
 import javax.swing.JOptionPane;
 
+import com.digero.common.view.UIText;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -55,8 +56,8 @@ public class AbcPlaylistXmlCoder {
 			
 			if (fileVersion.compareTo(ABC_PLAYLIST_VERSION) > 0) {
 				JOptionPane.showMessageDialog(getFrames()[0],
-						"This playlist was created using a newer version of AbcPlayer. It is suggested to upgrade AbcPlayer before loading this.",
-						"Warning", JOptionPane.WARNING_MESSAGE);
+						UIText.get("abcplayer.this.playlist.was.created.using.a.newer.version"),
+						UIText.get("abcplayer.warning"), JOptionPane.WARNING_MESSAGE);
 			}
 			
 			Element trackListEle = XmlUtil.selectSingleElement(playlistEle, "trackList");

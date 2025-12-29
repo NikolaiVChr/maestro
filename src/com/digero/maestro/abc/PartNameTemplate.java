@@ -11,6 +11,7 @@ import java.util.stream.Collectors;
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.util.Pair;
 import com.digero.common.util.Util;
+import com.digero.common.view.UIText;
 import com.digero.maestro.view.SettingsDialog.MockMetadataSource;
 import org.jetbrains.annotations.NotNull;
 
@@ -129,35 +130,35 @@ public class PartNameTemplate {
 
         variables = new TreeMap<>(caseInsensitiveStringComparator);
 
-        variables.put("$SongTitle", new Variable("The title of the song, as entered in the \"T:\" field") {
+        variables.put("$SongTitle", new Variable(UIText.get("maestro.template.part.the.title.of.the.song.as.entered.in.the.t.field")) {
             @Override
             public String getValue(AbcMetadataSource metadata, AbcPartMetadataSource currentPart) {
                 if (metadata == null) metadata = new MockMetadataSource(null);
                 return metadata.getSongTitle().trim();
             }
         });
-        variables.put("$SongLength", new Variable("The playing time of the song in mm:ss format") {
+        variables.put("$SongLength", new Variable(UIText.get("maestro.template.part.the.playing.time.of.the.song.in.mm.ss.format")) {
             @Override
             public String getValue(AbcMetadataSource metadata, AbcPartMetadataSource currentPart) {
                 if (metadata == null) metadata = new MockMetadataSource(null);
                 return Util.formatDuration(metadata.getSongLengthMicros());
             }
         });
-        variables.put("$SongComposer", new Variable("The song composer/artist, as entered in the \"C:\" field") {
+        variables.put("$SongComposer", new Variable(UIText.get("maestro.template.part.the.song.composer.artist.as.entered.in.the.c.field")) {
             @Override
             public String getValue(AbcMetadataSource metadata, AbcPartMetadataSource currentPart) {
                 if (metadata == null) metadata = new MockMetadataSource(null);
                 return metadata.getComposer().trim();
             }
         });
-        variables.put("$SongTranscriber", new Variable("Your name, as entered in the \"Z:\" field") {
+        variables.put("$SongTranscriber", new Variable(UIText.get("maestro.template.part.your.name.as.entered.in.the.z.field")) {
             @Override
             public String getValue(AbcMetadataSource metadata, AbcPartMetadataSource currentPart) {
                 if (metadata == null) metadata = new MockMetadataSource(null);
                 return metadata.getTranscriber().trim();
             }
         });
-        variables.put("$PartName", new Variable("The part name for the individual ABC part") {
+        variables.put("$PartName", new Variable(UIText.get("maestro.template.part.the.part.name.for.the.individual.abc.part")) {
             @Override
             public String getValue(AbcMetadataSource metadata, AbcPartMetadataSource currentPart) {
                 if (currentPart == null)
@@ -166,7 +167,7 @@ public class PartNameTemplate {
                 return currentPart.getTitle().trim();
             }
         });
-        variables.put("$PartNumber", new Variable("The part number for the individual ABC part") {
+        variables.put("$PartNumber", new Variable(UIText.get("maestro.template.part.the.part.number.for.the.individual.abc.part")) {
             @Override
             public String getValue(AbcMetadataSource metadata, AbcPartMetadataSource currentPart) {
                 if (currentPart == null)
@@ -175,14 +176,14 @@ public class PartNameTemplate {
                 return String.valueOf(currentPart.getPartNumber());
             }
         });
-        variables.put("$PartCount", new Variable("Number of parts in the ABC file") {
+        variables.put("$PartCount", new Variable(UIText.get("maestro.template.part.number.of.parts.in.the.abc.file")) {
             @Override
             public String getValue(AbcMetadataSource metadata, AbcPartMetadataSource currentPart) {
                 if (metadata == null) metadata = new MockMetadataSource(null);
                 return String.format("%d", metadata.getActivePartCount());
             }
         });
-        variables.put("$PartInstrument", new Variable("The instrument for the individual ABC part") {
+        variables.put("$PartInstrument", new Variable(UIText.get("maestro.template.part.the.instrument.for.the.individual.abc.part")) {
             @Override
             public String getValue(AbcMetadataSource metadata, AbcPartMetadataSource currentPart) {
                 if (currentPart == null)
@@ -192,10 +193,7 @@ public class PartNameTemplate {
             }
         });
         variables.put("$FilePath",
-                new Variable("The path to the ABC file including the ABC file name, "
-                        + "if it is in a subdirectory of the LOTRO/Music directory.\n"
-                        + "If the file is saved directly in the LOTRO/Music directory, "
-                        + "this will be the same as <b>$FileName</b>.") {
+                new Variable(UIText.get("maestro.template.part.the.path.to.the.abc.file")) {
                     @Override
                     public String getValue(AbcMetadataSource metadata, AbcPartMetadataSource currentPart) {
                         if (metadata == null || metadata.getExportFile() == null)

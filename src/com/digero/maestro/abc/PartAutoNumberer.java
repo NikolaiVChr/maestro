@@ -7,6 +7,7 @@ import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 import com.digero.common.abc.LotroInstrument;
+import com.digero.common.view.UIText;
 import com.digero.maestro.util.ListModelWrapper;
 
 /**
@@ -116,28 +117,28 @@ public class PartAutoNumberer {
 			// Missing case statement
 			return switch (instrument)
 			{
-                case LUTE_OF_AGES->"Lute of Ages";
-                case BASIC_LUTE->"Basic Lute";
-                case BASIC_HARP->"Harp";
-                case MISTY_MOUNTAIN_HARP->"Misty Mountain Harp";
-                case BARDIC_FIDDLE->"Bardic Fiddle";
-                case BASIC_FIDDLE->"Basic Fiddle";
-                case LONELY_MOUNTAIN_FIDDLE->"Lonely Mountain Fiddle";
-                case SPRIGHTLY_FIDDLE->"Sprightly Fiddle";
-                case STUDENT_FIDDLE->"Student's Fiddle";
-                case TRAVELLERS_TRUSTY_FIDDLE->"Traveller's Trusty Fiddle";
-                case JAUNTY_HAND_KNELLS->"Jaunty Hand-Knells";
+                case LUTE_OF_AGES->"Lute of Ages"; //NON-NLS
+                case BASIC_LUTE->"Basic Lute"; //NON-NLS
+                case BASIC_HARP->"Harp"; //NON-NLS
+                case MISTY_MOUNTAIN_HARP->"Misty Mountain Harp"; //NON-NLS
+                case BARDIC_FIDDLE->"Bardic Fiddle"; //NON-NLS
+                case BASIC_FIDDLE->"Basic Fiddle"; //NON-NLS
+                case LONELY_MOUNTAIN_FIDDLE->"Lonely Mountain Fiddle"; //NON-NLS
+                case SPRIGHTLY_FIDDLE->"Sprightly Fiddle"; //NON-NLS
+                case STUDENT_FIDDLE->"Student's Fiddle"; //NON-NLS
+                case TRAVELLERS_TRUSTY_FIDDLE->"Traveller's Trusty Fiddle"; //NON-NLS
+                case JAUNTY_HAND_KNELLS->"Jaunty Hand-Knells"; //NON-NLS //NON-NLS
                 case BASIC_THEORBO->"Theorbo";
-                case BASIC_FLUTE->"Flute";
-                case BASIC_CLARINET->"Clarinet";
-                case BASIC_HORN->"Horn";
+                case BASIC_FLUTE->"Flute"; //NON-NLS
+                case BASIC_CLARINET->"Clarinet"; //NON-NLS //NON-NLS
+                case BASIC_HORN->"Horn"; //NON-NLS
                 case BASIC_BASSOON->"Basic Bassoon";
-                case BRUSQUE_BASSOON->"Brusque Bassoon";
+                case BRUSQUE_BASSOON->"Brusque Bassoon"; //NON-NLS //NON-NLS //NON-NLS
                 case LONELY_MOUNTAIN_BASSOON->"Lonely Mountain Bassoon";
                 case BASIC_BAGPIPE->"Bagpipe";
-                case BASIC_PIBGORN->"Pibgorn";
-                case BASIC_DRUM->"Drums";
-                case BASIC_COWBELL->"Cowbell";
+                case BASIC_PIBGORN->"Pibgorn"; //NON-NLS
+                case BASIC_DRUM->"Drums"; //NON-NLS //NON-NLS
+                case BASIC_COWBELL->"Cowbell"; //NON-NLS
                 case MOOR_COWBELL->"Moor Cowbell";
                 default->instrument.toString();
             };
@@ -493,8 +494,8 @@ public class PartAutoNumberer {
         // name() is saved in maestro options
         // label is shown in UI
 
-        CLUSTER_SIMILAR("Cluster instr. with similar numbers"),
-        PART_NUMBER("Sort purely by part-numbers");
+        CLUSTER_SIMILAR(UIText.get("maestro.partnumber.cluster.instr.with.similar.numbers")),
+        PART_NUMBER(UIText.get("maestro.partnumber.sort.purely.by.part.numbers"));
 
         private final String label;
 

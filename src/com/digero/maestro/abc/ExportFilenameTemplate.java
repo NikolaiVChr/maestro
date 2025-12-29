@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 import com.digero.common.util.Pair;
 import com.digero.common.util.Util;
+import com.digero.common.view.UIText;
 import com.digero.maestro.view.SettingsDialog.MockMetadataSource;
 
 /**
@@ -157,35 +158,35 @@ public class ExportFilenameTemplate {
 
         SortedMap<String, Variable> vars = new TreeMap<>(caseInsensitiveStringComparator);
 
-        vars.put("$SongTitle", new Variable("The title of the song, as entered in the \"T:\" field") {
+        vars.put("$SongTitle", new Variable(UIText.get("maestro.template.filename.the.title.of.the.song.as.entered.in.the.t.field")) {
             @Override
             public String getValue(Settings settings, AbcMetadataSource metadata) {
                 if (metadata == null) metadata = new MockMetadataSource(null);
                 return metadata.getSongTitle().trim();
             }
         });
-        vars.put("$SongLength", new Variable("The playing time of the song in mm_ss format") {
+        vars.put("$SongLength", new Variable(UIText.get("maestro.template.filename.the.playing.time.of.the.song.in.mm.ss.format")) {
             @Override
             public String getValue(Settings settings, AbcMetadataSource metadata) {
                 if (metadata == null) metadata = new MockMetadataSource(null);
                 return Util.formatDuration(metadata.getSongLengthMicros(), 0, '-');
             }
         });
-        vars.put("$SongComposer", new Variable("The song composer/artist, as entered in the \"C:\" field") {
+        vars.put("$SongComposer", new Variable(UIText.get("maestro.template.filename.the.song.composer.artist.as.entered.in.the.c.field")) {
             @Override
             public String getValue(Settings settings, AbcMetadataSource metadata) {
                 if (metadata == null) metadata = new MockMetadataSource(null);
                 return metadata.getComposer().trim();
             }
         });
-        vars.put("$SongTranscriber", new Variable("Your name, as entered in the \"Z:\" field") {
+        vars.put("$SongTranscriber", new Variable(UIText.get("maestro.template.filename.your.name.as.entered.in.the.z.field")) {
             @Override
             public String getValue(Settings settings, AbcMetadataSource metadata) {
                 if (metadata == null) metadata = new MockMetadataSource(null);
                 return metadata.getTranscriber().trim();
             }
         });
-        vars.put("$PartCount", new Variable("Number of parts in the ABC file") {
+        vars.put("$PartCount", new Variable(UIText.get("maestro.template.filename.number.of.parts.in.the.abc.file")) {
             @Override
             public String getValue(Settings settings, AbcMetadataSource metadata) {
                 if (metadata == null) metadata = new MockMetadataSource(null);
@@ -193,7 +194,7 @@ public class ExportFilenameTemplate {
                         metadata.getActivePartCount());
             }
         });
-        vars.put("$SourceFile", new Variable("Source file name (midi or ABC)") {
+        vars.put("$SourceFile", new Variable(UIText.get("maestro.template.filename.source.file.name.midi.or.abc")) {
             @Override
             public String getValue(Settings settings, AbcMetadataSource metadata) {
                 if (metadata == null) metadata = new MockMetadataSource(null);

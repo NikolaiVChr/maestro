@@ -8,6 +8,7 @@ import javax.swing.*;
 
 import com.digero.common.util.Themer;
 
+import com.digero.common.view.UIText;
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
 
@@ -25,7 +26,7 @@ public class AbcPlayerSettingsDialog extends JDialog implements TableLayoutConst
 	private final Preferences prefs;
 	
 	public AbcPlayerSettingsDialog(JFrame owner, Preferences abcPlayerPrefs) {
-		super(owner, "More Options", true);
+		super(owner, UIText.get("abcplayer.more.options"), true);
 		
 		prefs = abcPlayerPrefs;
 		
@@ -38,7 +39,7 @@ public class AbcPlayerSettingsDialog extends JDialog implements TableLayoutConst
 			AbcPlayerSettingsDialog.this.setVisible(false);
 		});
 		
-		JButton cancelButton = new JButton("Cancel");
+		JButton cancelButton = new JButton(UIText.get("common.cancel"));
 		cancelButton.setMnemonic('C');
 		cancelButton.addActionListener(e -> {
 			AbcPlayerSettingsDialog.this.setVisible(false);
@@ -74,27 +75,27 @@ public class AbcPlayerSettingsDialog extends JDialog implements TableLayoutConst
 	
 	private JPanel createMoreOptionsPanel() {
 		
-		final JLabel themeLabel = new JLabel("Theme (Requires restart):");
+		final JLabel themeLabel = new JLabel(UIText.get("abcplayer.theme.requires.restart"));
 		
 		themeBox.setToolTipText(
-				"<html>Select the theme for ABC Player. Must restart ABC Player for it to take effect.</html>");
+				UIText.get("abcplayer.html.select.the.theme.for.abc.player"));
 		for (String theme : Themer.themes) {
 			themeBox.addItem(theme);
 		}
 		themeBox.setEditable(false);
 		themeBox.setSelectedItem(prefs.get("theme", Themer.FLAT_LIGHT_THEME));
 		
-		final JLabel fontSizeLabel = new JLabel("Font size (requires restart)");
+		final JLabel fontSizeLabel = new JLabel(UIText.get("abcplayer.font.size.requires.restart"));
 		
 		fontBox.setToolTipText(
-				"<html>Select a font size. Must restart ABC Player for it to take effect.</html>");
+				UIText.get("abcplayer.html.select.a.font.size"));
 		fontBox.setEditable(false);
 		for (int i : Themer.fontSizes) {
 			fontBox.addItem(Integer.toString(i));
 		}
 		fontBox.setSelectedItem(Integer.toString(prefs.getInt("fontSize", Themer.DEFAULT_FONT_SIZE)));
 
-		final JCheckBox flawedMaestroCheckbox = new JCheckBox("Enable popup warning for ABCs exported from flawed Maestro versions");
+		final JCheckBox flawedMaestroCheckbox = new JCheckBox(UIText.get("abcplayer.enable.popup.flawed.maestro.versions"));
 		flawedMaestroCheckbox.setSelected(prefs.getBoolean("flawedMaestroPopup", true));
 		flawedMaestroCheckbox.addActionListener(e-> {
 			prefs.putBoolean("flawedMaestroPopup", flawedMaestroCheckbox.isSelected());

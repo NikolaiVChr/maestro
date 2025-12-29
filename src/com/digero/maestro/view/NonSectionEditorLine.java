@@ -1,5 +1,7 @@
 package com.digero.maestro.view;
 
+import com.digero.common.view.UIText;
+
 import static javax.swing.SwingConstants.CENTER;
 
 import javax.swing.JTextField;
@@ -7,9 +9,9 @@ import javax.swing.JTextField;
 public class NonSectionEditorLine extends SectionEditorLine {
 	
 	
-	private static final JTextField nonSection = new JTextField("Rest of the track");
-	private static final JTextField nonSection2 = new JTextField("Rest of the track");
-	private static final JTextField nonSection3 = new JTextField("Rest of the track");
+	private static final JTextField nonSection = new JTextField(UIText.get("maestro.sectionedit.rest.of.the.track"));
+	private static final JTextField nonSection2 = new JTextField(UIText.get("maestro.sectionedit.rest.of.the.track"));
+	private static final JTextField nonSection3 = new JTextField(UIText.get("maestro.sectionedit.rest.of.the.track"));
 
 	public NonSectionEditorLine() {
 		super();

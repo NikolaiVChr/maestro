@@ -4,6 +4,7 @@ import com.digero.common.util.LyricLine;
 import com.digero.common.util.Themer;
 import com.digero.common.util.Util;
 import com.digero.common.view.ColorTable;
+import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.abc.QuantizedTimingInfo;
@@ -233,7 +234,7 @@ public class LyricEditorPanel extends JPanel {
                     boolean hasGap = prevLineMicros != Long.MIN_VALUE && gap > GAP_THRESHOLD;
                     if (lastWasBlank || (tick != tickPrev && hasGap)) {
                         if (prevLineMicros != Long.MIN_VALUE && gap > INSTRUMENTAL_THRESHOLD) {
-                            sb.append("\n% Interlude\n\n");
+                            sb.append(UIText.get("maestro.lyrics.interlude"));
                         }
                         sb.append("% ");
                         if (micros < 0L) {
@@ -327,15 +328,15 @@ public class LyricEditorPanel extends JPanel {
                 public void popupMenuCanceled(PopupMenuEvent e) {}
             });
 
-            JMenuItem insertItem = new JMenuItem("Insert Line...");
+            JMenuItem insertItem = new JMenuItem(UIText.get("maestro.lyrics.insert.line"));
             insertItem.addActionListener(e -> showInsertDialog());
             popup.add(insertItem);
 
-            JMenuItem deleteItem = new JMenuItem("Delete Line");
+            JMenuItem deleteItem = new JMenuItem(UIText.get("maestro.lyrics.delete.line"));
             deleteItem.addActionListener(e -> deleteSelectedLine());
             popup.add(deleteItem);
 
-            JMenuItem changeItem = new JMenuItem("Change Line Timing...");
+            JMenuItem changeItem = new JMenuItem(UIText.get("maestro.lyrics.change.line.timing"));
             changeItem.addActionListener(e -> changeSelectedLine());
             popup.add(changeItem);
 
@@ -382,18 +383,18 @@ public class LyricEditorPanel extends JPanel {
             c.fill = GridBagConstraints.HORIZONTAL;
 
             c.gridx = 0; c.gridy = 0;
-            panel.add(new JLabel("Bar Number:"), c);
+            panel.add(new JLabel(UIText.get("maestro.lyrics.bar.number")), c);
 
             c.gridx = 1; c.weightx = 1.0;
             panel.add(barField, c);
 
             c.gridx = 0; c.gridy = 1; c.weightx = 0.0; c.anchor = GridBagConstraints.NORTHWEST;
-            panel.add(new JLabel("Text:"), c);
+            panel.add(new JLabel(UIText.get("maestro.lyrics.text")), c);
 
             c.gridx = 1; c.weightx = 1.0; c.weighty = 1.0; c.fill = GridBagConstraints.BOTH;
             panel.add(textScroll, c);
 
-            int result = JOptionPane.showConfirmDialog(scrollPane, panel, "Insert New Lyric Line", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+            int result = JOptionPane.showConfirmDialog(scrollPane, panel, UIText.get("maestro.lyrics.insert.new.lyric.line"), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
             if (result == JOptionPane.OK_OPTION) {
                 try {
@@ -402,7 +403,7 @@ public class LyricEditorPanel extends JPanel {
                     long tick = abcSong.getSequenceInfo().getDataCache().barFloatToTick(bar);
                     model.addLine(new LyricLine(tick, text, tick));
                 } catch (NumberFormatException ex) {
-                    JOptionPane.showMessageDialog(scrollPane, "Invalid bar number.", "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(scrollPane, UIText.get("maestro.lyrics.invalid.bar.number"), UIText.get("maestro.lyrics.error"), JOptionPane.ERROR_MESSAGE);
                 }
             }
         }
@@ -429,8 +430,8 @@ public class LyricEditorPanel extends JPanel {
                 });
 
                 int result = JOptionPane.showConfirmDialog(scrollPane,
-                        new Object[] { "Enter new bar number for this lyrics line:", barField },
-                        "Move Line",
+                        new Object[] {UIText.get("maestro.lyrics.enter.new.bar.number.for.this.lyrics.line"), barField },
+                        UIText.get("maestro.lyrics.move.line"),
                         JOptionPane.OK_CANCEL_OPTION,
                         JOptionPane.PLAIN_MESSAGE);
 
@@ -441,7 +442,7 @@ public class LyricEditorPanel extends JPanel {
                         model.moveLine(row, newTick);
                         restoreSelection(newTick);
                     } catch (NumberFormatException ex) {
-                        JOptionPane.showMessageDialog(scrollPane, "Invalid bar number format.", "Error", JOptionPane.ERROR_MESSAGE);
+                        JOptionPane.showMessageDialog(scrollPane, UIText.get("maestro.lyrics.invalid.bar.number.format"), UIText.get("maestro.lyrics.error"), JOptionPane.ERROR_MESSAGE);
                     }
                 }
             }
@@ -460,7 +461,7 @@ public class LyricEditorPanel extends JPanel {
         private void deleteSelectedLine() {
             int row = getSelectedRow();
             if (row >= 0) {
-                int res = JOptionPane.showConfirmDialog(scrollPane, "Delete selected line?", "Confirm Delete", JOptionPane.YES_NO_OPTION);
+                int res = JOptionPane.showConfirmDialog(scrollPane, UIText.get("maestro.lyrics.delete.selected.line"), UIText.get("maestro.lyrics.confirm.delete"), JOptionPane.YES_NO_OPTION);
                 if (res == JOptionPane.YES_OPTION) {
                     model.removeLine(row);
                 }

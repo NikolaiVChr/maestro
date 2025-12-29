@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.logging.Level;
@@ -31,6 +32,7 @@ import com.digero.common.util.ExtensionFileFilter;
 import com.digero.common.util.Themer;
 import com.digero.common.util.Util;
 import com.digero.common.view.LinkButton;
+import com.digero.common.view.UIText;
 import com.digero.maestro.MaestroMain;
 import com.digero.maestro.abc.AbcMetadataSource;
 import com.digero.maestro.abc.AbcPartMetadataSource;
@@ -89,7 +91,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
     public SettingsDialog(JFrame owner, Preferences maestroPrefs, PartAutoNumberer partNumberer,
 			PartNameTemplate nameTemplate, ExportFilenameTemplate exportTemplate, SaveAndExportSettings saveSettings,
 			MiscSettings miscSettings, InstrNameSettings instrNameSettings) {
-		super(owner, "Options", true);
+		super(owner, UIText.get("maestro.options.title"), true);
 		this.own = owner;
 		setDefaultCloseOperation(HIDE_ON_CLOSE);
 
@@ -115,11 +117,11 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 			SettingsDialog.this.setVisible(false);
 		});
 
-		JButton resetButton = new JButton("Reset Page");
+		JButton resetButton = new JButton(UIText.get("maestro.options.reset.page"));
 		resetButton.addActionListener(e -> {
 			String page = tabPanel.getTitleAt(tabPanel.getSelectedIndex());
-			String title = "Reset '" + page + "' Settings?";
-			String message = "Are you sure you want to reset the " + page.toLowerCase() + " settings? No undo!";
+			String title = MessageFormat.format(UIText.get("maestro.options.reset.0.settings"), page);
+			String message = MessageFormat.format(UIText.get("maestro.options.are.you.sure.you.want.to.reset.the.0.settings.no.undo"), page.toLowerCase());
 			int result = JOptionPane.showConfirmDialog(null, message, title, JOptionPane.OK_CANCEL_OPTION,
 					JOptionPane.WARNING_MESSAGE, null);
 			if (result == JOptionPane.YES_OPTION) {
@@ -130,7 +132,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 			}
 		});
 
-		JButton cancelButton = new JButton("Cancel");
+		JButton cancelButton = new JButton(UIText.get("maestro.options.cancel"));
 		cancelButton.setMnemonic('C');
 		cancelButton.addActionListener(e -> {
 			success = false;
@@ -163,12 +165,12 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
         if (numberingPanel == null) {
             numberingPanel = createNumberingPanel();
         }
-		tabPanel.addTab("ABC Part Numbering", numberingPanel); // NUMBERING_TAB
-		tabPanel.addTab("ABC Part Naming", createNameTemplatePanel()); // NAME_TEMPLATE_TAB
-		tabPanel.addTab("File Naming", createExportTemplatePanel());
-		tabPanel.addTab("Instrument names", createInstrNamePanel());
-		tabPanel.addTab("Save & Export", createSaveAndExportSettingsPanel()); // SAVE_EXPORT_TAB
-		tabPanel.addTab("Misc", createMiscPanel()); // MISC_TAB
+		tabPanel.addTab(UIText.get("maestro.options.abc.part.numbering"), numberingPanel); // NUMBERING_TAB
+		tabPanel.addTab(UIText.get("maestro.options.abc.part.naming"), createNameTemplatePanel()); // NAME_TEMPLATE_TAB
+		tabPanel.addTab(UIText.get("maestro.options.file.naming"), createExportTemplatePanel());
+		tabPanel.addTab(UIText.get("maestro.options.instrument.names"), createInstrNamePanel());
+		tabPanel.addTab(UIText.get("maestro.options.save.export"), createSaveAndExportSettingsPanel()); // SAVE_EXPORT_TAB
+		tabPanel.addTab(UIText.get("maestro.options.misc"), createMiscPanel()); // MISC_TAB
 
 		JPanel mainPanel = new JPanel(new BorderLayout(PAD, PAD));
 		mainPanel.setBorder(BorderFactory.createEmptyBorder(PAD, PAD, PAD, PAD));
@@ -203,7 +205,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
     }
 
 	private JPanel createNumberingPanel() {
-		JLabel instrumentsTitle = new JLabel("<html><b><u>First part number</u></b></html>");
+		JLabel instrumentsTitle = new JLabel(UIText.get("maestro.options.html.b.u.first.part.number.u.b.html"));
 
 		TableLayout instrumentsLayout = new TableLayout(//
 				new double[] { PREFERRED, PREFERRED, 2 * PAD, PREFERRED, PREFERRED }, //
@@ -243,10 +245,8 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 			instrumentsPanel.add(new JLabel(inst.toString() + " "), (col + 1) + ", " + row);
 		}
 
-		JLabel incrementTitle = new JLabel("<html><b><u>Increment</u></b></html>");
-		JLabel incrementDescr = new JLabel("<html>Interval between multiple parts of the same instrument.<br>"
-				+ "<b>1</b>: number Lute parts as 10, 11, 12, etc.<br>"
-				+ "<b>10</b>: number Lute parts as 1, 11, 21, etc.</html>");
+		JLabel incrementTitle = new JLabel(UIText.get("maestro.options.html.b.u.increment.u.b.html"));
+		JLabel incrementDescr = new JLabel(UIText.get("maestro.options.interval.between.multiple.parts.of.the.same.instrument"));
 
 		incrementComboBox = new JComboBox<>(new Integer[] { 1, 10 });
 		incrementComboBox.setSelectedItem(partNumbererSettings.getIncrement());
@@ -273,7 +273,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 			partNumbererSettings.setIncrementByTen(newInc == 10);
 		});
 
-        JLabel orderTitle = new JLabel("<html><b><u>Part Order Sorting: </u></b></html>");
+        JLabel orderTitle = new JLabel(UIText.get("maestro.options.html.b.u.part.order.sorting.u.b.html"));
         orderCombo = new JComboBox<>(PartAutoNumberer.OrderOption.values());
         orderCombo.setSelectedItem(partNumbererSettings.orderOption);
         orderCombo.addActionListener(e -> {
@@ -295,14 +295,14 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		incrementPanel.add(incrementComboBox, "0, 0, C, T");
 		incrementPanel.add(incrementDescr, "1, 0");
 
-		JLabel numberingConfigLabel = new JLabel("<html><b><u>Part Numbering Config: </u></b></html>");
+		JLabel numberingConfigLabel = new JLabel(UIText.get("maestro.options.html.b.u.part.numbering.config.u.b.html"));
 
-		LinkButton importButton = new LinkButton("Import");
+		LinkButton importButton = new LinkButton(UIText.get("maestro.options.import"));
 		importButton.addActionListener(e -> loadPartNumberingConfig());
 
 		JLabel separator = new JLabel(" | ");
 
-		LinkButton exportButton = new LinkButton("Export");
+		LinkButton exportButton = new LinkButton(UIText.get("maestro.options.export"));
 		exportButton.addActionListener(e -> savePartNumberingConfig());
 
 		TableLayout mapLayout = new TableLayout(//
@@ -368,7 +368,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		numberingLayout.setVGap(PAD);
 		JPanel backPanel = new JPanel(numberingLayout);
 		backPanel.setBorder(BorderFactory.createEmptyBorder(PAD, PAD, PAD, PAD));
-		JLabel instrumentsTitle = new JLabel("<html><b><u>Default instrument naming for parts</u></b></html>");
+		JLabel instrumentsTitle = new JLabel(UIText.get("maestro.options.html.b.u.default.instrument.naming.for.parts.u.b.html"));
 		backPanel.add(instrumentsTitle, "0, 0, C, F");
 		backPanel.add(instrNamePanel, "0, 1, L, F");
 
@@ -443,7 +443,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 
 		JFileChooser fileChooser = new JFileChooser(dir);
 		fileChooser.setFileFilter(
-				new ExtensionFileFilter("Part numbering config file (*.partsconfig.txt)", "partsconfig.txt"));
+				new ExtensionFileFilter(UIText.get("maestro.options.part.numbering.config.file.partsconfig.txt"), Util.PARTS_CONFIG_FILE_EXTENSION_NO_DOT));
 
 		if (fileChooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION)
 			return false;
@@ -455,8 +455,8 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		try {
 			config.load(loadFile);
 		} catch (Exception e) {
-			JOptionPane.showMessageDialog(this, "Failed to load part numbering config:\n\n" + e.getMessage(),
-					"Failed to load part numbering config", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(this, MessageFormat.format(UIText.get("maestro.options.failed.to.load.part.numbering.config.0"), e.getMessage()),
+					UIText.get("maestro.options.failed.to.load.part.numbering.config"), JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
 
@@ -488,7 +488,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 
 		JFileChooser fileChooser = new JFileChooser(dir);
 		fileChooser.setFileFilter(
-				new ExtensionFileFilter("Part numbering config file (*.partsconfig.txt)", "partsconfig.txt"));
+				new ExtensionFileFilter(UIText.get("maestro.options.part.numbering.config.file.partsconfig.txt"), Util.PARTS_CONFIG_FILE_EXTENSION_NO_DOT));
 
 		File saveFile;
 		if (fileChooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
@@ -502,7 +502,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 
 		if (saveFile.exists()) {
 			int result = JOptionPane.showConfirmDialog(this,
-					"File " + saveFile.getName() + " already exists. Overwrite?", "Confirm overwrite",
+					MessageFormat.format(UIText.get("maestro.options.file.0.already.exists.overwrite"), saveFile.getName()), UIText.get("maestro.options.confirm.overwrite"),
 					JOptionPane.OK_CANCEL_OPTION);
 			if (result != JOptionPane.OK_OPTION)
 				return false;
@@ -520,8 +520,8 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		try {
 			config.save(saveFile);
 		} catch (IOException e) {
-			JOptionPane.showMessageDialog(this, "Failed to save part numbering config:\n\n" + e.getMessage(),
-					"Failed to save part numbering config", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(this, MessageFormat.format(UIText.get("maestro.options.failed.to.save.part.numbering.config.0"), e.getMessage()),
+					UIText.get("maestro.options.failed.to.save.part.numbering.config"), JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
 
@@ -530,7 +530,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 	}
 
 	private JPanel createNameTemplatePanel() {
-		JLabel whitespaceLabel = new JLabel("<html><b>Replace spaces in variables with:</b></html>");
+		JLabel whitespaceLabel = new JLabel(UIText.get("maestro.options.html.b.replace.spaces.in.variables.with.b.html"));
 
 		JComboBox<String> replaceWhitespaceComboBox = new JComboBox<>(PartNameTemplate.Settings.spaceReplaceLabels);
 		String replaceText = nameTemplateSettings.getWhitespaceReplaceText();
@@ -587,7 +587,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 
 		int row = 0;
 		layout.insertRow(row, PREFERRED);
-		JLabel patternLabel = new JLabel("<html><b><u>Pattern for ABC Part Name</b></u></html>");
+		JLabel patternLabel = new JLabel(UIText.get("maestro.options.html.b.u.pattern.for.abc.part.name.b.u.html"));
 		nameTemplatePanel.add(patternLabel, "0, " + row + ", 1, " + row);
 
 		layout.insertRow(++row, PREFERRED);
@@ -604,8 +604,8 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		
 		layout.insertRow(++row, PREFERRED);
 
-		JLabel nameLabel = new JLabel("<html><u><b>Variable Name</b></u></html>");
-		JLabel exampleLabel = new JLabel("<html><u><b>Example</b></u></html>");
+		JLabel nameLabel = new JLabel(UIText.get("maestro.options.html.u.b.variable.name.b.u.html"));
+		JLabel exampleLabel = new JLabel(UIText.get("maestro.options.html.u.b.example.b.u.html"));
 
 		layout.insertRow(++row, PREFERRED);
 		nameTemplatePanel.add(nameLabel, "0, " + row);
@@ -646,11 +646,11 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 	}
 
 	private JPanel createExportTemplatePanel() {
-		JLabel pageLabel = new JLabel("<html><b><u>ABC and MSX filename settings</b></u></html>");
+		JLabel pageLabel = new JLabel(UIText.get("maestro.options.html.b.u.abc.and.msx.filename.settings.b.u.html"));
 
-		JLabel patternLabel = new JLabel("<html><b>Custom pattern for exported filename:</b></html>");
+		JLabel patternLabel = new JLabel(UIText.get("maestro.options.html.b.custom.pattern.for.exported.filename.b.html"));
 
-		JLabel whitespaceLabel = new JLabel("<html><b>Replace spaces in variables with:</b></html>");
+		JLabel whitespaceLabel = new JLabel(UIText.get("maestro.options.html.b.replace.spaces.in.variables.with.b.html"));
 
 		JComboBox<String> replaceWhitespaceComboBox = new JComboBox<>(ExportFilenameTemplate.spaceReplaceLabels);
 		String replaceText = exportTemplateSettings.getWhitespaceReplaceText();
@@ -671,7 +671,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 			updateExportFilenameExample();
 		});
 
-		JCheckBox zeroPadPartCountCheckbox = new JCheckBox("Zero-pad part count to two digits");
+		JCheckBox zeroPadPartCountCheckbox = new JCheckBox(UIText.get("maestro.options.zero.pad.part.count.to.two.digits"));
 		zeroPadPartCountCheckbox.setSelected(exportTemplateSettings.isPartCountZeroPadded());
 		zeroPadPartCountCheckbox.addActionListener(e -> {
 			boolean selected = zeroPadPartCountCheckbox.isSelected();
@@ -701,22 +701,19 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 			}
 		});
 
-		JCheckBox alwaysRegenerateCheckBox = new JCheckBox("Always regenerate filenames using pattern");
+		JCheckBox alwaysRegenerateCheckBox = new JCheckBox(UIText.get("maestro.options.always.regenerate.filenames.using.pattern"));
 		alwaysRegenerateCheckBox.setSelected(exportTemplateSettings.shouldAlwaysRegenerateFromPattern());
 		alwaysRegenerateCheckBox.setEnabled(exportTemplateSettings.isExportFilenamePatternEnabled());
 		alwaysRegenerateCheckBox.setToolTipText(
-				"<html>Enable this setting to have Maestro always freshly generate filenames using the pattern.<br>"
-						+ "Disable this setting to have Maestro use a filename from a previous export, if available.</html>");
+				UIText.get("maestro.options.tip.always.regen"));
 		alwaysRegenerateCheckBox.addActionListener(e -> {
 			boolean selected = alwaysRegenerateCheckBox.isSelected();
 			exportTemplateSettings.setAlwaysRegenerateFromPattern(selected);
 		});
 
-		JCheckBox enablePatternExportCheckBox = new JCheckBox("Enable custom pattern for generating filenames");
+		JCheckBox enablePatternExportCheckBox = new JCheckBox(UIText.get("maestro.options.enable.custom.pattern.for.generating.filenames"));
 		enablePatternExportCheckBox.setSelected(exportTemplateSettings.isExportFilenamePatternEnabled());
-		enablePatternExportCheckBox.setToolTipText("<html>Select to enable filename generation using patterns.<br>"
-				+ "Define the pattern in the text box below, referencing any variables in the variable list.<br>"
-				+ "An example filename generated from your pattern is shown below the text box.</html>");
+		enablePatternExportCheckBox.setToolTipText(UIText.get("maestro.options.enable.filename.generation.using.patterns"));
 		enablePatternExportCheckBox.addActionListener(e -> {
 			boolean selected = enablePatternExportCheckBox.isSelected();
 			exportTemplateSettings.setExportFilenamePatternEnabled(selected);
@@ -767,8 +764,8 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		layout.insertRow(++row, PREFERRED);
 		panel.add(examplePanel, "0, " + row + ", 1, " + row);
 
-		JLabel nameLabel = new JLabel("<html><u><b>Variable Name</b></u></html>");
-		JLabel exampleLabel = new JLabel("<html><u><b>Example</b></u></html>");
+		JLabel nameLabel = new JLabel(UIText.get("maestro.options.html.u.b.variable.name.b.u.html"));
+		JLabel exampleLabel = new JLabel(UIText.get("maestro.options.html.u.b.example.b.u.html"));
 
 		layout.insertRow(++row, PREFERRED);
 		panel.add(nameLabel, "0, " + row);
@@ -797,7 +794,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		MockMetadataSource mockMetadata = new MockMetadataSource(song);
 
 		String exampleText = StringCleaner.cleanForFileName(Util.fileNameWithoutExtension(exportTemplate.formatName(exportTemplateSettings, mockMetadata)))+Util.ABC_FILE_EXTENSION;
-		exampleText = "Example filename:  " + exampleText;
+		exampleText = MessageFormat.format(UIText.get("maestro.options.example.filename.0"), exampleText);
 		String exampleTextEllipsis = Util.ellipsis(exampleText, exportTemplateExampleLabel.getWidth(),
 				exportTemplateExampleLabel.getFont());
 
@@ -808,64 +805,44 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 	}
 
 	private JPanel createSaveAndExportSettingsPanel() {
-		JLabel titleLabel = new JLabel("<html><u><b>Save &amp; Export</b></u></html>");
+		JLabel titleLabel = new JLabel(UIText.get("maestro.options.html.u.b.save.amp.export.b.u.html"));
 
-		final JCheckBox promptSaveCheckBox = new JCheckBox("Prompt to save new " + AbcSong.MSX_FILE_DESCRIPTION_PLURAL);
+		final JCheckBox promptSaveCheckBox = new JCheckBox(MessageFormat.format(UIText.get("maestro.options.prompt.to.save.new.0"), AbcSong.MSX_FILE_DESCRIPTION_PLURAL));
 		promptSaveCheckBox
-				.setToolTipText("<html>Select to be prompted to save new " + AbcSong.MSX_FILE_DESCRIPTION_PLURAL
-						+ "<br>" + "when opening a new file or closing the application.</html>");
+				.setToolTipText(MessageFormat.format(UIText.get("maestro.options.tip.prompted.to.save"), AbcSong.MSX_FILE_DESCRIPTION_PLURAL));
 		promptSaveCheckBox.setSelected(saveSettings.promptSaveNewSong);
 		promptSaveCheckBox.addActionListener(e -> saveSettings.promptSaveNewSong = promptSaveCheckBox.isSelected());
 
 		final JCheckBox showExportFileChooserCheckBox = new JCheckBox(
-				"Always prompt for the ABC file name when exporting");
-		showExportFileChooserCheckBox.setToolTipText("<html>Select to have the <b>Export ABC</b> button always<br>"
-				+ "prompt for the name of the file.</html>");
+				UIText.get("maestro.options.always.prompt.for.the.abc.file.name.when.exporting"));
+		showExportFileChooserCheckBox.setToolTipText(UIText.get("maestro.options.tip.always.prompt.for.the.name.of.the.file"));
 		showExportFileChooserCheckBox.setSelected(saveSettings.showExportFileChooser);
 		showExportFileChooserCheckBox.addActionListener(
 				e -> saveSettings.showExportFileChooser = showExportFileChooserCheckBox.isSelected());
 
-		final JCheckBox skipSilenceAtStartCheckBox = new JCheckBox("Remove silence from start of exported ABC");
-		skipSilenceAtStartCheckBox.setToolTipText("<html>" //
-				+ "Exported ABC files will not include silent measures from the<br>" //
-				+ "beginning of the song.<br>" //
-				+ "<br>" //
-				+ "Uncheck if you want to export multiple ABC files from the same<br>" //
-				+ "MIDI file that will be played together and need to line up." //
-				+ "</html>");
+		final JCheckBox skipSilenceAtStartCheckBox = new JCheckBox(UIText.get("maestro.options.remove.silence.from.start.of.exported.abc"));
+		skipSilenceAtStartCheckBox.setToolTipText(UIText.get("maestro.options.tip.skip.silence"));
 		skipSilenceAtStartCheckBox.setSelected(saveSettings.skipSilenceAtStart);
 		skipSilenceAtStartCheckBox
 				.addActionListener(e -> saveSettings.skipSilenceAtStart = skipSilenceAtStartCheckBox.isSelected());
 
-		final JCheckBox deleteMinimalNotesCheckBox = new JCheckBox("Delete Minimal Notes");
-		deleteMinimalNotesCheckBox.setToolTipText("<html>" //
-				+ "Notes that are quantized to zero duration<br>" //
-				+ "will not be exported if this setting is enabled.<br>" //
-				+ "<br>" //
-				+ "Enabling this can prevent fast notes overlapping in the abc export<br>" //
-				+ "which they would not do in the MIDI. Enabling this can fix severe dissonance in some songs.<br>" //
-				+ "Has no effect when exporting with organic.<br>" //
-				+ "Beware, this is an advanced option, if in doubt, keep it off.</html>");
+		final JCheckBox deleteMinimalNotesCheckBox = new JCheckBox(UIText.get("maestro.options.delete.minimal.notes"));
+		deleteMinimalNotesCheckBox.setToolTipText(UIText.get("maestro.options.tip.delete.minimal.notes"));
 		deleteMinimalNotesCheckBox.setSelected(saveSettings.deleteMinimalNotes);
 		deleteMinimalNotesCheckBox
 				.addActionListener(e -> saveSettings.deleteMinimalNotes = deleteMinimalNotesCheckBox.isSelected());
 		
 		final JCheckBox convertABCStringsToBasicAsciiCheckBox = new JCheckBox(
-				"Convert unicode, most ext. ascii and diacritical marks in ABC");
-		convertABCStringsToBasicAsciiCheckBox.setToolTipText("<html>" //
-				+ "If checked, exported ABC files will not include letters such as<br>" //
-				+ "&aelig;&#248;&#229;&#246;&#228;&#223; etc.<br>" //
-				+ "<br>" //
-				+ "Most songbooks cannot handle such chars, it's recommended to have this enabled." //
-				+ "</html>");
+				UIText.get("maestro.options.convert.unicode.most.ext.ascii.and.diacritical.marks.in.abc"));
+		convertABCStringsToBasicAsciiCheckBox.setToolTipText(UIText.get("maestro.options.tip.convert.to.ascii"));
 		convertABCStringsToBasicAsciiCheckBox.setSelected(saveSettings.convertABCStringsToBasicAscii);
 		convertABCStringsToBasicAsciiCheckBox.addActionListener(
 				e -> saveSettings.convertABCStringsToBasicAscii = convertABCStringsToBasicAsciiCheckBox.isSelected());
 		
-		final JLabel defaultTimingText = new JLabel("Default timing:");
+		final JLabel defaultTimingText = new JLabel(UIText.get("maestro.options.default.timing"));
 		final JComboBox<ProjectFrame.TimingEnum> defaultTimingComboBox = new JComboBox<>();
 		defaultTimingComboBox.setToolTipText(
-				"<html>Select default timing for new projects from midi.</html>");
+				UIText.get("maestro.options.html.select.default.timing.for.new.projects.from.midi.html"));
 		for (ProjectFrame.TimingEnum choice : ProjectFrame.TimingEnum.values()) {
 			defaultTimingComboBox.addItem(choice);
 		}
@@ -879,30 +856,29 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		defaultTimingComboBox.setSelectedItem(ProjectFrame.TimingEnum.getFromSettings(saveSettings.defaultTiming));
 		
 		final JCheckBox exceed6CheckBox = new JCheckBox(
-				"Allow more than 6 note polyphony in parts (organic only)");
-		exceed6CheckBox.setToolTipText("This can make old projects in need of volume adjustments,\n"
-				+ "therefore not enabled per default.\nHas no effect on mix or legacy timing.");
+				UIText.get("maestro.options.allow.more.than.6.note.polyphony.in.parts.organic.only"));
+		exceed6CheckBox.setToolTipText(UIText.get("maestro.options.tip.exceed6"));
 		exceed6CheckBox.setSelected(saveSettings.useRestsInChords);
 		exceed6CheckBox.addActionListener(
 				e -> saveSettings.useRestsInChords = exceed6CheckBox.isSelected());
 
         final JCheckBox warnSamePartsCheckBox = new JCheckBox(
-                "Warn if two or more part has same name");
-        warnSamePartsCheckBox.setToolTipText("Same names can make some songbooks get confused.");
+				UIText.get("maestro.options.warn.if.two.or.more.part.has.same.name"));
+        warnSamePartsCheckBox.setToolTipText(UIText.get("maestro.options.same.names.can.make.some.songbooks.get.confused"));
         warnSamePartsCheckBox.setSelected(saveSettings.warnOnExportOfSamePartNames);
         warnSamePartsCheckBox.addActionListener(
                 e -> saveSettings.warnOnExportOfSamePartNames = warnSamePartsCheckBox.isSelected());
 
         final JCheckBox reduceFileSizeCheckBox = new JCheckBox(
-                "Reduce exported ABC file size");
-        reduceFileSizeCheckBox.setToolTipText("When enabled, might export with slightly inaudible reduced precision and without time and bar number markers.");
+				UIText.get("maestro.options.reduce.exported.abc.file.size"));
+        reduceFileSizeCheckBox.setToolTipText(UIText.get("maestro.options.tip.reduced.filesize"));
         reduceFileSizeCheckBox.setSelected(saveSettings.reducedFilesize);
         reduceFileSizeCheckBox.addActionListener(
                 e -> saveSettings.reducedFilesize = reduceFileSizeCheckBox.isSelected());
 
 		final JCheckBox countUpLyricsCheckBox = new JCheckBox(
-				"Count-up lyrics timestamps");
-		countUpLyricsCheckBox.setToolTipText("When copying lyrics for Poetical this will make them count-up instead of count-down.");
+				UIText.get("maestro.options.count.up.lyrics.timestamps"));
+		countUpLyricsCheckBox.setToolTipText(UIText.get("maestro.options.when.copying.lyrics.for.poetical.this.will.make.them.count.up.instead.of.count.down"));
 		countUpLyricsCheckBox.setSelected(saveSettings.countUpLyrics);
 		countUpLyricsCheckBox.addActionListener(
 				e -> saveSettings.countUpLyrics = countUpLyricsCheckBox.isSelected());
@@ -957,7 +933,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 	}
 
 	private JPanel createMiscPanel() {
-		JLabel titleLabel = new JLabel("<html><u><b>Misc</b></u></html>");
+		JLabel titleLabel = new JLabel(UIText.get("maestro.options.html.u.b.misc.b.u.html"));
 		/*
 		 * final JCheckBox showPrunedCheckBox = new JCheckBox("Show discarded notes in yellow");
 		 * showPrunedCheckBox.setToolTipText("<html>" // +
@@ -970,14 +946,14 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		 * showPrunedCheckBox.isSelected(); } });
 		 */
 		
-		final JCheckBox checkForUpdatesCheckBox = new JCheckBox("Check for updates");
-		checkForUpdatesCheckBox.setToolTipText("<html>When starting Maestro, check if there is newer version available.");
+		final JCheckBox checkForUpdatesCheckBox = new JCheckBox(UIText.get("maestro.options.check.for.updates"));
+		checkForUpdatesCheckBox.setToolTipText(UIText.get("maestro.options.html.when.starting.maestro.check.if.there.is.newer.version.available"));
 		checkForUpdatesCheckBox.setSelected(miscSettings.checkForUpdates);
 		checkForUpdatesCheckBox.addActionListener(e -> miscSettings.checkForUpdates = checkForUpdatesCheckBox.isSelected());
 		
-		final JCheckBox showMaxPolyphonyCheckBox = new JCheckBox("Show polyphony");
+		final JCheckBox showMaxPolyphonyCheckBox = new JCheckBox(UIText.get("maestro.options.show.polyphony"));
 		showMaxPolyphonyCheckBox.setToolTipText(
-				"<html>Show number of simultanious notes<br>" + "that is playing as histogram.</html>");
+				UIText.get("maestro.options.histogram"));
 		showMaxPolyphonyCheckBox.setSelected(miscSettings.showMaxPolyphony);
 		showMaxPolyphonyCheckBox
 				.addActionListener(e -> miscSettings.showMaxPolyphony = showMaxPolyphonyCheckBox.isSelected());
@@ -989,37 +965,35 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		allBadgerCheckBox.setEnabled(miscSettings.showBadger);
 		*/
 		
-		final JCheckBox showBadgerCheckBox = new JCheckBox("Support extended songbook");
+		final JCheckBox showBadgerCheckBox = new JCheckBox(UIText.get("maestro.options.support.extended.songbook"));
 		showBadgerCheckBox.setToolTipText(
-				"<html>Output and show genre and mood fields<br>" + "that are used in extended songbooks:<br>"
-						+ "Badger Chapter, White Badger and Zedrock Chapter.</html>");
+				UIText.get("maestro.options.tip.badger"));
 		showBadgerCheckBox.setSelected(miscSettings.showBadger);
 		showBadgerCheckBox.addActionListener(e -> {
 			miscSettings.showBadger = showBadgerCheckBox.isSelected();
 			//allBadgerCheckBox.setEnabled(miscSettings.showBadger);
 		});
 		
-		final JCheckBox ignoreExpressionMessagesCheckBox = new JCheckBox("Ignore expression messages");
-		ignoreExpressionMessagesCheckBox.setToolTipText("<html>When loading a new MIDI, ignore expression messages when assigning note velocities.<br>Changing this option wont have nay effect on already made projects or MIDIs that has already been loaded into Maestro.<br>Default: False.</html>");
+		final JCheckBox ignoreExpressionMessagesCheckBox = new JCheckBox(UIText.get("maestro.options.ignore.expression.messages"));
+		ignoreExpressionMessagesCheckBox.setToolTipText(UIText.get("maestro.options.ignore.expression.messages"));
 		ignoreExpressionMessagesCheckBox.setSelected(miscSettings.ignoreExpressionMessages);
 		ignoreExpressionMessagesCheckBox.addActionListener(e -> miscSettings.ignoreExpressionMessages = ignoreExpressionMessagesCheckBox.isSelected());
 		
-		final JCheckBox autoplayOnOpenCheckBox = new JCheckBox("Autoplay files on open");
-		autoplayOnOpenCheckBox.setToolTipText("<html>When opening a MIDI/MSX/ABC file, begin playing the file as soon as it loads.");
+		final JCheckBox autoplayOnOpenCheckBox = new JCheckBox(UIText.get("maestro.options.autoplay.files.on.open"));
+		autoplayOnOpenCheckBox.setToolTipText(UIText.get("maestro.options.html.when.opening.a.midi.msx.abc.file.begin.playing.the.file.as.soon.as.it.loads"));
 		autoplayOnOpenCheckBox.setSelected(miscSettings.autoplayOnOpen);
 		autoplayOnOpenCheckBox.addActionListener(e -> miscSettings.autoplayOnOpen = autoplayOnOpenCheckBox.isSelected());
 
-		final String defaultStr = "Default";
+		final String defaultStr = "Default"; //NON-NLS
 		
-		final JLabel deviceText = new JLabel("Preferred MIDI out device:");
+		final JLabel deviceText = new JLabel(UIText.get("maestro.options.preferred.midi.out.device"));
 		deviceBox = new JComboBox<>();
-		deviceBox.setToolTipText("<html>Select preferred MIDI Device<br>"
-				+ "Will take effect next time a midi is loaded as source.</html>");
+		deviceBox.setToolTipText(UIText.get("maestro.options.html.select.preferred.midi.device"));
 		refreshDeviceBox();
 		deviceBox.setEditable(false);
 		deviceBox.addActionListener(e -> {
 			String s = (String) deviceBox.getSelectedItem();
-			if ("Default".equals(s)) {
+			if (defaultStr.equals(s)) {
 				NoteFilterSequencerWrapper.prefs.remove(NoteFilterSequencerWrapper.prefMIDISelect);
 			} else if (s == null) {
 			} else {
@@ -1032,13 +1006,13 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 			}
 		});
 
-		final JLabel themeText = new JLabel("Theme (Requires restart):");
+		final JLabel themeText = new JLabel(UIText.get("maestro.options.theme.requires.restart"));
 		final JComboBox<String> themeBox = new JComboBox<>();
-		final JLabel fontSizeLabel = new JLabel("Font size (Requires restart):");
+		final JLabel fontSizeLabel = new JLabel(UIText.get("maestro.options.font.size.requires.restart"));
 		final JComboBox<String> fontBox = new JComboBox<>();
 
 		themeBox.setToolTipText(
-				"<html>Select the theme for Maestro. Must restart Maestro for it to take effect.</html>");
+				UIText.get("maestro.options.html.select.the.theme.for.maestro.must.restart.maestro.for.it.to.take.effect.html"));
 		//themeBox.addItem(defaultStr);
 		for (String theme : Themer.themes) {
 			themeBox.addItem(theme);
@@ -1053,7 +1027,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		themeBox.setSelectedItem(miscSettings.theme);
 
 		fontBox.setToolTipText(
-				"<html>Select a font size. Must restart Maestro for it to take effect.</html>");
+				UIText.get("maestro.options.html.select.a.font.size.must.restart.maestro.for.it.to.take.effect.html"));
 		for (int i : Themer.fontSizes) {
 			fontBox.addItem(Integer.toString(i));
 		}
@@ -1068,10 +1042,10 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		fontBox.setSelectedItem(Integer.toString(miscSettings.fontSize));
 		fontBox.setEnabled(!miscSettings.theme.equals(defaultStr));
 
-		final JLabel bendLabel = new JLabel("Max range for new method of handling pitch bends (Requires restart):");
+		final JLabel bendLabel = new JLabel(UIText.get("maestro.options.max.range.for.new.method.of.handling.pitch.bends.requires.restart"));
 		final JComboBox<String> bendBox = new JComboBox<>();
 		bendBox.setToolTipText(
-				"<html>Select max seminote range for new way of handling pitch bends.<br>-1 means only old method. 12 is default.</html>");
+				UIText.get("maestro.options.html.select.max.seminote.range.for.new.way.of.handling.pitch.bends.br.1.means.only.old.method.12.is.default.html"));
 		bendBox.addItem(Integer.toString(-1));
 		bendBox.addItem(Integer.toString(6));
 		bendBox.addItem(Integer.toString(12));
@@ -1085,23 +1059,23 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		});
 		bendBox.setSelectedItem(Integer.toString(miscSettings.maxRangeForNewBendMethod));
 
-		final String ending = "msbk";
-		ExtensionFileFilter filter = new ExtensionFileFilter("Maestro settings files (*."+ending+")", ending);
+		final String ending = Util.OPTIONS_BACKUP_FILE_EXTENSION_NO_DOT;
+		ExtensionFileFilter filter = new ExtensionFileFilter(MessageFormat.format(UIText.get("maestro.options.maestro.settings.files.0"), ending), ending);
 		
-		final JButton exportPrefs = new JButton("Export all settings to a file");
+		final JButton exportPrefs = new JButton(UIText.get("maestro.options.export.all.settings.to.a.file"));
 		exportPrefs.addActionListener(a -> {
 			try {
 				JFileChooser jfc = new JFileChooser();
-				jfc.setDialogTitle("Export all settings to a file");
+				jfc.setDialogTitle(UIText.get("maestro.options.export.all.settings.to.a.file"));
 				jfc.setFileFilter(filter);
 				jfc.setSelectedFile(new File("maestro-settings-backup."+ending));
 				int returnVal = jfc.showSaveDialog(this);
 				if(returnVal == JFileChooser.APPROVE_OPTION) {
 					if (jfc.getSelectedFile().exists()) {
-						JOptionPane.showMessageDialog(this, "File already exist. Settings not saved.");
+						JOptionPane.showMessageDialog(this, UIText.get("maestro.options.file.already.exist.settings.not.saved"));
 					} else {
 						FileOutputStream fos = new FileOutputStream(jfc.getSelectedFile());
-						Preferences prefsMain = Preferences.userRoot().node("/com/digero");
+						Preferences prefsMain = Preferences.userRoot().node("/com/digero"); //NON-NLS
 						//Preferences prefsTools = Preferences.userRoot().node("/com/aifel");
 						prefsMain.exportSubtree(fos);
 						//prefsTools.exportSubtree(fos);
@@ -1111,17 +1085,17 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 				}
 			} catch (Exception e) {
                 log.log(Level.SEVERE, "Failed to export settings backup", e);
-				JOptionPane.showMessageDialog(this, "Settings failed saving. "+e.toString());
+				JOptionPane.showMessageDialog(this, MessageFormat.format(UIText.get("maestro.options.settings.failed.saving.0"), e.toString()));
 			}
 		});
 		
-		final JButton importPrefs = new JButton("Import all settings and exit Maestro");
+		final JButton importPrefs = new JButton(UIText.get("maestro.options.import.all.settings.and.exit.maestro"));
 		importPrefs.addActionListener(a -> {
             importPrefs.setEnabled(false);
 			try {
 				if(((ProjectFrame)(own)).closeSong()) {
 					JFileChooser jfc = new JFileChooser();
-					jfc.setDialogTitle("Import all settings and exit Maestro");
+					jfc.setDialogTitle(UIText.get("maestro.options.import.all.settings.and.exit.maestro"));
 					jfc.setFileFilter(filter);
 					int returnVal = jfc.showOpenDialog(this);
 					if(returnVal == JFileChooser.APPROVE_OPTION) {
@@ -1135,9 +1109,9 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
                                     System.exit(0);
                                 });
                             } catch (Throwable e) {
-                                log.log(Level.SEVERE, "Failed to load settings backup", e);
+                                log.log(Level.SEVERE, UIText.get("maestro.options.failed.to.load.settings.backup"), e);
                                 SwingUtilities.invokeLater(() -> {
-                                        JOptionPane.showMessageDialog(this, "Settings failed opening. " + e);
+                                        JOptionPane.showMessageDialog(this, MessageFormat.format(UIText.get("maestro.options.settings.failed.opening.1"), e));
                                         importPrefs.setEnabled(true);
                                     }
                                 );
@@ -1148,12 +1122,12 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 				}
 			} catch (Exception e) {
                 log.log(Level.SEVERE, "Failed to import settings backup", e);
-				JOptionPane.showMessageDialog(this, "Settings failed opening. "+e.toString());
+				JOptionPane.showMessageDialog(this, MessageFormat.format(UIText.get("maestro.options.settings.failed.opening.0"), e.toString()));
 			}
             importPrefs.setEnabled(true);
 		});
 
-        final JButton dissButton = new JButton("Dissonance graph");
+        final JButton dissButton = new JButton(UIText.get("maestro.options.dissonance.graph"));
         dissButton.addActionListener(a -> {
             DissonanceSettingsDialog dlg = new DissonanceSettingsDialog(SettingsDialog.this, miscSettings);
             dlg.setVisible(true);
@@ -1162,6 +1136,18 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
                 miscSettings.dissModified = true;
             }
         });
+
+		final String AUTO = "Auto"; //NON-NLS
+		final JLabel langLabel = new JLabel("Language/Sprache/Langue (BETA)"); //NON-NLS
+		final JComboBox<String> langBox = new JComboBox<>(new String[]{AUTO, "US", "FR", "DE"});
+		langBox.setToolTipText("<html>Changes take effect after restarting Maestro.<br><br>Änderungen werden nach einem Neustart von Maestro wirksam.<br><br>Les changements prendront effet après un redémarrage de Maestro.</html>");
+		langLabel.setToolTipText("<html>Changes take effect after restarting Maestro.<br><br>Änderungen werden nach einem Neustart von Maestro wirksam.<br><br>Les changements prendront effet après un redémarrage de Maestro.</html>");
+		langBox.setEditable(false);
+		langBox.setSelectedItem(miscSettings.locale==null?AUTO:miscSettings.locale);
+		langBox.addActionListener(e -> {
+			String item = langBox.getSelectedItem().toString();
+			miscSettings.locale = item.equals(AUTO) ? null : item;
+		});
 		
 		TableLayout layout = new TableLayout();
 		layout.insertColumn(0, FILL);
@@ -1225,12 +1211,18 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
         layout.insertRow(++row, PREFERRED);
         panel.add(dissButton, "0, " + row+", L, C");
 
+		layout.insertRow(++row, PREFERRED);
+		panel.add(langLabel, "0, " + row+", L, C");
+
+		layout.insertRow(++row, PREFERRED);
+		panel.add(langBox, "0, " + row+", L, C");
+
 		return panel;
 	}
 	
 	private void refreshDeviceBox() {
 		
-		final String defaultStr = "Default";
+		final String defaultStr = "Default"; //NON-NLS
 		String preferredDevice = NoteFilterSequencerWrapper.prefs.get(NoteFilterSequencerWrapper.prefMIDISelect, null);
 		deviceBox.removeAllItems();
 		deviceBox.addItem(defaultStr);
@@ -1306,7 +1298,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 
 		@Override
 		public String getTitle() {
-			return "First Flute";
+			return UIText.get("maestro.options.first.flute");
 		}
 
 		@Override
@@ -1324,7 +1316,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 			if (originalSource != null && !originalSource.getSongTitle().isEmpty())
 				return originalSource.getSongTitle();
 
-			return "Example Title";
+			return UIText.get("maestro.options.example.title");
 		}
 
 		@Override
@@ -1332,7 +1324,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 			if (originalSource != null && !originalSource.getComposer().isEmpty())
 				return originalSource.getComposer();
 
-			return "Example Composer";
+			return UIText.get("maestro.options.example.composer");
 		}
 
 		@Override
@@ -1340,7 +1332,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 			if (originalSource != null && !originalSource.getTranscriber().isEmpty())
 				return originalSource.getTranscriber();
 
-			return "Your Name Here";
+			return UIText.get("maestro.options.your.name.here");
 		}
 
 		@Override
@@ -1370,12 +1362,12 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 
 		@Override
 		public String getGenre() {
-			return "folk,rock";
+			return UIText.get("maestro.options.folk.rock");
 		}
 
 		@Override
 		public String getMood() {
-			return "sad,groovy";
+			return UIText.get("maestro.options.sad.groovy");
 		}
 
 		@Override
@@ -1401,7 +1393,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		public String getSourceFilename() {
 			if (originalSource != null && !Util.emptyIfNull(originalSource.getSourceFilename()).isEmpty() && !AbcSong.errorString.equals(originalSource.getSourceFilename()))
 				return originalSource.getSourceFilename();
-			return "Example Midi"+Util.MID_FILE_EXTENSION;
+			return MessageFormat.format(UIText.get("maestro.options.example.midi.0"), Util.MID_FILE_EXTENSION);
 		}
 	}
 }

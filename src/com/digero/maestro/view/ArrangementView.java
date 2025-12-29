@@ -10,6 +10,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseWheelEvent;
+import java.text.MessageFormat;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +35,7 @@ import com.digero.common.util.Util;
 import com.digero.common.view.ColorTable;
 import com.digero.common.view.InstrumentComboBox;
 import com.digero.common.view.PatchedJScrollPane;
+import com.digero.common.view.UIText;
 import com.digero.common.view.WrapLayout;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcPartEvent;
@@ -157,10 +159,10 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 			}
 		});
 
-        numberLockedCheckBox = new JCheckBox("Lock");
+        numberLockedCheckBox = new JCheckBox(UIText.get("maestro.lock"));
         numberLockedCheckBox.setHorizontalTextPosition(SwingConstants.RIGHT);
         numberLockedCheckBox.setFocusable(false);
-        numberLockedCheckBox.setToolTipText("<html>Fix the part number to the current value.</html>");
+        numberLockedCheckBox.setToolTipText(UIText.get("maestro.tip.html.fix.the.part.number.to.the.current.value.html"));
         numberLockedCheckBox.addActionListener(e -> {
             if (abcPart != null) {
                 abcPart.setPartNumberManuallyAssigned(numberLockedCheckBox.isSelected(), true);
@@ -169,7 +171,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 
 		numberSettingsButton = new JButton(IconLoader.getImageIcon("gear_16.png"));
 		numberSettingsButton.setMargin(new Insets(0, 0, 0, 0));
-		numberSettingsButton.setToolTipText("Automatic part numbering options");
+		numberSettingsButton.setToolTipText(UIText.get("maestro.tip.automatic.part.numbering.options"));
 		numberSettingsButton.setVisible(false);
 
 		nameTextField = new JTextField(24);
@@ -227,7 +229,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		// by 8 to get adjusted zoom
 		// so that approx. 8 seconds of music is on screen for max zoom
 		final float zoomSecondDivider = 8f;
-		JLabel hZoomLabel = new JLabel("HZoom:");
+		JLabel hZoomLabel = new JLabel(UIText.get("maestro.horiz.zoom"));
 		hZoomSlider = new JSlider(0, ZOOM_SLIDER_MAX, 0);
 		hZoomSlider.setFocusable(false);
 		hZoomSlider.addChangeListener(e -> {
@@ -247,7 +249,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		});
 		
 		final float maxVZoom = 6.f;
-		JLabel vZoomLabel = new JLabel("VZoom:");
+		JLabel vZoomLabel = new JLabel(UIText.get("maestro.vert.zoom"));
 		vZoomSlider = new JSlider(0, ZOOM_SLIDER_MAX, 0);
 		vZoomSlider.setFocusable(false);
 		vZoomSlider.addChangeListener(e -> {
@@ -257,10 +259,10 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 //			System.out.println("vz: " + vZoom);
 		});
 		
-		JCheckBox followCheckBox = new JCheckBox("Follow");
+		JCheckBox followCheckBox = new JCheckBox(UIText.get("maestro.follow"));
 		followCheckBox.setHorizontalTextPosition(SwingConstants.LEFT);
 		followCheckBox.setFocusable(false);
-		followCheckBox.setToolTipText("<html>Auto follow track position while song is playing.</html>");
+		followCheckBox.setToolTipText(UIText.get("maestro.tip.follow"));
 		
 		JPanel xPanel = new JPanel(new WrapLayout(FlowLayout.LEFT, HGAP, 0));
 		xPanel.add(new JLabel("X:"));
@@ -275,23 +277,19 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		partSettingsPanel.add(iPanel);
 		
 		JPanel partNamePanel = new JPanel(new WrapLayout(FlowLayout.LEFT, HGAP, 0));
-		partNamePanel.add(new JLabel("Part name:"));
+		partNamePanel.add(new JLabel(UIText.get("maestro.part.name")));
 		partNamePanel.add(nameTextField);
 		partSettingsPanel.add(partNamePanel);
 
         JPanel partPanPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, HGAP, 0));
-        partPanPanel.add(new JLabel("Pan part:"));
+        partPanPanel.add(new JLabel(UIText.get("maestro.pan.part")));
         panSlider = new JSlider(PanGenerator.LEFT, PanGenerator.RIGHT+1, 0);
         panSlider.setFocusable(false);
         panSlider.setMajorTickSpacing(PanGenerator.CENTER);
         panSlider.setPaintLabels(false);
         panSlider.setPaintTicks(true);
         panSlider.setSnapToTicks(false);
-        panSlider.setToolTipText("<html>Right-click to reset to automatic pan.<br>Middle-click to center." +
-                "<br><br>This panning is for preview playback only. To get panning in lotro" +
-                " you must position bandmembers manually." +
-                "<br><br>Graphics explainer: The numbers are part numbers. Green is the part you are setting the pan for," +
-                "yellow is other parts you have set a pan on. Grey is auto panned.</html>");
+        panSlider.setToolTipText(UIText.get("maestro.tip.slider.pan"));
         panPanel = new PanVisualizerPanel();
         PanController panWindow = new PanController(panSlider, panPanel);//also adds mouse-listener
         panSlider.addMouseListener(new MouseAdapter() {
@@ -521,8 +519,8 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		lyricsTabContainer.add(lyricLinesContent, BorderLayout.CENTER);
 		JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 5));
 
-		JButton copyButton = new JButton("Copy");
-		copyButton.setToolTipText("Copy lyrics to clipboard in Poetical friendly format");
+		JButton copyButton = new JButton(UIText.get("maestro.sidepanel.copy"));
+		copyButton.setToolTipText(UIText.get("maestro.sidepanel.copy.lyrics.to.clipboard.in.poetical.friendly.format"));
 		copyButton.addActionListener(e -> {
 			if (abcPart == null) return;
 			String text = lyricLinesContent.getPoeticalLyrics(abcPart.getAbcSong().getQTM(), abcPart.getAbcSong().isOrganic(), abcPart, countUp);
@@ -533,8 +531,8 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 			}
 		});
 
-		JButton revertButton = new JButton("Revert");
-		revertButton.setToolTipText("Reload lyrics from MIDI source (discards edits)");
+		JButton revertButton = new JButton(UIText.get("maestro.sidepanel.revert"));
+		revertButton.setToolTipText(UIText.get("maestro.sidepanel.reload.lyrics.from.midi.source.discards.edits"));
 		revertButton.addActionListener(e -> {
 			if (abcPart != null) {
 				// Fetch original MIDI/project text
@@ -543,9 +541,9 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 				int result = JOptionPane.showConfirmDialog(
 						SwingUtilities.getWindowAncestor(revertButton),
 						lines.isEmpty()
-								?"Source contains no lyrics, do you want to delete all lyrics?"
-								:"Are you sure you want to revert lyrics to MIDI source?",
-						"Delete and revert lyrics",
+								? UIText.get("maestro.sidepanel.source.contains.no.lyrics.do.you.want.to.delete.all.lyrics")
+								: UIText.get("maestro.sidepanel.are.you.sure.you.want.to.revert.lyrics.to.midi.source"),
+						UIText.get("maestro.sidepanel.delete.and.revert.lyrics"),
 						JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 
 				if (result == JOptionPane.YES_OPTION) {
@@ -595,9 +593,9 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
         statsContent.setEditable(false);
 
         //sidePanel.addTab("Lyrics", lyricsPanel);
-		sidePanel.addTab("Lyrics", lyricsTabContainer);
-        sidePanel.addTab("Notes", notePanel);
-        sidePanel.addTab("Stats", statsPanel);
+		sidePanel.addTab(UIText.get("maestro.sidepanel.lyrics"), lyricsTabContainer);
+        sidePanel.addTab(UIText.get("maestro.sidepanel.notes"), notePanel);
+        sidePanel.addTab(UIText.get("maestro.sidepanel.stats"), statsPanel);
     }
 
     public void scrollToTop() {

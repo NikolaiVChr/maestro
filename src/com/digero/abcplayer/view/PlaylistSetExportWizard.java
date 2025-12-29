@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -36,6 +37,7 @@ import javax.swing.SwingWorker;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
+import com.digero.common.view.UIText;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 
@@ -49,7 +51,7 @@ import net.miginfocom.swing.MigLayout;
 public class PlaylistSetExportWizard extends JDialog {
 		
 	public static final String[] partColumnsSettings = { "part", "instrument", "none" };
-	public static final String[] partColumnsLabels = { "Use Part Names", "Use Instrument Names", "Don't Include" };
+	public static final String[] partColumnsLabels = {UIText.get("abcplayer.use.part.names"), UIText.get("abcplayer.use.instrument.names"), UIText.get("abcplayer.don.t.include")};
 	
 	public static class SetExportSettings {
 		// Main settings
@@ -269,7 +271,7 @@ public class PlaylistSetExportWizard extends JDialog {
 	private List<JCheckBox> colCheckBoxes;
 	
 	public PlaylistSetExportWizard(JFrame owner, Preferences prefNode, File playlistFile, List<AbcInfo> setData, List<String> visibleColumns) {
-		super(owner, "Export Set Wizard", true);
+		super(owner, UIText.get("abcplayer.export.set.wizard"), true);
 		
 		this.playlistFile = playlistFile;
 		this.setData = setData;
@@ -278,11 +280,11 @@ public class PlaylistSetExportWizard extends JDialog {
 		this.filenameTemplate = new SetFilenameTemplate(settings);
 		
 		tabPanel = new JTabbedPane();
-		tabPanel.addTab("Export Settings", createExportPanel());
-		tabPanel.addTab("ABC File Renaming", createFileNamingPanel());
-		tabPanel.addTab("CSV Part Sheet", createPartSheetPanel());
+		tabPanel.addTab(UIText.get("abcplayer.export.settings"), createExportPanel());
+		tabPanel.addTab(UIText.get("abcplayer.abc.file.renaming"), createFileNamingPanel());
+		tabPanel.addTab(UIText.get("abcplayer.csv.part.sheet"), createPartSheetPanel());
 		
-		JButton exportButton = new JButton("Export");
+		JButton exportButton = new JButton(UIText.get("abcplayer.export"));
 		getRootPane().setDefaultButton(exportButton);
 		exportButton.addActionListener(e -> {
 			List<String> columns = visibleColumns;
@@ -297,7 +299,7 @@ public class PlaylistSetExportWizard extends JDialog {
 			new SetExportWorker(setNameField.getText(), columns).execute();
 		});
 		
-		JButton cancelButton = new JButton("Cancel");
+		JButton cancelButton = new JButton(UIText.get("common.cancel"));
 		cancelButton.addActionListener(e -> {
 			this.setVisible(false);
 		});
@@ -328,15 +330,15 @@ public class PlaylistSetExportWizard extends JDialog {
 		JPanel exportPanel = new JPanel(new MigLayout("fillx", "[grow -1][]"));
 		
 		JLabel directoryLabel = new JLabel(settings.getOutputDirectory());
-		directoryLabel.setToolTipText("Directory in which the set folder or zip will be exported.");
+		directoryLabel.setToolTipText(UIText.get("abcplayer.directory.in.which.the.set.folder.or.zip.will.be.exported"));
 		
-		JButton chooseDirectoryButton = new JButton("Output Folder...");
-		chooseDirectoryButton.setToolTipText("Choose the directory in which the set folder or zip will be exported.");
+		JButton chooseDirectoryButton = new JButton(UIText.get("abcplayer.output.folder"));
+		chooseDirectoryButton.setToolTipText(UIText.get("abcplayer.choose.the.directory.in.which.the.set.folder.or.zip.will.be.exported"));
 		chooseDirectoryButton.addActionListener(e -> {
 			JFileChooser chooser = new JFileChooser();
-			chooser.setApproveButtonText("Select");
+			chooser.setApproveButtonText(UIText.get("abcplayer.select"));
 			chooser.setCurrentDirectory(new File(directoryLabel.getText()));
-			chooser.setDialogTitle("Select Set Destination");
+			chooser.setDialogTitle(UIText.get("abcplayer.select.set.destination"));
 			chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 			chooser.setMultiSelectionEnabled(false);
 			if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
@@ -346,9 +348,9 @@ public class PlaylistSetExportWizard extends JDialog {
 			}
 		});
 		
-		JLabel setNameLabel = new JLabel("Set Name:");
-		setNameLabel.setToolTipText("The set will be exported into a folder or a zip file with this name.");
-		String setName = "Untitled Set";
+		JLabel setNameLabel = new JLabel(UIText.get("abcplayer.set.name"));
+		setNameLabel.setToolTipText(UIText.get("abcplayer.the.set.will.be.exported.into"));
+		String setName = UIText.get("abcplayer.untitled.set");
 		if (playlistFile != null) {
 			setName = playlistFile.getName();
 			if (setName.contains(".")) {
@@ -356,24 +358,24 @@ public class PlaylistSetExportWizard extends JDialog {
 			}
 		}
 		setNameField = new JTextField(setName);
-		setNameField.setToolTipText("The set will be exported into a folder or a zip file with this name.");
+		setNameField.setToolTipText(UIText.get("abcplayer.the.set.will.be.exported.into"));
 		
-		JCheckBox exportAsZip = new JCheckBox("Export As Zip");
-		exportAsZip.setToolTipText("If selected, the set will be exported as a zip file rather than into a folder.");
+		JCheckBox exportAsZip = new JCheckBox(UIText.get("abcplayer.export.as.zip"));
+		exportAsZip.setToolTipText(UIText.get("abcplayer.set.exported.as.a.zip"));
 		exportAsZip.setSelected(settings.isExportAsZip());
 		exportAsZip.addActionListener(e -> {
 			settings.setExportAsZip(exportAsZip.isSelected());
 		});
 		
-		JCheckBox exportCsvPartsheet = new JCheckBox("Export CSV Part Sheet");
-		exportCsvPartsheet.setToolTipText("<html>If selected, a CSV part sheet will be generated alongside the ABC files.<br>See the CSV Part Sheet tab for related options.</html>");
+		JCheckBox exportCsvPartsheet = new JCheckBox(UIText.get("abcplayer.export.csv.part.sheet"));
+		exportCsvPartsheet.setToolTipText(UIText.get("abcplayer.csv.part.sheet.alongside"));
 		exportCsvPartsheet.setSelected(settings.isExportPartSheet());
 		exportCsvPartsheet.addActionListener(e -> {
 			settings.setExportPartSheet(exportCsvPartsheet.isSelected());
 		});
 		
-		JCheckBox renameAbcFiles = new JCheckBox("Rename ABC Files using Pattern");
-		renameAbcFiles.setToolTipText("<html>If selected, ABC files will be renamed and reordered in the exported set<br>according to the pattern specified in the ABC File Renaming tab.</html>");
+		JCheckBox renameAbcFiles = new JCheckBox(UIText.get("abcplayer.rename.abc.files.using.pattern"));
+		renameAbcFiles.setToolTipText(UIText.get("abcplayer.html.if.selected.abc.files.will.be.renamed.and.reordered"));
 		renameAbcFiles.setSelected(settings.isRenameAbcFiles());
 		renameAbcFiles.addActionListener(e -> {
 			settings.setRenameAbcFiles(renameAbcFiles.isSelected());
@@ -395,7 +397,7 @@ public class PlaylistSetExportWizard extends JDialog {
 	private JPanel createFileNamingPanel() {
 		JPanel fileNamePanel = new JPanel(new MigLayout("fillx"));
 		
-		JLabel whitespaceLabel = new JLabel("<html><b>Replace spaces in variables with:</b></html>");
+		JLabel whitespaceLabel = new JLabel(UIText.get("abcplayer.html.b.replace.spaces.in.variables.with.b.html"));
 		
 		JComboBox<String> replaceWhitespaceComboBox = new JComboBox<>(ExportFilenameTemplate.spaceReplaceLabels);
 		String replaceText = settings.getWhitespaceReplaceText();
@@ -415,7 +417,7 @@ public class PlaylistSetExportWizard extends JDialog {
 			updateFilenameExample();
 		});
 		
-		JLabel patternLabel = new JLabel("<html><b><u>Pattern for new ABC filenames</b></u></html>");
+		JLabel patternLabel = new JLabel(UIText.get("abcplayer.html.b.u.pattern.for.new.abc.filenames.b.u.html"));
 		
 		JTextField patternTextField = new JTextField(settings.getExportFilenamePattern(), 40);
 		patternTextField.getDocument().addDocumentListener(new DocumentListener() {
@@ -439,8 +441,8 @@ public class PlaylistSetExportWizard extends JDialog {
 		
 		exampleAbcFileLabel = new JLabel(Util.ABC_FILE_EXTENSION);
 		
-		JLabel nameLabel = new JLabel("<html><u><b>Variable Name</b></u></html");
-		JLabel exampleLabel = new JLabel("<html><u><b>Example</b></u></html>");
+		JLabel nameLabel = new JLabel(UIText.get("abcplayer.html.u.b.variable.name.b.u.html"));
+		JLabel exampleLabel = new JLabel(UIText.get("abcplayer.html.u.b.example.b.u.html"));
 		
 		fileNamePanel.add(whitespaceLabel);
 		fileNamePanel.add(replaceWhitespaceComboBox, "grow x, wrap");
@@ -466,14 +468,14 @@ public class PlaylistSetExportWizard extends JDialog {
 	
 	private void updateFilenameExample() {
 		String exampleText = filenameTemplate.formatName(settings);
-		exampleText = "Example filename:   " + exampleText;
+		exampleText = MessageFormat.format(UIText.get("abcplayer.example.filename.0"), exampleText);
 		exampleAbcFileLabel.setText(exampleText);
 	}
 	
 	private JPanel createPartSheetPanel() {
 		JPanel partSheetPanel = new JPanel(new MigLayout());
 		
-		JLabel partChoiceLabel = new JLabel("Part columns content:");
+		JLabel partChoiceLabel = new JLabel(UIText.get("abcplayer.part.columns.content"));
 		
 		JComboBox<String> partContentChoice = new JComboBox<String>(partColumnsLabels);
 		int selectedIndex = 0;
@@ -491,8 +493,8 @@ public class PlaylistSetExportWizard extends JDialog {
 		List<String> colNames = AbcInfoTableModel.getColNames();
 		colCheckBoxes = new ArrayList<>(colNames.size());
 		
-		JRadioButton visibleColumns = new JRadioButton("Use visible table columns");
-		JRadioButton customColumns = new JRadioButton("Use custom columns");
+		JRadioButton visibleColumns = new JRadioButton(UIText.get("abcplayer.use.visible.table.columns"));
+		JRadioButton customColumns = new JRadioButton(UIText.get("abcplayer.use.custom.columns"));
 		ButtonGroup columnModeGroup = new ButtonGroup();
 		ActionListener columnListener = e -> {
 			boolean useVisibleColumns = visibleColumns.isSelected();
@@ -511,7 +513,7 @@ public class PlaylistSetExportWizard extends JDialog {
 			customColumns.setSelected(true);
 		}
 		
-		JLabel columnLabel = new JLabel("<html><u><b>Select Custom Columns</b></u></html");
+		JLabel columnLabel = new JLabel(UIText.get("abcplayer.html.u.b.select.custom.columns.b.u.html"));
 		
 		partSheetPanel.add(partChoiceLabel, "align right");
 		partSheetPanel.add(partContentChoice, "wrap");
@@ -572,20 +574,20 @@ public class PlaylistSetExportWizard extends JDialog {
 				String zipName = setName + ".zip";
 				zipFile = Paths.get(outputFolder, zipName).toFile();
 				if (zipFile.exists()) {
-					error = "Set output zip file already exists";
+					error = UIText.get("abcplayer.set.output.zip.file.already.exists");
 					return false;
 				}
 				try {
 					tempDir = Files.createTempDirectory("setExport");
 				} catch (IOException e) {
-					error = "Failed to create ABC export directory";
+					error = UIText.get("abcplayer.failed.to.create.abc.export.directory");
 					return false;
 				}
 				copyToFolder = Paths.get(tempDir.toString(), setName).toFile();
 			} else {
 				copyToFolder = Paths.get(outputFolder, setName).toFile();
 				if (copyToFolder.exists()) {
-					error = "Set output folder already exists";
+					error = UIText.get("abcplayer.set.output.folder.already.exists");
 					return false;
 				}
 			}
@@ -593,11 +595,11 @@ public class PlaylistSetExportWizard extends JDialog {
 			try {
 				Files.createDirectory(copyToFolder.toPath());
 			} catch (IOException e) {
-				error = "Failed to create ABC export directory";
+				error = UIText.get("abcplayer.failed.to.create.abc.export.directory");
 				return false;
 			}
 			
-			publish(new SetExportProgress(10, "Created destination folder..."));
+			publish(new SetExportProgress(10, UIText.get("abcplayer.created.destination.folder")));
 			
 			return true;
 		}
@@ -625,11 +627,11 @@ public class PlaylistSetExportWizard extends JDialog {
 					Files.copy(source, dest);
 				} catch (IOException e) {
 					e.printStackTrace();
-					error = "Failed to copy abc file '" + source.getFileName() + "' to set directory";
+					error = MessageFormat.format(UIText.get("abcplayer.failed.to.copy.abc.file.0.to.set.directory"), source.getFileName());
 					return false;
 				}
 				progress += inc;
-				publish(new SetExportProgress((int)progress, "Copied ABC " + (i + 1) + " of " + count + "..."));
+				publish(new SetExportProgress((int)progress, MessageFormat.format(UIText.get("abcplayer.copied.abc.0.of.1"), i + 1, count)));
 			}
 			
 			return true;
@@ -637,7 +639,7 @@ public class PlaylistSetExportWizard extends JDialog {
 		
 		private boolean generateCsvPartSheetIfNeeded() {
 			if (!settings.exportPartSheet) {
-				publish(new SetExportProgress(90, "No CSV part sheet needed"));
+				publish(new SetExportProgress(90, UIText.get("abcplayer.no.csv.part.sheet.needed")));
 				return true;
 			}
 			
@@ -658,7 +660,7 @@ public class PlaylistSetExportWizard extends JDialog {
 				}
 				
 				for (int i = 0; i < maxPartCount; i++) {
-					headerList.add("Part " + (i + 1));
+					headerList.add(MessageFormat.format(UIText.get("abcplayer.part.0"), i + 1));
 				}
 			}
 			
@@ -714,14 +716,14 @@ public class PlaylistSetExportWizard extends JDialog {
 				return false;
 			}
 			
-			publish(new SetExportProgress(90, "Generated CSV part sheet"));
+			publish(new SetExportProgress(90, UIText.get("abcplayer.generated.csv.part.sheet")));
 			
 			return true;
 		}
 		
 		private boolean zipSetIfNeeded() {
 			if (!settings.exportAsZip) {
-				publish(new SetExportProgress(100, "No zipping needed"));
+				publish(new SetExportProgress(100, UIText.get("abcplayer.no.zipping.needed")));
 				return true;
 			}
 			
@@ -738,12 +740,12 @@ public class PlaylistSetExportWizard extends JDialog {
 								Files.copy(path, zs);
 								zs.closeEntry();
 							} catch (IOException e) {
-								error = "Failed to zip the set";
+								error = UIText.get("abcplayer.failed.to.zip.the.set");
 							}
 						});
 				}
 			} catch (Exception e) {
-				error = "Failed to zip the set";
+				error = UIText.get("abcplayer.failed.to.zip.the.set");
 				e.printStackTrace();
 				return false;
 			}
@@ -752,7 +754,7 @@ public class PlaylistSetExportWizard extends JDialog {
 				return false;
 			}
 			
-			publish(new SetExportProgress(100, "Zipped the set"));
+			publish(new SetExportProgress(100, UIText.get("abcplayer.zipped.the.set")));
 			
 			return true;
 		}
@@ -799,9 +801,9 @@ public class PlaylistSetExportWizard extends JDialog {
 			
 			if (!error.isEmpty()) {
 				progressLabel.setText(error);
-				JOptionPane.showMessageDialog(PlaylistSetExportWizard.this, error, "Export Error", JOptionPane.ERROR_MESSAGE);
+				JOptionPane.showMessageDialog(PlaylistSetExportWizard.this, error, UIText.get("abcplayer.export.error"), JOptionPane.ERROR_MESSAGE);
 			} else {
-				progressLabel.setText("Set export finished");
+				progressLabel.setText(UIText.get("abcplayer.set.export.finished"));
 				settings.save();
 			}
 		}

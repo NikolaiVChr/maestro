@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.aifel.abctools.AbcTools;
 import com.digero.common.util.Version;
+import com.digero.common.view.UIText;
 import com.digero.maestro.MaestroMain;
 
 public class VersionsWithIssues {
@@ -15,33 +16,33 @@ public class VersionsWithIssues {
 	static {
 		// These are issues that can have exported corrupted abc files in some way.
 		abcVersionsWithIssues.add(new IssueVersion(new Version(3,4,4),
-				"Notes can be missing if they had no rest in-between them and were same pitch."));//beta
+				UIText.get("common.flaw.notes.can.be.missing.if.they.had.no.rest.in.between.them.and.were.same.pitch")));//beta
 		abcVersionsWithIssues.add(new IssueVersion(new Version(3,3,9), new Version(3,3,13),
-				"Song might have wrong tempo until first tempo-change."));//beta
+				UIText.get("common.flaw.song.might.have.wrong.tempo.until.first.tempo.change")));//beta
 		abcVersionsWithIssues.add(new IssueVersion(new Version(3,3,7),
-				"Notes can be missing."));
+				UIText.get("common.flaw.notes.can.be.missing")));
 		abcVersionsWithIssues.add(new IssueVersion(new Version(3,3,6),
-				"Possible issue with delayed start or ending."));
+				UIText.get("common.flaw.possible.issue.with.delayed.start.or.ending")));
 		abcVersionsWithIssues.add(new IssueVersion(new Version(3,2,0),
-				"Song duration in part names can be longer than actual song length."));
+				UIText.get("common.flaw.song.duration.in.part.names.can.be.longer.than.actual.song.length")));
 		abcVersionsWithIssues.add(new IssueVersion(new Version(3,1,9), new Version(3,1,10),
-				"Notes can be missing."));
+				UIText.get("common.flaw.notes.can.be.missing")));
 		abcVersionsWithIssues.add(new IssueVersion(new Version(2,5,0,118),
-				"Initial silence might not have been removed."));//beta of auto exporter
+				UIText.get("common.flaw.initial.silence.might.not.have.been.removed")));//beta of auto exporter
 		abcVersionsWithIssues.add(new IssueVersion(new Version(3,6,6), new Version(4,0,11),
-				"Notes can be missing or out of rhythm (if exported with organic)."));//beta of organic
+				UIText.get("common.flaw.notes.can.be.missing.or.out.of.rhythm.if.exported.with.organic")));//beta of organic
 		abcVersionsWithIssues.add(new IssueVersion(new Version(4,2,4), new Version(4,2,9),
-				"Parts can be silenced in lotro (if exported with organic single-stage and poly 6+)."));
+				UIText.get("common.flaw.parts.can.be.silenced.in.lotro.if.exported.with.organic.single.stage.and.poly.6")));
 		abcVersionsWithIssues.add(new IssueVersion(new Version(4,2,10),
-				"Rare chance of ties having rest between them in organic single-stage."));
+				UIText.get("common.flaw.rare.chance.of.ties.having.rest.between.them.in.organic.single.stage")));
 		abcVersionsWithIssues.add(new IssueVersion(new Version(4,2,14), new Version(4,2,16),
-				"Notes can be cut short (if exported with organic and poly 6+)."));//beta
+				UIText.get("common.flaw.notes.can.be.cut.short.if.exported.with.organic.and.poly.6")));//beta
 		abcVersionsWithIssues.add(new IssueVersion(new Version(4,3,0),
-				"Parts main volumes can be corrupted, check project also."));
+				UIText.get("common.flaw.parts.main.volumes.can.be.corrupted.check.project.also")));
 
 		// these are issues that can have corrupted project files in some way:
 		msxVersionsWithIssues.add(new IssueVersion(new Version(4,3,0),
-				"Main volumes can be modified due to bug in 4.3.0, it's suggested you re-adjust all volumes."));
+				UIText.get("common.flaw.main.volumes.can.be.modified")));
 	}
 	
 	/**

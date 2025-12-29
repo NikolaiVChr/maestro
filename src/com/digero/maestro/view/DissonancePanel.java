@@ -7,6 +7,7 @@ import com.digero.common.util.IDiscardable;
 import com.digero.common.util.Listener;
 import com.digero.common.view.ColorTable;
 import com.digero.common.view.LeanJLabel;
+import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.abc.DissonanceDetector;
 import com.digero.maestro.midi.FakeNoteEvent;
@@ -24,6 +25,7 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.NoninvertibleTransformException;
 import java.awt.geom.Point2D;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -98,18 +100,18 @@ public class DissonancePanel extends JPanel implements IDiscardable, TableLayout
 		dissoGraph.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER_HORIZ.get()));
 		setBackground(ColorTable.DISSONANCE_BACKGROUND.get());
 
-		JLabel titleLabel = new JLabel("Dissonance");
+		JLabel titleLabel = new JLabel(UIText.get("maestro.dissonance.dissonance"));
 		titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
 		titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD));
 		titleLabel.setForeground(ColorTable.PANEL_TEXT_DISABLED.get());
 
-		currentCountLabel = new LeanJLabel("128 score (Peak: 128)");
+		currentCountLabel = new LeanJLabel(UIText.get("maestro.dissonance.128.score.peak.128"));
 		currentCountLabel.setForeground(ColorTable.PANEL_TEXT_DISABLED.get());
-		currentCountLabel.setToolTipText("Dissonance score");
+		currentCountLabel.setToolTipText(UIText.get("maestro.dissonance.dissonance.score"));
 		currentCountLabel.setHorizontalAlignment(JLabel.RIGHT);
 
-        peakButton = new JButton("P");
-        peakButton.setToolTipText("Jump to highest peak");
+        peakButton = new JButton(UIText.get("maestro.dissonance.peak"));
+        peakButton.setToolTipText(UIText.get("maestro.dissonance.jump.to.highest.peak"));
         peakButton.addActionListener(a -> {
             if (dissonanceDetector != null) {
                 long tick = dissonanceDetector.getPeakTick(abcSong);
@@ -179,9 +181,9 @@ public class DissonancePanel extends JPanel implements IDiscardable, TableLayout
 	public void updateCountLabel() {
         if (dissonanceDetector != null) {
             int notes = dissonanceDetector.get(abcSequencer.getThumbTick(), abcSong).getTotalScore();// Must be abcSeq, due to tuneeditor can change micros from this call
-            currentCountLabel.setText(notes + " score (Peak: " + dissonanceDetector.max(abcSong) + ")");
+            currentCountLabel.setText(MessageFormat.format(UIText.get("maestro.dissonance.0.score.peak.1"), notes, dissonanceDetector.max(abcSong)));
         } else {
-            currentCountLabel.setText("No preview data");
+            currentCountLabel.setText(UIText.get("maestro.dissonance.no.preview.data"));
         }
 	}
 
@@ -217,7 +219,7 @@ public class DissonancePanel extends JPanel implements IDiscardable, TableLayout
 			setNoteOnColor(ColorTable.NOTE_POLYPHONY_ON);
 			setNoteOnExtraHeightPix(0);
 			setNoteOnOutlineWidthPix(0);
-            setToolTipText("Polyphony");
+            setToolTipText(UIText.get("maestro.dissonance.dissonance"));
 		}
 
         @Override
@@ -231,7 +233,7 @@ public class DissonancePanel extends JPanel implements IDiscardable, TableLayout
         }
 
         private int lastX = -1;
-        private String lastStr = "Dissonance";
+        private String lastStr = UIText.get("maestro.dissonance.dissonance");
         private DissonanceDetector lastDissonance = null;
 
         @Override
@@ -247,7 +249,7 @@ public class DissonancePanel extends JPanel implements IDiscardable, TableLayout
                     xForm.inverseTransform(pt, pt);
                 } catch (NoninvertibleTransformException e) {
                     lastX = -1;
-                    lastStr = "Dissonance";
+                    lastStr = UIText.get("maestro.dissonance.dissonance");
                     lastDissonance = null;
                     return null;
                 }
@@ -261,7 +263,7 @@ public class DissonancePanel extends JPanel implements IDiscardable, TableLayout
                 return lastStr;
             }
             lastX = -1;
-            lastStr = "Dissonance";
+            lastStr = UIText.get("maestro.dissonance.dissonance");
             lastDissonance = null;
             return null;
         }

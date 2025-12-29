@@ -4,6 +4,7 @@ import static javax.swing.SwingConstants.CENTER;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.text.MessageFormat;
 
 import javax.swing.JCheckBox;
 import javax.swing.JLabel;
@@ -12,6 +13,7 @@ import javax.swing.JTextField;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
+import com.digero.common.view.UIText;
 import info.clearthought.layout.TableLayout;
 
 class SectionEditorLine implements Comparable<SectionEditorLine> {
@@ -182,23 +184,19 @@ class SectionEditorLine implements Comparable<SectionEditorLine> {
 	}
 
 	protected void setTooltips() {
-		String enableTT = "<html><b> Enable a specific section edit. </b><br> Pressing APPLY will disable a section if it is bad.</html>";
-		String barATT = "<html><b> The start bar (inclusive) where this section edit starts." +
-                "</b><br> Must be above or equal to 0 and greater or equal than the 'From bar' of previous enabled sections." +
-                "<br><br>Right mouse-click to fetch current song position.</html>";
-		String barBTT = "<html><b> The end bar (exclusive) where this section edit end." +
-                "</b><br> Must be greater than the 'From bar'." +
-                "<br><br>Right mouse-click to fetch current song position.</html>";
-		String transposeTT = "<html><b> Transpose this section some octaves up or down. </b><br> Enter a positive or negative number. </html>";
-		String veloTT = "<html><b> Offset the volume of this section. </b><br> Experiment to find the number that does what you want. <br> Normally a number from -250 to 250. </html>";
-		String silentTT = "<html><b> Silence this section. </b></html>";
-		String legatoTT = "<html><b> Extend notes into following rests. </b></html>";
-		String resetTT = "<html><b> Reset volumes from the source notes. </b></html>";
-		String fadeTT = "<html><b> Fade in/out the volume of this section. </b><br> 0 = no fading <br> 100 = fade out full <br> -100 = fade in full <br> 150 = fade out before section ends <br> Etc. etc.. </html>";
-		String d0TT = "<html><b> Double all notes in this section 2 octaves below.</b></html>";
-		String d1TT = "<html><b> Double all notes in this section 1 octave below.</b></html>";
-		String d2TT = "<html><b> Double all notes in this section 1 octave above.</b></html>";
-		String d3TT = "<html><b> Double all notes in this section 2 octaves above.</b></html>";
+		String enableTT = UIText.get("maestro.sectionedit.tip.enable");
+		String barATT = UIText.get("maestro.sectionedit.tip.bar.begin");
+		String barBTT = UIText.get("maestro.sectionedit.tip.bar.end");
+		String transposeTT = UIText.get("maestro.sectionedit.tip.transpose");
+		String veloTT = UIText.get("maestro.sectionedit.tip.velocity");
+		String silentTT = UIText.get("maestro.sectionedit.tip.silent");
+		String legatoTT = UIText.get("maestro.sectionedit.tip.legato");
+		String resetTT = UIText.get("maestro.sectionedit.tip.reset");
+		String fadeTT = UIText.get("maestro.sectionedit.tip.fade");
+		String d0TT = UIText.get("maestro.sectionedit.tip.double.2below");
+		String d1TT = UIText.get("maestro.sectionedit.tip.double.1below");
+		String d2TT = UIText.get("maestro.sectionedit.tip.double.1above");
+		String d3TT = UIText.get("maestro.sectionedit.tip.double.2above");
 		
 		resetVelocities.setToolTipText(resetTT);
 		fade.setToolTipText(fadeTT);
@@ -219,8 +217,8 @@ class SectionEditorLine implements Comparable<SectionEditorLine> {
 		doubling1.setToolTipText(d1TT);
 		doubling2.setToolTipText(d2TT);
 		doubling3.setToolTipText(d3TT);
-		fromPitch.setToolTipText("Enter the note name (like Gb4 or Fs4) or the note number (like 60).");
-		toPitch.setToolTipText("Enter the note name (like Gb4 or Fs4) or the note number (like 60).");
+		fromPitch.setToolTipText(UIText.get("maestro.sectionedit.tip.enter.note.limit"));
+		toPitch.setToolTipText(UIText.get("maestro.sectionedit.tip.enter.note.limit"));
 	}
 
 	protected void setAlignment() {

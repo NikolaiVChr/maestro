@@ -1,5 +1,6 @@
 package com.digero.common.midi;
 
+import java.text.MessageFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -15,6 +16,7 @@ import javax.sound.midi.Receiver;
 import javax.sound.midi.MidiDevice.Info;
 
 import com.digero.common.midi.SequencerEvent.SequencerProperty;
+import com.digero.common.view.UIText;
 import com.digero.maestro.view.ProjectFrame;
 
 public class NoteFilterSequencerWrapper extends SequencerWrapper {
@@ -131,13 +133,13 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 		if (preferred == null) {
 			log.fine("Default MIDI out selected");
 			deviceInUse = null;
-			if (nonDefault && feedActive) ProjectFrame.feed("Default MIDI out", null);
+			if (nonDefault && feedActive) ProjectFrame.feed(UIText.get("common.default.midi.out"), null);
 			return MidiSystem.getReceiver();
 		}
 		if (myInfo == null) {
-			log.info("Default MIDI out selected (" + preferred + " not available)");
+			log.info(MessageFormat.format(UIText.get("common.default.midi.out.selected.0.not.available"), preferred));
 			deviceInUse = null;
-			if (nonDefault) ProjectFrame.feed("Default MIDI out (" + preferred + " not available)", null);
+			if (nonDefault) ProjectFrame.feed(MessageFormat.format(UIText.get("common.default.midi.out.0.not.available"), preferred), null);
 			return MidiSystem.getReceiver();
 		}
 
@@ -161,7 +163,7 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 		if (!okay || myReciever == null) {
 			log.info("Default MIDI out selected (" + preferred + " not connected)");
 			deviceInUse = null;
-			if (nonDefault) ProjectFrame.feed("Default MIDI out (" + preferred + " not connected)", null);
+			if (nonDefault) ProjectFrame.feed(MessageFormat.format(UIText.get("common.default.midi.out.0.not.connected"), preferred), null);
 			return MidiSystem.getReceiver();
 		}
 

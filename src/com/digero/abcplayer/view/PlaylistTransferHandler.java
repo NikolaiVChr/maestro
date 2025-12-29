@@ -1,5 +1,7 @@
 package com.digero.abcplayer.view;
 
+import com.digero.common.view.UIText;
+
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
@@ -21,7 +23,7 @@ public class PlaylistTransferHandler extends TransferHandler {
 	private Consumer<File> playlistLoader;
 	private AbcLoaderCallback abcFileLoader;
 	private final DataFlavor indexDataFlavor =
-		new DataFlavor(Integer.class,"Integer Row Index");
+		new DataFlavor(Integer.class, UIText.get("abcplayer.integer.row.index"));
 	
 	
 	public PlaylistTransferHandler(JTable playlistTable) {

@@ -4,6 +4,7 @@ import static javax.swing.SwingConstants.CENTER;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.List;
 import java.util.Map.Entry;
@@ -28,6 +29,7 @@ import javax.swing.border.EmptyBorder;
 import com.digero.common.midi.Note;
 import com.digero.common.util.Listener;
 import com.digero.common.view.PatchedJScrollPane;
+import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcPartEvent;
 import com.digero.maestro.abc.AbcPartEvent.AbcPartProperty;
@@ -88,9 +90,9 @@ public class SectionEditor {
 			private final List<SectionEditorLine> sectionInputs = new ArrayList<>(numberOfSections);
 			private final NonSectionEditorLine nonSectionInput = new NonSectionEditorLine();
 
-			final JButton showVolume = new JButton("Show volume");
-			final JButton copySections = new JButton("Copy");
-			final JButton pasteSections = new JButton("Paste");
+			final JButton showVolume = new JButton(UIText.get("maestro.sectionedit.show.volume"));
+			final JButton copySections = new JButton(UIText.get("maestro.sectionedit.copy"));
+			final JButton pasteSections = new JButton(UIText.get("maestro.sectionedit.paste"));
 			
 			private final JPanel doublingPanel;
 			private final JPanel miscPanel;
@@ -102,7 +104,7 @@ public class SectionEditor {
 			final JScrollPane tabRangeScroll = new JScrollPane();
 			final JScrollPane tabDoubleScroll = new JScrollPane();
 
-			private final JButton add1 = new JButton("Add");
+			private final JButton add1 = new JButton(UIText.get("maestro.sectionedit.add"));
 			
 			// NoteGraph noteGraph = null;
 
@@ -183,8 +185,7 @@ public class SectionEditor {
 				panel.setLayout(new TableLayout(LAYOUT_COLS, LAYOUT_ROWS));
 
 				// Row 0
-				titleLabel = new JLabel("<html><b> " + abcPart.getTitle() + ": </b> "
-						+ abcPart.getInstrument().toString() + " on track " + track + " </html>");
+				titleLabel = new JLabel(MessageFormat.format(UIText.get("maestro.sectionedit.title"), abcPart.getTitle(),abcPart.getInstrument().toString(),track));
 				panel.add(titleLabel, "0, 0, 7, 0, C, C");
 				tabPanel = new JTabbedPane() {
 					@Override
@@ -236,15 +237,15 @@ public class SectionEditor {
 				
 				panel.add(tabPanel, new TableLayoutConstraints(0, 1, 7, 1, TableLayout.FULL, TableLayout.TOP));
 				
-				tabPanel.addTab("Pitch & Vol", miscPanelM);
-				tabPanel.addTab("Octave doubling", doublingPanelM);
-				tabPanel.addTab("Notes", rangePanelM);
+				tabPanel.addTab(UIText.get("maestro.sectionedit.pitch.vol"), miscPanelM);
+				tabPanel.addTab(UIText.get("maestro.sectionedit.octave.doubling"), doublingPanelM);
+				tabPanel.addTab(UIText.get("maestro.sectionedit.notes"), rangePanelM);
 				
 				// Last row
-				JLabel panLabel = new JLabel("<html> Only play panned:</html>");
-				JCheckBox left = new JCheckBox("Left");
-				JCheckBox center = new JCheckBox("Center");
-				JCheckBox right = new JCheckBox("Right");
+				JLabel panLabel = new JLabel(UIText.get("maestro.sectionedit.html.only.play.panned.html"));
+				JCheckBox left = new JCheckBox(UIText.get("maestro.sectionedit.left"));
+				JCheckBox center = new JCheckBox(UIText.get("maestro.sectionedit.center"));
+				JCheckBox right = new JCheckBox(UIText.get("maestro.sectionedit.right"));
 				left.setSelected(abcPart.playLeft[track]);
 				center.setSelected(abcPart.playCenter[track]);
 				right.setSelected(abcPart.playRight[track]);
@@ -270,7 +271,7 @@ public class SectionEditor {
 				nonSectionInput.doubling3.setSelected(ps != null && ps.doubling[3]);
 				nonSectionInput.fromPitch.setText(ps != null?ps.fromPitch.toString():Note.C0.toString());
 				nonSectionInput.toPitch.setText(ps != null?ps.toPitch.toString():Note.MAX.toString());
-				nonSectionInput.textPitch.setText("("+(ps != null?ps.fromPitch.id:Note.C0.id)+" to "+(ps != null?ps.toPitch.id:Note.MAX.id)+")");
+				nonSectionInput.textPitch.setText(MessageFormat.format(UIText.get("maestro.sectionedit.0.to.2"), ps != null ? ps.fromPitch.id : Note.C0.id, ps != null ? ps.toPitch.id : Note.MAX.id));
 
 				while (sectionInputs.size() <= numberOfSections) {
 					makeNewSectorLine(percussion);
@@ -291,7 +292,7 @@ public class SectionEditor {
 					clipboardArmed = true;
 					pasteSections.setEnabled(true);
 				});
-				copySections.setToolTipText("<html><b> Copy the section starts and ends.</html>");
+				copySections.setToolTipText(UIText.get("maestro.sectionedit.html.b.copy.the.section.starts.and.ends.html"));
 				panel.add(copySections, "1,3,2,3,f,f");
 
 				pasteSections.getModel().addActionListener(e -> {
@@ -316,7 +317,7 @@ public class SectionEditor {
 						sectionInputs.get(i).enable[2].setSelected(false);
 					}
 				});
-				pasteSections.setToolTipText("<html><b> Paste the section starts and ends.</html>");
+				pasteSections.setToolTipText(UIText.get("maestro.sectionedit.html.b.paste.the.section.starts.and.ends.html"));
 				panel.add(pasteSections, "3,3,4,3,f,f");
 				pasteSections.setEnabled(clipboardArmed);
 
@@ -339,24 +340,17 @@ public class SectionEditor {
 					}
 				});
 				showVolume.setToolTipText(
-						"<html><b> Press and hold to see the note volumes on the track. </b><br> Only edits after clicking APPLY will show. </html>");
+						UIText.get("maestro.sectionedit.press.and.hold.to.see.the.note.volumes"));
 				panel.add(showVolume, "5,3,6,3,f,f");
 
-				JTextField help = new JTextField("Help");
+				JTextField help = new JTextField(UIText.get("maestro.sectionedit.help.button"));
 				help.setEditable(false);
 				help.setHorizontalAlignment(CENTER);
-				help.setToolTipText(
-						"<html><b>Enabled sections must have no overlap.<br>Bar numbers use original MIDI bars numbering.<br>"
-								+ "Decimal bar numbers allowed.<br>Bar numbers must not be negative.<br>"
-								+ "Bar numbers from are inclusive, to are exclusive.<br>"
-								+ "Clicking APPLY will also disable faulty sections.<br><br>Warning: If 'Remove initial silence' is enabled or the<br>"
-								+ "meter is modified, then the bar counter in lower-right might<br>not match up, unless your preview mode is in 'Original'.<br><br>"
-								+ "Doubling works by copying all<br>notes and pasting them 1 or 2<br>octaves from their original pitch.<br><br>"
-								+ "The last line under the sections 'Rest of the track' is all<br>notes that is not covered by sections.</b></html>");
+				help.setToolTipText(UIText.get("maestro.sectionedit.help"));
 				panel.add(help, "0,4, 0, 4,f,f");
 				
 				
-				add1.setToolTipText("Add 1 section line");
+				add1.setToolTipText(UIText.get("maestro.sectionedit.add.1.section.line"));
 				add1.addActionListener(e -> {
 					addSectorLine(percussion, add1);
 				});
@@ -367,8 +361,8 @@ public class SectionEditor {
 				/*
 				 * To do sort and pack, best expand SectionEditorLine to be comparable and have 3 JPanels in it.
 				 */
-				JButton sort = new JButton("Sort");
-				sort.setToolTipText("Sort section lines.");
+				JButton sort = new JButton(UIText.get("maestro.sectionedit.sort"));
+				sort.setToolTipText(UIText.get("maestro.sectionedit.sort.section.lines"));
 				sort.addActionListener(e -> {
 					Collections.sort(sectionInputs);
 					addSectorLines(nonSectionInput);
@@ -399,7 +393,7 @@ public class SectionEditor {
 						SectionDialog.this.abcPart.sections.set(SectionDialog.this.track, tm);
 
                         if (lastEnd > 200_000f) { // Limit to 200k bars to prevent OOM
-                            log.warning("Section endBar too large: " + lastEnd + ". Clamping to 200,000.");
+                            log.warning(MessageFormat.format(UIText.get("maestro.sectionedit.section.endbar.too.large.0.clamping.to.200.000"), lastEnd));
                             lastEnd = 200_000f;
                         }
 
@@ -420,7 +414,7 @@ public class SectionEditor {
 					SectionDialog.this.abcPart.sectionEdited(SectionDialog.this.track);
 				});
 				okButton.setToolTipText(
-						"<html><b> Apply the effects. </b><br> Note that non-applied effects will not be remembered when closing dialog.<br> Sections that are not enabled will likewise also not be remembered. </html>");
+						UIText.get("maestro.sectionedit.apply.the.effects"));
 				panel.add(okButton, "7,3, 7, 3,f,f");
 				
 				
@@ -520,7 +514,7 @@ public class SectionEditor {
 									SectionDialog.this.sectionInputs.get(k).toPitch.setText(ps1.toPitch.toString());
 								}
 							}
-							SectionDialog.this.sectionInputs.get(k).textPitch.setText("("+ps1.fromPitch.id+" to "+ps1.toPitch.id+")");
+							SectionDialog.this.sectionInputs.get(k).textPitch.setText(MessageFormat.format(UIText.get("maestro.sectionedit.0.to.1"), ps1.fromPitch.id, ps1.toPitch.id));
 							boolean soFarSoGood = true;
 							for (PartSection psC : tm.values()) {
 								if (!(ps1.startBar >= psC.endBar || ps1.endBar <= psC.startBar)) {
@@ -534,7 +528,7 @@ public class SectionEditor {
 									lastEnd = ps1.endBar;
 								ps1.dialogLine = k;
 							} else {
-								ProjectFrame.feed("Section(s) disabled, bad bar input.", null);
+								ProjectFrame.feed(UIText.get("maestro.sectionedit.section.s.disabled.bad.bar.input"), null);
 								SectionDialog.this.sectionInputs.get(k).enable[0].setSelected(false);
 								SectionDialog.this.sectionInputs.get(k).enable[1].setSelected(false);
 								SectionDialog.this.sectionInputs.get(k).enable[2].setSelected(false);
@@ -543,7 +537,7 @@ public class SectionEditor {
 							SectionDialog.this.sectionInputs.get(k).enable[0].setSelected(false);
 							SectionDialog.this.sectionInputs.get(k).enable[1].setSelected(false);
 							SectionDialog.this.sectionInputs.get(k).enable[2].setSelected(false);
-							ProjectFrame.feed("Section(s) disabled, bad number input.", null);
+							ProjectFrame.feed(UIText.get("maestro.sectionedit.section.s.disabled.bad.number.input"), null);
 						}
 					}
 				}
@@ -578,7 +572,7 @@ public class SectionEditor {
 							nonSectionInput.toPitch.setText(ps1.toPitch.toString());
 						}
 					}
-					nonSectionInput.textPitch.setText("("+ps1.fromPitch.id+" to "+ps1.toPitch.id+")");
+					nonSectionInput.textPitch.setText(MessageFormat.format(UIText.get("maestro.sectionedit.0.to.1"), ps1.fromPitch.id, ps1.toPitch.id));
 					if (ps1.silence || ps1.legato || ps1.resetVelocities || ps1.doubling[0] || ps1.doubling[1] || ps1.doubling[2]
 							|| ps1.doubling[3] || ps1.fromPitch != Note.C0 || ps1.toPitch != Note.MAX) {
 						SectionDialog.this.abcPart.nonSection.set(SectionDialog.this.track, ps1);
@@ -636,7 +630,7 @@ public class SectionEditor {
 						secInput.doubling3.setSelected(ps.doubling[3]);
 						secInput.fromPitch.setText(ps.fromPitch.toString());
 						secInput.toPitch.setText(ps.toPitch.toString());
-						secInput.textPitch.setText("("+ps.fromPitch.id+" to "+ps.toPitch.id+")");
+						secInput.textPitch.setText(MessageFormat.format(UIText.get("maestro.sectionedit.0.to.1"), ps.fromPitch.id, ps.toPitch.id));
 						if (number > highestNumber) highestNumber = number;
 					}
 					number++;
@@ -690,53 +684,53 @@ public class SectionEditor {
 			
 			@Deprecated
 			private void addTitlesToTabs() {
-				miscPanel.add(new JLabel("Enable"), "0, 0, c, c");
-				miscPanel.add(new JLabel("From bar"), "1, 0, c, c");
-				miscPanel.add(new JLabel("To bar"), "2, 0, c, c");
-				miscPanel.add(new JLabel("Octave"), "3, 0, c, c");
-				miscPanel.add(new JLabel("Volume"), "4, 0, c, c");
-				miscPanel.add(new JLabel("Silence"), "5, 0, c, c");
-				miscPanel.add(new JLabel("Fade %"), "6, 0, c, c");
-				miscPanel.add(new JLabel("Reset Vol"), "7, 0, c, c");
-				doublingPanel.add(new JLabel("Enable"), "0, 0, c, c");
-				doublingPanel.add(new JLabel("From bar"), "1, 0, c, c");
-				doublingPanel.add(new JLabel("To bar"), "2, 0, c, c");
-				doublingPanel.add(new JLabel("2 down"), "3, 0, c, c");
-				doublingPanel.add(new JLabel("1 down"), "4, 0, c, c");
-				doublingPanel.add(new JLabel("1 up"),   "5, 0, c, c");
-				doublingPanel.add(new JLabel("2 up"),   "6, 0, c, c");
-				rangePanel.add(new JLabel("Enable"), "0, 0, c, c");
-				rangePanel.add(new JLabel("From bar"), "1, 0, c, c");
-				rangePanel.add(new JLabel("To bar"), "2, 0, c, c");
-				rangePanel.add(new JLabel("Low limit"), "3, 0, c, c");
-				rangePanel.add(new JLabel("High limit"), "4, 0, c, c");
+				miscPanel.add(new JLabel(UIText.get("maestro.sectionedit.enable")), "0, 0, c, c");
+				miscPanel.add(new JLabel(UIText.get("maestro.sectionedit.from.bar")), "1, 0, c, c");
+				miscPanel.add(new JLabel(UIText.get("maestro.sectionedit.to.bar")), "2, 0, c, c");
+				miscPanel.add(new JLabel(UIText.get("maestro.sectionedit.octave")), "3, 0, c, c");
+				miscPanel.add(new JLabel(UIText.get("maestro.sectionedit.volume")), "4, 0, c, c");
+				miscPanel.add(new JLabel(UIText.get("maestro.sectionedit.silence")), "5, 0, c, c");
+				miscPanel.add(new JLabel(UIText.get("maestro.sectionedit.fade")), "6, 0, c, c");
+				miscPanel.add(new JLabel(UIText.get("maestro.sectionedit.reset.vol")), "7, 0, c, c");
+				doublingPanel.add(new JLabel(UIText.get("maestro.sectionedit.enable")), "0, 0, c, c");
+				doublingPanel.add(new JLabel(UIText.get("maestro.sectionedit.from.bar")), "1, 0, c, c");
+				doublingPanel.add(new JLabel(UIText.get("maestro.sectionedit.to.bar")), "2, 0, c, c");
+				doublingPanel.add(new JLabel(UIText.get("maestro.sectionedit.2.down")), "3, 0, c, c");
+				doublingPanel.add(new JLabel(UIText.get("maestro.sectionedit.1.down")), "4, 0, c, c");
+				doublingPanel.add(new JLabel(UIText.get("maestro.sectionedit.1.up")),   "5, 0, c, c");
+				doublingPanel.add(new JLabel(UIText.get("maestro.sectionedit.2.up")),   "6, 0, c, c");
+				rangePanel.add(new JLabel(UIText.get("maestro.sectionedit.enable")), "0, 0, c, c");
+				rangePanel.add(new JLabel(UIText.get("maestro.sectionedit.from.bar")), "1, 0, c, c");
+				rangePanel.add(new JLabel(UIText.get("maestro.sectionedit.to.bar")), "2, 0, c, c");
+				rangePanel.add(new JLabel(UIText.get("maestro.sectionedit.low.limit")), "3, 0, c, c");
+				rangePanel.add(new JLabel(UIText.get("maestro.sectionedit.high.limit")), "4, 0, c, c");
 				// column 5 is helper text for note limits
-				rangePanel.add(new JLabel("Legato"), "6, 0, c, c");
+				rangePanel.add(new JLabel(UIText.get("maestro.sectionedit.legato")), "6, 0, c, c");
 			}
 			
 			private void addTitlesToTabPanels() {
-				miscPanelM.add(new JLabel("Enable"), "0, 0, c, c");
-				miscPanelM.add(new JLabel("From bar"), "1, 0, c, c");
-				miscPanelM.add(new JLabel("To bar"), "2, 0, c, c");
-				miscPanelM.add(new JLabel("Octave"), "3, 0, c, c");
-				miscPanelM.add(new JLabel("Volume"), "4, 0, c, c");
-				miscPanelM.add(new JLabel("Silence"), "5, 0, c, c");
-				miscPanelM.add(new JLabel("Fade %"), "6, 0, c, c");
-				miscPanelM.add(new JLabel("Reset Vol"), "7, 0, c, c");
-				doublingPanelM.add(new JLabel("Enable"), "0, 0, c, c");
-				doublingPanelM.add(new JLabel("From bar"), "1, 0, c, c");
-				doublingPanelM.add(new JLabel("To bar"), "2, 0, c, c");
-				doublingPanelM.add(new JLabel("2 down"), "3, 0, c, c");
-				doublingPanelM.add(new JLabel("1 down"), "4, 0, c, c");
-				doublingPanelM.add(new JLabel("1 up"),   "5, 0, c, c");
-				doublingPanelM.add(new JLabel("2 up"),   "6, 0, c, c");
-				rangePanelM.add(new JLabel("Enable"), "0, 0, c, c");
-				rangePanelM.add(new JLabel("From bar"), "1, 0, c, c");
-				rangePanelM.add(new JLabel("To bar"), "2, 0, c, c");
-				rangePanelM.add(new JLabel("Low limit"), "3, 0, c, c");
-				rangePanelM.add(new JLabel("High limit"), "4, 0, c, c");
+				miscPanelM.add(new JLabel(UIText.get("maestro.sectionedit.enable")), "0, 0, c, c");
+				miscPanelM.add(new JLabel(UIText.get("maestro.sectionedit.from.bar")), "1, 0, c, c");
+				miscPanelM.add(new JLabel(UIText.get("maestro.sectionedit.to.bar")), "2, 0, c, c");
+				miscPanelM.add(new JLabel(UIText.get("maestro.sectionedit.octave")), "3, 0, c, c");
+				miscPanelM.add(new JLabel(UIText.get("maestro.sectionedit.volume")), "4, 0, c, c");
+				miscPanelM.add(new JLabel(UIText.get("maestro.sectionedit.silence")), "5, 0, c, c");
+				miscPanelM.add(new JLabel(UIText.get("maestro.sectionedit.fade")), "6, 0, c, c");
+				miscPanelM.add(new JLabel(UIText.get("maestro.sectionedit.reset.vol")), "7, 0, c, c");
+				doublingPanelM.add(new JLabel(UIText.get("maestro.sectionedit.enable")), "0, 0, c, c");
+				doublingPanelM.add(new JLabel(UIText.get("maestro.sectionedit.from.bar")), "1, 0, c, c");
+				doublingPanelM.add(new JLabel(UIText.get("maestro.sectionedit.to.bar")), "2, 0, c, c");
+				doublingPanelM.add(new JLabel(UIText.get("maestro.sectionedit.2.down")), "3, 0, c, c");
+				doublingPanelM.add(new JLabel(UIText.get("maestro.sectionedit.1.down")), "4, 0, c, c");
+				doublingPanelM.add(new JLabel(UIText.get("maestro.sectionedit.1.up")),   "5, 0, c, c");
+				doublingPanelM.add(new JLabel(UIText.get("maestro.sectionedit.2.up")),   "6, 0, c, c");
+				rangePanelM.add(new JLabel(UIText.get("maestro.sectionedit.enable")), "0, 0, c, c");
+				rangePanelM.add(new JLabel(UIText.get("maestro.sectionedit.from.bar")), "1, 0, c, c");
+				rangePanelM.add(new JLabel(UIText.get("maestro.sectionedit.to.bar")), "2, 0, c, c");
+				rangePanelM.add(new JLabel(UIText.get("maestro.sectionedit.low.limit")), "3, 0, c, c");
+				rangePanelM.add(new JLabel(UIText.get("maestro.sectionedit.high.limit")), "4, 0, c, c");
 				// column 5 is helper text for note limits
-				rangePanelM.add(new JLabel("Legato"), "6, 0, c, c");
+				rangePanelM.add(new JLabel(UIText.get("maestro.sectionedit.legato")), "6, 0, c, c");
 			}
 			
 			private void addScrollToTabs() {
@@ -778,11 +772,9 @@ public class SectionEditor {
 
 			private final Listener<AbcPartEvent> abcPartListener = e -> {
 				if (e.getProperty() == AbcPartProperty.TITLE) {
-					titleLabel.setText("<html><b> " + abcPart.getTitle() + ": </b> "
-							+ abcPart.getInstrument().toString() + " on track " + track + " </html>");
+					titleLabel.setText(MessageFormat.format(UIText.get("maestro.sectionedit.title2"), abcPart.getTitle(),abcPart.getInstrument().toString(),track));
 				} else if (e.getProperty() == AbcPartProperty.INSTRUMENT) {
-					titleLabel.setText("<html><b> " + abcPart.getTitle() + ": </b> "
-							+ abcPart.getInstrument().toString() + " on track " + track + " </html>");
+					titleLabel.setText(MessageFormat.format(UIText.get("maestro.sectionedit.title2"), abcPart.getTitle(),abcPart.getInstrument().toString(),track));
 					
 					
 					
@@ -883,7 +875,7 @@ public class SectionEditor {
 		
 		
 
-		openDialog = new SectionDialog(jf, noteGraph, "Section editor", false, abcPart, track);
+		openDialog = new SectionDialog(jf, noteGraph, UIText.get("maestro.sectionedit.section.editor"), false, abcPart, track);
 	}
 	
 	

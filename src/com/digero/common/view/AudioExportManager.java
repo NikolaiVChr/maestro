@@ -3,6 +3,7 @@ package com.digero.common.view;
 import java.awt.BorderLayout;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.text.MessageFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
@@ -57,7 +58,7 @@ public class AudioExportManager {
 			}
 		}
 
-		exportFileDialog.setFileFilter(new ExtensionFileFilter("WAV Files", "wav"));
+		exportFileDialog.setFileFilter(new ExtensionFileFilter(UIText.get("common.wav.files"), "wav"));
 
 		int result = exportFileDialog.showSaveDialog(parentWindow);
 		if (result == JFileChooser.APPROVE_OPTION) {
@@ -117,7 +118,7 @@ public class AudioExportManager {
 					// Invoke LAME library from https://mvnrepository.com/artifact/de.sciss/jump3r/1.0.5
 					de.sciss.jump3r.Main.main(args);
 				    
-				    log.info("MP3 Encoding done");
+				    log.info(UIText.get("common.mp3.encoding.done"));
 				} finally {
 					wavFile.delete();
 				}
@@ -141,10 +142,10 @@ public class AudioExportManager {
 		@Override
 		public void run() {
 			if (error != null) {
-				JOptionPane.showMessageDialog(parentWindow, error.getMessage(), "Error saving MP3 file",
+				JOptionPane.showMessageDialog(parentWindow, error.getMessage(), UIText.get("common.error.saving.mp3.file"),
 						JOptionPane.ERROR_MESSAGE);
-				log.log(Level.WARNING, "Something happened while converting to mp3.", error);
-				if (parentWindow instanceof ProjectFrame) ProjectFrame.feed("ERROR: " + error, MaestroMain.getFirstLines(error));
+				log.log(Level.WARNING, UIText.get("common.something.happened.while.converting.to.mp3"), error);
+				if (parentWindow instanceof ProjectFrame) ProjectFrame.feed(MessageFormat.format(UIText.get("common.error.0"), error), MaestroMain.getFirstLines(error));
 			}
 			waitFrame.setVisible(false);
 		}
@@ -194,10 +195,10 @@ public class AudioExportManager {
 		@Override
 		public void run() {
 			if (error != null) {
-				JOptionPane.showMessageDialog(parentWindow, error.getMessage(), "Error saving WAV file",
+				JOptionPane.showMessageDialog(parentWindow, error.getMessage(), UIText.get("common.error.saving.wav.file"),
 						JOptionPane.ERROR_MESSAGE);
 				log.log(Level.WARNING, "Something happened while converting to wav.", error);
-				if (parentWindow instanceof ProjectFrame) ProjectFrame.feed("ERROR: " + error, MaestroMain.getFirstLines(error));
+				if (parentWindow instanceof ProjectFrame) ProjectFrame.feed(MessageFormat.format(UIText.get("common.error.0"), error), MaestroMain.getFirstLines(error));
 			}
 			waitFrame.setVisible(false);
 		}
@@ -205,11 +206,11 @@ public class AudioExportManager {
 	
 	private class WaitDialog extends JDialog {
 		public WaitDialog(JFrame owner, File saveFile) {
-			super(owner, "Exporting...", false);
+			super(owner, UIText.get("common.exporting"), false);
 			JPanel waitContent = new JPanel(new BorderLayout(5, 5));
 			setContentPane(waitContent);
 			waitContent.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-			waitContent.add(new JLabel("Saving " + saveFile.getName() + ". Please wait..."), BorderLayout.CENTER);
+			waitContent.add(new JLabel(MessageFormat.format(UIText.get("common.saving.0.please.wait"), saveFile.getName())), BorderLayout.CENTER);
 			JProgressBar waitProgress = new JProgressBar();
 			waitProgress.setIndeterminate(true);
 			waitContent.add(waitProgress, BorderLayout.SOUTH);

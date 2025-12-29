@@ -28,6 +28,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.MessageFormat;
 import java.text.ParseException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -64,6 +65,7 @@ import com.digero.common.midi.MidiUtils;
 import com.digero.common.midi.PanGenerator;
 import com.digero.common.util.*;
 import com.digero.common.view.ColorSelector;
+import com.digero.common.view.UIText;
 import com.digero.maestro.abc.DissonanceDetector;
 import com.digero.maestro.midi.SequenceDataCache;
 import org.jetbrains.annotations.Nullable;
@@ -257,8 +259,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         super(MaestroMain.APP_NAME + " " + MaestroMain.APP_VERSION);
         if ("32".equals(System.getProperty("sun.arch.data.model"))) {
             JOptionPane.showMessageDialog(null,
-                    "You are running with 32 bit Java.\nPlease start with 64 bit Java instead,\nto ensure Maestro do not run out of memory.\n",
-                    "32 bit detected", JOptionPane.ERROR_MESSAGE);
+					UIText.get("maestro.you.are.running.with.32.bit.java"),
+					UIText.get("maestro.32.bit.detected"), JOptionPane.ERROR_MESSAGE);
             System.err.println(
                     "You are running with 32 bit Java.\nPlease start with 64 bit Java instead.\n Find Configure Java program in Start menu and\n configure it to start the 64 bit per default.\n\n");
             // System.exit(1);
@@ -295,8 +297,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
         if (miscSettings.checkForUpdates) checkVersionCompare();
 
-		String welcomeMessageTitle = "Hello Maestro";
-		String welcomeMessage =	"Drag and drop a MIDI or ABC file to open it.\n" + "Or use File > Open.";
+		String welcomeMessageTitle = UIText.get("maestro.welcomeMessageTitle");
+		String welcomeMessage =	UIText.get("maestro.DnD.file.to.open") + UIText.get("maestro.use.file.open");
 
         checkVolumeTransceiver();
 
@@ -310,19 +312,16 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 abcSequencer.addTransceiver(abcVolumeTransceiver);
 
             if (LotroSequencerWrapper.getLoadLotroSynthError() != null) {
-                welcomeMessageTitle = "Could not load LOTRO instrument sounds";
-				welcomeMessage = "ABC Preview will use standard MIDI instruments instead\n"
-                                + "(drums do not sound good in this mode).\n\n" + "Error details:\n"
-                                + LotroSequencerWrapper.getLoadLotroSynthError();
+                welcomeMessageTitle = UIText.get("maestro.could.not.load.lotro.instrument.sounds");
+				welcomeMessage = MessageFormat.format(UIText.get("maestro.abc.preview.will.use.standard.midi.instruments.instead"), LotroSequencerWrapper.getLoadLotroSynthError());
                 failedToLoadLotroInstruments = true;
             }
 
         } catch (MidiUnavailableException e) {
             JOptionPane
                     .showMessageDialog(
-                            null, "Failed to initialize MIDI sequencer.\nThe program will now exit.\n\n"
-                                    + "Error details:\n" + e.getMessage(),
-                            "Failed to initialize MIDI sequencer", JOptionPane.ERROR_MESSAGE);
+                            null, MessageFormat.format(UIText.get("maestro.failed.to.initialize.midi.sequencer.msg"), e.getMessage()),
+							UIText.get("maestro.failed.to.initialize.midi.sequencer.title"), JOptionPane.ERROR_MESSAGE);
             System.exit(1);
             return;
         }
@@ -434,7 +433,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
     private void generateSongInfoPanel() {
 		songTitleField = new JTextField();
-		songTitleField.setToolTipText("Song Title");
+		songTitleField.setToolTipText(UIText.get("maestro.song.title"));
 		songTitleField.getDocument().addDocumentListener(new SimpleDocumentListener() {
 			@Override
 			public void changedUpdate(DocumentEvent e) {
@@ -444,7 +443,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		});
 
 		composerField = new JTextField();
-		composerField.setToolTipText("Song Composer/Artist");
+		composerField.setToolTipText(UIText.get("maestro.song.composer.artist"));
 		composerField.getDocument().addDocumentListener(new SimpleDocumentListener() {
 			@Override
 			public void changedUpdate(DocumentEvent e) {
@@ -453,9 +452,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			}
 		});
 
-		transcriberField = new JTextField(prefs.get("transcriber", ""));
-		transcriberField.setToolTipText("Song Transcriber (your name)");
-		transcriberFieldListener = new PrefsDocumentListener(prefs, "transcriber");
+		transcriberField = new JTextField(prefs.get("abcplayer.transcriber", ""));
+		transcriberField.setToolTipText(UIText.get("maestro.song.transcriber.your.name"));
+		transcriberFieldListener = new PrefsDocumentListener(prefs, "abcplayer.transcriber");
 		transcriberField.getDocument().addDocumentListener(transcriberFieldListener);
 		transcriberField.getDocument().addDocumentListener(new SimpleDocumentListener() {
 			@Override
@@ -469,7 +468,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		});
 
 		genreField = new JTextField();
-		genreField.setToolTipText("Song Genre(s)");
+		genreField.setToolTipText(UIText.get("maestro.song.genre.s"));
 		genreField.getDocument().addDocumentListener(new SimpleDocumentListener() {
 			@Override
 			public void changedUpdate(DocumentEvent e) {
@@ -479,7 +478,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		});
 
 		moodField = new JTextField();
-		moodField.setToolTipText("Song Mood(s)");
+		moodField.setToolTipText(UIText.get("maestro.song.mood.s"));
 		moodField.getDocument().addDocumentListener(new SimpleDocumentListener() {
 			@Override
 			public void changedUpdate(DocumentEvent e) {
@@ -516,17 +515,17 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		row++;
 		songInfoPanel.add(moodLabel, "0, " + row);
 		songInfoPanel.add(moodField, "1, " + row);
-		songInfoPanel.setBorder(BorderFactory.createTitledBorder("Song Info"));
+		songInfoPanel.setBorder(BorderFactory.createTitledBorder(UIText.get("maestro.song.info")));
 	}
 
 	private void generateSongPartsPanel() {
-		newPartButton = new JButton("New Part");
+		newPartButton = new JButton(UIText.get("maestro.new.part"));
 		newPartButton.addActionListener(e -> {
 			if (abcSong != null)
 				abcSong.createNewPart();
 		});
 
-		deletePartButton = new JButton("Delete");
+		deletePartButton = new JButton(UIText.get("maestro.delete"));
 		deletePartButton.addActionListener(e -> {
 			if (abcSong != null) {
 				if (abcSong.getParts().size() == 1) {
@@ -541,12 +540,12 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			}
 		});
 		
-		sortPartsButton = new JButton("Sort") {
+		sortPartsButton = new JButton(UIText.get("maestro.sort")) {
 			public Dimension getMaximumSize() {
 				return getPreferredSize();
 			}
 		};
-		sortPartsButton.setToolTipText("Enable auto-sort of the parts. To disable just drag and drop them.");
+		sortPartsButton.setToolTipText(UIText.get("maestro.tip.sort.parts"));
 		sortPartsButton.addActionListener(e -> {
 			if (abcSong != null) {
 				abcSong.autoSortParts();
@@ -609,18 +608,18 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		sz.width = PartsListItem.getProtoDimension().width;
 		partsListScrollPane.setPreferredSize(sz);
 
-		partEditorButton = new JButton("Part Editor");
+		partEditorButton = new JButton(UIText.get("maestro.part.editor"));
 		partEditorButton.addActionListener(e -> {
 			partEditor.setVisible(!partEditor.isVisible());
 		});
-		partEditorButton.setToolTipText("Open a small window to edit parts.");
+		partEditorButton.setToolTipText(UIText.get("maestro.tip.partedit"));
 
-		numerateButton = new JButton("Numerate");
+		numerateButton = new JButton(UIText.get("maestro.numerate"));
 		numerateButton.addActionListener(e -> {
 			if (abcSong != null)
 				abcSong.assignNumbersToSimilarPartTypes();
 		});
-		numerateButton.setToolTipText("Auto assign numbers to identical instrument part titles.");
+		numerateButton.setToolTipText(UIText.get("maestro.tip.numerate"));
 
 		JPanel partsButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, HGAP, VGAP));
 		partsButtonPanel.add(newPartButton);
@@ -628,7 +627,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		partsButtonPanel.add(sortPartsButton);
 
 		partsListPanel = new JPanel(new BorderLayout(HGAP, VGAP));
-		partsListPanel.setBorder(BorderFactory.createTitledBorder("Song Parts"));
+		partsListPanel.setBorder(BorderFactory.createTitledBorder(UIText.get("maestro.song.parts")));
 		partsListPanel.add(partsButtonPanel, BorderLayout.NORTH);
 		partsListPanel.add(partsListScrollPane, BorderLayout.CENTER);
 
@@ -642,7 +641,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private void generateExportSettingsPanel() {
 		transposeSpinner = new JSpinner(new SpinnerNumberModel(0, -48, 48, 1));
 		transposeSpinner
-				.setToolTipText("<html>Transpose the entire song by semitones.<br>" + "12 semitones = 1 octave</html>");
+				.setToolTipText(UIText.get("maestro.tip.transpose.semi.tones"));
 		transposeSpinner.addChangeListener(e -> {
 			if (abcSong != null && fireTransposeListeners)
                 abcSong.setTranspose(getTranspose());
@@ -651,10 +650,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		tempoSpinner = new JSpinner(new SpinnerNumberModel(MidiConstants.DEFAULT_TEMPO_BPM /* value */, 8 /* min */,
 				960 /* max */, 1 /* step */));
-		tempoSpinner.setToolTipText("<html>Tempo in beats per minute.<br><br>"
-				+ "This number represents the <b>Main Tempo</b>, which is the tempo that covers<br>"
-				+ "the largest portion of the song. If parts of the song play at a different tempo,<br>"
-				+ "they will all be adjusted proportionally.</html>");
+		tempoSpinner.setToolTipText(UIText.get("maestro.tip.tempo"));
 		tempoSpinner.addChangeListener(e -> {
 			if (abcSong != null) {
 				if (fireTempoListeners) abcSong.setTempoBPM((Integer) tempoSpinner.getValue());
@@ -667,9 +663,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			}
 		});
 
-		resetTempoButton = new JButton("Reset");
+		resetTempoButton = new JButton(UIText.get("maestro.reset"));
 		resetTempoButton.setMargin(new Insets(2, 8, 2, 8));
-		resetTempoButton.setToolTipText("Set the tempo back to the source file's tempo");
+		resetTempoButton.setToolTipText(UIText.get("maestro.set.the.tempo.back.to.the.source.file.s.tempo"));
 		resetTempoButton.addActionListener(e -> {
 			if (abcSong == null) {
 				tempoSpinner.setValue(MidiConstants.DEFAULT_TEMPO_BPM);
@@ -683,9 +679,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		});
 
 		timeSignatureField = new TimeSignatureTextField(TimeSignature.FOUR_FOUR, 5);
-		timeSignatureField.setToolTipText("<html>Adjust the time signature of the ABC file.<br><br>"
-				+ "This mainly affects the display only, but can affect long notes slightly.<br>"
-				+ "Examples: 4/4, 3/4, 3/8, 2/2, 2/4, 6/8</html>");
+		timeSignatureField.setToolTipText(UIText.get("maestro.tip.time.signature"));
         // Tell the field to revert to the last valid value if the user enters invalid text
         timeSignatureField.setFocusLostBehavior(JFormattedTextField.COMMIT_OR_REVERT);
 		timeSignatureField.addPropertyChangeListener("value", evt -> {
@@ -731,20 +725,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				refreshPreviewSequence(false);
 			}
 		});
-		dynaCombo.setToolTipText("Volume calculation method for when multiple notes start at same time in a part.\n"
-				+ Chord.CalcDynamics.LOUDEST+": Volume of the loudest note.\n"
-				+ Chord.CalcDynamics.POWER_RMS_DB+": decibel mean.\n"
-				+ Chord.CalcDynamics.POWER_MID_DB+": A bit softer than RMS.\n"
-				+ Chord.CalcDynamics.WEIGHTED+": Generally softer than "+Chord.CalcDynamics.POWER_MID_DB+".\n"
-				+ Chord.CalcDynamics.SOFTEST+": Volume of the softest note.");
+		dynaCombo.setToolTipText(MessageFormat.format(UIText.get("maestro.tip.dynamics"), Chord.CalcDynamics.LOUDEST,Chord.CalcDynamics.POWER_RMS_DB,Chord.CalcDynamics.POWER_MID_DB,Chord.CalcDynamics.WEIGHTED,Chord.CalcDynamics.POWER_MID_DB,Chord.CalcDynamics.SOFTEST));
 
-        tempoOnlyFirstCheckBox = new JCheckBox("Only tempo changes from first track");
-        tempoOnlyFirstCheckBox.setToolTipText(
-                "<html>If the midi only have tempos in first track then this option cannot be changed.<br><br>"
-                + "Furthermore if a midi is expanded (from menu) with this option disabled,<br>"
-                + "the expanded midi will have all its tempos put into first track.<br><br>"
-                + "Changing this option can change the layout of the bar lines,<br>"
-                + "so be sure to review the section/tune edits if changing this option.</html>");
+        tempoOnlyFirstCheckBox = new JCheckBox(UIText.get("maestro.only.tempo.changes.from.first.track"));
+        tempoOnlyFirstCheckBox.setToolTipText(UIText.get("maestro.tip.tempo.first.track.only"));
         tempoOnlyFirstCheckBox.addActionListener(e -> {
             if (abcSong == null) {
                 return;
@@ -761,13 +745,13 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             reloadWithNewSource(sourceFile);
         });
 
-		exportSuccessfulLabel = new JLabel("Exported");
+		exportSuccessfulLabel = new JLabel(UIText.get("maestro.exported"));
 		exportSuccessfulLabel.setIcon(IconLoader.getImageIcon("check_16.png"));
 		exportSuccessfulLabel.setBorder(BorderFactory.createEmptyBorder(0, 2, 0, 0));
 		exportSuccessfulLabel.setVisible(false);
 
 		exportButton = new JButton(); // Label set in onSaveAndExportSettingsChanged()
-		exportButton.setToolTipText("<html><b>Export ABC</b><br>(Ctrl+E)</html>");
+		exportButton.setToolTipText(UIText.get("maestro.html.b.export.abc.b.br.ctrl.e.html"));
 		exportButton.setIcon(IconLoader.getImageIcon("abcfile_32.png"));
 		exportButton.setDisabledIcon(IconLoader.getDisabledIcon("abcfile_32.png"));
 		exportButton.setHorizontalAlignment(SwingConstants.LEFT);
@@ -793,24 +777,24 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		settingsLayout.setHGap(HGAP);
 
 		settingsPanel = new JPanel(settingsLayout);
-		settingsPanel.setBorder(BorderFactory.createTitledBorder("Export Settings"));
+		settingsPanel.setBorder(BorderFactory.createTitledBorder(UIText.get("maestro.export.settings")));
 		int row = 0;
 		settingsLayout.insertRow(row, PREFERRED);
-		settingsPanel.add(new JLabel("Transpose:"), "0, " + row);
+		settingsPanel.add(new JLabel(UIText.get("maestro.transpose")), "0, " + row);
 		settingsPanel.add(transposeSpinner, "1, " + row);
 		row++;
 		settingsLayout.insertRow(row, PREFERRED);
-		settingsPanel.add(new JLabel("Main Tempo:"), "0, " + row);
+		settingsPanel.add(new JLabel(UIText.get("maestro.main.tempo")), "0, " + row);
 		settingsPanel.add(tempoSpinner, "1, " + row);
 		settingsPanel.add(resetTempoButton, "2, " + row + ", L, F");
 		row++;
 		settingsLayout.insertRow(row, PREFERRED);
-		settingsPanel.add(new JLabel("Meter:"), "0, " + row);
+		settingsPanel.add(new JLabel(UIText.get("maestro.meter")), "0, " + row);
 		settingsPanel.add(timeSignatureField, "1, " + row + ", 2, " + row + ", L, F");
 		if (SHOW_KEY_FIELD) {
 			row++;
 			settingsLayout.insertRow(row, PREFERRED);
-			settingsPanel.add(new JLabel("Key:"), "0, " + row);
+			settingsPanel.add(new JLabel(UIText.get("maestro.key")), "0, " + row);
 			settingsPanel.add(keySignatureField, "1, " + row + ", 2, " + row + ", L, F");
 		}
         row++;
@@ -840,15 +824,15 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		arrangementView.addSettingsActionListener(e -> doSettingsDialog(SettingsDialog.NUMBERING_TAB));
 
 		tuneEditorButton = new JButton();
-		tuneEditorButton.setText("Tune-editor");
+		tuneEditorButton.setText(UIText.get("maestro.tune.editor"));
 		tuneEditorButton
-				.setToolTipText("<html><b> Tune Editor </b><br> Edit the tempo or key in specific sections </html>");
+				.setToolTipText(UIText.get("maestro.html.b.tune.editor.b.br.edit.the.tempo.or.key.in.specific.sections.html"));
 		tuneEditorButton.addActionListener(e -> TuneEditor.show(ProjectFrame.this, abcSong));
 
 		hideEditsCheckbox = new JCheckBox();
-		hideEditsCheckbox.setText("Hide Edits");
+		hideEditsCheckbox.setText(UIText.get("maestro.hide.edits"));
 		hideEditsCheckbox
-				.setToolTipText("<html>Hide edits on the tracks</html>");
+				.setToolTipText(UIText.get("maestro.html.hide.edits.on.the.tracks.html"));
 		hideEditsCheckbox.addActionListener(e -> abcSong.setHideEdits(hideEditsCheckbox.isSelected()));
 		
 		final Insets playControlButtonMargin = new Insets(5, 20, 5, 20);
@@ -860,7 +844,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		stopButton = new JButton(stopIcon);
 		stopButton.setDisabledIcon(stopIconDisabled);
-		stopButton.setToolTipText("Stop");
+		stopButton.setToolTipText(UIText.get("maestro.stop"));
 		stopButton.setMargin(playControlButtonMargin);
 		stopButton.addActionListener(e -> {
 			abcSequencer.stop();
@@ -876,11 +860,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			}
 		};
 
-		midiModeRadioButton = new JRadioButton("Original");
+		midiModeRadioButton = new JRadioButton(UIText.get("maestro.original"));
 		midiModeRadioButton.addActionListener(modeButtonListener);
 		midiModeRadioButton.setMargin(new Insets(1, 5, 1, 5));
 
-		abcModeRadioButton = new JRadioButton("ABC Preview");
+		abcModeRadioButton = new JRadioButton(UIText.get("maestro.abc.preview"));
 		abcModeRadioButton.addActionListener(modeButtonListener);
 		abcModeRadioButton.setMargin(new Insets(1, 5, 1, 5));
 
@@ -910,10 +894,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		abcPositionLabel.setVisible(!midiPositionLabel.isVisible());
 
 		midiBarLabel = new BarNumberLabel(sequencer, null, true, "0000,00/0000");
-		midiBarLabel.setToolTipText("Original Bar number");
+		midiBarLabel.setToolTipText(UIText.get("maestro.original.bar.number"));
 
 		abcBarLabel = new BarNumberLabel(abcSequencer, null, false,"0000/0000");
-		abcBarLabel.setToolTipText("ABC Preview Bar number");
+		abcBarLabel.setToolTipText(UIText.get("maestro.abc.preview.bar.number"));
 		abcBarLabel.setVisible(!midiBarLabel.isVisible());
 
 		sidepanelButton = new JButton("");
@@ -925,8 +909,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             sidepanelButton.setDisabledIcon(IconLoader.getDisabledIcon("sidepanel.png"));
         }
 		sidepanelButton.addActionListener(e -> arrangementView.sidepanelToggle());
-		sidepanelButton.setToolTipText("<html>Show sidepanel where custom comments can be entered.<br>"
-				+ "Notes will be saved in project file.</html>");
+		sidepanelButton.setToolTipText(UIText.get("maestro.tip.show.sidepanel"));
 				
 		feedLabel = new JLabel();
 		feedLabel.addMouseListener(new MouseAdapter() {
@@ -944,7 +927,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		playControlPanel.add(midiModeRadioButton);
 		playControlPanel.add(playButton, "spany 2, alignx right");
 		playControlPanel.add(stopButton, "spany 2");
-		playControlPanel.add(new JLabel("Volume:"), "alignx right");
+		playControlPanel.add(new JLabel(UIText.get("maestro.volume")), "alignx right");
 		playControlPanel.add(volumeSlider);
 		playControlPanel.add(sidepanelButton, "spany 2, center");
 		playControlPanel.add(midiPositionLabel);
@@ -954,7 +937,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		playControlPanel.add(abcModeRadioButton);
 		//play
 		//stop
-		playControlPanel.add(new JLabel("Stereo:"), "alignx right");
+		playControlPanel.add(new JLabel(UIText.get("maestro.stereo")), "alignx right");
 		playControlPanel.add(stereoSlider);
 		//note
 		playControlPanel.add(midiBarLabel);
@@ -965,7 +948,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		midiPartsAndControls = new JPanel(new BorderLayout(HGAP, VGAP));
 		midiPartsAndControls.add(arrangementView, BorderLayout.CENTER);
 		midiPartsAndControls.add(playControlPanel, BorderLayout.SOUTH);
-		midiPartsAndControls.setBorder(BorderFactory.createTitledBorder("Part Settings"));
+		midiPartsAndControls.setBorder(BorderFactory.createTitledBorder(UIText.get("maestro.part.settings")));
 	}
 	
 	/**
@@ -986,7 +969,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			if (feed == null) {
 				feedLabel.setText(null);
 			} else {
-				String dismiss = feed.isEmpty()?"":"  [click to dismiss]";
+				String dismiss = feed.isEmpty()?"": UIText.get("maestro.click.to.dismiss");
 				feedLabel.setText(feed + dismiss);
 			}
 			feedLabel.setToolTipText(feedFull);
@@ -1137,10 +1120,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		JMenuBar menuBar = new JMenuBar();
 		setJMenuBar(menuBar);
 
-		JMenu fileMenu = menuBar.add(new JMenu(" File "));
+		JMenu fileMenu = menuBar.add(new JMenu(UIText.get("maestro.menu.file")));
 		fileMenu.setMnemonic('F');
 
-        openItem = fileMenu.add(new JMenuItem("Open file..."));
+        openItem = fileMenu.add(new JMenuItem(UIText.get("maestro.menu.open.file")));
 		openItem.setMnemonic('O');
 		openItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, CTRL_DOWN_MASK));
 		openItem.addActionListener(new ActionListener() {
@@ -1160,10 +1143,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                                     Util.ABC_FILE_EXTENSION_NO_DOT,
                                     Util.TXT_FILE_EXTENSION_NO_DOT));
                     openFileChooser.addChoosableFileFilter(
-                            new ExtensionFileFilter("Project",
+                            new ExtensionFileFilter(UIText.get("maestro.project"),
                                     Util.MSX_FILE_EXTENSION_NO_DOT));
 					openFileChooser.setFileFilter(
-							new ExtensionFileFilter("MIDI, ABC, and Project",
+							new ExtensionFileFilter(UIText.get("maestro.midi.abc.and.project"),
 									Util.MID_FILE_EXTENSION_NO_DOT,
 									Util.MIDI_FILE_EXTENSION_NO_DOT, Util.KAR_FILE_EXTENSION_NO_DOT,
 									Util.ABC_FILE_EXTENSION_NO_DOT,
@@ -1181,51 +1164,51 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		
 		recentlyOpenedList = new RecentlyOpenedList(prefs.node("recentlyOpened"));
 		
-		openRecentMenu = new JMenu("Open Recent Projects");
+		openRecentMenu = new JMenu(UIText.get("maestro.menu.open.recent.projects"));
 		fileMenu.add(openRecentMenu);
 		
 		updateOpenRecentMenu();
 
 		fileMenu.addSeparator();
 
-		saveMenuItem = fileMenu.add(new JMenuItem("Save " + AbcSong.MSX_FILE_DESCRIPTION));
+		saveMenuItem = fileMenu.add(new JMenuItem(MessageFormat.format(UIText.get("maestro.menu.save.0"), AbcSong.MSX_FILE_DESCRIPTION)));
 		saveMenuItem.setIcon(IconLoader.getImageIcon("msxfile_16.png"));
 		saveMenuItem.setDisabledIcon(IconLoader.getDisabledIcon("msxfile_16.png"));
 		saveMenuItem.setMnemonic('S');
 		saveMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, CTRL_DOWN_MASK));
 		saveMenuItem.addActionListener(e -> save());
 
-		saveAsMenuItem = fileMenu.add(new JMenuItem("Save " + AbcSong.MSX_FILE_DESCRIPTION + " As..."));
+		saveAsMenuItem = fileMenu.add(new JMenuItem(MessageFormat.format(UIText.get("maestro.menu.save.0.as"), AbcSong.MSX_FILE_DESCRIPTION)));
 		saveAsMenuItem.setMnemonic('A');
 		saveAsMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, CTRL_DOWN_MASK | SHIFT_DOWN_MASK));
 		saveAsMenuItem.addActionListener(e -> saveAs());
 
 		fileMenu.addSeparator();
 
-		exportMenuItem = fileMenu.add(new JMenuItem("Export ABC"));
+		exportMenuItem = fileMenu.add(new JMenuItem(UIText.get("maestro.menu.export.abc")));
 		exportMenuItem.setIcon(IconLoader.getImageIcon("abcfile_16.png"));
 		exportMenuItem.setDisabledIcon(IconLoader.getDisabledIcon("abcfile_16.png"));
 		exportMenuItem.setMnemonic('E');
 		exportMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E, CTRL_DOWN_MASK));
 		exportMenuItem.addActionListener(e -> exportAbc());
 
-		exportAsMenuItem = fileMenu.add(new JMenuItem("Export ABC As..."));
+		exportAsMenuItem = fileMenu.add(new JMenuItem(UIText.get("maestro.menu.export.abc.as")));
 		exportAsMenuItem.setMnemonic('p');
 		exportAsMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E, CTRL_DOWN_MASK | SHIFT_DOWN_MASK));
 		exportAsMenuItem.addActionListener(e -> exportAbcAs());
 
 		fileMenu.addSeparator();
 
-		saveExpandedMidiMenuItem = fileMenu.add(new JMenuItem("Export Expanded MIDI..."));
+		saveExpandedMidiMenuItem = fileMenu.add(new JMenuItem(UIText.get("maestro.menu.export.expanded.midi")));
 		saveExpandedMidiMenuItem.addActionListener(e -> expandMidi());
 
 		fileMenu.addSeparator();
 		
-		exportAudioMenu = new JMenu("Export Audio");
+		exportAudioMenu = new JMenu(UIText.get("maestro.menu.export.audio"));
 		
 		fileMenu.add(exportAudioMenu);
 		
-		exportMp3MenuItem = exportAudioMenu.add(new JMenuItem("Export MP3 File..."));
+		exportMp3MenuItem = exportAudioMenu.add(new JMenuItem(UIText.get("maestro.menu.export.mp3.file")));
 		exportMp3MenuItem.addActionListener(e -> {
 			if (!abcSequencer.isLoaded() || abcSong == null || audioExporter.isExporting()) {
 				Toolkit.getDefaultToolkit().beep();
@@ -1235,7 +1218,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			audioExporter.exportMp3Builtin(abcSequencer, getAbcExportFile(), abcSong.getTitle(), abcSong.getComposer());
 		});
 
-		exportWavMenuItem = exportAudioMenu.add(new JMenuItem("Export WAV file..."));
+		exportWavMenuItem = exportAudioMenu.add(new JMenuItem(UIText.get("maestro.menu.export.wav.file")));
 		exportWavMenuItem.addActionListener(e -> {
 			if (!abcSequencer.isLoaded() || abcSong == null || audioExporter.isExporting()) {
 				Toolkit.getDefaultToolkit().beep();
@@ -1248,13 +1231,13 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		
 		fileMenu.addSeparator();
 		
-		chooseMidiFileMenuItem = fileMenu.add(new JMenuItem("Change MIDI file..."));
+		chooseMidiFileMenuItem = fileMenu.add(new JMenuItem(UIText.get("maestro.menu.change.midi.file")));
 		chooseMidiFileMenuItem.addActionListener(e -> {
 			if (abcSong == null || abcSong.getSourceFile() == null || abcSong.getProjectFile() == null) {
 				return; // should be an invalid state, item is disabled if no msx file
 			}
 			
-			int result = JOptionPane.showConfirmDialog(ProjectFrame.this, "If this doesn't work, your project will remain unaffected. For best results, pick a file similar to the current midi file of the project. Would you like to continue?", "Proceed?",
+			int result = JOptionPane.showConfirmDialog(ProjectFrame.this, UIText.get("maestro.would.you.like.to.continue"), UIText.get("maestro.proceed"),
 					JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 			if (result != JOptionPane.YES_OPTION)
 				return;
@@ -1270,7 +1253,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                             Util.ABC_FILE_EXTENSION_NO_DOT,
                             Util.TXT_FILE_EXTENSION_NO_DOT));
 			openMidiChooser.setFileFilter(
-					new ExtensionFileFilter("MIDI and ABC files", Util.MID_FILE_EXTENSION_NO_DOT,
+					new ExtensionFileFilter(UIText.get("maestro.menu.midi.and.abc.files"), Util.MID_FILE_EXTENSION_NO_DOT,
 							Util.MIDI_FILE_EXTENSION_NO_DOT, Util.KAR_FILE_EXTENSION_NO_DOT, Util.ABC_FILE_EXTENSION_NO_DOT,
 							Util.TXT_FILE_EXTENSION_NO_DOT));
             openMidiChooser.setAcceptAllFileFilterUsed(false);
@@ -1283,7 +1266,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			reloadWithNewSource(openMidiChooser.getSelectedFile());
 		});
 		
-		reloadMidiFileMenuItem = fileMenu.add(new JMenuItem("Reload MIDI file"));
+		reloadMidiFileMenuItem = fileMenu.add(new JMenuItem(UIText.get("maestro.menu.reload.midi.file")));
 		reloadMidiFileMenuItem.setMnemonic(KeyEvent.VK_R);
 		reloadMidiFileMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, CTRL_DOWN_MASK));
 		reloadMidiFileMenuItem.addActionListener(e -> {
@@ -1296,10 +1279,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		
 		fileMenu.addSeparator();
 
-		closeProject = fileMenu.add(new JMenuItem("Close Project"));
+		closeProject = fileMenu.add(new JMenuItem(UIText.get("maestro.menu.close.project")));
 		closeProject.addActionListener(e -> closeSong());
 
-		JMenuItem exitItem = fileMenu.add(new JMenuItem("Exit"));
+		JMenuItem exitItem = fileMenu.add(new JMenuItem(UIText.get("maestro.menu.exit")));
 		exitItem.setMnemonic('x');
 		exitItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F4, ALT_DOWN_MASK));
 		exitItem.addActionListener(e -> {
@@ -1310,10 +1293,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			}
 		});
 
-		JMenu toolsMenu = menuBar.add(new JMenu(" Tools "));
+		JMenu toolsMenu = menuBar.add(new JMenu(UIText.get("maestro.menu.tools")));
 		toolsMenu.setMnemonic('T');
 
-		JMenuItem settingsItem = toolsMenu.add(new JMenuItem("Options..."));
+		JMenuItem settingsItem = toolsMenu.add(new JMenuItem(UIText.get("maestro.menu.options")));
 		settingsItem.setIcon(IconLoader.getImageIcon("gear_16.png"));
 		settingsItem.setDisabledIcon(IconLoader.getDisabledIcon("gear_16.png"));
 		settingsItem.setMnemonic('O');
@@ -1326,14 +1309,14 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		toolsMenu.addSeparator();
 		
-		JMenuItem helpItem = toolsMenu.add(new JMenuItem("Help (Opens in browser)"));
+		JMenuItem helpItem = toolsMenu.add(new JMenuItem(UIText.get("maestro.menu.help.opens.in.browser")));
 		helpItem.setMnemonic('H');
 		helpItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F5, 0));
 		helpItem.addActionListener(e -> {
 			Util.openURL(MaestroMain.WIKI_URL, this);
 		});
 		
-		JMenuItem versionItem = toolsMenu.add(new JMenuItem("Check for Updates"));
+		JMenuItem versionItem = toolsMenu.add(new JMenuItem(UIText.get("maestro.menu.check.for.updates")));
 		versionItem.setMnemonic('V');
 		versionItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F6, 0));
 		versionItem.addActionListener(e -> {
@@ -1342,7 +1325,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		
 		toolsMenu.addSeparator();
 
-		JMenuItem aboutItem = toolsMenu.add(new JMenuItem("About " + MaestroMain.APP_NAME + "..."));
+		JMenuItem aboutItem = toolsMenu.add(new JMenuItem(MessageFormat.format(UIText.get("maestro.menu.about.0"), MaestroMain.APP_NAME)));
 		aboutItem.setMnemonic('A');
 		aboutItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0));
 		aboutItem.addActionListener(e -> AboutDialog.show(ProjectFrame.this, MaestroMain.APP_NAME,
@@ -1408,7 +1391,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			
 		openRecentMenu.addSeparator();
 		
-		JMenuItem clearMenuItem = openRecentMenu.add(new JMenuItem("Clear List"));
+		JMenuItem clearMenuItem = openRecentMenu.add(new JMenuItem(UIText.get("maestro.menu.clear.list")));
 		clearMenuItem.addActionListener(e -> {
 			recentlyOpenedList.clearList();
 			updateOpenRecentMenu();
@@ -1493,10 +1476,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private void onSaveAndExportSettingsChanged() {
 		if (saveSettings.showExportFileChooser) {
 			exportAsMenuItem.setVisible(false);
-			exportMenuItem.setText("Export ABC As...");
+			exportMenuItem.setText(UIText.get("maestro.menu.export.abc.as"));
 		} else {
 			exportAsMenuItem.setVisible(true);
-			exportMenuItem.setText("Export ABC");
+			exportMenuItem.setText(UIText.get("maestro.menu.export.abc"));
 		}
 		
 		updateExportOrExportAsButton();
@@ -1542,7 +1525,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 	
 	private void updateExportOrExportAsButton() {
-		String exportText = shouldExportAbcAs() ? "Export ABC As..." : "Export ABC";
+		String exportText = shouldExportAbcAs() ? UIText.get("maestro.export.abc.as") : UIText.get("maestro.export.abc");
 		if (!exportButton.getText().equals(exportText)) {
 			exportButton.setText(exportText);
 			exportButton.repaint();
@@ -1773,7 +1756,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		exportAudioMenu.setEnabled(abcSong != null && uiEnabled);
 		exportMp3MenuItem.setEnabled(abcSong != null && uiEnabled);
 		exportWavMenuItem.setEnabled(abcSong != null && uiEnabled);
-		String errStr = "<html><p style='color:red;'>Must save as an MSX project first</p></html>";
+		String errStr = UIText.get("maestro.html.p.style.color.red.must.save.as.an.msx.project.first.p.html");
 		chooseMidiFileMenuItem.setEnabled(abcSong != null && abcSong.getProjectFile() != null && uiEnabled && sourceChangeEnabled);
 		chooseMidiFileMenuItem.setToolTipText(abcSong != null && abcSong.getProjectFile() == null ? errStr : "");
 		reloadMidiFileMenuItem.setEnabled(abcSong != null && abcSong.getProjectFile() != null && uiEnabled && sourceChangeEnabled);
@@ -1819,22 +1802,20 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         tempoOnlyFirstCheckBox.setEnabled(abcSong != null && abcSong.getSequenceInfo().getDataCache().isTempoInHigherTracks() && uiEnabled);//  && abcSong.getProjectFile() != null
 		sidepanelButton.setEnabled(midiLoaded && uiEnabled);
 		if (midiLoaded) {
-			midiModeRadioButton.setText("Original ("
-					+ ((abcSong.getSequenceInfo().standard == MidiStandard.GM && abcSong.getSequenceInfo().hasPorts)
-							? MidiStandard.GM_PLUS
-							: abcSong.getSequenceInfo().standard)
-					+ ")");
+			midiModeRadioButton.setText(MessageFormat.format(UIText.get("maestro.original.0"), (abcSong.getSequenceInfo().standard == MidiStandard.GM && abcSong.getSequenceInfo().hasPorts)
+					? MidiStandard.GM_PLUS
+					: abcSong.getSequenceInfo().standard));
 		} else {
-			midiModeRadioButton.setText("Original");
+			midiModeRadioButton.setText(UIText.get("maestro.original"));
 		}
 
 //		double[] LAYOUT_COLS_DYN = new double[] { partsList.getFixedCellWidth() + 32, FILL };
 		double[] LAYOUT_COLS_DYN = new double[] { 300 + 32, FILL };
 		tableLayout.setColumn(LAYOUT_COLS_DYN);// This call is attempt of fix for no delete button on MacOS part 2
 
-		String partListTitle = "Song Parts";
+		String partListTitle = UIText.get("maestro.song.parts");
 		if (abcSong != null) {
-			partListTitle = partListTitle + " (Count: " + abcSong.getActivePartCount() + ")";
+			partListTitle = MessageFormat.format(UIText.get("maestro.0.count.1"), partListTitle, abcSong.getActivePartCount());
 		}
 
 		partsListPanel.setBorder(BorderFactory.createTitledBorder(partListTitle));
@@ -2053,8 +2034,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 				if (abcSong.getParts().isEmpty()) {
 					sequencer.stop();
-					arrangementView.showInfoMessage(formatInfoMessage("Add a part", "This ABC song has no parts.\n" + //
-							"Click the " + newPartButton.getText() + " button to add a new part.",getHTMLFontSizeNormal()));
+					arrangementView.showInfoMessage(formatInfoMessage(UIText.get("maestro.add.a.part"), MessageFormat.format(UIText.get("maestro.this.abc.song.has.no.parts.click.the.0.button.to.add.a.new.part"), newPartButton.getText()),getHTMLFontSizeNormal()));
 				}
 
 				partsList.repaint();
@@ -2244,11 +2224,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		if (promptSave) {
 			String message;
 			if (abcSong.getProjectFile() == null)
-				message = "Do you want to save this new song?";
+				message = UIText.get("maestro.do.you.want.to.save.this.new.song");
 			else
-				message = "Do you want to save changes to \"" + abcSong.getProjectFile().getName() + "\"?";
+				message = MessageFormat.format(UIText.get("maestro.do.you.want.to.save.changes.to.0"), abcSong.getProjectFile().getName());
 
-			int result = JOptionPane.showConfirmDialog(this, message, "Save Changes", JOptionPane.YES_NO_CANCEL_OPTION,
+			int result = JOptionPane.showConfirmDialog(this, message, UIText.get("maestro.save.changes"), JOptionPane.YES_NO_CANCEL_OPTION,
 					JOptionPane.QUESTION_MESSAGE, IconLoader.getImageIcon("msxfile_32.png"));
 			if (result == JOptionPane.CANCEL_OPTION || result == JOptionPane.CLOSED_OPTION)
 				return false;
@@ -2392,16 +2372,16 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				abcSong.setTranscriber(transcriberField.getText());
 			}
 
-            arrangementView.sidepanelTab("Notes");
+            arrangementView.sidepanelTab(UIText.get("maestro.notes"));
 
             String lyrics = abcSong.getLyrics();
             if (lyrics.isBlank()) {
-                lyrics = "Contains no lyrics";
+                lyrics = UIText.get("maestro.contains.no.lyrics");
             } else if (!abcSong.isFromXmlFile()) {
                 arrangementView.sidepanelVisible(true);
-                arrangementView.sidepanelTab("Lyrics");
+                arrangementView.sidepanelTab(UIText.get("maestro.lyrics"));
             } else {
-				arrangementView.sidepanelTab("Lyrics");
+				arrangementView.sidepanelTab(UIText.get("maestro.lyrics"));
 			}
             arrangementView.setLyrics(lyrics);
 			if (abcSong.getLyricLines() != null) arrangementView.setLyricLines(abcSong.getLyricLines(), true);
@@ -2414,7 +2394,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 	// lyrics were saved unchanged in the note.
                     arrangementView.setTextnote(note);
                     if (!note.isEmpty()) {
-                        arrangementView.sidepanelTab("Notes");
+                        arrangementView.sidepanelTab(UIText.get("maestro.notes"));
                         arrangementView.sidepanelVisible(true);
                     }
                 }
@@ -2492,10 +2472,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 					message += ", column " + e.getColumnNumber();
 			}
 
-			arrangementView.showInfoMessage(formatErrorMessage("Could not open " + file.getName(), message, getHTMLFontSizeNormal()));
+			arrangementView.showInfoMessage(formatErrorMessage(MessageFormat.format(UIText.get("maestro.could.not.open.0"), file.getName()), message, getHTMLFontSizeNormal()));
 			midiResolved = false;
 		} catch (InvalidMidiDataException | IOException | FileParseException | SAXException e) {
-			arrangementView.showInfoMessage(formatErrorMessage("Could not open " + file.getName(), e.getMessage(), getHTMLFontSizeNormal()));
+			arrangementView.showInfoMessage(formatErrorMessage(MessageFormat.format(UIText.get("maestro.could.not.open.0"), file.getName()), e.getMessage(), getHTMLFontSizeNormal()));
 			midiResolved = false;
 		}
 		
@@ -2564,18 +2544,18 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private final FileResolver openFileResolver = new FileResolver() {
 		@Override
 		public File locateFile(File original, String message) {
-			message += "\n\nWould you like to try to locate the file?";
+			message += UIText.get("maestro.would.you.like.to.try.to.locate.the.file");
 			return resolveHelper(original, message);
 		}
 
 		@Override
 		public File resolveFile(File original, String message) {
-			message += "\n\nWould you like to pick a different file?";
+			message += UIText.get("maestro.would.you.like.to.pick.a.different.file");
 			return resolveHelper(original, message);
 		}
 
 		private File resolveHelper(File original, String message) {
-			int result = JOptionPane.showConfirmDialog(ProjectFrame.this, message, "Failed to open file",
+			int result = JOptionPane.showConfirmDialog(ProjectFrame.this, message, UIText.get("maestro.failed.to.open.file"),
 					JOptionPane.OK_CANCEL_OPTION);
 
 			File alternateFile = null;
@@ -2589,11 +2569,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                         new ExtensionFileFilter("ABC",
                                 Util.ABC_FILE_EXTENSION_NO_DOT,
                                 Util.TXT_FILE_EXTENSION_NO_DOT));
-				jfc.setFileFilter(new ExtensionFileFilter("MIDI and ABC files", Util.MID_FILE_EXTENSION_NO_DOT,
+				jfc.setFileFilter(new ExtensionFileFilter(UIText.get("maestro.midi.and.abc.files"), Util.MID_FILE_EXTENSION_NO_DOT,
 						Util.MIDI_FILE_EXTENSION_NO_DOT, Util.KAR_FILE_EXTENSION_NO_DOT, Util.ABC_FILE_EXTENSION_NO_DOT,
 						Util.TXT_FILE_EXTENSION_NO_DOT));
                 jfc.setAcceptAllFileFilterUsed(false);
-				jfc.setDialogTitle("Open missing MIDI/ABC");
+				jfc.setDialogTitle(UIText.get("maestro.open.missing.midi.abc"));
 				if (original != null)
 					jfc.setSelectedFile(original);
 
@@ -2755,7 +2735,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
                 sequencer.stop();
                 abcSequencer.stop();
-                JOptionPane.showMessageDialog(ProjectFrame.this, cause.getMessage(), "Error previewing ABC",
+                JOptionPane.showMessageDialog(ProjectFrame.this, cause.getMessage(), UIText.get("maestro.error.previewing.abc"),
                         JOptionPane.WARNING_MESSAGE);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -2765,7 +2745,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
                 sequencer.stop();
                 abcSequencer.stop();
-                JOptionPane.showMessageDialog(ProjectFrame.this, cause.getMessage(), "Error previewing ABC",
+                JOptionPane.showMessageDialog(ProjectFrame.this, cause.getMessage(), UIText.get("maestro.error.previewing.abc"),
                         JOptionPane.WARNING_MESSAGE);
             } finally {
                 setSourceChangeEnabled(true);
@@ -2863,7 +2843,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             arrangementView.setHistogram(null);
             arrangementView.setDissonance(null);
             histogram = null;
-            JOptionPane.showMessageDialog(ProjectFrame.this, e.getMessage(), "Error previewing ABC",
+            JOptionPane.showMessageDialog(ProjectFrame.this, e.getMessage(), UIText.get("maestro.error.previewing.abc"),
                     JOptionPane.WARNING_MESSAGE);
         }
         compileStats();
@@ -2912,7 +2892,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 log.log(Level.WARNING, "Error exporting preview", e);
                 sequencer.stop();
                 abcSequencer.stop();
-                JOptionPane.showMessageDialog(ProjectFrame.this, e.getMessage(), "Error previewing ABC",
+                JOptionPane.showMessageDialog(ProjectFrame.this, e.getMessage(), UIText.get("maestro.error.previewing.abc"),
                         JOptionPane.WARNING_MESSAGE);
                 setSourceChangeEnabled(true);
             }
@@ -2950,7 +2930,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
             sequencer.stop();
             abcSequencer.stop();
-            JOptionPane.showMessageDialog(ProjectFrame.this, cause.getMessage(), "Error previewing ABC",
+            JOptionPane.showMessageDialog(ProjectFrame.this, cause.getMessage(), UIText.get("maestro.error.previewing.abc"),
                     JOptionPane.WARNING_MESSAGE);
         }
         setSourceChangeEnabled(true);
@@ -3093,9 +3073,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         if (abcSong != null && abcSong.isOrganic() && abcSong.isUseRestsInChords()) {
             // expensive to compute, so we only do it for poly 6+
             out.append("\n");
-            out.append("Part polyphony:\n");
+            out.append(UIText.get("maestro.part.polyphony"));
             for (AbcPart part : abcSong.getParts()) {
-                out.append("Part #").append(part.getPartNumber()).append(" has max ");
+                out.append(UIText.get("maestro.partnumber")).append(part.getPartNumber()).append(UIText.get("maestro.has.max"));
                 out.append(part.getMaxPoly()).append("\n");
             }
             out.append("\n");
@@ -3107,7 +3087,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		StringBuilder out = new StringBuilder();
 		for (AbcPart part : abcSong.getParts()) {
 			if (part.getEnabledTrackCount() == 0) {
-				out.append("Part #").append(part.getPartNumber()).append(" has no assigned tracks!\n\n");
+				out.append(UIText.get("maestro.partnumber")).append(part.getPartNumber()).append(UIText.get("maestro.has.no.assigned.tracks"));
 			}
 		}
 		return out.toString();
@@ -3121,7 +3101,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			for (int j = i+1 ; j < parts.size(); j++) {
 				AbcPart part2 = parts.get(j);
 				if (part1.getTitle().equals(part2.getTitle())) {
-					out.append("Warning: Part #").append(part1.getPartNumber()).append(" and part #").append(part2.getPartNumber()).append(" has same title:\n ").append(part1.getTitle()).append("\n\n");
+					out.append(UIText.get("maestro.warning.part")).append(part1.getPartNumber()).append(UIText.get("maestro.and.part")).append(part2.getPartNumber()).append(UIText.get("maestro.has.same.title")).append(part1.getTitle()).append("\n\n");
 				}
 			}
 		}
@@ -3148,8 +3128,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 			if (selectedFile.exists() && !selectedFile.equals(allowOverwriteFile)) {
 				int res = JOptionPane.showConfirmDialog(this,
-						"File \"" + fileName + "\" already exists.\n" + "Do you want to replace it?",
-						"Confirm Replace File", JOptionPane.YES_NO_CANCEL_OPTION);
+						MessageFormat.format(UIText.get("maestro.file.0.already.exists.do.you.want.to.replace.it"), fileName),
+						UIText.get("maestro.confirm.replace.file"), JOptionPane.YES_NO_CANCEL_OPTION);
 				if (res == JOptionPane.CANCEL_OPTION || res == JOptionPane.CLOSED_OPTION)
 					return null;
 				if (res != JOptionPane.YES_OPTION)
@@ -3206,7 +3186,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		exportSuccessfulLabel.setVisible(false);
 
 		if (abcSong == null) {
-			JOptionPane.showMessageDialog(this, "No ABC Song is open", "Error", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(this, UIText.get("maestro.no.abc.song.is.open"), UIText.get("maestro.error"), JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
 
@@ -3218,7 +3198,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		File allowOverwriteFile = allowOverwriteExportFile ? abcSong.getExportFile() : null;
 
 		exportFile = doSaveDialog(exportFile, allowOverwriteFile, Util.ABC_FILE_EXTENSION,
-				new ExtensionFileFilter("ABC files (*.abc, *.txt)", Util.ABC_FILE_EXTENSION_NO_DOT, Util.TXT_FILE_EXTENSION_NO_DOT));
+				new ExtensionFileFilter(UIText.get("maestro.abc.files.abc.txt"), Util.ABC_FILE_EXTENSION_NO_DOT, Util.TXT_FILE_EXTENSION_NO_DOT));
 
 		if (exportFile == null) {
 			return false;
@@ -3246,7 +3226,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private boolean exportAbc() {
 		exportSuccessfulLabel.setVisible(false);
 		if (abcSong == null) {
-			JOptionPane.showMessageDialog(this, "No ABC Song is open", "Error", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(this, UIText.get("maestro.no.abc.song.is.open"), UIText.get("maestro.error"), JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
 
@@ -3262,7 +3242,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
     private boolean confirmExportDespiteWarnings() {
         List<String> warnings = abcSong.getExportWarnings(histogram);
         for(String warning : warnings) {
-            int option = JOptionPane.showConfirmDialog(this, warning+"\nDo you want to proceed with exporting without fixing it?", "Warning", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            int option = JOptionPane.showConfirmDialog(this, MessageFormat.format(UIText.get("maestro.0.do.you.want.to.proceed.with.exporting.without.fixing.it"), warning), UIText.get("maestro.warning"), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
             if (option != JOptionPane.YES_OPTION) {
                 return false;
             }
@@ -3334,7 +3314,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 get(); // get exceptions from doInBackground()
 
                 exportSuccessfulLabel.setText(abcSong.getExportFile().getName());
-                exportSuccessfulLabel.setToolTipText("Exported " + abcSong.getExportFile().getName());
+                exportSuccessfulLabel.setToolTipText(MessageFormat.format(UIText.get("maestro.exported.0"), abcSong.getExportFile().getName()));
                 exportSuccessfulLabel.setVisible(true);
 
                 if (exportLabelHideTimer == null) {
@@ -3351,21 +3331,21 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 Throwable cause = e.getCause() != null ? e.getCause() : e;
                 log.log(Level.WARNING, "Error when exporting ABC", cause);
                 if (cause instanceof FileNotFoundException) {
-                    JOptionPane.showMessageDialog(ProjectFrame.this, "Failed to create file!\n" + cause.getMessage(),
-                            "Failed to create file", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(ProjectFrame.this, MessageFormat.format(UIText.get("maestro.failed.to.create.file.0"), cause.getMessage()),
+							UIText.get("maestro.failed.to.create.file"), JOptionPane.ERROR_MESSAGE);
                 } else if (cause instanceof IOException || cause instanceof AbcConversionException) {
-                    JOptionPane.showMessageDialog(ProjectFrame.this, cause.getMessage(), "Error",
+                    JOptionPane.showMessageDialog(ProjectFrame.this, cause.getMessage(), UIText.get("maestro.error"),
                             JOptionPane.ERROR_MESSAGE);
                 } else {
                     // Catch any other unexpected errors
-                    JOptionPane.showMessageDialog(ProjectFrame.this, "An unexpected error occurred:\n" + cause.getMessage(),
-                            "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(ProjectFrame.this, MessageFormat.format(UIText.get("maestro.an.unexpected.error.occurred.0"), cause.getMessage()),
+							UIText.get("maestro.error"), JOptionPane.ERROR_MESSAGE);
                 }
 
             } catch (Exception e) {
                 log.log(Level.SEVERE, "Error exporting ABC", e);
-                JOptionPane.showMessageDialog(ProjectFrame.this, "An unexpected UI error occurred:\n" + e.getMessage(),
-                        "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(ProjectFrame.this, MessageFormat.format(UIText.get("maestro.an.unexpected.ui.error.occurred.0"), e.getMessage()),
+						UIText.get("maestro.error"), JOptionPane.ERROR_MESSAGE);
             } finally {
                 setUIEnabled(true);
             }
@@ -3408,7 +3388,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	private boolean saveAs() {
 		if (abcSong == null) {
-			JOptionPane.showMessageDialog(this, "No ABC Song is open", "Error", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(this, UIText.get("maestro.no.abc.song.is.open"), UIText.get("maestro.error"), JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
 
@@ -3468,7 +3448,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	private boolean save() {
 		if (abcSong == null) {
-			JOptionPane.showMessageDialog(this, "No ABC Song is open", "Error", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(this, UIText.get("maestro.no.abc.song.is.open"), UIText.get("maestro.error"), JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
 
@@ -3489,12 +3469,12 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		try {
 			XmlUtil.saveDocument(abcSong.saveToXml(), abcSong.getProjectFile());
 		} catch (FileNotFoundException e) {
-			JOptionPane.showMessageDialog(this, "Failed to create file!\n" + e.getMessage(), "Failed to create file",
+			JOptionPane.showMessageDialog(this, MessageFormat.format(UIText.get("maestro.failed.to.create.file.0"), e.getMessage()), UIText.get("maestro.failed.to.create.file"),
 					JOptionPane.ERROR_MESSAGE);
 
 			return false;
 		} catch (IOException | TransformerException e) {
-			JOptionPane.showMessageDialog(this, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(this, e.getMessage(), UIText.get("maestro.error"), JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
 		
@@ -3509,17 +3489,17 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	private boolean expandMidi() {
 		if (abcSong == null || abcSong.getSourceFile() == null) {
-			JOptionPane.showMessageDialog(this, "No midi loaded", "Error", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(this, UIText.get("maestro.no.midi.loaded"), UIText.get("maestro.error"), JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
 
 		if (abcSong.getSequenceInfo().standard == MidiStandard.ABC) {
-			JOptionPane.showMessageDialog(this, "Cannot expand ABC song", "Error", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(this, UIText.get("maestro.cannot.expand.abc.song"), UIText.get("maestro.error"), JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
 
 		if (abcSong.getSourceFile().getName().startsWith("expanded_")) {
-			JOptionPane.showMessageDialog(this, "This midi has already been expanded", "Error",
+			JOptionPane.showMessageDialog(this, UIText.get("maestro.this.midi.has.already.been.expanded"), UIText.get("maestro.error"),
 					JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
@@ -3546,7 +3526,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
         saveFile = new File(directory, fileName);
 
-        saveFile = doSaveDialog(saveFile, saveFile, Util.MID_FILE_EXTENSION, new ExtensionFileFilter("MIDI songs (*.mid)", Util.MID_FILE_EXTENSION_NO_DOT));
+        saveFile = doSaveDialog(saveFile, saveFile, Util.MID_FILE_EXTENSION, new ExtensionFileFilter(UIText.get("maestro.midi.songs.mid"), Util.MID_FILE_EXTENSION_NO_DOT));
 
 		if (saveFile == null)
 			return false;
@@ -3558,7 +3538,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		try {
 			Sequence sequence2 = abcSong.getSequenceInfo().split();
 			if (sequence2 == null) {
-				JOptionPane.showMessageDialog(this, "Something went wrong in the splitting process", "Error",
+				JOptionPane.showMessageDialog(this, UIText.get("maestro.something.went.wrong.in.the.splitting.process"), UIText.get("maestro.error"),
 						JOptionPane.ERROR_MESSAGE);
 				return false;
 			}
@@ -3568,24 +3548,24 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 						+ saveFile.getAbsolutePath() + "'");
 				MidiSystem.write(sequence2, types[types.length - 1], saveFile);
 			} else {
-				JOptionPane.showMessageDialog(this, "Something went wrong when in midi type handling", "Error",
+				JOptionPane.showMessageDialog(this, UIText.get("maestro.something.went.wrong.when.in.midi.type.handling"), UIText.get("maestro.error"),
 						JOptionPane.ERROR_MESSAGE);
 				return false;
 			}
 		} catch (FileNotFoundException e) {
 			log.warning(e.getMessage());
-			JOptionPane.showMessageDialog(this, "Failed to create file!\n" + e.getMessage(), "Failed to create file",
+			JOptionPane.showMessageDialog(this, MessageFormat.format(UIText.get("maestro.failed.to.create.file.0"), e.getMessage()), UIText.get("maestro.failed.to.create.file"),
 					JOptionPane.ERROR_MESSAGE);
 
 			return false;
 		} catch (InvalidMidiDataException | IOException e) {
 			log.severe(e.getMessage());
-			JOptionPane.showMessageDialog(this, e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(this, e.getMessage(), UIText.get("maestro.error"), JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
 
-		int result = JOptionPane.showConfirmDialog(this, "Would you also like to load the new expanded midi?",
-				"Expanded MIDI", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+		int result = JOptionPane.showConfirmDialog(this, UIText.get("maestro.would.you.also.like.to.load.the.new.expanded.midi"),
+				UIText.get("maestro.expanded.midi"), JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
 
 		switch (result) {
 		case JOptionPane.YES_OPTION:
@@ -3637,7 +3617,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                             Version myVersion = MaestroMain.APP_VERSION;
                             if (latestVer != null && myVersion.compareTo(latestVer) < 0) {
                                 SwingUtilities.invokeLater(() -> {
-                                        int result = JOptionPane.showConfirmDialog(ProjectFrame.this, "Version "+latestVer+" is available, do you want to close and download it?", "Version check",
+                                        int result = JOptionPane.showConfirmDialog(ProjectFrame.this, MessageFormat.format(UIText.get("maestro.version.0.is.available.do.you.want.to.close.and.download.it"), latestVer), UIText.get("maestro.version.check"),
                                                 JOptionPane.YES_NO_OPTION);
                                         if (result == JOptionPane.YES_OPTION) {
                                             URI uriDownload;
@@ -3668,15 +3648,15 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
     }
 
     public enum TimingEnum {
-        ORGANIC_MULTISTAGE2 ("Organic Multi-stage 2",true, true, false,false,false,"Organic Multistage 2", true),
-        ORGANIC_MULTISTAGE ("Organic Multi-stage",true, true, false,false,false,"Organic Multistage", false),
-        ORGANIC_SINGLESTAGE ("Organic Single-stage", true, false, false,false,false,"Organic Singlestage", false),
-        MIX ("Mix Timings", false, false, true,false,false,"Mix Timings", false),
-        MIX_SWING ("Mix Timings, Swing", false, false, true,true,false,"Mix Timings Swing/Triplet", false),
-        MIX_PRIO ("Mix Timings, Combine Priorities", false, false, true,false,true,"Mix Timings Combine Priorities", false),
-        MIX_SWING_PRIO ("Mix Timings, Swing, Combine Priorities", false, false, true,true,true,"Mix Timings Swing/Triplet Combine Priorities", false),
-        LEGACY ("Legacy Timings", false, false, false,false,false,"Legacy", false),
-        LEGACY_SWING ("Legacy Timings, Swing", false, false, false,true,false,"Legacy Swing/Triplet", false),
+        ORGANIC_MULTISTAGE2 (UIText.get("maestro.timing.organic.multi.stage.2"),true, true, false,false,false,"Organic Multistage 2", true),
+        ORGANIC_MULTISTAGE (UIText.get("maestro.timing.organic.multi.stage"),true, true, false,false,false,"Organic Multistage", false),
+        ORGANIC_SINGLESTAGE (UIText.get("maestro.timing.organic.single.stage"), true, false, false,false,false,"Organic Singlestage", false),
+        MIX (UIText.get("maestro.timing.mix.timings"), false, false, true,false,false,"Mix Timings", false),
+        MIX_SWING (UIText.get("maestro.timing.mix.timings.swing"), false, false, true,true,false,"Mix Timings Swing/Triplet", false),
+        MIX_PRIO (UIText.get("maestro.timing.mix.timings.combine.priorities"), false, false, true,false,true,"Mix Timings Combine Priorities", false),
+        MIX_SWING_PRIO (UIText.get("maestro.timing.mix.timings.swing.combine.priorities"), false, false, true,true,true,"Mix Timings Swing/Triplet Combine Priorities", false),
+        LEGACY (UIText.get("maestro.timing.legacy.timings"), false, false, false,false,false,"Legacy", false),
+        LEGACY_SWING (UIText.get("maestro.timing.legacy.timings.swing"), false, false, false,true,false,"Legacy Swing/Triplet", false),
         ;
 
         public final boolean organic;
@@ -3717,39 +3697,15 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
         String getTooltip() {
             return switch (this) {
-                case ORGANIC_MULTISTAGE2 -> "<html>Different approach to exporting fluid timings.<br>"
-                        + "This is a beta feature, use on own risk.</html>";
-                case ORGANIC_MULTISTAGE -> "<html>Different approach to exporting fluid timings.</html>";
-                case ORGANIC_SINGLESTAGE -> "<html>Export more fluid timings.</html>";
-                case LEGACY -> "<html>Export whole song in the same fixed timing grid.<html>";
-                case LEGACY_SWING -> "<html>Export whole song in the same fixed timing grid." +
-                        "<br>Will setup the grid for triplets or a swing rhythm.<br><br>"
-                        + "This can cause short/fast notes to incorrectly be output as triplets.<br>"
-                        + "Don't use this unless the song has many triplets or a swing/jig rhythm.</html>";
-                case MIX_SWING_PRIO -> "<html>Allow Maestro to detect which notes<br>"
-                        + "that needs triplet/swing timing.<br><br>"
-                        + "It is done per part, so some notes in a parts might export as swing/tuplets<br>"
-                        + "while other parts at same time export even notes." +
-                        "<br>In case of uncertainty swing/triplet will be choosen."+
-                        "<br>Allows to set track priority.<br>" +
-                        "Checkboxes will appear when combining tracks,<br>" +
-                        "those enabled will prioritize the timings of those tracks over non-prioritized tracks.</html>";
-                case MIX -> "<html>Allow Maestro to detect which notes<br>"
-                        + "that needs triplet/swing timing.<br><br>"
-                        + "It is done per part, so some notes in a parts might export as swing/tuplets<br>"
-                        + "while other parts at same time export even notes.</html>";
-                case MIX_SWING -> "<html>Allow Maestro to detect which notes<br>"
-                        + "that needs triplet/swing timing.<br><br>"
-                        + "It is done per part, so some notes in a parts might export as swing/tuplets<br>"
-                        + "while other parts at same time export even notes.<br>" +
-                        "In case of uncertainty swing/triplet will be choosen.</html>";
-                case MIX_PRIO -> "<html>Allow Maestro to detect which notes<br>"
-                        + "that needs triplet/swing timing.<br><br>"
-                        + "It is done per part, so some notes in a parts might export as swing/tuplets<br>"
-                        + "while other parts at same time export even notes." +
-                        "<br>Allows to set track priority.<br>" +
-                        "Checkboxes will appear when combining tracks,<br>" +
-                        "those enabled will prioritize the timings of those tracks over non-prioritized tracks.</html>";
+                case ORGANIC_MULTISTAGE2 -> UIText.get("maestro.tip.multi2");
+                case ORGANIC_MULTISTAGE -> UIText.get("maestro.tip.multi1");
+                case ORGANIC_SINGLESTAGE -> UIText.get("maestro.tip.single");
+                case LEGACY -> UIText.get("maestro.tip.legacy");
+                case LEGACY_SWING -> UIText.get("maestro.tip.legacy.swing");
+                case MIX_SWING_PRIO -> UIText.get("maestro.tip.mix.swing.prio");
+                case MIX -> UIText.get("maestro.tip.mix");
+                case MIX_SWING -> UIText.get("maestro.tip.mix.swing");
+                case MIX_PRIO -> UIText.get("maestro.tip.mix.prio");
                 default -> null;
             };
         }

@@ -1,10 +1,12 @@
 package com.digero.common.abc;
 
+import com.digero.common.view.UIText;
+
 public enum LotroInstrumentGroup {
-	PLUCKED_STRINGS("Plucked Strings"), //
-	BOWED_STRINGS("Bowed Strings"), //
-	WOODWINDS("Woodwinds"), //
-	PERCUSSION("Percussion"); //
+	PLUCKED_STRINGS(UIText.get("common.plucked.strings")), //
+	BOWED_STRINGS(UIText.get("common.bowed.strings")), //
+	WOODWINDS(UIText.get("common.woodwinds")), //
+	PERCUSSION(UIText.get("common.percussion")); //
 
 	private final String label;
 

@@ -9,6 +9,7 @@ import javax.swing.JDialog;
 
 import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.util.Listener;
+import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcPartEvent;
 import com.digero.maestro.abc.AbcSongEvent;
@@ -24,7 +25,7 @@ public class PartEditor extends JDialog {
 	private ProjectFrame pFrame;
 
 	PartEditor (ProjectFrame pFrame, SequencerWrapper abcSequencer, MiscSettings miscSettings) {
-		super(pFrame, "Part Editor");
+		super(pFrame, UIText.get("maestro.part.editor"));
 		this.pFrame = pFrame;
 		partsList = new PartsListEditor(abcSequencer, miscSettings);
 		

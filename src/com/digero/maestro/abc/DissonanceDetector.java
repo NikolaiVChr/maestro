@@ -13,6 +13,7 @@ import com.digero.common.midi.LotroSequencerWrapper;
 import com.digero.common.midi.Note;
 import com.digero.common.midi.SequencerEvent;
 import com.digero.common.util.Listener;
+import com.digero.common.view.UIText;
 import com.digero.maestro.midi.AbcNoteEvent;
 import com.digero.maestro.midi.Chord;
 import com.digero.maestro.midi.SequenceDataCache;
@@ -334,32 +335,32 @@ public class DissonanceDetector {
 
         public String getTooltipHtml() {
             StringBuilder tooltip = new StringBuilder();
-            tooltip.append("<html>Dissonance:");
+            tooltip.append(UIText.get("maestro.dissonance.tip.html.dissonance"));
             tooltip.append("<br>")
-                    .append("Minor second")
+                    .append(UIText.get("maestro.dissonance.tip.minor.second"))
                     .append(":&nbsp;&nbsp;")
                     .append(minorSecondCount);
             tooltip.append("<br>")
-                    .append("Major seventh")
+                    .append(UIText.get("maestro.dissonance.tip.major.seventh"))
                     .append(":&nbsp;&nbsp;")
                     .append(majorSeventhCount);
             tooltip.append("<br>")
-                    .append("Tritone")
+                    .append(UIText.get("maestro.dissonance.tip.tritone"))
                     .append(":&nbsp;&nbsp;")
                     .append(tritoneCount);
             tooltip.append("<br>")
-                    .append("Minor seventh")
+                    .append(UIText.get("maestro.dissonance.tip.minor.seventh"))
                     .append(":&nbsp;&nbsp;")
                     .append(minorSeventhCount);
             tooltip.append("<br>")
-                    .append("Major second")
+                    .append(UIText.get("maestro.dissonance.tip.major.second"))
                     .append(":&nbsp;&nbsp;")
                     .append(majorSecondCount);
-            tooltip.append("<br>Total:&nbsp;&nbsp;");
+            tooltip.append(UIText.get("maestro.dissonance.tip.br.total.nbsp.nbsp"));
             tooltip.append(getTotalCollisions());
-            tooltip.append("<br><br>Bass mud:&nbsp;&nbsp;")
+            tooltip.append(UIText.get("maestro.dissonance.tip.br.br.bass.mud.nbsp.nbsp"))
                     .append(bassMudCount);
-            tooltip.append("<br><br><b>Value:&nbsp;&nbsp;");
+            tooltip.append(UIText.get("maestro.dissonance.tip.br.br.b.value.nbsp.nbsp"));
             tooltip.append(getTotalScore());
             tooltip.append("</b></html>");
             return tooltip.toString();

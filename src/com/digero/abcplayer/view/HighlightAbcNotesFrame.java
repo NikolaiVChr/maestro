@@ -55,6 +55,7 @@ import com.digero.common.util.NullCaret;
 import com.digero.common.util.Themer;
 import com.digero.common.util.Util;
 import com.digero.common.view.ColorTable;
+import com.digero.common.view.UIText;
 
 public class HighlightAbcNotesFrame extends JFrame {
 	private final SequencerWrapper sequencer;
@@ -166,7 +167,7 @@ public class HighlightAbcNotesFrame extends JFrame {
 
 		JPanel toolBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
-		toolBar.add(new JLabel("Part: "));
+		toolBar.add(new JLabel(UIText.get("abcplayer.part")));
 
 		followTrackComboBox = new JComboBox<>();
 		followTrackComboBox.setEnabled(false);
@@ -179,7 +180,7 @@ public class HighlightAbcNotesFrame extends JFrame {
 		});
 		toolBar.add(followTrackComboBox);
 
-		autoScrollCheckBox = new JCheckBox("Auto scroll");
+		autoScrollCheckBox = new JCheckBox(UIText.get("abcplayer.auto.scroll"));
 		autoScrollCheckBox.setSelected(true);
 		autoScrollCheckBox.addActionListener(e -> {
 			lastAutoScrollY = -1;

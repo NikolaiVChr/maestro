@@ -1,10 +1,12 @@
 package com.digero.maestro.view;
 
+import com.digero.common.view.UIText;
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
 
 import java.awt.Dimension;
 import java.awt.Font;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -105,7 +107,7 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
 		tempoGraph.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER_HORIZ.get()));
 		setBackground(ColorTable.TEMPO_BACKGROUND.get());
 
-		JLabel titleLabel = new JLabel("Tempo");
+		JLabel titleLabel = new JLabel(UIText.get("maestro.tempo"));
 		titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
 		titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD));
 		titleLabel.setForeground(ColorTable.PANEL_TEXT_DISABLED.get());
@@ -208,7 +210,7 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
         //TODO: replace with abcSong.getAbcTimingInfo().multiplyByExportTempoFactor():
 		int bpm = (int) Math.round(MidiUtils.convertTempo(mpq) * getCurrentTempoFactor());
 		if (bpm != lastRenderedBPM) {
-			currentTempoLabel.setText(bpm + " BPM ");
+			currentTempoLabel.setText(MessageFormat.format(UIText.get("maestro.0.bpm"), bpm));
 			lastRenderedBPM = bpm;
 		}
 	}

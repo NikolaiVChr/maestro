@@ -2,13 +2,13 @@ package com.digero.abcplayer.view;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
 import javax.swing.table.AbstractTableModel;
 
 import com.digero.common.abctomidi.AbcInfo;
+import com.digero.common.view.UIText;
 
 public class AbcInfoTableModel extends AbstractTableModel {
 
@@ -84,7 +84,7 @@ public class AbcInfoTableModel extends AbstractTableModel {
 			else if (val1 == null) return ascending ? -1 : 1;
 			else if (val2 == null) return ascending ? 1 : -1;
 			
-			if (columnName.equals("Duration")) {
+			if (columnName.equals(UIText.get("common.duration"))) {
 				return compareDurations((String)val1, (String)val2, ascending);
 			}
 			
@@ -131,31 +131,31 @@ public class AbcInfoTableModel extends AbstractTableModel {
 	public static String getNameOfColumn(int colIndex) {
 		switch (colIndex) {
 		case 0:
-			return "File Name";
+			return UIText.get("common.file.name");
 		case 1:
-			return "Full File Path";
+			return UIText.get("abcplayer.full.file.path");
 		case 2:
-			return "Song Name";
+			return UIText.get("abcplayer.song.name");
 		case 3:
-			return "Part Count";
+			return UIText.get("abcplayer.part.count");
 		case 4:
-			return "Setups Min";
+			return UIText.get("abcplayer.setups.min");
 		case 5:
-			return "Setups Max";
+			return UIText.get("abcplayer.setups.max");
 		case 6:
-			return "Duration";
+			return UIText.get("common.duration");
 		case 7:
-			return "Artist";
+			return UIText.get("common.artist");
 		case 8:
-			return "Transcriber";
+			return UIText.get("abcplayer.transcriber");
 		case 9:
-			return "Mood";
+			return UIText.get("common.mood");
 		case 10:
-			return "Genre";
+			return UIText.get("common.genre");
 		case 11:
-			return "Export Date";
+			return UIText.get("abcplayer.export.date");
 		case 12:
-			return "Exported By";
+			return UIText.get("abcplayer.exported.by");
 		}
 		return "ERR";
 	}
@@ -190,7 +190,7 @@ public class AbcInfoTableModel extends AbstractTableModel {
 		return getColumnValueForAbcInfo(inf, colIndex);
 	}
 	
-	public static final String[] DEFAULT_ENABLED_COLS = {"Song Name", "Part Count", "Duration", "Artist", "Transcriber" };
+	public static final String[] DEFAULT_ENABLED_COLS = {UIText.get("abcplayer.song.name"), UIText.get("abcplayer.part.count"), UIText.get("common.duration"), UIText.get("common.artist"), UIText.get("abcplayer.transcriber")};
 	
 	public boolean getColumnDefaultEnabled(String colName) {
 		if (Arrays.stream(DEFAULT_ENABLED_COLS).anyMatch(colName::equals)) {

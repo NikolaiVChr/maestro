@@ -3,6 +3,7 @@ package com.digero.maestro.view;
 import com.digero.common.midi.PanGenerator;
 import com.digero.common.util.Themer;
 import com.digero.common.view.ColorTable;
+import com.digero.common.view.UIText;
 
 import javax.swing.*;
 import java.awt.*;
@@ -117,7 +118,7 @@ public class PanVisualizerPanel extends JPanel {
         // 7. Draw Pan Position
         g2.setColor(Themer.isDarkMode()?ColorTable.PAN_TEXT_ON_DARK.get():ColorTable.PAN_TEXT_ON_LIGHT.get());
         g2.setFont(new Font("MonoSpaced", Font.BOLD, 14));
-        String panText = (activePan == null) ? "Auto" : String.format("%+d", activePan - PanGenerator.CENTER);
+        String panText = (activePan == null) ? UIText.get("maestro.autopan") : String.format("%+d", activePan - PanGenerator.CENTER);
         FontMetrics fm = g2.getFontMetrics();
         g2.drawString(panText, cx - (fm.stringWidth(panText) / 2), cy - HEAD_DIAM - 5);
     }

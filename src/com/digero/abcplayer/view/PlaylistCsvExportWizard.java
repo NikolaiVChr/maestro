@@ -2,6 +2,7 @@ package com.digero.abcplayer.view;
 
 import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.util.ExtensionFileFilter;
+import com.digero.common.view.UIText;
 import net.miginfocom.swing.MigLayout;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -14,6 +15,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.prefs.Preferences;
@@ -29,14 +31,14 @@ public class PlaylistCsvExportWizard extends JDialog {
 	private PlaylistSetExportWizard.SetExportSettings settings;
 
 	public PlaylistCsvExportWizard(JFrame owner, Preferences prefNode, File playlistFile, List<AbcInfo> setData, List<String> visibleColumns) {
-		super(owner, "Export CSV Partsheet", true);
+		super(owner, UIText.get("abcplayer.export.csv.partsheet"), true);
 
 		this.playlistFile = playlistFile;
 		this.setData = setData;
 
 		settings = new PlaylistSetExportWizard.SetExportSettings(prefNode);
 
-		JButton exportButton = new JButton("Export");
+		JButton exportButton = new JButton(UIText.get("abcplayer.export"));
 		getRootPane().setDefaultButton(exportButton);
 		exportButton.addActionListener(e -> {
 			List<String> columns = visibleColumns;
@@ -50,15 +52,15 @@ public class PlaylistCsvExportWizard extends JDialog {
 			}
 			boolean result = generateCsvPartSheet(columns);
 			if (!result) {
-				statusLabel.setText("Export failed!");
+				statusLabel.setText(UIText.get("abcplayer.export.failed"));
 			} else {
-				statusLabel.setText("Export succeeded.");
+				statusLabel.setText(UIText.get("abcplayer.export.succeeded"));
 				settings.save();
 				settings.saveCsvExportSettings();
 			}
 		});
 
-		JButton cancelButton = new JButton("Cancel");
+		JButton cancelButton = new JButton(UIText.get("common.cancel"));
 		cancelButton.addActionListener(e -> {
 			this.setVisible(false);
 		});
@@ -84,7 +86,7 @@ public class PlaylistCsvExportWizard extends JDialog {
 	private JPanel createPartSheetPanel() {
 		JPanel partSheetPanel = new JPanel(new MigLayout());
 
-		JLabel partChoiceLabel = new JLabel("Part columns content:");
+		JLabel partChoiceLabel = new JLabel(UIText.get("abcplayer.part.columns.content"));
 
 		JComboBox<String> partContentChoice = new JComboBox<String>(PlaylistSetExportWizard.partColumnsLabels);
 		int selectedIndex = 0;
@@ -102,8 +104,8 @@ public class PlaylistCsvExportWizard extends JDialog {
 		List<String> colNames = AbcInfoTableModel.getColNames();
 		colCheckBoxes = new ArrayList<>(colNames.size());
 
-		JRadioButton visibleColumns = new JRadioButton("Use visible table columns");
-		JRadioButton customColumns = new JRadioButton("Use custom columns");
+		JRadioButton visibleColumns = new JRadioButton(UIText.get("abcplayer.use.visible.table.columns"));
+		JRadioButton customColumns = new JRadioButton(UIText.get("abcplayer.use.custom.columns"));
 		ButtonGroup columnModeGroup = new ButtonGroup();
 		ActionListener columnListener = e -> {
 			boolean useVisibleColumns = visibleColumns.isSelected();
@@ -122,7 +124,7 @@ public class PlaylistCsvExportWizard extends JDialog {
 			customColumns.setSelected(true);
 		}
 
-		JLabel columnLabel = new JLabel("<html><u><b>Select Custom Columns</b></u></html");
+		JLabel columnLabel = new JLabel(UIText.get("abcplayer.html.u.b.select.custom.columns.b.u.html"));
 
 		partSheetPanel.add(partChoiceLabel, "align right");
 		partSheetPanel.add(partContentChoice, "wrap");
@@ -167,7 +169,7 @@ public class PlaylistCsvExportWizard extends JDialog {
 			}
 
 			for (int i = 0; i < maxPartCount; i++) {
-				headerList.add("Part " + (i + 1));
+				headerList.add(MessageFormat.format(UIText.get("abcplayer.part.0"), i + 1));
 			}
 		}
 
@@ -192,7 +194,7 @@ public class PlaylistCsvExportWizard extends JDialog {
 		File chooserFile = Paths.get(settings.getCsvExportOutputDirectory(), csvFilename).toFile();
 
 		JFileChooser chooser = new JFileChooser();
-		chooser.setFileFilter(new ExtensionFileFilter("CSV files (*.csv, *.txt)", "csv", "txt"));
+		chooser.setFileFilter(new ExtensionFileFilter(UIText.get("abcplayer.csv.files.csv.txt"), "csv", "txt"));
 		chooser.setSelectedFile(chooserFile);
 		int result = chooser.showSaveDialog(this);
 
@@ -204,8 +206,8 @@ public class PlaylistCsvExportWizard extends JDialog {
 
 		if (selectedFile.exists()) {
 			int res = JOptionPane.showConfirmDialog(this,
-					"File \"" + selectedFile.toString() + "\" already exists.\n" + "Do you want to replace it?",
-					"Confirm Replace File", JOptionPane.OK_CANCEL_OPTION);
+					MessageFormat.format(UIText.get("abcplayer.file.0.already.exists.do.you.want.to.replace.it2"), selectedFile.toString()),
+					UIText.get("abcplayer.confirm.replace.file"), JOptionPane.OK_CANCEL_OPTION);
 			if (res == JOptionPane.CANCEL_OPTION || res == JOptionPane.CLOSED_OPTION)
 				return false;
 		}
