@@ -248,6 +248,7 @@ public class PartAutoNumberer {
             if (part.isPartNumberManuallyAssigned() == null) {
                 // sort of a hack, since scheme can be changed between saving and loading project.
                 if (!isFittingInAutoNumberingScheme(part, -1, -1, parts)) {
+					log.info(part.getTitle()+" did not fit in auto-numbering scheme, assigning all that does not have explicit lock boolean to be locked.");
                     manualAssigned = true;
 					break;
                 } else if (manualAssigned == null) {

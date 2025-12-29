@@ -669,9 +669,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		}
         partAutoNumberer.assignManualPartNumber(parts);// convert all null values to booleans.
 		if (autoSorted) {
-            /* see https://discord.com/channels/1127545258729803797/1127660185297633280/1351686726674022491
-             * for discussion about this sorting and why its been disabled for now
-             */
             populateFirstNumbers();
             parts.sort(partAutoNumberer.getComparator());
 		}
