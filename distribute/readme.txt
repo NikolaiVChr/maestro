@@ -41,7 +41,7 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
-Version 4.6.2
+Version 4.6.3
 - Before installing this using the MSI installer, please remove old maestro from your windows manually.
     (search "Add or remove programs" in windows and remove "Maestro")
     This only needs to be done once, next versions will just update the previous version automatically again.
@@ -59,6 +59,7 @@ Version 4.6.2
 - When loading abc file into maestro also set the user pan on a new project.
 - Allow editing of lyrics and to copy them for Poetical with timestamps.
 - Allow changing colors of Maestro. Note that most colors are dictated by dark and light themes and can't be changed.
+- Added fr and de localizations. Consider this a beta feature please, as it's mostly auto translated.
 
 Version 4.5.24
 - Fixed a bug in splitting of long notes in organic multi-stage and made it slightly smarter.
