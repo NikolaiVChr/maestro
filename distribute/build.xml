@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <project default="Distribute" name="Build and Distribute Maestro and ABC Player">
 	<property name="src" value="../src" />
+	<property name="resources" value="../resources" />
 	<property name="target" value="../target" />
 	<property name="audio" value="../audio" />
 	<property name="audio_backslash" value="..\audio" />
@@ -15,8 +16,8 @@
 	<property name="basename.AbcPlayer" value="AbcPlayer" />
 	<property name="basename.Maestro" value="Maestro" />
 	<property name="basename.AbcTools" value="AbcTools" />
-	<property file="${src}/com/digero/abcplayer/version.properties" />
-	<property file="${src}/com/digero/maestro/version.properties" />
+	<property file="${resources}/com/digero/abcplayer/version.properties" />
+	<property file="${resources}/com/digero/maestro/version.properties" />
 	<property name="version.AbcTools" value="${version.AbcPlayer}" />
 	<condition property="isWindows">
 		<os family="windows" />
