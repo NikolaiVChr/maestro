@@ -9,3 +9,5 @@
 /distribute/app.wxs
 /distribute/runtime.wxs
 .idea
+!.idea/encodings.xml
+!.idea/resourceBundles.xml
