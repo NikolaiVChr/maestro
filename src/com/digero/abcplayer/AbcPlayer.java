@@ -99,7 +99,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 	private static final boolean defaultTimerCountdown = false;
 
 	private JMenu recentItems;
-	private Queue<String> recentQueue;
+	private LinkedList<String> recentQueue;
 	private final int recentMaxItems = 11;
 
 	private static ServerSocket serverSocket;
@@ -1040,31 +1040,25 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		mainMenu.add(playlistViewPanel.getPlaylistMenu());
 	}
 
+	/**
+	 * Last added at top
+	 */
 	private void recentAdd(final String fileNameToAdd) {
-		boolean removed = false;
-		if (recentQueue.contains(fileNameToAdd)) {
-			removed = recentQueue.remove(fileNameToAdd);
-		}
-		recentQueue.add(fileNameToAdd);
+		recentQueue.remove(fileNameToAdd);
+		recentQueue.addFirst(fileNameToAdd);
 
 		if (recentQueue.size() > recentMaxItems) {
-			removed = true;
-			recentQueue.remove();
+			recentQueue.removeLast();
 		}
 
-		if (removed) {
-			recentItems.removeAll();
+		recentItems.removeAll();
 
-			for (final String string : recentQueue) {
-				JMenuItem item = new JMenuItem(recentFilenameFromPath(string));
-				item.addActionListener(evt -> recentActionPerformed(evt, string));
-				recentItems.add(item);
-			}
-		} else {
-			JMenuItem newRecent = new JMenuItem(recentFilenameFromPath(fileNameToAdd));
-			newRecent.addActionListener(evt -> recentActionPerformed(evt, fileNameToAdd));
-			recentItems.add(newRecent);
+		for (final String string : recentQueue) {
+			JMenuItem item = new JMenuItem(recentFilenameFromPath(string));
+			item.addActionListener(evt -> recentActionPerformed(evt, string));
+			recentItems.add(item);
 		}
+
 		recentPrefsWrite();
 	}
 	
