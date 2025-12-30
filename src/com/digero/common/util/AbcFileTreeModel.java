@@ -24,12 +24,17 @@ public class AbcFileTreeModel implements TreeModel {
 		// Convert LAST_MODIFIED_DESC into Last Modified (desc)
 		@Override
 		public String toString() {
+			// Converts NAME_ASC -> "abcplayer.sort.name.asc"
+			String key = "abcplayer.sort." + name().toLowerCase().replace('_', '.');
+			return UIText.get(key);
+			/*
 			String[] parts = super.toString().toLowerCase().split("_");
 			for (int i = 0; i < parts.length - 1; i++) {
 				parts[i] = parts[i].substring(0, 1).toUpperCase() + parts[i].substring(1);
 			}
 			parts[parts.length - 1] = "(" + parts[parts.length - 1] + ")";
 			return String.join(" ", parts);
+			 */
 		}
 	}
 
