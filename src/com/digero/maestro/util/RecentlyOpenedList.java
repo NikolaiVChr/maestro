@@ -8,7 +8,7 @@ import java.util.prefs.Preferences;
 
 public class RecentlyOpenedList {
 	
-	private static final int RECENT_LIST_MAX_SIZE = 16;
+	private static final int RECENT_LIST_MAX_SIZE = 22;
 	
 	private final Preferences prefs;
 	private final LinkedList<File> openedFiles;
