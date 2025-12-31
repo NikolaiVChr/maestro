@@ -60,6 +60,7 @@ Version 4.6.3
 - Allow editing of lyrics and to copy them for Poetical with timestamps.
 - Allow changing colors of Maestro. Note that most colors are dictated by dark and light themes and can't be changed.
 - Added fr and de localizations. Consider this a beta feature please, as it's mostly auto translated.
+    Not translated: MIDI instruments and drum hit names, color editor, statistics.
 - Abc Player recent list now has the most recent at top instead of bottom (like Maestro).
 
 Version 4.5.24

@@ -242,7 +242,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 			InstrumentSpinner spinner = new InstrumentSpinner(inst);
 			instrumentSpinners.add(spinner);
 			instrumentsPanel.add(spinner, col + ", " + row);
-			instrumentsPanel.add(new JLabel(inst.toString() + " "), (col + 1) + ", " + row);
+			instrumentsPanel.add(new JLabel(inst.getLocalFriendlyName() + " "), (col + 1) + ", " + row);
 		}
 
 		JLabel incrementTitle = new JLabel(UIText.get("maestro.options.html.b.u.increment.u.b.html"));
@@ -358,7 +358,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 			InstrumentDropdown dropdown = new InstrumentDropdown(inst);
 
 			instrNamePanel.add(dropdown, col + ", " + row);
-			instrNamePanel.add(new JLabel(inst.toString() + " "), (col + 1) + ", " + row);
+			instrNamePanel.add(new JLabel(inst.getLocalFriendlyName() + " "), (col + 1) + ", " + row);
 		}
 
 		TableLayout numberingLayout = new TableLayout(//
@@ -385,6 +385,8 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 			setEditable(true);
 			addItem(instrNameSettings.getInstrNick(instrument));
 			addItem(instrument.friendlyName);
+			addItem(UIText.get(instrument.localFriendlyNameKey, Locale.FRENCH));
+			addItem(UIText.get(instrument.localFriendlyNameKey, Locale.GERMAN));
 			for (String nick : LotroInstrumentNick.getNicks(instrument)) {
 				addItem(nick);
 			}

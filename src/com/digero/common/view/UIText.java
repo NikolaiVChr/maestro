@@ -24,4 +24,13 @@ public class UIText {
             return "ERROR";
         }
     }
+
+    public static @NotNull String get(@PropertyKey(resourceBundle = BUNDLE_NAME)String key, Locale local) {
+        try {
+            return ResourceBundle.getBundle(BUNDLE_NAME, local).getString(key);
+        } catch (Exception e) {
+            log.warning("Failed to load UI text for key \"" + key + "\", locale is " + local); //NON-NLS //NON-NLS
+            return "ERROR";
+        }
+    }
 }

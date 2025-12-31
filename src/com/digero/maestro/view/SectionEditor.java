@@ -185,7 +185,7 @@ public class SectionEditor {
 				panel.setLayout(new TableLayout(LAYOUT_COLS, LAYOUT_ROWS));
 
 				// Row 0
-				titleLabel = new JLabel(MessageFormat.format(UIText.get("maestro.sectionedit.title"), abcPart.getTitle(),abcPart.getInstrument().toString(),track));
+				titleLabel = new JLabel(MessageFormat.format(UIText.get("maestro.sectionedit.title"), abcPart.getTitle(), abcPart.getInstrument().getLocalFriendlyName(),track));
 				panel.add(titleLabel, "0, 0, 7, 0, C, C");
 				tabPanel = new JTabbedPane() {
 					@Override
@@ -772,9 +772,9 @@ public class SectionEditor {
 
 			private final Listener<AbcPartEvent> abcPartListener = e -> {
 				if (e.getProperty() == AbcPartProperty.TITLE) {
-					titleLabel.setText(MessageFormat.format(UIText.get("maestro.sectionedit.title2"), abcPart.getTitle(),abcPart.getInstrument().toString(),track));
+					titleLabel.setText(MessageFormat.format(UIText.get("maestro.sectionedit.title2"), abcPart.getTitle(), abcPart.getInstrument().getLocalFriendlyName(),track));
 				} else if (e.getProperty() == AbcPartProperty.INSTRUMENT) {
-					titleLabel.setText(MessageFormat.format(UIText.get("maestro.sectionedit.title2"), abcPart.getTitle(),abcPart.getInstrument().toString(),track));
+					titleLabel.setText(MessageFormat.format(UIText.get("maestro.sectionedit.title2"), abcPart.getTitle(), abcPart.getInstrument().getLocalFriendlyName(),track));
 					
 					
 					

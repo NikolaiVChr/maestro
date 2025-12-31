@@ -189,7 +189,7 @@ public class PartNameTemplate {
                 if (currentPart == null)
                     return LotroInstrument.DEFAULT_INSTRUMENT.toString();
 
-                return currentPart.getInstrument().toString();
+                return currentPart.getInstrument().toString();//TODO: currentPart.getInstrument().localFriendlyName instead?
             }
         });
         variables.put("$FilePath",
