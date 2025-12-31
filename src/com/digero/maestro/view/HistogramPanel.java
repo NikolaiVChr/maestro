@@ -111,13 +111,13 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 		titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD));
 		titleLabel.setForeground(ColorTable.PANEL_TEXT_DISABLED.get());
 
-		currentCountLabel = new LeanJLabel(UIText.get("maestro.128.notes.peak.128"));
+		currentCountLabel = new LeanJLabel(UIText.get("maestro.polyphony.dummyLabel"));
 		currentCountLabel.setForeground(ColorTable.PANEL_TEXT_DISABLED.get());
-		currentCountLabel.setToolTipText(UIText.get("maestro.number.of.concurrent.playing.notes"));
+		currentCountLabel.setToolTipText(UIText.get("maestro.polyphony.number.of.concurrent.playing.notes"));
 		currentCountLabel.setHorizontalAlignment(JLabel.RIGHT);
 
-        peakButton = new JButton(UIText.get("maestro.p"));
-        peakButton.setToolTipText(UIText.get("maestro.jump.to.highest.peak"));
+        peakButton = new JButton(UIText.get("maestro.polyphony.peak"));
+        peakButton.setToolTipText(UIText.get("maestro.polyphony.jump.to.highest.peak"));
         peakButton.addActionListener(a -> {
             if (histogram != null) {
                 long tick = histogram.getPeakTick();
@@ -192,9 +192,9 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
                 histogram.sumUp(abcSong);
             }
             int notes = histogram.get(abcSequencer.getThumbPosition());// Must be abcSeq, due to tuneeditor can change micros from this call
-            currentCountLabel.setText(MessageFormat.format(UIText.get("maestro.0.notes.peak.1"), notes,histogram.max()));
+            currentCountLabel.setText(MessageFormat.format(UIText.get("maestro.polyphony.notes.peak"), notes,histogram.max()));
         } else {
-            currentCountLabel.setText(UIText.get("maestro.no.preview.data"));
+            currentCountLabel.setText(UIText.get("maestro.polyphony.no.preview.data"));
         }
 	}
 
@@ -267,7 +267,7 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
                 }
                 int total = 0;
                 StringBuilder tooltip = new StringBuilder();
-                tooltip.append(UIText.get("maestro.html.part.polyphony"));
+                tooltip.append(UIText.get("maestro.polyphony.part.polyphony"));
                 for (AbcPart part : abcSong.getParts()) {
                     int notesPart = histogram.get((long) pt.x, part);
                     if (notesPart == 0) continue;
@@ -277,7 +277,7 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
                             .append(":&nbsp;&nbsp;")
                             .append(notesPart);
                 }
-                tooltip.append(UIText.get("maestro.br.total.nbsp.nbsp"));
+                tooltip.append(UIText.get("maestro.polyphony.total.nbsp.nbsp"));
                 tooltip.append(total);
                 tooltip.append("</html>");
                 lastX = x;
