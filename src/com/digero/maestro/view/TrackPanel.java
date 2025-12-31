@@ -688,9 +688,9 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 					}
 				}
 				if (g3count == 0) {
-					badString = MessageFormat.format(UIText.get("maestro.b.br.bad.g3.notes.0"), g3count);
+					badString = UIText.get("maestro.b.br.bad.g3.notes.0", g3count);
 				} else {
-					badString = MessageFormat.format(UIText.get("maestro.b.br.p.style.color.red.bad.g3.notes.0.p"), g3count);
+					badString = UIText.get("maestro.b.br.p.style.color.red.bad.g3.notes.0.p", g3count);
 				}
 				break;
 			case BASIC_PIBGORN:
@@ -705,9 +705,9 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 					}
 				}
 				if (acount == 0) {
-					badString = MessageFormat.format(UIText.get("maestro.b.br.bad.a.notes.0"), acount);
+					badString = UIText.get("maestro.b.br.bad.a.notes.0", acount);
 				} else {
-					badString = MessageFormat.format(UIText.get("maestro.b.br.p.style.color.red.bad.a.notes.0.p"), acount);
+					badString = UIText.get("maestro.b.br.p.style.color.red.bad.a.notes.0.p", acount);
 				}
 				break;
 			case BASIC_HARP:
@@ -721,9 +721,9 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 					}
 				}
 				if (b4count == 0) {
-					badString = MessageFormat.format(UIText.get("maestro.b.br.bad.b4.notes.0"), b4count);
+					badString = UIText.get("maestro.b.br.bad.b4.notes.0", b4count);
 				} else {
-					badString = MessageFormat.format(UIText.get("maestro.b.br.p.style.color.red.bad.b4.notes.0.p"), b4count);
+					badString = UIText.get("maestro.b.br.p.style.color.red.bad.b4.notes.0.p", b4count);
 				}
 				break;
             /*
@@ -1029,7 +1029,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 		JFileChooser fileChooser = new JFileChooser(dir);
 		fileChooser.setFileFilter(
-				new ExtensionFileFilter(MessageFormat.format(UIText.get("maestro.drum.map.1"), DrumNoteMap.FILE_SUFFIX), DrumNoteMap.FILE_SUFFIX));
+				new ExtensionFileFilter(UIText.get("maestro.drum.map.1", DrumNoteMap.FILE_SUFFIX), DrumNoteMap.FILE_SUFFIX));
 
 		File saveFile;
 		do {
@@ -1044,7 +1044,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 			if (saveFile.exists()) {
 				int result = JOptionPane.showConfirmDialog(this,
-						MessageFormat.format(UIText.get("maestro.file.0.already.exists.overwrite"), saveFile.getName()), UIText.get("maestro.confirm.overwrite"),
+						UIText.get("maestro.file.0.already.exists.overwrite", saveFile.getName()), UIText.get("maestro.confirm.overwrite"),
 						JOptionPane.OK_CANCEL_OPTION);
 				if (result != JOptionPane.OK_OPTION)
 					continue;
@@ -1056,7 +1056,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		try {
 			abcPart.getDrumMap(trackInfo.getTrackNumber()).save(saveFile);
 		} catch (IOException e) {
-			JOptionPane.showMessageDialog(this, MessageFormat.format(UIText.get("maestro.failed.to.save.drum.map.0"), e.getMessage()),
+			JOptionPane.showMessageDialog(this, UIText.get("maestro.failed.to.save.drum.map.0", e.getMessage()),
 					UIText.get("maestro.failed.to.save.drum.map"), JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
@@ -1074,7 +1074,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 			dir = Util.getLotroMusicPath(false /* create */);
 
 		JFileChooser fileChooser = new JFileChooser(dir);
-		fileChooser.setFileFilter(new ExtensionFileFilter(MessageFormat.format(UIText.get("maestro.drum.map.0"), DrumNoteMap.FILE_SUFFIX),
+		fileChooser.setFileFilter(new ExtensionFileFilter(UIText.get("maestro.drum.map.0", DrumNoteMap.FILE_SUFFIX),
 				DrumNoteMap.FILE_SUFFIX, "txt"));
 
 		if (fileChooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION)
@@ -1085,7 +1085,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		try {
 			abcPart.getDrumMap(trackInfo.getTrackNumber()).load(loadFile);
 		} catch (IOException | FileParseException e) {
-			JOptionPane.showMessageDialog(this, MessageFormat.format(UIText.get("maestro.failed.to.load.drum.map.0"), e.getMessage()),
+			JOptionPane.showMessageDialog(this, UIText.get("maestro.failed.to.load.drum.map.0", e.getMessage()),
 					UIText.get("maestro.failed.to.load.drum.map"), JOptionPane.ERROR_MESSAGE);
 			return false;
 		}

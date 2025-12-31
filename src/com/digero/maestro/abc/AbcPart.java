@@ -482,8 +482,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				if (!abcSong.getSequenceInfo().getTrackInfo(t).hasEvents()) {
                     Component parent = (getFrames().length > 0) ? getFrames()[0] : null;
 					JOptionPane.showMessageDialog(parent,
-							MessageFormat.format(UIText.get("maestro.0.has.a.midi.track.track.1.selected.that.has.no.notes"), title, t),
-							MessageFormat.format(UIText.get("maestro.warning.for.0"), abcSong.getTitle()), JOptionPane.WARNING_MESSAGE);
+							UIText.get("maestro.0.has.a.midi.track.track.1.selected.that.has.no.notes", title, t),
+							UIText.get("maestro.warning.for.0", abcSong.getTitle()), JOptionPane.WARNING_MESSAGE);
 				}
 
 				TreeMap<Float, PartSection> tree = sections.get(t);

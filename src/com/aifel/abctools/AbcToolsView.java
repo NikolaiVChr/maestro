@@ -192,6 +192,7 @@ public class AbcToolsView extends JFrame {
 		});
 
 		btnMIDI = new JButton(UIText.get("abctools.select.folder.with.midis"));
+		btnMIDI.setToolTipText(UIText.get("abctools.midi.folder.button"));
 		splitPaneAuto.add(btnMIDI);
 		splitPaneAuto.add(btnDestAuto);
 

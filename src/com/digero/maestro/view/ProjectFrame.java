@@ -313,14 +313,14 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
             if (LotroSequencerWrapper.getLoadLotroSynthError() != null) {
                 welcomeMessageTitle = UIText.get("maestro.could.not.load.lotro.instrument.sounds");
-				welcomeMessage = MessageFormat.format(UIText.get("maestro.abc.preview.will.use.standard.midi.instruments.instead"), LotroSequencerWrapper.getLoadLotroSynthError());
+				welcomeMessage = UIText.get("maestro.abc.preview.will.use.standard.midi.instruments.instead", LotroSequencerWrapper.getLoadLotroSynthError());
                 failedToLoadLotroInstruments = true;
             }
 
         } catch (MidiUnavailableException e) {
             JOptionPane
                     .showMessageDialog(
-                            null, MessageFormat.format(UIText.get("maestro.failed.to.initialize.midi.sequencer.msg"), e.getMessage()),
+                            null, UIText.get("maestro.failed.to.initialize.midi.sequencer.msg", e.getMessage()),
 							UIText.get("maestro.failed.to.initialize.midi.sequencer.title"), JOptionPane.ERROR_MESSAGE);
             System.exit(1);
             return;
@@ -725,7 +725,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				refreshPreviewSequence(false);
 			}
 		});
-		dynaCombo.setToolTipText(MessageFormat.format(UIText.get("maestro.tip.dynamics"), Chord.CalcDynamics.LOUDEST,Chord.CalcDynamics.POWER_RMS_DB,Chord.CalcDynamics.POWER_MID_DB,Chord.CalcDynamics.WEIGHTED,Chord.CalcDynamics.POWER_MID_DB,Chord.CalcDynamics.SOFTEST));
+		dynaCombo.setToolTipText(UIText.get("maestro.tip.dynamics", Chord.CalcDynamics.LOUDEST,Chord.CalcDynamics.POWER_RMS_DB,Chord.CalcDynamics.POWER_MID_DB,Chord.CalcDynamics.WEIGHTED,Chord.CalcDynamics.POWER_MID_DB,Chord.CalcDynamics.SOFTEST));
 
         tempoOnlyFirstCheckBox = new JCheckBox(UIText.get("maestro.only.tempo.changes.from.first.track"));
         tempoOnlyFirstCheckBox.setToolTipText(UIText.get("maestro.tip.tempo.first.track.only"));
@@ -1171,14 +1171,14 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		fileMenu.addSeparator();
 
-		saveMenuItem = fileMenu.add(new JMenuItem(MessageFormat.format(UIText.get("maestro.menu.save.0"), AbcSong.MSX_FILE_DESCRIPTION)));
+		saveMenuItem = fileMenu.add(new JMenuItem(UIText.get("maestro.menu.save.0", AbcSong.MSX_FILE_DESCRIPTION)));
 		saveMenuItem.setIcon(IconLoader.getImageIcon("msxfile_16.png"));
 		saveMenuItem.setDisabledIcon(IconLoader.getDisabledIcon("msxfile_16.png"));
 		saveMenuItem.setMnemonic('S');
 		saveMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, CTRL_DOWN_MASK));
 		saveMenuItem.addActionListener(e -> save());
 
-		saveAsMenuItem = fileMenu.add(new JMenuItem(MessageFormat.format(UIText.get("maestro.menu.save.0.as"), AbcSong.MSX_FILE_DESCRIPTION)));
+		saveAsMenuItem = fileMenu.add(new JMenuItem(UIText.get("maestro.menu.save.0.as", AbcSong.MSX_FILE_DESCRIPTION)));
 		saveAsMenuItem.setMnemonic('A');
 		saveAsMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, CTRL_DOWN_MASK | SHIFT_DOWN_MASK));
 		saveAsMenuItem.addActionListener(e -> saveAs());
@@ -1325,7 +1325,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		
 		toolsMenu.addSeparator();
 
-		JMenuItem aboutItem = toolsMenu.add(new JMenuItem(MessageFormat.format(UIText.get("maestro.menu.about.0"), MaestroMain.APP_NAME)));
+		JMenuItem aboutItem = toolsMenu.add(new JMenuItem(UIText.get("maestro.menu.about.0", MaestroMain.APP_NAME)));
 		aboutItem.setMnemonic('A');
 		aboutItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F1, 0));
 		aboutItem.addActionListener(e -> AboutDialog.show(ProjectFrame.this, MaestroMain.APP_NAME,
@@ -1802,7 +1802,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         tempoOnlyFirstCheckBox.setEnabled(abcSong != null && abcSong.getSequenceInfo().getDataCache().isTempoInHigherTracks() && uiEnabled);//  && abcSong.getProjectFile() != null
 		sidepanelButton.setEnabled(midiLoaded && uiEnabled);
 		if (midiLoaded) {
-			midiModeRadioButton.setText(MessageFormat.format(UIText.get("maestro.original.0"), (abcSong.getSequenceInfo().standard == MidiStandard.GM && abcSong.getSequenceInfo().hasPorts)
+			midiModeRadioButton.setText(UIText.get("maestro.original.0", (abcSong.getSequenceInfo().standard == MidiStandard.GM && abcSong.getSequenceInfo().hasPorts)
 					? MidiStandard.GM_PLUS
 					: abcSong.getSequenceInfo().standard));
 		} else {
@@ -1815,7 +1815,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		String partListTitle = UIText.get("maestro.song.parts");
 		if (abcSong != null) {
-			partListTitle = MessageFormat.format(UIText.get("maestro.0.count.1"), partListTitle, abcSong.getActivePartCount());
+			partListTitle = UIText.get("maestro.0.count.1", partListTitle, abcSong.getActivePartCount());
 		}
 
 		partsListPanel.setBorder(BorderFactory.createTitledBorder(partListTitle));
@@ -2034,7 +2034,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 				if (abcSong.getParts().isEmpty()) {
 					sequencer.stop();
-					arrangementView.showInfoMessage(formatInfoMessage(UIText.get("maestro.add.a.part"), MessageFormat.format(UIText.get("maestro.this.abc.song.has.no.parts.click.the.0.button.to.add.a.new.part"), newPartButton.getText()),getHTMLFontSizeNormal()));
+					arrangementView.showInfoMessage(formatInfoMessage(UIText.get("maestro.add.a.part"), UIText.get("maestro.this.abc.song.has.no.parts.click.the.0.button.to.add.a.new.part", newPartButton.getText()),getHTMLFontSizeNormal()));
 				}
 
 				partsList.repaint();
@@ -2226,7 +2226,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			if (abcSong.getProjectFile() == null)
 				message = UIText.get("maestro.do.you.want.to.save.this.new.song");
 			else
-				message = MessageFormat.format(UIText.get("maestro.do.you.want.to.save.changes.to.0"), abcSong.getProjectFile().getName());
+				message = UIText.get("maestro.do.you.want.to.save.changes.to.0", abcSong.getProjectFile().getName());
 
 			int result = JOptionPane.showConfirmDialog(this, message, UIText.get("maestro.save.changes"), JOptionPane.YES_NO_CANCEL_OPTION,
 					JOptionPane.QUESTION_MESSAGE, IconLoader.getImageIcon("msxfile_32.png"));
@@ -2472,10 +2472,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 					message += ", column " + e.getColumnNumber();
 			}
 
-			arrangementView.showInfoMessage(formatErrorMessage(MessageFormat.format(UIText.get("maestro.could.not.open.0"), file.getName()), message, getHTMLFontSizeNormal()));
+			arrangementView.showInfoMessage(formatErrorMessage(UIText.get("maestro.could.not.open.0", file.getName()), message, getHTMLFontSizeNormal()));
 			midiResolved = false;
 		} catch (InvalidMidiDataException | IOException | FileParseException | SAXException e) {
-			arrangementView.showInfoMessage(formatErrorMessage(MessageFormat.format(UIText.get("maestro.could.not.open.0"), file.getName()), e.getMessage(), getHTMLFontSizeNormal()));
+			arrangementView.showInfoMessage(formatErrorMessage(UIText.get("maestro.could.not.open.0", file.getName()), e.getMessage(), getHTMLFontSizeNormal()));
 			midiResolved = false;
 		}
 		
@@ -3128,7 +3128,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 			if (selectedFile.exists() && !selectedFile.equals(allowOverwriteFile)) {
 				int res = JOptionPane.showConfirmDialog(this,
-						MessageFormat.format(UIText.get("maestro.file.0.already.exists.do.you.want.to.replace.it"), fileName),
+						UIText.get("maestro.file.0.already.exists.do.you.want.to.replace.it", fileName),
 						UIText.get("maestro.confirm.replace.file"), JOptionPane.YES_NO_CANCEL_OPTION);
 				if (res == JOptionPane.CANCEL_OPTION || res == JOptionPane.CLOSED_OPTION)
 					return null;
@@ -3242,7 +3242,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
     private boolean confirmExportDespiteWarnings() {
         List<String> warnings = abcSong.getExportWarnings(histogram);
         for(String warning : warnings) {
-            int option = JOptionPane.showConfirmDialog(this, MessageFormat.format(UIText.get("maestro.0.do.you.want.to.proceed.with.exporting.without.fixing.it"), warning), UIText.get("maestro.warning"), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            int option = JOptionPane.showConfirmDialog(this, UIText.get("maestro.0.do.you.want.to.proceed.with.exporting.without.fixing.it", warning), UIText.get("maestro.warning"), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
             if (option != JOptionPane.YES_OPTION) {
                 return false;
             }
@@ -3314,7 +3314,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 get(); // get exceptions from doInBackground()
 
                 exportSuccessfulLabel.setText(abcSong.getExportFile().getName());
-                exportSuccessfulLabel.setToolTipText(MessageFormat.format(UIText.get("maestro.exported.0"), abcSong.getExportFile().getName()));
+                exportSuccessfulLabel.setToolTipText(UIText.get("maestro.exported.0", abcSong.getExportFile().getName()));
                 exportSuccessfulLabel.setVisible(true);
 
                 if (exportLabelHideTimer == null) {
@@ -3331,20 +3331,20 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 Throwable cause = e.getCause() != null ? e.getCause() : e;
                 log.log(Level.WARNING, "Error when exporting ABC", cause);
                 if (cause instanceof FileNotFoundException) {
-                    JOptionPane.showMessageDialog(ProjectFrame.this, MessageFormat.format(UIText.get("maestro.failed.to.create.file.0"), cause.getMessage()),
+                    JOptionPane.showMessageDialog(ProjectFrame.this, UIText.get("maestro.failed.to.create.file.0", cause.getMessage()),
 							UIText.get("maestro.failed.to.create.file"), JOptionPane.ERROR_MESSAGE);
                 } else if (cause instanceof IOException || cause instanceof AbcConversionException) {
                     JOptionPane.showMessageDialog(ProjectFrame.this, cause.getMessage(), UIText.get("maestro.error"),
                             JOptionPane.ERROR_MESSAGE);
                 } else {
                     // Catch any other unexpected errors
-                    JOptionPane.showMessageDialog(ProjectFrame.this, MessageFormat.format(UIText.get("maestro.an.unexpected.error.occurred.0"), cause.getMessage()),
+                    JOptionPane.showMessageDialog(ProjectFrame.this, UIText.get("maestro.an.unexpected.error.occurred.0", cause.getMessage()),
 							UIText.get("maestro.error"), JOptionPane.ERROR_MESSAGE);
                 }
 
             } catch (Exception e) {
                 log.log(Level.SEVERE, "Error exporting ABC", e);
-                JOptionPane.showMessageDialog(ProjectFrame.this, MessageFormat.format(UIText.get("maestro.an.unexpected.ui.error.occurred.0"), e.getMessage()),
+                JOptionPane.showMessageDialog(ProjectFrame.this, UIText.get("maestro.an.unexpected.ui.error.occurred.0", e.getMessage()),
 						UIText.get("maestro.error"), JOptionPane.ERROR_MESSAGE);
             } finally {
                 setUIEnabled(true);
@@ -3469,7 +3469,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		try {
 			XmlUtil.saveDocument(abcSong.saveToXml(), abcSong.getProjectFile());
 		} catch (FileNotFoundException e) {
-			JOptionPane.showMessageDialog(this, MessageFormat.format(UIText.get("maestro.failed.to.create.file.0"), e.getMessage()), UIText.get("maestro.failed.to.create.file"),
+			JOptionPane.showMessageDialog(this, UIText.get("maestro.failed.to.create.file.0", e.getMessage()), UIText.get("maestro.failed.to.create.file"),
 					JOptionPane.ERROR_MESSAGE);
 
 			return false;
@@ -3554,7 +3554,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			}
 		} catch (FileNotFoundException e) {
 			log.warning(e.getMessage());
-			JOptionPane.showMessageDialog(this, MessageFormat.format(UIText.get("maestro.failed.to.create.file.0"), e.getMessage()), UIText.get("maestro.failed.to.create.file"),
+			JOptionPane.showMessageDialog(this, UIText.get("maestro.failed.to.create.file.0", e.getMessage()), UIText.get("maestro.failed.to.create.file"),
 					JOptionPane.ERROR_MESSAGE);
 
 			return false;
@@ -3617,7 +3617,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                             Version myVersion = MaestroMain.APP_VERSION;
                             if (latestVer != null && myVersion.compareTo(latestVer) < 0) {
                                 SwingUtilities.invokeLater(() -> {
-                                        int result = JOptionPane.showConfirmDialog(ProjectFrame.this, MessageFormat.format(UIText.get("maestro.version.0.is.available.do.you.want.to.close.and.download.it"), latestVer), UIText.get("maestro.version.check"),
+                                        int result = JOptionPane.showConfirmDialog(ProjectFrame.this, UIText.get("maestro.version.0.is.available.do.you.want.to.close.and.download.it", latestVer), UIText.get("maestro.version.check"),
                                                 JOptionPane.YES_NO_OPTION);
                                         if (result == JOptionPane.YES_OPTION) {
                                             URI uriDownload;

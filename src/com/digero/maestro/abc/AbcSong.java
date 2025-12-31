@@ -66,8 +66,8 @@ import com.digero.maestro.util.XmlUtil;
 public class AbcSong implements IDiscardable, AbcMetadataSource {
 	protected static final Logger log = Logger.getLogger("song");
 	
-	public static final String MSX_FILE_DESCRIPTION = MessageFormat.format(UIText.get("maestro.0.project"), MaestroMain.APP_NAME);
-	public static final String MSX_FILE_DESCRIPTION_PLURAL = MessageFormat.format(UIText.get("maestro.0.projects"), MaestroMain.APP_NAME);
+	public static final String MSX_FILE_DESCRIPTION = UIText.get("maestro.0.project", MaestroMain.APP_NAME);
+	public static final String MSX_FILE_DESCRIPTION_PLURAL = UIText.get("maestro.0.projects", MaestroMain.APP_NAME);
 	public static final Version SONG_FILE_VERSION = new Version(4, 6, 0, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
@@ -336,7 +336,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 			if (isFileNewer(fileVersion)) {
                 if (warningHandler != null) {
-                    String message = MessageFormat.format(UIText.get("maestro.project.0.was.saved.with.a.newer.version"), projectFile.getName());
+                    String message = UIText.get("maestro.project.0.was.saved.with.a.newer.version", projectFile.getName());
 
                     WarningHandler.WarningAction action = warningHandler.handleWarning(
                             NEWER_VERSION_WARNING_ID, UIText.get("maestro.newer.project.version"), message);
@@ -463,7 +463,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				String issue = VersionsWithIssues.checkProject(maestroVersion);
                 if (issue != null) {
                     if (warningHandler != null) {
-                        String message = MessageFormat.format(UIText.get("maestro.project.0.was.saved.with.maestro.version.1.which.had.this.issue.2"), file.getName(), maestroVersion, issue);
+                        String message = UIText.get("maestro.project.0.was.saved.with.maestro.version.1.which.had.this.issue.2", file.getName(), maestroVersion, issue);
                         WarningHandler.WarningAction action = warningHandler.handleWarning(
                                 KNOWN_ISSUE_WARNING_ID, UIText.get("maestro.known.issue.version"), message);
                         if (action == WarningHandler.WarningAction.SKIP_FILE) {
@@ -471,18 +471,18 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
                         }
                     } else {
                         JOptionPane.showMessageDialog(null,
-								MessageFormat.format(UIText.get("maestro.project.was.saved.with.maestro.version.0.which.had.this.issue.1"), maestroVersion, issue),
-								MessageFormat.format(UIText.get("maestro.warning.for.0"), file.getName()), JOptionPane.WARNING_MESSAGE);
+								UIText.get("maestro.project.was.saved.with.maestro.version.0.which.had.this.issue.1", maestroVersion, issue),
+								UIText.get("maestro.warning.for.0", file.getName()), JOptionPane.WARNING_MESSAGE);
                     }
                 }
 			}
             if (sequenceInfo.getDataCache().isTempoInHigherTracks()
                     && !usingOldTempos && !maestroVersion.equals(def)
                     && maestroVersion.compareTo(new Version(4, 3, 9)) < 0) {
-                log.warning(MessageFormat.format(UIText.get("maestro.warning.tempos.in.0.project.has.been.fixed"), file.getName()));
+                log.warning(UIText.get("maestro.warning.tempos.in.0.project.has.been.fixed", file.getName()));
                 temposWereFixed = true;
                 if (warningHandler != null) {
-                    String message = MessageFormat.format(UIText.get("maestro.warning.tempos.in.0.project.should.be.fixed"), file.getName());
+                    String message = UIText.get("maestro.warning.tempos.in.0.project.should.be.fixed", file.getName());
                     WarningHandler.WarningAction action = warningHandler.handleWarning(
                             TEMPO_ISSUE_WARNING_ID, UIText.get("maestro.important.question"), message);
                     if (action == WarningHandler.WarningAction.SKIP_FILE) {
@@ -490,8 +490,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
                     }
                 } else {
                     JOptionPane.showMessageDialog(null,
-							MessageFormat.format(UIText.get("maestro.warning.tempos.in.0.project.has.been.fixed.for.potential.problems"), file.getName()),
-							MessageFormat.format(UIText.get("maestro.warning.for.0"), file.getName()), JOptionPane.WARNING_MESSAGE);
+							UIText.get("maestro.warning.tempos.in.0.project.has.been.fixed.for.potential.problems", file.getName()),
+							UIText.get("maestro.warning.for.0", file.getName()), JOptionPane.WARNING_MESSAGE);
                 }
             }
 			Element lyricsContainer = XmlUtil.selectSingleElement(songEle, "lyrics");
@@ -567,10 +567,10 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			keySignature = (ICompileConstants.SHOW_KEY_FIELD) ? sequenceInfo.getKeySignature() : KeySignature.C_MAJOR;
 			timeSignature = sequenceInfo.getTimeSignature();
 		} catch (FileNotFoundException e) {
-			String msg = MessageFormat.format(UIText.get("maestro.could.not.find.the.file.used.to.create.this.song.0"), newSourceFile);
+			String msg = UIText.get("maestro.could.not.find.the.file.used.to.create.this.song.0", newSourceFile);
 			newSourceFile = fileResolver.locateFile(newSourceFile, msg);
 		} catch (InvalidMidiDataException | IOException | FileParseException e) {
-			String msg = MessageFormat.format(UIText.get("maestro.could.not.load.the.file.used.to.create.this.song.0.1"), newSourceFile, e.getMessage());
+			String msg = UIText.get("maestro.could.not.load.the.file.used.to.create.this.song.0.1", newSourceFile, e.getMessage());
 			newSourceFile = fileResolver.resolveFile(newSourceFile, msg);
 		}
 		if (storeNewSourceFile) {
@@ -1836,7 +1836,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         if (histogram != null && histogram.maxAll() > 64) {
             // There is growing concerns that 64+ polyphony can make audience lag (stutter),
             // so this warning is not optional.
-            warns.add(MessageFormat.format(UIText.get("maestro.more.notes.0.64.playing.at.same.time.than.lotro.can.handle"), histogram.maxAll()));
+            warns.add(UIText.get("maestro.more.notes.0.64.playing.at.same.time.than.lotro.can.handle", histogram.maxAll()));
         }
         if (saveAndExportSettings.warnOnExportOfSamePartNames && isPartsTitlesSimilar()) {
             warns.add(UIText.get("maestro.two.or.more.parts.has.same.name"));

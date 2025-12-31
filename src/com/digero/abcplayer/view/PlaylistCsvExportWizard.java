@@ -169,7 +169,7 @@ public class PlaylistCsvExportWizard extends JDialog {
 			}
 
 			for (int i = 0; i < maxPartCount; i++) {
-				headerList.add(MessageFormat.format(UIText.get("abcplayer.part.0"), i + 1));
+				headerList.add(UIText.get("abcplayer.part.0", i + 1));
 			}
 		}
 
@@ -206,7 +206,7 @@ public class PlaylistCsvExportWizard extends JDialog {
 
 		if (selectedFile.exists()) {
 			int res = JOptionPane.showConfirmDialog(this,
-					MessageFormat.format(UIText.get("abcplayer.file.0.already.exists.do.you.want.to.replace.it2"), selectedFile.toString()),
+					UIText.get("abcplayer.file.0.already.exists.do.you.want.to.replace.it2", selectedFile.toString()),
 					UIText.get("abcplayer.confirm.replace.file"), JOptionPane.OK_CANCEL_OPTION);
 			if (res == JOptionPane.CANCEL_OPTION || res == JOptionPane.CLOSED_OPTION)
 				return false;

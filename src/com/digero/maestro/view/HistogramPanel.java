@@ -192,7 +192,7 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
                 histogram.sumUp(abcSong);
             }
             int notes = histogram.get(abcSequencer.getThumbPosition());// Must be abcSeq, due to tuneeditor can change micros from this call
-            currentCountLabel.setText(MessageFormat.format(UIText.get("maestro.polyphony.notes.peak"), notes,histogram.max()));
+            currentCountLabel.setText(UIText.get("maestro.polyphony.notes.peak", notes,histogram.max()));
         } else {
             currentCountLabel.setText(UIText.get("maestro.polyphony.no.preview.data"));
         }

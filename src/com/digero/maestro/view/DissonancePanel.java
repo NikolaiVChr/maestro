@@ -181,7 +181,7 @@ public class DissonancePanel extends JPanel implements IDiscardable, TableLayout
 	public void updateCountLabel() {
         if (dissonanceDetector != null) {
             int notes = dissonanceDetector.get(abcSequencer.getThumbTick(), abcSong).getTotalScore();// Must be abcSeq, due to tuneeditor can change micros from this call
-            currentCountLabel.setText(MessageFormat.format(UIText.get("maestro.dissonance.0.score.peak.1"), notes, dissonanceDetector.max(abcSong)));
+            currentCountLabel.setText(UIText.get("maestro.dissonance.0.score.peak.1", notes, dissonanceDetector.max(abcSong)));
         } else {
             currentCountLabel.setText(UIText.get("maestro.dissonance.no.preview.data"));
         }

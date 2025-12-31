@@ -429,7 +429,7 @@ public class AbcPlaylistPanel extends JPanel {
 					}
 					String issue = inf.getIssue();
 					if (!issue.isEmpty()) {
-						txt = MessageFormat.format(UIText.get("abcplayer.0.potential.corrupted.abc.from.1.2"), txt, inf.getAbcCreator(), issue);
+						txt = UIText.get("abcplayer.0.potential.corrupted.abc.from.1.2", txt, inf.getAbcCreator(), issue);
 					}
 				}
 				return txt;
@@ -664,7 +664,7 @@ public class AbcPlaylistPanel extends JPanel {
 				boolean enabled = playlistTable.getSelectedRow() != -1;
 				if (enabled) {
 					AbcInfo info = tableModel.getAbcInfoAt(playlistTable.getSelectedRow());
-					playItem.setText(MessageFormat.format(UIText.get("abcplayer.menu.play.0"), info.getTitle()));
+					playItem.setText(UIText.get("abcplayer.menu.play.0", info.getTitle()));
 				} else {
 					playItem.setText(UIText.get("abcplayer.play"));
 				}
@@ -1139,7 +1139,7 @@ public class AbcPlaylistPanel extends JPanel {
 			
 			if (file.exists()) {
 				int res = JOptionPane.showConfirmDialog(this,
-						MessageFormat.format(UIText.get("abcplayer.file.0.already.exists.do.you.want.to.replace.it"), fileName),
+						UIText.get("abcplayer.file.0.already.exists.do.you.want.to.replace.it", fileName),
 						UIText.get("abcplayer.confirm.replace.file"), JOptionPane.YES_NO_CANCEL_OPTION);
 				if (res == JOptionPane.CANCEL_OPTION || res == JOptionPane.CLOSED_OPTION)
 					return false;
@@ -1199,7 +1199,7 @@ public class AbcPlaylistPanel extends JPanel {
 					fad.add(new FileAndData(f, AbcToMidi.readLines(f)));
 					data.add(AbcToMidi.parseAbcMetadata(fad));
 				} catch (Exception e) {
-					String err = MessageFormat.format(UIText.get("abcplayer.failed.to.parse.abc.0"), f.getAbsolutePath());
+					String err = UIText.get("abcplayer.failed.to.parse.abc.0", f.getAbsolutePath());
 					JOptionPane.showMessageDialog(this, err, UIText.get("abcplayer.failed.to.load.song"), JOptionPane.ERROR_MESSAGE);
 					markDirty = true;
 				}
@@ -1239,7 +1239,7 @@ public class AbcPlaylistPanel extends JPanel {
 		JTextPane notifPane = new JTextPane();
 		notifPane.setEditable(false);
 		notifPane.setContentType("text/html");
-		String confirmDialogStr = MessageFormat.format(UIText.get("abcplayer.some.abc.files.couldn.t.be.found"), missingSongs.size(), missingSongs.size() == 1 ? 0 : 1);
+		String confirmDialogStr = UIText.get("abcplayer.some.abc.files.couldn.t.be.found", missingSongs.size(), missingSongs.size() == 1 ? 0 : 1);
 		for (int i = 0; i < missingSongs.size(); i++) {
 			AbcInfo inf = songs.get(missingSongs.get(i));
 			confirmDialogStr += inf.getSourceFiles().get(0).toString() + "<br>";
@@ -1253,7 +1253,7 @@ public class AbcPlaylistPanel extends JPanel {
 		int result = JOptionPane.showConfirmDialog(this, scrollPane, UIText.get("abcplayer.missing.songs"), JOptionPane.YES_NO_OPTION);
 		
 		if (result == JOptionPane.NO_OPTION) {
-			JOptionPane.showMessageDialog(this, MessageFormat.format(UIText.get("abcplayer.the.0.missing.song.1"), missingSongs.size(), missingSongs.size() == 1 ? 0 : 1), UIText.get("abcplayer.no.search.done"), JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(this, UIText.get("abcplayer.the.0.missing.song.1", missingSongs.size(), missingSongs.size() == 1 ? 0 : 1), UIText.get("abcplayer.no.search.done"), JOptionPane.INFORMATION_MESSAGE);
 			for (int i = missingSongs.size() - 1; i >= 0; i--) {
 				int idx = missingSongs.get(i);
 				songs.remove(idx);
@@ -1270,7 +1270,7 @@ public class AbcPlaylistPanel extends JPanel {
 		folderChooser.setDialogTitle(UIText.get("abcplayer.choose.search.folder"));
 		result = folderChooser.showOpenDialog(this);
 		if (result != JFileChooser.APPROVE_OPTION) {
-			JOptionPane.showMessageDialog(this, MessageFormat.format(UIText.get("abcplayer.the.0.missing.song.1"), missingSongs.size(), missingSongs.size() == 1 ? 0 : 1), UIText.get("abcplayer.no.search.done"), JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(this, UIText.get("abcplayer.the.0.missing.song.1", missingSongs.size(), missingSongs.size() == 1 ? 0 : 1), UIText.get("abcplayer.no.search.done"), JOptionPane.INFORMATION_MESSAGE);
 			for (int i = missingSongs.size() - 1; i >= 0; i--) {
 				int idx = missingSongs.get(i);
 				songs.remove(idx);
@@ -1333,13 +1333,13 @@ public class AbcPlaylistPanel extends JPanel {
 		if (nameToIdx.isEmpty()) {
 			JOptionPane.showMessageDialog(this, UIText.get("abcplayer.found.all.missing.files"), UIText.get("abcplayer.search.complete"), JOptionPane.INFORMATION_MESSAGE);
 		} else if (nameToIdx.size() == missingSongs.size()) {
-			JOptionPane.showMessageDialog(this, MessageFormat.format(UIText.get("abcplayer.no.missing.files.were.found.in.the.selected.folder"), missingSongs.size(), missingSongs.size() == 1 ? 0 : 1), UIText.get("abcplayer.search.complete"), JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(this, UIText.get("abcplayer.no.missing.files.were.found.in.the.selected.folder", missingSongs.size(), missingSongs.size() == 1 ? 0 : 1), UIText.get("abcplayer.search.complete"), JOptionPane.INFORMATION_MESSAGE);
 		} else {
 			String fileReportStr = UIText.get("abcplayer.found.files");
 			for (int i = 0; i < foundFiles.size(); i++ ) {
 				fileReportStr += foundFiles.get(i) + "\n";
 			}
-			fileReportStr += MessageFormat.format(UIText.get("abcplayer.still.missing.0.files.the.1.missing.song.2"), nameToIdx.size(), nameToIdx.size(), nameToIdx.size() == 1 ? 0 : 1);
+			fileReportStr += UIText.get("abcplayer.still.missing.0.files.the.1.missing.song.2", nameToIdx.size(), nameToIdx.size(), nameToIdx.size() == 1 ? 0 : 1);
 			JOptionPane.showMessageDialog(this, fileReportStr, UIText.get("abcplayer.search.complete"), JOptionPane.INFORMATION_MESSAGE);
 		}
 		
@@ -1397,7 +1397,7 @@ public class AbcPlaylistPanel extends JPanel {
 		if (playlistFile == null) {
 			message = UIText.get("abcplayer.do.you.want.to.save.this.untitled.playlist");
 		} else {
-			message = MessageFormat.format(UIText.get("abcplayer.do.you.want.to.save.changes.to.0"), playlistFile.getName());
+			message = UIText.get("abcplayer.do.you.want.to.save.changes.to.0", playlistFile.getName());
 		}
 		
 		int result = JOptionPane.showConfirmDialog(this, message, UIText.get("abcplayer.save.changes"), JOptionPane.YES_NO_CANCEL_OPTION,
@@ -1523,16 +1523,16 @@ public class AbcPlaylistPanel extends JPanel {
 		}
 		
 		if (totalTimeMicroSec != 0) {
-			String songs = MessageFormat.format(UIText.get("abcplayer.song.0.choice.0.s.1"), numSongs > 1 ? 0 : 1);
-			labelStr += MessageFormat.format(UIText.get("abcplayer.0.1.time.2"), numSongs, songs, Util.formatDuration(totalTimeMicroSec));
+			String songs = UIText.get("abcplayer.song.0.choice.0.s.1", numSongs > 1 ? 0 : 1);
+			labelStr += UIText.get("abcplayer.0.1.time.2", numSongs, songs, Util.formatDuration(totalTimeMicroSec));
 			if (totalTimeWithDelayMicroSec != totalTimeMicroSec) {
-				labelStr += MessageFormat.format(UIText.get("abcplayer.with.switches.0"), Util.formatDuration(totalTimeWithDelayMicroSec));
+				labelStr += UIText.get("abcplayer.with.switches.0", Util.formatDuration(totalTimeWithDelayMicroSec));
 			}
 			labelStr += ")";
 		}
 		
 		if (nextSongIn >= 0) {
-			labelStr = MessageFormat.format(UIText.get("abcplayer.0.next.song.playing.in.1"), labelStr, nextSongIn);
+			labelStr = UIText.get("abcplayer.0.next.song.playing.in.1", labelStr, nextSongIn);
 		}
 		
 		abcPlaylistLabel.setText(labelStr);

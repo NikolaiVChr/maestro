@@ -90,7 +90,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 
 	private static final ExtensionFileFilter ABC_FILE_FILTER = new ExtensionFileFilter(UIText.get("abcplayer.abc.files.and.playlists"), Util.ABC_FILE_EXTENSION_NO_DOT, Util.TXT_FILE_EXTENSION_NO_DOT, Util.ABCP_FILE_EXTENSION_NO_DOT);
 	public static final String APP_NAME = "ABC Player";
-	private static final String APP_NAME_LONG = MessageFormat.format(UIText.get("abcplayer.0.for.the.lord.of.the.rings.online"), APP_NAME);
+	private static final String APP_NAME_LONG = UIText.get("abcplayer.0.for.the.lord.of.the.rings.online", APP_NAME);
 	private static final String WIKI_URL = "https://maestro.miraheze.org/wiki/Main_Page";
 	static Version APP_VERSION = new Version(0, 0, 0);
 
@@ -355,7 +355,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 
 					final String JAVA_URL = "http://www.java.com";
 					if (requredJavaVersion.compareTo(Version.parseVersion(System.getProperty("java.version"))) > 0) {
-						JLabel update = new JLabel(MessageFormat.format(UIText.get("abcplayer.html.it.is.recommended.that.you.install.java"), recommendedJavaVersion.getMinor(),recommendedJavaVersion.getRevision(),JAVA_URL,JAVA_URL));
+						JLabel update = new JLabel(UIText.get("abcplayer.html.it.is.recommended.that.you.install.java", recommendedJavaVersion.getMinor(),recommendedJavaVersion.getRevision(),JAVA_URL,JAVA_URL));
 						update.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 						update.addMouseListener(new MouseAdapter() {
 							@Override
@@ -369,10 +369,10 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 					}
 
 					errorMessage.add(new JLabel(
-									MessageFormat.format(UIText.get("abcplayer.html.error.details.br.0.html"), LotroSequencerWrapper.getLoadLotroSynthError())),
+									UIText.get("abcplayer.html.error.details.br.0.html", LotroSequencerWrapper.getLoadLotroSynthError())),
 							BorderLayout.SOUTH);
 
-					JOptionPane.showMessageDialog(this, errorMessage, MessageFormat.format(UIText.get("abcplayer.0.failed.to.load.lotro.instruments"), APP_NAME),
+					JOptionPane.showMessageDialog(this, errorMessage, UIText.get("abcplayer.0.failed.to.load.lotro.instruments", APP_NAME),
 							JOptionPane.ERROR_MESSAGE);
 
 					useLotroInstruments = false;
@@ -704,18 +704,18 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 
 		String issue = abcInfo.getIssue();
 		if (!issue.isEmpty()) {
-			issue = MessageFormat.format(UIText.get("abcplayer.potential.corrupted.abc.from.0.1"), abcInfo.getAbcCreator(), issue);
+			issue = UIText.get("abcplayer.potential.corrupted.abc.from.0.1", abcInfo.getAbcCreator(), issue);
 		}
 		String title = abcInfo.getTitle();
 		String artist = abcInfo.getComposer_MaybeNull();
 		String transcriber = abcInfo.getTranscriber_MaybeNull();
 
 		titleLabel.setText(title);
-		titleLabel.setToolTipText(MessageFormat.format(UIText.get("abcplayer.song.title.0.1"), title, issue));
+		titleLabel.setToolTipText(UIText.get("abcplayer.song.title.0.1", title, issue));
 
 		if (artist != null) {
 			composerLabel.setText(artist);
-			composerLabel.setToolTipText(MessageFormat.format(UIText.get("abcplayer.artist.0.1"), artist, issue));
+			composerLabel.setToolTipText(UIText.get("abcplayer.artist.0.1", artist, issue));
 			composerLabel.setVisible(true);
 		} else {
 			composerLabel.setVisible(false);
@@ -723,7 +723,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 
 		if (transcriber != null) {
 			transcriberLabel.setText(transcriber);
-			transcriberLabel.setToolTipText(MessageFormat.format(UIText.get("abcplayer.transcriber.0.1"), transcriber, issue));
+			transcriberLabel.setToolTipText(UIText.get("abcplayer.transcriber.0.1", transcriber, issue));
 			transcriberLabel.setVisible(true);
 		} else {
 			transcriberLabel.setVisible(false);
@@ -731,7 +731,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 
 		if (abcInfo.getMood() != null && !abcInfo.getMood().isEmpty()) {
 			moodLabel.setText(abcInfo.getMood());
-			moodLabel.setToolTipText(MessageFormat.format(UIText.get("abcplayer.mood.0"), abcInfo.getMood()));
+			moodLabel.setToolTipText(UIText.get("abcplayer.mood.0", abcInfo.getMood()));
 			moodLabel.setVisible(true);
 		} else {
 			moodLabel.setVisible(false);
@@ -739,7 +739,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 
 		if (abcInfo.getGenre() != null && !abcInfo.getGenre().isEmpty()) {
 			genreLabel.setText(abcInfo.getGenre());
-			genreLabel.setToolTipText(MessageFormat.format(UIText.get("abcplayer.genre.0"), abcInfo.getGenre()));
+			genreLabel.setToolTipText(UIText.get("abcplayer.genre.0", abcInfo.getGenre()));
 			genreLabel.setVisible(true);
 		} else {
 			genreLabel.setVisible(false);
@@ -749,7 +749,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 	private void updateTempoLabel() {
 		float tempo = sequencer.getTempoFactor();
 		int t = Math.round(tempo * 100);
-		tempoLabel.setText(MessageFormat.format(UIText.get("abcplayer.tempo.0"), t));
+		tempoLabel.setText(UIText.get("abcplayer.tempo.0", t));
 	}
 
 	private void initMenu() {
@@ -1020,7 +1020,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		
 		toolsMenu.addSeparator();
 		
-		JMenuItem about = toolsMenu.add(new JMenuItem(MessageFormat.format(UIText.get("abcplayer.menu.about.0"), APP_NAME)));
+		JMenuItem about = toolsMenu.add(new JMenuItem(UIText.get("abcplayer.menu.about.0", APP_NAME)));
 		about.setMnemonic(KeyEvent.VK_A);
 		about.addActionListener(
 				e -> AboutDialog.show(AbcPlayer.this, APP_NAME_LONG, APP_VERSION, WIKI_URL, "abcplayer_64.png"));
@@ -1268,7 +1268,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 
 			File saveFileTmp = new File(saveFileDialog.getSelectedFile().getParent(), fileName);
 			if (saveFileTmp.exists()) {
-				int res = JOptionPane.showConfirmDialog(this, MessageFormat.format(UIText.get("abcplayer.file.0.already.exists.overwrite"), fileName),
+				int res = JOptionPane.showConfirmDialog(this, UIText.get("abcplayer.file.0.already.exists.overwrite", fileName),
 						UIText.get("abcplayer.confirm.overwrite"), JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 				if (res != JOptionPane.YES_OPTION)
 					return;
@@ -1519,7 +1519,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 				}
 			} catch (FileParseException e) {
 				String thisFile = appendData.size() == 1 ? UIText.get("abcplayer.this.file") : UIText.get("abcplayer.these.files");
-				String msg = MessageFormat.format(UIText.get("abcplayer.0.would.you.like.to.close.the.current.song.and.retry.opening.1"), e.getMessage(), thisFile);
+				String msg = UIText.get("abcplayer.0.would.you.like.to.close.the.current.song.and.retry.opening.1", e.getMessage(), thisFile);
 				int result = JOptionPane.showConfirmDialog(this, msg, UIText.get("abcplayer.error.appending.abc"), JOptionPane.YES_NO_OPTION,
 						JOptionPane.ERROR_MESSAGE);
 				if (result == JOptionPane.YES_OPTION) {

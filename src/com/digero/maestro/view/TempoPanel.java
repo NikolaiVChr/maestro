@@ -210,7 +210,7 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
         //TODO: replace with abcSong.getAbcTimingInfo().multiplyByExportTempoFactor():
 		int bpm = (int) Math.round(MidiUtils.convertTempo(mpq) * getCurrentTempoFactor());
 		if (bpm != lastRenderedBPM) {
-			currentTempoLabel.setText(MessageFormat.format(UIText.get("maestro.0.bpm"), bpm));
+			currentTempoLabel.setText(UIText.get("maestro.0.bpm", bpm));
 			lastRenderedBPM = bpm;
 		}
 	}

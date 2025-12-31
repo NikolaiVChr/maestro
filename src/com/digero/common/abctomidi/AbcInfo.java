@@ -465,13 +465,13 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
                 issue = VersionsWithIssues.check(abcCreator);
                 if (issue != null) {
                     String title = songTitle != null ? songTitle: "";
-                    log.warning(MessageFormat.format(UIText.get("common.potential.corrupted.abc.0.abc.was.exported.with.a.flawed.maestro.1"), title,issue));
+                    log.warning(UIText.get("common.potential.corrupted.abc.0.abc.was.exported.with.a.flawed.maestro.1", title,issue));
                     if (warningHandler != null) {
                         // for now only Abc Tools use this. Happens when loading a project that uses abc as a source.
-                        String message = MessageFormat.format(UIText.get("common.project.uses.0.abc.which.was.exported.with.a.flawed.maestro.1"), title,issue);
+                        String message = UIText.get("common.project.uses.0.abc.which.was.exported.with.a.flawed.maestro.1", title,issue);
 
                         WarningHandler.WarningAction action = warningHandler.handleWarning(
-                                CORRUPT_ABC_WARNING_ID, MessageFormat.format(UIText.get("common.potential.corrupted.abc.from.0"), abcCreator), message);
+                                CORRUPT_ABC_WARNING_ID, UIText.get("common.potential.corrupted.abc.from.0", abcCreator), message);
 
                         if (action == WarningHandler.WarningAction.SKIP_FILE) {
                             throw new FileParseException("Skipped file (possible corrupt abc source) by user request.", null);
@@ -480,8 +480,8 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
                             .getBoolean("flawedMaestroPopup", true)) {
                         SwingUtilities.invokeLater(() -> {
                             JOptionPane.showMessageDialog(null,
-									MessageFormat.format(UIText.get("common.0.abc.was.exported.with.a.flawed.maestro.1"), title,issue),
-									MessageFormat.format(UIText.get("common.potential.corrupted.abc.from.0"), abcCreator), JOptionPane.WARNING_MESSAGE);
+									UIText.get("common.0.abc.was.exported.with.a.flawed.maestro.1", title,issue),
+									UIText.get("common.potential.corrupted.abc.from.0", abcCreator), JOptionPane.WARNING_MESSAGE);
                         });
                     }
                 }

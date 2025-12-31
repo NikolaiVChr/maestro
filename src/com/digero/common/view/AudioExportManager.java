@@ -145,7 +145,7 @@ public class AudioExportManager {
 				JOptionPane.showMessageDialog(parentWindow, error.getMessage(), UIText.get("common.error.saving.mp3.file"),
 						JOptionPane.ERROR_MESSAGE);
 				log.log(Level.WARNING, UIText.get("common.something.happened.while.converting.to.mp3"), error);
-				if (parentWindow instanceof ProjectFrame) ProjectFrame.feed(MessageFormat.format(UIText.get("common.error.0"), error), MaestroMain.getFirstLines(error));
+				if (parentWindow instanceof ProjectFrame) ProjectFrame.feed(UIText.get("common.error.0", error), MaestroMain.getFirstLines(error));
 			}
 			waitFrame.setVisible(false);
 		}
@@ -198,7 +198,7 @@ public class AudioExportManager {
 				JOptionPane.showMessageDialog(parentWindow, error.getMessage(), UIText.get("common.error.saving.wav.file"),
 						JOptionPane.ERROR_MESSAGE);
 				log.log(Level.WARNING, "Something happened while converting to wav.", error);
-				if (parentWindow instanceof ProjectFrame) ProjectFrame.feed(MessageFormat.format(UIText.get("common.error.0"), error), MaestroMain.getFirstLines(error));
+				if (parentWindow instanceof ProjectFrame) ProjectFrame.feed(UIText.get("common.error.0", error), MaestroMain.getFirstLines(error));
 			}
 			waitFrame.setVisible(false);
 		}
@@ -210,7 +210,7 @@ public class AudioExportManager {
 			JPanel waitContent = new JPanel(new BorderLayout(5, 5));
 			setContentPane(waitContent);
 			waitContent.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-			waitContent.add(new JLabel(MessageFormat.format(UIText.get("common.saving.0.please.wait"), saveFile.getName())), BorderLayout.CENTER);
+			waitContent.add(new JLabel(UIText.get("common.saving.0.please.wait", saveFile.getName())), BorderLayout.CENTER);
 			JProgressBar waitProgress = new JProgressBar();
 			waitProgress.setIndeterminate(true);
 			waitContent.add(waitProgress, BorderLayout.SOUTH);

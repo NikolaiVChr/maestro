@@ -120,8 +120,8 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		JButton resetButton = new JButton(UIText.get("maestro.options.reset.page"));
 		resetButton.addActionListener(e -> {
 			String page = tabPanel.getTitleAt(tabPanel.getSelectedIndex());
-			String title = MessageFormat.format(UIText.get("maestro.options.reset.0.settings"), page);
-			String message = MessageFormat.format(UIText.get("maestro.options.are.you.sure.you.want.to.reset.the.0.settings.no.undo"), page.toLowerCase());
+			String title = UIText.get("maestro.options.reset.0.settings", page);
+			String message = UIText.get("maestro.options.are.you.sure.you.want.to.reset.the.0.settings.no.undo", page.toLowerCase());
 			int result = JOptionPane.showConfirmDialog(null, message, title, JOptionPane.OK_CANCEL_OPTION,
 					JOptionPane.WARNING_MESSAGE, null);
 			if (result == JOptionPane.YES_OPTION) {
@@ -457,7 +457,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		try {
 			config.load(loadFile);
 		} catch (Exception e) {
-			JOptionPane.showMessageDialog(this, MessageFormat.format(UIText.get("maestro.options.failed.to.load.part.numbering.config.0"), e.getMessage()),
+			JOptionPane.showMessageDialog(this, UIText.get("maestro.options.failed.to.load.part.numbering.config.0", e.getMessage()),
 					UIText.get("maestro.options.failed.to.load.part.numbering.config"), JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
@@ -504,7 +504,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 
 		if (saveFile.exists()) {
 			int result = JOptionPane.showConfirmDialog(this,
-					MessageFormat.format(UIText.get("maestro.options.file.0.already.exists.overwrite"), saveFile.getName()), UIText.get("maestro.options.confirm.overwrite"),
+					UIText.get("maestro.options.file.0.already.exists.overwrite", saveFile.getName()), UIText.get("maestro.options.confirm.overwrite"),
 					JOptionPane.OK_CANCEL_OPTION);
 			if (result != JOptionPane.OK_OPTION)
 				return false;
@@ -522,7 +522,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		try {
 			config.save(saveFile);
 		} catch (IOException e) {
-			JOptionPane.showMessageDialog(this, MessageFormat.format(UIText.get("maestro.options.failed.to.save.part.numbering.config.0"), e.getMessage()),
+			JOptionPane.showMessageDialog(this, UIText.get("maestro.options.failed.to.save.part.numbering.config.0", e.getMessage()),
 					UIText.get("maestro.options.failed.to.save.part.numbering.config"), JOptionPane.ERROR_MESSAGE);
 			return false;
 		}
@@ -796,7 +796,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		MockMetadataSource mockMetadata = new MockMetadataSource(song);
 
 		String exampleText = StringCleaner.cleanForFileName(Util.fileNameWithoutExtension(exportTemplate.formatName(exportTemplateSettings, mockMetadata)))+Util.ABC_FILE_EXTENSION;
-		exampleText = MessageFormat.format(UIText.get("maestro.options.example.filename.0"), exampleText);
+		exampleText = UIText.get("maestro.options.example.filename.0", exampleText);
 		String exampleTextEllipsis = Util.ellipsis(exampleText, exportTemplateExampleLabel.getWidth(),
 				exportTemplateExampleLabel.getFont());
 
@@ -809,9 +809,9 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 	private JPanel createSaveAndExportSettingsPanel() {
 		JLabel titleLabel = new JLabel(UIText.get("maestro.options.html.u.b.save.amp.export.b.u.html"));
 
-		final JCheckBox promptSaveCheckBox = new JCheckBox(MessageFormat.format(UIText.get("maestro.options.prompt.to.save.new.0"), AbcSong.MSX_FILE_DESCRIPTION_PLURAL));
+		final JCheckBox promptSaveCheckBox = new JCheckBox(UIText.get("maestro.options.prompt.to.save.new.0", AbcSong.MSX_FILE_DESCRIPTION_PLURAL));
 		promptSaveCheckBox
-				.setToolTipText(MessageFormat.format(UIText.get("maestro.options.tip.prompted.to.save"), AbcSong.MSX_FILE_DESCRIPTION_PLURAL));
+				.setToolTipText(UIText.get("maestro.options.tip.prompted.to.save", AbcSong.MSX_FILE_DESCRIPTION_PLURAL));
 		promptSaveCheckBox.setSelected(saveSettings.promptSaveNewSong);
 		promptSaveCheckBox.addActionListener(e -> saveSettings.promptSaveNewSong = promptSaveCheckBox.isSelected());
 
@@ -1062,7 +1062,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		bendBox.setSelectedItem(Integer.toString(miscSettings.maxRangeForNewBendMethod));
 
 		final String ending = Util.OPTIONS_BACKUP_FILE_EXTENSION_NO_DOT;
-		ExtensionFileFilter filter = new ExtensionFileFilter(MessageFormat.format(UIText.get("maestro.options.maestro.settings.files.0"), ending), ending);
+		ExtensionFileFilter filter = new ExtensionFileFilter(UIText.get("maestro.options.maestro.settings.files.0", ending), ending);
 		
 		final JButton exportPrefs = new JButton(UIText.get("maestro.options.export.all.settings.to.a.file"));
 		exportPrefs.addActionListener(a -> {
@@ -1087,7 +1087,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 				}
 			} catch (Exception e) {
                 log.log(Level.SEVERE, "Failed to export settings backup", e);
-				JOptionPane.showMessageDialog(this, MessageFormat.format(UIText.get("maestro.options.settings.failed.saving.0"), e.toString()));
+				JOptionPane.showMessageDialog(this, UIText.get("maestro.options.settings.failed.saving.0", e.toString()));
 			}
 		});
 		
@@ -1113,7 +1113,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
                             } catch (Throwable e) {
                                 log.log(Level.SEVERE, UIText.get("maestro.options.failed.to.load.settings.backup"), e);
                                 SwingUtilities.invokeLater(() -> {
-                                        JOptionPane.showMessageDialog(this, MessageFormat.format(UIText.get("maestro.options.settings.failed.opening.1"), e));
+                                        JOptionPane.showMessageDialog(this, UIText.get("maestro.options.settings.failed.opening.1", e));
                                         importPrefs.setEnabled(true);
                                     }
                                 );
@@ -1124,7 +1124,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 				}
 			} catch (Exception e) {
                 log.log(Level.SEVERE, "Failed to import settings backup", e);
-				JOptionPane.showMessageDialog(this, MessageFormat.format(UIText.get("maestro.options.settings.failed.opening.0"), e.toString()));
+				JOptionPane.showMessageDialog(this, UIText.get("maestro.options.settings.failed.opening.0", e.toString()));
 			}
             importPrefs.setEnabled(true);
 		});
@@ -1395,7 +1395,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		public String getSourceFilename() {
 			if (originalSource != null && !Util.emptyIfNull(originalSource.getSourceFilename()).isEmpty() && !AbcSong.errorString.equals(originalSource.getSourceFilename()))
 				return originalSource.getSourceFilename();
-			return MessageFormat.format(UIText.get("maestro.options.example.midi.0"), Util.MID_FILE_EXTENSION);
+			return UIText.get("maestro.options.example.midi.0", Util.MID_FILE_EXTENSION);
 		}
 	}
 }

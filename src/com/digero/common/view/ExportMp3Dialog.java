@@ -243,11 +243,11 @@ public class ExportMp3Dialog extends JDialog implements TableLayoutConstants {
 		File f = new File(saveAsField.getText());
 
 		if (f.isDirectory()) {
-			JOptionPane.showMessageDialog(this, MessageFormat.format(UIText.get("common.mp3.specified.path.is.a.folder"), f.getAbsolutePath()), UIText.get("common.mp3.invalid.file"),
+			JOptionPane.showMessageDialog(this, UIText.get("common.mp3.specified.path.is.a.folder", f.getAbsolutePath()), UIText.get("common.mp3.invalid.file"),
 					JOptionPane.ERROR_MESSAGE);
 			return false;
 		} else if (f.exists()) {
-			int result = JOptionPane.showConfirmDialog(this, MessageFormat.format(UIText.get("common.mp3.file.0.already.exists.overwrite"), f.getName()),
+			int result = JOptionPane.showConfirmDialog(this, UIText.get("common.mp3.file.0.already.exists.overwrite", f.getName()),
 					UIText.get("common.mp3.confirm.overwrite"), JOptionPane.YES_NO_CANCEL_OPTION);
 			if (result == JOptionPane.CANCEL_OPTION || result == JOptionPane.CLOSED_OPTION) {
 				setVisible(false);
@@ -256,7 +256,7 @@ public class ExportMp3Dialog extends JDialog implements TableLayoutConstants {
 			return result == JOptionPane.OK_OPTION;
 		} else if (!f.getParentFile().exists()) {
 			int result = JOptionPane.showConfirmDialog(this,
-					MessageFormat.format(UIText.get("common.mp3.folder.doesn.t.exist.create"), f.getParentFile().getName()), UIText.get("common.mp3.create.directory"),
+					UIText.get("common.mp3.folder.doesn.t.exist.create", f.getParentFile().getName()), UIText.get("common.mp3.create.directory"),
 					JOptionPane.OK_CANCEL_OPTION);
 			if (result == JOptionPane.OK_OPTION) {
 				if (!f.getParentFile().mkdirs()) {

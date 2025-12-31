@@ -468,7 +468,7 @@ public class PlaylistSetExportWizard extends JDialog {
 	
 	private void updateFilenameExample() {
 		String exampleText = filenameTemplate.formatName(settings);
-		exampleText = MessageFormat.format(UIText.get("abcplayer.example.filename.0"), exampleText);
+		exampleText = UIText.get("abcplayer.example.filename.0", exampleText);
 		exampleAbcFileLabel.setText(exampleText);
 	}
 	
@@ -627,11 +627,11 @@ public class PlaylistSetExportWizard extends JDialog {
 					Files.copy(source, dest);
 				} catch (IOException e) {
 					e.printStackTrace();
-					error = MessageFormat.format(UIText.get("abcplayer.failed.to.copy.abc.file.0.to.set.directory"), source.getFileName());
+					error = UIText.get("abcplayer.failed.to.copy.abc.file.0.to.set.directory", source.getFileName());
 					return false;
 				}
 				progress += inc;
-				publish(new SetExportProgress((int)progress, MessageFormat.format(UIText.get("abcplayer.copied.abc.0.of.1"), i + 1, count)));
+				publish(new SetExportProgress((int)progress, UIText.get("abcplayer.copied.abc.0.of.1", i + 1, count)));
 			}
 			
 			return true;
@@ -660,7 +660,7 @@ public class PlaylistSetExportWizard extends JDialog {
 				}
 				
 				for (int i = 0; i < maxPartCount; i++) {
-					headerList.add(MessageFormat.format(UIText.get("abcplayer.part.0"), i + 1));
+					headerList.add(UIText.get("abcplayer.part.0", i + 1));
 				}
 			}
 			

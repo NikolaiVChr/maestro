@@ -193,7 +193,7 @@ public class SoundFontDownloader {
                     }
                     Object[] options = {UIText.get("common.soundfont.retry"), UIText.get("common.soundfont.quit"), UIText.get("common.soundfont.continue")};
                     int option = JOptionPane.showOptionDialog(dialog,
-                            MessageFormat.format(UIText.get("common.soundfont.download.failed.0"), e.getMessage()),
+                            UIText.get("common.soundfont.download.failed.0", e.getMessage()),
                             UIText.get("common.soundfont.download.error"),
                             JOptionPane.YES_NO_OPTION,
                             JOptionPane.ERROR_MESSAGE,

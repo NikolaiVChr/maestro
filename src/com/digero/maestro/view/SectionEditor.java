@@ -185,7 +185,7 @@ public class SectionEditor {
 				panel.setLayout(new TableLayout(LAYOUT_COLS, LAYOUT_ROWS));
 
 				// Row 0
-				titleLabel = new JLabel(MessageFormat.format(UIText.get("maestro.sectionedit.title"), abcPart.getTitle(), abcPart.getInstrument().getLocalFriendlyName(),track));
+				titleLabel = new JLabel(UIText.get("maestro.sectionedit.title", abcPart.getTitle(), abcPart.getInstrument().getLocalFriendlyName(),track));
 				panel.add(titleLabel, "0, 0, 7, 0, C, C");
 				tabPanel = new JTabbedPane() {
 					@Override
@@ -271,7 +271,7 @@ public class SectionEditor {
 				nonSectionInput.doubling3.setSelected(ps != null && ps.doubling[3]);
 				nonSectionInput.fromPitch.setText(ps != null?ps.fromPitch.toString():Note.C0.toString());
 				nonSectionInput.toPitch.setText(ps != null?ps.toPitch.toString():Note.MAX.toString());
-				nonSectionInput.textPitch.setText(MessageFormat.format(UIText.get("maestro.sectionedit.0.to.2"), ps != null ? ps.fromPitch.id : Note.C0.id, ps != null ? ps.toPitch.id : Note.MAX.id));
+				nonSectionInput.textPitch.setText(UIText.get("maestro.sectionedit.0.to.2", ps != null ? ps.fromPitch.id : Note.C0.id, ps != null ? ps.toPitch.id : Note.MAX.id));
 
 				while (sectionInputs.size() <= numberOfSections) {
 					makeNewSectorLine(percussion);
@@ -393,7 +393,7 @@ public class SectionEditor {
 						SectionDialog.this.abcPart.sections.set(SectionDialog.this.track, tm);
 
                         if (lastEnd > 200_000f) { // Limit to 200k bars to prevent OOM
-                            log.warning(MessageFormat.format(UIText.get("maestro.sectionedit.section.endbar.too.large.0.clamping.to.200.000"), lastEnd));
+                            log.warning(UIText.get("maestro.sectionedit.section.endbar.too.large.0.clamping.to.200.000", lastEnd));
                             lastEnd = 200_000f;
                         }
 
@@ -514,7 +514,7 @@ public class SectionEditor {
 									SectionDialog.this.sectionInputs.get(k).toPitch.setText(ps1.toPitch.toString());
 								}
 							}
-							SectionDialog.this.sectionInputs.get(k).textPitch.setText(MessageFormat.format(UIText.get("maestro.sectionedit.0.to.1"), ps1.fromPitch.id, ps1.toPitch.id));
+							SectionDialog.this.sectionInputs.get(k).textPitch.setText(UIText.get("maestro.sectionedit.0.to.1", ps1.fromPitch.id, ps1.toPitch.id));
 							boolean soFarSoGood = true;
 							for (PartSection psC : tm.values()) {
 								if (!(ps1.startBar >= psC.endBar || ps1.endBar <= psC.startBar)) {
@@ -572,7 +572,7 @@ public class SectionEditor {
 							nonSectionInput.toPitch.setText(ps1.toPitch.toString());
 						}
 					}
-					nonSectionInput.textPitch.setText(MessageFormat.format(UIText.get("maestro.sectionedit.0.to.1"), ps1.fromPitch.id, ps1.toPitch.id));
+					nonSectionInput.textPitch.setText(UIText.get("maestro.sectionedit.0.to.1", ps1.fromPitch.id, ps1.toPitch.id));
 					if (ps1.silence || ps1.legato || ps1.resetVelocities || ps1.doubling[0] || ps1.doubling[1] || ps1.doubling[2]
 							|| ps1.doubling[3] || ps1.fromPitch != Note.C0 || ps1.toPitch != Note.MAX) {
 						SectionDialog.this.abcPart.nonSection.set(SectionDialog.this.track, ps1);
@@ -630,7 +630,7 @@ public class SectionEditor {
 						secInput.doubling3.setSelected(ps.doubling[3]);
 						secInput.fromPitch.setText(ps.fromPitch.toString());
 						secInput.toPitch.setText(ps.toPitch.toString());
-						secInput.textPitch.setText(MessageFormat.format(UIText.get("maestro.sectionedit.0.to.1"), ps.fromPitch.id, ps.toPitch.id));
+						secInput.textPitch.setText(UIText.get("maestro.sectionedit.0.to.1", ps.fromPitch.id, ps.toPitch.id));
 						if (number > highestNumber) highestNumber = number;
 					}
 					number++;
@@ -772,9 +772,9 @@ public class SectionEditor {
 
 			private final Listener<AbcPartEvent> abcPartListener = e -> {
 				if (e.getProperty() == AbcPartProperty.TITLE) {
-					titleLabel.setText(MessageFormat.format(UIText.get("maestro.sectionedit.title2"), abcPart.getTitle(), abcPart.getInstrument().getLocalFriendlyName(),track));
+					titleLabel.setText(UIText.get("maestro.sectionedit.title2", abcPart.getTitle(), abcPart.getInstrument().getLocalFriendlyName(),track));
 				} else if (e.getProperty() == AbcPartProperty.INSTRUMENT) {
-					titleLabel.setText(MessageFormat.format(UIText.get("maestro.sectionedit.title2"), abcPart.getTitle(), abcPart.getInstrument().getLocalFriendlyName(),track));
+					titleLabel.setText(UIText.get("maestro.sectionedit.title2", abcPart.getTitle(), abcPart.getInstrument().getLocalFriendlyName(),track));
 					
 					
 					

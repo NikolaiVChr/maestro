@@ -137,9 +137,9 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 			return MidiSystem.getReceiver();
 		}
 		if (myInfo == null) {
-			log.info(MessageFormat.format(UIText.get("common.default.midi.out.selected.0.not.available"), preferred));
+			log.info(UIText.get("common.default.midi.out.selected.0.not.available", preferred));
 			deviceInUse = null;
-			if (nonDefault) ProjectFrame.feed(MessageFormat.format(UIText.get("common.default.midi.out.0.not.available"), preferred), null);
+			if (nonDefault) ProjectFrame.feed(UIText.get("common.default.midi.out.0.not.available", preferred), null);
 			return MidiSystem.getReceiver();
 		}
 
@@ -163,7 +163,7 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 		if (!okay || myReciever == null) {
 			log.info("Default MIDI out selected (" + preferred + " not connected)");
 			deviceInUse = null;
-			if (nonDefault) ProjectFrame.feed(MessageFormat.format(UIText.get("common.default.midi.out.0.not.connected"), preferred), null);
+			if (nonDefault) ProjectFrame.feed(UIText.get("common.default.midi.out.0.not.connected", preferred), null);
 			return MidiSystem.getReceiver();
 		}
 

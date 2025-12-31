@@ -1060,7 +1060,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 			if (e.getButton() == MouseEvent.BUTTON1 && sequenceInfo != null) {
 				sequencer.setDragging(true);
 				sequencer.setDragPosition(positionFromEvent(e));
-				barLabel = new JLabel(MessageFormat.format(UIText.get("maestro.bar.0"), BarNumberLabel.getBarStringFloat(sequencer, sequenceInfo.getDataCache())));
+				barLabel = new JLabel(UIText.get("maestro.bar.0", BarNumberLabel.getBarStringFloat(sequencer, sequenceInfo.getDataCache())));
 				barLabel.setFocusable(false);
 				barLabel.setBorder(BorderFactory.createEmptyBorder(5, 25, 5, 5));
 		        barIndicator = new JPopupMenu();
@@ -1077,7 +1077,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 				if (!isDragCanceled(e)) {
 					sequencer.setDragging(true);
 					sequencer.setDragPosition(positionFromEvent(e));
-					barLabel.setText(MessageFormat.format(UIText.get("maestro.bar.0"), BarNumberLabel.getBarStringFloat(sequencer, sequenceInfo.getDataCache())));
+					barLabel.setText(UIText.get("maestro.bar.0", BarNumberLabel.getBarStringFloat(sequencer, sequenceInfo.getDataCache())));
 					barIndicator.show(NoteGraph.this, e.getX(), e.getY());
 				} else {
 					sequencer.setDragging(false);
