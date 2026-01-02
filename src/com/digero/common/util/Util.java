@@ -37,20 +37,24 @@ public final class Util {
 	public static final @NonNls String ABC_FILE_EXTENSION_NO_DOT = "abc";
 	public static final @NonNls String ABCP_FILE_EXTENSION_NO_DOT = "abcp";
 	public static final @NonNls String TXT_FILE_EXTENSION_NO_DOT = "txt";
+	public static final @NonNls String CSV_FILE_EXTENSION_NO_DOT = "csv";
 	public static final @NonNls String MID_FILE_EXTENSION_NO_DOT = "mid";
 	public static final @NonNls String KAR_FILE_EXTENSION_NO_DOT = "kar";
 	public static final @NonNls String MIDI_FILE_EXTENSION_NO_DOT = "midi";
 	public static final @NonNls String THEME_FILE_EXTENSION_NO_DOT = "maestrotheme.xml";
 	public static final @NonNls String OPTIONS_BACKUP_FILE_EXTENSION_NO_DOT = "msbk";
 	public static final @NonNls String PARTS_CONFIG_FILE_EXTENSION_NO_DOT = "partsconfig.txt";
+	public static final @NonNls String DRUMMAP_FILE_EXTENSION_NO_DOT = "drummap.txt";
 	public static final String MSX_FILE_EXTENSION = "." + MSX_FILE_EXTENSION_NO_DOT;
 	public static final String ABC_FILE_EXTENSION = "." + ABC_FILE_EXTENSION_NO_DOT;
 	public static final String ABCP_FILE_EXTENSION = "." + ABCP_FILE_EXTENSION_NO_DOT;
 	public static final String TXT_FILE_EXTENSION = "." + TXT_FILE_EXTENSION_NO_DOT;
+	public static final String CSV_FILE_EXTENSION = "." + CSV_FILE_EXTENSION_NO_DOT;
 	public static final String MID_FILE_EXTENSION = "." + MID_FILE_EXTENSION_NO_DOT;
 	public static final String MIDI_FILE_EXTENSION = "." + MIDI_FILE_EXTENSION_NO_DOT;
 	public static final String KAR_FILE_EXTENSION = "." + KAR_FILE_EXTENSION_NO_DOT;
 	public static final String THEME_FILE_EXTENSION = "." + THEME_FILE_EXTENSION_NO_DOT;
+	public static final String DRUMMAP_FILE_EXTENSION = "." + DRUMMAP_FILE_EXTENSION_NO_DOT;
 	public static final String OPTIONS_BACKUP_FILE_EXTENSION = "." + OPTIONS_BACKUP_FILE_EXTENSION_NO_DOT;
 	public static final String PARTS_CONFIG_FILE_EXTENSION = "." + PARTS_CONFIG_FILE_EXTENSION_NO_DOT;
 	

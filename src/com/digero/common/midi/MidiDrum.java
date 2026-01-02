@@ -1,5 +1,6 @@
 package com.digero.common.midi;
 
+@SuppressWarnings("HardCodedStringLiteral")
 public enum MidiDrum {
 	/*
 	 * Standard Drum Kit

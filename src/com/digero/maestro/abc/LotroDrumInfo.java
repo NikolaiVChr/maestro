@@ -15,6 +15,7 @@ import java.util.TreeSet;
 import com.digero.common.midi.Note;
 import org.jetbrains.annotations.NotNull;
 
+@SuppressWarnings("HardCodedStringLiteral")
 public class LotroDrumInfo extends LotroEventInfo<LotroDrumInfo> {
 	private static final Map<Integer, LotroDrumInfo> byId = new HashMap<>();
 	private static final SortedMap<String, SortedSet<LotroDrumInfo>> byCategory = new TreeMap<>();

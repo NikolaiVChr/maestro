@@ -58,7 +58,8 @@ public class SequencerEvent extends EventObject {
 			}
 			System.out.println();
 		}
-		
+
+		@SuppressWarnings("HardCodedStringLiteral")
 		@Override
 		public String toString() {
 			String str = "";

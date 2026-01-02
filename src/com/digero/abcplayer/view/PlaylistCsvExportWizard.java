@@ -2,6 +2,7 @@ package com.digero.abcplayer.view;
 
 import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.util.ExtensionFileFilter;
+import com.digero.common.util.Util;
 import com.digero.common.view.UIText;
 import net.miginfocom.swing.MigLayout;
 import org.apache.commons.csv.CSVFormat;
@@ -194,7 +195,7 @@ public class PlaylistCsvExportWizard extends JDialog {
 		File chooserFile = Paths.get(settings.getCsvExportOutputDirectory(), csvFilename).toFile();
 
 		JFileChooser chooser = new JFileChooser();
-		chooser.setFileFilter(new ExtensionFileFilter(UIText.get("abcplayer.csv.files.csv.txt"), "csv", "txt"));
+		chooser.setFileFilter(new ExtensionFileFilter(UIText.get("abcplayer.csv.files.csv.txt"), Util.CSV_FILE_EXTENSION_NO_DOT, Util.TXT_FILE_EXTENSION_NO_DOT));
 		chooser.setSelectedFile(chooserFile);
 		int result = chooser.showSaveDialog(this);
 

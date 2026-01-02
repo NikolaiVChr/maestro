@@ -54,7 +54,8 @@ public class SynthesizerFactory {
 			log.severe("Failed to make wav synth");
 		return synth;
 	}
-	
+
+	@SuppressWarnings("HardCodedStringLiteral")
 	public static Map<String, Object> setupSynthesizerPropertyInfo() {
 		Map<String, Object> synthInfo = new HashMap<>();
 		synthInfo.put("midi channels", MidiConstants.CHANNEL_COUNT_ABC);// default is 16

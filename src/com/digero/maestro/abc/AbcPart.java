@@ -226,6 +226,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		sectionsTicked = longsections;
 	}
 
+	@SuppressWarnings("HardCodedStringLiteral")
 	public void saveToXml(Element ele) {
 		Document doc = ele.getOwnerDocument();
 
@@ -392,6 +393,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		return part;
 	}
 
+	@SuppressWarnings("HardCodedStringLiteral")
 	private void initFromXml(Element ele, Version fileVersion) throws FileParseException {
 		try {
 			partNumber = SaveUtil.parseValue(ele, "@id", partNumber);

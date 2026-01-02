@@ -32,6 +32,7 @@ import com.digero.common.util.Pair;
 import com.digero.common.view.UIText;
 import com.digero.maestro.abc.LotroCombiDrumInfo;
 
+@SuppressWarnings("HardCodedStringLiteral")
 public enum LotroInstrument
 {
 	BASIC_HARP               ( "Basic Harp",                false, "common.instrument.harp",

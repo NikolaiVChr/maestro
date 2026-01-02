@@ -22,7 +22,8 @@ import com.digero.maestro.util.XmlUtil;
 public class AbcPlaylistXmlCoder {
 	
 	public static final Version ABC_PLAYLIST_VERSION = new Version(3, 4, 0, 300);
-	
+
+	@SuppressWarnings("HardCodedStringLiteral")
 	public static Document savePlaylistToXml(List<AbcInfo> abcs) {
 		Document doc = XmlUtil.createDocument();
 		doc.setXmlVersion("1.1");
@@ -41,7 +42,8 @@ public class AbcPlaylistXmlCoder {
 		
 		return doc;
 	}
-	
+
+	@SuppressWarnings("HardCodedStringLiteral")
 	public static List<List<File>> loadPlaylist(File playlistPath) throws FileParseException {
 		List<List<File>> files = new ArrayList<List<File>>();
 		

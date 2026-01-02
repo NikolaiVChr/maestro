@@ -240,6 +240,7 @@ public class MidiUtils {
     	return str;
     }
 
+    @SuppressWarnings("HardCodedStringLiteral")
     public static String midiMessageToShortString(MidiMessage m) {
         String str = "";
         if (m instanceof ShortMessage shorty) {

@@ -335,6 +335,7 @@ public class ColorSelector extends JPanel {
     /**
      * Warning: Will overwrite the existing file.
      */
+    @SuppressWarnings("HardCodedStringLiteral")
     private void saveTheme(File file) throws TransformerException, IOException {
         Document doc = XmlUtil.createDocument();
         Element root = doc.createElement("MaestroTheme");
@@ -374,6 +375,7 @@ public class ColorSelector extends JPanel {
         }
     }
 
+    @SuppressWarnings("HardCodedStringLiteral")
     private void loadTheme(File themeFile) throws Exception {
         Document doc = XmlUtil.openDocument(themeFile);
         Element root = doc.getDocumentElement();

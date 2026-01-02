@@ -80,7 +80,7 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 		String badgerText = "<html>"+part.getBadgerPrio()+"</html>";
 		Color badgerColor = new JButton().getBackground();
 		badgerButton = new JButton(badgerText);
-		badgerButton.setToolTipText(UIText.get("maestro.songbook.setup.priority.1.must.play.6.least.important"));
+		badgerButton.setToolTipText(UIText.get("maestro.songbook.setup.priority"));
 		badgerButton.setBackground(badgerColor);
 		badgerButton.setPreferredSize(buttonSize);
 		badgerButton.setMargin(new Insets(0, 0, 0, 0));

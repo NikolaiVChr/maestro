@@ -56,6 +56,7 @@ public class MiscSettings {
 		saveToPrefs();
 	}
 
+	@SuppressWarnings("HardCodedStringLiteral")
 	private void loadPrefs(Preferences prefs) {
 		showMaxPolyphony = prefs.getBoolean("showMaxPolyphony", showMaxPolyphony);
 		showBadger = prefs.getBoolean("showBadger", showBadger);
@@ -113,6 +114,7 @@ public class MiscSettings {
 		excludeShortestNotes = that.excludeShortestNotes;
 	}
 
+	@SuppressWarnings("HardCodedStringLiteral")
 	public void saveToPrefs() {
 		prefs.putBoolean("showMaxPolyphony", showMaxPolyphony);
 		prefs.putBoolean("showBadger", showBadger);

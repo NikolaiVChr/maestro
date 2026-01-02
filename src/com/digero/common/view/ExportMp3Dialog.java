@@ -210,7 +210,8 @@ public class ExportMp3Dialog extends JDialog implements TableLayoutConstants {
 	public File getSaveFile() {
 		return new File(saveAsField.getText());
 	}
-	
+
+	@SuppressWarnings("HardCodedStringLiteral")
 	public List<String> getCommandLineBuiltinLame(File wav, String encodedBy) {
 		List<String> args = new ArrayList<>();
 		

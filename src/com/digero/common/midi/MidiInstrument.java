@@ -1,5 +1,6 @@
 package com.digero.common.midi;
 
+@SuppressWarnings("HardCodedStringLiteral")
 public enum MidiInstrument {
 	// Official name list is at: https://www.midi.org/specifications-old/item/gm-level-1-sound-set
 	PIANO("Acoustic Grand Piano"), // 0

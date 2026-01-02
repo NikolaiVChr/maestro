@@ -148,8 +148,15 @@ public class InstrumentComboBox extends JComboBox<LotroInstrument> {
 				boolean cellHasFocus) {
 			if (value instanceof LotroInstrument) {
 				label.setText(((LotroInstrument) value).getLocalFriendlyName());
+				if (!((LotroInstrument) value).getLocalFriendlyName().equals(((LotroInstrument) value).friendlyName)) {
+					// english tooltip on the instrument for FR and DE
+					label.setToolTipText(((LotroInstrument) value).friendlyName);
+				} else {
+					label.setToolTipText(null);
+				}
 			} else {
 				label.setText(value == null ? "" : value.toString());
+				label.setToolTipText(null);
 			}
 			if (value instanceof LotroInstrumentGroup) {
 				label.setFont(fontGroupHeader);

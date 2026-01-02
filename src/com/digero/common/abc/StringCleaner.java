@@ -3,6 +3,7 @@ package com.digero.common.abc;
 import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
 
+@SuppressWarnings("HardCodedStringLiteral")
 public class StringCleaner {
 
 	public static boolean cleanABC = true;

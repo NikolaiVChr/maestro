@@ -21,6 +21,7 @@ import com.digero.common.util.Pair;
 import com.ibm.icu.text.CharsetDetector;
 import com.ibm.icu.text.CharsetMatch;
 
+@SuppressWarnings("HardCodedStringLiteral")
 public class CharsetDetectAndDecode {
 	private static final Logger log = Logger.getLogger("import.midi.text");
 
@@ -486,7 +487,7 @@ public class CharsetDetectAndDecode {
         	// for short strings we only consider the most common charsets
 	        for (String detectNot : ignored) {
 	        	detector.setDetectableCharset(detectNot, false);
-	        }
+            }
         }
         CharsetMatch[] match;
         try {

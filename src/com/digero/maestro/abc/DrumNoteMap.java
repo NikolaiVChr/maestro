@@ -18,6 +18,7 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.xml.xpath.XPathExpressionException;
 
+import com.digero.common.util.Util;
 import org.w3c.dom.Element;
 
 import com.digero.common.abc.LotroInstrument;
@@ -32,7 +33,7 @@ import com.digero.maestro.util.SaveUtil;
 import com.digero.maestro.util.XmlUtil;
 
 public class DrumNoteMap implements IDiscardable {
-	public static final String FILE_SUFFIX = "drummap.txt";
+	public static final String FILE_SUFFIX = Util.DRUMMAP_FILE_EXTENSION_NO_DOT;
 	protected static final byte DISABLED_NOTE_ID = (byte) LotroDrumInfo.DISABLED.note.id;
 	private static final String MAP_PREFS_KEY = "DrumNoteMap.map";
 

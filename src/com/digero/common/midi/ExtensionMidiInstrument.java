@@ -1,5 +1,7 @@
 package com.digero.common.midi;
 
+import org.jetbrains.annotations.NonNls;
+
 import static java.lang.Integer.parseInt;
 
 import java.io.BufferedReader;
@@ -119,8 +121,8 @@ public class ExtensionMidiInstrument {
 		return instrName;
 	}
 
-	private void parse(MidiStandard extension, byte theByte, String fileName, boolean firstColumnPatch,
-			boolean theByteIsLSB) {
+	private void parse(MidiStandard extension, byte theByte, @NonNls String fileName, boolean firstColumnPatch,
+					   boolean theByteIsLSB) {
 		try {
 			InputStream in = getClass().getResourceAsStream(fileName);
 			if (in == null) {

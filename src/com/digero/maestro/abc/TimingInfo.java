@@ -216,6 +216,7 @@ public class TimingInfo {
 	}
 
     @Override
+	@SuppressWarnings("HardCodedStringLiteral")
     public String toString() {
         String str = "  TimingInfo:\n";
         str += "meter "+meter.toString() + "\n";

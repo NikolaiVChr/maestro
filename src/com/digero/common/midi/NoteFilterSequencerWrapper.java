@@ -1,6 +1,5 @@
 package com.digero.common.midi;
 
-import java.text.MessageFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -171,7 +170,7 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 		// System.out.println("maxReceivers="+myDevice.getMaxReceivers());
 
 		
-		if (feedActive && (deviceInUse == null || !deviceInUse.equals(preferred))) ProjectFrame.feed("MIDI out on "+myInfo.getName(), null);
+		if (feedActive && (deviceInUse == null || !deviceInUse.equals(preferred))) ProjectFrame.feed(UIText.get("maestro.midi.out.on.0", myInfo.getName()), null);
 		deviceInUse = preferred;
 		
 		log.info("Non-default MIDI out selected: " + myInfo.getName()+" ("+description+") "+vendor);

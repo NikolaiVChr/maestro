@@ -30,6 +30,7 @@ import com.digero.common.util.Util;
 import com.digero.common.util.WarningHandler;
 import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcExporter;
+import org.jetbrains.annotations.NonNls;
 
 import javax.sound.midi.MidiEvent;
 import javax.swing.*;
@@ -292,7 +293,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 			if (info != null && info.name != null)
 				return info.name;
 			return "Track " + trackIndex;
-		}
+        }
 
 		return info.rawName;
 	}

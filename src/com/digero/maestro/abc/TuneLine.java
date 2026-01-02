@@ -33,6 +33,7 @@ public class TuneLine {
     }
 
     @Override
+	@SuppressWarnings("HardCodedStringLiteral")
 	public String toString() {
 		return "Tune Line " + startBar + " to " + endBar + ": tempo=" + tempo + " seminoteStep=" + seminoteStep
 				 + " fade=" + fade + " accelerando=" + accelerando + " dialogLine=" + dialogLine;

@@ -38,6 +38,7 @@ import com.digero.common.util.Pair;
 import com.digero.common.util.Quad;
 import com.digero.common.util.Triple;
 import com.digero.common.util.Util;
+import com.digero.common.view.UIText;
 import com.digero.maestro.MaestroMain;
 import com.digero.maestro.abc.QuantizedTimingInfo.TimingInfoEvent;
 import com.digero.maestro.midi.AbcNoteEvent;
@@ -692,7 +693,7 @@ public class AbcExporter {
                 countInMicros = 0;
                 countIn = null;
                 logAbc.warning("Count-in for ABC: count-in longer than 12 seconds, cancelling count-in.");
-                ProjectFrame.feed("Warning: Count-in cancelled, it's too long.", "Reduce to at/under 12 seconds.");
+                ProjectFrame.feed(UIText.get("maestro.warning.count.in.cancelled.it.s.too.long"), UIText.get("maestro.reduce.to.at.under.12.seconds"));
             } else {
                 logAbc.info("Count-in for ABC: total count-in. micros = " + countInMicros + " bars = " + countIn.barCount);
             }
@@ -709,11 +710,11 @@ public class AbcExporter {
                 if (hitMicros < minimumMicro) {
                     countIn = null;//cancel, since count-in is too short
                     logAbc.warning("Count-in for ABC: hitMicros shorter than 60 ms, cancelling count-in.");
-                    ProjectFrame.feed("Warning: Count-in cancelled, it's too short.", "Expand so each drum hit is more than 60 ms apart.");
+                    ProjectFrame.feed(UIText.get("maestro.warning.count.in.cancelled.it.s.too.short"), UIText.get("maestro.expand.so.each.drum.hit.is.more.than.60.ms.apart"));
                 } else if (!useMicroAccuracy && microToMilliCeil(hitMicros,oneMicro,oneMilli) < minimumMilli) {
                     countIn = null;//cancel, since count-in is too short
                     logAbc.warning("Count-in for ABC: hitMicros shorter than 60 ms, cancelling count-in.");
-                    ProjectFrame.feed("Warning: Count-in cancelled, it's too short.", "Expand so each drum hit is more than 60 ms apart.");
+                    ProjectFrame.feed(UIText.get("maestro.warning.count.in.cancelled.it.s.too.short"), UIText.get("maestro.expand.so.each.drum.hit.is.more.than.60.ms.apart"));
                 } else {
                     logAbc.info("Count-in for ABC: going forward.");
                 }
@@ -1399,7 +1400,7 @@ public class AbcExporter {
                 countInMicros = 0;
                 countIn = null;
                 logAbc.warning("Count-in for ABC: count-in longer than 12 seconds, cancelling count-in.");
-                ProjectFrame.feed("Warning: Count-in cancelled, it's too long.", "Reduce to at/under 12 seconds.");
+                ProjectFrame.feed(UIText.get("maestro.warning.count.in.cancelled.it.s.too.long"), UIText.get("maestro.reduce.to.at.under.12.seconds"));
             } else {
                 logAbc.info("Count-in for ABC: total count-in. micros = " + countInMicros + " bars = " + countIn.barCount);
             }
@@ -1421,7 +1422,7 @@ public class AbcExporter {
                 if (hitMicros < minimumMicro) {
                     countIn = null;//cancel, since count-in is too short
                     logAbc.warning("Count-in for ABC: hitMicros shorter than 60 ms, cancelling count-in.");
-                    ProjectFrame.feed("Warning: Count-in cancelled, it's too short.", "Expand so each drum hit is more than 60 ms apart.");
+                    ProjectFrame.feed(UIText.get("maestro.warning.count.in.cancelled.it.s.too.short"), UIText.get("maestro.expand.so.each.drum.hit.is.more.than.60.ms.apart"));
                 }
             } else if (countIn != null) {
                 int hits = countIn.pattern.dynamics.length;
@@ -1857,7 +1858,7 @@ public class AbcExporter {
 		if (events.isEmpty()) {
 			logNotes.warning("Export to preview/abc: "+metadata.getSongTitle()+" has a part with no exported notes.");
 			if (!preview && !(part.getAbcSong().getCountIn() != null && part.getAbcSong().getCountIn().part == part)) {
-                ProjectFrame.feed("Note: Song has a part with no exported notes ("+part.getTitle()+")", null);
+                ProjectFrame.feed(UIText.get("maestro.note.song.has.a.part.with.no.exported.notes.0", part.getTitle()), null);
             }
 			return new ArrayList<>();
 		}
@@ -2341,7 +2342,7 @@ public class AbcExporter {
 		if (events.isEmpty()) {
 			logNotes.warning("Export to preview/abc: "+metadata.getSongTitle()+" has a part with no exported notes.");
 			if (!preview && !(part.getAbcSong().getCountIn() != null && part.getAbcSong().getCountIn().part == part)) {
-                ProjectFrame.feed("Note: Song has a part with no exported notes ("+part.getTitle()+")", null);
+                ProjectFrame.feed(UIText.get("maestro.note.song.has.a.part.with.no.exported.notes.0", part.getTitle()), null);
             }
 			return new Pair<>(Collections.emptyList(), false);
 		}

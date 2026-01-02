@@ -8,6 +8,7 @@ import com.digero.common.abc.Accidental;
 /**
  * Representation of a MIDI key signature.
  */
+@SuppressWarnings("HardCodedStringLiteral")
 public class KeySignature implements MidiConstants {
 	private static final String INVALID_KEY_SIGNATURE = "Invalid key signature: ";
 

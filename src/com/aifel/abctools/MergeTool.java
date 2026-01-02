@@ -13,7 +13,6 @@ import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -475,7 +474,7 @@ public class MergeTool {
 				join();
 			} catch (IOException e1) {
 				e1.printStackTrace();
-				frame.setTextFieldText(UIText.get("abctools.an.error.occured.1", e1));
+				frame.setTextFieldText(UIText.get("abctools.an.error.occured.0", e1));
 				lastExport = null;
 				refreshTest();
 			}

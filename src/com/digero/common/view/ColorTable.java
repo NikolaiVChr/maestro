@@ -5,6 +5,7 @@ import java.awt.Color;
 // Disable auto-formatting in this file
 // @formatter:off
 
+@SuppressWarnings("HardCodedStringLiteral")
 public enum ColorTable {
     /** Note currently being played */
 	NOTE_ON(Color.WHITE,

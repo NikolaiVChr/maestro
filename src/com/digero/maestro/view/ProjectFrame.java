@@ -28,7 +28,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.text.MessageFormat;
 import java.text.ParseException;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -68,6 +67,7 @@ import com.digero.common.view.ColorSelector;
 import com.digero.common.view.UIText;
 import com.digero.maestro.abc.DissonanceDetector;
 import com.digero.maestro.midi.SequenceDataCache;
+import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.Nullable;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
@@ -826,7 +826,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		tuneEditorButton = new JButton();
 		tuneEditorButton.setText(UIText.get("maestro.tune.editor"));
 		tuneEditorButton
-				.setToolTipText(UIText.get("maestro.html.b.tune.editor.b.br.edit.the.tempo.or.key.in.specific.sections.html"));
+				.setToolTipText(UIText.get("maestro.tuneEdit.tip"));
 		tuneEditorButton.addActionListener(e -> TuneEditor.show(ProjectFrame.this, abcSong));
 
 		hideEditsCheckbox = new JCheckBox();
@@ -2240,7 +2240,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 		
 		log.fine("Closing project");
-		
+
 		hideEditsCheckbox.setSelected(false);//best to have this before song is set to null
 
 		if (abcSong != null) {
@@ -3007,7 +3007,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}		
 		return out;
 	}
-	
+
+	@SuppressWarnings("HardCodedStringLiteral")
 	private String getNumberOfExportNotes() {
         StringBuilder out = new StringBuilder();
         int songNotes = 0;
@@ -3668,7 +3669,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         public final String settingsString;// use this for settings prefs. And never change the strings.
         public final boolean upgraded;
 
-        TimingEnum(String info, boolean organic, boolean multistage, boolean mixTimings, boolean swing, boolean priority, String settings, boolean upgraded) {
+        TimingEnum(String info, boolean organic, boolean multistage, boolean mixTimings, boolean swing, boolean priority, @NonNls String settings, boolean upgraded) {
             this.info = info;
             this.organic = organic;
             this.multistage = multistage;

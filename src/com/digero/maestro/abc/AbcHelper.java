@@ -4,6 +4,7 @@ import java.util.List;
 
 import javax.xml.xpath.XPathExpressionException;
 
+import com.digero.common.view.UIText;
 import org.w3c.dom.Element;
 
 import com.digero.common.midi.Note;
@@ -22,6 +23,7 @@ public class AbcHelper {
 		return null;
 	}
 
+	@SuppressWarnings("HardCodedStringLiteral")
 	static PartSection loadPartSectionFromXML(Element sectionEle, Version fileVersion) throws FileParseException, XPathExpressionException {
 		PartSection ps = new PartSection();
 		if (fileVersion.compareTo(new Version(3, 3, 4, 300)) < 0) {

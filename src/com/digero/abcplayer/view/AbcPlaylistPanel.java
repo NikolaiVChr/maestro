@@ -1109,7 +1109,7 @@ public class AbcPlaylistPanel extends JPanel {
 		if (savePlaylistChooser == null) {
 			savePlaylistChooser = new JFileChooser();
 			savePlaylistChooser.setDialogTitle(UIText.get("abcplayer.save.abc.playlist"));
-			savePlaylistChooser.setFileFilter(new ExtensionFileFilter(UIText.get("abcplayer.abc.playlist.abcp"), "abcp"));
+			savePlaylistChooser.setFileFilter(new ExtensionFileFilter(UIText.get("abcplayer.abc.playlist.abcp"), Util.ABCP_FILE_EXTENSION_NO_DOT));
 		}
 		
 		if (playlistFile != null) {
@@ -1364,7 +1364,7 @@ public class AbcPlaylistPanel extends JPanel {
 			openPlaylistChooser = new JFileChooser();
 			openPlaylistChooser.setDialogTitle(UIText.get("abcplayer.open.abc.playlist"));
 			openPlaylistChooser.setMultiSelectionEnabled(false);
-			openPlaylistChooser.setFileFilter(new ExtensionFileFilter(UIText.get("abcplayer.abc.playlist.abcp"), "abcp"));
+			openPlaylistChooser.setFileFilter(new ExtensionFileFilter(UIText.get("abcplayer.abc.playlist.abcp"), Util.ABCP_FILE_EXTENSION_NO_DOT));
 		}
 		
 		String folder = playlistPrefs.get("playlistDirectory", Util.getLotroMusicPath(true).getAbsolutePath());

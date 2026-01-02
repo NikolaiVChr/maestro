@@ -10,7 +10,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.logging.Level;
@@ -880,7 +879,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 
 		final JCheckBox countUpLyricsCheckBox = new JCheckBox(
 				UIText.get("maestro.options.count.up.lyrics.timestamps"));
-		countUpLyricsCheckBox.setToolTipText(UIText.get("maestro.options.when.copying.lyrics.for.poetical.this.will.make.them.count.up.instead.of.count.down"));
+		countUpLyricsCheckBox.setToolTipText(UIText.get("maestro.options.tip.count.up.lyrics.timestamps"));
 		countUpLyricsCheckBox.setSelected(saveSettings.countUpLyrics);
 		countUpLyricsCheckBox.addActionListener(
 				e -> saveSettings.countUpLyrics = countUpLyricsCheckBox.isSelected());
@@ -949,7 +948,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		 */
 		
 		final JCheckBox checkForUpdatesCheckBox = new JCheckBox(UIText.get("maestro.options.check.for.updates"));
-		checkForUpdatesCheckBox.setToolTipText(UIText.get("maestro.options.html.when.starting.maestro.check.if.there.is.newer.version.available"));
+		checkForUpdatesCheckBox.setToolTipText(UIText.get("maestro.options.tip.check.for.updates"));
 		checkForUpdatesCheckBox.setSelected(miscSettings.checkForUpdates);
 		checkForUpdatesCheckBox.addActionListener(e -> miscSettings.checkForUpdates = checkForUpdatesCheckBox.isSelected());
 		
@@ -982,7 +981,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		ignoreExpressionMessagesCheckBox.addActionListener(e -> miscSettings.ignoreExpressionMessages = ignoreExpressionMessagesCheckBox.isSelected());
 		
 		final JCheckBox autoplayOnOpenCheckBox = new JCheckBox(UIText.get("maestro.options.autoplay.files.on.open"));
-		autoplayOnOpenCheckBox.setToolTipText(UIText.get("maestro.options.html.when.opening.a.midi.msx.abc.file.begin.playing.the.file.as.soon.as.it.loads"));
+		autoplayOnOpenCheckBox.setToolTipText(UIText.get("maestro.options.tip.autoplay.files.on.open"));
 		autoplayOnOpenCheckBox.setSelected(miscSettings.autoplayOnOpen);
 		autoplayOnOpenCheckBox.addActionListener(e -> miscSettings.autoplayOnOpen = autoplayOnOpenCheckBox.isSelected());
 
@@ -1014,7 +1013,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		final JComboBox<String> fontBox = new JComboBox<>();
 
 		themeBox.setToolTipText(
-				UIText.get("maestro.options.html.select.the.theme.for.maestro.must.restart.maestro.for.it.to.take.effect.html"));
+				UIText.get("maestro.options.tip.theme"));
 		//themeBox.addItem(defaultStr);
 		for (String theme : Themer.themes) {
 			themeBox.addItem(theme);
@@ -1029,7 +1028,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		themeBox.setSelectedItem(miscSettings.theme);
 
 		fontBox.setToolTipText(
-				UIText.get("maestro.options.html.select.a.font.size.must.restart.maestro.for.it.to.take.effect.html"));
+				UIText.get("maestro.options.tip.font.size"));
 		for (int i : Themer.fontSizes) {
 			fontBox.addItem(Integer.toString(i));
 		}
@@ -1044,10 +1043,10 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		fontBox.setSelectedItem(Integer.toString(miscSettings.fontSize));
 		fontBox.setEnabled(!miscSettings.theme.equals(defaultStr));
 
-		final JLabel bendLabel = new JLabel(UIText.get("maestro.options.max.range.for.new.method.of.handling.pitch.bends.requires.restart"));
+		final JLabel bendLabel = new JLabel(UIText.get("maestro.options.max.seminote.range.for.pitch.bends"));
 		final JComboBox<String> bendBox = new JComboBox<>();
 		bendBox.setToolTipText(
-				UIText.get("maestro.options.html.select.max.seminote.range.for.new.way.of.handling.pitch.bends.br.1.means.only.old.method.12.is.default.html"));
+				UIText.get("maestro.options.tip.max.seminote.range.for.pitch.bends"));
 		bendBox.addItem(Integer.toString(-1));
 		bendBox.addItem(Integer.toString(6));
 		bendBox.addItem(Integer.toString(12));
@@ -1140,7 +1139,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
         });
 
 		final String AUTO = "Auto"; //NON-NLS
-		final JLabel langLabel = new JLabel("Language/Sprache/Langue (BETA)"); //NON-NLS
+		final JLabel langLabel = new JLabel("Language/Sprache/Langue"); //NON-NLS
 		final JComboBox<String> langBox = new JComboBox<>(new String[]{AUTO, "US", "FR", "DE"});
 		langBox.setToolTipText("<html>Changes take effect after restarting Maestro.<br><br>Änderungen werden nach einem Neustart von Maestro wirksam.<br><br>Les changements prendront effet après un redémarrage de Maestro.</html>");
 		langLabel.setToolTipText("<html>Changes take effect after restarting Maestro.<br><br>Änderungen werden nach einem Neustart von Maestro wirksam.<br><br>Les changements prendront effet après un redémarrage de Maestro.</html>");

@@ -1075,7 +1075,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 		JFileChooser fileChooser = new JFileChooser(dir);
 		fileChooser.setFileFilter(new ExtensionFileFilter(UIText.get("maestro.drum.map.0", DrumNoteMap.FILE_SUFFIX),
-				DrumNoteMap.FILE_SUFFIX, "txt"));
+				DrumNoteMap.FILE_SUFFIX, Util.TXT_FILE_EXTENSION_NO_DOT));//For backwards compat use txt filter instead of drummap.txt
 
 		if (fileChooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION)
 			return false;

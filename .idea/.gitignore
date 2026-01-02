@@ -12,4 +12,5 @@ codeStyles/
 # except these:
 !encodings.xml
 !resourceBundles.xml
+!external-annotations/
 !.gitignore

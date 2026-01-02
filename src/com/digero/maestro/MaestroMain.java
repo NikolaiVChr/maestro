@@ -27,6 +27,7 @@ import com.digero.common.util.SoundFontDownloader;
 import com.digero.common.util.Themer;
 import com.digero.common.util.Util;
 import com.digero.common.util.Version;
+import com.digero.common.view.UIText;
 import com.digero.maestro.view.MiscSettings;
 import com.digero.maestro.view.ProjectFrame;
 
@@ -69,7 +70,7 @@ public class MaestroMain {
         AppInfo.APP_NAME = APP_NAME;
 		Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
 			log.log(Level.SEVERE, throwable.toString(), throwable);
-		    ProjectFrame.feed("ERROR: exception in thread " + thread.getName() + ": " + throwable+". Please notify the devs.", getFirstLines(throwable));
+		    ProjectFrame.feed(UIText.get("maestro.error.exception.in.thread.0.1.please.notify.the.devs", thread.getName(),throwable), getFirstLines(throwable));
 		    if (mainWindow != null) {		    	
 		    	SwingUtilities.invokeLater(() -> {
 		    		try {

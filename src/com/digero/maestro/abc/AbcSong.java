@@ -321,6 +321,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         note = "";
 	}
 
+	@SuppressWarnings("HardCodedStringLiteral")
 	private void initFromXml(File file, FileResolver fileResolver, MiscSettings miscSettings, boolean calledFromTools,
                              WarningHandler warningHandler)
 			throws SAXException, IOException, FileParseException {
@@ -708,6 +709,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         }
 	}
 
+	@SuppressWarnings("HardCodedStringLiteral")
 	public Document saveToXml() {
 		Document doc = XmlUtil.createDocument();
 		doc.setXmlVersion("1.1");// This will allow project files with numerical chars to later be loaded fine.
@@ -856,6 +858,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
      *
      * Since NTFS native encoding is UTF_16LE, we use that.
      */
+	@SuppressWarnings("HardCodedStringLiteral")
     private void setFileMetadata(Path file, String appName) {
         try {
             UserDefinedFileAttributeView view = Files.getFileAttributeView(
