@@ -1303,7 +1303,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		settingsItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T, CTRL_DOWN_MASK));
 		settingsItem.addActionListener(e -> doSettingsDialog());
 
-		JMenuItem themeItem = toolsMenu.add(new JMenuItem("Color Theme"));
+		JMenuItem themeItem = toolsMenu.add(new JMenuItem(UIText.get("maestro.menu.colors")));
 		themeItem.setMnemonic('C');
 		themeItem.addActionListener(e -> showThemeEditor());
 
@@ -1333,7 +1333,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
 	private void initTheme() {
-		themeEditorDialog = new JDialog(this, "Theme Editor", false); // false = non-modal
+		themeEditorDialog = new JDialog(this, "Color Editor", false); // false = non-modal
 
 		ColorSelector selector = new ColorSelector(arrangementView);
 

@@ -75,7 +75,7 @@ public class ColorSelector extends JPanel {
         String initTheme = Preferences.userNodeForPackage(ColorTable.class).get("themeFile", "");
         if (!initTheme.isEmpty()) {
             File file = new File(initTheme);
-            log.info("Attempting to load theme from " + file.getName());
+            log.info("Attempting to load color theme from " + file.getName());
             try {
                 loadTheme(file);
             } catch (Exception e) {
@@ -93,11 +93,11 @@ public class ColorSelector extends JPanel {
     private JPanel createButtonPanel() {
         JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         
-        JButton importBtn = new JButton("Import Theme XML");
+        JButton importBtn = new JButton("Import Colors XML");
         importBtn.setToolTipText("Load colors from file. Will only change the colors contained in the file.");
         importBtn.addActionListener(e -> importTheme());
         
-        JButton exportBtn = new JButton("Export Theme XML");
+        JButton exportBtn = new JButton("Export Colors XML");
         exportBtn.setToolTipText("<html>Save colors to file (only saves the modified colors)." +
                 "<br>Note: Color IDs 'might' change in future Maestro versions. (then they will be ignored when importing)</html>");
         exportBtn.addActionListener(e -> exportTheme());
@@ -299,16 +299,16 @@ public class ColorSelector extends JPanel {
 
     private void exportTheme() {
         JFileChooser jfc = new JFileChooser();
-        jfc.setDialogTitle("Export Color Theme");
-        ExtensionFileFilter filter = new ExtensionFileFilter("Maestro Theme (*"+Util.THEME_FILE_EXTENSION+")", Util.THEME_FILE_EXTENSION_NO_DOT);
+        jfc.setDialogTitle("Export Colors");
+        ExtensionFileFilter filter = new ExtensionFileFilter("Maestro Colors (*"+Util.COLORS_FILE_EXTENSION +")", Util.COLORS_FILE_EXTENSION_NO_DOT);
         jfc.setFileFilter(filter);
         jfc.setAcceptAllFileFilterUsed(false);
         jfc.setCurrentDirectory(lastDir);
         
         if (jfc.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
             File file = jfc.getSelectedFile();
-            if (!file.getName().toLowerCase().endsWith(Util.THEME_FILE_EXTENSION)) {
-                file = new File(file.getParent(), file.getName() + Util.THEME_FILE_EXTENSION);
+            if (!file.getName().toLowerCase().endsWith(Util.COLORS_FILE_EXTENSION)) {
+                file = new File(file.getParent(), file.getName() + Util.COLORS_FILE_EXTENSION);
             }
 
             if(file.exists()) {
@@ -321,13 +321,13 @@ public class ColorSelector extends JPanel {
             try {
                 saveTheme(file);
                 lastDir = file.getParentFile();
-                int result = JOptionPane.showConfirmDialog(this, "Do you want to apply this theme every time Maestro start?", "Theme exported successfully", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                int result = JOptionPane.showConfirmDialog(this, "Do you want to apply these colors every time Maestro start?", "Colors exported successfully", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
                 if (result == JOptionPane.YES_OPTION) {
                     Preferences.userNodeForPackage(ColorTable.class).put("themeFile", file.getAbsolutePath());
                 }
             } catch (Exception e) {
                 log.log(Level.SEVERE, "Failed to export theme", e);
-                JOptionPane.showMessageDialog(this, "Error saving theme: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Error saving colors: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -356,8 +356,8 @@ public class ColorSelector extends JPanel {
 
     private void importTheme() {
         JFileChooser jfc = new JFileChooser();
-        jfc.setDialogTitle("Import Color Theme");
-        jfc.setFileFilter(new ExtensionFileFilter("Maestro Theme (*"+Util.THEME_FILE_EXTENSION+")", Util.THEME_FILE_EXTENSION_NO_DOT));
+        jfc.setDialogTitle("Import Colors");
+        jfc.setFileFilter(new ExtensionFileFilter("Maestro Colors (*"+Util.COLORS_FILE_EXTENSION +")", Util.COLORS_FILE_EXTENSION_NO_DOT));
         jfc.setAcceptAllFileFilterUsed(false);
         jfc.setCurrentDirectory(lastDir);
 
@@ -366,11 +366,11 @@ public class ColorSelector extends JPanel {
                 File themeFile = jfc.getSelectedFile();
                 loadTheme(themeFile);
                 lastDir = themeFile.getParentFile();
-                JOptionPane.showMessageDialog(this, "Theme imported successfully.");
+                JOptionPane.showMessageDialog(this, "Colors imported successfully.");
                 
             } catch (Exception e) {
                 log.log(Level.SEVERE, "Failed to import theme", e);
-                JOptionPane.showMessageDialog(this, "Error loading theme: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Error loading colors: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
@@ -396,7 +396,7 @@ public class ColorSelector extends JPanel {
                 ct.set(new Color(argb, true));
             } catch (Exception ignored) {
                 // Skip invalid colors
-                log.info("Invalid color id or value in theme file: " + id);
+                log.info("Invalid color id or value in colors file: " + id);
             }
         }
         refreshUI();

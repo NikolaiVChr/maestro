@@ -26,6 +26,7 @@ import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
+import com.digero.common.util.Util;
 import org.apache.commons.math3.complex.Complex;
 import org.apache.commons.math3.transform.DftNormalization;
 import org.apache.commons.math3.transform.FastFourierTransformer;
@@ -92,7 +93,7 @@ public class AudioSorter {
                     previous = null;
                 }
 
-                String targetFileName = instrumentName + "_" + i + (equals ? "a" : "") + ".wav";
+                String targetFileName = instrumentName + "_" + i + (equals ? "a" : "") + Util.WAV_FILE_EXTENSION;
                 Path target = equals ? Paths.get(targetRoot, "a", targetFileName)
                         : Paths.get(targetRoot, targetFileName);
 
@@ -143,10 +144,10 @@ public class AudioSorter {
 		File outputRoot = new File("F:\\Games\\LOTRO\\u16\\fft");
 		if (!outputRoot.exists())
 			outputRoot.mkdirs();
-		try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File(outputRoot, instrument + ".txt")))) {
+		try (BufferedWriter writer = new BufferedWriter(new FileWriter(new File(outputRoot, instrument + Util.TXT_FILE_EXTENSION)))) {
 			for (int noteId = 36; noteId <= 72; noteId++) {
 //				System.out.println(noteId);
-				File wavFile = new File(directory, instrument + "_" + noteId + ".wav");
+				File wavFile = new File(directory, instrument + "_" + noteId + Util.WAV_FILE_EXTENSION);
 				if (!wavFile.exists())
 					continue;
 

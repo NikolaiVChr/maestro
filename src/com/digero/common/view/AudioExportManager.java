@@ -22,6 +22,7 @@ import javax.swing.SwingUtilities;
 import com.digero.abcplayer.MidiToWav;
 import com.digero.common.midi.LotroSequencerWrapper;
 import com.digero.common.util.ExtensionFileFilter;
+import com.digero.common.util.Util;
 import com.digero.maestro.MaestroMain;
 import com.digero.maestro.view.ProjectFrame;
 
@@ -53,12 +54,12 @@ public class AudioExportManager {
 				if (dot >= 0) {
 					openedName = openedName.substring(0, dot);
 				}
-				openedName += ".wav";
+				openedName += Util.WAV_FILE_EXTENSION;
 				exportFileDialog.setSelectedFile(new File(exportFileDialog.getCurrentDirectory() + "/" + openedName));
 			}
 		}
 
-		exportFileDialog.setFileFilter(new ExtensionFileFilter(UIText.get("common.wav.files"), "wav"));
+		exportFileDialog.setFileFilter(new ExtensionFileFilter(UIText.get("common.wav.files"), Util.WAV_FILE_EXTENSION_NO_DOT));
 
 		int result = exportFileDialog.showSaveDialog(parentWindow);
 		if (result == JFileChooser.APPROVE_OPTION) {
@@ -66,7 +67,7 @@ public class AudioExportManager {
 
 			File saveFile = exportFileDialog.getSelectedFile();
 			if (saveFile.getName().indexOf('.') < 0) {
-				saveFile = new File(saveFile.getParent() + "/" + saveFile.getName() + ".wav");
+				saveFile = new File(saveFile.getParent() + "/" + saveFile.getName() + Util.WAV_FILE_EXTENSION);
 				exportFileDialog.setSelectedFile(saveFile);
 			}
 
@@ -108,7 +109,7 @@ public class AudioExportManager {
 		public void run() {
 			Exception error = null;
 			try {
-				File wavFile = File.createTempFile("Abc-", ".wav");
+				File wavFile = File.createTempFile("Abc-", Util.WAV_FILE_EXTENSION);
 				try (FileOutputStream fos = new FileOutputStream(wavFile)) {
 					MidiToWav.render(sequence, fos, startTick);
 					fos.close();

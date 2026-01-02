@@ -40,8 +40,10 @@ public final class Util {
 	public static final @NonNls String CSV_FILE_EXTENSION_NO_DOT = "csv";
 	public static final @NonNls String MID_FILE_EXTENSION_NO_DOT = "mid";
 	public static final @NonNls String KAR_FILE_EXTENSION_NO_DOT = "kar";
+	public static final @NonNls String WAV_FILE_EXTENSION_NO_DOT = "wav";
+	public static final @NonNls String MP3_FILE_EXTENSION_NO_DOT = "mp3";
 	public static final @NonNls String MIDI_FILE_EXTENSION_NO_DOT = "midi";
-	public static final @NonNls String THEME_FILE_EXTENSION_NO_DOT = "maestrotheme.xml";
+	public static final @NonNls String COLORS_FILE_EXTENSION_NO_DOT = "maestro-colors.xml";
 	public static final @NonNls String OPTIONS_BACKUP_FILE_EXTENSION_NO_DOT = "msbk";
 	public static final @NonNls String PARTS_CONFIG_FILE_EXTENSION_NO_DOT = "partsconfig.txt";
 	public static final @NonNls String DRUMMAP_FILE_EXTENSION_NO_DOT = "drummap.txt";
@@ -53,7 +55,9 @@ public final class Util {
 	public static final String MID_FILE_EXTENSION = "." + MID_FILE_EXTENSION_NO_DOT;
 	public static final String MIDI_FILE_EXTENSION = "." + MIDI_FILE_EXTENSION_NO_DOT;
 	public static final String KAR_FILE_EXTENSION = "." + KAR_FILE_EXTENSION_NO_DOT;
-	public static final String THEME_FILE_EXTENSION = "." + THEME_FILE_EXTENSION_NO_DOT;
+	public static final String WAV_FILE_EXTENSION = "." + WAV_FILE_EXTENSION_NO_DOT;
+	public static final String MP3_FILE_EXTENSION = "." + MP3_FILE_EXTENSION_NO_DOT;
+	public static final String COLORS_FILE_EXTENSION = "." + COLORS_FILE_EXTENSION_NO_DOT;
 	public static final String DRUMMAP_FILE_EXTENSION = "." + DRUMMAP_FILE_EXTENSION_NO_DOT;
 	public static final String OPTIONS_BACKUP_FILE_EXTENSION = "." + OPTIONS_BACKUP_FILE_EXTENSION_NO_DOT;
 	public static final String PARTS_CONFIG_FILE_EXTENSION = "." + PARTS_CONFIG_FILE_EXTENSION_NO_DOT;

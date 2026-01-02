@@ -73,7 +73,7 @@ public class ExportMp3Dialog extends JDialog implements TableLayoutConstants {
 		String saveDir = prefs.get("saveDirectory", abcFile.getParentFile().getAbsolutePath());
 		String saveName = abcFile.getName();
 		if (saveName.toLowerCase().endsWith(Util.ABC_FILE_EXTENSION)) {
-			saveName = saveName.substring(0, saveName.length() - 4) + ".mp3";
+			saveName = saveName.substring(0, saveName.length() - 4) + Util.MP3_FILE_EXTENSION;
 		}
 		File saveFile = new File(saveDir, saveName);
 
@@ -92,7 +92,7 @@ public class ExportMp3Dialog extends JDialog implements TableLayoutConstants {
 			if (result == JFileChooser.APPROVE_OPTION) {
 				File f = fc.getSelectedFile();
 				if (f.getName().indexOf('.') < 0)
-					f = new File(f.getParentFile(), f + ".mp3");
+					f = new File(f.getParentFile(), f + Util.MP3_FILE_EXTENSION);
 				saveAsField.setText(fc.getSelectedFile().getAbsolutePath());
 			}
 		});
