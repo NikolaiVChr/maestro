@@ -13,4 +13,5 @@ codeStyles/
 !encodings.xml
 !resourceBundles.xml
 !external-annotations/
+!external-annotations/**
 !.gitignore
