@@ -28,7 +28,6 @@ import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.midi.TimeSignature;
 import com.digero.common.util.FileParseException;
 import com.digero.common.util.Quad;
-import com.digero.common.util.Triple;
 import com.digero.common.util.Util;
 import com.digero.maestro.abc.*;
 import com.digero.maestro.abc.AbcExporter.ExportTrackInfo;

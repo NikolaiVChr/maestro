@@ -4,7 +4,6 @@ import static javax.swing.SwingConstants.CENTER;
 
 import java.awt.*;
 import java.awt.event.*;
-import java.text.MessageFormat;
 import java.util.*;
 import java.util.List;
 import java.util.Map.Entry;

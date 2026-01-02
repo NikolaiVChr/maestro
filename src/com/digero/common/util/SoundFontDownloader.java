@@ -19,7 +19,6 @@ import java.nio.file.StandardCopyOption;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.text.MessageFormat;
 import java.time.Duration;
 import java.util.HexFormat;
 import java.util.logging.Level;

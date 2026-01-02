@@ -3,7 +3,6 @@ package com.digero.common.view;
 import java.awt.BorderLayout;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.text.MessageFormat;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;

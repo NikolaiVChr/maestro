@@ -1,7 +1,6 @@
 package com.digero.common.abctomidi;
 
 import java.io.File;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,7 +29,6 @@ import com.digero.common.util.Util;
 import com.digero.common.util.WarningHandler;
 import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcExporter;
-import org.jetbrains.annotations.NonNls;
 
 import javax.sound.midi.MidiEvent;
 import javax.swing.*;

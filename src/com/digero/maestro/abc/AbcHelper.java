@@ -4,7 +4,6 @@ import java.util.List;
 
 import javax.xml.xpath.XPathExpressionException;
 
-import com.digero.common.view.UIText;
 import org.w3c.dom.Element;
 
 import com.digero.common.midi.Note;

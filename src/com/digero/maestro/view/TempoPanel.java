@@ -6,7 +6,6 @@ import info.clearthought.layout.TableLayoutConstants;
 
 import java.awt.Dimension;
 import java.awt.Font;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;

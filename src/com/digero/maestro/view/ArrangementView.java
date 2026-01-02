@@ -10,7 +10,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseWheelEvent;
-import java.text.MessageFormat;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;

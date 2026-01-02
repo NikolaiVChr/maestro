@@ -5,7 +5,6 @@ import static java.awt.Frame.getFrames;
 
 import java.awt.*;
 import java.io.IOException;
-import java.text.MessageFormat;
 import java.util.*;
 import java.util.List;
 import java.util.Map.Entry;
@@ -25,7 +24,6 @@ import com.digero.common.midi.PanGenerator;
 import com.digero.common.util.*;
 import com.digero.common.view.UIText;
 import com.digero.maestro.view.CountIn;
-import com.digero.maestro.view.PanVisualizerPanel;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.*;
 
