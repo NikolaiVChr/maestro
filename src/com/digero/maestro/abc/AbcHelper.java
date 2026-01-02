@@ -56,6 +56,7 @@ public class AbcHelper {
 		return ps;
 	}
 
+	@SuppressWarnings("HardCodedStringLiteral")
 	static void saveDoublingToXML(PartSection partSection, Element sectionElement, boolean skip) {
 		if (!skip) {
 			if (partSection.doubling[0])

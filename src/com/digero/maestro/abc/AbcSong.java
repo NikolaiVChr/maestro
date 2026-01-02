@@ -384,7 +384,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
             }
 			title = SaveUtil.parseValue(songEle, "title", sequenceInfo.getTitle());
 			composer = SaveUtil.parseValue(songEle, "composer", sequenceInfo.getComposer());
-			transcriber = SaveUtil.parseValue(songEle, "abcplayer.transcriber", transcriber);
+			transcriber = SaveUtil.parseValue(songEle, "transcriber", transcriber);
 			genre = SaveUtil.parseValue(songEle, "genre", genre);
 			mood = SaveUtil.parseValue(songEle, "mood", mood);
 			note = SaveUtil.parseValue(songEle, "note", "");
@@ -612,6 +612,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	 * Loading tuneline from xml
 	 *
      */
+	@SuppressWarnings("HardCodedStringLiteral")
 	private void handleTuneSections(Element songElement, Version fileVersion) throws XPathExpressionException, FileParseException {
 		float lastEnd = 0;
 		for (Element tuneEle : XmlUtil.selectElements(songElement, "tuneSection")) {
@@ -658,6 +659,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		convertTunelinesToLongs();
 	}
 
+	@SuppressWarnings("HardCodedStringLiteral")
 	private void loadPartsFromXML(Element songEle, Version fileVersion, boolean autoSorted)
 			throws XPathExpressionException, FileParseException {
 		for (Element ele : XmlUtil.selectElements(songEle, "part")) {
@@ -724,7 +726,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 		SaveUtil.appendChildTextElement(songEle, "title", title);
 		SaveUtil.appendChildTextElement(songEle, "composer", composer);
-		SaveUtil.appendChildTextElement(songEle, "abcplayer.transcriber", transcriber);
+		SaveUtil.appendChildTextElement(songEle, "transcriber", transcriber);
 		if (!genre.isEmpty())
 			SaveUtil.appendChildTextElement(songEle, "genre", genre);
 		if (!mood.isEmpty())
@@ -774,6 +776,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		return doc;
 	}
 
+	@SuppressWarnings("HardCodedStringLiteral")
 	private void appendExportSettings(Document doc, Element songEle) {
 		Element exportSettingsEle = doc.createElement("exportSettings");
 		if (tempoFactor != 1.0f)
@@ -804,6 +807,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			songEle.appendChild(exportSettingsEle);
 	}
 
+	@SuppressWarnings("HardCodedStringLiteral")
 	private void appendImportSettings(Document doc, Element songEle) {
 		Element importSettingsEle = doc.createElement("importSettings");
 		importSettingsEle.setAttribute("useOldVelocities", String.valueOf(usingOldVelocities));
@@ -813,6 +817,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			songEle.appendChild(importSettingsEle);
 	}
 
+	@SuppressWarnings("HardCodedStringLiteral")
 	private void appendTuneSections(Document doc, Element songEle) {
 		for (TuneLine tuneLine : tuneBars.values()) {
 			Element tuneEle = (Element) songEle.appendChild(doc.createElement("tuneSection"));

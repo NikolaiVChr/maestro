@@ -335,6 +335,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
     /**
      * Save the list of enabled drum hits and drummap to xml
      */
+	@SuppressWarnings("HardCodedStringLiteral")
 	private void saveDrumHitsToXML(Element ele, Document doc, int t, Element trackEle) {
 		BitSet[] enabledSetByTrack = isCowbellPart() ? cowbellsEnabled : (isStudentPart() || isJauntyHandKnellsPart()) ? fxEnabled : drumsEnabled;
 		BitSet enabledSet = (enabledSetByTrack == null) ? null : enabledSetByTrack[t];
@@ -370,6 +371,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		}
 	}
 
+	@SuppressWarnings("HardCodedStringLiteral")
 	private void storeDisabledDrums(Element ele, BitSet enabledSet, Element drumsEnabledEle) {
 		drumsEnabledEle.setAttribute("defaultEnabled", String.valueOf(true));
 
@@ -608,6 +610,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
     /**
      * Load enabled drum hits from XML
      */
+	@SuppressWarnings("HardCodedStringLiteral")
 	private void loadEnabledSetFromXML(int t, Element drumsEle) throws FileParseException, XPathExpressionException {
 		boolean defaultEnabled = SaveUtil.parseValue(drumsEle, "@defaultEnabled", !isCowbellPart());
 
