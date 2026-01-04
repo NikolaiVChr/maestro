@@ -12,7 +12,7 @@ public class MiscSettings {
 	public boolean showBadger = false;
 	//public boolean allBadger = false;
 	public String theme = "Flat Light";
-	public String locale = null;
+	public String locale = "US";
 	public int fontSize = 12;
 	public int maxRangeForNewBendMethod = 12;
 	public boolean autoplayOnOpen = true;
