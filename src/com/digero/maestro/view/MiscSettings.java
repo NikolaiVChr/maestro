@@ -5,6 +5,7 @@ import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 import com.digero.common.midi.NoteFilterSequencerWrapper;
+import com.digero.common.view.UIText;
 
 public class MiscSettings {
 	public boolean showMaxPolyphony = true;
@@ -12,7 +13,7 @@ public class MiscSettings {
 	public boolean showBadger = false;
 	//public boolean allBadger = false;
 	public String theme = "Flat Light";
-	public String locale = "US";
+	public String locale = UIText.LANG_EN;
 	public int fontSize = 12;
 	public int maxRangeForNewBendMethod = 12;
 	public boolean autoplayOnOpen = true;
@@ -64,6 +65,9 @@ public class MiscSettings {
 		ignoreExpressionMessages = prefs.getBoolean("ignoreExpressionMessages", ignoreExpressionMessages);
 		theme = prefs.get("theme", theme);
 		locale = prefs.get("locale", locale);
+		if ("FR".equals(locale)) locale = UIText.LANG_FR;
+		if ("DE".equals(locale)) locale = UIText.LANG_DE;
+		if ("US".equals(locale)) locale = UIText.LANG_EN;
 		fontSize = prefs.getInt("fontSize", fontSize);
 		maxRangeForNewBendMethod = prefs.getInt("maxRangeForNewBendMethod", maxRangeForNewBendMethod);
 		if (maxRangeForNewBendMethod == 24) maxRangeForNewBendMethod = 16;// Due to student fiddle we can't go to 24.
