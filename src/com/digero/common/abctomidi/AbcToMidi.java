@@ -729,8 +729,10 @@ public class AbcToMidi {
 									log.warning(fileName+": Overlapping note "+soundingNote.third+", lotro might not play part "
 											+info.getPartNumber()+" correctly. Overlap ticks="+(soundingNote.second-chordStartTick)+" "+soundingNote.second+" - "+chordStartTick+" "+noteEndTick+ " "+lengthSeconds+"s");
 									// This should maybe give a warning instead, not catastrophic failure
+									/*
 									throw new LotroFileParseException("Overlapping note, lotro might not play part "
 											+info.getPartNumber()+" correctly.", fileName, lineNumber, m.start());
+									 */
 								}
 							}
 
