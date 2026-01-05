@@ -275,7 +275,7 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 		int trackNo = part.getPreviewSequenceTrackNumber();
 
 		if (trackNo >= 0) {
-            System.out.println(part.getTitle()+": updatePartSoloMute trackNo="+trackNo+" part.isSoloed()="+part.isSoloed()+" part.isMuted()="+part.isMuted()+" seq="+abcSequencer);
+            //System.out.println(part.getTitle()+": updatePartSoloMute trackNo="+trackNo+" part.isSoloed()="+part.isSoloed()+" part.isMuted()="+part.isMuted()+" seq="+abcSequencer);
 			abcSequencer.setTrackMute(trackNo, part.isMuted());
 			abcSequencer.setTrackSolo(trackNo, part.isSoloed());
 		}
