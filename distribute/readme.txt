@@ -41,7 +41,7 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
-Version 4.6.4
+Version 4.6.5
 - Before installing this using the MSI installer, please remove old maestro from your windows manually.
     (search "Add or remove programs" in windows and remove "Maestro")
     This only needs to be done once, next versions will just update the previous version automatically again.

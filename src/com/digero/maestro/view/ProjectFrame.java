@@ -571,7 +571,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		
 		
 		
-		partEditor = new PartEditor(this, sequencer, miscSettings);
+		partEditor = new PartEditor(this, null, miscSettings);
 
 		/*
 		 * Wrap the part list in a panel that forces the list to the top. Fixes a swing bug where clicking after the end

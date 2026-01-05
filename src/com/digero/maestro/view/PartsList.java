@@ -73,11 +73,13 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 		rowDimension.height = 8 * rowDimension.height; // min size should fit 8 rows
 		this.setMinimumSize(rowDimension);
 
-		this.abcSequencer.addChangeListener(e -> {
-			if (e.getProperty() == SequencerProperty.SEQUENCE) {
-				updateTrackNumbers();
-			}
-		});
+		if (this.abcSequencer != null) {
+			this.abcSequencer.addChangeListener(e -> {
+				if (e.getProperty() == SequencerProperty.SEQUENCE) {
+					updateTrackNumbers();
+				}
+			});
+		}
 		
 		model = new DefaultListModel<>();
 			
@@ -266,14 +268,14 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 	}
 
 	private void updatePartSoloMute(AbcPart part) {
-		if (part == null) {
+		if (part == null || abcSequencer == null) {
 			return;
 		}
 
 		int trackNo = part.getPreviewSequenceTrackNumber();
 
 		if (trackNo >= 0) {
-            //System.out.println(part.getTitle()+": updatePartSoloMute trackNo="+trackNo+" part.isSoloed()="+part.isSoloed()+" part.isMuted()="+part.isMuted());
+            System.out.println(part.getTitle()+": updatePartSoloMute trackNo="+trackNo+" part.isSoloed()="+part.isSoloed()+" part.isMuted()="+part.isMuted()+" seq="+abcSequencer);
 			abcSequencer.setTrackMute(trackNo, part.isMuted());
 			abcSequencer.setTrackSolo(trackNo, part.isSoloed());
 		}
