@@ -62,6 +62,7 @@ Version 4.6.5
 - Added fr and de localizations. Consider this a beta feature please, as it's mostly auto translated.
     Not translated: MIDI instruments and drum hit names, color editor, statistics.
 - Abc Player recent list now has the most recent at top instead of bottom (like Maestro).
+- Fixed that soloing a part and then switching from preview to MIDI playback would solo one of the midi tracks.
 
 Version 4.5.24
 - Fixed a bug in splitting of long notes in organic multi-stage and made it slightly smarter.
