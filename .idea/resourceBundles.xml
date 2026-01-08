@@ -4,9 +4,11 @@
     <file url="file://$PROJECT_DIR$/resources/uitext.properties" />
     <file url="file://$PROJECT_DIR$/resources/uitext_de.properties" />
     <file url="file://$PROJECT_DIR$/resources/uitext_fr.properties" />
+    <file url="file://$PROJECT_DIR$/resources/uitext_en.properties" />
     <custom-resource-bundle>
       <file value="file://$PROJECT_DIR$/resources/uitext.properties" />
       <file value="file://$PROJECT_DIR$/resources/uitext_de.properties" />
+      <file value="file://$PROJECT_DIR$/resources/uitext_en.properties" />
       <file value="file://$PROJECT_DIR$/resources/uitext_fr.properties" />
       <base-name>uitext</base-name>
     </custom-resource-bundle>
