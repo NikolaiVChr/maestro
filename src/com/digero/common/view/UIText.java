@@ -5,21 +5,73 @@ import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.PropertyKey;
 
+import javax.swing.*;
+import java.awt.*;
+import java.lang.reflect.InvocationTargetException;
 import java.text.MessageFormat;
 import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
 public class UIText {
     private static final Logger log = Logger.getLogger("locale"); //NON-NLS
-    private static final String locale = Preferences.userNodeForPackage(MaestroMain.class).node("miscSettings").get("locale", null); //NON-NLS
+    private static String locale = null;
     private static final @NonNls String BUNDLE_NAME = "uitext";
-    private static final ResourceBundle uiText = ResourceBundle.getBundle(BUNDLE_NAME, locale==null? Locale.getDefault():Locale.of(locale)); //NON-NLS
-    public static String LANG_EN = "en";
-    public static String LANG_FR = "fr";
-    public static String LANG_DE = "de";
+    private static ResourceBundle uiText = null;
+    public static @NonNls String LANG_EN = "en";
+    public static @NonNls String LANG_FR = "fr";
+    public static @NonNls String LANG_DE = "de";
+    private static final @NonNls String LANG_EN_NAME = "English";
+    private static final @NonNls String LANG_FR_NAME = "Français";
+    private static final @NonNls String LANG_DE_NAME = "Deutsch";
+    private static final @NonNls String mainKey = "locale";
+
+    static {
+        locale = Preferences.userNodeForPackage(MaestroMain.class).node("miscSettings").get(mainKey, null); //NON-NLS
+        log.info("Stored locale: " + (locale==null?"null":locale));
+
+        if (locale == null) {
+            int[] choice = {-1};
+            if (!GraphicsEnvironment.isHeadless()) {// test if we are in code testing
+                System.out.println("No locale stored, prompting user");
+                try {
+                    if (SwingUtilities.isEventDispatchThread()) {
+                        choice[0] = JOptionPane.showOptionDialog(null, "Language/Langue/Sprache", "Maestro Language", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, new Object[]{LANG_EN_NAME, LANG_FR_NAME, LANG_DE_NAME}, LANG_EN_NAME);
+                    } else {
+                        SwingUtilities.invokeAndWait(() -> {
+                            choice[0] = JOptionPane.showOptionDialog(null, "Language/Langue/Sprache", "Maestro Language", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, new Object[]{LANG_EN_NAME, LANG_FR_NAME, LANG_DE_NAME}, LANG_EN_NAME);
+                        });
+                    }
+                } catch (InterruptedException | InvocationTargetException e) {
+                    log.log(Level.SEVERE, "Failed to initialize locale, EN will be used.", e);
+                }
+            }
+
+            if (choice[0] == 0) locale = LANG_EN;
+            else if (choice[0] == 1) locale = LANG_FR;
+            else if (choice[0] == 2) locale = LANG_DE;
+            else locale = LANG_EN;
+
+            if (!GraphicsEnvironment.isHeadless()) {
+                Preferences.userNodeForPackage(MaestroMain.class).node("miscSettings").put(mainKey, locale);
+            }
+        }
+        Locale selectedLocale;
+
+        if (locale == null) locale = LANG_EN;
+
+        if (LANG_EN.equals(locale.toLowerCase())) {
+            //selectedLocale = Locale.ROOT; // Forces use of uitext.properties
+            selectedLocale = Locale.of(locale.toLowerCase());
+        } else {
+            selectedLocale = Locale.of(locale.toLowerCase());
+        }
+        log.info("Using locale: " + selectedLocale);
+        uiText = ResourceBundle.getBundle(BUNDLE_NAME, selectedLocale); //NON-NLS
+    }
 
     public static @NotNull String get(@PropertyKey(resourceBundle = BUNDLE_NAME)String key, Locale local) {
         try {

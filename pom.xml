@@ -47,6 +47,9 @@
 					</includes>
                     <useFile>false</useFile>
                     <trimStackTrace>false</trimStackTrace>
+					<systemPropertyVariables>
+						<java.awt.headless>true</java.awt.headless>
+					</systemPropertyVariables>
 				</configuration>
 			</plugin>
 			<plugin>

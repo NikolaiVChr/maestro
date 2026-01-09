@@ -1138,16 +1138,15 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
             }
         });
 
-		final String AUTO = "Auto"; //NON-NLS
 		final JLabel langLabel = new JLabel("Language/Sprache/Langue"); //NON-NLS
-		final JComboBox<String> langBox = new JComboBox<>(new String[]{AUTO, UIText.LANG_EN, UIText.LANG_FR, UIText.LANG_DE});
+		final JComboBox<String> langBox = new JComboBox<>(new String[]{UIText.LANG_EN, UIText.LANG_FR, UIText.LANG_DE});
 		langBox.setToolTipText("<html>Changes take effect after restarting Maestro.<br><br>Änderungen werden nach einem Neustart von Maestro wirksam.<br><br>Les changements prendront effet après un redémarrage de Maestro.</html>");
 		langLabel.setToolTipText("<html>Changes take effect after restarting Maestro.<br><br>Änderungen werden nach einem Neustart von Maestro wirksam.<br><br>Les changements prendront effet après un redémarrage de Maestro.</html>");
 		langBox.setEditable(false);
-		langBox.setSelectedItem(miscSettings.locale==null?AUTO:miscSettings.locale.toLowerCase());
+		langBox.setSelectedItem(miscSettings.locale==null?UIText.LANG_EN:miscSettings.locale.toLowerCase());
 		langBox.addActionListener(e -> {
 			String item = langBox.getSelectedItem().toString();
-			miscSettings.locale = item.equals(AUTO) ? null : item;
+			miscSettings.locale = item;
 		});
 		
 		TableLayout layout = new TableLayout();
