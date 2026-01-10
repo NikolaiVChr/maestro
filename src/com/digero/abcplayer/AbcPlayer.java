@@ -86,9 +86,9 @@ import net.miginfocom.swing.MigLayout;
 public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConstants, TrackListPanelCallback {
     private static Logger log;
 
-	private static final ExtensionFileFilter ABC_FILE_FILTER = new ExtensionFileFilter(UIText.get("abcplayer.abc.files.and.playlists"), Util.ABC_FILE_EXTENSION_NO_DOT, Util.TXT_FILE_EXTENSION_NO_DOT, Util.ABCP_FILE_EXTENSION_NO_DOT);
-	public static final String APP_NAME = "ABC Player";
-	private static final String APP_NAME_LONG = UIText.get("abcplayer.0.for.the.lord.of.the.rings.online", APP_NAME);
+	private static ExtensionFileFilter ABC_FILE_FILTER;
+	public static final String APP_NAME = "ABC Player"; //NON-NLS
+	private static String APP_NAME_LONG;
 	private static final String WIKI_URL = "https://maestro.miraheze.org/wiki/Main_Page";
 	static Version APP_VERSION = new Version(0, 0, 0);
 
@@ -149,11 +149,17 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			if (!tools) {
 				SwingUtilities.invokeAndWait(() -> {
 					try {
+						// UIText must not be called from static fields or before Logger has been init. And best after Swing thread has been activated.
+						APP_NAME_LONG = UIText.get("abcplayer.0.for.the.lord.of.the.rings.online", APP_NAME);
+						ABC_FILE_FILTER = new ExtensionFileFilter(UIText.get("abcplayer.abc.files.and.playlists"), Util.ABC_FILE_EXTENSION_NO_DOT, Util.TXT_FILE_EXTENSION_NO_DOT, Util.ABCP_FILE_EXTENSION_NO_DOT);
 						Preferences prefs = Preferences.userNodeForPackage(AbcPlayer.class).node("miscSettings");
 						Themer.setLookAndFeel(prefs.get("theme", Themer.FLAT_LIGHT_THEME), prefs.getInt("fontSize", Themer.DEFAULT_FONT_SIZE));
-					} catch (Exception e) {
+					} catch (Exception ignored) {
 					}
 				});
+			} else {
+				APP_NAME_LONG = APP_NAME;
+				ABC_FILE_FILTER = new ExtensionFileFilter("ABC files and playlists", Util.ABC_FILE_EXTENSION_NO_DOT, Util.TXT_FILE_EXTENSION_NO_DOT, Util.ABCP_FILE_EXTENSION_NO_DOT); //NON-NLS
 			}
 
 			mainWindow = new AbcPlayer(tools);
@@ -163,7 +169,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 				try {
 					if (!tools) mainWindow.setVisible(true);
 					mainWindow.openSongFromCommandLine(songArgs);
-				} catch (Exception e) {
+				} catch (Exception ignored) {
 				}
 			});
 		} catch (InvocationTargetException | InterruptedException e) {

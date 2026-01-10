@@ -16,6 +16,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
+/**
+ * Utility class for handling UI text localization and retrieval.
+ * Do NOT access this in static fields in main classes. (AbcPlayer, MaestroMain, AbcTools)
+ * And best wait AFTER the first use of Swing thread.
+ * And after Logging has been init.
+ */
 public class UIText {
     private static final Logger log = Logger.getLogger("locale"); //NON-NLS
     private static String locale = null;
@@ -30,23 +36,24 @@ public class UIText {
     private static final @NonNls String mainKey = "locale";
 
     static {
+        //Preferences.userNodeForPackage(MaestroMain.class).node("miscSettings").remove(mainKey);
         locale = Preferences.userNodeForPackage(MaestroMain.class).node("miscSettings").get(mainKey, null); //NON-NLS
         log.info("Stored locale: " + (locale==null?"null":locale));
 
         if (locale == null) {
             int[] choice = {-1};
             if (!GraphicsEnvironment.isHeadless()) {// test if we are in code testing
-                System.out.println("No locale stored, prompting user");
+                log.info("No locale stored, prompting user");
                 try {
                     if (SwingUtilities.isEventDispatchThread()) {
-                        choice[0] = JOptionPane.showOptionDialog(null, "Language/Langue/Sprache", "Maestro Language", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, new Object[]{LANG_EN_NAME, LANG_FR_NAME, LANG_DE_NAME}, LANG_EN_NAME);
+                        choice[0] = JOptionPane.showOptionDialog(null, "Language/Langue/Sprache", "Maestro Language", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, new Object[]{LANG_EN_NAME, LANG_FR_NAME, LANG_DE_NAME}, LANG_EN_NAME); //NON-NLS  //NON-NLS
                     } else {
                         SwingUtilities.invokeAndWait(() -> {
-                            choice[0] = JOptionPane.showOptionDialog(null, "Language/Langue/Sprache", "Maestro Language", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, new Object[]{LANG_EN_NAME, LANG_FR_NAME, LANG_DE_NAME}, LANG_EN_NAME);
+                            choice[0] = JOptionPane.showOptionDialog(null, "Language/Langue/Sprache", "Maestro Language", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, new Object[]{LANG_EN_NAME, LANG_FR_NAME, LANG_DE_NAME}, LANG_EN_NAME); //NON-NLS  //NON-NLS
                         });
                     }
                 } catch (InterruptedException | InvocationTargetException e) {
-                    log.log(Level.SEVERE, "Failed to initialize locale, EN will be used.", e);
+                    log.log(Level.WARNING, "Failed to initialize locale, EN will be used.", e);
                 }
             }
 
@@ -56,21 +63,26 @@ public class UIText {
             else locale = LANG_EN;
 
             if (!GraphicsEnvironment.isHeadless()) {
+                log.fine("saving "+locale);
                 Preferences.userNodeForPackage(MaestroMain.class).node("miscSettings").put(mainKey, locale);
             }
         }
         Locale selectedLocale;
 
-        if (locale == null) locale = LANG_EN;
+        if (locale == null || "US".equals(locale)) {
+            // Backwards compat; Initially used "US" instead of "en".
+            locale = LANG_EN;
+        }
+        locale = locale.toLowerCase();//handle FR and DE
 
-        if (LANG_EN.equals(locale.toLowerCase())) {
+        if (LANG_EN.equals(locale)) {
             //selectedLocale = Locale.ROOT; // Forces use of uitext.properties
-            selectedLocale = Locale.of(locale.toLowerCase());
+            selectedLocale = Locale.of(locale);
         } else {
-            selectedLocale = Locale.of(locale.toLowerCase());
+            selectedLocale = Locale.of(locale);
         }
         log.info("Using locale: " + selectedLocale);
-        uiText = ResourceBundle.getBundle(BUNDLE_NAME, selectedLocale); //NON-NLS
+        uiText = ResourceBundle.getBundle(BUNDLE_NAME, selectedLocale);
     }
 
     public static @NotNull String get(@PropertyKey(resourceBundle = BUNDLE_NAME)String key, Locale local) {
