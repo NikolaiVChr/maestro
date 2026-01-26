@@ -54,7 +54,7 @@ public class SoundFontDownloader {
 
         File dataDir = getCommonDataDirectory();
         if (dataDir == null) {
-            log.info("Common Data Directory not found.");
+            log.info("Common Maestro folder not found.");
             return null;
         }
         File sf2File = new File(dataDir, SF2_FILENAME);
@@ -102,7 +102,7 @@ public class SoundFontDownloader {
         if (!dir.exists()) {
             boolean madeDirs = dir.mkdirs();
             if (!madeDirs) {
-                log.warning("Failed to create directory: " + dir);
+                log.warning("Failed to create common Maestro folder");
                 return null;
             }
         }
@@ -180,78 +180,83 @@ public class SoundFontDownloader {
         // Background worker thread
         downloadThread[0] = new Thread(() -> {
             boolean keepTrying = true;
-            while (keepTrying) {
-                try {
+            try {
+                while (keepTrying) {
+                    try {
 
-                    downloadFile(SF2_URL, tempFile[0], progressBar[0], statusLabel[0]);
-                    
-                    // Verify hash immediately after download
-                    SwingUtilities.invokeLater(() -> {
-                        statusLabel[0].setText(UIText.get("common.soundfont.verifying.integrity"));
-                        progressBar[0].setString(UIText.get("common.soundfont.verifying"));
-                        progressBar[0].setIndeterminate(true);
-                    });
-                    if (verifyChecksum(tempFile[0].toPath(), EXPECTED_SHA256)) {
-                        // Rename tmp to actual
-                        Files.move(tempFile[0].toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                        result.success = true;
-                        keepTrying = false;
-                        SwingUtilities.invokeLater(dialog[0]::dispose);
-                    } else {
-                        Files.deleteIfExists(tempFile[0].toPath());
-                        throw new IOException("Downloaded file corrupted (Checksum mismatch)");
-                    }
-                } catch (Exception e) {
-                    if (e instanceof InterruptedIOException || e instanceof InterruptedException || Thread.currentThread().isInterrupted()) {
-                        log.info("Download soundfont interrupted");
-                        keepTrying = false; // Exit the loop silently
+                        downloadFile(SF2_URL, tempFile[0], progressBar[0], statusLabel[0]);
+
+                        // Verify hash immediately after download
+                        SwingUtilities.invokeLater(() -> {
+                            statusLabel[0].setText(UIText.get("common.soundfont.verifying.integrity"));
+                            progressBar[0].setString(UIText.get("common.soundfont.verifying"));
+                            progressBar[0].setIndeterminate(true);
+                        });
+                        if (verifyChecksum(tempFile[0].toPath(), EXPECTED_SHA256)) {
+                            // Rename tmp to actual
+                            Files.move(tempFile[0].toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                            result.success = true;
+                            keepTrying = false;
+                            SwingUtilities.invokeLater(dialog[0]::dispose);
+                        } else {
+                            Files.deleteIfExists(tempFile[0].toPath());
+                            throw new IOException("Downloaded file corrupted (Checksum mismatch)");
+                        }
+                    } catch (Exception e) {
+                        if (e instanceof InterruptedIOException || e instanceof InterruptedException || Thread.currentThread().isInterrupted()) {
+                            log.info("Download soundfont interrupted");
+                            keepTrying = false; // Exit the loop silently
+                            try {
+                                Files.deleteIfExists(tempFile[0].toPath());
+                            } catch (IOException ignored) {}
+                            return;
+                        }
+                        log.info("Downloading soundfont failed");
+                        log.log(Level.WARNING, "Download failed", e);
                         try {
                             Files.deleteIfExists(tempFile[0].toPath());
-                        } catch (IOException ignored) {}
-                        return;
-                    }
-                    log.info("Downloading soundfont failed");
-                    log.log(Level.WARNING, "Download failed", e);
-                    try {
-                        Files.deleteIfExists(tempFile[0].toPath());
-                    } catch (IOException ignored) {
-                    }
-                    Object[] options = {UIText.get("common.soundfont.retry"), UIText.get("common.soundfont.quit"), UIText.get("common.soundfont.continue")};
-                    int[] option = {JOptionPane.CLOSED_OPTION};
-                    try {
-                        SwingUtilities.invokeAndWait(() -> {
-                            option[0] = JOptionPane.showOptionDialog(dialog[0],
-                                    UIText.get("common.soundfont.download.failed.0", e.getMessage()),
-                                    UIText.get("common.soundfont.download.error"),
-                                    JOptionPane.YES_NO_OPTION,
-                                    JOptionPane.ERROR_MESSAGE,
-                                    null,
-                                    options,
-                                    options[0]);
-                        });
-                    } catch (InterruptedException | InvocationTargetException ex) {
-                        option[0] = JOptionPane.CLOSED_OPTION;
-                    }
-                    if (option[0] == 2) {
-                        // continue
-                        log.info("Continue without soundfont");
-                        keepTrying = false;
-                        SwingUtilities.invokeLater(dialog[0]::dispose);
-                    } else if (option[0] == 1 || option[0] == JOptionPane.CLOSED_OPTION) {
-                        // quit
-                        log.info("Quitting");
-                        keepTrying = false;
-                        System.exit(0);
-                    } else {
-                        // retry
-                        log.info(UIText.get("common.soundfont.retrying.downloading.soundfont.to.shared.location"));
-                        SwingUtilities.invokeLater(() -> {
-                            progressBar[0].setIndeterminate(false);
-                            progressBar[0].setValue(0);
-                            statusLabel[0].setText(UIText.get("common.soundfont.retrying"));
-                        });
+                        } catch (IOException ignored) {
+                        }
+                        Object[] options = {UIText.get("common.soundfont.retry"), UIText.get("common.soundfont.quit"), UIText.get("common.soundfont.continue")};
+                        int[] option = {JOptionPane.CLOSED_OPTION};
+                        try {
+                            SwingUtilities.invokeAndWait(() -> {
+                                option[0] = JOptionPane.showOptionDialog(dialog[0],
+                                        UIText.get("common.soundfont.download.failed.0", e.getMessage()),
+                                        UIText.get("common.soundfont.download.error"),
+                                        JOptionPane.YES_NO_OPTION,
+                                        JOptionPane.ERROR_MESSAGE,
+                                        null,
+                                        options,
+                                        options[0]);
+                            });
+                        } catch (InterruptedException | InvocationTargetException ex) {
+                            option[0] = JOptionPane.CLOSED_OPTION;
+                        }
+                        if (option[0] == 2) {
+                            // continue
+                            log.info("Continue without soundfont");
+                            keepTrying = false;
+                            SwingUtilities.invokeLater(dialog[0]::dispose);
+                        } else if (option[0] == 1 || option[0] == JOptionPane.CLOSED_OPTION) {
+                            // quit
+                            log.info("Quitting");
+                            keepTrying = false;
+                            System.exit(0);
+                        } else {
+                            // retry
+                            log.info(UIText.get("common.soundfont.retrying.downloading.soundfont.to.shared.location"));
+                            SwingUtilities.invokeLater(() -> {
+                                progressBar[0].setIndeterminate(false);
+                                progressBar[0].setValue(0);
+                                statusLabel[0].setText(UIText.get("common.soundfont.retrying"));
+                            });
+                        }
                     }
                 }
+            } finally {
+                // Ensure dialog is always closed if thread dies
+                if (dialog[0] != null) SwingUtilities.invokeLater(dialog[0]::dispose);
             }
         });
         downloadThread[0].setDaemon(true);//tell the OS that this thread should be closed with the app.
@@ -358,7 +363,7 @@ public class SoundFontDownloader {
             String actualHex = HexFormat.of().formatHex(hashBytes);
             return actualHex.equalsIgnoreCase(expectedHex);
         } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("SHA-256 algorithm not found", e);
+            throw new RuntimeException("SHA-256 algorithm not found, downloaded soundfont cannot be verified.", e);
         }
     }
 }
