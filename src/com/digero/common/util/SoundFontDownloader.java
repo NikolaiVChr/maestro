@@ -43,11 +43,15 @@ public class SoundFontDownloader {
     public static File ensureSoundFontExists() {
         if (SynthesizerFactory.userOwnSoundFontExist()) {
             // user has put their own sound font into the app folder, use that instead of downloading
+            log.info("SoundFont found in app folder.");
             return null;
         }
 
         File dataDir = getCommonDataDirectory();
-        if (dataDir == null) return null;
+        if (dataDir == null) {
+            log.info("Common Data Directory not found.");
+            return null;
+        }
         File sf2File = new File(dataDir, SF2_FILENAME);
 
         // Check if the file exists and has the correct size (fast check)
@@ -92,8 +96,10 @@ public class SoundFontDownloader {
         File dir = path.toFile();
         if (!dir.exists()) {
             boolean madeDirs = dir.mkdirs();
-            if (!madeDirs) log.warning("Failed to create directory: " + dir);
-            return null;
+            if (!madeDirs) {
+                log.warning("Failed to create directory: " + dir);
+                return null;
+            }
         }
         return dir;
     }
