@@ -8,6 +8,7 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -35,6 +36,10 @@ public class SoundFontDownloader {
     // We append the first 8 chars of the hash to the filename to support multiple versions side-by-side
     // so users of multiple zip versions also don't have to download for each release.
     private static final String SF2_FILENAME = "LotroInstruments_" + EXPECTED_SHA256.substring(0, 8) + ".sf2";
+
+    private static class ResultObject {
+        public volatile boolean success = false;
+    }
 
     /**
      * Ensures the SoundFont exists in the central app data folder.
@@ -105,55 +110,70 @@ public class SoundFontDownloader {
     }
 
     private static boolean showDownloadDialog(File targetFile) {
-        JDialog dialog = new JDialog((Frame) null, UIText.get("common.soundfont.lotro.soundbank"), true);
-        dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        dialog.setLayout(new BorderLayout(10, 10));
-        dialog.setLocationRelativeTo(null); // Center on screen
+        final JDialog[] dialog = new JDialog[1];
+        final JLabel[] statusLabel = new JLabel[1];
+        final JProgressBar[] progressBar = new JProgressBar[1];
+        final ResultObject result = new ResultObject();
+        final Thread[] downloadThread = new Thread[1];
+        final File[] tempFile = {null};
+        try {
+            SwingUtilities.invokeAndWait(() -> {
+                dialog[0] = new JDialog((Frame) null, UIText.get("common.soundfont.lotro.soundbank"), true);
+                dialog[0].setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+                dialog[0].setLayout(new BorderLayout(10, 10));
 
-        JLabel statusLabel = new JLabel(UIText.get("common.soundfont.downloading.soundfont.200.mb.please.wait"));
-        statusLabel.setBorder(BorderFactory.createEmptyBorder(10, 10, 0, 10));
-        statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                statusLabel[0] = new JLabel(UIText.get("common.soundfont.downloading.soundfont.200.mb.please.wait"));
+                statusLabel[0].setBorder(BorderFactory.createEmptyBorder(10, 10, 0, 10));
+                statusLabel[0].setHorizontalAlignment(SwingConstants.CENTER);
 
-        JProgressBar progressBar = new JProgressBar(0, 100);
-        progressBar.setMinimumSize(new Dimension(300, 40));
-        progressBar.setStringPainted(true);
-        progressBar.setIndeterminate(false);
-        progressBar.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+                progressBar[0] = new JProgressBar(0, 100);
+                progressBar[0].setMinimumSize(new Dimension(300, 40));
+                progressBar[0].setStringPainted(true);
+                progressBar[0].setIndeterminate(false);
+                progressBar[0].setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        JPanel btnPanel = new JPanel();
-        JButton cancelButton = new JButton(UIText.get("common.soundfont.cancel"));
-        btnPanel.add(cancelButton);
+                JPanel btnPanel = new JPanel();
+                JButton cancelButton = new JButton(UIText.get("common.soundfont.cancel"));
+                btnPanel.add(cancelButton);
 
-        dialog.add(statusLabel, BorderLayout.NORTH);
-        dialog.add(progressBar, BorderLayout.CENTER);
-        dialog.add(btnPanel, BorderLayout.SOUTH);
+                dialog[0].add(statusLabel[0], BorderLayout.NORTH);
+                dialog[0].add(progressBar[0], BorderLayout.CENTER);
+                dialog[0].add(btnPanel, BorderLayout.SOUTH);
 
-        // State object to hold the result
-        var result = new Object() { boolean success = false; };
+                // Use temporary file to prevent corruption of an existing file on partial download
+                tempFile[0] = new File(targetFile.getAbsolutePath() + ".tmp");
 
-        // Use temporary file to prevent corruption of an existing file on partial download
-        File tempFile = new File(targetFile.getAbsolutePath() + ".tmp");
+                Runnable onCancel = () -> {
+                    if (downloadThread[0] != null && downloadThread[0].isAlive()) {
+                        downloadThread[0].interrupt();
+                    }
+                    dialog[0].dispose();
+                };
 
-        Thread[] downloadThread = new Thread[1];
+                dialog[0].addWindowListener(new WindowAdapter() {
+                    @Override
+                    public void windowClosing(WindowEvent e) {
+                        onCancel.run();
+                    }
+                    @Override
+                    public void windowOpened(WindowEvent e) {
+                        if (downloadThread[0] != null) {
+                            downloadThread[0].start();
+                        }
+                    }
+                });
 
-        Runnable onCancel = () -> {
-            if (downloadThread[0] != null && downloadThread[0].isAlive()) {
-                downloadThread[0].interrupt();
-            }
-            dialog.dispose();
-        };
+                cancelButton.addActionListener(e -> {
+                    log.info("Cancelling downloading of soundfont");
+                    onCancel.run();
+                });
+            });
+        } catch (InterruptedException | InvocationTargetException e3) {
+            log.info("Downloading soundfont window building failed.");
+            return false;
+        }
 
-        dialog.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                onCancel.run();
-            }
-        });
-
-        cancelButton.addActionListener(e -> {
-            log.info("Cancelling downloading of soundfont");
-            onCancel.run();
-        });
+        if (dialog[0] == null || tempFile[0] == null) return false;
 
         log.info("Downloading soundfont to shared location");
 
@@ -163,55 +183,61 @@ public class SoundFontDownloader {
             while (keepTrying) {
                 try {
 
-                    downloadFile(SF2_URL, tempFile, progressBar, statusLabel);
+                    downloadFile(SF2_URL, tempFile[0], progressBar[0], statusLabel[0]);
                     
                     // Verify hash immediately after download
                     SwingUtilities.invokeLater(() -> {
-                        statusLabel.setText(UIText.get("common.soundfont.verifying.integrity"));
-                        progressBar.setString(UIText.get("common.soundfont.verifying"));
-                        progressBar.setIndeterminate(true);
+                        statusLabel[0].setText(UIText.get("common.soundfont.verifying.integrity"));
+                        progressBar[0].setString(UIText.get("common.soundfont.verifying"));
+                        progressBar[0].setIndeterminate(true);
                     });
-                    if (verifyChecksum(tempFile.toPath(), EXPECTED_SHA256)) {
+                    if (verifyChecksum(tempFile[0].toPath(), EXPECTED_SHA256)) {
                         // Rename tmp to actual
-                        Files.move(tempFile.toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                        Files.move(tempFile[0].toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
                         result.success = true;
                         keepTrying = false;
-                        SwingUtilities.invokeLater(dialog::dispose);
+                        SwingUtilities.invokeLater(dialog[0]::dispose);
                     } else {
-                        Files.deleteIfExists(tempFile.toPath());
+                        Files.deleteIfExists(tempFile[0].toPath());
                         throw new IOException("Downloaded file corrupted (Checksum mismatch)");
                     }
                 } catch (Exception e) {
                     if (e instanceof InterruptedIOException || e instanceof InterruptedException || Thread.currentThread().isInterrupted()) {
-                        log.info("Download soundfont interupted");
+                        log.info("Download soundfont interrupted");
                         keepTrying = false; // Exit the loop silently
                         try {
-                            Files.deleteIfExists(tempFile.toPath());
+                            Files.deleteIfExists(tempFile[0].toPath());
                         } catch (IOException ignored) {}
                         return;
                     }
                     log.info("Downloading soundfont failed");
                     log.log(Level.WARNING, "Download failed", e);
                     try {
-                        Files.deleteIfExists(tempFile.toPath());
+                        Files.deleteIfExists(tempFile[0].toPath());
                     } catch (IOException ignored) {
                     }
                     Object[] options = {UIText.get("common.soundfont.retry"), UIText.get("common.soundfont.quit"), UIText.get("common.soundfont.continue")};
-                    int option = JOptionPane.showOptionDialog(dialog,
-                            UIText.get("common.soundfont.download.failed.0", e.getMessage()),
-                            UIText.get("common.soundfont.download.error"),
-                            JOptionPane.YES_NO_OPTION,
-                            JOptionPane.ERROR_MESSAGE,
-                            null,
-                            options,
-                            options[0]);
-
-                    if (option == 2) {
+                    int[] option = {JOptionPane.CLOSED_OPTION};
+                    try {
+                        SwingUtilities.invokeAndWait(() -> {
+                            option[0] = JOptionPane.showOptionDialog(dialog[0],
+                                    UIText.get("common.soundfont.download.failed.0", e.getMessage()),
+                                    UIText.get("common.soundfont.download.error"),
+                                    JOptionPane.YES_NO_OPTION,
+                                    JOptionPane.ERROR_MESSAGE,
+                                    null,
+                                    options,
+                                    options[0]);
+                        });
+                    } catch (InterruptedException | InvocationTargetException ex) {
+                        option[0] = JOptionPane.CLOSED_OPTION;
+                    }
+                    if (option[0] == 2) {
                         // continue
                         log.info("Continue without soundfont");
                         keepTrying = false;
-                        SwingUtilities.invokeLater(dialog::dispose);
-                    } else if (option == 1 || option == JOptionPane.CLOSED_OPTION) {
+                        SwingUtilities.invokeLater(dialog[0]::dispose);
+                    } else if (option[0] == 1 || option[0] == JOptionPane.CLOSED_OPTION) {
                         // quit
                         log.info("Quitting");
                         keepTrying = false;
@@ -220,18 +246,29 @@ public class SoundFontDownloader {
                         // retry
                         log.info(UIText.get("common.soundfont.retrying.downloading.soundfont.to.shared.location"));
                         SwingUtilities.invokeLater(() -> {
-                            progressBar.setIndeterminate(false);
-                            progressBar.setValue(0);
-                            statusLabel.setText(UIText.get("common.soundfont.retrying"));
+                            progressBar[0].setIndeterminate(false);
+                            progressBar[0].setValue(0);
+                            statusLabel[0].setText(UIText.get("common.soundfont.retrying"));
                         });
                     }
                 }
             }
         });
         downloadThread[0].setDaemon(true);//tell the OS that this thread should be closed with the app.
-        downloadThread[0].start();
-        dialog.pack();
-        dialog.setVisible(true); // blocks until dispose()
+        try {
+            SwingUtilities.invokeAndWait(() ->{
+                dialog[0].pack();
+                dialog[0].setLocationRelativeTo(null);//should be after pack to center properly
+                dialog[0].setVisible(true); // blocks until dispose(), but 2nd EDT thread takes over rendering of the dialog while this waits.
+            });
+        } catch (InterruptedException | InvocationTargetException e) {
+            result.success = false;
+            log.info("Downloading soundfont window display interrupted");
+            downloadThread[0].interrupt();
+            try {
+                Files.deleteIfExists(tempFile[0].toPath());
+            } catch (IOException ignored) {}
+        }
 
         log.info("Downloading soundfont success: " + result.success);
 

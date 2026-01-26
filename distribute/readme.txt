@@ -41,6 +41,12 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
+Version 4.6.9
+- Fixed that the download progress window for soundfont was not always shown. That could result in app hanging with no visible window to close it.
+
+Version 4.6.8
+- Fixed having to run Maestro twice to get soundfont.
+
 Version 4.6.7
 - Before installing this using the MSI installer, please remove old maestro from your windows manually.
     (search "Add or remove programs" in windows and remove "Maestro")
