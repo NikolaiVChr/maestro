@@ -43,6 +43,7 @@ Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 
 Version 4.6.9
 - Fixed that the download progress window for soundfont was not always shown. That could result in app hanging with no visible window to close it.
+- Stopped using Documents folder for log files. They are now next to where the soundfont is.
 
 Version 4.6.8
 - Fixed having to run Maestro twice to get soundfont.
