@@ -41,6 +41,9 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
+Version 4.6.10
+- Fix for when saving expanded midi, but it sometimes sounded like piano on some tracks.
+
 Version 4.6.9
 - Fixed that the download progress window for soundfont was not always shown. That could result in app hanging with no visible window to close it.
 - Stopped using Documents folder for log files. They are now next to where the soundfont is.
