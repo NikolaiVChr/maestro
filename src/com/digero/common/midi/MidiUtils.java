@@ -241,6 +241,102 @@ public class MidiUtils {
     }
 
     @SuppressWarnings("HardCodedStringLiteral")
+    public static String midiMessageToString(MidiMessage m) {
+        String str = "";
+        if (m instanceof ShortMessage shorty) {
+            int command = shorty.getCommand();
+            switch (command) {
+                case ShortMessage.NOTE_ON -> {
+                    int pitch = shorty.getData1();
+                    int velocity = shorty.getData2();
+                    if (velocity > 0) {
+                        str += "Note ON, Pitch=" + pitch + ", Velocity=" + velocity;
+                    } else {
+                        str += "Note OFF (via Velocity 0), Pitch=" + pitch;
+                    }
+                }
+                case ShortMessage.NOTE_OFF -> {
+                    str += "Note OFF, Pitch=" + shorty.getData1();
+                }
+                case ShortMessage.CHANNEL_PRESSURE -> str += "Aftertouch";
+                case ShortMessage.POLY_PRESSURE -> str += "Aftertouch (poly)";
+                case ShortMessage.CONTROL_CHANGE -> {
+                    str += "Control Change";
+                    int controller = shorty.getData1();
+                    int value = shorty.getData2();
+                    str += ". Controller="+controller+", Value="+value;
+                }
+                case ShortMessage.PITCH_BEND -> str += "Pitch Bend";
+                case ShortMessage.PROGRAM_CHANGE -> {
+                    int program = shorty.getData1();
+                    str += "Program Change: " + program + " (" + MidiInstrument.fromId(program) + ")";
+                }
+                default -> str+="";
+            };
+            str += ", Channel="+shorty.getChannel();
+        } else if (m instanceof SysexMessage sysex) {
+            str += "Sysex";
+            if (sysex.getMessage()[1] == MidiConstants.SYSEX_UNIVERSAL_REALTIME) {
+                str += ", Realtime";
+            } else if (sysex.getMessage()[1] == MidiConstants.SYSEX_UNIVERSAL_NON_REALTIME) {
+                str += ", Non-Realtime";
+            }
+            if (isSysexLyrics(sysex.getMessage())) {
+                str += ", Lyrics";
+            }
+            if (SequenceInfo.isResetGM(sysex.getMessage())) {
+                str += ", GM Reset";
+            } else if (SequenceInfo.isResetGS(sysex.getMessage())) {
+                str += ", GS Reset";
+            } else if (SequenceInfo.isResetXG(sysex.getMessage())) {
+                str += ", XG Reset";
+            } else if (SequenceInfo.isResetGM2(sysex.getMessage())) {
+                str += ", GM2 Reset";
+            } else {
+                // take note of difference of midi (7 bit unsigned) vs. java (8 bit signed):
+                str += ", "+formatBytesHexOnly(sysex.getMessage());
+            }
+        } else if (m instanceof MetaMessage meta) {
+            str += "Meta";
+            if (isMetaTempo(m)) {
+                str += ", Tempo";
+            } else if (isMetaEndOfTrack(m)) {
+                str += ", EndOfTrack";
+            } else if (meta.getType() == MidiConstants.META_TIME_SIGNATURE) {
+                str += ", Time Signature";
+            } else if (meta.getType() == MidiConstants.META_PORT_CHANGE) {
+                str += ", Port change. Data="+meta.getData();
+            } else if (meta.getType() == MidiConstants.META_PORT_NAME) {
+                str += ", Port name. Data="+meta.getData();
+            } else if (meta.getType() == MidiConstants.META_COPYRIGHT) {
+                str += ", Copyright";
+            } else if (meta.getType() == MidiConstants.META_TRACK_NAME) {
+                str += ", Track Name";
+            } else if (meta.getType() == MidiConstants.META_TEXT) {
+                str += ", Text";
+            } else if (meta.getType() == MidiConstants.META_LYRIC) {
+                str += ", Lyric";
+            } else if (meta.getType() == MidiConstants.META_CUE_POINT) {
+                str += ", Cue Point";
+            } else if (meta.getType() == MidiConstants.META_SMPTE_OFFSET) {
+                str += ", SMPTE Offset";
+            } else if (meta.getType() == MidiConstants.META_PROGRAM_NAME) {
+                str += ", Program Name";
+            } else if (meta.getType() == MidiConstants.META_KEY_SIGNATURE) {
+                str += ", Key Signature";
+            } else if (meta.getType() == MidiConstants.META_INSTRUMENT_NAME) {
+                str += ", Instrument name";
+            } else if (meta.getType() == MidiConstants.META_MARKER) {
+                str += ", Marker";
+            } else if (meta.getType() == MidiConstants.META_M_LIVE) {
+                str += ", M-Live";
+            } else {
+                return str;
+            }
+        }
+        return str;
+    }
+
     public static String midiMessageToShortString(MidiMessage m) {
         String str = "";
         if (m instanceof ShortMessage shorty) {

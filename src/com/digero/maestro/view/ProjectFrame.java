@@ -227,7 +227,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private Icon stopIcon;
 	private Icon stopIconDisabled;
 
-	private long abcPreviewStartTick = 0;
+	private long abcPreviewStartTick = 0L;
 	private float abcPreviewTempoFactor = 1.0f;// deprecated
 	private boolean echoingPosition = false;
 
@@ -1608,11 +1608,22 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				try {
 					echoingPosition = true;
 					if (evt.getProperty() == SequencerProperty.POSITION) {
-						abcSequencer.setTickPosition(Util.clamp(sequencer.getTickPosition(), abcPreviewStartTick,
+						if (abcSequencer.getTickLength() < abcPreviewStartTick) {
+							// I don't fully understand how this can happen, bug report here:
+							// https://discord.com/channels/1127545258729803797/1132590018985201664/1465902468419551324
+							log.severe("MainSequencerListener: tick-length mismatch.");
+							abcPreviewStartTick = 0L;
+						}
+						abcSequencer.setTickPosition(Util.clamp(sequencer.getTickPosition(),
+								Math.min(abcPreviewStartTick,abcSequencer.getTickLength()),
 								abcSequencer.getTickLength()));
 					} else if (evt.getProperty() == SequencerProperty.DRAG_POSITION) {
+						if (abcSequencer.getTickLength() < abcPreviewStartTick) {
+							log.severe("MainSequencerListener: tick-length mismatch.");
+							abcPreviewStartTick = 0L;
+						}
 						abcSequencer.setDragTick(
-								Util.clamp(sequencer.getDragTick(), abcPreviewStartTick, abcSequencer.getTickLength()));
+								Util.clamp(sequencer.getDragTick(), Math.min(abcPreviewStartTick,abcSequencer.getTickLength()), abcSequencer.getTickLength()));
 					} else if (evt.getProperty() == SequencerProperty.IS_DRAGGING) {
 						abcSequencer.setDragging(sequencer.isDragging());
 					}
@@ -2271,7 +2282,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		sequencer.reset(true);
 		abcSequencer.reset(false);
 		abcSequencer.setTempoFactor(1.0f);
-		abcPreviewStartTick = 0;
+		abcPreviewStartTick = 0L;
 
 		songTitleField.setText("");
 		composerField.setText("");

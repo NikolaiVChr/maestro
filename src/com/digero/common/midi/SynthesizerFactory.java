@@ -182,7 +182,7 @@ public class SynthesizerFactory {
 	public static boolean userOwnSoundFontExist() {
         if (soundFontFile != null && soundFontFile.exists()) return true;
 		if (!soundFontFile.exists()) {
-			log.log(Level.INFO, "Soundfont file not found, using jar location.");
+			log.log(Level.INFO, "Soundfont file not found, trying jar location.");
 			String folder = ".";
 			try {
 				// Find the path to the jar file we are executing in

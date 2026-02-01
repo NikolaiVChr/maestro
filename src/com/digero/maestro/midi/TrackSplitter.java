@@ -7,13 +7,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.logging.Logger;
 
-import javax.sound.midi.InvalidMidiDataException;
-import javax.sound.midi.MetaMessage;
-import javax.sound.midi.MidiEvent;
-import javax.sound.midi.MidiMessage;
-import javax.sound.midi.Sequence;
-import javax.sound.midi.ShortMessage;
-import javax.sound.midi.Track;
+import javax.sound.midi.*;
 
 import com.digero.common.midi.MidiConstants;
 import com.digero.common.midi.MidiFactory;
@@ -47,7 +41,9 @@ public class TrackSplitter {
 
 		Track[] oldTracks = sequence.getTracks();
 		Track newMetaTrack = expandedSequence.createTrack();
+		Track newProgramChangeTrack = expandedSequence.createTrack();
 		newMetaTrack.add(MidiFactory.createTrackNameEvent("META"));
+		newProgramChangeTrack.add(MidiFactory.createTrackNameEvent("NON-META"));
 		long lastEOTTick = 0L;
 		for (int oldTrackNumber = 0; oldTrackNumber < oldTracks.length; oldTrackNumber++) {
 			Track oldTrack = oldTracks[oldTrackNumber];
@@ -117,6 +113,10 @@ public class TrackSplitter {
 					} else if (hasPorts && cmd == ShortMessage.PROGRAM_CHANGE) {
 						portPrograms.add(evt);
 						continue evtIter;
+					} else {
+						// Identify instrument for Control Change, Pitch Bend, and standard Program Changes
+						// So they go into the Instrument Track instead of the NON-META track.
+						instr = fetchInstrName(tick, channel, port, oldTrackNumber);
 					}
 
 					// Lets put the midi event in its new track. If we determined its tied to an
@@ -151,43 +151,45 @@ public class TrackSplitter {
 						}
 						newTrack.add(evt);
 					} else {
-						newMetaTrack.add(evt);
+						newProgramChangeTrack.add(evt);
 					}
 				} else {
                     if (msg instanceof MetaMessage metaMsg) {
-                        int type = metaMsg.getType();
-                        if (oldTrackNumber > 0 && (type == MidiConstants.META_TEXT || type == MidiConstants.META_LYRIC || type == MidiConstants.META_MARKER || type == MidiConstants.META_CUE_POINT)) {
-                            // Its lyrics related
-                            String trackID = "Lyrics " + oldTrackNumber;
-                            Track newTrack = newTracks.get(trackID);
-                            if (newTrack == null) {
-                                newTrack = expandedSequence.createTrack();
-                                newTrack.add(MidiFactory.createTrackNameEvent(oldTrackName + " : Lyrics"));
-                                //if (oldEndOfTrack != null) newTrack.add(MidiFactory.createEndOfTrackEvent(oldEndOfTrack.getTick()));
+						int type = metaMsg.getType();
+						if (oldTrackNumber > 0 && (type == MidiConstants.META_TEXT || type == MidiConstants.META_LYRIC || type == MidiConstants.META_MARKER || type == MidiConstants.META_CUE_POINT)) {
+							// Its lyrics related
+							String trackID = "Lyrics " + oldTrackNumber;
+							Track newTrack = newTracks.get(trackID);
+							if (newTrack == null) {
+								newTrack = expandedSequence.createTrack();
+								newTrack.add(MidiFactory.createTrackNameEvent(oldTrackName + " : Lyrics"));
+								//if (oldEndOfTrack != null) newTrack.add(MidiFactory.createEndOfTrackEvent(oldEndOfTrack.getTick()));
 
-                                trackCounter += 1;
-                                newTracks.put(trackID, newTrack);
-                            }
-                            newTrack.add(evt);
+								trackCounter += 1;
+								newTracks.put(trackID, newTrack);
+							}
+							newTrack.add(evt);
 
-                        } else if (oldTrackNumber > 0 && type == MidiConstants.META_TEMPO) {
-                            // Its tempo but not in first track
-                            String trackID = "Tempos " + oldTrackNumber;
-                            Track newTrack = newTracks.get(trackID);
-                            if (newTrack == null) {
-                                newTrack = expandedSequence.createTrack();
-                                newTrack.add(MidiFactory.createTrackNameEvent(oldTrackName + " : Tempos"));
-                                //if (oldEndOfTrack != null) newTrack.add(MidiFactory.createEndOfTrackEvent(oldEndOfTrack.getTick()));
+						} else if (oldTrackNumber > 0 && type == MidiConstants.META_TEMPO) {
+							// Its tempo but not in first track
+							String trackID = "Tempos " + oldTrackNumber;
+							Track newTrack = newTracks.get(trackID);
+							if (newTrack == null) {
+								newTrack = expandedSequence.createTrack();
+								newTrack.add(MidiFactory.createTrackNameEvent(oldTrackName + " : Tempos"));
+								//if (oldEndOfTrack != null) newTrack.add(MidiFactory.createEndOfTrackEvent(oldEndOfTrack.getTick()));
 
-                                trackCounter += 1;
-                                newTracks.put(trackID, newTrack);
-                            }
-                            newTrack.add(evt);
-                        } else {
-                            newMetaTrack.add(evt);
-                        }
-                    } else {
-                        newMetaTrack.add(evt);
+								trackCounter += 1;
+								newTracks.put(trackID, newTrack);
+							}
+							newTrack.add(evt);
+						} else {
+							newMetaTrack.add(evt);
+						}
+					} else if (msg instanceof SysexMessage sysMsg) {
+						newProgramChangeTrack.add(evt);
+					} else {
+						newProgramChangeTrack.add(evt);
                     }
 				}
 			}

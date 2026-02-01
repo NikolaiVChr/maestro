@@ -311,7 +311,7 @@ public class MidiText {
 		if (valid) {
 			// We skip mark and cue as they mostly do not hold lyrics
 			if (fragment.source == Source.CUE || fragment.source == Source.MARK) {
-				log.info(fragment.toString());
+				log.fine(fragment.toString());
 			} else {
 				log.finer(MidiUtils.formatBytesHexOnly(data));
                 //fragment.syline = decode(fragment.sylineBytes);//for debug
