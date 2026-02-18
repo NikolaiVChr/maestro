@@ -1022,12 +1022,37 @@ public class SequenceInfo implements MidiConstants {
 		
 		long earlyEndTick = 0L;
 		long maxEmpty = Math.max(song.getTickLength()/4L, MidiUtils.microsecond2tick(song, 20L*AbcConstants.ONE_SECOND_MICROS, tempoCache));
-		
+		Map<Integer,Set<Integer>> notesOn = new HashMap<>();
+		for (int ch = 0; ch < CHANNEL_COUNT; ch++) {
+			notesOn.put(ch, new HashSet<>());
+		}
 		for(MidiEvent evt : allEvents) {
+
 			if (evt.getTick() > earlyEndTick && evt.getTick() < earlyEndTick + maxEmpty) {
 				earlyEndTick = evt.getTick();
 			} else if (evt.getTick() >= earlyEndTick + maxEmpty) {
-				log.info(" Quarter song is empty, will delete all after the empty starts.. ");
+				boolean silence = true;
+				for (Set<Integer> on : notesOn.values()) {
+					if (!on.isEmpty()) {
+						silence = false;
+						break;
+					}
+				}
+				if (silence) {
+					log.info(" Quarter song is empty, will delete all after the empty starts.. ");
+				} else {
+					earlyEndTick = evt.getTick();
+				}
+			}
+			if (evt.getMessage() instanceof ShortMessage shortMessage) {
+				int command = shortMessage.getCommand();
+				int pitch = shortMessage.getData1();
+				if (command == ShortMessage.NOTE_OFF || (command == ShortMessage.NOTE_ON && shortMessage.getData2() == 0)) {
+					// note OFF or note ON with zero velocity
+					notesOn.get(shortMessage.getChannel()).remove(pitch);
+				} else if (command == ShortMessage.NOTE_ON) {
+					notesOn.get(shortMessage.getChannel()).add(pitch);
+				}
 			}
 		}
 		
