@@ -129,6 +129,7 @@ public class AbcPlaylistPanel extends JPanel {
 	private JCheckBoxMenuItem expandSearchMenuItem;
 	private JMenuItem exportSetMenuItem;
 	private JMenuItem exportCsvMenuItem;
+	private JMenuItem exportMp3MenuItem;
 	
 	private JFileChooser openPlaylistChooser = null;
 	private JFileChooser savePlaylistChooser = null;
@@ -898,6 +899,15 @@ public class AbcPlaylistPanel extends JPanel {
 					playlistFile,
 					tableModel.getTableData(),
 					visibleColumns);
+			wiz.setVisible(true);
+		});
+		exportMp3MenuItem = playlistMenu.add(new JMenuItem(UIText.get("abcplayer.menu.export.playlist.to.mp3")));
+		exportMp3MenuItem.addActionListener(e -> {
+			PlaylistMp3ExportWizard wiz = new PlaylistMp3ExportWizard(
+					(JFrame)SwingUtilities.getWindowAncestor(this),
+					prefs.node("setExport"),
+					playlistFile,
+					tableModel.getTableData());
 			wiz.setVisible(true);
 		});
 		playlistMenu.addSeparator();
