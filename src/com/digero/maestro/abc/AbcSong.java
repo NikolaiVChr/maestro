@@ -1279,8 +1279,10 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	 */
 
 	public void setBadger(boolean badger) {
-		this.badger = badger;
-		fireChangeEvent(AbcSongProperty.BADGER);
+		if (this.badger != badger) {
+			this.badger = badger;
+			fireChangeEvent(AbcSongProperty.BADGER);
+		}
 	}
 
 	public SequenceInfo getSequenceInfo() {

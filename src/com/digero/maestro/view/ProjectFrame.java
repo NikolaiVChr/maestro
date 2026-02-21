@@ -2022,6 +2022,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				partEditor.updateParts();
 				partEditor.repaint();
 				updateButtons(false);
+				modified = false;
 				break;
 			case TUNE_EDIT:
 				updateButtons(false);
@@ -2122,7 +2123,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				// Don't care
 				break;
 			case SONG_CLOSING:
-				// Don't care
+				modified = false;
 				break;
 			case HIDE_EDITS_UPDATE:
 				// Don't care
