@@ -11,7 +11,7 @@ import java.util.logging.Logger;
 public class LotroInstrumentSampleDuration {
 	private static final Logger log = Logger.getLogger("file");
 	private static LotroInstrumentSampleDuration instance = null;
-	private static Map<String, Map<Integer, Long>> db = null;
+	private static volatile Map<String, Map<Integer, Long>> db = null;
 
     public static long getSafeDuration(LotroInstrument instrument) {
         return switch (instrument) {
@@ -44,7 +44,11 @@ public class LotroInstrumentSampleDuration {
 	 */
 	public static Long getDura(String friendlyName, int note) throws IOException {
 		if (db == null) {
-			parse();
+			synchronized (LotroInstrumentSampleDuration.class) {
+				if (db == null) {
+					parse();
+				}
+			}
 		}
         Map<Integer, Long> instr = db.get(friendlyName);
         if (instr == null) {
@@ -53,36 +57,37 @@ public class LotroInstrumentSampleDuration {
 		if (friendlyName.equals(LotroInstrument.BASIC_COWBELL.friendlyName) || friendlyName.equals(LotroInstrument.MOOR_COWBELL.friendlyName)) {
 			note = AbcConstants.COWBELL_NOTE_ID;// 71
 		}
-		Long dura = instr.get(note);
-		return dura;
+        return instr.get(note);
 	}
 	
 	public static LotroInstrumentSampleDuration getInstance() throws IOException {
-		if (instance != null) {
-			return instance;
+		if (instance == null) {
+			synchronized (LotroInstrumentSampleDuration.class) {
+				if (instance == null) {
+					instance = new LotroInstrumentSampleDuration();
+					if (db == null) parse();
+				}
+			}
 		}
-
-		instance = new LotroInstrumentSampleDuration();
-
-		parse();
-
 		return instance;
 	}
 	
 	private static void parse() throws IOException {
 		String fileName = "noteDurations.txt";
-		db = new HashMap<>(); 
-		InputStream in = getInstance().getClass().getResourceAsStream(fileName);
+		Map<String, Map<Integer, Long>> tempDb = new HashMap<>();
+		InputStream in = LotroInstrumentSampleDuration.class.getResourceAsStream(fileName);
 		if (in == null) {
 			log.severe(fileName + " not readable.");
+			db = tempDb;// this makes us get the error logged only once
 			return;
 		}
 		BufferedReader theFileReader = new BufferedReader(new InputStreamReader(in));			
-		readLines(fileName, theFileReader);
+		readLines(fileName, theFileReader, tempDb);
 		theFileReader.close();
+		db = tempDb;
 	}
 
-	private static void readLines(String fileName, BufferedReader theFileReader) throws IOException {
+	private static void readLines(String fileName, BufferedReader theFileReader, Map<String, Map<Integer, Long>> tempDb) throws IOException {
 		String line = theFileReader.readLine();
 		while (line != null) {
 			if (line.isBlank() || line.startsWith("#")) {
@@ -99,11 +104,11 @@ public class LotroInstrumentSampleDuration {
 			String instr = splits[0].trim();
 			int note = Integer.parseInt(splits[1].trim());
 			long dura = Long.parseLong(splits[2].trim());
-            Map<Integer, Long> instrMap = db.computeIfAbsent(instr, k -> new HashMap<>());
+            Map<Integer, Long> instrMap = tempDb.computeIfAbsent(instr, k -> new HashMap<>());
             instrMap.put(note, dura);
 			if (instr.equals(LotroInstrument.BASIC_FIDDLE.friendlyName) && note >= LotroInstrument.STUDENT_CHROMATIC_LOWEST.id) {
 				// Student fiddle needs the basic fiddle notes also above 42.
-                Map<Integer, Long> instrMap2 = db.computeIfAbsent(LotroInstrument.STUDENT_FIDDLE.friendlyName, k -> new HashMap<>());
+                Map<Integer, Long> instrMap2 = tempDb.computeIfAbsent(LotroInstrument.STUDENT_FIDDLE.friendlyName, k -> new HashMap<>());
                 instrMap2.put(note, dura);
 			}
 			line = theFileReader.readLine();
