@@ -217,8 +217,9 @@ public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardab
 		addPropertyChangeListener("enabled", evt -> updateState());
 		
 		abcPart.getAbcSong().addSongListener(songListener = e -> {
-			
+
 			if (e.getProperty() == AbcSongProperty.HIDE_EDITS_UPDATE || e.getProperty() == AbcSongProperty.TUNE_EDIT) {
+				noteGraph.invalidateNoteCache();
 				updateState();
 				noteGraph.repaint();
 			}
@@ -267,6 +268,9 @@ public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardab
 
 	private Listener<AbcPartEvent> abcPartListener = e -> {
 		if (e.isNoteGraphRelated()) {
+			// Drum mapping, enabled state, instrument etc. can affect which notes are visible
+			// and how they are categorised; invalidate before updateState() calls setters.
+			noteGraph.invalidateNoteCache();
 			checkBox.setEnabled(abcPart.isTrackEnabled(trackInfo.getTrackNumber()));
 			checkBox.setSelected(abcPart.isPercussionNoteEnabled(trackInfo.getTrackNumber(), drumId));
 			if (abcPart.getInstrument() == LotroInstrument.STUDENT_FIDDLE) {

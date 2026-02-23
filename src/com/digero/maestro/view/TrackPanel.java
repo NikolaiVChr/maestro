@@ -415,24 +415,28 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		updateTitleText();
 
 		abcPart.addAbcListener(abcListener = e -> {
-			
+
 			if (e.getProperty() == AbcPartProperty.INSTRUMENT || e.getProperty() == AbcPartProperty.TRACK_ENABLED) {
+				noteGraph.invalidateNoteCache(); // instrument range or visibility changed; color may stay same so setter won't invalidate
 				updateColors();
 				updateState();
 				noteGraph.repaint();
 				updateBadTooltipText();
 				updateTitleText();
 			} else if (e.isNoteGraphRelated()) {
+				// transposeNote, getSectionDoubling, isNotePlayable, etc. may have changed
+				noteGraph.invalidateNoteCache();
                 updateState();
                 noteGraph.repaint();
                 updateBadTooltipText();
                 updateTitleText();
             }
 		});
-		
+
 		abcPart.getAbcSong().addSongListener(songListener = e -> {
-			
+
 			if (e.getProperty() == AbcSongProperty.HIDE_EDITS_UPDATE || e.getProperty() == AbcSongProperty.TUNE_EDIT) {
+				noteGraph.invalidateNoteCache();
 				updateState();
 				noteGraph.repaint();
 				updateBadTooltipText();
@@ -462,6 +466,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		abcPart.removeAbcListener(abcListener);
 		this.abcPart = part;
 		abcPart.addAbcListener(abcListener);
+		noteGraph.invalidateNoteCache(); // instrument, transpose, doublings etc. all change when switching parts
 		trackVolumeBar.setDeltaVolume(abcPart.getTrackVolumeAdjust(trackInfo.getTrackNumber()));
 
 		if (!abcPart.isPercussionPart()) {
