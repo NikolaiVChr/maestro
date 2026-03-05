@@ -145,7 +145,7 @@
 			<arg value="--main-jar"/>
 			<arg value="AbcPlayer.jar"/>
             <arg value="--add-modules"/>
-            <arg value="java.base,java.desktop,java.logging,java.prefs,jdk.charsets,java.sql,java.management,java.xml,java.net.http"/>
+            <arg value="java.base,java.desktop,java.logging,java.prefs,jdk.charsets,java.sql,java.management,java.xml,java.net.http,jdk.accessibility"/>
 		</exec>
 		<!-- Abc Tools -->
 		<exec executable="${env.JAVA_HOME}/bin/jpackage.exe" failonerror="true">
@@ -181,7 +181,7 @@
 			<arg value="--main-jar"/>
 			<arg value="AbcTools.jar"/>
             <arg value="--add-modules"/>
-            <arg value="java.base,java.desktop,java.logging,java.prefs,jdk.charsets,java.sql,java.management,java.xml,java.net.http"/>
+            <arg value="java.base,java.desktop,java.logging,java.prefs,jdk.charsets,java.sql,java.management,java.xml,java.net.http,jdk.accessibility"/>
 		</exec>
 		<!-- Copy assets for final app/ folder -->
 		<!--copy file="${build}/LotroInstruments.sf2" todir="${staging}" /-->
@@ -223,7 +223,7 @@
 			<arg value="--main-jar"/>
 			<arg value="Maestro.jar"/>
             <arg value="--add-modules"/>
-            <arg value="java.base,java.desktop,java.logging,java.prefs,jdk.charsets,java.sql,java.management,java.xml,java.net.http"/>
+            <arg value="java.base,java.desktop,java.logging,java.prefs,jdk.charsets,java.sql,java.management,java.xml,java.net.http,jdk.accessibility"/>
 		</exec>
 		<copy file="${jpackage}/AbcPlayer/app/AbcPlayer.cfg" tofile="${jpackage}/Maestro/app/AbcPlayer.cfg" />
 		<copy file="${jpackage}/AbcTools/app/AbcTools.cfg" tofile="${jpackage}/Maestro/app/AbcTools.cfg" />

@@ -41,6 +41,13 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
+Version 4.6.11
+- Stop setting project modified when reduce file size is toggled in options.
+- Fixed that when auto-exporting the first song, might fail to export.
+- Added batch export of playlist to mp3 files
+- Fixed that the quarter song empty test algorithm did not take extremely long sustained notes into account.
+- Fixed that if certain accessibility features were enable din windows, Maestro would not start.
+
 Version 4.6.10
 - Fix for when saving expanded midi, but it sometimes sounded like piano on some tracks.
 
