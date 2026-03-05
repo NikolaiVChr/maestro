@@ -46,7 +46,7 @@ Version 4.6.11
 - Fixed that when auto-exporting the first song, might fail to export.
 - Added batch export of playlist to mp3 files
 - Fixed that the quarter song empty test algorithm did not take extremely long sustained notes into account.
-- Fixed that if certain accessibility features were enable din windows, Maestro would not start.
+- Fixed that if certain accessibility features were enabled in windows, apps would not start.
 
 Version 4.6.10
 - Fix for when saving expanded midi, but it sometimes sounded like piano on some tracks.
