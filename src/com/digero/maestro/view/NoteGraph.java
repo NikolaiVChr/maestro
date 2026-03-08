@@ -24,6 +24,7 @@ import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -146,6 +147,14 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 	@Override
 	public void discard() {
 		sequencer.removeChangeListener(this);
+		if (staticNotesImage != null) {
+			staticNotesImage.flush();
+			staticNotesImage = null;
+		}
+		if (bitmapRebuildTimer != null) {
+			bitmapRebuildTimer.stop();
+			bitmapRebuildTimer = null;
+		}
 	}
 
 	protected int transposeNote(int noteId, long tickStart) {
@@ -471,24 +480,48 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 	 */
 	private BufferedImage staticNotesImage = null;
 
-	/** True when the bitmap needs a rebuild but we may be throttling it. */
-	private boolean bitmapStale = false;
+	/** True when the bitmap needs a rebuild before the next non-direct paint. */
+	private boolean bitmapDirty = false;
 
-	/** Minimum interval between bitmap rebuilds, in milliseconds. */
-	private static final int BITMAP_REBUILD_MIN_INTERVAL_MS = 16;
+	/**
+	 * Deadline (System.nanoTime()) until which paintComponent uses direct rendering instead of the
+	 * cached bitmap.  Reset to {@code now + DIRECT_RENDER_NANOS} on every invalidation so that
+	 * rapid zoom/resize bursts never cause repeated BufferedImage allocations.
+	 */
+	private long directRenderUntilNanos = 0L;
 
-	/** System.currentTimeMillis() of the last completed bitmap rebuild. */
-	private long lastBitmapRebuildTimeMs = 0;
+	/** Duration of the direct-rendering window, in nanoseconds (150 ms). */
+	private static final long DIRECT_RENDER_NANOS = 150_000_000L;
 
-	/** Swing timer that fires a single deferred repaint after the throttle interval. */
+	/** Debounce interval before a bitmap rebuild is triggered after the last invalidation, in ms. */
+	private static final int BITMAP_DEBOUNCE_MS = 150;
+
+	/**
+	 * Maximum bitmap area in pixels.  Above this threshold renderStaticNotesToImage falls back to
+	 * direct rendering to avoid excessive heap allocations on very large displays.
+	 */
+	private static final int MAX_BITMAP_PIXELS = 8_000_000;
+
+	/** Swing timer that fires a single deferred repaint after the debounce interval. */
 	private Timer bitmapRebuildTimer = null;
 
 	/**
-	 * Marks the static-notes bitmap as stale so it is rebuilt before the next paint.
-	 * Called automatically by {@link #invalidateNoteCache()} and {@link #invalidateTransform()}.
+	 * Marks the bitmap as dirty and enters the direct-rendering window for 150 ms.
+	 * Restarts the debounce timer so the bitmap is rebuilt 150 ms after the *last* invalidation,
+	 * not just the first one.  Safe to call from the EDT only (same thread as the timer).
 	 */
 	private void invalidateBitmapCache() {
-		bitmapStale = true;
+		bitmapDirty = true;
+		directRenderUntilNanos = System.nanoTime() + DIRECT_RENDER_NANOS;
+		if (bitmapRebuildTimer == null) {
+			bitmapRebuildTimer = new Timer(BITMAP_DEBOUNCE_MS, e -> repaint());
+			bitmapRebuildTimer.setRepeats(false);
+		} else {
+			bitmapRebuildTimer.stop();
+		}
+		bitmapRebuildTimer.setInitialDelay(BITMAP_DEBOUNCE_MS);
+		bitmapRebuildTimer.setDelay(BITMAP_DEBOUNCE_MS);
+		bitmapRebuildTimer.start();
 	}
 
 	// ----- Note render cache -----
@@ -566,7 +599,6 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 	@SuppressWarnings("unchecked")
 	private void rebuildNoteCache() {
 		cacheRebuildCount++;
-		System.out.println("[NoteGraph] Cache rebuild #" + cacheRebuildCount + " \u2014 " + getClass().getSimpleName());
 
 		List<NoteEvent> events = getEvents();
 		cachedEvents = events;
@@ -794,15 +826,29 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 	 * null or the panel has been resized.  Uses a hardware-compatible image format when
 	 * possible so the subsequent drawImage blit is GPU-accelerated.
 	 */
-	private void renderStaticNotesToImage(AffineTransform xform, double minLength, double height) {
+	/**
+	 * Renders bar lines, octave lines, and all notes into {@link #staticNotesImage}.
+	 * Reuses the existing image when dimensions are unchanged to avoid allocation churn.
+	 * Returns {@code false} if the bitmap was not built (size guard or zero dimensions),
+	 * in which case the caller should fall back to direct rendering.
+	 */
+	private boolean renderStaticNotesToImage(AffineTransform xform, double minLength, double height) {
 		int w = getWidth();
 		int h = getHeight();
-		if (w <= 0 || h <= 0) return;
+		if (w <= 0 || h <= 0) return false;
 
-		GraphicsConfiguration gc = getGraphicsConfiguration();
-		staticNotesImage = (gc != null)
-				? gc.createCompatibleImage(w, h, Transparency.OPAQUE)
-				: new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+		if ((long) w * h > MAX_BITMAP_PIXELS) {
+			staticNotesImage = null;
+			return false;
+		}
+
+		// Only allocate when dimensions change; reuse the existing image otherwise.
+		if (staticNotesImage == null || staticNotesImage.getWidth() != w || staticNotesImage.getHeight() != h) {
+			GraphicsConfiguration gc = getGraphicsConfiguration();
+			staticNotesImage = (gc != null)
+					? gc.createCompatibleImage(w, h, Transparency.OPAQUE)
+					: new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+		}
 
 		Graphics2D bg = staticNotesImage.createGraphics();
 		try {
@@ -820,6 +866,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 		} finally {
 			bg.dispose();
 		}
+		return true;
 	}
 
 	@Override
@@ -855,77 +902,76 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 		if (!isShowingNoteVelocity()) {
 			if (noteCacheDirty) rebuildNoteCache();
 
-			// Rebuild the static bitmap if needed (stale or wrong size).
-			// Throttled: if we rebuilt recently, stretch the old image and schedule
-			// a deferred repaint so the bitmap catches up after the throttle interval.
-			boolean needsBitmapRebuild = bitmapStale
-					|| staticNotesImage == null
-					|| staticNotesImage.getWidth()  != getWidth()
-					|| staticNotesImage.getHeight() != getHeight();
-
-			if (needsBitmapRebuild) {
-				long now = System.currentTimeMillis();
-				long elapsed = now - lastBitmapRebuildTimeMs;
-
-				if (staticNotesImage == null || elapsed >= BITMAP_REBUILD_MIN_INTERVAL_MS) {
-					// Enough time has passed (or no image at all) — do a full rebuild.
-					renderStaticNotesToImage(xform, minLength, height);
-					lastBitmapRebuildTimeMs = System.currentTimeMillis();
-					bitmapStale = false;
-					// Don't stop a pending timer — let it fire so that a full repaint
-					// covers any areas still showing the old stretched bitmap (this
-					// rebuild may have happened inside a partial dirty-rect paint).
-				} else {
-					// Too soon — schedule a deferred repaint to catch up later.
-					if (bitmapRebuildTimer == null) {
-						int delay = (int) (BITMAP_REBUILD_MIN_INTERVAL_MS - elapsed);
-						bitmapRebuildTimer = new Timer(delay, e -> {
-							bitmapRebuildTimer = null;
-							repaint();
-						});
-						bitmapRebuildTimer.setRepeats(false);
-						bitmapRebuildTimer.start();
-					}
+			if (System.nanoTime() < directRenderUntilNanos) {
+				// Burst in progress (zoom/resize) — render directly to avoid allocation churn.
+				// The debounce timer will trigger a repaint once the burst settles.
+				g2.transform(xform);
+				paintBarLines(g2, xform, clipPosStart, clipPosEnd);
+				paintOctaveLines(g2, xform);
+				g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+				paintNotesNormal(g2, xform, minLength, height, clipPosStart, clipPosEnd, showNotesOn, minSongPos);
+			} else {
+				// Burst has settled — use the cached bitmap for fast blitting.
+				if (bitmapDirty || staticNotesImage == null
+						|| staticNotesImage.getWidth()  != getWidth()
+						|| staticNotesImage.getHeight() != getHeight()) {
+					boolean built = renderStaticNotesToImage(xform, minLength, height);
+					if (built) bitmapDirty = false;
 				}
-			}
 
-			// Blit the cached image — stretch to current size if dimensions don't match
-			// (happens when we throttled and the panel was resized since last rebuild).
-			if (staticNotesImage != null) {
-				if (staticNotesImage.getWidth() == getWidth() && staticNotesImage.getHeight() == getHeight()) {
+				if (staticNotesImage != null) {
+					// Bitmap always matches current dimensions; blit without scaling.
 					g2.drawImage(staticNotesImage, 0, 0, null);
 				} else {
-					g2.drawImage(staticNotesImage, 0, 0, getWidth(), getHeight(), null);
+					// Size guard triggered — fall back to direct rendering.
+					g2.transform(xform);
+					paintBarLines(g2, xform, clipPosStart, clipPosEnd);
+					paintOctaveLines(g2, xform);
+					g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+					paintNotesNormal(g2, xform, minLength, height, clipPosStart, clipPosEnd, showNotesOn, minSongPos);
+				}
+
+				if (staticNotesImage != null) {
+					// Draw note-on highlights on top of the bitmap — only the few currently-playing notes.
+					g2.transform(xform);
+					g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+					List<CachedPrimary> notesOnList = null;
+					Set<CachedPrimary> notesOnSeen = null;
+					if (showNotesOn) {
+						int startIdx = binarySearchStartMicros(noteCache, minSongPos - LONG_NOTE_THRESHOLD_MICROS);
+						for (int i = startIdx; i < noteCache.size(); i++) {
+							CachedPrimary cp = noteCache.get(i);
+							if (cp.startMicros > clipPosEnd) break;
+							if (cp.endMicros < clipPosStart) continue;
+							if (songPos >= cp.startMicros && minSongPos <= cp.endMicros) {
+								if (notesOnList == null) {
+									notesOnList = new ArrayList<>();
+									notesOnSeen = Collections.newSetFromMap(new IdentityHashMap<>());
+								}
+								if (notesOnSeen.add(cp)) {
+									notesOnList.add(cp);
+								}
+							}
+						}
+						// Also check long-held notes that binary search may have skipped
+						for (CachedPrimary cp : cacheLongHeld) {
+							if (cp.startMicros > clipPosEnd) break;
+							if (cp.endMicros < clipPosStart) continue;
+							if (songPos >= cp.startMicros && minSongPos <= cp.endMicros) {
+								if (notesOnList == null) {
+									notesOnList = new ArrayList<>();
+									notesOnSeen = Collections.newSetFromMap(new IdentityHashMap<>());
+								}
+								if (notesOnSeen.add(cp)) {
+									notesOnList.add(cp);
+								}
+							}
+						}
+					}
+					paintNoteOnHighlights(g2, xform, minLength, height, notesOnList);
 				}
 			}
-
-			// Draw note-on highlights on top — only the few currently-playing notes.
-			g2.transform(xform);
-			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-
-			List<CachedPrimary> notesOnList = null;
-			if (showNotesOn) {
-				int startIdx = binarySearchStartMicros(noteCache, minSongPos - LONG_NOTE_THRESHOLD_MICROS);
-				for (int i = startIdx; i < noteCache.size(); i++) {
-					CachedPrimary cp = noteCache.get(i);
-					if (cp.startMicros > clipPosEnd) break;
-					if (cp.endMicros < clipPosStart) continue;
-					if (songPos >= cp.startMicros && minSongPos <= cp.endMicros) {
-						if (notesOnList == null) notesOnList = new ArrayList<>();
-						notesOnList.add(cp);
-					}
-				}
-				// Also check long-held notes that binary search may have skipped
-				for (CachedPrimary cp : cacheLongHeld) {
-					if (cp.startMicros > clipPosEnd) break;
-					if (cp.endMicros < clipPosStart) continue;
-					if (songPos >= cp.startMicros && minSongPos <= cp.endMicros) {
-						if (notesOnList == null) notesOnList = new ArrayList<>();
-						notesOnList.add(cp);
-					}
-				}
-			}
-			paintNoteOnHighlights(g2, xform, minLength, height, notesOnList);
 
 		} else {
 			// Velocity mode: direct rendering, no bitmap (only active while dragging the volume bar)
