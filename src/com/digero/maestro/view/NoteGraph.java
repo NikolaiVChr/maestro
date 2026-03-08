@@ -483,16 +483,6 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 	/** True when the bitmap needs a rebuild before the next non-direct paint. */
 	private boolean bitmapDirty = false;
 
-	/**
-	 * Deadline (System.nanoTime()) until which paintComponent uses direct rendering instead of the
-	 * cached bitmap.  Reset to {@code now + DIRECT_RENDER_NANOS} on every invalidation so that
-	 * rapid zoom/resize bursts never cause repeated BufferedImage allocations.
-	 */
-	private long directRenderUntilNanos = 0L;
-
-	/** Duration of the direct-rendering window, in nanoseconds (150 ms). */
-	private static final long DIRECT_RENDER_NANOS = 150_000_000L;
-
 	/** Debounce interval before a bitmap rebuild is triggered after the last invalidation, in ms. */
 	private static final int BITMAP_DEBOUNCE_MS = 150;
 
@@ -506,21 +496,21 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 	private Timer bitmapRebuildTimer = null;
 
 	/**
-	 * Marks the bitmap as dirty and enters the direct-rendering window for 150 ms.
-	 * Restarts the debounce timer so the bitmap is rebuilt 150 ms after the *last* invalidation,
-	 * not just the first one.  Safe to call from the EDT only (same thread as the timer).
+	 * Marks the bitmap dirty and restarts the debounce timer.  While the timer is pending
+	 * ({@code bitmapRebuildTimer != null}), paintComponent renders directly instead of touching
+	 * the bitmap.  The timer fires 150 ms after the *last* invalidation, nulls itself, and
+	 * queues a repaint that rebuilds the bitmap once.
 	 */
 	private void invalidateBitmapCache() {
 		bitmapDirty = true;
-		directRenderUntilNanos = System.nanoTime() + DIRECT_RENDER_NANOS;
-		if (bitmapRebuildTimer == null) {
-			bitmapRebuildTimer = new Timer(BITMAP_DEBOUNCE_MS, e -> repaint());
-			bitmapRebuildTimer.setRepeats(false);
-		} else {
+		if (bitmapRebuildTimer != null) {
 			bitmapRebuildTimer.stop();
 		}
-		bitmapRebuildTimer.setInitialDelay(BITMAP_DEBOUNCE_MS);
-		bitmapRebuildTimer.setDelay(BITMAP_DEBOUNCE_MS);
+		bitmapRebuildTimer = new Timer(BITMAP_DEBOUNCE_MS, e -> {
+			bitmapRebuildTimer = null;
+			repaint();
+		});
+		bitmapRebuildTimer.setRepeats(false);
 		bitmapRebuildTimer.start();
 	}
 
@@ -902,9 +892,9 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 		if (!isShowingNoteVelocity()) {
 			if (noteCacheDirty) rebuildNoteCache();
 
-			if (System.nanoTime() < directRenderUntilNanos) {
-				// Burst in progress (zoom/resize) — render directly to avoid allocation churn.
-				// The debounce timer will trigger a repaint once the burst settles.
+			if (bitmapRebuildTimer != null) {
+				// Debounce timer pending (burst in progress) — render directly to avoid allocation churn.
+				// The timer will null itself and queue one repaint once the burst settles.
 				g2.transform(xform);
 				paintBarLines(g2, xform, clipPosStart, clipPosEnd);
 				paintOctaveLines(g2, xform);
