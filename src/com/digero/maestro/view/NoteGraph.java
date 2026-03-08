@@ -471,36 +471,21 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 
 	private Rectangle2D.Double rectTmp = new Rectangle2D.Double();
 
-	// ----- Static-notes bitmap cache -----
-
 	/**
 	 * Pre-rendered image of all static content: bar lines, octave lines, and every note
 	 * (no note-on highlighting).  Null when dirty.  Rebuilt lazily in paintComponent.
 	 * Only used in normal (non-velocity) mode; pixel-space so must be discarded on resize.
 	 */
 	private BufferedImage staticNotesImage = null;
-
-	/** True when the bitmap needs a rebuild before the next non-direct paint. */
 	private boolean bitmapDirty = false;
 
-	/** Debounce interval before a bitmap rebuild is triggered after the last invalidation, in ms. */
+	// Debounce interval before a bitmap rebuild is triggered after the last invalidation
 	private static final int BITMAP_DEBOUNCE_MS = 150;
-
-	/**
-	 * Maximum bitmap area in pixels.  Above this threshold renderStaticNotesToImage falls back to
-	 * direct rendering to avoid excessive heap allocations on very large displays.
-	 */
+	// Max bitmap area in pixels before we fallback to direct rendering to avoid excessive memory usage
 	private static final int MAX_BITMAP_PIXELS = 8_000_000;
-
-	/** Swing timer that fires a single deferred repaint after the debounce interval. */
+	// Timer to debounce rebuilding the bitmap when the bitmap cache goes dirty
 	private Timer bitmapRebuildTimer = null;
 
-	/**
-	 * Marks the bitmap dirty and restarts the debounce timer.  While the timer is pending
-	 * ({@code bitmapRebuildTimer != null}), paintComponent renders directly instead of touching
-	 * the bitmap.  The timer fires 150 ms after the *last* invalidation, nulls itself, and
-	 * queues a repaint that rebuilds the bitmap once.
-	 */
 	private void invalidateBitmapCache() {
 		bitmapDirty = true;
 		if (bitmapRebuildTimer != null) {
@@ -514,23 +499,16 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 		bitmapRebuildTimer.start();
 	}
 
-	// ----- Note render cache -----
-
-	/** True when the cache must be rebuilt before the next paint. */
 	private boolean noteCacheDirty = true;
-	/** Incremented each time rebuildNoteCache() runs; use to verify cache is not rebuilt during steady playback. */
-	private int cacheRebuildCount = 0;
-	/** Pre-computed rendering data for all visible+audible notes, built in rebuildNoteCache(). */
-	private List<CachedPrimary> noteCache = new ArrayList<>();
-	/** Subset of noteCache where cp.bad == true; for pass 2 of paintNotesNormal. */
-	private List<CachedPrimary> cacheBad = new ArrayList<>();
-	/** Subset of noteCache where cp.extraBad == true; for pass 3 of paintNotesNormal. */
-	private List<CachedPrimary> cacheExtraBad = new ArrayList<>();
-	/** Subset of noteCache where cp.doubIds != null; for pass 4 of paintNotesNormal. */
-	private List<CachedPrimary> cacheWithDoublings = new ArrayList<>();
-	/** Subset of noteCache where note duration exceeds LONG_NOTE_THRESHOLD_MICROS; checked separately after binary search. */
-	private List<CachedPrimary> cacheLongHeld = new ArrayList<>();
-	/** The event list from the last rebuildNoteCache(); reused by onEvent(POSITION) to avoid allocating a new list 20×/second. */
+	private int cacheRebuildCount = 0; // For debug
+	// Note cache lists
+	private List<CachedNote> noteCache = new ArrayList<>();
+	private List<CachedNote> cacheBad = new ArrayList<>();
+	private List<CachedNote> cacheExtraBad = new ArrayList<>();
+	private List<CachedNote> cacheWithDoublings = new ArrayList<>();
+	// Subset of noteCache where note duration exceeds LONG_NOTE_THRESHOLD_MICROS; checked separately after binary search.
+	private List<CachedNote> cacheLongHeld = new ArrayList<>();
+	// The event list from the last rebuildNoteCache(); reused by onEvent(POSITION) to avoid allocating a new list 20×/second.
 	private List<NoteEvent> cachedEvents = Collections.emptyList();
 
 	/**
@@ -538,7 +516,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 	 * and all of its active section doublings.  Rebuilt once per cache rebuild cycle;
 	 * valid until {@link #invalidateNoteCache()} is called.
 	 */
-	private static final class CachedPrimary {
+	private static final class CachedNote {
 		final NoteEvent source;           // original event (for fillNote + timing checks)
 		final long startMicros;           // = source.getStartMicros() at cache build time
 		final long endMicros;             // = source.getEndMicros()   at cache build time
@@ -557,9 +535,9 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 		final NoteEvent[] doubSrc;        // null for out-of-limit; synthetic NoteEvent for normal drawing
 		                                  //   (suppresses bend rendering on doubled notes, matching original behaviour)
 
-		CachedPrimary(NoteEvent source, int noteId, Color color, boolean bad, boolean extraBad,
-				int[] doubIds, boolean[] doubBad, boolean[] doubOutOfLimit,
-				Color[] doubColors, NoteEvent[] doubSrc) {
+		CachedNote(NoteEvent source, int noteId, Color color, boolean bad, boolean extraBad,
+				   int[] doubIds, boolean[] doubBad, boolean[] doubOutOfLimit,
+				   Color[] doubColors, NoteEvent[] doubSrc) {
 			this.source        = source;
 			this.startMicros   = source.getStartMicros();
 			this.endMicros     = source.getEndMicros();
@@ -575,8 +553,8 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 		}
 	}
 
-	/** Marks the note render cache and bitmap as dirty; both will be rebuilt before the next paint. */
 	public void invalidateNoteCache() {
+		// Invalidate both caches
 		noteCacheDirty = true;
 		invalidateBitmapCache();
 	}
@@ -586,7 +564,6 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 	 * All virtual methods (transposeNote, isNotePlayable, getSectionDoubling, getNoteColor, …)
 	 * are called here once per note, rather than on every paint frame.
 	 */
-	@SuppressWarnings("unchecked")
 	private void rebuildNoteCache() {
 		cacheRebuildCount++;
 
@@ -665,20 +642,20 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 				}
 			}
 
-			CachedPrimary cp = new CachedPrimary(ne, noteId, color, bad, exBad,
+			CachedNote cn = new CachedNote(ne, noteId, color, bad, exBad,
 					doubIds, doubBad, doubOol, doubColors, doubSrc);
-			noteCache.add(cp);
-			if (bad)            cacheBad.add(cp);
-			if (exBad)          cacheExtraBad.add(cp);
-			if (doubIds != null) cacheWithDoublings.add(cp);
-			if (cp.endMicros - cp.startMicros > LONG_NOTE_THRESHOLD_MICROS) cacheLongHeld.add(cp);
+			noteCache.add(cn);
+			if (bad)            cacheBad.add(cn);
+			if (exBad)          cacheExtraBad.add(cn);
+			if (doubIds != null) cacheWithDoublings.add(cn);
+			if (cn.endMicros - cn.startMicros > LONG_NOTE_THRESHOLD_MICROS) cacheLongHeld.add(cn);
 		}
 
 		noteCacheDirty = false;
 	}
 
 	/** Returns the index of the first element in {@code list} whose {@code startMicros >= targetMicros}. */
-	private static int binarySearchStartMicros(List<CachedPrimary> list, long targetMicros) {
+	private static int binarySearchStartMicros(List<CachedNote> list, long targetMicros) {
 		int lo = 0, hi = list.size();
 		while (lo < hi) {
 			int mid = (lo + hi) >>> 1;
@@ -762,7 +739,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 		g2.fill(rectTmp);
 	}
 
-	/** Semitone additions for the 4 section-doubling offsets (k=0..3). */
+	// Semitone additions for the 4 section-doubling offsets (k=0..3).
 	private static final int[] DOUBLING_ADDITIONS = { -24, -12, 12, 24 };
 
 	private static float[] hsb;
@@ -811,15 +788,9 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 	}
 
 	/**
-	 * Renders bar lines, octave lines, and all notes (without note-on highlighting) into
-	 * {@link #staticNotesImage}.  Called lazily from paintComponent whenever the image is
-	 * null or the panel has been resized.  Uses a hardware-compatible image format when
-	 * possible so the subsequent drawImage blit is GPU-accelerated.
-	 */
-	/**
 	 * Renders bar lines, octave lines, and all notes into {@link #staticNotesImage}.
-	 * Reuses the existing image when dimensions are unchanged to avoid allocation churn.
-	 * Returns {@code false} if the bitmap was not built (size guard or zero dimensions),
+	 * Reuses the existing image when dimensions are unchanged to avoid reallocation.
+	 * Returns false if the bitmap was not built (size guard or zero dimensions),
 	 * in which case the caller should fall back to direct rendering.
 	 */
 	private boolean renderStaticNotesToImage(AffineTransform xform, double minLength, double height) {
@@ -926,35 +897,35 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 					g2.transform(xform);
 					g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-					List<CachedPrimary> notesOnList = null;
-					Set<CachedPrimary> notesOnSeen = null;
+					List<CachedNote> notesOnList = null;
+					Set<CachedNote> notesOnSeen = null;
 					if (showNotesOn) {
 						int startIdx = binarySearchStartMicros(noteCache, minSongPos - LONG_NOTE_THRESHOLD_MICROS);
 						for (int i = startIdx; i < noteCache.size(); i++) {
-							CachedPrimary cp = noteCache.get(i);
-							if (cp.startMicros > clipPosEnd) break;
-							if (cp.endMicros < clipPosStart) continue;
-							if (songPos >= cp.startMicros && minSongPos <= cp.endMicros) {
+							CachedNote cn = noteCache.get(i);
+							if (cn.startMicros > clipPosEnd) break;
+							if (cn.endMicros < clipPosStart) continue;
+							if (songPos >= cn.startMicros && minSongPos <= cn.endMicros) {
 								if (notesOnList == null) {
 									notesOnList = new ArrayList<>();
 									notesOnSeen = Collections.newSetFromMap(new IdentityHashMap<>());
 								}
-								if (notesOnSeen.add(cp)) {
-									notesOnList.add(cp);
+								if (notesOnSeen.add(cn)) {
+									notesOnList.add(cn);
 								}
 							}
 						}
 						// Also check long-held notes that binary search may have skipped
-						for (CachedPrimary cp : cacheLongHeld) {
-							if (cp.startMicros > clipPosEnd) break;
-							if (cp.endMicros < clipPosStart) continue;
-							if (songPos >= cp.startMicros && minSongPos <= cp.endMicros) {
+						for (CachedNote cn : cacheLongHeld) {
+							if (cn.startMicros > clipPosEnd) break;
+							if (cn.endMicros < clipPosStart) continue;
+							if (songPos >= cn.startMicros && minSongPos <= cn.endMicros) {
 								if (notesOnList == null) {
 									notesOnList = new ArrayList<>();
 									notesOnSeen = Collections.newSetFromMap(new IdentityHashMap<>());
 								}
-								if (notesOnSeen.add(cp)) {
-									notesOnList.add(cp);
+								if (notesOnSeen.add(cn)) {
+									notesOnList.add(cn);
 								}
 							}
 						}
@@ -1135,65 +1106,65 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 	private void paintNotesNormal(Graphics2D g2, AffineTransform xform, double minLength, double height,
 			long clipPosStart, long clipPosEnd, boolean showNotesOn, long minSongPos) {
 
-		List<CachedPrimary> notesOnList = null;
+		List<CachedNote> notesOnList = null;
 
 		// Pass 1: Draw normal (playable) primary notes and all normal (playable) doublings.
 		// noteCache is sorted by startMicros ascending (events come from getEvents() sorted by tick).
-		for (CachedPrimary cp : noteCache) {
-			if (cp.startMicros > clipPosEnd) break;
-			if (cp.endMicros < clipPosStart) continue;
+		for (CachedNote cn : noteCache) {
+			if (cn.startMicros > clipPosEnd) break;
+			if (cn.endMicros < clipPosStart) continue;
 
-			boolean isOn = showNotesOn && songPos >= cp.startMicros && minSongPos <= cp.endMicros;
+			boolean isOn = showNotesOn && songPos >= cn.startMicros && minSongPos <= cn.endMicros;
 
 			if (isOn) {
 				// Defer to note-on highlight pass (takes priority over bad/extraBad too)
 				if (notesOnList == null) notesOnList = new ArrayList<>();
-				notesOnList.add(cp);
-			} else if (!cp.bad && !cp.extraBad) {
-				g2.setColor(cp.color);
-				fillNote(g2, cp.source, cp.noteId, minLength, height);
+				notesOnList.add(cn);
+			} else if (!cn.bad && !cn.extraBad) {
+				g2.setColor(cn.color);
+				fillNote(g2, cn.source, cn.noteId, minLength, height);
 			}
 
 			// Normal (non-bad, non-ool) doublings are drawn in pass 1 for all primaries,
 			// regardless of primary category, to match original rendering order.
-			if (cp.doubIds != null) {
-				boolean activeNote = isOn && sequencer.isNoteActive(cp.source.note.id);
-				for (int d = 0; d < cp.doubIds.length; d++) {
-					if (activeNote || cp.doubOutOfLimit[d] || cp.doubBad[d]) continue;
-					g2.setColor(cp.doubColors[d]);
-					fillNote(g2, cp.doubSrc[d], cp.doubIds[d], minLength, height);
+			if (cn.doubIds != null) {
+				boolean activeNote = isOn && sequencer.isNoteActive(cn.source.note.id);
+				for (int d = 0; d < cn.doubIds.length; d++) {
+					if (activeNote || cn.doubOutOfLimit[d] || cn.doubBad[d]) continue;
+					g2.setColor(cn.doubColors[d]);
+					fillNote(g2, cn.doubSrc[d], cn.doubIds[d], minLength, height);
 				}
 			}
 		}
 
 		// Pass 2: Draw bad primary notes on top of normal notes.
-		for (CachedPrimary cp : cacheBad) {
-			if (cp.startMicros > clipPosEnd) break;
-			if (cp.endMicros < clipPosStart) continue;
-			if (showNotesOn && songPos >= cp.startMicros && minSongPos <= cp.endMicros) continue;
-			g2.setColor(cp.color);
-			fillNote(g2, cp.source, cp.noteId, minLength, height);
+		for (CachedNote cn : cacheBad) {
+			if (cn.startMicros > clipPosEnd) break;
+			if (cn.endMicros < clipPosStart) continue;
+			if (showNotesOn && songPos >= cn.startMicros && minSongPos <= cn.endMicros) continue;
+			g2.setColor(cn.color);
+			fillNote(g2, cn.source, cn.noteId, minLength, height);
 		}
 
 		// Pass 3: Draw extra-bad primary notes (e.g., polyphony overflow) on top of bad notes.
-		for (CachedPrimary cp : cacheExtraBad) {
-			if (cp.startMicros > clipPosEnd) break;
-			if (cp.endMicros < clipPosStart) continue;
-			if (showNotesOn && songPos >= cp.startMicros && minSongPos <= cp.endMicros) continue;
-			g2.setColor(cp.color);
-			fillNote(g2, cp.source, cp.noteId, minLength, height);
+		for (CachedNote cn : cacheExtraBad) {
+			if (cn.startMicros > clipPosEnd) break;
+			if (cn.endMicros < clipPosStart) continue;
+			if (showNotesOn && songPos >= cn.startMicros && minSongPos <= cn.endMicros) continue;
+			g2.setColor(cn.color);
+			fillNote(g2, cn.source, cn.noteId, minLength, height);
 		}
 
 		// Pass 4: Draw bad (out-of-range) doubling notes.
-		for (CachedPrimary cp : cacheWithDoublings) {
-			if (cp.startMicros > clipPosEnd) break;
-			if (cp.endMicros < clipPosStart) continue;
-			boolean isOn = showNotesOn && songPos >= cp.startMicros && minSongPos <= cp.endMicros;
-			boolean activeNote = isOn && sequencer.isNoteActive(cp.source.note.id);
-			for (int d = 0; d < cp.doubIds.length; d++) {
-				if (!cp.doubBad[d] || cp.doubOutOfLimit[d] || activeNote) continue;
-				g2.setColor(cp.doubColors[d]);
-				fillNote(g2, cp.doubSrc[d], cp.doubIds[d], minLength, height);
+		for (CachedNote cn : cacheWithDoublings) {
+			if (cn.startMicros > clipPosEnd) break;
+			if (cn.endMicros < clipPosStart) continue;
+			boolean isOn = showNotesOn && songPos >= cn.startMicros && minSongPos <= cn.endMicros;
+			boolean activeNote = isOn && sequencer.isNoteActive(cn.source.note.id);
+			for (int d = 0; d < cn.doubIds.length; d++) {
+				if (!cn.doubBad[d] || cn.doubOutOfLimit[d] || activeNote) continue;
+				g2.setColor(cn.doubColors[d]);
+				fillNote(g2, cn.doubSrc[d], cn.doubIds[d], minLength, height);
 			}
 		}
 
@@ -1210,7 +1181,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 	 * in the highlight pass.
 	 */
 	private void paintNoteOnHighlights(Graphics2D g2, AffineTransform xform, double minLength, double height,
-			List<CachedPrimary> notesOnList) {
+			List<CachedNote> notesOnList) {
 		if (notesOnList == null) return;
 
 		double noteOnOutlineWidthX = noteOnOutlineWidthPix / xform.getScaleX();
@@ -1219,12 +1190,12 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 
 		// Border (outline) pass
 		g2.setColor(noteOnBorder.get());
-		for (CachedPrimary cp : notesOnList) {
-			fillNote(g2, cp.source, cp.noteId, minLength, height,
+		for (CachedNote cn : notesOnList) {
+			fillNote(g2, cn.source, cn.noteId, minLength, height,
 					noteOnOutlineWidthX, noteOnExtraHeightY + noteOnOutlineWidthY);
-			if (cp.doubIds != null) {
-				for (int d = 0; d < cp.doubIds.length; d++) {
-					fillNote(g2, cp.source, cp.doubIds[d], minLength, height,
+			if (cn.doubIds != null) {
+				for (int d = 0; d < cn.doubIds.length; d++) {
+					fillNote(g2, cn.source, cn.doubIds[d], minLength, height,
 							noteOnOutlineWidthX, noteOnExtraHeightY + noteOnOutlineWidthY);
 				}
 			}
@@ -1232,11 +1203,11 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 
 		// Fill pass
 		g2.setColor(noteOnColor.get());
-		for (CachedPrimary cp : notesOnList) {
-			fillNote(g2, cp.source, cp.noteId, minLength, height, 0, noteOnExtraHeightY);
-			if (cp.doubIds != null) {
-				for (int d = 0; d < cp.doubIds.length; d++) {
-					fillNote(g2, cp.source, cp.doubIds[d], minLength, height, 0, noteOnExtraHeightY);
+		for (CachedNote cn : notesOnList) {
+			fillNote(g2, cn.source, cn.noteId, minLength, height, 0, noteOnExtraHeightY);
+			if (cn.doubIds != null) {
+				for (int d = 0; d < cn.doubIds.length; d++) {
+					fillNote(g2, cn.source, cn.doubIds[d], minLength, height, 0, noteOnExtraHeightY);
 				}
 			}
 		}
