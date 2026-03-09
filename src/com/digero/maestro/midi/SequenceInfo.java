@@ -1023,7 +1023,7 @@ public class SequenceInfo implements MidiConstants {
 		long earlyEndTick = 0L;
 		long maxEmpty = Math.max(song.getTickLength()/4L, MidiUtils.microsecond2tick(song, 20L*AbcConstants.ONE_SECOND_MICROS, tempoCache));
 		Map<Integer,Set<Integer>> notesOn = new HashMap<>();
-		for (int ch = 0; ch < CHANNEL_COUNT; ch++) {
+		for (int ch = 0; ch < CHANNEL_COUNT_ABC; ch++) {
 			notesOn.put(ch, new HashSet<>());
 		}
 		for(MidiEvent evt : allEvents) {
