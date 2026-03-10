@@ -53,8 +53,9 @@
                executable="${env.JAVA_HOME}/bin/javac"
                includeantruntime="false"
                failonerror="true"
-			   release="21">
-
+			   source="21"
+			   target="21">
+			<compilerarg value="-Xlint:-options" />
             <compilerarg value="--patch-module" />
             <compilerarg value="java.desktop=../patches/java.desktop" />
         </javac>
