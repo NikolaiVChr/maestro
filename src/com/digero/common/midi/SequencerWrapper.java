@@ -30,7 +30,7 @@ import com.digero.common.util.ListenerList;
 public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardable {
     private static final Logger log = Logger.getLogger("playback");
 
-	public static final int UPDATE_FREQUENCY_MILLIS = 50;
+	public static final int UPDATE_FREQUENCY_MILLIS = 16;
 	public static final long UPDATE_FREQUENCY_MICROS = UPDATE_FREQUENCY_MILLIS * 1000L;
 
     protected static LotroSequencerWrapper abcSeq = null;// is set only by LotroSequencer

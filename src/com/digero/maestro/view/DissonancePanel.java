@@ -268,6 +268,8 @@ public class DissonancePanel extends JPanel implements IDiscardable, TableLayout
         }
 
 		private void recalcPolyphonyEvents() {
+			// Underlying events list is being rebuilt; the note render cache must follow.
+			invalidateNoteCache();
 			// Make fake note events for every count event
 			events = new ArrayList<>();
 			if (abcSong.getQTM() == null) return;

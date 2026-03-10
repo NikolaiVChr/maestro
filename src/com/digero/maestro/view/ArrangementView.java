@@ -247,7 +247,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 			}
 		});
 		
-		final float maxVZoom = 6.f;
+		final float maxVZoom = 10.f;
 		JLabel vZoomLabel = new JLabel(UIText.get("maestro.vert.zoom"));
 		vZoomSlider = new JSlider(0, ZOOM_SLIDER_MAX, 0);
 		vZoomSlider.setFocusable(false);

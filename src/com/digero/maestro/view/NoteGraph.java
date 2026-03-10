@@ -5,10 +5,13 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.GraphicsConfiguration;
 import java.awt.LayoutManager;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
+import java.awt.Transparency;
+import java.awt.image.BufferedImage;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.InputEvent;
@@ -20,8 +23,8 @@ import java.awt.geom.Point2D;
 import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -32,6 +35,7 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.SwingUtilities;
+import javax.swing.Timer;
 
 import com.digero.common.abc.Dynamics;
 import com.digero.common.midi.ITempoCache;
@@ -66,6 +70,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 	private double noteOnExtraHeightPix = 0.5;
 	private static final double NOTE_VELOCITY_MIN_WIDTH_PX = 2;
 	private static final double NOTE_VELOCITY_MIN_HEIGHT_PX = 6;
+	private static final long LONG_NOTE_THRESHOLD_MICROS = 10_000_000L; // 10 seconds
 
 	private ColorTable noteColor = ColorTable.NOTE_ENABLED;
 	private ColorTable badNoteColor = ColorTable.NOTE_BAD_ENABLED;
@@ -109,9 +114,9 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 		this.MAX_RENDERED = maxRenderedNoteId;
 		this.NOTE_WIDTH_PX = noteWidthPx;
 		this.NOTE_HEIGHT_PX = noteHeightPx;
-		
+
 //		this.setBorder(BorderFactory.createEmptyBorder());
-		
+
 //		this.setOpaque(true);
 
 		this.sequencer.addChangeListener(this);
@@ -142,6 +147,14 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 	@Override
 	public void discard() {
 		sequencer.removeChangeListener(this);
+		if (staticNotesImage != null) {
+			staticNotesImage.flush();
+			staticNotesImage = null;
+		}
+		if (bitmapRebuildTimer != null) {
+			bitmapRebuildTimer.stop();
+			bitmapRebuildTimer = null;
+		}
 	}
 
 	protected int transposeNote(int noteId, long tickStart) {
@@ -167,7 +180,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
     protected boolean isNotePlayable(NoteEvent ne, int addition) {
 		return true;
 	}
-	
+
 	protected boolean isNoteExtraBad(NoteEvent ne, int addition) {
 		return false;
 	}
@@ -176,9 +189,16 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 		return true;
 	}
 
+	@Override
+	public void setBackground(Color bg) {
+		super.setBackground(bg);
+		invalidateBitmapCache();
+	}
+
 	public void setOctaveLinesVisible(boolean octaveLinesVisible) {
 		if (this.octaveLinesVisible != octaveLinesVisible) {
 			this.octaveLinesVisible = octaveLinesVisible;
+			invalidateBitmapCache();
 			repaint();
 		}
 	}
@@ -186,14 +206,15 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 	public boolean isOctaveLinesVisible() {
 		return octaveLinesVisible;
 	}
-	
+
 	public void setHistogramThresholdLinesVisible(boolean histogramThresholdLinesVisible) {
 		if (this.histogramThresholdLinesVisible != histogramThresholdLinesVisible) {
 			this.histogramThresholdLinesVisible = histogramThresholdLinesVisible;
+			invalidateBitmapCache();
 			repaint();
 		}
 	}
-	
+
 	public boolean isHistogramThresholdLinesVisible() {
 		return histogramThresholdLinesVisible;
 	}
@@ -202,6 +223,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 		if (this.noteColor != noteColor) {
 			this.noteColor = noteColor;
 			Arrays.fill(noteColorByDynamics, null);
+			invalidateNoteCache();
 			repaint();
 		}
 	}
@@ -210,13 +232,15 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 		if (this.badNoteColor != badNoteColor) {
 			this.badNoteColor = badNoteColor;
 			Arrays.fill(badNoteColorByDynamics, null);
+			invalidateNoteCache();
 			repaint();
 		}
 	}
-	
+
 	public final void setExtraBadNoteColor(ColorTable extraBadNoteColor) {
 		if (this.extraBadNoteColor != extraBadNoteColor) {
 			this.extraBadNoteColor = extraBadNoteColor;
+			invalidateNoteCache();
 			repaint();
 		}
 	}
@@ -231,6 +255,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 	public void setDeltaVolume(int deltaVolume) {
 		if (this.deltaVolume != deltaVolume) {
 			this.deltaVolume = deltaVolume;
+			invalidateNoteCache();
 			repaint();
 		}
 	}
@@ -241,6 +266,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 
 	public void setTrackInfo(TrackInfo trackInfo) {
 		this.trackInfo = trackInfo;
+		invalidateNoteCache();
 		invalidateTransform();
 		repaint();
 	}
@@ -286,7 +312,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 
 		List<NoteEvent> list = new ArrayList<>();
 		list.addAll(trackInfo.getEvents());
-		
+
 		return list;
 	}
 
@@ -294,6 +320,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 
 	protected final void invalidateTransform() {
 		noteToScreenXForm = null;
+		invalidateBitmapCache();
 		repaint();
 	}
 
@@ -388,13 +415,17 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 				long right = rightSongPos;
 
 				// The song position changes frequently, so only repaint the rect that
-				// contains the notes that were/are playing
+				// contains the notes that were/are playing.
+				// Use cachedEvents (already allocated) instead of getEvents() to avoid
+				// creating a new ArrayList every frame.
 				if (isShowingNotesOn()) {
-					for (NoteEvent ne : getEvents()) {
-						if (ne.getEndMicros() < leftSongPos)
-							continue;
+					int startIdx = binarySearchStartMicrosEvents(cachedEvents, leftSongPos - LONG_NOTE_THRESHOLD_MICROS);
+					for (int i = startIdx; i < cachedEvents.size(); i++) {
+						NoteEvent ne = cachedEvents.get(i);
 						if (ne.getStartMicros() > rightSongPos)
 							break;
+						if (ne.getEndMicros() < leftSongPos)
+							continue;
 
 						// This note event is or was playing
 						if (ne.getStartMicros() < left)
@@ -423,9 +454,12 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 
 			// These properties don't change often; just repaint the whole thing
 			case IS_LOADED:
+			case SEQUENCE:
+				invalidateNoteCache();
+				repaint();
+				break;
 			case IS_RUNNING:
 			case LENGTH:
-			case SEQUENCE:
 			case TRACK_ACTIVE:
 			default:
 				repaint();
@@ -436,6 +470,211 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 	}
 
 	private Rectangle2D.Double rectTmp = new Rectangle2D.Double();
+
+	/**
+	 * Pre-rendered image of all static content: bar lines, octave lines, and every note
+	 * (no note-on highlighting).  Null when dirty.  Rebuilt lazily in paintComponent.
+	 * Only used in normal (non-velocity) mode; pixel-space so must be discarded on resize.
+	 */
+	private BufferedImage staticNotesImage = null;
+	private boolean bitmapDirty = false;
+
+	// Debounce interval before a bitmap rebuild is triggered after the last invalidation
+	private static final int BITMAP_DEBOUNCE_MS = 150;
+	// Max bitmap area in pixels before we fallback to direct rendering to avoid excessive memory usage
+	private static final int MAX_BITMAP_PIXELS = 8_000_000;
+	// Timer to debounce rebuilding the bitmap when the bitmap cache goes dirty
+	private Timer bitmapRebuildTimer = null;
+
+	private void invalidateBitmapCache() {
+		bitmapDirty = true;
+		if (bitmapRebuildTimer != null) {
+			bitmapRebuildTimer.stop();
+		}
+		bitmapRebuildTimer = new Timer(BITMAP_DEBOUNCE_MS, e -> {
+			bitmapRebuildTimer = null;
+			repaint();
+		});
+		bitmapRebuildTimer.setRepeats(false);
+		bitmapRebuildTimer.start();
+	}
+
+	private boolean noteCacheDirty = true;
+	private int cacheRebuildCount = 0; // For debug
+	// Note cache lists
+	private List<CachedNote> noteCache = new ArrayList<>();
+	private List<CachedNote> cacheBad = new ArrayList<>();
+	private List<CachedNote> cacheExtraBad = new ArrayList<>();
+	private List<CachedNote> cacheWithDoublings = new ArrayList<>();
+	// Subset of noteCache where note duration exceeds LONG_NOTE_THRESHOLD_MICROS; checked separately after binary search.
+	private List<CachedNote> cacheLongHeld = new ArrayList<>();
+	// The event list from the last rebuildNoteCache(); reused by onEvent(POSITION) to avoid allocating a new list 20×/second.
+	private List<NoteEvent> cachedEvents = Collections.emptyList();
+
+	/**
+	 * Pre-computed rendering data for one visible+audible NoteEvent (primary note)
+	 * and all of its active section doublings.  Rebuilt once per cache rebuild cycle;
+	 * valid until {@link #invalidateNoteCache()} is called.
+	 */
+	private static final class CachedNote {
+		final NoteEvent source;           // original event (for fillNote + timing checks)
+		final long startMicros;           // = source.getStartMicros() at cache build time
+		final long endMicros;             // = source.getEndMicros()   at cache build time
+		final int noteId;                 // transposed primary note ID
+		final Color color;                // pre-computed drawing color for this entry
+		final boolean bad;                // primary is out of playable range
+		final boolean extraBad;           // primary is extra-bad (e.g., over polyphony limit)
+		// Doubling arrays – null when no active doublings exist for this note.
+		// Includes ALL doublings where getSectionDoubling[k] == true, including out-of-limit ones
+		// (out-of-limit doublings are skipped in normal drawing but still drawn in note-on highlights,
+		//  matching the original rendering behaviour).
+		final int[]       doubIds;        // transposed doubling note IDs
+		final boolean[]   doubBad;        // true if !isNotePlayable for this doubling (ignored when doubOutOfLimit)
+		final boolean[]   doubOutOfLimit; // true if isOutOfLimit → skip in normal drawing passes
+		final Color[]     doubColors;     // null for out-of-limit entries; else pre-computed color
+		final NoteEvent[] doubSrc;        // null for out-of-limit; synthetic NoteEvent for normal drawing
+		                                  //   (suppresses bend rendering on doubled notes, matching original behaviour)
+
+		CachedNote(NoteEvent source, int noteId, Color color, boolean bad, boolean extraBad,
+				   int[] doubIds, boolean[] doubBad, boolean[] doubOutOfLimit,
+				   Color[] doubColors, NoteEvent[] doubSrc) {
+			this.source        = source;
+			this.startMicros   = source.getStartMicros();
+			this.endMicros     = source.getEndMicros();
+			this.noteId        = noteId;
+			this.color         = color;
+			this.bad           = bad;
+			this.extraBad      = extraBad;
+			this.doubIds       = doubIds;
+			this.doubBad       = doubBad;
+			this.doubOutOfLimit = doubOutOfLimit;
+			this.doubColors    = doubColors;
+			this.doubSrc       = doubSrc;
+		}
+	}
+
+	public void invalidateNoteCache() {
+		// Invalidate both caches
+		noteCacheDirty = true;
+		invalidateBitmapCache();
+	}
+
+	/**
+	 * Rebuilds the note render cache from the current events list.
+	 * All virtual methods (transposeNote, isNotePlayable, getSectionDoubling, getNoteColor, …)
+	 * are called here once per note, rather than on every paint frame.
+	 */
+	private void rebuildNoteCache() {
+		cacheRebuildCount++;
+
+		List<NoteEvent> events = getEvents();
+		cachedEvents = events;
+		noteCache = new ArrayList<>(events.size());
+		cacheBad = new ArrayList<>();
+		cacheExtraBad = new ArrayList<>();
+		cacheWithDoublings = new ArrayList<>();
+		cacheLongHeld = new ArrayList<>();
+
+		// Temporary lists for doubling data (reused across iterations to reduce allocation)
+		List<Integer>   tmpIds    = new ArrayList<>(4);
+		List<Boolean>   tmpBad    = new ArrayList<>(4);
+		List<Boolean>   tmpOol    = new ArrayList<>(4);
+		List<Color>     tmpColors = new ArrayList<>(4);
+		List<NoteEvent> tmpSrc    = new ArrayList<>(4);
+
+		for (NoteEvent ne : events) {
+			if (!isNoteVisible(ne) || !audibleNote(ne)) continue;
+
+			int noteId    = transposeNote(ne.note.id, ne.getStartTick());
+			boolean exBad = isNoteExtraBad(ne, 0);
+			boolean bad   = !exBad && !isNotePlayable(ne, 0);
+			Color color;
+			if      (exBad) color = getExtraBadNoteColor(ne);
+			else if (bad)   color = getBadNoteColor(ne);
+			else            color = getNoteColor(ne);
+
+			Boolean[] sectDoubling = getSectionDoubling(ne.getStartTick());
+			boolean isBent = ne instanceof BentMidiNoteEvent;
+
+			tmpIds.clear(); tmpBad.clear(); tmpOol.clear(); tmpColors.clear(); tmpSrc.clear();
+			for (int k = 0; k < 4; k++) {
+				if (!Boolean.TRUE.equals(sectDoubling[k])) continue;
+				int addition = DOUBLING_ADDITIONS[k];
+				int doubId   = transposeNote(ne.note.id + addition, ne.getStartTick());
+				boolean ool  = isOutOfLimit(doubId, ne.getStartTick());
+				tmpIds.add(doubId);
+				tmpOol.add(ool);
+				if (ool) {
+					tmpBad.add(false);
+					tmpColors.add(null);
+					tmpSrc.add(null);
+				} else {
+					boolean dBad = !isNotePlayable(ne, addition);
+					tmpBad.add(dBad);
+					tmpColors.add(dBad ? getBadNoteColor(ne) : getNoteColor(ne));
+					// Use a synthetic (non-bent) NoteEvent as draw source for doublings so that
+					// bend segments are not rendered on doubled notes in normal mode, matching
+					// the original behaviour where 'nd = new NoteEvent(...)' was passed to fillNote.
+					tmpSrc.add(isBent
+						? new NoteEvent(Note.fromId(doubId), ne.velocity, ne.getStartTick(), ne.getEndTick(), ne.getTempoCache())
+						: ne);
+				}
+			}
+
+			int[]       doubIds   = null;
+			boolean[]   doubBad   = null;
+			boolean[]   doubOol   = null;
+			Color[]     doubColors = null;
+			NoteEvent[] doubSrc   = null;
+			if (!tmpIds.isEmpty()) {
+				int n       = tmpIds.size();
+				doubIds     = new int[n];
+				doubBad     = new boolean[n];
+				doubOol     = new boolean[n];
+				doubColors  = new Color[n];
+				doubSrc     = new NoteEvent[n];
+				for (int i = 0; i < n; i++) {
+					doubIds[i]    = tmpIds.get(i);
+					doubBad[i]    = tmpBad.get(i);
+					doubOol[i]    = tmpOol.get(i);
+					doubColors[i] = tmpColors.get(i);
+					doubSrc[i]    = tmpSrc.get(i);
+				}
+			}
+
+			CachedNote cn = new CachedNote(ne, noteId, color, bad, exBad,
+					doubIds, doubBad, doubOol, doubColors, doubSrc);
+			noteCache.add(cn);
+			if (bad)            cacheBad.add(cn);
+			if (exBad)          cacheExtraBad.add(cn);
+			if (doubIds != null) cacheWithDoublings.add(cn);
+			if (cn.endMicros - cn.startMicros > LONG_NOTE_THRESHOLD_MICROS) cacheLongHeld.add(cn);
+		}
+
+		noteCacheDirty = false;
+	}
+
+	/** Returns the index of the first element in {@code list} whose {@code startMicros >= targetMicros}. */
+	private static int binarySearchStartMicros(List<CachedNote> list, long targetMicros) {
+		int lo = 0, hi = list.size();
+		while (lo < hi) {
+			int mid = (lo + hi) >>> 1;
+			if (list.get(mid).startMicros < targetMicros) lo = mid + 1;
+			else hi = mid;
+		}
+		return lo;
+	}
+
+	/** Returns the index of the first element in {@code list} whose {@code getStartMicros() >= targetMicros}. */
+	private static int binarySearchStartMicrosEvents(List<NoteEvent> list, long targetMicros) {
+		int lo = 0, hi = list.size();
+		while (lo < hi) {
+			int mid = (lo + hi) >>> 1;
+			if (list.get(mid).getStartMicros() < targetMicros) lo = mid + 1;
+			else hi = mid;
+		}
+		return lo;
+	}
 
 	private void fillNote(Graphics2D g2, NoteEvent ne, int noteId, double minWidth, double height) {
 		fillNote(g2, ne, noteId, minWidth, height, 0, 0);
@@ -500,15 +739,8 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 		g2.fill(rectTmp);
 	}
 
-	private BitSet notesOn = null;
-	private BitSet notesBad = null;
-	private BitSet notesBad0 = null;
-	private BitSet notesBad1 = null;
-	private BitSet notesBad2 = null;
-	private BitSet notesBad3 = null;
-	
-	// For histogram panel - "extra bad" "notes" (> 64 polyphony)
-	private BitSet notesExtraBad = null;
+	// Semitone additions for the 4 section-doubling offsets (k=0..3).
+	private static final int[] DOUBLING_ADDITIONS = { -24, -12, 12, 24 };
 
 	private static float[] hsb;
 
@@ -549,16 +781,59 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 	Color getBadNoteColor(NoteEvent ne) {
 		return getNoteColorEx(ne, badNoteColor.get(), badNoteColorByDynamics);
 	}
-	
+
 	// Used only for histogram
 	Color getExtraBadNoteColor(NoteEvent ne) {
 		return extraBadNoteColor.get();
 	}
 
+	/**
+	 * Renders bar lines, octave lines, and all notes into {@link #staticNotesImage}.
+	 * Reuses the existing image when dimensions are unchanged to avoid reallocation.
+	 * Returns false if the bitmap was not built (size guard or zero dimensions),
+	 * in which case the caller should fall back to direct rendering.
+	 */
+	private boolean renderStaticNotesToImage(AffineTransform xform, double minLength, double height) {
+		int w = getWidth();
+		int h = getHeight();
+		if (w <= 0 || h <= 0) return false;
+
+		if ((long) w * h > MAX_BITMAP_PIXELS) {
+			staticNotesImage = null;
+			return false;
+		}
+
+		// Only allocate when dimensions change; reuse the existing image otherwise.
+		if (staticNotesImage == null || staticNotesImage.getWidth() != w || staticNotesImage.getHeight() != h) {
+			GraphicsConfiguration gc = getGraphicsConfiguration();
+			staticNotesImage = (gc != null)
+					? gc.createCompatibleImage(w, h, Transparency.OPAQUE)
+					: new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+		}
+
+		Graphics2D bg = staticNotesImage.createGraphics();
+		try {
+			bg.setColor(getBackground());
+			bg.fillRect(0, 0, w, h);
+			bg.transform(xform);
+
+			paintBarLines(bg, xform, 0, sequencer.getLength());
+			paintOctaveLines(bg, xform);
+
+			bg.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			// Draw all notes unconditionally — showNotesOn=false means no notes are
+			// deferred and paintNoteOnHighlights is a no-op at the end of the call.
+			paintNotesNormal(bg, xform, minLength, height, Long.MIN_VALUE, Long.MAX_VALUE, false, 0);
+		} finally {
+			bg.dispose();
+		}
+		return true;
+	}
+
 	@Override
 	protected void paintComponent(Graphics g) {
 		super.paintComponent(g);
-		
+
 		Graphics2D g2 = (Graphics2D) g;
 
 		Object hintAntialiasSav = g2.getRenderingHint(RenderingHints.KEY_ANTIALIASING);
@@ -566,8 +841,115 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 
 		AffineTransform xform = getTransform();
 		double minLength = NOTE_WIDTH_PX / xform.getScaleX();
-		double height = Math.abs(NOTE_HEIGHT_PX / xform.getScaleY());
+		double height = Math.max(1.0, Math.abs(NOTE_HEIGHT_PX / xform.getScaleY()));
 
+		long[] clip = computeClipBounds(g2, xform);
+		long clipPosStart = clip[0];
+		long clipPosEnd = clip[1];
+
+		boolean showNotesOn = isShowingNotesOn() && songPos >= 0;
+		long minSongPos = songPos;
+
+		if (showNotesOn) {
+			// Highlight notes that are on, or were on since we last painted (up to 2 frames ago)
+			if (lastPaintedSongPos >= 0 && lastPaintedSongPos < songPos) {
+				minSongPos = Math.max(lastPaintedSongPos, songPos - 2 * SequencerWrapper.UPDATE_FREQUENCY_MICROS);
+			}
+		}
+
+		lastPaintedMinSongPos = minSongPos;
+		lastPaintedSongPos = songPos;
+
+		if (!isShowingNoteVelocity()) {
+			if (noteCacheDirty) rebuildNoteCache();
+
+			if (bitmapRebuildTimer != null) {
+				// Debounce timer pending (burst in progress) — render directly to avoid allocation churn.
+				// The timer will null itself and queue one repaint once the burst settles.
+				g2.transform(xform);
+				paintBarLines(g2, xform, clipPosStart, clipPosEnd);
+				paintOctaveLines(g2, xform);
+				g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+				paintNotesNormal(g2, xform, minLength, height, clipPosStart, clipPosEnd, showNotesOn, minSongPos);
+			} else {
+				// Burst has settled — use the cached bitmap for fast blitting.
+				if (bitmapDirty || staticNotesImage == null
+						|| staticNotesImage.getWidth()  != getWidth()
+						|| staticNotesImage.getHeight() != getHeight()) {
+					boolean built = renderStaticNotesToImage(xform, minLength, height);
+					if (built) bitmapDirty = false;
+				}
+
+				if (staticNotesImage != null) {
+					// Bitmap always matches current dimensions; blit without scaling.
+					g2.drawImage(staticNotesImage, 0, 0, null);
+				} else {
+					// Size guard triggered — fall back to direct rendering.
+					g2.transform(xform);
+					paintBarLines(g2, xform, clipPosStart, clipPosEnd);
+					paintOctaveLines(g2, xform);
+					g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+					paintNotesNormal(g2, xform, minLength, height, clipPosStart, clipPosEnd, showNotesOn, minSongPos);
+				}
+
+				if (staticNotesImage != null) {
+					// Draw note-on highlights on top of the bitmap — only the few currently-playing notes.
+					g2.transform(xform);
+					g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+					List<CachedNote> notesOnList = null;
+					Set<CachedNote> notesOnSeen = null;
+					if (showNotesOn) {
+						int startIdx = binarySearchStartMicros(noteCache, minSongPos - LONG_NOTE_THRESHOLD_MICROS);
+						for (int i = startIdx; i < noteCache.size(); i++) {
+							CachedNote cn = noteCache.get(i);
+							if (cn.startMicros > clipPosEnd) break;
+							if (cn.endMicros < clipPosStart) continue;
+							if (songPos >= cn.startMicros && minSongPos <= cn.endMicros) {
+								if (notesOnList == null) {
+									notesOnList = new ArrayList<>();
+									notesOnSeen = Collections.newSetFromMap(new IdentityHashMap<>());
+								}
+								if (notesOnSeen.add(cn)) {
+									notesOnList.add(cn);
+								}
+							}
+						}
+						// Also check long-held notes that binary search may have skipped
+						for (CachedNote cn : cacheLongHeld) {
+							if (cn.startMicros > clipPosEnd) break;
+							if (cn.endMicros < clipPosStart) continue;
+							if (songPos >= cn.startMicros && minSongPos <= cn.endMicros) {
+								if (notesOnList == null) {
+									notesOnList = new ArrayList<>();
+									notesOnSeen = Collections.newSetFromMap(new IdentityHashMap<>());
+								}
+								if (notesOnSeen.add(cn)) {
+									notesOnList.add(cn);
+								}
+							}
+						}
+					}
+					paintNoteOnHighlights(g2, xform, minLength, height, notesOnList);
+				}
+			}
+
+		} else {
+			// Velocity mode: direct rendering, no bitmap (only active while dragging the volume bar)
+			g2.transform(xform);
+			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+			paintNotesVelocity(g2, clipPosStart, clipPosEnd, showNotesOn, minSongPos, getEvents());
+		}
+
+		g2.setTransform(xformSav);
+		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, hintAntialiasSav);
+	}
+
+	/**
+	 * Converts the Graphics2D clip rectangle from screen space to song-coordinate space.
+	 * Returns {clipPosStart, clipPosEnd} in microseconds, or {Long.MIN_VALUE, Long.MAX_VALUE} if unclipped.
+	 */
+	private long[] computeClipBounds(Graphics2D g2, AffineTransform xform) {
 		long clipPosStart = Long.MIN_VALUE;
 		long clipPosEnd = Long.MAX_VALUE;
 
@@ -587,98 +969,105 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 			}
 		}
 		//System.out.println(" clipPosStart="+Util.formatDuration(clipPosStart)+" clipPosEnd="+Util.formatDuration(clipPosEnd));
-		
-		g2.transform(xform);
 
-		if (sequenceInfo != null) {
-			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
+		return new long[]{ clipPosStart, clipPosEnd };
+	}
 
-			double lineWidth = Math.abs(1.0 / xform.getScaleX());
+	/** Draws bar lines, section backgrounds, and first/last bar silencing regions. */
+	private void paintBarLines(Graphics2D g2, AffineTransform xform, long clipPosStart, long clipPosEnd) {
+		if (sequenceInfo == null)
+			return;
 
-			SequenceDataCache data = sequenceInfo.getDataCache();
-			long barLengthTicks = data.getBarLengthTicks();
+		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
 
-			long firstBarTick = (data.microsToTick(clipPosStart) / barLengthTicks) * barLengthTicks;
-			long lastBarTick = (data.microsToTick(clipPosEnd) / barLengthTicks) * barLengthTicks;
+		double lineWidth = Math.abs(1.0 / xform.getScaleX());
 
-			boolean[] sectionArray = getSectionsModified();
-			long barCount = data.microsToTick(clipPosStart) / barLengthTicks - 1;
-			long barMicros = clipPosStart;
-			boolean barEdited = false;
-			boolean barBothEdited = false;
-			long loopcounter = 0;//max 2500 bars
-			for (long barTick = firstBarTick; barTick <= lastBarTick + barLengthTicks && loopcounter < 2500; barTick += barLengthTicks) {
-				loopcounter++;
-				barEdited = false;
-				long barTempMicros = data.tickToMicros(barTick);
-				boolean barTouched = sectionArray != null && barCount < sectionArray.length && barCount > -1 && sectionArray[(int) barCount];
-				List<Pair<Long,Long>> modi = null;
-				if (barTouched) {
-					modi = getMicrosModified(barMicros, barTempMicros);
-				}				
-				if (modi != null) {
-					double start = (barMicros + lineWidth);
-					double finish = (barTempMicros);
-					for (Pair<Long,Long> pair : modi) {
-						double x = Math.max(start, pair.first);
-						double w = Math.min(finish, pair.second) - x;
-						if (w > 0.0d) {
-							rectTmp.setRect(x, MIN_RENDERED - 1, w,	MAX_RENDERED - MIN_RENDERED + 2);
-							g2.setColor(ColorTable.GRAPH_BACKGROUND_EDITED.get());
-							g2.fill(rectTmp);
-							barEdited = true;
-							start = x + w;
-						}
-					}
-				}
-				if (getFirstBar() != null && barCount < Math.floor(getFirstBar())) {
-					// whole bar is red
-					rectTmp.setRect(barMicros + lineWidth, MIN_RENDERED - 1, barTempMicros - barMicros - lineWidth,
-							MAX_RENDERED - MIN_RENDERED + 2);
-					g2.setColor(ColorTable.GRAPH_SILENCED.get());
-					g2.fill(rectTmp);
-				} else if (getLastBar() != null && barCount >= Math.ceil(getLastBar())) {
-					// whole bar is red
-					rectTmp.setRect(barMicros + lineWidth, MIN_RENDERED - 1, barTempMicros - barMicros - lineWidth,
-							MAX_RENDERED - MIN_RENDERED + 2);
-					g2.setColor(ColorTable.GRAPH_SILENCED.get());
-					g2.fill(rectTmp);
-				} else {
-					if (getFirstBar() != null && barCount < Math.ceil(getFirstBar())) {
-						// partial bar is red
-						assert getFirstBarTick() != null && getFirstBarTick() >= 0L;
-						long lateStart = data.tickToMicros(getFirstBarTick());					
-						rectTmp.setRect(barMicros + lineWidth, MIN_RENDERED - 1, Math.min(lateStart, barTempMicros) - barMicros - lineWidth,
-								MAX_RENDERED - MIN_RENDERED + 2);
-						g2.setColor(ColorTable.GRAPH_SILENCED.get());
-						g2.fill(rectTmp);
-					}
-					if (getLastBar() != null && barCount >= Math.floor(getLastBar())) {
-						// partial bar is red
-						assert getLastBarTick() != null && getLastBarTick() >= 0L;
-						long earlyEnd = data.tickToMicros(getLastBarTick());					
-						rectTmp.setRect(Math.max(earlyEnd, barMicros + lineWidth), MIN_RENDERED - 1, barTempMicros - barMicros - lineWidth,
-								MAX_RENDERED - MIN_RENDERED + 2);
-						g2.setColor(ColorTable.GRAPH_SILENCED.get());
-						g2.fill(rectTmp);
-					}
-				}
+		SequenceDataCache data = sequenceInfo.getDataCache();
+		long barLengthTicks = data.getBarLengthTicks();
 
-				barCount++;
-				barMicros = barTempMicros;
-				rectTmp.setRect(barMicros, MIN_RENDERED - 1, lineWidth, MAX_RENDERED - MIN_RENDERED + 2);
-				barBothEdited = false;
-				if (barEdited && sectionArray != null && barCount < sectionArray.length && barCount > -1) {
-					// TODO: This could be refined a bit now that floats are used
-					if (sectionArray[(int) barCount]) {
-						barBothEdited = true;
-					}
-				}
-				g2.setColor(barBothEdited ? ColorTable.BAR_LINE_EDITED.get() : ColorTable.BAR_LINE.get());
-				g2.fill(rectTmp);
+		long firstBarTick = (data.microsToTick(clipPosStart) / barLengthTicks) * barLengthTicks;
+		long lastBarTick = (data.microsToTick(clipPosEnd) / barLengthTicks) * barLengthTicks;
+
+		boolean[] sectionArray = getSectionsModified();
+		long barCount = data.microsToTick(clipPosStart) / barLengthTicks - 1;
+		long barMicros = clipPosStart;
+		boolean barEdited = false;
+		boolean barBothEdited = false;
+		long loopcounter = 0; // max 2500 bars
+		for (long barTick = firstBarTick; barTick <= lastBarTick + barLengthTicks && loopcounter < 2500; barTick += barLengthTicks) {
+			loopcounter++;
+			barEdited = false;
+			long barTempMicros = data.tickToMicros(barTick);
+			boolean barTouched = sectionArray != null && barCount < sectionArray.length && barCount > -1 && sectionArray[(int) barCount];
+			List<Pair<Long,Long>> modi = null;
+			if (barTouched) {
+				modi = getMicrosModified(barMicros, barTempMicros);
 			}
-		}
+			if (modi != null) {
+				double start = (barMicros + lineWidth);
+				double finish = (barTempMicros);
+				for (Pair<Long,Long> pair : modi) {
+					double x = Math.max(start, pair.first);
+					double w = Math.min(finish, pair.second) - x;
+					if (w > 0.0d) {
+						rectTmp.setRect(x, MIN_RENDERED - 1, w, MAX_RENDERED - MIN_RENDERED + 2);
+						g2.setColor(ColorTable.GRAPH_BACKGROUND_EDITED.get());
+						g2.fill(rectTmp);
+						barEdited = true;
+						start = x + w;
+					}
+				}
+			}
+			if (getFirstBar() != null && barCount < Math.floor(getFirstBar())) {
+				// whole bar is red
+				rectTmp.setRect(barMicros + lineWidth, MIN_RENDERED - 1, barTempMicros - barMicros - lineWidth,
+						MAX_RENDERED - MIN_RENDERED + 2);
+				g2.setColor(ColorTable.GRAPH_SILENCED.get());
+				g2.fill(rectTmp);
+			} else if (getLastBar() != null && barCount >= Math.ceil(getLastBar())) {
+				// whole bar is red
+				rectTmp.setRect(barMicros + lineWidth, MIN_RENDERED - 1, barTempMicros - barMicros - lineWidth,
+						MAX_RENDERED - MIN_RENDERED + 2);
+				g2.setColor(ColorTable.GRAPH_SILENCED.get());
+				g2.fill(rectTmp);
+			} else {
+				if (getFirstBar() != null && barCount < Math.ceil(getFirstBar())) {
+					// partial bar is red
+					assert getFirstBarTick() != null && getFirstBarTick() >= 0L;
+					long lateStart = data.tickToMicros(getFirstBarTick());
+					rectTmp.setRect(barMicros + lineWidth, MIN_RENDERED - 1, Math.min(lateStart, barTempMicros) - barMicros - lineWidth,
+							MAX_RENDERED - MIN_RENDERED + 2);
+					g2.setColor(ColorTable.GRAPH_SILENCED.get());
+					g2.fill(rectTmp);
+				}
+				if (getLastBar() != null && barCount >= Math.floor(getLastBar())) {
+					// partial bar is red
+					assert getLastBarTick() != null && getLastBarTick() >= 0L;
+					long earlyEnd = data.tickToMicros(getLastBarTick());
+					rectTmp.setRect(Math.max(earlyEnd, barMicros + lineWidth), MIN_RENDERED - 1, barTempMicros - barMicros - lineWidth,
+							MAX_RENDERED - MIN_RENDERED + 2);
+					g2.setColor(ColorTable.GRAPH_SILENCED.get());
+					g2.fill(rectTmp);
+				}
+			}
 
+			barCount++;
+			barMicros = barTempMicros;
+			rectTmp.setRect(barMicros, MIN_RENDERED - 1, lineWidth, MAX_RENDERED - MIN_RENDERED + 2);
+			barBothEdited = false;
+			if (barEdited && sectionArray != null && barCount < sectionArray.length && barCount > -1) {
+				// TODO: This could be refined a bit now that floats are used
+				if (sectionArray[(int) barCount]) {
+					barBothEdited = true;
+				}
+			}
+			g2.setColor(barBothEdited ? ColorTable.BAR_LINE_EDITED.get() : ColorTable.BAR_LINE.get());
+			g2.fill(rectTmp);
+		}
+	}
+
+	/** Draws octave reference lines or histogram threshold lines. */
+	private void paintOctaveLines(Graphics2D g2, AffineTransform xform) {
 		if (octaveLinesVisible) {
 			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
 
@@ -705,297 +1094,176 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 			rectTmp.setRect(0, y2, sequencer.getLength(), lineHeight);
 			g2.fill(rectTmp);
 		}
+	}
 
-		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+	/**
+	 * Draws all notes in normal (pitch-based) rendering mode using the pre-built note cache.
+	 * Notes are drawn in four layered passes so that bad notes always appear on top of normal
+	 * notes, and note-on highlights appear on top of everything.
+	 *
+	 * <p>The cache must be valid (i.e. {@link #noteCacheDirty} == false) before this is called.
+	 */
+	private void paintNotesNormal(Graphics2D g2, AffineTransform xform, double minLength, double height,
+			long clipPosStart, long clipPosEnd, boolean showNotesOn, long minSongPos) {
 
-		boolean showNotesOn = isShowingNotesOn() && songPos >= 0;
-		long minSongPos = songPos;
+		List<CachedNote> notesOnList = null;
 
-		if (showNotesOn) {
-			// Highlight all notes that are on, or were on since we last painted (up to
-			// 100ms ago)
-			if (lastPaintedSongPos >= 0 && lastPaintedSongPos < songPos) {
-				minSongPos = Math.max(lastPaintedSongPos, songPos - 2 * SequencerWrapper.UPDATE_FREQUENCY_MICROS);
+		// Pass 1: Draw normal (playable) primary notes and all normal (playable) doublings.
+		// noteCache is sorted by startMicros ascending (events come from getEvents() sorted by tick).
+		for (CachedNote cn : noteCache) {
+			if (cn.startMicros > clipPosEnd) break;
+			if (cn.endMicros < clipPosStart) continue;
+
+			boolean isOn = showNotesOn && songPos >= cn.startMicros && minSongPos <= cn.endMicros;
+
+			if (isOn) {
+				// Defer to note-on highlight pass (takes priority over bad/extraBad too)
+				if (notesOnList == null) notesOnList = new ArrayList<>();
+				notesOnList.add(cn);
+			} else if (!cn.bad && !cn.extraBad) {
+				g2.setColor(cn.color);
+				fillNote(g2, cn.source, cn.noteId, minLength, height);
+			}
+
+			// Normal (non-bad, non-ool) doublings are drawn in pass 1 for all primaries,
+			// regardless of primary category, to match original rendering order.
+			if (cn.doubIds != null) {
+				boolean activeNote = isOn && sequencer.isNoteActive(cn.source.note.id);
+				for (int d = 0; d < cn.doubIds.length; d++) {
+					if (activeNote || cn.doubOutOfLimit[d] || cn.doubBad[d]) continue;
+					g2.setColor(cn.doubColors[d]);
+					fillNote(g2, cn.doubSrc[d], cn.doubIds[d], minLength, height);
+				}
 			}
 		}
 
-		lastPaintedMinSongPos = minSongPos;
-		lastPaintedSongPos = songPos;
+		// Pass 2: Draw bad primary notes on top of normal notes.
+		for (CachedNote cn : cacheBad) {
+			if (cn.startMicros > clipPosEnd) break;
+			if (cn.endMicros < clipPosStart) continue;
+			if (showNotesOn && songPos >= cn.startMicros && minSongPos <= cn.endMicros) continue;
+			g2.setColor(cn.color);
+			fillNote(g2, cn.source, cn.noteId, minLength, height);
+		}
 
-		List<NoteEvent> noteEvents = getEvents();
+		// Pass 3: Draw extra-bad primary notes (e.g., polyphony overflow) on top of bad notes.
+		for (CachedNote cn : cacheExtraBad) {
+			if (cn.startMicros > clipPosEnd) break;
+			if (cn.endMicros < clipPosStart) continue;
+			if (showNotesOn && songPos >= cn.startMicros && minSongPos <= cn.endMicros) continue;
+			g2.setColor(cn.color);
+			fillNote(g2, cn.source, cn.noteId, minLength, height);
+		}
 
-		if (notesOn != null)
-			notesOn.clear();
-		if (notesBad != null)
-			notesBad.clear();
-		if (notesBad0 != null)
-			notesBad0.clear();
-		if (notesBad1 != null)
-			notesBad1.clear();
-		if (notesBad2 != null)
-			notesBad2.clear();
-		if (notesBad3 != null)
-			notesBad3.clear();
-		if (notesExtraBad != null)
-			notesExtraBad.clear();
+		// Pass 4: Draw bad (out-of-range) doubling notes.
+		for (CachedNote cn : cacheWithDoublings) {
+			if (cn.startMicros > clipPosEnd) break;
+			if (cn.endMicros < clipPosStart) continue;
+			boolean isOn = showNotesOn && songPos >= cn.startMicros && minSongPos <= cn.endMicros;
+			boolean activeNote = isOn && sequencer.isNoteActive(cn.source.note.id);
+			for (int d = 0; d < cn.doubIds.length; d++) {
+				if (!cn.doubBad[d] || cn.doubOutOfLimit[d] || activeNote) continue;
+				g2.setColor(cn.doubColors[d]);
+				fillNote(g2, cn.doubSrc[d], cn.doubIds[d], minLength, height);
+			}
+		}
 
-		if (!isShowingNoteVelocity()) {
-			// Normal rendering
+		// Pass 5: Note-on highlights (border + bright fill) on top of everything.
+		paintNoteOnHighlights(g2, xform, minLength, height, notesOnList);
+	}
 
-			// Paint the playable notes and keep track of the currently sounding and
-			// unplayable notes
-			g2.setColor(noteColor.get());
-			for (int i = 0; i < noteEvents.size(); i++) {
-				NoteEvent ne = noteEvents.get(i);
+	/**
+	 * Draws the "note on" highlight border and fill for currently-playing notes.
+	 * Uses the pre-collected {@code notesOnList} built during {@link #paintNotesNormal}.
+	 *
+	 * <p>All active doublings (including out-of-limit ones) are drawn in highlight mode,
+	 * matching the behaviour of the original code which did not apply an isOutOfLimit filter
+	 * in the highlight pass.
+	 */
+	private void paintNoteOnHighlights(Graphics2D g2, AffineTransform xform, double minLength, double height,
+			List<CachedNote> notesOnList) {
+		if (notesOnList == null) return;
 
-				// Don't bother drawing the note if it's clipped
-				if (ne.getEndMicros() < clipPosStart || ne.getStartMicros() > clipPosEnd)
+		double noteOnOutlineWidthX = noteOnOutlineWidthPix / xform.getScaleX();
+		double noteOnOutlineWidthY = Math.abs(noteOnOutlineWidthPix / xform.getScaleY());
+		double noteOnExtraHeightY = Math.abs(noteOnExtraHeightPix / xform.getScaleY());
+
+		// Border (outline) pass
+		g2.setColor(noteOnBorder.get());
+		for (CachedNote cn : notesOnList) {
+			fillNote(g2, cn.source, cn.noteId, minLength, height,
+					noteOnOutlineWidthX, noteOnExtraHeightY + noteOnOutlineWidthY);
+			if (cn.doubIds != null) {
+				for (int d = 0; d < cn.doubIds.length; d++) {
+					fillNote(g2, cn.source, cn.doubIds[d], minLength, height,
+							noteOnOutlineWidthX, noteOnExtraHeightY + noteOnOutlineWidthY);
+				}
+			}
+		}
+
+		// Fill pass
+		g2.setColor(noteOnColor.get());
+		for (CachedNote cn : notesOnList) {
+			fillNote(g2, cn.source, cn.noteId, minLength, height, 0, noteOnExtraHeightY);
+			if (cn.doubIds != null) {
+				for (int d = 0; d < cn.doubIds.length; d++) {
+					fillNote(g2, cn.source, cn.doubIds[d], minLength, height, 0, noteOnExtraHeightY);
+				}
+			}
+		}
+	}
+
+	/** Draws all notes in velocity (dynamics) display mode. */
+	private void paintNotesVelocity(Graphics2D g2, long clipPosStart, long clipPosEnd, boolean showNotesOn,
+			long minSongPos, List<NoteEvent> noteEvents) {
+		// Render the volume of each note instead of its note value
+		Dynamics[] dynamicsValues = Dynamics.values();
+
+		// Render from highest dynamics to lowest.
+		// Out of range notes are rendered with (d == dynamicsValues.length) and (d ==
+		// -1)
+		for (int d = dynamicsValues.length; d >= -1; --d) {
+			for (NoteEvent ne : noteEvents) {
+				if (ne.getEndMicros() < clipPosStart || ne.getStartMicros() > clipPosEnd || !audibleNote(ne))
 					continue;
 
-				if (isNoteVisible(ne) && audibleNote(ne)) {
+				int[] sv = getSectionVelocity(ne);
+				int velocity = getSourceNoteVelocity(ne);
+				velocity = (int) ((velocity + deltaVolume + sv[0]) * 0.01f * (float) sv[1] * 0.01f * (float) sv[2]);
 
-					int noteId = transposeNote(ne.note.id, ne.getStartTick());
+				Dynamics dynamicsRenderedInThisPass = null;
+				if (d == dynamicsValues.length)
+					dynamicsRenderedInThisPass = Dynamics.MAXIMUM;
+				else if (d == -1)
+					dynamicsRenderedInThisPass = Dynamics.MINIMUM;
+				else
+					dynamicsRenderedInThisPass = dynamicsValues[d];
 
-					if (showNotesOn && songPos >= ne.getStartMicros() && minSongPos <= ne.getEndMicros()) {
-						if (notesOn == null)
-							notesOn = new BitSet(noteEvents.size());
-						notesOn.set(i);
-					} else if (isNoteExtraBad(ne, 0)) {
-						if (notesExtraBad == null)
-							notesExtraBad = new BitSet(noteEvents.size());
-						notesExtraBad.set(i);
-					} else if (!isNotePlayable(ne, 0)) {
-						if (notesBad == null)
-							notesBad = new BitSet(noteEvents.size());
-						notesBad.set(i);
-					} else {
-						g2.setColor(getNoteColor(ne));
-						fillNote(g2, ne, noteId, minLength, height);
-					}
-					for (int k = 0; k < 4; k++) {
-						if (!getSectionDoubling(ne.getStartTick())[k]) {
-							continue;
-						}
-						int addition = 12;
-						if (k == 0) {
-							addition = -24;
-						} else if (k == 1) {
-							addition = -12;
-						} else if (k == 3) {
-							addition = 24;
-						}
+				boolean isOutOfRange = (velocity < Dynamics.MINIMUM.midiVol)
+						|| (velocity > Dynamics.MAXIMUM.midiVol);
 
-						int noteIdDouble = transposeNote(ne.note.id + addition, ne.getStartTick());
-						
-						if (isOutOfLimit(noteIdDouble, ne.getStartTick())) {
-							continue;
-						}
-
-						if (showNotesOn && songPos >= ne.getStartMicros() && minSongPos <= ne.getEndMicros()
-								&& sequencer.isNoteActive(ne.note.id)) {
-							//
-						} else if (!isNotePlayable(ne, addition)) {
-							BitSet notesBadDouble;
-
-							if (k == 0) {
-								if (notesBad0 == null)
-									notesBad0 = new BitSet(noteEvents.size());
-								notesBadDouble = notesBad0;
-							} else if (k == 1) {
-								if (notesBad1 == null)
-									notesBad1 = new BitSet(noteEvents.size());
-								notesBadDouble = notesBad1;
-							} else if (k == 2) {
-								if (notesBad2 == null)
-									notesBad2 = new BitSet(noteEvents.size());
-								notesBadDouble = notesBad2;
-							} else {
-								if (notesBad3 == null)
-									notesBad3 = new BitSet(noteEvents.size());
-								notesBadDouble = notesBad3;
-							}
-
-							notesBadDouble.set(i);
-						} else {
-							NoteEvent nd = new NoteEvent(Note.fromId(noteIdDouble), ne.velocity, ne.getStartTick(),
-									ne.getEndTick(), ne.getTempoCache());
-
-							g2.setColor(getNoteColor(nd));
-							fillNote(g2, nd, noteIdDouble, minLength, height);
-						}
-					}
-				}
-			}
-
-			if (notesBad != null) {
-				for (int i = notesBad.nextSetBit(0); i >= 0; i = notesBad.nextSetBit(i + 1)) {
-					NoteEvent ne = noteEvents.get(i);
-					g2.setColor(getBadNoteColor(ne));
-					int noteId = transposeNote(ne.note.id, ne.getStartTick());
-					fillNote(g2, ne, noteId, minLength, height);
-				}
-			}
-			if (notesExtraBad != null) {
-				for (int i = notesExtraBad.nextSetBit(0); i >= 0; i = notesExtraBad.nextSetBit(i + 1)) {
-					NoteEvent ne = noteEvents.get(i);
-					g2.setColor(getExtraBadNoteColor(ne));
-					int noteId = transposeNote(ne.note.id, ne.getStartTick());
-					fillNote(g2, ne, noteId, minLength, height);
-				}
-			}
-			if (notesBad0 != null) {
-				for (int i = notesBad0.nextSetBit(0); i >= 0; i = notesBad0.nextSetBit(i + 1)) {
-					NoteEvent ne = noteEvents.get(i);
-					NoteEvent nd = new NoteEvent(Note.fromId(ne.note.id - 24), ne.velocity, ne.getStartTick(),
-							ne.getEndTick(), ne.getTempoCache());
-					g2.setColor(getBadNoteColor(nd));
-					int noteId = transposeNote(nd.note.id, nd.getStartTick());
-					fillNote(g2, nd, noteId, minLength, height);
-				}
-			}
-			if (notesBad1 != null) {
-				for (int i = notesBad1.nextSetBit(0); i >= 0; i = notesBad1.nextSetBit(i + 1)) {
-					NoteEvent ne = noteEvents.get(i);
-					NoteEvent nd = new NoteEvent(Note.fromId(ne.note.id - 12), ne.velocity, ne.getStartTick(),
-							ne.getEndTick(), ne.getTempoCache());
-					g2.setColor(getBadNoteColor(nd));
-					int noteId = transposeNote(nd.note.id, nd.getStartTick());
-					fillNote(g2, nd, noteId, minLength, height);
-				}
-			}
-			if (notesBad2 != null) {
-				for (int i = notesBad2.nextSetBit(0); i >= 0; i = notesBad2.nextSetBit(i + 1)) {
-					NoteEvent ne = noteEvents.get(i);
-					NoteEvent nd = new NoteEvent(Note.fromId(ne.note.id + 12), ne.velocity, ne.getStartTick(),
-							ne.getEndTick(), ne.getTempoCache());
-					g2.setColor(getBadNoteColor(nd));
-					int noteId = transposeNote(nd.note.id, nd.getStartTick());
-					fillNote(g2, nd, noteId, minLength, height);
-				}
-			}
-			if (notesBad3 != null) {
-				for (int i = notesBad3.nextSetBit(0); i >= 0; i = notesBad3.nextSetBit(i + 1)) {
-					NoteEvent ne = noteEvents.get(i);
-					NoteEvent nd = new NoteEvent(Note.fromId(ne.note.id + 24), ne.velocity, ne.getStartTick(),
-							ne.getEndTick(), ne.getTempoCache());
-					g2.setColor(getBadNoteColor(nd));
-					int noteId = transposeNote(nd.note.id, nd.getStartTick());
-					fillNote(g2, nd, noteId, minLength, height);
-				}
-			}
-
-			if (notesOn != null) {
-				double noteOnOutlineWidthX = noteOnOutlineWidthPix / xform.getScaleX();
-				double noteOnOutlineWidthY = Math.abs(noteOnOutlineWidthPix / xform.getScaleY());
-				double noteOnExtraHeightY = Math.abs(noteOnExtraHeightPix / xform.getScaleY());
-
-				g2.setColor(noteOnBorder.get());
-				for (int i = notesOn.nextSetBit(0); i >= 0; i = notesOn.nextSetBit(i + 1)) {
-					NoteEvent ne = noteEvents.get(i);
-					int noteId = transposeNote(ne.note.id, ne.getStartTick());
-
-					fillNote(g2, noteEvents.get(i), noteId, minLength, height, noteOnOutlineWidthX,
-							noteOnExtraHeightY + noteOnOutlineWidthY);
-
-					for (int k = 0; k < 4; k++) {
-						if (!getSectionDoubling(ne.getStartTick())[k]) {
-							continue;
-						}
-						int addition = 12;
-						if (k == 0) {
-							addition = -24;
-						} else if (k == 1) {
-							addition = -12;
-						} else if (k == 3) {
-							addition = 24;
-						}
-
-						int noteIdDouble = transposeNote(ne.note.id + addition, ne.getStartTick());
-
-						fillNote(g2, ne, noteIdDouble, minLength, height, noteOnOutlineWidthX,
-								noteOnExtraHeightY + noteOnOutlineWidthY);
-					}
-				}
-
-				g2.setColor(noteOnColor.get());
-				for (int i = notesOn.nextSetBit(0); i >= 0; i = notesOn.nextSetBit(i + 1)) {
-					NoteEvent ne = noteEvents.get(i);
-					int noteId = transposeNote(ne.note.id, ne.getStartTick());
-
-					fillNote(g2, noteEvents.get(i), noteId, minLength, height, 0, noteOnExtraHeightY);
-
-					for (int k = 0; k < 4; k++) {
-						if (!getSectionDoubling(ne.getStartTick())[k]) {
-							continue;
-						}
-						int addition = 12;
-						if (k == 0) {
-							addition = -24;
-						} else if (k == 1) {
-							addition = -12;
-						} else if (k == 3) {
-							addition = 24;
-						}
-
-						int noteIdDouble = transposeNote(ne.note.id + addition, ne.getStartTick());
-
-						fillNote(g2, ne, noteIdDouble, minLength, height, 0, noteOnExtraHeightY);
-					}
-				}
-			}
-		} else {
-			// Render the volume of each note instead of its note value
-			Dynamics[] dynamicsValues = Dynamics.values();
-
-			// Render from highest dynamics to lowest.
-			// Out of range notes are rendered with (d == dynamicsValues.length) and (d ==
-			// -1)
-			for (int d = dynamicsValues.length; d >= -1; --d) {
-				for (NoteEvent ne : noteEvents) {
-					if (ne.getEndMicros() < clipPosStart || ne.getStartMicros() > clipPosEnd || !audibleNote(ne))
+				// Note that we're rendering the "above max" dynamics in the *second* pass
+				// (the first is d == dynamicsValues.length). This lets us render those bad
+				// notes on top and makes them more visible.
+				if (d == dynamicsValues.length - 1) {
+					// Only rendering notes where (velocity > Dynamics.MAXIMUM.midiVol) in this pass
+					if (!(velocity > Dynamics.MAXIMUM.midiVol))
 						continue;
-
-					int[] sv = getSectionVelocity(ne);
-					int velocity = getSourceNoteVelocity(ne);
-					velocity = (int) ((velocity + deltaVolume + sv[0]) * 0.01f * (float) sv[1] * 0.01f * (float) sv[2]);
-
-					Dynamics dynamicsRenderedInThisPass = null;
-					if (d == dynamicsValues.length)
-						dynamicsRenderedInThisPass = Dynamics.MAXIMUM;
-					else if (d == -1)
-						dynamicsRenderedInThisPass = Dynamics.MINIMUM;
-					else
-						dynamicsRenderedInThisPass = dynamicsValues[d];
-
-					boolean isOutOfRange = (velocity < Dynamics.MINIMUM.midiVol)
-							|| (velocity > Dynamics.MAXIMUM.midiVol);
-
-					// Note that we're rendering the "above max" dynamics in the *second* pass
-					// (the first is d == dynamicsValues.length). This lets us render those bad
-					// notes on top and makes them more visible.
-					if (d == dynamicsValues.length - 1) {
-						// Only rendering notes where (velocity > Dynamics.MAXIMUM.midiVol) in this pass
-						if (!(velocity > Dynamics.MAXIMUM.midiVol))
-							continue;
-					} else if (d == -1) {
-						// Only rendering notes where (velocity < Dynamics.MINIMUM.midiVol) in this pass
-						if (!(velocity < Dynamics.MINIMUM.midiVol))
-							continue;
-					} else if (isOutOfRange || Dynamics.fromMidiVelocity(velocity) != dynamicsRenderedInThisPass) {
-						// Only rendering notes that have the particular velocity in this pass
+				} else if (d == -1) {
+					// Only rendering notes where (velocity < Dynamics.MINIMUM.midiVol) in this pass
+					if (!(velocity < Dynamics.MINIMUM.midiVol))
 						continue;
-					}
+				} else if (isOutOfRange || Dynamics.fromMidiVelocity(velocity) != dynamicsRenderedInThisPass) {
+					// Only rendering notes that have the particular velocity in this pass
+					continue;
+				}
 
-					if (isNoteVisible(ne)) {
-						setColorAndFillVelocity(g2, showNotesOn, minSongPos, ne, dynamicsRenderedInThisPass,
-								isOutOfRange);
-					}
+				if (isNoteVisible(ne)) {
+					setColorAndFillVelocity(g2, showNotesOn, minSongPos, ne, dynamicsRenderedInThisPass,
+							isOutOfRange);
 				}
 			}
 		}
-
-		g2.setTransform(xformSav);
-		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, hintAntialiasSav);
 	}
 
 	protected List<Pair<Long, Long>> getMicrosModified(long from, long to) {
@@ -1121,19 +1389,19 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 	protected Float getLastBar() {
 		return null;
 	}
-	
+
 	protected Float getFirstBar() {
 		return null;
 	}
-	
+
 	protected Long getLastBarTick() {
 		return null;
 	}
-	
+
 	protected Long getFirstBarTick() {
 		return null;
 	}
-	
+
 	protected boolean isActiveTrack() {
 		return false;
 	}

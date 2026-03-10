@@ -128,7 +128,10 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
 			public void onEvent(AbcSongEvent e) {
 				if (e.getProperty().equals(AbcSongProperty.HIDE_EDITS_UPDATE) || e.getProperty().equals(AbcSongProperty.TUNE_EDIT)) {
 					refreshWanted = true;
-					if (tempoGraph != null) tempoGraph.repaint();
+					if (tempoGraph != null) {
+						tempoGraph.invalidateNoteCache();
+						tempoGraph.repaint();
+					}
 				}
 			}
 		};
@@ -181,7 +184,10 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
 			this.abcPreviewMode = abcPreviewMode;
 			updateTempoLabel();
 		}
-		if (tempoGraph != null) tempoGraph.repaint();
+		if (tempoGraph != null) {
+			tempoGraph.invalidateNoteCache();
+			tempoGraph.repaint();
+		}
 	}
 
     @Override
@@ -249,6 +255,8 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
 		}
 
 		private void recalcTempoEvents() {
+			// Underlying events list is being rebuilt; the note render cache must follow.
+			invalidateNoteCache();
 			// Make fake note events for every tempo event
 			events = new ArrayList<>();
 			Collection<TimingInfoEvent> events2 = abcSong.getTimingInfoByTick();
