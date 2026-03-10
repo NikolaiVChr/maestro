@@ -189,6 +189,7 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
         if (histogram != null) {
             if (histogram.isDirty()) {
                 histogram.sumUp(abcSong);
+                histoGraph.invalidateNoteCache();
             }
             int notes = histogram.get(abcSequencer.getThumbPosition());// Must be abcSeq, due to tuneeditor can change micros from this call
             currentCountLabel.setText(UIText.get("maestro.polyphony.notes.peak", notes,histogram.max()));
@@ -225,10 +226,10 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 			
 			setOctaveLinesVisible(false);
 			setHistogramThresholdLinesVisible(true);
-			setNoteColor(ColorTable.DISSONANCE_FEW);
-			setBadNoteColor(ColorTable.DISSONANCE_WARNING);
-			setExtraBadNoteColor(ColorTable.DISSONANCE_SEVERE);
-			setNoteOnColor(ColorTable.DISSONANCE_ON);
+			setNoteColor(ColorTable.NOTE_POLYPHONY);
+			setBadNoteColor(ColorTable.NOTE_POLYPHONY_WARNING);
+			setExtraBadNoteColor(ColorTable.NOTE_POLYPHONY_OVER);
+			setNoteOnColor(ColorTable.NOTE_POLYPHONY_ON);
 			setNoteOnExtraHeightPix(0);
 			setNoteOnOutlineWidthPix(0);
             setToolTipText(UIText.get("maestro.polyphony"));
