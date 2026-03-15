@@ -42,6 +42,7 @@ Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
 Version 4.6.12
+- When zoom vertically the note heights will now also zoom.
 - Major backend rework of note painting, it now have significant less CPU and GPU usage.
 - Fixed that loading in a 15+ part abc song into Maestro would fail with exception.
 - Fixed that sometimes when resizing maestro the note graph zoom lvl did not match what it was before resizing.
