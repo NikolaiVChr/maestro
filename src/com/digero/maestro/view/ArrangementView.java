@@ -2,14 +2,7 @@ package com.digero.maestro.view;
 
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
-import java.awt.event.ActionListener;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
-import java.awt.event.InputEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.event.MouseWheelEvent;
+import java.awt.event.*;
 import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
@@ -237,13 +230,14 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 			float oldHZoom = hZoom;
             double normalizedSliderValue = hZoomSlider.getValue() / (double) ZOOM_SLIDER_MAX;
 			hZoom = Util.map((float)Math.pow(normalizedSliderValue,4d), 0.0f, 1.0f, 1.f, adjustedZoom);
+			//System.out.println("hZoomSlider - value: " + hZoomSlider.getValue());
 			if (hZoom != oldHZoom) {
 				calcZoomTarget();
 				updateZoom();
 				if (mousePointTrack != null) mousePointTrack.x = (int) (mousePointTrack.x * hZoom / oldHZoom);
 				scrollToPosition(mouseHzooming);
 				repaintAfterZoom();
-	//			System.out.println("hz: " + hZoom);
+				//System.out.println("hZoomSlider - hZoom: " + hZoom);
 			}
 		});
 		
@@ -413,7 +407,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		controlPanel.setBackground(ColorTable.CENTER_BACKGROUND.get());
 		
 		graphLayout = new GraphLayout(TrackPanel.calculateTrackDims().rowHeight + 1, controlLayout);
-		graphLayout.setViewport(noteGraphScrollPane.getViewport());
+		graphLayout.setViewport(noteGraphScrollPane.getViewport(), this);
 		noteGraphPanel.setLayout(graphLayout);
 		noteGraphPanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0)); // top, left, bottom, right
 
@@ -1003,8 +997,8 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		controlLayout.setZoomVertical(vZoom);
 	}
 
-	private void repaintAfterZoom() {
-		//Note invalidate does not invalidate sub components, hence why its called on the panels directly
+	void repaintAfterZoom() {
+		//Note: Invalidate does not invalidate subcomponents, hence why it's called on the panels directly
 		noteGraphPanel.invalidate();
 		controlPanel.invalidate();
 		revalidate();

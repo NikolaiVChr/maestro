@@ -41,6 +41,11 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
+Version 4.6.12
+- Major backend rework of note painting, it now have significant less CPU and GPU usage.
+- Fixed that loading in a 15+ part abc song into Maestro would fail with exception.
+- Fixed that sometimes when resizing maestro the note graph zoom lvl did not match what it was before resizing.
+
 Version 4.6.11
 - Stop setting project modified when reduce file size is toggled in options.
 - Fixed that when auto-exporting the first song, might fail to export.

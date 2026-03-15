@@ -5,6 +5,9 @@ import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.Insets;
 import java.awt.LayoutManager;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,7 +19,8 @@ public class GraphLayout implements LayoutManager {
 	private float zoomH = 1.0f;
 	private final ControlLayout controlLayout;
 	private JViewport port;
-	
+	private ComponentListener portListener;
+
 	/**
 	 * Make sure controlLayout and this layout have same number of components.
 	 * They should also be added on correct order so they match up to each other.
@@ -33,8 +37,20 @@ public class GraphLayout implements LayoutManager {
 		this.controlLayout = controlLayout;
 	}
 	
-	public void setViewport(JViewport port) {
+	public void setViewport(JViewport port, final ArrangementView mainView) {
+		if (this.port != null && portListener != null) {
+			this.port.removeComponentListener(portListener);
+		}
 		this.port = port;
+
+		portListener = new ComponentAdapter() {
+			@Override
+			public void componentResized(ComponentEvent e) {
+				// Force to recalculate when the viewport changes
+				mainView.repaintAfterZoom();
+			}
+		};
+		this.port.addComponentListener(portListener);
 	}
 
 	@Override
@@ -89,8 +105,8 @@ public class GraphLayout implements LayoutManager {
 
 		int width = (int) (port.getExtentSize().width * zoomH);
 
-		//System.out.println(" Container: "+target.getBounds().width);
-		//System.out.println(" Width:     "+width);
+		//System.out.println("GraphLayout - Container:  "+target.getBounds().width);
+		//System.out.println("GraphLayout - Port Width: "+width);
 		
 		for (int i = 0; i < components.size(); i++) {
 			Component c = components.get(i);
