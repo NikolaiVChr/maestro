@@ -41,6 +41,9 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
+Version 4.6.13
+- The abc save-as window will now show the path as title.
+
 Version 4.6.12
 - When zoom vertically the note heights will now also zoom.
 - Major backend rework of note painting, it now have significant less CPU and GPU usage.
