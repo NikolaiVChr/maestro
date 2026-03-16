@@ -131,6 +131,27 @@ public final class Util {
 
 		return fit;
 	}
+
+	/**
+	 * Shortens an absolute path to a maximum length by replacing the middle with "...".
+	 * @param path The absolute path to shorten.
+	 * @param maxLength The maximum allowed length.
+	 * @return The shortened path
+	 */
+	public static String ellipsis(String path, int maxLength) {
+		if (path == null || path.length() <= maxLength) {
+			return path;
+		}
+
+		String ellipsis = "...";
+		int charsToKeep = maxLength - ellipsis.length();
+
+		// Weight the truncation so we keep more of the end (filename) than the beginning (drive)
+		int keepFront = (int) (charsToKeep * 0.3);
+		int keepBack = charsToKeep - keepFront;
+
+		return path.substring(0, keepFront) + ellipsis + path.substring(path.length() - keepBack);
+	}
 	
     /**
      *

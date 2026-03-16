@@ -16,6 +16,8 @@ import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
@@ -3126,6 +3128,17 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		JFileChooser jfc = new JFileChooser();
 		jfc.setFileFilter(fileFilter);
 		jfc.setSelectedFile(defaultFile);
+
+		jfc.setDialogTitle(UIText.get("maestro.save.to.0", Util.ellipsis(jfc.getCurrentDirectory().getAbsolutePath(), 64)));
+		jfc.addPropertyChangeListener(JFileChooser.DIRECTORY_CHANGED_PROPERTY, new PropertyChangeListener() {
+			@Override
+			public void propertyChange(PropertyChangeEvent evt) {
+				File currentDir = (File) evt.getNewValue();
+				if (currentDir != null) {
+					jfc.setDialogTitle(UIText.get("maestro.save.to.0", Util.ellipsis(jfc.getCurrentDirectory().getAbsolutePath(), 64)));
+				}
+			}
+		});
 
 		while (true) {
 			int result = jfc.showSaveDialog(this);
