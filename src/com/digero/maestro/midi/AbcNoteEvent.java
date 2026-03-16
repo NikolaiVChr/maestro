@@ -10,7 +10,8 @@ public class AbcNoteEvent extends NoteEvent {
 	public AbcNoteEvent tiesFrom = null;
 	public AbcNoteEvent tiesTo = null;
 	
-	// These 3 is used by organic v2:
+	// These 2 is used by organic. For non-organic they are only populated
+	// for ExportTrackInfo events at end of preview generation:
 	public long startABCMicros;
 	public long endABCMicros;
 	
@@ -152,5 +153,21 @@ public class AbcNoteEvent extends NoteEvent {
 			c.endABCMicros = this.endABCMicros;
 			return c;
 		}
+	}
+
+	/**
+	 * Must ONLY be used from notegraph
+	 */
+	@Override
+	public long getStartMicros() {
+		return startABCMicros;
+	}
+
+	/**
+	 * Must ONLY be used from notegraph
+	 */
+	@Override
+	public long getEndMicros() {
+		return endABCMicros;
 	}
 }

@@ -8,24 +8,10 @@ import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.NavigableMap;
-import java.util.NavigableSet;
-import java.util.TreeMap;
-import java.util.TreeSet;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MidiEvent;
@@ -41,14 +27,9 @@ import com.digero.common.util.Util;
 import com.digero.common.view.UIText;
 import com.digero.maestro.MaestroMain;
 import com.digero.maestro.abc.QuantizedTimingInfo.TimingInfoEvent;
-import com.digero.maestro.midi.AbcNoteEvent;
-import com.digero.maestro.midi.BentAbcNoteEvent;
-import com.digero.maestro.midi.BentMidiNoteEvent;
-import com.digero.maestro.midi.Chord;
-import com.digero.maestro.midi.ChordOrganic;
-import com.digero.maestro.midi.MidiNoteEvent;
-import com.digero.maestro.midi.TrackInfo;
+import com.digero.maestro.midi.*;
 import com.digero.maestro.view.CountIn;
+import com.digero.maestro.view.GenericTrackInfo;
 import com.digero.maestro.view.MiscSettings;
 import com.digero.maestro.view.ProjectFrame;
 
@@ -261,7 +242,7 @@ public class AbcExporter {
 		List<Chord> chords = chordsMade.get(part);
 
 		Triple<Integer, Integer, Long> trackNumber = exportPartToMidi(part, sequence, chords, pan, useLotroInstruments, countIn);
-		/*
+
 		List<AbcNoteEvent> noteEvents = new ArrayList<>(chords.size());
 		
 		for (Chord chord : chords) {
@@ -274,6 +255,7 @@ public class AbcExporter {
 
 				// Convert tied notes into a single note event
 				if (ne.tiesTo != null) {
+                    ne.endABCMicros = ne.getTieEnd().endABCMicros;//must be before setEndTick() due to an assert inside getTieEnd()
 					ne.setEndTick(ne.getTieEnd().getEndTick());
 					ne.tiesTo = null;
 					// Not fixing up the ne.tiesTo.tiesFrom pointer since we that for the
@@ -284,9 +266,8 @@ public class AbcExporter {
 				noteEvents.add(ne);
 			}
 		}
-		*/
 
-		return new ExportTrackInfo(trackNumber.first, part.origPart, null, trackNumber.second,
+		return new ExportTrackInfo(trackNumber.first, part.origPart, noteEvents, trackNumber.second,
 				part.getInstrument().midi.id(), trackNumber.third, part.numberOfExportedNotes, part.numberOfRemovedNotesForSafety,
                 part.getMaxPoly(), part.numberOfRemovedNotesFromFitting, part.numberOfRemovedNotesZeros, part.numberOfRemovedNotesFromPruning,
                 part.getPanEvent());
@@ -394,6 +375,13 @@ public class AbcExporter {
                     dynamics = Dynamics.DEFAULT;
                 for (int j = 0; j < chord.size(); j++) {
                     AbcNoteEvent ne = chord.get(j);
+
+                    if (!organic) {
+                        // Need these for ExportTrackInfo. Note that delay is not included.
+                        ne.startABCMicros = qtm.tickToMicrosABC(ne.getStartTick(), part);
+                        ne.endABCMicros = qtm.tickToMicrosABC(ne.getEndTick(), part);
+                    }
+
                     // Skip rests and notes that are the continuation of a tied note
                     if (ne.note == Note.REST || ne.tiesFrom != null)
                         continue;
@@ -5321,7 +5309,7 @@ public class AbcExporter {
 
 			long maxNoteEndTick = qtm.quantize(
 					qtm.microsToTick(
-							ne.getStartMicros() + qtm.multiplyByExportTempoFactor(TimingInfo.LONGEST_NOTE_MICROS)),
+							qtm.tickToMicros(ne.getStartTick()) + qtm.multiplyByExportTempoFactor(TimingInfo.LONGEST_NOTE_MICROS)),
 					part);
 			
 			// quantize:            tunedit + mixtimings 
@@ -6293,7 +6281,7 @@ public class AbcExporter {
 		}
 	}
 
-	public static class ExportTrackInfo {
+	public static class ExportTrackInfo implements GenericTrackInfo {
 		public final int trackNumber;
 		public final AbcPart part;
         public final int numberOfExportedNotes;
@@ -6303,13 +6291,15 @@ public class AbcExporter {
         public final int numberOfRemovedNotesFromPruning;
 		
 		//not sure what this used to be used for
-		//public final List<AbcNoteEvent> noteEvents;
+		public final List<AbcNoteEvent> noteEvents;
 		
 		public final Integer channel;
 		public final Integer patch;
 		public final long endOfTrack;
         public int maxPoly;
         public final MidiEvent panEvent;
+        public SequenceInfo seqInfo = null;
+        private final SortedSet<Integer> notesInUse = new TreeSet<>();
 
         public ExportTrackInfo(int trackNumber, AbcPart part, List<AbcNoteEvent> noteEvents, Integer channel, int patch, long endOfTrack,
                                int numberOfExportedNotes, int numberOfRemovedNotesForSafety, int maxPoly,
@@ -6319,7 +6309,7 @@ public class AbcExporter {
 			this.part = part;
             this.numberOfExportedNotes = numberOfExportedNotes;
             this.numberOfRemovedNotesForSafety = numberOfRemovedNotesForSafety;
-            //this.noteEvents = noteEvents;
+            this.noteEvents = noteEvents;
 			this.channel = channel;
 			this.patch = patch;
 			this.endOfTrack = endOfTrack;
@@ -6328,12 +6318,72 @@ public class AbcExporter {
             this.numberOfRemovedNotesZeros = numberOfRemovedNotesZeros;
             this.numberOfRemovedNotesFromPruning = numberOfRemovedNotesFromPruning;
             this.panEvent = panEvent;
+            if (noteEvents != null) {
+                for (NoteEvent ne : noteEvents) {
+                    notesInUse.add(ne.note.id);
+                }
+            }
 		}
+
+        @Override
+        public int getTrackNumber() {
+            // beware: this returns part number.
+            return part.getPartNumber();
+        }
+
+        @Override
+        public List<NoteEvent> getEvents() {
+            return Collections.unmodifiableList(noteEvents);
+        }
+
+        @Override
+        public boolean isDrumTrack() {
+            if (part == null) return false;//TODO: for abcToMidi store instrument in case part is null
+            return part.isDrumPart();
+        }
+
+        @Override
+        public SortedSet<Integer> getNotesInUse() {
+            return notesInUse;
+        }
+
+        @Override
+        public int getMinVelocity() {
+            return 0;
+        }
+
+        @Override
+        public int getMaxVelocity() {
+            return 127;
+        }
+
+        @Override
+        public String getName() {
+            if (part == null) return "Unset name";
+            return part.getTitle();
+        }
+
+        @Override
+        public String getInstrumentNames() {
+            if (part == null) return "Unset instrument";//TODO: for abcToMidi store instrumentname in case part is null
+            return part.getInstrument().getLocalFriendlyName();
+        }
+
+        @Override
+        public int getInstrumentExCount() {
+            return 0;
+        }
+
+        @Override
+        public SequenceInfo getSequenceInfo() {
+            return seqInfo;
+        }
 
         @Override
         public String toString() {
             String str = "";
-            str = part.getTitle()+": preview track number "+trackNumber;
+            if (part != null) str = part.getTitle()+": ";
+            str += "Preview track number "+trackNumber;
             return str;
         }
 	}

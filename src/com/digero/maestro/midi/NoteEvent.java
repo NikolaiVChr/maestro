@@ -80,6 +80,9 @@ public class NoteEvent implements Comparable<NoteEvent> {
 		return endTick - startTick;
 	}
 
+	/**
+	 * Must ONLY be used from notegraph
+	 */
 	public long getStartMicros() {
 		if (startMicrosCached == -1)
 			startMicrosCached = tempoCache.tickToMicros(startTick);
@@ -87,6 +90,9 @@ public class NoteEvent implements Comparable<NoteEvent> {
 		return startMicrosCached;
 	}
 
+	/**
+	 * Must ONLY be used from notegraph
+	 */
 	public long getEndMicros() {
 		if (endMicrosCached == -1)
 			endMicrosCached = tempoCache.tickToMicros(endTick);
@@ -94,6 +100,9 @@ public class NoteEvent implements Comparable<NoteEvent> {
 		return endMicrosCached;
 	}
 
+	/**
+	 * Must only be used from note graph
+	 */
 	public long getLengthMicros() {
 		return getEndMicros() - getStartMicros();
 	}

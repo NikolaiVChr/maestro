@@ -2815,6 +2815,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                     trackInfo.part.numberOfRemovedNotesFromFitting = trackInfo.numberOfRemovedNotesFromFitting;
                     trackInfo.part.setMaxPoly(trackInfo.maxPoly);
                     trackInfo.part.setPanEvent(trackInfo.panEvent);
+					trackInfo.seqInfo = previewSequenceInfo;
                     //System.out.println(trackInfo);
                 }
             }

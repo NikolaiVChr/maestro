@@ -677,7 +677,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	};
 
 	public List<MidiNoteEvent> getTrackEvents(int track) {
-		return abcSong.getSequenceInfo().getTrackInfo(track).getEvents();
+		return abcSong.getSequenceInfo().getTrackInfo(track).getMidiEvents();
 	}
 
 	/**

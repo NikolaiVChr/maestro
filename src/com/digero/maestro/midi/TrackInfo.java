@@ -28,12 +28,13 @@ import com.digero.common.midi.Note;
 import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.midi.TimeSignature;
 import com.digero.common.util.Util;
+import com.digero.maestro.view.GenericTrackInfo;
 import com.digero.maestro.view.MiscSettings;
 
 /**
  * Create NoteEvents from MIDI note ON/OFF messages
  */
-public class TrackInfo implements MidiConstants {
+public class TrackInfo implements MidiConstants, GenericTrackInfo {
 	private static final Logger log = Logger.getLogger("import.midi.track");
 	
 	private SequenceInfo sequenceInfo;
@@ -407,10 +408,12 @@ public class TrackInfo implements MidiConstants {
 		instruments = Collections.unmodifiableSet(instruments);
 	}
 
+	@Override
 	public SequenceInfo getSequenceInfo() {
 		return sequenceInfo;
 	}
 
+	@Override
 	public int getTrackNumber() {
 		return trackNumber;
 	}
@@ -419,6 +422,7 @@ public class TrackInfo implements MidiConstants {
 		return name != null;
 	}
 
+	@Override
 	public String getName() {
 		if (name == null)
 			return "Track " + trackNumber;
@@ -438,12 +442,18 @@ public class TrackInfo implements MidiConstants {
 		return getName();
 	}
 
+	@Override
 	public boolean isDrumTrack() {
 		return isDrumTrack;
 	}
 
 	/** Gets an unmodifiable list of the note events in this track. */
-	public List<MidiNoteEvent> getEvents() {
+	@Override
+	public List<NoteEvent> getEvents() {
+		return Collections.unmodifiableList(noteEvents);
+	}
+
+	public List<MidiNoteEvent> getMidiEvents() {
 		return noteEvents;
 	}
 
@@ -451,6 +461,7 @@ public class TrackInfo implements MidiConstants {
 		return !noteEvents.isEmpty();
 	}
 
+	@Override
 	public SortedSet<Integer> getNotesInUse() {
 		return notesInUse;
 	}
@@ -466,6 +477,7 @@ public class TrackInfo implements MidiConstants {
 		return getEventCount() + " notes";
 	}
 
+	@Override
 	public String getInstrumentNames() {
 		if (isDrumTrack) {
 
@@ -533,7 +545,8 @@ public class TrackInfo implements MidiConstants {
 	public int getInstrumentCount() {
 		return instruments.size();
 	}
-	
+
+	@Override
 	public int getInstrumentExCount() {
 		return instrumentExtensions.size();
 	}
@@ -542,10 +555,12 @@ public class TrackInfo implements MidiConstants {
 		return instruments;
 	}
 
+	@Override
 	public int getMinVelocity() {
 		return minVelocity;
 	}
 
+	@Override
 	public int getMaxVelocity() {
 		return maxVelocity;
 	}
