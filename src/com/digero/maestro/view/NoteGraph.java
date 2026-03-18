@@ -937,6 +937,8 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 		} else {
 			// Velocity mode: direct rendering, no bitmap (only active while dragging the volume bar)
 			g2.transform(xform);
+			paintBarLines(g2, xform, clipPosStart, clipPosEnd);
+			paintOctaveLines(g2, xform);
 			g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 			paintNotesVelocity(g2, clipPosStart, clipPosEnd, showNotesOn, minSongPos, getEvents());
 		}
