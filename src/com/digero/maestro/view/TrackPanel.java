@@ -683,7 +683,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		switch (abcPart.getInstrument()) {
 			case BASIC_CLARINET:
 				int g3count = 0;
-				for (MidiNoteEvent ne : trackInfo.getEvents()) {
+				for (NoteEvent ne : trackInfo.getEvents()) {
 					if (!(ne instanceof BentMidiNoteEvent)) {
 						Note mn = abcPart.mapNote(trackInfo.getTrackNumber(), ne.note.id, ne.getStartTick());
 						if (mn != null && abcPart.shouldPlay(ne, trackInfo.getTrackNumber()) && mn == Note.G3) {
@@ -699,7 +699,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 				break;
 			case BASIC_PIBGORN:
 				int acount = 0;
-				for (MidiNoteEvent ne : trackInfo.getEvents()) {
+				for (NoteEvent ne : trackInfo.getEvents()) {
 					if (!(ne instanceof BentMidiNoteEvent)) {
 						Note mn = abcPart.mapNote(trackInfo.getTrackNumber(), ne.note.id, ne.getStartTick());
 						if (mn != null && abcPart.shouldPlay(ne, trackInfo.getTrackNumber())
@@ -716,7 +716,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 				break;
 			case BASIC_HARP:
 				int b4count = 0;
-				for (MidiNoteEvent ne : trackInfo.getEvents()) {
+				for (NoteEvent ne : trackInfo.getEvents()) {
 					if (!(ne instanceof BentMidiNoteEvent)) {
 						Note mn = abcPart.mapNote(trackInfo.getTrackNumber(), ne.note.id, ne.getStartTick());
 						if (mn != null && abcPart.shouldPlay(ne, trackInfo.getTrackNumber()) && mn == Note.B4) {
