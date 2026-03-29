@@ -2981,6 +2981,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			return;
 		}
 		String tempNote = "";
+		tempNote += "Source song:\n" + abcSong.getSourceFile().getAbsolutePath()+"\n\n";
 		tempNote += getTimingStats();
 		tempNote += checkDuplicatePartTitles();
 		tempNote += getNumberOfExportNotes();
