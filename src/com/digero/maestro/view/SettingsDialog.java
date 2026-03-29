@@ -455,12 +455,14 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 			return false;
 		}
 
+		/*
 		if (song != null && song.getParts() != null && !song.getParts().isEmpty()) {
 			for (AbcPart part : song.getParts()) {
 				// unlock all parts
 				part.setPartNumberManuallyAssigned(false, true);
 			}
 		}
+		*/
 
 		incrementComboBox.setSelectedItem(config.increment);
         orderCombo.setSelectedItem(config.orderOption);
