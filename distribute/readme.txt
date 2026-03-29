@@ -44,7 +44,7 @@ Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 Version 4.6.13
 - The abc save-as window will now show the path as title.
 - Re-added missing octave and bar lines to tracks when dragging volume slider.
-- When importing part numbering config, unlock all part numbers.
+- Added context menu to 'Lock' option. Right click to chose Lock/Unlock all.
 - Show full path of source song file in stats view.
 
 Version 4.6.12

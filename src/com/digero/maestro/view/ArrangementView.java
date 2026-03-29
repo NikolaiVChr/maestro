@@ -160,6 +160,44 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
                 abcPart.setPartNumberManuallyAssigned(numberLockedCheckBox.isSelected(), true);
             }
         });
+		numberLockedCheckBox.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mousePressed(MouseEvent e) {
+				showMenu(e);
+			}
+
+			@Override
+			public void mouseReleased(MouseEvent e) {
+				showMenu(e);
+			}
+
+			private void showMenu(MouseEvent e) {
+				if (e.isPopupTrigger() && abcPart != null) {
+					JPopupMenu menu = new JPopupMenu();
+
+					// Lock All Option
+					JMenuItem lockAll = new JMenuItem(UIText.get("maestro.menu.lock.all"));
+					lockAll.addActionListener(al -> setAllLocks(true));
+
+					// Unlock All Option
+					JMenuItem unlockAll = new JMenuItem(UIText.get("maestro.menu.unlock.all"));
+					unlockAll.addActionListener(al -> setAllLocks(false));
+
+					menu.add(lockAll);
+					menu.add(unlockAll);
+					menu.show(e.getComponent(), e.getX(), e.getY());
+				}
+			}
+
+			private void setAllLocks(boolean locked) {
+				if (abcPart == null) return;
+				for (AbcPart party : abcPart.getAbcSong().getParts()) {
+					party.setPartNumberManuallyAssigned(locked, false);
+				}
+				// I 'think' that we can get away with only notifying listeners of current part:
+				abcPart.notifyPartNumberManuallyAssigned();
+			}
+		});
 
 		numberSettingsButton = new JButton(IconLoader.getImageIcon("gear_16.png"));
 		numberSettingsButton.setMargin(new Insets(0, 0, 0, 0));
