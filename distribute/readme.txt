@@ -44,6 +44,7 @@ Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 Version 4.6.13
 - The abc save-as window will now show the path as title.
 - Re-added missing octave and bar lines to tracks when dragging volume slider.
+- When importing part numbering config, unlock all part numbers.
 
 Version 4.6.12
 - When zoom vertically the note heights will now also zoom.

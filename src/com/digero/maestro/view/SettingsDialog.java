@@ -33,13 +33,7 @@ import com.digero.common.util.Util;
 import com.digero.common.view.LinkButton;
 import com.digero.common.view.UIText;
 import com.digero.maestro.MaestroMain;
-import com.digero.maestro.abc.AbcMetadataSource;
-import com.digero.maestro.abc.AbcPartMetadataSource;
-import com.digero.maestro.abc.AbcSong;
-import com.digero.maestro.abc.ExportFilenameTemplate;
-import com.digero.maestro.abc.PartAutoNumberer;
-import com.digero.maestro.abc.PartNameTemplate;
-import com.digero.maestro.abc.PartNumberingConfig;
+import com.digero.maestro.abc.*;
 
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
@@ -191,8 +185,8 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 	}
 
     public void setVisible(boolean visible, AbcSong song) {
+		this.song = song;
         super.setVisible(visible);
-        this.song = song;
     }
 
     public void setVisible(boolean visible) {
@@ -459,6 +453,13 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 			JOptionPane.showMessageDialog(this, UIText.get("maestro.options.failed.to.load.part.numbering.config.0", e.getMessage()),
 					UIText.get("maestro.options.failed.to.load.part.numbering.config"), JOptionPane.ERROR_MESSAGE);
 			return false;
+		}
+
+		if (song != null && song.getParts() != null && !song.getParts().isEmpty()) {
+			for (AbcPart part : song.getParts()) {
+				// unlock all parts
+				part.setPartNumberManuallyAssigned(false, true);
+			}
 		}
 
 		incrementComboBox.setSelectedItem(config.increment);
