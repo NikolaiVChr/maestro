@@ -146,7 +146,9 @@ public class PartAutoNumberer {
         }
 
 		private void init(LotroInstrument instrument, int defaultValue) {
-			firstNumber.put(instrument, prefs.getInt(prefsKey(instrument), defaultValue));
+			int pNumber = prefs.getInt(prefsKey(instrument), defaultValue);
+			if (pNumber == 0) pNumber = incrementByTen ? 1 : 10;
+			firstNumber.put(instrument, pNumber);
 		}
 
 		private void init(LotroInstrument instruments, LotroInstrument copyDefaultFrom) {

@@ -409,7 +409,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		private LotroInstrument instrument;
 
 		public InstrumentSpinner(LotroInstrument instrument) {
-			super(new SpinnerNumberModel(partNumbererSettings.getFirstNumber(instrument), 0,
+			super(new SpinnerNumberModel(partNumbererSettings.getFirstNumber(instrument), 1,
 					partNumbererSettings.isIncrementByTen() ? 10 : 999, 1));
 
 			this.instrument = instrument;

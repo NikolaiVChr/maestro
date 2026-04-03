@@ -268,6 +268,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		timeSignature = abcInfo.getTimeSignature();
 
 		int t = 0;
+		// Since parts with zero part numbers will be assigned 999,
+		// and 999 could be assigned already, we iterate till we find a free number:
+		Set<Integer> pNumbers = new HashSet<>();
 		for (TrackInfo trackInfo : sequenceInfo.getTrackList()) {
 			if (!trackInfo.hasEvents()) {
 				t++;
@@ -277,7 +280,16 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			AbcPart newPart = new AbcPart(this);
 
 			newPart.setTitle(abcInfo.getPartName(t));
-			newPart.setPartNumber(abcInfo.getPartNumber(t));
+			int pNumber = abcInfo.getPartNumber(t);
+			if (pNumber == 0) pNumber = 999;
+			while (pNumbers.contains(pNumber)) {
+				pNumber--;
+				if (pNumber < 1) {
+					throw new RuntimeException("Part number error");
+				}
+			}
+			pNumbers.add(pNumber);
+			newPart.setPartNumber(pNumber);
             newPart.setPartNumberManuallyAssigned(true, true);// what is loaded from abc we consider manually assigned numbers
 			newPart.setTrackEnabled(t, true);
 			newPart.setUserPan(abcInfo.getUserPan(t));
@@ -668,6 +680,20 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			parts.add(part);
 			part.convertSectionsToLongTrees();
 			part.addAbcListener(abcPartListener);
+		}
+		// Since parts with zero part numbers will be assigned 999,
+		// and 999 could be assigned already, we iterate till we find a free number:
+		Set<Integer> pNumbers = new HashSet<>();
+		for (AbcPart part : parts) {
+			int pN = part.getPartNumber();
+			while (pNumbers.contains(pN)) {
+				pN--;
+				if (pN < 1) {
+					throw new RuntimeException("Part number error");
+				}
+				part.setPartNumber(pN);
+			}
+			pNumbers.add(pN);
 		}
         partAutoNumberer.assignManualPartNumber(parts);// convert all null values to booleans.
 		if (autoSorted) {

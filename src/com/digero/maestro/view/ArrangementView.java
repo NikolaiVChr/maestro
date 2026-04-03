@@ -141,7 +141,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		this.abcSequencer = abcSequencer;
 		this.partAutoNumberer = partAutoNumberer;
 
-		numberSpinnerModel = new SpinnerNumberModel(0, 0, 999,
+		numberSpinnerModel = new SpinnerNumberModel(1, 1, 999,
                 partAutoNumberer.getIncrement());
 		numberSpinner = new JSpinner(numberSpinnerModel);
 		numberSpinner.addChangeListener(e -> {
@@ -826,7 +826,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 			hZoomSlider.setEnabled(false);
 			vZoomSlider.setEnabled(false);
 
-			numberSpinner.setValue(0);
+			numberSpinner.setValue(1);
             numberLockedCheckBox.setSelected(false);
 			nameTextField.setText("");
 			instrumentComboBox.setSelectedItem(LotroInstrument.DEFAULT_INSTRUMENT);

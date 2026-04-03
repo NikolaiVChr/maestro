@@ -41,6 +41,9 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
+Version 4.6.14
+- Fixed that Maestro allowed zero part number.
+
 Version 4.6.13
 - The abc save-as window will now show the path as title.
 - Re-added missing octave and bar lines to tracks when dragging volume slider.

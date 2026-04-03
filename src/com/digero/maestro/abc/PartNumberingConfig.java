@@ -86,7 +86,9 @@ public class PartNumberingConfig {
 
 				if (instrument != null) {
 					try {
-						map.put(instrument, Integer.parseInt(value));
+						int firstNumber = Integer.parseInt(value);
+						if (firstNumber == 0) firstNumber = increment == 10 ? 1 : 10;// increment would normally have been init at this point
+						map.put(instrument, firstNumber);
 					} catch (NumberFormatException nfe) {
 						throw new FileParseException("Invalid value " + value + ". Should be a number", fn,
 								lineNo);

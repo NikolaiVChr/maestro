@@ -397,6 +397,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	private void initFromXml(Element ele, Version fileVersion) throws FileParseException {
 		try {
 			partNumber = SaveUtil.parseValue(ele, "@id", partNumber);
+			if (partNumber == 0) partNumber = 999;
             String lock = SaveUtil.parseValue(ele, "@userAssignedId", "null");
             if (lock.equals("null")) {
                 partNumberManuallyModified = null;
