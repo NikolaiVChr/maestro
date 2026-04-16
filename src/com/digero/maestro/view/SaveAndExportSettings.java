@@ -11,7 +11,7 @@ public class SaveAndExportSettings {
 	public boolean deleteMinimalNotes = false;
 	public boolean useRestsInChords = false;
     public boolean warnOnExportOfSamePartNames = true;
-    public boolean reducedFilesize = true;
+    public boolean reducedFilesize = false;
 	public String defaultTiming = ProjectFrame.TimingEnum.MIX.settingsString;
 	// public boolean showPruned = false;
 	public boolean convertABCStringsToBasicAscii = true;
