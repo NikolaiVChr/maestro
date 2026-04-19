@@ -16,6 +16,7 @@ public class SaveAndExportSettings {
 	// public boolean showPruned = false;
 	public boolean convertABCStringsToBasicAscii = true;
 	public boolean countUpLyrics = false;
+	public boolean lyricsTimestampEveryLine = false;
 
 	private final Preferences prefs;
 
@@ -35,6 +36,7 @@ public class SaveAndExportSettings {
 				convertABCStringsToBasicAscii);
         reducedFilesize = prefs.getBoolean("reducedFilesize", reducedFilesize);
 		countUpLyrics = prefs.getBoolean("countUpLyrics", countUpLyrics);
+		lyricsTimestampEveryLine = prefs.getBoolean("lyricsTimestampEveryLine", lyricsTimestampEveryLine);
 	}
 
 	public SaveAndExportSettings(SaveAndExportSettings that) {
@@ -54,6 +56,7 @@ public class SaveAndExportSettings {
 		convertABCStringsToBasicAscii = that.convertABCStringsToBasicAscii;
         reducedFilesize = that.reducedFilesize;
 		countUpLyrics = that.countUpLyrics;
+		lyricsTimestampEveryLine = that.lyricsTimestampEveryLine;
 	}
 
 	public void saveToPrefs() {
@@ -68,6 +71,7 @@ public class SaveAndExportSettings {
 		prefs.putBoolean("convertABCStringsToBasicAscii", convertABCStringsToBasicAscii);
         prefs.putBoolean("reducedFilesize", reducedFilesize);
 		prefs.putBoolean("countUpLyrics", countUpLyrics);
+		prefs.putBoolean("lyricsTimestampEveryLine", lyricsTimestampEveryLine);
 	}
 
 	public void restoreDefaults() {

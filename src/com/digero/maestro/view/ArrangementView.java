@@ -109,6 +109,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
     private final JTextArea lyricsContent = new JTextArea();
 	private final LyricEditorPanel lyricLinesContent = new LyricEditorPanel();
 	private boolean countUp = true;
+	private boolean allTimestamps = false;
     private boolean userEdit = true;
 
 	private boolean syncUpdate = false;
@@ -554,7 +555,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		copyButton.setToolTipText(UIText.get("maestro.sidepanel.copy.lyrics.to.clipboard.in.poetical.friendly.format"));
 		copyButton.addActionListener(e -> {
 			if (abcPart == null) return;
-			String text = lyricLinesContent.getPoeticalLyrics(abcPart.getAbcSong().getQTM(), abcPart.getAbcSong().isOrganic(), abcPart, countUp);
+			String text = lyricLinesContent.getPoeticalLyrics(abcPart.getAbcSong().getQTM(), abcPart.getAbcSong().isOrganic(), abcPart, countUp, allTimestamps);
 
 			if (text != null) {
 				StringSelection selection = new StringSelection(text);
@@ -1109,6 +1110,10 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 	 */
 	public void setPoeticalLyricsAdvancement(boolean up) {
 		countUp = up;
+	}
+
+	public void setPoeticalLyricsTimestampEveryLine(boolean lyricsTimestampEveryLine) {
+		allTimestamps = lyricsTimestampEveryLine;
 	}
 
     public void setStats(String stats) {

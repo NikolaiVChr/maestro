@@ -159,7 +159,7 @@ public class LyricEditorPanel extends JPanel {
         return lines;
     }
 
-    public String getPoeticalLyrics(QuantizedTimingInfo qtm, boolean organic, AbcPart part, boolean countUp) {
+    public String getPoeticalLyrics(QuantizedTimingInfo qtm, boolean organic, AbcPart part, boolean countUp, boolean allTimestamps) {
         StringBuilder sb = new StringBuilder();
         boolean first = true;
         long tickPrev = Long.MIN_VALUE;
@@ -168,9 +168,9 @@ public class LyricEditorPanel extends JPanel {
         boolean lastWasBlank = true; // Treat start as a new block
         long prevLineMicros = Long.MIN_VALUE;
         // If lines start > 6 seconds apart, assume a significant pause/break
-        final long GAP_THRESHOLD = 6_000_000L;
-        final long STANZA_THRESHOLD = 2_000_000L; // 2.0s gap -> Allow Stanza Break (Blank Line)
-        final long INSTRUMENTAL_THRESHOLD = 20_000_000L;
+        final long GAP_THRESHOLD = 6_000_000L;// minimal gap to print timestamp
+        final long STANZA_THRESHOLD = 2_000_000L; // 2.0s gap -> Allow Stanza Break (print blank Line)
+        final long INSTRUMENTAL_THRESHOLD = 20_000_000L;// Minimal gap to print 'instrumental'
 
         // Track if we are holding a blank line in suspense
         boolean pendingStanzaBreak = false;
@@ -231,8 +231,8 @@ public class LyricEditorPanel extends JPanel {
                         }
                         pendingStanzaBreak = false; // Reset flag
                     }
-                    boolean hasGap = prevLineMicros != Long.MIN_VALUE && gap > GAP_THRESHOLD;
-                    if (lastWasBlank || (tick != tickPrev && hasGap)) {
+                    boolean hasGap = prevLineMicros != Long.MIN_VALUE && (gap > GAP_THRESHOLD || allTimestamps);
+                    if (lastWasBlank || ((allTimestamps || tick != tickPrev) && hasGap)) {
                         if (prevLineMicros != Long.MIN_VALUE && gap > INSTRUMENTAL_THRESHOLD) {
                             sb.append(UIText.get("maestro.lyrics.interlude"));
                         }

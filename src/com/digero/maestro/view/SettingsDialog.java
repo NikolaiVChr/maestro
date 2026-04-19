@@ -887,6 +887,13 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		countUpLyricsCheckBox.addActionListener(
 				e -> saveSettings.countUpLyrics = countUpLyricsCheckBox.isSelected());
 
+		final JCheckBox lyricsTimestampEveryLineCheckBox = new JCheckBox(
+				UIText.get("maestro.options.lyrics.timestamps.all.lines"));
+		lyricsTimestampEveryLineCheckBox.setToolTipText(UIText.get("maestro.options.tip.lyrics.timestamps.all.lines"));
+		lyricsTimestampEveryLineCheckBox.setSelected(saveSettings.lyricsTimestampEveryLine);
+		lyricsTimestampEveryLineCheckBox.addActionListener(
+				e -> saveSettings.lyricsTimestampEveryLine = lyricsTimestampEveryLineCheckBox.isSelected());
+
 		TableLayout layout = new TableLayout();
 		layout.insertColumn(0, PREFERRED);
 //		layout.insertColumn(1, FILL);
@@ -932,6 +939,9 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 
 		layout.insertRow(++row, PREFERRED);
 		panel.add(countUpLyricsCheckBox, "0, " + row);
+
+		layout.insertRow(++row, PREFERRED);
+		panel.add(lyricsTimestampEveryLineCheckBox, "0, " + row);
 
 		return panel;
 	}
