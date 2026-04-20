@@ -44,6 +44,7 @@ Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 Version 4.6.14
 - Fixed that Maestro allowed zero part number.
 - Made 'reduced filesize' default setting be false. As it is suspected that notes can get skipped with it enabled.
+- Improved organic multi-stage 2 with regards to note placements on timeline.
 
 Version 4.6.13
 - The abc save-as window will now show the path as title.
