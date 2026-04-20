@@ -14,6 +14,10 @@ public class AbcNoteEvent extends NoteEvent {
 	// for ExportTrackInfo events at end of preview generation:
 	public long startABCMicros;
 	public long endABCMicros;
+
+	// these 2 are only used by multi-stage 2:
+	public long initStartABCMicros;
+	public long initEndABCMicros;
 	
 	// These fields are used by the pruning:
 	// Note that if several midi notes contributed to one abc note,
