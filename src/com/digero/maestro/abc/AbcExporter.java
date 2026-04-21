@@ -3973,6 +3973,10 @@ public class AbcExporter {
         final long GRACE_THRESHOLD = 50_000L; // 50ms
         final long SHORT_NOTE_THRESHOLD = minimumMicros * 3;
 
+        // The window within which notes are considered part of the same group
+        final long arpeggioWindow = 45_000L;
+        final int MAX_BOUNCE_CHAIN = 2;
+
         // when cutting up too long notes, this is the minimum buffer they are allowed to exceed max with.
         long maxSustainBuffer = minimumMicros * 2;
         long maxSustain = LotroInstrumentSampleDuration.getSafeDuration(part.getInstrument());
@@ -4042,11 +4046,17 @@ public class AbcExporter {
                 .thenComparingLong(Candidate3::micros));
 
         TreeSet<GridPoint3> grid = new TreeSet<>();
-        grid.add(new GridPoint3(getExportStartMicrosABC(), 0, Integer.MAX_VALUE));
+        final long firstMicros = getExportStartMicrosABC();
+        grid.add(new GridPoint3(firstMicros, 0, Integer.MAX_VALUE));
 
-        final int MAX_BOUNCE_CHAIN = 2;
+        // The absolute last microsecond of the track
+        long endOfTrack = candidates.get(candidates.size() - 1).micros;
 
-        for (Candidate3 c : candidates) {
+        // Tracks the time of the last note that failed a bounce and was forced to crush
+        long lastCrushedTime = -1L;
+
+        for (int i = 0; i < candidates.size(); i++) {
+            Candidate3 c = candidates.get(i);
             long time = c.micros;
 
             GridPoint3 searchKey = new GridPoint3(time, 0, 0);
@@ -4075,22 +4085,61 @@ public class AbcExporter {
             } else if (bouncingEnabled && c.type == TYPE_START) {
                 // Conflicts (Bounces and block Chords)
 
+                // The Group Collapse Check
+                // Are we part of a fast group that just collapsed?
+                boolean partOfCollapsedGroup = (lastCrushedTime != -1L) && (time - lastCrushedTime <= arpeggioWindow);
+
+                if (partOfCollapsedGroup && floor != null) {
+                    // The group is collapsing. Force this note to the floor immediately.
+                    floor.mergeCandidate(c);
+                    lastCrushedTime = time; // Update the time so the next note knows we're still collapsing
+                    continue; // Skip all other bounce logic!
+                }
+
+                // The Leapfrog Trap Door
+                // If 3rd note evaluates and sees that 2nd snowplowed past it,
+                // 3rd must ride the snowplow, not crush backward into the past.
+                if (ceilConflict && ceil.bounceDepth() > 0 && time < ceil.micros()) {
+                    floor = ceil;
+                    floorConflict = true;
+                }
+
                 if (c.weight >= WEIGHT_SOLO && floorConflict) {
                     // Forward bounce (solos/arpeggios)
-                    boolean distanceOk = floor.micros() + minimumMicros / 2 < time;
+                    boolean distanceOk = floor.micros() + minimumMicros * 3L / 4L < time;
                     boolean snowplowActive = floor.bounceDepth() > 0;
+                    boolean underChainLimit = floor.bounceDepth() < MAX_BOUNCE_CHAIN;
 
-                    // If the previous grid point was a bounce, we assume we are in a run/arpeggio chain
-                    // and should continue bouncing to preserve separation, even if the gap is small.
-                    // The crucial limit: Must be under the max chain length
-                    boolean isOkToBounce = (snowplowActive || distanceOk) && floor.bounceDepth() < MAX_BOUNCE_CHAIN;
+                    boolean isOkToBounce = (snowplowActive || distanceOk) && underChainLimit;
                     long bounceTime = floor.micros() + minimumMicros;
 
-                    if (isOkToBounce && isValidBounce3(bounceTime, time, minimumMicros, grid, c.weight, true)) {
+                    // Look-Ahead Check
+                    if (isOkToBounce) {
+                        boolean chainSafe = isSnowplowPathClear(i, bounceTime, candidates, grid, minimumMicros, floor.bounceDepth() + 1, MAX_BOUNCE_CHAIN, firstMicros);
+                        if (!chainSafe) {
+                            isOkToBounce = false; // The future is blocked. Abort the bounce!
+                        }
+                    }
+
+                    // Check if very last note can bounce without requiring its ending to go past end of track.
+                    if (isOkToBounce) {
+                        for (AbcNoteEvent note : c.notes) {
+                            // If this note ends at the absolute edge of the track, and bouncing
+                            // forward leaves it with zero/negative duration or an illegal micro-gap...
+                            if (note.initEndABCMicros == endOfTrack && (note.initEndABCMicros - bounceTime < minimumMicros)) {
+                                isOkToBounce = false; // Abort the bounce. Crush backward instead.
+                                break;
+                            }
+                        }
+                    }
+
+                    if (isOkToBounce && isValidBounce3(bounceTime, time, minimumMicros, grid, c.weight, true, firstMicros)) {
                         applyBounce3(grid, bounceTime, c, minimumMicros, floor.bounceDepth() + 1);
+                        lastCrushedTime = -1;
                     } else {
-                        // Force into block chord: Snap to floor.
+                        // Force into Block Chord: Snap to floor.
                         floor.mergeCandidate(c);
+                        lastCrushedTime = time;
                     }
                 } else if (c.weight == WEIGHT_GRACE && ceil != null && ceilConflict) {
                     // Backward bounce (grace notes)
@@ -4098,8 +4147,9 @@ public class AbcExporter {
                     boolean isOkToBounceBackward = ceil.bounceDepth() < MAX_BOUNCE_CHAIN;
                     long bounceTime = ceil.micros() - minimumMicros;
 
-                    if (isOkToBounceBackward && isValidBounce3(bounceTime, time, minimumMicros, grid, c.weight, false)) {
+                    if (isOkToBounceBackward && isValidBounce3(bounceTime, time, minimumMicros, grid, c.weight, false, firstMicros)) {
                         applyBounce3(grid, bounceTime, c, minimumMicros, ceil.bounceDepth() + 1);
+                        lastCrushedTime = -1;
                     } else {
                         // mark it for deletion by moving it to negative infinity.
                         for (AbcNoteEvent note : c.notes) {
@@ -4108,10 +4158,12 @@ public class AbcExporter {
                         if (logNotes.isLoggable(Level.FINEST)) {
                             logNotes.finest("Deleted grace note at " + Util.formatDurationM(time) + " (No space available)");
                         }
+                        lastCrushedTime = time;
                     }
                 } else {
                     GridPoint3 blocker = floorConflict ? floor : ceil;
                     if (blocker != null) blocker.mergeCandidate(c);
+                    lastCrushedTime = time;
                 }
 
             } else if (c.type == TYPE_END) {
@@ -4310,22 +4362,59 @@ public class AbcExporter {
         }
     }
 
-    private boolean isValidBounce3(long bounceTime, long originalTime, long minimumMicros, TreeSet<GridPoint3> grid, int weight, boolean forward) {
+    private boolean isValidBounce3(long bounceTime, long originalTime, long minimumMicros, TreeSet<GridPoint3> grid, int weight, boolean forward, long exportStartTime) {
+
+        if (bounceTime < exportStartTime) {
+            return false;
+        }
+
         boolean directionOk = forward ? (bounceTime >= originalTime) : (bounceTime <= originalTime);
         boolean reasonable = Math.abs(bounceTime - originalTime) < (3 * minimumMicros / 2);
 
         GridPoint3 key = new GridPoint3(bounceTime, 0, 0);
         GridPoint3 neighbor = forward ? grid.ceiling(key) : grid.floor(key);
 
+        // A space is only naturally safe if it's empty, or if the neighbor is at least 60ms away.
+        // We explicitly forbid landing exactly on a neighbor here.
         boolean spaceSafe = neighbor == null
-                || Math.abs(neighbor.micros() - bounceTime) >= minimumMicros
-                || neighbor.micros() == bounceTime;
+                || Math.abs(neighbor.micros() - bounceTime) >= minimumMicros;
 
         // Can we overwrite a weak neighbor?
         int neighborWeight = (neighbor == null) ? 0 : neighbor.weight();
         boolean weightSafe = neighborWeight < weight;
 
+        // To bounce, the direction and distance must be okay, AND we must either have
+        // safe empty space, or be strong enough to crush the existing weak candidate.
         return directionOk && reasonable && (spaceSafe || weightSafe);
+    }
+
+    // Simulates the snowplow chain reaction. Returns false if a leapfrogged note
+    // hits a wall, meaning the current bounce must be aborted.
+    private boolean isSnowplowPathClear(int currentIndex, long proposedBounceTime, List<Candidate3> candidates, TreeSet<GridPoint3> grid, long minimumMicros, int nextDepth, int maxChain, long exportStartTime) {
+        long simTarget = proposedBounceTime;
+        int simDepth = nextDepth;
+
+        // Look ahead at upcoming candidates
+        for (int j = currentIndex + 1; j < candidates.size(); j++) {
+            Candidate3 futureC = candidates.get(j);
+            if (futureC.type != TYPE_START) continue;
+
+            // If the future note is safely past our simulated target, the chain is clear.
+            if (futureC.micros >= simTarget) return true;
+
+            // futureC is trapped. It must bounce to the next slot.
+            simDepth++;
+            simTarget += minimumMicros;
+
+            // Chain limit exceeded
+            if (simDepth > maxChain) return false;
+
+            // The forced destination is blocked by a heavy chord
+            if (!isValidBounce3(simTarget, futureC.micros, minimumMicros, grid, futureC.weight, true, exportStartTime)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
