@@ -4050,7 +4050,7 @@ public class AbcExporter {
         grid.add(new GridPoint3(firstMicros, 0, Integer.MAX_VALUE));
 
         // The absolute last microsecond of the track
-        long endOfTrack = candidates.get(candidates.size() - 1).micros;
+        long endOfTrack = candidates.getLast().micros;
 
         // Tracks the time of the last note that failed a bounce and was forced to crush
         long lastCrushedTime = -1L;
