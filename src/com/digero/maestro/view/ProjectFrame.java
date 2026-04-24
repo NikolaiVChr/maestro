@@ -2464,6 +2464,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				}
 				
 				if (miscSettings.autoplayOnOpen) {
+					// Uncomment this line to preview lots of midis and skipping their intro:
+					//sequencer.setTickPosition(sequencer.getTickLength()/4L);
 					sequencer.start();
 				}
 			}
