@@ -43,6 +43,7 @@ Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 
 Version 4.6.14
 - Fixed that Maestro allowed zero part number.
+- Added an option to timestamp every lyric line, even when there is no rest between them.
 - Made 'reduced filesize' default setting be false. As it is suspected that notes can get skipped with it enabled.
 - Major upgrade of organic multi-stage 2.
 
