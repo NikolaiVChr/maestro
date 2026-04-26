@@ -971,9 +971,15 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		synchronized(ProjectFrame.class) {
 			if (feed == null) {
 				feedLabel.setText(null);
+				feedLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
 			} else {
 				String dismiss = feed.isEmpty()?"": UIText.get("maestro.click.to.dismiss");
 				feedLabel.setText(feed + dismiss);
+				if (!feed.isEmpty()) {
+					feedLabel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Color.RED, 2), BorderFactory.createEmptyBorder(0, 2, 0, 2)));
+				} else {
+					feedLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+				}
 			}
 			feedLabel.setToolTipText(feedFull);
 			playControlPanel.validate();
