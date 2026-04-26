@@ -41,6 +41,9 @@ Special thanks to the folks who have tested beta builds and gave feedback.
 Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
+Version 4.6.15
+
+
 Version 4.6.14
 - Fixed that Maestro allowed zero part number.
 - Added an option to timestamp every lyric line, even when there is no rest between them.
