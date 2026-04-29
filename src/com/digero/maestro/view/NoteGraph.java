@@ -317,9 +317,28 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 	}
 
 	private AffineTransform noteToScreenXForm = null; // Always use getTransform()
+	// Width of note leading edge in song-time coords, recomputed whenever the transform is rebuilt.
+	private double leadingEdgeWidthSong = 0.0;
+	// Note edge shade amount: positive mixes toward white, negative toward black.
+	private static final float EDGE_SHADE_AMOUNT = -0.3f;
+	private Color lastEdgeBaseColor = null;
+	private Color lastEdgeShadedColor = null;
+
+	private static Color shadeColor(Color c) {
+		if (EDGE_SHADE_AMOUNT >= 0) {
+			int r = c.getRed()   + Math.round((255 - c.getRed())   * EDGE_SHADE_AMOUNT);
+			int g = c.getGreen() + Math.round((255 - c.getGreen()) * EDGE_SHADE_AMOUNT);
+			int b = c.getBlue()  + Math.round((255 - c.getBlue())  * EDGE_SHADE_AMOUNT);
+			return new Color(r, g, b);
+		} else {
+			float k = 1 + EDGE_SHADE_AMOUNT;
+			return new Color(Math.round(c.getRed() * k), Math.round(c.getGreen() * k), Math.round(c.getBlue() * k));
+		}
+	}
 
 	protected final void invalidateTransform() {
 		noteToScreenXForm = null;
+		leadingEdgeWidthSong = 0.0;
 		invalidateBitmapCache();
 		repaint();
 	}
@@ -361,6 +380,8 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 			}
 
 			noteToScreenXForm = scrnXForm;
+			double sx = scrnXForm.getScaleX();
+			leadingEdgeWidthSong = (sx != 0) ? 1.5 / sx : 0.0;
 		}
 
 		return noteToScreenXForm;
@@ -481,8 +502,8 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 
 	// Debounce interval before a bitmap rebuild is triggered after the last invalidation
 	private static final int BITMAP_DEBOUNCE_MS = 150;
-	// Max bitmap area in pixels before we fallback to direct rendering to avoid excessive memory usage
-	private static final int MAX_BITMAP_PIXELS = 8_000_000;
+	// Total budget for bitmap caches across all note graphs (4 bytes / pixel)
+	private static final long TOTAL_BITMAP_BUDGET_PIXELS = 256 * 1024 * 1024 / 4;
 	// Timer to debounce rebuilding the bitmap when the bitmap cache goes dirty
 	private Timer bitmapRebuildTimer = null;
 
@@ -713,11 +734,24 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 			double y = Util.clamp(noteId, MIN_RENDERED, MAX_RENDERED);
             if (isBars()) {
                 rectTmp.setRect(ne.getStartMicros() - extraWidth, MIN_RENDERED, width + 2 * extraWidth, y-MIN_RENDERED);
+                g2.fill(rectTmp);
             } else {
                 rectTmp.setRect(ne.getStartMicros() - extraWidth, y - extraHeight, width + 2 * extraWidth,
                         height + 2 * extraHeight);
+                g2.fill(rectTmp);
+                // Draw a darker leading edge so back-to-back same-pitch notes are distinguishable.
+                if (extraWidth == 0 && extraHeight == 0 && leadingEdgeWidthSong > 0 && leadingEdgeWidthSong < width) {
+                    Color baseColor = g2.getColor();
+                    if (baseColor != lastEdgeBaseColor) {
+                        lastEdgeShadedColor = shadeColor(baseColor);
+                        lastEdgeBaseColor = baseColor;
+                    }
+                    g2.setColor(lastEdgeShadedColor);
+                    rectTmp.setRect(ne.getStartMicros(), y, leadingEdgeWidthSong, height);
+                    g2.fill(rectTmp);
+                    g2.setColor(baseColor);
+                }
             }
-			g2.fill(rectTmp);
 		}
 	}
 
@@ -798,7 +832,10 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 		int h = getHeight();
 		if (w <= 0 || h <= 0) return false;
 
-		if ((long) w * h > MAX_BITMAP_PIXELS) {
+		// Technically this calc should include histogram and tempo, but as a heuristic it's fine.
+		int graphCount = (sequenceInfo != null) ? Math.max(1, sequenceInfo.getTrackCount()) : 1;
+		long maxPixels = TOTAL_BITMAP_BUDGET_PIXELS / graphCount;
+		if ((long) w * h > maxPixels) {
 			staticNotesImage = null;
 			return false;
 		}
@@ -841,7 +878,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 
 		AffineTransform xform = getTransform();
 		double minLength = NOTE_WIDTH_PX / xform.getScaleX();
-		double height = Math.max(1.0, Math.abs(NOTE_HEIGHT_PX / xform.getScaleY()));
+		double height = Math.max(getMinNoteHeightPx(), Math.abs(NOTE_HEIGHT_PX / xform.getScaleY()));
 
 		long[] clip = computeClipBounds(g2, xform);
 		long clipPosStart = clip[0];
@@ -1411,4 +1448,8 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
     protected boolean isBars() {
         return false;
     }
+
+	protected double getMinNoteHeightPx() {
+		return 1.0;
+	}
 }
