@@ -428,6 +428,11 @@ public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardab
 		}
 
 		@Override
+		protected double getMinNoteHeightPx() {
+			return 0.0;
+		}
+
+		@Override
 		protected boolean isNotePlayable(NoteEvent ne, int addition) {
 			return abcPart.isDrumPlayable(trackInfo.getTrackNumber(), ne.note.id);
 		}
