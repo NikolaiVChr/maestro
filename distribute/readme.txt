@@ -1,4 +1,8 @@
-These instructions only apply to version 4.2.0 or later.
+############
+##  MAESTRO, ABC PLAYER and ABC TOOLS
+############
+
+The install instructions only apply to version 4.2.0 or later.
 
 Install instruction (.msi)
 ===================
@@ -23,9 +27,9 @@ Linux/Mac instruction (.zip)
 
 Starting from command prompt
 ============================
-- Install java jdk 21
+- Install java jdk 21 or 25.0.1
 - Then use command-line prompt from the install folder:
-java --enable-native-access=ALL-UNNAMED --add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED -jar app/Maestro.jar
+java --patch-module java.desktop=java.midi.patch.jar --enable-native-access=ALL-UNNAMED --add-exports=java.desktop/com.sun.media.sound=ALL-UNNAMED -jar app/Maestro.jar
 
 
 
@@ -38,8 +42,19 @@ Thanks to all who gave feedback of features and bugs plus suggestions.
 Special thanks to the folks who have tested beta builds and gave feedback.
 
 
-Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
-================
+Authors
+=======
+Digero of Landroval
+Aifel of Meriadoc
+Elamond of Peregrin
+Karloman
+
+
+Changelog
+=========
+
+This changelog is only partial, to see all the way back to v1.0.0 go here:
+  https://maestro.miraheze.org/wiki/Version_history
 
 Version 4.6.15
 - No more vertically scale notes in drum/fx panels.
