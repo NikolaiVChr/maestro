@@ -1,7 +1,6 @@
 package com.digero.common.midi;
 
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Logger;
@@ -15,6 +14,7 @@ import javax.sound.midi.Receiver;
 import javax.sound.midi.MidiDevice.Info;
 
 import com.digero.common.midi.SequencerEvent.SequencerProperty;
+import com.digero.common.util.AppInfo;
 import com.digero.common.view.UIText;
 import com.digero.maestro.view.ProjectFrame;
 
@@ -35,7 +35,7 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 		super();
 		filter = new NoteFilterTransceiver();
 		addTransceiver(filter);
-		feedActive = true;
+		feedActive = AppInfo.maestro;
 	}
 
 	public NoteFilterTransceiver getFilter() {
@@ -132,37 +132,35 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 		if (preferred == null) {
 			log.fine("Default MIDI out selected");
 			deviceInUse = null;
-			if (nonDefault && feedActive) ProjectFrame.feed(UIText.get("common.default.midi.out"), null);
+			if (feedActive && nonDefault) ProjectFrame.feed(UIText.get("common.default.midi.out"), null);
 			return MidiSystem.getReceiver();
 		}
 		if (myInfo == null) {
 			log.info(UIText.get("common.default.midi.out.selected.0.not.available", preferred));
 			deviceInUse = null;
-			if (nonDefault) ProjectFrame.feed(UIText.get("common.default.midi.out.0.not.available", preferred), null);
+			if (feedActive && nonDefault) ProjectFrame.feed(UIText.get("common.default.midi.out.0.not.available", preferred), null);
 			return MidiSystem.getReceiver();
 		}
 
-		Receiver myReciever = null;
+		Receiver myReceiver = null;
 		boolean okay = true;
 		try {
 			device = MidiSystem.getMidiDevice(myInfo);
 			if (device instanceof com.sun.media.sound.SoftSynthesizer) {
-				Map<String, Object> synthInfo = new HashMap<>();
-				synthInfo.put("reverb", false);// default is true
-				synthInfo.put("chorus", false);// default is true
+				Map<String, Object> synthInfo = SynthesizerFactory.setupExternalSynthesizerPropertyInfo();
 				((com.sun.media.sound.SoftSynthesizer) device).open(null, synthInfo);
 			} else {
 				device.open();
 			}
-			myReciever = device.getReceiver();
+			myReceiver = device.getReceiver();
 		} catch (MidiUnavailableException e) {
 			okay = false;
 			closeDevice();
 		}
-		if (!okay || myReciever == null) {
+		if (!okay || myReceiver == null) {
 			log.info("Default MIDI out selected (" + preferred + " not connected)");
 			deviceInUse = null;
-			if (nonDefault) ProjectFrame.feed(UIText.get("common.default.midi.out.0.not.connected", preferred), null);
+			if (feedActive && nonDefault) ProjectFrame.feed(UIText.get("common.default.midi.out.0.not.connected", preferred), null);
 			return MidiSystem.getReceiver();
 		}
 
@@ -174,7 +172,7 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 		deviceInUse = preferred;
 		
 		log.info("Non-default MIDI out selected: " + myInfo.getName()+" ("+description+") "+vendor);
-		return myReciever;
+		return myReceiver;
 	}
 
 	@Override

@@ -78,6 +78,15 @@ public class SynthesizerFactory {
 		return synthInfo;
 	}
 
+	@SuppressWarnings("HardCodedStringLiteral")
+	public static Map<String, Object> setupExternalSynthesizerPropertyInfo() {
+		Map<String, Object> synthInfo = new HashMap<>();
+		synthInfo.put("reverb", false);// default is true
+		synthInfo.put("chorus", false);// default is true
+		synthInfo.put("light reverb", false);// default is true
+		return synthInfo;
+	}
+
 	/**
 	 * This is used for ABC preview in both Maestro and AbcPlayer
 	 *
@@ -85,7 +94,8 @@ public class SynthesizerFactory {
 	@SuppressWarnings("restriction")
 	public static void initLotroSynthesizer(Synthesizer synth)
 			throws MidiUnavailableException, InvalidMidiDataException, IOException {
-				((com.sun.media.sound.SoftSynthesizer) synth).open(null, setupSynthesizerPropertyInfo());
+
+		((com.sun.media.sound.SoftSynthesizer) synth).open(null, setupSynthesizerPropertyInfo());
 		// ((LotroSoftSynthesizer)synth).open(null, synthInfo);
 		//synth.unloadAllInstruments(getLotroSoundbank()); // not needed, as we only make it once
 		synth.loadAllInstruments(getLotroSoundbank());
