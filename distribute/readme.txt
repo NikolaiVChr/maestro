@@ -42,12 +42,14 @@ Maestro upgrades by Aifel of Meriadoc, Elamond of Peregrin and Karloman
 ================
 
 Version 4.6.15
-
+- No more vertically scale notes in drum/fx panels.
+- Added leading-edge note color markers to distinguish sequential notes.
+- Made default timing setting in options (for newly installed Maestro apps) be Organic Single-stage instead of Mix timings.
 
 Version 4.6.14
 - Fixed that Maestro allowed zero part number.
 - Added an option to timestamp every lyric line, even when there is no rest between them.
-- Made 'reduced filesize' default setting be false. As it is suspected that notes can get skipped with it enabled.
+- Made 'reduced filesize' default setting be false (for newly installed Maestro apps). As it is suspected that notes can get skipped with it enabled.
 - Major upgrade of organic multi-stage 2.
 
 Version 4.6.13
