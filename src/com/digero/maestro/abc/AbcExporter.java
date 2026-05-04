@@ -244,6 +244,8 @@ public class AbcExporter {
 		Triple<Integer, Integer, Long> trackNumber = exportPartToMidi(part, sequence, chords, pan, useLotroInstruments, countIn);
 
 		List<AbcNoteEvent> noteEvents = new ArrayList<>(chords.size());
+
+        long delayMicros = part.delay * 1000L;
 		
 		for (Chord chord : chords) {
 			for (int i = 0; i < chord.size(); i++) {
@@ -262,6 +264,11 @@ public class AbcExporter {
 					// (ne.tiesFrom != null) check above, and we otherwise don't care about
 					// ne.tiesTo.
 				}
+
+                // Issue with this is that tune editor section bars will no longer match up with what gets edited
+                // could maybe be a toggle to show delay or not
+                //ne.startABCMicros += delayMicros;
+                //ne.endABCMicros += delayMicros;
 
 				noteEvents.add(ne);
 			}
@@ -5085,7 +5092,7 @@ public class AbcExporter {
                 continue;
             }
 
-            // Snap End to nearest grid point
+            // Snap end to nearest grid point
             long expectedEnd = note.endABCMicros;
             Long endFloor = grid.floor(expectedEnd);
             Long endCeiling = grid.ceiling(expectedEnd);
@@ -5136,7 +5143,7 @@ public class AbcExporter {
 
                 if (!canExpandBackward && higherIsTooLong) {
                     gridDeletion++;
-                    continue; // Cannot expand safely in either direction. Drop the artifact.
+                    continue; // Cannot expand safely in either direction. Drop the event.
                 }
 
                 // Expand into the adjacent grid interval that best matches original duration
@@ -5220,7 +5227,7 @@ public class AbcExporter {
                 continue; // No grid points exist at all
             }
 
-            // Shield against snapping garbage artifacts across massive rests
+            // Shield against snapping events across massive rests
             if (Math.abs(candidateStart - note.startABCMicros) > getMaxStartShiftMicros(originalDuration, minimumMicros)) {
                 gridDeletion++;
                 continue;
