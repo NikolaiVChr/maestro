@@ -129,8 +129,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	private final Preferences prefs = Preferences.userNodeForPackage(MaestroMain.class);
 
-	private int defaultStereo = 25;
-	private int defaultVolume = MidiConstants.MAX_VOLUME;
+	private final int defaultStereo = 25;
+	private final int defaultVolume = MidiConstants.MAX_VOLUME;
 
 	private AbcSong abcSong;
 	private boolean abcSongModified = false;
