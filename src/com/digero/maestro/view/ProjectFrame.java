@@ -129,6 +129,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	private final Preferences prefs = Preferences.userNodeForPackage(MaestroMain.class);
 
+	private int defaultStereo = 25;
+	private int defaultVolume = MidiConstants.MAX_VOLUME;
+
 	private AbcSong abcSong;
 	private boolean abcSongModified = false;
 
@@ -1076,7 +1079,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	private void checkVolumeTransceiver() {
 		volumeTransceiver = new VolumeTransceiver();
-		volumeTransceiver.setVolume(prefs.getInt("volumizer", MidiConstants.MAX_VOLUME));
+		volumeTransceiver.setVolume(prefs.getInt("volumizer", defaultVolume));
 
 		abcVolumeTransceiver = new VolumeTransceiver();
 		abcVolumeTransceiver.setVolume(volumeTransceiver.getVolume());
@@ -1561,11 +1564,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			return volumeTransceiver.getVolume();
 		if (abcVolumeTransceiver != null)
 			return abcVolumeTransceiver.getVolume();
-		return MidiConstants.MAX_VOLUME;
+		return defaultVolume;
 	}
 	
 	public void setPan(int pan) {
-		if (pan != prefs.getInt("stereoPan", 100)) {
+		if (pan != prefs.getInt("stereoPan", defaultStereo)) {
 			prefs.putInt("stereoPan", pan);
 			saveSettings.saveToPrefs();
             updateStereo();
@@ -1573,7 +1576,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 	
 	public int getPan() {
-		return prefs.getInt("stereoPan", 100);
+		return prefs.getInt("stereoPan", defaultStereo);
 	}
 
     /**
@@ -1582,7 +1585,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
      */
     private void updateStereo() {
         if (abcSequencer != null && abcSequencer.getSequence() != null && abcSong != null) {
-            int panModifier = prefs.getInt("stereoPan", 100);
+            int panModifier = prefs.getInt("stereoPan", defaultStereo);
             Sequence seq = abcSequencer.getSequence();
             Track[] tracks = seq.getTracks();
             PanGenerator panner = new PanGenerator();
@@ -2910,7 +2913,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 abcSong.setReducedFilesize(saveSettings.reducedFilesize);
                 abcSong.setUseRestsInChords(saveSettings.useRestsInChords);
                 // abcSong.setShowPruned(saveSettings.showPruned);
-                previewWorker = new PreviewExportWorker(abcSong, !failedToLoadLotroInstruments, false, prefs.getInt("stereoPan", 100));
+                previewWorker = new PreviewExportWorker(abcSong, !failedToLoadLotroInstruments, false, prefs.getInt("stereoPan", defaultStereo));
                 setSourceChangeEnabled(false);
                 previewWorker.execute();
             } catch (AbcConversionException e) {
@@ -2943,7 +2946,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             abcSong.setUseRestsInChords(saveSettings.useRestsInChords);
             // abcSong.setShowPruned(saveSettings.showPruned);
             AbcExporter exporter = abcSong.getAbcExporter();
-            exporter.stereoPan = prefs.getInt("stereoPan", 100);
+            exporter.stereoPan = prefs.getInt("stereoPan", defaultStereo);
             SequenceInfo previewSequenceInfo = SequenceInfo.fromAbcParts(exporter, !failedToLoadLotroInstruments, false);
             applyPreview(previewSequenceInfo, exporter);
             setSourceChangeEnabled(true);
