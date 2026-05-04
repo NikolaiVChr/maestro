@@ -385,15 +385,26 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 				}
 			}
 		} else {
-			// If this sequence is for preview then we only need to find lastTick
-            for (Track track : tracks) {
-                for (int j = 0, sz = track.size(); j < sz; j++) {
-                    MidiEvent evt = track.get(j);
-                    long tick = evt.getTick();
-                    if (tick > lastTick)
-                        lastTick = tick;
-                }
-            }
+			// If this sequence is for preview then we only need to find lastTick and tempos
+			for (int iTrack = 0; iTrack < tracks.length; iTrack++) {
+				Track track = tracks[iTrack];
+
+				for (int j = 0, sz = track.size(); j < sz; j++) {
+					MidiEvent evt = track.get(j);
+					MidiMessage msg = evt.getMessage();
+					long tick = evt.getTick();
+					if (tick > lastTick)// && msg instanceof ShortMessage
+						lastTick = tick;
+
+					if (MidiUtils.isMetaTempo(msg)) {
+
+						int tempoRaw = MidiUtils.getTempoMPQ(msg);
+						if (tempoRaw != 0) {
+							tempo.put(tick, new TempoEvent(tempoRaw, tick, 0L));// micros is added later
+						}
+					}
+				}
+			}
 		}
 
         // We now populate the tempo events with micros,
