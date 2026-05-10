@@ -62,6 +62,11 @@ public interface MidiConstants {
 	byte SYSEX_UNIVERSAL_REALTIME = 0x7F;
 	byte SYSEX_UNIVERSAL_NON_REALTIME = 0x7E;
 
+	byte DEVICE_ID_BROADCAST = (byte) 0x7F;
+	byte DEVICE_ID_ROLAND = (byte) 0x10;
+	byte DEVICE_ID_YAMAHA = (byte) 0x10;
+	byte DEVICE_ID_XG = (byte) 0x4C;
+
 	int DEFAULT_TEMPO_BPM = 120;
 	int DEFAULT_TEMPO_MPQ = 500000;
 	int DEFAULT_INSTRUMENT = 0;

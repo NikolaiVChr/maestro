@@ -226,4 +226,93 @@ public class MidiFactory implements MidiConstants {
 		}
 		return msg;
 	}
+
+    public static MidiMessage createGMReset() {
+		MidiMessage reset = new SysexMessage();
+		byte EOX = (byte) 0xF7;
+		byte[] data = {(byte) SysexMessage.SYSTEM_EXCLUSIVE, SYSEX_UNIVERSAL_NON_REALTIME, DEVICE_ID_BROADCAST, (byte) 0x09, (byte) 0x01, EOX};
+		try {
+			((SysexMessage) reset).setMessage(data, 6);
+			/*
+			byte[] message = reset.getMessage();
+			if (message.length == 6 && (message[0] & 0xFF) == SysexMessage.SYSTEM_EXCLUSIVE && (message[1] & 0xFF) == SYSEX_UNIVERSAL_NON_REALTIME
+					&& (message[3] & 0xFF) == 0x09 && (message[4] & 0xFF) == 0x01 && (message[5] & 0xFF) == 0xF7) {
+				System.out.println("Okay");
+			} else {
+				System.out.println("Fail "+MidiUtils.midiMessageToString(reset));
+			}
+			*/
+		} catch (InvalidMidiDataException e) {
+			e.printStackTrace();
+		}
+		return reset;
+    }
+
+	public static MidiMessage createGM2Reset() {
+		MidiMessage reset = new SysexMessage();
+		byte EOX = (byte) 0xF7;
+		byte[] data = {(byte) SysexMessage.SYSTEM_EXCLUSIVE, SYSEX_UNIVERSAL_NON_REALTIME, DEVICE_ID_BROADCAST, (byte) 0x09, (byte) 0x03, EOX};
+		try {
+			((SysexMessage) reset).setMessage(data, 6);
+		} catch (InvalidMidiDataException e) {
+			e.printStackTrace();
+		}
+		return reset;
+	}
+
+	public static MidiMessage createGSReset() {
+		MidiMessage reset = new SysexMessage();
+		byte EOX = (byte) 0xF7;
+
+		byte addrH = (byte) 0x40;
+		byte addrM = (byte) 0x00;
+		byte addrL = (byte) 0x7F;
+		byte dataByte  = (byte) 0x00;
+
+		byte[] data = {(byte) SysexMessage.SYSTEM_EXCLUSIVE,
+				(byte) 0x41, DEVICE_ID_ROLAND, (byte) 0x42, (byte) 0x12, addrH, addrM, addrL, dataByte, calculateRolandChecksum(addrH,addrM,addrL,dataByte), EOX};
+		try {
+			((SysexMessage) reset).setMessage(data, 11);
+		} catch (InvalidMidiDataException e) {
+			e.printStackTrace();
+		}
+		return reset;
+	}
+
+	public static MidiMessage createXGReset() {
+		MidiMessage reset = new SysexMessage();
+		byte EOX = (byte) 0xF7;
+		byte[] data = {(byte) SysexMessage.SYSTEM_EXCLUSIVE, (byte) 0x43, DEVICE_ID_YAMAHA, DEVICE_ID_XG, (byte) 0x00, (byte) 0x00, (byte) 0x7E, (byte) 0x00, EOX};
+		try {
+			((SysexMessage) reset).setMessage(data, 9);
+		} catch (InvalidMidiDataException e) {
+			e.printStackTrace();
+		}
+		return reset;
+	}
+
+	/**
+	 * Roland SysEx Checksum.
+	 *
+	 * @param addressAndData An array containing only the address and data bytes.
+	 * @return The calculated checksum byte.
+	 */
+	public static byte calculateRolandChecksum(byte... addressAndData) {
+		int sum = 0;
+
+		// Add up the decimal values of all address and data bytes
+		for (byte b : addressAndData) {
+			// Use & 0xFF to prevent negative values from signed Java bytes
+			sum += (b & 0xFF);
+		}
+
+		// Find the remainder when divided by 128
+		int remainder = sum % 128;
+
+		// Subtract the remainder from 128.
+		// The & 0x7F ensures that if the remainder is 0, the checksum is 0 (not 128).
+		int checksum = (128 - remainder) & 0x7F;
+
+		return (byte) checksum;
+	}
 }

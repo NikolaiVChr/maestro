@@ -18,9 +18,14 @@ public class VolumeTransceiver implements Transceiver, MidiConstants
 {
 	private Receiver receiver;
 	private int volume = MAX_VOLUME;
+	private boolean lsbBlock = false;
 
 	public VolumeTransceiver()
 	{
+	}
+
+	public void setLSBBlock (boolean block) {
+		lsbBlock = block;
 	}
 
 	public void setVolume(int volume)
@@ -73,7 +78,13 @@ public class VolumeTransceiver implements Transceiver, MidiConstants
 		{
             if (m.getCommand() == ShortMessage.SYSTEM_RESET)
 			{
+				//System.out.println("System reset");
 				systemReset = true;
+			} else if (m.getCommand() == ShortMessage.CONTROL_CHANGE && m.getData1() == BANK_SELECT_LSB && m.getData2() != 0) {
+				if (lsbBlock) {
+					// It's a GS midi, some of them sadly have lsb changes, we don't allow that.
+					return;
+				}
 			}
 		} else if (message instanceof SysexMessage m) {
 
@@ -85,13 +96,18 @@ public class VolumeTransceiver implements Transceiver, MidiConstants
 			} else if (SequenceInfo.isResetGS(sysex)) {
 				//System.out.println("GS reset (will mess with MIDI playback volume, so we set also volume again)");
 				systemReset = true;
-				//return;
+				return;
 			} else if (SequenceInfo.isResetXG(sysex)) {
 				//System.out.println("XG reset (will mess with MIDI playback volume, so we set also volume again)");
 				systemReset = true;
+				return;
 			} else if (SequenceInfo.isResetGM2(sysex)) {
 				//System.out.println("GM2 reset (will mess with MIDI playback volume, so we set also volume again)");
 				systemReset = true;
+				return;
+			} else if (SequenceInfo.isResetGM(sysex)) {
+				//System.out.println("GM reset");
+				return;
 			} else {
 				//System.out.println("SysEx command: "+MidiUtils.formatBytes(sysex));			
 			}

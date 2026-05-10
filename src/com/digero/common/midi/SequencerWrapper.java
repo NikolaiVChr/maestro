@@ -549,6 +549,8 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 
 	public void setTrackMute(int track, boolean mute) {
 		if (mute != this.getTrackMute(track)) {
+			//boolean midi = !(this instanceof LotroSequencerWrapper);
+			//System.out.println((midi?"MIDI":"ABC")+" Setting track " + track + " mute to " + mute);
 			trackActiveCache = null;
 			sequencer.setTrackMute(track, mute);
 			fireChangeEvent(SequencerProperty.TRACK_ACTIVE);
@@ -561,6 +563,8 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 
 	public void setTrackSolo(int track, boolean solo) {
 		if (solo != this.getTrackSolo(track)) {
+			//boolean midi = !(this instanceof LotroSequencerWrapper);
+			//System.out.println((midi?"MIDI":"ABC")+" Setting track " + track + " solo to " + solo);
 			trackActiveCache = null;
 			sequencer.setTrackSolo(track, solo);
 			fireChangeEvent(SequencerProperty.TRACK_ACTIVE);

@@ -43,12 +43,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
-import javax.sound.midi.InvalidMidiDataException;
-import javax.sound.midi.MidiEvent;
-import javax.sound.midi.MidiSystem;
-import javax.sound.midi.MidiUnavailableException;
-import javax.sound.midi.Sequence;
-import javax.sound.midi.Track;
+import javax.sound.midi.*;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -62,8 +57,7 @@ import javax.swing.text.Document;
 import javax.xml.transform.TransformerException;
 
 import com.digero.common.abc.AbcConstants;
-import com.digero.common.midi.MidiUtils;
-import com.digero.common.midi.PanGenerator;
+import com.digero.common.midi.*;
 import com.digero.common.util.*;
 import com.digero.common.view.ColorSelector;
 import com.digero.common.view.UIText;
@@ -76,16 +70,7 @@ import org.xml.sax.SAXParseException;
 
 import com.digero.common.abc.StringCleaner;
 import com.digero.common.icons.IconLoader;
-import com.digero.common.midi.KeySignature;
-import com.digero.common.midi.LotroSequencerWrapper;
-import com.digero.common.midi.MidiConstants;
-import com.digero.common.midi.MidiStandard;
-import com.digero.common.midi.NoteFilterSequencerWrapper;
-import com.digero.common.midi.SequencerEvent;
 import com.digero.common.midi.SequencerEvent.SequencerProperty;
-import com.digero.common.midi.SequencerWrapper;
-import com.digero.common.midi.TimeSignature;
-import com.digero.common.midi.VolumeTransceiver;
 import com.digero.common.view.AboutDialog;
 import com.digero.common.view.AudioExportManager;
 import com.digero.common.view.BarNumberLabel;
@@ -2437,7 +2422,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 			SequenceInfo sequenceInfo = abcSong.getSequenceInfo();
 			sequencer.setSequence(sequenceInfo.getSequence());
-            // TODO: should we not have sequencer be a LotroSeqWrapper when loading from abc?
+			sendMIDIResets(sequenceInfo.standard);
+			// TODO: should we not have sequencer be a LotroSeqWrapper when loading from abc?
             //       in which case we should here call seq.setCurrentTrackInfos(sequenceInfo.getLastTrackInfos());
             //       else its only abc player that can play abc files with more then 15 parts.
             //       Haven't checked how easy it is to do. NoteFilterSequencerWrapper differs in some ways.
@@ -2513,7 +2499,35 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 		inOpenFile = false;
 	}
-	
+
+	private void sendMIDIResets(MidiStandard standard) {
+		if (standard == MidiStandard.ABC) return;
+		volumeTransceiver.setLSBBlock(false);
+		sequencer.getReceiver().send(MidiFactory.createGMReset(), -1);
+		try {
+			Thread.sleep(100);
+			switch (standard) {
+				case GM2:
+					sequencer.getReceiver().send(MidiFactory.createGM2Reset(), -1);
+					Thread.sleep(50);
+					break;
+				case GS:
+					sequencer.getReceiver().send(MidiFactory.createGSReset(), -1);
+					Thread.sleep(50);
+					volumeTransceiver.setLSBBlock(true);
+					break;
+				case XG:
+					sequencer.getReceiver().send(MidiFactory.createXGReset(), -1);
+					Thread.sleep(50);
+					break;
+				default:
+					break;
+			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+		}
+	}
+
 	private boolean reloadWithNewSource(File newSource) {
 		List<Pair<Boolean, Boolean>> soloMuteState = partsList.getSoloMuteStates();
 		File originalMsx = abcSong.getProjectFile();
@@ -2686,6 +2700,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			abcModeRadioButton.setSelected(newAbcPreviewMode);
 
 			SequencerWrapper newSequencer = newAbcPreviewMode ? abcSequencer : sequencer;
+
+			if (!newAbcPreviewMode && abcSong != null) {
+				sendMIDIResets(abcSong.getSequenceInfo().standard);
+			}
+
 			newSequencer.setRunning(shouldBeRunning);
 
 			abcPreviewMode = newAbcPreviewMode;
