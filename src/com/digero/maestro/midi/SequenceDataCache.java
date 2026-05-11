@@ -196,9 +196,11 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 								expression.put(ch, tick, shortMsg.getData2());
 								break;
 							case REGISTERED_PARAMETER_NUMBER_MSB:
+								if (rpn[ch] == REGISTERED_PARAM_NONE) rpn[ch] = 0;
 								rpn[ch] = (rpn[ch] & 0x7F) | ((shortMsg.getData2() & 0x7F) << 7);
 								break;
 							case REGISTERED_PARAMETER_NUMBER_LSB:
+								// there is no guard to zero it here on purpose
 								rpn[ch] = (rpn[ch] & (0x7F << 7)) | (shortMsg.getData2() & 0x7F);
 								break;
 							case DATA_ENTRY_COARSE:
