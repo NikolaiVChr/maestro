@@ -384,6 +384,18 @@ public class SequenceInfo implements MidiConstants {
 		TreeMap<Long, PatchEntry> bankAndPatchTrack = new TreeMap<>();// Maps cannot have duplicate entries, so using a
 																		// PatchEntry class to store.
 
+		/*
+		// debug track 0:
+		for (int track = 0; track < tracks.length; track++) {
+			if (track != 0) continue;
+			Track t = tracks[track];
+			for (int j = 0; j < t.size(); j++) {
+				MidiEvent evt = t.get(j);
+				System.out.printf("Tick %08d: %s\n",evt.getTick(), MidiUtils.midiMessageToString(evt.getMessage()));
+			}
+		}
+		*/
+
 		// System.err.println("\nDetermineStandard:");
 
 		/*
@@ -405,7 +417,7 @@ public class SequenceInfo implements MidiConstants {
 					 */
 
 					// the "& 0xFF" is to convert to unsigned int from signed byte.
-					if (isResetXG(message)) {
+					if (MidiUtils.isResetXG(message)) {
 						if (MidiStandard.GM != standard && MidiStandard.XG != standard) {
 							log.info(fileName + ": MIDI XG Reset in a " + standard + " file. This is unusual!");
 						}
@@ -421,7 +433,7 @@ public class SequenceInfo implements MidiConstants {
 						}
 						ExtensionMidiInstrument.getInstance();
 						// System.err.println("Yamaha XG Reset, tick "+evt.getTick());
-					} else if (isResetGS(message)) {
+					} else if (MidiUtils.isResetGS(message)) {
 						if (MidiStandard.GM != standard && MidiStandard.GS != standard) {
 							log.info(fileName + ": MIDI GS Reset in a " + standard + " file. This is unusual!");
 						}
@@ -431,7 +443,7 @@ public class SequenceInfo implements MidiConstants {
 						}
 						ExtensionMidiInstrument.getInstance();
 						// System.err.println("Roland GS Reset, tick "+evt.getTick());
-					} else if (isResetGM2(message)) {
+					} else if (MidiUtils.isResetGM2(message)) {
 						if (MidiStandard.GM != standard && MidiStandard.GM2 != standard) {
 							log.info(fileName + ": MIDI GM2 Reset in a " + standard + " file. This is unusual!");
 						}
@@ -1166,48 +1178,7 @@ public class SequenceInfo implements MidiConstants {
 		log.fine("After: " + Util.formatDurationM(song.getMicrosecondLength()));
 		return earlyEndTick + 1L;
 	}
-	
-	public static boolean isResetGM(byte[] message) {
-		// byte[2] = device id
-		if (message.length == 6 && (message[0] & 0xFF) == 0xF0 && (message[1] & 0xFF) == 0x7E
-				&& (message[3] & 0xFF) == 0x09 && (message[4] & 0xFF) == 0x01 && (message[5] & 0xFF) == 0xF7) {
-			return true;
-		}
-		return false;
-	}
-	
-	public static boolean isResetXG(byte[] message) {
-		// byte[2] = device id
-		if (message.length == 9 && (message[0] & 0xFF) == 0xF0 && (message[1] & 0xFF) == 0x43
-				&& (message[4] & 0xFF) == 0x00 && (message[5] & 0xFF) == 0x00 && (message[6] & 0xFF) == 0x7E
-				&& (message[7] & 0xFF) == 0x00 && (message[8] & 0xFF) == 0xF7) {
-			return true;
-		}
-		return false;
-	}
-	
-	public static boolean isResetGS(byte[] message) {
-		// byte[2] = device id
-		// byte[3] = device model
-		if (message.length == 11 && (message[0] & 0xFF) == 0xF0 && (message[1] & 0xFF) == 0x41
-				&& (message[3] & 0xFF) == 0x42 && (message[4] & 0xFF) == 0x12 && (message[5] & 0xFF) == 0x40
-				&& (message[6] & 0xFF) == 0x00 && (message[7] & 0xFF) == 0x7F && (message[8] & 0xFF) == 0x00
-				&& (message[10] & 0xFF) == 0xF7) {
-			return true;
-		}
-		return false;
-	}
-	
-	public static boolean isResetGM2(byte[] message) {
-		// byte[2] = device id
-		if (message.length == 6 && (message[0] & 0xFF) == 0xF0 && (message[1] & 0xFF) == 0x7E
-				&& (message[3] & 0xFF) == 0x09 && (message[4] & 0xFF) == 0x03
-				&& (message[5] & 0xFF) == 0xF7) {
-			return true;
-		}
-		return false;
-	}
-	
+
 	/**
 	 * 
 	 * @return the result from splitting tracks with multiple instruments into 1 track per instrument.

@@ -5,8 +5,6 @@ import javax.sound.midi.Receiver;
 import javax.sound.midi.ShortMessage;
 import javax.sound.midi.SysexMessage;
 
-import com.digero.maestro.midi.SequenceInfo;
-
 /**
  * This class has only 2 functions:
  * 1: Intercept any sysex device master volume messages from midi files and don't pass them on to the Synthesizer.
@@ -93,19 +91,19 @@ public class VolumeTransceiver implements Transceiver, MidiConstants
 			if (sysex.length > 4 && sysex[1] == SYSEX_UNIVERSAL_REALTIME && (sysex[3] & 0xFF) == 0x04 && (sysex[4] & 0xFF) == 0x01) {
 				//System.out.println("Ignored SysEx device volume command:\n"+MidiUtils.formatBytes(sysex));
 				return;
-			} else if (SequenceInfo.isResetGS(sysex)) {
+			} else if (MidiUtils.isResetGS(sysex)) {
 				//System.out.println("GS reset (will mess with MIDI playback volume, so we set also volume again)");
 				systemReset = true;
 				return;
-			} else if (SequenceInfo.isResetXG(sysex)) {
+			} else if (MidiUtils.isResetXG(sysex)) {
 				//System.out.println("XG reset (will mess with MIDI playback volume, so we set also volume again)");
 				systemReset = true;
 				return;
-			} else if (SequenceInfo.isResetGM2(sysex)) {
+			} else if (MidiUtils.isResetGM2(sysex)) {
 				//System.out.println("GM2 reset (will mess with MIDI playback volume, so we set also volume again)");
 				systemReset = true;
 				return;
-			} else if (SequenceInfo.isResetGM(sysex)) {
+			} else if (MidiUtils.isResetGM(sysex)) {
 				//System.out.println("GM reset");
 				return;
 			} else {
