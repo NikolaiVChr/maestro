@@ -657,6 +657,10 @@ public class MidiUtils {
             str += ", Channel="+shorty.getChannel();
         } else if (m instanceof SysexMessage sysex) {
             str += "Sysex";
+            if (sysex.getMessage().length < 2) {
+                str += " with only 1 byte: "+formatBytesHexOnly(sysex.getMessage());
+                return str;
+            }
             if (sysex.getMessage()[1] == MidiConstants.SYSEX_UNIVERSAL_REALTIME) {
                 str += ", Realtime";
             } else if (sysex.getMessage()[1] == MidiConstants.SYSEX_UNIVERSAL_NON_REALTIME) {
