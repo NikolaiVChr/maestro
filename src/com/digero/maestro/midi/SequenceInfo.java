@@ -476,6 +476,7 @@ public class SequenceInfo implements MidiConstants {
 							rolandDrumChannels[channel] = toDrums;
 						}
 					} else if (message.length == 9 && (message[0] & 0xFF) == 0xF0 && (message[1] & 0xFF) == 0x43
+							&& (message[3] & 0xFF) == 0x4C
 							&& (message[4] & 0xFF) == 0x08 && (message[6] & 0xFF) == 0x07
 							&& (message[8] & 0xFF) == 0xF7) {
 						String type = "Normal";
@@ -496,25 +497,32 @@ public class SequenceInfo implements MidiConstants {
 								type = "Invalid setup: " + message[7];
 							}
 							log.fine("Yamaha XG setting channel #"+message[5]+" to "+type);
+							/*
 							if ((message[3] & 0xFF) != 0x4C) {
 								// for backwards compat we still do the setup but just log the fail:
-								log.severe("Yamaha XG drum setup without 0x4C !!!");
+								log.severe("Yamaha XG drum setup without 0x4C !!! "+fileName);
 							}
+							*/
 						}
 					} else if (message.length == 9 && (message[0] & 0xFF) == 0xF0 && (message[1] & 0xFF) == 0x43
+							&& (message[3] & 0xFF) == 0x4C
 							&& (message[4] & 0xFF) == 0x00 && (message[5] & 0xFF) == 0x00 && (message[6] & 0xFF) == 0x07
 							&& (message[8] & 0xFF) == 0xF7) {
-
-						log.fine(
+						// TODO: implement this
+						log.warning(
 								fileName + ": Yamaha XG Drum Part Protect mode " + (message[7] == 0 ? "OFF" : "ON"));
+						/*
 						if ((message[3] & 0xFF) != 0x4C) {
 							// for backwards compat we still do the protection but just log the fail:
-							log.severe("Yamaha XG drum protect mode without 0x4C !!!");
+							log.severe("Yamaha XG drum protect mode without 0x4C !!! "+fileName);
 						}
+						*/
 					} else if (message.length == 9 && (message[0] & 0xFF) == 0xF0 && (message[1] & 0xFF) == 0x43
 							&& (message[3] & 0xFF) == 0x4C // this check can change the listed instr, but that does not break back compat
 							&& (message[4] & 0xFF) == 0x08 && (message[8] & 0xFF) == 0xF7) {
 						// XG bank/patch change
+						// TODO: Why not check for standard here? Complex situation if file was edited on Yamaha first then Roland or GM after..
+						//       We check for standard in SequenceDataCache for same sysex!
 						PatchEntry entry = null;
 						entry = bankAndPatchTrack.get(evt.getTick());
 						if (entry == null) {
@@ -524,6 +532,14 @@ public class SequenceInfo implements MidiConstants {
 						} else {
 							entry.sysex.add(evt);
 						}
+						if (standard != MidiStandard.XG) {
+							log.severe("Yamaha XG bank select, but in "+standard+" file. "+fileName);
+						}
+						/*
+						if ((message[3] & 0xFF) != 0x4C) {
+							log.severe("Yamaha XG bank select without 0x4C !!! "+fileName);
+						}
+						*/
 					}
 				} else if (msg instanceof ShortMessage m) {
                     int cmd = m.getCommand();
