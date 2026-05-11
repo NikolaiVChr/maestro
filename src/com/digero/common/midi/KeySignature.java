@@ -35,12 +35,17 @@ public class KeySignature implements MidiConstants {
 
 	public KeySignature(MetaMessage midiMessage) {
 		byte[] data = midiMessage.getData();
-		if (midiMessage.getType() != META_KEY_SIGNATURE || data.length < 2) {
+		if (midiMessage.getType() != META_KEY_SIGNATURE || data.length < 1) {
 			throw new IllegalArgumentException("Midi message is not a key signature");
 		}
 
 		this.sharpsFlats = data[0];
-		this.mode = (data[1] == 1) ? KeyMode.MINOR : KeyMode.MAJOR;
+		if (data.length > 1) {
+			this.mode = (data[1] == 1) ? KeyMode.MINOR : KeyMode.MAJOR;
+		} else {
+			// guard for missing byte
+			this.mode = KeyMode.MAJOR;
+		}
 	}
 
 	public MetaMessage toMidiMessage() {

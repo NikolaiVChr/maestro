@@ -269,7 +269,11 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 						name = tmp;
 					}
 				} else if (type == META_KEY_SIGNATURE && keySignature == null) {
-					keySignature = new KeySignature(m);
+					try {
+						keySignature = new KeySignature(m);
+					} catch (IllegalArgumentException e) {
+						log.info("Track "+trackNumber+": Invalid key signature with zero bytes");
+					}
 				} else if (type == META_TIME_SIGNATURE) {
 					try {
 						if (timeSignature == null) timeSignature = new TimeSignature(m);
