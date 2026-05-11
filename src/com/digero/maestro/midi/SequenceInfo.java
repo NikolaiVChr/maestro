@@ -532,9 +532,6 @@ public class SequenceInfo implements MidiConstants {
 						} else {
 							entry.sysex.add(evt);
 						}
-						if (standard != MidiStandard.XG) {
-							log.severe("Yamaha XG bank select, but in "+standard+" file. "+fileName);
-						}
 						/*
 						if ((message[3] & 0xFF) != 0x4C) {
 							log.severe("Yamaha XG bank select without 0x4C !!! "+fileName);
