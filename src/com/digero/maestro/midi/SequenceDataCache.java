@@ -251,6 +251,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 					} else if (msg instanceof SysexMessage sysex) {
                         byte[] message = sysex.getMessage();
 						if (message.length == 9 && (message[0] & 0xFF) == 0xF0 && (message[1] & 0xFF) == 0x43
+								&& (message[3] & 0xFF) == 0x4C // this check can change the listed instr, but that does not break back compat
 								&& (message[4] & 0xFF) == 0x08 && (message[8] & 0xFF) == 0xF7) {
 							String bank = message[6] == 1 ? "MSB"
 									: (message[6] == 2 ? "LSB" : (message[6] == 3 ? "Patch" : ""));

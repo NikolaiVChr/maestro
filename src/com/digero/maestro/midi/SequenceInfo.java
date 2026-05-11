@@ -496,6 +496,10 @@ public class SequenceInfo implements MidiConstants {
 								type = "Invalid setup: " + message[7];
 							}
 							log.fine("Yamaha XG setting channel #"+message[5]+" to "+type);
+							if ((message[3] & 0xFF) != 0x4C) {
+								// for backwards compat we still do the setup but just log the fail:
+								log.severe("Yamaha XG drum setup without 0x4C !!!");
+							}
 						}
 					} else if (message.length == 9 && (message[0] & 0xFF) == 0xF0 && (message[1] & 0xFF) == 0x43
 							&& (message[4] & 0xFF) == 0x00 && (message[5] & 0xFF) == 0x00 && (message[6] & 0xFF) == 0x07
@@ -503,7 +507,12 @@ public class SequenceInfo implements MidiConstants {
 
 						log.fine(
 								fileName + ": Yamaha XG Drum Part Protect mode " + (message[7] == 0 ? "OFF" : "ON"));
+						if ((message[3] & 0xFF) != 0x4C) {
+							// for backwards compat we still do the protection but just log the fail:
+							log.severe("Yamaha XG drum protect mode without 0x4C !!!");
+						}
 					} else if (message.length == 9 && (message[0] & 0xFF) == 0xF0 && (message[1] & 0xFF) == 0x43
+							&& (message[3] & 0xFF) == 0x4C // this check can change the listed instr, but that does not break back compat
 							&& (message[4] & 0xFF) == 0x08 && (message[8] & 0xFF) == 0xF7) {
 						// XG bank/patch change
 						PatchEntry entry = null;
