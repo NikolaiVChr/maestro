@@ -99,7 +99,7 @@ public class SequenceInfo implements MidiConstants {
 	}
 
     /**
-     * Create instance of this class for unti-testing
+     * Create an instance of this class for unit-testing
      */
     public static SequenceInfo fromSequence(Sequence seq, MiscSettings miscSettings)
             throws InvalidMidiDataException, FileParseException {
