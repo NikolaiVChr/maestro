@@ -521,8 +521,8 @@ public class SequenceInfo implements MidiConstants {
 							&& (message[3] & 0xFF) == 0x4C // this check can change the listed instr, but that does not break back compat
 							&& (message[4] & 0xFF) == 0x08 && (message[8] & 0xFF) == 0xF7) {
 						// XG bank/patch change
-						// TODO: Why not check for standard here? Complex situation if file was edited on Yamaha first then Roland or GM after..
-						//       We check for standard in SequenceDataCache for same sysex!
+						// We do not check for standard here cause it is later put into yamaha bank changes and only
+						// Used in XG standard.
 						PatchEntry entry = null;
 						entry = bankAndPatchTrack.get(evt.getTick());
 						if (entry == null) {
@@ -1221,6 +1221,6 @@ public class SequenceInfo implements MidiConstants {
 	private static class PatchEntry {
 		public List<MidiEvent> bank = new ArrayList<>();
 		public List<MidiEvent> patch = new ArrayList<>();
-		public List<MidiEvent> sysex = new ArrayList<>();
+		public List<MidiEvent> sysex = new ArrayList<>();// only xg bank changes are put in here
 	}
 }
