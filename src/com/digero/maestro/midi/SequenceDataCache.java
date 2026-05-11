@@ -127,7 +127,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 								// Support for (non-midi-standard) port assignments used by Cakewalk and
 								// Musescore.
 								// We only support this for GM, and only super well-formed (tick == 0).
-								port = (int) portChange[0];
+								port = (int) portChange[0] & 0xFF;
 								log.fine("Port change on track "+iiTrack+", tick "+tick+", port "+MidiUtils.formatBytes(portChange));
 								portMap.put(iiTrack, port);
 								hasPorts = MidiStandard.GM == standard;

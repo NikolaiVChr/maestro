@@ -45,7 +45,7 @@ public interface MidiConstants {
 	int DRUM_CHANNEL = 9;
 	int CHANNEL_COUNT = 16;
 	int CHANNEL_COUNT_ABC = 25;
-	int PORT_COUNT = 128;
+	int PORT_COUNT = 256;
 	int LOWEST_NOTE_ID = 0;
 	int HIGHEST_NOTE_ID = 127;
 	int NOTE_COUNT = HIGHEST_NOTE_ID - LOWEST_NOTE_ID + 1;

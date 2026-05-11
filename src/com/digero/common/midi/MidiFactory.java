@@ -1,6 +1,7 @@
 package com.digero.common.midi;
 
 import java.nio.charset.StandardCharsets;
+import java.util.logging.Logger;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MetaMessage;
@@ -13,6 +14,9 @@ import javax.sound.midi.SysexMessage;
  * Provides static methods to create MidiEvents.
  */
 public class MidiFactory implements MidiConstants {
+
+	private static final Logger log = Logger.getLogger("midi");
+
 	/**
 	 * @param mpqn Microseconds per quarter note
 	 */
@@ -161,13 +165,13 @@ public class MidiFactory implements MidiConstants {
 	}
 
 	public static MidiEvent createPortEvent(int port) {
+		if (port < 0 || port > 255) {
+			log.severe("Invalid MIDI Port: " + port + ". Must be 0-255.");
+			return null;
+		}
 		try {
 			byte[] data = new byte[1];
 			data[0] = (byte) port;
-			if (port != (int) data[0]) {
-				System.out.println("Midi expansion cast to byte failed");
-				return null;
-			}
 			MetaMessage msg = new MetaMessage();
 			msg.setMessage(META_PORT_CHANGE, data, 1);
 			return new MidiEvent(msg, 0);
