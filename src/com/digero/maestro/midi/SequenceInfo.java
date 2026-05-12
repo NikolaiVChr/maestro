@@ -158,7 +158,8 @@ public class SequenceInfo implements MidiConstants {
 		}
 
 		sequenceCache = new SequenceDataCache(this.sequence, standard, rolandDrumChannels, yamahaDrumSwitches,
-				yamahaDrumChannels, mmaDrumSwitches, portMap, onlyFirstTrackTempos, ignoreZeroChannelVolume, ignoreMidiText);
+				yamahaDrumChannels, mmaDrumSwitches, portMap, onlyFirstTrackTempos, ignoreZeroChannelVolume,
+				ignoreMidiText, fileName);
 		hasPorts = sequenceCache.hasPorts;
 		primaryTempoMPQ = sequenceCache.getPrimaryTempoMPQ();
 
@@ -211,7 +212,7 @@ public class SequenceInfo implements MidiConstants {
         histogram = result.third;
         dissonance = result.fourth;
 		standard = MidiStandard.PREVIEW;
-		sequenceCache = new SequenceDataCache(sequence, standard, null, null, null, null, portMap, true, false, true);
+		sequenceCache = new SequenceDataCache(sequence, standard, null, null, null, null, portMap, true, false, true, "ABC Preview Internal MIDI");
 		primaryTempoMPQ = sequenceCache.getPrimaryTempoMPQ();
 
 		this.trackInfoList = null;

@@ -1,7 +1,6 @@
 package com.digero.maestro.midi;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -52,6 +51,8 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	private final MapByChannel pitchBendRangeCoarse = new MapByChannel(DEFAULT_PITCH_BEND_RANGE_SEMITONES);
 	private final MapByChannel pitchBendRangeFine = new MapByChannel(DEFAULT_PITCH_BEND_RANGE_CENTS);
 	private final MapByChannel bendMap;
+	private final MapByChannel rpnLSBMap = new MapByChannel(DEFAULT_RPN_NULL);
+	private final MapByChannel rpnMSBMap = new MapByChannel(DEFAULT_RPN_NULL);
 	private final MapByChannel panMap;
 	private final MapByChannel mapMSB = new MapByChannel(0);
 	private final MapByChannel mapLSB = new MapByChannel(0);
@@ -65,10 +66,15 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	private final boolean ignoreZeroChannelVolume;
 	private final MidiText midiText;
     private boolean tempoInHigherTracks = false;
+	private String fileName = "";
 
 	public SequenceDataCache(Sequence song, MidiStandard standard, boolean[] rolandDrumChannels,
 			List<TreeMap<Long, Boolean>> yamahaDrumSwitches, boolean[] yamahaDrumChannels,
-			List<TreeMap<Long, Boolean>> mmaDrumSwitches, SortedMap<Integer, Integer> portMap, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume, boolean ignoreMidiText) {
+			List<TreeMap<Long, Boolean>> mmaDrumSwitches, SortedMap<Integer, Integer> portMap,
+			boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume, boolean ignoreMidiText,
+			String fileName) {
+
+		this.fileName = fileName;
 
         // This is total accumulated duration in micros of each tempo used in the song
 		Map<Integer, Long> tempoLengths = new HashMap<>();// MPQ -> micros
@@ -87,10 +93,6 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		divisionType = song.getDivisionType();
 		tickResolution = song.getResolution();
 
-		// Keep track of the active Registered Parameter Number for pitch bend range
-		int[] rpn = new int[CHANNEL_COUNT_ABC];
-		Arrays.fill(rpn, REGISTERED_PARAM_NONE);
-
 		midiText = new MidiText(this);
 		
 		/*
@@ -101,11 +103,12 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		 * This among other things we will find out by iterating through all MidiEvents.
 		 * 
 		 */
-		List<Triple<Integer, Long, Double>> rawBendMap = new ArrayList<>();
+		List<Triple<Integer, Long, Double>> pitchWheelMap = new ArrayList<>();
 		panMap = new MapByChannel(PAN_CENTER);
 		Track[] tracks = song.getTracks();
 		hasPorts = false;
 		long lastTick = 0L;
+		final boolean specCompliant = false;
 		if (standard != MidiStandard.PREVIEW) {
 			for (int iiTrack = 0; iiTrack < tracks.length; iiTrack++) {
 				// Build a map of ports, this is done before main iteration
@@ -117,25 +120,94 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 				for (int jj = 0, sz1 = track.size(); jj < sz1; jj++) {
 					MidiEvent evt = track.get(jj);
 					long tick = evt.getTick();
-					if (tick != 0L)
-						break;
 					MidiMessage msg = evt.getMessage();
-					if (msg instanceof MetaMessage meta) {
-                        if (meta.getType() == META_PORT_CHANGE) {
+					if (tick == 0L && msg instanceof MetaMessage meta) {
+						if (meta.getType() == META_PORT_CHANGE) {
 							byte[] portChange = meta.getData();
 							if (portChange.length == 1) {
 								// Support for (non-midi-standard) port assignments used by Cakewalk and
 								// Musescore.
 								// We only support this for GM, and only super well-formed (tick == 0).
 								port = (int) portChange[0] & 0xFF;
-								log.fine("Port change on track "+iiTrack+", tick "+tick+", port "+MidiUtils.formatBytes(portChange));
+								log.fine("Port change on track " + iiTrack + ", tick " + tick + ", port " + MidiUtils.formatBytes(portChange));
 								portMap.put(iiTrack, port);
 								hasPorts = MidiStandard.GM == standard;
 								break;
 							}
 						} else if (meta.getType() == META_PORT_NAME) {
 							byte[] data = meta.getData();
-							log.fine("Named port: "+(new String(data)));
+							log.fine("Named port: " + (new String(data)));
+						}
+					} else if (msg instanceof ShortMessage shortMsg) {
+						int cmd = shortMsg.getCommand();
+						int ch = shortMsg.getChannel();
+						if (cmd == ShortMessage.CONTROL_CHANGE) {
+							switch (shortMsg.getData1()) {
+								case REGISTERED_PARAMETER_NUMBER_MSB:
+									rpnMSBMap.put(ch, tick, shortMsg.getData2());
+									break;
+								case REGISTERED_PARAMETER_NUMBER_LSB:
+									rpnLSBMap.put(ch, tick, shortMsg.getData2());
+									break;
+								case RESET_ALL_CONTROLLERS:
+									if (tick > 0L) {
+										String str = "";
+										int rl = rpnLSBMap.get(ch, tick);
+										int rm = rpnMSBMap.get(ch, tick);
+										int ex = expression.get(ch, tick);
+										boolean changingStuff = rl != 127 || rm != 127 || (specCompliant && ex != 127);// too much hassle to detect if bend wheel was active.
+										if (changingStuff) {
+											str += "\n rpn lsb " + rl + " -> " + DEFAULT_RPN_NULL;
+											str += "\n rpn msb " + rm + " -> " + DEFAULT_RPN_NULL;
+											if (specCompliant) str += "\n expr " + ex + " -> " + DEFAULT_EXPRESSION;
+											str += "\n pitch wheel -> 0%";
+										}
+
+										//this will remove some pitch bending changes from some songs, but it's the right thing to do as per specs:
+										rpnLSBMap.putIfAbsent(ch, tick, DEFAULT_RPN_NULL);
+										rpnMSBMap.putIfAbsent(ch, tick, DEFAULT_RPN_NULL);
+										pitchWheelMap.add(new Triple<>(ch, tick, 0.0d));
+
+										// TODO: Spec dictates this, but it will break backwards compatibility with projects volume.
+										//       Plan is to make an option or toggle inside projects like when introduced expressions.
+										//expression.put(ch, tick, DEFAULT_EXPRESSION);
+
+										if (changingStuff) log.warning(fileName + ": Resetting all controllers on channel " + ch + ", tick " + tick + str);
+									}
+									break;
+							}
+						}
+					} else if (specCompliant && tick > 0L && msg instanceof SysexMessage sysex) {
+						byte[] smsg = sysex.getMessage();
+						boolean isResetGM = false;
+						boolean isResetGM2 = false;
+						boolean isResetXG = false;
+						boolean isResetGS = false;
+						if ((isResetGM = MidiUtils.isResetGM(smsg)) || (isResetGS = MidiUtils.isResetGS(smsg))
+								|| (isResetXG = MidiUtils.isResetXG(smsg)) || (isResetGM2 = MidiUtils.isResetGM2(smsg))) {
+
+							// TODO: This will break backwards compatibility for sure :(
+							//       Therefore the specCompliant bool stops it from happening.
+							//       In future versions, this behavior may be configurable.
+							for (int ch = 0; ch < CHANNEL_COUNT_ABC; ch++) {
+								rpnLSBMap.put(ch, tick, DEFAULT_RPN_NULL);
+								rpnMSBMap.put(ch, tick, DEFAULT_RPN_NULL);
+								expression.put(ch, tick, DEFAULT_EXPRESSION);
+								channelVolume.put(ch, tick, DEFAULT_CHANNEL_VOLUME);
+								panMap.put(ch, tick, PAN_CENTER);
+								pitchWheelMap.add(new Triple<>(ch, tick, 0.0d));
+								pitchBendRangeCoarse.put(ch, tick, DEFAULT_PITCH_BEND_RANGE_SEMITONES);
+								pitchBendRangeFine.put(ch, tick, DEFAULT_PITCH_BEND_RANGE_CENTS);
+								if (MidiStandard.GM == standard && isResetGM) {
+									// This has issues. What if there is a GM reset in the middle
+									// of a GS file? This will reset the patch, which is not ideal.
+									// This code should probably never be run, even though its spec compliant.
+									mapMSB.put(ch, tick, 0);
+									mapLSB.put(ch, tick, 0);
+									mapPatch.put(ch, tick, 0);
+								}
+							}
+							log.warning(fileName+": Resetting everything, tick "+tick+" GM="+isResetGM+" XG="+isResetXG+" GS="+isResetGS+" GM2="+isResetGM2);
 						}
 					}
 				}
@@ -171,6 +243,10 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 								brandDrumBanks[iTrack] = DrumBankType.STANDARD_DRUM;// GM drums on channel #10
 							}
 						} else if (cmd == ShortMessage.PROGRAM_CHANGE) {
+							if (shortMsg.getData1() > 127) {
+								log.warning(fileName+"; Channel "+ch+": Ignoring program change out of range: "+shortMsg.getData1());
+								continue;
+							}
 							if (((ch != DRUM_CHANNEL && rolandDrumChannels == null && yamahaDrumChannels == null)
 									|| ((rolandDrumChannels == null || MidiStandard.GS != standard
 											|| !rolandDrumChannels[ch])
@@ -190,12 +266,14 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 							switch (shortMsg.getData1()) {
 							case CHANNEL_VOLUME_CONTROLLER_COARSE:
 								if (shortMsg.getData2() != 0 || !ignoreZeroChannelVolume)
-									channelVolume.put(ch, tick, shortMsg.getData2());
+									channelVolume.put(ch, tick, Math.clamp(shortMsg.getData2(), 0, 127));
 								break;
 							case CHANNEL_EXPRESSION_CONTROLLER:
-								expression.put(ch, tick, shortMsg.getData2());
+								expression.put(ch, tick, Math.clamp(shortMsg.getData2(), 0, 127));
 								break;
+								/*
 							case REGISTERED_PARAMETER_NUMBER_MSB:
+								// TODO: channel, not tracks!!
 								if (rpn[ch] == REGISTERED_PARAM_NONE) rpn[ch] = 0;
 								rpn[ch] = (rpn[ch] & 0x7F) | ((shortMsg.getData2() & 0x7F) << 7);
 								break;
@@ -203,30 +281,77 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 								// there is no guard to zero it here on purpose
 								rpn[ch] = (rpn[ch] & (0x7F << 7)) | (shortMsg.getData2() & 0x7F);
 								break;
+								*/
 							case DATA_ENTRY_COARSE:
-								if (rpn[ch] == REGISTERED_PARAM_PITCH_BEND_RANGE)
-									pitchBendRangeCoarse.put(ch, tick, shortMsg.getData2());
+								if (getRPN(ch, tick) == REGISTERED_PARAM_PITCH_BEND_RANGE) {
+									if (shortMsg.getData2() > 127) {
+										log.warning(fileName + "; Channel " + ch + ": Clamping coarse pitch bend wheel range out of bounds: " + shortMsg.getData2()+" semitones");
+									}
+									pitchBendRangeCoarse.put(ch, tick, Math.clamp(shortMsg.getData2(), 0, 127));
+								}
 								break;
 							case DATA_ENTRY_FINE:
-								if (rpn[ch] == REGISTERED_PARAM_PITCH_BEND_RANGE)
-									pitchBendRangeFine.put(ch, tick, shortMsg.getData2());
+								if (getRPN(ch, tick) == REGISTERED_PARAM_PITCH_BEND_RANGE) {
+									if (shortMsg.getData2() > 99) {
+										log.info(fileName + "; Channel " + ch + ": Clamping fine pitch bend wheel range out of bounds: " + shortMsg.getData2()+" cents.");
+									}
+									pitchBendRangeFine.put(ch, tick, Math.clamp(shortMsg.getData2(), 0, 99));
+								}
 								break;
 							case DATA_BUTTON_INCREMENT:
-								if (rpn[ch] == REGISTERED_PARAM_PITCH_BEND_RANGE) {
-									pitchBendRangeFine.put(ch, tick, pitchBendRangeFine.get(ch, tick) + 1);
+								// TODO: other RPNs??
+								if (getRPN(ch, tick) == REGISTERED_PARAM_PITCH_BEND_RANGE) {
+									int currentFine = pitchBendRangeFine.get(ch, tick);
+									int currentCoarse = pitchBendRangeCoarse.get(ch, tick);
+
+									currentFine++;
+
+									// RP-018: Wrap to next semitone when reaching 100 cents
+									if (currentFine >= 100) {
+										if (currentCoarse < 127) {
+											currentFine = 0;
+											currentCoarse++;
+											pitchBendRangeCoarse.put(ch, tick, currentCoarse);
+										} else {
+											// Hard clamp at the absolute maximum (127 semitones, 99 cents)
+											currentFine = 99;
+										}
+									}
 									log.fine("DATA_BUTTON_INCREMENT for pitch bend detected.");
+									pitchBendRangeFine.put(ch, tick, currentFine);
 								}
 								break;
 							case DATA_BUTTON_DECREMENT:
-								if (rpn[ch] == REGISTERED_PARAM_PITCH_BEND_RANGE) {
-									pitchBendRangeFine.put(ch, tick, pitchBendRangeFine.get(ch, tick) - 1);
+								if (getRPN(ch, tick) == REGISTERED_PARAM_PITCH_BEND_RANGE) {
+									int currentFine2 = pitchBendRangeFine.get(ch, tick);
+									int currentCoarse2 = pitchBendRangeCoarse.get(ch, tick);
+
+									currentFine2--;
+
+									// RP-018: Wrap to previous semitone when dropping below 0 cents
+									if (currentFine2 < 0) {
+										if (currentCoarse2 > 0) {
+											currentFine2 = 99;
+											currentCoarse2--;
+											pitchBendRangeCoarse.put(ch, tick, currentCoarse2);
+										} else {
+											// Hard clamp at absolute minimum (0 semitones, 0 cents)
+											currentFine2 = 0;
+										}
+									}
+
+									pitchBendRangeFine.put(ch, tick, currentFine2);
 									log.fine("DATA_BUTTON_DECREMENT for pitch bend detected.");
 								}
 								break;
 							case PAN_CONTROL:
-								panMap.put(ch, tick, shortMsg.getData2());
+								panMap.put(ch, tick, Math.clamp(shortMsg.getData2(),0,127));
 								break;
 							case BANK_SELECT_MSB:
+								if (shortMsg.getData2() > 127) {
+									log.warning(fileName+"; Channel "+ch+": Ignoring MSB bank address out of range: "+shortMsg.getData2());
+									continue;
+								}
 								if (ch != DRUM_CHANNEL || MidiStandard.XG != standard || shortMsg.getData2() == 126
 										|| shortMsg.getData2() == 127) {
 									// Due to XG drum part protect mode being ON, drum channel 9 only can switch
@@ -239,13 +364,24 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 								// if(ch==DRUM_CHANNEL) System.err.println("Bank select MSB "+m.getData2()+" "+tick);
 								break;
 							case BANK_SELECT_LSB:
+								if (shortMsg.getData2() > 127) {
+									log.warning(fileName+"; Channel "+ch+": Ignoring LSB bank address out of range: "+shortMsg.getData2());
+									continue;
+								}
 								mapLSB.put(ch, tick, shortMsg.getData2());
 								// if(ch==DRUM_CHANNEL) System.err.println("Bank select LSB "+m.getData2()+" "+tick);
 								break;
 							}
 						} else if (cmd == ShortMessage.PITCH_BEND) {
-							double pct = 2.0d * (((shortMsg.getData1() | (shortMsg.getData2() << 7)) / (double) (1 << 14)) - 0.5d);
-							rawBendMap.add(new Triple<>(ch, tick, pct));
+							int value1 = shortMsg.getData1();
+							int value2 = shortMsg.getData2();
+							if (value1 > 127 || value2 > 127) {
+								log.warning(fileName+"; Channel "+ch+": Clamping pitch bend out of range: "+value1+","+value2);
+							}
+							value1 = Math.clamp(shortMsg.getData1(),0,127);
+							value2 = Math.clamp(shortMsg.getData2(),0,127);
+							double pct = 2.0d * (((value1 | (value2 << 7)) / (double) (1 << 14)) - 0.5d);
+							pitchWheelMap.add(new Triple<>(ch, tick, pct));
 							// Notice we put in the bend even if its a repeat of same bend.
 							// Reason is that later on another track there might get put some
 							// bends in between them.
@@ -272,7 +408,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 					} else if (divisionType == Sequence.PPQ && MidiUtils.isMetaTempo(msg)) {
 
                         int tempoRaw = MidiUtils.getTempoMPQ(msg);
-                        if (tempoRaw != 0) {
+                        if (tempoRaw > 0) {
                             if (iTrack > 0) tempoInHigherTracks = true;
 
                             if (!onlyFirstTrackTempos || iTrack == 0) {
@@ -296,7 +432,8 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
                                 }
                             }
                         } else {
-                            log.warning("MIDI has tempo message of zero MPQ! Ignoring it..");
+                            if (tempoRaw == 0) log.warning("MIDI has tempo message of zero MPQ! Ignoring it..");
+							if (tempoRaw < 0) log.warning("MIDI has tempo message of negative MPQ! Ignoring it..");
                             track.remove(evt);
                             sz--;
                             j--;
@@ -432,7 +569,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		// We do this after the main iteration so that the
 		// getPitchBendRange has been fully built.
 		bendMap = new MapByChannel(0);
-		for (Triple<Integer, Long, Double> raw : rawBendMap) {
+		for (Triple<Integer, Long, Double> raw : pitchWheelMap) {
 			int semiToneBend = (int) Math.round(raw.third * getPitchBendRange(raw.first, raw.second));
 			bendMap.put(raw.first, raw.second, semiToneBend);
 		}
@@ -449,7 +586,17 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		songLengthTicks = lastTick;
 		
 		if (!ignoreMidiText && standard != MidiStandard.ABC) log.info("Lyrics stats: "+midiText.getTextStats());
-	}	
+	}
+
+	private int getRPN(int channel, long tick) {
+		int msb = rpnMSBMap.get(channel, tick);
+		int lsb = rpnLSBMap.get(channel, tick);
+		if (msb != 127 && lsb == 127) {// && rpnLSBMap.getEntries(channel,0L, tick).isEmpty()
+			log.severe(fileName+": Channel "+channel+", RPN being utilized while LSB is default (NULL)! Using effective value of 0 LSB.");
+			lsb = 0;
+		}
+		return (msb << 7) | lsb;
+	}
 
 	public boolean isXGDrumsTrack(int track) {
 		if (track >= brandDrumBanks.length)
@@ -752,6 +899,13 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 				map[channel] = new TreeMap<>();
 
 			map[channel].put(tick, value);
+		}
+
+		public void putIfAbsent(int channel, long tick, Integer value) {
+			if (map[channel] == null)
+				map[channel] = new TreeMap<>();
+
+			map[channel].putIfAbsent(tick, value);
 		}
 
 		public int get(int channel, long tick) {
