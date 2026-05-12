@@ -825,6 +825,17 @@ public class SequenceInfo implements MidiConstants {
             Track oldTrack = oldTracks[i];
             Track mainTrack = newMainTracks[i];
 
+			// Find the port event on this track
+			MidiEvent portEvent = null;
+			for (int j = 0; j < oldTrack.size(); j++) {
+				MidiEvent evt = oldTrack.get(j);
+				if (evt.getTick() > 0L) break;
+				if (evt.getMessage() instanceof MetaMessage meta && meta.getType() == META_PORT_CHANGE) {
+					portEvent = evt;
+					break;
+				}
+			}
+
             int drumsGS = 0;
             int drumsXG = 0;
             int drumsGM2 = 0;
@@ -901,15 +912,18 @@ public class SequenceInfo implements MidiConstants {
                     if (drumsGM == 1) {
                         drumTrack = newSeq.createTrack();
                         drumTrack.add(MidiFactory.createTrackNameEvent(ExtensionMidiInstrument.TRACK_NAME_DRUM_GM));
+						if (portEvent != null) drumTrack.add(new MidiEvent(portEvent.getMessage(), portEvent.getTick()));
                         //System.err.println("Drum and Chromatic notes in same track. Create ch10 GM Drum track. From "+i);
                     }
                     if (notes10 + notesX > 1) {
                         noteTrack = newSeq.createTrack();
                         noteTrack.add(MidiFactory.createTrackNameEvent("Track " + i + "+"));
+						if (portEvent != null) noteTrack.add(new MidiEvent(portEvent.getMessage(), portEvent.getTick()));
                         //System.err.println("Chromatic notes in channel 10. Create chromatic ch10 track. From " + i);
                     }
                     if (drumsXG + drumsGS + drumsGM2 > 0) {
                         brandDrumTrack = createBrandDrumTrack(drumsGS, drumsXG, drumsGM2, newSeq);
+						if (portEvent != null) brandDrumTrack.add(new MidiEvent(portEvent.getMessage(), portEvent.getTick()));
                         //System.err.println("Drum and Chromatic notes in same track. Create EXT Drum track. From "+i);
                     }
                 } else {
@@ -917,6 +931,7 @@ public class SequenceInfo implements MidiConstants {
                     if (drumsExt10 == 1) {
                         // Maestro v2.5.0 would have separated these, so we do the same.
                         brandDrumTrack = createBrandDrumTrack(drumsGS, drumsXG, drumsGM2, newSeq);
+						if (portEvent != null) brandDrumTrack.add(new MidiEvent(portEvent.getMessage(), portEvent.getTick()));
                         //System.err.println("EXT Drum notes in ch10 and in other channels. Create EXT Drum track. From "+i);
                     }
                     assert drumsGM == 0;
