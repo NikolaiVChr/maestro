@@ -460,12 +460,13 @@ public class SequenceInfo implements MidiConstants {
 							&& (message[7] & 0xFF) == 0x15 && (message[10] & 0xFF) == 0xF7) {
 						boolean toDrums = message[8] == 1 || message[8] == 2;
 						int channel = -1;
-						if (message[6] == 16) {
+						int part = message[6] & 0xFF;
+						if (part == 16) {
 							channel = DRUM_CHANNEL;
-						} else if (message[6] > 25 && message[6] < 32) {
+						} else if (part > 25 && part < 32) {
 							channel = message[6] - 16;
-						} else if (message[6] > 16 && message[6] < 26) {
-							channel = message[6] - 17;
+						} else if (part > 16 && part < 26) {
+							channel = part - 17;
 						}
 						if (channel != -1 && channel < 16) {
 							if (toDrums) {

@@ -164,9 +164,13 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 
 				if (cmd == ShortMessage.NOTE_ON || cmd == ShortMessage.NOTE_OFF) {
 					int noteId = m.getData1();
-					int velocity = m.getData2();
+					int velocity = Math.clamp(m.getData2(), 0, 127);
 					if (noteId < 0 || noteId > 127) {
-						throw new InvalidMidiDataException("Corrupt MIDI");
+						log.warning("Invalid note "+(cmd == ShortMessage.NOTE_ON?"ON":"OFF")+" id: "+noteId+" in track "+trackNumber+" of "+sequenceInfo.getFileName());
+						// Ignoring it might make the midi sound weird, but the alternative is to cancel the
+						// parsing of the midi. At least there is a chance it will sound okay.
+						continue;
+						//throw new InvalidMidiDataException("Corrupt MIDI");
 					}
 					if (oldVelocities) {
 						// The order of math expression here is important, so I added some parentheses:
