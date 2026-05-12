@@ -395,7 +395,7 @@ public class SequenceInfo implements MidiConstants {
 				System.out.printf("Tick %08d: %s\n",evt.getTick(), MidiUtils.midiMessageToString(evt.getMessage()));
 			}
 		}
-		*/
+		 */
 
 		// System.err.println("\nDetermineStandard:");
 

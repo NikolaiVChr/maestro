@@ -50,6 +50,7 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 	private boolean isDrumTrack;
 	private final int minVelocity;
 	private final int maxVelocity;
+	private int port = 0;
 
 	@SuppressWarnings("unchecked") //
 	TrackInfo(SequenceInfo parent, Track track, int trackNumber, SequenceDataCache sequenceCache, boolean isXGDrumTrack,
@@ -100,6 +101,19 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 
         Set<MidiNoteEvent> toBeRemoved = new HashSet<>(50);
 
+		for (int evtNum = 0, sz = track.size(); evtNum < sz; evtNum++) {
+			MidiEvent evt = track.get(evtNum);
+			MidiMessage msg = evt.getMessage();
+
+			if (evt.getTick() > 0L) break;
+			if (evt.getTick() == 0L && evt.getMessage() instanceof MetaMessage meta && meta.getType() == META_PORT_CHANGE) {
+				if (meta.getData().length == 1) {
+					port = meta.getData()[0] & 0xFF;
+					break;
+				}
+			}
+		}
+
 		long tick = -10000000;
 		for (int j = 0, sz = track.size(); j < sz; j++) {
 			MidiEvent evt = track.get(j);
@@ -114,7 +128,7 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 				// Moving to new tick, lets process bends since the last tick
 				for (int ch = 0; ch < CHANNEL_COUNT_ABC; ch++) {
 					// Lets get all bends that happened since last tick, excluding the current tick
-					Set<Entry<Long, Integer>> entries = sequenceCache.getBendMap().getEntries(ch, tick, evt.getTick());
+					Set<Entry<Long, Integer>> entries = sequenceCache.getBendMap().getEntries(port, ch, tick, evt.getTick());
 					for (Entry<Long, Integer> entry : entries) {
 						int bend = entry.getValue();
 						long bendTick = entry.getKey();
@@ -234,12 +248,12 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 							continue; // Note was probably bent out of range. Not great, but not a reason to fail.
 						}
 
-						MidiNoteEvent ne = new MidiNoteEvent(note, velocity, tick, tick, sequenceCache, sequenceCache.getPanMap().get(ch, tick));
-						if (!isDrumTrack && sequenceCache.getBendMap().get(ch, tick) != 0) {
+						MidiNoteEvent ne = new MidiNoteEvent(note, velocity, tick, tick, sequenceCache, sequenceCache.getPanMap().get(port, ch, tick));
+						if (!isDrumTrack && sequenceCache.getBendMap().get(port, ch, tick) != 0) {
 							// pitch bend active in channel already when note starts
-							BentMidiNoteEvent be = new BentMidiNoteEvent(note, velocity, tick, tick, sequenceCache, sequenceCache.getPanMap().get(ch, tick));
+							BentMidiNoteEvent be = new BentMidiNoteEvent(note, velocity, tick, tick, sequenceCache, sequenceCache.getPanMap().get(port, ch, tick));
 							allBentNotes.add(be);
-							be.addBend(tick, sequenceCache.getBendMap().get(ch, tick));
+							be.addBend(tick, sequenceCache.getBendMap().get(port, ch, tick));
 							ne = be;
 						}
 						
