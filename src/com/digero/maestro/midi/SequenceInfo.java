@@ -46,6 +46,7 @@ public class SequenceInfo implements MidiConstants {
 	public MidiStandard standard = MidiStandard.GM;
 	public boolean hasPorts = false;
 	public int midiType = -1;// -1 = abc, 0 = type 0, 1 = type 1, 2 = type 2
+	private int usingNewMidiLayout;// 0 = back compat, 1 = fixed some stuff.
 	private final boolean[] rolandDrumChannels = new boolean[CHANNEL_COUNT_ABC];// Which of the channels GS designates as
 																			// drums
 	private final boolean[] yamahaDrumChannels = new boolean[CHANNEL_COUNT_ABC];// Which of the channels XG designates as
@@ -71,12 +72,12 @@ public class SequenceInfo implements MidiConstants {
 	/**
 	 * Create instance of this class while creating MIDI sequence from abc file.
 	 */
-	public static SequenceInfo fromAbc(AbcToMidi.Params params, MiscSettings miscSettings, boolean oldVelocities, boolean ignoreMidiText)
+	public static SequenceInfo fromAbc(AbcToMidi.Params params, MiscSettings miscSettings, boolean oldVelocities, boolean ignoreMidiText, int usingNewMidiLayout)
 			throws InvalidMidiDataException, FileParseException {
 		if (params.abcInfo == null)
 			params.abcInfo = new AbcInfo();
 		SequenceInfo sequenceInfo = new SequenceInfo(params.filesData.getFirst().file.getName(), AbcToMidi.convert(params),
-				-1, miscSettings, oldVelocities, true, false, ignoreMidiText, params.abcInfo);
+				-1, miscSettings, oldVelocities, true, false, ignoreMidiText, params.abcInfo, usingNewMidiLayout);
 		sequenceInfo.title = params.abcInfo.getTitle();
 		sequenceInfo.composer = params.abcInfo.getComposer();
 		sequenceInfo.primaryTempoMPQ = (int) Math.round(MidiUtils.convertTempo(params.abcInfo.getPrimaryTempoBPM()));
@@ -86,7 +87,7 @@ public class SequenceInfo implements MidiConstants {
 	/**
 	 * Create instance of this class while creating sequence from MIDI file
 	 */
-	public static SequenceInfo fromMidi(File midiFile, MiscSettings miscSettings, boolean oldVelocities, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume, boolean ignoreMidiText)
+	public static SequenceInfo fromMidi(File midiFile, MiscSettings miscSettings, boolean oldVelocities, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume, boolean ignoreMidiText, int usingNewMidiLayout)
 			throws InvalidMidiDataException, IOException, FileParseException {
         try (InputStream is1 = new BufferedInputStream(new FileInputStream(midiFile));
              InputStream is2 = new BufferedInputStream(new FileInputStream(midiFile))) {
@@ -94,7 +95,7 @@ public class SequenceInfo implements MidiConstants {
             MidiFileFormat midiFileFormat = MidiSystem.getMidiFileFormat(is2);
             return new SequenceInfo(midiFile.getName(), ConvertPPQ.convert(sequence),
                     midiFileFormat.getType(), miscSettings, oldVelocities, onlyFirstTrackTempos, ignoreZeroChannelVolume,
-                    ignoreMidiText, null);
+                    ignoreMidiText, null, usingNewMidiLayout);
         }
 	}
 
@@ -104,7 +105,7 @@ public class SequenceInfo implements MidiConstants {
     public static SequenceInfo fromSequence(Sequence seq, MiscSettings miscSettings)
             throws InvalidMidiDataException, FileParseException {
         return new SequenceInfo("unit-test", seq,
-                1, miscSettings, false, true, true, true, null);
+                1, miscSettings, false, true, true, true, null, 0);
     }
 
 	/**
@@ -131,8 +132,9 @@ public class SequenceInfo implements MidiConstants {
         }
     }
 
-	private SequenceInfo(String fileName, Sequence sequence, int type, MiscSettings miscSettings, boolean oldVelocities, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume, boolean ignoreMidiText, AbcInfo abcInfo)
+	private SequenceInfo(String fileName, Sequence sequence, int type, MiscSettings miscSettings, boolean oldVelocities, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume, boolean ignoreMidiText, AbcInfo abcInfo, int usingNewMidiLayout)
 			throws InvalidMidiDataException, FileParseException {
+		this.usingNewMidiLayout = usingNewMidiLayout;
 		this.fileName = fileName;
 
 		this.midiType = type;
@@ -159,7 +161,7 @@ public class SequenceInfo implements MidiConstants {
 
 		sequenceCache = new SequenceDataCache(this.sequence, standard, rolandDrumChannels, yamahaDrumSwitches,
 				yamahaDrumChannels, mmaDrumSwitches, portMap, onlyFirstTrackTempos, ignoreZeroChannelVolume,
-				ignoreMidiText, fileName);
+				ignoreMidiText, fileName, usingNewMidiLayout);
 		hasPorts = sequenceCache.hasPorts;
 		primaryTempoMPQ = sequenceCache.getPrimaryTempoMPQ();
 
@@ -167,7 +169,7 @@ public class SequenceInfo implements MidiConstants {
 		for (int i = 0; i < tracks.length; i++) {
 			myTrackInfoList.add(new TrackInfo(this, tracks[i], i, sequenceCache, sequenceCache.isXGDrumsTrack(i),
 					sequenceCache.isGSDrumsTrack(i), wasType0, sequenceCache.isDrumsTrack(i),
-					sequenceCache.isGM2DrumsTrack(i), portMap, miscSettings, oldVelocities, ignoreMidiText));
+					sequenceCache.isGM2DrumsTrack(i), miscSettings, oldVelocities, ignoreMidiText));
 		}
 
 		composer = "";
@@ -212,7 +214,10 @@ public class SequenceInfo implements MidiConstants {
         histogram = result.third;
         dissonance = result.fourth;
 		standard = MidiStandard.PREVIEW;
-		sequenceCache = new SequenceDataCache(sequence, standard, null, null, null, null, portMap, true, false, true, "ABC Preview Internal MIDI");
+		sequenceCache = new SequenceDataCache(sequence, standard,
+				null, null, null, null,
+				portMap, true, false, true,
+				"ABC Preview Internal MIDI", usingNewMidiLayout);
 		primaryTempoMPQ = sequenceCache.getPrimaryTempoMPQ();
 
 		this.trackInfoList = null;
@@ -406,6 +411,7 @@ public class SequenceInfo implements MidiConstants {
 		 * 
 		 */
 		for (Track track : tracks) {
+			List<MidiEvent> phantomEvents = new ArrayList<>();
 			for (int j = 0; j < track.size(); j++) {
 				MidiEvent evt = track.get(j);
 				MidiMessage msg = evt.getMessage();
@@ -488,23 +494,48 @@ public class SequenceInfo implements MidiConstants {
 							// Sure looks like Korg has it correct, at least for pre Tyros XG standard.
 							if (message[7] == 0) {
 								type = "Normal";
-								yamahaDrumChannels[message[5]] = false;
+								if (usingNewMidiLayout == 0) yamahaDrumChannels[message[5]] = false;
 							} else if (message[7] == 1) {
 								type = "Drums";
-								yamahaDrumChannels[message[5]] = true;
+								if (usingNewMidiLayout == 0) yamahaDrumChannels[message[5]] = true;
 							} else if (message[7] > 1 && message[7] <= 5) {
 								type = "Drums Setup " + (message[7] - 1);
-								yamahaDrumChannels[message[5]] = true;
+								if (usingNewMidiLayout == 0) yamahaDrumChannels[message[5]] = true;
 							} else {
 								type = "Invalid setup: " + message[7];
 							}
 							log.fine("Yamaha XG setting channel #"+message[5]+" to "+type);
-							/*
-							if ((message[3] & 0xFF) != 0x4C) {
-								// for backwards compat we still do the setup but just log the fail:
-								log.severe("Yamaha XG drum setup without 0x4C !!! "+fileName);
+
+							if (usingNewMidiLayout >= 1) {
+								PatchEntry entry = bankAndPatchTrack.get(evt.getTick());
+								if (entry == null) {
+									entry = new PatchEntry();
+									bankAndPatchTrack.put(evt.getTick(), entry);
+								}
+								entry.sysex.add(evt);
+
+								try {
+									// If switching to drums, MSB 127. If switching to normal, MSB 0.
+									boolean isDrum = (message[7] > 0);
+									int msbValue = isDrum ? 127 : 0;
+
+									// MSB
+									ShortMessage fakeMsb = new ShortMessage();
+									fakeMsb.setMessage(ShortMessage.CONTROL_CHANGE, message[5], BANK_SELECT_MSB, msbValue);
+									MidiEvent msbEvt = new MidiEvent(fakeMsb, evt.getTick());
+									phantomEvents.add(msbEvt);
+									entry.bank.add(msbEvt);
+
+									// Standard Kit / Grand Piano
+									ShortMessage fakePc = new ShortMessage();
+									fakePc.setMessage(ShortMessage.PROGRAM_CHANGE, message[5], 0, 0);
+									MidiEvent pcEvt = new MidiEvent(fakePc, evt.getTick());
+									phantomEvents.add(pcEvt);
+									entry.patch.add(pcEvt);
+								} catch (InvalidMidiDataException e) {
+									log.warning("Failed to inject phantom drum bank change");
+								}
 							}
-							*/
 						}
 					} else if (message.length == 9 && (message[0] & 0xFF) == 0xF0 && (message[1] & 0xFF) == 0x43
 							&& (message[3] & 0xFF) == 0x4C
@@ -513,12 +544,6 @@ public class SequenceInfo implements MidiConstants {
 						// TODO: implement this
 						log.warning(
 								fileName + ": Yamaha XG Drum Part Protect mode " + (message[7] == 0 ? "OFF" : "ON"));
-						/*
-						if ((message[3] & 0xFF) != 0x4C) {
-							// for backwards compat we still do the protection but just log the fail:
-							log.severe("Yamaha XG drum protect mode without 0x4C !!! "+fileName);
-						}
-						*/
 					} else if (message.length == 9 && (message[0] & 0xFF) == 0xF0 && (message[1] & 0xFF) == 0x43
 							&& (message[3] & 0xFF) == 0x4C // this check can change the listed instr, but that does not break back compat
 							&& (message[4] & 0xFF) == 0x08 && (message[8] & 0xFF) == 0xF7) {
@@ -566,6 +591,13 @@ public class SequenceInfo implements MidiConstants {
 					}
 				}
 			}
+
+			/*
+			This can potentially override existing bank/patch change if they are at same tick. Therefore we comment this.
+			for (MidiEvent pEvt : phantomEvents) {
+				track.add(pEvt);
+			}
+			*/
 		}
 		
 		yamahaDrumSwitches = new ArrayList<>();
@@ -624,9 +656,13 @@ public class SequenceInfo implements MidiConstants {
 				MidiMessage msg = evt.getMessage();
 				if (msg instanceof SysexMessage sysex) {
                     byte[] message = sysex.getMessage();
-					// we already know that this sysex is a XG bank/patch change, so no need for if statement.
-					String bank = message[6] == 1 ? "MSB"
-							: (message[6] == 2 ? "LSB" : (message[6] == 3 ? "Patch" : ""));
+					// we already know that this sysex is a XG bank/patch/drum change, so no need for if statement.
+					String bank = "";
+					if (message[6] == 1) bank = "MSB";
+					else if (message[6] == 2) bank = "LSB";
+					else if (message[6] == 3) bank = "Patch";
+					else if (usingNewMidiLayout >= 1 && message[6] == 7) bank = "DrumSetup";
+
 					if (!bank.isEmpty() && message[5] < 16 && message[5] >= 0 && message[7] < 128 && message[7] >= 0) {
 						// System.err.println(fileName+": Yamaha XG Sysex "+bank+" set to "+message[7]+" for channel
 						// "+message[5]);
@@ -647,6 +683,10 @@ public class SequenceInfo implements MidiConstants {
 								yamahaDrumSwitches.get(ch).put(evt.getTick(), false);
 								// System.err.println(" channel "+(ch+1)+" changed voice in track "+i);
 							}
+						} else if ("DrumSetup".equals(bank)) {
+							boolean isDrum = (message[7] > 0);
+							yamahaBankAndPatchChanges[ch] = isDrum ? DRUMS : CHROMATIC;
+							yamahaDrumSwitches.get(ch).put(evt.getTick(), isDrum);
 						}
 					}
 				} else if (msg instanceof ShortMessage m) {
@@ -1226,8 +1266,7 @@ public class SequenceInfo implements MidiConstants {
 	public Sequence split() throws InvalidMidiDataException {
 		TrackSplitter splitter = new TrackSplitter();
 		Sequence sequence2 = null;
-		sequence2 = splitter.split(sequence, sequenceCache, standard, rolandDrumChannels, yamahaDrumSwitches,
-					yamahaDrumChannels, mmaDrumSwitches, portMap);
+		sequence2 = splitter.split(sequence, sequenceCache, standard, portMap);
 		
 		return sequence2;
 	}

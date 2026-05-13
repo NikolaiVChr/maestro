@@ -8,7 +8,7 @@ public enum MidiStandard {
 	GS     ("GS",   "General Sound",           "Roland",   "Roland Corporation"),
 	XG     ("XG",   "Extended General MIDI",   "Yamaha",   "Yamaha Corporation"),
 	GM2    ("GM2",  "General Midi Level 2",    "MMA",      "MIDI Manufacturers Association"),
-	GM_PLUS("GM+",  "General Midi with Ports", "Cakewalk", "BandLab"),// Plus many other MIDI editors, this is only used in ProjectFrame for displaying Original source type	
+	//GM_PLUS("GM+",  "General Midi with Ports", "Cakewalk", "BandLab"),// Plus many other MIDI editors, this is only used in ProjectFrame for displaying Original source type
 	// ABC
 	ABC    ("ABC",  "ABC Notation",            "Walshaw",  "Chris Walshaw"),	
 	// MIDI 2.0:

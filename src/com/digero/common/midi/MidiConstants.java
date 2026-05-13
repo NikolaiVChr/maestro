@@ -17,6 +17,7 @@ public interface MidiConstants {
 	int META_TIME_SIGNATURE = 0x58;
 	int META_KEY_SIGNATURE = 0x59;
 	int META_PORT_CHANGE = 0x21;
+	int META_CHANNEL_PREFIX = 0x20;
 	
 	// M-Live meta info:
 	byte M_LIVE_GENRE = 1;

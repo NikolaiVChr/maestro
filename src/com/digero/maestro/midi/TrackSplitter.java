@@ -1,10 +1,6 @@
 package com.digero.maestro.midi;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.*;
 import java.util.logging.Logger;
 
 import javax.sound.midi.*;
@@ -16,7 +12,7 @@ import com.digero.common.midi.MidiStandard;
 import com.digero.common.midi.MidiUtils;
 
 /**
- * Takes a midi input and expands each instrument to its own track. Works with GM2, XG, GS, GM and GM+
+ * Takes a midi input and expands each instrument to its own track. Works with GM2, XG, GS, GM
  * 
  */
 public class TrackSplitter {
@@ -26,8 +22,7 @@ public class TrackSplitter {
 	private boolean isGM = true;
 
 	public Sequence split(Sequence sequence, SequenceDataCache sequenceCache, MidiStandard standard,
-			boolean[] rolandDrumChannels, List<TreeMap<Long, Boolean>> yamahaDrumSwitches, boolean[] yamahaDrumChannels,
-			List<TreeMap<Long, Boolean>> mmaDrumSwitches, SortedMap<Integer, Integer> portMap)
+			SortedMap<Integer, Integer> portMap)
 			throws InvalidMidiDataException {
 
 		this.sequenceCache = sequenceCache;
@@ -41,9 +36,28 @@ public class TrackSplitter {
 
 		Track[] oldTracks = sequence.getTracks();
 		Track newMetaTrack = expandedSequence.createTrack();
-		Track newProgramChangeTrack = expandedSequence.createTrack();
+
 		newMetaTrack.add(MidiFactory.createTrackNameEvent("META"));
-		newProgramChangeTrack.add(MidiFactory.createTrackNameEvent("NON-META"));
+
+		Map<Integer, Track> initTracksByPort = new HashMap<>();
+		Set<Integer> activePorts = new HashSet<>(portMap.values());
+		activePorts.add(0);
+		for (int p : activePorts) {
+			Track initTrack = expandedSequence.createTrack();
+			initTrack.add(MidiFactory.createTrackNameEvent("NON-META " + p));
+
+			// Lock this initialization track to the correct hardware port!
+			if (hasPorts) {
+				MidiEvent evtPort = MidiFactory.createPortEvent(p);
+				if (evtPort != null) {
+					initTrack.add(evtPort);
+				} else {
+					log.severe("Failed to create port event when expanding midi");
+					return null;
+				}
+			}
+			initTracksByPort.put(p, initTrack);
+		}
 		long lastEOTTick = 0L;
 		for (int oldTrackNumber = 0; oldTrackNumber < oldTracks.length; oldTrackNumber++) {
 			Track oldTrack = oldTracks[oldTrackNumber];
@@ -87,15 +101,11 @@ public class TrackSplitter {
 				notesOn.add(new HashMap<>());
 			}
 
-			// GM+ stuff
 			int port = portMap.get(oldTrackNumber);
-			List<MidiEvent> portPrograms = new ArrayList<>();// Program changes within specific port, they will later be
-																// put into 'firstTrackUsingPorts'
-			Track firstTrackUsingPorts = null;// The first of the new expanded tracks, this will come to contain GM+
-												// port program changes.
 
 			// Iterate over all midi events in old track
 			int trackCounter = 1;
+			MidiEvent pendingChannelPrefix = null;
 			evtIter: for (int i = 0; i < oldTrack.size(); i++) {
 
 				String instr = "";
@@ -106,12 +116,19 @@ public class TrackSplitter {
                     int cmd = shortMsg.getCommand();
 					int channel = shortMsg.getChannel();
 
+					// If we have prefix pending, it was an orphan.
+					if (pendingChannelPrefix != null) {
+						log.fine("Discarding orphaned MIDI Channel Prefix at tick " + tick);
+						pendingChannelPrefix = null;
+					}
+
 					if (cmd == ShortMessage.NOTE_OFF || cmd == ShortMessage.NOTE_ON) {
 						instr = handleEvent(oldTrackNumber, notesOn, port, tick, channel, cmd, shortMsg);
 						// if (instr == null) System.out.println("instr==null "+on);
 						// if ("".equals(instr)) System.out.println("instr=='' "+on);
-					} else if (hasPorts && cmd == ShortMessage.PROGRAM_CHANGE) {
-						portPrograms.add(evt);
+					} else if (cmd == ShortMessage.PROGRAM_CHANGE ||
+							(cmd == ShortMessage.CONTROL_CHANGE && (shortMsg.getData1() == MidiConstants.BANK_SELECT_MSB || shortMsg.getData1() == MidiConstants.BANK_SELECT_LSB))) {
+						initTracksByPort.get(port).add(evt);
 						continue evtIter;
 					} else {
 						// Identify instrument for Control Change, Pitch Bend, and standard Program Changes
@@ -126,23 +143,19 @@ public class TrackSplitter {
 					// If not associated with an instrument, then it is put in track 0, where we
 					// keep all the meta, sysex, bank changes and normal program changes..
 					if (instr != null && !instr.isEmpty()) {
-						String trackID = hasPorts ? (channel + instr) : instr;// If its not a Cakewalk midi then we
-																				// lumps all of same instr together,
-																				// regardless of channel.
+						String trackID = port+":"+channel+":"+instr;
 						Track newTrack = newTracks.get(trackID);
 						if (newTrack == null) {
 							newTrack = expandedSequence.createTrack();
-							if (firstTrackUsingPorts == null)
-								firstTrackUsingPorts = newTrack;
 							newTrack.add(MidiFactory.createTrackNameEvent(oldTrackName + " : " + trackCounter));
                             //if (oldEndOfTrack != null) newTrack.add(MidiFactory.createEndOfTrackEvent(oldEndOfTrack.getTick()));
 							if (hasPorts) {
-								// We put the GM+ port change in every one of the new tracks if the old had it.
+								// We put the port change in every one of the new tracks if the old had it.
 								MidiEvent evtPort = MidiFactory.createPortEvent(port);
 								if (evtPort != null) {
 									newTrack.add(evtPort);
 								} else {
-									log.severe("Failed to create GM+ port event when expanding midi");
+									log.severe("Failed to create port event when expanding midi");
 									return null;
 								}
 							}
@@ -151,12 +164,18 @@ public class TrackSplitter {
 						}
 						newTrack.add(evt);
 					} else {
-						newProgramChangeTrack.add(evt);
+						initTracksByPort.get(port).add(evt);
 					}
 				} else {
                     if (msg instanceof MetaMessage metaMsg) {
 						int type = metaMsg.getType();
-						if (oldTrackNumber > 0 && (type == MidiConstants.META_TEXT || type == MidiConstants.META_LYRIC || type == MidiConstants.META_MARKER || type == MidiConstants.META_CUE_POINT)) {
+
+						if (type == MidiConstants.META_PORT_CHANGE) {
+							// Ignore old port events!
+						} else if (type == MidiConstants.META_CHANNEL_PREFIX) {
+							// store the prefix
+							pendingChannelPrefix = evt;
+						} else if (oldTrackNumber > 0 && (type == MidiConstants.META_TEXT || type == MidiConstants.META_LYRIC || type == MidiConstants.META_MARKER || type == MidiConstants.META_CUE_POINT)) {
 							// Its lyrics related
 							String trackID = "Lyrics " + oldTrackNumber;
 							Track newTrack = newTracks.get(trackID);
@@ -167,6 +186,10 @@ public class TrackSplitter {
 
 								trackCounter += 1;
 								newTracks.put(trackID, newTrack);
+							}
+							if (pendingChannelPrefix != null) {
+								newTrack.add(pendingChannelPrefix);
+								pendingChannelPrefix = null;
 							}
 							newTrack.add(evt);
 
@@ -182,20 +205,29 @@ public class TrackSplitter {
 								trackCounter += 1;
 								newTracks.put(trackID, newTrack);
 							}
+							if (pendingChannelPrefix != null) {
+								pendingChannelPrefix = null;
+							}
 							newTrack.add(evt);
 						} else {
+							if (pendingChannelPrefix != null) {
+								newMetaTrack.add(pendingChannelPrefix);
+								pendingChannelPrefix = null;
+							}
 							newMetaTrack.add(evt);
 						}
 					} else if (msg instanceof SysexMessage sysMsg) {
-						newProgramChangeTrack.add(evt);
+						if (pendingChannelPrefix != null) {
+							initTracksByPort.get(port).add(pendingChannelPrefix);
+							pendingChannelPrefix = null;
+						}
+						initTracksByPort.get(port).add(evt);
 					} else {
-						newProgramChangeTrack.add(evt);
+						assert false: "Unexpected MIDI message type: " + msg.getClass().getSimpleName();
                     }
 				}
 			}
-			
-			addPortChangesToTrack(newMetaTrack, portPrograms, firstTrackUsingPorts);
-			
+
 			for (Track track : newTracks.values()) {
 				long last = track.get(track.size()-1).getTick();
 				track.add(MidiFactory.createEndOfTrackEvent(last+1L));
@@ -271,7 +303,7 @@ public class TrackSplitter {
 			int instrumentNumber = sequenceCache.getInstrument(port, channel, tick);
 			return MidiInstrument.fromId(instrumentNumber).toString();
 		} else {
-            return sequenceCache.getInstrumentExt(channel, tick, isDrumsTrack(track));
+            return sequenceCache.getInstrumentExt(port, channel, tick, isDrumsTrack(track));
 		}
 	}
 

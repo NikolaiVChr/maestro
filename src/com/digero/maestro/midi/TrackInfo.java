@@ -6,7 +6,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
@@ -37,14 +36,14 @@ import com.digero.maestro.view.MiscSettings;
 public class TrackInfo implements MidiConstants, GenericTrackInfo {
 	private static final Logger log = Logger.getLogger("import.midi.track");
 	
-	private SequenceInfo sequenceInfo;
+	private final SequenceInfo sequenceInfo;
 
-	private int trackNumber;
+	private final int trackNumber;
 	private String name;
 	private TimeSignature timeSignature = null;// The first one in this track
 	private KeySignature keySignature = null;
 	private Set<Integer> instruments;
-	private Set<String> instrumentExtensions;
+	private final Set<String> instrumentExtensions;
 	private List<MidiNoteEvent> noteEvents;
 	private SortedSet<Integer> notesInUse;// Used for knowing which drum sounds to display in DrumPanel
 	private boolean isDrumTrack;
@@ -52,10 +51,9 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 	private final int maxVelocity;
 	private int port = 0;
 
-	@SuppressWarnings("unchecked") //
 	TrackInfo(SequenceInfo parent, Track track, int trackNumber, SequenceDataCache sequenceCache, boolean isXGDrumTrack,
 			boolean isGSDrumTrack, boolean wasType0, boolean isDrumsTrack, boolean isGM2DrumTrack,
-			TreeMap<Integer, Integer> portMap, MiscSettings miscSettings, boolean oldVelocities, boolean ignoreMidiText)
+			MiscSettings miscSettings, boolean oldVelocities, boolean ignoreMidiText)
 			throws InvalidMidiDataException {
 		this.sequenceInfo = parent;
 		// TempoCache tempoCache = new TempoCache(parent.getSequence());
@@ -103,8 +101,6 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 
 		for (int evtNum = 0, sz = track.size(); evtNum < sz; evtNum++) {
 			MidiEvent evt = track.get(evtNum);
-			MidiMessage msg = evt.getMessage();
-
 			if (evt.getTick() > 0L) break;
 			if (evt.getTick() == 0L && evt.getMessage() instanceof MetaMessage meta && meta.getType() == META_PORT_CHANGE) {
 				if (meta.getData().length == 1) {
@@ -264,10 +260,10 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 						if (velocity < minVelocity)
 							minVelocity = velocity;
 
-						instrumentExtensions.add(sequenceCache.getInstrumentExt(ch, tick, isDrumTrack));
+						instrumentExtensions.add(sequenceCache.getInstrumentExt(port, ch, tick, isDrumTrack));
 						if (!isDrumTrack) {
-							instruments.add(sequenceCache.getInstrument(portMap.get(trackNumber), ch, tick));
-							log.finest("Track 0 uses instrument "+MidiInstrument.fromId(sequenceCache.getInstrument(portMap.get(trackNumber), ch, tick))+", channel "+ch);
+							instruments.add(sequenceCache.getInstrument(port, ch, tick));
+							log.finest("Track "+trackNumber+" uses instrument "+MidiInstrument.fromId(sequenceCache.getInstrument(port, ch, tick))+", channel "+ch);
 						}
 						noteEvents.add(ne);
 						//notesInUse.add(ne.note.id);

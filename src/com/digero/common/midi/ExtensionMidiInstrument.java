@@ -70,8 +70,7 @@ public class ExtensionMidiInstrument {
 		 * 
 		 */
 		
-		assert extension != MidiStandard.PREVIEW && extension != MidiStandard.ABC
-				&& extension != MidiStandard.GM_PLUS : extension+" should not be used here";
+		assert extension != MidiStandard.PREVIEW && extension != MidiStandard.ABC : extension+" should not be used here";
 
 		// GS does not have Dulcimer on patch 15 MSB 0 like GM but a Santur, so we are
 		// careful to fetch its actual name.

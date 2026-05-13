@@ -67,7 +67,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	
 	public static final String MSX_FILE_DESCRIPTION = UIText.get("maestro.0.project", MaestroMain.APP_NAME);
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = UIText.get("maestro.0.projects", MaestroMain.APP_NAME);
-	public static final Version SONG_FILE_VERSION = new Version(4, 6, 0, 300);// Keep build above 117 to make earlier
+	public static final Version SONG_FILE_VERSION = new Version(4, 6, 15, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
 
@@ -126,6 +126,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private File projectFile; // The XML Maestro song file
 	private boolean usingOldVelocities = false;
 	private boolean usingOldTempos = false;
+	private int usingNewMidiLayout = 1;
     private boolean temposWereFixed = false;// If tempos were fixed in v4.3.9 or later. Future use.
 	private boolean hideEdits = false;
 	public final static Chord.CalcDynamics dynamicsMethodDefault = CalcDynamics.LOUDEST;
@@ -230,7 +231,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		sourceFile = file;
 		usingOldVelocities = miscSettings.ignoreExpressionMessages;
 		ProjectFrame.TimingEnum.getFromSettings(saveSettings.defaultTiming).action(this);
-		sequenceInfo = SequenceInfo.fromMidi(file, miscSettings, usingOldVelocities, usingOldTempos, false, false);
+		sequenceInfo = SequenceInfo.fromMidi(file, miscSettings, usingOldVelocities, usingOldTempos, false, false, usingNewMidiLayout);
 		title = sequenceInfo.getTitle();
 		composer = sequenceInfo.getComposer();
 		if (sequenceInfo.getDataCache() != null) {
@@ -259,7 +260,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		// params.stereo = false;
 		usingOldVelocities = true;// The abc volumes are tuned to old volume scheme
 		usingOldTempos = true;
-		sequenceInfo = SequenceInfo.fromAbc(params, miscSettings, usingOldVelocities, ignoreMidiText);
+		usingNewMidiLayout = 1;
+		sequenceInfo = SequenceInfo.fromAbc(params, miscSettings, usingOldVelocities, ignoreMidiText, usingNewMidiLayout);
 		exportFile = file;
 
 		title = sequenceInfo.getTitle();
@@ -366,7 +368,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			dynamicsMethod = Chord.CalcDynamics.fromString(SaveUtil.parseValue(songEle, "exportSettings/@calcDynamics", Chord.CalcDynamics.LOUDEST.name()));
 			usingOldVelocities = SaveUtil.parseValue(songEle, "importSettings/@useOldVelocities", true);// must be
 			usingOldTempos     = SaveUtil.parseValue(songEle, "importSettings/@useOldTempos", true);    // before
-																										// tryToLoadFromFile
+			usingNewMidiLayout = SaveUtil.parseValue(songEle, "importSettings/@useNewMidiLayout", 0);    // tryToLoadFromFile
 			ignoreZeroChannelVolume = SaveUtil.parseValue(songEle, "importSettings/@ignoreZeroChannelVolume", false);
 			
 			sourceFile = SaveUtil.parseValue(songEle, "sourceFile", (File) null);
@@ -558,7 +560,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				// params.stereo = false;
 				usingOldVelocities = true;// The abc volumes are tuned to old volume scheme
 				usingOldTempos = true;
-				sequenceInfo = SequenceInfo.fromAbc(params, miscSettings, usingOldVelocities, ignoreMidiText);
+				usingNewMidiLayout = 1;
+				sequenceInfo = SequenceInfo.fromAbc(params, miscSettings, usingOldVelocities, ignoreMidiText, usingNewMidiLayout);
 
 				organic = abcInfo.isOrganic();
 				organic2 = abcInfo.isOrganic2();
@@ -568,7 +571,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				priorityActive = false;
 				transcriber = abcInfo.getTranscriber();
 			} else {
-				sequenceInfo = SequenceInfo.fromMidi(newSourceFile, miscSettings, usingOldVelocities, usingOldTempos, ignoreZeroChannelVolume, ignoreMidiText);
+				sequenceInfo = SequenceInfo.fromMidi(newSourceFile, miscSettings, usingOldVelocities, usingOldTempos, ignoreZeroChannelVolume, ignoreMidiText, usingNewMidiLayout);
 			}
 
 			title = sequenceInfo.getTitle();
@@ -838,6 +841,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		Element importSettingsEle = doc.createElement("importSettings");
 		importSettingsEle.setAttribute("useOldVelocities", String.valueOf(usingOldVelocities));
 		importSettingsEle.setAttribute("useOldTempos", String.valueOf(usingOldTempos));
+		importSettingsEle.setAttribute("useNewMidiLayout", String.valueOf(usingNewMidiLayout));
 		if (ignoreZeroChannelVolume) importSettingsEle.setAttribute("ignoreZeroChannelVolume", String.valueOf(ignoreZeroChannelVolume)); 
 		if (importSettingsEle.getAttributes().getLength() > 0 || importSettingsEle.getChildNodes().getLength() > 0)
 			songEle.appendChild(importSettingsEle);
@@ -1951,6 +1955,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         this.fromXmlFile = other.fromXmlFile;
         this.usingOldVelocities = other.usingOldVelocities;
         this.usingOldTempos = other.usingOldTempos;
+		this.usingNewMidiLayout = other.usingNewMidiLayout;
         this.temposWereFixed = other.temposWereFixed;
         this.hideEdits = other.hideEdits;
         this.dynamicsMethod = other.dynamicsMethod;

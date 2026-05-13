@@ -1811,9 +1811,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         tempoOnlyFirstCheckBox.setEnabled(abcSong != null && abcSong.getSequenceInfo().getDataCache().isTempoInHigherTracks() && uiEnabled);//  && abcSong.getProjectFile() != null
 		sidepanelButton.setEnabled(midiLoaded && uiEnabled);
 		if (midiLoaded) {
-			midiModeRadioButton.setText(UIText.get("maestro.original.0", (abcSong.getSequenceInfo().standard == MidiStandard.GM && abcSong.getSequenceInfo().hasPorts)
-					? MidiStandard.GM_PLUS
-					: abcSong.getSequenceInfo().standard));
+			midiModeRadioButton.setText(UIText.get("maestro.original.0", abcSong.getSequenceInfo().standard+(abcSong.getSequenceInfo().hasPorts?"+":"")));
 		} else {
 			midiModeRadioButton.setText(UIText.get("maestro.original"));
 		}
