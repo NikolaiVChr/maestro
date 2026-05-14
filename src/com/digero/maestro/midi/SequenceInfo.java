@@ -51,10 +51,15 @@ public class SequenceInfo implements MidiConstants {
 																			// drums
 	private final boolean[] yamahaDrumChannels = new boolean[CHANNEL_COUNT_ABC];// Which of the channels XG designates as
 																			// drums
-	private ArrayList<TreeMap<Long, Boolean>> yamahaDrumSwitches = null;// Which channel/tick XG switches to drums
-																		// outside of designated drum channels
-	private ArrayList<TreeMap<Long, Boolean>> mmaDrumSwitches = null;// Which channel/tick GM2 switches to drums outside
-																		// of designated drum channels
+																			// Change these two fields to Sparse Maps:
+	// Which channel/tick XG switches to drums
+	// outside of designated drum channels
+	private Map<Integer, ArrayList<TreeMap<Long, Boolean>>> yamahaDrumSwitches = new HashMap<>();
+
+	// Which channel/tick GM2 switches to drums outside
+	// of designated drum channels
+	private Map<Integer, ArrayList<TreeMap<Long, Boolean>>> mmaDrumSwitches = new HashMap<>();
+
 	private int primaryTempoMPQ;
 	private final TreeMap<Integer, Integer> portMap = new TreeMap<>();
 
@@ -365,7 +370,6 @@ public class SequenceInfo implements MidiConstants {
 		// sysex XG drum part protect mode:
 		// F0 43 dv md 00 00 07 pp F7 (dv = device ID, md = model id, pp = 0 is off, 1 is on)
 		// If ON then only MSB 126/127 on chan #10. (unless by sysex bank change). XG Reset is counted as protect ON.
-		// Ignoring this sysex as I have tested 130,000 midi files and none of them had this, so its super rare.
 
 		// sysex XG MSB bank change:
 		// F0 43 dv md 08 nn 01 bb F7 (dv = device ID, md = model id, bb = MSB, nn = 0=non-chan#10 7F=chan#10)
@@ -387,8 +391,7 @@ public class SequenceInfo implements MidiConstants {
 
 		Track[] tracks = seq.getTracks();
 		long lastResetTick = Long.MIN_VALUE;
-		TreeMap<Long, PatchEntry> bankAndPatchTrack = new TreeMap<>();// Maps cannot have duplicate entries, so using a
-																		// PatchEntry class to store.
+		Map<Integer, TreeMap<Long, PatchEntry>> portBankAndPatchTrack = new HashMap<>();
 
 		/*
 		// debug track 0:
@@ -411,10 +414,40 @@ public class SequenceInfo implements MidiConstants {
 		 * 
 		 */
 		for (Track track : tracks) {
+			int currentPort = 0;
+			for (int j = 0; j < track.size(); j++) {
+				MidiEvent evt = track.get(j);
+				MidiMessage msg = evt.getMessage();
+				if (evt.getTick() > 0L) break;
+				if (msg instanceof MetaMessage meta && meta.getType() == META_PORT_CHANGE) {
+					byte[] data = meta.getData();
+					if (data.length > 0) currentPort = data[0] & 0xFF;
+				}
+			}
+
+			TreeMap<Long, PatchEntry> bankAndPatchTrack = portBankAndPatchTrack.computeIfAbsent(currentPort, k -> new TreeMap<>());
+
 			List<MidiEvent> phantomEvents = new ArrayList<>();
 			for (int j = 0; j < track.size(); j++) {
 				MidiEvent evt = track.get(j);
 				MidiMessage msg = evt.getMessage();
+
+				if (!yamahaDrumSwitches.containsKey(currentPort)) {
+					ArrayList<TreeMap<Long, Boolean>> yChannels = new ArrayList<>(CHANNEL_COUNT_ABC);
+					ArrayList<TreeMap<Long, Boolean>> mChannels = new ArrayList<>(CHANNEL_COUNT_ABC);
+					for (int c = 0; c < CHANNEL_COUNT_ABC; c++) {
+						TreeMap<Long, Boolean> yTm = new TreeMap<>();
+						yTm.put(-1L, yamahaDrumChannels[c]);
+						yChannels.add(yTm);
+
+						TreeMap<Long, Boolean> mTm = new TreeMap<>();
+						mTm.put(-1L, c == DRUM_CHANNEL);
+						mChannels.add(mTm);
+					}
+					yamahaDrumSwitches.put(currentPort, yChannels);
+					mmaDrumSwitches.put(currentPort, mChannels);
+				}
+
 				if (msg instanceof SysexMessage sysex) {
                     byte[] message = sysex.getMessage();
 
@@ -506,7 +539,10 @@ public class SequenceInfo implements MidiConstants {
 							}
 							log.fine("Yamaha XG setting channel #"+message[5]+" to "+type);
 
-							if (usingNewMidiLayout >= 1) {
+							if (usingNewMidiLayout >= 1 && message[7] <= 5) {
+								boolean isDrum = "Drums".equals(type) || type.startsWith("Drums Setup");
+								yamahaDrumSwitches.get(currentPort).get(message[5]).put(evt.getTick(), isDrum);
+
 								PatchEntry entry = bankAndPatchTrack.get(evt.getTick());
 								if (entry == null) {
 									entry = new PatchEntry();
@@ -516,7 +552,6 @@ public class SequenceInfo implements MidiConstants {
 
 								try {
 									// If switching to drums, MSB 127. If switching to normal, MSB 0.
-									boolean isDrum = (message[7] > 0);
 									int msbValue = isDrum ? 127 : 0;
 
 									// MSB
@@ -541,7 +576,10 @@ public class SequenceInfo implements MidiConstants {
 							&& (message[3] & 0xFF) == 0x4C
 							&& (message[4] & 0xFF) == 0x00 && (message[5] & 0xFF) == 0x00 && (message[6] & 0xFF) == 0x07
 							&& (message[8] & 0xFF) == 0xF7) {
-						// TODO: implement this
+						// TODO: This is default ON by a XG reset. It prevent bank changes to drum channels that are not
+						//       126/127 MSB.
+						//       Ignoring this sysex as I have tested 130,000 midi files and none of them had an OFF,
+						//       so its super rare.
 						log.warning(
 								fileName + ": Yamaha XG Drum Part Protect mode " + (message[7] == 0 ? "OFF" : "ON"));
 					} else if (message.length == 9 && (message[0] & 0xFF) == 0xF0 && (message[1] & 0xFF) == 0x43
@@ -600,13 +638,6 @@ public class SequenceInfo implements MidiConstants {
 			*/
 		}
 		
-		yamahaDrumSwitches = new ArrayList<>();
-		mmaDrumSwitches = new ArrayList<>();
-		for (int channel = 0; channel < CHANNEL_COUNT_ABC; channel++) {
-			yamahaDrumSwitches.add(new TreeMap<>());
-			mmaDrumSwitches.add(new TreeMap<>());
-		}
-
 		/*
 		  yamahaBankAndPatchChanges (XG) & mmaBankAndPatchChanges (GM2):
 
@@ -618,20 +649,19 @@ public class SequenceInfo implements MidiConstants {
 		final int CHROMATIC = 0;
 		final int DRUMS_UNKNOWN_PATCH = 1;
 		final int DRUMS = 2;
-		Integer[] yamahaBankAndPatchChanges = new Integer[CHANNEL_COUNT_ABC];
-		Integer[] mmaBankAndPatchChanges = new Integer[CHANNEL_COUNT_ABC];
 
-		for (int channel = 0; channel < CHANNEL_COUNT_ABC; channel++) {
-			if (yamahaDrumChannels[channel]) {
-				yamahaBankAndPatchChanges[channel] = DRUMS;
-			} else {
-				yamahaBankAndPatchChanges[channel] = CHROMATIC;
+		Map<Integer, Integer[]> portYamahaChanges = new HashMap<>();
+		Map<Integer, Integer[]> portMmaChanges = new HashMap<>();
+
+		for (int port : portBankAndPatchTrack.keySet()) {
+			Integer[] yChanges = new Integer[CHANNEL_COUNT_ABC];
+			Integer[] mChanges = new Integer[CHANNEL_COUNT_ABC];
+			for (int channel = 0; channel < CHANNEL_COUNT_ABC; channel++) {
+				yChanges[channel] = yamahaDrumChannels[channel] ? DRUMS : CHROMATIC;
+				mChanges[channel] = (channel == DRUM_CHANNEL) ? DRUMS : CHROMATIC;
 			}
-			if (channel == DRUM_CHANNEL) {
-				mmaBankAndPatchChanges[channel] = DRUMS;
-			} else {
-				mmaBankAndPatchChanges[channel] = CHROMATIC;
-			}
+			portYamahaChanges.put(port, yChanges);
+			portMmaChanges.put(port, mChanges);
 		}
 
 		/*
@@ -640,114 +670,169 @@ public class SequenceInfo implements MidiConstants {
 		 * how to separate drum tracks and which tracks to mark as drum tracks.
 		 * 
 		 */
-		for (PatchEntry entry : bankAndPatchTrack.values()) {
-			List<MidiEvent> masterList = new ArrayList<>();
+		for (int port : portBankAndPatchTrack.keySet()) {
+			TreeMap<Long, PatchEntry> bankAndPatchTrack = portBankAndPatchTrack.get(port);
+			Integer[] yamahaBankAndPatchChanges = portYamahaChanges.get(port);
+			Integer[] mmaBankAndPatchChanges = portMmaChanges.get(port);
 
-			// The order here is important, patch must be last, since not all MIDI files adhere to standard of certain
-			// time separation between these
-			// events:
-			// Not sure if sysex bank/patch change have higher priority than Control Change events. But giving it lowest
-			// priority for now.
-			masterList.addAll(entry.sysex);
-			masterList.addAll(entry.bank);
-			masterList.addAll(entry.patch);
+			for (PatchEntry entry : bankAndPatchTrack.values()) {
+				List<MidiEvent> masterList = new ArrayList<>();
 
-			for (MidiEvent evt : masterList) {
-				MidiMessage msg = evt.getMessage();
-				if (msg instanceof SysexMessage sysex) {
-                    byte[] message = sysex.getMessage();
-					// we already know that this sysex is a XG bank/patch/drum change, so no need for if statement.
-					String bank = "";
-					if (message[6] == 1) bank = "MSB";
-					else if (message[6] == 2) bank = "LSB";
-					else if (message[6] == 3) bank = "Patch";
-					else if (usingNewMidiLayout >= 1 && message[6] == 7) bank = "DrumSetup";
+				// The order here is important, patch must be last, since not all MIDI files adhere to standard of certain
+				// time separation between these
+				// events:
+				// Not sure if sysex bank/patch change have higher priority than Control Change events. But giving it lowest
+				// priority for now.
+				masterList.addAll(entry.sysex);
+				masterList.addAll(entry.bank);
+				masterList.addAll(entry.patch);
 
-					if (!bank.isEmpty() && message[5] < 16 && message[5] >= 0 && message[7] < 128 && message[7] >= 0) {
-						// System.err.println(fileName+": Yamaha XG Sysex "+bank+" set to "+message[7]+" for channel
-						// "+message[5]);
-						int ch = message[5];
-						if ("MSB".equals(bank)) {
-							if (message[7] == 126 || message[7] == 127) {// 64 is chromatic effects, so not testing for
-																			// that.
-								yamahaBankAndPatchChanges[ch] = DRUMS_UNKNOWN_PATCH;
-							} else {
-								yamahaBankAndPatchChanges[ch] = CHROMATIC;
+				for (MidiEvent evt : masterList) {
+					MidiMessage msg = evt.getMessage();
+					if (msg instanceof SysexMessage sysex) {
+						byte[] message = sysex.getMessage();
+						// we already know that this sysex is a XG bank/patch change, so no need for if statement.
+						String bank = "";
+						if (message[6] == 1) bank = "MSB";
+						else if (message[6] == 2) bank = "LSB";
+						else if (message[6] == 3) bank = "Patch";
+						else if (usingNewMidiLayout >= 1 && message[6] == 7) bank = "DrumSetup";
+
+						if (!bank.isEmpty() && message[5] < 16 && message[5] >= 0 && message[7] < 128 && message[7] >= 0) {
+							// System.err.println(fileName+": Yamaha XG Sysex "+bank+" set to "+message[7]+" for channel
+							// "+message[5]);
+							int ch = message[5];
+							if ("MSB".equals(bank)) {
+								if (message[7] == 126 || message[7] == 127) {// 64 is chromatic effects, so not testing for
+									// that.
+									yamahaBankAndPatchChanges[ch] = DRUMS_UNKNOWN_PATCH;
+								} else {
+									yamahaBankAndPatchChanges[ch] = CHROMATIC;
+								}
+							} else if ("Patch".equals(bank)) {
+								if (yamahaBankAndPatchChanges[ch] > CHROMATIC) {
+									yamahaBankAndPatchChanges[ch] = DRUMS;
+									// Apply standard bank changes across all active ports to prevent breaking old files
+									if (usingNewMidiLayout == 0) {
+										for (ArrayList<TreeMap<Long, Boolean>> portChannels : yamahaDrumSwitches.values()) {
+											portChannels.get(ch).put(evt.getTick(), true);
+										}
+									} else {
+										yamahaDrumSwitches.get(port).get(ch).put(evt.getTick(), true);
+									}
+									// System.err.println(" XG drums in channel "+(ch+1));
+								} else if (yamahaBankAndPatchChanges[ch] == CHROMATIC) {
+									if (usingNewMidiLayout == 0) {
+										for (ArrayList<TreeMap<Long, Boolean>> portChannels : yamahaDrumSwitches.values()) {
+											portChannels.get(ch).put(evt.getTick(), false);
+										}
+									} else {
+										yamahaDrumSwitches.get(port).get(ch).put(evt.getTick(), false);
+									}
+									// System.err.println(" channel "+(ch+1)+" changed voice in track "+i);
+								}
 							}
-						} else if ("Patch".equals(bank)) {
+						}
+					} else if (msg instanceof ShortMessage m) {
+						int cmd = m.getCommand();
+						int ch = m.getChannel();
+
+						if (cmd == ShortMessage.PROGRAM_CHANGE) {
 							if (yamahaBankAndPatchChanges[ch] > CHROMATIC) {
 								yamahaBankAndPatchChanges[ch] = DRUMS;
-								yamahaDrumSwitches.get(ch).put(evt.getTick(), true);
-								// System.err.println(" XG drums in channel "+(ch+1));
+								if (usingNewMidiLayout == 0) {
+									for (ArrayList<TreeMap<Long, Boolean>> portChannels : yamahaDrumSwitches.values()) {
+										portChannels.get(ch).put(evt.getTick(), true);
+									}
+								} else {
+									yamahaDrumSwitches.get(port).get(ch).put(evt.getTick(), true);
+								}
+								// if (ch == 9) System.err.println("XG channel "+ch+" changed to drum kit "+m.getData1()+"
+								// at tick "+evt.getTick());
 							} else if (yamahaBankAndPatchChanges[ch] == CHROMATIC) {
-								yamahaDrumSwitches.get(ch).put(evt.getTick(), false);
-								// System.err.println(" channel "+(ch+1)+" changed voice in track "+i);
+								if (usingNewMidiLayout == 0) {
+									for (ArrayList<TreeMap<Long, Boolean>> portChannels : yamahaDrumSwitches.values()) {
+										portChannels.get(ch).put(evt.getTick(), false);
+									}
+								} else {
+									yamahaDrumSwitches.get(port).get(ch).put(evt.getTick(), false);
+								}
+								// if (ch == 9) System.err.println("XG channel "+ch+" changed to voice "+m.getData1()+" at
+								// tick "+evt.getTick());
 							}
-						} else if ("DrumSetup".equals(bank)) {
-							boolean isDrum = (message[7] > 0);
-							yamahaBankAndPatchChanges[ch] = isDrum ? DRUMS : CHROMATIC;
-							yamahaDrumSwitches.get(ch).put(evt.getTick(), isDrum);
-						}
-					}
-				} else if (msg instanceof ShortMessage m) {
-                    int cmd = m.getCommand();
-					int ch = m.getChannel();
+							if (mmaBankAndPatchChanges[ch] > CHROMATIC) {
+								mmaBankAndPatchChanges[ch] = DRUMS;
+								if (usingNewMidiLayout == 0) {
+									for (ArrayList<TreeMap<Long, Boolean>> portChannels : mmaDrumSwitches.values()) {
+										portChannels.get(ch).put(evt.getTick(), true);
+									}
+								} else {
+									mmaDrumSwitches.get(port).get(ch).put(evt.getTick(), true);
+								}
+								// System.err.println(" GM2 channel "+ch+" changed kit at tick "+evt.getTick());
+							} else if (mmaBankAndPatchChanges[ch] == CHROMATIC) {
+								if (usingNewMidiLayout == 0) {
+									for (ArrayList<TreeMap<Long, Boolean>> portChannels : mmaDrumSwitches.values()) {
+										portChannels.get(ch).put(evt.getTick(), false);
+									}
+								} else {
+									mmaDrumSwitches.get(port).get(ch).put(evt.getTick(), false);
+								}
+								// System.err.println(" GM2 channel "+ch+" changed voice at tick "+evt.getTick());
+							}
+						} else if (cmd == ShortMessage.CONTROL_CHANGE) {
+							switch (m.getData1()) {
+								case BANK_SELECT_MSB:
+									if (usingNewMidiLayout >= 1) {
+										if (yamahaBankAndPatchChanges[ch] > CHROMATIC) {
+											// It IS a drum track. Enforce Drum Protect.
+											if (m.getData2() != 126 && m.getData2() != 127) {
+												// Blocked. Do not change the state.
+											} else {
+												// Valid drum MSB.
+												yamahaBankAndPatchChanges[ch] = DRUMS_UNKNOWN_PATCH;
+											}
+										} else {
+											// It is a melodic track.
+											// In XG hardware, melodic tracks ignore MSB 126/127. They remain melodic!
+											yamahaBankAndPatchChanges[ch] = CHROMATIC;
+										}
+									} else {
+										// Preserve the old bug for backwards compatibility
+										if (m.getData2() == 127 || m.getData2() == 126) {
+											yamahaBankAndPatchChanges[ch] = DRUMS_UNKNOWN_PATCH;
+										} else {
+											yamahaBankAndPatchChanges[ch] = CHROMATIC;
+										}
+									}
 
-					if (cmd == ShortMessage.PROGRAM_CHANGE) {
-						if (yamahaBankAndPatchChanges[ch] > CHROMATIC) {
-							yamahaBankAndPatchChanges[ch] = DRUMS;
-							yamahaDrumSwitches.get(ch).put(evt.getTick(), true);
-							// if (ch == 9) System.err.println("XG channel "+ch+" changed to drum kit "+m.getData1()+"
-							// at tick "+evt.getTick());
-						} else if (yamahaBankAndPatchChanges[ch] == CHROMATIC) {
-							yamahaDrumSwitches.get(ch).put(evt.getTick(), false);
-							// if (ch == 9) System.err.println("XG channel "+ch+" changed to voice "+m.getData1()+" at
-							// tick "+evt.getTick());
-						}
-						if (mmaBankAndPatchChanges[ch] > CHROMATIC) {
-							mmaBankAndPatchChanges[ch] = DRUMS;
-							mmaDrumSwitches.get(ch).put(evt.getTick(), true);
-							// System.err.println(" GM2 channel "+ch+" changed kit at tick "+evt.getTick());
-						} else if (mmaBankAndPatchChanges[ch] == CHROMATIC) {
-							mmaDrumSwitches.get(ch).put(evt.getTick(), false);
-							// System.err.println(" GM2 channel "+ch+" changed voice at tick "+evt.getTick());
-						}
-					} else if (cmd == ShortMessage.CONTROL_CHANGE) {
-						switch (m.getData1()) {
-						case BANK_SELECT_MSB:
-							if (m.getData2() == 127 || m.getData2() == 126) {// 64 is chromatic effects, so not testing
-																				// for that.
-								yamahaBankAndPatchChanges[ch] = DRUMS_UNKNOWN_PATCH;
-							} else {
-								yamahaBankAndPatchChanges[ch] = CHROMATIC;
-								// if (ch == 9) System.err.println(" channel "+ch+" changed to voice in track "+i+" to
-								// MSB "+m.getData2()+" at tick
-								// "+evt.getTick());
+									// GS dont need this, as MSB/LSB cannot change to drums anyway
+
+									if (m.getData2() == 120) {
+										mmaBankAndPatchChanges[ch] = DRUMS_UNKNOWN_PATCH;
+									} else {
+										mmaBankAndPatchChanges[ch] = CHROMATIC;
+									}
+									// System.err.println("Channel "+ch+" bank select MSB "+m.getData2()+" at tick
+									// "+evt.getTick());
+									break;
+								case BANK_SELECT_LSB:
+									// System.err.println("Bank select LSB "+m.getData2());
+									break;
+								default:
+									break;
 							}
-							if (m.getData2() == 120) {
-								mmaBankAndPatchChanges[ch] = DRUMS_UNKNOWN_PATCH;
-							} else {
-								mmaBankAndPatchChanges[ch] = CHROMATIC;
-							}
-							// System.err.println("Channel "+ch+" bank select MSB "+m.getData2()+" at tick
-							// "+evt.getTick());
-							break;
-						case BANK_SELECT_LSB:
-							// System.err.println("Bank select LSB "+m.getData2());
-							break;
-						default:
-							break;
 						}
 					}
 				}
 			}
-		}
-		for (int i = 0; i < CHANNEL_COUNT_ABC; i++) {
-			yamahaDrumSwitches.get(i).put(-1L, yamahaDrumChannels[i]);
-			if (i == DRUM_CHANNEL) {
-				mmaDrumSwitches.get(i).put(-1L, true);
-			} else if (i != DRUM_CHANNEL) {
-				mmaDrumSwitches.get(i).put(-1L, false);
+			for (int i = 0; i < CHANNEL_COUNT_ABC; i++) {
+				yamahaDrumSwitches.get(port).get(i).put(-1L, yamahaDrumChannels[i]);
+				if (i == DRUM_CHANNEL) {
+					mmaDrumSwitches.get(port).get(i).put(-1L, true);
+				} else {
+					mmaDrumSwitches.get(port).get(i).put(-1L, false);
+				}
 			}
 		}
 	}
@@ -867,11 +952,14 @@ public class SequenceInfo implements MidiConstants {
 
 			// Find the port event on this track
 			MidiEvent portEvent = null;
+			int port = 0;
 			for (int j = 0; j < oldTrack.size(); j++) {
 				MidiEvent evt = oldTrack.get(j);
 				if (evt.getTick() > 0L) break;
 				if (evt.getMessage() instanceof MetaMessage meta && meta.getType() == META_PORT_CHANGE) {
 					portEvent = evt;
+					byte[] data = meta.getData();
+					if (data.length > 0) port = data[0] & 0xFF;
 					break;
 				}
 			}
@@ -906,9 +994,9 @@ public class SequenceInfo implements MidiConstants {
                     drumsGM = 1;
                 } else if (isDrumGS(chan)) {
                     drumsGS = 1;
-                } else if (isDrumXG(evt, chan)) {
+                } else if (isDrumXG(evt, port, chan)) {
                     drumsXG = 1;
-                } else if (isDrumGM2(evt, chan)) {
+                } else if (isDrumGM2(evt, port, chan)) {
                     drumsGM2 = 1;
                 } else {
                     notes = 1;
@@ -982,6 +1070,7 @@ public class SequenceInfo implements MidiConstants {
             for (int j = 0; j < oldTrack.size(); j++) {
                 MidiEvent evt = oldTrack.get(j);
                 MidiMessage msg = evt.getMessage();
+				long tick = evt.getTick();
                 boolean moved = false;
 
                 if (msg instanceof ShortMessage smsg && (useLegacyLogic && modified || !useLegacyLogic && trackModified)) {
@@ -998,26 +1087,26 @@ public class SequenceInfo implements MidiConstants {
                         brandDrumTrack.add(evt);
                         moved = true;
                     } else if (brandDrumTrack != null && drumsXG == 1 && (notes == 1 || chan == DRUM_CHANNEL)
-                            && yamahaDrumSwitches.get(chan).floorEntry(evt.getTick()) != null
-                            && yamahaDrumSwitches.get(chan).floorEntry(evt.getTick()).getValue()) {
+                            && yamahaDrumSwitches.get(port).get(chan).floorEntry(tick) != null
+                            && yamahaDrumSwitches.get(port).get(chan).floorEntry(tick).getValue()) {
                         // XG drum note split into new track because either:
                         // - to avoid mixing with chromatics.
                         // - its on ch10, which v2.5.0 would also have split into new track.
                         brandDrumTrack.add(evt);
                         moved = true;
                     } else if (brandDrumTrack != null && drumsGM2 == 1 && (notes == 1 || chan == DRUM_CHANNEL)
-                            && mmaDrumSwitches.get(chan).floorEntry(evt.getTick()) != null
-                            && mmaDrumSwitches.get(chan).floorEntry(evt.getTick()).getValue()) {
+                            && mmaDrumSwitches.get(port).get(chan).floorEntry(tick) != null
+                            && mmaDrumSwitches.get(port).get(chan).floorEntry(tick).getValue()) {
                         // GM2 drum note split into new track because either:
                         // - to avoid mixing with chromatics.
                         // - its on ch10, which v2.5.0 would also have split into new track.
                         brandDrumTrack.add(evt);
                         moved = true;
                     } else if ((drumsGS == 1 && rolandDrumChannels[chan])
-                            || (drumsXG == 1 && yamahaDrumSwitches.get(chan).floorEntry(evt.getTick()) != null
-                            && yamahaDrumSwitches.get(chan).floorEntry(evt.getTick()).getValue())
-                            || (drumsGM2 == 1 && mmaDrumSwitches.get(chan).floorEntry(evt.getTick()) != null
-                            && mmaDrumSwitches.get(chan).floorEntry(evt.getTick()).getValue())) {
+                            || (drumsXG == 1 && yamahaDrumSwitches.get(port).get(chan).floorEntry(tick) != null
+                            && yamahaDrumSwitches.get(port).get(chan).floorEntry(tick).getValue())
+                            || (drumsGM2 == 1 && mmaDrumSwitches.get(port).get(chan).floorEntry(tick) != null
+                            && mmaDrumSwitches.get(port).get(chan).floorEntry(tick).getValue())) {
                         // These non-channel-10 GS/XG/GM2 drum notes stay in the track.
                         // The chromatic notes will never enter here as
                         // 'notes' will be 1 when they are present,
@@ -1027,10 +1116,10 @@ public class SequenceInfo implements MidiConstants {
 								+"\n notes="+notes+" channel="+chan+" drumsExt10="+drumsExt10+" drumsExtX="+drumsExtX
 								+"\n notes10="+notes10 +" notesX="+ notesX
 								+" isGSDrumChannel="+(rolandDrumChannels[chan])
-								+" isXGdrum="+(yamahaDrumSwitches.get(chan).floorEntry(evt.getTick()) != null
-									&& yamahaDrumSwitches.get(chan).floorEntry(evt.getTick()).getValue())
-								+" isGM2drum="+(mmaDrumSwitches.get(chan).floorEntry(evt.getTick()) != null
-									&& mmaDrumSwitches.get(chan).floorEntry(evt.getTick()).getValue());
+								+" isXGdrum="+(yamahaDrumSwitches.get(port).get(chan).floorEntry(tick) != null
+									&& yamahaDrumSwitches.get(port).get(chan).floorEntry(tick).getValue())
+								+" isGM2drum="+(mmaDrumSwitches.get(port).get(chan).floorEntry(tick) != null
+									&& mmaDrumSwitches.get(port).get(chan).floorEntry(tick).getValue());
                     } else if (noteTrack != null && chan == DRUM_CHANNEL) {
                         // Chromatic note on ch10. Split it into new track.
                         noteTrack.add(evt);
@@ -1066,22 +1155,34 @@ public class SequenceInfo implements MidiConstants {
 		return brandDrumTrack;
 	}
 
+	/**
+	 * Returns true if the given channel a drum channel and standard is GM.
+	 */
 	private boolean isDrumGM(int chan) {
 		return MidiStandard.GM == standard && chan == DRUM_CHANNEL;
 	}
 
-	private boolean isDrumGM2(MidiEvent evt, int chan) {
-		return MidiStandard.GM2 == standard
-				&& mmaDrumSwitches.get(chan).floorEntry(evt.getTick()) != null
-				&& mmaDrumSwitches.get(chan).floorEntry(evt.getTick()).getValue();
+	/**
+	 * Returns true if the given channel a drum channel and standard is GM2.
+	 */
+	private boolean isDrumGM2(MidiEvent evt, int port, int chan) {
+		if (MidiStandard.GM2 != standard || !mmaDrumSwitches.containsKey(port)) return false;
+		TreeMap<Long, Boolean> mTree = mmaDrumSwitches.get(port).get(chan);
+		return mTree.floorEntry(evt.getTick()) != null && mTree.floorEntry(evt.getTick()).getValue();
 	}
 
-	private boolean isDrumXG(MidiEvent evt, int chan) {
-		return MidiStandard.XG == standard
-				&& yamahaDrumSwitches.get(chan).floorEntry(evt.getTick()) != null
-				&& yamahaDrumSwitches.get(chan).floorEntry(evt.getTick()).getValue();
+	/**
+	 * Returns true if the given channel a drum channel and standard is XG.
+	 */
+	private boolean isDrumXG(MidiEvent evt, int port, int chan) {
+		if (MidiStandard.XG != standard || !yamahaDrumSwitches.containsKey(port)) return false;
+		TreeMap<Long, Boolean> yTree = yamahaDrumSwitches.get(port).get(chan);
+		return yTree.floorEntry(evt.getTick()) != null && yTree.floorEntry(evt.getTick()).getValue();
 	}
 
+	/**
+	 * Returns true if the given channel a drum channel and standard is GS.
+	 */
 	private boolean isDrumGS(int chan) {
 		return MidiStandard.GS == standard && rolandDrumChannels[chan];
 	}

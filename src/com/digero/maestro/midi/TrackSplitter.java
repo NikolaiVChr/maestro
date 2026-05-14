@@ -5,11 +5,7 @@ import java.util.logging.Logger;
 
 import javax.sound.midi.*;
 
-import com.digero.common.midi.MidiConstants;
-import com.digero.common.midi.MidiFactory;
-import com.digero.common.midi.MidiInstrument;
-import com.digero.common.midi.MidiStandard;
-import com.digero.common.midi.MidiUtils;
+import com.digero.common.midi.*;
 
 /**
  * Takes a midi input and expands each instrument to its own track. Works with GM2, XG, GS, GM
@@ -19,6 +15,7 @@ public class TrackSplitter {
 	private static final Logger log = Logger.getLogger("export.midi");
 	
 	private SequenceDataCache sequenceCache = null;
+	private Sequence oldSequence = null;
 	private boolean isGM = true;
 
 	public Sequence split(Sequence sequence, SequenceDataCache sequenceCache, MidiStandard standard,
@@ -26,6 +23,7 @@ public class TrackSplitter {
 			throws InvalidMidiDataException {
 
 		this.sequenceCache = sequenceCache;
+		this.oldSequence = sequence;
 
 		int resolution = sequence.getResolution();
 		float divisionType = sequence.getDivisionType();
@@ -217,11 +215,38 @@ public class TrackSplitter {
 							newMetaTrack.add(evt);
 						}
 					} else if (msg instanceof SysexMessage sysMsg) {
-						if (pendingChannelPrefix != null) {
-							initTracksByPort.get(port).add(pendingChannelPrefix);
-							pendingChannelPrefix = null;
+						byte[] message = sysMsg.getMessage();
+						boolean isXGPartModeSwitch = false;
+
+						if (message.length == 9 && (message[0] & 0xFF) == 0xF0 && (message[1] & 0xFF) == 0x43
+								&& (message[3] & 0xFF) == 0x4C && (message[4] & 0xFF) == 0x08 && (message[6] & 0xFF) == 0x07
+								&& (message[8] & 0xFF) == 0xF7 && (message[5] & 0xFF) < 16) {
+							isXGPartModeSwitch = true;
 						}
-						initTracksByPort.get(port).add(evt);
+
+						if (isXGPartModeSwitch) {
+							log.fine("Translating XG Part Mode SysEx to standard msb/patch during split.");
+							int ch = message[5];
+							boolean isDrum = (message[7] > 0);
+							int msb = isDrum ? 127 : 0;
+
+							if (pendingChannelPrefix != null) {
+								pendingChannelPrefix = null;
+							}
+
+							// Inject the MSB Bank Select where the SysEx used to be
+							initTracksByPort.get(port).add(MidiFactory.createControllerEvent((byte)MidiConstants.BANK_SELECT_MSB, msb, ch, tick));
+
+							// A real XG synth resets the patch when receiving this SysEx.
+							// PC 0 acts as Standard Kit (if MSB 127) or Grand Piano (if MSB 0).
+							initTracksByPort.get(port).add(MidiFactory.createProgramChangeEvent(0, ch, tick));
+						} else {
+							if (pendingChannelPrefix != null) {
+								initTracksByPort.get(port).add(pendingChannelPrefix);
+								pendingChannelPrefix = null;
+							}
+							initTracksByPort.get(port).add(evt);
+						}
 					} else {
 						assert false: "Unexpected MIDI message type: " + msg.getClass().getSimpleName();
                     }
