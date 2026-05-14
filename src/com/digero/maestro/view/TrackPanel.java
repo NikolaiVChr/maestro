@@ -1174,8 +1174,18 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		@Override
 		protected boolean audibleNote(NoteEvent ne) {
 			if (abcPart.getAbcSong().isHideEdits()) return true;
-			return abcPart.getAudible(trackInfo.getTrackNumber(), ne.getStartTick(), isActiveTrack())
-					&& abcPart.shouldPlay(ne, trackInfo.getTrackNumber()) && abcPart.mapNoteEvent(trackInfo.getTrackNumber(), ne, true) != null;
+
+			// if not enabled we only check getAudible()
+			boolean enabled = isActiveTrack();
+
+			// is visible if not tune-edited away. Or section-edit silenced.
+			boolean visible = abcPart.getAudible(trackInfo.getTrackNumber(), ne.getStartTick(), enabled);
+
+			return visible && (!enabled || (
+					// shouldPlay() is checking for section-edit pan setting
+					abcPart.shouldPlay(ne, trackInfo.getTrackNumber())
+					&& abcPart.mapNoteEvent(trackInfo.getTrackNumber(), ne, true) != null)
+					);
 		}
 
 		@Override

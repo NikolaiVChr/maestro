@@ -67,6 +67,7 @@ Version 4.6.15
 - More spec. compliant XG/GM2 processing while at the same time try to account for badly made midi files.
 - Improved midi expansion export.
 - Added some more guards against 7bit midi bytes using 8th bit.
+- Fixed that sometimes it would not draw the notes of tracks that were not selected.
 - Added support for custom soundfont for playback of midi.
   Name it: midi.sf2
   Put it in:
