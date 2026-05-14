@@ -41,6 +41,7 @@ public class SequenceInfo implements MidiConstants {
 	private final Sequence sequence;
 	private final SequenceDataCache sequenceCache;
 	private final String fileName;
+	private File midiFile = null;
 	private String title;
 	private String composer;
 	public MidiStandard standard = MidiStandard.GM;
@@ -82,7 +83,7 @@ public class SequenceInfo implements MidiConstants {
 		if (params.abcInfo == null)
 			params.abcInfo = new AbcInfo();
 		SequenceInfo sequenceInfo = new SequenceInfo(params.filesData.getFirst().file.getName(), AbcToMidi.convert(params),
-				-1, miscSettings, oldVelocities, true, false, ignoreMidiText, params.abcInfo, usingNewMidiLayout);
+				-1, miscSettings, oldVelocities, true, false, ignoreMidiText, params.abcInfo, usingNewMidiLayout, null);
 		sequenceInfo.title = params.abcInfo.getTitle();
 		sequenceInfo.composer = params.abcInfo.getComposer();
 		sequenceInfo.primaryTempoMPQ = (int) Math.round(MidiUtils.convertTempo(params.abcInfo.getPrimaryTempoBPM()));
@@ -96,11 +97,12 @@ public class SequenceInfo implements MidiConstants {
 			throws InvalidMidiDataException, IOException, FileParseException {
         try (InputStream is1 = new BufferedInputStream(new FileInputStream(midiFile));
              InputStream is2 = new BufferedInputStream(new FileInputStream(midiFile))) {
+
             Sequence sequence = MidiSystem.getSequence(is1);
             MidiFileFormat midiFileFormat = MidiSystem.getMidiFileFormat(is2);
             return new SequenceInfo(midiFile.getName(), ConvertPPQ.convert(sequence),
                     midiFileFormat.getType(), miscSettings, oldVelocities, onlyFirstTrackTempos, ignoreZeroChannelVolume,
-                    ignoreMidiText, null, usingNewMidiLayout);
+                    ignoreMidiText, null, usingNewMidiLayout, midiFile);
         }
 	}
 
@@ -110,7 +112,7 @@ public class SequenceInfo implements MidiConstants {
     public static SequenceInfo fromSequence(Sequence seq, MiscSettings miscSettings)
             throws InvalidMidiDataException, FileParseException {
         return new SequenceInfo("unit-test", seq,
-                1, miscSettings, false, true, true, true, null, 0);
+                1, miscSettings, false, true, true, true, null, 0, null);
     }
 
 	/**
@@ -137,9 +139,10 @@ public class SequenceInfo implements MidiConstants {
         }
     }
 
-	private SequenceInfo(String fileName, Sequence sequence, int type, MiscSettings miscSettings, boolean oldVelocities, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume, boolean ignoreMidiText, AbcInfo abcInfo, int usingNewMidiLayout)
+	private SequenceInfo(String fileName, Sequence sequence, int type, MiscSettings miscSettings, boolean oldVelocities, boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume, boolean ignoreMidiText, AbcInfo abcInfo, int usingNewMidiLayout, File midiFile)
 			throws InvalidMidiDataException, FileParseException {
 		this.usingNewMidiLayout = usingNewMidiLayout;
+		this.midiFile = midiFile;
 		this.fileName = fileName;
 
 		this.midiType = type;
@@ -1362,12 +1365,12 @@ public class SequenceInfo implements MidiConstants {
 	/**
 	 * 
 	 * @return the result from splitting tracks with multiple instruments into 1 track per instrument.
-	 * @throws InvalidMidiDataException 
 	 */
-	public Sequence split() throws InvalidMidiDataException {
+	public Sequence split() throws InvalidMidiDataException, FileParseException, IOException {
 		TrackSplitter splitter = new TrackSplitter();
 		Sequence sequence2 = null;
-		sequence2 = splitter.split(sequence, sequenceCache, standard, portMap);
+		if (midiFile == null) return null;
+		sequence2 = splitter.split(midiFile);
 		
 		return sequence2;
 	}

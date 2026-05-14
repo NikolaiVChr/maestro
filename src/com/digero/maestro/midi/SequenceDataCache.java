@@ -57,6 +57,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	private final MapByChannelPort mapMSB = new MapByChannelPort(0);
 	private final MapByChannelPort mapLSB = new MapByChannelPort(0);
 	private final MapByChannelPort mapPatch = new MapByChannelPort(0);
+	private final SortedMap<Integer, Integer> portMap;
 	private final DrumBankType[] brandDrumBanks;
 	private final MidiStandard standard;
 	private final boolean[] rolandDrumChannels;
@@ -77,6 +78,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 
 		this.fileName = fileName;
 		this.usingNewMidiLayout = usingNewMidiLayout;
+		this.portMap = portMap;
 
         // This is total accumulated duration in micros of each tempo used in the song
 		Map<Integer, Long> tempoLengths = new HashMap<>();// MPQ -> micros
@@ -946,6 +948,10 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	
 	public String getComposer() {
 		return midiText.artist;
+	}
+
+	SortedMap<Integer, Integer> getPortMap() {
+		return portMap;
 	}
 
 	/**

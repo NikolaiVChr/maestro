@@ -1,11 +1,17 @@
 package com.digero.maestro.midi;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.logging.Logger;
+import java.util.prefs.BackingStoreException;
+import java.util.prefs.Preferences;
 
 import javax.sound.midi.*;
 
 import com.digero.common.midi.*;
+import com.digero.common.util.FileParseException;
+import com.digero.maestro.view.MiscSettings;
 
 /**
  * Takes a midi input and expands each instrument to its own track. Works with GM2, XG, GS, GM
@@ -18,21 +24,31 @@ public class TrackSplitter {
 	private Sequence oldSequence = null;
 	private boolean isGM = true;
 
-	public Sequence split(Sequence sequence, SequenceDataCache sequenceCache, MidiStandard standard,
-			SortedMap<Integer, Integer> portMap)
-			throws InvalidMidiDataException {
+	public Sequence split(File file)
+            throws InvalidMidiDataException, FileParseException, IOException {
 
-		this.sequenceCache = sequenceCache;
-		this.oldSequence = sequence;
+		// "temp_midi_expander" is super important, else it will wipe all maestro settings as it's tied to package, not class inside the package.
+		Preferences prefs = Preferences.userNodeForPackage(this.getClass()).node("temp_midi_expander");
+        try {
+            prefs.clear();
+        } catch (BackingStoreException e) {
+            throw new RuntimeException(e);
+        }
+        SequenceInfo sequenceInfo = SequenceInfo.fromMidi(file, new MiscSettings(prefs, false), false, false, false, false, 1);
 
-		int resolution = sequence.getResolution();
-		float divisionType = sequence.getDivisionType();
+		this.sequenceCache = sequenceInfo.getDataCache();
+		this.oldSequence = sequenceInfo.getSequence();
+		SortedMap<Integer, Integer> portMap = sequenceCache.getPortMap();
+		MidiStandard standard = sequenceInfo.standard;
+
+		int resolution = oldSequence.getResolution();
+		float divisionType = oldSequence.getDivisionType();
 		Sequence expandedSequence = new Sequence(divisionType, resolution);
 
 		isGM = standard == MidiStandard.GM;
 		boolean hasPorts = sequenceCache.hasPorts;
 
-		Track[] oldTracks = sequence.getTracks();
+		Track[] oldTracks = oldSequence.getTracks();
 		Track newMetaTrack = expandedSequence.createTrack();
 
 		newMetaTrack.add(MidiFactory.createTrackNameEvent("META"));

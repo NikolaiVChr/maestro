@@ -3616,7 +3616,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 					JOptionPane.ERROR_MESSAGE);
 
 			return false;
-		} catch (InvalidMidiDataException | IOException e) {
+		} catch (InvalidMidiDataException | IOException | FileParseException e) {
 			log.severe(e.getMessage());
 			JOptionPane.showMessageDialog(this, e.getMessage(), UIText.get("maestro.error"), JOptionPane.ERROR_MESSAGE);
 			return false;
