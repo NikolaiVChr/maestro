@@ -184,12 +184,12 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 					}
 					if (oldVelocities) {
 						// The order of math expression here is important, so I added some parentheses:
-						velocity = (velocity * sequenceCache.getChannelVolume(ch, tick)) / DEFAULT_CHANNEL_VOLUME;
+						velocity = (velocity * sequenceCache.getChannelVolume(port, ch, tick)) / DEFAULT_CHANNEL_VOLUME;
 						if (velocity > 127)
 							velocity = 127;
 					} else {
-						int ch_vol = sequenceCache.getChannelVolume(ch, tick);
-						int expr = sequenceCache.getExpression(ch, tick);
+						int ch_vol = sequenceCache.getChannelVolume(port, ch, tick);
+						int expr = sequenceCache.getExpression(port, ch, tick);
 						double volume_modifier = (ch_vol / (double) MAX_VOLUME) * (expr / (double) MAX_EXPRESSION);
 						velocity = (int) Math.clamp(volume_modifier * velocity, 0.0d, 127.0d);
 						if (velocity == 0 && m.getData2() > 0 && ch_vol > 0 && expr > 0) {

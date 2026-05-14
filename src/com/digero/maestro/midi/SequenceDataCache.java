@@ -46,8 +46,8 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	private static final int NO_RESULT = -250;
 
 	private final MapByChannelPort instruments = new MapByChannelPort(DEFAULT_INSTRUMENT);
-	private final MapByChannel channelVolume = new MapByChannel(DEFAULT_CHANNEL_VOLUME);//TODO: this should be port aware too, but for backward compat, it is not
-	private final MapByChannel expression = new MapByChannel(DEFAULT_EXPRESSION);//TODO: this should be port aware too, but for backward compat, it is not
+	private final MapByChannelPort channelVolume = new MapByChannelPort(DEFAULT_CHANNEL_VOLUME);
+	private final MapByChannelPort expression = new MapByChannelPort(DEFAULT_EXPRESSION);
 	private final MapByChannelPort pitchBendRangeCoarse = new MapByChannelPort(DEFAULT_PITCH_BEND_RANGE_SEMITONES);
 	private final MapByChannelPort pitchBendRangeFine = new MapByChannelPort(DEFAULT_PITCH_BEND_RANGE_CENTS);
 	private final MapByChannelPort bendMap;
@@ -171,7 +171,8 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 										String str = "";
 										int rl = rpnLSBMap.get(port, ch, tick);
 										int rm = rpnMSBMap.get(port, ch, tick);
-										int ex = expression.get(ch, tick);
+										int p = (usingNewMidiLayout >= 1) ? port : 0;
+										int ex = expression.get(p, ch, tick);
 										boolean changingStuff = rl != 127 || rm != 127 || (specCompliant && ex != 127);// too much hassle to detect if bend wheel was active.
 										if (changingStuff) {
 											str += "\n rpn lsb " + rl + " -> " + DEFAULT_RPN_NULL;
@@ -209,8 +210,8 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 							for (int ch = 0; ch < CHANNEL_COUNT_ABC; ch++) {
 								rpnLSBMap.put(port, ch, tick, DEFAULT_RPN_NULL);
 								rpnMSBMap.put(port, ch, tick, DEFAULT_RPN_NULL);
-								expression.put(ch, tick, DEFAULT_EXPRESSION);
-								channelVolume.put(ch, tick, DEFAULT_CHANNEL_VOLUME);
+								expression.put(port, ch, tick, DEFAULT_EXPRESSION);
+								channelVolume.put(port, ch, tick, DEFAULT_CHANNEL_VOLUME);
 								panMap.put(port, ch, tick, PAN_CENTER);
 								pitchWheelMap.add(new Quad<>(port, ch, tick, 0.0d));
 								pitchBendRangeCoarse.put(port, ch, tick, DEFAULT_PITCH_BEND_RANGE_SEMITONES);
@@ -282,11 +283,14 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 						} else if (cmd == ShortMessage.CONTROL_CHANGE) {
 							switch (shortMsg.getData1()) {
 							case CHANNEL_VOLUME_CONTROLLER_COARSE:
-								if (shortMsg.getData2() != 0 || !ignoreZeroChannelVolume)
-									channelVolume.put(ch, tick, Math.clamp(shortMsg.getData2(), 0, 127));
+								if (shortMsg.getData2() != 0 || !ignoreZeroChannelVolume) {
+									int p = (usingNewMidiLayout >= 1) ? port : 0;
+									channelVolume.put(p, ch, tick, Math.clamp(shortMsg.getData2(), 0, 127));
+								}
 								break;
 							case CHANNEL_EXPRESSION_CONTROLLER:
-								expression.put(ch, tick, Math.clamp(shortMsg.getData2(), 0, 127));
+								int p = (usingNewMidiLayout >= 1) ? port : 0;
+								expression.put(p, ch, tick, Math.clamp(shortMsg.getData2(), 0, 127));
 								break;
 								/*
 							case REGISTERED_PARAMETER_NUMBER_MSB:
@@ -730,8 +734,9 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	 * @param tick
 	 * @return volume from 0 to 127. 100 is default.
 	 */
-	public int getChannelVolume(int channel, long tick) {
-		return channelVolume.get(channel, tick);
+	public int getChannelVolume(int port, int channel, long tick) {
+		int p = (usingNewMidiLayout >= 1) ? port : 0;
+		return channelVolume.get(p, channel, tick);
 	}
 
 	/**
@@ -740,8 +745,9 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	 * @param tick
 	 * @return expression from 0 to 127. 127 is default.
 	 */
-	public int getExpression(int channel, long tick) {
-		return expression.get(channel, tick);
+	public int getExpression(int port, int channel, long tick) {
+		int p = (usingNewMidiLayout >= 1) ? port : 0;
+		return expression.get(p, channel, tick);
 	}
 
 	public double getPitchBendRange(int port, int channel, long tick) {
