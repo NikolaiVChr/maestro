@@ -7,10 +7,7 @@ import java.util.logging.Logger;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
-import javax.sound.midi.MidiDevice;
-import javax.sound.midi.MidiSystem;
-import javax.sound.midi.MidiUnavailableException;
-import javax.sound.midi.Receiver;
+import javax.sound.midi.*;
 import javax.sound.midi.MidiDevice.Info;
 
 import com.digero.common.midi.SequencerEvent.SequencerProperty;
@@ -120,6 +117,14 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 				}
 			}
 		}
+		boolean customAvailable = false;
+		String customKey = SynthesizerFactory.customMidiSoundfontFilename;
+		if (SynthesizerFactory.getCustomMIDIAudioSynthesizer() != null) {
+			prefsNode.putLong(customKey, new Date().getTime());
+			customAvailable = true;
+		} else {
+			prefsNode.remove(customKey);
+		}
 		try {
 			prefsNode.flush();
 		} catch (BackingStoreException e) {
@@ -136,6 +141,21 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 			deviceInUse = null;
 			if (feedActive && nonDefault) ProjectFrame.feed(UIText.get("common.default.midi.out"), null);
 			return MidiSystem.getReceiver();
+		}
+		if (customAvailable && customKey.equals(preferred)) {
+			Synthesizer s = SynthesizerFactory.getCustomMIDIAudioSynthesizer();
+			if (s != null) {
+				deviceInUse = customKey;
+				myInfo = s.getDeviceInfo();
+				// we don't assign 'device' as we don't want to close it. Might not be able to get it back.
+				// therefore we set it to null
+				device = null;
+				if (feedActive && nonDefault) ProjectFrame.feed("MIDI Device: "+customKey, null);
+				log.info("Non-default MIDI out selected: " + myInfo.getName()+" ("+description+") "+vendor+" with "+customKey+" soundfont");
+				return s.getReceiver();
+			} else {
+				prefsNode.remove(customKey);
+			}
 		}
 		if (myInfo == null) {
 			log.info(UIText.get("common.default.midi.out.selected.0.not.available", preferred));

@@ -60,6 +60,18 @@ Version 4.6.15
 - No more vertically scale notes in drum/fx panels.
 - Added leading-edge note color markers to distinguish sequential notes.
 - Made default timing setting in options (for newly installed Maestro apps) be Organic Single-stage instead of Mix timings.
+- Set default stereo to 25% when installing fresh maestro.
+- Fixed that some GS midi files channels could be silent during midi playback. (likely connected to Win 11 new midi engine)
+- Much more expansive support of midi ports. Only fresh projects will benefit from all the changes to keep backward compatibility.
+- Fixed some edge cases of misbehaving pitch bends. That combined with the port update means that some bends can change or even go away.
+- More spec. compliant XG/GM2 processing while at the same time try to account for badly made midi files.
+- Improved midi expansion export.
+- Added some more guards against 7bit midi bytes using 8th bit.
+- Added support for custom soundfont for playback of midi.
+  Name it: midi.sf2
+  Put it in:
+  C:\Users\[username]\AppData\Local\MaestroCommon
+  Before starting Maestro.
 
 Version 4.6.14
 - Fixed that Maestro allowed zero part number.

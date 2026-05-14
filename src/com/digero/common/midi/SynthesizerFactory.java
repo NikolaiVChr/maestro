@@ -21,10 +21,13 @@ import javax.sound.sampled.AudioFormat;
 import com.sun.media.sound.AudioSynthesizer;
 import com.sun.media.sound.AudioSynthesizerPropertyInfo;
 
+import static com.digero.common.util.SoundFontDownloader.getCommonDataDirectory;
+
 public class SynthesizerFactory {
 	private static final Logger log = Logger.getLogger("playback.abc");
 	private static Soundbank lotroSoundbank = null;
 	private static File soundFontFile = new File("LotroInstruments.sf2");
+	private static Soundbank customSoundfont = null;
     public static final long PLAYBACK_LATENCY_MICROS = 250000L;
 
 	public static void setSoundFontLocation(File soundFontFile) {
@@ -53,6 +56,25 @@ public class SynthesizerFactory {
 		else
 			log.severe("Failed to make wav synth");
 		return synth;
+	}
+
+	private static com.sun.media.sound.SoftSynthesizer customMidisynth = null;
+	public static Synthesizer getCustomMIDIAudioSynthesizer() {
+		// The soundfont file should be named AppData/Local/MaestroCommon/midi.sf2
+		try {
+			if (customMidisynth != null) return customMidisynth;
+			Soundbank bank = getCustomSoundbank();
+			if (bank == null) return null;
+			customMidisynth = findMIDISynthesizer();
+			if (customMidisynth != null) {
+				customMidisynth.open(null, setupSynthesizerPropertyInfo());
+				customMidisynth.unloadAllInstruments(bank);
+				customMidisynth.loadAllInstruments(bank);
+			}
+		} catch (Throwable t) {
+			log.log(Level.WARNING, "Failed to create synth for custom midi SF2 soundbank", t);
+		}
+		return customMidisynth;
 	}
 
 	@SuppressWarnings("HardCodedStringLiteral")
@@ -168,6 +190,41 @@ public class SynthesizerFactory {
 		return lotroSoundbank;
 	}
 
+	public static final String customMidiSoundfontFilename = "midi.sf2";
+	public static Soundbank getCustomSoundbank() throws InvalidMidiDataException, IOException {
+		if (customSoundfont == null) {
+			try {
+				File dataDir = getCommonDataDirectory();
+				if (dataDir != null) {
+					File sf2File = new File(dataDir, customMidiSoundfontFilename);
+					if (sf2File.exists()) {
+						customSoundfont = MidiSystem.getSoundbank(sf2File);
+					}
+				}
+			} catch (Throwable t) {
+				log.log(Level.WARNING, "Failed to load custom midi SF2 soundbank", t);
+			}
+		}
+		return customSoundfont;
+	}
+
+	public static com.sun.media.sound.SoftSynthesizer findMIDISynthesizer() throws MidiUnavailableException {
+		// First check if default synthesizer is AudioSynthesizer.
+		Synthesizer synth = MidiSystem.getSynthesizer();
+		if (synth instanceof com.sun.media.sound.SoftSynthesizer && synth != LotroSequencerWrapper.getLotroSynth())
+			return (com.sun.media.sound.SoftSynthesizer) synth;
+
+		// If default synthesizer is not SoftSynthesizer, check others.
+		for (Info info : MidiSystem.getMidiDeviceInfo()) {
+			MidiDevice dev = MidiSystem.getMidiDevice(info);
+			if (dev instanceof com.sun.media.sound.SoftSynthesizer && dev != LotroSequencerWrapper.getLotroSynth())
+				return (com.sun.media.sound.SoftSynthesizer) dev;
+		}
+
+		log.severe("No custom MIDI audio synth found");
+		return null;
+	}
+
 	/**
 	 * Find available AudioSynthesizer
 	 */
@@ -190,6 +247,7 @@ public class SynthesizerFactory {
 	}
 
 	public static boolean userOwnSoundFontExist() {
+		// this is for lotro soundfont
         if (soundFontFile != null && soundFontFile.exists()) return true;
 		if (!soundFontFile.exists()) {
 			log.log(Level.INFO, "Soundfont file not found, trying jar location.");

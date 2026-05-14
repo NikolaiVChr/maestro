@@ -159,4 +159,8 @@ public class LotroSequencerWrapper extends NoteFilterSequencerWrapper {
     public long getCountInMicros() {
         return countInMicros;
     }
+
+	public static Synthesizer getLotroSynth() {
+		return lotroSynth;
+	}
 }
