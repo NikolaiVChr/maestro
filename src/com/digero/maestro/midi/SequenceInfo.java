@@ -396,7 +396,7 @@ public class SequenceInfo implements MidiConstants {
 		long lastResetTick = Long.MIN_VALUE;
 		Map<Integer, TreeMap<Long, PatchEntry>> portBankAndPatchTrack = new HashMap<>();
 
-
+		/*
 		// debug track 0:
 		for (int track = 0; track < tracks.length; track++) {
 			//if (track != 10) continue;
@@ -408,6 +408,7 @@ public class SequenceInfo implements MidiConstants {
 				System.out.printf("Tick %08d: %s\n",evt.getTick(), MidiUtils.midiMessageToString(evt.getMessage()));
 			}
 		}
+		*/
 
 		// System.err.println("\nDetermineStandard:");
 

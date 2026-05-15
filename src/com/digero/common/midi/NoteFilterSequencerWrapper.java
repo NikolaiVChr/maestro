@@ -150,7 +150,7 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 				// we don't assign 'device' as we don't want to close it. Might not be able to get it back.
 				// therefore we set it to null
 				device = null;
-				if (feedActive && nonDefault) ProjectFrame.feed("MIDI Device: "+customKey, null);
+				if (feedActive && nonDefault) ProjectFrame.feed(UIText.get("maestro.midi.out.on.0",customKey), null);
 				log.info("Non-default MIDI out selected: " + myInfo.getName()+" ("+description+") "+vendor+" with "+customKey+" soundfont");
 				return s.getReceiver();
 			} else {
