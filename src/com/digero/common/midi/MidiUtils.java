@@ -482,6 +482,20 @@ public class MidiUtils {
                     } else {
                         str += ", GS failed to set a channel to drums. sysexMsg[6]=" + String.format("0x%02X",sysexMsg[6]);
                     }
+                } else if (sysexMsg.length == 11 && (sysexMsg[0] & 0xFF) == 0xF0 && (sysexMsg[1] & 0xFF) == 0x41
+                        && (sysexMsg[3] & 0xFF) == 0x42 && (sysexMsg[4] & 0xFF) == 0x12
+                        && (sysexMsg[5] & 0xFF) == 0x40 && (sysexMsg[6] & 0xFF) == 0x00 && (sysexMsg[7] & 0xFF) == 0x04
+                        && (sysexMsg[10] & 0xFF) == 0xF7) {
+
+                    int masterVol = sysexMsg[8] & 0xFF;
+                    str += ", GS Device Master Volume set to " + masterVol;
+                } else if (sysexMsg.length == 9 && (sysexMsg[0] & 0xFF) == 0xF0 && (sysexMsg[1] & 0xFF) == 0x43
+                        && (sysexMsg[3] & 0xFF) == 0x4C
+                        && (sysexMsg[4] & 0xFF) == 0x00 && (sysexMsg[5] & 0xFF) == 0x00 && (sysexMsg[6] & 0xFF) == 0x04
+                        && (sysexMsg[8] & 0xFF) == 0xF7) {
+
+                    int masterVol = sysexMsg[7] & 0xFF;
+                    str += ", XG Device Master Volume set to " + masterVol;
                 } else if (sysexMsg.length == 9 && (sysexMsg[0] & 0xFF) == 0xF0 && (sysexMsg[1] & 0xFF) == 0x43
                         && (sysexMsg[3] & 0xFF) == 0x4C
                         && (sysexMsg[4] & 0xFF) == 0x00 && (sysexMsg[5] & 0xFF) == 0x00 && (sysexMsg[6] & 0xFF) == 0x07

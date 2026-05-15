@@ -83,25 +83,44 @@ public class VolumeTransceiver implements Transceiver, MidiConstants
 					// It's a GS midi, some of them sadly have lsb changes, we don't allow that.
 					return;
 				}
+				if (NoteFilterSequencerWrapper.deviceInUse == null) {
+					// We are using windows MIDI mapper
+				}
+			} else if (m.getCommand() == ShortMessage.CONTROL_CHANGE && m.getData1() == BANK_SELECT_MSB && m.getData2() != 0) {
+				if (NoteFilterSequencerWrapper.deviceInUse == null) {
+					// We are using windows MIDI mapper
+				}
+			} else if (m.getCommand() == ShortMessage.PROGRAM_CHANGE && m.getChannel() == DRUM_CHANNEL) {
+				if (NoteFilterSequencerWrapper.deviceInUse == null) {
+					// We are using windows MIDI mapper
+				}
 			}
 		} else if (message instanceof SysexMessage m) {
 
-            byte[] sysex = m.getMessage();
-					    
+			byte[] sysex = m.getMessage();
+
 			if (sysex.length > 4 && sysex[1] == SYSEX_UNIVERSAL_REALTIME && (sysex[3] & 0xFF) == 0x04 && (sysex[4] & 0xFF) == 0x01) {
 				//System.out.println("Ignored SysEx device volume command:\n"+MidiUtils.formatBytes(sysex));
 				return;
+			} else if (sysex.length >= 8 && (sysex[1] & 0xFF) == 0x43 && (sysex[4] & 0xFF) == 0x00 && (sysex[5] & 0xFF) == 0x00 && (sysex[6] & 0xFF) == 0x04) {
+				// XG Master Volume (F0 43 10 4C 00 00 04 vv F7)
+				// System.out.println("Ignored XG Master Volume");
+				return;
+			} else if (sysex.length >= 9 && (sysex[1] & 0xFF) == 0x41 && (sysex[5] & 0xFF) == 0x40 && (sysex[6] & 0xFF) == 0x00 && (sysex[7] & 0xFF) == 0x04) {
+				// GS Master Volume (F0 41 10 42 12 40 00 04 vv ss F7)
+				// System.out.println("Ignored GS Master Volume");
+				return;
 			} else if (MidiUtils.isResetGS(sysex)) {
 				//System.out.println("GS reset (will mess with MIDI playback volume, so we set also volume again)");
-				systemReset = true;
+				//systemReset = true;
 				return;
 			} else if (MidiUtils.isResetXG(sysex)) {
 				//System.out.println("XG reset (will mess with MIDI playback volume, so we set also volume again)");
-				systemReset = true;
+				//systemReset = true;
 				return;
 			} else if (MidiUtils.isResetGM2(sysex)) {
 				//System.out.println("GM2 reset (will mess with MIDI playback volume, so we set also volume again)");
-				systemReset = true;
+				//systemReset = true;
 				return;
 			} else if (MidiUtils.isResetGM(sysex)) {
 				//System.out.println("GM reset");
@@ -110,7 +129,7 @@ public class VolumeTransceiver implements Transceiver, MidiConstants
 				//System.out.println("SysEx command: "+MidiUtils.formatBytes(sysex));			
 			}
 		}
-
+		//System.out.println("Passing on: "+MidiUtils.midiMessageToString(message));
 		passOn(message, timeStamp);
 		if (systemReset) {
 			//System.out.println("systemReset");
