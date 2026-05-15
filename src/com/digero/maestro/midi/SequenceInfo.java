@@ -396,17 +396,18 @@ public class SequenceInfo implements MidiConstants {
 		long lastResetTick = Long.MIN_VALUE;
 		Map<Integer, TreeMap<Long, PatchEntry>> portBankAndPatchTrack = new HashMap<>();
 
-		/*
+
 		// debug track 0:
 		for (int track = 0; track < tracks.length; track++) {
-			if (track != 0) continue;
+			//if (track != 10) continue;
 			Track t = tracks[track];
+			System.out.println("\nTrack "+track+":");
 			for (int j = 0; j < t.size(); j++) {
 				MidiEvent evt = t.get(j);
+				if (evt.getTick() > 5_000L) break;
 				System.out.printf("Tick %08d: %s\n",evt.getTick(), MidiUtils.midiMessageToString(evt.getMessage()));
 			}
 		}
-		 */
 
 		// System.err.println("\nDetermineStandard:");
 
@@ -660,7 +661,11 @@ public class SequenceInfo implements MidiConstants {
 			Integer[] yChanges = new Integer[CHANNEL_COUNT_ABC];
 			Integer[] mChanges = new Integer[CHANNEL_COUNT_ABC];
 			for (int channel = 0; channel < CHANNEL_COUNT_ABC; channel++) {
-				yChanges[channel] = yamahaDrumChannels[channel] ? DRUMS : CHROMATIC;
+				if (usingNewMidiLayout == 0) {
+					yChanges[channel] = yamahaDrumChannels[channel] ? DRUMS : CHROMATIC;
+				} else {
+					yChanges[channel] = (channel == DRUM_CHANNEL) ? DRUMS : CHROMATIC;
+				}
 				mChanges[channel] = (channel == DRUM_CHANNEL) ? DRUMS : CHROMATIC;
 			}
 			portYamahaChanges.put(port, yChanges);
@@ -694,18 +699,29 @@ public class SequenceInfo implements MidiConstants {
 					MidiMessage msg = evt.getMessage();
 					if (msg instanceof SysexMessage sysex) {
 						byte[] message = sysex.getMessage();
-						// we already know that this sysex is a XG bank/patch change, so no need for if statement.
+						// we already know that this sysex is a XG bank/patch/mode change, so no need for if statement.
 						String bank = "";
 						if (message[6] == 1) bank = "MSB";
 						else if (message[6] == 2) bank = "LSB";
 						else if (message[6] == 3) bank = "Patch";
-						else if (usingNewMidiLayout >= 1 && message[6] == 7) bank = "DrumSetup";
+						else if (message[6] == 7) bank = "ChannelMode";
 
 						if (!bank.isEmpty() && message[5] < 16 && message[5] >= 0 && message[7] < 128 && message[7] >= 0) {
 							// System.err.println(fileName+": Yamaha XG Sysex "+bank+" set to "+message[7]+" for channel
 							// "+message[5]);
 							int ch = message[5];
-							if ("MSB".equals(bank)) {
+							if ("ChannelMode".equals(bank)) {
+								if (usingNewMidiLayout >= 1) {
+									if (message[7] > 0) {
+										// Switching to Drums
+										yamahaBankAndPatchChanges[ch] = DRUMS_UNKNOWN_PATCH;
+									} else {
+										// Switching back to Melodic
+										yamahaBankAndPatchChanges[ch] = CHROMATIC;
+										yamahaDrumSwitches.get(port).get(ch).put(evt.getTick(), false);
+									}
+								}
+							} else if ("MSB".equals(bank)) {
 								if (message[7] == 126 || message[7] == 127) {// 64 is chromatic effects, so not testing for
 									// that.
 									yamahaBankAndPatchChanges[ch] = DRUMS_UNKNOWN_PATCH;
@@ -830,7 +846,11 @@ public class SequenceInfo implements MidiConstants {
 				}
 			}
 			for (int i = 0; i < CHANNEL_COUNT_ABC; i++) {
-				yamahaDrumSwitches.get(port).get(i).put(-1L, yamahaDrumChannels[i]);
+				if (usingNewMidiLayout == 0) {
+					yamahaDrumSwitches.get(port).get(i).put(-1L, yamahaDrumChannels[i]);
+				} else {
+					yamahaDrumSwitches.get(port).get(i).put(-1L, i == DRUM_CHANNEL);
+				}
 				if (i == DRUM_CHANNEL) {
 					mmaDrumSwitches.get(port).get(i).put(-1L, true);
 				} else {
