@@ -1,12 +1,6 @@
 package com.digero.maestro.midi;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
 
@@ -78,8 +72,8 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 			}
 		}
 
-		instruments = new HashSet<>();
-		instrumentExtensions = new HashSet<>();
+		instruments = new LinkedHashSet<>();//linked hashset preserves insertion order
+		instrumentExtensions = new LinkedHashSet<>();
 		noteEvents = new ArrayList<>();
 		notesInUse = new TreeSet<>();
         MidiNoteEvent[][] activeNotes = new MidiNoteEvent[CHANNEL_COUNT_ABC][128];
