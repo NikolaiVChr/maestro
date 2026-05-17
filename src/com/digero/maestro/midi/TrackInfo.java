@@ -4,12 +4,7 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
 
-import javax.sound.midi.InvalidMidiDataException;
-import javax.sound.midi.MetaMessage;
-import javax.sound.midi.MidiEvent;
-import javax.sound.midi.MidiMessage;
-import javax.sound.midi.ShortMessage;
-import javax.sound.midi.Track;
+import javax.sound.midi.*;
 
 import com.digero.common.midi.ExtensionMidiInstrument;
 import com.digero.common.midi.KeySignature;
@@ -47,7 +42,7 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 
 	TrackInfo(SequenceInfo parent, Track track, int trackNumber, SequenceDataCache sequenceCache, boolean isXGDrumTrack,
 			boolean isGSDrumTrack, boolean wasType0, boolean isDrumsTrack, boolean isGM2DrumTrack,
-			MiscSettings miscSettings, boolean oldVelocities, boolean ignoreMidiText)
+			MiscSettings miscSettings, boolean oldVelocities, boolean ignoreMidiText, int usingNewMidiLayout)
 			throws InvalidMidiDataException {
 		this.sequenceInfo = parent;
 		// TempoCache tempoCache = new TempoCache(parent.getSequence());
@@ -263,6 +258,9 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 						//notesInUse.add(ne.note.id);
                         activeNotes[ch][noteId] = ne;
 					}
+				} else {
+					// Protect Program Changes and Control Changes from the cleanup loop
+					if (usingNewMidiLayout > 0) lastValidEvent = tick;
 				}
 			} else if (msg instanceof MetaMessage m) {
                 int type = m.getType();
@@ -325,6 +323,7 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 				}
 			} else {
 				//SysEx
+				if (usingNewMidiLayout > 0) lastValidEvent = tick;
 			}
 		}
 
@@ -343,28 +342,59 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 			for (int j = track.size()-1; j >= 0; j--) {
 				MidiEvent evt = track.get(j);
 				if (evt.getTick() > lastValidEvent+1) {
-					if (evt.getMessage() instanceof ShortMessage) {
-						log.fine(trackNumber+": removing "+MidiUtils.midiEventToShortString(evt));
-						danglingNoteOffs.add(evt);
+					if (evt.getMessage() instanceof ShortMessage msg) {
+						if (usingNewMidiLayout == 0 || (msg.getCommand() == ShortMessage.NOTE_OFF || (msg.getCommand() == ShortMessage.NOTE_ON && msg.getData2() == 0))) {
+							log.fine(trackNumber + ": removing " + MidiUtils.midiEventToShortString(evt));
+							danglingNoteOffs.add(evt);
+						}
+						// note ON, patch and bank changes etc., won't be moved to earlier in the timeline or removed.
 					} else {
-						log.fine(trackNumber+": moving "+MidiUtils.midiEventToShortString(evt)+" to "+(lastValidEvent+1));
-						danglingEvents.add(evt);
+						boolean isLyrics = false;
+						if (evt.getMessage() instanceof SysexMessage msg) {
+							if (MidiUtils.isSysexLyrics(msg.getMessage())) {
+								isLyrics = true;
+							}
+						} else if (evt.getMessage() instanceof MetaMessage m) {
+							int type = m.getType();
+							if (type == META_LYRIC) {
+								isLyrics = true;
+							} else if (!ignoreMidiText && type == META_TEXT) {
+								isLyrics = true;
+							} else if (!ignoreMidiText && type == META_MARKER) {
+								isLyrics = true;
+							} else if (!ignoreMidiText && type == META_CUE_POINT) {
+								isLyrics = true;
+							} else if (!ignoreMidiText && type == META_M_LIVE) {
+								isLyrics = true;
+							} else if (m.getType() == META_COPYRIGHT) {
+								isLyrics = true;
+							}
+						}
+						if (usingNewMidiLayout == 0 && !isLyrics) {
+							log.fine(trackNumber+": moving "+MidiUtils.midiEventToShortString(evt)+" to "+(lastValidEvent+1));
+							danglingEvents.add(evt);
+						}
 					}
 				} else {
 					break;
 				}
 			}
 		}
-		
+
 		for (MidiEvent off : danglingNoteOffs) {
+			//System.out.println(trackNumber+": Removing dangling note OFF "+MidiUtils.midiMessageToString(off.getMessage()));
 			track.remove(off);
 		}
 		
 		for (MidiEvent evt : danglingEvents.reversed()) {
-			track.remove(evt);
+			// this is only populated when usingNewMidiLayout == 0
+			assert usingNewMidiLayout == 0;
             boolean isEOT = MidiUtils.isMetaEndOfTrack(evt.getMessage());
-            MidiEvent nw = new MidiEvent(evt.getMessage(), lastValidEvent+1+(isEOT?1:0));
-			track.add(nw);
+			if (!isEOT) {
+				track.remove(evt);
+				MidiEvent nw = new MidiEvent(evt.getMessage(), lastValidEvent);
+				track.add(nw);
+			}
 		}
 		
 		for (BentMidiNoteEvent be : allBentNotes) {
