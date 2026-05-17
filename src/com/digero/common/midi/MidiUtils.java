@@ -365,8 +365,21 @@ public class MidiUtils {
             }
             if (isResetGM(sysexMsg)) {
                 str += ", GM Reset";
-            } else if (isResetGS(sysexMsg)) {
+            } else if (isResetGS(sysexMsg, false)) {
                 str += ", GS Reset";
+                byte[] data = sysex.getData();
+                byte generation = data[data.length -3];
+                str += ". Generation="+switch(generation) {
+                    case 0x00 -> "SC-55 (Standard GS Reset)";
+                    case 0x01 -> "SC-88";
+                    case 0x02 -> "SC-88Pro";
+                    case 0x03 -> "SC-8820";
+                    case 0x04 -> "SC-8850";
+                    case 0x05 -> "SD-90 / SD-80";
+                    default -> "Unknown (0x"+String.format("%02X", generation)+")";
+                };
+            } else if (isResetGS(sysexMsg, true)) {
+                str += ", GS System Mode Set";
                 byte[] data = sysex.getData();
                 byte generation = data[data.length -3];
                 str += ". Generation="+switch(generation) {
@@ -764,12 +777,40 @@ public class MidiUtils {
     }
 
     public static boolean isResetGS(byte[] message) {
+        return isResetGS(message, false);
+    }
+
+    public static boolean isResetGS(byte[] message, boolean checkSystemModeSet) {
+        // Regular classic GS reset
         // byte[2] = device id
         // byte[3] = device model
-        if (message.length == 11 && (message[0] & 0xFF) == 0xF0 && (message[1] & 0xFF) == 0x41
-                && (message[3] & 0xFF) == 0x42 && (message[4] & 0xFF) == 0x12 && (message[5] & 0xFF) == 0x40
-                && (message[6] & 0xFF) == 0x00 && (message[7] & 0xFF) == 0x7F && (message[8] & 0xFF) == 0x00
-                && (message[10] & 0xFF) == 0xF7) {
+        // it should be 11 bytes, but some times lazy DAWs omit the checksum, byte[9].
+        if (message.length >= 10 && (
+                    message[0] & 0xFF) == 0xF0
+                && (message[1] & 0xFF) == 0x41
+                && (message[3] & 0xFF) == 0x42
+                && (message[4] & 0xFF) == 0x12
+                && (message[5] & 0xFF) == 0x40
+                && (message[6] & 0xFF) == 0x00
+                && (message[7] & 0xFF) == 0x7F
+                && (message[8] & 0xFF) == 0x00
+                && (message[message.length - 1] & 0xFF) == 0xF7) {
+            return true;
+        }
+        // SC-88 System Mode Set sysex. Will also switch system to GS.
+        // byte[2] = device id
+        // byte[3] = device model
+        // byte[8] = mode (typically 00 or 01)
+        // it should be 11 bytes, but sometimes lazy DAWs omited the checksum, byte[9].
+        if (checkSystemModeSet && message.length >= 10 && (
+                    message[0] & 0xFF) == 0xF0
+                && (message[1] & 0xFF) == 0x41
+                && (message[3] & 0xFF) == 0x42
+                && (message[4] & 0xFF) == 0x12
+                && (message[5] & 0xFF) == 0x00
+                && (message[6] & 0xFF) == 0x00
+                && (message[7] & 0xFF) == 0x7F
+                && (message[message.length - 1] & 0xFF) == 0xF7) {
             return true;
         }
         return false;

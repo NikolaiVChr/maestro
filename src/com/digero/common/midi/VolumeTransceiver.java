@@ -110,7 +110,7 @@ public class VolumeTransceiver implements Transceiver, MidiConstants
 				// GS Master Volume (F0 41 10 42 12 40 00 04 vv ss F7)
 				// System.out.println("Ignored GS Master Volume");
 				return;
-			} else if (MidiUtils.isResetGS(sysex)) {
+			} else if (MidiUtils.isResetGS(sysex, true)) {
 				//System.out.println("GS reset (will mess with MIDI playback volume, so we set also volume again)");
 				//systemReset = true;
 				return;

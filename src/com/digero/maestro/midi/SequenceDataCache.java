@@ -201,7 +201,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 						boolean isResetGM2 = false;
 						boolean isResetXG = false;
 						boolean isResetGS = false;
-						if ((isResetGM = MidiUtils.isResetGM(smsg)) || (isResetGS = MidiUtils.isResetGS(smsg))
+						if ((isResetGM = MidiUtils.isResetGM(smsg)) || (isResetGS = MidiUtils.isResetGS(smsg, true))
 								|| (isResetXG = MidiUtils.isResetXG(smsg)) || (isResetGM2 = MidiUtils.isResetGM2(smsg))) {
 
 							// TODO: This will break backwards compatibility for sure :(

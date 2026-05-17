@@ -316,7 +316,7 @@ public class TrackSplitter {
 							continue evtIter;
 						}
 
-						if (MidiUtils.isResetGM(message) || MidiUtils.isResetXG(message) || MidiUtils.isResetGS(message) || MidiUtils.isResetGM2(message)) {
+						if (MidiUtils.isResetGM(message) || MidiUtils.isResetXG(message) || MidiUtils.isResetGS(message, true) || MidiUtils.isResetGM2(message)) {
 							if (pendingChannelPrefix != null) {
 								pendingChannelPrefix = null;
 							}

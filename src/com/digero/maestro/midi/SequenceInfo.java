@@ -478,7 +478,7 @@ public class SequenceInfo implements MidiConstants {
 						}
 						ExtensionMidiInstrument.getInstance();
 						// System.err.println("Yamaha XG Reset, tick "+evt.getTick());
-					} else if (MidiUtils.isResetGS(message)) {
+					} else if (MidiUtils.isResetGS(message, usingNewMidiLayout > 0)) {
 						if (MidiStandard.GM != standard && MidiStandard.GS != standard) {
 							log.info(fileName + ": MIDI GS Reset in a " + standard + " file. This is unusual!");
 						}
