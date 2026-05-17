@@ -203,16 +203,10 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 			}
 			prevTransmitter.setReceiver(receiver);
 
-			try {
-                if (seqSave != null) {
-                    ShortMessage msg = new ShortMessage();
-                    msg.setMessage(ShortMessage.SYSTEM_RESET);
-                    receiver.send(msg, -1);
-                }
-			} catch (InvalidMidiDataException e) {
-				e.printStackTrace();
-			}
-		} else {
+            if (seqSave != null) {
+                //receiver.send(MidiFactory.createGMReset(), -1);
+            }
+        } else {
 			// Not a full reset
 			boolean isOpen = sequencer.isOpen();
 			try {
@@ -227,8 +221,6 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
                         msg.setMessage(ShortMessage.CONTROL_CHANGE, i, RESET_ALL_CONTROLLERS, 0);
                         receiver.send(msg, -1);
                     }
-                    msg.setMessage(ShortMessage.SYSTEM_RESET);
-                    receiver.send(msg, -1);
                 }
 			} catch (MidiUnavailableException e) {
 				// Ignore
