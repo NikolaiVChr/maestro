@@ -175,11 +175,11 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 										int rm = rpnMSBMap.get(port, ch, tick);
 										int p = (usingNewMidiLayout >= 1) ? port : 0;
 										int ex = expression.get(p, ch, tick);
-										boolean changingStuff = rl != 127 || rm != 127 || (specCompliant && ex != 127);// too much hassle to detect if bend wheel was active.
+										boolean changingStuff = rl != 127 || rm != 127 || (usingNewMidiLayout > 0 && ex != 127);// too much hassle to detect if bend wheel was active.
 										if (changingStuff) {
 											str += "\n rpn lsb " + rl + " -> " + DEFAULT_RPN_NULL;
 											str += "\n rpn msb " + rm + " -> " + DEFAULT_RPN_NULL;
-											if (specCompliant) str += "\n expr " + ex + " -> " + DEFAULT_EXPRESSION;
+											if (usingNewMidiLayout > 0) str += "\n expr " + ex + " -> " + DEFAULT_EXPRESSION;
 											str += "\n pitch wheel -> 0%";
 										}
 
@@ -188,9 +188,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 										rpnMSBMap.putIfAbsent(port, ch, tick, DEFAULT_RPN_NULL);
 										pitchWheelMap.add(new Quad<>(port, ch, tick, 0.0d));
 
-										// TODO: Spec dictates this, but it will break backwards compatibility with projects volume.
-										//       Plan is to make an option or toggle inside projects like when introduced expressions.
-										//expression.put(ch, tick, DEFAULT_EXPRESSION);
+										if (usingNewMidiLayout > 0) expression.put(port, ch, tick, DEFAULT_EXPRESSION);
 
 										if (changingStuff) log.warning(fileName + ": Resetting all controllers on channel " + ch + ", tick " + tick + str);
 									}
@@ -642,7 +640,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	private int getRPN(int port, int channel, long tick) {
 		int msb = rpnMSBMap.get(port, channel, tick);
 		int lsb = rpnLSBMap.get(port, channel, tick);
-		if (msb != 127 && lsb == 127) {// && rpnLSBMap.getEntries(channel,0L, tick).isEmpty()
+		if (msb != DEFAULT_RPN_NULL && lsb == DEFAULT_RPN_NULL) {// && rpnLSBMap.getEntries(channel,0L, tick).isEmpty()
 			log.severe(fileName+": Channel "+channel+", RPN being utilized while LSB is default (NULL)! Using effective value of 0 LSB.");
 			lsb = 0;
 		}
