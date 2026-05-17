@@ -67,7 +67,9 @@ public class SynthesizerFactory {
 			if (bank == null) return null;
 			customMidisynth = findMIDISynthesizer();
 			if (customMidisynth != null) {
-				customMidisynth.open(null, setupSynthesizerPropertyInfo());
+				Map<String, Object> info = setupSynthesizerPropertyInfo();
+				info.put("latency", 24000);// double of default
+				customMidisynth.open(null, info);
 				customMidisynth.unloadAllInstruments(bank);
 				customMidisynth.loadAllInstruments(bank);
 			}
