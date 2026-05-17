@@ -2,6 +2,7 @@ package com.digero.maestro.midi;
 
 import java.io.*;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.sound.midi.InvalidMidiDataException;
@@ -151,6 +152,22 @@ public class SequenceInfo implements MidiConstants {
         this.lastTrackInfos = abcInfo==null?null:abcInfo.abcTrackInfos;
 		log.fine("Importing (Type "+type+"): "+fileName);
 
+		/*
+		// debug seq part 1:
+		System.out.println("PPQ resolution="+sequence.getResolution());
+		Track[] trcks = sequence.getTracks();
+		for (int track = 0; track < trcks.length; track++) {
+			//if (track != 0 && track != 13) continue;
+			Track t = trcks[track];
+			System.out.println("\nTrack "+track+":");
+			for (int j = 0; j < t.size(); j++) {
+				MidiEvent evt = t.get(j);
+				if (evt.getTick() > 25_000L) break;
+				System.out.printf("Tick %08d: %s\n",evt.getTick(), MidiUtils.midiMessageToString(evt.getMessage()));
+			}
+		}
+		*/
+
 		determineStandard(sequence, fileName);
 
 		// Since the drum track separation is only applicable to type 1 midi sequences,
@@ -194,6 +211,7 @@ public class SequenceInfo implements MidiConstants {
 				System.out.printf("Tick %08d: %s\n",evt.getTick(), MidiUtils.midiMessageToString(evt.getMessage()));
 			}
 		}
+		*/
 
 		composer = "";
 		/*
@@ -218,7 +236,7 @@ public class SequenceInfo implements MidiConstants {
 			log.severe("Time signature does not match between SequenceInfo (" + getTimeSignature()
 					+ ") and SequenceDataCache (" + sequenceCache.getTimeSignature() + ").");
 		}
-	}
+    }
 
 	/**
 	 * This constructor ignores most of the data, as preview is only used for playback
@@ -411,19 +429,6 @@ public class SequenceInfo implements MidiConstants {
 		long lastResetTick = Long.MIN_VALUE;
 		Map<Integer, TreeMap<Long, PatchEntry>> portBankAndPatchTrack = new HashMap<>();
 
-		/*
-		// debug track 0:
-		for (int track = 0; track < tracks.length; track++) {
-			//if (track != 10) continue;
-			Track t = tracks[track];
-			System.out.println("\nTrack "+track+":");
-			for (int j = 0; j < t.size(); j++) {
-				MidiEvent evt = t.get(j);
-				if (evt.getTick() > 5_000L) break;
-				System.out.printf("Tick %08d: %s\n",evt.getTick(), MidiUtils.midiMessageToString(evt.getMessage()));
-			}
-		}
-		*/
 
 		// System.err.println("\nDetermineStandard:");
 

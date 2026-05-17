@@ -229,4 +229,8 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 	public void setRealDura(long realDuraTicks) {
 		this.realDuraTicks = realDuraTicks; 	
 	}
+
+	public boolean isDefault() {
+		return deviceInUse == null;
+	}
 }

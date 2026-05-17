@@ -2499,28 +2499,47 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
 	private void sendMIDIResets(MidiStandard standard) {
-		if (standard == MidiStandard.ABC) return;
-		volumeTransceiver.setLSBBlock(false);
-		sequencer.getReceiver().send(MidiFactory.createGMReset(), -1);
+		volumeTransceiver.setStandard(MidiStandard.GM);
+		if (sequencer.isDefault() || standard == MidiStandard.ABC) return;
+
 		try {
+
+			volumeTransceiver.send(MidiFactory.createGMReset(), -1);
 			Thread.sleep(100);
+			//volumeTransceiver.send(MidiFactory.createGSReset(), -1);
+			//Thread.sleep(200);
 			switch (standard) {
 				case GM2:
-					sequencer.getReceiver().send(MidiFactory.createGM2Reset(), -1);
-					Thread.sleep(50);
+					volumeTransceiver.send(MidiFactory.createGM2Reset(), -1);
+					Thread.sleep(100);
 					break;
 				case GS:
-					sequencer.getReceiver().send(MidiFactory.createGSReset(), -1);
-					Thread.sleep(50);
-					volumeTransceiver.setLSBBlock(true);
+					volumeTransceiver.send(MidiFactory.createGSReset(), -1);
+					Thread.sleep(100);
 					break;
 				case XG:
-					sequencer.getReceiver().send(MidiFactory.createXGReset(), -1);
-					Thread.sleep(50);
+					volumeTransceiver.send(MidiFactory.createXGReset(), -1);
+					Thread.sleep(100);
+					break;
+				case GM:
+					//volumeTransceiver.send(MidiFactory.createGMReset(), -1);
+					//Thread.sleep(100);
 					break;
 				default:
 					break;
 			}
+			volumeTransceiver.setStandard(standard);
+			/*
+			volumeTransceiver.send(MidiFactory.createNoteOnEventEx(64,0,100,0).getMessage(), -1);
+			Thread.sleep(150);
+			volumeTransceiver.send(MidiFactory.createNoteOffEventEx(64,0,0,0).getMessage(), -1);
+			Thread.sleep(50);
+			volumeTransceiver.send(MidiFactory.createNoteOnEventEx(64,0,100,0).getMessage(), -1);
+			Thread.sleep(150);
+			volumeTransceiver.send(MidiFactory.createNoteOffEventEx(64,0,0,0).getMessage(), -1);
+			System.out.println("MIDI sent");
+			Thread.sleep(200);
+			*/
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}

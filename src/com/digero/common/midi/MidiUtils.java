@@ -349,6 +349,9 @@ public class MidiUtils {
                     int program = shorty.getData1();
                     str += "Program Change: " + program + " (" + MidiInstrument.fromId(program) + ")";
                 }
+                case ShortMessage.SYSTEM_RESET -> {
+                    str += "System reset short msg.";
+                }
                 default -> str+="";
             };
             str += ", Channel="+shorty.getChannel();

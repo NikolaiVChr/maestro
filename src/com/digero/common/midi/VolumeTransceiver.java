@@ -1,9 +1,8 @@
 package com.digero.common.midi;
 
-import javax.sound.midi.MidiMessage;
-import javax.sound.midi.Receiver;
-import javax.sound.midi.ShortMessage;
-import javax.sound.midi.SysexMessage;
+import javax.sound.midi.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * This class has only 2 functions:
@@ -14,16 +13,17 @@ import javax.sound.midi.SysexMessage;
  */
 public class VolumeTransceiver implements Transceiver, MidiConstants
 {
+	private static final Logger log = Logger.getLogger("playback.midi");
 	private Receiver receiver;
 	private int volume = MAX_VOLUME;
-	private boolean lsbBlock = false;
+	private MidiStandard standard = MidiStandard.GM;
 
 	public VolumeTransceiver()
 	{
 	}
 
-	public void setLSBBlock (boolean block) {
-		lsbBlock = block;
+	public void setStandard(MidiStandard standard) {
+		this.standard = standard;
 	}
 
 	public void setVolume(int volume)
@@ -72,23 +72,41 @@ public class VolumeTransceiver implements Transceiver, MidiConstants
 	@Override public void send(MidiMessage message, long timeStamp)
 	{
 		boolean systemReset = false;
-		if (message instanceof ShortMessage m)
-		{
-            if (m.getCommand() == ShortMessage.SYSTEM_RESET)
-			{
-				//System.out.println("System reset");
+		//System.out.println(timeStamp+": VolumeTransceiver want to send to midi player: "+MidiUtils.midiMessageToString(message));
+		if (message instanceof ShortMessage m) {
+            if (m.getCommand() == ShortMessage.SYSTEM_RESET) {
+				log.info("System reset");
 				systemReset = true;
+				return;
 			} else if (m.getCommand() == ShortMessage.CONTROL_CHANGE && m.getData1() == BANK_SELECT_LSB && m.getData2() != 0) {
-				if (lsbBlock) {
-					// It's a GS midi, some of them sadly have lsb changes, we don't allow that.
-					return;
-				}
 				if (NoteFilterSequencerWrapper.deviceInUse == null) {
 					// We are using windows MIDI mapper
+					if (standard == MidiStandard.GS) {
+						// It's a GS midi, some of them sadly have lsb changes, we don't allow that.
+						return;
+					}
 				}
 			} else if (m.getCommand() == ShortMessage.CONTROL_CHANGE && m.getData1() == BANK_SELECT_MSB && m.getData2() != 0) {
 				if (NoteFilterSequencerWrapper.deviceInUse == null) {
 					// We are using windows MIDI mapper
+				} else if (standard == MidiStandard.XG && SynthesizerFactory.customMidiSoundfontFilename.equals(NoteFilterSequencerWrapper.deviceInUse)) {
+					if (m.getData2() == 127) {
+                        try {
+							receiver.send(MidiFactory.createControllerEvent((byte)BANK_SELECT_LSB, 0, m.getChannel(), 0L).getMessage(), -1);
+                            m.setMessage(ShortMessage.CONTROL_CHANGE, m.getChannel(), BANK_SELECT_MSB, 1);
+                        } catch (InvalidMidiDataException ignored) {
+                        }
+                    } else {
+						try {
+							m.setMessage(ShortMessage.CONTROL_CHANGE, m.getChannel(), BANK_SELECT_LSB, m.getData2());
+						} catch (InvalidMidiDataException ignored) {
+						}
+					}
+				} else if (standard == MidiStandard.GS && SynthesizerFactory.customMidiSoundfontFilename.equals(NoteFilterSequencerWrapper.deviceInUse)) {
+					try {
+						m.setMessage(ShortMessage.CONTROL_CHANGE, m.getChannel(), BANK_SELECT_LSB, m.getData2());
+					} catch (InvalidMidiDataException ignored) {
+					}
 				}
 			} else if (m.getCommand() == ShortMessage.PROGRAM_CHANGE && m.getChannel() == DRUM_CHANNEL) {
 				if (NoteFilterSequencerWrapper.deviceInUse == null) {
@@ -98,38 +116,41 @@ public class VolumeTransceiver implements Transceiver, MidiConstants
 		} else if (message instanceof SysexMessage m) {
 
 			byte[] sysex = m.getMessage();
+			Level level = Level.WARNING;//TODO
 
 			if (sysex.length > 4 && sysex[1] == SYSEX_UNIVERSAL_REALTIME && (sysex[3] & 0xFF) == 0x04 && (sysex[4] & 0xFF) == 0x01) {
-				//System.out.println("Ignored SysEx device volume command:\n"+MidiUtils.formatBytes(sysex));
+				System.out.println("Ignored SysEx device volume command");
 				return;
 			} else if (sysex.length >= 8 && (sysex[1] & 0xFF) == 0x43 && (sysex[4] & 0xFF) == 0x00 && (sysex[5] & 0xFF) == 0x00 && (sysex[6] & 0xFF) == 0x04) {
 				// XG Master Volume (F0 43 10 4C 00 00 04 vv F7)
-				// System.out.println("Ignored XG Master Volume");
+				System.out.println("Ignored XG Master Volume");
 				return;
 			} else if (sysex.length >= 9 && (sysex[1] & 0xFF) == 0x41 && (sysex[5] & 0xFF) == 0x40 && (sysex[6] & 0xFF) == 0x00 && (sysex[7] & 0xFF) == 0x04) {
 				// GS Master Volume (F0 41 10 42 12 40 00 04 vv ss F7)
-				// System.out.println("Ignored GS Master Volume");
+				log.log(level,"Ignored GS Master Volume");
 				return;
 			} else if (MidiUtils.isResetGS(sysex, true)) {
-				//System.out.println("GS reset (will mess with MIDI playback volume, so we set also volume again)");
-				//systemReset = true;
-				return;
+				log.log(level,"GS reset (will mess with MIDI playback volume, so we set also volume again)");
+				systemReset = true;
+				//return;
 			} else if (MidiUtils.isResetXG(sysex)) {
-				//System.out.println("XG reset (will mess with MIDI playback volume, so we set also volume again)");
-				//systemReset = true;
-				return;
+				log.log(level,"XG reset (will mess with MIDI playback volume, so we set also volume again)");
+				systemReset = true;
+				//return;
 			} else if (MidiUtils.isResetGM2(sysex)) {
-				//System.out.println("GM2 reset (will mess with MIDI playback volume, so we set also volume again)");
-				//systemReset = true;
-				return;
+				log.log(level,"GM2 reset (will mess with MIDI playback volume, so we set also volume again)");
+				systemReset = true;
+				//return;
 			} else if (MidiUtils.isResetGM(sysex)) {
-				//System.out.println("GM reset");
-				return;
+				log.log(level,"GM reset");
+				//return;
 			} else {
-				//System.out.println("SysEx command: "+MidiUtils.formatBytes(sysex));			
+				//System.out.println("SysEx command: "+MidiUtils.formatBytes(sysex));
+				log.log(level,"Not handling sysex: "+MidiUtils.formatBytesHexOnly(sysex));
 			}
 		}
 		//System.out.println("Passing on: "+MidiUtils.midiMessageToString(message));
+		//System.out.println(" -> sent.");
 		passOn(message, timeStamp);
 		if (systemReset) {
 			//System.out.println("systemReset");

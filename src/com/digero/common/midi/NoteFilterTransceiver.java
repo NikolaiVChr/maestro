@@ -108,6 +108,7 @@ public class NoteFilterTransceiver implements Transceiver, MidiConstants, ICompi
 	 */
 	@Override
 	public void send(MidiMessage message, long timeStamp) {
+		//System.out.println(timeStamp+": NoteFilterTransceiver want to send to midi player: "+MidiUtils.midiMessageToString(message));
 		if (receiver == null)
 			return;
 
@@ -131,6 +132,7 @@ public class NoteFilterTransceiver implements Transceiver, MidiConstants, ICompi
 			}
 		}
         //System.out.println(MidiUtils.midiMessageToShortString(message));
+		//System.out.println(" -> sent.");
 		receiver.send(message, timeStamp);
 	}
 }
