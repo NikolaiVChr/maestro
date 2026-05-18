@@ -73,23 +73,36 @@ public class VolumeTransceiver implements Transceiver, MidiConstants
 	{
 		boolean systemReset = false;
 		//System.out.println(timeStamp+": VolumeTransceiver want to send to midi player: "+MidiUtils.midiMessageToString(message));
+		boolean usingWindowsMidiMapper = NoteFilterSequencerWrapper.deviceInUse == null;
+		boolean usingSF2 = !usingWindowsMidiMapper && SynthesizerFactory.customMidiSoundfontFilename.equals(NoteFilterSequencerWrapper.deviceInUse);
 		if (message instanceof ShortMessage m) {
+			// SF2 on GS: drop lsb and pass msb and patch. Confirmed working.
+			// SF2 on XG: drop lsb and pass msb and patch. Confirmed working.
+			int channel = m.getChannel();
             if (m.getCommand() == ShortMessage.SYSTEM_RESET) {
 				log.info("System reset");
 				systemReset = true;
 				return;
-			} else if (m.getCommand() == ShortMessage.CONTROL_CHANGE && m.getData1() == BANK_SELECT_LSB && m.getData2() != 0) {
-				if (NoteFilterSequencerWrapper.deviceInUse == null) {
-					// We are using windows MIDI mapper
-					if (standard == MidiStandard.GS) {
+			} else if (m.getCommand() == ShortMessage.CONTROL_CHANGE && m.getData1() == BANK_SELECT_LSB) {
+				if (standard == MidiStandard.GS) {
+					if (usingWindowsMidiMapper) {
+						// We are using windows MIDI mapper
 						// It's a GS midi, some of them sadly have lsb changes, we don't allow that.
+						//return;
+					} else if (usingSF2) {
+						//System.out.println("Dropping LSB " + m.getData2() + " on GS for sf2. Channel " + channel);
+						return;
+					}
+				} else if (standard == MidiStandard.XG) {
+					if (usingWindowsMidiMapper) {
+					} else if (usingSF2) {
+						//System.out.println("Dropping LSB " + m.getData2() + " on XG for sf2. Channel " + channel);
 						return;
 					}
 				}
-			} else if (m.getCommand() == ShortMessage.CONTROL_CHANGE && m.getData1() == BANK_SELECT_MSB && m.getData2() != 0) {
-				if (NoteFilterSequencerWrapper.deviceInUse == null) {
-					// We are using windows MIDI mapper
-				} else if (standard == MidiStandard.XG && SynthesizerFactory.customMidiSoundfontFilename.equals(NoteFilterSequencerWrapper.deviceInUse)) {
+			} else if (m.getCommand() == ShortMessage.CONTROL_CHANGE && m.getData1() == BANK_SELECT_MSB) {
+
+				if (standard == MidiStandard.XG && usingSF2) {
 					if (m.getData2() == 127) {
                         try {
 							receiver.send(MidiFactory.createControllerEvent((byte)BANK_SELECT_LSB, 0, m.getChannel(), 0L).getMessage(), -1);
@@ -97,21 +110,32 @@ public class VolumeTransceiver implements Transceiver, MidiConstants
                         } catch (InvalidMidiDataException ignored) {
                         }
                     } else {
+						/*
+						System.out.println("Changing MSB " + m.getData2() + " to LSB on XG for sf2. Channel " + channel);
 						try {
 							m.setMessage(ShortMessage.CONTROL_CHANGE, m.getChannel(), BANK_SELECT_LSB, m.getData2());
 						} catch (InvalidMidiDataException ignored) {
 						}
+						 */
 					}
-				} else if (standard == MidiStandard.GS && SynthesizerFactory.customMidiSoundfontFilename.equals(NoteFilterSequencerWrapper.deviceInUse)) {
-					try {
-						m.setMessage(ShortMessage.CONTROL_CHANGE, m.getChannel(), BANK_SELECT_LSB, m.getData2());
-					} catch (InvalidMidiDataException ignored) {
-					}
+				} else if (standard == MidiStandard.GS) {
+					if (usingSF2) {
+						/*
+						System.out.println("Changing MSB " + m.getData2() + " to LSB on GS for sf2. Channel " + channel);
+						try {
+							m.setMessage(ShortMessage.CONTROL_CHANGE, m.getChannel(), BANK_SELECT_LSB, m.getData2());
+						} catch (InvalidMidiDataException ignored) {
+						}
+						*/
+					} else if (usingWindowsMidiMapper) {
+						//System.out.println("Passing MSB "+m.getData2()+". Channel "+channel);
+                    }
 				}
-			} else if (m.getCommand() == ShortMessage.PROGRAM_CHANGE && m.getChannel() == DRUM_CHANNEL) {
-				if (NoteFilterSequencerWrapper.deviceInUse == null) {
+			} else if (m.getCommand() == ShortMessage.PROGRAM_CHANGE) {
+				if (usingWindowsMidiMapper && m.getChannel() == DRUM_CHANNEL) {
 					// We are using windows MIDI mapper
 				}
+				//System.out.println("Passing patch "+m.getData1()+". Channel "+channel);
 			}
 		} else if (message instanceof SysexMessage m) {
 
@@ -119,11 +143,11 @@ public class VolumeTransceiver implements Transceiver, MidiConstants
 			Level level = Level.FINE;
 
 			if (sysex.length > 4 && sysex[1] == SYSEX_UNIVERSAL_REALTIME && (sysex[3] & 0xFF) == 0x04 && (sysex[4] & 0xFF) == 0x01) {
-				System.out.println("Ignored SysEx device volume command");
+				log.log(level,"Ignored SysEx device volume command");
 				return;
 			} else if (sysex.length >= 8 && (sysex[1] & 0xFF) == 0x43 && (sysex[4] & 0xFF) == 0x00 && (sysex[5] & 0xFF) == 0x00 && (sysex[6] & 0xFF) == 0x04) {
 				// XG Master Volume (F0 43 10 4C 00 00 04 vv F7)
-				System.out.println("Ignored XG Master Volume");
+				log.log(level,"Ignored XG Master Volume");
 				return;
 			} else if (sysex.length >= 9 && (sysex[1] & 0xFF) == 0x41 && (sysex[5] & 0xFF) == 0x40 && (sysex[6] & 0xFF) == 0x00 && (sysex[7] & 0xFF) == 0x04) {
 				// GS Master Volume (F0 41 10 42 12 40 00 04 vv ss F7)

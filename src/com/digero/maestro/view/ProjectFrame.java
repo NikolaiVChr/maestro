@@ -2499,9 +2499,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
 	private void sendMIDIResets(MidiStandard standard) {
-		volumeTransceiver.setStandard(MidiStandard.GM);
-		if (sequencer.isDefault() || standard == MidiStandard.ABC) return;
-
+		volumeTransceiver.setStandard(standard);
+		if (sequencer.isDefault() || standard == MidiStandard.ABC) {
+			return;
+		}
 		try {
 
 			volumeTransceiver.send(MidiFactory.createGMReset(), -1);
@@ -2528,7 +2529,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				default:
 					break;
 			}
-			volumeTransceiver.setStandard(standard);
+
 			/*
 			volumeTransceiver.send(MidiFactory.createNoteOnEventEx(64,0,100,0).getMessage(), -1);
 			Thread.sleep(150);
