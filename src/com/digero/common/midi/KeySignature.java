@@ -39,7 +39,11 @@ public class KeySignature implements MidiConstants {
 			throw new IllegalArgumentException("Midi message is not a key signature");
 		}
 
-		this.sharpsFlats = data[0];
+		byte sf = data[0];
+		if (sf < -7) sf = -7;
+		if (sf > 7) sf = 7;
+		this.sharpsFlats = sf;
+
 		if (data.length > 1) {
 			this.mode = (data[1] == 1) ? KeyMode.MINOR : KeyMode.MAJOR;
 		} else {
