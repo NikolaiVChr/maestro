@@ -95,7 +95,7 @@ public class TrackSplitter {
 
 		for (int p : activePorts) {
 			Track initTrack = expandedSequence.createTrack();
-			initTrack.add(MidiFactory.createTrackNameEvent("NON-META " + p));
+			initTrack.add(MidiFactory.createTrackNameEvent("NON-META - Port " + p));
 
 			// Lock this initialization track to the correct hardware port
 			MidiEvent evtPort = MidiFactory.createPortEvent(p);
