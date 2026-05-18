@@ -177,16 +177,18 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 										int ex = expression.get(p, ch, tick);
 										boolean changingStuff = rl != 127 || rm != 127 || (usingNewMidiLayout > 0 && ex != 127);// too much hassle to detect if bend wheel was active.
 										if (changingStuff) {
-											str += "\n rpn lsb " + rl + " -> " + DEFAULT_RPN_NULL;
-											str += "\n rpn msb " + rm + " -> " + DEFAULT_RPN_NULL;
+											//str += "\n rpn lsb " + rl + " -> " + DEFAULT_RPN_NULL;
+											//str += "\n rpn msb " + rm + " -> " + DEFAULT_RPN_NULL;
 											if (usingNewMidiLayout > 0) str += "\n expr " + ex + " -> " + DEFAULT_EXPRESSION;
-											str += "\n pitch wheel -> 0%";
+											//str += "\n pitch wheel -> 0%";
 										}
 
 										//this will remove some pitch bending changes from some songs, but it's the right thing to do as per specs:
-										rpnLSBMap.putIfAbsent(port, ch, tick, DEFAULT_RPN_NULL);
-										rpnMSBMap.putIfAbsent(port, ch, tick, DEFAULT_RPN_NULL);
-										pitchWheelMap.add(new Quad<>(port, ch, tick, 0.0d));
+										//rpnLSBMap.putIfAbsent(port, ch, tick, DEFAULT_RPN_NULL);
+										//rpnMSBMap.putIfAbsent(port, ch, tick, DEFAULT_RPN_NULL);
+
+										// this should per spec be enabled, but it will break many badly made songs to reset pitch wheel.
+										//pitchWheelMap.add(new Quad<>(port, ch, tick, 0.0d));
 
 										if (usingNewMidiLayout > 0) expression.put(port, ch, tick, DEFAULT_EXPRESSION);
 
