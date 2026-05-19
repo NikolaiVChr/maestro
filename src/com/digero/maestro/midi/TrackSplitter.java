@@ -197,6 +197,9 @@ public class TrackSplitter {
 						instr = handleEvent(oldTrackNumber, notesOn, port, tick, channel, cmd, shortMsg);
 						// if (instr == null) System.out.println("instr==null "+on);
 						// if ("".equals(instr)) System.out.println("instr=='' "+on);
+						if (instr == null) {
+							continue evtIter;
+						}
 					} else if (cmd == ShortMessage.PROGRAM_CHANGE ||
 							(cmd == ShortMessage.CONTROL_CHANGE && (shortMsg.getData1() == MidiConstants.BANK_SELECT_MSB || shortMsg.getData1() == MidiConstants.BANK_SELECT_LSB))) {
 						// If this event was shifted to Channel 10, vaporize all Bank Selects!
@@ -389,6 +392,14 @@ public class TrackSplitter {
 				track.add(MidiFactory.createEndOfTrackEvent(last+1L));
 			}
 		}
+
+		for (Track initTrack : initTracksByPort.values()) {
+			long lastTick = 0L;
+			if (initTrack.size() > 0L) {
+				lastTick = initTrack.get(initTrack.size() - 1).getTick();
+			}
+			initTrack.add(MidiFactory.createEndOfTrackEvent(lastTick + 1));
+		}
 		
 		if (lastEOTTick > 0L) {
 			newMetaTrack.add(MidiFactory.createEndOfTrackEvent(lastEOTTick));
@@ -407,23 +418,11 @@ public class TrackSplitter {
 			// This is a genuine midi OFF event
 			return notesOn.get(channel).remove(note);
 		} else {
-			// This is a midi ON event that might act as a midi OFF
-			String instr = notesOn.get(channel).remove(note);
-			if (instr == null) {
-				instr = treatAsMidiOn(oldTrackNumber, notesOn, port, tick, channel, note);
-			}
-			return instr;
+			// This is a midi ON event that act as a midi OFF
+			return notesOn.get(channel).remove(note);
 		}
 	}
 
-	/**
-	 * Its a silent MIDI ON not preceded by a midi ON, so we treat is as a midi ON although, it's silent.
-	 * <p>
-	 * TODO: Consider to remove it, cause Maestro will assign +pppp+ to it,
-     * TODO: and it will become audible which is probably
-	 * TODO: not what the midi maker intended.
-	 *
-     */
 	private String treatAsMidiOn(int index, List<HashMap<Integer, String>> notesOn, int port, long tick, int channel,
 			int note) {
 		String instr;
