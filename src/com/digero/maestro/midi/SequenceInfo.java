@@ -177,9 +177,14 @@ public class SequenceInfo implements MidiConstants {
 
         this.sequence = separateDrumTracks(sequence);// Beware: Do not refer to param sequence after this line
 
-		boolean hasPorts = buildPortMap(sequence);//fixupTrackLength needs portMap
+		boolean hasPorts = buildPortMap(sequence);//fixupTrackLength2 needs portMap
 
-		realDuraTicks = fixupTrackLength(this.sequence);
+		if (usingNewMidiLayout == 0) {
+			realDuraTicks = fixupTrackLength1(this.sequence);
+		} else {
+			// smarter, cleaner and port aware
+			realDuraTicks = fixupTrackLength2(this.sequence);
+		}
 
 		Track[] tracks = this.sequence.getTracks();
 		if (tracks.length == 0) {
@@ -189,7 +194,7 @@ public class SequenceInfo implements MidiConstants {
 		sequenceCache = new SequenceDataCache(this.sequence, standard, rolandDrumChannels, yamahaDrumSwitches,
 				yamahaDrumChannels, mmaDrumSwitches, portMap, onlyFirstTrackTempos, ignoreZeroChannelVolume,
 				ignoreMidiText, fileName, usingNewMidiLayout, hasPorts);
-		hasPorts = sequenceCache.hasPorts;
+
 		primaryTempoMPQ = sequenceCache.getPrimaryTempoMPQ();
 
 		List<TrackInfo> myTrackInfoList = new ArrayList<>(tracks.length);
@@ -1273,7 +1278,7 @@ public class SequenceInfo implements MidiConstants {
 	 * Also it will truncate the song at start of silence if silence is more than a quarter of the song.
 	 *
 	 */
-	public long fixupTrackLength(Sequence song) {
+	public long fixupTrackLength2(Sequence song) {
 		log.fine("Before: " + Util.formatDurationM(song.getMicrosecondLength()));
 		SequencerWrapper.TempoCacheSlow tempoCache = new SequencerWrapper.TempoCacheSlow(song);
 
@@ -1301,6 +1306,8 @@ public class SequenceInfo implements MidiConstants {
 
 		allEvents.sort(Comparator.comparingLong(pe -> pe.evt.getTick()));
 
+		int[] trackActiveNotes = new int[tracks.length];
+		int totalActiveNotes = 0;
 		long endTick = 0L;
 		long earlyEndTick = 0L;
 		long[] trackDead = new long[tracks.length];
@@ -1314,6 +1321,10 @@ public class SequenceInfo implements MidiConstants {
 			if (trackDead[pe.trackIdx] < tick) continue;
 			if (MidiUtils.isMetaEndOfTrack(evt.getMessage())) {
 				trackDead[pe.trackIdx] = tick;
+				// EOT only extends the song if specific track has hanging notes
+				if (trackActiveNotes[pe.trackIdx] > 0) {
+					endTick = Math.max(endTick, tick);
+				}
 				continue;
 			}
 
@@ -1337,6 +1348,10 @@ public class SequenceInfo implements MidiConstants {
 				}
 			}
 
+			if (totalActiveNotes > 0) {
+				endTick = Math.max(endTick, tick);
+			}
+
 			if (evt.getMessage() instanceof ShortMessage shortMessage) {
 				int command = shortMessage.getCommand();
 				int ch = shortMessage.getChannel();
@@ -1346,11 +1361,17 @@ public class SequenceInfo implements MidiConstants {
 					// Note OFF or Note ON with zero velocity
 					boolean wasOn = notesOn.get(port).get(ch).remove(pitch);
 					if (wasOn) {
+						if (trackActiveNotes[pe.trackIdx] > 0) trackActiveNotes[pe.trackIdx]--;
+						totalActiveNotes--;
 						// By doing Math.max here, we perfectly capture the latest valid Note Off!
 						endTick = Math.max(endTick, tick);
 					}
 				} else if (command == ShortMessage.NOTE_ON) {
-					notesOn.get(port).get(ch).add(pitch);
+					if (notesOn.get(port).get(ch).add(pitch)) {
+						trackActiveNotes[pe.trackIdx]++;
+						totalActiveNotes++;
+					}
+					endTick = Math.max(endTick, tick);
 				}
 			}
 		}
@@ -1362,6 +1383,8 @@ public class SequenceInfo implements MidiConstants {
 			List<MidiEvent> toRemove = new ArrayList<>();
 			List<MidiEvent> metaToRelocate = new ArrayList<>();
 
+			long trackCutoff = Math.min(absoluteEnd, trackDead[i]);
+
 			for (int j = 0; j < track.size(); j++) {
 				MidiEvent evt = track.get(j);
 				MidiMessage msg = evt.getMessage();
@@ -1370,14 +1393,14 @@ public class SequenceInfo implements MidiConstants {
 				// remove EOT no matter where they are
 				if (MidiUtils.isMetaEndOfTrack(msg)) {
 					toRemove.add(evt);
-				} else if (tick > absoluteEnd) {
+				} else if (tick > trackCutoff) {
 					if (msg instanceof MetaMessage && !MidiUtils.isMetaTempo(msg)) {
 						// Non-tempo MetaMessages (like track names, text, lyrics) get salvaged
 						metaToRelocate.add(evt);
 						toRemove.add(evt);
 						log.finer("Moving event from "
 								+ Util.formatDurationM(MidiUtils.tick2microsecond(song, tick, tempoCache)) + " to "
-								+ Util.formatDurationM(MidiUtils.tick2microsecond(song, absoluteEnd, tempoCache)));
+								+ Util.formatDurationM(MidiUtils.tick2microsecond(song, trackCutoff, tempoCache)));
 					} else {
 						// ShortMessages (notes, CCs, bends), Sysex, and Tempos get marked for deletion
 						toRemove.add(evt);
@@ -1390,17 +1413,186 @@ public class SequenceInfo implements MidiConstants {
 			}
 
 			for (MidiEvent evt : metaToRelocate) {
-				evt.setTick(absoluteEnd);
+				evt.setTick(trackCutoff);
 				track.add(evt);
 			}
 
-			track.add(MidiFactory.createEndOfTrackEvent(absoluteEnd + 1));
+			track.add(MidiFactory.createEndOfTrackEvent(trackCutoff + 1));
 		}
 
 		//System.out.println("Real song duration: "
 		//		+ Util.formatDurationM(MidiUtils.tick2microsecond(song, last, tempoCache)));
 		log.fine("After: " + Util.formatDurationM(song.getMicrosecondLength()));
 		return absoluteEnd + 1L;
+	}
+
+	/**
+	 * The old method, we keep it for backwards compat.
+	 */
+	public static long fixupTrackLength1(Sequence song) {
+		log.fine("Before: " + Util.formatDurationM(song.getMicrosecondLength()));
+		SequencerWrapper.TempoCacheSlow tempoCache = new SequencerWrapper.TempoCacheSlow(song);
+		Track[] tracks = song.getTracks();
+
+		@SuppressWarnings("unchecked")
+		List<MidiEvent>[] suspectEvents = new List[tracks.length];
+
+		List<MidiEvent> allEvents = new ArrayList<>();
+
+		// populate allEvents with events from all tracks
+		for (Track track : tracks) {
+			for (int j = 0; j < track.size(); j++) {
+				allEvents.add(track.get(j));
+			}
+		}
+
+		allEvents.sort(Comparator.comparingLong(MidiEvent::getTick));
+
+		long earlyEndTick = 0L;
+		long maxEmpty = Math.max(song.getTickLength()/4L, MidiUtils.microsecond2tick(song, 20L*AbcConstants.ONE_SECOND_MICROS, tempoCache));
+		Map<Integer,Set<Integer>> notesOn = new HashMap<>();
+		for (int ch = 0; ch < CHANNEL_COUNT_ABC; ch++) {
+			notesOn.put(ch, new HashSet<>());
+		}
+		for(MidiEvent evt : allEvents) {
+
+			if (evt.getTick() > earlyEndTick && evt.getTick() < earlyEndTick + maxEmpty) {
+				earlyEndTick = evt.getTick();
+			} else if (evt.getTick() >= earlyEndTick + maxEmpty) {
+				boolean silence = true;
+				for (Set<Integer> on : notesOn.values()) {
+					if (!on.isEmpty()) {
+						silence = false;
+						break;
+					}
+				}
+				if (silence) {
+					log.info(" Quarter song is empty, will delete all after the empty starts.. ");
+				} else {
+					earlyEndTick = evt.getTick();
+				}
+			}
+			if (evt.getMessage() instanceof ShortMessage shortMessage) {
+				int command = shortMessage.getCommand();
+				int pitch = shortMessage.getData1();
+				if (command == ShortMessage.NOTE_OFF || (command == ShortMessage.NOTE_ON && shortMessage.getData2() == 0)) {
+					// note OFF or note ON with zero velocity
+					notesOn.get(shortMessage.getChannel()).remove(pitch);
+				} else if (command == ShortMessage.NOTE_ON) {
+					notesOn.get(shortMessage.getChannel()).add(pitch);
+				}
+			}
+		}
+
+		long endTick = 0L;
+
+		for (int i = 0; i < tracks.length; i++) {
+			Track track = tracks[i];
+			MidiEvent lastEOT = null;
+			for (int j = track.size() - 1; j >= 0; --j) {
+				MidiEvent evt = track.get(j);
+				if (MidiUtils.isMetaEndOfTrack(evt.getMessage())) {
+					if (suspectEvents[i] == null)
+						suspectEvents[i] = new ArrayList<>();
+					suspectEvents[i].add(evt);
+					lastEOT = evt;
+				} else if (evt.getTick() > endTick) {
+					// Seems like some songs have extra meta messages way past the end
+					if (evt.getMessage() instanceof MetaMessage) {
+						if (suspectEvents[i] == null)
+							suspectEvents[i] = new ArrayList<>();
+						suspectEvents[i].addFirst(evt);
+					} else {
+						if (evt.getMessage() instanceof ShortMessage) {
+							int command = ((ShortMessage)evt.getMessage()).getCommand();
+							if (command == ShortMessage.NOTE_OFF || (command == ShortMessage.NOTE_ON && ((ShortMessage)evt.getMessage()).getData2() == 0)) {
+								// note OFF or note ON with zero velocity
+								endTick = evt.getTick();
+								log.finer(i+": last note OFF = "+MidiUtils.midiEventToShortString(evt));
+								break;
+							}
+							if (command == ShortMessage.NOTE_ON && lastEOT != null) {
+								// last note is missing note off, so it should end at EOT
+								// if no EOT after it, we ignore it.
+								endTick = lastEOT.getTick();
+								log.finer(i+": endTick = lastEOT = "+endTick);
+								break;
+							}
+						}
+					}
+				}
+			}
+		}
+		log.fine("endTick = "+endTick+" earlyEndTick="+earlyEndTick);
+
+		/*
+		 * Weakness in this, is that if there is note OFF far at end without corresponding note ON,
+		 * then notegraphs will show empty until that useless note OFF.
+		 * TrackInfo will try to fix that.
+		 */
+
+		for (int i = 0; i < tracks.length; i++) {
+			Track track = tracks[i];
+
+			if (suspectEvents[i] != null) {
+				for (MidiEvent evt : suspectEvents[i].reversed()) {
+					if (evt.getTick() > endTick) {
+						track.remove(evt);
+
+						log.finer("Moving event from "
+								+ Util.formatDurationM(MidiUtils.tick2microsecond(song, evt.getTick(), tempoCache)) + " to "
+								+ Util.formatDurationM(MidiUtils.tick2microsecond(song, endTick, tempoCache)));
+
+						// Why do we do this, events after endTick don't affect song,
+						// so why keep them? (unless its a EOT)
+						// I guess in theory it could be trackname or something like that,
+						// so for now we keep doing this.
+						if (!MidiUtils.isMetaTempo(evt.getMessage())) {
+							// tempo events after endTick we don't re-add.
+							evt.setTick(endTick);
+							track.add(evt);
+						}
+					}
+				}
+			}
+
+			// insert any missing end-of-track events
+			boolean okay = false;
+			for (int e = track.size() - 1; e >= 0; e--) {
+				MidiEvent evt = track.get(e);
+				if (MidiUtils.isMetaEndOfTrack(evt.getMessage()) && evt.getTick() <= Math.min(earlyEndTick, endTick) + 1) {
+					okay = true;
+					break;
+				}
+			}
+			if (!okay) {
+				long trackEndTick = 0L;
+				if (track.size() > 0)
+					trackEndTick = Math.min(Math.min(earlyEndTick, endTick), track.get(track.size() - 1).getTick());
+				MidiEvent end = MidiFactory.createEndOfTrackEvent(trackEndTick + 1);
+				track.add(end);
+				log.finest("Track " + i + " was missing an EndOfTrack. It was now inserted.");
+			}
+		}
+
+		// remove all events after earlyEndTick
+		// isn't this a risk to remove tracknames etc.?
+		for (Track track : tracks) {
+			for (int j = track.size()-1; j >= 0; j--) {
+				MidiEvent evt = track.get(j);
+				if (evt.getTick() > earlyEndTick + 1L) {
+					track.remove(evt);
+				} else {
+					break;
+				}
+			}
+		}
+		//System.out.println("last="+last+" endTick="+endTick);
+
+		//System.out.println("Real song duration: "
+		//		+ Util.formatDurationM(MidiUtils.tick2microsecond(song, last, tempoCache)));
+		log.fine("After: " + Util.formatDurationM(song.getMicrosecondLength()));
+		return earlyEndTick + 1L;
 	}
 
 	/**
