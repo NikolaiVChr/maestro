@@ -74,7 +74,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 							 Map<Integer, ArrayList<TreeMap<Long, Boolean>>> yamahaDrumSwitches, boolean[] yamahaDrumChannels,
 			                 Map<Integer, ArrayList<TreeMap<Long, Boolean>>> mmaDrumSwitches, SortedMap<Integer, Integer> portMap,
 			boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume, boolean ignoreMidiText,
-			String fileName, int usingNewMidiLayout) {
+			String fileName, int usingNewMidiLayout, boolean hasPorts) {
 
 		this.fileName = fileName;
 		this.usingNewMidiLayout = usingNewMidiLayout;
@@ -82,6 +82,8 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 
         // This is total accumulated duration in micros of each tempo used in the song
 		Map<Integer, Long> tempoLengths = new HashMap<>();// MPQ -> micros
+
+		this.hasPorts = hasPorts;
 
 		this.standard = standard;
 		this.rolandDrumChannels = rolandDrumChannels;
@@ -110,46 +112,9 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		List<Quad<Integer, Integer, Long, Double>> pitchWheelMap = new ArrayList<>();
 		panMap = new MapByChannelPort(PAN_CENTER);
 		Track[] tracks = song.getTracks();
-		hasPorts = false;
 		long lastTick = 0L;
 		final boolean specCompliant = false;
 		if (standard != MidiStandard.PREVIEW) {
-			for (int iiTrack = 0; iiTrack < tracks.length; iiTrack++) {
-				// Build a map of ports, this is done before main iteration
-				// due to that patch changes need to know this.
-				Track track = tracks[iiTrack];
-				int port = 0;
-				portMap.put(iiTrack, port);
-
-				for (int jj = 0, sz1 = track.size(); jj < sz1; jj++) {
-					MidiEvent evt = track.get(jj);
-					long tick = evt.getTick();
-					if (tick > 0L) break;
-					MidiMessage msg = evt.getMessage();
-					if (msg instanceof MetaMessage meta) {
-						if (meta.getType() == META_PORT_CHANGE) {
-							byte[] portChange = meta.getData();
-							if (portChange.length == 1) {
-								// Support for (non-midi-standard) port assignments used by Cakewalk and
-								// Musescore.
-								// We only support this for GM, and only super well-formed (tick == 0).
-								port = (int) portChange[0] & 0xFF;
-								log.fine("Port change on track " + iiTrack + ", tick " + tick + ", port " + MidiUtils.formatBytes(portChange));
-								portMap.put(iiTrack, port);
-								boolean isGM = MidiStandard.GM == standard;
-								if (!isGM) {
-									log.info(fileName + ": "+standard+" with ports");
-								}
-								hasPorts = true;// = isGM
-								break;
-							}
-						} else if (meta.getType() == META_PORT_NAME) {
-							byte[] data = meta.getData();
-							log.warning("Named port: " + (new String(data)));
-						}
-					}
-				}
-			}
 			for (int iiTrack = 0; iiTrack < tracks.length; iiTrack++) {
 				Track track = tracks[iiTrack];
 				int port = portMap.get(iiTrack);
