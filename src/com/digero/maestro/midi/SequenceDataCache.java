@@ -1,16 +1,8 @@
 package com.digero.maestro.midi;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
-import java.util.NavigableMap;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MetaMessage;
 import javax.sound.midi.MidiEvent;
@@ -60,8 +52,10 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	private final SortedMap<Integer, Integer> portMap;
 	private final DrumBankType[] brandDrumBanks;
 	private final MidiStandard standard;
-	private final boolean[] rolandDrumChannels;
-	private final boolean[] yamahaDrumChannels;
+	private final Map<Integer, ArrayList<Boolean>> rolandDrumChannels;
+	private final Map<Integer, ArrayList<Boolean>> yamahaDrumChannels;
+	private final Map<Integer, ArrayList<TreeMap<Long, Boolean>>> yamahaDrumSwitches;
+	private final Map<Integer, ArrayList<TreeMap<Long, Boolean>>> mmaDrumSwitches;
 	public boolean hasPorts = false;
 	private String copyright = "";
 	private final boolean ignoreZeroChannelVolume;
@@ -70,8 +64,10 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	private String fileName = "";
 	private final int usingNewMidiLayout;
 
-	public SequenceDataCache(Sequence song, MidiStandard standard, boolean[] rolandDrumChannels,
-							 Map<Integer, ArrayList<TreeMap<Long, Boolean>>> yamahaDrumSwitches, boolean[] yamahaDrumChannels,
+	public SequenceDataCache(Sequence song, MidiStandard standard,
+							 Map<Integer, ArrayList<Boolean>> rolandDrumChannels,
+							 Map<Integer, ArrayList<TreeMap<Long, Boolean>>> yamahaDrumSwitches,
+							 Map<Integer, ArrayList<Boolean>> yamahaDrumChannels,
 			                 Map<Integer, ArrayList<TreeMap<Long, Boolean>>> mmaDrumSwitches, SortedMap<Integer, Integer> portMap,
 			boolean onlyFirstTrackTempos, boolean ignoreZeroChannelVolume, boolean ignoreMidiText,
 			String fileName, int usingNewMidiLayout, boolean hasPorts) {
@@ -88,7 +84,9 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		this.standard = standard;
 		this.rolandDrumChannels = rolandDrumChannels;
 		this.yamahaDrumChannels = yamahaDrumChannels;
-		
+		this.yamahaDrumSwitches = yamahaDrumSwitches;
+		this.mmaDrumSwitches = mmaDrumSwitches;
+
 		this.ignoreZeroChannelVolume = ignoreZeroChannelVolume;
 
 		brandDrumBanks = new DrumBankType[song.getTracks().length];
@@ -140,7 +138,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 										int rm = rpnMSBMap.get(port, ch, tick);
 										int p = (usingNewMidiLayout >= 1) ? port : 0;
 										int ex = expression.get(p, ch, tick);
-										boolean changingStuff = rl != 127 || rm != 127 || (usingNewMidiLayout > 0 && ex != 127);// too much hassle to detect if bend wheel was active.
+										boolean changingStuff = (usingNewMidiLayout > 0 && ex != 127);// too much hassle to detect if bend wheel was active. rl != 127 || rm != 127 ||
 										if (changingStuff) {
 											//str += "\n rpn lsb " + rl + " -> " + DEFAULT_RPN_NULL;
 											//str += "\n rpn msb " + rm + " -> " + DEFAULT_RPN_NULL;
@@ -213,37 +211,52 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 						int ch = shortMsg.getChannel();
 
 						if (cmd == ShortMessage.NOTE_ON) {
-							if (rolandDrumChannels != null && rolandDrumChannels[ch] && MidiStandard.GS == standard) {
-								brandDrumBanks[iTrack] = DrumBankType.GS_DRUM;
-							} else if (brandDrumBanks[iTrack] != DrumBankType.XG_DRUM && MidiStandard.XG == standard
-									&& yamahaDrumSwitches != null && yamahaDrumSwitches.get(port).get(ch).floorEntry(tick) != null
-									&& yamahaDrumSwitches.get(port).get(ch).floorEntry(tick).getValue()) {
-								brandDrumBanks[iTrack] = DrumBankType.XG_DRUM;// XG drums
-							} else if (brandDrumBanks[iTrack] != DrumBankType.GM2_DRUM && MidiStandard.GM2 == standard
-									&& mmaDrumSwitches != null && mmaDrumSwitches.get(port).get(ch).floorEntry(tick) != null
-									&& mmaDrumSwitches.get(port).get(ch).floorEntry(tick).getValue()) {
-								brandDrumBanks[iTrack] = DrumBankType.GM2_DRUM;// GM2 drums
-							} else if (ch == DRUM_CHANNEL
-									&& (MidiStandard.GM == standard || MidiStandard.ABC == standard)) {
-								brandDrumBanks[iTrack] = DrumBankType.STANDARD_DRUM;// GM drums on channel #10
+							switch (standard) {
+								case GS:
+									if (rolandDrumChannels != null && getRolandDrum(port, ch)) {
+										brandDrumBanks[iTrack] = DrumBankType.GS_DRUM;
+									}
+									break;
+								case XG:
+									if (yamahaDrumSwitches != null && getYamahaDrumAccurate(port, ch, tick)){
+										brandDrumBanks[iTrack] = DrumBankType.XG_DRUM;
+									}
+									break;
+								case GM2:
+									if (mmaDrumSwitches != null && getMmaDrumAccurate(port, ch, tick)) {
+										brandDrumBanks[iTrack] = DrumBankType.GM2_DRUM;
+									}
+									break;
+								default:
+									if (ch == DRUM_CHANNEL) {
+										// GM drums on channel #10
+										brandDrumBanks[iTrack] = DrumBankType.STANDARD_DRUM;
+									}
+									break;
 							}
 						} else if (cmd == ShortMessage.PROGRAM_CHANGE) {
 							if (shortMsg.getData1() > 127) {
 								log.warning(fileName+"; Channel "+ch+": Ignoring program change out of range: "+shortMsg.getData1());
 								continue;
 							}
-							if (((ch != DRUM_CHANNEL && rolandDrumChannels == null && yamahaDrumChannels == null)
-									|| ((rolandDrumChannels == null || MidiStandard.GS != standard
-											|| !rolandDrumChannels[ch])
-											&& (yamahaDrumChannels == null || MidiStandard.XG != standard
-													|| !yamahaDrumChannels[ch])))
-									&& (MidiStandard.XG != standard || yamahaDrumSwitches == null
-											|| yamahaDrumSwitches.get(port).get(ch).floorEntry(tick) == null
-											|| !yamahaDrumSwitches.get(port).get(ch).floorEntry(tick).getValue())
-									&& (MidiStandard.GM2 != standard || mmaDrumSwitches == null
-											|| mmaDrumSwitches.get(port).get(ch).floorEntry(tick) == null
-											|| !mmaDrumSwitches.get(port).get(ch).floorEntry(tick).getValue())) {
-								instruments.put(portMap.get(iTrack), ch, tick, shortMsg.getData1());
+							boolean allowPatchChange = true;
+							switch (standard) {
+								case GS:
+									allowPatchChange = rolandDrumChannels == null || !getRolandDrum(port, ch);
+									break;
+								case XG:
+									allowPatchChange = getYamahaDrumAccurate(port,ch,tick);
+									break;
+								case GM2:
+									allowPatchChange = getMmaDrumAccurate(port,ch,tick);
+									break;
+								default:
+									allowPatchChange = ch != DRUM_CHANNEL;
+									break;
+							}
+
+							if (allowPatchChange) {
+								instruments.put(port, ch, tick, shortMsg.getData1());
 								log.fine("Instrument change on track "+iTrack+", tick "+tick+", instrument "+MidiInstrument.fromId(shortMsg.getData1())+ ", port "+portMap.get(iTrack)+", channel "+ch);
 							}
 							mapPatch.put(port, ch, tick, shortMsg.getData1());
@@ -353,11 +366,8 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 									// if(ch==DRUM_CHANNEL) System.err.println("Bank select MSB "+m.getData2()+" "+tick);
 								} else {
 									boolean isXGDrumChannel = false;
-									if (MidiStandard.XG == standard && yamahaDrumSwitches != null) {
-										Map.Entry<Long, Boolean> entry = yamahaDrumSwitches.get(port).get(ch).floorEntry(tick);
-										if (entry != null && entry.getValue()) {
-											isXGDrumChannel = true;
-										}
+									if (MidiStandard.XG == standard && getYamahaDrumAccurate(port, ch, tick)) {
+										isXGDrumChannel = true;
 									}
 
 									if (isXGDrumChannel && shortMsg.getData2() != 126 && shortMsg.getData2() != 127) {
@@ -503,13 +513,19 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 					mapPatch.put(port, i, -1, 0);
 					mapLSB.put(port, i, -1, 0);
 				}
-				if (MidiStandard.XG == standard && yamahaDrumChannels != null) {
+				if (MidiStandard.XG == standard) {
 					// Bank 127 is implicit the default on drum channels in XG.
 					for (int i = 0; i < CHANNEL_COUNT_ABC; i++) {
-						if (yamahaDrumChannels[i])
-							mapMSB.put(port, i, -1, 127);
-						else
-							mapMSB.put(port, i, -1, 0);
+						boolean initAsDrums;
+
+						if (usingNewMidiLayout == 0) initAsDrums = getYamahaDrum(port, i);
+						else initAsDrums = getYamahaDrumAccurate(port, i, 0L);
+
+						if (initAsDrums) {
+							mapMSB.put(port, i, -1L, 127);
+						} else {
+							mapMSB.put(port, i, -1L, 0);
+						}
 					}
 				} else if (MidiStandard.GM2 == standard) {
 					// Bank 120 is implicit the default on drum channel in GM2.
@@ -654,10 +670,14 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		boolean rhythmChannel = channel == DRUM_CHANNEL;
 		if (MidiStandard.XG == standard) {
 			type = MidiStandard.XG;
-			rhythmChannel = yamahaDrumChannels[channel];
+			if (usingNewMidiLayout == 0) {
+				rhythmChannel = getYamahaDrum(port, channel);
+			} else {
+				rhythmChannel = getYamahaDrumAccurate(port, channel, tick);
+			}
 		} else if (MidiStandard.GS == standard) {
 			type = MidiStandard.GS;
-			rhythmChannel = rolandDrumChannels[channel];
+			rhythmChannel = getRolandDrum(port, channel);
 		} else if (MidiStandard.GM2 == standard) {
 			type = MidiStandard.GM2;
 		}
@@ -917,6 +937,42 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 
 	SortedMap<Integer, Integer> getPortMap() {
 		return portMap;
+	}
+
+	private boolean getYamahaDrum(int port, int channel) {
+		port = usingNewMidiLayout==0?0:port;
+		if (yamahaDrumChannels.get(port) == null) {
+			yamahaDrumChannels.put(port, new ArrayList<>(Collections.nCopies(CHANNEL_COUNT_ABC, false)));
+			yamahaDrumChannels.get(port).set(DRUM_CHANNEL, true);
+		}
+		return yamahaDrumChannels.get(port).get(channel);
+	}
+
+	private boolean getRolandDrum(int port, int channel) {
+		port = usingNewMidiLayout==0?0:port;
+		if (rolandDrumChannels.get(port) == null) {
+			rolandDrumChannels.put(port, new ArrayList<>(Collections.nCopies(CHANNEL_COUNT_ABC, false)));
+			rolandDrumChannels.get(port).set(DRUM_CHANNEL, true);
+		}
+		return rolandDrumChannels.get(port).get(channel);
+	}
+
+	private boolean getYamahaDrumAccurate(int port, int channel, long tick) {
+		port = usingNewMidiLayout==0?0:port;
+		if (yamahaDrumSwitches == null) return getYamahaDrum(port, channel);
+		if (yamahaDrumSwitches.get(port) == null) return getYamahaDrum(port, channel);
+		if (yamahaDrumSwitches.get(port).get(channel) == null) return getYamahaDrum(port, channel);
+		if (yamahaDrumSwitches.get(port).get(channel).floorEntry(tick) == null) return getYamahaDrum(port, channel);
+		return yamahaDrumSwitches.get(port).get(channel).floorEntry(tick).getValue();
+	}
+
+	private boolean getMmaDrumAccurate(int port, int channel, long tick) {
+		port = usingNewMidiLayout==0?0:port;
+		if (mmaDrumSwitches == null) return channel == DRUM_CHANNEL;
+		if (mmaDrumSwitches.get(port) == null) return channel == DRUM_CHANNEL;
+		if (mmaDrumSwitches.get(port).get(channel) == null) return channel == DRUM_CHANNEL;
+		if (mmaDrumSwitches.get(port).get(channel).floorEntry(tick) == null) return channel == DRUM_CHANNEL;
+		return mmaDrumSwitches.get(port).get(channel).floorEntry(tick).getValue();
 	}
 
 	/**

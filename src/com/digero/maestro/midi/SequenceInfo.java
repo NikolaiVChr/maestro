@@ -2,7 +2,6 @@ package com.digero.maestro.midi;
 
 import java.io.*;
 import java.util.*;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.sound.midi.InvalidMidiDataException;
@@ -50,18 +49,18 @@ public class SequenceInfo implements MidiConstants {
 	public boolean hasPorts = false;
 	public int midiType = -1;// -1 = abc, 0 = type 0, 1 = type 1, 2 = type 2
 	private int usingNewMidiLayout;// 0 = back compat, 1 = fixed some stuff.
-	private final boolean[] rolandDrumChannels = new boolean[CHANNEL_COUNT_ABC];// Which of the channels GS designates as
+	private final Map<Integer, ArrayList<Boolean>> rolandDrumChannels = new HashMap<>();// Which of the channels GS designates as
 																			// drums
-	private final boolean[] yamahaDrumChannels = new boolean[CHANNEL_COUNT_ABC];// Which of the channels XG designates as
+	private final Map<Integer, ArrayList<Boolean>> yamahaDrumChannels = new HashMap<>();// Which of the channels XG designates as
 																			// drums
 																			// Change these two fields to Sparse Maps:
 	// Which channel/tick XG switches to drums
 	// outside of designated drum channels
-	private Map<Integer, ArrayList<TreeMap<Long, Boolean>>> yamahaDrumSwitches = new HashMap<>();
+	private final Map<Integer, ArrayList<TreeMap<Long, Boolean>>> yamahaDrumSwitches = new HashMap<>();
 
 	// Which channel/tick GM2 switches to drums outside
 	// of designated drum channels
-	private Map<Integer, ArrayList<TreeMap<Long, Boolean>>> mmaDrumSwitches = new HashMap<>();
+	private final Map<Integer, ArrayList<TreeMap<Long, Boolean>>> mmaDrumSwitches = new HashMap<>();
 
 	private int primaryTempoMPQ;
 	private final TreeMap<Integer, Integer> portMap = new TreeMap<>();
@@ -159,16 +158,16 @@ public class SequenceInfo implements MidiConstants {
 		System.out.println("PPQ resolution="+sequence.getResolution());
 		Track[] trcks = sequence.getTracks();
 		for (int track = 0; track < trcks.length; track++) {
-			//if (track != 0 && track != 13) continue;
+			//if (track != 0 && track != 24) continue;
 			Track t = trcks[track];
 			System.out.println("\nTrack "+track+":");
 			for (int j = 0; j < t.size(); j++) {
 				MidiEvent evt = t.get(j);
-				if (evt.getTick() > 25_000L) break;
+				if (evt.getTick() > 100_000L) break;
 				System.out.printf("Tick %08d: %s\n",evt.getTick(), MidiUtils.midiMessageToString(evt.getMessage()));
 			}
 		}
-		*/
+		 */
 
 		determineStandard(sequence, fileName);
 
@@ -211,16 +210,17 @@ public class SequenceInfo implements MidiConstants {
 		System.out.println("  PPQ resolution="+this.sequence.getResolution());
 		Track[] trcks2 = this.sequence.getTracks();
 		for (int track = 0; track < trcks2.length; track++) {
-			//if (track != 0 && track != 13) continue;
+			if (track != 0 && track != 1 && track != 2 && track != 13) continue;
 			Track t = trcks2[track];
 			System.out.println("\nTrack "+track+":");
 			for (int j = 0; j < t.size(); j++) {
 				MidiEvent evt = t.get(j);
-				if (evt.getTick() > 25_000L) break;
+				if (evt.getTick() > 100_000L) break;
 				System.out.printf("Tick %08d: %s\n",evt.getTick(), MidiUtils.midiMessageToString(evt.getMessage()));
 			}
 		}
-		*/
+		 */
+
 
 		composer = "";
 		/*
@@ -463,12 +463,6 @@ public class SequenceInfo implements MidiConstants {
 
 		standard = MidiStandard.GM;
 
-        Arrays.fill(rolandDrumChannels, false);
-		rolandDrumChannels[DRUM_CHANNEL] = true;
-
-        Arrays.fill(yamahaDrumChannels, false);
-		yamahaDrumChannels[DRUM_CHANNEL] = true;
-
 		Track[] tracks = seq.getTracks();
 		long lastResetTick = Long.MIN_VALUE;
 		Map<Integer, TreeMap<Long, PatchEntry>> portBankAndPatchTrack = new HashMap<>();
@@ -506,7 +500,7 @@ public class SequenceInfo implements MidiConstants {
 					ArrayList<TreeMap<Long, Boolean>> mChannels = new ArrayList<>(CHANNEL_COUNT_ABC);
 					for (int c = 0; c < CHANNEL_COUNT_ABC; c++) {
 						TreeMap<Long, Boolean> yTm = new TreeMap<>();
-						yTm.put(-1L, yamahaDrumChannels[c]);
+						yTm.put(-1L, c == DRUM_CHANNEL);
 						yChannels.add(yTm);
 
 						TreeMap<Long, Boolean> mTm = new TreeMap<>();
@@ -583,7 +577,7 @@ public class SequenceInfo implements MidiConstants {
 							} else {
 								// System.err.println("Roland GS unsets channel "+(channel+1)+" to drums.");
 							}
-							rolandDrumChannels[channel] = toDrums;
+							putRolandDrum(currentPort, channel, toDrums);
 						}
 					} else if (message.length == 9 && (message[0] & 0xFF) == 0xF0 && (message[1] & 0xFF) == 0x43
 							&& (message[3] & 0xFF) == 0x4C
@@ -596,13 +590,13 @@ public class SequenceInfo implements MidiConstants {
 							// Sure looks like Korg has it correct, at least for pre Tyros XG standard.
 							if (message[7] == 0) {
 								type = "Normal";
-								if (usingNewMidiLayout == 0) yamahaDrumChannels[message[5]] = false;
+								putYamahaDrum(currentPort, message[5], false);
 							} else if (message[7] == 1) {
 								type = "Drums";
-								if (usingNewMidiLayout == 0) yamahaDrumChannels[message[5]] = true;
+								putYamahaDrum(currentPort, message[5], true);
 							} else if (message[7] > 1 && message[7] <= 5) {
 								type = "Drums Setup " + (message[7] - 1);
-								if (usingNewMidiLayout == 0) yamahaDrumChannels[message[5]] = true;
+								putYamahaDrum(currentPort, message[5], true);
 							} else {
 								type = "Invalid setup: " + message[7];
 							}
@@ -727,7 +721,7 @@ public class SequenceInfo implements MidiConstants {
 			Integer[] mChanges = new Integer[CHANNEL_COUNT_ABC];
 			for (int channel = 0; channel < CHANNEL_COUNT_ABC; channel++) {
 				if (usingNewMidiLayout == 0) {
-					yChanges[channel] = yamahaDrumChannels[channel] ? DRUMS : CHROMATIC;
+					yChanges[channel] = isYamahaDrum(0, channel) ? DRUMS : CHROMATIC;
 				} else {
 					yChanges[channel] = (channel == DRUM_CHANNEL) ? DRUMS : CHROMATIC;
 				}
@@ -779,7 +773,8 @@ public class SequenceInfo implements MidiConstants {
 								if (usingNewMidiLayout >= 1) {
 									if (message[7] > 0) {
 										// Switching to Drums
-										yamahaBankAndPatchChanges[ch] = DRUMS_UNKNOWN_PATCH;
+										if (yamahaBankAndPatchChanges[ch] < DRUMS)
+												yamahaBankAndPatchChanges[ch] = DRUMS_UNKNOWN_PATCH;
 									} else {
 										// Switching back to Melodic
 										yamahaBankAndPatchChanges[ch] = CHROMATIC;
@@ -789,7 +784,11 @@ public class SequenceInfo implements MidiConstants {
 							} else if ("MSB".equals(bank)) {
 								if (message[7] == 126 || message[7] == 127) {// 64 is chromatic effects, so not testing for
 									// that.
-									yamahaBankAndPatchChanges[ch] = DRUMS_UNKNOWN_PATCH;
+									if (usingNewMidiLayout == 0) {
+										yamahaBankAndPatchChanges[ch] = DRUMS_UNKNOWN_PATCH;
+									} else {
+										if (yamahaBankAndPatchChanges[ch] < DRUMS) yamahaBankAndPatchChanges[ch] = DRUMS_UNKNOWN_PATCH;
+									}
 								} else {
 									yamahaBankAndPatchChanges[ch] = CHROMATIC;
 								}
@@ -869,17 +868,20 @@ public class SequenceInfo implements MidiConstants {
 								case BANK_SELECT_MSB:
 									if (usingNewMidiLayout >= 1) {
 										if (yamahaBankAndPatchChanges[ch] > CHROMATIC) {
-											// It IS a drum track. Enforce Drum Protect.
+											// It is a drum track. Enforce Drum Protect.
 											if (m.getData2() != 126 && m.getData2() != 127) {
 												// Blocked. Do not change the state.
 											} else {
 												// Valid drum MSB.
-												yamahaBankAndPatchChanges[ch] = DRUMS_UNKNOWN_PATCH;
+												if (yamahaBankAndPatchChanges[ch] < DRUMS) yamahaBankAndPatchChanges[ch] = DRUMS_UNKNOWN_PATCH;
 											}
 										} else {
-											// It is a melodic track.
-											// In XG hardware, melodic tracks ignore MSB 126/127. They remain melodic!
-											yamahaBankAndPatchChanges[ch] = CHROMATIC;
+											// In XG hardware, melodic tracks allow MSB 126/127.
+											if (m.getData2() == 127 || m.getData2() == 126) {
+												if (yamahaBankAndPatchChanges[ch] < DRUMS) yamahaBankAndPatchChanges[ch] = DRUMS_UNKNOWN_PATCH;
+											} else {
+												yamahaBankAndPatchChanges[ch] = CHROMATIC;
+											}
 										}
 									} else {
 										// Preserve the old bug for backwards compatibility
@@ -910,19 +912,59 @@ public class SequenceInfo implements MidiConstants {
 					}
 				}
 			}
-			for (int i = 0; i < CHANNEL_COUNT_ABC; i++) {
+			for (int ch = 0; ch < CHANNEL_COUNT_ABC; ch++) {
 				if (usingNewMidiLayout == 0) {
-					yamahaDrumSwitches.get(port).get(i).put(-1L, yamahaDrumChannels[i]);
+					yamahaDrumSwitches.get(port).get(ch).put(-1L, isYamahaDrum(port, ch));
 				} else {
-					yamahaDrumSwitches.get(port).get(i).put(-1L, i == DRUM_CHANNEL);
+					yamahaDrumSwitches.get(port).get(ch).put(-1L, ch == DRUM_CHANNEL);
 				}
-				if (i == DRUM_CHANNEL) {
-					mmaDrumSwitches.get(port).get(i).put(-1L, true);
-				} else {
-					mmaDrumSwitches.get(port).get(i).put(-1L, false);
-				}
+				mmaDrumSwitches.get(port).get(ch).put(-1L, ch == DRUM_CHANNEL);
 			}
 		}
+	}
+
+	/**
+	 * Is entire channel/port a drum sequence?
+	 * This holds info to sequence after drums have been separated into own tracks.
+	 */
+	private boolean isYamahaDrum(int port, int channel) {
+		port = usingNewMidiLayout==0?0:port;
+		if (yamahaDrumChannels.get(port) == null) {
+			yamahaDrumChannels.put(port, new ArrayList<>(Collections.nCopies(CHANNEL_COUNT_ABC, false)));
+			yamahaDrumChannels.get(port).set(DRUM_CHANNEL, true);
+		}
+		return yamahaDrumChannels.get(port).get(channel);
+	}
+
+	private void putYamahaDrum(int port, int channel, Boolean drum) {
+		port = usingNewMidiLayout==0?0:port;
+		if (yamahaDrumChannels.get(port) == null) {
+			yamahaDrumChannels.put(port, new ArrayList<>(Collections.nCopies(CHANNEL_COUNT_ABC, false)));
+			yamahaDrumChannels.get(port).set(DRUM_CHANNEL, true);
+		}
+		yamahaDrumChannels.get(port).set(channel, drum);
+	}
+
+	/**
+	 * Is entire channel/port a drum sequence?
+	 * This holds info to sequence after drums have been separated into own tracks.
+	 */
+	private boolean isRolandDrum(int port, int channel) {
+		port = usingNewMidiLayout==0?0:port;
+		if (rolandDrumChannels.get(port) == null) {
+			rolandDrumChannels.put(port, new ArrayList<>(Collections.nCopies(CHANNEL_COUNT_ABC, false)));
+			rolandDrumChannels.get(port).set(DRUM_CHANNEL, true);
+		}
+		return rolandDrumChannels.get(port).get(channel);
+	}
+
+	private void putRolandDrum(int port, int channel, Boolean drum) {
+		port = usingNewMidiLayout==0?0:port;
+		if (rolandDrumChannels.get(port) == null) {
+			rolandDrumChannels.put(port, new ArrayList<>(Collections.nCopies(CHANNEL_COUNT_ABC, false)));
+			rolandDrumChannels.get(port).set(DRUM_CHANNEL, true);
+		}
+		rolandDrumChannels.get(port).set(channel, drum);
 	}
 
 	/**
@@ -1039,6 +1081,7 @@ public class SequenceInfo implements MidiConstants {
             Track mainTrack = newMainTracks[i];
 
 			// Find the port event on this track
+			// We do NOT build the portMap here, that is done after seperation.
 			MidiEvent portEvent = null;
 			int port = 0;
 			for (int j = 0; j < oldTrack.size(); j++) {
@@ -1051,6 +1094,8 @@ public class SequenceInfo implements MidiConstants {
 					break;
 				}
 			}
+
+			port = usingNewMidiLayout == 0 ? (standard == MidiStandard.GM ? port : 0) : port;
 
             int drumsGS = 0;
             int drumsXG = 0;
@@ -1080,7 +1125,7 @@ public class SequenceInfo implements MidiConstants {
 
                 if (isDrumGM(chan)) {
                     drumsGM = 1;
-                } else if (isDrumGS(chan)) {
+                } else if (isDrumGS(port, chan)) {
                     drumsGS = 1;
                 } else if (isDrumXG(evt, port, chan)) {
                     drumsXG = 1;
@@ -1168,7 +1213,7 @@ public class SequenceInfo implements MidiConstants {
                         drumTrack.add(evt);
                         moved = true;
                     } else if (brandDrumTrack != null && drumsGS == 1 && (notes == 1 || chan == DRUM_CHANNEL)
-                            && rolandDrumChannels[chan]) {
+                            && isRolandDrum(port,chan)) {
                         // GS drum note split into new track because either:
                         // - to avoid mixing with chromatics.
                         // - its on ch10, which v2.5.0 would also have split into new track.
@@ -1190,7 +1235,7 @@ public class SequenceInfo implements MidiConstants {
                         // - its on ch10, which v2.5.0 would also have split into new track.
                         brandDrumTrack.add(evt);
                         moved = true;
-                    } else if ((drumsGS == 1 && rolandDrumChannels[chan])
+                    } else if ((drumsGS == 1 && isRolandDrum(port,chan))
                             || (drumsXG == 1 && yamahaDrumSwitches.get(port).get(chan).floorEntry(tick) != null
                             && yamahaDrumSwitches.get(port).get(chan).floorEntry(tick).getValue())
                             || (drumsGM2 == 1 && mmaDrumSwitches.get(port).get(chan).floorEntry(tick) != null
@@ -1203,7 +1248,7 @@ public class SequenceInfo implements MidiConstants {
 								"\n drumsGS="+drumsGS+" drumsGM2="+drumsGM2+" drumsXG="+drumsXG+" drumsGM="+drumsGM
 								+"\n notes="+notes+" channel="+chan+" drumsExt10="+drumsExt10+" drumsExtX="+drumsExtX
 								+"\n notes10="+notes10 +" notesX="+ notesX
-								+" isGSDrumChannel="+(rolandDrumChannels[chan])
+								+" isGSDrumChannel="+(isRolandDrum(port,chan))
 								+" isXGdrum="+(yamahaDrumSwitches.get(port).get(chan).floorEntry(tick) != null
 									&& yamahaDrumSwitches.get(port).get(chan).floorEntry(tick).getValue())
 								+" isGM2drum="+(mmaDrumSwitches.get(port).get(chan).floorEntry(tick) != null
@@ -1254,6 +1299,7 @@ public class SequenceInfo implements MidiConstants {
 	 * Returns true if the given channel a drum channel and standard is GM2.
 	 */
 	private boolean isDrumGM2(MidiEvent evt, int port, int chan) {
+		port = usingNewMidiLayout == 0 ? 0 : port;
 		if (MidiStandard.GM2 != standard || !mmaDrumSwitches.containsKey(port)) return false;
 		TreeMap<Long, Boolean> mTree = mmaDrumSwitches.get(port).get(chan);
 		return mTree.floorEntry(evt.getTick()) != null && mTree.floorEntry(evt.getTick()).getValue();
@@ -1263,6 +1309,7 @@ public class SequenceInfo implements MidiConstants {
 	 * Returns true if the given channel a drum channel and standard is XG.
 	 */
 	private boolean isDrumXG(MidiEvent evt, int port, int chan) {
+		port = usingNewMidiLayout == 0 ? 0 : port;
 		if (MidiStandard.XG != standard || !yamahaDrumSwitches.containsKey(port)) return false;
 		TreeMap<Long, Boolean> yTree = yamahaDrumSwitches.get(port).get(chan);
 		return yTree.floorEntry(evt.getTick()) != null && yTree.floorEntry(evt.getTick()).getValue();
@@ -1271,8 +1318,9 @@ public class SequenceInfo implements MidiConstants {
 	/**
 	 * Returns true if the given channel a drum channel and standard is GS.
 	 */
-	private boolean isDrumGS(int chan) {
-		return MidiStandard.GS == standard && rolandDrumChannels[chan];
+	private boolean isDrumGS(int port, int chan) {
+		port = usingNewMidiLayout == 0 ? 0 : port;
+		return MidiStandard.GS == standard && isRolandDrum(port,chan);
 	}
 
 	/**
