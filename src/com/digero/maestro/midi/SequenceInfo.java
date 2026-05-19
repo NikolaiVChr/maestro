@@ -42,6 +42,7 @@ public class SequenceInfo implements MidiConstants {
 	private final Sequence sequence;
 	private final SequenceDataCache sequenceCache;
 	private final String fileName;
+	private boolean onlyFirstTrackTempos;
 	private File midiFile = null;
 	private String title;
 	private String composer;
@@ -150,6 +151,7 @@ public class SequenceInfo implements MidiConstants {
         this.histogram = null;
         this.dissonance = null;
         this.lastTrackInfos = abcInfo==null?null:abcInfo.abcTrackInfos;
+		this.onlyFirstTrackTempos = onlyFirstTrackTempos;// if user toggles this, we create a whole new sequenceInfo instance.
 		log.fine("Importing (Type "+type+"): "+fileName);
 
 		/*
@@ -262,9 +264,10 @@ public class SequenceInfo implements MidiConstants {
         histogram = result.third;
         dissonance = result.fourth;
 		standard = MidiStandard.PREVIEW;
+		onlyFirstTrackTempos = true;
 		sequenceCache = new SequenceDataCache(sequence, standard,
 				null, null, null, null,
-				portMap, true, false, true,
+				portMap, onlyFirstTrackTempos, false, true,
 				"ABC Preview Internal MIDI", usingNewMidiLayout, false);
 		primaryTempoMPQ = sequenceCache.getPrimaryTempoMPQ();
 
@@ -1603,7 +1606,7 @@ public class SequenceInfo implements MidiConstants {
 		TrackSplitter splitter = new TrackSplitter();
 		Sequence sequence2 = null;
 		if (midiFile == null) return null;
-		sequence2 = splitter.split(midiFile);
+		sequence2 = splitter.split(midiFile, onlyFirstTrackTempos);
 		
 		return sequence2;
 	}

@@ -24,7 +24,7 @@ public class TrackSplitter {
 	private Sequence oldSequence = null;
 	private boolean isGM = true;
 
-	public Sequence split(File file)
+	public Sequence split(File file, boolean onlyFirstTrackTempos)
             throws InvalidMidiDataException, FileParseException, IOException {
 
 		// "temp_midi_expander" is super important, else it will wipe all maestro settings as it's tied to package, not class inside the package.
@@ -34,7 +34,7 @@ public class TrackSplitter {
         } catch (BackingStoreException e) {
             throw new RuntimeException(e);
         }
-        SequenceInfo sequenceInfo = SequenceInfo.fromMidi(file, new MiscSettings(prefs, false), false, false, false, false, 1);
+        SequenceInfo sequenceInfo = SequenceInfo.fromMidi(file, new MiscSettings(prefs, false), false, onlyFirstTrackTempos, false, false, 50);
 
 		this.sequenceCache = sequenceInfo.getDataCache();
 		this.oldSequence = sequenceInfo.getSequence();
