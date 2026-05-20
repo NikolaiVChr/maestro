@@ -384,17 +384,21 @@ public class MidiUtils {
                     case 0x05 -> "SD-90 / SD-80";
                     default -> "Unknown (0x"+String.format("%02X", generation & 0xFF)+")";
                 };
-            } else if (isResetGS(sysexMsg, true)) {
+            } else if (sysexMsg.length >= 10 && (
+                    sysexMsg[0] & 0xFF) == 0xF0
+                    && (sysexMsg[1] & 0xFF) == 0x41
+                    && (sysexMsg[3] & 0xFF) == 0x42
+                    && (sysexMsg[4] & 0xFF) == 0x12
+                    && (sysexMsg[5] & 0xFF) == 0x00
+                    && (sysexMsg[6] & 0xFF) == 0x00
+                    && (sysexMsg[7] & 0xFF) == 0x7F
+                    && (sysexMsg[sysexMsg.length - 1] & 0xFF) == 0xF7) {
                 str += ", GS System Mode Set";
-                byte generation = sysexMsg[8];
-                str += ". Generation="+switch(generation) {
-                    case 0x00 -> "SC-55 (Standard GS Reset)";
-                    case 0x01 -> "SC-88";
-                    case 0x02 -> "SC-88Pro";
-                    case 0x03 -> "SC-8820";
-                    case 0x04 -> "SC-8850";
-                    case 0x05 -> "SD-90 / SD-80";
-                    default -> "Unknown (0x"+String.format("%02X", generation & 0xFF)+")";
+                int systemMode = sysexMsg[8] & 0xFF;
+                str += ". Mode Setting=" + switch(systemMode) {
+                    case 0x00 -> "Single Module Mode (Mode-1)";
+                    case 0x01 -> "Double Module Mode (Mode-2)";
+                    default   -> "Ignored/Invalid State (0x" + String.format("%02X", systemMode) + ")";
                 };
             } else if (isResetXG(sysexMsg)) {
                 str += ", XG Reset";
@@ -882,6 +886,7 @@ public class MidiUtils {
                 && (message[5] & 0xFF) == 0x00
                 && (message[6] & 0xFF) == 0x00
                 && (message[7] & 0xFF) == 0x7F
+                && ((message[8] & 0xFF) == 0x00 || (message[8] & 0xFF) == 0x01)
                 && (message[message.length - 1] & 0xFF) == 0xF7) {
             return true;
         }
