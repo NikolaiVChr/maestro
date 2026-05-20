@@ -126,10 +126,14 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 						if (cmd == ShortMessage.CONTROL_CHANGE) {
 							switch (shortMsg.getData1()) {
 								case REGISTERED_PARAMETER_NUMBER_MSB:
-									rpnMSBMap.put(port, ch, tick, shortMsg.getData2());
+									int valueMSB = shortMsg.getData2();
+									if (valueMSB > 127) log.warning("RPN MSB out of bounds and will be ignored: port=" + port + ", ch=" + ch + ", tick=" + tick + ", value=" + valueMSB);
+									else rpnMSBMap.put(port, ch, tick, valueMSB);
 									break;
 								case REGISTERED_PARAMETER_NUMBER_LSB:
-									rpnLSBMap.put(port, ch, tick, shortMsg.getData2());
+									int valueLSB = shortMsg.getData2();
+									if (valueLSB > 127) log.warning("RPN LSB out of bounds and will be ignored: port=" + port + ", ch=" + ch + ", tick=" + tick + ", value=" + valueLSB);
+									else rpnLSBMap.put(port, ch, tick, valueLSB);
 									break;
 								case RESET_ALL_CONTROLLERS:
 									if (tick > 0L) {
@@ -239,23 +243,23 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 								log.warning(fileName+"; Channel "+ch+": Ignoring program change out of range: "+shortMsg.getData1());
 								continue;
 							}
-							boolean allowPatchChange = true;
+							boolean allowGMPatchChange = true;
 							switch (standard) {
 								case GS:
-									allowPatchChange = rolandDrumChannels == null || !getRolandDrum(port, ch);
+									allowGMPatchChange = rolandDrumChannels == null || !getRolandDrum(port, ch);
 									break;
 								case XG:
-									allowPatchChange = getYamahaDrumAccurate(port,ch,tick);
+									allowGMPatchChange = !getYamahaDrumAccurate(port,ch,tick);
 									break;
 								case GM2:
-									allowPatchChange = getMmaDrumAccurate(port,ch,tick);
+									allowGMPatchChange = !getMmaDrumAccurate(port,ch,tick);
 									break;
 								default:
-									allowPatchChange = ch != DRUM_CHANNEL;
+									allowGMPatchChange = ch != DRUM_CHANNEL;
 									break;
 							}
 
-							if (allowPatchChange) {
+							if (allowGMPatchChange) {
 								instruments.put(port, ch, tick, shortMsg.getData1());
 								log.fine("Instrument change on track "+iTrack+", tick "+tick+", instrument "+MidiInstrument.fromId(shortMsg.getData1())+ ", port "+portMap.get(iTrack)+", channel "+ch);
 							}
@@ -272,17 +276,6 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 								int p = (usingNewMidiLayout >= 1) ? port : 0;
 								expression.put(p, ch, tick, Math.clamp(shortMsg.getData2(), 0, 127));
 								break;
-								/*
-							case REGISTERED_PARAMETER_NUMBER_MSB:
-								// TODO: channel, not tracks!!
-								if (rpn[ch] == REGISTERED_PARAM_NONE) rpn[ch] = 0;
-								rpn[ch] = (rpn[ch] & 0x7F) | ((shortMsg.getData2() & 0x7F) << 7);
-								break;
-							case REGISTERED_PARAMETER_NUMBER_LSB:
-								// there is no guard to zero it here on purpose
-								rpn[ch] = (rpn[ch] & (0x7F << 7)) | (shortMsg.getData2() & 0x7F);
-								break;
-								*/
 							case DATA_ENTRY_COARSE:
 								if (getRPN(port, ch, tick) == REGISTERED_PARAM_PITCH_BEND_RANGE) {
 									if (shortMsg.getData2() > 127) {
@@ -300,6 +293,10 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 								}
 								break;
 							case DATA_BUTTON_INCREMENT:
+								// TODO: Since we do this track by track,
+								//       data button changes spread across tracks can cause unintended values.
+								//       Its an unlikely scenario, and I have never even seen a data button change being used in any midi.
+								//       To fix it, can make a treemap of changes, and apply them after the loop.
 								if (getRPN(port, ch, tick) == REGISTERED_PARAM_PITCH_BEND_RANGE) {
 									int currentFine = pitchBendRangeFine.get(port, ch, tick);
 									int currentCoarse = pitchBendRangeCoarse.get(port, ch, tick);
