@@ -35,9 +35,12 @@ public class MidiFactory implements MidiConstants {
 		}
 	}
 
+	/**
+	 * Expects UTF-8 string
+	 */
 	public static MidiEvent createTrackNameEvent(String name) {
 		try {
-			byte[] data = name.getBytes(StandardCharsets.US_ASCII);
+			byte[] data = name.getBytes(StandardCharsets.UTF_8);
 			MetaMessage msg = new MetaMessage();
 			msg.setMessage(META_TRACK_NAME, data, data.length);
 			return new MidiEvent(msg, 0);

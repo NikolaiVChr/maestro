@@ -1,7 +1,7 @@
 0
 	0	Standard Drum Kit
 	1	Standard Drum Kit 2
-	2	Standard Drum Kit L/R
+	2	Standard Drum Kit L/R / Std. 3
 	8	Room Drum Kit
 	9	Hip hop Drum Kit
 	10	Jungle Drum Kit
