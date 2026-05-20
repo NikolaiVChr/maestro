@@ -196,11 +196,11 @@ public class MidiUtils {
 	public static String formatBytes(byte[] portChange) {
 		StringBuilder str = new StringBuilder();
 		for (byte by : portChange) {
-			str.append((int) by).append(" ");
+			str.append(by & 0xFF).append(" ");
 		}
 		StringBuilder sb = new StringBuilder();
 		for (byte b : portChange) {
-			sb.append(String.format("%02X ", b));
+			sb.append(String.format("%02X ", b & 0xFF));
 		}
 		str.append("[ ").append(sb).append("]");
 		return str.toString();
@@ -209,7 +209,7 @@ public class MidiUtils {
 	public static String formatBytesHexOnly(byte[] portChange) {
 		StringBuilder sb = new StringBuilder();
 		for (byte b : portChange) {
-			sb.append(String.format("%02X ", b));
+			sb.append(String.format("%02X ", b & 0xFF));
 		}
 		return sb.toString();
 	}
@@ -357,12 +357,16 @@ public class MidiUtils {
             str += ", Channel="+shorty.getChannel();
         } else if (m instanceof SysexMessage sysex) {
             str += "Sysex";
-            if (sysex.getMessage()[1] == MidiConstants.SYSEX_UNIVERSAL_REALTIME) {
+            byte[] sysexMsg = sysex.getMessage();
+            if (sysexMsg == null || sysexMsg.length < 2) {
+                str += " (Malformed or Empty)";
+                return str;
+            }
+            if (sysexMsg[1] == MidiConstants.SYSEX_UNIVERSAL_REALTIME) {
                 str += ", Realtime";
-            } else if (sysex.getMessage()[1] == MidiConstants.SYSEX_UNIVERSAL_NON_REALTIME) {
+            } else if (sysexMsg[1] == MidiConstants.SYSEX_UNIVERSAL_NON_REALTIME) {
                 str += ", Non-Realtime";
             }
-            byte[] sysexMsg = sysex.getMessage();
             if (isSysexLyrics(sysexMsg)) {
                 str += ", Lyrics";
             }
@@ -370,8 +374,7 @@ public class MidiUtils {
                 str += ", GM Reset";
             } else if (isResetGS(sysexMsg, false)) {
                 str += ", GS Reset";
-                byte[] data = sysex.getData();
-                byte generation = data[data.length -3];
+                byte generation = sysexMsg[8];
                 str += ". Generation="+switch(generation) {
                     case 0x00 -> "SC-55 (Standard GS Reset)";
                     case 0x01 -> "SC-88";
@@ -379,12 +382,11 @@ public class MidiUtils {
                     case 0x03 -> "SC-8820";
                     case 0x04 -> "SC-8850";
                     case 0x05 -> "SD-90 / SD-80";
-                    default -> "Unknown (0x"+String.format("%02X", generation)+")";
+                    default -> "Unknown (0x"+String.format("%02X", generation & 0xFF)+")";
                 };
             } else if (isResetGS(sysexMsg, true)) {
                 str += ", GS System Mode Set";
-                byte[] data = sysex.getData();
-                byte generation = data[data.length -3];
+                byte generation = sysexMsg[8];
                 str += ". Generation="+switch(generation) {
                     case 0x00 -> "SC-55 (Standard GS Reset)";
                     case 0x01 -> "SC-88";
@@ -392,7 +394,7 @@ public class MidiUtils {
                     case 0x03 -> "SC-8820";
                     case 0x04 -> "SC-8850";
                     case 0x05 -> "SD-90 / SD-80";
-                    default -> "Unknown (0x"+String.format("%02X", generation)+")";
+                    default -> "Unknown (0x"+String.format("%02X", generation & 0xFF)+")";
                 };
             } else if (isResetXG(sysexMsg)) {
                 str += ", XG Reset";
@@ -403,7 +405,7 @@ public class MidiUtils {
                         && (sysexMsg[3] & 0xFF) == 0x4C && (sysexMsg[4] & 0xFF) == 0x08
                         && (sysexMsg[6] & 0xFF) == 0x07 && (sysexMsg[8] & 0xFF) == 0xF7) {
                     String type = "Normal";
-                    if (sysexMsg[5] < 16) {
+                    if ((sysexMsg[5] & 0xFF) < 16) {
                         // From Tyros 1 data doc: part10=0x02, other parts=0x00. Korg EX-20 say this is channel.
                         // TODO: Drum Setup Reset sysex.
                         // Sure looks like Korg has it correct, at least for pre Tyros XG standard.
@@ -416,18 +418,18 @@ public class MidiUtils {
                         } else {
                             type = "Invalid setup: " + sysexMsg[7];
                         }
-                        str += ", XG setting channel #" + sysexMsg[5] + " to " + type;
+                        str += ", XG setting channel #" + (sysexMsg[5] & 0xFF) + " to " + type;
                     } else {
-                        str += ", XG drum setup fail, " + formatBytesHexOnly(sysex.getMessage());
+                        str += ", XG drum setup fail, " + formatBytesHexOnly(sysexMsg);
                     }
                 } else if (sysexMsg.length == 9 && (sysexMsg[0] & 0xFF) == 0xF0 && (sysexMsg[1] & 0xFF) == 0x43
                         && (sysexMsg[3] & 0xFF) == 0x4C && (sysexMsg[4] & 0xFF) == 0x08 && (sysexMsg[8] & 0xFF) == 0xF7) {
                     String bank = sysexMsg[6] == 1 ? "MSB"
                             : (sysexMsg[6] == 2 ? "LSB" : (sysexMsg[6] == 3 ? "Patch" : ""));
-                    if (!"".equals(bank) && sysexMsg[5] < 16 && sysexMsg[5] >= 0
-                            && sysexMsg[7] < 128 && sysexMsg[7] >= 0) {
+                    if (!"".equals(bank) && (sysexMsg[5] & 0xFF) < 16
+                            && (sysexMsg[7] & 0xFF) < 128) {
                         str += ", XG Select "+bank+" "+sysexMsg[7]+ " on Channel " + sysexMsg[5];
-                    } else if (sysexMsg[5] < 16 && sysexMsg[5] >= 0) {
+                    } else if ((sysexMsg[5] & 0xFF) < 16) {
                         int paramAddress = sysexMsg[6] & 0xFF;
                         String paramName = switch(paramAddress) {
                             // --- Basic Setup ---
@@ -473,9 +475,9 @@ public class MidiUtils {
                             default -> String.format("Unknown Parameter [0x%02X]", paramAddress);
                         };
                         str += String.format(", XG Channel %d %s set to %d",
-                                (sysexMsg[5]), paramName, sysexMsg[7]);
+                                (sysexMsg[5] & 0xFF), paramName, sysexMsg[7] & 0xFF);
                     } else {
-                        str += ", XG unknown param, " + formatBytesHexOnly(sysex.getMessage());
+                        str += ", XG unknown param, " + formatBytesHexOnly(sysexMsg);
                     }
                 } else if (sysexMsg.length == 11 && (sysexMsg[0] & 0xFF) == 0xF0 && (sysexMsg[1] & 0xFF) == 0x41
                         && (sysexMsg[3] & 0xFF) == 0x42 && (sysexMsg[4] & 0xFF) == 0x12 && (sysexMsg[5] & 0xFF) == 0x40
@@ -496,7 +498,7 @@ public class MidiUtils {
                             str += ", GS unsets channel "+(channel)+" to drums.";
                         }
                     } else {
-                        str += ", GS failed to set a channel to drums. sysexMsg[6]=" + String.format("0x%02X",sysexMsg[6]);
+                        str += ", GS failed to set a channel to drums. sysexMsg[6]=" + String.format("0x%02X",sysexMsg[6] & 0xFF);
                     }
                 } else if (sysexMsg.length == 11 && (sysexMsg[0] & 0xFF) == 0xF0 && (sysexMsg[1] & 0xFF) == 0x41
                         && (sysexMsg[3] & 0xFF) == 0x42 && (sysexMsg[4] & 0xFF) == 0x12
@@ -519,16 +521,16 @@ public class MidiUtils {
 
                     str += ", XG Drum Part Protect mode " + (sysexMsg[7] == 0 ? "OFF" : "ON");
                 } else if (sysexMsg.length == 9 && (sysexMsg[0] & 0xFF) == 0xF0 && (sysexMsg[1] & 0xFF) == 0x43
-                        && (sysexMsg[3] & 0xFF) == 0x4C && (sysexMsg[4] & 0xF0) == 0x30 && (sysexMsg[8] & 0xFF) == 0xF7) {
+                        && (sysexMsg[3] & 0xFF) == 0x4C && ((sysexMsg[4] & 0xFF) & 0xF0) == 0x30 && (sysexMsg[8] & 0xFF) == 0xF7) {
 
-                    int drumSetup = (sysexMsg[4] & 0x0F) + 1; // 30 is Setup 1, 31 is Setup 2
+                    int drumSetup = ((sysexMsg[4] & 0xFF) & 0x0F) + 1; // 30 is Setup 1, 31 is Setup 2
                     int noteNum = sysexMsg[5] & 0xFF;
                     int paramAddress = sysexMsg[6] & 0xFF;
                     int value = sysexMsg[7] & 0xFF;
 
                     String drumName = "Note " + noteNum;
 
-                    String paramName = switch(paramAddress) {
+                    String paramName = switch (paramAddress) {
                         case 0x00 -> "Pitch Coarse";
                         case 0x01 -> "Pitch Fine";
                         case 0x02 -> "Level";
@@ -549,14 +551,81 @@ public class MidiUtils {
                     };
 
                     str += String.format(", XG Drum Setup %d (%s) %s set to %d", drumSetup, drumName, paramName, value);
+                } else if (sysexMsg.length == 8
+                            && (sysexMsg[0] & 0xFF) == 0xF0
+                            && (sysexMsg[1] & 0xFF) == 0x7F
+                            && (sysexMsg[3] & 0xFF) == 0x04
+                            && (sysexMsg[7] & 0xFF) == 0xF7) {
+
+                    if ((sysexMsg[4] & 0xFF) == 0x01) {
+                        // 14-bit value: 0x2000 (8192) represents standard center pitch (A440)
+                        int fineTune = (sysexMsg[5] & 0xFF) | ((sysexMsg[6] & 0xFF) << 7);
+                        double cents = ((fineTune - 8192) / 8192.0) * 100.0;
+                        str += String.format(", Universal Master Fine Tuning: %.2f cents (Raw: %d)", cents, fineTune);
+                    } else if ((sysexMsg[4] & 0xFF) == 0x02) {
+                        // 0x40 (64) represents 0 semitones relative change
+                        int coarseTune = sysexMsg[6] & 0xFF;
+                        int semitones = coarseTune - 64;
+                        str += String.format(", Universal Master Coarse Tuning: %d semitones (Raw: %d)", semitones, coarseTune);
+                    }
+                } else if (sysexMsg.length == 9 && (sysexMsg[0] & 0xFF) == 0xF0 && (sysexMsg[1] & 0xFF) == 0x43
+                        && (sysexMsg[3] & 0xFF) == 0x4C
+                        && (sysexMsg[4] & 0xFF) == 0x00 && (sysexMsg[5] & 0xFF) == 0x00 && (sysexMsg[6] & 0xFF) == 0x00
+                        && (sysexMsg[8] & 0xFF) == 0xF7) {
+
+                    str += ", XG System Master Tune Command";
+                } else if (sysexMsg.length == 11 && (sysexMsg[0] & 0xFF) == 0xF0 && (sysexMsg[1] & 0xFF) == 0x41
+                        && (sysexMsg[3] & 0xFF) == 0x42 && (sysexMsg[4] & 0xFF) == 0x12
+                        && (sysexMsg[5] & 0xFF) == 0x40 && (sysexMsg[6] & 0xFF) == 0x00 && (sysexMsg[7] & 0xFF) == 0x00
+                        && (sysexMsg[10] & 0xFF) == 0xF7) {
+
+                    str += ", GS System Master Tune Command";
+                } else if (sysexMsg.length == 11 && (sysexMsg[0] & 0xFF) == 0xF0 && (sysexMsg[1] & 0xFF) == 0x41
+                        && (sysexMsg[3] & 0xFF) == 0x42 && (sysexMsg[4] & 0xFF) == 0x12
+                        && (sysexMsg[5] & 0xFF) == 0x40 && (sysexMsg[6] & 0xFF) == 0x01 && (sysexMsg[10] & 0xFF) == 0xF7) {
+
+                    int param = sysexMsg[7] & 0xFF;
+                    int macroId = sysexMsg[8] & 0xFF;
+                    if (param == 0x30) {
+                        String revType = switch(macroId) {
+                            case 0 -> "Room 1"; case 1 -> "Room 2"; case 2 -> "Room 3";
+                            case 3 -> "Hall 1"; case 4 -> "Hall 2"; case 5 -> "Plate";
+                            case 6 -> "Delay";  case 7 -> "Panning Delay";
+                            default -> "Unknown";
+                        };
+                        str += ", GS Reverb Macro set to Type: " + revType;
+                    } else if (param == 0x38) {
+                        String choType = switch(macroId) {
+                            case 0 -> "Chorus 1"; case 1 -> "Chorus 2"; case 2 -> "Chorus 3";
+                            case 3 -> "Chorus 4"; case 4 -> "Feedback Chorus"; case 5 -> "Flanger";
+                            case 6 -> "Short Delay"; case 7 -> "Short Delay (FB)";
+                            default -> "Unknown";
+                        };
+                        str += ", GS Chorus Macro set to Type: " + choType;
+                    }
+                } else if (sysexMsg.length == 9 && (sysexMsg[0] & 0xFF) == 0xF0 && (sysexMsg[1] & 0xFF) == 0x43
+                        && (sysexMsg[3] & 0xFF) == 0x4C && (sysexMsg[4] & 0xFF) == 0x02 && (sysexMsg[5] & 0xFF) == 0x01
+                        && (sysexMsg[8] & 0xFF) == 0xF7) {
+
+                    int typeAddress = sysexMsg[6] & 0xFF;
+                    int typeValue = sysexMsg[7] & 0xFF;
+                    if (typeAddress == 0x00) {
+                        str += String.format(", XG Global Reverb Type MSB set to: %d", typeValue);
+                    } else if (typeAddress == 0x01) {
+                        str += String.format(", XG Global Reverb Type LSB set to: %d", typeValue);
+                    } else if (typeAddress == 0x20) {
+                        str += String.format(", XG Global Chorus Type MSB set to: %d", typeValue);
+                    } else if (typeAddress == 0x21) {
+                        str += String.format(", XG Global Chorus Type LSB set to: %d", typeValue);
+                    }
                 } else if (sysexMsg.length >= 9 && (sysexMsg[0] & 0xFF) == 0xF0 && (sysexMsg[1] & 0xFF) == 0x43
                         && (sysexMsg[3] & 0xFF) == 0x4C) {
                     // We know it's XG
                     str += String.format(", XG SysEx [Block 0x%02X]: %s",
-                            sysexMsg[4], MidiUtils.formatBytesHexOnly(sysexMsg));
+                            sysexMsg[4] & 0xFF, MidiUtils.formatBytesHexOnly(sysexMsg));
                 } else {
                     // take note of difference of midi (7 bit unsigned) vs. java (8 bit signed):
-                    str += ", " + formatBytesHexOnly(sysex.getMessage());
+                    str += ", " + formatBytesHexOnly(sysexMsg);
                 }
             }
         } else if (m instanceof MetaMessage meta) {
