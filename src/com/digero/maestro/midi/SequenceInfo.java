@@ -564,14 +564,14 @@ public class SequenceInfo implements MidiConstants {
 						boolean toDrums = message[8] == 1 || message[8] == 2;
 						int channel = -1;
 						int part = message[6] & 0xFF;
-						if (part == 16) {
+						if (part == CHANNEL_COUNT) {
 							channel = DRUM_CHANNEL;
 						} else if (part > 25 && part < 32) {
-							channel = message[6] - 16;
+							channel = part - 16;
 						} else if (part > 16 && part < 26) {
 							channel = part - 17;
 						}
-						if (channel != -1 && channel < 16) {
+						if (channel != -1 && channel < CHANNEL_COUNT) {
 							if (toDrums) {
 								// System.err.println("Roland GS sets channel "+(channel+1)+" to drums.");
 							} else {
@@ -584,27 +584,29 @@ public class SequenceInfo implements MidiConstants {
 							&& (message[4] & 0xFF) == 0x08 && (message[6] & 0xFF) == 0x07
 							&& (message[8] & 0xFF) == 0xF7) {
 						String type = "Normal";
-						if (message[5] < 16) {
+						int channel = message[5] & 0xFF;
+						int setup = message[7] & 0xFF;
+						if (channel < CHANNEL_COUNT) {
 							// From Tyros 1 data doc: part10=0x02, other parts=0x00. Korg EX-20 say this is channel.
 							// TODO: Drum Setup Reset sysex.
 							// Sure looks like Korg has it correct, at least for pre Tyros XG standard.
-							if (message[7] == 0) {
+							if (setup == 0) {
 								type = "Normal";
-								putYamahaDrum(currentPort, message[5], false);
-							} else if (message[7] == 1) {
+								putYamahaDrum(currentPort, channel, false);
+							} else if (setup == 1) {
 								type = "Drums";
-								putYamahaDrum(currentPort, message[5], true);
-							} else if (message[7] > 1 && message[7] <= 5) {
-								type = "Drums Setup " + (message[7] - 1);
-								putYamahaDrum(currentPort, message[5], true);
+								putYamahaDrum(currentPort, channel, true);
+							} else if (setup > 1 && setup <= 5) {
+								type = "Drums Setup " + (setup - 1);
+								putYamahaDrum(currentPort, channel, true);
 							} else {
-								type = "Invalid setup: " + message[7];
+								type = "Invalid setup: " + setup;
 							}
-							log.fine("Yamaha XG setting channel #"+message[5]+" to "+type);
+							log.fine("Yamaha XG setting channel #"+channel+" to "+type);
 
-							if (usingNewMidiLayout >= 1 && message[7] <= 5) {
+							if (usingNewMidiLayout >= 1 && setup <= 5) {
 								boolean isDrum = "Drums".equals(type) || type.startsWith("Drums Setup");
-								yamahaDrumSwitches.get(currentPort).get(message[5]).put(evt.getTick(), isDrum);
+								yamahaDrumSwitches.get(currentPort).get(channel).put(evt.getTick(), isDrum);
 
 								PatchEntry entry = bankAndPatchTrack.get(evt.getTick());
 								if (entry == null) {
@@ -619,14 +621,14 @@ public class SequenceInfo implements MidiConstants {
 
 									// MSB
 									ShortMessage fakeMsb = new ShortMessage();
-									fakeMsb.setMessage(ShortMessage.CONTROL_CHANGE, message[5], BANK_SELECT_MSB, msbValue);
+									fakeMsb.setMessage(ShortMessage.CONTROL_CHANGE, channel, BANK_SELECT_MSB, msbValue);
 									MidiEvent msbEvt = new MidiEvent(fakeMsb, evt.getTick());
 									phantomEvents.add(msbEvt);
 									entry.bank.add(msbEvt);
 
 									// Standard Kit / Grand Piano
 									ShortMessage fakePc = new ShortMessage();
-									fakePc.setMessage(ShortMessage.PROGRAM_CHANGE, message[5], 0, 0);
+									fakePc.setMessage(ShortMessage.PROGRAM_CHANGE, channel, 0, 0);
 									MidiEvent pcEvt = new MidiEvent(fakePc, evt.getTick());
 									phantomEvents.add(pcEvt);
 									entry.patch.add(pcEvt);
@@ -760,15 +762,16 @@ public class SequenceInfo implements MidiConstants {
 						byte[] message = sysex.getMessage();
 						// we already know that this sysex is a XG bank/patch/mode change, so no need for if statement.
 						String bank = "";
-						if (message[6] == 1) bank = "MSB";
-						else if (message[6] == 2) bank = "LSB";
-						else if (message[6] == 3) bank = "Patch";
-						else if (message[6] == 7) bank = "ChannelMode";
+						int addressType = message[6] & 0xFF;
+						if (addressType == 1) bank = "MSB";
+						else if (addressType == 2) bank = "LSB";
+						else if (addressType == 3) bank = "Patch";
+						else if (addressType == 7) bank = "ChannelMode";
 
-						if (!bank.isEmpty() && message[5] < 16 && message[5] >= 0 && message[7] < 128 && message[7] >= 0) {
+						int ch = message[5] & 0xFF;
+						if (!bank.isEmpty() && ch < CHANNEL_COUNT && message[7] < 128 && message[7] >= 0) {
 							// System.err.println(fileName+": Yamaha XG Sysex "+bank+" set to "+message[7]+" for channel
 							// "+message[5]);
-							int ch = message[5];
 							if ("ChannelMode".equals(bank)) {
 								if (usingNewMidiLayout >= 1) {
 									if (message[7] > 0) {
