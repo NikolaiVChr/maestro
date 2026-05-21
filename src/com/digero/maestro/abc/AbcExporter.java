@@ -44,6 +44,14 @@ public class AbcExporter {
     private boolean upgraded = false;
 	private static final int MAX_RAID = 24; // Max number of parts that in any case can be played in lotro
 
+    /*
+        bouncingEnabled is only for multi-stage 2
+        If two note starts are 45 to 60 ms apart (arpeggio), keep the arpeggio instead of forcing them into
+        block chord as createGrid() would do. The new arpegio will be 60 ms instead, but thats barely noticable.
+        However only do it if there is not another note start within first note + 120 ms.
+     */
+    private boolean bouncingEnabled = true;
+
 	private final List<AbcPart> parts;
 	private final AbcMetadataSource metadata;
 	private QuantizedTimingInfo qtm;
@@ -3993,13 +4001,6 @@ public class AbcExporter {
 
         //System.err.println("createGridVersion3: maxSustainBuffer="+maxSustainBuffer+" maxSustain="+maxSustain+" minPreferredSustain="+minPreferredSustain+" minSustain="+minSustain+" sustained="+sustained);
 
-        /*
-            If two note starts are 30 to 60 ms apart (arpeggio), keep the arpeggio instead of forcing them into
-            block chord as createGrid() would do. The new arpegio will be 60 ms instead, but thats barely noticable.
-            However only do it if there is not another note start within first note + 120 ms.
-         */
-        final boolean bouncingEnabled = true;
-
 
         // Using maps first to sum weights of coincident events
         Map<Long, Candidate3> startCandidates = new HashMap<>();
@@ -4064,6 +4065,12 @@ public class AbcExporter {
 
         for (int i = 0; i < candidates.size(); i++) {
             Candidate3 c = candidates.get(i);
+
+            if (c.notes.isEmpty()) {
+                // backward gracenote bounce might have removed all notes from c
+                continue;
+            }
+
             long time = c.micros;
 
             GridPoint3 searchKey = new GridPoint3(time, 0, 0);
@@ -4156,6 +4163,24 @@ public class AbcExporter {
 
                     if (isOkToBounceBackward && isValidBounce3(bounceTime, time, minimumMicros, grid, c.weight, false, firstMicros)) {
                         applyBounce3(grid, bounceTime, c, minimumMicros, ceil.bounceDepth() + 1);
+
+                        for (AbcNoteEvent note : c.notes) {
+                            if (note.initEndABCMicros <= ceil.micros()) {
+                                // No original overlap with main note
+                                Candidate3 endCand = endCandidates.get(note.endABCMicros);
+
+                                // Stop gracenote(s) from having their own end candidate
+                                // put their endings into main notes candidate instead.
+                                if (endCand != null) {
+                                    endCand.notes.remove(note);
+                                }
+                                note.endABCMicros = ceil.micros(); // Snap end to main note start
+                                ceil.ends.add(note);
+                            }
+                            // If note.initEndABCMicros > ceil.micros(), we leave it untouched
+                            // to preserve the intentional overlap.
+                        }
+
                         lastCrushedTime = -1;
                     } else {
                         // mark it for deletion by moving it to negative infinity.
@@ -7274,6 +7299,9 @@ public class AbcExporter {
         }
 	}
 
+    /**
+     * Master bool for organic enabled
+     */
 	public void setOrganic(boolean org) {
 		organic = org;
 	}
@@ -7281,7 +7309,11 @@ public class AbcExporter {
 	public boolean isOrganic() {		
 		return organic;
 	}
-	
+
+    /**
+     * Enable multi-stage
+     * Only has meaning if organic is true
+     */
 	public void setOrganic2(boolean org) {
 		organic2 = org;
 	}
@@ -7290,6 +7322,19 @@ public class AbcExporter {
 		return organic2;
 	}
 
+    /**
+     * Enable multi-stage 2 bouncing
+     * Only has meaning if organic, upgraded and multistage is true
+     * Default is true.
+     */
+    public void setBouncingEnabled(boolean bouncingEnabled) {
+        this.bouncingEnabled = bouncingEnabled;
+    }
+
+    /**
+     * Enable multi-stage 2
+     * Only has meaning if organic and multistage is true
+     */
     public boolean isUpgraded() {
         return upgraded;
     }

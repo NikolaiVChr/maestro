@@ -92,6 +92,8 @@ class AbcExporterTest {
                 false, 
                 true
         );
+
+        exporter.setBouncingEnabled(true);// we test bouncing, so it needs to be enabled
         
         // 5. Inject the QTM into exporter (just to be sure, though constructor set it)
         Field qtmField = AbcExporter.class.getDeclaredField("qtm");
