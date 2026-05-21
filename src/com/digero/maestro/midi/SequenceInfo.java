@@ -167,7 +167,7 @@ public class SequenceInfo implements MidiConstants {
 				System.out.printf("Tick %08d: %s\n",evt.getTick(), MidiUtils.midiMessageToString(evt.getMessage()));
 			}
 		}
-		 */
+		*/
 
 		determineStandard(sequence, fileName);
 
@@ -205,7 +205,7 @@ public class SequenceInfo implements MidiConstants {
 					sequenceCache.isGM2DrumsTrack(i), miscSettings, oldVelocities, ignoreMidiText, usingNewMidiLayout));
 		}
 
-		/*
+/*
 		// debug seq part 2:
 		System.out.println("  PPQ resolution="+this.sequence.getResolution());
 		Track[] trcks2 = this.sequence.getTracks();
@@ -215,11 +215,11 @@ public class SequenceInfo implements MidiConstants {
 			System.out.println("\nTrack "+track+":");
 			for (int j = 0; j < t.size(); j++) {
 				MidiEvent evt = t.get(j);
-				if (evt.getTick() > 100_000L) break;
+				if (evt.getTick() > 10_000L) break;
 				System.out.printf("Tick %08d: %s\n",evt.getTick(), MidiUtils.midiMessageToString(evt.getMessage()));
 			}
 		}
-		 */
+*/
 
 
 		composer = "";
@@ -1091,6 +1091,7 @@ public class SequenceInfo implements MidiConstants {
 					portEvent = evt;
 					byte[] data = meta.getData();
 					if (data.length > 0) port = data[0] & 0xFF;
+					if (port > 127) log.warning(fileName+": Port number out of range: "+port+". File might not be interpreted correctly.");
 					break;
 				}
 			}
@@ -1393,7 +1394,7 @@ public class SequenceInfo implements MidiConstants {
 					if (!silence) break;
 				}
 				if (silence) {
-					log.warning("Quarter song is empty, will delete all after the empty starts.");
+					log.warning(fileName+": Quarter song is empty, will delete all after the empty starts.");
 				} else {
 					earlyEndTick = tick;
 				}
