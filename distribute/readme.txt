@@ -56,7 +56,7 @@ Changelog
 This changelog is only partial, to see all the way back to v1.0.0 go here:
   https://maestro.miraheze.org/wiki/Version_history
 
-Version 4.6.15
+Version 4.6.16
 - No more vertically scale notes in drum/fx panels.
 - Added leading-edge note color markers to distinguish sequential notes.
 - Made default timing setting in options (for newly installed Maestro apps) be Organic Single-stage instead of Mix timings.
@@ -71,6 +71,7 @@ Version 4.6.15
 - Prevent XG and GS device volume commands from being sent to the midi player, as that will change maestros master volume, which the user should control.
 - Exporting expanded midi now put xg, gs and gm2 drum tracks onto new ports so they can be assigned to GM midi 10th channel, and windows midi player can figure out to play at least standard drumkit from them.
 - Plus exporting expanded midi now convert XG sysex bank/patch changes into regular midi control changes. This will allow for better support of playing the expanded midi with own custom sf2
+- Better grace-note handling in org multi-stage 2. If it did not overlap before backwards bounce, it now also wont after.
 - Added support for custom soundfont for playback of midi.
   Name it: midi.sf2
   Put it in:
