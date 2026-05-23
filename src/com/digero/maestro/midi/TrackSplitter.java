@@ -171,7 +171,7 @@ public class TrackSplitter {
 					int channel = shortMsg.getChannel();
 					targetChannel = channel;
 
-					String pKey = port + ":" + channel+":"+oldTrackNumber;
+					String pKey = port + ":" + channel + ":" + oldTrackNumber;
 					boolean hasExtDrum = extensionDrumPorts.containsKey(pKey);
 
 					if (hasExtDrum && channel != MidiConstants.DRUM_CHANNEL) {
@@ -221,7 +221,7 @@ public class TrackSplitter {
 					// If not associated with an instrument, then it is put in track 0, where we
 					// keep all the meta, sysex, bank changes and normal program changes..
 					if (instr != null && !instr.isEmpty()) {
-						String trackID = targetPort+":"+targetChannel+":"+instr;
+						String trackID = targetPort+":"+instr;
 						Track newTrack = newTracks.get(trackID);
 						if (newTrack == null) {
 							newTrack = expandedSequence.createTrack();
