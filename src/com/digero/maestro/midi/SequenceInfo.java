@@ -156,6 +156,7 @@ public class SequenceInfo implements MidiConstants {
 		/*
 		// debug seq part 1:
 		System.out.println("PPQ resolution="+sequence.getResolution());
+		System.out.println("  Before processing");
 		Track[] trcks = sequence.getTracks();
 		for (int track = 0; track < trcks.length; track++) {
 			//if (track != 0 && track != 24) continue;
@@ -207,7 +208,7 @@ public class SequenceInfo implements MidiConstants {
 
 /*
 		// debug seq part 2:
-		System.out.println("  PPQ resolution="+this.sequence.getResolution());
+		System.out.println("  After processing");
 		Track[] trcks2 = this.sequence.getTracks();
 		for (int track = 0; track < trcks2.length; track++) {
 			if (track != 0 && track != 1 && track != 2 && track != 13) continue;
@@ -301,7 +302,7 @@ public class SequenceInfo implements MidiConstants {
 						}
 					} else if (meta.getType() == META_PORT_NAME) {
 						byte[] data = meta.getData();
-						log.info("Named port: " + (new String(data)));
+						log.warning(fileName+": Named port " + new String(data));//abc tools also use this line, no icu in jar, so dont call charset analyser.
 					}
 				}
 			}

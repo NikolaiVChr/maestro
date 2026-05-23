@@ -21,14 +21,16 @@ public class Pair<T1, T2> {
 		if (!(obj instanceof Pair<?, ?> that))
 			return false;
 
-        return (Objects.equals(this.first, that.first)) && (Objects.equals(this.second, that.second));
+        return Objects.equals(this.first, that.first) && Objects.equals(this.second, that.second);
 	}
 
 	@Override
 	public int hashCode() {
-		int hash = (first == null) ? 0 : first.hashCode();
-		if (second != null)
-			hash ^= Integer.rotateLeft(second.hashCode(), Integer.SIZE / 2);
-		return hash;
+		return Objects.hash(first, second);
+	}
+
+	@Override
+	public String toString() {
+		return "(" + first + ", " + second + ")";
 	}
 }

@@ -21,7 +21,7 @@ import com.digero.common.midi.MidiUtils;
 import com.digero.common.midi.ITempoCache;
 import com.digero.common.midi.TimeSignature;
 import com.digero.common.util.LyricLine;
-import com.digero.common.util.Quad;
+import com.digero.common.util.Quint;
 import com.digero.common.util.Util;
 import com.digero.maestro.abc.TimingInfo;
 
@@ -40,11 +40,11 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	private final MapByChannelPort instruments = new MapByChannelPort(DEFAULT_INSTRUMENT);
 	private final MapByChannelPort channelVolume = new MapByChannelPort(DEFAULT_CHANNEL_VOLUME);
 	private final MapByChannelPort expression = new MapByChannelPort(DEFAULT_EXPRESSION);
-	private final MapByChannelPort pitchBendRangeCoarse = new MapByChannelPort(DEFAULT_PITCH_BEND_RANGE_SEMITONES);
-	private final MapByChannelPort pitchBendRangeFine = new MapByChannelPort(DEFAULT_PITCH_BEND_RANGE_CENTS);
+	private final MapByChannelPortMsg pitchBendRangeCoarse = new MapByChannelPortMsg(DEFAULT_PITCH_BEND_RANGE_SEMITONES);
+	private final MapByChannelPortMsg pitchBendRangeFine = new MapByChannelPortMsg(DEFAULT_PITCH_BEND_RANGE_CENTS);
 	private final MapByChannelPort bendMap;
-	private final MapByChannelPort rpnLSBMap = new MapByChannelPort(DEFAULT_RPN_NULL);
-	private final MapByChannelPort rpnMSBMap = new MapByChannelPort(DEFAULT_RPN_NULL);
+	private final MapByChannelPortMsg rpnLSBMap = new MapByChannelPortMsg(DEFAULT_RPN_NULL);
+	private final MapByChannelPortMsg rpnMSBMap = new MapByChannelPortMsg(DEFAULT_RPN_NULL);
 	private final MapByChannelPort panMap;
 	private final MapByChannelPort mapMSB = new MapByChannelPort(0);
 	private final MapByChannelPort mapLSB = new MapByChannelPort(0);
@@ -107,7 +107,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		 * This among other things we will find out by iterating through all MidiEvents.
 		 * 
 		 */
-		List<Quad<Integer, Integer, Long, Double>> pitchWheelMap = new ArrayList<>();
+		List<Quint<Integer, Integer, Long, Long, Double>> pitchWheelMap = new ArrayList<>();
 		panMap = new MapByChannelPort(PAN_CENTER);
 		Track[] tracks = song.getTracks();
 		long lastTick = 0L;
@@ -128,18 +128,18 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 								case REGISTERED_PARAMETER_NUMBER_MSB:
 									int valueMSB = shortMsg.getData2();
 									if (valueMSB > 127) log.warning("RPN MSB out of bounds and will be ignored: port=" + port + ", ch=" + ch + ", tick=" + tick + ", value=" + valueMSB);
-									else rpnMSBMap.put(port, ch, tick, valueMSB);
+									else rpnMSBMap.put(port, ch, tick, jj, valueMSB);
 									break;
 								case REGISTERED_PARAMETER_NUMBER_LSB:
 									int valueLSB = shortMsg.getData2();
 									if (valueLSB > 127) log.warning("RPN LSB out of bounds and will be ignored: port=" + port + ", ch=" + ch + ", tick=" + tick + ", value=" + valueLSB);
-									else rpnLSBMap.put(port, ch, tick, valueLSB);
+									else rpnLSBMap.put(port, ch, tick, jj, valueLSB);
 									break;
 								case RESET_ALL_CONTROLLERS:
 									if (tick > 0L) {
 										String str = "";
-										int rl = rpnLSBMap.get(port, ch, tick);
-										int rm = rpnMSBMap.get(port, ch, tick);
+										int rl = rpnLSBMap.get(port, ch, tick, jj);
+										int rm = rpnMSBMap.get(port, ch, tick, jj);
 										int p = (usingNewMidiLayout >= 1) ? port : 0;
 										int ex = expression.get(p, ch, tick);
 										boolean changingStuff = (usingNewMidiLayout > 0 && ex != 127);// too much hassle to detect if bend wheel was active. rl != 127 || rm != 127 ||
@@ -177,14 +177,14 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 							//       Therefore the specCompliant bool stops it from happening.
 							//       In future versions, this behavior may be configurable.
 							for (int ch = 0; ch < CHANNEL_COUNT_ABC; ch++) {
-								rpnLSBMap.put(port, ch, tick, DEFAULT_RPN_NULL);
-								rpnMSBMap.put(port, ch, tick, DEFAULT_RPN_NULL);
+								rpnLSBMap.put(port, ch, tick, jj, DEFAULT_RPN_NULL);
+								rpnMSBMap.put(port, ch, tick, jj, DEFAULT_RPN_NULL);
 								expression.put(port, ch, tick, DEFAULT_EXPRESSION);
 								channelVolume.put(port, ch, tick, DEFAULT_CHANNEL_VOLUME);
 								panMap.put(port, ch, tick, PAN_CENTER);
-								pitchWheelMap.add(new Quad<>(port, ch, tick, 0.0d));
-								pitchBendRangeCoarse.put(port, ch, tick, DEFAULT_PITCH_BEND_RANGE_SEMITONES);
-								pitchBendRangeFine.put(port, ch, tick, DEFAULT_PITCH_BEND_RANGE_CENTS);
+								pitchWheelMap.add(new Quint<>(port, ch, tick, (long)jj,0.0d));
+								pitchBendRangeCoarse.put(port, ch, tick, jj, DEFAULT_PITCH_BEND_RANGE_SEMITONES);
+								pitchBendRangeFine.put(port, ch, tick, jj, DEFAULT_PITCH_BEND_RANGE_CENTS);
 								if (MidiStandard.GM == standard && isResetGM) {
 									// This has issues. What if there is a GM reset in the middle
 									// of a GS file? This will reset the patch, which is not ideal.
@@ -203,7 +203,14 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 			for (int iTrack = 0; iTrack < tracks.length; iTrack++) {
 				Track track = tracks[iTrack];
 				int port = portMap.get(iTrack);
+
+				// message index jj. It does not decrease when removing a tempo event from the track,
+				// as it should be in sync with pass 1 jj.
+				// PS: These tempo movements to track 0 only works, cause fixuptracklength runs before trackInfo.
+				//     Consider in future to make a pre pass to pass 1 that does that movement. So jj is more stable downstream.
+				int jj = -1;
 				for (int j = 0, sz = track.size(); j < sz; j++) {
+					jj++;
 					MidiEvent evt = track.get(j);
 					MidiMessage msg = evt.getMessage();
 					long tick = evt.getTick();
@@ -277,19 +284,19 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 								expression.put(p, ch, tick, Math.clamp(shortMsg.getData2(), 0, 127));
 								break;
 							case DATA_ENTRY_COARSE:
-								if (getRPN(port, ch, tick) == REGISTERED_PARAM_PITCH_BEND_RANGE) {
+								if (getRPN(port, ch, tick, jj) == REGISTERED_PARAM_PITCH_BEND_RANGE) {
 									if (shortMsg.getData2() > 127) {
 										log.warning(fileName + "; Channel " + ch + " Port " + port + ": Clamping coarse pitch bend wheel range out of bounds: " + shortMsg.getData2()+" semitones");
 									}
-									pitchBendRangeCoarse.put(port, ch, tick, Math.clamp(shortMsg.getData2(), 0, 127));
+									pitchBendRangeCoarse.put(port, ch, tick, jj, Math.clamp(shortMsg.getData2(), 0, 127));
 								}
 								break;
 							case DATA_ENTRY_FINE:
-								if (getRPN(port, ch, tick) == REGISTERED_PARAM_PITCH_BEND_RANGE) {
+								if (getRPN(port, ch, tick, jj) == REGISTERED_PARAM_PITCH_BEND_RANGE) {
 									if (shortMsg.getData2() > 99) {
 										log.info(fileName + "; Channel " + ch + " Port " + port + ": Clamping fine pitch bend wheel range out of bounds: " + shortMsg.getData2()+" cents.");
 									}
-									pitchBendRangeFine.put(port, ch, tick, Math.clamp(shortMsg.getData2(), 0, 99));
+									pitchBendRangeFine.put(port, ch, tick, jj, Math.clamp(shortMsg.getData2(), 0, 99));
 								}
 								break;
 							case DATA_BUTTON_INCREMENT:
@@ -297,9 +304,9 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 								//       data button changes spread across tracks can cause unintended values.
 								//       Its an unlikely scenario, and I have never even seen a data button change being used in any midi.
 								//       To fix it, can make a treemap of changes, and apply them after the loop.
-								if (getRPN(port, ch, tick) == REGISTERED_PARAM_PITCH_BEND_RANGE) {
-									int currentFine = pitchBendRangeFine.get(port, ch, tick);
-									int currentCoarse = pitchBendRangeCoarse.get(port, ch, tick);
+								if (getRPN(port, ch, tick, jj) == REGISTERED_PARAM_PITCH_BEND_RANGE) {
+									int currentFine = pitchBendRangeFine.get(port, ch, tick, jj);
+									int currentCoarse = pitchBendRangeCoarse.get(port, ch, tick, jj);
 
 									currentFine++;
 
@@ -308,20 +315,20 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 										if (currentCoarse < 127) {
 											currentFine = 0;
 											currentCoarse++;
-											pitchBendRangeCoarse.put(port, ch, tick, currentCoarse);
+											pitchBendRangeCoarse.put(port, ch, tick, jj, currentCoarse);
 										} else {
 											// Hard clamp at the absolute maximum (127 semitones, 99 cents)
 											currentFine = 99;
 										}
 									}
 									log.fine("DATA_BUTTON_INCREMENT for pitch bend detected.");
-									pitchBendRangeFine.put(port, ch, tick, currentFine);
+									pitchBendRangeFine.put(port, ch, tick, jj, currentFine);
 								}
 								break;
 							case DATA_BUTTON_DECREMENT:
-								if (getRPN(port, ch, tick) == REGISTERED_PARAM_PITCH_BEND_RANGE) {
-									int currentFine2 = pitchBendRangeFine.get(port, ch, tick);
-									int currentCoarse2 = pitchBendRangeCoarse.get(port, ch, tick);
+								if (getRPN(port, ch, tick, jj) == REGISTERED_PARAM_PITCH_BEND_RANGE) {
+									int currentFine2 = pitchBendRangeFine.get(port, ch, tick, jj);
+									int currentCoarse2 = pitchBendRangeCoarse.get(port, ch, tick, jj);
 
 									currentFine2--;
 
@@ -330,14 +337,14 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 										if (currentCoarse2 > 0) {
 											currentFine2 = 99;
 											currentCoarse2--;
-											pitchBendRangeCoarse.put(port, ch, tick, currentCoarse2);
+											pitchBendRangeCoarse.put(port, ch, tick, jj, currentCoarse2);
 										} else {
 											// Hard clamp at absolute minimum (0 semitones, 0 cents)
 											currentFine2 = 0;
 										}
 									}
 
-									pitchBendRangeFine.put(port, ch, tick, currentFine2);
+									pitchBendRangeFine.put(port, ch, tick, jj, currentFine2);
 									log.fine("DATA_BUTTON_DECREMENT for pitch bend detected.");
 								}
 								break;
@@ -392,7 +399,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 							value1 = Math.clamp(value1,0,127);
 							value2 = Math.clamp(value2,0,127);
 							double pct = 2.0d * (((value1 | (value2 << 7)) / (double) (1 << 14)) - 0.5d);
-							pitchWheelMap.add(new Quad<>(port, ch, tick, pct));
+							pitchWheelMap.add(new Quint<>(port, ch, tick, (long)jj, pct));
 							// Notice we put in the bend even if its a repeat of same bend.
 							// Reason is that later on another track there might get put some
 							// bends in between them.
@@ -598,8 +605,8 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		// We do this after the main iteration so that the
 		// getPitchBendRange has been fully built.
 		bendMap = new MapByChannelPort(0);
-		for (Quad<Integer, Integer, Long, Double> raw : pitchWheelMap) {
-			int semiToneBend = (int) Math.round(raw.fourth * getPitchBendRange(raw.first, raw.second, raw.third));
+		for (Quint<Integer, Integer, Long, Long, Double> raw : pitchWheelMap) {
+			int semiToneBend = (int) Math.round(raw.fifth * getPitchBendRange(raw.first, raw.second, raw.third, raw.fourth));
 			bendMap.put(raw.first, raw.second, raw.third, semiToneBend);
 		}
 
@@ -617,9 +624,9 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		if (!ignoreMidiText && standard != MidiStandard.ABC) log.info("Lyrics stats: "+midiText.getTextStats());
 	}
 
-	private int getRPN(int port, int channel, long tick) {
-		int msb = rpnMSBMap.get(port, channel, tick);
-		int lsb = rpnLSBMap.get(port, channel, tick);
+	private int getRPN(int port, int channel, long tick, long index) {
+		int msb = rpnMSBMap.get(port, channel, tick, index);
+		int lsb = rpnLSBMap.get(port, channel, tick, index);
 		if (msb != DEFAULT_RPN_NULL && lsb == DEFAULT_RPN_NULL) {// && rpnLSBMap.getEntries(channel,0L, tick).isEmpty()
 			log.severe(fileName+": Channel "+channel+", RPN being utilized while LSB is default (NULL)! Using effective value of 0 LSB.");
 			lsb = 0;
@@ -734,8 +741,8 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		return expression.get(p, channel, tick);
 	}
 
-	public double getPitchBendRange(int port, int channel, long tick) {
-		return pitchBendRangeCoarse.get(port, channel, tick) + (pitchBendRangeFine.get(port, channel, tick) / 100.0d);
+	private double getPitchBendRange(int port, int channel, long tick, long index) {
+		return pitchBendRangeCoarse.get(port, channel, tick, index) + (pitchBendRangeFine.get(port, channel, tick, index) / 100.0d);
 	}
 
     /**
@@ -1030,7 +1037,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	}
 
 	/**
-	 * Map by channel
+	 * Map by channel and port
 	 */
 	protected static class MapByChannelPort {
 		private final NavigableMap<Long, Integer>[][] map;
@@ -1087,6 +1094,89 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 				return NO_RESULT;
 
 			return entry.getKey();
+		}
+	}
+
+	protected static class MsgKey implements Comparable<MsgKey> {
+		final long tick;
+		final long index;
+
+		public MsgKey(long tick, long index) {
+			this.tick = tick;
+			this.index = index;
+		}
+
+		@Override
+		public int compareTo(MsgKey o) {
+			int tickCompare = Long.compare(this.tick, o.tick);
+			if (tickCompare != 0) {
+				return tickCompare;
+			}
+			return Long.compare(this.index, o.index);
+		}
+	}
+
+	/**
+	 * Map by channel, port and message index
+	 */
+	protected static class MapByChannelPortMsg {
+		private final NavigableMap<MsgKey, Integer>[][] map;
+		private final int defaultValue;
+
+		@SuppressWarnings("unchecked") //
+		public MapByChannelPortMsg(int defaultValue) {
+			map = new NavigableMap[PORT_COUNT][CHANNEL_COUNT_ABC];
+			this.defaultValue = defaultValue;
+		}
+
+		public void put(int port, int channel, long tick, long index, Integer value) {
+			if (map[port][channel] == null)
+				map[port][channel] = new TreeMap<>();
+
+			map[port][channel].put(new MsgKey(tick, index), value);
+		}
+
+		public void putIfAbsent(int port, int channel, long tick, long index, Integer value) {
+			if (map[port][channel] == null)
+				map[port][channel] = new TreeMap<>();
+
+			map[port][channel].putIfAbsent(new MsgKey(tick, index), value);
+		}
+
+		public int get(int port, int channel, long tick, long index) {
+			if (map[port][channel] == null)
+				return defaultValue;
+
+			Entry<MsgKey, Integer> entry = map[port][channel].floorEntry(new MsgKey(tick, index));
+			if (entry == null)
+				return defaultValue;
+
+			return entry.getValue();
+		}
+
+		/**
+		 * Each entry is <MsgKey, bend>
+		 *
+		 */
+		public Set<Entry<MsgKey, Integer>> getEntries(int port, int channel, long fromTick, long toTick) {
+			if (map[port][channel] == null)
+				return new HashSet<>();
+			SortedMap<MsgKey, Integer> subMap = map[port][channel].subMap(
+					new MsgKey(fromTick, 0L),
+					new MsgKey(toTick, 0L)
+			);
+			return subMap.entrySet();
+		}
+
+		public long getEntryTick(int port, int channel, long tick, long index) {
+			if (map[port][channel] == null)
+				return NO_RESULT;
+
+			Entry<MsgKey, Integer> entry = map[port][channel].floorEntry(new MsgKey(tick, index));
+			if (entry == null)
+				return NO_RESULT;
+
+			return entry.getKey().tick;
 		}
 	}
 	

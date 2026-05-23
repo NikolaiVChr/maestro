@@ -18,17 +18,17 @@ public class Triple<T1, T2, T3> {
 		if (!(obj instanceof Triple<?, ?, ?> that))
 			return false;
 
-        return (Objects.equals(this.first, that.first)) && (Objects.equals(this.second, that.second))
-				&& (Objects.equals(this.third, that.third));
+        return Objects.equals(this.first, that.first) && Objects.equals(this.second, that.second)
+				&& Objects.equals(this.third, that.third);
 	}
 
 	@Override
 	public int hashCode() {
-		int hash = (first == null) ? 0 : first.hashCode();
-		if (second != null)
-			hash ^= Integer.rotateLeft(second.hashCode(), Integer.SIZE / 2);
-		if (third != null)
-			hash ^= Integer.rotateLeft(third.hashCode(), Integer.SIZE / 2);
-		return hash;
+		return Objects.hash(first, second, third);
+	}
+
+	@Override
+	public String toString() {
+		return "(" + first + ", " + second + ", " + third + ")";
 	}
 }

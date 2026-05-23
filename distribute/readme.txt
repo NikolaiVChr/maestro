@@ -56,7 +56,7 @@ Changelog
 This changelog is only partial, to see all the way back to v1.0.0 go here:
   https://maestro.miraheze.org/wiki/Version_history
 
-Version 4.6.16
+Version 4.6.17
 - No more vertically scale notes in drum/fx panels.
 - Added leading-edge note color markers to distinguish sequential notes.
 - Made default timing setting in options (for newly installed Maestro apps) be Organic Single-stage instead of Mix timings.
