@@ -164,7 +164,7 @@ public class SequenceInfo implements MidiConstants {
 			System.out.println("\nTrack "+track+":");
 			for (int j = 0; j < t.size(); j++) {
 				MidiEvent evt = t.get(j);
-				if (evt.getTick() > 100_000L) break;
+				//if (evt.getTick() > 100_000L) break;
 				System.out.printf("Tick %08d: %s\n",evt.getTick(), MidiUtils.midiMessageToString(evt.getMessage()));
 			}
 		}
@@ -211,12 +211,12 @@ public class SequenceInfo implements MidiConstants {
 		System.out.println("  After processing");
 		Track[] trcks2 = this.sequence.getTracks();
 		for (int track = 0; track < trcks2.length; track++) {
-			if (track != 0 && track != 1 && track != 2 && track != 13) continue;
+			//if (track != 0 && track != 1 && track != 2 && track != 13) continue;
 			Track t = trcks2[track];
 			System.out.println("\nTrack "+track+":");
 			for (int j = 0; j < t.size(); j++) {
 				MidiEvent evt = t.get(j);
-				if (evt.getTick() > 10_000L) break;
+				//if (evt.getTick() > 10_000L) break;
 				System.out.printf("Tick %08d: %s\n",evt.getTick(), MidiUtils.midiMessageToString(evt.getMessage()));
 			}
 		}

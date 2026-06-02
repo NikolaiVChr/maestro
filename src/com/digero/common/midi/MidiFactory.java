@@ -59,6 +59,52 @@ public class MidiFactory implements MidiConstants {
 		}
 	}
 
+	public static MidiEvent createPitchBendEvent(int lsb, int msb, int channel, long ticks) {
+		try {
+			ShortMessage msg = new ShortMessage();
+			msg.setMessage(ShortMessage.PITCH_BEND, channel, lsb, msb);
+			return new MidiEvent(msg, ticks);
+		} catch (InvalidMidiDataException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	/**
+	 * From -100 to +100 percent
+	 */
+	public static MidiEvent createPitchBendEvent(int percent, int channel, long ticks) {
+		try {
+			ShortMessage msg = new ShortMessage();
+			int[] values = fromPercentage(percent);
+			msg.setMessage(ShortMessage.PITCH_BEND, channel, values[0], values[1]);
+			return new MidiEvent(msg, ticks);
+		} catch (InvalidMidiDataException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	static int[] fromPercentage(double percentage) {
+		// Loophole Protection: Strict clamping to prevent out-of-bounds bit shifting
+		if (percentage > 100.0) percentage = 100.0;
+		if (percentage < -100.0) percentage = -100.0;
+
+		int midi14BitValue;
+
+		if (percentage >= 0.0) {
+			// Upward headroom is exactly 8191 steps (16383 - 8192)
+			midi14BitValue = 8192 + (int) Math.round((percentage / 100.0) * 8191.0);
+		} else {
+			// Downward headroom is exactly 8192 steps (8192 - 0)
+			midi14BitValue = 8192 + (int) Math.round((percentage / 100.0) * 8192.0);
+		}
+
+		// Extract the 7-bit data halves
+		int lsb = midi14BitValue & 0x7F;        // Lower 7 bits (data1)
+		int msb = (midi14BitValue >> 7) & 0x7F; // Upper 7 bits (data2)
+
+		return new int[] { lsb, msb };
+	}
+
 	public static MidiMessage createAllNotesOff(int channel) {
 		try {
 			LotroShortMessage msg = new LotroShortMessage();

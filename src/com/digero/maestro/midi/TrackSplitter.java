@@ -77,16 +77,20 @@ public class TrackSplitter {
 				for (int i = 0; i < t.size(); i++) {
 					MidiMessage msg = t.get(i).getMessage();
 					if (msg instanceof ShortMessage shortMsg) {
-						int ch = shortMsg.getChannel();
-						if (isDrumsTrack(oldTrackNumber)) {
-							String pKey = p + ":" + ch+ ":" + oldTrackNumber;
-							if (!extensionDrumPorts.containsKey(pKey)) {
-								extensionDrumPorts.put(pKey, freePort);
-								activePorts.add(freePort);
-								while (activePorts.contains(freePort)) freePort++;
+						int cmd = shortMsg.getCommand();
+						int vel = shortMsg.getData2();
+						if (cmd == ShortMessage.NOTE_ON && vel > 0) {
+							int ch = shortMsg.getChannel();
+							if (ch != MidiConstants.DRUM_CHANNEL) {
+								String pKey = p + ":" + ch + ":" + oldTrackNumber;
+								if (!extensionDrumPorts.containsKey(pKey)) {
+									extensionDrumPorts.put(pKey, freePort);
+									activePorts.add(freePort);
+									while (activePorts.contains(freePort)) freePort++;
+								}
 							}
+							break; // We found the channel for this track, move to the next track
 						}
-						break; // We found the channel for this track, move to the next track
 					}
 				}
 			}
@@ -174,75 +178,108 @@ public class TrackSplitter {
 					String pKey = port + ":" + channel + ":" + oldTrackNumber;
 					boolean hasExtDrum = extensionDrumPorts.containsKey(pKey);
 
-					if (hasExtDrum && channel != MidiConstants.DRUM_CHANNEL) {
-						targetPort = extensionDrumPorts.get(pKey);
-						targetChannel = MidiConstants.DRUM_CHANNEL; // Force to Ch 10
+					List<String> pKeys = new ArrayList<>();
+					if (hasExtDrum) {
+						pKeys.add(pKey);
+					}
 
-						// Rewrite the binary message for Channel 10
-						try {
-							ShortMessage newMsg = new ShortMessage();
-							newMsg.setMessage(cmd, targetChannel, shortMsg.getData1(), shortMsg.getData2());
-							evt = new MidiEvent(newMsg, tick);
-							shortMsg = newMsg; // Update local msg for downstream routing
-						} catch (InvalidMidiDataException e) {
-							log.warning("Failed to rewrite drum channel.");
+					// If this specific track doesn't claim the drum channel, but it's an initialization
+					// track (like Track 0), check if any other track turned this channel into drums.
+					if (!hasExtDrum && oldTrackNumber == 0 && cmd != ShortMessage.NOTE_OFF && cmd != ShortMessage.NOTE_ON) {
+						String cPrefix = port + ":" + channel + ":";
+						for (Map.Entry<String, Integer> entry : extensionDrumPorts.entrySet()) {
+							if (entry.getKey().startsWith(cPrefix)) {
+								pKeys.add(entry.getKey());
+								hasExtDrum = true;
+							}
 						}
+					}
+
+					Map<MidiEvent, Integer> evts = new HashMap<>();
+
+					if (hasExtDrum && channel != MidiConstants.DRUM_CHANNEL) {
+						for (String pKey2 : pKeys) {
+							targetPort = extensionDrumPorts.get(pKey2);
+							targetChannel = MidiConstants.DRUM_CHANNEL; // Force to 10th Ch
+
+							// Rewrite the binary message for 10th channel
+							try {
+								ShortMessage newMsg = new ShortMessage();
+								newMsg.setMessage(cmd, targetChannel, shortMsg.getData1(), shortMsg.getData2());
+								evt = new MidiEvent(newMsg, tick);
+								evts.put(evt, targetPort);
+							} catch (InvalidMidiDataException e) {
+								log.warning("Failed to rewrite drum channel.");
+							}
+						}
+					} else {
+						evts.put(evt, targetPort);
 					}
 
 					if (pendingChannelPrefix != null) {
 						pendingChannelPrefix = null;
 					}
 
-					if (cmd == ShortMessage.NOTE_OFF || cmd == ShortMessage.NOTE_ON) {
-						instr = handleEvent(oldTrackNumber, notesOn, port, tick, channel, cmd, shortMsg);
-						// if (instr == null) System.out.println("instr==null "+on);
-						// if ("".equals(instr)) System.out.println("instr=='' "+on);
-						if (instr == null) {
-							continue evtIter;
-						}
-					} else if (cmd == ShortMessage.PROGRAM_CHANGE ||
-							(cmd == ShortMessage.CONTROL_CHANGE && (shortMsg.getData1() == MidiConstants.BANK_SELECT_MSB || shortMsg.getData1() == MidiConstants.BANK_SELECT_LSB))) {
-						// If this event was shifted to Channel 10, vaporize all Bank Selects!
-						//if (targetChannel == MidiConstants.DRUM_CHANNEL && cmd == ShortMessage.CONTROL_CHANGE) {
-						//	continue evtIter; // Drop the MSB/LSB completely!
-						//}
-						initTracksByPort.get(targetPort).add(evt);
-						continue evtIter;
-					} else {
-						// Identify instrument for Control Change, Pitch Bend, and standard Program Changes
-						// So they go into the Instrument Track instead of the NON-META track.
-						instr = fetchInstrName(tick, channel, port, oldTrackNumber);
-					}
+					for (MidiEvent event : evts.keySet()) {
+						ShortMessage shortMsg2 = (ShortMessage) event.getMessage();
+						targetPort = evts.get(event);
+						if (cmd == ShortMessage.NOTE_OFF || cmd == ShortMessage.NOTE_ON) {
+							instr = handleEvent(oldTrackNumber, notesOn, port, tick, channel, cmd, shortMsg2);
+							// if (instr == null) System.out.println("instr==null "+on);
+							// if ("".equals(instr)) System.out.println("instr=='' "+on);
+							if (instr == null) {
+								continue;
+							}
+						} else if (cmd == ShortMessage.PROGRAM_CHANGE ||
+								(cmd == ShortMessage.CONTROL_CHANGE && (shortMsg2.getData1() == MidiConstants.BANK_SELECT_MSB || shortMsg2.getData1() == MidiConstants.BANK_SELECT_LSB))) {
+							// If this event was shifted to 10th channel, remove all Bank Selects!
+							//if (targetChannel == MidiConstants.DRUM_CHANNEL && cmd == ShortMessage.CONTROL_CHANGE) {
+							//	continue evtIter; // Drop the MSB/LSB completely!
+							//}
+							initTracksByPort.get(targetPort).add(event);
+							continue;
+						} else {
 
-					// Lets put the midi event in its new track. If we determined its tied to an
-					// instrument,
-					// then we place it in one of the new tracks, which each represent an
-					// instrument.
-					// If not associated with an instrument, then it is put in track 0, where we
-					// keep all the meta, sysex, bank changes and normal program changes..
-					if (instr != null && !instr.isEmpty()) {
-						String trackID = targetPort+":"+instr;
-						Track newTrack = newTracks.get(trackID);
-						if (newTrack == null) {
-							newTrack = expandedSequence.createTrack();
-							newTrack.add(MidiFactory.createTrackNameEvent(oldTrackName + " : " + trackCounter));
-                            //if (oldEndOfTrack != null) newTrack.add(MidiFactory.createEndOfTrackEvent(oldEndOfTrack.getTick()));
-
-							// We put the port change in every one of the new tracks if the old had it.
-							MidiEvent evtPort = MidiFactory.createPortEvent(targetPort);
-							if (evtPort != null) {
-								newTrack.add(evtPort);
-							} else {
-								log.severe("Failed to create port event when expanding midi");
-								return null;
+							if (oldTrackNumber == 0) {
+								initTracksByPort.get(targetPort).add(event);
+								continue;
 							}
 
-							trackCounter += 1;
-							newTracks.put(trackID, newTrack);
+							// Identify instrument for Control Change, Pitch Bend, and standard Program Changes
+							// So they go into the Instrument Track instead of the NON-META track.
+							instr = fetchInstrName(tick, channel, port, oldTrackNumber);
 						}
-						newTrack.add(evt);
-					} else {
-						initTracksByPort.get(targetPort).add(evt);
+
+						// Lets put the midi event in its new track. If we determined its tied to an
+						// instrument,
+						// then we place it in one of the new tracks, which each represent an
+						// instrument.
+						// If not associated with an instrument, then it is put in track 0, where we
+						// keep all the meta, sysex, bank changes and normal program changes..
+						if (instr != null && !instr.isEmpty()) {
+							String trackID = targetPort + ":" + instr;
+							Track newTrack = newTracks.get(trackID);
+							if (newTrack == null) {
+								newTrack = expandedSequence.createTrack();
+								newTrack.add(MidiFactory.createTrackNameEvent(oldTrackName + " : " + trackCounter));
+								//if (oldEndOfTrack != null) newTrack.add(MidiFactory.createEndOfTrackEvent(oldEndOfTrack.getTick()));
+
+								// We put the port change in every one of the new tracks if the old had it.
+								MidiEvent evtPort = MidiFactory.createPortEvent(targetPort);
+								if (evtPort != null) {
+									newTrack.add(evtPort);
+								} else {
+									log.severe("Failed to create port event when expanding midi");
+									return null;
+								}
+
+								trackCounter += 1;
+								newTracks.put(trackID, newTrack);
+							}
+							newTrack.add(event);
+						} else {
+							initTracksByPort.get(targetPort).add(event);
+						}
 					}
 				} else {
                     if (msg instanceof MetaMessage metaMsg) {
@@ -250,6 +287,8 @@ public class TrackSplitter {
 
 						if (type == MidiConstants.META_PORT_CHANGE) {
 							// Ignore old port events!
+						} else if (type == MidiConstants.META_TRACK_NAME) {
+							// Ignore original sub-track names
 						} else if (type == MidiConstants.META_CHANNEL_PREFIX) {
 							// store the prefix
 							pendingChannelPrefix = evt;
@@ -332,47 +371,55 @@ public class TrackSplitter {
 								&& (message[4] & 0xFF) == 0x08 && (message[6] & 0xFF) < 4 && (message[6] & 0xFF) > 0
 								&& (message[8] & 0xFF) == 0xF7 && (message[5] & 0xFF) < 16;
 
-						if (isXGSysexPatch) {
+						if (isXGSysexPatch && standard == MidiStandard.XG) {
 							int ch = message[5] & 0xFF;
 							int param = message[6] & 0xFF;
 							int value = message[7] & 0xFF;
 
-							int transPort = port;
-							int transChannel = ch;
+							String globalPrefix = port + ":" + ch + ":";
+							boolean multiCastHandled = false;
 
-							// Check if this channel was funneled into a new port by loop 1
-							String hKey = port + ":" + ch+":"+oldTrackNumber;
-							if (extensionDrumPorts.containsKey(hKey)) {
-								transPort = extensionDrumPorts.get(hKey);
-								transChannel = MidiConstants.DRUM_CHANNEL;
+							// Scan the entire registry to find every extra port spawned by this channel
+							for (Map.Entry<String, Integer> entry : extensionDrumPorts.entrySet()) {
+								if (entry.getKey().startsWith(globalPrefix)) {
+									int transPort = entry.getValue();
+									int transChannel = MidiConstants.DRUM_CHANNEL; // Force to 10th Ch
+									multiCastHandled = true;
+
+									try {
+										ShortMessage translatedMsg = null;
+										if (param == 1) { // Bank Select MSB
+											translatedMsg = new ShortMessage();
+											translatedMsg.setMessage(ShortMessage.CONTROL_CHANGE, transChannel, MidiConstants.BANK_SELECT_MSB, value);
+										} else if (param == 2) { // Bank Select LSB
+											translatedMsg = new ShortMessage();
+											translatedMsg.setMessage(ShortMessage.CONTROL_CHANGE, transChannel, MidiConstants.BANK_SELECT_LSB, value);
+										} else if (param == 3) { // Program Change
+											translatedMsg = new ShortMessage();
+											translatedMsg.setMessage(ShortMessage.PROGRAM_CHANGE, transChannel, value, 0);
+										}
+
+										if (translatedMsg != null) {
+											initTracksByPort.get(transPort).add(new MidiEvent(translatedMsg, tick));
+										}
+									} catch (InvalidMidiDataException e) {
+										log.warning("Failed to translate XG SysEx to ShortMessage.");
+									}
+								}
 							}
 
-							try {
-								ShortMessage translatedMsg = null;
-
-								if (param == 1) { // 0x01 = Bank Select MSB
-									// Do not send MSB 127 to the drum channel
-									//if (!(transChannel == MidiConstants.DRUM_CHANNEL && value == 127)) {
-										translatedMsg = new ShortMessage(ShortMessage.CONTROL_CHANGE, transChannel, MidiConstants.BANK_SELECT_MSB, value);
-									//}
-								} else if (param == 2) { // 0x02 = Bank Select LSB
-									// do not use LSB on drums
-									//if (transChannel != MidiConstants.DRUM_CHANNEL) {
-										translatedMsg = new ShortMessage(ShortMessage.CONTROL_CHANGE, transChannel, MidiConstants.BANK_SELECT_LSB, value);
-									//}
-								} else if (param == 3) { // 0x03 = Program Change
-									translatedMsg = new ShortMessage(ShortMessage.PROGRAM_CHANGE, transChannel, value, 0);
+							if (multiCastHandled) {
+								if (pendingChannelPrefix != null) {
+									pendingChannelPrefix = null;
 								}
-
-								if (translatedMsg != null) {
-									if (pendingChannelPrefix != null) {
-										pendingChannelPrefix = null;
-									}
-									initTracksByPort.get(transPort).add(new MidiEvent(translatedMsg, tick));
+								continue evtIter; // Event fully dispersed across all target ports
+							} else {
+								// No extensions matched; write to the native port initialization track
+								if (pendingChannelPrefix != null) {
+									initTracksByPort.get(port).add(pendingChannelPrefix);
+									pendingChannelPrefix = null;
 								}
-
-							} catch (InvalidMidiDataException e) {
-								log.warning("Failed to translate XG SysEx to ShortMessage.");
+								initTracksByPort.get(port).add(evt);
 							}
 						} else {
 							if (pendingChannelPrefix != null) {
