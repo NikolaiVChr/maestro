@@ -298,7 +298,7 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 						}
 					}
 					// turn off all notes, but keep them instead of discarding them like old days.
-					for (int ch = 0; ch < MidiConstants.CHANNEL_COUNT; ch++) {
+					for (int ch = 0; ch < MidiConstants.CHANNEL_COUNT_ABC; ch++) {
 						for (int pitch = 0 ; pitch < 128 ; pitch++) {
                             MidiNoteEvent ne = activeNotes[ch][pitch];
                             if (ne != null) {
