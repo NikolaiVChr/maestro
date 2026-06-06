@@ -177,9 +177,13 @@ public class SequenceInfo implements MidiConstants {
 		// Aifel: changed order so that XG drums in middle of a track from a type 0 gets separated out
 		boolean wasType0 = convertToType1(sequence);
 
-        this.sequence = separateDrumTracks(sequence);// Beware: Do not refer to param sequence after this line
+        this.sequence = separateDrumTracks(sequence);// Beware: Do not refer to param 'sequence' after this line
 
-		boolean hasPorts = buildPortMap(sequence);//fixupTrackLength2 needs portMap
+		hasPorts = buildPortMap();//fixupTrackLength2 needs portMap
+
+		if (usingNewMidiLayout >= 1) {
+        	normalizeOverlappingVoices(this.sequence);
+ 		}
 
 		if (usingNewMidiLayout == 0) {
 			realDuraTicks = fixupTrackLength1(this.sequence);
@@ -276,9 +280,9 @@ public class SequenceInfo implements MidiConstants {
 
 	}
 
-	private boolean buildPortMap(Sequence seq) {
+	private boolean buildPortMap() {
 		Track[] tracks = this.sequence.getTracks();
-		boolean hasPorts = false;
+		boolean havePorts = false;
 		for (int iiTrack = 0; iiTrack < tracks.length; iiTrack++) {
 			// Build a map of ports now that the tracks are settled.
 			Track track = tracks[iiTrack];
@@ -296,7 +300,7 @@ public class SequenceInfo implements MidiConstants {
 						if (portChange.length == 1) {
 							port = (int) portChange[0] & 0xFF;
 							log.fine("Port change on track " + iiTrack + ", tick " + tick + ", port " + port);
-							hasPorts = true;
+							havePorts = true;
 							portMap.put(iiTrack, port);
 							break;
 						}
@@ -307,7 +311,163 @@ public class SequenceInfo implements MidiConstants {
 				}
 			}
 		}
-		return hasPorts;
+		return havePorts;
+	}
+
+	/**
+	 * Enforces monophonic-per-(port, channel, pitch) voice semantics so that every
+	 * NOTE_ON is matched by a NOTE_OFF on the same track before TrackInfo scans.
+	 *
+	 * A MIDI synth has one voice per (port, channel, pitch): a second NOTE_ON without
+	 * an intervening NOTE_OFF just retriggers that voice. But tracks are processed
+	 * per-track by TrackInfo, so two tracks sharing a (port, channel) -- the channel-10
+	 * tracks produced by drum separation, or type-1 files that reuse a channel -- can
+	 * each hold the same pitch concurrently, which the synth never does. This pass
+	 * inserts the NOTE_OFFs that resolve those collisions and closes any still-open
+	 * note at its track's effective end.
+	 *
+	 * After this runs, fixupTrackLength2 can no longer leak active-note state across a
+	 * dead track, because there are no never-closed notes left.
+	 *
+	 * Active only for usingNewMidiLayout >= 1: it changes note durations for
+	 * channel-sharing tracks, so it belongs to the new-layout contract.
+	 */
+	private void normalizeOverlappingVoices(Sequence song) {
+		Track[] tracks = song.getTracks();
+		if (tracks.length == 0) {
+			return;
+		}
+
+		// Effective end of each track: its first EOT, or its last event if it has none.
+		// We treat events past this point the way TrackInfo does (drop them), and we
+		// close any voice still owned by the track at this tick.
+		long[] closeAt = new long[tracks.length];
+		for (int t = 0; t < tracks.length; t++) {
+			long minEot = Long.MAX_VALUE;
+			long maxTick = 0L;
+			Track track = tracks[t];
+			for (int j = 0, sz = track.size(); j < sz; j++) {
+				MidiEvent evt = track.get(j);
+				long tick = evt.getTick();
+				if (tick > maxTick) {
+					maxTick = tick;
+				}
+				if (MidiUtils.isMetaEndOfTrack(evt.getMessage()) && tick < minEot) {
+					minEot = tick;
+				}
+			}
+			closeAt[t] = (minEot != Long.MAX_VALUE) ? minEot : maxTick;
+		}
+
+		// A mergeable view of the only events that affect voicing.
+		// kind also serves as the equal-tick tie-break, so OFFs and EOTs are processed
+		// before ONs at the same tick (a real OFF must free the voice before a foreign
+		// ON at that tick is judged a collision).
+		record VEvent(long tick, int kind, int trackIdx, int channel, int pitch) {}
+
+		// The order of the numbers here matters for tiebreaking
+		final int KIND_OFF = 0;
+		final int KIND_EOT = 1;
+		final int KIND_ON = 2;
+
+		List<VEvent> events = new ArrayList<>();
+		for (int t = 0; t < tracks.length; t++) {
+			Track track = tracks[t];
+			long end = closeAt[t];
+			for (int j = 0, sz = track.size(); j < sz; j++) {
+				MidiEvent evt = track.get(j);
+				long tick = evt.getTick();
+				if (tick > end) {
+					continue; // past the track's effective end; TrackInfo would drop it
+				}
+				if (evt.getMessage() instanceof ShortMessage sm) {
+					int cmd = sm.getCommand();
+					if (cmd == ShortMessage.NOTE_OFF || (cmd == ShortMessage.NOTE_ON && sm.getData2() == 0)) {
+						events.add(new VEvent(tick, KIND_OFF, t, sm.getChannel(), sm.getData1()));
+					} else if (cmd == ShortMessage.NOTE_ON && tick < end) {
+						// A NOTE_ON exactly at the close tick is zero-duration; skip it
+						// (TrackInfo would discard it anyway) so no voice is left open.
+						events.add(new VEvent(tick, KIND_ON, t, sm.getChannel(), sm.getData1()));
+					}
+				}
+			}
+			// Synthetic close for this track (covers both real-EOT and no-EOT cases).
+			events.add(new VEvent(end, KIND_EOT, t, 0, 0));
+		}
+
+		events.sort(Comparator
+				.comparingLong(VEvent::tick)
+				.thenComparingInt(VEvent::kind)
+				.thenComparingInt(VEvent::trackIdx));
+
+		// voice key -> owning track index, plus a reverse index so a close is O(owned).
+		Map<Long, Integer> owner = new HashMap<>();
+		List<Set<Long>> ownedByTrack = new ArrayList<>(tracks.length);
+		for (int t = 0; t < tracks.length; t++) {
+			ownedByTrack.add(new HashSet<>());
+		}
+
+		record OffToInsert(int trackIdx, long tick, int channel, int pitch) {}
+		List<OffToInsert> offs = new ArrayList<>();
+
+		for (VEvent ve : events) {
+			if (ve.kind() == KIND_EOT) {
+				// Track end: close every voice this track still owns, at this tick.
+				Set<Long> owned = ownedByTrack.get(ve.trackIdx());
+				for (long key : owned) {
+					offs.add(new OffToInsert(ve.trackIdx(), ve.tick(), channelOf(key), pitchOf(key)));
+					owner.remove(key);
+				}
+				owned.clear();
+				continue;
+			}
+
+			int port = portMap.getOrDefault(ve.trackIdx(), 0);
+			long key = voiceKey(port, ve.channel(), ve.pitch());
+			Integer curTrack = owner.get(key);
+
+			if (ve.kind() == KIND_OFF) {
+				// OFF: any NOTE_OFF for this voice closes the single owner.
+				if (curTrack != null) {
+					if (curTrack != ve.trackIdx()) {
+						// The off landed on a different track than the on; close the real
+						// owner. The off on ve.trackIdx is dangling and TrackInfo drops it.
+						offs.add(new OffToInsert(curTrack, ve.tick(), ve.channel(), ve.pitch()));
+					}
+					ownedByTrack.get(curTrack).remove(key);
+					owner.remove(key);
+				}
+				// curTrack == null: dangling off, no matching on; leave it for TrackInfo.
+			} else {
+				// ON: if another track holds this voice, preempt it at this tick.
+				if (curTrack != null && curTrack != ve.trackIdx()) {
+					offs.add(new OffToInsert(curTrack, ve.tick(), ve.channel(), ve.pitch()));
+					ownedByTrack.get(curTrack).remove(key);
+				}
+				// curTrack == ve.trackIdx() is a same-track retrigger; TrackInfo already closes
+				// the previous note at this tick, so nothing is inserted for it.
+				owner.put(key, ve.trackIdx());
+				ownedByTrack.get(ve.trackIdx()).add(key);
+			}
+		}
+
+		// Apply the offs after the scan so we never mutate a track while reading it.
+		for (OffToInsert off : offs) {
+			MidiEvent me = MidiFactory.createNoteOffEventEx(off.pitch(), off.channel(), 0, off.tick());
+			tracks[off.trackIdx()].add(me);
+		}
+	}
+
+	private static long voiceKey(int port, int channel, int pitch) {
+		return ((long) port << 16) | ((long) channel << 8) | pitch;
+	}
+
+	private static int channelOf(long key) {
+		return (int) ((key >> 8) & 0xFF);
+	}
+
+	private static int pitchOf(long key) {
+		return (int) (key & 0xFF);
 	}
 
     public List<ExportTrackInfo> getLastTrackInfos() {
@@ -467,7 +627,7 @@ public class SequenceInfo implements MidiConstants {
 		Track[] tracks = seq.getTracks();
 		long lastResetTick = Long.MIN_VALUE;
 		Map<Integer, TreeMap<Long, PatchEntry>> portBankAndPatchTrack = new HashMap<>();
-
+		boolean isSingleTrack = tracks.length == 1;
 
 		// System.err.println("\nDetermineStandard:");
 
@@ -484,6 +644,15 @@ public class SequenceInfo implements MidiConstants {
 				MidiMessage msg = evt.getMessage();
 				if (evt.getTick() > 0L) break;
 				if (msg instanceof MetaMessage meta && meta.getType() == META_PORT_CHANGE) {
+					if (isSingleTrack && usingNewMidiLayout > 0) {
+                        try {
+							// For single-track midi files we force the port to zero.
+							// Solves several issues later on
+                            meta.setMessage(META_PORT_CHANGE, new byte[]{0}, 1);
+                        } catch (InvalidMidiDataException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
 					byte[] data = meta.getData();
 					if (data.length > 0) currentPort = data[0] & 0xFF;
 				}
@@ -1262,7 +1431,6 @@ public class SequenceInfo implements MidiConstants {
                         // Chromatic note on ch10. Split it into new track.
                         noteTrack.add(evt);
                         moved = true;
-                        assert drumsGM == 1 : "GM drum note snuck into ch10 chromatic track!";
                     }
                 }
 
@@ -1377,8 +1545,8 @@ public class SequenceInfo implements MidiConstants {
 			if (trackDead[pe.trackIdx] < tick) continue;
 			if (MidiUtils.isMetaEndOfTrack(evt.getMessage())) {
 				trackDead[pe.trackIdx] = tick;
-				// EOT only extends the song if specific track has hanging notes
 				if (trackActiveNotes[pe.trackIdx] > 0) {
+					// EOT only extends the song if specific track has hanging notes
 					endTick = Math.max(endTick, tick);
 				}
 				continue;
