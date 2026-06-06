@@ -89,7 +89,6 @@ public class TrackSplitter {
 									while (activePorts.contains(freePort)) freePort++;
 								}
 							}
-							break; // We found the channel for this track, move to the next track
 						}
 					}
 				}
@@ -127,9 +126,9 @@ public class TrackSplitter {
 					if (type == MidiConstants.META_TRACK_NAME) {
 						byte[] data = meta.getData();
 						String tmp = MidiUtils.decodeMidiText(data).trim();
-						if (!tmp.isEmpty()) {
+						if (!tmp.isEmpty() && oldTrackName.isEmpty()) {
 							oldTrackName = tmp;
-							break;
+							if (oldEndOfTrack != null) break;
 						}
 					} else if (type == MidiConstants.META_END_OF_TRACK) {
 						oldEndOfTrack = evt;
@@ -285,7 +284,9 @@ public class TrackSplitter {
                     if (msg instanceof MetaMessage metaMsg) {
 						int type = metaMsg.getType();
 
-						if (type == MidiConstants.META_PORT_CHANGE) {
+						if (type == MidiConstants.META_END_OF_TRACK) {
+							// Ignore old EOT events
+						} else if (type == MidiConstants.META_PORT_CHANGE) {
 							// Ignore old port events!
 						} else if (type == MidiConstants.META_TRACK_NAME) {
 							// Ignore original sub-track names
