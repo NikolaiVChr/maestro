@@ -40,11 +40,24 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 	}
 
 	public void setNoteSolo(int track, int noteId, boolean solo) {
-		if (solo != getNoteSolo(track, noteId)) {
+		if (solo != filter.getNoteSolo(noteId)) {
 			//boolean midi = !(this instanceof LotroSequencerWrapper);
 			//System.out.println((midi?"MIDI":"ABC")+" Setting track " + track + " solo to " + solo+" for note "+noteId);
 			sequencer.setTrackSolo(track, solo);
 			filter.setNoteSolo(noteId, solo);
+			fireChangeEvent(SequencerProperty.TRACK_ACTIVE);
+		}
+	}
+
+	@Override
+	public void clearAllSoloMute() {
+		super.clearAllSoloMute();
+		filter.clearSolos();
+	}
+
+	public void clearNoteSolo(int noteId) {
+		if (filter.getNoteSolo(noteId)) {
+			filter.setNoteSolo(noteId, false);
 			fireChangeEvent(SequencerProperty.TRACK_ACTIVE);
 		}
 	}

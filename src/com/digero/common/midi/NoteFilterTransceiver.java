@@ -42,6 +42,10 @@ public class NoteFilterTransceiver implements Transceiver, MidiConstants, ICompi
 			turnOffInactiveNotes();
 	}
 
+	public void clearSolos() {
+		solos.clear();
+	}
+
 	public boolean getNoteSolo(int noteId) {
 		return solos.get(noteId);
 	}

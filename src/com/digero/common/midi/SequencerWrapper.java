@@ -236,6 +236,19 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 		hoursPlus = 0L;
 	}
 
+	public void clearAllSoloMute() {
+		if (sequencer.getSequence() == null) {
+            return;
+        }
+		Track[] tracks = sequencer.getSequence().getTracks();
+		for (int t = 0; t < tracks.length; t++) {
+			sequencer.setTrackSolo(t, false);
+			sequencer.setTrackMute(t, false);
+		}
+		trackActiveCache = null;
+		fireChangeEvent(SequencerProperty.TRACK_ACTIVE);
+	}
+
 	public long getTickPosition() {
 		return sequencer.getTickPosition();
 	}
@@ -676,6 +689,7 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 			trackActiveCache = null;
 			boolean preLoaded = isLoaded();
 			sequencer.setSequence(sequence);
+			clearAllSoloMute();
 
 			if (sequence != null) {
 				/*

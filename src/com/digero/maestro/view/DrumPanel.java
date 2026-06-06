@@ -195,8 +195,14 @@ public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardab
 			public void mouseReleased(MouseEvent e) {
 				if (e.getButton() == MouseEvent.BUTTON3) {
 					if (soloAbcTrack >= 0 && soloAbcDrumId >= 0 && abcSequencer instanceof NoteFilterSequencerWrapper) {
-						((NoteFilterSequencerWrapper) abcSequencer).setNoteSolo(soloAbcTrack, soloAbcDrumId, false);
-						abcSequencer.setTrackSolo(soloAbcTrack, prevSoloState);
+						// Always clear the filter note-solo (keyed by note id, so a track change can't strand it)
+						((NoteFilterSequencerWrapper) abcSequencer).clearNoteSolo(soloAbcDrumId);
+
+						// Restore the part's solo on its curr track, which may have changed during the mouse hold
+						int curTrack = abcPart.getPreviewSequenceTrackNumber();
+						if (curTrack >= 0) {
+							abcSequencer.setTrackSolo(curTrack, prevSoloState);
+						}
 					}
 					soloAbcTrack = -1;
 					soloAbcDrumId = -1;

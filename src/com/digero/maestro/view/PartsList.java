@@ -73,6 +73,9 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 		rowDimension.height = 8 * rowDimension.height; // min size should fit 8 rows
 		this.setMinimumSize(rowDimension);
 
+		/*
+		if this is ran here it will update with stale track numbers from last preview
+		instead we rely on PREVIEW_TRACK_NUMBER to set the soloMute state
 		if (this.abcSequencer != null) {
 			this.abcSequencer.addChangeListener(e -> {
 				if (e.getProperty() == SequencerProperty.SEQUENCE) {
@@ -80,6 +83,7 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 				}
 			});
 		}
+		*/
 		
 		model = new DefaultListModel<>();
 			
