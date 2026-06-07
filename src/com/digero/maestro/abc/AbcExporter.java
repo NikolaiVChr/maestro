@@ -2421,6 +2421,9 @@ public class AbcExporter {
 		boolean assertionsEnabled = false;
 		assert assertionsEnabled = true;
 
+        final long LONGEST_NOTE_SOFT_BUFFER_MICROS = 70000L;
+        final long softMaxDurationMicros = LotroInstrumentSampleDuration.getSafeDuration(part.getInstrument());
+
         part.numberOfRemovedNotesFromPruning = 0;
         part.numberOfRemovedNotesFromFitting = 0;
         part.numberOfRemovedNotesZeros = 0;
@@ -2431,12 +2434,12 @@ public class AbcExporter {
         }
         final long songStartMicros = getExportStartMicrosABC();
 
-		breakLongNotesOrganic(part, events);
+		breakLongNotesOrganic(part, events, softMaxDurationMicros);
 
 		List<ChordOrganic> chords = new ArrayList<>(events.size() / 2);
 		List<AbcNoteEvent> tmpEvents = new ArrayList<>();
 
-		long minimumMicros = quanFractions[2];
+		long minimumMicros = quanFractions[2];//often slightly above 60 ms
 		
 		// Combine notes that play at the same time into chords
 		
@@ -2747,7 +2750,7 @@ public class AbcExporter {
 					shortRest.startABCMicros = curChord.getStartMicros();
 					shortRest.endABCMicros = endMicro;
 					tmpEvents.add(shortRest);
-					breakLongNotesOrganic(part, tmpEvents);
+					breakLongNotesOrganic(part, tmpEvents, softMaxDurationMicros);
 					if (!tmpEvents.isEmpty()) {
 						// If rest needed to be broken up, we just keep the first segment
 						// we wont get in here again due to condition for hadRestAndNotes()
@@ -3025,7 +3028,7 @@ public class AbcExporter {
 						tmpEvents.add(rest);
 						rest.startABCMicros = curChord.getEndMicros();
 						rest.endABCMicros = nextChord.getStartMicros();
-						breakLongNotesOrganic(part, tmpEvents);
+						breakLongNotesOrganic(part, tmpEvents, softMaxDurationMicros);
 						
 						for (AbcNoteEvent restEvent : tmpEvents) {
 							ChordOrganic restChord = new ChordOrganic(restEvent, qtm);
@@ -3120,7 +3123,7 @@ public class AbcExporter {
 					 */
 					for (AbcNoteEvent evt : curChord.getNotes()) {
 						long mics = evt.endABCMicros - evt.startABCMicros;
-						assert mics <= TimingInfo.LONGEST_NOTE_MICROS + 70000L: evt.note+" micros="+mics;
+						assert mics <= softMaxDurationMicros + LONGEST_NOTE_SOFT_BUFFER_MICROS: evt.note+" micros="+mics;
 					}
 					long endCur = curChord.getEndMicros();
 					curChord.recalcEndMicros();
@@ -3281,7 +3284,7 @@ public class AbcExporter {
 				 */
 				for (AbcNoteEvent evt : curChord.getNotes()) {
 					long mics = evt.endABCMicros - evt.startABCMicros;
-					assert mics <= TimingInfo.LONGEST_NOTE_MICROS + 500L: evt.note+" micros="+mics;
+					assert mics <= softMaxDurationMicros + LONGEST_NOTE_SOFT_BUFFER_MICROS: evt.note+" micros="+mics;
 				}					
 				long endCur = curChord.getEndMicros();
 				curChord.recalcEndMicros();
@@ -6188,7 +6191,8 @@ public class AbcExporter {
 		events.addAll(thirds);
 		events.removeAll(trash);
 	}
-	
+
+    @Deprecated
 	private void removeDuplicateNotesVerify(List<AbcNoteEvent> events, LotroInstrument instrument) {
 		List<AbcNoteEvent> notesOn = new ArrayList<>();
         //second
@@ -6353,7 +6357,7 @@ public class AbcExporter {
 	 * Used by single-stage organic
 	 *
      */
-	private void breakLongNotesOrganic(AbcPart part, List<AbcNoteEvent> events) {
+	private void breakLongNotesOrganic(AbcPart part, List<AbcNoteEvent> events, long softMaxDurationMicros) {
 		TreeSet<Long> startPoints = new TreeSet<>();
         for (AbcNoteEvent ne : events) {
             startPoints.add(ne.startABCMicros);
@@ -6363,7 +6367,7 @@ public class AbcExporter {
 		for (int i = 0; i < events.size(); i++) {
 			AbcNoteEvent ne = events.get(i);
 
-			long maxNoteEndMicros = ne.startABCMicros + TimingInfo.LONGEST_NOTE_MICROS;
+			long maxNoteEndMicros = ne.startABCMicros + softMaxDurationMicros;
 
             if (ne.endABCMicros <= maxNoteEndMicros) {
                 continue;
@@ -6440,13 +6444,13 @@ public class AbcExporter {
                 // Where this is tied can matter for other notes, so
                 // find where other notes start or end and choose that place.
 
-                // maxTickForDrones is 4.75 s after start
+                // maxTickForDrones is softMaxDurationMicros - 0.25s after start
                 long maxMicrosForDrones =
-                        ne.startABCMicros + TimingInfo.LONGEST_NOTE_MICROS - AbcConstants.ONE_SECOND_MICROS / 4;
+                        ne.startABCMicros + softMaxDurationMicros - AbcConstants.ONE_SECOND_MICROS / 4;
 
-                // minForDrones is 4.00 s after start
+                // minForDrones is softMaxDurationMicros - 1s after start
                 long minMicrosForDrones =
-                        ne.startABCMicros + TimingInfo.LONGEST_NOTE_MICROS - AbcConstants.ONE_SECOND_MICROS;
+                        ne.startABCMicros + softMaxDurationMicros - AbcConstants.ONE_SECOND_MICROS;
 
                 logNotes.finer("note " + ne.startABCMicros + " - " + ne.endABCMicros + ", drone=" + drone + ", rest=" + rest);
                 logNotes.finer("minMicrosForDrones = " + minMicrosForDrones);
@@ -6476,7 +6480,7 @@ public class AbcExporter {
                     events.add(ins, next);
                 }
             } else if (rest) {
-                // Rest longer than 5s, split it at 4s:
+                // Rest longer than softMaxDurationMicros, split it at 4s:
                 long targetEndMicros =
                             ne.startABCMicros + AbcConstants.LONGEST_NOTE_MICROS / 2;
                 logNotes.finer("targetEndMicros=" + targetEndMicros);
@@ -6497,7 +6501,7 @@ public class AbcExporter {
                 assert (ins > i);
                 events.add(ins, next);
             }
-            assert ne.endABCMicros - ne.startABCMicros <= TimingInfo.LONGEST_NOTE_MICROS:Util.formatDurationM(ne.endABCMicros - ne.startABCMicros)+" too long still. instr="+part.getInstrument()+" drone="+drone+" rest="+rest;
+            assert ne.endABCMicros - ne.startABCMicros <= softMaxDurationMicros:Util.formatDurationM(ne.endABCMicros - ne.startABCMicros)+" too long still. instr="+part.getInstrument()+" drone="+drone+" rest="+rest;
 		}
 	}
 
