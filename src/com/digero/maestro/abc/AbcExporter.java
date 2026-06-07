@@ -414,11 +414,13 @@ public class AbcExporter {
                         if (endTick <= ne.getStartTick()) {
                             // This note has been turned off
                             onIter.remove();
-                            long off;
-                            if (organic) {
-                                off = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(endTick) + delayMicros);
-                            } else {
-                                off = qtm.microsToTick(qtm.tickToMicros(endTick) + delayMicros);
+                            long off = endTick;
+                            if (delayMicros > 0L) {
+                                if (organic) {
+                                    off = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(endTick) + delayMicros);
+                                } else {
+                                    off = qtm.microsToTick(qtm.tickToMicros(endTick) + delayMicros);
+                                }
                             }
                             lastEnd = Math.max(off, lastEnd);
                             track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off));
@@ -486,11 +488,13 @@ public class AbcExporter {
             }
 
             for (AbcNoteEvent on : notesOn) {
-                long off;
-                if (organic) {
-                    off = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(on.getEndTick()) + delayMicros);
-                } else {
-                    off = qtm.microsToTick(qtm.tickToMicros(on.getEndTick()) + delayMicros);
+                long off = on.getEndTick();
+                if (delayMicros > 0L) {
+                    if (organic) {
+                        off = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(on.getEndTick()) + delayMicros);
+                    } else {
+                        off = qtm.microsToTick(qtm.tickToMicros(on.getEndTick()) + delayMicros);
+                    }
                 }
                 lastEnd = Math.max(off, lastEnd);
                 track.add(MidiFactory.createNoteOffEvent(on.note.id + noteDelta, channel, off));
