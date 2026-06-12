@@ -74,6 +74,7 @@ Version 4.6.18
 - Better grace-note handling in org multi-stage 2. If it did not overlap before backwards bounce, it now also wont after.
 - Fixed several reasons ABC preview could become muted.
 - Fixed that drum sounds could become muted.
+- Allow longer note durations for certain instruments when using organic single-stage too.
 - Added support for custom soundfont for playback of midi.
   Name it: midi.sf2
   Put it in:
