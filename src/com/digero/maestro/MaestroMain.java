@@ -2,6 +2,7 @@ package com.digero.maestro;
 
 import static java.awt.Frame.ICONIFIED;
 
+import java.awt.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -14,11 +15,12 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 
 import com.digero.common.midi.SynthesizerFactory;
 import com.digero.common.util.AppInfo;
@@ -132,6 +134,12 @@ public class MaestroMain {
 				preferences.node("saveAndExportSettings").put("theme", "Default");
 			}
 		});
+
+		AtomicReference<JWindow> loading = new AtomicReference<>();
+		SwingUtilities.invokeAndWait(() -> {
+			loading.set(createLoadingWindow(UIText.get("maestro.splash")));
+			loading.get().setVisible(true);
+		});
 		
 		mainWindow = new ProjectFrame();
 
@@ -139,7 +147,31 @@ public class MaestroMain {
 			mainWindow.setVisible(true);
 			mainWindow.getRootPane().requestFocus();
 			openSongFromCommandLine(args);
+			loading.get().dispose();
 		});
+	}
+
+	private static JWindow createLoadingWindow(String message) {
+		JWindow window = new JWindow(); // no title bar / decorations
+
+		JPanel panel = new JPanel(new BorderLayout(10, 12));
+		panel.setBorder(BorderFactory.createCompoundBorder(
+				BorderFactory.createLineBorder(new Color(0x44_44_44)),
+				BorderFactory.createEmptyBorder(24, 32, 24, 32)));
+
+		JLabel label = new JLabel(message, SwingConstants.CENTER);
+		label.setFont(label.getFont().deriveFont(Font.PLAIN, 14f));
+
+		JProgressBar bar = new JProgressBar();
+		bar.setIndeterminate(true);
+
+		panel.add(label, BorderLayout.NORTH);
+		panel.add(bar, BorderLayout.SOUTH);
+
+		window.add(panel);
+		window.pack();
+		window.setLocationRelativeTo(null); // center on screen
+		return window;
 	}
 
 	public static String getFirstLines(Throwable throwable) {
