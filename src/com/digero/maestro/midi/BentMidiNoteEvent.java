@@ -7,11 +7,13 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 import java.util.Map.Entry;
+import java.util.logging.Logger;
 
 import com.digero.common.midi.ITempoCache;
 import com.digero.common.midi.Note;
 
 public class BentMidiNoteEvent extends MidiNoteEvent {
+	private static final Logger log = Logger.getLogger("midi.noteevent");
 
 	private int cacheMin = -1;// These fields will only be used after all bends have been added
 	private int cacheMax = -1;// So its fine to cache them here.
@@ -143,7 +145,7 @@ public class BentMidiNoteEvent extends MidiNoteEvent {
             int dominantBend = getDominantBend(segmentStartTick, targetEndTick);
             Note currNote = Note.fromId(note.id + dominantBend);
 
-            if (currNote != null) { // Filter out-of-range notes
+            if (currNote != null && currNote != Note.REST) { // Filter out-of-range notes
                 // Optimization: Merge with previous if pitch is same
                 if (!splits.isEmpty() && splits.getLast().note.id == currNote.id
                         && splits.getLast().getEndTick() == segmentStartTick) {
@@ -153,9 +155,10 @@ public class BentMidiNoteEvent extends MidiNoteEvent {
                     splits.add(segment);
                 }
             } else {
-                // TODO: can happen with the midi WonderousStories.mid
+                // TODO: can happen with the midi WonderousStories.mid and Proud Mary
                 // possible solution: allow negative note ids for bent midi notes
                 // but its really a midi issue, so maybe its best we drop this entire bent note..
+				log.warning("Dropping entire bent note as it was bent out of range. note.id="+note.id+" bend="+dominantBend);
                 return new ArrayList<>();
             }
 

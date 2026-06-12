@@ -6609,6 +6609,7 @@ public class AbcExporter {
             Note newNote = Note.fromId(pitch);
             if (newNote == null || newNote == Note.REST) {
                 // Pitch out of range
+                logNotes.warning("Dropping entire bent note as it was bent out of range. pitch="+pitch);
                 return new ArrayList<>();
             } else {
                 // Only create if length > 0 (TreeMap ensures start < nextStart)
@@ -6936,11 +6937,10 @@ public class AbcExporter {
 			current.setEndTick(tick);
 		}
 		Note newNote = Note.fromId(noteID);
-		if (newNote == null) {
-			System.out.println("Note removed, pitch bend out of range");
+		if (newNote == null || newNote == Note.REST) {
+			System.out.println("Note removed, pitch bend out of range: "+noteID);
 			return null;
 		}
-		assert newNote != Note.REST;
 		AbcNoteEvent sub = new AbcNoteEvent(newNote, be.velocity, tick, be.getEndTick(), be.getTempoCache(), be.origNote);
 		sub.setOrigBend(bend);
 		return sub;
