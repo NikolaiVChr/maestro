@@ -768,6 +768,10 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		if (!skipAudibleCheck && !getAudible(track, tickStart)) {
 			return null;
 		}
+		if (noteId < 0 || noteId > 127) {
+			// extra check for invalid noteid that can make drum-map throw exception.
+			return null;
+		}
 		
 		if (!isChromatic(track)) {
 			if (!isPercussionNoteEnabled(track, noteId))
