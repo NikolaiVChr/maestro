@@ -161,6 +161,7 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 		}
 	}
 
+	//TODO: this method should only reset the sequencer and not create a new one. Make another method to rebuild the sequencer if needed.
 	public void reset(boolean fullReset) {
 		stop();
 		setPosition(0);

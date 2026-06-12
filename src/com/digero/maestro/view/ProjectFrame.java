@@ -324,7 +324,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                if (closeSong()) {
+                if (closeProjectForShutdown()) {
                     setVisible(false);
                     dispose();
                     System.exit(0);
@@ -1277,13 +1277,13 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		fileMenu.addSeparator();
 
 		closeProject = fileMenu.add(new JMenuItem(UIText.get("maestro.menu.close.project")));
-		closeProject.addActionListener(e -> closeSong());
+		closeProject.addActionListener(e -> closeProjectForNormal());
 
 		JMenuItem exitItem = fileMenu.add(new JMenuItem(UIText.get("maestro.menu.exit")));
 		exitItem.setMnemonic('x');
 		exitItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F4, ALT_DOWN_MASK));
 		exitItem.addActionListener(e -> {
-			if (closeSong()) {
+			if (closeProjectForShutdown()) {
 				setVisible(false);
 				dispose();
 				System.exit(0);
@@ -2217,12 +2217,36 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         fireDynaListeners = true;
     }
 
+	private enum CloseProjectMode {
+    	NORMAL,
+    	SHUTDOWN
+	}
 
 	/**
+	 * closes the current project as part of the application shutdown process
+	 * @return true if it was closed
+	 */
+	protected boolean closeProjectForShutdown() {
+		return closeProject(CloseProjectMode.SHUTDOWN);
+	}
+
+	/**
+	 * closes the current project as part of normal project closing,
+	 * either to open another project or just to close the current project without opening another
+	 * @return true if it was closed
+	 */
+	protected boolean closeProjectForNormal() {
+		return closeProject(CloseProjectMode.NORMAL);
+	}
+
+	/**
+	 * Close the current song, prompting to save if there are unsaved changes.
+	 * Does not prompt to save if there is no current song, even if there are unsaved changes.
 	 * 
 	 * @return true if it was closed
 	 */
-	public boolean closeSong() {
+	private boolean closeProject(CloseProjectMode mode) {
+		boolean skipSequencerReset = mode == CloseProjectMode.SHUTDOWN;
 		SectionEditor.clearClipboard();
 		TrackPanel.clearDrumClipboard();
 		sequencer.stop();
@@ -2276,8 +2300,18 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		sequencer.clearSequence();
 		abcSequencer.clearSequence();
-		sequencer.reset(true);
-		abcSequencer.reset(false);
+
+		/*
+		 * If we shut down we do not need to reset the sequencers as they get disposed in ProjectFrame.dispose()
+		 * If we are just closing the project, we want to reset them so that they are fresh for the next project.
+		 * Before the implementation of this if-Statement, SequencerWrapper.reset(boolean) caused a recreation of
+		 * the sequencer only to have it immediately discarded in ProjectFrame.dispose()
+		*/
+		if (!skipSequencerReset)  {
+			sequencer.reset(true);
+			abcSequencer.reset(false);
+		}
+
 		abcSequencer.setTempoFactor(1.0f);
 		abcPreviewStartTick = 0L;
 
@@ -2331,7 +2365,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			return;
 		}
 		inCloseFile = true;
-		if (!closeSong()) {
+		if (!closeProjectForNormal()) {
 			inCloseFile = false;
 			return;
 		}
@@ -3673,6 +3707,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		return threadDump.toString();
 	}
 
+	/**
+	 * Checks if there is a new version of Maestro available on github, and if so, prompts the user to download it.
+	 * To avoid spamming github with requests, it only does this check if there isn't already a check in progress, or if the previous check is finished.
+	 */
     private void checkVersionCompare() {
         if (future == null || future.isDone()) {
             future = CompletableFuture.runAsync(() -> {
@@ -3702,7 +3740,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                                             try {
                                                 uriDownload = new URI(MaestroMain.DOWNLOAD_URL);
                                                 if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.BROWSE)) {
-                                                    if (closeSong()) {
+													// Attempt to open the download URL in the user's default browser
+													// If the project can be closed successfully, open the browser and exit the application
+                                                    if (closeProjectForShutdown()) {
                                                         Desktop.getDesktop().browse(uriDownload);
                                                         System.exit(0);
                                                     }
