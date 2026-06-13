@@ -1,19 +1,13 @@
 package com.aifel.abctools;
 
-import static java.nio.file.FileVisitResult.CONTINUE;
-import static java.nio.file.FileVisitResult.TERMINATE;
-
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.Timer;
 import java.util.concurrent.ForkJoinPool;
@@ -52,7 +46,6 @@ import com.digero.maestro.util.XmlUtil;
 import com.digero.maestro.view.InstrNameSettings;
 import com.digero.maestro.view.MiscSettings;
 import com.digero.maestro.view.SaveAndExportSettings;
-import org.jetbrains.annotations.NotNull;
 
 public class AutoExporter implements WarningHandler {
 	private static final Logger log = Logger.getLogger("util");
@@ -375,113 +368,7 @@ public class AutoExporter implements WarningHandler {
 			frame.setRecursiveCheckBoxEnabled(true);
 		});
 	}
-
-    @Deprecated
-	public class CountFiles extends SimpleFileVisitor<Path> {
-		
-		MsxFileFilter f = new MsxFileFilter();
-		
-	    @Override
-	    public @NotNull FileVisitResult visitFile(Path file, BasicFileAttributes attr) {
-	        if (attr.isRegularFile() && f.accept(file.toFile())) {
-	        	totalExportCount++;
-	        }
-	        return CONTINUE;
-	    }
 	
-	    @Override
-	    public @NotNull FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-	        throws IOException
-	    {
-	        Objects.requireNonNull(dir);
-	        Objects.requireNonNull(attrs);
-	        if (dir.getFileName().toString().startsWith(".")) {
-	        	return FileVisitResult.SKIP_SUBTREE;
-	        }
-	        return FileVisitResult.CONTINUE;
-	    }
-	    
-	    // Print each directory visited.
-	    @Override
-	    public @NotNull FileVisitResult postVisitDirectory(Path dir,
-                                                           IOException exc) {
-	        //System.out.format("Finished directory: %s%n", dir);
-	        return CONTINUE;
-	    }
-	
-	    // If there is some error accessing
-	    // the file, let the user know.
-	    // If you don't override this method
-	    // and an error occurs, an IOException 
-	    // is thrown.
-	    @Override
-	    public @NotNull FileVisitResult visitFileFailed(Path file,
-                                                        IOException exc) {
-			log.warning(exc.getMessage());
-	        return CONTINUE;
-	    }
-	}
-
-    @Deprecated
-	public class ProcessFiles extends SimpleFileVisitor<Path> {
-
-		MsxFileFilter f = new MsxFileFilter();
-		
-	    @Override
-	    public @NotNull FileVisitResult visitFile(Path file, BasicFileAttributes attr) {
-	    	if (cancel) return TERMINATE;
-	    	if (f.accept(file.toFile())) {
-		        if (attr.isSymbolicLink()) {
-		            System.out.format("Ignoring symbolic link: %s ", file);
-		        } else if (attr.isRegularFile()) {
-		        	try {
-						exportProject(file.toFile());
-					} catch (Exception e) {
-						log.warning(file.getFileName()+": "+e.getMessage());
-						appendToField("<p></p><p><font color='red'>"+e.toString()+"</font></p>");
-                        skippedProjects.add(file.toFile());
-					}
-					setProgress((int) (exportCount.incrementAndGet() * progressFactor));
-		        } else {
-		            System.out.format("Ignoring: %s ", file);
-		        }
-	    	}
-	        return CONTINUE;
-	    }
-	    
-	    @Override
-	    public @NotNull FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-	        throws IOException
-	    {
-	        Objects.requireNonNull(dir);
-	        Objects.requireNonNull(attrs);
-	        if (dir.getFileName().toString().startsWith(".")) {
-	        	return FileVisitResult.SKIP_SUBTREE;
-	        }
-	        return FileVisitResult.CONTINUE;
-	    }
-	
-	    // Print each directory visited.
-	    @Override
-	    public @NotNull FileVisitResult postVisitDirectory(Path dir,
-                                                           IOException exc) {
-	        System.out.format("Finished directory: %s%n", dir);
-	        return CONTINUE;
-	    }
-	
-	    // If there is some error accessing
-	    // the file, let the user know.
-	    // If you don't override this method
-	    // and an error occurs, an IOException 
-	    // is thrown.
-	    @Override
-	    public @NotNull FileVisitResult visitFileFailed(Path file,
-                                                        IOException exc) {
-	        log.warning(exc.getMessage());
-	        return CONTINUE;
-	    }
-	}
-
 	private void setProgress(final int progress) {
 		progressInt = progress;
 	}
