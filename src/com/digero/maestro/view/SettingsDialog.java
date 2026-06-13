@@ -1107,7 +1107,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 		importPrefs.addActionListener(a -> {
             importPrefs.setEnabled(false);
 			try {
-				if(((ProjectFrame)(own)).closeSong()) {
+				if(((ProjectFrame)(own)).closeProjectForNormal()) {
 					JFileChooser jfc = new JFileChooser();
 					jfc.setDialogTitle(UIText.get("maestro.options.import.all.settings.and.exit.maestro"));
 					jfc.setFileFilter(filter);
