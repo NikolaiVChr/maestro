@@ -253,11 +253,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             // return;
         }
 
-		boolean showGenreAndMood = miscSettings.showBadger;
-		String defaultTranscriber = prefs.get("abcplayer.transcriber", "");
-		songInfoPanel = new SongInfoPanel(showGenreAndMood, defaultTranscriber);
-        configureSongInfoPanel();
-
 		setRootPane(new JRootPane() {
 			@Override
 			public void requestFocus() {
@@ -273,21 +268,36 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
         disableSpaceFocus();
 
-        partAutoNumberer = new PartAutoNumberer(prefs.node("partAutoNumberer"));
-        partNameTemplate = new PartNameTemplate(prefs.node("partNameTemplate"));
-        exportFilenameTemplate = new ExportFilenameTemplate(prefs.node("exportFilenameTemplate"));
-        instrNameSettings = new InstrNameSettings(prefs.node("instrNameSettings"));
-        saveSettings = new SaveAndExportSettings(prefs.node("saveAndExportSettings"));
-        miscSettings = new MiscSettings(prefs.node("miscSettings"),
-                true /*
-         * Fallback if miscSettings is empty. Maestro 2.5.0.115 and earlier save misc settings in
-         * saveAndExportSettings
-         */);
+        partAutoNumberer = new PartAutoNumberer(
+			prefs.node("partAutoNumberer"));
+
+        partNameTemplate = new PartNameTemplate(
+			prefs.node("partNameTemplate"));
+
+        exportFilenameTemplate = new ExportFilenameTemplate(
+			prefs.node("exportFilenameTemplate"));
+
+        instrNameSettings = new InstrNameSettings(
+			prefs.node("instrNameSettings"));
+
+        saveSettings = new SaveAndExportSettings(
+			prefs.node("saveAndExportSettings"));
+
+		//if misc settings is empty use fallback; Maestro 2.5.0.115 and earlier save misc settings in saveAndExportSettings
+        miscSettings = new MiscSettings(
+			prefs.node("miscSettings"),
+                true);
 
         if (miscSettings.checkForUpdates) checkVersionCompare();
 
 		String welcomeMessageTitle = UIText.get("maestro.welcomeMessageTitle");
 		String welcomeMessage =	UIText.get("maestro.DnD.file.to.open") + UIText.get("maestro.use.file.open");
+
+		// SongInfoPanel
+		boolean showGenreAndMood = miscSettings.showBadger;
+		String defaultTranscriber = prefs.get("abcplayer.transcriber", "");
+		songInfoPanel = new SongInfoPanel(showGenreAndMood, defaultTranscriber);
+        configureSongInfoPanel();
 
         checkVolumeTransceiver();
 
