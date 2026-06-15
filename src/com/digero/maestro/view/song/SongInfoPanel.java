@@ -35,7 +35,10 @@ public class SongInfoPanel extends JPanel {
     private static final int VGAP = 4;
 
     /**
-     * 
+     * Builds the song metadata editor used by the project frame.
+     *
+     * @param showGenreAndMood Whether the optional genre and mood rows should be visible.
+     * @param defaultTranscriber The initial transcriber text to show before a song is loaded.
      */
     public SongInfoPanel(boolean showGenreAndMood, String defaultTranscriber) {
         titleField = createTextField("", "maestro.song.title");
@@ -72,10 +75,10 @@ public class SongInfoPanel extends JPanel {
     }
 
     /**
-     * 
-     * 
-     * @param initialText
-     * @param tooltipKey
+     * Creates one text field with localized help text.
+     *
+     * @param initialText The text to place in the field when it is created.
+     * @param tooltipKey The {@link UIText} key used for the field tooltip.
      * @return The created field
      */
     private static JTextField createTextField(String initialText, String tooltipKey) {
@@ -85,16 +88,19 @@ public class SongInfoPanel extends JPanel {
     }
 
     /**
-     * 
-     * @param listener
+     * Registers the callback that receives user edits as complete {@link SongInfo} snapshots.
+     *
+     * @param listener The listener to notify when the user changes a metadata field.
      */
     public void setChangeListener(SongInfoChangeListener listener) {
         changeListener = listener;
     }
 
     /**
-     * 
-     * @param field
+     * Attaches document notifications so edits, deletes, and styled-document changes all share
+     * the same update path.
+     *
+     * @param field The text field whose document should trigger song-info changes.
      */
     private void addChangeListener(JTextField field) {
         field.getDocument().addDocumentListener(new DocumentListener() {
@@ -121,7 +127,8 @@ public class SongInfoPanel extends JPanel {
     }
 
     /**
-     * 
+     * Sends the current panel contents to the registered listener unless the panel is being
+     * refreshed programmatically.
      */
     private void notifyChanged() {
         if (!updatingFields && changeListener != null) {
@@ -130,8 +137,9 @@ public class SongInfoPanel extends JPanel {
     }
 
     /**
-     * 
-     * @return
+     * Reads the current text from every metadata field.
+     *
+     * @return A new {@link SongInfo} snapshot matching the visible editor state.
      */
     public SongInfo getSongInfo() {
         return new SongInfo(
@@ -143,15 +151,15 @@ public class SongInfoPanel extends JPanel {
     }
 
     /**
-     * 
-     * @param songInfo
+     * Copies metadata into the text fields without reporting the copy as a user edit.
+     *
+     * @param songInfo The metadata to show in the editor.
      */
     public void setSongInfo(SongInfo songInfo) {
         Objects.requireNonNull(songInfo, "song info must not be null");
 
-        // The updatingFields flag is important. Without it, calling setSongInfo() while
-        // opening a project would trigger the same listener and make the freshly loaded
-        // project appear modified. @see notifyChanged()
+        // Programmatic field changes fire DocumentEvents too. Suppress them here so loading
+        // or refreshing a project does not look like a user edit; see notifyChanged().
         updatingFields = true;
 
         try {
@@ -165,6 +173,10 @@ public class SongInfoPanel extends JPanel {
         }
     }
 
+    /**
+     * Updates a field only when its text actually differs, keeping existing caret state stable
+     * when no update is needed.
+     */
     private static void setTextIfChanged(JTextField field, String value) {
         String text = value != null ? value : "";
 
@@ -174,6 +186,9 @@ public class SongInfoPanel extends JPanel {
         }
     }
 
+    /**
+     * Clears song-specific metadata while preserving the current transcriber value.
+     */
     public void clearSongInfo() {
         setSongInfo(new SongInfo(
                 "",
@@ -184,9 +199,10 @@ public class SongInfoPanel extends JPanel {
     }
 
     /**
-     * 
-     * @param count
-     * @return
+     * Creates the row-size array expected by {@link TableLayout}.
+     *
+     * @param count The number of preferred-height rows to create.
+     * @return A row-size array with each row set to {@link TableLayoutConstants#PREFERRED}.
      */
     private static double[] createRows(int count) {
         double[] rows = new double[count];
@@ -195,16 +211,22 @@ public class SongInfoPanel extends JPanel {
     }
 
     /**
-     * 
-     * @param label
-     * @param field
-     * @param row
+     * Adds one label/field pair to the two-column table layout.
+     *
+     * @param label The ABC metadata label.
+     * @param field The text field edited on that row.
+     * @param row The zero-based table row index.
      */
     private void addRow(JLabel label, JTextField field, int row) {
         add(label, "0, " + row);
         add(field, "1, " + row);
     }
 
+    /**
+     * Enables or disables editing for every metadata field at once.
+     *
+     * @param enabled Whether the fields should accept user edits.
+     */
     public void setEditingEnabled(boolean enabled) {
         titleField.setEnabled(enabled);
         composerField.setEnabled(enabled);
@@ -213,6 +235,11 @@ public class SongInfoPanel extends JPanel {
         moodField.setEnabled(enabled);
     }
 
+    /**
+     * Shows or hides the optional Badger-style genre and mood fields.
+     *
+     * @param visible Whether the genre and mood rows should be part of the visible form.
+     */
     public void setGenreAndMoodVisible(boolean visible) {
         genreLabel.setVisible(visible);
         genreField.setVisible(visible);
