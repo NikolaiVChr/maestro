@@ -50,11 +50,9 @@ public class SongInfoPanel extends JPanel {
         addChangeListener(genreField);
         addChangeListener(moodField);
 
-        int rowCount = showGenreAndMood ? 5 : 3;
-
         layout = new TableLayout(
                 new double[] { TableLayoutConstants.PREFERRED, TableLayoutConstants.FILL },
-                createRows(rowCount));
+                createRows(5));
 
         layout.setHGap(HGAP);
         layout.setVGap(VGAP);
@@ -218,7 +216,7 @@ public class SongInfoPanel extends JPanel {
     public void setGenreAndMoodVisible(boolean visible) {
         genreLabel.setVisible(visible);
         genreField.setVisible(visible);
-        genreField.setVisible(visible);
+        moodLabel.setVisible(visible);
         moodField.setVisible(visible);
 
         layout.setRow(createRows(visible ? 5 : 3));

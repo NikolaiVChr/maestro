@@ -105,6 +105,9 @@ import net.miginfocom.swing.MigLayout;
 public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompileConstants {
 	private static final Logger log = Logger.getLogger("view");
 
+	// future refactors might be able to make this field final
+	private SongInfoPanel songInfoPanel;
+
     private boolean uiEnabled = true;
     private boolean sourceChangeEnabled = true;
 
@@ -139,7 +142,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private MiscSettings miscSettings;
 
 	private JPanel content;
-	private final SongInfoPanel songInfoPanel;
 
 	private JSpinner transposeSpinner;
 	private JSpinner tempoSpinner;
@@ -251,6 +253,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             // return;
         }
 
+		boolean showGenreAndMood = miscSettings.showBadger;
+		String defaultTranscriber = prefs.get("abcplayer.transcriber", "");
+		songInfoPanel = new SongInfoPanel(showGenreAndMood, defaultTranscriber);
+        configureSongInfoPanel();
+
 		setRootPane(new JRootPane() {
 			@Override
 			public void requestFocus() {
@@ -265,8 +272,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         ToolTipManager.sharedInstance().setDismissDelay(8000);
 
         disableSpaceFocus();
-
-
 
         partAutoNumberer = new PartAutoNumberer(prefs.node("partAutoNumberer"));
         partNameTemplate = new PartNameTemplate(prefs.node("partNameTemplate"));
@@ -334,8 +339,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
         content = new JPanel(tableLayout, false);
         setContentPane(content);
-
-        generateSongInfoPanel();
 
         generateSongPartsPanel();
 
@@ -415,12 +418,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		arrangementView.setFocusable(true);
     }
 
-    private void generateSongInfoPanel() {
-
-		boolean showGenreAndMood = miscSettings.showBadger;
-		String defaultTranscriber = prefs.get("abcplayer.transcriber", "");
-		songInfoPanel = new SongInfoPanel(showGenreAndMood, defaultTranscriber);
-		
+    private void configureSongInfoPanel() {		
 		songInfoPanel.setChangeListener(songInfo -> {
 			if (abcSong == null)
         		return;
