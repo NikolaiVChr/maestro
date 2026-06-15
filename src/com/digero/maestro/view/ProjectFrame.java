@@ -139,7 +139,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private MiscSettings miscSettings;
 
 	private JPanel content;
-	private SongInfoPanel songInfoPanel;
+	private final SongInfoPanel songInfoPanel;
 
 	private JSpinner transposeSpinner;
 	private JSpinner tempoSpinner;
@@ -422,11 +422,16 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		songInfoPanel = new SongInfoPanel(showGenreAndMood, defaultTranscriber);
 		
 		songInfoPanel.setChangeListener(songInfo -> {
+			if (abcSong == null)
+        		return;
+
     		abcSong.setTitle(songInfo.title());
     		abcSong.setComposer(songInfo.composer());
     		abcSong.setTranscriber(songInfo.transcriber());
     		abcSong.setGenre(songInfo.genre());
     		abcSong.setMood(songInfo.mood());
+
+			prefs.put("abcplayer.transcriber", songInfo.transcriber());
 		});
 	}
 

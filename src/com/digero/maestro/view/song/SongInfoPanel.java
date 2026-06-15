@@ -20,13 +20,16 @@ public class SongInfoPanel extends JPanel {
     private SongInfoChangeListener changeListener;
     private boolean updatingFields;
 
-    private TableLayout layout;
+    private final TableLayout layout;
 
-    private JTextField titleField;
-    private JTextField composerField;
-    private JTextField transcriberField;
-    private JTextField genreField;
-    private JTextField moodField;
+    private final JTextField titleField;
+    private final JTextField composerField;
+    private final JTextField transcriberField;
+    private final JTextField genreField;
+    private final JTextField moodField;
+
+    private final JLabel genreLabel = new JLabel("G:");
+    private final JLabel moodLabel = new JLabel("M:");
 
     private static final int HGAP = 4;
     private static final int VGAP = 4;
@@ -58,14 +61,14 @@ public class SongInfoPanel extends JPanel {
         setLayout(layout);
 
         int row = 0;
-        addRow("T:", titleField, row++);
-        addRow("C:", composerField, row++);
-        addRow("Z:", transcriberField, row++);
+        addRow(new JLabel("T:"), titleField, row++);
+        addRow(new JLabel("C:"), composerField, row++);
+        addRow(new JLabel("Z:"), transcriberField, row++);
+        addRow(genreLabel, genreField, row++);
+        addRow(moodLabel, moodField, row);
 
-        if (showGenreAndMood) {
-            addRow("G:", genreField, row++);
-            addRow("M:", moodField, row);
-        }
+        setGenreAndMoodVisible(showGenreAndMood);
+
         setBorder(BorderFactory.createTitledBorder(
                 UIText.get("maestro.song.info")));
     }
@@ -77,7 +80,7 @@ public class SongInfoPanel extends JPanel {
      * @param tooltipKey
      * @return The created field
      */
-    private JTextField createTextField(String initialText, String tooltipKey) {
+    private static JTextField createTextField(String initialText, String tooltipKey) {
         JTextField field = new JTextField(initialText);
         field.setToolTipText(UIText.get(tooltipKey));
         return field;
@@ -164,7 +167,7 @@ public class SongInfoPanel extends JPanel {
         }
     }
 
-    private void setTextIfChanged(JTextField field, String value) {
+    private static void setTextIfChanged(JTextField field, String value) {
         String text = value != null ? value : "";
 
         if (!field.getText().equals(text)) {
@@ -174,7 +177,12 @@ public class SongInfoPanel extends JPanel {
     }
 
     public void clearSongInfo() {
-        setSongInfo(SongInfo.empty());
+        setSongInfo(new SongInfo(
+                "",
+                "",
+                transcriberField.getText(),
+                "",
+                ""));
     }
 
     /**
@@ -194,8 +202,8 @@ public class SongInfoPanel extends JPanel {
      * @param field
      * @param row
      */
-    private void addRow(String label, JTextField field, int row) {
-        add(new JLabel(label), "0, " + row);
+    private void addRow(JLabel label, JTextField field, int row) {
+        add(label, "0, " + row);
         add(field, "1, " + row);
     }
 
@@ -208,11 +216,12 @@ public class SongInfoPanel extends JPanel {
     }
 
     public void setGenreAndMoodVisible(boolean visible) {
+        genreLabel.setVisible(visible);
+        genreField.setVisible(visible);
         genreField.setVisible(visible);
         moodField.setVisible(visible);
 
         layout.setRow(createRows(visible ? 5 : 3));
-
         revalidate();
         repaint();
     }
