@@ -1,4 +1,4 @@
-package com.digero.maestro.view.song;
+package com.digero.maestro.view;
 
 /**
  * Immutable song metadata edited by {@link SongInfoPanel} and copied to or from the current project.

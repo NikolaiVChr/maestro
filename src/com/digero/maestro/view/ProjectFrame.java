@@ -95,9 +95,6 @@ import com.digero.maestro.util.FileResolver;
 import com.digero.maestro.util.ListModelWrapper;
 import com.digero.maestro.util.RecentlyOpenedList;
 import com.digero.maestro.util.XmlUtil;
-import com.digero.maestro.view.song.SongInfo;
-import com.digero.maestro.view.song.SongInfoField;
-import com.digero.maestro.view.song.SongInfoPanel;
 
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;

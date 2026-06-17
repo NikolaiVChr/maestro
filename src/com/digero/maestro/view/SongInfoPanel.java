@@ -1,4 +1,4 @@
-package com.digero.maestro.view.song;
+package com.digero.maestro.view;
 
 import java.util.Arrays;
 import java.util.Objects;

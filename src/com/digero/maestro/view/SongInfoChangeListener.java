@@ -1,4 +1,4 @@
-package com.digero.maestro.view.song;
+package com.digero.maestro.view;
 
 @FunctionalInterface
 public interface SongInfoChangeListener {
