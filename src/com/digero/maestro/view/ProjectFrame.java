@@ -96,6 +96,7 @@ import com.digero.maestro.util.ListModelWrapper;
 import com.digero.maestro.util.RecentlyOpenedList;
 import com.digero.maestro.util.XmlUtil;
 import com.digero.maestro.view.song.SongInfo;
+import com.digero.maestro.view.song.SongInfoField;
 import com.digero.maestro.view.song.SongInfoPanel;
 
 import info.clearthought.layout.TableLayout;
@@ -297,7 +298,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		boolean showGenreAndMood = miscSettings.showBadger;
 		String defaultTranscriber = prefs.get("abcplayer.transcriber", "");
 		songInfoPanel = new SongInfoPanel(showGenreAndMood, defaultTranscriber);
-        configureSongInfoPanel();
+        songInfoPanel.setChangeListener(this::updateAbcSongFromSongInfo);
 
         checkVolumeTransceiver();
 
@@ -428,22 +429,33 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		arrangementView.setFocusable(true);
     }
 
-    private void configureSongInfoPanel() {		
-		songInfoPanel.setChangeListener(songInfo -> {
-			if (abcSong == null)
+    private void updateAbcSongFromSongInfo(SongInfoField field,
+        SongInfo songInfo) {		
+		
+		if (abcSong == null)
         		return;
 
-    		abcSong.setTitle(songInfo.title());
-    		abcSong.setComposer(songInfo.composer());
-    		abcSong.setTranscriber(songInfo.transcriber());
-    		abcSong.setGenre(songInfo.genre());
-    		abcSong.setMood(songInfo.mood());
+    	switch (field) {
+        	case TITLE ->
+            	abcSong.setTitle(songInfo.title());
 
-			prefs.put("abcplayer.transcriber", songInfo.transcriber());
-		});
+        	case COMPOSER ->
+           		abcSong.setComposer(songInfo.composer());
+
+        	case TRANSCRIBER -> {
+            	abcSong.setTranscriber(songInfo.transcriber());
+            	prefs.put("abcplayer.transcriber", songInfo.transcriber());
+        	}
+
+        	case GENRE ->
+            	abcSong.setGenre(songInfo.genre());
+
+        	case MOOD ->
+            	abcSong.setMood(songInfo.mood());
+    	}
 	}
 
-	private void updateSongInfoPanel() {
+	private void updateSongInfoFromAbcSong() {
 		if (!abcSong.isFromAbcFile() && !abcSong.isFromXmlFile()) {
         	abcSong.setTranscriber(songInfoPanel.getSongInfo().transcriber());
     	}
@@ -2326,7 +2338,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				part.addAbcListener(partEditor.getPartListener());
 			}
 
-			updateSongInfoPanel();
+			updateSongInfoFromAbcSong();
 			setDyna(abcSong.dynamicsMethod);
 
             arrangementView.sidepanelTab(UIText.get("maestro.notes"));
