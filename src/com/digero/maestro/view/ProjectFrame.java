@@ -103,6 +103,9 @@ import net.miginfocom.swing.MigLayout;
 public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompileConstants {
 	private static final Logger log = Logger.getLogger("view");
 
+	// future refactors might be able to make this field final
+	private SongInfoPanel songInfoPanel;
+
     private boolean uiEnabled = true;
     private boolean sourceChangeEnabled = true;
 
@@ -137,16 +140,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private MiscSettings miscSettings;
 
 	private JPanel content;
-	private JTextField songTitleField;
-	private JTextField composerField;
-	private JTextField transcriberField;
-	private JTextField genreField;
-	private JTextField moodField;
-	private TableLayout songInfoLayout;
-	private JPanel songInfoPanel;
-	private final JLabel genreLabel = new JLabel("G:");
-	private final JLabel moodLabel = new JLabel("M:");
-	private PrefsDocumentListener transcriberFieldListener;
+
 	private JSpinner transposeSpinner;
 	private JSpinner tempoSpinner;
 	private JButton resetTempoButton;
@@ -272,23 +266,36 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
         disableSpaceFocus();
 
+        partAutoNumberer = new PartAutoNumberer(
+			prefs.node("partAutoNumberer"));
 
+        partNameTemplate = new PartNameTemplate(
+			prefs.node("partNameTemplate"));
 
-        partAutoNumberer = new PartAutoNumberer(prefs.node("partAutoNumberer"));
-        partNameTemplate = new PartNameTemplate(prefs.node("partNameTemplate"));
-        exportFilenameTemplate = new ExportFilenameTemplate(prefs.node("exportFilenameTemplate"));
-        instrNameSettings = new InstrNameSettings(prefs.node("instrNameSettings"));
-        saveSettings = new SaveAndExportSettings(prefs.node("saveAndExportSettings"));
-        miscSettings = new MiscSettings(prefs.node("miscSettings"),
-                true /*
-         * Fallback if miscSettings is empty. Maestro 2.5.0.115 and earlier save misc settings in
-         * saveAndExportSettings
-         */);
+        exportFilenameTemplate = new ExportFilenameTemplate(
+			prefs.node("exportFilenameTemplate"));
+
+        instrNameSettings = new InstrNameSettings(
+			prefs.node("instrNameSettings"));
+
+        saveSettings = new SaveAndExportSettings(
+			prefs.node("saveAndExportSettings"));
+
+		//if misc settings is empty use fallback; Maestro 2.5.0.115 and earlier save misc settings in saveAndExportSettings
+        miscSettings = new MiscSettings(
+			prefs.node("miscSettings"),
+                true);
 
         if (miscSettings.checkForUpdates) checkVersionCompare();
 
 		String welcomeMessageTitle = UIText.get("maestro.welcomeMessageTitle");
 		String welcomeMessage =	UIText.get("maestro.DnD.file.to.open") + UIText.get("maestro.use.file.open");
+
+		// SongInfoPanel
+		boolean showGenreAndMood = miscSettings.showBadger;
+		String defaultTranscriber = prefs.get("abcplayer.transcriber", "");
+		songInfoPanel = new SongInfoPanel(showGenreAndMood, defaultTranscriber);
+        songInfoPanel.setChangeListener(this::updateAbcSongFromSongInfo);
 
         checkVolumeTransceiver();
 
@@ -340,8 +347,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
         content = new JPanel(tableLayout, false);
         setContentPane(content);
-
-        generateSongInfoPanel();
 
         generateSongPartsPanel();
 
@@ -408,7 +413,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		content.addMouseListener(listenForFocus);
 
 		// Add to main structural panels that might capture clicks
-		if (songInfoPanel != null) songInfoPanel.addMouseListener(listenForFocus);
+		songInfoPanel.addMouseListener(listenForFocus);
 		if (settingsPanel != null) settingsPanel.addMouseListener(listenForFocus);
 		if (partsListPanel != null) partsListPanel.addMouseListener(listenForFocus);
 		if (midiPartsAndControls != null) midiPartsAndControls.addMouseListener(listenForFocus);
@@ -421,91 +426,65 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		arrangementView.setFocusable(true);
     }
 
-    private void generateSongInfoPanel() {
-		songTitleField = new JTextField();
-		songTitleField.setToolTipText(UIText.get("maestro.song.title"));
-		songTitleField.getDocument().addDocumentListener(new SimpleDocumentListener() {
-			@Override
-			public void changedUpdate(DocumentEvent e) {
-				if (abcSong != null)
-					abcSong.setTitle(songTitleField.getText());
-			}
-		});
+    private void updateAbcSongFromSongInfo(SongInfoField field,
+        SongInfo songInfo) {		
+		
+		if (abcSong == null)
+        		return;
 
-		composerField = new JTextField();
-		composerField.setToolTipText(UIText.get("maestro.song.composer.artist"));
-		composerField.getDocument().addDocumentListener(new SimpleDocumentListener() {
-			@Override
-			public void changedUpdate(DocumentEvent e) {
-				if (abcSong != null)
-					abcSong.setComposer(composerField.getText());
-			}
-		});
+    	switch (field) {
+        	case TITLE ->
+            	abcSong.setTitle(songInfo.title());
 
-		transcriberField = new JTextField(prefs.get("abcplayer.transcriber", ""));
-		transcriberField.setToolTipText(UIText.get("maestro.song.transcriber.your.name"));
-		transcriberFieldListener = new PrefsDocumentListener(prefs, "abcplayer.transcriber");
-		transcriberField.getDocument().addDocumentListener(transcriberFieldListener);
-		transcriberField.getDocument().addDocumentListener(new SimpleDocumentListener() {
-			@Override
-			public void changedUpdate(DocumentEvent e) {
-                // It's not a big deal, but when programmatically setting
-                // the text, removeUpdate and insertUpdate will both
-                // call this method, so it gets called twice.
-				if (abcSong != null)
-					abcSong.setTranscriber(transcriberField.getText());
-			}
-		});
+        	case COMPOSER ->
+           		abcSong.setComposer(songInfo.composer());
 
-		genreField = new JTextField();
-		genreField.setToolTipText(UIText.get("maestro.song.genre.s"));
-		genreField.getDocument().addDocumentListener(new SimpleDocumentListener() {
-			@Override
-			public void changedUpdate(DocumentEvent e) {
-				if (abcSong != null)
-					abcSong.setGenre(genreField.getText());
-			}
-		});
+        	case TRANSCRIBER -> {
+            	abcSong.setTranscriber(songInfo.transcriber());
+            	prefs.put("abcplayer.transcriber", songInfo.transcriber());
+        	}
 
-		moodField = new JTextField();
-		moodField.setToolTipText(UIText.get("maestro.song.mood.s"));
-		moodField.getDocument().addDocumentListener(new SimpleDocumentListener() {
-			@Override
-			public void changedUpdate(DocumentEvent e) {
-				if (abcSong != null)
-					abcSong.setMood(moodField.getText());
-			}
-		});
+        	case GENRE ->
+            	abcSong.setGenre(songInfo.genre());
 
-		if (miscSettings.showBadger) {
-			songInfoLayout = new TableLayout(//
-					new double[] { PREFERRED, FILL }, //
-					new double[] { PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED });
-		} else {
-			songInfoLayout = new TableLayout(//
-					new double[] { PREFERRED, FILL }, //
-					new double[] { PREFERRED, PREFERRED, PREFERRED });
-		}
-		songInfoLayout.setHGap(HGAP);
-		songInfoLayout.setVGap(VGAP);
+        	case MOOD ->
+            	abcSong.setMood(songInfo.mood());
+    	}
+	}
 
-		songInfoPanel = new JPanel(songInfoLayout);
-		int row = 0;
-		songInfoPanel.add(new JLabel("T:"), "0, " + row);
-		songInfoPanel.add(songTitleField, "1, " + row);
-		row++;
-		songInfoPanel.add(new JLabel("C:"), "0, " + row);
-		songInfoPanel.add(composerField, "1, " + row);
-		row++;
-		songInfoPanel.add(new JLabel("Z:"), "0, " + row);
-		songInfoPanel.add(transcriberField, "1, " + row);
-		row++;
-		songInfoPanel.add(genreLabel, "0, " + row);
-		songInfoPanel.add(genreField, "1, " + row);
-		row++;
-		songInfoPanel.add(moodLabel, "0, " + row);
-		songInfoPanel.add(moodField, "1, " + row);
-		songInfoPanel.setBorder(BorderFactory.createTitledBorder(UIText.get("maestro.song.info")));
+	private void updateSongInfoFromAbcSong() {
+		if (!abcSong.isFromAbcFile() && !abcSong.isFromXmlFile()) {
+        	abcSong.setTranscriber(songInfoPanel.getSongInfo().transcriber());
+    	}
+
+    	songInfoPanel.setSongInfo(new SongInfo(
+            abcSong.getTitle(),
+            abcSong.getComposer(),
+            abcSong.getTranscriber(),
+            abcSong.getGenre(),
+            abcSong.getMood()
+    	));
+	}
+
+	private void clearSongInfoPanel(){
+		songInfoPanel.clearSongInfo();
+	}
+
+	/**
+	 * 
+	 * @return
+	 */
+	private SongInfo getCurrentSongInfo() {
+		if (abcSong == null)
+        	return SongInfo.empty();
+
+		return new SongInfo(
+            abcSong.getTitle(),
+            abcSong.getComposer(),
+            abcSong.getTranscriber(),
+            abcSong.getGenre(),
+            abcSong.getMood()
+    	);
 	}
 
 	private void generateSongPartsPanel() {
@@ -1658,61 +1637,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 	}
 
-	private abstract static class SimpleDocumentListener implements DocumentListener {
-		@Override
-		public void insertUpdate(DocumentEvent e) {
-			this.changedUpdate(e);
-		}
-
-		@Override
-		public void removeUpdate(DocumentEvent e) {
-			this.changedUpdate(e);
-		}
-	}
-
-	private static class PrefsDocumentListener implements DocumentListener {
-		private final Preferences prefs;
-		private final String prefName;
-		private boolean ignoreChanges = false;
-
-		public PrefsDocumentListener(Preferences prefs, String prefName) {
-			this.prefs = prefs;
-			this.prefName = prefName;
-		}
-
-		public void setIgnoreChanges(boolean ignoringChanges) {
-			this.ignoreChanges = ignoringChanges;
-		}
-
-		private void updatePrefs(Document doc) {
-			if (ignoreChanges)
-				return;
-
-			String txt;
-			try {
-				txt = doc.getText(0, doc.getLength());
-			} catch (BadLocationException e) {
-				txt = "";
-			}
-			prefs.put(prefName, txt);
-		}
-
-		@Override
-		public void changedUpdate(DocumentEvent e) {
-			updatePrefs(e.getDocument());
-		}
-
-		@Override
-		public void insertUpdate(DocumentEvent e) {
-			updatePrefs(e.getDocument());
-		}
-
-		@Override
-		public void removeUpdate(DocumentEvent e) {
-			updatePrefs(e.getDocument());
-		}
-	}
-
 	private boolean updateButtonsPending = false;
 	private final Runnable updateButtonsTask = () -> {
 		boolean hasAbcNotes = false;
@@ -1775,21 +1699,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		closeProject.setEnabled(midiLoaded && uiEnabled && sourceChangeEnabled);
 
-		songTitleField.setEnabled(midiLoaded && uiEnabled);
-		composerField.setEnabled(midiLoaded && uiEnabled);
-		transcriberField.setEnabled(midiLoaded && uiEnabled);
-		moodField.setEnabled(midiLoaded && uiEnabled);
-		genreField.setEnabled(midiLoaded && uiEnabled);
-		if (miscSettings.showBadger) {
-			songInfoLayout.setRow(new double[] { PREFERRED, PREFERRED, PREFERRED, PREFERRED, PREFERRED });
-		} else {
-			songInfoLayout.setRow(new double[] { PREFERRED, PREFERRED, PREFERRED });
-		}
-		songInfoLayout.layoutContainer(songInfoPanel);
-		moodField.setVisible(miscSettings.showBadger);
-		genreField.setVisible(miscSettings.showBadger);
-		moodLabel.setVisible(miscSettings.showBadger);
-		genreLabel.setVisible(miscSettings.showBadger);
+		songInfoPanel.setEditingEnabled(midiLoaded && uiEnabled);
+		songInfoPanel.setGenreAndMoodVisible(miscSettings.showBadger);
+
 		transposeSpinner.setEnabled(midiLoaded && uiEnabled);
 		tempoSpinner.setEnabled(midiLoaded && uiEnabled);
 		tuneEditorButton.setEnabled(midiLoaded && uiEnabled);
@@ -1941,25 +1853,12 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		switch (e.getProperty()) {
 			case TITLE:
-				if (!songTitleField.getText().equals(abcSong.getTitle())) {
-					songTitleField.setText(abcSong.getTitle());
-					songTitleField.select(0, 0);
-				}
-				break;
 			case COMPOSER:
-				if (!composerField.getText().equals(abcSong.getComposer())) {
-					composerField.setText(abcSong.getComposer());
-					composerField.select(0, 0);
-				}
-				break;
 			case TRANSCRIBER:
-				if (!transcriberField.getText().equals(abcSong.getTranscriber())) {
-					transcriberFieldListener.setIgnoreChanges(true);
-					transcriberField.setText(abcSong.getTranscriber());
-					transcriberField.select(0, 0);
-					transcriberFieldListener.setIgnoreChanges(false);
-				}
-				break;
+			case GENRE:
+			case MOOD:
+    			songInfoPanel.setSongInfo(getCurrentSongInfo());
+    			break;
 
 			case TEMPO_FACTOR:
 				if (getTempo() != abcSong.getTempoBPM())
@@ -2088,18 +1987,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 					//saveSettings.saveToPrefs();
 				}
 				modified = false;
-				break;
-			case GENRE:
-				if (!genreField.getText().equals(abcSong.getGenre())) {
-					genreField.setText(abcSong.getGenre());
-					genreField.select(0, 0);
-				}
-				break;
-			case MOOD:
-				if (!moodField.getText().equals(abcSong.getMood())) {
-					moodField.setText(abcSong.getMood());
-					moodField.select(0, 0);
-				}
 				break;
 			case COUNT_IN:
 				setAbcSongModified(true);
@@ -2315,10 +2202,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		abcSequencer.setTempoFactor(1.0f);
 		abcPreviewStartTick = 0L;
 
-		songTitleField.setText("");
-		composerField.setText("");
-		genreField.setText("");
-		moodField.setText("");
+		clearSongInfoPanel();
+
 		transposeSpinner.setValue(0);
 		tempoSpinner.setValue(MidiConstants.DEFAULT_TEMPO_BPM);
 		keySignatureField.setValue(KeySignature.C_MAJOR);
@@ -2395,24 +2280,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				part.addAbcListener(partEditor.getPartListener());
 			}
 
-			songTitleField.setText(abcSong.getTitle());
-			songTitleField.select(0, 0);
-			composerField.setText(abcSong.getComposer());
-			composerField.select(0, 0);
-			genreField.setText(abcSong.getGenre());
-			genreField.select(0, 0);
-			moodField.setText(abcSong.getMood());
-			moodField.select(0, 0);
+			updateSongInfoFromAbcSong();
 			setDyna(abcSong.dynamicsMethod);
-
-			if (abcSong.isFromAbcFile() || abcSong.isFromXmlFile()) {
-				transcriberFieldListener.setIgnoreChanges(true);
-				transcriberField.setText(abcSong.getTranscriber());
-				transcriberField.select(0, 0);
-				transcriberFieldListener.setIgnoreChanges(false);
-			} else {
-				abcSong.setTranscriber(transcriberField.getText());
-			}
 
             arrangementView.sidepanelTab(UIText.get("maestro.notes"));
 
