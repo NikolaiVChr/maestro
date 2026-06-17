@@ -416,7 +416,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		content.addMouseListener(listenForFocus);
 
 		// Add to main structural panels that might capture clicks
-		if (songInfoPanel != null) songInfoPanel.addMouseListener(listenForFocus);
+		songInfoPanel.addMouseListener(listenForFocus);
 		if (settingsPanel != null) settingsPanel.addMouseListener(listenForFocus);
 		if (partsListPanel != null) partsListPanel.addMouseListener(listenForFocus);
 		if (midiPartsAndControls != null) midiPartsAndControls.addMouseListener(listenForFocus);
@@ -1637,61 +1637,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 					echoingPosition = false;
 				}
 			}
-		}
-	}
-
-	private abstract static class SimpleDocumentListener implements DocumentListener {
-		@Override
-		public void insertUpdate(DocumentEvent e) {
-			this.changedUpdate(e);
-		}
-
-		@Override
-		public void removeUpdate(DocumentEvent e) {
-			this.changedUpdate(e);
-		}
-	}
-
-	private static class PrefsDocumentListener implements DocumentListener {
-		private final Preferences prefs;
-		private final String prefName;
-		private boolean ignoreChanges = false;
-
-		public PrefsDocumentListener(Preferences prefs, String prefName) {
-			this.prefs = prefs;
-			this.prefName = prefName;
-		}
-
-		public void setIgnoreChanges(boolean ignoringChanges) {
-			this.ignoreChanges = ignoringChanges;
-		}
-
-		private void updatePrefs(Document doc) {
-			if (ignoreChanges)
-				return;
-
-			String txt;
-			try {
-				txt = doc.getText(0, doc.getLength());
-			} catch (BadLocationException e) {
-				txt = "";
-			}
-			prefs.put(prefName, txt);
-		}
-
-		@Override
-		public void changedUpdate(DocumentEvent e) {
-			updatePrefs(e.getDocument());
-		}
-
-		@Override
-		public void insertUpdate(DocumentEvent e) {
-			updatePrefs(e.getDocument());
-		}
-
-		@Override
-		public void removeUpdate(DocumentEvent e) {
-			updatePrefs(e.getDocument());
 		}
 	}
 
