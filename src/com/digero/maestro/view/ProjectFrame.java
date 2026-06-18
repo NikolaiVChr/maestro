@@ -472,7 +472,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	/**
 	 * 
-	 * @return
+	 * @return The current song info
 	 */
 	private SongInfo getCurrentSongInfo() {
 		if (abcSong == null)
@@ -521,6 +521,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			}
 		});
 
+		//PartsList is also a JPanel. The scrollPane should be added in it's contructor and not here nor in SongPartsPanel
 		partsList = new PartsList(abcSequencer, miscSettings);
 		partsList.addListSelectionListener(e -> {
 			AbcPart abcPart = partsList.getSelectedPart();
