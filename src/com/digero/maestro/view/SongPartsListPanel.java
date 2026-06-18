@@ -64,7 +64,7 @@ public class SongPartsListPanel extends JPanel implements IDiscardable, TableLay
 	public SongPartsListPanel(SequencerWrapper abcSequencer, MiscSettings miscSettings) {
 		this.abcSequencer = abcSequencer;
 		this.miscSettings = miscSettings;
-		layout = new BoxLayout(this, BoxLayout.Y_AXIS);
+		this.layout = new BoxLayout(this, BoxLayout.Y_AXIS);
 		setLayout(layout);
 		setBackground(new JList<AbcPartMetadataSource>().getBackground());
 
