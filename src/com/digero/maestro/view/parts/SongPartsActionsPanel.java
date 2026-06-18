@@ -7,8 +7,7 @@ import javax.swing.JPanel;
 
 import com.digero.common.view.UIText;
 
-public class SongPartsActionsPanel extends JPanel {
-
+public final class SongPartsActionsPanel extends JPanel {
     private final FlowLayout layout;
 
     private final JButton createNewPartButton;
@@ -18,6 +17,10 @@ public class SongPartsActionsPanel extends JPanel {
     private static final int HGAP = 4;
     private static final int VGAP = 4;
 
+    private Runnable createPartAction;
+    private Runnable deletePartAction;
+    private Runnable sortPartsAction;
+
     public SongPartsActionsPanel() {
         this.createNewPartButton = createButton("maestro.new.part");
         this.deletePartButton = createButton("maestro.delete");
@@ -25,6 +28,21 @@ public class SongPartsActionsPanel extends JPanel {
 
         this.layout = new FlowLayout(FlowLayout.CENTER, HGAP, VGAP);
         setLayout(layout);
+
+        createNewPartButton.addActionListener(e -> {
+            if (createPartAction != null)
+                createPartAction.run();
+        });
+
+        deletePartButton.addActionListener(e -> {
+            if (deletePartAction != null)
+                deletePartAction.run();
+        });
+
+        sortPartsButton.addActionListener(e -> {
+            if (sortPartsAction != null)
+                sortPartsAction.run();
+        });
 
         add(createNewPartButton);
         add(deletePartButton);
@@ -38,7 +56,7 @@ public class SongPartsActionsPanel extends JPanel {
      * @param tooltipKey The {@link UIText} key used for the tooltip.
      * @return The created {@link JButton}
      */
-    private JButton createButton(String labelKey, String tooltipKey) {
+    private static JButton createButton(String labelKey, String tooltipKey) {
         JButton button = new JButton(UIText.get(labelKey));
         button.setToolTipText(UIText.get(tooltipKey));
         return button;
@@ -52,6 +70,18 @@ public class SongPartsActionsPanel extends JPanel {
      */
     private static JButton createButton(String labelKey) {
         return new JButton(UIText.get(labelKey));
+    }
+
+    public void setCreatePartAction(Runnable action) {
+        createPartAction = action;
+    }
+
+    public void setDeletePartAction(Runnable action) {
+        deletePartAction = action;
+    }
+
+    public void setSortPartsAction(Runnable action) {
+        sortPartsAction = action;
     }
 
 }

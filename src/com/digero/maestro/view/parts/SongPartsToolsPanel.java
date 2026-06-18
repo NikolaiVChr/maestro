@@ -7,17 +7,29 @@ import javax.swing.JPanel;
 
 import com.digero.common.view.UIText;
 
-public class SongPartsToolsPanel extends JPanel {
+public final class SongPartsToolsPanel extends JPanel {
 
     private final GridLayout layout;
 
     private final JButton openPartEditorButton;
     private final JButton numeratePartsButton;
 
+    private Runnable openPartEditorAction;
+    private Runnable numeratePartsAction;
 
-    public SongPartsToolsPanel(){
+    public SongPartsToolsPanel() {
         this.openPartEditorButton = createButton("maestro.part.editor", "maestro.tip.partedit");
         this.numeratePartsButton = createButton("maestro.numerate", "maestro.tip.numerate");
+
+        openPartEditorButton.addActionListener(e -> {
+            if (openPartEditorAction != null)
+                openPartEditorAction.run();
+        });
+
+        numeratePartsButton.addActionListener(e -> {
+            if (numeratePartsAction != null)
+                numeratePartsAction.run();
+        });
 
         this.layout = new GridLayout(1, 2);
         setLayout(layout);
@@ -33,9 +45,17 @@ public class SongPartsToolsPanel extends JPanel {
      * @param tooltipKey The {@link UIText} key used for the tooltip.
      * @return The created {@link JButton}
      */
-    private JButton createButton(String labelKey, String tooltipKey) {
+    private static JButton createButton(String labelKey, String tooltipKey) {
         JButton button = new JButton(UIText.get(labelKey));
         button.setToolTipText(UIText.get(tooltipKey));
         return button;
+    }
+
+    public void setOpenPartEditorAction(Runnable action) {
+        openPartEditorAction = action;
+    }
+
+    public void setNumeratePartsAction(Runnable action) {
+        numeratePartsAction = action;
     }
 }

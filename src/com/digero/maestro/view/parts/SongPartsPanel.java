@@ -2,6 +2,7 @@ package com.digero.maestro.view.parts;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.util.function.Consumer;
 
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
@@ -12,6 +13,8 @@ import com.digero.common.view.UIText;
 import com.digero.maestro.view.SongPartsListPanel;
 
 public class SongPartsPanel extends JPanel {
+
+    private SongPartsActionListener actionListener;
 
     private final JScrollPane scrollPane;
     private final SongPartsActionsPanel actionsPanel;
@@ -29,6 +32,21 @@ public class SongPartsPanel extends JPanel {
         this.scrollPane = createScrollPane(partsList);
         this.actionsPanel = new SongPartsActionsPanel();
         this.toolsPanel = new SongPartsToolsPanel();
+
+        actionsPanel.setCreatePartAction(
+                () -> notifyListener(SongPartsActionListener::createPartRequested));
+
+        actionsPanel.setDeletePartAction(
+                () -> notifyListener(SongPartsActionListener::deletePartRequested));
+
+        actionsPanel.setSortPartsAction(
+                () -> notifyListener(SongPartsActionListener::sortPartsRequested));
+
+        toolsPanel.setOpenPartEditorAction(
+                () -> notifyListener(SongPartsActionListener::openPartEditorRequested));
+
+        toolsPanel.setNumeratePartsAction(
+                () -> notifyListener(SongPartsActionListener::numeratePartsRequested));
 
         this.layout = new BorderLayout(HGAP, VGAP);
         setLayout(layout);
@@ -53,5 +71,15 @@ public class SongPartsPanel extends JPanel {
         scrollPane.setMinimumSize(minimumSize);
 
         return scrollPane;
+    }
+
+    public void setActionListener(SongPartsActionListener listener) {
+        this.actionListener = listener;
+    }
+
+    private void notifyListener(Consumer<SongPartsActionListener> notification) {
+        if (actionListener != null) {
+            notification.accept(actionListener);
+        }
     }
 }
