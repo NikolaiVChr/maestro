@@ -170,7 +170,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	private FileFilterDropListener dropListener = null;
 	
-	private JPanel partsListPanel;
+	private JPanel songPartsPanel;
 	private SongPartsListPanel partsList;
 	private JButton newPartButton;
 	private JButton deletePartButton;
@@ -415,7 +415,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		// Add to main structural panels that might capture clicks
 		songInfoPanel.addMouseListener(listenForFocus);
 		if (settingsPanel != null) settingsPanel.addMouseListener(listenForFocus);
-		if (partsListPanel != null) partsListPanel.addMouseListener(listenForFocus);
+		if (songPartsPanel != null) songPartsPanel.addMouseListener(listenForFocus);
 		if (midiPartsAndControls != null) midiPartsAndControls.addMouseListener(listenForFocus);
 		if (playControlPanel != null) playControlPanel.addMouseListener(listenForFocus);
 		if (arrangementView != null) arrangementView.addMouseListener(listenForFocus);
@@ -521,7 +521,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			}
 		});
 
-		//PartsList is also a JPanel. The scrollPane should be added in it's contructor and not here nor in SongPartsPanel
 		partsList = new SongPartsListPanel(abcSequencer, miscSettings);
 		partsList.addListSelectionListener(e -> {
 			AbcPart abcPart = partsList.getSelectedPart();
@@ -596,16 +595,16 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		partsButtonPanel.add(deletePartButton);
 		partsButtonPanel.add(sortPartsButton);
 
-		partsListPanel = new JPanel(new BorderLayout(HGAP, VGAP));
-		partsListPanel.setBorder(BorderFactory.createTitledBorder(UIText.get("maestro.song.parts")));
-		partsListPanel.add(partsButtonPanel, BorderLayout.NORTH);
-		partsListPanel.add(partsListScrollPane, BorderLayout.CENTER);
+		songPartsPanel = new JPanel(new BorderLayout(HGAP, VGAP));
+		songPartsPanel.setBorder(BorderFactory.createTitledBorder(UIText.get("maestro.song.parts")));
+		songPartsPanel.add(partsButtonPanel, BorderLayout.NORTH);
+		songPartsPanel.add(partsListScrollPane, BorderLayout.CENTER);
 
 		GridLayout delayGrid = new GridLayout(1, 2);
 		JPanel delayPanel = new JPanel(delayGrid);
 		delayPanel.add(partEditorButton);
 		delayPanel.add(numerateButton);
-		partsListPanel.add(delayPanel, BorderLayout.SOUTH);
+		songPartsPanel.add(delayPanel, BorderLayout.SOUTH);
 	}
 
 	private void generateExportSettingsPanel() {
@@ -988,7 +987,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		JPanel abcPartsAndSettings = new JPanel(new BorderLayout(HGAP, VGAP));
 		abcPartsAndSettings.add(songInfoPanel, BorderLayout.NORTH);
 		JPanel partsListAndColorizer = new JPanel(new BorderLayout(HGAP, VGAP));
-		partsListAndColorizer.add(partsListPanel, BorderLayout.CENTER);
+		partsListAndColorizer.add(songPartsPanel, BorderLayout.CENTER);
 		if (SHOW_COLORIZER)
 			partsListAndColorizer.add(new Colorizer(arrangementView), BorderLayout.SOUTH);
 		abcPartsAndSettings.add(partsListAndColorizer, BorderLayout.CENTER);
@@ -1738,7 +1737,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			partListTitle = UIText.get("maestro.0.count.1", partListTitle, abcSong.getActivePartCount());
 		}
 
-		partsListPanel.setBorder(BorderFactory.createTitledBorder(partListTitle));
+		songPartsPanel.setBorder(BorderFactory.createTitledBorder(partListTitle));
 
 		showFeed();
 		
