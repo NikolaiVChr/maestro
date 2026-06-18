@@ -1,6 +1,7 @@
 package com.digero.maestro.view.parts;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
@@ -19,14 +20,13 @@ public class SongPartsPanel extends JPanel {
     private final BorderLayout layout;
     private final TitledBorder border;
 
+    private static final int MINIMUM_LIST_WIDTH = 220;
     private static final int HGAP = 4;
     private static final int VGAP = 4;
 
     public SongPartsPanel(SongPartsListPanel partsList) {
-        
-        this.scrollPane = new JScrollPane(partsList,
-                JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
-                JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+
+        this.scrollPane = createScrollPane(partsList);
         this.actionsPanel = new SongPartsActionsPanel();
         this.toolsPanel = new SongPartsToolsPanel();
 
@@ -39,5 +39,19 @@ public class SongPartsPanel extends JPanel {
         add(actionsPanel, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
         add(toolsPanel, BorderLayout.SOUTH);
+    }
+
+    private static JScrollPane createScrollPane(SongPartsListPanel partsListPanel) {
+
+        JScrollPane scrollPane = new JScrollPane(
+                partsListPanel,
+                JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
+                JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+
+        Dimension minimumSize = scrollPane.getMinimumSize();
+        minimumSize.width = MINIMUM_LIST_WIDTH;
+        scrollPane.setMinimumSize(minimumSize);
+
+        return scrollPane;
     }
 }
