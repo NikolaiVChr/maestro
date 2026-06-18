@@ -33,7 +33,6 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
 import com.digero.common.midi.SequencerWrapper;
-import com.digero.common.midi.SequencerEvent.SequencerProperty;
 import com.digero.common.util.IDiscardable;
 import com.digero.common.util.Listener;
 import com.digero.common.util.Pair;
@@ -45,7 +44,7 @@ import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.abc.AbcSongEvent;
 import info.clearthought.layout.TableLayoutConstants;
 
-public class PartsList extends JPanel implements IDiscardable, TableLayoutConstants {
+public class SongPartsListPanel extends JPanel implements IDiscardable, TableLayoutConstants {
     protected static final Logger log = Logger.getLogger("view.PartsList");
 
 	protected DefaultListModel<AbcPart> model;
@@ -62,7 +61,7 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 	private int dropInsertIndex = -1;
 	private final PanelTransferHandler handler;
 
-	public PartsList(SequencerWrapper abcSequencer, MiscSettings miscSettings) {
+	public SongPartsListPanel(SequencerWrapper abcSequencer, MiscSettings miscSettings) {
 		this.abcSequencer = abcSequencer;
 		this.miscSettings = miscSettings;
 		layout = new BoxLayout(this, BoxLayout.Y_AXIS);
@@ -133,7 +132,7 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 		        	if (handler != null && dtde.getTransferable().getTransferData(PANEL_FLAVOR) instanceof String) {
 		        	dtde.acceptDrop(DnDConstants.ACTION_MOVE);
 		        			                
-		                handler.handleDrop(PartsList.this, (String)dtde.getTransferable().getTransferData(PANEL_FLAVOR),dtde.getLocation());
+		                handler.handleDrop(SongPartsListPanel.this, (String)dtde.getTransferable().getTransferData(PANEL_FLAVOR),dtde.getLocation());
 		                dtde.dropComplete(true);
 		        	} else {
 		        		dtde.dropComplete(false);
@@ -395,11 +394,11 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
         /** This global flag is true when any D&D is in progress. */
         public static volatile boolean isDragInProgress = false;
 
-		PartsList main;
+		SongPartsListPanel main;
 		private boolean canImport;
 		private boolean export;
 		
-		PanelTransferHandler(PartsList main, boolean canImport, boolean export) {
+		PanelTransferHandler(SongPartsListPanel main, boolean canImport, boolean export) {
 			super();
 			this.canImport = canImport;
 			this.export = export;

@@ -5,7 +5,7 @@ import com.digero.common.midi.SequencerWrapper;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcSong;
 
-public class PartsListEditor extends PartsList {
+public class PartsListEditor extends SongPartsListPanel {
 	private static final long serialVersionUID = -3564677504833477636L;
 	private final Dimension rowDim;
 
