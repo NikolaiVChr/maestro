@@ -47,13 +47,9 @@ import javax.sound.midi.*;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import javax.swing.filechooser.FileFilter;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.Document;
 import javax.xml.transform.TransformerException;
 
 import com.digero.common.abc.AbcConstants;
@@ -95,6 +91,8 @@ import com.digero.maestro.util.FileResolver;
 import com.digero.maestro.util.ListModelWrapper;
 import com.digero.maestro.util.RecentlyOpenedList;
 import com.digero.maestro.util.XmlUtil;
+import com.digero.maestro.view.parts.SongPartsActionListener;
+import com.digero.maestro.view.parts.SongPartsPanel;
 
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
@@ -103,8 +101,10 @@ import net.miginfocom.swing.MigLayout;
 public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompileConstants {
 	private static final Logger log = Logger.getLogger("view");
 
-	// future refactors might be able to make this field final
+	// future refactors might be able to make field final
 	private SongInfoPanel songInfoPanel;
+	private SongPartsListPanel songPartsListPanel;
+	private SongPartsPanel songPartsPanel;
 
     private boolean uiEnabled = true;
     private boolean sourceChangeEnabled = true;
@@ -170,13 +170,21 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	private FileFilterDropListener dropListener = null;
 	
-	private JPanel songPartsPanel;
+	@Deprecated(forRemoval = true)
+	private JPanel songPartsPanel_old;
+	@Deprecated(forRemoval = true)
 	private SongPartsListPanel partsList;
+	@Deprecated(forRemoval = true)
 	private JButton newPartButton;
+	@Deprecated(forRemoval = true)
 	private JButton deletePartButton;
+	@Deprecated(forRemoval = true)
 	private JButton sortPartsButton;
+	@Deprecated(forRemoval = true)
 	private JButton partEditorButton;
+	@Deprecated(forRemoval = true)
 	private JButton numerateButton;
+	@Deprecated(forRemoval = true)
 	private PartEditor partEditor;
 
 	private JPanel settingsPanel;
@@ -297,6 +305,13 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		songInfoPanel = new SongInfoPanel(showGenreAndMood, defaultTranscriber);
         songInfoPanel.setChangeListener(this::updateAbcSongFromSongInfo);
 
+		//SongPartsListPanel
+		songPartsListPanel = new SongPartsListPanel(abcSequencer, miscSettings);
+
+		//SongPartsPanel
+		songPartsPanel = new SongPartsPanel(songPartsListPanel);
+		songPartsPanel.setActionListener(createSongPartsActionListener());
+
         checkVolumeTransceiver();
 
         try {
@@ -415,7 +430,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		// Add to main structural panels that might capture clicks
 		songInfoPanel.addMouseListener(listenForFocus);
 		if (settingsPanel != null) settingsPanel.addMouseListener(listenForFocus);
-		if (songPartsPanel != null) songPartsPanel.addMouseListener(listenForFocus);
+		if (songPartsPanel_old != null) songPartsPanel_old.addMouseListener(listenForFocus);
 		if (midiPartsAndControls != null) midiPartsAndControls.addMouseListener(listenForFocus);
 		if (playControlPanel != null) playControlPanel.addMouseListener(listenForFocus);
 		if (arrangementView != null) arrangementView.addMouseListener(listenForFocus);
@@ -426,6 +441,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		arrangementView.setFocusable(true);
     }
 
+	/**
+	 * 
+	 * @param field
+	 * @param songInfo
+	 */
     private void updateAbcSongFromSongInfo(SongInfoField field,
         SongInfo songInfo) {		
 		
@@ -452,6 +472,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
     	}
 	}
 
+	/**
+	 * 
+	 */
 	private void updateSongInfoFromAbcSong() {
 		if (!abcSong.isFromAbcFile() && !abcSong.isFromXmlFile()) {
         	abcSong.setTranscriber(songInfoPanel.getSongInfo().transcriber());
@@ -466,6 +489,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
     	));
 	}
 
+	/**
+	 * 
+	 */
 	private void clearSongInfoPanel(){
 		songInfoPanel.clearSongInfo();
 	}
@@ -487,6 +513,64 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
     	);
 	}
 
+	/**
+	 * This method creates a anonymous implementation of {@link SongPartsActionListener}
+	 * to ensure behavior belongs to ProjectFrame. 
+	 * This method can in a later refactor of ProjectFrame be replaced by a implementation
+	 * of a SongPartsController like: <br>
+	 * Now: <br>
+	 * SongPartsPanel → SongPartsActionListener → anonymous implementation in ProjectFrame <br>
+	 * Later: <br>
+	 * SongPartsPanel → SongPartsController → application/domain services
+	 * @return The created {@link SongPartsActionListener}
+	 */
+	private SongPartsActionListener createSongPartsActionListener() {
+		return new SongPartsActionListener() {
+
+			@Override
+			public void createPartRequested() {
+				if (abcSong != null)
+					abcSong.createNewPart();
+			}
+
+			@Override
+			public void deletePartRequested() {
+				if (abcSong == null) 
+					return;
+				
+				if (abcSong.getParts().size() == 1) {
+					// When deleting last past, make sure a new part is replacing it, so something
+					// is selected
+					AbcPart deleteMe = partsList.getSelectedPart();
+					abcSong.createNewPart();
+					abcSong.deletePart(deleteMe);
+				}
+
+				if (abcSong.getParts().size() > 1)
+					abcSong.deletePart(partsList.getSelectedPart());
+			}
+
+			@Override
+			public void sortPartsRequested() {
+				if (abcSong != null) 
+					abcSong.autoSortParts();
+			}
+
+			@Override
+			public void numeratePartsRequested() {
+				if (abcSong != null)
+					abcSong.assignNumbersToSimilarPartTypes();
+			}
+
+			@Override
+			public void openPartEditorRequested() {
+				partEditor.setVisible(!partEditor.isVisible());
+			}
+			
+		};
+	}
+
+	@Deprecated(forRemoval = true)
 	private void generateSongPartsPanel() {
 		newPartButton = new JButton(UIText.get("maestro.new.part"));
 		newPartButton.addActionListener(e -> {
@@ -595,16 +679,16 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		partsButtonPanel.add(deletePartButton);
 		partsButtonPanel.add(sortPartsButton);
 
-		songPartsPanel = new JPanel(new BorderLayout(HGAP, VGAP));
-		songPartsPanel.setBorder(BorderFactory.createTitledBorder(UIText.get("maestro.song.parts")));
-		songPartsPanel.add(partsButtonPanel, BorderLayout.NORTH);
-		songPartsPanel.add(partsListScrollPane, BorderLayout.CENTER);
+		songPartsPanel_old = new JPanel(new BorderLayout(HGAP, VGAP));
+		songPartsPanel_old.setBorder(BorderFactory.createTitledBorder(UIText.get("maestro.song.parts")));
+		songPartsPanel_old.add(partsButtonPanel, BorderLayout.NORTH);
+		songPartsPanel_old.add(partsListScrollPane, BorderLayout.CENTER);
 
 		GridLayout delayGrid = new GridLayout(1, 2);
 		JPanel delayPanel = new JPanel(delayGrid);
 		delayPanel.add(partEditorButton);
 		delayPanel.add(numerateButton);
-		songPartsPanel.add(delayPanel, BorderLayout.SOUTH);
+		songPartsPanel_old.add(delayPanel, BorderLayout.SOUTH);
 	}
 
 	private void generateExportSettingsPanel() {
@@ -987,7 +1071,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		JPanel abcPartsAndSettings = new JPanel(new BorderLayout(HGAP, VGAP));
 		abcPartsAndSettings.add(songInfoPanel, BorderLayout.NORTH);
 		JPanel partsListAndColorizer = new JPanel(new BorderLayout(HGAP, VGAP));
-		partsListAndColorizer.add(songPartsPanel, BorderLayout.CENTER);
+		partsListAndColorizer.add(songPartsPanel_old, BorderLayout.CENTER);
 		if (SHOW_COLORIZER)
 			partsListAndColorizer.add(new Colorizer(arrangementView), BorderLayout.SOUTH);
 		abcPartsAndSettings.add(partsListAndColorizer, BorderLayout.CENTER);
@@ -1737,7 +1821,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			partListTitle = UIText.get("maestro.0.count.1", partListTitle, abcSong.getActivePartCount());
 		}
 
-		songPartsPanel.setBorder(BorderFactory.createTitledBorder(partListTitle));
+		songPartsPanel_old.setBorder(BorderFactory.createTitledBorder(partListTitle));
 
 		showFeed();
 		
