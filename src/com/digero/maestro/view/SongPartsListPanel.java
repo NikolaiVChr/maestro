@@ -48,7 +48,6 @@ public class SongPartsListPanel extends JPanel implements IDiscardable, TableLay
     protected static final Logger log = Logger.getLogger("view.PartsList");
 
 	protected DefaultListModel<AbcPart> model;
-	private final BoxLayout layout;
 
 	protected List<PartsListItem> parts = new ArrayList<>();
 	protected AbcPart selectedPart = null;
@@ -64,8 +63,7 @@ public class SongPartsListPanel extends JPanel implements IDiscardable, TableLay
 	public SongPartsListPanel(SequencerWrapper abcSequencer, MiscSettings miscSettings) {
 		this.abcSequencer = abcSequencer;
 		this.miscSettings = miscSettings;
-		this.layout = new BoxLayout(this, BoxLayout.Y_AXIS);
-		setLayout(layout);
+		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
 		setBackground(new JList<AbcPartMetadataSource>().getBackground());
 
 		rowDimension = PartsListItem.getProtoDimension();

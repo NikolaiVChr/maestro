@@ -1,4 +1,4 @@
-package com.digero.maestro.view.parts;
+package com.digero.maestro.view;
 
 public interface SongPartsActionListener {
     void createPartRequested();

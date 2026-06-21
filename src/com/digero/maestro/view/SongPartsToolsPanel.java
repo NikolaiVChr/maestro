@@ -1,4 +1,4 @@
-package com.digero.maestro.view.parts;
+package com.digero.maestro.view;
 
 import java.awt.Color;
 import java.awt.GridLayout;
@@ -8,9 +8,7 @@ import javax.swing.JPanel;
 
 import com.digero.common.view.UIText;
 
-public final class SongPartsToolsPanel extends JPanel {
-
-    private final GridLayout layout;
+final class SongPartsToolsPanel extends JPanel {
 
     private final JButton openPartEditorButton;
     private final JButton numeratePartsButton;
@@ -35,8 +33,7 @@ public final class SongPartsToolsPanel extends JPanel {
                 numeratePartsAction.run();
         });
 
-        this.layout = new GridLayout(1, 2);
-        setLayout(layout);
+        setLayout(new GridLayout(1, 2));
 
         add(openPartEditorButton);
         add(numeratePartsButton);

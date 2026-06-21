@@ -89,8 +89,6 @@ import com.digero.maestro.util.FileResolver;
 import com.digero.maestro.util.ListModelWrapper;
 import com.digero.maestro.util.RecentlyOpenedList;
 import com.digero.maestro.util.XmlUtil;
-import com.digero.maestro.view.parts.SongPartsActionListener;
-import com.digero.maestro.view.parts.SongPartsPanel;
 
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
@@ -202,7 +200,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private Icon stopIconDisabled;
 
 	private long abcPreviewStartTick = 0L;
-	@Deprecated
 	private float abcPreviewTempoFactor = 1.0f;// deprecated
 	private boolean echoingPosition = false;
 
@@ -316,18 +313,23 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		songInfoPanel = new SongInfoPanel(showGenreAndMood, defaultTranscriber);
         songInfoPanel.setChangeListener(this::updateAbcSongFromSongInfo);
 
-		//PartEditor
+		// PartEditor
 		partEditor = new PartEditor(this, null, miscSettings);
 
-		//SongPartsListPanel
+		// SongPartsListPanel
 		songPartsListPanel = new SongPartsListPanel(abcSequencer, miscSettings);
 		songPartsListPanel.addListSelectionListener(e -> {
+			if (e.getValueIsAdjusting())
+        		return;
+						
 			AbcPart abcPart = songPartsListPanel.getSelectedPart();
+
 			sequencer.getFilter().onAbcPartChanged(abcPart != null);
 			abcSequencer.getFilter().onAbcPartChanged(abcPart != null);
 			arrangementView.setAbcPart(abcPart, false);
+
 			if (abcPart != null) {
-				
+				updateButtons(false);
 			} else {
 				if (songPartsListPanel.getModel().getSize() > 0) {
 					// If ctrl-clicking to deselect this will ensure something is selected
@@ -336,7 +338,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			}
 		});
 
-		//SongPartsPanel
+		// SongPartsPanel
 		songPartsPanel = new SongPartsPanel(this.songPartsListPanel);
 		songPartsPanel.setActionListener(createSongPartsActionListener());
 
@@ -367,7 +369,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
         generateMidiPartsAndControlsPanel();
 
-		initTheme();//after arrangementView is defined, but before welcome message is set.
+		// after arrangementView is defined, but before welcome message is set.
+		initTheme();
 
         if (!SHOW_TEMPO_SPINNER)
             tempoSpinner.setEnabled(false);
@@ -387,7 +390,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         });
         new DropTarget(this, dropListener);
 
-        //dropListener.exclude = partsList; // not the cause of the partsList d'n'd flicker
+        // dropListener.exclude = partsList; // not the cause of the partsList d'n'd flicker
 
         mainSequencerListener = new MainSequencerListener();
         sequencer.addChangeListener(mainSequencerListener);
@@ -400,8 +403,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         initMenu();
         onSaveAndExportSettingsChanged();
         arrangementView.showInfoMessage(formatInfoMessage(welcomeMessageTitle, welcomeMessage, getHTMLFontSizeNormal()));
-        updateButtons(false);//must be false since we are not in AWT thread now.
-
+		
         // Add support for using spacebar for pause/play.
         ActionListener spaceBarListener = e -> {
             if (!sequencer.isLoaded()) {
@@ -1667,12 +1669,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		songPartsPanel.setButtonsEnabled(abcSong != null && uiEnabled, partSelected && uiEnabled, midiLoaded && uiEnabled, partSelected && uiEnabled);
 
 		Color c = UIManager.getColor("Button.foreground");
-        if (abcSong != null) {
+        if (abcSong != null) 
 			songPartsPanel.setOpenEditorButtonForeground(abcSong.isPartEdited() ? ColorTable.CONTROLS_EDITED.get() : c);
-        } else {
-            tuneEditorButton.setForeground(c);
-		}
-
+        
 		transposeSpinner.setEnabled(midiLoaded && uiEnabled);
 		tempoSpinner.setEnabled(midiLoaded && uiEnabled);
 		tuneEditorButton.setEnabled(midiLoaded && uiEnabled);

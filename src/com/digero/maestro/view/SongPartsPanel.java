@@ -1,4 +1,4 @@
-package com.digero.maestro.view.parts;
+package com.digero.maestro.view;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -8,10 +8,8 @@ import java.util.function.Consumer;
 import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.border.TitledBorder;
 
 import com.digero.common.view.UIText;
-import com.digero.maestro.view.SongPartsListPanel;
 
 public class SongPartsPanel extends JPanel {
 
@@ -21,10 +19,7 @@ public class SongPartsPanel extends JPanel {
     private final SongPartsActionsPanel actionsPanel;
     private final SongPartsToolsPanel toolsPanel;
 
-    private final BorderLayout layout;
-    private final TitledBorder border;
-
-    private static final int MINIMUM_LIST_WIDTH = 220;
+    private static final int PREFERRED_WIDTH = 300;
     private static final int HGAP = 4;
     private static final int VGAP = 4;
 
@@ -54,11 +49,8 @@ public class SongPartsPanel extends JPanel {
         toolsPanel.setNumeratePartsAction(
                 () -> notifyListener(SongPartsActionListener::numeratePartsRequested));
 
-        this.layout = new BorderLayout(HGAP, VGAP);
-        setLayout(layout);
-
-        this.border = BorderFactory.createTitledBorder(UIText.get("maestro.song.parts"));
-        setBorder(border);
+        setLayout(new BorderLayout(HGAP, VGAP));
+        setBorder(BorderFactory.createTitledBorder(UIText.get("maestro.song.parts")));
 
         add(actionsPanel, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
@@ -66,23 +58,26 @@ public class SongPartsPanel extends JPanel {
     }
 
     /**
-     * Creates a JScrollPane containing the given parts list panel, with appropriate
-     * scroll bar policies and minimum size.
-     * 
-     * @param partsListPanel The parts list panel to be displayed in the scroll
-     *                       pane.
-     * @return The created JScrollPane containing the parts list panel.
+     * Creates a scroll pane for the song-parts list.
+     *
+     * @param songPartsListPanel the panel displayed in the scroll pane
+     * @return the configured scroll pane
      */
-    private static JScrollPane createScrollPane(SongPartsListPanel partsListPanel) {
+    private static JScrollPane createScrollPane(
+            SongPartsListPanel songPartsListPanel) {
 
         JScrollPane scrollPane = new JScrollPane(
-                partsListPanel,
+                songPartsListPanel,
                 JScrollPane.VERTICAL_SCROLLBAR_ALWAYS,
                 JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
 
-        Dimension minimumSize = scrollPane.getMinimumSize();
-        minimumSize.width = MINIMUM_LIST_WIDTH;
-        scrollPane.setMinimumSize(minimumSize);
+        // SongPartsListPanel uses the viewport size when calculating its
+        // preferred size, ensuring that it fills otherwise empty viewport space.
+        songPartsListPanel.setScroll(scrollPane);
+
+        Dimension preferredSize = scrollPane.getMinimumSize();
+        preferredSize.width = PREFERRED_WIDTH;
+        scrollPane.setPreferredSize(preferredSize);
 
         return scrollPane;
     }

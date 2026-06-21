@@ -1,4 +1,4 @@
-package com.digero.maestro.view.parts;
+package com.digero.maestro.view;
 
 import java.awt.FlowLayout;
 
@@ -7,7 +7,7 @@ import javax.swing.JPanel;
 
 import com.digero.common.view.UIText;
 
-public final class SongPartsActionsPanel extends JPanel {
+final class SongPartsActionsPanel extends JPanel {
     private final FlowLayout layout;
 
     private final JButton createNewPartButton;
