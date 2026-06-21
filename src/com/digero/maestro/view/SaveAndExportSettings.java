@@ -12,7 +12,7 @@ public class SaveAndExportSettings {
 	public boolean useRestsInChords = false;
     public boolean warnOnExportOfSamePartNames = true;
     public boolean reducedFilesize = false;
-	public String defaultTiming = ProjectFrame.TimingEnum.ORGANIC_SINGLESTAGE.settingsString;
+	public String defaultTiming = TimingMode.ORGANIC_SINGLESTAGE.settingsString;
 	// public boolean showPruned = false;
 	public boolean convertABCStringsToBasicAscii = true;
 	public boolean countUpLyrics = false;
