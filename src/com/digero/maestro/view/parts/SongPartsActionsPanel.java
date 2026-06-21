@@ -21,6 +21,9 @@ public final class SongPartsActionsPanel extends JPanel {
     private Runnable deletePartAction;
     private Runnable sortPartsAction;
 
+    /**
+     * Creates the panel with three buttons: "Create New Part", "Delete Part" and "Sort Parts".
+     */
     public SongPartsActionsPanel() {
         this.createNewPartButton = createButton("maestro.new.part");
         this.deletePartButton = createButton("maestro.delete");
@@ -72,16 +75,51 @@ public final class SongPartsActionsPanel extends JPanel {
         return new JButton(UIText.get(labelKey));
     }
 
+    /**
+     * Sets the action to be performed when the "Create New Part" button is clicked.
+     * @param action The action to be performed.
+     */
     public void setCreatePartAction(Runnable action) {
         createPartAction = action;
     }
 
+    /**
+     * Sets the action to be performed when the "Delete Part" button is clicked.
+     * @param action The action to be performed.
+     */
     public void setDeletePartAction(Runnable action) {
         deletePartAction = action;
     }
 
+    /**
+     * Sets the action to be performed when the "Sort Parts" button is clicked.
+     * @param action The action to be performed.
+     */
     public void setSortPartsAction(Runnable action) {
         sortPartsAction = action;
     }
 
+    /**
+     * Enables or disables the "Create New Part" button.
+     * @param enable True to enable the button, false to disable it.
+     */
+    public void setCreateNewPartButtonEnabled(boolean enable) {
+        createNewPartButton.setEnabled(enable);
+    }
+
+    /**
+     * Enables or disables the "Delete Part" button.
+     * @param enable True to enable the button, false to disable it.
+     */
+    public void setDeletePartButtonEnabled(boolean enable) {
+        deletePartButton.setEnabled(enable);
+    }
+
+    /**
+     * Enables or disables the "Sort Parts" button.
+     * @param enable True to enable the button, false to disable it.
+     */
+    public void setSortPartsButtonEnabled(boolean enable) {
+        sortPartsButton.setEnabled(enable);
+    }
 }
