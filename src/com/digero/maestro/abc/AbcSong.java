@@ -61,6 +61,7 @@ import com.digero.maestro.util.FileResolver;
 import com.digero.maestro.util.ListModelWrapper;
 import com.digero.maestro.util.SaveUtil;
 import com.digero.maestro.util.XmlUtil;
+import com.digero.maestro.view.TimingMode;
 
 public class AbcSong implements IDiscardable, AbcMetadataSource {
 	protected static final Logger log = Logger.getLogger("song");
@@ -230,7 +231,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			throws IOException, InvalidMidiDataException, FileParseException {
 		sourceFile = file;
 		usingOldVelocities = miscSettings.ignoreExpressionMessages;
-		ProjectFrame.TimingEnum.getFromSettings(saveSettings.defaultTiming).action(this);
+		TimingMode mode = TimingMode.getFromSettings(saveSettings.defaultTiming);
+		setTimings(mode.organic, mode.multistage, mode.mixTimings, mode.swing, mode.priority, mode.upgraded);
 		sequenceInfo = SequenceInfo.fromMidi(file, miscSettings, usingOldVelocities, usingOldTempos, false, false, usingNewMidiLayout);
 		title = sequenceInfo.getTitle();
 		composer = sequenceInfo.getComposer();

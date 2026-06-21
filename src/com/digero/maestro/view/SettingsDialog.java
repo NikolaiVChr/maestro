@@ -844,20 +844,20 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 				e -> saveSettings.convertABCStringsToBasicAscii = convertABCStringsToBasicAsciiCheckBox.isSelected());
 		
 		final JLabel defaultTimingText = new JLabel(UIText.get("maestro.options.default.timing"));
-		final JComboBox<ProjectFrame.TimingEnum> defaultTimingComboBox = new JComboBox<>();
+		final JComboBox<TimingMode> defaultTimingComboBox = new JComboBox<>();
 		defaultTimingComboBox.setToolTipText(
 				UIText.get("maestro.options.html.select.default.timing.for.new.projects.from.midi.html"));
-		for (ProjectFrame.TimingEnum choice : ProjectFrame.TimingEnum.values()) {
+		for (TimingMode choice : TimingMode.values()) {
 			defaultTimingComboBox.addItem(choice);
 		}
 		defaultTimingComboBox.setEditable(false);
 		defaultTimingComboBox.addActionListener(e -> {
 			try {
-				saveSettings.defaultTiming = ((ProjectFrame.TimingEnum) Objects.requireNonNull(defaultTimingComboBox.getSelectedItem())).settingsString;
+				saveSettings.defaultTiming = ((TimingMode) Objects.requireNonNull(defaultTimingComboBox.getSelectedItem())).settingsString;
 			} catch (Exception ignored) {
 			}
 		});
-		defaultTimingComboBox.setSelectedItem(ProjectFrame.TimingEnum.getFromSettings(saveSettings.defaultTiming));
+		defaultTimingComboBox.setSelectedItem(TimingMode.getFromSettings(saveSettings.defaultTiming));
 		
 		final JCheckBox exceed6CheckBox = new JCheckBox(
 				UIText.get("maestro.options.allow.more.than.6.note.polyphony.in.parts.organic.only"));
