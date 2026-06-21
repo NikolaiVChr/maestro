@@ -8,7 +8,6 @@ import javax.swing.JPanel;
 import com.digero.common.view.UIText;
 
 final class SongPartsActionsPanel extends JPanel {
-    private final FlowLayout layout;
 
     private final JButton createNewPartButton;
     private final JButton deletePartButton;
@@ -29,8 +28,7 @@ final class SongPartsActionsPanel extends JPanel {
         this.deletePartButton = createButton("maestro.delete");
         this.sortPartsButton = createButton("maestro.sort", "maestro.tip.sort.parts");
 
-        this.layout = new FlowLayout(FlowLayout.CENTER, HGAP, VGAP);
-        setLayout(layout);
+        setLayout(new FlowLayout(FlowLayout.CENTER, HGAP, VGAP));
 
         createNewPartButton.addActionListener(e -> {
             if (createPartAction != null)
