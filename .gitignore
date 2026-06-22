@@ -9,3 +9,9 @@
 /distribute/app.wxs
 /distribute/runtime.wxs
 # .idea folder has its own .gitignore file
+
+# IDE-specific project files
+.project
+.settings/
+.vscode/
+.classpath
