@@ -1701,8 +1701,15 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		dynaCombo.setEnabled(midiLoaded && uiEnabled);
         tempoOnlyFirstCheckBox.setEnabled(currentAbcSong != null && currentAbcSong.getSequenceInfo().getDataCache().isTempoInHigherTracks() && uiEnabled);//  && currentSong.getProjectFile() != null
 		sidepanelButton.setEnabled(midiLoaded && uiEnabled);
-		if (midiLoaded) {
-			midiModeRadioButton.setText(UIText.get("maestro.original.0", currentAbcSong.getSequenceInfo().standard+(currentAbcSong.getSequenceInfo().hasPorts?"+":"")));
+
+		if (midiLoaded && currentAbcSong != null) {
+			SequenceInfo seqInfo = currentAbcSong.getSequenceInfo();
+			midiModeRadioButton.setText(
+				UIText.get(
+					"maestro.original.0",
+					seqInfo.standard + (seqInfo.hasPorts ? "+" : "")
+				)
+			);
 		} else {
 			midiModeRadioButton.setText(UIText.get("maestro.original"));
 		}
