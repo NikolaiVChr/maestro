@@ -1608,8 +1608,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private boolean updateButtonsPending = false;
 	private final Runnable updateButtonsTask = () -> {
 		boolean hasAbcNotes = false;
-		if (abcSong != null) {
-			for (AbcPart part : abcSong.getParts()) {
+		AbcSong currentAbcSong = abcSong;
+		if (currentAbcSong != null) {
+			for (AbcPart part : currentAbcSong.getParts()) {
 				if (part.getEnabledTrackCount() > 0) {
 					hasAbcNotes = true;
 					break;
@@ -1669,31 +1670,36 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		songPartsPanel.setButtonsEnabled(abcSong != null && uiEnabled, partSelected && uiEnabled, midiLoaded && uiEnabled, partSelected && uiEnabled);
 
 		Color c = UIManager.getColor("Button.foreground");
-        if (abcSong != null) 
-			songPartsPanel.setOpenEditorButtonForeground(abcSong.isPartEdited() ? ColorTable.CONTROLS_EDITED.get() : c);
+        
+		songPartsPanel.setOpenEditorButtonForeground(currentAbcSong != null && currentAbcSong.isPartEdited() ? ColorTable.CONTROLS_EDITED.get() : c);
         
 		transposeSpinner.setEnabled(midiLoaded && uiEnabled);
 		tempoSpinner.setEnabled(midiLoaded && uiEnabled);
 		tuneEditorButton.setEnabled(midiLoaded && uiEnabled);
 		hideEditsCheckbox.setEnabled(midiLoaded && uiEnabled);
 		if (!midiLoaded) hideEditsCheckbox.setSelected(false);
-		if (midiLoaded && (abcSong.tuneBars != null || abcSong.getFirstBar() != null || abcSong.getLastBar() != null)) {
-			tuneEditorButton.setForeground(ColorTable.CONTROLS_EDITED.get());
+		
+		if (midiLoaded
+			&& currentAbcSong != null
+			&& (currentAbcSong.tuneBars != null
+				|| currentAbcSong.getFirstBar() != null
+				|| currentAbcSong.getLastBar() != null)) {
+					tuneEditorButton.setForeground(ColorTable.CONTROLS_EDITED.get());
 		} else {
 			c = UIManager.getColor("Button.foreground");
 			tuneEditorButton.setForeground(c);
 		}
-		resetTempoButton.setEnabled(midiLoaded && abcSong != null && abcSong.getTempoFactor() != 1.0f && uiEnabled);
+		resetTempoButton.setEnabled(midiLoaded && currentAbcSong != null && currentAbcSong.getTempoFactor() != 1.0f && uiEnabled);
 		resetTempoButton.setVisible(resetTempoButton.isEnabled());
 		keySignatureField.setEnabled(midiLoaded && uiEnabled);
 		timeSignatureField.setEnabled(midiLoaded && uiEnabled);
         timingCombo.setEnabled(midiLoaded && uiEnabled);
 
 		dynaCombo.setEnabled(midiLoaded && uiEnabled);
-        tempoOnlyFirstCheckBox.setEnabled(abcSong != null && abcSong.getSequenceInfo().getDataCache().isTempoInHigherTracks() && uiEnabled);//  && abcSong.getProjectFile() != null
+        tempoOnlyFirstCheckBox.setEnabled(currentAbcSong != null && currentAbcSong.getSequenceInfo().getDataCache().isTempoInHigherTracks() && uiEnabled);//  && currentSong.getProjectFile() != null
 		sidepanelButton.setEnabled(midiLoaded && uiEnabled);
 		if (midiLoaded) {
-			midiModeRadioButton.setText(UIText.get("maestro.original.0", abcSong.getSequenceInfo().standard+(abcSong.getSequenceInfo().hasPorts?"+":"")));
+			midiModeRadioButton.setText(UIText.get("maestro.original.0", currentAbcSong.getSequenceInfo().standard+(currentAbcSong.getSequenceInfo().hasPorts?"+":"")));
 		} else {
 			midiModeRadioButton.setText(UIText.get("maestro.original"));
 		}
@@ -1705,12 +1711,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		tableLayout.setColumn(LAYOUT_COLS_DYN);
 
 		String partListTitle = UIText.get("maestro.song.parts");
-		AbcSong currentSong = abcSong;
-		if (currentSong != null) {
+		if (currentAbcSong != null) {
 			partListTitle = UIText.get(
 				"maestro.0.count.1",
 				partListTitle,
-				currentSong.getActivePartCount()
+				currentAbcSong.getActivePartCount()
 			);
 		}
 		songPartsPanel.setBorder(BorderFactory.createTitledBorder(partListTitle));
