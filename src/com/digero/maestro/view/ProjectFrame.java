@@ -1609,19 +1609,49 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	private boolean updateButtonsPending = false;
 	private final Runnable updateButtonsTask = () -> {
-		AbcSong currentAbcSong = abcSong;
-		boolean hasAbcNotes = false;
-		if (currentAbcSong != null) {
-			for (AbcPart part : currentAbcSong.getParts()) {
-				if (part.getEnabledTrackCount() > 0) {
-					hasAbcNotes = true;
-					break;
-				}
+		try {
+			updateUiState();
+		} finally {
+			updateButtonsPending = false;
+		}
+	};
+
+	private void updateUiState() {
+		AbcSong currentSong = abcSong;
+		SequenceInfo sequenceInfo = currentSong != null ? currentSong.getSequenceInfo() : null;
+		boolean midiLoaded = sequencer.isLoaded();
+		boolean hasAbcNotes = hasEnabledAbcNotes(currentSong);
+		boolean partSelected = songPartsListPanel.getSelectedIndex() != -1;
+		boolean hasProjectFile = currentSong != null && currentSong.getProjectFile() != null;
+
+		updatePlaybackIcons();
+		ensureValidPreviewMode(hasAbcNotes);
+		updatePlaybackControls(midiLoaded, hasAbcNotes);
+		updateFileActions(currentSong, hasAbcNotes);
+		updateSourceControls(midiLoaded, hasProjectFile);
+		updateSongPartsControls(currentSong, midiLoaded, partSelected);
+		updateTuneControls(currentSong, midiLoaded);
+		updateTimingAndDynamicsControls(currentSong, sequenceInfo, midiLoaded);
+		updateSongPartsTitle(currentSong);
+
+		showFeed();
+	}
+
+	private boolean hasEnabledAbcNotes(AbcSong song) {
+		if (song == null) {
+			return false;
+		}
+
+		for (AbcPart part : song.getParts()) {
+			if (part.getEnabledTrackCount() > 0) {
+				return true;
 			}
 		}
 
-		boolean midiLoaded = sequencer.isLoaded();
+		return false;
+	}
 
+	private void updatePlaybackIcons() {
 		SequencerWrapper curSequencer = abcPreviewMode ? abcSequencer : sequencer;
 		Icon curPlayIcon = abcPreviewMode ? abcPlayIcon : playIcon;
 		Icon curPlayIconDisabled = abcPreviewMode ? abcPlayIconDisabled : playIconDisabled;
@@ -1629,93 +1659,110 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		Icon curPauseIconDisabled = abcPreviewMode ? abcPauseIconDisabled : pauseIconDisabled;
 		playButton.setIcon(curSequencer.isRunning() ? curPauseIcon : curPlayIcon);
 		playButton.setDisabledIcon(curSequencer.isRunning() ? curPauseIconDisabled : curPlayIconDisabled);
+	}
 
+	private void ensureValidPreviewMode(boolean hasAbcNotes) {
 		if (!hasAbcNotes) {
 			midiModeRadioButton.setSelected(true);
 			abcSequencer.setRunning(false);
 			//updatePreviewMode(false);
-            abcSequencer.clearSequence();
+			abcSequencer.clearSequence();
 		}
+	}
 
-        volumeSlider.setEnabled(uiEnabled);
-        stereoSlider.setEnabled(uiEnabled);
+	private void updatePlaybackControls(boolean midiLoaded, boolean hasAbcNotes) {
+		volumeSlider.setEnabled(uiEnabled);
+		stereoSlider.setEnabled(uiEnabled);
 
 		playButton.setEnabled(midiLoaded && uiEnabled);
 		midiModeRadioButton.setEnabled((midiLoaded || hasAbcNotes) && uiEnabled);
 		abcModeRadioButton.setEnabled(hasAbcNotes && uiEnabled);
 		stopButton.setEnabled((midiLoaded && (sequencer.isRunning() || !sequencer.isAtStart()))
 				|| (abcSequencer.isLoaded() && (abcSequencer.isRunning() || !abcSequencer.isAtStart())) && uiEnabled);
+	}
 
+	private void updateFileActions(AbcSong currentSong, boolean hasAbcNotes) {
 		exportButton.setEnabled(hasAbcNotes);// so that it keep focus, we keep it enabled during export.
 		exportMenuItem.setEnabled(hasAbcNotes && uiEnabled);
 		exportAsMenuItem.setEnabled(hasAbcNotes && uiEnabled);
-		saveMenuItem.setEnabled(currentAbcSong != null && uiEnabled);
-		saveAsMenuItem.setEnabled(currentAbcSong != null && uiEnabled);
-		saveExpandedMidiMenuItem.setEnabled(currentAbcSong != null && uiEnabled);
-		exportAudioMenu.setEnabled(currentAbcSong != null && uiEnabled);
-		exportMp3MenuItem.setEnabled(currentAbcSong != null && uiEnabled);
-		exportWavMenuItem.setEnabled(currentAbcSong != null && uiEnabled);
-		String errStr = UIText.get("maestro.html.p.style.color.red.must.save.as.an.msx.project.first.p.html");
+		saveMenuItem.setEnabled(currentSong != null && uiEnabled);
+		saveAsMenuItem.setEnabled(currentSong != null && uiEnabled);
+		saveExpandedMidiMenuItem.setEnabled(currentSong != null && uiEnabled);
+		exportAudioMenu.setEnabled(currentSong != null && uiEnabled);
+		exportMp3MenuItem.setEnabled(currentSong != null && uiEnabled);
+		exportWavMenuItem.setEnabled(currentSong != null && uiEnabled);
+	}
 
-		boolean hasProjectFile = currentAbcSong != null && currentAbcSong.getProjectFile() != null;
+	private void updateSourceControls(boolean midiLoaded, boolean hasProjectFile) {
+		String errStr = UIText.get("maestro.html.p.style.color.red.must.save.as.an.msx.project.first.p.html");
 		chooseMidiFileMenuItem.setEnabled(hasProjectFile && uiEnabled && sourceChangeEnabled);
 		chooseMidiFileMenuItem.setToolTipText(hasProjectFile ? "" : errStr);
 		reloadMidiFileMenuItem.setEnabled(hasProjectFile && uiEnabled && sourceChangeEnabled);
 		reloadMidiFileMenuItem.setToolTipText(hasProjectFile ? "" : errStr);
 
-        openRecentMenu.setEnabled(sourceChangeEnabled);
-        openItem.setEnabled(sourceChangeEnabled);
+		openRecentMenu.setEnabled(sourceChangeEnabled);
+		openItem.setEnabled(sourceChangeEnabled);
 
 		closeProject.setEnabled(midiLoaded && uiEnabled && sourceChangeEnabled);
+	}
 
+	private void updateSongPartsControls(AbcSong currentSong, boolean midiLoaded, boolean partSelected) {
 		songInfoPanel.setEditingEnabled(midiLoaded && uiEnabled);
 		songInfoPanel.setGenreAndMoodVisible(miscSettings.showBadger);
 
-		boolean partSelected = songPartsListPanel.getSelectedIndex() != -1;
-		songPartsPanel.setButtonsEnabled(currentAbcSong != null && uiEnabled, partSelected && uiEnabled, midiLoaded && uiEnabled, partSelected && uiEnabled);
+		songPartsPanel.setButtonsEnabled(currentSong != null && uiEnabled, partSelected && uiEnabled, midiLoaded && uiEnabled,
+				partSelected && uiEnabled);
 
 		Color c = UIManager.getColor("Button.foreground");
-        
-		songPartsPanel.setOpenEditorButtonForeground(currentAbcSong != null && currentAbcSong.isPartEdited() ? ColorTable.CONTROLS_EDITED.get() : c);
-        
+		songPartsPanel.setOpenEditorButtonForeground(
+				currentSong != null && currentSong.isPartEdited() ? ColorTable.CONTROLS_EDITED.get() : c);
+	}
+
+	private void updateTuneControls(AbcSong currentSong, boolean midiLoaded) {
 		transposeSpinner.setEnabled(midiLoaded && uiEnabled);
 		tempoSpinner.setEnabled(midiLoaded && uiEnabled);
 		tuneEditorButton.setEnabled(midiLoaded && uiEnabled);
 		hideEditsCheckbox.setEnabled(midiLoaded && uiEnabled);
-		if (!midiLoaded) hideEditsCheckbox.setSelected(false);
+		if (!midiLoaded)
+			hideEditsCheckbox.setSelected(false);
 
 		if (midiLoaded
-			&& currentAbcSong != null
-			&& (currentAbcSong.tuneBars != null
-				|| currentAbcSong.getFirstBar() != null
-				|| currentAbcSong.getLastBar() != null)) {
-					tuneEditorButton.setForeground(ColorTable.CONTROLS_EDITED.get());
+				&& currentSong != null
+				&& (currentSong.tuneBars != null
+						|| currentSong.getFirstBar() != null
+						|| currentSong.getLastBar() != null)) {
+			tuneEditorButton.setForeground(ColorTable.CONTROLS_EDITED.get());
 		} else {
-			c = UIManager.getColor("Button.foreground");
+			Color c = UIManager.getColor("Button.foreground");
 			tuneEditorButton.setForeground(c);
 		}
-		resetTempoButton.setEnabled(midiLoaded && currentAbcSong != null && currentAbcSong.getTempoFactor() != 1.0f && uiEnabled);
+		resetTempoButton.setEnabled(midiLoaded && currentSong != null && currentSong.getTempoFactor() != 1.0f && uiEnabled);
 		resetTempoButton.setVisible(resetTempoButton.isEnabled());
+	}
+
+	private void updateTimingAndDynamicsControls(AbcSong currentSong, SequenceInfo sequenceInfo, boolean midiLoaded) {
 		keySignatureField.setEnabled(midiLoaded && uiEnabled);
 		timeSignatureField.setEnabled(midiLoaded && uiEnabled);
-        timingCombo.setEnabled(midiLoaded && uiEnabled);
+		timingCombo.setEnabled(midiLoaded && uiEnabled);
 
 		dynaCombo.setEnabled(midiLoaded && uiEnabled);
-        tempoOnlyFirstCheckBox.setEnabled(currentAbcSong != null && currentAbcSong.getSequenceInfo().getDataCache().isTempoInHigherTracks() && uiEnabled);//  && currentSong.getProjectFile() != null
+		tempoOnlyFirstCheckBox.setEnabled(currentSong != null && sequenceInfo != null
+				&& sequenceInfo.getDataCache().isTempoInHigherTracks() && uiEnabled);//  && currentSong.getProjectFile() != null
 		sidepanelButton.setEnabled(midiLoaded && uiEnabled);
 
-		if (midiLoaded && currentAbcSong != null) {
-			SequenceInfo seqInfo = currentAbcSong.getSequenceInfo();
+		if (midiLoaded && currentSong != null && sequenceInfo != null) {
 			midiModeRadioButton.setText(
-				UIText.get(
-					"maestro.original.0",
-					seqInfo.standard + (seqInfo.hasPorts ? "+" : "")
-				)
+					UIText.get(
+							"maestro.original.0",
+							sequenceInfo.standard + (sequenceInfo.hasPorts ? "+" : "")
+					)
 			);
 		} else {
 			midiModeRadioButton.setText(UIText.get("maestro.original"));
 		}
+	}
 
+	private void updateSongPartsTitle(AbcSong currentSong) {
 		// double[] LAYOUT_COLS_DYN = new double[] { partsList.getFixedCellWidth() + 32, FILL };
 		double[] LAYOUT_COLS_DYN = new double[] { 300 + 32, FILL };
 
@@ -1723,19 +1770,15 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		tableLayout.setColumn(LAYOUT_COLS_DYN);
 
 		String partListTitle = UIText.get("maestro.song.parts");
-		if (currentAbcSong != null) {
+		if (currentSong != null) {
 			partListTitle = UIText.get(
-				"maestro.0.count.1",
-				partListTitle,
-				currentAbcSong.getActivePartCount()
+					"maestro.0.count.1",
+					partListTitle,
+					currentSong.getActivePartCount()
 			);
 		}
 		songPartsPanel.setBorder(BorderFactory.createTitledBorder(partListTitle));
-
-		showFeed();
-		
-		updateButtonsPending = false;
-	};
+	}
 	
 	void updateButtons(boolean immediate) {
 		if (immediate) {
