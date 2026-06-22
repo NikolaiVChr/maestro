@@ -1607,15 +1607,29 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 	}
 
+	/**
+	 * Flag to indicate whether a button update is pending. This prevents multiple updates from being scheduled simultaneously.
+	 */
 	private boolean updateButtonsPending = false;
+
+	/**
+	 * Runnable task that updates the UI state. It ensures that the updateButtonsPending flag is reset even if an exception occurs during the update.
+	 */
 	private final Runnable updateButtonsTask = () -> {
 		try {
 			updateUiState();
 		} finally {
+			/* prevents one failed UI refresh from permanently blocking all future scheduled refreshes
+			 * This is important because updateUiState() can throw exceptions if the UI is in an unexpected state.
+			*/
 			updateButtonsPending = false;
 		}
 	};
 
+	/**
+	 * Updates the UI state based on the current song, sequencer state, and other factors.
+	 * This method should be called whenever there is a change in the song or sequencer state.
+	 */
 	private void updateUiState() {
 		AbcSong currentSong = abcSong;
 		SequenceInfo sequenceInfo = currentSong != null ? currentSong.getSequenceInfo() : null;
@@ -1632,11 +1646,16 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		updateSongPartsControls(currentSong, midiLoaded, partSelected);
 		updateTuneControls(currentSong, midiLoaded);
 		updateTimingAndDynamicsControls(currentSong, sequenceInfo, midiLoaded);
-		updateSongPartsTitle(currentSong);
+		updateSongPartsLayoutAndTitle(currentSong);
 
 		showFeed();
 	}
 
+	/**
+	 * Checks if the given AbcSong has any enabled ABC notes in its parts.	
+	 * @param song the AbcSong to check
+	 * @return true if the song has any enabled ABC notes, false otherwise
+	 */
 	private boolean hasEnabledAbcNotes(AbcSong song) {
 		if (song == null) {
 			return false;
@@ -1651,6 +1670,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		return false;
 	}
 
+	/**
+	 * Updates the playback icons (play/pause) based on the current sequencer state and preview mode.
+	 */
 	private void updatePlaybackIcons() {
 		SequencerWrapper curSequencer = abcPreviewMode ? abcSequencer : sequencer;
 		Icon curPlayIcon = abcPreviewMode ? abcPlayIcon : playIcon;
@@ -1661,6 +1683,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		playButton.setDisabledIcon(curSequencer.isRunning() ? curPauseIconDisabled : curPlayIconDisabled);
 	}
 
+	/**
+	 * Ensures that the preview mode is valid based on the presence of ABC notes.
+	 * If there are no ABC notes, it switches to MIDI mode and clears the ABC sequencer.
+	 * @param hasAbcNotes true if there are enabled ABC notes, false otherwise
+	 */
 	private void ensureValidPreviewMode(boolean hasAbcNotes) {
 		if (!hasAbcNotes) {
 			midiModeRadioButton.setSelected(true);
@@ -1670,6 +1697,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 	}
 
+	/**
+	 * Updates the playback controls (buttons, sliders) based on the current state of the sequencers and UI.
+	 * @param midiLoaded true if the MIDI sequencer is loaded, false otherwise
+	 * @param hasAbcNotes true if there are enabled ABC notes, false otherwise
+	 */
 	private void updatePlaybackControls(boolean midiLoaded, boolean hasAbcNotes) {
 		volumeSlider.setEnabled(uiEnabled);
 		stereoSlider.setEnabled(uiEnabled);
@@ -1681,6 +1713,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				|| (abcSequencer.isLoaded() && (abcSequencer.isRunning() || !abcSequencer.isAtStart())) && uiEnabled);
 	}
 
+	/**
+	 * Updates the file-related actions (export, save) based on the current song and UI state.
+	 * @param currentSong the current AbcSong
+	 * @param hasAbcNotes true if there are enabled ABC notes, false otherwise
+	 */
 	private void updateFileActions(AbcSong currentSong, boolean hasAbcNotes) {
 		exportButton.setEnabled(hasAbcNotes);// so that it keep focus, we keep it enabled during export.
 		exportMenuItem.setEnabled(hasAbcNotes && uiEnabled);
@@ -1693,6 +1730,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		exportWavMenuItem.setEnabled(currentSong != null && uiEnabled);
 	}
 
+	/**
+	 * Updates the source-related controls (choose/reload MIDI file, open recent) based on the current song and UI state.
+	 * @param midiLoaded true if the MIDI sequencer is loaded, false otherwise
+	 * @param hasProjectFile true if the current song has an associated project file, false otherwise
+	 */
 	private void updateSourceControls(boolean midiLoaded, boolean hasProjectFile) {
 		String errStr = UIText.get("maestro.html.p.style.color.red.must.save.as.an.msx.project.first.p.html");
 		chooseMidiFileMenuItem.setEnabled(hasProjectFile && uiEnabled && sourceChangeEnabled);
@@ -1706,6 +1748,12 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		closeProject.setEnabled(midiLoaded && uiEnabled && sourceChangeEnabled);
 	}
 
+	/**
+	 * Updates the song parts controls (editing, buttons) based on the current song, MIDI state, and part selection.
+	 * @param currentSong the current AbcSong
+	 * @param midiLoaded true if the MIDI sequencer is loaded, false otherwise
+	 * @param partSelected true if a part is currently selected, false otherwise
+	 */
 	private void updateSongPartsControls(AbcSong currentSong, boolean midiLoaded, boolean partSelected) {
 		songInfoPanel.setEditingEnabled(midiLoaded && uiEnabled);
 		songInfoPanel.setGenreAndMoodVisible(miscSettings.showBadger);
@@ -1718,6 +1766,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				currentSong != null && currentSong.isPartEdited() ? ColorTable.CONTROLS_EDITED.get() : c);
 	}
 
+	/**
+	 * Updates the tune-related controls (transpose, tempo, editor) based on the current song and MIDI state.
+	 * @param currentSong the current AbcSong
+	 * @param midiLoaded true if the MIDI sequencer is loaded, false otherwise
+	 */
 	private void updateTuneControls(AbcSong currentSong, boolean midiLoaded) {
 		transposeSpinner.setEnabled(midiLoaded && uiEnabled);
 		tempoSpinner.setEnabled(midiLoaded && uiEnabled);
@@ -1740,6 +1793,13 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		resetTempoButton.setVisible(resetTempoButton.isEnabled());
 	}
 
+	/**
+	 * Updates the timing and dynamics controls (key signature, time signature, dynamics) based on the current song,
+	 * sequence information, and MIDI state.
+	 * @param currentSong the current AbcSong
+	 * @param sequenceInfo the SequenceInfo associated with the current song
+	 * @param midiLoaded true if the MIDI sequencer is loaded, false otherwise
+	 */
 	private void updateTimingAndDynamicsControls(AbcSong currentSong, SequenceInfo sequenceInfo, boolean midiLoaded) {
 		keySignatureField.setEnabled(midiLoaded && uiEnabled);
 		timeSignatureField.setEnabled(midiLoaded && uiEnabled);
@@ -1762,7 +1822,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 	}
 
-	private void updateSongPartsTitle(AbcSong currentSong) {
+	/**
+	 * Updates the layout and title of the song parts panel based on the current song.
+	 * @param currentSong the current AbcSong
+	 */
+	private void updateSongPartsLayoutAndTitle(AbcSong currentSong) {
 		// double[] LAYOUT_COLS_DYN = new double[] { partsList.getFixedCellWidth() + 32, FILL };
 		double[] LAYOUT_COLS_DYN = new double[] { 300 + 32, FILL };
 
@@ -1780,6 +1844,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		songPartsPanel.setBorder(BorderFactory.createTitledBorder(partListTitle));
 	}
 	
+	/**
+	 * Updates the buttons in the UI. If 'immediate' is true, the update is performed immediately; otherwise, it is scheduled to run later.
+	 * @param immediate true to update immediately, false to schedule for later
+	 */
 	void updateButtons(boolean immediate) {
 		if (immediate) {
 			updateButtonsTask.run();
@@ -1789,6 +1857,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 	}
 
+	/**
+	 * Flag to indicate whether a title update is pending. This prevents multiple title updates from being scheduled simultaneously.
+	 */
 	private boolean updateTitlePending = false;
 
     /**
