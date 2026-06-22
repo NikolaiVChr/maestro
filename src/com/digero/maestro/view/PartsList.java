@@ -10,12 +10,7 @@ import java.awt.Rectangle;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
-import java.awt.dnd.DnDConstants;
-import java.awt.dnd.DropTarget;
-import java.awt.dnd.DropTargetAdapter;
-import java.awt.dnd.DropTargetDragEvent;
-import java.awt.dnd.DropTargetDropEvent;
-import java.awt.dnd.DropTargetEvent;
+import java.awt.dnd.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -95,6 +90,8 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 		    public void dragEnter(DropTargetDragEvent dtde) {
 		        if (dtde.isDataFlavorSupported(PANEL_FLAVOR)) {
 		            dtde.acceptDrag(DnDConstants.ACTION_MOVE);
+					if (PanelTransferHandler.isDragInProgress)
+						getRootPane().setCursor(DragSource.DefaultMoveDrop);
 		        }
 		        else {
 		            dtde.rejectDrag();
@@ -123,6 +120,8 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 		    public void dragExit(DropTargetEvent dte) {
 		        dropInsertIndex = -1;
 		        repaint();
+				if (PanelTransferHandler.isDragInProgress)
+					getRootPane().setCursor(DragSource.DefaultMoveNoDrop);
 		    }
 
 		    @Override
@@ -413,6 +412,7 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
 		    if (!export) return null;
 
             isDragInProgress = true;
+			main.getRootPane().setCursor(DragSource.DefaultMoveDrop);
 
 		    int panelIndex = main.model.indexOf(((PartsListItem) c.getParent()).getPart()); 
 		    if (panelIndex == -1) {
@@ -502,6 +502,7 @@ public class PartsList extends JPanel implements IDiscardable, TableLayoutConsta
         @Override
         public void exportDone(JComponent c, Transferable t, int action) {
             isDragInProgress = false;
+			main.getRootPane().setCursor(null);
             if (action == TransferHandler.MOVE) {
                 //cleanup
             }
