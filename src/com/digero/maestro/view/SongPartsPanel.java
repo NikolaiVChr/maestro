@@ -19,7 +19,7 @@ public class SongPartsPanel extends JPanel {
     private final SongPartsActionsPanel actionsPanel;
     private final SongPartsToolsPanel toolsPanel;
 
-    private static final int PREFERRED_WIDTH = 300;
+    private static final int PREFERRED_WIDTH = PartsListItem.getProtoDimension().width;
     private static final int HGAP = 4;
     private static final int VGAP = 4;
 
