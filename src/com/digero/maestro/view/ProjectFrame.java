@@ -1705,10 +1705,14 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		tableLayout.setColumn(LAYOUT_COLS_DYN);
 
 		String partListTitle = UIText.get("maestro.song.parts");
-		if (abcSong != null) {
-			partListTitle = UIText.get("maestro.0.count.1", partListTitle, abcSong.getActivePartCount());
+		AbcSong currentSong = abcSong;
+		if (currentSong != null) {
+			partListTitle = UIText.get(
+				"maestro.0.count.1",
+				partListTitle,
+				currentSong.getActivePartCount()
+			);
 		}
-
 		songPartsPanel.setBorder(BorderFactory.createTitledBorder(partListTitle));
 
 		showFeed();
