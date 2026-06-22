@@ -11,6 +11,7 @@ public class PartsListEditor extends SongPartsListPanel {
 
 	public PartsListEditor(SequencerWrapper abcSequencer, MiscSettings miscSettings) {
 		super(abcSequencer, miscSettings);
+		setDropTarget(null);
 		
 		songListener = e -> {
 			AbcSong song = e.getSource();
