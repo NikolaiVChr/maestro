@@ -3,8 +3,6 @@ package com.digero.maestro.view;
 import static java.awt.event.InputEvent.ALT_DOWN_MASK;
 import static java.awt.event.InputEvent.CTRL_DOWN_MASK;
 import static java.awt.event.InputEvent.SHIFT_DOWN_MASK;
-import static javax.swing.ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED;
-import static javax.swing.ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS;
 
 import java.awt.*;
 import java.awt.dnd.DropTarget;
@@ -47,13 +45,9 @@ import javax.sound.midi.*;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import javax.swing.filechooser.FileFilter;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.Document;
 import javax.xml.transform.TransformerException;
 
 import com.digero.common.abc.AbcConstants;
@@ -103,8 +97,11 @@ import net.miginfocom.swing.MigLayout;
 public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompileConstants {
 	private static final Logger log = Logger.getLogger("view");
 
-	// future refactors might be able to make this field final
+	// future refactors might be able to make these fields final
 	private SongInfoPanel songInfoPanel;
+	private PartEditor partEditor;
+	private SongPartsListPanel songPartsListPanel;
+	private SongPartsPanel songPartsPanel;
 
     private boolean uiEnabled = true;
     private boolean sourceChangeEnabled = true;
@@ -169,15 +166,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private RecentlyOpenedList recentlyOpenedList;
 
 	private FileFilterDropListener dropListener = null;
-	
-	private JPanel partsListPanel;
-	private PartsList partsList;
-	private JButton newPartButton;
-	private JButton deletePartButton;
-	private JButton sortPartsButton;
-	private JButton partEditorButton;
-	private JButton numerateButton;
-	private PartEditor partEditor;
 
 	private JPanel settingsPanel;
 	private JDialog themeEditorDialog;
@@ -291,12 +279,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		String welcomeMessageTitle = UIText.get("maestro.welcomeMessageTitle");
 		String welcomeMessage =	UIText.get("maestro.DnD.file.to.open") + UIText.get("maestro.use.file.open");
 
-		// SongInfoPanel
-		boolean showGenreAndMood = miscSettings.showBadger;
-		String defaultTranscriber = prefs.get("abcplayer.transcriber", "");
-		songInfoPanel = new SongInfoPanel(showGenreAndMood, defaultTranscriber);
-        songInfoPanel.setChangeListener(this::updateAbcSongFromSongInfo);
-
         checkVolumeTransceiver();
 
         try {
@@ -323,7 +305,42 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             return;
         }
 
-        // SWING stuff starts here
+        // ------- SWING stuff starts here -------
+
+		// SongInfoPanel
+		boolean showGenreAndMood = miscSettings.showBadger;
+		String defaultTranscriber = prefs.get("abcplayer.transcriber", "");
+		songInfoPanel = new SongInfoPanel(showGenreAndMood, defaultTranscriber);
+        songInfoPanel.setChangeListener(this::updateAbcSongFromSongInfo);
+
+		// PartEditor
+		partEditor = new PartEditor(this, null, miscSettings);
+
+		// SongPartsListPanel
+		songPartsListPanel = new SongPartsListPanel(abcSequencer, miscSettings);
+		songPartsListPanel.addListSelectionListener(e -> {
+			if (e.getValueIsAdjusting())
+        		return;
+						
+			AbcPart abcPart = songPartsListPanel.getSelectedPart();
+
+			sequencer.getFilter().onAbcPartChanged(abcPart != null);
+			abcSequencer.getFilter().onAbcPartChanged(abcPart != null);
+			arrangementView.setAbcPart(abcPart, false);
+
+			if (abcPart != null) {
+				updateButtons(false);
+			} else {
+				if (songPartsListPanel.getModel().getSize() > 0) {
+					// If ctrl-clicking to deselect this will ensure something is selected
+					songPartsListPanel.selectPart(0);
+				}
+			}
+		});
+
+		// SongPartsPanel
+		songPartsPanel = new SongPartsPanel(this.songPartsListPanel);
+		songPartsPanel.setActionListener(createSongPartsActionListener());
 
         loadIcons();
 
@@ -348,13 +365,12 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         content = new JPanel(tableLayout, false);
         setContentPane(content);
 
-        generateSongPartsPanel();
-
         generateExportSettingsPanel();
 
         generateMidiPartsAndControlsPanel();
 
-		initTheme();//after arrangementView is defined, but before welcome message is set.
+		// after arrangementView is defined, but before welcome message is set.
+		initTheme();
 
         if (!SHOW_TEMPO_SPINNER)
             tempoSpinner.setEnabled(false);
@@ -374,7 +390,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         });
         new DropTarget(this, dropListener);
 
-        //dropListener.exclude = partsList; // not the cause of the partsList d'n'd flicker
+        // dropListener.exclude = partsList; // not the cause of the partsList d'n'd flicker
 
         mainSequencerListener = new MainSequencerListener();
         sequencer.addChangeListener(mainSequencerListener);
@@ -387,8 +403,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         initMenu();
         onSaveAndExportSettingsChanged();
         arrangementView.showInfoMessage(formatInfoMessage(welcomeMessageTitle, welcomeMessage, getHTMLFontSizeNormal()));
-        updateButtons(false);//must be false since we are not in AWT thread now.
-
+		
         // Add support for using spacebar for pause/play.
         ActionListener spaceBarListener = e -> {
             if (!sequencer.isLoaded()) {
@@ -401,21 +416,24 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         this.getRootPane().registerKeyboardAction(spaceBarListener, KeyStroke.getKeyStroke(' '),
                 JComponent.WHEN_IN_FOCUSED_WINDOW);
 
-        // Add a listener to remove focus from the current component when somewhere else is
-        // clicked.
+        /* Add a listener to remove focus from the current component when somewhere else is
+         clicked.*/
         MouseAdapter listenForFocus = new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
                 getRootPane().requestFocus();
+				if(e.getSource() instanceof SongPartsListPanel)
+					arrangementView.stopEditingLyrics();
             }
         };
-        addMouseListener(listenForFocus);
-		content.addMouseListener(listenForFocus);
-
+        
 		// Add to main structural panels that might capture clicks
+		addMouseListener(listenForFocus);
+		content.addMouseListener(listenForFocus);
 		songInfoPanel.addMouseListener(listenForFocus);
+		songPartsListPanel.addMouseListener(listenForFocus);
+		songPartsPanel.addMouseListener(listenForFocus);
 		if (settingsPanel != null) settingsPanel.addMouseListener(listenForFocus);
-		if (partsListPanel != null) partsListPanel.addMouseListener(listenForFocus);
 		if (midiPartsAndControls != null) midiPartsAndControls.addMouseListener(listenForFocus);
 		if (playControlPanel != null) playControlPanel.addMouseListener(listenForFocus);
 		if (arrangementView != null) arrangementView.addMouseListener(listenForFocus);
@@ -424,8 +442,19 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		content.setFocusable(true);
 		getRootPane().setFocusable(true);
 		arrangementView.setFocusable(true);
+
+		/* updateButtons once to set the initial state of the buttons.
+		This is needed in case a MIDI file is loaded by default or on first run,
+		and also to set the correct state of the buttons when no song is loaded. */
+		updateButtons(false);
     }
 
+	/**
+	 * update the abcSong with the new songInfo data. This is called when the user changes a field in the SongInfoPanel.
+	 * 
+	 * @param field
+	 * @param songInfo
+	 */
     private void updateAbcSongFromSongInfo(SongInfoField field,
         SongInfo songInfo) {		
 		
@@ -452,12 +481,15 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
     	}
 	}
 
+	/**
+	 * update the SongInfoPanel with the current abcSong data. This is called when a new abcSong is loaded or created.
+	 */
 	private void updateSongInfoFromAbcSong() {
 		if (!abcSong.isFromAbcFile() && !abcSong.isFromXmlFile()) {
         	abcSong.setTranscriber(songInfoPanel.getSongInfo().transcriber());
     	}
 
-    	songInfoPanel.setSongInfo(new SongInfo(
+    	this.songInfoPanel.setSongInfo(new SongInfo(
             abcSong.getTitle(),
             abcSong.getComposer(),
             abcSong.getTranscriber(),
@@ -466,13 +498,17 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
     	));
 	}
 
+	/**
+	 * Clear the SongInfoPanel. This is called when a new abcSong is loaded or created.
+	 */
 	private void clearSongInfoPanel(){
-		songInfoPanel.clearSongInfo();
+		this.songInfoPanel.clearSongInfo();
 	}
 
 	/**
+	 * get the current song info from the SongInfoPanel. This is called when a new abcSong is loaded or created.
 	 * 
-	 * @return
+	 * @return The current song info
 	 */
 	private SongInfo getCurrentSongInfo() {
 		if (abcSong == null)
@@ -487,124 +523,56 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
     	);
 	}
 
-	private void generateSongPartsPanel() {
-		newPartButton = new JButton(UIText.get("maestro.new.part"));
-		newPartButton.addActionListener(e -> {
-			if (abcSong != null)
-				abcSong.createNewPart();
-		});
+	/**
+	 * Create a new SongPartsActionListener that will handle the actions from the SongPartsPanel.
+	 * This might be a good candidate for future refactoring into a separate class, but for now it is an anonymous inner class.
+	 * 
+	 * @return The created {@link SongPartsActionListener}
+	 */
+	private SongPartsActionListener createSongPartsActionListener() {
+		return new SongPartsActionListener() {
 
-		deletePartButton = new JButton(UIText.get("maestro.delete"));
-		deletePartButton.addActionListener(e -> {
-			if (abcSong != null) {
+			@Override
+			public void createPartRequested() {
+				if (abcSong != null)
+					abcSong.createNewPart();
+			}
+
+			@Override
+			public void deletePartRequested() {
+				if (abcSong == null) 
+					return;
+				
 				if (abcSong.getParts().size() == 1) {
 					// When deleting last past, make sure a new part is replacing it, so something
 					// is selected
-					AbcPart deleteMe = partsList.getSelectedPart();
+					AbcPart deleteMe = songPartsListPanel.getSelectedPart();
 					abcSong.createNewPart();
 					abcSong.deletePart(deleteMe);
-				} else if (abcSong.getParts().size() > 1) {
-					abcSong.deletePart(partsList.getSelectedPart());
 				}
+
+				if (abcSong.getParts().size() > 1)
+					abcSong.deletePart(songPartsListPanel.getSelectedPart());
 			}
-		});
-		
-		sortPartsButton = new JButton(UIText.get("maestro.sort")) {
-			public Dimension getMaximumSize() {
-				return getPreferredSize();
+
+			@Override
+			public void sortPartsRequested() {
+				if (abcSong != null) 
+					abcSong.autoSortParts();
 			}
+
+			@Override
+			public void numeratePartsRequested() {
+				if (abcSong != null)
+					abcSong.assignNumbersToSimilarPartTypes();
+			}
+
+			@Override
+			public void openPartEditorRequested() {
+				partEditor.setVisible(!partEditor.isVisible());
+			}
+			
 		};
-		sortPartsButton.setToolTipText(UIText.get("maestro.tip.sort.parts"));
-		sortPartsButton.addActionListener(e -> {
-			if (abcSong != null) {
-				abcSong.autoSortParts();
-			}
-		});
-
-		partsList = new PartsList(abcSequencer, miscSettings);
-		partsList.addListSelectionListener(e -> {
-			AbcPart abcPart = partsList.getSelectedPart();
-			sequencer.getFilter().onAbcPartChanged(abcPart != null);
-			abcSequencer.getFilter().onAbcPartChanged(abcPart != null);
-			arrangementView.setAbcPart(abcPart, false);
-			if (abcPart != null) {
-				updateButtons(false);
-			} else {
-				updatePartEditorButton();
-				if (partsList.getModel().getSize() > 0) {
-					// If ctrl-clicking to deselect this will ensure something is selected
-					partsList.selectPart(0);
-				}
-			}
-		});
-		
-		
-		
-		partEditor = new PartEditor(this, null, miscSettings);
-
-		/*
-		 * Wrap the part list in a panel that forces the list to the top. Fixes a swing bug where clicking after the end
-		 * of the list will select the last element.
-		 */
-		/*
-		JPanel partListWrapperPanel = new JPanel(new BorderLayout());
-		partListWrapperPanel.add(partsList, BorderLayout.NORTH);
-		partListWrapperPanel.setBackground(partsList.getBackground());
-
-		// Remove focus from text boxes if area under parts is clicked
-		partListWrapperPanel.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				getRootPane().requestFocus();
-			}
-		});
-		JScrollPane partsListScrollPane = new JScrollPane(partListWrapperPanel, VERTICAL_SCROLLBAR_ALWAYS,
-				HORIZONTAL_SCROLLBAR_AS_NEEDED);
-		*/
-		JScrollPane partsListScrollPane = new JScrollPane(partsList, VERTICAL_SCROLLBAR_ALWAYS,
-				HORIZONTAL_SCROLLBAR_AS_NEEDED);
-		partsList.setScroll(partsListScrollPane);
-		// Remove focus from text boxes if area under parts is clicked
-		partsList.addMouseListener(new MouseAdapter() {
-			@Override
-			public void mouseClicked(MouseEvent e) {
-				getRootPane().requestFocus();
-				arrangementView.stopEditingLyrics();
-			}
-		});
-		
-		Dimension sz = partsListScrollPane.getMinimumSize();
-		sz.width = PartsListItem.getProtoDimension().width;
-		partsListScrollPane.setPreferredSize(sz);
-
-		partEditorButton = new JButton(UIText.get("maestro.part.editor"));
-		partEditorButton.addActionListener(e -> {
-			partEditor.setVisible(!partEditor.isVisible());
-		});
-		partEditorButton.setToolTipText(UIText.get("maestro.tip.partedit"));
-
-		numerateButton = new JButton(UIText.get("maestro.numerate"));
-		numerateButton.addActionListener(e -> {
-			if (abcSong != null)
-				abcSong.assignNumbersToSimilarPartTypes();
-		});
-		numerateButton.setToolTipText(UIText.get("maestro.tip.numerate"));
-
-		JPanel partsButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, HGAP, VGAP));
-		partsButtonPanel.add(newPartButton);
-		partsButtonPanel.add(deletePartButton);
-		partsButtonPanel.add(sortPartsButton);
-
-		partsListPanel = new JPanel(new BorderLayout(HGAP, VGAP));
-		partsListPanel.setBorder(BorderFactory.createTitledBorder(UIText.get("maestro.song.parts")));
-		partsListPanel.add(partsButtonPanel, BorderLayout.NORTH);
-		partsListPanel.add(partsListScrollPane, BorderLayout.CENTER);
-
-		GridLayout delayGrid = new GridLayout(1, 2);
-		JPanel delayPanel = new JPanel(delayGrid);
-		delayPanel.add(partEditorButton);
-		delayPanel.add(numerateButton);
-		partsListPanel.add(delayPanel, BorderLayout.SOUTH);
 	}
 
 	private void generateExportSettingsPanel() {
@@ -989,7 +957,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		JPanel abcPartsAndSettings = new JPanel(new BorderLayout(HGAP, VGAP));
 		abcPartsAndSettings.add(songInfoPanel, BorderLayout.NORTH);
 		JPanel partsListAndColorizer = new JPanel(new BorderLayout(HGAP, VGAP));
-		partsListAndColorizer.add(partsListPanel, BorderLayout.CENTER);
+		partsListAndColorizer.add(songPartsPanel, BorderLayout.CENTER);
 		if (SHOW_COLORIZER)
 			partsListAndColorizer.add(new Colorizer(arrangementView), BorderLayout.SOUTH);
 		abcPartsAndSettings.add(partsListAndColorizer, BorderLayout.CENTER);
@@ -1641,9 +1609,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	private boolean updateButtonsPending = false;
 	private final Runnable updateButtonsTask = () -> {
+		AbcSong currentAbcSong = abcSong;
 		boolean hasAbcNotes = false;
-		if (abcSong != null) {
-			for (AbcPart part : abcSong.getParts()) {
+		if (currentAbcSong != null) {
+			for (AbcPart part : currentAbcSong.getParts()) {
 				if (part.getEnabledTrackCount() > 0) {
 					hasAbcNotes = true;
 					break;
@@ -1677,25 +1646,23 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		stopButton.setEnabled((midiLoaded && (sequencer.isRunning() || !sequencer.isAtStart()))
 				|| (abcSequencer.isLoaded() && (abcSequencer.isRunning() || !abcSequencer.isAtStart())) && uiEnabled);
 
-		newPartButton.setEnabled(abcSong != null && uiEnabled);
-		deletePartButton.setEnabled(partsList.getSelectedIndex() != -1 && uiEnabled);
-		sortPartsButton.setEnabled(abcSong != null && uiEnabled);
-		numerateButton.setEnabled(midiLoaded && uiEnabled);
-		updatePartEditorButton();
 		exportButton.setEnabled(hasAbcNotes);// so that it keep focus, we keep it enabled during export.
 		exportMenuItem.setEnabled(hasAbcNotes && uiEnabled);
 		exportAsMenuItem.setEnabled(hasAbcNotes && uiEnabled);
-		saveMenuItem.setEnabled(abcSong != null && uiEnabled);
-		saveAsMenuItem.setEnabled(abcSong != null && uiEnabled);
-		saveExpandedMidiMenuItem.setEnabled(abcSong != null && uiEnabled);
-		exportAudioMenu.setEnabled(abcSong != null && uiEnabled);
-		exportMp3MenuItem.setEnabled(abcSong != null && uiEnabled);
-		exportWavMenuItem.setEnabled(abcSong != null && uiEnabled);
+		saveMenuItem.setEnabled(currentAbcSong != null && uiEnabled);
+		saveAsMenuItem.setEnabled(currentAbcSong != null && uiEnabled);
+		saveExpandedMidiMenuItem.setEnabled(currentAbcSong != null && uiEnabled);
+		exportAudioMenu.setEnabled(currentAbcSong != null && uiEnabled);
+		exportMp3MenuItem.setEnabled(currentAbcSong != null && uiEnabled);
+		exportWavMenuItem.setEnabled(currentAbcSong != null && uiEnabled);
 		String errStr = UIText.get("maestro.html.p.style.color.red.must.save.as.an.msx.project.first.p.html");
-		chooseMidiFileMenuItem.setEnabled(abcSong != null && abcSong.getProjectFile() != null && uiEnabled && sourceChangeEnabled);
-		chooseMidiFileMenuItem.setToolTipText(abcSong != null && abcSong.getProjectFile() == null ? errStr : "");
-		reloadMidiFileMenuItem.setEnabled(abcSong != null && abcSong.getProjectFile() != null && uiEnabled && sourceChangeEnabled);
-		reloadMidiFileMenuItem.setToolTipText(abcSong != null && abcSong.getProjectFile() == null ? errStr : "");
+
+		boolean hasProjectFile = currentAbcSong != null && currentAbcSong.getProjectFile() != null;
+		chooseMidiFileMenuItem.setEnabled(hasProjectFile && uiEnabled && sourceChangeEnabled);
+		chooseMidiFileMenuItem.setToolTipText(hasProjectFile ? "" : errStr);
+		reloadMidiFileMenuItem.setEnabled(hasProjectFile && uiEnabled && sourceChangeEnabled);
+		reloadMidiFileMenuItem.setToolTipText(hasProjectFile ? "" : errStr);
+
         openRecentMenu.setEnabled(sourceChangeEnabled);
         openItem.setEnabled(sourceChangeEnabled);
 
@@ -1704,57 +1671,71 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		songInfoPanel.setEditingEnabled(midiLoaded && uiEnabled);
 		songInfoPanel.setGenreAndMoodVisible(miscSettings.showBadger);
 
+		boolean partSelected = songPartsListPanel.getSelectedIndex() != -1;
+		songPartsPanel.setButtonsEnabled(currentAbcSong != null && uiEnabled, partSelected && uiEnabled, midiLoaded && uiEnabled, partSelected && uiEnabled);
+
+		Color c = UIManager.getColor("Button.foreground");
+        
+		songPartsPanel.setOpenEditorButtonForeground(currentAbcSong != null && currentAbcSong.isPartEdited() ? ColorTable.CONTROLS_EDITED.get() : c);
+        
 		transposeSpinner.setEnabled(midiLoaded && uiEnabled);
 		tempoSpinner.setEnabled(midiLoaded && uiEnabled);
 		tuneEditorButton.setEnabled(midiLoaded && uiEnabled);
 		hideEditsCheckbox.setEnabled(midiLoaded && uiEnabled);
 		if (!midiLoaded) hideEditsCheckbox.setSelected(false);
-		if (midiLoaded && (abcSong.tuneBars != null || abcSong.getFirstBar() != null || abcSong.getLastBar() != null)) {
-			tuneEditorButton.setForeground(ColorTable.CONTROLS_EDITED.get());
+
+		if (midiLoaded
+			&& currentAbcSong != null
+			&& (currentAbcSong.tuneBars != null
+				|| currentAbcSong.getFirstBar() != null
+				|| currentAbcSong.getLastBar() != null)) {
+					tuneEditorButton.setForeground(ColorTable.CONTROLS_EDITED.get());
 		} else {
-			Color c = UIManager.getColor("Button.foreground");
+			c = UIManager.getColor("Button.foreground");
 			tuneEditorButton.setForeground(c);
 		}
-		resetTempoButton.setEnabled(midiLoaded && abcSong != null && abcSong.getTempoFactor() != 1.0f && uiEnabled);
+		resetTempoButton.setEnabled(midiLoaded && currentAbcSong != null && currentAbcSong.getTempoFactor() != 1.0f && uiEnabled);
 		resetTempoButton.setVisible(resetTempoButton.isEnabled());
 		keySignatureField.setEnabled(midiLoaded && uiEnabled);
 		timeSignatureField.setEnabled(midiLoaded && uiEnabled);
         timingCombo.setEnabled(midiLoaded && uiEnabled);
 
 		dynaCombo.setEnabled(midiLoaded && uiEnabled);
-        tempoOnlyFirstCheckBox.setEnabled(abcSong != null && abcSong.getSequenceInfo().getDataCache().isTempoInHigherTracks() && uiEnabled);//  && abcSong.getProjectFile() != null
+        tempoOnlyFirstCheckBox.setEnabled(currentAbcSong != null && currentAbcSong.getSequenceInfo().getDataCache().isTempoInHigherTracks() && uiEnabled);//  && currentSong.getProjectFile() != null
 		sidepanelButton.setEnabled(midiLoaded && uiEnabled);
-		if (midiLoaded) {
-			midiModeRadioButton.setText(UIText.get("maestro.original.0", abcSong.getSequenceInfo().standard+(abcSong.getSequenceInfo().hasPorts?"+":"")));
+
+		if (midiLoaded && currentAbcSong != null) {
+			SequenceInfo seqInfo = currentAbcSong.getSequenceInfo();
+			midiModeRadioButton.setText(
+				UIText.get(
+					"maestro.original.0",
+					seqInfo.standard + (seqInfo.hasPorts ? "+" : "")
+				)
+			);
 		} else {
 			midiModeRadioButton.setText(UIText.get("maestro.original"));
 		}
 
-//		double[] LAYOUT_COLS_DYN = new double[] { partsList.getFixedCellWidth() + 32, FILL };
+		// double[] LAYOUT_COLS_DYN = new double[] { partsList.getFixedCellWidth() + 32, FILL };
 		double[] LAYOUT_COLS_DYN = new double[] { 300 + 32, FILL };
-		tableLayout.setColumn(LAYOUT_COLS_DYN);// This call is attempt of fix for no delete button on MacOS part 2
+
+		//This call is attempt of fix for no delete button on MacOS part 2
+		tableLayout.setColumn(LAYOUT_COLS_DYN);
 
 		String partListTitle = UIText.get("maestro.song.parts");
-		if (abcSong != null) {
-			partListTitle = UIText.get("maestro.0.count.1", partListTitle, abcSong.getActivePartCount());
+		if (currentAbcSong != null) {
+			partListTitle = UIText.get(
+				"maestro.0.count.1",
+				partListTitle,
+				currentAbcSong.getActivePartCount()
+			);
 		}
-
-		partsListPanel.setBorder(BorderFactory.createTitledBorder(partListTitle));
+		songPartsPanel.setBorder(BorderFactory.createTitledBorder(partListTitle));
 
 		showFeed();
 		
 		updateButtonsPending = false;
 	};
-
-	public void updatePartEditorButton() {
-        Color c = UIManager.getColor("Button.foreground");
-        if (abcSong != null) {
-            partEditorButton.setForeground(abcSong.isPartEdited() ? ColorTable.CONTROLS_EDITED.get() : c);
-        } else {
-            tuneEditorButton.setForeground(c);
-        }
-		partEditorButton.setEnabled(partsList.getSelectedIndex() != -1 && uiEnabled);
-	}
 	
 	void updateButtons(boolean immediate) {
 		if (immediate) {
@@ -1825,7 +1806,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             updateStereo();
         }
 
-		partsList.repaint();
+		songPartsListPanel.repaint();
 		partEditor.repaint();
 
 		setAbcSongModified(true);
@@ -1902,20 +1883,20 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				e.getPart().addAbcListener(abcPartListener);
 
 				idx = abcSong.getParts().indexOf(e.getPart());
-				partsList.selectPart(idx);
-				partsList.ensureIndexIsVisible(idx);
-				partsList.repaint();
+				songPartsListPanel.selectPart(idx);
+				songPartsListPanel.ensureIndexIsVisible(idx);
+				songPartsListPanel.repaint();
 				partEditor.repaint();
 				updateButtons(false);
 				compileStats();
 				break;
 			case BADGER:
-				AbcPart ap = partsList.getSelectedPart();
-				partsList.updateParts();
+				AbcPart ap = songPartsListPanel.getSelectedPart();
+				songPartsListPanel.updateParts();
 				idx = abcSong.getParts().indexOf(ap);
-				partsList.selectPart(idx);
-				partsList.ensureIndexIsVisible(idx);
-				partsList.repaint();
+				songPartsListPanel.selectPart(idx);
+				songPartsListPanel.ensureIndexIsVisible(idx);
+				songPartsListPanel.repaint();
 				partEditor.updateParts();
 				partEditor.repaint();
 				updateButtons(false);
@@ -1923,9 +1904,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				break;
 			case TUNE_EDIT:
 				updateButtons(false);
-				if (partsList.getSelectedPart() != null) {
+				if (songPartsListPanel.getSelectedPart() != null) {
 					// We do this to show the tempo panel if the tune editor has changed something
-					arrangementView.setAbcPart(partsList.getSelectedPart(), true);
+					arrangementView.setAbcPart(songPartsListPanel.getSelectedPart(), true);
 				}
 				if (abcPreviewMode)
 					refreshPreviewSequence(false);
@@ -1936,32 +1917,39 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 				idx = abcSong.getParts().indexOf(e.getPart());
 				if (idx > 0)
-					partsList.selectPart(idx - 1);
+					songPartsListPanel.selectPart(idx - 1);
 				else if (abcSong.getParts().size() > 1) {
-					partsList.selectPart(1);
+					songPartsListPanel.selectPart(1);
 				}
 
 				if (abcSong.getParts().isEmpty()) {
 					sequencer.stop();
-					arrangementView.showInfoMessage(formatInfoMessage(UIText.get("maestro.add.a.part"), UIText.get("maestro.this.abc.song.has.no.parts.click.the.0.button.to.add.a.new.part", newPartButton.getText()),getHTMLFontSizeNormal()));
+					arrangementView.showInfoMessage(
+						formatInfoMessage(
+							UIText.get("maestro.add.a.part"),
+							UIText.get("maestro.this.abc.song.has.no.parts.click.the.0.button.to.add.a.new.part",
+							UIText.get("maestro.new.part")),
+							getHTMLFontSizeNormal()
+						)
+					);
 				}
 
-				partsList.repaint();
+				songPartsListPanel.repaint();
 				updateButtons(false);
 				break;
 			case AFTER_PART_REMOVED:
 				refreshPreviewSequence(false);
 				break;
 			case PART_LIST_ORDER:
-				partsList.updateParts();//important to run before the below code
-				partsList.selectPart(abcSong.getParts().indexOf(arrangementView.getAbcPart()));
+				songPartsListPanel.updateParts();//important to run before the below code
+				songPartsListPanel.selectPart(abcSong.getParts().indexOf(arrangementView.getAbcPart()));
 				// this is important, else after a deletion, the tracklist might be in the wrong state:
-				if (partsList.getSelectedPart() != null) {
+				if (songPartsListPanel.getSelectedPart() != null) {
 					// might be null shortly after loading from midi
-					arrangementView.setAbcPart(partsList.getSelectedPart(), true);
+					arrangementView.setAbcPart(songPartsListPanel.getSelectedPart(), true);
 				}
 				refreshPreviewSequence(false);// autoPan depend on part order
-				partsList.repaint();
+				songPartsListPanel.repaint();
 				partEditor.repaint();
 				updateButtons(false);
 				break;
@@ -2027,21 +2015,21 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private final ListDataListener partsListListener = new ListDataListener() {
 		@Override
 		public void intervalAdded(ListDataEvent e) {
-			partsList.updateParts();
+			songPartsListPanel.updateParts();
 			partEditor.updateParts();
 			updateButtons(false);
 		}
 
 		@Override
 		public void intervalRemoved(ListDataEvent e) {
-			partsList.updateParts();
+			songPartsListPanel.updateParts();
 			partEditor.updateParts();
 			updateButtons(false);
 		}
 
 		@Override
 		public void contentsChanged(ListDataEvent e) {
-			partsList.updateParts();
+			songPartsListPanel.updateParts();
 			partEditor.updateParts();
 			updateButtons(false);
 		}
@@ -2181,7 +2169,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		
 		partEditor.setVisible(false);
 
-		partsList.updateParts();
+		songPartsListPanel.updateParts();
 		partEditor.updateParts();
 
 		allowOverwriteSaveFile = false;
@@ -2274,11 +2262,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			SequencerWrapper.onlyFirstTrackTempos = abcSong.isUsingOldTempos();
 			abcSong.setBadger(miscSettings.showBadger);
 			abcSong.addSongListener(abcSongListener);
-			abcSong.addSongListener(partsList.songListener);
+			abcSong.addSongListener(songPartsListPanel.songListener);
 			abcSong.addSongListener(partEditor.getSongListener());
 			for (AbcPart part : abcSong.getParts()) {
 				part.addAbcListener(abcPartListener);
-				part.addAbcListener(partsList.partListener);
+				part.addAbcListener(songPartsListPanel.partListener);
 				part.addAbcListener(partEditor.getPartListener());
 			}
 
@@ -2350,7 +2338,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 					updateButtons(true);
 					abcSong.createNewPart();
 				} else {
-					partsList.selectPart(0);
+					songPartsListPanel.selectPart(0);
 					boolean autoplay = miscSettings.autoplayOnOpen;
 					updatePreviewMode(true, autoplay);
 					updateButtons(true);
@@ -2452,7 +2440,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
 	private boolean reloadWithNewSource(File newSource) {
-		List<Pair<Boolean, Boolean>> soloMuteState = partsList.getSoloMuteStates();
+		List<Pair<Boolean, Boolean>> soloMuteState = songPartsListPanel.getSoloMuteStates();
 		File originalMsx = abcSong.getProjectFile();
 		File oldSource = abcSong.getSourceFile();
 		boolean modified = abcSongModified;
@@ -2490,7 +2478,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			updateTitle();
 		}
 		
-		partsList.restoreSoloMuteState(soloMuteState);
+		songPartsListPanel.restoreSoloMuteState(soloMuteState);
 
         updatePreviewMode(abcPreview, miscSettings.autoplayOnOpen);
         if (hideEdits && !hideEditsCheckbox.isSelected()) hideEditsCheckbox.doClick();
@@ -2500,7 +2488,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	private void setPartsListModel() {
 		// Not really used as a model anymore since switching to PartsList rather than JList
-		partsList.setModel(abcSong.getParts().getListModel());
+		songPartsListPanel.setModel(abcSong.getParts().getListModel());
 		partEditor.setModel(abcSong.getParts().getListModel());
 	}
 

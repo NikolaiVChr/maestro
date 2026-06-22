@@ -5,12 +5,13 @@ import com.digero.common.midi.SequencerWrapper;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcSong;
 
-public class PartsListEditor extends PartsList {
+public class PartsListEditor extends SongPartsListPanel {
 	private static final long serialVersionUID = -3564677504833477636L;
 	private final Dimension rowDim;
 
 	public PartsListEditor(SequencerWrapper abcSequencer, MiscSettings miscSettings) {
 		super(abcSequencer, miscSettings);
+		setDropTarget(null);
 		
 		songListener = e -> {
 			AbcSong song = e.getSource();

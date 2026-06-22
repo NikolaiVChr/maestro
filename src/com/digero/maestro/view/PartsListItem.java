@@ -78,9 +78,9 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 
 	protected Listener<PartsListItemEvent> itemListener = null;
 	
-	private PartsList parent = null;
+	private SongPartsListPanel parent = null;
 
-	public PartsListItem(AbcPart part, boolean showBadger, PartsList parent) {
+	public PartsListItem(AbcPart part, boolean showBadger, SongPartsListPanel parent) {
 		super();
 		
 		this.parent = parent;
@@ -220,7 +220,7 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 			}
 		});
 		if (parent != null) {
-			title.setTransferHandler(new PartsList.PanelTransferHandler(parent, false, true));
+			title.setTransferHandler(new SongPartsListPanel.PanelTransferHandler(parent, false, true));
 			title.setDropTarget(null);
 			setDropTarget(null);
 		}

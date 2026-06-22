@@ -499,7 +499,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 
             // If a PartsList Drag'n'Drop operation is active, pause follow.
             // That fixes the d'n'd cursor flicker.
-            if (PartsList.PanelTransferHandler.isDragInProgress) {
+            if (SongPartsListPanel.PanelTransferHandler.isDragInProgress) {
                 return;
             }
 
