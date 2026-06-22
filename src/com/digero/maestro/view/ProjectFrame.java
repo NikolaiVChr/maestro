@@ -1607,8 +1607,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	private boolean updateButtonsPending = false;
 	private final Runnable updateButtonsTask = () -> {
-		boolean hasAbcNotes = false;
 		AbcSong currentAbcSong = abcSong;
+		boolean hasAbcNotes = false;
 		if (currentAbcSong != null) {
 			for (AbcPart part : currentAbcSong.getParts()) {
 				if (part.getEnabledTrackCount() > 0) {
@@ -1647,17 +1647,20 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		exportButton.setEnabled(hasAbcNotes);// so that it keep focus, we keep it enabled during export.
 		exportMenuItem.setEnabled(hasAbcNotes && uiEnabled);
 		exportAsMenuItem.setEnabled(hasAbcNotes && uiEnabled);
-		saveMenuItem.setEnabled(abcSong != null && uiEnabled);
-		saveAsMenuItem.setEnabled(abcSong != null && uiEnabled);
-		saveExpandedMidiMenuItem.setEnabled(abcSong != null && uiEnabled);
-		exportAudioMenu.setEnabled(abcSong != null && uiEnabled);
-		exportMp3MenuItem.setEnabled(abcSong != null && uiEnabled);
-		exportWavMenuItem.setEnabled(abcSong != null && uiEnabled);
+		saveMenuItem.setEnabled(currentAbcSong != null && uiEnabled);
+		saveAsMenuItem.setEnabled(currentAbcSong != null && uiEnabled);
+		saveExpandedMidiMenuItem.setEnabled(currentAbcSong != null && uiEnabled);
+		exportAudioMenu.setEnabled(currentAbcSong != null && uiEnabled);
+		exportMp3MenuItem.setEnabled(currentAbcSong != null && uiEnabled);
+		exportWavMenuItem.setEnabled(currentAbcSong != null && uiEnabled);
 		String errStr = UIText.get("maestro.html.p.style.color.red.must.save.as.an.msx.project.first.p.html");
-		chooseMidiFileMenuItem.setEnabled(abcSong != null && abcSong.getProjectFile() != null && uiEnabled && sourceChangeEnabled);
-		chooseMidiFileMenuItem.setToolTipText(abcSong != null && abcSong.getProjectFile() == null ? errStr : "");
-		reloadMidiFileMenuItem.setEnabled(abcSong != null && abcSong.getProjectFile() != null && uiEnabled && sourceChangeEnabled);
-		reloadMidiFileMenuItem.setToolTipText(abcSong != null && abcSong.getProjectFile() == null ? errStr : "");
+
+		boolean hasProjectFile = currentAbcSong != null && currentAbcSong.getProjectFile() != null;
+		chooseMidiFileMenuItem.setEnabled(hasProjectFile && uiEnabled && sourceChangeEnabled);
+		chooseMidiFileMenuItem.setToolTipText(hasProjectFile ? "" : errStr);
+		reloadMidiFileMenuItem.setEnabled(hasProjectFile && uiEnabled && sourceChangeEnabled);
+		reloadMidiFileMenuItem.setToolTipText(hasProjectFile ? "" : errStr);
+
         openRecentMenu.setEnabled(sourceChangeEnabled);
         openItem.setEnabled(sourceChangeEnabled);
 
@@ -1667,7 +1670,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		songInfoPanel.setGenreAndMoodVisible(miscSettings.showBadger);
 
 		boolean partSelected = songPartsListPanel.getSelectedIndex() != -1;
-		songPartsPanel.setButtonsEnabled(abcSong != null && uiEnabled, partSelected && uiEnabled, midiLoaded && uiEnabled, partSelected && uiEnabled);
+		songPartsPanel.setButtonsEnabled(currentAbcSong != null && uiEnabled, partSelected && uiEnabled, midiLoaded && uiEnabled, partSelected && uiEnabled);
 
 		Color c = UIManager.getColor("Button.foreground");
         
@@ -1678,7 +1681,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		tuneEditorButton.setEnabled(midiLoaded && uiEnabled);
 		hideEditsCheckbox.setEnabled(midiLoaded && uiEnabled);
 		if (!midiLoaded) hideEditsCheckbox.setSelected(false);
-		
+
 		if (midiLoaded
 			&& currentAbcSong != null
 			&& (currentAbcSong.tuneBars != null
