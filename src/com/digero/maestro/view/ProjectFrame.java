@@ -1718,8 +1718,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		updateTuneControls(currentSong, midiLoaded);
 		updateTimingAndDynamicsControls(currentSong, sequenceInfo, midiLoaded);
 		updateSongPartsLayoutAndTitle(currentSong);
-
-		showFeed();
 	}
 
 	/**
