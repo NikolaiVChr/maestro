@@ -37,6 +37,7 @@ import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
@@ -327,7 +328,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			arrangementView.setAbcPart(abcPart, false);
 
 			if (abcPart != null) {
-				updateButtons(false);
+				refreshUi();
 			} else {
 				if (songPartsListPanel.getModel().getSize() > 0) {
 					// If ctrl-clicking to deselect this will ensure something is selected
@@ -441,10 +442,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		getRootPane().setFocusable(true);
 		arrangementView.setFocusable(true);
 
-		/* updateButtons once to set the initial state of the buttons.
+		/* refreshUi once to set the initial state of the UI.
 		This is needed in case a MIDI file is loaded by default or on first run,
-		and also to set the correct state of the buttons when no song is loaded. */
-		updateButtons(false);
+		and also to set the correct state of the UI when no song is loaded. */
+		refreshUi();
     }
 
 	/**
@@ -948,7 +949,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 
 		curSequencer.setRunning(running);
-		updateButtons(false);
+		refreshUi();
 	}
 
 	private JSplitPane generateTopLevelSplitPane() {
@@ -1465,7 +1466,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			sequencer.setTickPosition(tick);
 			if (running) sequencer.setRunning(true); 
 		}
-		updateButtons(false);
+		refreshUi();
         if (needRefresh) refreshPreviewSequence(false);
 	}
 	
@@ -1544,7 +1545,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private class MainSequencerListener implements Listener<SequencerEvent> {
 		@Override
 		public void onEvent(SequencerEvent evt) {
-			updateButtons(false);
+			refreshUi();
 			if (evt.getProperty() == SequencerProperty.IS_RUNNING) {
 				if (sequencer.isRunning()) {
 					abcSequencer.stop();
@@ -1582,7 +1583,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private class AbcSequencerListener implements Listener<SequencerEvent> {
 		@Override
 		public void onEvent(SequencerEvent evt) {
-			updateButtons(false);
+			refreshUi();
 			if (evt.getProperty() == SequencerProperty.IS_RUNNING) {
 				if (abcSequencer.isRunning()) {
 					sequencer.stop();
@@ -1606,29 +1607,101 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
 	/**
-	 * Flag to indicate whether a button update is pending. This prevents multiple updates from being scheduled simultaneously.
+	 * Flag to indicate whether a title update is pending. This prevents multiple title updates from being scheduled simultaneously.
 	 */
-	private boolean updateButtonsPending = false;
+	private boolean updateTitlePending = false;
+
+    /**
+     * Update title of maestro window
+     */
+	private void updateTitle() {
+		if (!updateTitlePending) {
+			updateTitlePending = true;
+			SwingUtilities.invokeLater(() -> {
+				updateTitlePending = false;
+				String title = MaestroMain.APP_NAME + " " + MaestroMain.APP_VERSION;
+				if (abcSong != null) {
+					if (abcSong.getProjectFile() != null) {
+						title += " - " + abcSong.getProjectFile().getName();
+						if (abcSong.getSourceFile() != null)
+							title += " [" + abcSong.getSourceFile().getName() + "]";
+					} else if (abcSong.getSourceFile() != null) {
+						title += " - " + abcSong.getSourceFile().getName();
+					}
+
+					if (isAbcSongModified())
+						title += "*";
+				}
+				setTitle(title);
+			});
+		}
+	}
 
 	/**
-	 * Runnable task that updates the UI state. It ensures that the updateButtonsPending flag is reset even if an exception occurs during the update.
+	 * Tracks whether a deferred UI-state update is already queued.
 	 */
-	private final Runnable updateButtonsTask = () -> {
-		try {
-			updateUiState();
-		} finally {
-			/* prevents one failed UI refresh from permanently blocking all future scheduled refreshes
-			 * This is important because updateUiState() can throw exceptions if the UI is in an unexpected state.
-			*/
-			updateButtonsPending = false;
-		}
+	private AtomicBoolean uiRefreshPending = new AtomicBoolean();
+
+	/**
+	 * Updates the UI controls based on the current application state.
+	 *
+	 * <p>If {@code immediate} is {@code true} and this method is called on the
+	 * Event Dispatch Thread, the update runs immediately. Otherwise, it is
+	 * scheduled on the Event Dispatch Thread.</p>
+	 *
+	 * @deprecated Use {@link #refreshUi()} instead, which automatically handles scheduling on the Event Dispatch Thread.
+	 * @param immediate whether to update immediately when already on the EDT
+	 */
+	@Deprecated(forRemoval = true)
+	void updateButtons(boolean immediate) {
+    	if (immediate && SwingUtilities.isEventDispatchThread()) {
+        	refreshUiStateAndFeed();
+    	} else if (uiRefreshPending.compareAndSet(false, true)) {
+        	SwingUtilities.invokeLater(uiRefreshTask);
+    	}
+	}
+
+	/**
+	 * Refreshes the UI state and error feed. If called from a non-Event Dispatch Thread,
+	 * the update is scheduled to run on the Event Dispatch Thread.
+	 */
+	void refreshUi() {
+		if (SwingUtilities.isEventDispatchThread()) {
+        	refreshUiStateAndFeed();
+        	return;
+    	}
+
+    	if (uiRefreshPending.compareAndSet(false, true)) {
+        	SwingUtilities.invokeLater(uiRefreshTask);
+    	}
+	}
+
+	/**
+	 * Runnable task for refreshing the UI state and error feed.
+	 */
+	private final Runnable uiRefreshTask = () -> {
+			// The request is no longer pending once its execution begins.
+    		// Another thread may now schedule a subsequent refresh if necessary.
+			uiRefreshPending.set(false);
+			refreshUiStateAndFeed();
 	};
 
 	/**
-	 * Updates the UI state based on the current song, sequencer state, and other factors.
-	 * This method should be called whenever there is a change in the song or sequencer state.
+	 * Performs a UI-state update and refreshes the error feed afterward.
 	 */
-	private void updateUiState() {
+	private void refreshUiStateAndFeed() {
+		try {
+			refreshUiState();
+		} finally {
+			showFeed();
+		}
+	}
+
+	/**
+	 * Refreshes the UI state based on the current application context,
+	 * including the current song, sequencer states, and user interface settings.
+	 */
+	private void refreshUiState() {
 		AbcSong currentSong = abcSong;
 		SequenceInfo sequenceInfo = currentSong != null ? currentSong.getSequenceInfo() : null;
 		boolean midiLoaded = sequencer.isLoaded();
@@ -1841,50 +1914,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 		songPartsPanel.setBorder(BorderFactory.createTitledBorder(partListTitle));
 	}
-	
-	/**
-	 * Updates the buttons in the UI. If 'immediate' is true, the update is performed immediately; otherwise, it is scheduled to run later.
-	 * @param immediate true to update immediately, false to schedule for later
-	 */
-	void updateButtons(boolean immediate) {
-		if (immediate) {
-			updateButtonsTask.run();
-		} else if (!updateButtonsPending) {
-			updateButtonsPending = true;
-			SwingUtilities.invokeLater(updateButtonsTask);
-		}
-	}
-
-	/**
-	 * Flag to indicate whether a title update is pending. This prevents multiple title updates from being scheduled simultaneously.
-	 */
-	private boolean updateTitlePending = false;
-
-    /**
-     * Update title of maestro window
-     */
-	private void updateTitle() {
-		if (!updateTitlePending) {
-			updateTitlePending = true;
-			SwingUtilities.invokeLater(() -> {
-				updateTitlePending = false;
-				String title = MaestroMain.APP_NAME + " " + MaestroMain.APP_VERSION;
-				if (abcSong != null) {
-					if (abcSong.getProjectFile() != null) {
-						title += " - " + abcSong.getProjectFile().getName();
-						if (abcSong.getSourceFile() != null)
-							title += " [" + abcSong.getSourceFile().getName() + "]";
-					} else if (abcSong.getSourceFile() != null) {
-						title += " - " + abcSong.getSourceFile().getName();
-					}
-
-					if (isAbcSongModified())
-						title += "*";
-				}
-				setTitle(title);
-			});
-		}
-	}
 
 	private final Listener<AbcPartEvent> abcPartListener = e -> {
         //log.warning(this.getClass().getTypeName()+" AbcPartEvent: "+e.getProperty());
@@ -1906,7 +1935,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         }
 
 		if (e.getProperty() == AbcPartProperty.TRACK_ENABLED)
-			updateButtons(false);
+			refreshUi();
 
 		if (e.getProperty() == AbcPartProperty.TITLE && arrangementView != null)
 			arrangementView.setNewTitle(e.getSource());
@@ -1986,7 +2015,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				// setting on model dont fire action listener
 				timingCombo.getModel().setSelectedItem(TimingMode.getInstance(abcSong.isOrganic(), abcSong.isOrganic2(), abcSong.isMixTiming(), abcSong.isTripletTiming(), abcSong.isPriorityActive(), abcSong.isUpgraded()));
 
-				updateButtons(false);
+				refreshUi();
 				break;
 			case CALC_DYNAMICS:
 				setDyna(abcSong.dynamicsMethod);
@@ -1999,7 +2028,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				songPartsListPanel.ensureIndexIsVisible(idx);
 				songPartsListPanel.repaint();
 				partEditor.repaint();
-				updateButtons(false);
+				refreshUi();
 				compileStats();
 				break;
 			case BADGER:
@@ -2011,11 +2040,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				songPartsListPanel.repaint();
 				partEditor.updateParts();
 				partEditor.repaint();
-				updateButtons(false);
+				refreshUi();
 				modified = false;
 				break;
 			case TUNE_EDIT:
-				updateButtons(false);
+				refreshUi();
 				if (songPartsListPanel.getSelectedPart() != null) {
 					// We do this to show the tempo panel if the tune editor has changed something
 					arrangementView.setAbcPart(songPartsListPanel.getSelectedPart(), true);
@@ -2047,7 +2076,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				}
 
 				songPartsListPanel.repaint();
-				updateButtons(false);
+				refreshUi();
 				break;
 			case AFTER_PART_REMOVED:
 				refreshPreviewSequence(false);
@@ -2063,7 +2092,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				refreshPreviewSequence(false);// autoPan depend on part order
 				songPartsListPanel.repaint();
 				partEditor.repaint();
-				updateButtons(false);
+				refreshUi();
 				break;
 
 			case SKIP_SILENCE_AT_START:
@@ -2129,21 +2158,21 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		public void intervalAdded(ListDataEvent e) {
 			songPartsListPanel.updateParts();
 			partEditor.updateParts();
-			updateButtons(false);
+			refreshUi();
 		}
 
 		@Override
 		public void intervalRemoved(ListDataEvent e) {
 			songPartsListPanel.updateParts();
 			partEditor.updateParts();
-			updateButtons(false);
+			refreshUi();
 		}
 
 		@Override
 		public void contentsChanged(ListDataEvent e) {
 			songPartsListPanel.updateParts();
 			partEditor.updateParts();
-			updateButtons(false);
+			refreshUi();
 		}
 	};
 
@@ -2319,7 +2348,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		abcPositionLabel.setInitialOffsetTick(abcPreviewStartTick);
 
 		setAbcSongModified(false);
-		updateButtons(false);
+		refreshUi();
 		updateTitle();
 
 		return true;
@@ -2447,16 +2476,16 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 			if (abcSong.isFromAbcFile() || abcSong.isFromXmlFile()) {
 				if (abcSong.getParts().isEmpty()) {
-					updateButtons(true);
+					refreshUi();
 					abcSong.createNewPart();
 				} else {
 					songPartsListPanel.selectPart(0);
 					boolean autoplay = miscSettings.autoplayOnOpen;
 					updatePreviewMode(true, autoplay);
-					updateButtons(true);
+					refreshUi();
 				}
 			} else {
-				updateButtons(true);
+				refreshUi();
 				if (abcSong.getParts().isEmpty()) {
 					abcSong.createNewPart();
 				}
@@ -2734,7 +2763,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             SequencerWrapper.isAbcPreview = abcPreviewMode;
 
 			arrangementView.setAbcPreviewMode(abcPreviewMode);
-			updateButtons(false);
+			refreshUi();
 		}
 		if (abcPreviewMode) {
 			long tick = abcSequencer.getTickPosition();
@@ -3442,7 +3471,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
      */
     private void setSourceChangeEnabled(boolean on) {
         sourceChangeEnabled = on;
-        updateButtons(true);
+        refreshUi();
     }
 
     /**
