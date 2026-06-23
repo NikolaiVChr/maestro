@@ -1663,7 +1663,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	/**
 	 * Refreshes the UI state and error feed. If called from a non-Event Dispatch Thread,
-	 * the update is scheduled to run on the Event Dispatch Thread.
+	 * the update is scheduled to run on the Event Dispatch Thread if not already pending..
 	 */
 	void refreshUi() {
 		if (SwingUtilities.isEventDispatchThread()) {
