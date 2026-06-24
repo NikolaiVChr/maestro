@@ -1674,15 +1674,14 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
 	/**
-	 * The task that performs the UI-state update and refreshes the error feed.
-	 * This task is executed on the Event Dispatch Thread.
+	 * Performs the queued UI refresh on the Event Dispatch Thread.
+	 *
+	 * The pending flag is cleared before execution so that a state change caused
+	 * during the refresh can schedule one follow-up refresh.
 	 */
 	private final Runnable uiRefreshTask = () -> {
-			try {
-				refreshUiStateAndFeed();
-			} finally {
-				uiRefreshPending.set(false);
-			}
+		uiRefreshPending.set(false);
+		refreshUiStateAndFeed();
 	};
 
 	/**
