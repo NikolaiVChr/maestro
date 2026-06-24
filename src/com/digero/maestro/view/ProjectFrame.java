@@ -37,6 +37,7 @@ import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
@@ -57,8 +58,6 @@ import com.digero.common.view.ColorSelector;
 import com.digero.common.view.UIText;
 import com.digero.maestro.abc.DissonanceDetector;
 import com.digero.maestro.midi.SequenceDataCache;
-import org.jetbrains.annotations.NonNls;
-import org.jetbrains.annotations.Nullable;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
@@ -329,7 +328,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			arrangementView.setAbcPart(abcPart, false);
 
 			if (abcPart != null) {
-				updateButtons(false);
+				refreshUi();
 			} else {
 				if (songPartsListPanel.getModel().getSize() > 0) {
 					// If ctrl-clicking to deselect this will ensure something is selected
@@ -443,10 +442,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		getRootPane().setFocusable(true);
 		arrangementView.setFocusable(true);
 
-		/* updateButtons once to set the initial state of the buttons.
+		/* refreshUi once to set the initial state of the UI.
 		This is needed in case a MIDI file is loaded by default or on first run,
-		and also to set the correct state of the buttons when no song is loaded. */
-		updateButtons(false);
+		and also to set the correct state of the UI when no song is loaded. */
+		refreshUi();
     }
 
 	/**
@@ -950,7 +949,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 
 		curSequencer.setRunning(running);
-		updateButtons(false);
+		refreshUi();
 	}
 
 	private JSplitPane generateTopLevelSplitPane() {
@@ -1467,7 +1466,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			sequencer.setTickPosition(tick);
 			if (running) sequencer.setRunning(true); 
 		}
-		updateButtons(false);
+		refreshUi();
         if (needRefresh) refreshPreviewSequence(false);
 	}
 	
@@ -1546,7 +1545,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private class MainSequencerListener implements Listener<SequencerEvent> {
 		@Override
 		public void onEvent(SequencerEvent evt) {
-			updateButtons(false);
+			refreshUi();
 			if (evt.getProperty() == SequencerProperty.IS_RUNNING) {
 				if (sequencer.isRunning()) {
 					abcSequencer.stop();
@@ -1584,7 +1583,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private class AbcSequencerListener implements Listener<SequencerEvent> {
 		@Override
 		public void onEvent(SequencerEvent evt) {
-			updateButtons(false);
+			refreshUi();
 			if (evt.getProperty() == SequencerProperty.IS_RUNNING) {
 				if (abcSequencer.isRunning()) {
 					sequencer.stop();
@@ -1607,145 +1606,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 	}
 
-	private boolean updateButtonsPending = false;
-	private final Runnable updateButtonsTask = () -> {
-		AbcSong currentAbcSong = abcSong;
-		boolean hasAbcNotes = false;
-		if (currentAbcSong != null) {
-			for (AbcPart part : currentAbcSong.getParts()) {
-				if (part.getEnabledTrackCount() > 0) {
-					hasAbcNotes = true;
-					break;
-				}
-			}
-		}
-
-		boolean midiLoaded = sequencer.isLoaded();
-
-		SequencerWrapper curSequencer = abcPreviewMode ? abcSequencer : sequencer;
-		Icon curPlayIcon = abcPreviewMode ? abcPlayIcon : playIcon;
-		Icon curPlayIconDisabled = abcPreviewMode ? abcPlayIconDisabled : playIconDisabled;
-		Icon curPauseIcon = abcPreviewMode ? abcPauseIcon : pauseIcon;
-		Icon curPauseIconDisabled = abcPreviewMode ? abcPauseIconDisabled : pauseIconDisabled;
-		playButton.setIcon(curSequencer.isRunning() ? curPauseIcon : curPlayIcon);
-		playButton.setDisabledIcon(curSequencer.isRunning() ? curPauseIconDisabled : curPlayIconDisabled);
-
-		if (!hasAbcNotes) {
-			midiModeRadioButton.setSelected(true);
-			abcSequencer.setRunning(false);
-			//updatePreviewMode(false);
-            abcSequencer.clearSequence();
-		}
-
-        volumeSlider.setEnabled(uiEnabled);
-        stereoSlider.setEnabled(uiEnabled);
-
-		playButton.setEnabled(midiLoaded && uiEnabled);
-		midiModeRadioButton.setEnabled((midiLoaded || hasAbcNotes) && uiEnabled);
-		abcModeRadioButton.setEnabled(hasAbcNotes && uiEnabled);
-		stopButton.setEnabled((midiLoaded && (sequencer.isRunning() || !sequencer.isAtStart()))
-				|| (abcSequencer.isLoaded() && (abcSequencer.isRunning() || !abcSequencer.isAtStart())) && uiEnabled);
-
-		exportButton.setEnabled(hasAbcNotes);// so that it keep focus, we keep it enabled during export.
-		exportMenuItem.setEnabled(hasAbcNotes && uiEnabled);
-		exportAsMenuItem.setEnabled(hasAbcNotes && uiEnabled);
-		saveMenuItem.setEnabled(currentAbcSong != null && uiEnabled);
-		saveAsMenuItem.setEnabled(currentAbcSong != null && uiEnabled);
-		saveExpandedMidiMenuItem.setEnabled(currentAbcSong != null && uiEnabled);
-		exportAudioMenu.setEnabled(currentAbcSong != null && uiEnabled);
-		exportMp3MenuItem.setEnabled(currentAbcSong != null && uiEnabled);
-		exportWavMenuItem.setEnabled(currentAbcSong != null && uiEnabled);
-		String errStr = UIText.get("maestro.html.p.style.color.red.must.save.as.an.msx.project.first.p.html");
-
-		boolean hasProjectFile = currentAbcSong != null && currentAbcSong.getProjectFile() != null;
-		chooseMidiFileMenuItem.setEnabled(hasProjectFile && uiEnabled && sourceChangeEnabled);
-		chooseMidiFileMenuItem.setToolTipText(hasProjectFile ? "" : errStr);
-		reloadMidiFileMenuItem.setEnabled(hasProjectFile && uiEnabled && sourceChangeEnabled);
-		reloadMidiFileMenuItem.setToolTipText(hasProjectFile ? "" : errStr);
-
-        openRecentMenu.setEnabled(sourceChangeEnabled);
-        openItem.setEnabled(sourceChangeEnabled);
-
-		closeProject.setEnabled(midiLoaded && uiEnabled && sourceChangeEnabled);
-
-		songInfoPanel.setEditingEnabled(midiLoaded && uiEnabled);
-		songInfoPanel.setGenreAndMoodVisible(miscSettings.showBadger);
-
-		boolean partSelected = songPartsListPanel.getSelectedIndex() != -1;
-		songPartsPanel.setButtonsEnabled(currentAbcSong != null && uiEnabled, partSelected && uiEnabled, midiLoaded && uiEnabled, partSelected && uiEnabled);
-
-		Color c = UIManager.getColor("Button.foreground");
-        
-		songPartsPanel.setOpenEditorButtonForeground(currentAbcSong != null && currentAbcSong.isPartEdited() ? ColorTable.CONTROLS_EDITED.get() : c);
-        
-		transposeSpinner.setEnabled(midiLoaded && uiEnabled);
-		tempoSpinner.setEnabled(midiLoaded && uiEnabled);
-		tuneEditorButton.setEnabled(midiLoaded && uiEnabled);
-		hideEditsCheckbox.setEnabled(midiLoaded && uiEnabled);
-		if (!midiLoaded) hideEditsCheckbox.setSelected(false);
-
-		if (midiLoaded
-			&& currentAbcSong != null
-			&& (currentAbcSong.tuneBars != null
-				|| currentAbcSong.getFirstBar() != null
-				|| currentAbcSong.getLastBar() != null)) {
-					tuneEditorButton.setForeground(ColorTable.CONTROLS_EDITED.get());
-		} else {
-			c = UIManager.getColor("Button.foreground");
-			tuneEditorButton.setForeground(c);
-		}
-		resetTempoButton.setEnabled(midiLoaded && currentAbcSong != null && currentAbcSong.getTempoFactor() != 1.0f && uiEnabled);
-		resetTempoButton.setVisible(resetTempoButton.isEnabled());
-		keySignatureField.setEnabled(midiLoaded && uiEnabled);
-		timeSignatureField.setEnabled(midiLoaded && uiEnabled);
-        timingCombo.setEnabled(midiLoaded && uiEnabled);
-
-		dynaCombo.setEnabled(midiLoaded && uiEnabled);
-        tempoOnlyFirstCheckBox.setEnabled(currentAbcSong != null && currentAbcSong.getSequenceInfo().getDataCache().isTempoInHigherTracks() && uiEnabled);//  && currentSong.getProjectFile() != null
-		sidepanelButton.setEnabled(midiLoaded && uiEnabled);
-
-		if (midiLoaded && currentAbcSong != null) {
-			SequenceInfo seqInfo = currentAbcSong.getSequenceInfo();
-			midiModeRadioButton.setText(
-				UIText.get(
-					"maestro.original.0",
-					seqInfo.standard + (seqInfo.hasPorts ? "+" : "")
-				)
-			);
-		} else {
-			midiModeRadioButton.setText(UIText.get("maestro.original"));
-		}
-
-		// double[] LAYOUT_COLS_DYN = new double[] { partsList.getFixedCellWidth() + 32, FILL };
-		double[] LAYOUT_COLS_DYN = new double[] { 300 + 32, FILL };
-
-		//This call is attempt of fix for no delete button on MacOS part 2
-		tableLayout.setColumn(LAYOUT_COLS_DYN);
-
-		String partListTitle = UIText.get("maestro.song.parts");
-		if (currentAbcSong != null) {
-			partListTitle = UIText.get(
-				"maestro.0.count.1",
-				partListTitle,
-				currentAbcSong.getActivePartCount()
-			);
-		}
-		songPartsPanel.setBorder(BorderFactory.createTitledBorder(partListTitle));
-
-		showFeed();
-		
-		updateButtonsPending = false;
-	};
-	
-	void updateButtons(boolean immediate) {
-		if (immediate) {
-			updateButtonsTask.run();
-		} else if (!updateButtonsPending) {
-			updateButtonsPending = true;
-			SwingUtilities.invokeLater(updateButtonsTask);
-		}
-	}
-
+	/**
+	 * Flag to indicate whether a title update is pending. This prevents multiple title updates from being scheduled simultaneously.
+	 */
 	private boolean updateTitlePending = false;
 
     /**
@@ -1774,6 +1637,282 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 	}
 
+	/**
+	 * Tracks whether a deferred UI-state update is already queued.
+	 */
+	private AtomicBoolean uiRefreshPending = new AtomicBoolean();
+
+	/**
+	 * Updates the UI controls based on the current application state.
+	 *
+	 * <p>If {@code immediate} is {@code true} and this method is called on the
+	 * Event Dispatch Thread, the update runs immediately. Otherwise, it is
+	 * scheduled on the Event Dispatch Thread.</p>
+	 *
+	 * @deprecated Use {@link #refreshUi()} instead, which automatically handles scheduling on the Event Dispatch Thread.
+	 * @param immediate whether to update immediately when already on the EDT
+	 */
+	@Deprecated(forRemoval = true)
+	void updateButtons(boolean immediate) {
+    	if (immediate && SwingUtilities.isEventDispatchThread()) {
+        	refreshUiStateAndFeed();
+    	} else if (uiRefreshPending.compareAndSet(false, true)) {
+        	SwingUtilities.invokeLater(uiRefreshTask);
+    	}
+	}
+
+	/**
+	 * Refreshes the UI state and error feed. If called from a non-Event Dispatch Thread,
+	 * the update is scheduled to run on the Event Dispatch Thread if not already pending..
+	 */
+	void refreshUi() {
+		if (SwingUtilities.isEventDispatchThread()) {
+        	refreshUiStateAndFeed();
+        	return;
+    	}
+
+    	if (uiRefreshPending.compareAndSet(false, true)) {
+        	SwingUtilities.invokeLater(uiRefreshTask);
+    	}
+	}
+
+	/**
+	 * Runnable task for refreshing the UI state and error feed.
+	 */
+	private final Runnable uiRefreshTask = () -> {
+			// The request is no longer pending once its execution begins.
+    		// Another thread may now schedule a subsequent refresh if necessary.
+			uiRefreshPending.set(false);
+			refreshUiStateAndFeed();
+	};
+
+	/**
+	 * Performs a UI-state update and refreshes the error feed afterward.
+	 */
+	private void refreshUiStateAndFeed() {
+		try {
+			refreshUiState();
+		} finally {
+			showFeed();
+		}
+	}
+
+	/**
+	 * Refreshes the UI state based on the current application context,
+	 * including the current song, sequencer states, and user interface settings.
+	 */
+	private void refreshUiState() {
+		AbcSong currentSong = abcSong;
+		SequenceInfo sequenceInfo = currentSong != null ? currentSong.getSequenceInfo() : null;
+		boolean midiLoaded = sequencer.isLoaded();
+		boolean hasAbcNotes = hasEnabledAbcNotes(currentSong);
+		boolean partSelected = songPartsListPanel.getSelectedIndex() != -1;
+		boolean hasProjectFile = currentSong != null && currentSong.getProjectFile() != null;
+
+		updatePlaybackIcons();
+		ensureValidPreviewMode(hasAbcNotes);
+		updatePlaybackControls(midiLoaded, hasAbcNotes);
+		updateFileActions(currentSong, hasAbcNotes);
+		updateSourceControls(midiLoaded, hasProjectFile);
+		updateSongPartsControls(currentSong, midiLoaded, partSelected);
+		updateTuneControls(currentSong, midiLoaded);
+		updateTimingAndDynamicsControls(currentSong, sequenceInfo, midiLoaded);
+		updateSongPartsLayoutAndTitle(currentSong);
+	}
+
+	/**
+	 * Checks if the given AbcSong has any enabled ABC notes in its parts.	
+	 * @param song the AbcSong to check
+	 * @return true if the song has any enabled ABC notes, false otherwise
+	 */
+	private boolean hasEnabledAbcNotes(AbcSong song) {
+		if (song == null) {
+			return false;
+		}
+
+		for (AbcPart part : song.getParts()) {
+			if (part.getEnabledTrackCount() > 0) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 * Updates the playback icons (play/pause) based on the current sequencer state and preview mode.
+	 */
+	private void updatePlaybackIcons() {
+		SequencerWrapper curSequencer = abcPreviewMode ? abcSequencer : sequencer;
+		Icon curPlayIcon = abcPreviewMode ? abcPlayIcon : playIcon;
+		Icon curPlayIconDisabled = abcPreviewMode ? abcPlayIconDisabled : playIconDisabled;
+		Icon curPauseIcon = abcPreviewMode ? abcPauseIcon : pauseIcon;
+		Icon curPauseIconDisabled = abcPreviewMode ? abcPauseIconDisabled : pauseIconDisabled;
+		playButton.setIcon(curSequencer.isRunning() ? curPauseIcon : curPlayIcon);
+		playButton.setDisabledIcon(curSequencer.isRunning() ? curPauseIconDisabled : curPlayIconDisabled);
+	}
+
+	/**
+	 * Ensures that the preview mode is valid based on the presence of ABC notes.
+	 * If there are no ABC notes, it switches to MIDI mode and clears the ABC sequencer.
+	 * @param hasAbcNotes true if there are enabled ABC notes, false otherwise
+	 */
+	private void ensureValidPreviewMode(boolean hasAbcNotes) {
+		if (!hasAbcNotes) {
+			midiModeRadioButton.setSelected(true);
+			abcSequencer.setRunning(false);
+			//updatePreviewMode(false);
+			abcSequencer.clearSequence();
+		}
+	}
+
+	/**
+	 * Updates the playback controls (buttons, sliders) based on the current state of the sequencers and UI.
+	 * @param midiLoaded true if the MIDI sequencer is loaded, false otherwise
+	 * @param hasAbcNotes true if there are enabled ABC notes, false otherwise
+	 */
+	private void updatePlaybackControls(boolean midiLoaded, boolean hasAbcNotes) {
+		volumeSlider.setEnabled(uiEnabled);
+		stereoSlider.setEnabled(uiEnabled);
+
+		playButton.setEnabled(midiLoaded && uiEnabled);
+		midiModeRadioButton.setEnabled((midiLoaded || hasAbcNotes) && uiEnabled);
+		abcModeRadioButton.setEnabled(hasAbcNotes && uiEnabled);
+		stopButton.setEnabled((midiLoaded && (sequencer.isRunning() || !sequencer.isAtStart()))
+				|| (abcSequencer.isLoaded() && (abcSequencer.isRunning() || !abcSequencer.isAtStart())) && uiEnabled);
+	}
+
+	/**
+	 * Updates the file-related actions (export, save) based on the current song and UI state.
+	 * @param currentSong the current AbcSong
+	 * @param hasAbcNotes true if there are enabled ABC notes, false otherwise
+	 */
+	private void updateFileActions(AbcSong currentSong, boolean hasAbcNotes) {
+		exportButton.setEnabled(hasAbcNotes);// so that it keep focus, we keep it enabled during export.
+		exportMenuItem.setEnabled(hasAbcNotes && uiEnabled);
+		exportAsMenuItem.setEnabled(hasAbcNotes && uiEnabled);
+		saveMenuItem.setEnabled(currentSong != null && uiEnabled);
+		saveAsMenuItem.setEnabled(currentSong != null && uiEnabled);
+		saveExpandedMidiMenuItem.setEnabled(currentSong != null && uiEnabled);
+		exportAudioMenu.setEnabled(currentSong != null && uiEnabled);
+		exportMp3MenuItem.setEnabled(currentSong != null && uiEnabled);
+		exportWavMenuItem.setEnabled(currentSong != null && uiEnabled);
+	}
+
+	/**
+	 * Updates the source-related controls (choose/reload MIDI file, open recent) based on the current song and UI state.
+	 * @param midiLoaded true if the MIDI sequencer is loaded, false otherwise
+	 * @param hasProjectFile true if the current song has an associated project file, false otherwise
+	 */
+	private void updateSourceControls(boolean midiLoaded, boolean hasProjectFile) {
+		String errStr = UIText.get("maestro.html.p.style.color.red.must.save.as.an.msx.project.first.p.html");
+		chooseMidiFileMenuItem.setEnabled(hasProjectFile && uiEnabled && sourceChangeEnabled);
+		chooseMidiFileMenuItem.setToolTipText(hasProjectFile ? "" : errStr);
+		reloadMidiFileMenuItem.setEnabled(hasProjectFile && uiEnabled && sourceChangeEnabled);
+		reloadMidiFileMenuItem.setToolTipText(hasProjectFile ? "" : errStr);
+
+		openRecentMenu.setEnabled(sourceChangeEnabled);
+		openItem.setEnabled(sourceChangeEnabled);
+
+		closeProject.setEnabled(midiLoaded && uiEnabled && sourceChangeEnabled);
+	}
+
+	/**
+	 * Updates the song parts controls (editing, buttons) based on the current song, MIDI state, and part selection.
+	 * @param currentSong the current AbcSong
+	 * @param midiLoaded true if the MIDI sequencer is loaded, false otherwise
+	 * @param partSelected true if a part is currently selected, false otherwise
+	 */
+	private void updateSongPartsControls(AbcSong currentSong, boolean midiLoaded, boolean partSelected) {
+		songInfoPanel.setEditingEnabled(midiLoaded && uiEnabled);
+		songInfoPanel.setGenreAndMoodVisible(miscSettings.showBadger);
+
+		songPartsPanel.setButtonsEnabled(currentSong != null && uiEnabled, partSelected && uiEnabled, midiLoaded && uiEnabled,
+				partSelected && uiEnabled);
+
+		Color c = UIManager.getColor("Button.foreground");
+		songPartsPanel.setOpenEditorButtonForeground(
+				currentSong != null && currentSong.isPartEdited() ? ColorTable.CONTROLS_EDITED.get() : c);
+	}
+
+	/**
+	 * Updates the tune-related controls (transpose, tempo, editor) based on the current song and MIDI state.
+	 * @param currentSong the current AbcSong
+	 * @param midiLoaded true if the MIDI sequencer is loaded, false otherwise
+	 */
+	private void updateTuneControls(AbcSong currentSong, boolean midiLoaded) {
+		transposeSpinner.setEnabled(midiLoaded && uiEnabled);
+		tempoSpinner.setEnabled(midiLoaded && uiEnabled);
+		tuneEditorButton.setEnabled(midiLoaded && uiEnabled);
+		hideEditsCheckbox.setEnabled(midiLoaded && uiEnabled);
+		if (!midiLoaded)
+			hideEditsCheckbox.setSelected(false);
+
+		if (midiLoaded
+				&& currentSong != null
+				&& (currentSong.tuneBars != null
+						|| currentSong.getFirstBar() != null
+						|| currentSong.getLastBar() != null)) {
+			tuneEditorButton.setForeground(ColorTable.CONTROLS_EDITED.get());
+		} else {
+			Color c = UIManager.getColor("Button.foreground");
+			tuneEditorButton.setForeground(c);
+		}
+		resetTempoButton.setEnabled(midiLoaded && currentSong != null && currentSong.getTempoFactor() != 1.0f && uiEnabled);
+		resetTempoButton.setVisible(resetTempoButton.isEnabled());
+	}
+
+	/**
+	 * Updates the timing and dynamics controls (key signature, time signature, dynamics) based on the current song,
+	 * sequence information, and MIDI state.
+	 * @param currentSong the current AbcSong
+	 * @param sequenceInfo the SequenceInfo associated with the current song
+	 * @param midiLoaded true if the MIDI sequencer is loaded, false otherwise
+	 */
+	private void updateTimingAndDynamicsControls(AbcSong currentSong, SequenceInfo sequenceInfo, boolean midiLoaded) {
+		keySignatureField.setEnabled(midiLoaded && uiEnabled);
+		timeSignatureField.setEnabled(midiLoaded && uiEnabled);
+		timingCombo.setEnabled(midiLoaded && uiEnabled);
+
+		dynaCombo.setEnabled(midiLoaded && uiEnabled);
+		tempoOnlyFirstCheckBox.setEnabled(currentSong != null && sequenceInfo != null
+				&& sequenceInfo.getDataCache().isTempoInHigherTracks() && uiEnabled);//  && currentSong.getProjectFile() != null
+		sidepanelButton.setEnabled(midiLoaded && uiEnabled);
+
+		if (midiLoaded && currentSong != null && sequenceInfo != null) {
+			midiModeRadioButton.setText(
+					UIText.get(
+							"maestro.original.0",
+							sequenceInfo.standard + (sequenceInfo.hasPorts ? "+" : "")
+					)
+			);
+		} else {
+			midiModeRadioButton.setText(UIText.get("maestro.original"));
+		}
+	}
+
+	/**
+	 * Updates the layout and title of the song parts panel based on the current song.
+	 * @param currentSong the current AbcSong
+	 */
+	private void updateSongPartsLayoutAndTitle(AbcSong currentSong) {
+		// double[] LAYOUT_COLS_DYN = new double[] { partsList.getFixedCellWidth() + 32, FILL };
+		double[] LAYOUT_COLS_DYN = new double[] { 300 + 32, FILL };
+
+		//This call is attempt of fix for no delete button on MacOS part 2
+		tableLayout.setColumn(LAYOUT_COLS_DYN);
+
+		String partListTitle = UIText.get("maestro.song.parts");
+		if (currentSong != null) {
+			partListTitle = UIText.get(
+					"maestro.0.count.1",
+					partListTitle,
+					currentSong.getActivePartCount()
+			);
+		}
+		songPartsPanel.setBorder(BorderFactory.createTitledBorder(partListTitle));
+	}
+
 	private final Listener<AbcPartEvent> abcPartListener = e -> {
         //log.warning(this.getClass().getTypeName()+" AbcPartEvent: "+e.getProperty());
 
@@ -1794,7 +1933,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         }
 
 		if (e.getProperty() == AbcPartProperty.TRACK_ENABLED)
-			updateButtons(false);
+			refreshUi();
 
 		if (e.getProperty() == AbcPartProperty.TITLE && arrangementView != null)
 			arrangementView.setNewTitle(e.getSource());
@@ -1874,7 +2013,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				// setting on model dont fire action listener
 				timingCombo.getModel().setSelectedItem(TimingMode.getInstance(abcSong.isOrganic(), abcSong.isOrganic2(), abcSong.isMixTiming(), abcSong.isTripletTiming(), abcSong.isPriorityActive(), abcSong.isUpgraded()));
 
-				updateButtons(false);
+				refreshUi();
 				break;
 			case CALC_DYNAMICS:
 				setDyna(abcSong.dynamicsMethod);
@@ -1887,7 +2026,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				songPartsListPanel.ensureIndexIsVisible(idx);
 				songPartsListPanel.repaint();
 				partEditor.repaint();
-				updateButtons(false);
+				refreshUi();
 				compileStats();
 				break;
 			case BADGER:
@@ -1899,11 +2038,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				songPartsListPanel.repaint();
 				partEditor.updateParts();
 				partEditor.repaint();
-				updateButtons(false);
+				refreshUi();
 				modified = false;
 				break;
 			case TUNE_EDIT:
-				updateButtons(false);
+				refreshUi();
 				if (songPartsListPanel.getSelectedPart() != null) {
 					// We do this to show the tempo panel if the tune editor has changed something
 					arrangementView.setAbcPart(songPartsListPanel.getSelectedPart(), true);
@@ -1935,7 +2074,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				}
 
 				songPartsListPanel.repaint();
-				updateButtons(false);
+				refreshUi();
 				break;
 			case AFTER_PART_REMOVED:
 				refreshPreviewSequence(false);
@@ -1951,7 +2090,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				refreshPreviewSequence(false);// autoPan depend on part order
 				songPartsListPanel.repaint();
 				partEditor.repaint();
-				updateButtons(false);
+				refreshUi();
 				break;
 
 			case SKIP_SILENCE_AT_START:
@@ -2017,21 +2156,21 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		public void intervalAdded(ListDataEvent e) {
 			songPartsListPanel.updateParts();
 			partEditor.updateParts();
-			updateButtons(false);
+			refreshUi();
 		}
 
 		@Override
 		public void intervalRemoved(ListDataEvent e) {
 			songPartsListPanel.updateParts();
 			partEditor.updateParts();
-			updateButtons(false);
+			refreshUi();
 		}
 
 		@Override
 		public void contentsChanged(ListDataEvent e) {
 			songPartsListPanel.updateParts();
 			partEditor.updateParts();
-			updateButtons(false);
+			refreshUi();
 		}
 	};
 
@@ -2207,7 +2346,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		abcPositionLabel.setInitialOffsetTick(abcPreviewStartTick);
 
 		setAbcSongModified(false);
-		updateButtons(false);
+		refreshUi();
 		updateTitle();
 
 		return true;
@@ -2335,16 +2474,16 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 			if (abcSong.isFromAbcFile() || abcSong.isFromXmlFile()) {
 				if (abcSong.getParts().isEmpty()) {
-					updateButtons(true);
+					refreshUi();
 					abcSong.createNewPart();
 				} else {
 					songPartsListPanel.selectPart(0);
 					boolean autoplay = miscSettings.autoplayOnOpen;
 					updatePreviewMode(true, autoplay);
-					updateButtons(true);
+					refreshUi();
 				}
 			} else {
-				updateButtons(true);
+				refreshUi();
 				if (abcSong.getParts().isEmpty()) {
 					abcSong.createNewPart();
 				}
@@ -2622,7 +2761,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             SequencerWrapper.isAbcPreview = abcPreviewMode;
 
 			arrangementView.setAbcPreviewMode(abcPreviewMode);
-			updateButtons(false);
+			refreshUi();
 		}
 		if (abcPreviewMode) {
 			long tick = abcSequencer.getTickPosition();
@@ -3330,7 +3469,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
      */
     private void setSourceChangeEnabled(boolean on) {
         sourceChangeEnabled = on;
-        updateButtons(true);
+        refreshUi();
     }
 
     /**
