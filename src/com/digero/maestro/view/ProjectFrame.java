@@ -328,7 +328,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			arrangementView.setAbcPart(abcPart, false);
 
 			if (abcPart != null) {
-				refreshUi();
+				scheduleUiRefresh();
 			} else {
 				if (songPartsListPanel.getModel().getSize() > 0) {
 					// If ctrl-clicking to deselect this will ensure something is selected
@@ -445,7 +445,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		/* refreshUi once to set the initial state of the UI.
 		This is needed in case a MIDI file is loaded by default or on first run,
 		and also to set the correct state of the UI when no song is loaded. */
-		refreshUi();
+		scheduleUiRefresh();
     }
 
 	/**
@@ -949,7 +949,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 
 		curSequencer.setRunning(running);
-		refreshUi();
+		scheduleUiRefresh();
 	}
 
 	private JSplitPane generateTopLevelSplitPane() {
@@ -1466,7 +1466,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			sequencer.setTickPosition(tick);
 			if (running) sequencer.setRunning(true); 
 		}
-		refreshUi();
+		scheduleUiRefresh();
         if (needRefresh) refreshPreviewSequence(false);
 	}
 	
@@ -1545,7 +1545,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private class MainSequencerListener implements Listener<SequencerEvent> {
 		@Override
 		public void onEvent(SequencerEvent evt) {
-			refreshUi();
+			scheduleUiRefresh();
 			if (evt.getProperty() == SequencerProperty.IS_RUNNING) {
 				if (sequencer.isRunning()) {
 					abcSequencer.stop();
@@ -1583,7 +1583,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private class AbcSequencerListener implements Listener<SequencerEvent> {
 		@Override
 		public void onEvent(SequencerEvent evt) {
-			refreshUi();
+			scheduleUiRefresh();
 			if (evt.getProperty() == SequencerProperty.IS_RUNNING) {
 				if (abcSequencer.isRunning()) {
 					sequencer.stop();
@@ -1649,7 +1649,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	 * Event Dispatch Thread, the update runs immediately. Otherwise, it is
 	 * scheduled on the Event Dispatch Thread.</p>
 	 *
-	 * @deprecated Use {@link #refreshUi()} instead, which automatically handles scheduling on the Event Dispatch Thread.
+	 * @deprecated Use {@link #scheduleUiRefresh()} instead, which automatically handles scheduling on the Event Dispatch Thread.
 	 * @param immediate whether to update immediately when already on the EDT
 	 */
 	@Deprecated(forRemoval = true)
@@ -1662,28 +1662,27 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
 	/**
-	 * Refreshes the UI state and error feed. If called from a non-Event Dispatch Thread,
-	 * the update is scheduled to run on the Event Dispatch Thread if not already pending..
+	 * Schedules a UI-state update to run on the Event Dispatch Thread.
+	 * If an update is already pending, this method does nothing.
+	 * 
+	 * TODO: This method should be enhanced to allow granular updates, e.g., only updating certain parts of the UI state instead of the entire state.
 	 */
-	void refreshUi() {
-		if (SwingUtilities.isEventDispatchThread()) {
-        	refreshUiStateAndFeed();
-        	return;
-    	}
-
+	void scheduleUiRefresh() {
     	if (uiRefreshPending.compareAndSet(false, true)) {
         	SwingUtilities.invokeLater(uiRefreshTask);
     	}
 	}
 
 	/**
-	 * Runnable task for refreshing the UI state and error feed.
+	 * The task that performs the UI-state update and refreshes the error feed.
+	 * This task is executed on the Event Dispatch Thread.
 	 */
 	private final Runnable uiRefreshTask = () -> {
-			// The request is no longer pending once its execution begins.
-    		// Another thread may now schedule a subsequent refresh if necessary.
-			uiRefreshPending.set(false);
-			refreshUiStateAndFeed();
+			try {
+				refreshUiStateAndFeed();
+			} finally {
+				uiRefreshPending.set(false);
+			}
 	};
 
 	/**
@@ -1933,7 +1932,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         }
 
 		if (e.getProperty() == AbcPartProperty.TRACK_ENABLED)
-			refreshUi();
+			scheduleUiRefresh();
 
 		if (e.getProperty() == AbcPartProperty.TITLE && arrangementView != null)
 			arrangementView.setNewTitle(e.getSource());
@@ -2013,7 +2012,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				// setting on model dont fire action listener
 				timingCombo.getModel().setSelectedItem(TimingMode.getInstance(abcSong.isOrganic(), abcSong.isOrganic2(), abcSong.isMixTiming(), abcSong.isTripletTiming(), abcSong.isPriorityActive(), abcSong.isUpgraded()));
 
-				refreshUi();
+				scheduleUiRefresh();
 				break;
 			case CALC_DYNAMICS:
 				setDyna(abcSong.dynamicsMethod);
@@ -2026,7 +2025,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				songPartsListPanel.ensureIndexIsVisible(idx);
 				songPartsListPanel.repaint();
 				partEditor.repaint();
-				refreshUi();
+				scheduleUiRefresh();
 				compileStats();
 				break;
 			case BADGER:
@@ -2038,11 +2037,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				songPartsListPanel.repaint();
 				partEditor.updateParts();
 				partEditor.repaint();
-				refreshUi();
+				scheduleUiRefresh();
 				modified = false;
 				break;
 			case TUNE_EDIT:
-				refreshUi();
+				scheduleUiRefresh();
 				if (songPartsListPanel.getSelectedPart() != null) {
 					// We do this to show the tempo panel if the tune editor has changed something
 					arrangementView.setAbcPart(songPartsListPanel.getSelectedPart(), true);
@@ -2074,7 +2073,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				}
 
 				songPartsListPanel.repaint();
-				refreshUi();
+				scheduleUiRefresh();
 				break;
 			case AFTER_PART_REMOVED:
 				refreshPreviewSequence(false);
@@ -2090,7 +2089,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				refreshPreviewSequence(false);// autoPan depend on part order
 				songPartsListPanel.repaint();
 				partEditor.repaint();
-				refreshUi();
+				scheduleUiRefresh();
 				break;
 
 			case SKIP_SILENCE_AT_START:
@@ -2156,21 +2155,21 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		public void intervalAdded(ListDataEvent e) {
 			songPartsListPanel.updateParts();
 			partEditor.updateParts();
-			refreshUi();
+			scheduleUiRefresh();
 		}
 
 		@Override
 		public void intervalRemoved(ListDataEvent e) {
 			songPartsListPanel.updateParts();
 			partEditor.updateParts();
-			refreshUi();
+			scheduleUiRefresh();
 		}
 
 		@Override
 		public void contentsChanged(ListDataEvent e) {
 			songPartsListPanel.updateParts();
 			partEditor.updateParts();
-			refreshUi();
+			scheduleUiRefresh();
 		}
 	};
 
@@ -2346,7 +2345,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		abcPositionLabel.setInitialOffsetTick(abcPreviewStartTick);
 
 		setAbcSongModified(false);
-		refreshUi();
+		scheduleUiRefresh();
 		updateTitle();
 
 		return true;
@@ -2474,16 +2473,16 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 			if (abcSong.isFromAbcFile() || abcSong.isFromXmlFile()) {
 				if (abcSong.getParts().isEmpty()) {
-					refreshUi();
+					scheduleUiRefresh();
 					abcSong.createNewPart();
 				} else {
 					songPartsListPanel.selectPart(0);
 					boolean autoplay = miscSettings.autoplayOnOpen;
 					updatePreviewMode(true, autoplay);
-					refreshUi();
+					scheduleUiRefresh();
 				}
 			} else {
-				refreshUi();
+				scheduleUiRefresh();
 				if (abcSong.getParts().isEmpty()) {
 					abcSong.createNewPart();
 				}
@@ -2761,7 +2760,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             SequencerWrapper.isAbcPreview = abcPreviewMode;
 
 			arrangementView.setAbcPreviewMode(abcPreviewMode);
-			refreshUi();
+			scheduleUiRefresh();
 		}
 		if (abcPreviewMode) {
 			long tick = abcSequencer.getTickPosition();
@@ -3469,7 +3468,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
      */
     private void setSourceChangeEnabled(boolean on) {
         sourceChangeEnabled = on;
-        refreshUi();
+        scheduleUiRefresh();
     }
 
     /**
