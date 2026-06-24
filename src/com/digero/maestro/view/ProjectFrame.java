@@ -1666,6 +1666,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	 * If an update is already pending, this method does nothing.
 	 * 
 	 * TODO: This method should be enhanced to allow granular updates, e.g., only updating certain parts of the UI state instead of the entire state.
+	 * This could further be enhanced by also coalescing multiple granular updates into a single update.
 	 */
 	void scheduleUiRefresh() {
     	if (uiRefreshPending.compareAndSet(false, true)) {
@@ -1716,7 +1717,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		disappear instead of happening as a side effect of refreshing
 		the UI? */
 		ensureValidPreviewMode(hasAbcNotes);
-		
+
 		updatePlaybackControls(midiLoaded, hasAbcNotes);
 		updateFileActions(currentSong, hasAbcNotes);
 		updateSourceControls(midiLoaded, hasProjectFile);
