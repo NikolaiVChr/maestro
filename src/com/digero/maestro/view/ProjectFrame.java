@@ -1643,25 +1643,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private AtomicBoolean uiRefreshPending = new AtomicBoolean();
 
 	/**
-	 * Updates the UI controls based on the current application state.
-	 *
-	 * <p>If {@code immediate} is {@code true} and this method is called on the
-	 * Event Dispatch Thread, the update runs immediately. Otherwise, it is
-	 * scheduled on the Event Dispatch Thread.</p>
-	 *
-	 * @deprecated Use {@link #scheduleUiRefresh()} instead, which automatically handles scheduling on the Event Dispatch Thread.
-	 * @param immediate whether to update immediately when already on the EDT
-	 */
-	@Deprecated(forRemoval = true)
-	void updateButtons(boolean immediate) {
-    	if (immediate && SwingUtilities.isEventDispatchThread()) {
-        	refreshUiStateAndFeed();
-    	} else if (uiRefreshPending.compareAndSet(false, true)) {
-        	SwingUtilities.invokeLater(uiRefreshTask);
-    	}
-	}
-
-	/**
 	 * Schedules a UI-state update to run on the Event Dispatch Thread.
 	 * If an update is already pending, this method does nothing.
 	 * 
