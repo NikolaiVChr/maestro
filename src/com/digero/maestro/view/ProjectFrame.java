@@ -1708,7 +1708,15 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		boolean hasProjectFile = currentSong != null && currentSong.getProjectFile() != null;
 
 		updatePlaybackIcons();
+
+		/*ensureValidPreviewMode() is not purely a UI update:
+		it can stop and clear the ABC sequencer. Since this refresh
+		is now deferred and coalesced, should that sequencer cleanup
+		be triggered explicitly when the last enabled ABC notes
+		disappear instead of happening as a side effect of refreshing
+		the UI? */
 		ensureValidPreviewMode(hasAbcNotes);
+		
 		updatePlaybackControls(midiLoaded, hasAbcNotes);
 		updateFileActions(currentSong, hasAbcNotes);
 		updateSourceControls(midiLoaded, hasProjectFile);
