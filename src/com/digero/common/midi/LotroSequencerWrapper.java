@@ -2,6 +2,8 @@ package com.digero.common.midi;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MidiEvent;
@@ -15,6 +17,7 @@ import javax.sound.midi.VoiceStatus;
 import com.digero.maestro.abc.AbcExporter.ExportTrackInfo;
 
 public class LotroSequencerWrapper extends NoteFilterSequencerWrapper {
+	private static final Logger log = Logger.getLogger("playback.lotro");
 	private static Synthesizer lotroSynth;
 	private static String loadLotroSynthError;
 	private long startTick = 0L;
@@ -25,6 +28,7 @@ public class LotroSequencerWrapper extends NoteFilterSequencerWrapper {
 		try {
 			lotroSynth = SynthesizerFactory.getLotroSynthesizer();
 		} catch (InvalidMidiDataException | MidiUnavailableException | IOException e) {
+			log.log(Level.SEVERE, "Could not load Lotro synthesizer, playback cannot not use lotro sounds.", e);
 			loadLotroSynthError = e.getMessage();
 		}
 	}

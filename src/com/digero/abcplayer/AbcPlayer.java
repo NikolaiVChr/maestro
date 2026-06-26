@@ -38,6 +38,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
+import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
@@ -391,6 +392,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			if (volumeTransceiver != null)
 				sequencer.addTransceiver(volumeTransceiver);
 		} catch (MidiUnavailableException e) {
+			log.log(Level.SEVERE, "Could not init MIDI playback, exiting.", e);
 			JOptionPane.showMessageDialog(this, e.getMessage(), UIText.get("abcplayer.midi.error"), JOptionPane.ERROR_MESSAGE);
 			System.exit(1);
 

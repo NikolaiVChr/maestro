@@ -69,7 +69,7 @@ public class Logging {
 				root.addHandler(fileHandler);
 				//important that we dont write windows username to log in case user is asked to send to us:
 				String safePath = logDir.getAbsolutePath().replace(System.getProperty("user.name"), "[user]");
-				root.config("Logging to file: " + safePath);
+				root.config("Logging to folder: " + safePath);
 			} else {
 				root.warning("Logging to file disabled as folder don't exist: " + (new File(home, logDirName).toString()));
 			}
@@ -103,7 +103,7 @@ public class Logging {
 		Logger.getLogger("jdk").setLevel(Level.OFF);
 		Logger.getLogger("java").setLevel(Level.OFF);
 		
-		root.config("Logging initialized");
+		root.config(app + " logging initialized");
 	}
 	/*
 	 * OFF
