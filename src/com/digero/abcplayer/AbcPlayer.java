@@ -212,17 +212,17 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		 * if (args != null && args.length > 0 && args[0] != null) {
 		 * System.out.println(" Processing file path ("+args[0].length()+" chars):\n" +args[0]); }
 		 */
-		mainWindow.openSongFromCommandLine(args);
+		SwingUtilities.invokeLater(()->{if (mainWindow != null) mainWindow.openSongFromCommandLine(args);});
 	}
 
 	/** A new activation from WinRun4J 64bit (a.k.a. a file was opened) */
 	public static void activate(String arg0) {
 		final String[] args = { arg0.substring(1, arg0.length() - 1) };
-		mainWindow.openSongFromCommandLine(args);
+		SwingUtilities.invokeLater(()->{if (mainWindow != null) mainWindow.openSongFromCommandLine(args);});
 	}
 
 	public static void execute(String cmdLine) {
-		mainWindow.openSongFromCommandLine(new String[] { cmdLine });
+		SwingUtilities.invokeLater(()->{if (mainWindow != null) mainWindow.openSongFromCommandLine(new String[] { cmdLine });});
 	}
 
 	private final SequencerWrapper sequencer;
@@ -377,10 +377,15 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 									UIText.get("abcplayer.html.error.details.br.0.html", LotroSequencerWrapper.getLoadLotroSynthError())),
 							BorderLayout.SOUTH);
 
-					JOptionPane.showMessageDialog(this, errorMessage, UIText.get("abcplayer.0.failed.to.load.lotro.instruments", APP_NAME),
-							JOptionPane.ERROR_MESSAGE);
+                    try {
+                        SwingUtilities.invokeAndWait(() -> {
+                            JOptionPane.showMessageDialog(this, errorMessage, UIText.get("abcplayer.0.failed.to.load.lotro.instruments", APP_NAME),
+                                    JOptionPane.ERROR_MESSAGE);
+                        });
+                    } catch (InterruptedException | InvocationTargetException ignored) {
+                    }
 
-					useLotroInstruments = false;
+                    useLotroInstruments = false;
 				}
 				sequencer.createReceiver();// To make sure its there
 			} else {
@@ -393,8 +398,13 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 				sequencer.addTransceiver(volumeTransceiver);
 		} catch (MidiUnavailableException e) {
 			log.log(Level.SEVERE, "Could not init MIDI playback, exiting.", e);
-			JOptionPane.showMessageDialog(this, e.getMessage(), UIText.get("abcplayer.midi.error"), JOptionPane.ERROR_MESSAGE);
-			System.exit(1);
+            try {
+                SwingUtilities.invokeAndWait(() -> {
+                    JOptionPane.showMessageDialog(this, e.getMessage(), UIText.get("abcplayer.midi.error"), JOptionPane.ERROR_MESSAGE);
+                });
+            } catch (InterruptedException | InvocationTargetException ignored) {
+            }
+            System.exit(1);
 
 			// This will never be hit, but convinces the compiler that
 			// the sequencer field will never be uninitialized
