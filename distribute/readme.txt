@@ -75,6 +75,7 @@ Version 4.6.18
 - Fixed several reasons ABC preview could become muted.
 - Fixed that drum sounds could become muted.
 - Allow longer note durations for certain instruments when using organic single-stage too.
+- Fixed that when getting "Undefined External Error" message due to no audio out on PC, the message now gives that info.
 - Added support for custom soundfont for playback of midi.
   Name it: midi.sf2
   Put it in:

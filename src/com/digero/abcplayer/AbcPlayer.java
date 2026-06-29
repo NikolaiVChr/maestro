@@ -43,6 +43,10 @@ import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
 import javax.sound.midi.*;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.DataLine;
+import javax.sound.sampled.Mixer;
+import javax.sound.sampled.SourceDataLine;
 import javax.swing.*;
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
@@ -399,12 +403,14 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		} catch (MidiUnavailableException e) {
 			log.log(Level.SEVERE, "Could not init MIDI playback, exiting.", e);
             try {
+				final String message = hasNoAudioOutput()
+						? UIText.get("abcplayer.no.audio.device") : e.getMessage();
                 SwingUtilities.invokeAndWait(() -> {
-                    JOptionPane.showMessageDialog(this, e.getMessage(), UIText.get("abcplayer.midi.error"), JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, message, UIText.get("abcplayer.midi.error"), JOptionPane.ERROR_MESSAGE);
                 });
             } catch (InterruptedException | InvocationTargetException ignored) {
             }
-            System.exit(1);
+			if (!tools) System.exit(1);
 
 			// This will never be hit, but convinces the compiler that
 			// the sequencer field will never be uninitialized
@@ -626,6 +632,24 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			updatePlaylistCardView();
 		};
 		this.getRootPane().registerKeyboardAction(tabListener, KeyStroke.getKeyStroke(KeyEvent.VK_TAB, 0), JComponent.WHEN_IN_FOCUSED_WINDOW);
+	}
+
+	/** @return true if no audio output line exists on this machine at all. */
+	private static boolean hasNoAudioOutput() {
+		try {
+			DataLine.Info out = new DataLine.Info(SourceDataLine.class, null); // null = any format
+			for (Mixer.Info mi : AudioSystem.getMixerInfo()) {
+				try {
+					if (AudioSystem.getMixer(mi).isLineSupported(out))
+						return false;   // at least one device can play audio
+				} catch (Exception | LinkageError ignored) {
+					// a mixer that won't even answer - skip it
+				}
+			}
+			return true;                // nothing can output audio
+		} catch (Throwable t) {
+			return true;                // if probing itself fails, treat as no audio
+		}
 	}
 	
 	private void updatePlaylistCardView() {
