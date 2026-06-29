@@ -133,19 +133,6 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			return;
 		}
 		
-		boolean tools;
-		String[] songArgs;
-		if (args != null && args.length > 1 && args[args.length-1].equals("--tools")) {
-			tools = true;
-			songArgs = Arrays.copyOf(args, args.length - 1);
-		} else if (args != null) {
-			tools = false;
-			songArgs = Arrays.copyOf(args, args.length);
-		} else {
-			tools = false;
-			songArgs = new String[0];
-		}
-		
 		if (!tools) Logging.configure(APP_NAME);
 		log = Logger.getLogger("view");
 
