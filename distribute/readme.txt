@@ -47,6 +47,7 @@ Authors
 Digero of Landroval
 Aifel of Meriadoc
 Elamond of Peregrin
+Asgloin of Meriadoc
 Karloman
 
 
@@ -56,7 +57,7 @@ Changelog
 This changelog is only partial, to see all the way back to v1.0.0 go here:
   https://maestro.miraheze.org/wiki/Version_history
 
-Version 4.6.18
+Version 4.6.19
 - No more vertically scale notes in drum/fx panels.
 - Added leading-edge note color markers to distinguish sequential notes.
 - Made default timing setting in options (for newly installed Maestro apps) be Organic Single-stage instead of Mix timings.
@@ -75,8 +76,7 @@ Version 4.6.18
 - Fixed several reasons ABC preview could become muted.
 - Fixed that drum sounds could become muted.
 - Allow longer note durations for certain instruments when using organic single-stage too.
-- Fixed that when getting "Undefined External Error" message due to no audio out on PC, the message now gives that info.
-- Fixed that Maestro when no audio out exists would silently fail and keep running in background.
+- Fixed that when getting "Undefined External Error" message due to no audio out on PC, the message now informs better.
 - Added support for custom soundfont for playback of midi.
   Name it: midi.sf2
   Put it in:
