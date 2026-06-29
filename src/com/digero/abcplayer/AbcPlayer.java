@@ -404,7 +404,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			log.log(Level.SEVERE, "Could not init MIDI playback, exiting.", e);
             try {
 				final String message = hasNoAudioOutput()
-						? UIText.get("abcplayer.no.audio.device") : e.getMessage();
+						? UIText.get("no.audio.device") : e.getMessage();
                 SwingUtilities.invokeAndWait(() -> {
                     JOptionPane.showMessageDialog(this, message, UIText.get("abcplayer.midi.error"), JOptionPane.ERROR_MESSAGE);
                 });

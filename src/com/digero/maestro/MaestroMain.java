@@ -141,7 +141,33 @@ public class MaestroMain {
 			loading.get().setVisible(true);
 		});
 		
-		mainWindow = new ProjectFrame();
+		try {
+			if (ProjectFrame.hasNoAudioOutput()) {
+				throw new ProjectFrame.SequencerInitException(
+						new IllegalStateException("No audio output device"));
+			}
+			mainWindow = new ProjectFrame();
+		} catch (Throwable t) {
+			log.log(Level.SEVERE, "Startup failed", t);
+			final String msg;
+			if (ProjectFrame.hasNoAudioOutput()) {
+				msg = UIText.get("no.audio.device");
+			} else {
+				Throwable cause = (t.getCause() != null) ? t.getCause() : t;
+				String detail = cause.getMessage();
+				if (detail == null || detail.isBlank())
+					detail = cause.getClass().getSimpleName();
+				msg = UIText.get("maestro.failed.to.initialize.midi.sequencer.msg", detail);
+			}
+			SwingUtilities.invokeAndWait(() -> {
+				if (loading.get() != null) loading.get().dispose();   // splash first
+				JOptionPane.showMessageDialog(null, msg,
+						UIText.get("maestro.failed.to.initialize.midi.sequencer.title"),
+						JOptionPane.ERROR_MESSAGE);
+			});
+			System.exit(1);
+			return;
+		}
 
 		SwingUtilities.invokeAndWait(() -> {
 			mainWindow.setVisible(true);

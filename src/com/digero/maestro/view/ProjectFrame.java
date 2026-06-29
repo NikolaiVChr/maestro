@@ -43,6 +43,10 @@ import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
 import javax.sound.midi.*;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.DataLine;
+import javax.sound.sampled.Mixer;
+import javax.sound.sampled.SourceDataLine;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
@@ -295,13 +299,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 failedToLoadLotroInstruments = true;
             }
 
-        } catch (MidiUnavailableException e) {
-            JOptionPane
-                    .showMessageDialog(
-                            null, UIText.get("maestro.failed.to.initialize.midi.sequencer.msg", e.getMessage()),
-							UIText.get("maestro.failed.to.initialize.midi.sequencer.title"), JOptionPane.ERROR_MESSAGE);
-            System.exit(1);
-            return;
+        } catch (MidiUnavailableException | IllegalStateException e) {// the state exception is important to catch
+			// Wrap so MaestroMain can react, but don't show UI or exit from here.
+			throw new SequencerInitException(e);
         }
 
         // ------- SWING stuff starts here -------
@@ -447,6 +447,28 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		and also to set the correct state of the UI when no song is loaded. */
 		scheduleUiRefresh();
     }
+
+	/** @return true if no audio output line exists on this machine at all. */
+	public static boolean hasNoAudioOutput() {
+		try {
+			DataLine.Info out = new DataLine.Info(SourceDataLine.class, null); // null = any format
+			for (Mixer.Info mi : AudioSystem.getMixerInfo()) {
+				try {
+					if (AudioSystem.getMixer(mi).isLineSupported(out))
+						return false;   // at least one device can play audio
+				} catch (Exception | LinkageError ignored) {
+					// a mixer that won't even answer - skip it
+				}
+			}
+			return true;                // nothing can output audio
+		} catch (Throwable t) {
+			return true;                // if probing itself fails, treat as no audio
+		}
+	}
+
+	public static class SequencerInitException extends RuntimeException {
+		public SequencerInitException(Throwable cause) { super(cause); }
+	}
 
 	/**
 	 * update the abcSong with the new songInfo data. This is called when the user changes a field in the SongInfoPanel.
