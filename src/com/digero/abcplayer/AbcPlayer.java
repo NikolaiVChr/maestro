@@ -112,10 +112,23 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 			String versionString = props.getProperty("version.AbcPlayer");
 			if (versionString != null)
 				APP_VERSION = Version.parseVersion(versionString);
-		} catch (IOException ex) {
+		} catch (IOException ignored) {
 		}
 
-		if (!openPort() && args != null && args.length > 0 && args[0].length() > 3) {
+		boolean tools;
+		String[] songArgs;
+		if (args != null && args.length > 1 && args[args.length-1].equals("--tools")) {
+			tools = true;
+			songArgs = Arrays.copyOf(args, args.length - 1);
+		} else if (args != null) {
+			tools = false;
+			songArgs = Arrays.copyOf(args, args.length);
+		} else {
+			tools = false;
+			songArgs = new String[0];
+		}
+
+		if (!tools && !openPort() && args != null && args.length > 0 && args[0].length() > 3) {
 			sendArgsToPort(args);
 			return;
 		}
