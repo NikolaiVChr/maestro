@@ -1607,7 +1607,7 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 	}
 
 	private boolean saveSong(File file) {
-		try (PrintStream out = new PrintStream(file)) {
+		try (PrintStream out = new PrintStream(file, StandardCharsets.UTF_8)) {
 			int i = 0;
 			for (FileAndData fileData : abcData) {
 				for (String line : fileData.lines)
@@ -1638,10 +1638,11 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 
 	private void updateButtonStates() {
 		boolean loaded = (sequencer.getSequence() != null);
+		boolean isRunning = sequencer.isRunning();
 		playButton.setEnabled(loaded);
-		playButton.setIcon(sequencer.isRunning() ? pauseIcon : playIcon);
-		playButton.setDisabledIcon(sequencer.isRunning() ? pauseIconDisabled : playIconDisabled);
-		stopButton.setEnabled(loaded && (sequencer.isRunning() || !sequencer.isAtStart()));
+		playButton.setIcon(isRunning ? pauseIcon : playIcon);
+		playButton.setDisabledIcon(isRunning ? pauseIconDisabled : playIconDisabled);
+		stopButton.setEnabled(loaded && (isRunning || !sequencer.isAtStart()));
 	}
 
 	private void refreshSequence() {
