@@ -251,7 +251,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		});
 
         setMinimumSize(new Dimension(512, 384));
-        Util.initWinBounds(this, prefs.node("window"), 800, 600);
+        Util.initWinBounds(this, prefs.node("window"), 1000, 800);
 
         ToolTipManager.sharedInstance().setDismissDelay(8000);
 
