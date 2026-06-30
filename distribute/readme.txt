@@ -58,7 +58,7 @@ This changelog is only partial, to see all the way back to v1.0.0 go here:
   https://maestro.miraheze.org/wiki/Version_history
 
 Version 4.6.19
-- No more vertically scale notes in drum/fx panels.
+- Stop scaling notes in drum/fx panels vertically.
 - Added leading-edge note color markers to distinguish sequential notes.
 - Made default timing setting in options (for newly installed Maestro apps) be Organic Single-stage instead of Mix timings.
 - Set default stereo to 25% when installing fresh maestro.
@@ -77,6 +77,7 @@ Version 4.6.19
 - Fixed that drum sounds could become muted.
 - Allow longer note durations for certain instruments when using organic single-stage too.
 - Fixed that when getting "Undefined External Error" message due to no audio out on PC, the message now informs better.
+- Increase default size of Maestro as time was not even shown and there was only room for 1 part in parts-list.
 - Added support for custom soundfont for playback of midi.
   Name it: midi.sf2
   Put it in:
