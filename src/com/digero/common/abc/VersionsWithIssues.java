@@ -1,12 +1,14 @@
 package com.digero.common.abc;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.aifel.abctools.AbcTools;
 import com.digero.common.util.Version;
 import com.digero.common.view.UIText;
 import com.digero.maestro.MaestroMain;
+import org.jetbrains.annotations.NotNull;
 
 public class VersionsWithIssues {
 	
@@ -43,6 +45,9 @@ public class VersionsWithIssues {
 		// these are issues that can have corrupted project files in some way:
 		msxVersionsWithIssues.add(new IssueVersion(new Version(4,3,0),
 				UIText.get("common.flaw.main.volumes.can.be.modified")));
+
+		Collections.sort(abcVersionsWithIssues);
+		Collections.sort(msxVersionsWithIssues);
 	}
 	
 	/**
@@ -87,7 +92,7 @@ public class VersionsWithIssues {
 		return null;
 	}
 	
-	static class IssueVersion {
+	static class IssueVersion implements Comparable<IssueVersion>  {
 		public final Version begin;
 		public final Version end;
 		public final String info;
@@ -103,5 +108,30 @@ public class VersionsWithIssues {
 			this.end = end;
 			this.info = info;			
 		}
+
+		@Override
+		public int compareTo(@NotNull VersionsWithIssues.IssueVersion o) {
+			return begin.compareTo(o.begin);
+		}
+	}
+
+	@Override
+	public String toString() {
+		String str = "";
+		for (IssueVersion issue : abcVersionsWithIssues) {
+			String v = "v"+issue.begin.toString();
+			if (!issue.end.equals(issue.begin)) {
+				v = v + " - v" + issue.end.toString();
+			}
+			str += v + ": " + issue.info + "\n";
+		}
+		for (IssueVersion issue : msxVersionsWithIssues) {
+			String v = "v"+issue.begin.toString();
+			if (!issue.end.equals(issue.begin)) {
+				v = v + " - v" + issue.end.toString();
+			}
+			str += v + ": " + issue.info + "\n";
+		}
+		return str;
 	}
 }
