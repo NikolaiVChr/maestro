@@ -593,6 +593,14 @@ public class AbcExporter {
 					}
 				}
 			}
+
+            // PrintStream never throws on write failure; it sets an internal error
+            // flag instead. checkError() flushes first, so this catches a failure
+            // from any out.print/println above (disk full, broken pipe, etc.).
+            if (out.checkError()) {
+                throw new AbcConversionException(
+                        "An I/O error occurred while writing the ABC file; the output may be incomplete.");
+            }
 		}
 	}
 
