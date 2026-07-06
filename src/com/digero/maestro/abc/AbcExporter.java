@@ -723,8 +723,8 @@ public class AbcExporter {
 			if (length == 0)
 				return;
 
-			while (Character.isWhitespace(bar.charAt(length - 1)))
-				length--;
+            while (length > 0 && Character.isWhitespace(bar.charAt(length - 1)))
+                length--;
 			bar.setLength(length);
 		};
 
@@ -1413,7 +1413,7 @@ public class AbcExporter {
 			if (length == 0)
 				return;
 
-			while (Character.isWhitespace(bar.charAt(length - 1)))
+            while (length > 0 && Character.isWhitespace(bar.charAt(length - 1)))
 				length--;
 			bar.setLength(length);
 
