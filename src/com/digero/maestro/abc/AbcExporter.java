@@ -1311,9 +1311,14 @@ public class AbcExporter {
             }
         }
         if (quanFractions.length == 0) {
+            logNotes.info("No best fraction setup found.");
             int L = (qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? 16 : 8;
             quanFractions = suggestion(1,L,strange,Q);
-            logNotes.info("No best fraction setup found.");
+            if (quanFractions == null) {
+                // should very very rarely happen if ever at all
+                reducedFilesize = false;//Metadata will still write reduced true out. But thats fine, it just didnt reduce anything.
+                quanFractions = minimumQuantifiedMicros(false);
+            }
         }
         //if (!(strange && quanFractions[2] == 60000)) throw new RuntimeException("skipping file");
         logNotes.info("Reduced file size. Optimal fraction setup is L="+quanFractions[0]+"/"+quanFractions[1]+" Q="+Q+" micros="+quanFractions[2]+" digits="+quanFractions[3]+" denom="+quanFractions[4]+"| result L:"+quanFractions[5]+"/"+quanFractions[6]+" fits="+quanFractions[7]+" strange="+strange);
