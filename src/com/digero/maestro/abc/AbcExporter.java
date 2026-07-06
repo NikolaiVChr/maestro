@@ -137,17 +137,22 @@ public class AbcExporter {
 			Track track0 = sequence.createTrack();
 			track0.add(MidiFactory.createTrackNameEvent(metadata.getSongTitle()));
 
-            AbcPart one = parts.getFirst();
+            AbcPart one = parts.isEmpty() ? null : parts.getFirst();
             CountIn countIn = null;
             if (one != null) {
                 countIn = one.getAbcSong().getCountIn();
                 if (countIn != null) {
-                    long countInMicros = calculateCountInTotalMicrosABC(countIn, qtm);
-                    long hitMicros = countInMicros/countIn.pattern.dynamics.length;
-                    if (countInMicros > AbcConstants.LONGEST_COUNT_IN_MICROS) {
+                    long countInMicros;
+                    if (countIn.pattern == CountIn.CountInPattern.OFF) {
                         countInMicros = 0L;
-                    } else if (hitMicros < AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())) {
-                        countInMicros = 0L;
+                    } else {
+                        countInMicros = calculateCountInTotalMicrosABC(countIn, qtm);
+                        long hitMicros = countInMicros / countIn.pattern.dynamics.length;
+                        if (countInMicros > AbcConstants.LONGEST_COUNT_IN_MICROS) {
+                            countInMicros = 0L;
+                        } else if (hitMicros < AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM())) {
+                            countInMicros = 0L;
+                        }
                     }
                     countIn.micros = countInMicros;
                 }
@@ -555,6 +560,30 @@ public class AbcExporter {
 	        PolyphonyHistogram histogram = new PolyphonyHistogram();
             boolean useMicroAccuracy = useRestsInChords || !reducedFilesize;
             int[] quanFractions = minimumQuantifiedMicros(!useMicroAccuracy);
+
+            AbcPart one = parts.isEmpty() ? null : parts.getFirst();
+            CountIn countIn = null;
+            long minMicros = AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM());
+            if (organic) minMicros = quanFractions[3];
+            if (one != null) {
+                countIn = one.getAbcSong().getCountIn();
+                if (countIn != null) {
+                    long countInMicros;
+                    if (countIn.pattern.dynamics.length == 0) {
+                        countInMicros = 0L;
+                    } else {
+                        countInMicros = calculateCountInTotalMicrosABC(countIn, qtm);
+                        long hitMicros = countInMicros / countIn.pattern.dynamics.length;
+                        if (countInMicros > AbcConstants.LONGEST_COUNT_IN_MICROS) {
+                            countInMicros = 0L;
+                        } else if (hitMicros < minMicros) {
+                            countInMicros = 0L;
+                        }
+                    }
+                    countIn.micros = countInMicros;
+                }
+            }
+
 			for (AbcPart part : parts) {
 				if (part.getEnabledTrackCount() > 0 || (part.getAbcSong().getCountIn() != null && part.getAbcSong().getCountIn().micros > 0L && part.getAbcSong().getCountIn().part == part)) {
 					if (organic) {
@@ -693,7 +722,7 @@ public class AbcExporter {
 
         long countInMicros = 0L;//all non-count-in track notes will be delayed by this
         CountIn countIn = null;
-        if (part.getAbcSong().getCountIn() != null) {
+        if (part.getAbcSong().getCountIn() != null && part.getAbcSong().getCountIn().pattern != CountIn.CountInPattern.OFF) {
             countIn = part.getAbcSong().getCountIn();
             countInMicros = calculateCountInTotalMicrosABC(countIn, qtm);
             if (countInMicros > AbcConstants.LONGEST_COUNT_IN_MICROS) {
@@ -1400,7 +1429,7 @@ public class AbcExporter {
 
         long countInMicros = 0L;//all non-count-in track notes will be delayed by this
         CountIn countIn = null;
-        if (part.getAbcSong().getCountIn() != null) {
+        if (part.getAbcSong().getCountIn() != null && part.getAbcSong().getCountIn().pattern != CountIn.CountInPattern.OFF) {
             countIn = part.getAbcSong().getCountIn();
             countInMicros = calculateCountInTotalMicrosABC(countIn, qtm);
             if (countInMicros > AbcConstants.LONGEST_COUNT_IN_MICROS) {
