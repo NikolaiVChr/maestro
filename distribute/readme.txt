@@ -69,7 +69,7 @@ Version 4.6.20
 - Improved midi expansion export.
 - Added some more guards against 7bit midi bytes using 8th bit.
 - Fixed that sometimes it would not draw the notes of tracks that were not selected.
-- Prevent XG and GS device volume commands from being sent to the midi player, as that will change maestros master volume, which the user should control.
+- Prevent XG and GS device volume commands from being sent to the midi player, as that will change Maestros master volume, which the user should control.
 - Exporting expanded midi now put XG, GS and GM2 drum tracks onto new ports so they can be assigned to GM midi 10th channel, and windows midi player can figure out to play at least standard drumkit from them.
 - Plus exporting expanded midi now convert XG sysex bank/patch changes into regular midi control changes. This will allow for better support of playing the expanded midi with own custom sf2
 - Better grace-note handling in org multi-stage 2. If it did not overlap before backwards bounce, it now also wont after.
