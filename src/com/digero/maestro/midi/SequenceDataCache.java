@@ -59,7 +59,6 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 	private final Map<Integer, ArrayList<TreeMap<Long, Boolean>>> mmaDrumSwitches;
 	public boolean hasPorts = false;
 	private String copyright = "";
-	private final boolean ignoreZeroChannelVolume;
 	private final MidiText midiText;
 	private boolean tempoInHigherTracks = false;
 	private String fileName = "";
@@ -87,8 +86,6 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		this.yamahaDrumChannels = yamahaDrumChannels;
 		this.yamahaDrumSwitches = yamahaDrumSwitches;
 		this.mmaDrumSwitches = mmaDrumSwitches;
-
-		this.ignoreZeroChannelVolume = ignoreZeroChannelVolume;
 
 		brandDrumBanks = new DrumBankType[song.getTracks().length];
 
@@ -147,8 +144,6 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 								case RESET_ALL_CONTROLLERS:
 									if (tick > 0L) {
 										String str = "";
-										int rl = rpnLSBMap.get(port, ch, tick, jj);
-										int rm = rpnMSBMap.get(port, ch, tick, jj);
 										int p = (usingNewMidiLayout >= 1) ? port : 0;
 										int ex = expression.get(p, ch, tick);
 										boolean changingStuff = (usingNewMidiLayout > 0 && ex != 127);// too much hassle
