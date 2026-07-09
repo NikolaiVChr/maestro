@@ -92,14 +92,17 @@ public final class LotroInstrumentSampleDuration {
 		String fileName = "noteDurations.txt";
 		Map<String, Map<Integer, Long>> tempDb = new HashMap<>();
 		InputStream in = LotroInstrumentSampleDuration.class.getResourceAsStream(fileName);
+
 		if (in == null) {
 			log.severe(fileName + " not readable.");
 			db = tempDb;// this makes us get the error logged only once
 			return;
 		}
-		BufferedReader theFileReader = new BufferedReader(new InputStreamReader(in));
-		readLines(fileName, theFileReader, tempDb);
-		theFileReader.close();
+
+		try (BufferedReader theFileReader = new BufferedReader(new InputStreamReader(in))) {
+			readLines(fileName, theFileReader, tempDb);
+		}
+
 		db = tempDb;
 	}
 
