@@ -724,7 +724,10 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		}
 	}
 
-	private void logMessage(Level warning, String message) {
+	private void logMessage(Level level, String message) {
+		if (message == null || !log.isLoggable(level)) {
+			return;
+		}
 		message = message
 				.replace('\r', ' ')
 				.replace('\n', ' ')
@@ -732,7 +735,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 				.replaceAll("\\p{Cntrl}", "")
 				.replaceAll(" +", " ")
 				.trim();
-		log.log(warning, message);
+		log.log(level, message);
 	}
 
 	private int getRPN(int port, int channel, long tick, long index) {
