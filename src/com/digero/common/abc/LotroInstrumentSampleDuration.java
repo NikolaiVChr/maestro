@@ -10,8 +10,8 @@ import java.util.logging.Logger;
 
 public class LotroInstrumentSampleDuration {
 	private static final Logger log = Logger.getLogger("file");
-	private static LotroInstrumentSampleDuration instance = null;
-	private static volatile Object lock = new Object();
+	private static volatile LotroInstrumentSampleDuration instance = null;
+	private static Object lock = new Object();
 	private static volatile Map<String, Map<Integer, Long>> db = null;
 
 	public static long getSafeDuration(LotroInstrument instrument) {
