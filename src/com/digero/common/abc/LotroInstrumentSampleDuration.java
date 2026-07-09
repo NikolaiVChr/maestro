@@ -38,7 +38,7 @@ public final class LotroInstrumentSampleDuration {
 	 * 
 	 * @param friendlyName Name of instrument
 	 * @param note         Note id
-	 * @return duration in seconds
+	 * @return duration in microseconds
 	 * @throws IOException if an I/O error occurs
 	 */
 	public static Long getDura(String friendlyName, int note) throws IOException {
@@ -60,7 +60,7 @@ public final class LotroInstrumentSampleDuration {
 	 * actual sample duration to avoid issues with fading out.
 	 * 
 	 * @param instrument The instrument for which to get the safe duration
-	 * @return The safe duration in milliseconds
+	 * @return The safe duration in microseconds
 	 */
 	public static long getSafeDuration(LotroInstrument instrument) {
 		return switch (instrument) {
@@ -99,7 +99,9 @@ public final class LotroInstrumentSampleDuration {
 			return;
 		}
 
-		try (BufferedReader theFileReader = new BufferedReader(new InputStreamReader(in))) {
+		try (InputStream stream = in;// including in here will make it auto close too
+			 InputStreamReader streamReader = new InputStreamReader(stream);
+			 BufferedReader theFileReader = new BufferedReader(streamReader)) {
 			readLines(fileName, theFileReader, tempDb);
 		}
 
