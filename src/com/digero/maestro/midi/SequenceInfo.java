@@ -2,6 +2,7 @@ package com.digero.maestro.midi;
 
 import java.io.*;
 import java.util.*;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -165,8 +166,8 @@ public class SequenceInfo implements MidiConstants {
 		this.lastTrackInfos = abcInfo == null ? null : abcInfo.abcTrackInfos;
 		this.onlyFirstTrackTempos = onlyFirstTrackTempos;// if user toggles this, we create a whole new sequenceInfo
 															// instance.
-		String message = "Importing (Type " + type + "): " + fileName;
-		logMessage(Level.FINE, message);
+		String logMsg = "Importing (Type " + type + "): " + fileName;
+		logMessage(Level.FINE, logMsg);
 
 		/*
 		 * // debug seq part 1:
@@ -266,15 +267,15 @@ public class SequenceInfo implements MidiConstants {
 		this.trackInfoList = Collections.unmodifiableList(myTrackInfoList);
 		if (!getTimeSignature().equals(sequenceCache.getTimeSignature())) {
 			// If see this output then..
-			message = "Time signature does not match between SequenceInfo (" + getTimeSignature()
+			logMsg = "Time signature does not match between SequenceInfo (" + getTimeSignature()
 					+ ") and SequenceDataCache (" + sequenceCache.getTimeSignature() + ").";
-			logMessage(Level.SEVERE, message);
+			logMessage(Level.SEVERE, logMsg);
 		}
 	}
 
 	/**
-	 * Log a message, but first clean it up so it doesn't have newlines or tabs in
-	 * it.
+	 * Log a message, but first clean it up so it doesn't have newlines or tabs,
+	 * control characters and multiple spaces in a row.
 	 * 
 	 * @param level   The logging level
 	 * @param message The message to log
@@ -291,6 +292,20 @@ public class SequenceInfo implements MidiConstants {
 				.replaceAll(" +", " ")
 				.trim();
 		log.log(level, message);
+	}
+
+	/**
+	 * Log a message, but first clean it up so it doesn't have newlines or tabs,
+	 * control characters and multiple spaces in a row.
+	 * 
+	 * @param finer          The logging level
+	 * @param logMsgSupplier The supplier for the message to log
+	 */
+	private void logMessage(Level finer, Supplier<String> logMsgSupplier) {
+		if (logMsgSupplier == null || !log.isLoggable(finer)) {
+			return;
+		}
+		logMessage(finer, logMsgSupplier.get());
 	}
 
 	/**
@@ -343,20 +358,20 @@ public class SequenceInfo implements MidiConstants {
 						byte[] portChange = meta.getData();
 						if (portChange.length == 1) {
 							port = (int) portChange[0] & 0xFF;
-							String message = "Port change on track " + iiTrack + ", tick " + tick + ", port " + port;
-							logMessage(Level.FINE, message);
+							String logMsg = "Port change on track " + iiTrack + ", tick " + tick + ", port " + port;
+							logMessage(Level.FINE, logMsg);
 							havePorts = true;
 							portMap.put(iiTrack, port);
 							break;
 						}
 					} else if (meta.getType() == META_PORT_NAME) {
 						byte[] data = meta.getData();
-						String message = fileName + ": Named port " + new String(data);// abc tools also use this line,
+						String logMsg = fileName + ": Named port " + new String(data);// abc tools also use this line,
 																						// no
 																						// icu in jar, so dont call
 																						// charset
 																						// analyser.
-						logMessage(Level.WARNING, message);
+						logMessage(Level.WARNING, logMsg);
 					}
 				}
 			}
@@ -1752,10 +1767,10 @@ public class SequenceInfo implements MidiConstants {
 						// Non-tempo MetaMessages (like track names, text, lyrics) get salvaged
 						metaToRelocate.add(evt);
 						toRemove.add(evt);
-						logMsg = "Moving event from "
+						Supplier<String> logMsgSupplier = () -> "Moving event from "
 								+ Util.formatDurationM(MidiUtils.tick2microsecond(song, tick, tempoCache)) + " to "
 								+ Util.formatDurationM(MidiUtils.tick2microsecond(song, trackCutoff, tempoCache));
-						logMessage(Level.FINER, logMsg);
+						logMessage(Level.FINER, logMsgSupplier);
 					} else {
 						// ShortMessages (notes, CCs, bends), Sysex, and Tempos get marked for deletion
 						toRemove.add(evt);
@@ -1826,7 +1841,7 @@ public class SequenceInfo implements MidiConstants {
 				}
 				if (silence) {
 					logMsg = "Quarter song is empty, will delete all after the empty starts.";
-					logMessage(Level.WARNING, logMsg);
+					logMessage(Level.INFO, logMsg);
 				} else {
 					earlyEndTick = evt.getTick();
 				}
