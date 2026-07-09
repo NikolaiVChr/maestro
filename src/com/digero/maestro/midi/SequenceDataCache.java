@@ -564,8 +564,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 									try {
 										backupTimeSignature = new TimeSignature(m, true);
 									} catch (InvalidMidiDataException e2) {
-										String message = fileName + ": Ignoring illegal time signature.";
-										logMessage(Level.WARNING, message);
+						// Ignore the illegal time signature
 									}
 								}
 							}
