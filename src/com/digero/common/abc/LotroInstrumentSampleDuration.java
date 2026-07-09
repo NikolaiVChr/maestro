@@ -8,12 +8,60 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-public class LotroInstrumentSampleDuration {
+public final class LotroInstrumentSampleDuration {
 	private static final Logger log = Logger.getLogger("file");
-	private static volatile LotroInstrumentSampleDuration instance = null;
-	private static Object lock = new Object();
+	private static final Object lock = new Object();
 	private static volatile Map<String, Map<Integer, Long>> db = null;
 
+	private LotroInstrumentSampleDuration() {
+		// private constructor to prevent instantiation
+	}
+
+	/**
+	 * Ensure that the database is initialized. If it is not, parse the
+	 * noteDurations.txt file to populate it.
+	 * 
+	 * @throws IOException if an I/O error occurs
+	 */
+	private static void ensureDbInitialized() throws IOException {
+		if (db == null) {
+			synchronized (lock) {
+				if (db == null) {
+					parse();
+				}
+			}
+		}
+	}
+
+	/**
+	 * Get duration of particular lotro instrument sample.
+	 * 
+	 * @param friendlyName Name of instrument
+	 * @param note         Note id
+	 * @return duration in seconds
+	 * @throws IOException if an I/O error occurs
+	 */
+	public static Long getDura(String friendlyName, int note) throws IOException {
+		ensureDbInitialized();
+
+		Map<Integer, Long> instr = db.get(friendlyName);
+		if (instr == null) {
+			return null;
+		}
+		if (friendlyName.equals(LotroInstrument.BASIC_COWBELL.friendlyName)
+				|| friendlyName.equals(LotroInstrument.MOOR_COWBELL.friendlyName)) {
+			note = AbcConstants.COWBELL_NOTE_ID;// 71
+		}
+		return instr.get(note);
+	}
+
+	/**
+	 * Get a safe duration for the given instrument, which is slightly less than the
+	 * actual sample duration to avoid issues with fading out.
+	 * 
+	 * @param instrument The instrument for which to get the safe duration
+	 * @return The safe duration in milliseconds
+	 */
 	public static long getSafeDuration(LotroInstrument instrument) {
 		return switch (instrument) {
 			// These have a safety buffer of around 0.5 seconds
@@ -36,54 +84,10 @@ public class LotroInstrumentSampleDuration {
 	}
 
 	/**
-	 * Get duration of particular lotro instrument sample.
+	 * Parse the noteDurations.txt file and populate the database.
 	 * 
-	 * @param friendlyName Name of instrument
-	 * @param note         Note id
-	 * @return duration in seconds
-	 * @throws IOException
-	 */
-	public static Long getDura(String friendlyName, int note) throws IOException {
-		if (db == null) {
-			synchronized (LotroInstrumentSampleDuration.class) {
-				if (db == null) {
-					parse();
-				}
-			}
-		}
-		Map<Integer, Long> instr = db.get(friendlyName);
-		if (instr == null) {
-			return null;
-		}
-		if (friendlyName.equals(LotroInstrument.BASIC_COWBELL.friendlyName)
-				|| friendlyName.equals(LotroInstrument.MOOR_COWBELL.friendlyName)) {
-			note = AbcConstants.COWBELL_NOTE_ID;// 71
-		}
-		return instr.get(note);
-	}
-
-	/**
-	 * Get the singleton instance of LotroInstrumentSampleDuration.
-	 * 
-	 * @return the singleton instance
 	 * @throws IOException if an I/O error occurs
 	 */
-	public static LotroInstrumentSampleDuration getInstance() throws IOException {
-		LotroInstrumentSampleDuration result = instance;
-		if (result == null) {
-			synchronized (lock) {
-				result = instance;
-				if (result == null) {
-					instance = new LotroInstrumentSampleDuration();
-					if (db == null)
-						parse();
-					instance = result;
-				}
-			}
-		}
-		return instance;
-	}
-
 	private static void parse() throws IOException {
 		String fileName = "noteDurations.txt";
 		Map<String, Map<Integer, Long>> tempDb = new HashMap<>();
@@ -99,6 +103,14 @@ public class LotroInstrumentSampleDuration {
 		db = tempDb;
 	}
 
+	/**
+	 * Read lines from the given file and populate the temporary database.
+	 * 
+	 * @param fileName      Name of the file being read
+	 * @param theFileReader BufferedReader for reading the file
+	 * @param tempDb        Temporary database to populate
+	 * @throws IOException if an I/O error occurs
+	 */
 	private static void readLines(String fileName, BufferedReader theFileReader, Map<String, Map<Integer, Long>> tempDb)
 			throws IOException {
 		String line = theFileReader.readLine();
