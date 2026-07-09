@@ -2,6 +2,7 @@ package com.digero.maestro.midi;
 
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MetaMessage;
@@ -127,18 +128,22 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 							switch (shortMsg.getData1()) {
 								case REGISTERED_PARAMETER_NUMBER_MSB:
 									int valueMSB = shortMsg.getData2();
-									if (valueMSB > 127)
-										log.warning("RPN MSB out of bounds and will be ignored: port=" + port + ", ch="
-												+ ch + ", tick=" + tick + ", value=" + valueMSB);
-									else
+									if (valueMSB > 127) {
+										String message = "RPN MSB out of bounds and will be ignored: port=" + port
+												+ ", ch=" + ch + ", tick=" + tick
+												+ ", value=" + valueMSB;
+										logMessage(Level.WARNING, message);
+									} else
 										rpnMSBMap.put(port, ch, tick, jj, valueMSB);
 									break;
 								case REGISTERED_PARAMETER_NUMBER_LSB:
 									int valueLSB = shortMsg.getData2();
-									if (valueLSB > 127)
-										log.warning("RPN LSB out of bounds and will be ignored: port=" + port + ", ch="
-												+ ch + ", tick=" + tick + ", value=" + valueLSB);
-									else
+									if (valueLSB > 127) {
+										String message = "RPN LSB out of bounds and will be ignored: port=" + port
+												+ ", ch=" + ch + ", tick=" + tick
+												+ ", value=" + valueLSB;
+										logMessage(Level.WARNING, message);
+									} else
 										rpnLSBMap.put(port, ch, tick, jj, valueLSB);
 									break;
 								case RESET_ALL_CONTROLLERS:
@@ -172,9 +177,11 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 										if (usingNewMidiLayout > 0)
 											expression.put(port, ch, tick, DEFAULT_EXPRESSION);
 
-										if (changingStuff)
-											log.warning(fileName + ": Resetting all controllers on channel " + ch
-													+ ", tick " + tick + str);
+										if (changingStuff) {
+											String message = "Resetting all controllers on channel " + ch + ", tick "
+													+ tick + str;
+											logMessage(Level.WARNING, message);
+										}
 									}
 									break;
 							}
@@ -218,9 +225,9 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 										mapPatch.put(port, ch, tick, 0);
 									}
 								}
-								log.warning(
-										fileName + ": Resetting everything, tick " + tick + " GM=" + isResetGM + " XG="
-												+ isResetXG + " GS=" + isResetGS + " GM2=" + isResetGM2);
+								String message = fileName + ": Resetting everything, tick " + tick + " GM=" + isResetGM
+										+ " XG=" + isResetXG + " GS=" + isResetGS + " GM2=" + isResetGM2;
+								logMessage(Level.WARNING, message);
 							}
 						}
 					}
@@ -277,8 +284,10 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 							}
 						} else if (cmd == ShortMessage.PROGRAM_CHANGE) {
 							if (shortMsg.getData1() > 127) {
-								log.warning(fileName + "; Channel " + ch + ": Ignoring program change out of range: "
-										+ shortMsg.getData1());
+								String message = fileName + "; Channel " + ch
+										+ ": Ignoring program change out of range: "
+										+ shortMsg.getData1();
+								logMessage(Level.WARNING, message);
 								continue;
 							}
 							boolean allowGMPatchChange = true;
@@ -299,9 +308,10 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 
 							if (allowGMPatchChange) {
 								instruments.put(port, ch, tick, shortMsg.getData1());
-								log.fine("Instrument change on track " + iTrack + ", tick " + tick + ", instrument "
+								String str = "Instrument change on track " + iTrack + ", tick " + tick + ", instrument "
 										+ MidiInstrument.fromId(shortMsg.getData1()) + ", port " + portMap.get(iTrack)
-										+ ", channel " + ch);
+										+ ", channel " + ch;
+								logMessage(Level.FINE, str);
 							}
 							mapPatch.put(port, ch, tick, shortMsg.getData1());
 						} else if (cmd == ShortMessage.CONTROL_CHANGE) {
@@ -319,9 +329,10 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 								case DATA_ENTRY_COARSE:
 									if (getRPN(port, ch, tick, jj) == REGISTERED_PARAM_PITCH_BEND_RANGE) {
 										if (shortMsg.getData2() > 127) {
-											log.warning(fileName + "; Channel " + ch + " Port " + port
+											String message = fileName + "; Channel " + ch + " Port " + port
 													+ ": Clamping coarse pitch bend wheel range out of bounds: "
-													+ shortMsg.getData2() + " semitones");
+													+ shortMsg.getData2() + " semitones";
+											logMessage(Level.WARNING, message);
 										}
 										pitchBendRangeCoarse.put(port, ch, tick, jj,
 												Math.clamp(shortMsg.getData2(), 0, 127));
@@ -330,9 +341,10 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 								case DATA_ENTRY_FINE:
 									if (getRPN(port, ch, tick, jj) == REGISTERED_PARAM_PITCH_BEND_RANGE) {
 										if (shortMsg.getData2() > 99) {
-											log.info(fileName + "; Channel " + ch + " Port " + port
+											String message = fileName + "; Channel " + ch + " Port " + port
 													+ ": Clamping fine pitch bend wheel range out of bounds: "
-													+ shortMsg.getData2() + " cents.");
+													+ shortMsg.getData2() + " cents.";
+											logMessage(Level.WARNING, message);
 										}
 										pitchBendRangeFine.put(port, ch, tick, jj,
 												Math.clamp(shortMsg.getData2(), 0, 99));
@@ -361,7 +373,9 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 												currentFine = 99;
 											}
 										}
-										log.fine("DATA_BUTTON_INCREMENT for pitch bend detected.");
+										String message = fileName + "; Channel " + ch + " Port " + port
+												+ ": DATA_BUTTON_INCREMENT for pitch bend detected.";
+										logMessage(Level.FINE, message);
 										pitchBendRangeFine.put(port, ch, tick, jj, currentFine);
 									}
 									break;
@@ -385,7 +399,9 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 										}
 
 										pitchBendRangeFine.put(port, ch, tick, jj, currentFine2);
-										log.fine("DATA_BUTTON_DECREMENT for pitch bend detected.");
+										String message = fileName + "; Channel " + ch + " Port " + port
+												+ ": DATA_BUTTON_DECREMENT for pitch bend detected.";
+										logMessage(Level.FINE, message);
 									}
 									break;
 								case PAN_CONTROL:
@@ -393,8 +409,9 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 									break;
 								case BANK_SELECT_MSB:
 									if (shortMsg.getData2() > 127) {
-										log.warning(fileName + "; Channel " + ch
-												+ ": Ignoring MSB bank address out of range: " + shortMsg.getData2());
+										String message = fileName + "; Channel " + ch
+												+ ": Ignoring MSB bank address out of range: " + shortMsg.getData2();
+										logMessage(Level.WARNING, message);
 										continue;
 									}
 
@@ -408,7 +425,9 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 										} else if (ch == DRUM_CHANNEL && MidiStandard.XG == standard
 												&& shortMsg.getData2() != 126
 												&& shortMsg.getData2() != 127) {
-											log.finer("XG Drum Part Protect Mode prevented bank select MSB.");
+											String message = fileName + "; Channel " + ch
+													+ ": XG Drum Part Protect Mode prevented bank select MSB.";
+											logMessage(Level.FINER, message);
 										}
 										// if(ch==DRUM_CHANNEL) System.err.println("Bank select MSB "+m.getData2()+"
 										// "+tick);
@@ -420,8 +439,9 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 
 										if (isXGDrumChannel && shortMsg.getData2() != 126
 												&& shortMsg.getData2() != 127) {
-											log.finer("XG Drum Part Protect Mode prevented bank select MSB on port "
-													+ port + " channel " + ch);
+											String message = fileName + "; Channel " + ch + " Port " + port
+													+ ": XG Drum Part Protect Mode prevented bank select MSB.";
+											logMessage(Level.FINER, message);
 										} else {
 											mapMSB.put(port, ch, tick, shortMsg.getData2());
 										}
@@ -429,8 +449,9 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 									break;
 								case BANK_SELECT_LSB:
 									if (shortMsg.getData2() > 127) {
-										log.warning(fileName + "; Channel " + ch
-												+ ": Ignoring LSB bank address out of range: " + shortMsg.getData2());
+										String message = fileName + "; Channel " + ch
+												+ ": Ignoring LSB bank address out of range: " + shortMsg.getData2();
+										logMessage(Level.WARNING, message);
 										continue;
 									}
 									mapLSB.put(port, ch, tick, shortMsg.getData2());
@@ -442,8 +463,9 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 							int value1 = shortMsg.getData1();
 							int value2 = shortMsg.getData2();
 							if (value1 > 127 || value2 > 127) {
-								log.warning(fileName + "; Channel " + ch + ": Clamping pitch bend out of range: "
-										+ value1 + "," + value2);
+								String message = fileName + "; Channel " + ch + ": Clamping pitch bend out of range: "
+										+ value1 + "," + value2;
+								logMessage(Level.WARNING, message);
 							}
 							value1 = Math.clamp(value1, 0, 127);
 							value2 = Math.clamp(value2, 0, 127);
@@ -495,8 +517,10 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 
 								tempo.put(tick, new TempoEvent(tempoRaw, tick, 0L));// micros is added later
 								if (iTrack != 0) {
-									log.fine("Track " + iTrack + " has tempo message in non-first track. "
-											+ MidiUtils.convertTempo(tempoRaw) + " BPM, tick " + tick);
+									String message = fileName + ": Track " + iTrack
+											+ " has tempo message in non-first track. "
+											+ MidiUtils.convertTempo(tempoRaw) + " BPM, tick " + tick;
+									logMessage(Level.FINE, message);
 									// we move the tempo event to track 0 so the playback
 									// matches our internal tempos.
 									// This means that if the user expands the midi
@@ -513,10 +537,14 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 								}
 							}
 						} else {
-							if (tempoRaw == 0)
-								log.warning("MIDI has tempo message of zero MPQ! Ignoring it..");
-							if (tempoRaw < 0)
-								log.warning("MIDI has tempo message of negative MPQ! Ignoring it..");
+							if (tempoRaw == 0) {
+								String message = fileName + ": MIDI has tempo message of zero MPQ! Ignoring it..";
+								logMessage(Level.WARNING, message);
+							}
+							if (tempoRaw < 0) {
+								String message = fileName + ": MIDI has tempo message of negative MPQ! Ignoring it..";
+								logMessage(Level.WARNING, message);
+							}
 							track.remove(evt);
 							sz--;
 							j--;
@@ -536,7 +564,8 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 									try {
 										backupTimeSignature = new TimeSignature(m, true);
 									} catch (InvalidMidiDataException e2) {
-										// Ignore the illegal time signature
+										String message = fileName + ": Ignoring illegal time signature.";
+										logMessage(Level.WARNING, message);
 									}
 								}
 							}
@@ -551,14 +580,16 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 						} else if (!ignoreMidiText && type == META_M_LIVE && m.getData() != null) {
 							midiText.collectTxt(tick, data, META_M_LIVE, iTrack);
 						} else if (m.getType() == META_COPYRIGHT && tick == 0L && iTrack == 0) {
-							log.finer("\n(c): " + MidiUtils.formatBytes(data));
+							String message = fileName + ": (c): " + MidiUtils.formatBytes(data);
+							logMessage(Level.FINER, message);
 							String tmp = "";
 							if (!ignoreMidiText)
 								tmp = MidiUtils.decodeMidiText(data).trim();
 
 							if (!tmp.isEmpty()) {
 								copyright = tmp;
-								log.info("MIDI copyright: " + tmp);
+								message = fileName + ": MIDI copyright: " + tmp;
+								logMessage(Level.INFO, message);
 							}
 						}
 					}
@@ -687,16 +718,30 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 
 		songLengthTicks = lastTick;
 
-		if (!ignoreMidiText && standard != MidiStandard.ABC)
-			log.info("Lyrics stats: " + midiText.getTextStats());
+		if (!ignoreMidiText && standard != MidiStandard.ABC) {
+			String message = fileName + ": Lyrics stats: " + midiText.getTextStats();
+			logMessage(Level.INFO, message);
+		}
+	}
+
+	private void logMessage(Level warning, String message) {
+		message = message
+				.replace('\r', ' ')
+				.replace('\n', ' ')
+				.replace('\t', ' ')
+				.replaceAll("\\p{Cntrl}", "")
+				.replaceAll(" +", " ")
+				.trim();
+		log.log(warning, message);
 	}
 
 	private int getRPN(int port, int channel, long tick, long index) {
 		int msb = rpnMSBMap.get(port, channel, tick, index);
 		int lsb = rpnLSBMap.get(port, channel, tick, index);
 		if (msb != DEFAULT_RPN_NULL && lsb == DEFAULT_RPN_NULL) {// && rpnLSBMap.getEntries(channel,0L, tick).isEmpty()
-			log.severe(fileName + ": Channel " + channel
-					+ ", RPN being utilized while LSB is default (NULL)! Using effective value of 0 LSB.");
+			String message = fileName + ": Channel " + channel
+					+ ", RPN being utilized while LSB is default (NULL)! Using effective value of 0 LSB.";
+			logMessage(Level.SEVERE, message);
 			lsb = 0;
 		}
 		return (msb << 7) | lsb;
