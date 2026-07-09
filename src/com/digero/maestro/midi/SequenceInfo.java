@@ -2,6 +2,8 @@ package com.digero.maestro.midi;
 
 import java.io.*;
 import java.util.*;
+import java.util.function.Supplier;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.sound.midi.InvalidMidiDataException;
@@ -164,7 +166,8 @@ public class SequenceInfo implements MidiConstants {
 		this.lastTrackInfos = abcInfo == null ? null : abcInfo.abcTrackInfos;
 		this.onlyFirstTrackTempos = onlyFirstTrackTempos;// if user toggles this, we create a whole new sequenceInfo
 															// instance.
-		log.fine("Importing (Type " + type + "): " + fileName);
+		String logMsg = "Importing (Type " + type + "): " + fileName;
+		logMessage(Level.FINE, logMsg);
 
 		/*
 		 * // debug seq part 1:
@@ -264,9 +267,45 @@ public class SequenceInfo implements MidiConstants {
 		this.trackInfoList = Collections.unmodifiableList(myTrackInfoList);
 		if (!getTimeSignature().equals(sequenceCache.getTimeSignature())) {
 			// If see this output then..
-			log.severe("Time signature does not match between SequenceInfo (" + getTimeSignature()
-					+ ") and SequenceDataCache (" + sequenceCache.getTimeSignature() + ").");
+			logMsg = "Time signature does not match between SequenceInfo (" + getTimeSignature()
+					+ ") and SequenceDataCache (" + sequenceCache.getTimeSignature() + ").";
+			logMessage(Level.SEVERE, logMsg);
 		}
+	}
+
+	/**
+	 * Log a message, but first clean it up so it doesn't have newlines or tabs,
+	 * control characters and multiple spaces in a row.
+	 * 
+	 * @param level   The logging level
+	 * @param message The message to log
+	 */
+	private static void logMessage(Level level, String message) {
+		if (message == null || !log.isLoggable(level)) {
+			return;
+		}
+		message = message
+				.replace('\r', ' ')
+				.replace('\n', ' ')
+				.replace('\t', ' ')
+				.replaceAll("\\p{Cntrl}", "")
+				.replaceAll(" +", " ")
+				.trim();
+		log.log(level, message);
+	}
+
+	/**
+	 * Log a message, but first clean it up so it doesn't have newlines or tabs,
+	 * control characters and multiple spaces in a row.
+	 * 
+	 * @param finer          The logging level
+	 * @param logMsgSupplier The supplier for the message to log
+	 */
+	private void logMessage(Level finer, Supplier<String> logMsgSupplier) {
+		if (logMsgSupplier == null || !log.isLoggable(finer)) {
+			return;
+		}
+		logMessage(finer, logMsgSupplier.get());
 	}
 
 	/**
@@ -319,16 +358,20 @@ public class SequenceInfo implements MidiConstants {
 						byte[] portChange = meta.getData();
 						if (portChange.length == 1) {
 							port = (int) portChange[0] & 0xFF;
-							log.fine("Port change on track " + iiTrack + ", tick " + tick + ", port " + port);
+							String logMsg = "Port change on track " + iiTrack + ", tick " + tick + ", port " + port;
+							logMessage(Level.FINE, logMsg);
 							havePorts = true;
 							portMap.put(iiTrack, port);
 							break;
 						}
 					} else if (meta.getType() == META_PORT_NAME) {
 						byte[] data = meta.getData();
-						log.warning(fileName + ": Named port " + new String(data));// abc tools also use this line, no
-																					// icu in jar, so dont call charset
-																					// analyser.
+						String logMsg = fileName + ": Named port " + new String(data);// abc tools also use this line,
+																						// no
+																						// icu in jar, so dont call
+																						// charset
+																						// analyser.
+						logMessage(Level.WARNING, logMsg);
 					}
 				}
 			}
@@ -732,17 +775,18 @@ public class SequenceInfo implements MidiConstants {
 					// the "& 0xFF" is to convert to unsigned int from signed byte.
 					if (MidiUtils.isResetXG(message)) {
 						if (MidiStandard.GM != standard && MidiStandard.XG != standard) {
-							log.info(fileName + ": MIDI XG Reset in a " + standard + " file. This is unusual!");
+							String logMsg = fileName + ": MIDI XG Reset in a " + standard + " file. This is unusual!";
+							logMessage(Level.INFO, logMsg);
 						}
 						if (evt.getTick() > lastResetTick) {
 							lastResetTick = evt.getTick();
 							standard = MidiStandard.XG;
 						} else if (MidiStandard.GS == standard && evt.getTick() == lastResetTick) {
-							log.info(
-									"They are at same tick. Statistically bigger chance its a GS, so not switching to XG.");
+							String logMsg = "They are at same tick. Statistically bigger chance its a GS, so not switching to XG.";
+							logMessage(Level.INFO, logMsg);
 						} else if (MidiStandard.GM2 == standard && evt.getTick() == lastResetTick) {
-							log.info(
-									"They are at same tick. Statistically bigger chance its a XG, so switching to that.");
+							String logMsg = "They are at same tick. Statistically bigger chance its a XG, so switching to that.";
+							logMessage(Level.INFO, logMsg);
 							lastResetTick = evt.getTick();
 							standard = MidiStandard.XG;
 						}
@@ -750,7 +794,8 @@ public class SequenceInfo implements MidiConstants {
 						// System.err.println("Yamaha XG Reset, tick "+evt.getTick());
 					} else if (MidiUtils.isResetGS(message, usingNewMidiLayout > 0)) {
 						if (MidiStandard.GM != standard && MidiStandard.GS != standard) {
-							log.info(fileName + ": MIDI GS Reset in a " + standard + " file. This is unusual!");
+							String logMsg = fileName + ": MIDI GS Reset in a " + standard + " file. This is unusual!";
+							logMessage(Level.INFO, logMsg);
 						}
 						if (evt.getTick() >= lastResetTick) {
 							lastResetTick = evt.getTick();
@@ -760,14 +805,15 @@ public class SequenceInfo implements MidiConstants {
 						// System.err.println("Roland GS Reset, tick "+evt.getTick());
 					} else if (MidiUtils.isResetGM2(message)) {
 						if (MidiStandard.GM != standard && MidiStandard.GM2 != standard) {
-							log.info(fileName + ": MIDI GM2 Reset in a " + standard + " file. This is unusual!");
+							String logMsg = fileName + ": MIDI GM2 Reset in a " + standard + " file. This is unusual!";
+							logMessage(Level.INFO, logMsg);
 						}
 						if (evt.getTick() > lastResetTick) {
 							lastResetTick = evt.getTick();
 							standard = MidiStandard.GM2;
 						} else if (evt.getTick() == lastResetTick && MidiStandard.GM != standard) {
-							log.info(
-									"They are at same tick. Statistically bigger chance its not a GM2, so not switching standard.");
+							String logMsg = "They are at same tick. Statistically bigger chance its not a GM2, so not switching standard.";
+							logMessage(Level.INFO, logMsg);
 						}
 						ExtensionMidiInstrument.getInstance();
 						// System.err.println("MIDI GM2 Reset, tick "+evt.getTick());
@@ -859,8 +905,9 @@ public class SequenceInfo implements MidiConstants {
 						// Ignoring this sysex as I have tested 130,000 midi files and none of them had
 						// an OFF,
 						// so its super rare.
-						log.warning(
-								fileName + ": Yamaha XG Drum Part Protect mode " + (message[7] == 0 ? "OFF" : "ON"));
+						String logMsg = fileName + ": Yamaha XG Drum Part Protect mode "
+								+ (message[7] == 0 ? "OFF" : "ON");
+						logMessage(Level.WARNING, logMsg);
 					} else if (message.length == 9 && (message[0] & 0xFF) == 0xF0 && (message[1] & 0xFF) == 0x43
 							&& (message[3] & 0xFF) == 0x4C // this check can change the listed instr, but that does not
 															// break back compat
@@ -1326,9 +1373,11 @@ public class SequenceInfo implements MidiConstants {
 					byte[] data = meta.getData();
 					if (data.length > 0)
 						port = data[0] & 0xFF;
-					if (port > 127)
-						log.warning(fileName + ": Port number out of range: " + port
-								+ ". File might not be interpreted correctly.");
+					if (port > 127) {
+						String logMsg = fileName + ": Port number out of range: " + port
+								+ ". File might not be interpreted correctly.";
+						logMessage(Level.WARNING, logMsg);
+					}
 					break;
 				}
 			}
@@ -1591,7 +1640,8 @@ public class SequenceInfo implements MidiConstants {
 	 *
 	 */
 	public long fixupTrackLength2(Sequence song) {
-		log.fine("Before: " + Util.formatDurationM(song.getMicrosecondLength()));
+		String logMsg = "Before: " + Util.formatDurationM(song.getMicrosecondLength());
+		logMessage(Level.FINE, logMsg);
 		SequencerWrapper.TempoCacheSlow tempoCache = new SequencerWrapper.TempoCacheSlow(song);
 
 		long maxEmpty = Math.max(song.getTickLength() / 4L,
@@ -1657,7 +1707,8 @@ public class SequenceInfo implements MidiConstants {
 						break;
 				}
 				if (silence) {
-					log.warning(fileName + ": Quarter song is empty, will delete all after the empty starts.");
+					logMsg = fileName + ": Quarter song is empty, will delete all after the empty starts.";
+					logMessage(Level.WARNING, logMsg);
 				} else {
 					earlyEndTick = tick;
 				}
@@ -1692,7 +1743,8 @@ public class SequenceInfo implements MidiConstants {
 				}
 			}
 		}
-		log.fine("endTick = " + endTick + " earlyEndTick=" + earlyEndTick);
+		logMsg = fileName + ": endTick = " + endTick + " earlyEndTick=" + earlyEndTick;
+		logMessage(Level.FINE, logMsg);
 		long absoluteEnd = Math.min(earlyEndTick, endTick);
 
 		for (int i = 0; i < tracks.length; i++) {
@@ -1715,9 +1767,10 @@ public class SequenceInfo implements MidiConstants {
 						// Non-tempo MetaMessages (like track names, text, lyrics) get salvaged
 						metaToRelocate.add(evt);
 						toRemove.add(evt);
-						log.finer("Moving event from "
+						Supplier<String> logMsgSupplier = () -> "Moving event from "
 								+ Util.formatDurationM(MidiUtils.tick2microsecond(song, tick, tempoCache)) + " to "
-								+ Util.formatDurationM(MidiUtils.tick2microsecond(song, trackCutoff, tempoCache)));
+								+ Util.formatDurationM(MidiUtils.tick2microsecond(song, trackCutoff, tempoCache));
+						logMessage(Level.FINER, logMsgSupplier);
 					} else {
 						// ShortMessages (notes, CCs, bends), Sysex, and Tempos get marked for deletion
 						toRemove.add(evt);
@@ -1739,7 +1792,8 @@ public class SequenceInfo implements MidiConstants {
 
 		// System.out.println("Real song duration: "
 		// + Util.formatDurationM(MidiUtils.tick2microsecond(song, last, tempoCache)));
-		log.fine("After: " + Util.formatDurationM(song.getMicrosecondLength()));
+		logMsg = fileName + ": After: " + Util.formatDurationM(song.getMicrosecondLength());
+		logMessage(Level.FINE, logMsg);
 		return absoluteEnd + 1L;
 	}
 
@@ -1747,7 +1801,8 @@ public class SequenceInfo implements MidiConstants {
 	 * The old method, we keep it for backwards compat.
 	 */
 	public static long fixupTrackLength1(Sequence song) {
-		log.fine("Before: " + Util.formatDurationM(song.getMicrosecondLength()));
+		String logMsg = "Before: " + Util.formatDurationM(song.getMicrosecondLength());
+		logMessage(Level.FINE, logMsg);
 		SequencerWrapper.TempoCacheSlow tempoCache = new SequencerWrapper.TempoCacheSlow(song);
 		Track[] tracks = song.getTracks();
 
@@ -1785,7 +1840,8 @@ public class SequenceInfo implements MidiConstants {
 					}
 				}
 				if (silence) {
-					log.info(" Quarter song is empty, will delete all after the empty starts.. ");
+					logMsg = "Quarter song is empty, will delete all after the empty starts.";
+					logMessage(Level.INFO, logMsg);
 				} else {
 					earlyEndTick = evt.getTick();
 				}
@@ -1828,14 +1884,16 @@ public class SequenceInfo implements MidiConstants {
 									&& ((ShortMessage) evt.getMessage()).getData2() == 0)) {
 								// note OFF or note ON with zero velocity
 								endTick = evt.getTick();
-								log.finer(i + ": last note OFF = " + MidiUtils.midiEventToShortString(evt));
+								logMsg = i + ": last note OFF = " + MidiUtils.midiEventToShortString(evt);
+								logMessage(Level.FINER, logMsg);
 								break;
 							}
 							if (command == ShortMessage.NOTE_ON && lastEOT != null) {
 								// last note is missing note off, so it should end at EOT
 								// if no EOT after it, we ignore it.
 								endTick = lastEOT.getTick();
-								log.finer(i + ": endTick = lastEOT = " + endTick);
+								logMsg = i + ": endTick = lastEOT = " + endTick;
+								logMessage(Level.FINER, logMsg);
 								break;
 							}
 						}
@@ -1843,7 +1901,8 @@ public class SequenceInfo implements MidiConstants {
 				}
 			}
 		}
-		log.fine("endTick = " + endTick + " earlyEndTick=" + earlyEndTick);
+		logMsg = "endTick = " + endTick + " earlyEndTick=" + earlyEndTick;
+		logMessage(Level.FINE, logMsg);
 
 		/*
 		 * Weakness in this, is that if there is note OFF far at end without
@@ -1860,10 +1919,11 @@ public class SequenceInfo implements MidiConstants {
 					if (evt.getTick() > endTick) {
 						track.remove(evt);
 
-						log.finer("Moving event from "
+						logMsg = "Moving event from "
 								+ Util.formatDurationM(MidiUtils.tick2microsecond(song, evt.getTick(), tempoCache))
 								+ " to "
-								+ Util.formatDurationM(MidiUtils.tick2microsecond(song, endTick, tempoCache)));
+								+ Util.formatDurationM(MidiUtils.tick2microsecond(song, endTick, tempoCache));
+						logMessage(Level.FINER, logMsg);
 
 						// Why do we do this, events after endTick don't affect song,
 						// so why keep them? (unless its a EOT)
@@ -1894,7 +1954,8 @@ public class SequenceInfo implements MidiConstants {
 					trackEndTick = Math.min(Math.min(earlyEndTick, endTick), track.get(track.size() - 1).getTick());
 				MidiEvent end = MidiFactory.createEndOfTrackEvent(trackEndTick + 1);
 				track.add(end);
-				log.finest("Track " + i + " was missing an EndOfTrack. It was now inserted.");
+				logMsg = "Track " + i + " was missing an EndOfTrack. It was now inserted.";
+				logMessage(Level.FINEST, logMsg);
 			}
 		}
 
@@ -1914,7 +1975,8 @@ public class SequenceInfo implements MidiConstants {
 
 		// System.out.println("Real song duration: "
 		// + Util.formatDurationM(MidiUtils.tick2microsecond(song, last, tempoCache)));
-		log.fine("After: " + Util.formatDurationM(song.getMicrosecondLength()));
+		logMsg = "After: " + Util.formatDurationM(song.getMicrosecondLength());
+		logMessage(Level.FINE, logMsg);
 		return earlyEndTick + 1L;
 	}
 
