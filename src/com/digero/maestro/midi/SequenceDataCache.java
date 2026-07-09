@@ -344,7 +344,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 											String message = fileName + "; Channel " + ch + " Port " + port
 													+ ": Clamping fine pitch bend wheel range out of bounds: "
 													+ shortMsg.getData2() + " cents.";
-											logMessage(Level.WARNING, message);
+									logMessage(Level.INFO, message);
 										}
 										pitchBendRangeFine.put(port, ch, tick, jj,
 												Math.clamp(shortMsg.getData2(), 0, 99));
