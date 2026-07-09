@@ -5,11 +5,14 @@ import org.jetbrains.annotations.NonNls;
 import static java.lang.Integer.parseInt;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -25,11 +28,13 @@ public class ExtensionMidiInstrument {
 
 	private static final ExtensionMidiInstrument instance = new ExtensionMidiInstrument();
 
-	private final HashMap<String, String> mapxg = new HashMap<>();
-	private final HashMap<String, String> mapgs = new HashMap<>();
-	private final HashMap<String, String> mapgm2 = new HashMap<>();
+	private final Map<MidiStandard, Map<String, String>> maps = new EnumMap<>(MidiStandard.class);
 
 	private ExtensionMidiInstrument() {
+
+		maps.put(MidiStandard.XG, new HashMap<>());
+		maps.put(MidiStandard.GS, new HashMap<>());
+		maps.put(MidiStandard.GM2, new HashMap<>());
 
         parse(MidiStandard.XG, (byte) 0, "xg.txt", true, false);
         parse(MidiStandard.GS, (byte) 0, "gs.txt", true, true);
@@ -41,15 +46,15 @@ public class ExtensionMidiInstrument {
         parse(MidiStandard.XG, (byte) 64, "xg64.txt", false, false);
 
         /*
-         * GM voices: 129 GS voices: 1170 XG voices: 1011 GM2 voices: 136 Total : 2446
+         * GM voices: 129, GS voices: 1170, XG voices: 1011, GM2 voices: 136, Total : 2446
          */
 
         /*
-         * System.out.println("GM  voices: 129"); System.out.println("GS  voices: "+(mapgs.size()-129));
-         * System.out.println("XG  voices: "+(mapxg.size()-129));
-         * System.out.println("GM2 voices: "+(mapgm2.size()-129));
-         * System.out.println("Total     : "+(mapgm2.size()-129+mapxg.size()-129+mapgs. size()-129+129));
-         */
+		System.out.println("GM  voices: 129"); System.out.println("GS  voices: "+(maps.get(MidiStandard.GS).size()-129));
+		System.out.println("XG  voices: "+(maps.get(MidiStandard.XG).size()-129));
+		System.out.println("GM2 voices: "+(maps.get(MidiStandard.GM2).size()-129));
+		System.out.println("Total     : "+(maps.get(MidiStandard.GS).size()-129+maps.get(MidiStandard.XG).size()-129+maps.get(MidiStandard.GM2).size()-129+129));
+        */
     }
 
     public static ExtensionMidiInstrument getInstance() {
@@ -57,22 +62,47 @@ public class ExtensionMidiInstrument {
 	}
 
 	/**
-	 * Determine name of voice.
-	 * 
-	 * @param rhythmChannel rhythmic non-chromatic channel.
-	 * @return string with instrument name
+	 * Resolve a bank select MSB/LSB and program change into the name of the voice they select.
+	 * <p>
+	 * Both {@code MSB} and {@code LSB} may be rewritten internally before the lookup, per the
+	 * quirks of each standard: GS forces its own rhythm-kit key onto rhythm parts and collapses
+	 * LSB (which selects the SC-55/SC-88/etc. sound family) to 0, since only one family table is
+	 * bundled; XG ignores LSB when MSB is 127.
+	 *
+	 * @param extension     the MIDI standard governing the lookup. Must not be
+	 *                      {@link MidiStandard#PREVIEW} or {@link MidiStandard#ABC}.
+	 *                      {@link MidiStandard#GM} always resolves through the plain GM patch map.
+	 * @param MSB           bank select MSB (CC#0) in effect, 0-127
+	 * @param LSB           bank select LSB (CC#32) in effect, 0-127
+	 * @param patch         program change value in effect, 0-127
+	 * @param drumKit       {@code true} if the caller expects a drum kit name. This is a statement
+	 *                      about the caller's classification of the track, not about the channel:
+	 *                      it suppresses the plain-GM shortcut and selects
+	 *                      {@link MidiInstrument#STANDARD_DRUM_KIT} rather than a melodic patch name
+	 *                      as the fallback when no table entry matches.
+	 * @param rhythmChannel {@code true} if the synth is treating this channel as a rhythm part at
+	 *                      this point in the song, as recorded from GS {@code Use For Rhythm Part}
+	 *                      SysEx or XG part-mode messages. Consulted only for GS, where it forces
+	 *                      the rhythm-kit MSB bank and suppresses the Santur special case. Independent
+	 *                      of {@code drumKit}: XG can place a kit on a non-rhythm channel, and a GS
+	 *                      rhythm channel can carry a track the caller did not classify as drums.
+	 * @return the voice name, never {@code null}. Falls back to the GM patch name, or to
+	 *         {@link MidiInstrument#STANDARD_DRUM_KIT} when {@code drumKit} is set, if the
+	 *         standard's table has no entry for the given bank and patch.
 	 */
 	public String fromId(MidiStandard extension, byte MSB, byte LSB, byte patch, boolean drumKit,
 			boolean rhythmChannel) {
 		/*
 		 * 
-		 * Abbreviations that are not expanded: KSP: Keyboard Stereo Panning (in GS/GM2 terms this is called 'Wide')
-		 * 
+		 * Abbreviations that are not expanded:
+		 * 	KSP	Keyboard Stereo Panning (in GS/GM2 terms this is called 'Wide')
+		 * 		It means left and right side of keyboard/piano is panned heavily.
+		 *
 		 */
 		
 		assert extension != MidiStandard.PREVIEW && extension != MidiStandard.ABC : extension+" should not be used here";
 
-		// GS does not have Dulcimer on patch 15 MSB 0 like GM but a Santur, so we are
+		// GS does not have Dulcimer on patch 15 MSB 0 like GM, but a Santur, so we are
 		// careful to fetch its actual name.
 		boolean santur = extension == MidiStandard.GS && MSB == 0 && patch == 15 && !rhythmChannel;
 
@@ -108,40 +138,34 @@ public class ExtensionMidiInstrument {
 	}
 
 	private String determineInstrumentName(MidiStandard extension, byte MSB, byte LSB, byte patch) {
-		String instrName = null;
-
-		if (extension == MidiStandard.XG) {
-			instrName = mapxg.get(String.format("%03d%03d%03d", MSB, LSB, patch));
-		} else if (extension == MidiStandard.GS) {
-			instrName = mapgs.get(String.format("%03d%03d%03d", MSB, LSB, patch));
-		} else if (extension == MidiStandard.GM2) {
-			instrName = mapgm2.get(String.format("%03d%03d%03d", MSB, LSB, patch));
+		Map<String, String> map = maps.get(extension);
+		if (map == null) {
+			return null;
 		}
-		return instrName;
+		return map.get(String.format("%03d%03d%03d", MSB, LSB, patch));
 	}
 
 	private void parse(MidiStandard extension, byte theByte, @NonNls String fileName, boolean firstColumnPatch,
 					   boolean theByteIsLSB) {
-		try {
-			InputStream in = getClass().getResourceAsStream(fileName);
+		try (InputStream in = getClass().getResourceAsStream(fileName)) {
 			if (in == null) {
 				log.severe(fileName + " not readable.");
 				return;
 			}
-			BufferedReader theFileReader = new BufferedReader(new InputStreamReader(in));
-			String line = theFileReader.readLine();
-			int lastPatch = -1;
-			int lookupByte = -1;
-			String regex = "\t+";// one or more tabs
-			readLines(extension, theByte, fileName, firstColumnPatch, theByteIsLSB, theFileReader, line, lastPatch,
-					lookupByte, regex);
-			theFileReader.close();
-		} catch (FileNotFoundException e) {
-			log.severe(fileName + " not readable.");
-			e.printStackTrace();
+			try (InputStreamReader sReader = new InputStreamReader(in, StandardCharsets.UTF_8);
+				 BufferedReader theFileReader = new BufferedReader(sReader)) {
+				String line = theFileReader.readLine();
+				int lastPatch = -1;
+				int lookupByte = -1;
+				String regex = "\t+";// one or more tabs
+
+				readLines(extension, theByte, fileName, firstColumnPatch, theByteIsLSB, theFileReader, line, lastPatch,
+				          lookupByte, regex);
+			}
 		} catch (IOException e) {
-			log.severe(fileName + " line failed to read.");
-			e.printStackTrace();
+			log.log(Level.SEVERE, fileName + " line failed to read.", e);
+		} catch (RuntimeException e) {
+			log.log(Level.SEVERE, fileName + " failed to parse.", e);
 		}
 	}
 
@@ -149,26 +173,32 @@ public class ExtensionMidiInstrument {
 			boolean theByteIsLSB, BufferedReader theFileReader, String line, int lastPatch, int lookupByte,
 			String regex) throws IOException {
 		while (line != null) {
-			if (line.isEmpty()) {
+			if (line.isBlank()) {
 				line = theFileReader.readLine();
 				continue;
 			}
 			if (line.startsWith("\t")) {
-				String[] splits = line.split(regex);
-				if (splits.length != 3) {
-					// Something is wrong in the tab formatting of one of the files
-					log.severe("Wrong number of tabs in " + fileName + ":");
-					int l = 0;
-					for (String a : splits) {
-						System.err.println(l + ": " + a);
-						l++;
+				if (lastPatch != -1) {
+					String[] splits = line.split(regex);
+					if (splits.length != 3) {
+						// Something is wrong in the tab formatting of one of the files
+
+						int l = 0;
+						StringBuilder str = new StringBuilder();
+						for (String a : splits) {
+							str.append(l).append(": ").append(a).append("\n");
+							l++;
+						}
+						log.severe("Wrong number of tabs in " + fileName + ":\n" + str);
+						line = theFileReader.readLine();
+						continue;
 					}
-					line = theFileReader.readLine();
-					continue;
+					String lookupString = splits[1].trim();
+					lookupByte = parseInt(lookupString.trim());
+					addInstruments(extension, theByte, firstColumnPatch, theByteIsLSB, lastPatch, lookupByte, splits);
+				} else {
+					log.severe("Likely wrong number of tabs in " + fileName + ": " + line);
 				}
-				String lookupString = splits[1].trim();
-				lookupByte = parseInt(lookupString.trim());
-				addInstruments(extension, theByte, firstColumnPatch, theByteIsLSB, lastPatch, lookupByte, splits);
 			} else {
 				String patchString = line.trim();
 				lastPatch = Integer.parseInt(patchString);
@@ -195,20 +225,15 @@ public class ExtensionMidiInstrument {
 	}
 
 	private void addInstrument(MidiStandard extension, byte MSB, byte LSB, byte patch, String name) {
-		// System.err.println(" addInstrument "+name+" ("+MSB+", "+LSB+", "+patch+")");
+		// log.fine(extension+" addInstrument "+name+" ("+MSB+", "+LSB+", "+patch+")");
+		Map<String, String> map = maps.get(extension);
+		if (map == null) {
+			return;
+		}
 		String key = String.format("%03d%03d%03d", MSB, LSB, patch);
-		if (extension == MidiStandard.XG) {
-			if (mapxg.get(key) != null)
-				log.warning("Duplicate entry for (" + MSB + ", " + LSB + ", " + patch + ") in XG map");
-			mapxg.put(key, name);
-		} else if (extension == MidiStandard.GS) {
-			if (mapgs.get(key) != null)
-				log.warning("Duplicate entry for (" + MSB + ", " + LSB + ", " + patch + ") in GS map");
-			mapgs.put(key, name);
-		} else if (extension == MidiStandard.GM2) {
-			if (mapgm2.get(key) != null)
-				log.warning("Duplicate entry for (" + MSB + ", " + LSB + ", " + patch + ") in GM2 map");
-			mapgm2.put(key, name);
+		String previous = map.put(key, name);
+		if (previous != null) {
+			log.warning("Duplicate entry for (" + MSB + ", " + LSB + ", " + patch + ") in " + extension + " map");
 		}
 	}
 }
