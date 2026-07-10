@@ -26,6 +26,7 @@ import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.ParseException;
@@ -2595,7 +2596,17 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		boolean modified = abcSongModified;
 		File tmpMsx;
 		try {
-			tmpMsx = File.createTempFile("tmpproj", Util.MSX_FILE_EXTENSION);
+			/* Create a temporary MSX file to save the current project state with the new
+			* source file. {@link Files#createTempFile(Path, String, String)} creates the
+			* file with restrictive default permissions (typically {@code -rw-------} on
+			* POSIX systems), making it accessible only to the creating user. This helps
+			* prevent local information disclosure vulnerabilities.
+			*/
+			tmpMsx = Files.createTempFile(
+        		Path.of(System.getProperty("java.io.tmpdir")),
+        		"tmpproj",
+        		Util.MSX_FILE_EXTENSION)
+    		.toFile();
 		} catch (IOException e) {
 			return false;
 		}
