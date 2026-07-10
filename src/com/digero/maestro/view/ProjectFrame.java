@@ -2608,6 +2608,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         		Util.MSX_FILE_EXTENSION)
     		.toFile();
 		} catch (IOException e) {
+			log.log(Level.SEVERE, "Failed to create temporary MSX file for saving project state", e);
 			return false;
 		}
 		
