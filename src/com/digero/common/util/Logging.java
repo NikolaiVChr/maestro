@@ -176,6 +176,12 @@ public class Logging {
 					}
 					sb.setCharAt(i, '_');
 				}
+				if (c == '\t') {
+					if (sb == null) {
+						sb = new StringBuilder(message);
+					}
+					sb.setCharAt(i, ' ');
+				}
 			}
 			return sb == null ? message : sb.toString();
 		}
