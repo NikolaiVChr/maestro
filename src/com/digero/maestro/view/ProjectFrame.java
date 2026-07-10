@@ -26,6 +26,7 @@ import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.ParseException;
@@ -2593,20 +2594,31 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		File originalMsx = abcSong.getProjectFile();
 		File oldSource = abcSong.getSourceFile();
 		boolean modified = abcSongModified;
-		File tmpMsx;
+		final File tmpMsx;
 		try {
-			tmpMsx = File.createTempFile("tmpproj", Util.MSX_FILE_EXTENSION);
+			/* Create a temporary MSX file to save the current project state with the new
+			* source file. Files.createTempFile() creates the
+			* file with restrictive default permissions (typically -rw------- on
+			* POSIX systems), making it accessible only to the creating user. This helps
+			* prevent local information disclosure vulnerabilities.
+			*/
+			tmpMsx = Files.createTempFile(
+        		Path.of(System.getProperty("java.io.tmpdir")),
+        		"tmpproj",
+        		Util.MSX_FILE_EXTENSION)
+    		.toFile();
 		} catch (IOException e) {
+			log.log(Level.SEVERE, "Failed to create temporary MSX file for saving project state", e);
 			return false;
 		}
 		
 		abcSong.setProjectFile(tmpMsx);
 		abcSong.setSourceFile(newSource);
-		
+
 		if (!finishSave(false)) {
-			// failed to save tmp - restore
 			abcSong.setProjectFile(originalMsx);
 			abcSong.setSourceFile(oldSource);
+			log.log(Level.SEVERE, "Failed to save temporary MSX file");
 			return false;
 		}
 
