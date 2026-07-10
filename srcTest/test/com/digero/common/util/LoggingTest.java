@@ -3,7 +3,6 @@ package com.digero.common.util;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.lang.reflect.Constructor;
 import java.util.logging.Formatter;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -16,6 +15,12 @@ public class LoggingTest {
 		Formatter formatter = newSanitizingFormatter();
 		RuntimeException cause = new IllegalArgumentException("cause\u202Etext\nline");
 		RuntimeException thrown = new RuntimeException("top\r\nmessage\u202E", cause);
+		thrown.setStackTrace(new StackTraceElement[] {
+				new StackTraceElement("com.digero.TestClass", "testMethod", "TestClass.java", 42)
+		});
+		cause.setStackTrace(new StackTraceElement[] {
+				new StackTraceElement("com.digero.CauseClass", "causeMethod", "CauseClass.java", 7)
+		});
 
 		LogRecord record = new LogRecord(Level.SEVERE, "Message {0}");
 		record.setLoggerName("test");
@@ -30,19 +35,18 @@ public class LoggingTest {
 		String formatted = formatter.format(record);
 		String lineSeparator = System.lineSeparator();
 
-		assertTrue(formatted.contains("Message param__value"));
-		assertTrue(formatted.contains("java.lang.RuntimeException: top__message_"));
+		assertTrue(formatted.contains("SEVERE test - Message param__value" + lineSeparator));
+		assertTrue(formatted.contains("java.lang.RuntimeException: top__message_" + lineSeparator));
 		assertTrue(formatted.contains("Caused by: java.lang.IllegalArgumentException: cause_text_line"));
-		assertTrue(formatted.contains(lineSeparator + "\tat "));
+		assertTrue(formatted.contains("\tat com.digero.TestClass.testMethod(TestClass.java:42)"));
+		assertTrue(formatted.contains("\tat com.digero.CauseClass.causeMethod(CauseClass.java:7)"));
+		assertTrue(formatted.contains(lineSeparator + "java.lang.RuntimeException: top__message_"));
 		assertFalse(formatted.contains("\u202E"));
 		assertFalse(formatted.contains("top\r\nmessage"));
 		assertFalse(formatted.contains("cause\u202Etext\nline"));
 	}
 
-	private static Formatter newSanitizingFormatter() throws Exception {
-		Class<?> formatterClass = Class.forName("com.digero.common.util.Logging$SanitizingFormatter");
-		Constructor<?> constructor = formatterClass.getDeclaredConstructor();
-		constructor.setAccessible(true);
-		return (Formatter) constructor.newInstance();
+	private static Formatter newSanitizingFormatter() {
+		return new SanitizingFormatter();
 	}
 }

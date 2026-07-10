@@ -1,12 +1,16 @@
 package com.digero.common.util;
 
-import java.util.Collections;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.IdentityHashMap;
-import java.util.Set;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.logging.LogRecord;
 import java.util.logging.SimpleFormatter;
 
 public final class SanitizingFormatter extends SimpleFormatter {
+    private static final DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+            .withZone(ZoneId.systemDefault());
     private static final String LINE_SEPARATOR = System.lineSeparator();
 
     @Override
@@ -35,107 +39,36 @@ public final class SanitizingFormatter extends SimpleFormatter {
         sanitizedRecord.setSourceClassName(record.getSourceClassName());
         sanitizedRecord.setSourceMethodName(record.getSourceMethodName());
         sanitizedRecord.setLongThreadID(record.getLongThreadID());
-        sanitizedRecord.setThrown(null);
+        sanitizedRecord.setThrown(sanitizeThrowable(record.getThrown()));
 
-        StringBuilder formatted = new StringBuilder(super.format(sanitizedRecord));
+        return formatSanitizedRecord(sanitizedRecord, formatMessage(sanitizedRecord));
+    }
+
+    	private static String formatSanitizedRecord(LogRecord record, String message) {
+        StringBuilder result = new StringBuilder();
+        result.append(TIMESTAMP_FORMAT.format(record.getInstant()))
+                .append(' ')
+                .append(record.getLevel().getName());
+
+        String loggerName = record.getLoggerName();
+        if (loggerName != null && !loggerName.isEmpty()) {
+            result.append(' ').append(loggerName);
+        }
+
+        if (message != null && !message.isEmpty()) {
+            result.append(" - ").append(message);
+        }
+
+        result.append(LINE_SEPARATOR);
+
         Throwable thrown = record.getThrown();
         if (thrown != null) {
-            // Append the sanitized stack trace of the thrown exception to the formatted log
-            // message
-            appendSanitizedThrowable(formatted, thrown,
-                    Collections.newSetFromMap(new IdentityHashMap<Throwable, Boolean>()), "");
+            StringWriter writer = new StringWriter();
+            thrown.printStackTrace(new PrintWriter(writer));
+            result.append(writer);
         }
 
-        return formatted.toString();
-    }
-
-    /**
-     * Appends a sanitized representation of a throwable to the log message.
-     *
-     * @param sb     the StringBuilder to append to
-     * @param thrown the throwable to append
-     * @param seen   a set of already seen throwables to detect circular references
-     * @param prefix the prefix for each line
-     */
-    private static void appendSanitizedThrowable(StringBuilder sb, Throwable thrown,
-            Set<Throwable> seen, String prefix) {
-        if (!seen.add(thrown)) {
-            // Circular reference detected, append a message indicating the circular
-            // reference
-            sb.append(prefix).append("[CIRCULAR REFERENCE: ")
-                    .append(sanitizeString(thrown.toString())).append("]").append(LINE_SEPARATOR);
-            return;
-        }
-
-        // Append the sanitized representation of the throwable to the log message
-        sb.append(prefix).append(sanitizeString(thrown.toString())).append(LINE_SEPARATOR);
-        appendStackTraceElements(sb, thrown.getStackTrace(), prefix);
-
-        for (Throwable suppressed : thrown.getSuppressed()) {
-            // Append the sanitized representation of the suppressed throwable to the log
-            // message with the appropriate label
-            appendEnclosedThrowable(sb, suppressed, seen, prefix, "Suppressed: ");
-        }
-
-        Throwable cause = thrown.getCause();
-        if (cause != null) {
-            // Append the sanitized representation of the cause throwable to the log message
-            // with the appropriate label
-            appendEnclosedThrowable(sb, cause, seen, prefix, "Caused by: ");
-        }
-    }
-
-    /**
-     * Appends a sanitized representation of an enclosed throwable (cause or
-     * suppressed) to the log message.
-     *
-     * @param sb     the StringBuilder to append to
-     * @param thrown the throwable to append
-     * @param seen   a set of already seen throwables to detect circular references
-     * @param prefix the prefix for each line
-     * @param label  the label for the enclosed throwable (e.g., "Caused by: ",
-     *               "Suppressed: ")
-     */
-    private static void appendEnclosedThrowable(StringBuilder sb, Throwable thrown,
-            Set<Throwable> seen, String prefix, String label) {
-        String childPrefix = prefix + "\t";
-        if (!seen.add(thrown)) {
-            // Circular reference detected, append a message indicating the circular
-            // reference
-            sb.append(childPrefix).append(label).append("[CIRCULAR REFERENCE: ")
-                    .append(sanitizeString(thrown.toString())).append("]").append(LINE_SEPARATOR);
-            return;
-        }
-
-        sb.append(childPrefix).append(label).append(sanitizeString(thrown.toString())).append(LINE_SEPARATOR);
-        appendStackTraceElements(sb, thrown.getStackTrace(), childPrefix);
-
-        for (Throwable suppressed : thrown.getSuppressed()) {
-            // Append the sanitized representation of the suppressed throwable to the log
-            // message with the appropriate label
-            appendEnclosedThrowable(sb, suppressed, seen, childPrefix, "Suppressed: ");
-        }
-
-        Throwable cause = thrown.getCause();
-        if (cause != null) {
-            // Append the sanitized representation of the cause throwable to the log message
-            // with the appropriate label
-            appendEnclosedThrowable(sb, cause, seen, prefix, "Caused by: ");
-        }
-    }
-
-    /**
-     * Appends the stack trace elements of a throwable to the log message.
-     *
-     * @param sb         the StringBuilder to append to
-     * @param stackTrace the stack trace elements to append
-     * @param prefix     the prefix for each line
-     */
-    private static void appendStackTraceElements(StringBuilder sb, StackTraceElement[] stackTrace, String prefix) {
-        for (StackTraceElement element : stackTrace) {
-            sb.append(prefix).append("\tat ").append(sanitizeString(String.valueOf(element)))
-                    .append(LINE_SEPARATOR);
-        }
+        return result.toString();
     }
 
     /**
@@ -166,6 +99,51 @@ public final class SanitizingFormatter extends SimpleFormatter {
         return result.toString();
     }
 
+    private static Throwable sanitizeThrowable(Throwable thrown) {
+        if (thrown == null) {
+            return null;
+        }
+
+        return sanitizeThrowable(thrown, new IdentityHashMap<Throwable, SanitizedThrowable>());
+    }
+
+    /**
+     * Recursively sanitizes a Throwable and its causes and suppressed exceptions.
+     * 
+     * @param thrown the Throwable to sanitize
+     * @param seen   a map to track already sanitized Throwables to avoid infinite
+     *               loops
+     * @return the sanitized Throwable
+     */
+    private static Throwable sanitizeThrowable(Throwable thrown,
+            IdentityHashMap<Throwable, SanitizedThrowable> seen) {
+        SanitizedThrowable existing = seen.get(thrown);
+        if (existing != null) {
+            return existing;
+        }
+
+        SanitizedThrowable sanitized = new SanitizedThrowable(thrown);
+        seen.put(thrown, sanitized);
+        sanitized.setStackTrace(thrown.getStackTrace());
+
+        Throwable cause = thrown.getCause();
+        if (cause != null) {
+            Throwable sanitizedCause = sanitizeThrowable(cause, seen);
+            if (sanitizedCause != sanitized) {
+                sanitized.initCause(sanitizedCause);
+            }
+        }
+
+        for (Throwable suppressed : thrown.getSuppressed()) {
+            Throwable sanitizedSuppressed = sanitizeThrowable(suppressed, seen);
+            if (sanitizedSuppressed != sanitized) {
+                sanitized.addSuppressed(sanitizedSuppressed);
+            }
+        }
+
+        return sanitized;
+    }
+
     /**
      * Checks if a code point is considered dangerous for logging purposes.
      * 
@@ -173,7 +151,6 @@ public final class SanitizingFormatter extends SimpleFormatter {
      * @return true if the code point is dangerous, false otherwise
      */
     private static boolean isDangerousCodePoint(int cp) {
-
         // Check for control characters
         if (Character.isISOControl(cp)) {
             return true;
@@ -216,5 +193,22 @@ public final class SanitizingFormatter extends SimpleFormatter {
         }
 
         sb.append(hex);
+    }
+
+    /**
+     * A Throwable subclass that sanitizes its string representation.
+     */
+    private static final class SanitizedThrowable extends Throwable {
+        private final String sanitizedText;
+
+        private SanitizedThrowable(Throwable original) {
+            super();
+            this.sanitizedText = sanitizeString(original.toString());
+        }
+
+        @Override
+        public String toString() {
+            return sanitizedText;
+        }
     }
 }
