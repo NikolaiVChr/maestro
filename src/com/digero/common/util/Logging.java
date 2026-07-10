@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
-import java.text.Normalizer;
+import java.util.Collections;
+import java.util.IdentityHashMap;
+import java.util.Set;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
@@ -127,32 +129,144 @@ public class Logging {
 	 */
 
 	private static final class SanitizingFormatter extends SimpleFormatter {
+		private static final String LINE_SEPARATOR = System.lineSeparator();
 
 		@Override
-		public String formatMessage(LogRecord record) {
+		public String format(LogRecord record) {
 			Object[] params = record.getParameters();
+			Object[] sanitizedParams = params;
+
 			if (params != null) {
-				Object[] sanitizedParams = params.clone();
+				sanitizedParams = params.clone();
 				for (int i = 0; i < sanitizedParams.length; i++) {
-					if (sanitizedParams[i] instanceof String s) {
-						sanitizedParams[i] = sanitizeLogMessage(s);
+					if (sanitizedParams[i] != null) {
+						// Sanitize each parameter by converting it to a string and replacing dangerous
+						// characters
+						sanitizedParams[i] = sanitizeString(String.valueOf(sanitizedParams[i]));
 					}
 				}
-				record.setParameters(sanitizedParams);
 			}
 
-			// Sanitize the formatted message
-			return sanitizeLogMessage(super.formatMessage(record));
+			LogRecord sanitizedRecord = new LogRecord(record.getLevel(), sanitizeString(record.getMessage()));
+			sanitizedRecord.setLoggerName(record.getLoggerName());
+			sanitizedRecord.setInstant(record.getInstant());
+			sanitizedRecord.setParameters(sanitizedParams);
+			sanitizedRecord.setResourceBundle(record.getResourceBundle());
+			sanitizedRecord.setResourceBundleName(record.getResourceBundleName());
+			sanitizedRecord.setSequenceNumber(record.getSequenceNumber());
+			sanitizedRecord.setSourceClassName(record.getSourceClassName());
+			sanitizedRecord.setSourceMethodName(record.getSourceMethodName());
+			sanitizedRecord.setLongThreadID(record.getLongThreadID());
+			sanitizedRecord.setThrown(null);
+
+			StringBuilder formatted = new StringBuilder(super.format(sanitizedRecord));
+			Throwable thrown = record.getThrown();
+			if (thrown != null) {
+				// Append the sanitized stack trace of the thrown exception to the formatted log
+				// message
+				appendSanitizedThrowable(formatted, thrown,
+						Collections.newSetFromMap(new IdentityHashMap<Throwable, Boolean>()), "");
+			}
+
+			return formatted.toString();
 		}
 
 		/**
-		 * Sanitizes a log message by replacing dangerous characters with their escaped
-		 * Unicode representation.
-		 * 
-		 * @param input the log message to sanitize
-		 * @return the sanitized log message
+		 * Appends a sanitized representation of a throwable to the log message.
+		 *
+		 * @param sb     the StringBuilder to append to
+		 * @param thrown the throwable to append
+		 * @param seen   a set of already seen throwables to detect circular references
+		 * @param prefix the prefix for each line
 		 */
-		private static String sanitizeLogMessage(String input) {
+		private static void appendSanitizedThrowable(StringBuilder sb, Throwable thrown,
+				Set<Throwable> seen, String prefix) {
+			if (!seen.add(thrown)) {
+				// Circular reference detected, append a message indicating the circular
+				// reference
+				sb.append(prefix).append("[CIRCULAR REFERENCE: ")
+						.append(sanitizeString(thrown.toString())).append("]").append(LINE_SEPARATOR);
+				return;
+			}
+
+			// Append the sanitized representation of the throwable to the log message
+			sb.append(prefix).append(sanitizeString(thrown.toString())).append(LINE_SEPARATOR);
+			appendStackTraceElements(sb, thrown.getStackTrace(), prefix);
+
+			for (Throwable suppressed : thrown.getSuppressed()) {
+				// Append the sanitized representation of the suppressed throwable to the log
+				// message with the appropriate label
+				appendEnclosedThrowable(sb, suppressed, seen, prefix, "Suppressed: ");
+			}
+
+			Throwable cause = thrown.getCause();
+			if (cause != null) {
+				// Append the sanitized representation of the cause throwable to the log message
+				// with the appropriate label
+				appendEnclosedThrowable(sb, cause, seen, prefix, "Caused by: ");
+			}
+		}
+
+		/**
+		 * Appends a sanitized representation of an enclosed throwable (cause or
+		 * suppressed) to the log message.
+		 *
+		 * @param sb     the StringBuilder to append to
+		 * @param thrown the throwable to append
+		 * @param seen   a set of already seen throwables to detect circular references
+		 * @param prefix the prefix for each line
+		 * @param label  the label for the enclosed throwable (e.g., "Caused by: ",
+		 *               "Suppressed: ")
+		 */
+		private static void appendEnclosedThrowable(StringBuilder sb, Throwable thrown,
+				Set<Throwable> seen, String prefix, String label) {
+			String childPrefix = prefix + "\t";
+			if (!seen.add(thrown)) {
+				// Circular reference detected, append a message indicating the circular
+				// reference
+				sb.append(childPrefix).append(label).append("[CIRCULAR REFERENCE: ")
+						.append(sanitizeString(thrown.toString())).append("]").append(LINE_SEPARATOR);
+				return;
+			}
+
+			sb.append(childPrefix).append(label).append(sanitizeString(thrown.toString())).append(LINE_SEPARATOR);
+			appendStackTraceElements(sb, thrown.getStackTrace(), childPrefix);
+
+			for (Throwable suppressed : thrown.getSuppressed()) {
+				// Append the sanitized representation of the suppressed throwable to the log
+				// message with the appropriate label
+				appendEnclosedThrowable(sb, suppressed, seen, childPrefix, "Suppressed: ");
+			}
+
+			Throwable cause = thrown.getCause();
+			if (cause != null) {
+				// Append the sanitized representation of the cause throwable to the log message
+				// with the appropriate label
+				appendEnclosedThrowable(sb, cause, seen, prefix, "Caused by: ");
+			}
+		}
+
+		/**
+		 * Appends the stack trace elements of a throwable to the log message.
+		 *
+		 * @param sb         the StringBuilder to append to
+		 * @param stackTrace the stack trace elements to append
+		 * @param prefix     the prefix for each line
+		 */
+		private static void appendStackTraceElements(StringBuilder sb, StackTraceElement[] stackTrace, String prefix) {
+			for (StackTraceElement element : stackTrace) {
+				sb.append(prefix).append("\tat ").append(sanitizeString(String.valueOf(element)))
+						.append(LINE_SEPARATOR);
+			}
+		}
+
+		/**
+		 * Sanitizes string by replacing dangerous characters with an underscore.
+		 * 
+		 * @param input the string to sanitize
+		 * @return the sanitized string
+		 */
+		private static String sanitizeString(String input) {
 			if (input == null) {
 				return null;
 			}
