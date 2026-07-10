@@ -2614,11 +2614,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		
 		abcSong.setProjectFile(tmpMsx);
 		abcSong.setSourceFile(newSource);
-		
+
 		if (!finishSave(false)) {
-			// failed to save tmp - restore
 			abcSong.setProjectFile(originalMsx);
 			abcSong.setSourceFile(oldSource);
+			log.log(Level.SEVERE, "Failed to save temporary MSX file");
 			return false;
 		}
 
