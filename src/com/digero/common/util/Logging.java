@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
@@ -125,65 +126,104 @@ public class Logging {
 	 * ALL
 	 */
 
-	/**
-	 * A formatter that sanitizes log messages by replacing newline characters with
-	 * underscores.
-	 * This helps prevent log injection attacks and ensures log messages are
-	 * single-line.
-	 */
 	private static final class SanitizingFormatter extends SimpleFormatter {
-		@Override
-		public String format(LogRecord record) {
-			// Sanitize the log message before formatting
-			record.setMessage(sanitizeLogMessage(record.getMessage()));
-			return super.format(record);
-		}
 
 		@Override
 		public String formatMessage(LogRecord record) {
-			// Sanitize parameters if they are strings
 			Object[] params = record.getParameters();
 			if (params != null) {
-				for (int i = 0; i < params.length; i++) {
-					if (params[i] instanceof String s) {
-						params[i] = sanitizeLogMessage(s);
+				Object[] sanitizedParams = params.clone();
+				for (int i = 0; i < sanitizedParams.length; i++) {
+					if (sanitizedParams[i] instanceof String s) {
+						sanitizedParams[i] = sanitizeLogMessage(s);
 					}
 				}
+				record.setParameters(sanitizedParams);
 			}
-			// Call the superclass method to format the message with sanitized parameters
-			return super.formatMessage(record);
+
+			// Sanitize the formatted message
+			return sanitizeLogMessage(super.formatMessage(record));
 		}
 
 		/**
-		 * Sanitizes a log message by replacing newline characters with underscores.
-		 * This helps prevent log injection attacks and ensures log messages are
-		 * single-line.
+		 * Sanitizes a log message by replacing dangerous characters with their escaped
+		 * Unicode representation.
 		 * 
-		 * @param message the log message to sanitize
+		 * @param input the log message to sanitize
 		 * @return the sanitized log message
 		 */
-		private static String sanitizeLogMessage(String message) {
-			if (message == null) {
+		private static String sanitizeLogMessage(String input) {
+			if (input == null) {
 				return null;
 			}
 
-			StringBuilder sb = null;
-			for (int i = 0; i < message.length(); i++) {
-				char c = message.charAt(i);
-				if (c == '\r' || c == '\n') {
-					if (sb == null) {
-						sb = new StringBuilder(message);
-					}
-					sb.setCharAt(i, '_');
+			StringBuilder result = new StringBuilder(input.length());
+			for (int offset = 0; offset < input.length();) {
+				int cp = input.codePointAt(offset);
+				offset += Character.charCount(cp);
+
+				if (isDangerousCodePoint(cp)) {
+					// Replace dangerous characters with an underscore
+					result.append("_");
+				} else {
+					result.appendCodePoint(cp);
 				}
-				if (c == '\t') {
-					if (sb == null) {
-						sb = new StringBuilder(message);
-					}
-					sb.setCharAt(i, ' ');
-				}
+
 			}
-			return sb == null ? message : sb.toString();
+
+			return result.toString();
+		}
+
+		/**
+		 * Checks if a code point is considered dangerous for logging purposes.
+		 * 
+		 * @param cp the code point to check
+		 * @return true if the code point is dangerous, false otherwise
+		 */
+		private static boolean isDangerousCodePoint(int cp) {
+
+			// Check for control characters
+			if (Character.isISOControl(cp)) {
+				return true;
+			}
+
+			// Check for zero-width and non-printable characters
+			if (cp == 0x200B || cp == 0x200C || cp == 0x200D
+					|| cp == 0x2060 || cp == 0xFEFF
+					|| cp == 0x2061 || cp == 0x2062
+					|| cp == 0x2063 || cp == 0x2064) {
+				return true;
+			}
+
+			// Check for bidirectional text control characters
+			if ((cp >= 0x202A && cp <= 0x202E)
+					|| (cp >= 0x2066 && cp <= 0x2069)) {
+				return true;
+			}
+
+			// Check for other formatting characters
+			return cp == 0x2028
+					|| cp == 0x2029
+					|| Character.getType(cp) == Character.FORMAT;
+		}
+
+		/**
+		 * Appends the Unicode escape sequence for a given code point to a
+		 * StringBuilder.
+		 * 
+		 * @param sb the StringBuilder to append to
+		 * @param cp the code point to convert to a Unicode escape sequence
+		 */
+		@SuppressWarnings("unused") // This method is not currently used, but may be useful for future enhancements
+		private static void appendUnicodeEscape(StringBuilder sb, int cp) {
+			sb.append("\\u");
+			String hex = Integer.toHexString(cp);
+
+			for (int i = hex.length(); i < 4; i++) {
+				sb.append('0');
+			}
+
+			sb.append(hex);
 		}
 	}
 }
