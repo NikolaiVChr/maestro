@@ -2594,11 +2594,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		File originalMsx = abcSong.getProjectFile();
 		File oldSource = abcSong.getSourceFile();
 		boolean modified = abcSongModified;
-		File tmpMsx;
+		final File tmpMsx;
 		try {
 			/* Create a temporary MSX file to save the current project state with the new
-			* source file. {@link Files#createTempFile(Path, String, String)} creates the
-			* file with restrictive default permissions (typically {@code -rw-------} on
+			* source file. Files.createTempFile() creates the
+			* file with restrictive default permissions (typically -rw------- on
 			* POSIX systems), making it accessible only to the creating user. This helps
 			* prevent local information disclosure vulnerabilities.
 			*/
