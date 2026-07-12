@@ -9,10 +9,7 @@ import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -30,12 +27,114 @@ public class CharsetDetectAndDecode {
         return decodeWithReplace(data, cs);
     }
 
+    /**
+     * Decode all text blobs from one MIDI file together. A file has a single author
+     * and almost always a single encoding, so tracks that decode unambiguously vote
+     * on the charset for the tracks that don't. This resolves the mostly-ASCII case
+     * (soundfont bank labels, "Track 1" + a few kanji) that is genuinely undecidable
+     * in isolation.
+     */
+    public static List<Pair<String, Charset>> decodeMidiFile(List<byte[]> blobs, boolean western) {
+        // Pass 1: decode each blob independently, but keep the *confidence*, not just
+        // the answer. A blob is a "strong vote" only if its decode is unambiguous.
+        Script fileScript = voteScript(blobs, western);
+        //System.out.println("File script: " + fileScript);
+
+        if (fileScript == null) return null;
+
+        // Pass 2: re-decode, biasing toward the file's script where a blob is ambiguous.
+        List<Pair<String, Charset>> out = new ArrayList<>(blobs.size());
+        for (byte[] blob : blobs) {
+            if (blob == null) {
+                out.add(null);
+                continue;
+            }
+            out.add(decodeBlobWithFileHint(blob, western, fileScript));
+        }
+        return out;
+    }
+
+    private static Pair<String, Charset> decodeBlobWithFileHint(byte[] data, boolean western, Script preferScript) {
+        Pair<String, Charset> unbiased = decodeMidiData(data, western);
+        if (preferScript == null || unbiased.second == null) return unbiased;
+
+        Script own = getScript(unbiased.second.name());
+        int evidence = scriptEvidence(unbiased.first, own);
+
+        // This blob spoke for itself -- a clean non-ASCII decode in some script.
+        // Do not let the file vote override it. Bilingual files (Russian lyrics +
+        // Big5 bank names) are real; each track keeps its own answer.
+        if (evidence >= 2) return unbiased;
+
+        // Ambiguous blob with a file hint. Run the strong, unambiguous shortcuts
+        // (UTF-8, BOM, marker) but NOT the weak ones (half-width katakana, CP1252),
+        // then let the scorer apply the bias. The weak shortcuts are exactly the ones
+        // that mis-fire on Big5/Cyrillic trail bytes -- letting them win here would
+        // deny the file vote the decision it exists to make.
+        Pair<String, Charset> strong = tryStrongShortcutsOnly(data);
+        if (strong != null) return strong;
+
+        // Half-width katakana track names (ﾒﾛﾃﾞｨ, ﾄﾞﾗﾑ) are pure 0xA1-0xDF, which the
+        // scorer refuses to credit as Japanese (matchCount=0) to avoid Cyrillic false
+        // positives -- so they can never win CP932 via the scorer, bias or not. But if
+        // the FILE voted Japanese, a majority-katakana track is genuinely Japanese.
+        // Honour the katakana shortcut in that case.
+        if (preferScript == Script.JAPANESE && looksLikeAsciiOrHalfwidthKatakana(data)) {
+            Charset sjis = Charset.forName("Windows-31J");
+            String s = decodeWithReplace(data, sjis);
+            if (decodedHasMajorityHalfwidthKatakana(s, 60)) {
+                return new Pair<>(s, sjis);
+            }
+        }
+
+        if (preferScript == Script.EASTERN) {
+            String s = decodeWithReplace(data, Charset.forName("windows-1258"));
+            long viet = s.codePoints().filter(VIET_PRECOMPOSED::contains).count();
+            if (viet > 0 && !containsPua(s) && isPrintableAndNoSurrogates(s)) {
+                return new Pair<>(s, Charset.forName("windows-1258"));
+            }
+        }
+
+        return bestFitLegacyDecode(data, western, preferScript);
+    }
+
+    private static Pair<String, Charset> tryStrongShortcutsOnly(byte[] data) {
+        if (data == null || data.length == 0) return new Pair<>("", null);
+
+        String marker = sniffAsciiMarker(data);
+        if (marker != null) return decodeWithMarker(data, marker);
+
+        Pair<String, Charset> bom = tryBomDecode(data);
+        if (bom != null) return bom;
+
+        Pair<String, Charset> u16 = tryHeuristicUtf16(data);
+        if (u16 != null) return u16;
+
+        Pair<String, Charset> u8 = tryStrictUtf8(data);
+        if (u8 != null) return u8;
+
+        // Majority-ASCII CP1252 is strong enough to resist a file bias: a blob that is
+        // mostly ASCII plus a couple of CP1252 punctuation bytes is Western, not a
+        // mis-decode of the file's CJK. Skipping it would let "don't" in a Chinese file
+        // get biased to GB18030 (92 74 -> one Han char).
+        if (looksLikeWindows1252(data)) {
+            Charset cs = Charset.forName("windows-1252");
+            String s = decodeWithReplace(data, cs);
+            long ascii = s.codePoints().filter(cp -> cp < 0x80).count();
+            if (ascii * 2 >= s.codePointCount(0, s.length())) return new Pair<>(s, cs);
+        }
+        return null;
+    }
+
 	public static Pair<String, Charset> decodeMidiData(byte[] data) {
 		return decodeMidiData(data, false);
 	}
-	
-	public static Pair<String, Charset> decodeMidiData(byte[] data, boolean western) {
-		
+
+    public static Pair<String, Charset> decodeMidiData(byte[] data, boolean western) {
+        return decodeMidiDataInternal(data, western, null);
+    }
+
+	private static Pair<String, Charset> decodeMidiDataInternal(byte[] data, boolean western, Script preferScript) {
 		if (data == null || data.length == 0) return new Pair<>("", null);
 
         // Marker sniff
@@ -62,44 +161,48 @@ public class CharsetDetectAndDecode {
         }
                 
         Charset sjis = Charset.forName("Windows-31J");
+        Charset eucJp = Charset.forName("EUC-JP");
         
         // Mix of ascii and Shift_JIS will trigger this
-        if (isValidShiftJis(data) && (!western || data.length > 8)) {
+        if (looksLikeJapaneseSjis(data) && (!western || data.length > 8)) {
             try {
                 CharsetDecoder dec = sjis.newDecoder()
                     .onMalformedInput(CodingErrorAction.REPORT)
                     .onUnmappableCharacter(CodingErrorAction.REPORT);
-                CharBuffer buf = dec.decode(ByteBuffer.wrap(data));
-                String s = buf.toString();
-                if (isPrintableAndNoSurrogates(s) && decodedHasJapaneseChars(s, Math.max(1, s.length()/10))) {
-                	log.fine("First sjis shortcut");
-                    return new Pair<>(decodeWithReplace(data, sjis), sjis);
+                String s = dec.decode(ByteBuffer.wrap(data)).toString();
+                if (isPrintableAndNoSurrogates(s) && decodedIsMostlyJapanese(s, 60) && !containsPua(s)) {
+                    log.fine("First sjis shortcut");
+                    return new Pair<>(s, sjis);
                 }
             } catch (CharacterCodingException e) {
             }
         }
 
-        if (isValidEucJp(data) && !western) {
+        if (looksLikeJapaneseEucJp(data) && !western) {
             try {
                 CharsetDecoder dec = Charset.forName("EUC-JP")
                     .newDecoder()
                     .onMalformedInput(CodingErrorAction.REPORT)
                     .onUnmappableCharacter(CodingErrorAction.REPORT);
                 String s = dec.decode(ByteBuffer.wrap(data)).toString();
-                if (isPrintableAndNoSurrogates(s) && decodedHasJapaneseChars(s, Math.max(1, s.length()/10))) {
-                	log.fine("Euc shortcut");
-                	return new Pair<>(decodeWithReplace(data, Charset.forName("EUC-JP")), Charset.forName("EUC-JP"));
+                if (isPrintableAndNoSurrogates(s) && decodedIsMostlyJapanese(s, 60) && !containsPua(s)) {
+                    log.fine("Euc shortcut");
+                    return new Pair<>(s, eucJp);
                 }
             } catch (CharacterCodingException e) {
             }
         }
 
         if (looksLikeWindows1252(data)) {
-            // decode as Windows-1252 directly
-        	Charset cs = Charset.forName("windows-1252");
+            Charset cs = Charset.forName("windows-1252");
             String s = decodeWithReplace(data, cs);
-            log.fine("shorted win-1252");
-            return new Pair<>(s, cs);
+            // Real Western text is majority ASCII. A CP1252 decode that is mostly
+            // high bytes is mojibake from some other codepage; let the scorer decide.
+            long ascii = s.codePoints().filter(cp -> cp < 0x80).count();
+            if (ascii * 2 >= s.codePointCount(0, s.length())) {
+                log.fine("shorted win-1252");
+                return new Pair<>(s, cs);
+            }
         }
         
         // Pure half width Shift_JIS will trigger this, with at 60% of bytes being japanese
@@ -110,14 +213,24 @@ public class CharsetDetectAndDecode {
                 return new Pair<>(decoded, sjis);
             }
         }
-        
-        // Pure full width Shift_JIS will trigger this
-        if (looksLikeSjisDoubleBytes(data, western?100:60)) {
-        	String s = decodeWithReplace(data, sjis);
-        	if (isPrintableAndNoSurrogates(s) && decodedHasJapaneseChars(s, Math.max(1, s.length()/10))) {
-        		log.fine("Third sjis shortcut");
-        		return new Pair<>(s, sjis);
-        	}
+
+        // Pure full width Shift_JIS will trigger this.
+        // Byte-level kana evidence is required: Cyrillic in windows-1251 occupies
+        // 0xC0-0xFF and therefore forms structurally valid SJIS lead+trail pairs,
+        // but it can never produce a 0x82 (hiragana) or 0x83 (katakana) lead.
+        if (looksLikeSjisDoubleBytes(data, western ? 100 : 60)
+                && (hasShiftJisHiragana(data) || hasShiftJisFullwidthKatakana(data))) {
+            try {
+                CharsetDecoder dec = sjis.newDecoder()
+                        .onMalformedInput(CodingErrorAction.REPORT)
+                        .onUnmappableCharacter(CodingErrorAction.REPORT);
+                String s = dec.decode(ByteBuffer.wrap(data)).toString();
+                if (isPrintableAndNoSurrogates(s) && decodedIsMostlyJapanese(s, 60) && !containsPua(s)) {
+                    log.fine("Third sjis shortcut");
+                    return new Pair<>(s, sjis);
+                }
+            } catch (CharacterCodingException ignored) {
+            }
         }
         
         Pair<String, Charset> result = detectAndDecode(data, 65);//25
@@ -128,7 +241,7 @@ public class CharsetDetectAndDecode {
         	return result;
         }
         
-        return bestFitLegacyDecode(data, western);
+        return bestFitLegacyDecode(data, western, null);
     }
 
 	/*
@@ -169,19 +282,19 @@ public class CharsetDetectAndDecode {
         if (data.length >= 3
          && (data[0]&0xFF)==0xEF && (data[1]&0xFF)==0xBB && (data[2]&0xFF)==0xBF) {
             String s = new String(data, 3, data.length-3, StandardCharsets.UTF_8);
-            if (isPrintableAndNoSurrogates(s)) return new Pair<>(s, StandardCharsets.UTF_8);
+            if (looksLikeCleanText(s)) return new Pair<>(s, StandardCharsets.UTF_8);
         }
         // UTF-16BE BOM
         if (data.length >= 2
          && (data[0]&0xFF)==0xFE && (data[1]&0xFF)==0xFF) {
             String s = new String(data, 2, data.length-2, StandardCharsets.UTF_16BE);
-            if (isPrintableAndNoSurrogates(s)) return new Pair<>(s, StandardCharsets.UTF_16BE);
+            if (looksLikeCleanText(s)) return new Pair<>(s, StandardCharsets.UTF_16BE);
         }
         // UTF-16LE BOM
         if (data.length >= 2
          && (data[0]&0xFF)==0xFF && (data[1]&0xFF)==0xFE) {
             String s = new String(data, 2, data.length-2, StandardCharsets.UTF_16LE);
-            if (isPrintableAndNoSurrogates(s)) return new Pair<>(s, StandardCharsets.UTF_16LE);
+            if (looksLikeCleanText(s)) return new Pair<>(s, StandardCharsets.UTF_16LE);
         }
         return null;
     }
@@ -221,7 +334,7 @@ public class CharsetDetectAndDecode {
         
         Charset cs = looks16BE ? StandardCharsets.UTF_16BE : StandardCharsets.UTF_16LE;
         String s = new String(data, cs);
-        return isPrintableAndNoSurrogates(s) ? new Pair<>(s, cs) : null;
+        return looksLikeCleanText(s) ? new Pair<>(s, cs) : null;
     }
  
     private static Pair<String, Charset> tryStrictUtf8(byte[] data) {
@@ -376,15 +489,13 @@ public class CharsetDetectAndDecode {
         int n = data.length;
         if (n < 5 || percent <= 0) return false;
 
-        int pairs = n - 1;
+        int pairs = n / 2;
         int doubleSeqCount = 0;
         for (int i = 0; i + 1 < n; i++) {
             int b1 = data[i]   & 0xFF;
             int b2 = data[i+1] & 0xFF;
-            boolean leadOK  = (b1 >= 0x81 && b1 <= 0x9F)
-                           || (b1 >= 0xE0 && b1 <= 0xFC);
-            boolean trailOK = (b2 >= 0x40 && b2 <= 0x7E)
-                           || (b2 >= 0x80 && b2 <= 0xFC);
+            boolean leadOK = isSjisLead(b1);
+            boolean trailOK = isSjisTrail(b2);
             if (leadOK && trailOK) {
                 doubleSeqCount++;
                 i++;  // skip the trail byte to avoid overlapping
@@ -394,9 +505,23 @@ public class CharsetDetectAndDecode {
         // now check ratio: doubleSeqCount/pairs >= percent/100
         return doubleSeqCount * 100 >= pairs * percent;
     }
+
+    /**
+     * True if at least {@code percent} of the non-ASCII code points are Japanese.
+     * Unlike decodedHasJapaneseChars this scales with length instead of using an
+     * absolute count, so a long mis-decode can't pass on two lucky kanji.
+     */
+    private static boolean decodedIsMostlyJapanese(String s, int percent) {
+        long nonAscii = s.codePoints().filter(cp -> cp > 0x7F).count();
+        if (nonAscii == 0) return false;
+        long jp = s.codePoints().filter(cp ->
+                        (isJapaneseCp(cp)))     // fullwidth forms + halfwidth katakana
+                .count();
+        return jp * 100 >= nonAscii * percent;
+    }
     
     /**
-     * True iff every byte maps to a printable CP-1252 character (no controls or undefined),
+     * True if every byte maps to a printable CP-1252 character (no controls or undefined),
      * and at least one byte is a CP-1252-only extension (0x80–0x9F printable slot).
      */
     private static boolean looksLikeWindows1252(byte[] data) {
@@ -457,6 +582,7 @@ public class CharsetDetectAndDecode {
 	    0x01A0, // Ơ
 	    0x01A1  // ơ
 	);
+    @Deprecated
 	private static final Set<Integer> VIET_DIACRITICS = Set.of(
 	    0x0300, // ◌̀ (grave)
 	    0x0301, // ◌́ (acute)
@@ -466,6 +592,7 @@ public class CharsetDetectAndDecode {
 	    0x031B  // ◌̛ (horn)
 	);
 	// simple vowel set
+    @Deprecated
 	private static final Set<Integer> LATIN_VOWELS = Set.of(
 	    (int)'a',(int)'A',
 	    (int)'e',(int)'E',
@@ -503,14 +630,23 @@ public class CharsetDetectAndDecode {
             return null;
         }
         try {
-        	log.fine("icu4j: "+match[0].getName()+" "+confidence+"% for "+match[0].getString());
-            return new Pair<>(match[0].getString(), Charset.forName(match[0].getName()));
+            String s = match[0].getString();
+            Charset cs = Charset.forName(match[0].getName());
+            // ICU is the only path in this class that does not validate its own output.
+            // It will happily return C0 controls, unpaired surrogates, and Private Use
+            // Area characters -- see isPua. Hold it to the same bar as the shortcuts.
+            if (!isPrintableAndNoSurrogates(s) || containsPua(s)) {
+                log.fine("icu4j rejected: " + cs.name() + " " + s);
+                return null;
+            }
+            log.fine("icu4j: " + cs.name() + " " + confidence + "% for " + s);
+            return new Pair<>(s, cs);
         } catch (Exception e) {
             return null;
         }
     }
 
-    public static Pair<String, Charset> bestFitLegacyDecode(byte[] data, boolean western) {
+    public static Pair<String, Charset> bestFitLegacyDecode(byte[] data, boolean western, Script preferScript) {
         log.finer("best fit");
 
         CandidateResult bestDecoded = null;
@@ -519,12 +655,18 @@ public class CharsetDetectAndDecode {
 
         for (Charset cs : candidates) {
             CandidateResult cr = evaluateCandidate(data, cs, western);
-            // if western preferred, penalize non-Western codepages
-    		if (western && getScript(cs.name()) != Script.WESTERN) {
-    			// choose a penalty large enough to swing ties, but not so large
-    			// that a really bad asian decode beats a mediocre Western decode.
-    			cr.score += 8;
-    		}
+            if (western && getScript(cs.name()) != Script.WESTERN) {
+                // choose a penalty large enough to swing ties, but not so large
+                // that a really bad asian decode beats a mediocre Western decode.
+                cr.score += 8;
+            }
+
+            // File-level bias: nudge toward the script the rest of the file used.
+            // Small -- it only decides genuine ties like the mostly-ASCII Big5 track,
+            // and must never override a clean decode in a different script.
+            if (preferScript != null && getScript(cs.name()) == preferScript) {
+                cr.score -= 30;
+            }
             if (cr.score < bestScore) {
                 bestScore = cr.score;
                 bestDecoded = cr;
@@ -552,9 +694,11 @@ public class CharsetDetectAndDecode {
         Charset cs;
         String decoded;
         int replCount = 0;//replacement chars
+        int puaCount = 0;// Private Use Area count
         int ctrlCount = 0;
         int cyrCount = 0;
         int jpCount = 0;
+        int hwKatakanaCount = 0;
         int asciiCount = 0;
         int extLatinCount = 0;
 		int vietCount = 0;
@@ -565,8 +709,8 @@ public class CharsetDetectAndDecode {
         @Override
         public String toString() {
         	if (decoded.length() < 12)
-        		return cs.name()+" '"+decoded+"' "+" replCount="+replCount+" ctrlCount="+ctrlCount+" cyrCount="+cyrCount+" jpCount="+jpCount+" vCount="+vietCount+" words="+wordCount+" asciiCount="+asciiCount+" extLatinCount="+extLatinCount+" score="+score;
-        	return cs.name()+" replCount="+replCount+" ctrlCount="+ctrlCount+" cyrCount="+cyrCount+" jpCount="+jpCount+" vCount="+vietCount+" words="+wordCount+" asciiCount="+asciiCount+" extLatinCount="+extLatinCount+" score="+score;
+        		return cs.name()+" '"+decoded+"' "+" replCount="+replCount+" puaCount="+puaCount+" ctrlCount="+ctrlCount+" cyrCount="+cyrCount+" jpCount="+jpCount+" hwKatananaCount="+hwKatakanaCount+" vCount="+vietCount+" words="+wordCount+" asciiCount="+asciiCount+" extLatinCount="+extLatinCount+" score="+score;
+        	return cs.name()+" replCount="+replCount+" puaCount="+puaCount+" ctrlCount="+ctrlCount+" cyrCount="+cyrCount+" jpCount="+jpCount+" hwKatananaCount="+hwKatakanaCount+" vCount="+vietCount+" words="+wordCount+" asciiCount="+asciiCount+" extLatinCount="+extLatinCount+" score="+score;
         }
     }
     
@@ -601,8 +745,12 @@ public class CharsetDetectAndDecode {
             i += Character.charCount(cp);
 
             // replacement char
-            if (decoded.startsWith(replChar, i - replChar.length())) {
+            if (cp == 0xFFFD) {
                 result.replCount++;
+                continue;
+            }
+            if (isPua(cp)) {
+                result.puaCount++;
                 continue;
             }
             if (cp == '\n' || cp == '\r' || cp == '\t') {
@@ -620,10 +768,9 @@ public class CharsetDetectAndDecode {
                 continue;
             }
             // Japanese blocks
-            if ((cp >= 0x3040 && cp <= 0x30FF) ||
-                (cp >= 0x4E00 && cp <= 0x9FFF) ||
-                (cp >= 0xFF61 && cp <= 0xFF9F)) {
-            	result.jpCount++;
+            if (isJapaneseCp(cp)) {
+                if (cp >= 0xFF61 && cp <= 0xFF9F) result.hwKatakanaCount++;
+                else result.jpCount++;
                 continue;
             }
             if (cp == ' ') {
@@ -673,7 +820,14 @@ public class CharsetDetectAndDecode {
                 matchCount = result.cyrCount;
                 break;
             case JAPANESE:
-                matchCount = result.jpCount;
+                // Half-width katakana is credited only alongside full-width kana or kanji.
+                // On its own it is almost always Latin-1 accents or uppercase Cyrillic
+                // (source bytes 0xA1-0xDF) mis-read as CP932. The genuine article is
+                // caught earlier by looksLikeAsciiOrHalfwidthKatakana, which requires a
+                // 60% majority rather than a single character.
+                matchCount = result.jpCount > 0
+                        ? result.jpCount + result.hwKatakanaCount
+                        : 0;
                 break;
             case CHINESE:
                 matchCount = (int) decoded.codePoints()
@@ -707,6 +861,9 @@ public class CharsetDetectAndDecode {
         	result.wordCount = wordMatches;
         } else if (script != Script.WESTERN) {
             neutral += result.asciiCount;
+            if (script == Script.JAPANESE || script == Script.CHINESE) {
+                neutral += result.extLatinCount;
+            }
         } else {
             // Western still allows Latin-1 Supplement as neutral
             neutral += result.extLatinCount;
@@ -721,7 +878,8 @@ public class CharsetDetectAndDecode {
 
         // weights
         int replWeight     = 200;  // per replacement
-        int ctrlWeight     = 20;  // per stray control
+        int puaWeight      = 2000;  // same as replacement: PUA is a silent U+FFFD
+        int ctrlWeight     = 20;   // per stray control
         int nonMatchWeight = 40;   // per code-point not in our target script
         int matchBonus     = -5;   // per in-script code-point
         int wordBonus      = -1000;   // per in-script word
@@ -735,10 +893,11 @@ public class CharsetDetectAndDecode {
         int scriptPriority = getScriptPriority(csName, script);
         
         int emptyPenalty = decoded.isEmpty()?2000:0;
-        
+
         
         log.fine("\n"+csName+" score:"
         		+"\nreplace: "+(result.replCount * replWeight)
+                +"\npua:     "+(result.puaCount * puaWeight)
         		+"\ncontrol: "+(result.ctrlCount * ctrlWeight)
         		+"\nnonMatch:"+(nonMatch * nonMatchWeight)
         		+"\ntie:     "+tieBreaker
@@ -747,9 +906,10 @@ public class CharsetDetectAndDecode {
         		+"\nmatch:   "+(matchCount * matchBonus)+" "+(wordMatches  * wordBonus));
         log.finer("Total="+totalCp+" nonMatch="+nonMatch);
         int junkPenalty = result.replCount * replWeight
-                        + result.ctrlCount * ctrlWeight
-                        + nonMatch * nonMatchWeight
-                        + emptyPenalty;
+                + result.puaCount * puaWeight
+                + result.ctrlCount * ctrlWeight
+                + nonMatch * nonMatchWeight
+                + emptyPenalty;
 
         result.score = junkPenalty
                   + matchCount * matchBonus
@@ -822,63 +982,48 @@ public class CharsetDetectAndDecode {
             return "";
         }
     }
-    
+
+    /** Byte-structure validity only. No judgment about whether the text is Japanese. */
     public static boolean isValidShiftJis(byte[] data) {
-        int len = data.length;
-        if (len == 0) return false;
-        // First reject invalid bytes as before
-        if (countInvalidShiftJisBytes(data) > 0) return false;
-
-        int validMulti = countValidShiftJisMulti(data);
-
-        // Byte-level kana evidence:
-        boolean hasHiragana = hasShiftJisHiragana(data);
-        boolean hasFullKatakana = hasShiftJisFullwidthKatakana(data);
-        boolean hasHalfKatakana = hasShiftJisHalfwidthKatakana(data);
-
-        // If any full-width kana appear, accept
-        if (hasHiragana || hasFullKatakana) {
-            return true;
-        }
-        // Otherwise, if pure ASCII+half-width katakana:
-        boolean allAsciiOrHwk = true;
-        int hwkCount = 0;
-        for (byte bb : data) {
-            int b = bb & 0xFF;
-            if (b <= 0x7F) continue;
-            if (0xA1 <= b && b <= 0xDF) {
-                hwkCount++;
-                continue;
-            }
-            allAsciiOrHwk = false;
-            break;
-        }
-        if (allAsciiOrHwk && (hwkCount > 1 || (len == 1 && hwkCount == 1))) {
-            // require at least two half-width katakana for confidence
-            return false;//TODO: change to false, since it detected cyrillic as jis.
-        }
-        // Otherwise require at least one multi-byte sequence AND decoded Japanese char
-        // Require either:
-	    //   • at least 1 kana (hiragana or full-width katakana), or
-	    //   • at least 2 CJK characters.
-	    // This prevents Latin1 accents that form a single rare Kanji
-	    // from being mis-recognized as Shift_JIS.
-	    if (validMulti < 1) return false;
-	
-	    String decoded = decodeWithReplace(data, Charset.forName("Shift_JIS"));
-	    long kanaCount = decoded.codePoints()
-	            .filter(cp -> (0x3040 <= cp && cp <= 0x30FF)) // hira + kata
-	            .count();
-	    long cjkCount  = decoded.codePoints()
-	            .filter(cp -> (0x4E00 <= cp && cp <= 0x9FFF))
-	            .count();
-	
-	    if (kanaCount == 0 && cjkCount < 2) {
-	        return false;                 // not Japanese enough
-	    }
-	    return true;
+        return data.length > 0 && countInvalidShiftJisBytes(data) == 0;
     }
-    
+
+    /** Structure + evidence that the content really is Japanese. Gate for the fast path. */
+    private static boolean looksLikeJapaneseSjis(byte[] data) {
+        if (!isValidShiftJis(data)) return false;
+
+        // Full-width kana is the discriminator. Half-width katakana (0xFF61-0xFF9F)
+        // is deliberately NOT accepted here: its source bytes are 0xA1-0xDF, which is
+        // also uppercase Cyrillic in windows-1251, so "ПЕСНЯ" decodes to plausible
+        // half-width katakana under CP932. That case belongs to the dedicated
+        // looksLikeAsciiOrHalfwidthKatakana + decodedHasMajorityHalfwidthKatakana path,
+        // which additionally requires a majority ratio.
+        if (hasShiftJisHiragana(data) || hasShiftJisFullwidthKatakana(data)) return true;
+
+        String decoded = decodeWithReplace(data, Charset.forName("windows-31j"));
+
+        // Kana also lives in the 0x81 punctuation row: ー(0x815B), ・(0x8145), ヽ(0x8152).
+        if (decoded.codePoints().anyMatch(cp -> 0x3040 <= cp && cp <= 0x30FF)) return true;
+
+        // Kanji- and fullwidth-only text (尺八独奏, ３×３ＥＹＥＳ, 第１楽章：序曲) has no
+        // kana at all, so the checks above miss it. Accept it, but narrowly:
+        //
+        //  - No ASCII. "don't can't" is 64 6F 6E 92 74 20 63 61 6E 92 74; both 92 74
+        //    pairs are valid CP932 and decode to 猪. Mixed text goes to the scorer.
+        //  - No half-width katakana. Source bytes 0xA1-0xDF are uppercase Cyrillic and
+        //    the Latin-1 accents.
+        //  - At least three. Two is what a 4-byte lowercase Cyrillic word (поле,
+        //    EF EE EB E5) collapses to.
+        //  - No ASCII letters/digits once padding is stripped. "don't can't" has
+        //    interior ASCII; a space-padded track name "石川羚子      " does not.
+        //    MIDI names are routinely padded to fixed width, so trailing/leading
+        //    spaces must not disqualify.
+        String core = decoded.strip();
+        if (core.codePoints().anyMatch(cp -> cp < 0x80 && cp != ' ')) return false;
+        if (core.codePoints().anyMatch(cp -> 0xFF61 <= cp && cp <= 0xFF9F)) return false;
+        return core.codePoints().filter(CharsetDetectAndDecode::isJapaneseCp).count() >= 3;
+    }
+
     /**
      * Check if the byte array contains at least one full-width hiragana sequence in Shift_JIS.
      * Hiragana in Shift_JIS: lead byte = 0x82, trail byte in 0x9F-0xF1.
@@ -913,6 +1058,7 @@ public class CharsetDetectAndDecode {
      * Check if the byte array contains at least one half-width katakana byte in Shift_JIS.
      * Half-width Katakana single bytes: 0xA1-0xDF.
      */
+    @Deprecated
     private static boolean hasShiftJisHalfwidthKatakana(byte[] data) {
         for (byte bb : data) {
             int b = bb & 0xFF;
@@ -924,6 +1070,7 @@ public class CharsetDetectAndDecode {
     }
 
     /** Count valid Shift_JIS multi-byte sequences (lead+trail). */
+    @Deprecated
     private static int countValidShiftJisMulti(byte[] data) {
         int cnt = 0;
         for (int i = 0; i < data.length - 1; i++) {
@@ -943,21 +1090,16 @@ public class CharsetDetectAndDecode {
         int invalid = 0, i = 0;
         while (i < data.length) {
             int b = data[i] & 0xFF;
-            if ((0x81 <= b && b <= 0x9F) || (0xE0 <= b && b <= 0xEF)) {
-                if (i + 1 < data.length) {
-                    int b2 = data[i+1] & 0xFF;
-                    if ((0x40 <= b2 && b2 <= 0x7E) || (0x80 <= b2 && b2 <= 0xFC)) {
-                        i += 2;
-                        continue;
-                    }
+            if (isSjisLead(b)) {
+                if (i + 1 < data.length && isSjisTrail(data[i+1] & 0xFF)) {
+                    i += 2;
+                    continue;
                 }
                 invalid++;
+            } else if (b <= 0x7F || (0xA1 <= b && b <= 0xDF)) {
+                // ok: ASCII or half-width katakana
             } else {
-                if ((0x00 <= b && b <= 0x7F) || (0xA1 <= b && b <= 0xDF)) {
-                    // ok
-                } else {
-                    invalid++;
-                }
+                invalid++;
             }
             i++;
         }
@@ -965,6 +1107,7 @@ public class CharsetDetectAndDecode {
     }
 
     /** Check if decoded string has at least one Japanese character. */
+    @Deprecated
     private static boolean decodedHasJapaneseChars(String s, int number) {
 	    long count = s.codePoints().filter(cp ->
 	        (cp >= 0x3040 && cp <= 0x30FF) ||  // full-width Hiragana/Katakana
@@ -972,7 +1115,8 @@ public class CharsetDetectAndDecode {
 	    ).count();
 	    return count >= number;
 	}
-    
+
+    @Deprecated
     private static boolean decodedHasAnyJapaneseChar(String s) {
 	    return s.codePoints().anyMatch(cp ->
 	        (cp >= 0x3040 && cp <= 0x30FF) ||  // full-width Hiragana/Katakana
@@ -1075,13 +1219,16 @@ public class CharsetDetectAndDecode {
         return info;
     }
 
-    /** Validate EUC-JP name, requiring kana evidence. */
+    /** Byte-structure validity only. */
     public static boolean isValidEucJp(byte[] data) {
-        int len = data.length;
-        if (len == 0) return false;
+        return data.length > 0 && countInvalidEucJpBytes(data) == 0;
+    }
 
-        int invalid = countInvalidEucJpBytes(data);
-        if (invalid > 0) return false;
+    /** Structure + evidence the content really is Japanese. Gate for the fast path. */
+    private static boolean looksLikeJapaneseEucJp(byte[] data) {
+        if (!isValidEucJp(data)) return false;
+
+        int len = data.length;
 
         EucJpMultiInfo info = analyzeEucJpMulti(data);
 
@@ -1112,7 +1259,7 @@ public class CharsetDetectAndDecode {
             if (ss2Count > 1 || (len == 1 && ss2Count == 1)) {
                 // decode and check half-width kana
                 String decoded = decodeWithReplace(data, Charset.forName("EUC-JP"));
-                return decodedHasAnyJapaneseChar(decoded);
+                return decodedIsMostlyJapanese(decoded, 60);
             }
             return false;
         }
@@ -1123,7 +1270,7 @@ public class CharsetDetectAndDecode {
         }
         // decode and confirm presence of Japanese script
         String decoded = decodeWithReplace(data, Charset.forName("EUC-JP"));
-        return decodedHasJapaneseChars(decoded, Math.max(1, decoded.length()/5));
+        return decodedIsMostlyJapanese(decoded, 60);
     }
     
     private static boolean isPrintableAndNoSurrogates(String s) {
@@ -1132,8 +1279,151 @@ public class CharsetDetectAndDecode {
             // C0 controls other than \r\n\t?
             if (c < 0x20 && c!='\n' && c!='\r' && c!='\t') return false;
             // Unpaired surrogates
-            if (Character.isSurrogate(c)) return false;
+            if (Character.isHighSurrogate(c)) {
+                if (i + 1 >= s.length() || !Character.isLowSurrogate(s.charAt(i + 1))) return false;
+                i++;
+            } else if (Character.isSurrogate(c)) return false;
         }
         return true;
+    }
+
+    /**
+     * CP932 lead bytes.
+     *
+     * The formal range is 0x81-0x9F and 0xE0-0xFC. We accept 0xFA-0xFC (the NEC-selected
+     * IBM extension rows: ㈱, №, ℡ and friends, which do occur in copyright strings) but
+     * deliberately reject 0xF0-0xF9, the gaiji / user-defined rows. Those map to the
+     * Private Use Area (see isPua) and would otherwise decode "successfully".
+     *
+     * Rejecting 0xF0-0xF9 has a useful side effect: windows-1251 lowercase р-я is
+     * 0xF0-0xFF, so a lowercase Cyrillic string can never be structurally valid here.
+     */
+    private static boolean isSjisLead(int b) {
+        return (0x81 <= b && b <= 0x9F)
+                || (0xE0 <= b && b <= 0xEF)
+                || (0xFA <= b && b <= 0xFC);   // NEC-selected IBM extensions
+    }
+
+    private static boolean isSjisTrail(int b) {
+        return (0x40 <= b && b <= 0x7E) || (0x80 <= b && b <= 0xFC);
+    }
+
+    /**
+     * Code points that constitute positive evidence of Japanese text.
+     *
+     * Deliberately wider than the kana+kanji blocks: CP932 and EUC-JP routinely emit
+     * fullwidth forms and CJK punctuation (、。「」〜　！？（）), and no Western
+     * single-byte codepage can produce them, so they are strong positive evidence
+     * rather than noise. Scoring them as nonMatch cost the correct decode 40 points
+     * apiece and could lose real Japanese to Latin-1.
+     */
+    private static boolean isJapaneseCp(int cp) {
+        return (cp >= 0x3000 && cp <= 0x303F)   // CJK punctuation 、。「」〜　
+                || (cp >= 0x3040 && cp <= 0x309F)   // hiragana
+                || (cp >= 0x30A0 && cp <= 0x30FF)   // katakana
+                || (cp >= 0x3200 && cp <= 0x33FF)   // enclosed CJK / compatibility ㈱ ㍉
+                || (cp >= 0x4E00 && cp <= 0x9FFF)   // CJK unified ideographs
+                || (cp >= 0xF900 && cp <= 0xFAFF)   // CJK compatibility ideographs (IBM ext)
+                || (cp >= 0xFF01 && cp <= 0xFF5E)   // fullwidth forms
+                || (cp >= 0xFF61 && cp <= 0xFF9F)   // halfwidth katakana
+                || (cp >= 0xFFE0 && cp <= 0xFFE6);  // fullwidth signs ￥￦
+    }
+
+    /**
+     * Private Use Area: BMP (U+E000-U+F8FF) plus supplementary planes 15 and 16.
+     *
+     * PUA code points are the quiet failure mode of this class. Several candidate
+     * charsets map byte ranges into the PUA rather than rejecting them, so the decode
+     * "succeeds": no exception under CodingErrorAction.REPORT, no U+FFFD under REPLACE.
+     * Every downstream check that keys off replacement characters or printability is
+     * therefore blind to them. Known sources:
+     *
+     *   windows-31j  0xF040-0xF9FC  -> U+E000-U+E757  (gaiji, user-defined characters)
+     *   x-MacRoman   0xF0           -> U+F8FF         (Apple logo)
+     *
+     * None of these can appear in a MIDI track name, lyric, or copyright string that
+     * was authored on purpose. Their presence means we picked the wrong charset, so
+     * they are weighted like replacement characters in scoring and rejected outright
+     * in the fast paths.
+     */
+    private static boolean isPua(int cp) {
+        return (cp >= 0xE000 && cp <= 0xF8FF)
+                || (cp >= 0xF0000 && cp <= 0xFFFFD)
+                || (cp >= 0x100000 && cp <= 0x10FFFD);
+    }
+
+    /** True if the string contains any Private Use Area code point. */
+    private static boolean containsPua(String s) {
+        return s.codePoints().anyMatch(CharsetDetectAndDecode::isPua);
+    }
+
+    /** A decode that is clean enough to accept without scoring: printable, properly
+     *  paired surrogates, no replacement characters, no Private Use Area. */
+    private static boolean looksLikeCleanText(String s) {
+        return isPrintableAndNoSurrogates(s)
+                && s.indexOf('\uFFFD') < 0
+                && !containsPua(s);
+    }
+
+    private static Script voteScript(List<byte[]> blobs, boolean western) {
+        Map<Script, Integer> votes = new EnumMap<>(Script.class);
+        for (byte[] blob : blobs) {
+            if (blob == null || blob.length == 0) continue;
+            Pair<String, Charset> p = decodeMidiData(blob, western);
+            if (p.second == null) continue;
+            Script s = getScript(p.second.name());
+
+            // Weight the vote by how much non-ASCII, script-specific evidence the blob
+            // carried. A pure-ASCII decode contributes nothing; a blob full of Han or
+            // Cyrillic contributes a lot. This is what stops the ambiguous tracks from
+            // voting for themselves.
+            int weight = scriptEvidence(p.first, s);
+            if (weight > 0) votes.merge(s, weight, Integer::sum);
+            //System.out.println("vote: " + p.second.name() + " ev=" + weight + " :: " + p.first);
+        }
+        if (votes.isEmpty()) return null;   // was Script.WESTERN; null = "no bias"
+
+        var ranked = votes.entrySet().stream()
+                .sorted(Map.Entry.<Script,Integer>comparingByValue().reversed())
+                .toList();
+
+        int top = ranked.get(0).getValue();
+        int second = ranked.size() > 1 ? ranked.get(1).getValue() : 0;
+
+        // Need real, dominant evidence. A handful of CJK from one possibly-mis-decoded
+        // track is not enough to override every other track in the file.
+        if (top < 8) return null;              // absolute floor
+        if (second * 2 >= top) return null;    // mixed / contested
+
+        return ranked.get(0).getKey();
+    }
+
+    /** Count of code points that are positive evidence for the given script. */
+    /*
+    private static int scriptEvidence(String s, Script script) {
+        return switch (script) {
+            case CHINESE  -> (int) s.codePoints().filter(cp -> cp >= 0x4E00 && cp <= 0x9FFF).count();
+            case JAPANESE -> (int) s.codePoints().filter(CharsetDetectAndDecode::isJapaneseCp).count();
+            case CYRILLIC -> (int) s.codePoints().filter(CharsetDetectAndDecode::isCyrillicLetter).count();
+            case EASTERN  -> (int) s.codePoints().filter(VIET_PRECOMPOSED::contains).count();
+            default       -> 0;   // WESTERN carries no discriminating evidence
+        };
+    }
+    */
+    /** Count of code points that are STRONG positive evidence for the given script.
+     *  Half-width katakana is deliberately excluded from JAPANESE: its bytes 0xA1-0xDF
+     *  are also Cyrillic, Latin-1 accents, and Big5 trail bytes, so it is the weakest
+     *  possible signal and mis-decodes routinely produce it. Requiring full-width kana
+     *  or kanji keeps garbage tracks from voting. */
+    private static int scriptEvidence(String s, Script script) {
+        return switch (script) {
+            case CHINESE  -> (int) s.codePoints().filter(cp -> cp >= 0x4E00 && cp <= 0x9FFF).count();
+            case JAPANESE -> (int) s.codePoints().filter(cp ->
+                    (cp >= 0x3040 && cp <= 0x30FF)     // full-width kana only
+                            || (cp >= 0x4E00 && cp <= 0x9FFF)).count();  // kanji
+            case CYRILLIC -> (int) s.codePoints().filter(CharsetDetectAndDecode::isCyrillicLetter).count();
+            case EASTERN  -> (int) s.codePoints().filter(VIET_PRECOMPOSED::contains).count();
+            default       -> 0;
+        };
     }
 }

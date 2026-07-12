@@ -1,6 +1,7 @@
 package com.digero.maestro.midi;
 
 import java.io.*;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -18,15 +19,9 @@ import javax.sound.midi.Track;
 import com.digero.common.abc.AbcConstants;
 import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.abctomidi.AbcToMidi;
-import com.digero.common.midi.MidiConstants;
-import com.digero.common.midi.ExtensionMidiInstrument;
-import com.digero.common.midi.KeySignature;
-import com.digero.common.midi.MidiFactory;
-import com.digero.common.midi.MidiStandard;
-import com.digero.common.midi.MidiUtils;
-import com.digero.common.midi.SequencerWrapper;
-import com.digero.common.midi.TimeSignature;
+import com.digero.common.midi.*;
 import com.digero.common.util.FileParseException;
+import com.digero.common.util.Pair;
 import com.digero.common.util.Quad;
 import com.digero.common.util.Util;
 import com.digero.maestro.abc.*;
@@ -209,6 +204,25 @@ public class SequenceInfo implements MidiConstants {
 					sequenceCache.isGSDrumsTrack(i), wasType0, sequenceCache.isDrumsTrack(i),
 					sequenceCache.isGM2DrumsTrack(i), miscSettings, oldVelocities, ignoreMidiText, usingNewMidiLayout));
 		}
+		if (!ignoreMidiText) {
+			// This decode track name pass will re-decode the track names, considering all the track names scripts where a name is ambiguous.
+			// This works because track names in a midi are most often using the same charset.
+			List<byte[]> blobs = new ArrayList<>(myTrackInfoList.size());
+			for (TrackInfo trackInfo : myTrackInfoList) {
+				blobs.add(trackInfo.getNameData());//raw trackname bytes
+			}
+			List<Pair<String, Charset>> results = CharsetDetectAndDecode.decodeMidiFile(blobs, false);
+			if (results != null) {
+				for (int i = 0; i < myTrackInfoList.size(); i++) {
+					Pair<String, Charset> r = results.get(i);
+					if (r != null && r.first != null && !r.first.isBlank()) {
+						//System.out.println("Track "+i+": replacing "+myTrackInfoList.get(i).getName()+" with "+r.first);
+						myTrackInfoList.get(i).setName(r.first);
+					}
+				}
+			}
+		}
+
 
 /*
 		// debug seq part 2:

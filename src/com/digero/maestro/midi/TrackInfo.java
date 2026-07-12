@@ -29,6 +29,7 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 
 	private final int trackNumber;
 	private String name;
+	private byte[] nameData;
 	private TimeSignature timeSignature = null;// The first one in this track
 	private KeySignature keySignature = null;
 	private Set<Integer> instruments;
@@ -273,6 +274,7 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 					
 					if (!tmp.isEmpty() && !tmp.equalsIgnoreCase("untitled")) {
 						name = tmp;
+						nameData = data;
 					}
 				} else if (type == META_KEY_SIGNATURE && keySignature == null) {
 					try {
@@ -472,6 +474,16 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 		if (name == null)
 			return "Track " + trackNumber;
 		return name;
+	}
+
+	public byte[] getNameData() {
+		if (nameData == null)
+			return new byte[]{};
+		return nameData;
+	}
+
+	public void setName(String name) {
+		this.name = name;
 	}
 
 	public KeySignature getKeySignature() {
