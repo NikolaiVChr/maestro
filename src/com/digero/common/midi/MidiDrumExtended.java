@@ -5,7 +5,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -19,8 +21,9 @@ import com.digero.common.util.Pair;
 public class MidiDrumExtended {
 	private static final Logger log = Logger.getLogger("import.midi");
 	
-	private static MidiDrumExtended instance = new MidiDrumExtended();
-	private final HashMap<String, String> map = new HashMap<>();
+	private static final MidiDrumExtended instance = new MidiDrumExtended();
+	private final Map<String, String> map = new HashMap<>();
+	private final Pattern hitPattern = Pattern.compile("^(\\d+)\\s+(.+)$");
 
 	private MidiDrumExtended() {
 
@@ -53,20 +56,22 @@ public class MidiDrumExtended {
 	}
 	
 	private void parse(String fileName) {
-		try {
-			InputStream in = getClass().getResourceAsStream(fileName);
+		try (InputStream in = getClass().getResourceAsStream(fileName)) {
+
 			if (in == null) {
-				System.err.println(fileName + " not readable.");
+				log.severe(fileName + " not readable.");
 				return;
 			}
-			BufferedReader theFileReader = new BufferedReader(new InputStreamReader(in));
-			String line = theFileReader.readLine();
-			readLines(fileName, theFileReader, line);
-			theFileReader.close();
+			try (BufferedReader theFileReader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+				String line = theFileReader.readLine();
+				readLines(fileName, theFileReader, line);
+			}
 		} catch (FileNotFoundException e) {
 			log.log(Level.SEVERE, fileName + " not readable.", e);
 		} catch (IOException e) {
 			log.log(Level.SEVERE, fileName + " line failed to read.", e);
+		} catch (RuntimeException e) {
+			log.log(Level.SEVERE, fileName + " failed to parse.", e);
 		}
 	}
 
@@ -74,7 +79,7 @@ public class MidiDrumExtended {
 		MidiStandard std = null;
 		String patch = null;
 		while (line != null) {
-			if (line.isEmpty() || line.startsWith("#")) {
+			if (line.isBlank() || line.startsWith("#")) {
 				line = theFileReader.readLine();
 				continue;
 			}
@@ -82,19 +87,25 @@ public class MidiDrumExtended {
 				String[] splits = line.split("=");
 				if (splits.length != 3) {
 					// Something is wrong in the tab formatting of one of the files
-					log.severe("Wrong number of = in " + fileName + ":");
+
+					StringBuilder sb = new StringBuilder();
 					int l = 0;
 					for (String a : splits) {
-						System.err.println(l + ": " + a);
+						sb.append("\n").append(l).append(": ").append(a);
 						l++;
 					}
+					log.severe("Wrong number of = in " + fileName + ": "+sb);
 					break;
 				}
 				if (splits[1].equals(MidiStandard.GS.toString())) std = MidiStandard.GS;
 				else if (splits[1].equals(MidiStandard.XG.toString())) std = MidiStandard.XG;
 				else if (splits[1].equals(MidiStandard.GM2.toString())) std = MidiStandard.GM2;
-				else break;
-				patch = splits[2];		
+				else {
+					log.severe("Unknown standard: " + splits[1]);
+					break;
+				}
+				patch = splits[2];
+				if (patch != null) patch = patch.trim();
 			} else if (std != null && patch != null) {
 				Pair<Integer, String> hit = getHit(line.trim());
 				if (hit != null) {
@@ -106,8 +117,7 @@ public class MidiDrumExtended {
 	}	
 
 	private Pair<Integer, String> getHit(String input) {
-        Pattern pattern = Pattern.compile("^(\\d+)\\s+(.+)$");
-        Matcher matcher = pattern.matcher(input);
+        Matcher matcher = hitPattern.matcher(input);
 
         if (matcher.matches()) {
         	try {
@@ -115,15 +125,20 @@ public class MidiDrumExtended {
 	            String text = matcher.group(2);
 	            return new Pair<>(number, text);
         	} catch (NumberFormatException e) {
+				log.severe("Invalid drum hit: " + input);
         		return null;
         	}            
         } else {
+			log.severe("No drum hit found: " + input);
         	return null;
         }
     }
 
 	private void addHit(MidiStandard std, String patch, int first, String second) {
 		String key = String.format("%s:%s%03d", std, patch, first);
-		map.put(key, second);
+		String old = map.put(key, second);
+		if (old != null) {
+			log.severe("Duplicate hit: " + key);
+		}
 	}	
 }
