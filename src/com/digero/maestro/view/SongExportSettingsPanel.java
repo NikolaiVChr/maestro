@@ -470,6 +470,7 @@ public class SongExportSettingsPanel extends JPanel {
         exportButton.setEnabled(enabled);
     }
 
+    // Reset tempo button methods
     public void setResetTempoButtonEnabledAndVisible(boolean enabled) {
         resetTempoButton.setEnabled(enabled);
         resetTempoButton.setVisible(enabled);
