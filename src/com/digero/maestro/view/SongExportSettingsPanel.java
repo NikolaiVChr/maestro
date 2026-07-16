@@ -2,11 +2,15 @@ package com.digero.maestro.view;
 
 import java.awt.Component;
 import java.awt.Insets;
+import java.util.function.Consumer;
+
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
 import javax.swing.border.Border;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -47,14 +51,26 @@ public class SongExportSettingsPanel extends JPanel {
     private final JFormattedTextField timeSignatureField;
     private final JFormattedTextField keySignatureField;
 
-    private final JComboBox<TimingMode> timingCombo;
-    private final JComboBox<Chord.CalcDynamics> dynaCombo;
+    private final JComboBox<TimingMode> timingModeCombo;
+    private final JComboBox<Chord.CalcDynamics> dynamicChordModeCombo;
 
     private final JCheckBox tempoOnlyFirstCheckBox;
 
     private final TableLayout layout;
 
+    private SongExportSettingsListener actionListener;
+
+    private Runnable transposeSpinnerChangedAction;
+    private Runnable tempoSpinnerChangedAction;
+    private Runnable resetTempoAction;
+    private Runnable timeSignatureFieldChangedAction;
+    private Runnable keySignatureFieldChangedAction;
+    private Runnable timingModeChangedAction;
+    private Runnable dynamicChordModeChangedAction;
+    private Runnable countOnlyTempoChangesFromFirstTrackSettingsChanged;
+
     public SongExportSettingsPanel() {
+        // Initialize components
         this.transposeSpinner = createJSpinner(
                 new SpinnerNumberModel(0, -48, 48, 1),
                 UIText.get("maestro.tip.transpose.semi.tones"));
@@ -91,17 +107,98 @@ public class SongExportSettingsPanel extends JPanel {
                         + "Examples: C maj, Eb maj, F# min</html>",
                 new KeySignatureFormatter());
 
-        this.timingCombo = createJComboBox(TimingMode.values(), null);
-        this.dynaCombo = createJComboBox(Chord.CalcDynamics.values(),
+        this.timingModeCombo = createJComboBox(TimingMode.values(), null);
+        this.dynamicChordModeCombo = createJComboBox(Chord.CalcDynamics.values(),
                 UIText.get("maestro.tip.dynamics", Chord.CalcDynamics.LOUDEST, Chord.CalcDynamics.POWER_RMS_DB,
                         Chord.CalcDynamics.POWER_MID_DB, Chord.CalcDynamics.WEIGHTED, Chord.CalcDynamics.POWER_MID_DB,
                         Chord.CalcDynamics.SOFTEST));
-        dynaCombo.setSelectedItem(AbcSong.dynamicsMethodDefault);
+        dynamicChordModeCombo.setSelectedItem(AbcSong.dynamicsMethodDefault);
 
         this.tempoOnlyFirstCheckBox = createJCheckBox(
                 UIText.get("maestro.only.tempo.changes.from.first.track"),
                 UIText.get("maestro.tip.tempo.first.track.only"));
 
+        // Set up action listeners for the components to notify the action listener of
+        // changes
+        transposeSpinnerChangedAction = () -> notifyListener(SongExportSettingsListener::transposeSettingsChanged);
+        tempoSpinnerChangedAction = () -> notifyListener(SongExportSettingsListener::tempoSettingsChanged);
+        resetTempoAction = () -> notifyListener(SongExportSettingsListener::tempoResetRequested);
+        timeSignatureFieldChangedAction = () -> notifyListener(SongExportSettingsListener::timeSignatureChanged);
+        keySignatureFieldChangedAction = () -> notifyListener(SongExportSettingsListener::keySignatureChanged);
+        countOnlyTempoChangesFromFirstTrackSettingsChanged = () -> notifyListener(
+                SongExportSettingsListener::countOnlyTempoChangesFromFirstTrackSettingsChanged);
+
+        // Add listeners to the components to notify the action listener of changes
+        transposeSpinner.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                if (transposeSpinnerChangedAction != null)
+                    transposeSpinnerChangedAction.run();
+            }
+        });
+
+        tempoSpinner.addChangeListener(new ChangeListener() {
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                if (tempoSpinnerChangedAction != null)
+                    tempoSpinnerChangedAction.run();
+            }
+        });
+
+        resetTempoButton.addActionListener(e -> {
+            if (resetTempoAction != null)
+                resetTempoAction.run();
+        });
+
+        timeSignatureField.addPropertyChangeListener("value", e -> {
+            if (e.getOldValue() != null && e.getOldValue().equals(e.getNewValue()))
+                return;
+
+            if (timeSignatureFieldChangedAction != null)
+                timeSignatureFieldChangedAction.run();
+        });
+
+        if (ICompileConstants.SHOW_KEY_FIELD) {
+            keySignatureField.addPropertyChangeListener("value", e -> {
+                if (keySignatureFieldChangedAction != null)
+                    keySignatureFieldChangedAction.run();
+            });
+        }
+
+        timingModeCombo.addActionListener(e -> {
+            if (timingModeChangedAction != null)
+                timingModeChangedAction.run();
+        });
+
+        dynamicChordModeCombo.addActionListener(e -> {
+            if (dynamicChordModeChangedAction != null)
+                dynamicChordModeChangedAction.run();
+        });
+
+        tempoOnlyFirstCheckBox.addActionListener(e -> {
+            if (countOnlyTempoChangesFromFirstTrackSettingsChanged != null)
+                countOnlyTempoChangesFromFirstTrackSettingsChanged.run();
+        });
+
+        exportButton.addChangeListener(new ChangeListener() {
+            private boolean pressed = false;
+
+            @Override
+            public void stateChanged(ChangeEvent e) {
+                if (exportButton.getModel().isPressed() != pressed) {
+                    pressed = exportButton.getModel().isPressed();
+                    if (pressed)
+                        exportSuccessfulLabel.setVisible(false);
+                }
+            }
+        });
+
+        exportButton.addActionListener(e -> {
+            if (actionListener != null)
+                actionListener.exportRequested();
+        });
+
+        // Set up the layout and add components to the panel
         this.layout = new TableLayout(
                 new double[] { TableLayoutConstants.PREFERRED, TableLayoutConstants.PREFERRED,
                         TableLayoutConstants.FILL },
@@ -117,8 +214,8 @@ public class SongExportSettingsPanel extends JPanel {
         if (ICompileConstants.SHOW_KEY_FIELD)
             addRow(row++, createJLabel(UIText.get("maestro.key"), null, null), keySignatureField);
 
-        addRow(row++, timingCombo);
-        addRow(row++, dynaCombo);
+        addRow(row++, timingModeCombo);
+        addRow(row++, dynamicChordModeCombo);
         addRow(row++, tempoOnlyFirstCheckBox);
         addRow(row++, exportSuccessfulLabel);
         addRow(row, exportButton);
@@ -264,6 +361,23 @@ public class SongExportSettingsPanel extends JPanel {
 
     }
 
+    public void setActionListener(SongExportSettingsListener listener) {
+        this.actionListener = listener;
+    }
+
+    /**
+     * Notifies the action listener of a user action by accepting a notification
+     * consumer that calls the appropriate method on the listener.
+     * 
+     * @param notification A consumer that accepts the action listener and calls the
+     *                     appropriate method for the user action.
+     */
+    private void notifyListener(Consumer<SongExportSettingsListener> notification) {
+        if (actionListener != null) {
+            notification.accept(actionListener);
+        }
+    }
+
     /**
      * Gets the current transpose value from the transpose spinner.
      *
@@ -283,6 +397,50 @@ public class SongExportSettingsPanel extends JPanel {
 
     public void setTempo(int tempo) {
         tempoSpinner.setValue(tempo);
+    }
+
+    public TimeSignature getTimeSignature() {
+        return (TimeSignature) timeSignatureField.getValue();
+    }
+
+    public void setTimeSignature(TimeSignature timeSignature) {
+        timeSignatureField.setValue(timeSignature);
+    }
+
+    public KeySignature getKeySignature() {
+        return (KeySignature) keySignatureField.getValue();
+    }
+
+    public void setKeySignature(KeySignature keySignature) {
+        keySignatureField.setValue(keySignature);
+    }
+
+    public TimingMode getTimingMode() {
+        return (TimingMode) timingModeCombo.getSelectedItem();
+    }
+
+    public void setTimingMode(TimingMode timingMode) {
+        timingModeCombo.setSelectedItem(timingMode);
+    }
+
+    public void setTimingModeToolTipText(String tooltip) {
+        timingModeCombo.setToolTipText(tooltip);
+    }
+
+    public Chord.CalcDynamics getDynamicChordMode() {
+        return (Chord.CalcDynamics) dynamicChordModeCombo.getSelectedItem();
+    }
+
+    public void setDynamicChordMode(Chord.CalcDynamics dynamicsMode) {
+        dynamicChordModeCombo.setSelectedItem(dynamicsMode);
+    }
+
+    public boolean isCountOnlyTempoChangesFromFirstTrackSelected() {
+        return tempoOnlyFirstCheckBox.isSelected();
+    }
+
+    public void setCountOnlyTempoChangesFromFirstTrackAsSelected(boolean selected) {
+        tempoOnlyFirstCheckBox.setSelected(selected);
     }
 
 }

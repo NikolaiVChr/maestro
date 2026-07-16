@@ -12,9 +12,9 @@ public interface SongExportSettingsListener {
 
     void keySignatureChanged();
 
-    void timingSettingsChanged();
+    void timingModeChanged();
 
-    void dynamicChordSettingsChanged();
+    void dynamicChordModeChanged();
 
     void countOnlyTempoChangesFromFirstTrackSettingsChanged();
 

@@ -345,7 +345,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		//SongExportSettingsPanel
 		songExportSettingsPanel = new SongExportSettingsPanel();
-		songExportSettingsPanel.setActionListener(createSongExportSettingsActionListener());
+		songExportSettingsPanel.setActionListener(createSongExportSettingsListener());
 
         loadIcons();
 
@@ -601,227 +601,94 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
 	private SongExportSettingsListener createSongExportSettingsListener() {
-		SongExportSettingsListener listener = new SongExportSettingsListener() {
+		return new SongExportSettingsListener() {
 			@Override
 			public void transposeSettingsChanged() {
 				if (abcSong != null && fireTransposeListeners)
-                abcSong.setTranspose(songExportSettingsPanel.getTranspose());
+                	abcSong.setTranspose(songExportSettingsPanel.getTranspose());
             	refreshPreviewSequence(false);
 			}
+
 			@Override
 			public void tempoSettingsChanged() {
-				
-			}
-			@Override
-			public void tempoResetRequested() {
-				
-			}
-			@Override
-			public void timeSignatureChanged() {
-				
-			}
-			@Override
-			public void keySignatureChanged() {
-				
-			}
-			@Override
-			public void timingSettingsChanged() {
-				
-			}
-			@Override
-			public void dynamicChordSettingsChanged() {
-				
-			}
-			@Override
-			public void countOnlyTempoChangesFromFirstTrackSettingsChanged() {
-				
-			}
-			@Override
-			public void exportRequested() {
-				
-			}
-
-		};
-		transposeSpinner = new JSpinner(new SpinnerNumberModel(0, -48, 48, 1));
-		transposeSpinner
-				.setToolTipText(UIText.get("maestro.tip.transpose.semi.tones"));
-		transposeSpinner.addChangeListener(e -> {
-			if (abcSong != null && fireTransposeListeners)
-                abcSong.setTranspose(getTranspose());
-            refreshPreviewSequence(false);
-		});
-
-		tempoSpinner = new JSpinner(new SpinnerNumberModel(MidiConstants.DEFAULT_TEMPO_BPM /* value */, 8 /* min */,
-				960 /* max */, 1 /* step */));
-		tempoSpinner.setToolTipText(UIText.get("maestro.tip.tempo"));
-		tempoSpinner.addChangeListener(e -> {
-			if (abcSong != null) {
-				if (fireTempoListeners) abcSong.setTempoBPM((Integer) tempoSpinner.getValue());
-
-				abcSequencer.setTempoFactor(abcSong.getTempoFactor());
-
-				refreshPreviewSequence(false);
-			} else {
-				abcSequencer.setTempoFactor(1.0f);
-			}
-		});
-
-		resetTempoButton = new JButton(UIText.get("maestro.reset"));
-		resetTempoButton.setMargin(new Insets(2, 8, 2, 8));
-		resetTempoButton.setToolTipText(UIText.get("maestro.set.the.tempo.back.to.the.source.file.s.tempo"));
-		resetTempoButton.addActionListener(e -> {
-			if (abcSong == null) {
-				tempoSpinner.setValue(MidiConstants.DEFAULT_TEMPO_BPM);
-			} else {
-				float tempoFactor = abcSong.getTempoFactor();
-				tempoSpinner.setValue(abcSong.getSequenceInfo().getPrimaryTempoBPM());
-				if (tempoFactor != 1.0f)
+				if (abcSong != null) {
+					if (fireTempoListeners) abcSong.setTempoBPM((Integer) tempoSpinner.getValue());
+						abcSequencer.setTempoFactor(abcSong.getTempoFactor());
 					refreshPreviewSequence(false);
-			}
-			tempoSpinner.requestFocus();
-		});
-
-		timeSignatureField = new TimeSignatureTextField(TimeSignature.FOUR_FOUR, 5);
-		timeSignatureField.setToolTipText(UIText.get("maestro.tip.time.signature"));
-        // Tell the field to revert to the last valid value if the user enters invalid text
-        timeSignatureField.setFocusLostBehavior(JFormattedTextField.COMMIT_OR_REVERT);
-		timeSignatureField.addPropertyChangeListener("value", evt -> {
-            if (evt.getOldValue() != null && evt.getOldValue().equals(evt.getNewValue())) {
-                return;
-            }
-
-			if (abcSong != null && fireMeterListeners)
-				abcSong.setTimeSignature((TimeSignature) timeSignatureField.getValue());
-
-            // Breaking up of long notes can depend on time signature for bar lines.
-            refreshPreviewSequence(false);
-		});
-
-		keySignatureField = new MyFormattedTextField(KeySignature.C_MAJOR, 5);
-		keySignatureField.setToolTipText("<html>Adjust the key signature of the ABC file. "
-				+ "This only affects the display, not the sound of the exported file.<br>"
-				+ "Examples: C maj, Eb maj, F# min</html>");
-		if (SHOW_KEY_FIELD) {
-			keySignatureField.addPropertyChangeListener("value", evt -> {
-				if (abcSong != null)
-					abcSong.setKeySignature((KeySignature) keySignatureField.getValue());
-
-			});
-		}
-
-        timingCombo = new JComboBox<>(TimingMode.values());
-
-        timingCombo.addActionListener(e -> {
-            TimingMode mode = (TimingMode) Objects.requireNonNull(timingCombo.getSelectedItem());
-            timingCombo.setToolTipText(mode.getTooltip());
-
-            if (abcSong != null) {
-                abcSong.setTimings(mode.organic, mode.multistage, mode.mixTimings, mode.swing, mode.priority, mode.upgraded);
-            }
-
-            refreshPreviewSequence(false);
-        });
-		
-		dynaCombo = new JComboBox<>(Chord.CalcDynamics.values());
-		dynaCombo.setSelectedItem(AbcSong.dynamicsMethodDefault);
-		dynaCombo.addItemListener(i -> {
-			if (abcSong != null) {
-				if (fireDynaListeners) abcSong.dynamicsMethod = (Chord.CalcDynamics) dynaCombo.getSelectedItem();
-				refreshPreviewSequence(false);
-			}
-		});
-		dynaCombo.setToolTipText(UIText.get("maestro.tip.dynamics", Chord.CalcDynamics.LOUDEST,Chord.CalcDynamics.POWER_RMS_DB,Chord.CalcDynamics.POWER_MID_DB,Chord.CalcDynamics.WEIGHTED,Chord.CalcDynamics.POWER_MID_DB,Chord.CalcDynamics.SOFTEST));
-
-        tempoOnlyFirstCheckBox = new JCheckBox(UIText.get("maestro.only.tempo.changes.from.first.track"));
-        tempoOnlyFirstCheckBox.setToolTipText(UIText.get("maestro.tip.tempo.first.track.only"));
-        tempoOnlyFirstCheckBox.addActionListener(e -> {
-            if (abcSong == null) {
-                return;
-            }
-
-            if (abcSong.getProjectFile() == null) {
-                //return; // should be an invalid state, item is disabled if no msx file
-            }
-
-            abcSong.setUsingOldTempos(tempoOnlyFirstCheckBox.isSelected());
-
-            setAbcSongModified(true);
-            File sourceFile = abcSong.getSourceFile();
-            reloadWithNewSource(sourceFile);
-        });
-
-		exportSuccessfulLabel = new JLabel(UIText.get("maestro.exported"));
-		exportSuccessfulLabel.setIcon(IconLoader.getImageIcon("check_16.png"));
-		exportSuccessfulLabel.setBorder(BorderFactory.createEmptyBorder(0, 2, 0, 0));
-		exportSuccessfulLabel.setVisible(false);
-
-		exportButton = new JButton(); // Label set in onSaveAndExportSettingsChanged()
-		exportButton.setToolTipText(UIText.get("maestro.html.b.export.abc.b.br.ctrl.e.html"));
-		exportButton.setIcon(IconLoader.getImageIcon("abcfile_32.png"));
-		exportButton.setDisabledIcon(IconLoader.getDisabledIcon("abcfile_32.png"));
-		exportButton.setHorizontalAlignment(SwingConstants.LEFT);
-		exportButton.getModel().addChangeListener(new ChangeListener() {
-			private boolean pressed = false;
-
-			@Override
-			public void stateChanged(ChangeEvent e) {
-				if (exportButton.getModel().isPressed() != pressed) {
-					pressed = exportButton.getModel().isPressed();
-					if (pressed)
-						exportSuccessfulLabel.setVisible(false);
+				} else {
+					abcSequencer.setTempoFactor(1.0f);
 				}
 			}
-		});
-		exportButton.addActionListener(e -> exportAbc());
 
-		// Add everything to panel
-		TableLayout settingsLayout = new TableLayout(//
-				new double[] { PREFERRED, PREFERRED, FILL }, //
-				new double[] {});
-		settingsLayout.setVGap(VGAP);
-		settingsLayout.setHGap(HGAP);
+			@Override
+			public void tempoResetRequested() {
+				if (abcSong != null) {
+					if (fireTempoListeners) abcSong.setTempoBPM((Integer) tempoSpinner.getValue());
 
-		settingsPanel = new JPanel(settingsLayout);
-		settingsPanel.setBorder(BorderFactory.createTitledBorder(UIText.get("maestro.export.settings")));
-		int row = 0;
-		settingsLayout.insertRow(row, PREFERRED);
-		settingsPanel.add(new JLabel(UIText.get("maestro.transpose")), "0, " + row);
-		settingsPanel.add(transposeSpinner, "1, " + row);
-		row++;
-		settingsLayout.insertRow(row, PREFERRED);
-		settingsPanel.add(new JLabel(UIText.get("maestro.main.tempo")), "0, " + row);
-		settingsPanel.add(tempoSpinner, "1, " + row);
-		settingsPanel.add(resetTempoButton, "2, " + row + ", L, F");
-		row++;
-		settingsLayout.insertRow(row, PREFERRED);
-		settingsPanel.add(new JLabel(UIText.get("maestro.meter")), "0, " + row);
-		settingsPanel.add(timeSignatureField, "1, " + row + ", 2, " + row + ", L, F");
-		if (SHOW_KEY_FIELD) {
-			row++;
-			settingsLayout.insertRow(row, PREFERRED);
-			settingsPanel.add(new JLabel(UIText.get("maestro.key")), "0, " + row);
-			settingsPanel.add(keySignatureField, "1, " + row + ", 2, " + row + ", L, F");
-		}
-        row++;
-        settingsLayout.insertRow(row, PREFERRED);
-        settingsPanel.add(timingCombo, "0, " + row + ", 2, " + row + ", L, C");
+					abcSequencer.setTempoFactor(abcSong.getTempoFactor());
 
-		row++;
-		settingsLayout.insertRow(row, PREFERRED);
-		settingsPanel.add(dynaCombo, "0, " + row + ", 2, " + row + ", L, C");
-        row++;
-        settingsLayout.insertRow(row, PREFERRED);
-        settingsPanel.add(tempoOnlyFirstCheckBox, "0, " + row + ", 2, " + row + ", L, C");
-		//row++;
-		//settingsLayout.insertRow(row, PREFERRED);
-		//settingsPanel.add(zeroDropdown, "0, " + row + ", 2, " + row + ", L, C");
-		row++;
-		settingsLayout.insertRow(row, PREFERRED);
-		settingsPanel.add(exportSuccessfulLabel, "0, " + row + ", 2, " + row + ", F, F");
-		row++;
-		settingsLayout.insertRow(row, PREFERRED);
-		settingsPanel.add(exportButton, "0, " + row + ", 2, " + row + ", F, F");
-		return null;
+					refreshPreviewSequence(false);
+				} else {
+					abcSequencer.setTempoFactor(1.0f);
+				}				
+			}
+
+			@Override
+			public void timeSignatureChanged() {
+				if (abcSong != null && fireMeterListeners)
+					abcSong.setTimeSignature(songExportSettingsPanel.getTimeSignature());
+
+				// Breaking up of long notes can depend on time signature for bar lines.
+				refreshPreviewSequence(false);				
+			}
+
+			@Override
+			public void keySignatureChanged() {
+				if (abcSong != null)
+					abcSong.setKeySignature(songExportSettingsPanel.getKeySignature());
+			}
+
+			@Override
+			public void timingModeChanged() {
+				TimingMode mode = songExportSettingsPanel.getTimingMode();
+            	songExportSettingsPanel.setTimingModeToolTipText(mode.getTooltip());
+
+            	if (abcSong != null)
+                	abcSong.setTimings(mode.organic, mode.multistage, mode.mixTimings, mode.swing, mode.priority, mode.upgraded);
+
+            	refreshPreviewSequence(false);
+			}
+
+			@Override
+			public void dynamicChordModeChanged() {
+				if (abcSong != null) {
+					if (fireDynaListeners)
+						abcSong.dynamicsMethod = songExportSettingsPanel.getDynamicChordMode();
+					refreshPreviewSequence(false);
+				}
+			}
+
+			@Override
+			public void countOnlyTempoChangesFromFirstTrackSettingsChanged() {
+				if (abcSong == null)
+                	return;            
+
+            	if (abcSong.getProjectFile() == null) {
+                	//return; // should be an invalid state, item is disabled if no msx file
+            	}
+
+            	abcSong.setUsingOldTempos(songExportSettingsPanel.isCountOnlyTempoChangesFromFirstTrackSelected());
+
+            	setAbcSongModified(true);
+				File sourceFile = abcSong.getSourceFile();
+				reloadWithNewSource(sourceFile);
+			}
+
+			@Override
+			public void exportRequested() {
+				exportAbc();
+			}
+		};
 	}
 
 	private void generateMidiPartsAndControlsPanel() {
