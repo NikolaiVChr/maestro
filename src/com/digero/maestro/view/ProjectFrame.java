@@ -191,7 +191,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private Icon stopIconDisabled;
 
 	private long abcPreviewStartTick = 0L;
-	private float abcPreviewTempoFactor = 1.0f;// deprecated
 	private boolean echoingPosition = false;
 
 	private MainSequencerListener mainSequencerListener;
@@ -2775,7 +2774,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
      */
     private void applyPreview(SequenceInfo previewSequenceInfo, AbcExporter exporter) {
         abcPreviewStartTick = exporter.getExportStartTick();
-        abcPreviewTempoFactor = abcSequencer.getTempoFactor();
         abcBarLabel.setBarNumberCache(exporter.getTimingInfo());
         abcBarLabel.setInitialOffsetTick(abcPreviewStartTick);
         abcPositionLabel.setInitialOffsetTick(abcPreviewStartTick);
@@ -2882,7 +2880,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
         if (abcSong == null || abcSong.getActivePartCount() == 0) {
             abcPreviewStartTick = 0L;
-            abcPreviewTempoFactor = 1.0f;
             abcSequencer.clearSequence();
             abcSequencer.reset(false);
             abcBarLabel.setBarNumberCache(null);
