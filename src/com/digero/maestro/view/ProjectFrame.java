@@ -106,6 +106,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private PartEditor partEditor;
 	private SongPartsListPanel songPartsListPanel;
 	private SongPartsPanel songPartsPanel;
+	private SongExportSettingsPanel songExportSettingsPanel;
 
     private boolean uiEnabled = true;
     private boolean sourceChangeEnabled = true;
@@ -342,6 +343,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		songPartsPanel = new SongPartsPanel(this.songPartsListPanel);
 		songPartsPanel.setActionListener(createSongPartsActionListener());
 
+		//SongExportSettingsPanel
+		songExportSettingsPanel = new SongExportSettingsPanel();
+		songExportSettingsPanel.setActionListener(createSongExportSettingsActionListener());
+
         loadIcons();
 
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
@@ -364,8 +369,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
         content = new JPanel(tableLayout, false);
         setContentPane(content);
-
-        generateExportSettingsPanel();
 
         generateMidiPartsAndControlsPanel();
 
@@ -433,7 +436,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		songInfoPanel.addMouseListener(listenForFocus);
 		songPartsListPanel.addMouseListener(listenForFocus);
 		songPartsPanel.addMouseListener(listenForFocus);
-		if (settingsPanel != null) settingsPanel.addMouseListener(listenForFocus);
+		songExportSettingsPanel.addMouseListener(listenForFocus);
 		if (midiPartsAndControls != null) midiPartsAndControls.addMouseListener(listenForFocus);
 		if (playControlPanel != null) playControlPanel.addMouseListener(listenForFocus);
 		if (arrangementView != null) arrangementView.addMouseListener(listenForFocus);
@@ -597,7 +600,48 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		};
 	}
 
-	private void generateExportSettingsPanel() {
+	private SongExportSettingsListener createSongExportSettingsListener() {
+		SongExportSettingsListener listener = new SongExportSettingsListener() {
+			@Override
+			public void transposeSettingsChanged() {
+				if (abcSong != null && fireTransposeListeners)
+                abcSong.setTranspose(songExportSettingsPanel.getTranspose());
+            	refreshPreviewSequence(false);
+			}
+			@Override
+			public void tempoSettingsChanged() {
+				
+			}
+			@Override
+			public void tempoResetRequested() {
+				
+			}
+			@Override
+			public void timeSignatureChanged() {
+				
+			}
+			@Override
+			public void keySignatureChanged() {
+				
+			}
+			@Override
+			public void timingSettingsChanged() {
+				
+			}
+			@Override
+			public void dynamicChordSettingsChanged() {
+				
+			}
+			@Override
+			public void countOnlyTempoChangesFromFirstTrackSettingsChanged() {
+				
+			}
+			@Override
+			public void exportRequested() {
+				
+			}
+
+		};
 		transposeSpinner = new JSpinner(new SpinnerNumberModel(0, -48, 48, 1));
 		transposeSpinner
 				.setToolTipText(UIText.get("maestro.tip.transpose.semi.tones"));
@@ -777,6 +821,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		row++;
 		settingsLayout.insertRow(row, PREFERRED);
 		settingsPanel.add(exportButton, "0, " + row + ", 2, " + row + ", F, F");
+		return null;
 	}
 
 	private void generateMidiPartsAndControlsPanel() {

@@ -113,10 +113,10 @@ public class SongExportSettingsPanel extends JPanel {
         addRow(row++, createJLabel(UIText.get("maestro.transpose"), null, null), transposeSpinner);
         addRow(row++, createJLabel(UIText.get("maestro.tempo"), null, null), tempoSpinner, resetTempoButton);
         addRow(row++, createJLabel(UIText.get("maestro.meter"), null, null), timeSignatureField);
-        
-        if (ICompileConstants.SHOW_KEY_FIELD) 
+
+        if (ICompileConstants.SHOW_KEY_FIELD)
             addRow(row++, createJLabel(UIText.get("maestro.key"), null, null), keySignatureField);
-        
+
         addRow(row++, timingCombo);
         addRow(row++, dynaCombo);
         addRow(row++, tempoOnlyFirstCheckBox);
@@ -260,11 +260,15 @@ public class SongExportSettingsPanel extends JPanel {
         }
     }
 
-    
     public void deactivateListeners() {
 
     }
 
+    /**
+     * Gets the current transpose value from the transpose spinner.
+     *
+     * @return the current transpose value
+     */
     public int getTranspose() {
         return (Integer) transposeSpinner.getValue();
     }
