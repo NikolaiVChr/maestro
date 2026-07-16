@@ -1753,7 +1753,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			Color c = UIManager.getColor("Button.foreground");
 			tuneEditorButton.setForeground(c);
 		}
-		songExportSettingsPanel.setResetTempoButtonEnabledandVisible(midiLoaded && currentSong != null && currentSong.getTempoFactor() != 1.0f && uiEnabled);
+		songExportSettingsPanel.setResetTempoButtonEnabledAndVisible(midiLoaded && currentSong != null && currentSong.getTempoFactor() != 1.0f && uiEnabled);
 	}
 
 	/**

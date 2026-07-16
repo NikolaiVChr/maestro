@@ -2,17 +2,22 @@ package com.digero.maestro.view;
 
 import java.awt.Component;
 import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.FocusEvent;
+import java.awt.event.KeyEvent;
 import java.text.ParseException;
 import java.util.function.Consumer;
 
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
+import javax.swing.KeyStroke;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingConstants;
+import javax.swing.SwingUtilities;
 import javax.swing.border.Border;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
-
+import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -61,15 +66,6 @@ public class SongExportSettingsPanel extends JPanel {
     private final TableLayout layout;
 
     private SongExportSettingsListener actionListener;
-
-    private Runnable transposeSpinnerChangedAction;
-    private Runnable tempoSpinnerChangedAction;
-    private Runnable resetTempoAction;
-    private Runnable timeSignatureFieldChangedAction;
-    private Runnable keySignatureFieldChangedAction;
-    private Runnable timingModeChangedAction;
-    private Runnable dynamicChordModeChangedAction;
-    private Runnable countOnlyTempoChangesFromFirstTrackSettingsChanged;
 
     public SongExportSettingsPanel() {
         // Initialize components
@@ -126,70 +122,36 @@ public class SongExportSettingsPanel extends JPanel {
                 UIText.get("maestro.only.tempo.changes.from.first.track"),
                 UIText.get("maestro.tip.tempo.first.track.only"));
 
-        // Set up action listeners for the components to notify the action listener of
-        // changes
-        transposeSpinnerChangedAction = () -> notifyListener(SongExportSettingsListener::transposeSettingsChanged);
-        tempoSpinnerChangedAction = () -> notifyListener(SongExportSettingsListener::tempoSettingsChanged);
-        resetTempoAction = () -> notifyListener(SongExportSettingsListener::tempoResetRequested);
-        timeSignatureFieldChangedAction = () -> notifyListener(SongExportSettingsListener::timeSignatureChanged);
-        keySignatureFieldChangedAction = () -> notifyListener(SongExportSettingsListener::keySignatureChanged);
-        countOnlyTempoChangesFromFirstTrackSettingsChanged = () -> notifyListener(
-                SongExportSettingsListener::countOnlyTempoChangesFromFirstTrackSettingsChanged);
-
         // Add listeners to the components to notify the action listener of changes
-        transposeSpinner.addChangeListener(new ChangeListener() {
-            @Override
-            public void stateChanged(ChangeEvent e) {
-                if (transposeSpinnerChangedAction != null)
-                    transposeSpinnerChangedAction.run();
-            }
-        });
+        transposeSpinner.addChangeListener(e -> notifyListener(SongExportSettingsListener::transposeSettingsChanged));
+
         if (ICompileConstants.SHOW_TEMPO_SPINNER) {
-            tempoSpinner.addChangeListener(new ChangeListener() {
-                @Override
-                public void stateChanged(ChangeEvent e) {
-                    if (tempoSpinnerChangedAction != null)
-                        tempoSpinnerChangedAction.run();
-                }
-            });
+            tempoSpinner.addChangeListener(e -> notifyListener(SongExportSettingsListener::tempoSettingsChanged));
         }
 
-        resetTempoButton.addActionListener(e -> {
-            if (resetTempoAction != null)
-                resetTempoAction.run();
-        });
+        resetTempoButton.addActionListener(e -> notifyListener(SongExportSettingsListener::tempoResetRequested));
 
         if (ICompileConstants.SHOW_METER_TEXTBOX) {
             timeSignatureField.addPropertyChangeListener("value", e -> {
                 if (e.getOldValue() != null && e.getOldValue().equals(e.getNewValue()))
                     return;
 
-                if (timeSignatureFieldChangedAction != null)
-                    timeSignatureFieldChangedAction.run();
+                notifyListener(SongExportSettingsListener::timeSignatureChanged);
             });
         }
 
         if (ICompileConstants.SHOW_KEY_FIELD) {
-            keySignatureField.addPropertyChangeListener("value", e -> {
-                if (keySignatureFieldChangedAction != null)
-                    keySignatureFieldChangedAction.run();
-            });
+            keySignatureField.addPropertyChangeListener("value",
+                    e -> notifyListener(SongExportSettingsListener::keySignatureChanged));
         }
 
-        timingModeCombo.addActionListener(e -> {
-            if (timingModeChangedAction != null)
-                timingModeChangedAction.run();
-        });
+        timingModeCombo.addActionListener(e -> notifyListener(SongExportSettingsListener::timingModeChanged));
 
-        dynamicChordModeCombo.addActionListener(e -> {
-            if (dynamicChordModeChangedAction != null)
-                dynamicChordModeChangedAction.run();
-        });
+        dynamicChordModeCombo.addActionListener(
+                e -> notifyListener(SongExportSettingsListener::dynamicChordModeChanged));
 
-        countOnlyTempoChangesFromFirstTrackCheckBox.addActionListener(e -> {
-            if (countOnlyTempoChangesFromFirstTrackSettingsChanged != null)
-                countOnlyTempoChangesFromFirstTrackSettingsChanged.run();
-        });
+        countOnlyTempoChangesFromFirstTrackCheckBox.addActionListener(
+                e -> notifyListener(SongExportSettingsListener::countOnlyTempoChangesFromFirstTrackSettingsChanged));
 
         exportButton.addChangeListener(new ChangeListener() {
             private boolean pressed = false;
@@ -204,10 +166,7 @@ public class SongExportSettingsPanel extends JPanel {
             }
         });
 
-        exportButton.addActionListener(e -> {
-            if (actionListener != null)
-                actionListener.exportRequested();
-        });
+        exportButton.addActionListener(e -> notifyListener(SongExportSettingsListener::exportRequested));
 
         // Set up the layout and add components to the panel
         this.layout = new TableLayout(
@@ -314,16 +273,35 @@ public class SongExportSettingsPanel extends JPanel {
             AbstractFormatter formatter) {
         JFormattedTextField field = new JFormattedTextField(formatter) {
             @Override
-            protected void processFocusEvent(java.awt.event.FocusEvent e) {
+            protected void processFocusEvent(FocusEvent e) {
                 super.processFocusEvent(e);
-                if (e.getID() == java.awt.event.FocusEvent.FOCUS_GAINED)
+                if (e.getID() == FocusEvent.FOCUS_GAINED) {
                     selectAll();
+                }
             }
         };
+
         field.setValue(value);
         field.setColumns(columns);
         field.setToolTipText(tooltip);
-        // the behavoir JFormattedTextField.COMMIT_OR_REVERT is the default
+        field.setFocusLostBehavior(JFormattedTextField.COMMIT_OR_REVERT);
+
+        KeyStroke enterKey = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0);
+        Object actionKey = field.getInputMap().get(enterKey);
+
+        if (actionKey != null) {
+            field.getActionMap().put(actionKey, new AbstractAction() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    try {
+                        field.commitEdit();
+                    } catch (ParseException ex) {
+                        field.setValue(field.getValue());
+                    }
+                }
+            });
+        }
+
         return field;
     }
 
@@ -493,7 +471,7 @@ public class SongExportSettingsPanel extends JPanel {
         exportButton.setEnabled(enabled);
     }
 
-    public void setResetTempoButtonEnabledandVisible(boolean enabled) {
+    public void setResetTempoButtonEnabledAndVisible(boolean enabled) {
         resetTempoButton.setEnabled(enabled);
         resetTempoButton.setVisible(enabled);
     }
