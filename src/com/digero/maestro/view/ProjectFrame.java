@@ -34,7 +34,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -49,8 +48,6 @@ import javax.sound.sampled.DataLine;
 import javax.sound.sampled.Mixer;
 import javax.sound.sampled.SourceDataLine;
 import javax.swing.*;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import javax.swing.filechooser.FileFilter;
@@ -143,17 +140,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	private JPanel content;
 
-	private JSpinner transposeSpinner;
-	private JSpinner tempoSpinner;
-	private JButton resetTempoButton;
-	private JFormattedTextField keySignatureField;
-	private JFormattedTextField timeSignatureField;
-    private JComboBox<TimingMode> timingCombo;
-
-    private JCheckBox tempoOnlyFirstCheckBox;
-	private JComboBox<Chord.CalcDynamics> dynaCombo;
-	private JButton exportButton;
-	private JLabel exportSuccessfulLabel;
 	private Timer exportLabelHideTimer;
 	private JMenu openRecentMenu;
 	private JMenuItem saveMenuItem;
@@ -374,13 +360,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		// after arrangementView is defined, but before welcome message is set.
 		initTheme();
-
-        if (!SHOW_TEMPO_SPINNER)
-            tempoSpinner.setEnabled(false);
-        if (!SHOW_METER_TEXTBOX)
-            timeSignatureField.setEnabled(false);
-        if (!SHOW_KEY_FIELD)
-            keySignatureField.setEnabled(false);
 
         add(generateTopLevelSplitPane(), "0, 0, 1, 0");
 
@@ -612,8 +591,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			@Override
 			public void tempoSettingsChanged() {
 				if (abcSong != null) {
-					if (fireTempoListeners) abcSong.setTempoBPM((Integer) tempoSpinner.getValue());
-						abcSequencer.setTempoFactor(abcSong.getTempoFactor());
+					if (fireTempoListeners)
+						abcSong.setTempoBPM(songExportSettingsPanel.getTempo());
+
+					abcSequencer.setTempoFactor(abcSong.getTempoFactor());
 					refreshPreviewSequence(false);
 				} else {
 					abcSequencer.setTempoFactor(1.0f);
@@ -623,10 +604,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			@Override
 			public void tempoResetRequested() {
 				if (abcSong != null) {
-					if (fireTempoListeners) abcSong.setTempoBPM((Integer) tempoSpinner.getValue());
+					if (fireTempoListeners)
+						abcSong.setTempoBPM(songExportSettingsPanel.getTempo());
 
 					abcSequencer.setTempoFactor(abcSong.getTempoFactor());
-
 					refreshPreviewSequence(false);
 				} else {
 					abcSequencer.setTempoFactor(1.0f);
@@ -1362,7 +1343,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			exportMenuItem.setText(UIText.get("maestro.menu.export.abc"));
 		}
 		
-		updateExportOrExportAsButton();
+		songExportSettingsPanel.updateExportButton(shouldExportAbcAs());
 
         boolean needRefresh = false;
 
@@ -1403,14 +1384,6 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 		scheduleUiRefresh();
         if (needRefresh) refreshPreviewSequence(false);
-	}
-	
-	private void updateExportOrExportAsButton() {
-		String exportText = shouldExportAbcAs() ? UIText.get("maestro.export.abc.as") : UIText.get("maestro.export.abc");
-		if (!exportButton.getText().equals(exportText)) {
-			exportButton.setText(exportText);
-			exportButton.repaint();
-		}
 	}
 
     @Deprecated
@@ -1711,7 +1684,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	 * @param hasAbcNotes true if there are enabled ABC notes, false otherwise
 	 */
 	private void updateFileActions(AbcSong currentSong, boolean hasAbcNotes) {
-		exportButton.setEnabled(hasAbcNotes);// so that it keep focus, we keep it enabled during export.
+		songExportSettingsPanel.setExportButtonEnabled(hasAbcNotes);// so that it keep focus, we keep it enabled during export.
 		exportMenuItem.setEnabled(hasAbcNotes && uiEnabled);
 		exportAsMenuItem.setEnabled(hasAbcNotes && uiEnabled);
 		saveMenuItem.setEnabled(currentSong != null && uiEnabled);
@@ -1764,8 +1737,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	 * @param midiLoaded true if the MIDI sequencer is loaded, false otherwise
 	 */
 	private void updateTuneControls(AbcSong currentSong, boolean midiLoaded) {
-		transposeSpinner.setEnabled(midiLoaded && uiEnabled);
-		tempoSpinner.setEnabled(midiLoaded && uiEnabled);
+		songExportSettingsPanel.setTransposeSpinnerEnabled(midiLoaded && uiEnabled);
+		songExportSettingsPanel.setTempoSpinnerEnabled(midiLoaded && uiEnabled);
 		tuneEditorButton.setEnabled(midiLoaded && uiEnabled);
 		hideEditsCheckbox.setEnabled(midiLoaded && uiEnabled);
 		if (!midiLoaded)
@@ -1781,8 +1754,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			Color c = UIManager.getColor("Button.foreground");
 			tuneEditorButton.setForeground(c);
 		}
-		resetTempoButton.setEnabled(midiLoaded && currentSong != null && currentSong.getTempoFactor() != 1.0f && uiEnabled);
-		resetTempoButton.setVisible(resetTempoButton.isEnabled());
+		songExportSettingsPanel.setResetTempoButtonEnabledandVisible(midiLoaded && currentSong != null && currentSong.getTempoFactor() != 1.0f && uiEnabled);
 	}
 
 	/**
@@ -1793,14 +1765,20 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	 * @param midiLoaded true if the MIDI sequencer is loaded, false otherwise
 	 */
 	private void updateTimingAndDynamicsControls(AbcSong currentSong, SequenceInfo sequenceInfo, boolean midiLoaded) {
-		keySignatureField.setEnabled(midiLoaded && uiEnabled);
-		timeSignatureField.setEnabled(midiLoaded && uiEnabled);
-		timingCombo.setEnabled(midiLoaded && uiEnabled);
 
-		dynaCombo.setEnabled(midiLoaded && uiEnabled);
-		tempoOnlyFirstCheckBox.setEnabled(currentSong != null && sequenceInfo != null
-				&& sequenceInfo.getDataCache().isTempoInHigherTracks() && uiEnabled);//  && currentSong.getProjectFile() != null
-		sidepanelButton.setEnabled(midiLoaded && uiEnabled);
+		boolean midiLoadedAndUiEnabled = midiLoaded && uiEnabled;
+
+		songExportSettingsPanel.setKeySignatureFieldEnabled(midiLoadedAndUiEnabled);
+		songExportSettingsPanel.setTimeSignatureFieldEnabled(midiLoadedAndUiEnabled);
+		songExportSettingsPanel.setTimingModeComboEnabled(midiLoadedAndUiEnabled);
+		songExportSettingsPanel.setDynamicChordModeComboEnabled(midiLoadedAndUiEnabled);
+		songExportSettingsPanel.setCountOnlyTempoChangesFromFirstTrackCheckBoxEnabled(
+			currentSong != null &&
+			sequenceInfo != null &&
+			sequenceInfo.getDataCache().isTempoInHigherTracks() &&
+			uiEnabled); //  && currentSong.getProjectFile() != null
+
+		sidepanelButton.setEnabled(midiLoadedAndUiEnabled);
 
 		if (midiLoaded && currentSong != null && sequenceInfo != null) {
 			midiModeRadioButton.setText(
@@ -1884,7 +1862,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			}
 		}
 		
-		updateExportOrExportAsButton();
+		songExportSettingsPanel.updateExportButton(shouldExportAbcAs());
 	};
 
 	private final Listener<AbcSongEvent> abcSongListener = e -> {
@@ -1906,24 +1884,24 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
     			break;
 
 			case TEMPO_FACTOR:
-				if (getTempo() != abcSong.getTempoBPM())
-					setTempo(abcSong.getTempoBPM());
+				if (songExportSettingsPanel.getTempo() != abcSong.getTempoBPM())
+					setTempoWithoutEvent(abcSong.getTempoBPM());
 
 				//not needed as listeners on spinner will refresh
 				//refreshPreviewSequence(false);
 
 				break;
 			case TRANSPOSE:
-				setTranspose(abcSong.getTranspose());
+				setTransposeWithoutEvent(abcSong.getTranspose());
 				break;
 			case KEY_SIGNATURE:
 				if (SHOW_KEY_FIELD) {
-					if (!keySignatureField.getValue().equals(abcSong.getKeySignature()))
-						keySignatureField.setValue(abcSong.getKeySignature());
+					if (!songExportSettingsPanel.getKeySignature().equals(abcSong.getKeySignature()))
+						songExportSettingsPanel.setKeySignature(abcSong.getKeySignature());
 				}
 				break;
 			case TIME_SIGNATURE:
-				setMeter(abcSong.getTimeSignature());
+				setTimeSignatureWithoutEvent(abcSong.getTimeSignature());
 				break;
 			case ORGANIC:
 			case TRIPLET_TIMING:
@@ -1932,14 +1910,22 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				break;
 			case TIMINGS_MULTI:
 				// one or more timing settings were change in abc song
-
 				// setting on model dont fire action listener
-				timingCombo.getModel().setSelectedItem(TimingMode.getInstance(abcSong.isOrganic(), abcSong.isOrganic2(), abcSong.isMixTiming(), abcSong.isTripletTiming(), abcSong.isPriorityActive(), abcSong.isUpgraded()));
+				songExportSettingsPanel.setTimingMode(
+					TimingMode.getInstance(
+						abcSong.isOrganic(),
+						abcSong.isOrganic2(),
+						abcSong.isMixTiming(),
+						abcSong.isTripletTiming(),
+						abcSong.isPriorityActive(),
+						abcSong.isUpgraded()
+					)
+				);
 
 				scheduleUiRefresh();
 				break;
 			case CALC_DYNAMICS:
-				setDyna(abcSong.dynamicsMethod);
+				setDynamicChordModeWithoutEvent(abcSong.dynamicsMethod);
 				break;
 			case PART_ADDED:
 				e.getPart().addAbcListener(abcPartListener);
@@ -2069,8 +2055,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			case USER_LYRICS:
 				break;
 		}
-
-		updateExportOrExportAsButton();
+		songExportSettingsPanel.updateExportButton(shouldExportAbcAs());
 		if (modified) setAbcSongModified(true);
 	};
 
@@ -2112,47 +2097,39 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		return abcSong != null && abcSongModified;
 	}
 
-	public int getTranspose() {
-		return (Integer) transposeSpinner.getValue();
-	}
-
     /**
      * Will not activate the changelistener to set abcSong
      */
-    public void setTranspose(int transpose) {
+    public void setTransposeWithoutEvent(int transpose) {
         fireTransposeListeners = false;
-        transposeSpinner.setValue(transpose);
+        songExportSettingsPanel.setTranspose(transpose);
         fireTransposeListeners = true;
     }
 
     /**
      * Will not activate the changelistener to set abcSong
      */
-    private void setMeter(TimeSignature ts) {
+    private void setTimeSignatureWithoutEvent(TimeSignature ts) {
         fireMeterListeners = false;
-        timeSignatureField.setValue(ts);
+        songExportSettingsPanel.setTimeSignature(ts);
         fireMeterListeners = true;
     }
 
     /**
      * Will not activate the changelistener to set abcSong
      */
-    private void setTempo(int tempoBPM) {
+    private void setTempoWithoutEvent(int tempoBPM) {
         fireTempoListeners = false;
-        tempoSpinner.setValue(tempoBPM);
+        songExportSettingsPanel.setTempo(tempoBPM);
         fireTempoListeners = true;
     }
-
-	public int getTempo() {
-		return (Integer) tempoSpinner.getValue();
-	}
 
     /**
      * Will not activate the changelistener to set abcSong
      */
-    private void setDyna(Chord.CalcDynamics dyna) {
+    private void setDynamicChordModeWithoutEvent(Chord.CalcDynamics dyna) {
         fireDynaListeners = false;
-        dynaCombo.setSelectedItem(dyna);
+        songExportSettingsPanel.setDynamicChordMode(dyna);
         fireDynaListeners = true;
     }
 
@@ -2256,13 +2233,14 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		clearSongInfoPanel();
 
-		transposeSpinner.setValue(0);
-		tempoSpinner.setValue(MidiConstants.DEFAULT_TEMPO_BPM);
-		keySignatureField.setValue(KeySignature.C_MAJOR);
-		timeSignatureField.setValue(TimeSignature.FOUR_FOUR);
-        timingCombo.getModel().setSelectedItem(TimingMode.MIX);
-        dynaCombo.setSelectedItem(AbcSong.dynamicsMethodDefault);
-        tempoOnlyFirstCheckBox.setSelected(false);
+		songExportSettingsPanel.setTranspose(0);
+		songExportSettingsPanel.setTempo(MidiConstants.DEFAULT_TEMPO_BPM);
+		songExportSettingsPanel.setKeySignature(KeySignature.C_MAJOR);
+		songExportSettingsPanel.setTimeSignature(TimeSignature.FOUR_FOUR);
+		songExportSettingsPanel.setTimingMode(TimingMode.MIX);
+		songExportSettingsPanel.setDynamicChordMode(AbcSong.dynamicsMethodDefault);
+		songExportSettingsPanel.setCountOnlyTempoChangesFromFirstTrackSelected(false);
+
 		midiBarLabel.setBarNumberCache(null);
 		abcBarLabel.setBarNumberCache(null);
 		abcBarLabel.setInitialOffsetTick(abcPreviewStartTick);
@@ -2333,7 +2311,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			}
 
 			updateSongInfoFromAbcSong();
-			setDyna(abcSong.dynamicsMethod);
+			setDynamicChordModeWithoutEvent(abcSong.dynamicsMethod);
 
             arrangementView.sidepanelTab(UIText.get("maestro.notes"));
 
@@ -2363,15 +2341,24 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 }
             }
 
-			setTranspose(abcSong.getTranspose());
-			setTempo(abcSong.getTempoBPM());
-			keySignatureField.setValue(abcSong.getKeySignature());
-			setMeter(abcSong.getTimeSignature());
+			setTransposeWithoutEvent(abcSong.getTranspose());
+			setTempoWithoutEvent(abcSong.getTempoBPM());
+			songExportSettingsPanel.setKeySignature(abcSong.getKeySignature());
+			setTimeSignatureWithoutEvent(abcSong.getTimeSignature());
 
             // setting on model dont fire action listener
-            timingCombo.getModel().setSelectedItem(TimingMode.getInstance(abcSong.isOrganic(),abcSong.isOrganic2(),abcSong.isMixTiming(),abcSong.isTripletTiming(),abcSong.isPriorityActive(), abcSong.isUpgraded()));
+			songExportSettingsPanel.setTimingMode(
+				TimingMode.getInstance(
+					abcSong.isOrganic(),
+					abcSong.isOrganic2(),
+					abcSong.isMixTiming(),
+					abcSong.isTripletTiming(),
+					abcSong.isPriorityActive(),
+					abcSong.isUpgraded()
+				)
+			);
 
-            tempoOnlyFirstCheckBox.setSelected(abcSong.isUsingOldTempos());
+			songExportSettingsPanel.setCountOnlyTempoChangesFromFirstTrackSelected(abcSong.isUsingOldTempos());
 
 			SequenceInfo sequenceInfo = abcSong.getSequenceInfo();
 			sequencer.setSequence(sequenceInfo.getSequence());
@@ -2974,10 +2961,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			if (arrangementView.isLyricsModified()) abcSong.setLyricLines(arrangementView.getLyricLines(), false);
 			else abcSong.setLyricLines(null, false);
 			arrangementView.commitAllFields();
-			transposeSpinner.commitEdit();
-			tempoSpinner.commitEdit();
-			timeSignatureField.commitEdit();
-			keySignatureField.commitEdit();
+			songExportSettingsPanel.commitAllFields();
 		} catch (ParseException ignore) {
 		}
 	}
@@ -3011,12 +2995,13 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             }
             tempNote += histogram.getStats();
         }
-        tempNote += "\nMain export tempo will be " + getTempo() + ".\n"
-                + (AbcConstants.isStrangeBPM(getTempo())?(
+		int tempo = songExportSettingsPanel.getTempo();
+        tempNote += "\nMain export tempo will be " + tempo + ".\n"
+                + (AbcConstants.isStrangeBPM(tempo)?(
                 "Recommendation: To ease output of fractions"
                 +" without repeating decimals, Maestro recommend"
                 +" to decrease the tempo to "
-                +(AbcConstants.isStrangeBPM(getTempo()-1)?getTempo()-2:getTempo()-1)):"");
+                +(AbcConstants.isStrangeBPM(tempo-1)?tempo-2:tempo-1)):"");
 		arrangementView.setStats(tempNote);
 
         /*
@@ -3227,7 +3212,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
 	private boolean exportAbcAs() {
-		exportSuccessfulLabel.setVisible(false);
+		songExportSettingsPanel.setExportSuccessfulLabelVisible(false);
 
 		if (abcSong == null) {
 			JOptionPane.showMessageDialog(this, UIText.get("maestro.no.abc.song.is.open"), UIText.get("maestro.error"), JOptionPane.ERROR_MESSAGE);
@@ -3268,7 +3253,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
 	private boolean exportAbc() {
-		exportSuccessfulLabel.setVisible(false);
+		songExportSettingsPanel.setExportSuccessfulLabelVisible(false);
 		if (abcSong == null) {
 			JOptionPane.showMessageDialog(this, UIText.get("maestro.no.abc.song.is.open"), UIText.get("maestro.error"), JOptionPane.ERROR_MESSAGE);
 			return false;
@@ -3296,7 +3281,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	private boolean finishExportAbc(File exportFile) {
         setUIEnabled(false);
-		exportSuccessfulLabel.setVisible(false);
+		songExportSettingsPanel.setExportSuccessfulLabelVisible(false);
 		commitAllFields();
         StringCleaner.cleanABC = saveSettings.convertABCStringsToBasicAscii;
 
@@ -3357,12 +3342,12 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             try {
                 get(); // get exceptions from doInBackground()
 
-                exportSuccessfulLabel.setText(abcSong.getExportFile().getName());
-                exportSuccessfulLabel.setToolTipText(UIText.get("maestro.exported.0", abcSong.getExportFile().getName()));
-                exportSuccessfulLabel.setVisible(true);
+                songExportSettingsPanel.setExportSuccessfulLabelText(abcSong.getExportFile().getName());
+                songExportSettingsPanel.setExportSuccessfulLabelToolTipText(UIText.get("maestro.exported.0", abcSong.getExportFile().getName()));
+                songExportSettingsPanel.setExportSuccessfulLabelVisible(true);
 
                 if (exportLabelHideTimer == null) {
-                    exportLabelHideTimer = new Timer(8000, e -> exportSuccessfulLabel.setVisible(false));
+                    exportLabelHideTimer = new Timer(8000, e -> songExportSettingsPanel.setExportSuccessfulLabelVisible(false));
                     exportLabelHideTimer.setRepeats(false);
                 }
                 exportLabelHideTimer.stop();

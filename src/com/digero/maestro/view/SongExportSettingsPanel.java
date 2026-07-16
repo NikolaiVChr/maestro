@@ -2,6 +2,7 @@ package com.digero.maestro.view;
 
 import java.awt.Component;
 import java.awt.Insets;
+import java.text.ParseException;
 import java.util.function.Consumer;
 
 import javax.swing.JPanel;
@@ -11,6 +12,9 @@ import javax.swing.SwingConstants;
 import javax.swing.border.Border;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+
+import org.jetbrains.annotations.NotNull;
+
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -54,7 +58,7 @@ public class SongExportSettingsPanel extends JPanel {
     private final JComboBox<TimingMode> timingModeCombo;
     private final JComboBox<Chord.CalcDynamics> dynamicChordModeCombo;
 
-    private final JCheckBox tempoOnlyFirstCheckBox;
+    private final JCheckBox countOnlyTempoChangesFromFirstTrackCheckBox;
 
     private final TableLayout layout;
 
@@ -74,16 +78,19 @@ public class SongExportSettingsPanel extends JPanel {
         this.transposeSpinner = createJSpinner(
                 new SpinnerNumberModel(0, -48, 48, 1),
                 UIText.get("maestro.tip.transpose.semi.tones"));
+
         this.tempoSpinner = createJSpinner(
                 new SpinnerNumberModel(MidiConstants.DEFAULT_TEMPO_BPM, 8, 960, 1),
                 UIText.get("maestro.tip.tempo"));
+        tempoSpinner.setEnabled(ICompileConstants.SHOW_TEMPO_SPINNER);
 
         this.resetTempoButton = createJButton(
                 UIText.get("maestro.reset"),
                 new Insets(2, 8, 2, 8),
                 UIText.get("maestro.set.the.tempo.back.to.the.source.file.s.tempo"));
+
         this.exportButton = createJButton(
-                UIText.get("maestro.menu.export.abc"),
+                null,
                 UIText.get("maestro.html.b.export.abc.b.br.ctrl.e.html"),
                 "abcfile_32.png",
                 SwingConstants.LEFT);
@@ -99,6 +106,8 @@ public class SongExportSettingsPanel extends JPanel {
                 5,
                 UIText.get("maestro.tip.time.signature"),
                 new TimeSignatureFormatter());
+        timeSignatureField.setEnabled(ICompileConstants.SHOW_METER_TEXTBOX);
+
         this.keySignatureField = createJFormattedTextField(
                 KeySignature.C_MAJOR,
                 5,
@@ -106,6 +115,7 @@ public class SongExportSettingsPanel extends JPanel {
                         + "This only affects the display, not the sound of the exported file.<br>"
                         + "Examples: C maj, Eb maj, F# min</html>",
                 new KeySignatureFormatter());
+        keySignatureField.setEnabled(ICompileConstants.SHOW_KEY_FIELD);
 
         this.timingModeCombo = createJComboBox(TimingMode.values(), null);
         this.dynamicChordModeCombo = createJComboBox(Chord.CalcDynamics.values(),
@@ -114,7 +124,7 @@ public class SongExportSettingsPanel extends JPanel {
                         Chord.CalcDynamics.SOFTEST));
         dynamicChordModeCombo.setSelectedItem(AbcSong.dynamicsMethodDefault);
 
-        this.tempoOnlyFirstCheckBox = createJCheckBox(
+        this.countOnlyTempoChangesFromFirstTrackCheckBox = createJCheckBox(
                 UIText.get("maestro.only.tempo.changes.from.first.track"),
                 UIText.get("maestro.tip.tempo.first.track.only"));
 
@@ -136,27 +146,30 @@ public class SongExportSettingsPanel extends JPanel {
                     transposeSpinnerChangedAction.run();
             }
         });
-
-        tempoSpinner.addChangeListener(new ChangeListener() {
-            @Override
-            public void stateChanged(ChangeEvent e) {
-                if (tempoSpinnerChangedAction != null)
-                    tempoSpinnerChangedAction.run();
-            }
-        });
+        if (ICompileConstants.SHOW_TEMPO_SPINNER) {
+            tempoSpinner.addChangeListener(new ChangeListener() {
+                @Override
+                public void stateChanged(ChangeEvent e) {
+                    if (tempoSpinnerChangedAction != null)
+                        tempoSpinnerChangedAction.run();
+                }
+            });
+        }
 
         resetTempoButton.addActionListener(e -> {
             if (resetTempoAction != null)
                 resetTempoAction.run();
         });
 
-        timeSignatureField.addPropertyChangeListener("value", e -> {
-            if (e.getOldValue() != null && e.getOldValue().equals(e.getNewValue()))
-                return;
+        if (ICompileConstants.SHOW_METER_TEXTBOX) {
+            timeSignatureField.addPropertyChangeListener("value", e -> {
+                if (e.getOldValue() != null && e.getOldValue().equals(e.getNewValue()))
+                    return;
 
-            if (timeSignatureFieldChangedAction != null)
-                timeSignatureFieldChangedAction.run();
-        });
+                if (timeSignatureFieldChangedAction != null)
+                    timeSignatureFieldChangedAction.run();
+            });
+        }
 
         if (ICompileConstants.SHOW_KEY_FIELD) {
             keySignatureField.addPropertyChangeListener("value", e -> {
@@ -175,7 +188,7 @@ public class SongExportSettingsPanel extends JPanel {
                 dynamicChordModeChangedAction.run();
         });
 
-        tempoOnlyFirstCheckBox.addActionListener(e -> {
+        countOnlyTempoChangesFromFirstTrackCheckBox.addActionListener(e -> {
             if (countOnlyTempoChangesFromFirstTrackSettingsChanged != null)
                 countOnlyTempoChangesFromFirstTrackSettingsChanged.run();
         });
@@ -216,7 +229,7 @@ public class SongExportSettingsPanel extends JPanel {
 
         addRow(row++, timingModeCombo);
         addRow(row++, dynamicChordModeCombo);
-        addRow(row++, tempoOnlyFirstCheckBox);
+        addRow(row++, countOnlyTempoChangesFromFirstTrackCheckBox);
         addRow(row++, exportSuccessfulLabel);
         addRow(row, exportButton);
     }
@@ -357,10 +370,6 @@ public class SongExportSettingsPanel extends JPanel {
         }
     }
 
-    public void deactivateListeners() {
-
-    }
-
     public void setActionListener(SongExportSettingsListener listener) {
         this.actionListener = listener;
     }
@@ -378,11 +387,7 @@ public class SongExportSettingsPanel extends JPanel {
         }
     }
 
-    /**
-     * Gets the current transpose value from the transpose spinner.
-     *
-     * @return the current transpose value
-     */
+    // Transpose methods
     public int getTranspose() {
         return (Integer) transposeSpinner.getValue();
     }
@@ -391,6 +396,11 @@ public class SongExportSettingsPanel extends JPanel {
         transposeSpinner.setValue(transpose);
     }
 
+    public void setTransposeSpinnerEnabled(boolean enabled) {
+        transposeSpinner.setEnabled(enabled);
+    }
+
+    // Tempo methods
     public int getTempo() {
         return (Integer) tempoSpinner.getValue();
     }
@@ -399,6 +409,11 @@ public class SongExportSettingsPanel extends JPanel {
         tempoSpinner.setValue(tempo);
     }
 
+    public void setTempoSpinnerEnabled(boolean enabled) {
+        tempoSpinner.setEnabled(enabled);
+    }
+
+    // Time signature methods
     public TimeSignature getTimeSignature() {
         return (TimeSignature) timeSignatureField.getValue();
     }
@@ -407,6 +422,11 @@ public class SongExportSettingsPanel extends JPanel {
         timeSignatureField.setValue(timeSignature);
     }
 
+    public void setTimeSignatureFieldEnabled(boolean enabled) {
+        timeSignatureField.setEnabled(enabled);
+    }
+
+    // Key signature methods
     public KeySignature getKeySignature() {
         return (KeySignature) keySignatureField.getValue();
     }
@@ -415,6 +435,11 @@ public class SongExportSettingsPanel extends JPanel {
         keySignatureField.setValue(keySignature);
     }
 
+    public void setKeySignatureFieldEnabled(boolean enabled) {
+        keySignatureField.setEnabled(enabled);
+    }
+
+    // Timing mode methods
     public TimingMode getTimingMode() {
         return (TimingMode) timingModeCombo.getSelectedItem();
     }
@@ -427,6 +452,11 @@ public class SongExportSettingsPanel extends JPanel {
         timingModeCombo.setToolTipText(tooltip);
     }
 
+    public void setTimingModeComboEnabled(boolean enabled) {
+        timingModeCombo.setEnabled(enabled);
+    }
+
+    // Dynamic chord mode methods
     public Chord.CalcDynamics getDynamicChordMode() {
         return (Chord.CalcDynamics) dynamicChordModeCombo.getSelectedItem();
     }
@@ -435,12 +465,58 @@ public class SongExportSettingsPanel extends JPanel {
         dynamicChordModeCombo.setSelectedItem(dynamicsMode);
     }
 
+    public void setDynamicChordModeComboEnabled(boolean enabled) {
+        dynamicChordModeCombo.setEnabled(enabled);
+    }
+
+    // Count only tempo changes from first track methods
     public boolean isCountOnlyTempoChangesFromFirstTrackSelected() {
-        return tempoOnlyFirstCheckBox.isSelected();
+        return countOnlyTempoChangesFromFirstTrackCheckBox.isSelected();
     }
 
-    public void setCountOnlyTempoChangesFromFirstTrackAsSelected(boolean selected) {
-        tempoOnlyFirstCheckBox.setSelected(selected);
+    public void setCountOnlyTempoChangesFromFirstTrackSelected(boolean selected) {
+        countOnlyTempoChangesFromFirstTrackCheckBox.setSelected(selected);
     }
 
+    public void setCountOnlyTempoChangesFromFirstTrackCheckBoxEnabled(boolean enabled) {
+        countOnlyTempoChangesFromFirstTrackCheckBox.setEnabled(enabled);
+    }
+
+    // Export button methods
+    public void updateExportButton(boolean exportAsAbc) {
+        String exportText = exportAsAbc ? UIText.get("maestro.export.abc.as") : UIText.get("maestro.export.abc");
+        if (!exportButton.getText().equals(exportText)) {
+            exportButton.setText(exportText);
+            exportButton.repaint();
+        }
+    }
+
+    public void setExportButtonEnabled(boolean enabled) {
+        exportButton.setEnabled(enabled);
+    }
+
+    public void setResetTempoButtonEnabledandVisible(boolean enabled) {
+        resetTempoButton.setEnabled(enabled);
+        resetTempoButton.setVisible(enabled);
+    }
+
+    // Export successful label methods
+    public void setExportSuccessfulLabelText(String name) {
+        exportSuccessfulLabel.setText(name);
+    }
+
+    public void setExportSuccessfulLabelToolTipText(String string) {
+        exportSuccessfulLabel.setToolTipText(string);
+    }
+
+    public void setExportSuccessfulLabelVisible(boolean b) {
+        exportSuccessfulLabel.setVisible(b);
+    }
+
+    public void commitAllFields() throws ParseException {
+        tempoSpinner.commitEdit();
+        transposeSpinner.commitEdit();
+        timeSignatureField.commitEdit();
+        keySignatureField.commitEdit();
+    }
 }
