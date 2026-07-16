@@ -18,7 +18,7 @@ public final class I18n {
     private static final String BUNDLE_NAME = "uitext";
     private static volatile ResourceBundle RESOURCE_BUNDLE; // if the locale is changed at runtime, reload the resource
                                                             // bundle accordingly
-    private static volatile boolean initialized;
+    private static boolean initialized = false;
 
     private I18n() {
         // Prevent instantiation
@@ -28,12 +28,15 @@ public final class I18n {
         if (initialized) {
             return;
         }
+        if (RESOURCE_BUNDLE == null) {
+            throw new IllegalStateException("Unable to initialize I18n");
+        }
         reload();
         initialized = true;
     }
 
     public static String get(@PropertyKey(resourceBundle = BUNDLE_NAME) String key, Object... args) {
-        if (RESOURCE_BUNDLE == null) {
+        if (!initialized) {
             throw new IllegalStateException("I18n has not been initialized");
         }
         try {
@@ -63,9 +66,12 @@ public final class I18n {
      */
     public static synchronized void reload() {
         try {
-            RESOURCE_BUNDLE = ResourceBundle.getBundle(
+            ResourceBundle bundle = ResourceBundle.getBundle(
                     BUNDLE_NAME,
                     LocaleManager.getLocale());
+
+            RESOURCE_BUNDLE = bundle;
+
         } catch (MissingResourceException e) {
             LOGGER.log(Level.SEVERE, "Failed to reload resource bundle for locale: " + LocaleManager.getLocale(), e);
         }

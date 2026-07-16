@@ -13,9 +13,9 @@ import javax.swing.SwingUtilities;
 import com.digero.maestro.MaestroMain;
 
 /**
- * Handles UI text localization and retrieval.
+ * Manages the application's current locale and locale preferences.
  *
- * Initialize LocaleManager before creating Swing UI components.
+ * Initialize before creating Swing UI components.
  * LocaleManager.init() may show a language selection dialog on first run,
  * so it should be called from the application startup sequence.
  */
@@ -33,7 +33,7 @@ public final class LocaleManager {
             Locale.GERMAN);
 
     private static volatile Locale locale = Locale.ENGLISH;
-    private static volatile boolean initialized;
+    private static boolean initialized = false;
 
     private static final String LANGUAGE_SELECTION_MESSAGE = "Language/Langue/Sprache";
     private static final String LANGUAGE_SELECTION_TITLE = "Maestro Language";
@@ -54,8 +54,18 @@ public final class LocaleManager {
 
         String lang = PREFS.get("locale", null);
 
+        // Migrate legacy locale setting "US" to Locale.ENGLISH
+        final String LEGACY_LOCALE_US = "US";
+        if (LEGACY_LOCALE_US.equalsIgnoreCase(lang)) {
+            LOGGER.log(Level.INFO, "Migrating legacy locale setting US to " + Locale.ENGLISH);
+            lang = Locale.ENGLISH.getLanguage();
+            PREFS.put("locale", lang);
+        }
+
+        final String selectedLanguage = lang;
+
         locale = SUPPORTED_LOCALES.stream()
-                .filter(l -> l.getLanguage().equals(lang))
+                .filter(l -> l.getLanguage().equals(selectedLanguage))
                 .findFirst()
                 .orElseGet(() -> {
                     Locale selected = promptUserForLocale();
