@@ -67,4 +67,11 @@ public final class Settings {
         store.clear();
     }
 
+    /**
+     * Flushes any changes to the underlying storage.
+     */
+    public void flush() {
+        store.flush();
+    }
+
 }
