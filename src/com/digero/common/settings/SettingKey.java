@@ -13,11 +13,14 @@ public final class SettingKey<T> {
     private final boolean hasDefaultValue;
 
     /**
-     * Private constructor to enforce the use of factory methods.
-     * 
-     * @param key          the key for the setting
-     * @param converter    the converter for the setting
-     * @param defaultValue the default value for the setting
+     * Constructs a new SettingKey with the specified key, default value, and
+     * converter.
+     *
+     * @param key             the key for the setting
+     * @param defaultValue    the default value for the setting
+     * @param converter       the converter for the setting
+     * @param hasDefaultValue whether this SettingKey has a default value
+     * @exception NullPointerException if key or converter is null
      */
     private SettingKey(String key, T defaultValue, SettingConverter<T> converter, boolean hasDefaultValue) {
         this.key = Objects.requireNonNull(key, "key must not be null");
@@ -32,17 +35,8 @@ public final class SettingKey<T> {
      * @param key       the key for the setting
      * @param converter the converter for the setting
      * @return a new SettingKey without a default value
-     * @exception NullPointerException if {@code key} or {@code converter} is null
-     * @apiNote This method is a convenience method for creating a
-     *          {@link SettingKey}
-     *          without a default value.<br>
-     *          If you want to create a SettingKey with a
-     *          default value, use the {@link #of(String, Object, SettingConverter)}
-     *          method instead.
      */
     public static <T> SettingKey<T> of(String key, SettingConverter<T> converter) {
-        Objects.requireNonNull(key, "key must not be null");
-        Objects.requireNonNull(converter, "converter must not be null");
         return new SettingKey<>(key, null, converter, false);
     }
 
@@ -54,16 +48,8 @@ public final class SettingKey<T> {
      * @param defaultValue the default value for the setting
      * @param <T>          the type of the setting value
      * @return a new SettingKey with the specified default value
-     * @exception NullPointerException if {@code key} or {@code converter} is null
-     * @apiNote This method is a convenience method for creating a
-     *          {@link SettingKey}
-     *          with a default value.<br>
-     *          If you want to create a SettingKey without a default value, use the
-     *          {@link #of(String, SettingConverter)} method instead.
      */
     public static <T> SettingKey<T> of(String key, T defaultValue, SettingConverter<T> converter) {
-        Objects.requireNonNull(key, "key must not be null");
-        Objects.requireNonNull(converter, "converter must not be null");
         return new SettingKey<>(key, defaultValue, converter, true);
     }
 
