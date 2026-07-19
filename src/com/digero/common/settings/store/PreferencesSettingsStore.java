@@ -27,9 +27,10 @@ public final class PreferencesSettingsStore implements SettingsStore {
      *
      * @param key the setting key to retrieve
      * @param <T> the type of the setting value
-     * @return the value of the setting, or the default value if not found
+     * @return the value of the setting, the default value if no value is set,
+     *         otherwise null if no default value is defined
      * @throws NullPointerException if {@code key} is null
-     * @throws SettingsException    if an error occurs while retrieving the setting
+     * @throws SettingsException    if an error occurs while deserializing the value
      */
     @Override
     public <T> T get(SettingKey<T> key) {
@@ -37,10 +38,12 @@ public final class PreferencesSettingsStore implements SettingsStore {
         try {
             String value = preferences.get(key.getKey(), null);
             if (value == null) {
-                return key.getDefaultValue();
+                return key.hasDefaultValue()
+                        ? key.getDefaultValue()
+                        : null;
             }
             return key.deserialize(value);
-        } catch (IllegalStateException | IllegalArgumentException e) {
+        } catch (RuntimeException e) {
             throw new SettingsException("Failed to get setting for key: " + key.getKey(), e);
         }
     }
@@ -58,7 +61,7 @@ public final class PreferencesSettingsStore implements SettingsStore {
         Objects.requireNonNull(key, "key cannot be null");
         try {
             return preferences.get(key.getKey(), null) != null;
-        } catch (IllegalStateException | IllegalArgumentException e) {
+        } catch (RuntimeException e) {
             throw new SettingsException("Failed to check if setting exists for key: " + key.getKey(), e);
         }
     }
@@ -80,7 +83,7 @@ public final class PreferencesSettingsStore implements SettingsStore {
                 return;
             }
             preferences.put(key.getKey(), key.serialize(value));
-        } catch (IllegalStateException | IllegalArgumentException e) {
+        } catch (RuntimeException e) {
             throw new SettingsException("Failed to set setting for key: " + key.getKey(), e);
         }
     }
@@ -97,7 +100,7 @@ public final class PreferencesSettingsStore implements SettingsStore {
         Objects.requireNonNull(key, "key cannot be null");
         try {
             preferences.remove(key.getKey());
-        } catch (IllegalStateException | IllegalArgumentException e) {
+        } catch (RuntimeException e) {
             throw new SettingsException("Failed to remove setting for key: " + key.getKey(), e);
         }
     }
@@ -111,7 +114,7 @@ public final class PreferencesSettingsStore implements SettingsStore {
     public void clear() {
         try {
             preferences.clear();
-        } catch (BackingStoreException | IllegalStateException e) {
+        } catch (BackingStoreException | RuntimeException e) {
             throw new SettingsException("Failed to clear preferences", e);
         }
     }

@@ -23,10 +23,10 @@ public class InMemorySettingsStore implements SettingsStore {
      *
      * @param key the setting key to retrieve
      * @param <T> the type of the setting value
-     * @return the value of the setting, or the default value if not found
+     * @return the value of the setting, the default value if no value is set,
+     *         otherwise null if no default value is defined
      * @throws NullPointerException if {@code key} is null
-     * @throws SettingsException    if an error occurs while deserializing the
-     *                              setting
+     * @throws SettingsException    if an error occurs while deserializing the value
      */
     @Override
     public <T> T get(SettingKey<T> key) {
@@ -34,11 +34,15 @@ public class InMemorySettingsStore implements SettingsStore {
 
         String value = values.get(key.getKey());
         if (value == null) {
-            return key.getDefaultValue();
+            // Return the default value if the key has a default value, otherwise return
+            // null
+            return key.hasDefaultValue()
+                    ? key.getDefaultValue()
+                    : null;
         }
         try {
             return key.deserialize(value);
-        } catch (ClassCastException e) {
+        } catch (RuntimeException e) {
             throw new SettingsException("Failed to deserialize setting for key: " + key.getKey(), e);
         }
     }
@@ -69,13 +73,14 @@ public class InMemorySettingsStore implements SettingsStore {
     public <T> void set(SettingKey<T> key, T value) {
         Objects.requireNonNull(key, "key cannot be null");
 
+        // If the value is null, remove the key from the store
         if (value == null) {
             remove(key);
             return;
         }
         try {
             values.put(key.getKey(), key.serialize(value));
-        } catch (UnsupportedOperationException | ClassCastException | IllegalArgumentException e) {
+        } catch (RuntimeException e) {
             throw new SettingsException("Failed to serialize setting for key: " + key.getKey(), e);
         }
     }

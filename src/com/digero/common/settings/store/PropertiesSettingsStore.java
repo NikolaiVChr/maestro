@@ -37,7 +37,8 @@ public final class PropertiesSettingsStore implements SettingsStore {
      *
      * @param <T> the type of the setting value
      * @param key the setting key
-     * @return the value associated with the key, or the default value if not found
+     * @return the value associated with the key, the default value if not found,
+     *         otherwise null if no default value is defined
      * @throws NullPointerException if {@code key} is null
      * @throws SettingsException    if an error occurs while deserializing the value
      */
@@ -47,12 +48,14 @@ public final class PropertiesSettingsStore implements SettingsStore {
         String value = properties.getProperty(key.getKey());
 
         if (value == null) {
-            return key.getDefaultValue();
+            return key.hasDefaultValue()
+                    ? key.getDefaultValue()
+                    : null;
         }
 
         try {
             return key.deserialize(value);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             throw new SettingsException(
                     "Failed to deserialize setting: " + key.getKey(), e);
         }
@@ -87,8 +90,12 @@ public final class PropertiesSettingsStore implements SettingsStore {
             remove(key);
             return;
         }
-
-        properties.setProperty(key.getKey(), key.serialize(value));
+        try {
+            properties.setProperty(key.getKey(), key.serialize(value));
+        } catch (RuntimeException e) {
+            throw new SettingsException(
+                    "Failed to serialize setting: " + key.getKey(), e);
+        }
     }
 
     /**
