@@ -13,18 +13,24 @@ public final class SettingKey<T> {
     private final boolean hasDefaultValue;
 
     /**
-     * Constructs a new SettingKey with the specified key, default value, and
-     * converter.
+     * Constructs a new SettingKey with the specified key, default value, converter,
+     * and a flag indicating whether it has a default value.
      *
      * @param key             the key for the setting
      * @param defaultValue    the default value for the setting
      * @param converter       the converter for the setting
-     * @param hasDefaultValue whether this SettingKey has a default value
-     * @exception NullPointerException if key or converter is null
+     * @param hasDefaultValue true if this SettingKey has a default value, false
+     *                        otherwise
      */
     private SettingKey(String key, T defaultValue, SettingConverter<T> converter, boolean hasDefaultValue) {
         this.key = Objects.requireNonNull(key, "key must not be null");
         this.converter = Objects.requireNonNull(converter, "converter must not be null");
+
+        // If hasDefaultValue is true, ensure that defaultValue is not null
+        if (hasDefaultValue) {
+            Objects.requireNonNull(defaultValue, "defaultValue must not be null");
+        }
+
         this.defaultValue = defaultValue;
         this.hasDefaultValue = hasDefaultValue;
     }
