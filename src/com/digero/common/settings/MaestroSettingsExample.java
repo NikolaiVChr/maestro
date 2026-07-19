@@ -118,6 +118,7 @@ public class MaestroSettingsExample {
      * This inner class demonstrates how to initialize and use the settings
      * manager.
      */
+    @SuppressWarnings("unused")
     private static class UsageExample {
         public void exampleUsage() {
             // Initialize the settings manager with a SettingsStore implementation

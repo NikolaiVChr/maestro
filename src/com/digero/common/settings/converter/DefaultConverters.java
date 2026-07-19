@@ -11,20 +11,24 @@ public final class DefaultConverters {
     }
 
     public static final SettingConverter<String> STRING = new SettingConverter<>() {
+        @Override
         public String deserialize(String value) {
             return value;
         }
 
+        @Override
         public String serialize(String value) {
             return value;
         }
     };
 
     public static final SettingConverter<Integer> INTEGER = new SettingConverter<>() {
+        @Override
         public Integer deserialize(String value) {
             return Integer.valueOf(value);
         }
 
+        @Override
         public String serialize(Integer value) {
             return String.valueOf(value);
         }
@@ -43,23 +47,26 @@ public final class DefaultConverters {
     };
 
     public static final SettingConverter<Double> DOUBLE = new SettingConverter<>() {
+        @Override
         public Double deserialize(String value) {
             return Double.valueOf(value);
         }
 
+        @Override
         public String serialize(Double value) {
             return String.valueOf(value);
         }
     };
 
     public static final SettingConverter<Locale> LOCALE = new SettingConverter<>() {
+        @Override
         public Locale deserialize(String value) {
             return Locale.forLanguageTag(value);
         }
 
+        @Override
         public String serialize(Locale value) {
             return value.toLanguageTag();
         }
     };
-
 }
