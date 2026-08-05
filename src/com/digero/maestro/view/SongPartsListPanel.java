@@ -178,12 +178,6 @@ public class SongPartsListPanel extends JPanel implements IDiscardable, TableLay
 		add(item);
 	}
 
-	private void updateTrackNumbers() {
-		for (PartsListItem item : parts) {
-			updatePartSoloMute(item.getPart());
-		}
-	}
-
 	public void selectPart(int idx) {
 		if (idx < 0) {
 			selectedIndex = idx;
