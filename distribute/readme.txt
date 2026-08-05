@@ -57,6 +57,9 @@ Changelog
 This changelog is only partial, to see all the way back to v1.0.0 go here:
   https://maestro.miraheze.org/wiki/Version_history
 
+Version 4.6.21
+- Fixed that Jaunty FX could save empty note assignments.
+
 Version 4.6.20
 - Stop scaling notes in drum/fx panels vertically.
 - Added leading-edge note color markers to distinguish sequential notes.
