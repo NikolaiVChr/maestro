@@ -681,6 +681,32 @@ public class SectionEditor {
 				addScrollToTabs();
 			}
 			
+			@Deprecated
+			private void addTitlesToTabs() {
+				miscPanel.add(new JLabel(UIText.get("maestro.sectionedit.enable")), "0, 0, c, c");
+				miscPanel.add(new JLabel(UIText.get("maestro.sectionedit.from.bar")), "1, 0, c, c");
+				miscPanel.add(new JLabel(UIText.get("maestro.sectionedit.to.bar")), "2, 0, c, c");
+				miscPanel.add(new JLabel(UIText.get("maestro.sectionedit.octave")), "3, 0, c, c");
+				miscPanel.add(new JLabel(UIText.get("maestro.sectionedit.volume")), "4, 0, c, c");
+				miscPanel.add(new JLabel(UIText.get("maestro.sectionedit.silence")), "5, 0, c, c");
+				miscPanel.add(new JLabel(UIText.get("maestro.sectionedit.fade")), "6, 0, c, c");
+				miscPanel.add(new JLabel(UIText.get("maestro.sectionedit.reset.vol")), "7, 0, c, c");
+				doublingPanel.add(new JLabel(UIText.get("maestro.sectionedit.enable")), "0, 0, c, c");
+				doublingPanel.add(new JLabel(UIText.get("maestro.sectionedit.from.bar")), "1, 0, c, c");
+				doublingPanel.add(new JLabel(UIText.get("maestro.sectionedit.to.bar")), "2, 0, c, c");
+				doublingPanel.add(new JLabel(UIText.get("maestro.sectionedit.2.down")), "3, 0, c, c");
+				doublingPanel.add(new JLabel(UIText.get("maestro.sectionedit.1.down")), "4, 0, c, c");
+				doublingPanel.add(new JLabel(UIText.get("maestro.sectionedit.1.up")),   "5, 0, c, c");
+				doublingPanel.add(new JLabel(UIText.get("maestro.sectionedit.2.up")),   "6, 0, c, c");
+				rangePanel.add(new JLabel(UIText.get("maestro.sectionedit.enable")), "0, 0, c, c");
+				rangePanel.add(new JLabel(UIText.get("maestro.sectionedit.from.bar")), "1, 0, c, c");
+				rangePanel.add(new JLabel(UIText.get("maestro.sectionedit.to.bar")), "2, 0, c, c");
+				rangePanel.add(new JLabel(UIText.get("maestro.sectionedit.low.limit")), "3, 0, c, c");
+				rangePanel.add(new JLabel(UIText.get("maestro.sectionedit.high.limit")), "4, 0, c, c");
+				// column 5 is helper text for note limits
+				rangePanel.add(new JLabel(UIText.get("maestro.sectionedit.legato")), "6, 0, c, c");
+			}
+			
 			private void addTitlesToTabPanels() {
 				miscPanelM.add(new JLabel(UIText.get("maestro.sectionedit.enable")), "0, 0, c, c");
 				miscPanelM.add(new JLabel(UIText.get("maestro.sectionedit.from.bar")), "1, 0, c, c");
@@ -760,7 +786,7 @@ public class SectionEditor {
 			private void enableDueToPercussion(AbcPart abcPart, int track) {
 				boolean perc = abcPart.getInstrument().isPercussion;
 				boolean fx = abcPart.isFX(track);
-                // boolean isJauntyFX = fx && abcPart.isJauntyHandKnellsPart();
+                boolean isJauntyFX = fx && abcPart.isJauntyHandKnellsPart();
                 boolean isStudentFX = fx && abcPart.isStudentPart();
                 boolean limitsEnabled = !perc && !fx;
 

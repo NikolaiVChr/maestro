@@ -1,8 +1,12 @@
 package com.digero.maestro.view;
 
 import java.util.Objects;
+
 import org.jetbrains.annotations.NonNls;
+import org.jetbrains.annotations.Nullable;
+
 import com.digero.common.view.UIText;
+import com.digero.maestro.abc.AbcSong;
 
 public enum TimingMode {
         ORGANIC_MULTISTAGE2 (UIText.get("maestro.timing.organic.multi.stage.2"),true, true, false,false,false,"Organic Multistage 2", true),
