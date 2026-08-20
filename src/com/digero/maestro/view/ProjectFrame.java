@@ -157,8 +157,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private RecentlyOpenedList recentlyOpenedList;
 
 	private FileFilterDropListener dropListener = null;
-
-	private JPanel settingsPanel;
+	
 	private JDialog themeEditorDialog;
 
 	private ArrangementView arrangementView;
@@ -875,7 +874,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		if (SHOW_COLORIZER)
 			partsListAndColorizer.add(new Colorizer(arrangementView), BorderLayout.SOUTH);
 		abcPartsAndSettings.add(partsListAndColorizer, BorderLayout.CENTER);
-		abcPartsAndSettings.add(settingsPanel, BorderLayout.SOUTH);
+		abcPartsAndSettings.add(songExportSettingsPanel, BorderLayout.SOUTH);
 
 		int splitPanePos = prefs.getInt("splitPanePos", -1);
 

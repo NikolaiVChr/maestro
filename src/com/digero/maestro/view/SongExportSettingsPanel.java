@@ -174,6 +174,8 @@ public class SongExportSettingsPanel extends JPanel {
                 new double[] {});
         this.layout.setVGap(VGAP);
         this.layout.setHGap(HGAP);
+        setLayout(this.layout);
+
         setBorder(BorderFactory.createTitledBorder(UIText.get("maestro.export.settings")));
         int row = 0;
         addRow(row++, createJLabel(UIText.get("maestro.transpose"), null, null), transposeSpinner);
@@ -338,10 +340,10 @@ public class SongExportSettingsPanel extends JPanel {
      * @param components the components to add to the row
      */
     private void addRow(int row, Component... components) {
+        layout.insertRow(row, TableLayoutConstants.PREFERRED);
         for (int col = 0; col < components.length; col++) {
             Component comp = components[col];
-            layout.addLayoutComponent(comp, new TableLayoutConstraints(col, row));
-            add(comp);
+            add(comp, new TableLayoutConstraints(col, row));
         }
     }
 
