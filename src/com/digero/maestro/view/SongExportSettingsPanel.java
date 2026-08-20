@@ -180,16 +180,16 @@ public class SongExportSettingsPanel extends JPanel {
         int row = 0;
         addRow(row++, createJLabel(UIText.get("maestro.transpose"), null, null), transposeSpinner);
         addRow(row++, createJLabel(UIText.get("maestro.tempo"), null, null), tempoSpinner, resetTempoButton);
-        addRow(row++, createJLabel(UIText.get("maestro.meter"), null, null), timeSignatureField);
+        addLabelledSpanningRow(row++, createJLabel(UIText.get("maestro.meter"), null, null), timeSignatureField);
 
         if (ICompileConstants.SHOW_KEY_FIELD)
-            addRow(row++, createJLabel(UIText.get("maestro.key"), null, null), keySignatureField);
+            addLabelledSpanningRow(row++, createJLabel(UIText.get("maestro.key"), null, null), keySignatureField);
 
-        addRow(row++, timingModeCombo);
-        addRow(row++, dynamicChordModeCombo);
-        addRow(row++, countOnlyTempoChangesFromFirstTrackCheckBox);
-        addRow(row++, exportSuccessfulLabel);
-        addRow(row, exportButton);
+        addSpanningRow(row++, timingModeCombo);
+        addSpanningRow(row++, dynamicChordModeCombo);
+        addSpanningRow(row++, countOnlyTempoChangesFromFirstTrackCheckBox);
+        addSpanningRow(row++, exportSuccessfulLabel);
+        addSpanningRow(row, exportButton);
     }
 
     /**
@@ -345,6 +345,40 @@ public class SongExportSettingsPanel extends JPanel {
             Component comp = components[col];
             add(comp, new TableLayoutConstraints(col, row));
         }
+    }
+
+    /**
+     * Adds a component that spans multiple columns in the specified row.
+     * 
+     * @param row       the row index to add the component to
+     * @param component the component to add that spans multiple columns
+     */
+    private void addSpanningRow(int row, Component component) {
+        layout.insertRow(row, TableLayoutConstants.PREFERRED);
+        add(component,
+                new TableLayoutConstraints(
+                        0, row,
+                        2, row,
+                        TableLayoutConstants.LEFT, TableLayoutConstants.CENTER));
+    }
+
+    /**
+     * Adds a labeled component that spans multiple columns in the specified row.
+     * 
+     * @param row       the row index to add the components to
+     * @param label     the label component
+     * @param component the component to add that spans multiple columns
+     */
+    private void addLabelledSpanningRow(int row, Component label, Component component) {
+        layout.insertRow(row, TableLayoutConstants.PREFERRED);
+
+        add(label, new TableLayoutConstraints(0, row));
+
+        add(component, new TableLayoutConstraints(
+                1, row,
+                2, row,
+                TableLayoutConstants.LEFT,
+                TableLayoutConstants.FULL));
     }
 
     public void setActionListener(SongExportSettingsListener listener) {
