@@ -1,12 +1,14 @@
 name: "CodeQL Maestro"
 
 on:
-  push:
-    branches: [ "java24" ]
-  pull_request:
-    branches: [ "java24" ]
+  #push:
+  #  branches: [ "java24" ]
+  #pull_request:
+  #  branches: [ "java24" ]
   #schedule:
   #  - cron: '43 12 * * 4'
+  workflow_dispatch:
+    branches: [ "java24" ]
 
 jobs:
   analyze:
