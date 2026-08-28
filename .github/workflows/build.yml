@@ -124,8 +124,19 @@ jobs:
           # Append the VirusTotal summary if the scan step produced one.
           if [ -f vt-notes.md ]; then { echo; cat vt-notes.md; } >> release-notes.md; fi
 
+          # Only replace an existing release if it is still a draft; never
+          # clobber one that has already been published.
+          if state=$(gh release view "$tag" --json isDraft -q .isDraft 2>/dev/null); then
+            if [ "$state" = "true" ]; then
+              echo "Existing draft $tag found - replacing it."
+              gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
+            else
+              echo "::warning::Release $tag is already published; leaving it untouched and skipping upload."
+              exit 0
+            fi
+          fi
+
           echo "Releasing Maestro $ver as draft $tag"
-          gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
           gh release create "$tag" distribute/output/*.msi distribute/output/*.zip \
             --draft \
             --title "Maestro $ver" \
