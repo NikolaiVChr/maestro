@@ -150,7 +150,7 @@ jobs:
           ' distribute/readme.txt)
 
           # Fall back to the whole file if the section was not found.
-          if [ -z "$notes" ]; then notes=$(sed 's/\r$//' distribute/readme.txt); fi
+          if [ -z "$notes" ]; then notes="See the attached readme.txt for release notes."; fi
 
           # Lead with an automated-build note, then this version's changelog.
           {
