@@ -1,0 +1,46 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build MSI + ZIP (Windows, Ant)
+    runs-on: windows-latest
+
+    # MAVEN_ARGS passes batch mode
+    env:
+      MAVEN_ARGS: -B
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'      # bump to 25 if that's the JDK you package with
+          cache: maven
+        # setup-java exports JAVA_HOME, which build.xml reads via ${env.JAVA_HOME}
+        # for its javac / jpackage.exe calls.
+
+      # Ant (1.10.x) and Maven (3.9.x) are preinstalled on windows-latest, so no
+      # setup step is needed for them. Distribute runs mvn clean install, then
+      # jpackage + WiX to produce the MSI and ZIP.
+      - name: Run Ant Distribute
+        working-directory: distribute
+        run: ant Distribute
+
+      - name: Upload installer artifacts
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: installer
+          path: |
+            distribute/output/*.msi
+            distribute/output/*.zip
+          if-no-files-found: error
