@@ -1,6 +1,8 @@
-name: Build Draft Release
+name: Build
 
 on:
+  push:
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
@@ -12,7 +14,8 @@ jobs:
     runs-on: windows-latest
 
     env:
-      MAVEN_ARGS: -B      # setup-java also appends -ntp to quiet Maven transfer logs
+      MAVEN_ARGS: -B                                   # setup-java also appends -ntp
+      VT_API_KEY: ${{ secrets.VIRUSTOTAL_API_KEY }}    # empty on forks -> scan step is skipped
 
     steps:
       - name: Check out repository
@@ -22,7 +25,7 @@ jobs:
         uses: actions/setup-java@v5
         with:
           distribution: oracle    # Oracle JDK (No-Fee Terms license), includes jmods
-          java-version: '25'  # if Oracle later drops 25.0.4, use '25' for latest
+          java-version: '25.0.4'  # if Oracle later drops this archived patch, use '25' for latest
           cache: maven
         # setup-java exports JAVA_HOME, which build.xml reads via ${env.JAVA_HOME}.
 
@@ -32,10 +35,59 @@ jobs:
         working-directory: distribute
         run: ant Distribute
 
-      # Attaches the MSI + ZIP to a versioned draft release. The version is read
-      # from the produced zip name (Maestro_v<version>.zip), which Ant derives from
-      # resources/com/digero/maestro/version.properties. gh is the official GitHub
-      # CLI, preinstalled on the runner.
+      # Uploads each artifact to VirusTotal via its REST API (no third-party action).
+      # Informational only: it records a permalink + verdict, never fails the build.
+      # Skipped automatically when the VIRUSTOTAL_API_KEY secret is not set.
+      - name: Scan artifacts on VirusTotal
+        if: env.VT_API_KEY != ''
+        shell: bash
+        run: |
+          echo "## VirusTotal scan" > vt-notes.md
+
+          scan () {
+            f="$1"; name=$(basename "$f")
+            sha=$(sha256sum "$f" | cut -d' ' -f1)
+            link="https://www.virustotal.com/gui/file/$sha"
+
+            # 1) request a large-file upload URL (handles any size up to 650 MB)
+            up=$(curl -sS -H "x-apikey: $VT_API_KEY" \
+                   https://www.virustotal.com/api/v3/files/upload_url | jq -r '.data')
+
+            # 2) upload the file and grab the analysis id
+            aid=$(curl -sS -H "x-apikey: $VT_API_KEY" \
+                   --form "file=@$f" "$up" | jq -r '.data.id // empty')
+
+            if [ -z "$aid" ]; then
+              echo "- \`$name\` — upload to VirusTotal failed" >> vt-notes.md
+              return
+            fi
+
+            # 3) poll briefly for a verdict; never fail the build if it is slow
+            stats=""
+            for _ in $(seq 1 9); do
+              sleep 20
+              resp=$(curl -sS -H "x-apikey: $VT_API_KEY" \
+                       "https://www.virustotal.com/api/v3/analyses/$aid")
+              if [ "$(echo "$resp" | jq -r '.data.attributes.status')" = "completed" ]; then
+                stats=$(echo "$resp" | jq -r '.data.attributes.stats
+                          | "\(.malicious) malicious / \(.suspicious) suspicious / \(.harmless + .undetected) clean"')
+                break
+              fi
+            done
+
+            if [ -n "$stats" ]; then
+              echo "- [\`$name\`]($link) — $stats" >> vt-notes.md
+            else
+              echo "- [\`$name\`]($link) — analysis still running; open the link for results" >> vt-notes.md
+            fi
+          }
+
+          for f in distribute/output/*.msi distribute/output/*.zip; do scan "$f"; done
+          cat vt-notes.md >> "$GITHUB_STEP_SUMMARY"
+
+      # Attaches the MSI + ZIP to a versioned draft release, using this version's
+      # changelog section of readme.txt (plus the VirusTotal summary, if any) as the
+      # release notes. gh is the official GitHub CLI, preinstalled on the runner.
       - name: Publish to draft release
         shell: bash
         env:
@@ -44,32 +96,39 @@ jobs:
           zip=$(ls distribute/output/Maestro_v*.zip | head -n1)
           ver=$(basename "$zip" .zip | sed -E 's/^Maestro_v//')
           tag="v$ver"
-          
+
           # Extract this version's changelog block from readme.txt:
           #  - strip trailing CR (readme is CRLF)
-          #  - start after the "Version <ver>" header line (exact field match)
-          #  - stop at the next "Version x.y.z" header or end of file
+          #  - start after the version header line (matches "Version X.Y.Z",
+          #    "## X.Y.Z", "## Version X.Y.Z", "vX.Y.Z", ...)
+          #  - stop at the next version header or end of file
           notes=$(awk -v ver="$ver" '
             { sub(/\r$/, "") }
-            # A version header line: optional leading #s, optional "Version "/"v",
-            # then the number alone (e.g. "Version 4.6.22", "## 4.6.22", "v4.6.22").
             /^#*[[:space:]]*([Vv]ersion[[:space:]]+|[vV])?[0-9]+\.[0-9]+([.][0-9]+)?[[:space:]]*$/ {
               v = $0; gsub(/[^0-9.]/, "", v)
-              if (v == ver)  { grab = 1; next }   # start of our section
-              else if (grab) { exit }             # next section reached
+              if (v == ver)  { grab = 1; next }
+              else if (grab) { exit }
               else           { next }
             }
             grab { print }
           ' distribute/readme.txt)
-          
+
           # Fall back to the whole file if the section was not found.
           if [ -z "$notes" ]; then notes=$(sed 's/\r$//' distribute/readme.txt); fi
-          printf '%s\n' "$notes" > release-notes.md
-          
+
+          # Lead with an automated-build note, then this version's changelog.
+          {
+            echo "_Automated GitHub release build (commit ${GITHUB_SHA::7})._"
+            echo
+            printf '%s\n' "$notes"
+          } > release-notes.md
+
+          # Append the VirusTotal summary if the scan step produced one.
+          if [ -f vt-notes.md ]; then { echo; cat vt-notes.md; } >> release-notes.md; fi
+
           echo "Releasing Maestro $ver as draft $tag"
           gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
           gh release create "$tag" distribute/output/*.msi distribute/output/*.zip \
             --draft \
             --title "Maestro $ver" \
             --notes-file release-notes.md
-          # To also append GitHub's auto commit/PR list, add:  --generate-notes
