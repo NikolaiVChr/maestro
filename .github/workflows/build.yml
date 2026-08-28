@@ -179,7 +179,7 @@ jobs:
           fi
 
           echo "Releasing Maestro $ver as draft $tag"
-          gh release create "$tag" distribute/output/*.msi distribute/output/*.zip \
+          gh release create "$tag" distribute/output/*.msi distribute/output/*.zip distribute/readme.txt \
             --draft \
             --title "Maestro $ver" \
             --notes-file release-notes.md
