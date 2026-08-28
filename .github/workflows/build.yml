@@ -44,10 +44,32 @@ jobs:
           zip=$(ls distribute/output/Maestro_v*.zip | head -n1)
           ver=$(basename "$zip" .zip | sed -E 's/^Maestro_v//')
           tag="v$ver"
+          
+          # Extract this version's changelog block from readme.txt:
+          #  - strip trailing CR (readme is CRLF)
+          #  - start after the "Version <ver>" header line (exact field match)
+          #  - stop at the next "Version x.y.z" header or end of file
+          notes=$(awk -v ver="$ver" '
+            { sub(/\r$/, "") }
+            # A version header line: optional leading #s, optional "Version "/"v",
+            # then the number alone (e.g. "Version 4.6.22", "## 4.6.22", "v4.6.22").
+            /^#*[[:space:]]*([Vv]ersion[[:space:]]+|[vV])?[0-9]+\.[0-9]+([.][0-9]+)?[[:space:]]*$/ {
+              v = $0; gsub(/[^0-9.]/, "", v)
+              if (v == ver)  { grab = 1; next }   # start of our section
+              else if (grab) { exit }             # next section reached
+              else           { next }
+            }
+            grab { print }
+          ' distribute/readme.txt)
+          
+          # Fall back to the whole file if the section was not found.
+          if [ -z "$notes" ]; then notes=$(sed 's/\r$//' distribute/readme.txt); fi
+          printf '%s\n' "$notes" > release-notes.md
+          
           echo "Releasing Maestro $ver as draft $tag"
-          # Replace any existing draft/tag for this version so re-runs refresh it.
           gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
           gh release create "$tag" distribute/output/*.msi distribute/output/*.zip \
             --draft \
             --title "Maestro $ver" \
-            --notes "Automated build of Maestro $ver from commit ${GITHUB_SHA}."
+            --notes-file release-notes.md
+          # To also append GitHub's auto commit/PR list, add:  --generate-notes
