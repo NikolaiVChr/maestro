@@ -59,8 +59,7 @@ This changelog is only partial, to see all the way back to v1.0.0 go here:
   https://maestro.miraheze.org/wiki/Version_history
 
 Version 4.6.22
-* Downloads of the apps are now found on github.
-* This build should not overwrite
+* Downloads of the apps are now found on github. [https://github.com/NikolaiVChr/maestro/releases](https://github.com/NikolaiVChr/maestro/releases)
 
 Version 4.6.21
 - Fixed that Jaunty FX could save empty note assignments.

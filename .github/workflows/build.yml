@@ -117,6 +117,7 @@ jobs:
           # Lead with an automated-build note, then this version's changelog.
           {
             echo "_Automated GitHub release build (commit ${GITHUB_SHA::7})._"
+            echo "[Wiki manual link](https://maestro.miraheze.org)"
             echo
             printf '%s\n' "$notes"
           } > release-notes.md
