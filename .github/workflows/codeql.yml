@@ -2,9 +2,9 @@ name: "CodeQL Maestro"
 
 on:
   push:
-    branches: [ "java24" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "java24" ]
+    branches: [ "main" ]
   #schedule:
   #  - cron: '43 12 * * 4'
 
