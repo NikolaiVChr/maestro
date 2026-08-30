@@ -563,6 +563,7 @@ public class DrumNoteMap implements IDiscardable {
 			combiInfo.saveLibrary();
 			combiInfo.fireLibraryChanged();
 		}
+		// fireChangeEvent(); should not be needed as song is still setting up.
 	}
 
 	/**
