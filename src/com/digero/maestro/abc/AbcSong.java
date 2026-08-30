@@ -68,7 +68,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	
 	public static final String MSX_FILE_DESCRIPTION = UIText.get("maestro.0.project", MaestroMain.APP_NAME);
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = UIText.get("maestro.0.projects", MaestroMain.APP_NAME);
-	public static final Version SONG_FILE_VERSION = new Version(4, 6, 15, 300);// Keep build above 117 to make earlier
+	public static final Version SONG_FILE_VERSION = new Version(4, 6, 23, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
 
@@ -152,6 +152,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private final SaveAndExportSettings saveAndExportSettings;
     private CountIn countIn = null;
 
+	private final LotroCombiDrumInfo combiInfo;
+
     public AbcSong(File file, PartAutoNumberer partAutoNumberer, PartNameTemplate partNameTemplate,
 			ExportFilenameTemplate exportFilenameTemplate, InstrNameSettings instrNameSettings,
 			FileResolver fileResolver, MiscSettings miscSettings, SaveAndExportSettings saveAndExportSettings)
@@ -165,6 +167,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
                    FileResolver fileResolver, MiscSettings miscSettings, boolean saveMSXwhenSourceChange,
                    SaveAndExportSettings saveAndExportSettings, boolean ignoreMidiText, WarningHandler warningHandler)
 			throws IOException, InvalidMidiDataException, FileParseException, SAXException {
+
+		combiInfo = new LotroCombiDrumInfo(!ignoreMidiText);//only load prefs when not in auto-export mode.
+
 
         parts = new ListModelWrapper<>(new DefaultListModel<>());
 
@@ -1431,6 +1436,10 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			listeners.fire(new AbcSongEvent(this, property, part));
 	}
 
+	public LotroCombiDrumInfo getCombiInfo() {
+		return combiInfo;
+	}
+
 	public QuantizedTimingInfo getAbcTimingInfo() throws AbcConversionException {
 		if (timingInfo == null //
 				|| timingInfo.getExportTempoFactord() != getTempoFactor() //
@@ -1924,6 +1933,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
      */
     public AbcSong(AbcSong other) {
         // Immutable/Shared Fields
+		this.combiInfo = other.combiInfo;
         this.title = other.title;
         this.composer = other.composer;
         this.transcriber = other.transcriber;

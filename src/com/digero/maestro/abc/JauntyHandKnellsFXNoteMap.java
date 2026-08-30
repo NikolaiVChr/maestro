@@ -15,7 +15,7 @@ public class JauntyHandKnellsFXNoteMap extends DrumNoteMap {
 	private static final String MAP_PREFS_KEY = "JauntyHandKnellsFXNoteMap.map";
 
     public JauntyHandKnellsFXNoteMap() {
-        super();
+        super((LotroCombiDrumInfo) null);
     }
 
     protected JauntyHandKnellsFXNoteMap(JauntyHandKnellsFXNoteMap orig) {
@@ -100,6 +100,11 @@ public class JauntyHandKnellsFXNoteMap extends DrumNoteMap {
 	}
 
 	@Override
+	public int hashCode() {
+		return Arrays.hashCode(map);
+	}
+
+	@Override
 	public void save(Preferences prefs) {
 		ensureMap();
 		prefs.putByteArray(MAP_PREFS_KEY, map);
@@ -108,6 +113,16 @@ public class JauntyHandKnellsFXNoteMap extends DrumNoteMap {
 	@Override
 	public void load(Preferences prefs) {
 		setLoadedByteArray(prefs.getByteArray(MAP_PREFS_KEY, null), LotroInstrument.JAUNTY_HAND_KNELLS);
+	}
+
+	@Override
+	protected boolean supportsCombis() {
+		return false;
+	}
+
+	@Override
+	protected LotroInstrument getLotroInstrument() {
+		return LotroInstrument.JAUNTY_HAND_KNELLS;
 	}
 
 	@Override

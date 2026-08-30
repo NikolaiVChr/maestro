@@ -10,16 +10,12 @@ import java.awt.LayoutManager;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NavigableMap;
-import java.util.TreeMap;
+import java.text.Collator;
+import java.util.*;
 import java.util.Map.Entry;
+import java.util.logging.Logger;
 
-import javax.swing.BorderFactory;
-import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
-import javax.swing.JPanel;
+import javax.swing.*;
 
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.midi.MidiDrum;
@@ -41,8 +37,8 @@ import com.digero.maestro.midi.SequenceDataCache;
 import com.digero.maestro.midi.TrackInfo;
 import com.digero.maestro.view.TrackPanel.TrackDimensions;
 
-@SuppressWarnings("serial")
 public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardable, TableLayoutConstants, ICompileConstants {
+	protected static final Logger log = Logger.getLogger("drumHitPanel");
 	// 0 1 2 3
 	// +---+--------------------+----------+--------------------+
 	// | | TRACK NAME | Drum | +--------------+ |
@@ -64,10 +60,11 @@ public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardab
 	private boolean isAbcPreviewMode;
 	
 	private Listener<AbcSongEvent> songListener;
+	private final Runnable libraryRebuild = this::rebuildModel;
 
 	private JPanel gutter;
 	private JCheckBox checkBox;
-	private JComboBox<LotroDrumInfo> drumComboBox;
+	private JComboBox<DrumChoice> drumComboBox;
 	private JComboBox<LotroStudentFXInfo> drumComboBoxFX;
     private JComboBox<LotroChromaticFXInfo> drumComboBoxJauntyFX;
 	private DrumNoteGraph noteGraph;
@@ -76,6 +73,8 @@ public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardab
 	private boolean showVolume = false;
 
 	private TrackDimensions dims = new TrackDimensions(TITLE_WIDTH, 0, COMBO_WIDTH, -1);
+
+	private final LotroCombiDrumInfo combiInfo;
 
 	public DrumPanel(TrackInfo info, NoteFilterSequencerWrapper sequencer, AbcPart part, int drumNoteId,
 			SequencerWrapper abcSequencer_, TrackVolumeBar trackVolumeBar_) {
@@ -87,6 +86,8 @@ public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardab
 		this.abcPart = part;
 		this.drumId = drumNoteId;
 		this.trackVolumeBar = trackVolumeBar_;
+
+		combiInfo = abcPart.getAbcSong().getCombiInfo();
 
 		TableLayout tableLayout = (TableLayout) getLayout();
 		tableLayout.setHGap(TrackPanel.HGAP);
@@ -137,6 +138,7 @@ public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardab
 		drumComboBoxFX.setMaximumRowCount(20);
 		drumComboBoxFX.addActionListener(e -> {
 			LotroStudentFXInfo selected = (LotroStudentFXInfo) drumComboBoxFX.getSelectedItem();
+			if (selected == null) return;
 			abcPart.getFXMap(trackInfo.getTrackNumber()).set(drumId, selected.note.id);
 		});
         drumComboBoxJauntyFX = new JComboBox<>(LotroChromaticFXInfo.getRange(LotroInstrument.JAUNTY_HAND_KNELLS).toArray(new LotroChromaticFXInfo[0]));
@@ -144,15 +146,25 @@ public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardab
         drumComboBoxJauntyFX.setMaximumRowCount(20);
         drumComboBoxJauntyFX.addActionListener(e -> {
             LotroChromaticFXInfo selected = (LotroChromaticFXInfo) drumComboBoxJauntyFX.getSelectedItem();
+			if (selected == null) return;
             abcPart.getJauntyHandKnellsFXMap(trackInfo.getTrackNumber()).set(drumId, selected.note.id);
         });
-		drumComboBox = new JComboBox<>(LotroDrumInfo.ALL_DRUMS.toArray(new LotroDrumInfo[0]));
-		drumComboBox.setSelectedItem(getSelectedDrum());
+		drumComboBox = new JComboBox<>();
+		updatingModel = true;
+		for (DrumChoice choice : buildChoices()) {
+			drumComboBox.addItem(choice);
+		}
+		updatingModel = false;
+		drumComboBox.setSelectedItem(getSelectedChoice());
 		drumComboBox.setMaximumRowCount(20);
 		drumComboBox.addActionListener(e -> {
-			LotroDrumInfo selected = (LotroDrumInfo) drumComboBox.getSelectedItem();
-			abcPart.getDrumMap(trackInfo.getTrackNumber()).set(drumId, selected.note.id);
+			if (updatingModel) return;
+			DrumChoice sel = (DrumChoice) drumComboBox.getSelectedItem();
+			if (sel == null) return;
+			DrumNoteMap dm = abcPart.getDrumMap(trackInfo.getTrackNumber());
+			dm.set(drumId, (byte) sel.markerId());
 		});
+		combiInfo.addLibraryListener(libraryRebuild);
 
 		seq.addChangeListener(sequencerListener);
 		if (abcSequencer != null)
@@ -181,12 +193,12 @@ public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardab
 						
 						if (soloAbcTrack >= 0 && soloAbcDrumId >= 0) {
 							prevSoloState = abcPart.isSoloed();
-							((NoteFilterSequencerWrapper) abcSequencer).setNoteSolo(soloAbcTrack, soloAbcDrumId, true);
+							((NoteFilterSequencerWrapper) abcSequencer).setNoteSolo(soloAbcTrack, soloAbcDrumId, true, abcPart);
 						}
 					} else {
 						soloTrack = trackNumber;
 						soloDrumId = drumId;
-						seq.setNoteSolo(trackNumber, drumId, true);
+						seq.setNoteSolo(trackNumber, drumId, true, null);
 					}
 				}
 			}
@@ -196,7 +208,7 @@ public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardab
 				if (e.getButton() == MouseEvent.BUTTON3) {
 					if (soloAbcTrack >= 0 && soloAbcDrumId >= 0 && abcSequencer instanceof NoteFilterSequencerWrapper) {
 						// Always clear the filter note-solo (keyed by note id, so a track change can't strand it)
-						((NoteFilterSequencerWrapper) abcSequencer).clearNoteSolo(soloAbcDrumId);
+						((NoteFilterSequencerWrapper) abcSequencer).clearNoteSolo(soloAbcDrumId, soloAbcTrack, part);
 
 						// Restore the part's solo on its curr track, which may have changed during the mouse hold
 						int curTrack = abcPart.getPreviewSequenceTrackNumber();
@@ -208,7 +220,8 @@ public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardab
 					soloAbcDrumId = -1;
 
 					if (soloTrack >= 0 && soloDrumId >= 0) {
-						seq.setNoteSolo(soloTrack, soloDrumId, false);
+						AbcPart partParam = isAbcPreviewMode() && abcSequencer instanceof NoteFilterSequencerWrapper? abcPart:null;
+						seq.setNoteSolo(soloTrack, soloDrumId, false, partParam);
 					}
 					soloTrack = -1;
 					soloDrumId = -1;
@@ -241,6 +254,91 @@ public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardab
 		//noteGraph.setPreferredSize(new Dimension(noteGraph.getPreferredSize().width, getPreferredSize().height)); the getter is overridden
 	}
 
+	private boolean updatingModel = false;   // reentrancy guard for the action listener
+
+	private void rebuildModel() {
+		if (discarded) return;
+		updatingModel = true;
+		try {
+			DrumChoice current = getSelectedChoice();          // what should be selected after rebuild
+			drumComboBox.setModel(new DefaultComboBoxModel<>(
+					buildChoices().toArray(new DrumChoice[0])));
+			drumComboBox.setSelectedItem(current);             // matches via equals-on-(kind,markerId)
+		} finally {
+			updatingModel = false;
+		}
+	}
+
+	/**
+	 * Build a list of drum hit choices for drum combobox.
+	 */
+	private List<DrumChoice> buildChoices() {
+		List<DrumChoice> out = new ArrayList<>();
+
+		for (LotroDrumInfo d : LotroDrumInfo.ALL_DRUMS)  // lotro drums (+ DISABLED)
+			out.add(DrumChoice.drum(d));
+
+		for (var e : combiInfo.libraryEntries())         // every combo: locked + custom
+			out.add(DrumChoice.combi(e.getKey().id, e.getValue()));
+
+		Collator col = Collator.getInstance();
+		col.setStrength(Collator.SECONDARY);
+		out.sort(Comparator.comparingInt(this::sectionRank)
+				.thenComparing(DrumChoice::label, col));
+		return out;
+	}
+
+	/**
+	 * A single item in drum combobox.
+	 * @param markerId the library id of the combo, or the note id of the drum
+	 */
+	record DrumChoice(Kind kind, int markerId, LotroCombiDrumInfo.CombiDrumHit combi, String label) {
+		enum Kind { DRUM, LOCKED, COMBI }
+
+		static DrumChoice drum(LotroDrumInfo d) {
+			return new DrumChoice(Kind.DRUM, d.note.id, null, d.toString());
+		}
+		/** One factory for any combo; kind follows locked-ness, id is the library id. */
+		static DrumChoice combi(int libraryId, LotroCombiDrumInfo.CombiDrumHit c) {
+			return new DrumChoice(c.locked() ? Kind.LOCKED : Kind.COMBI, libraryId, c, label(c));
+		}
+		private static String label(LotroCombiDrumInfo.CombiDrumHit c) {
+			return (c.name() != null && !c.name().isEmpty())
+					? c.name() : ("combi " + c.firstNote().id + "+" + c.secondNote().id);
+		}
+		@Override public boolean equals(Object o) {
+			return o instanceof DrumChoice d && d.kind() == kind && d.markerId() == markerId;
+		}
+		@Override public int hashCode() { return kind.hashCode() * 31 + markerId; }
+		@Override public String toString() { return label; }
+	}
+
+	/**
+	 * Return the rank of a drum choice in the combobox.
+	 * @param c the choice
+	 * @return 0 for disabled drum, 1 for real drum, 2 for locked combo, 3 for custom combo
+	 */
+	private int sectionRank(DrumChoice c) {
+		if (c.kind() == DrumChoice.Kind.DRUM && c.markerId() == LotroDrumInfo.DISABLED.note.id) return 0;
+		return switch (c.kind()) {
+			case DRUM -> 1;
+			case LOCKED -> 2;
+			case COMBI -> 3;
+		};
+	}
+
+	/**
+	 * Return the selected drum choice.
+	 */
+	private DrumChoice getSelectedChoice() {
+		DrumNoteMap dm = abcPart.getDrumMap(trackInfo.getTrackNumber());
+		int id = dm.get(drumId);
+		var c = dm.resolveCombi(id);
+		if (c != null) return DrumChoice.combi(id, c);
+		LotroDrumInfo d = LotroDrumInfo.getById(id);
+		return d != null ? DrumChoice.drum(d) : DrumChoice.drum(LotroDrumInfo.DISABLED);
+	}
+
     @Override
 	public JPanel getNoteGraph() {
 		return noteGraph;
@@ -260,8 +358,11 @@ public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardab
 		return checkBox.isSelected();
 	}
 
+	private boolean discarded = false;
+
 	@Override
 	public void discard() {
+		discarded = true;
 		noteGraph.discard();
 		abcPart.removeAbcListener(abcPartListener);
 		seq.removeChangeListener(sequencerListener);
@@ -270,10 +371,14 @@ public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardab
 		if (trackVolumeBar != null)
 			trackVolumeBar.removeActionListener(trackVolumeBarListener);
 		abcPart.getAbcSong().removeSongListener(songListener);
+		combiInfo.removeLibraryListener(libraryRebuild);
 	}
 
 	private Listener<AbcPartEvent> abcPartListener = e -> {
 		if (e.isNoteGraphRelated()) {
+			if (!SwingUtilities.isEventDispatchThread()) {
+				log.severe("abcPartListener called from non-EDT thread updates swing components!!");
+			}
 			// Drum mapping, enabled state, instrument etc. can affect which notes are visible
 			// and how they are categorised; invalidate before updateState() calls setters.
 			noteGraph.invalidateNoteCache();
@@ -284,7 +389,7 @@ public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardab
             } else if (abcPart.getInstrument() == LotroInstrument.JAUNTY_HAND_KNELLS) {
                 drumComboBoxJauntyFX.setSelectedItem(getSelectedJauntyFX());
 			} else {
-				drumComboBox.setSelectedItem(getSelectedDrum());
+				rebuildModel();
 			}
 			updateState();
 		}
@@ -390,10 +495,6 @@ public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardab
     @Override
 	public boolean isAbcPreviewMode() {
 		return abcSequencer != null && isAbcPreviewMode;
-	}
-
-	private LotroDrumInfo getSelectedDrum() {
-		return LotroDrumInfo.getById(abcPart.getDrumMap(trackInfo.getTrackNumber()).get(drumId));
 	}
 
 	private LotroStudentFXInfo getSelectedFX() {
@@ -543,7 +644,7 @@ public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardab
 		this.abcPart = part;
 		abcPart.addAbcListener(abcPartListener);
 		checkBox.setSelected(abcPart.isPercussionNoteEnabled(trackInfo.getTrackNumber(), drumId));
-		drumComboBox.setSelectedItem(getSelectedDrum());
+		drumComboBox.setSelectedItem(getSelectedChoice());
 		drumComboBoxFX.setSelectedItem(getSelectedFX());
         drumComboBoxJauntyFX.setSelectedItem(getSelectedJauntyFX());
 		updateState();

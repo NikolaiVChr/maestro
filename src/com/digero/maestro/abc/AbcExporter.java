@@ -2219,42 +2219,47 @@ public class AbcExporter {
 	}
 
 	private List<MidiNoteEvent> expandXtraDrumNotes(AbcPart part, int trackNumber) {
-		boolean specialDrumNotes = false;
-		if (part.getInstrument() == LotroInstrument.BASIC_DRUM) {
-			TrackInfo tInfo = part.getAbcSong().getSequenceInfo().getTrackInfo(trackNumber);
-			for (int inNo : tInfo.getNotesInUse()) {
-				byte outNo = part.getDrumMap(trackNumber).get(inNo);
-				if (outNo > part.getInstrument().highestPlayable.id) {
-					specialDrumNotes = true;
-					break;
-				}
-			}
-		}
-		List<MidiNoteEvent> listOfNotes = new ArrayList<>(part.getTrackEvents(trackNumber));
+        DrumNoteMap dm = part.getDrumMap(trackNumber);
 
-		if (specialDrumNotes) {
-			List<MidiNoteEvent> extraList = new ArrayList<>();
-			List<MidiNoteEvent> removeList = new ArrayList<>();
-			for (MidiNoteEvent ne : listOfNotes) {
-				Note possibleCombiNote = part.mapNote(trackNumber, ne.note.id, ne.getStartTick());
-				if (possibleCombiNote != null && LotroCombiDrumInfo.noteIdIsXtraNote(possibleCombiNote.id)) {
-					MidiNoteEvent extra1 = LotroCombiDrumInfo.getId1(ne, possibleCombiNote, ne.midiPan);
-					MidiNoteEvent extra2 = LotroCombiDrumInfo.getId2(ne, possibleCombiNote, ne.midiPan);
-					extraList.add(extra1);
-					extraList.add(extra2);
-					removeList.add(ne);
-					// Notice that bent notes on chromatic tracks are treated as only 1 note here
-				} else if (possibleCombiNote != null && possibleCombiNote.id > LotroCombiDrumInfo.maxCombi.id) {
-					// Just for safety, should never land here.
-					logNotes.severe("Just for safety, should never land here: "+ne);
-					removeList.add(ne);
-				}
-			}
-			listOfNotes.removeAll(removeList);
-			listOfNotes.addAll(extraList);
-		}
+        boolean specialDrumNotes = false;
+        if (part.getInstrument() == LotroInstrument.BASIC_DRUM) {
+            TrackInfo tInfo = part.getAbcSong().getSequenceInfo().getTrackInfo(trackNumber);
+            for (int inNo : tInfo.getNotesInUse()) {
+                byte outNo = dm.get(inNo);
+                if (dm.isCombiNote(outNo)) {
+                    specialDrumNotes = true;
+                    break;
+                }
+            }
+        }
+        List<MidiNoteEvent> listOfNotes = new ArrayList<>(part.getTrackEvents(trackNumber));
+        if (!specialDrumNotes) return listOfNotes;
+
+        List<MidiNoteEvent> extraList = new ArrayList<>();
+        List<MidiNoteEvent> removeList = new ArrayList<>();
+        for (MidiNoteEvent ne : listOfNotes) {
+            Note mapped = part.mapNote(trackNumber, ne.note.id, ne.getStartTick());
+            if (mapped == null) continue;
+
+            LotroCombiDrumInfo.CombiDrumHit c = dm.resolveCombi(mapped.id);
+            if (c != null) {
+                extraList.add(makeHit(ne, c.firstNote(),  ne.midiPan));
+                extraList.add(makeHit(ne, c.secondNote(), ne.midiPan));
+                removeList.add(ne);
+                // Notice that bent notes on chromatic tracks are treated as only 1 note here
+            }
+        }
+        listOfNotes.removeAll(removeList);
+        listOfNotes.addAll(extraList);
+
 		return listOfNotes;
 	}
+
+    private static MidiNoteEvent makeHit(MidiNoteEvent ne, Note n, int pan) {
+        MidiNoteEvent e = new MidiNoteEvent(n, ne.velocity, ne.getStartTick(), ne.getEndTick(), ne.getTempoCache(), pan);
+        e.alreadyMapped = true;
+        return e;
+    }
 	
 	/**
 	 * Combine the tracks into one, separate into chords.

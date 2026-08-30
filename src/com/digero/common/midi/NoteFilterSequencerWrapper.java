@@ -13,6 +13,9 @@ import javax.sound.midi.MidiDevice.Info;
 import com.digero.common.midi.SequencerEvent.SequencerProperty;
 import com.digero.common.util.AppInfo;
 import com.digero.common.view.UIText;
+import com.digero.maestro.abc.AbcPart;
+import com.digero.maestro.abc.DrumNoteMap;
+import com.digero.maestro.abc.LotroCombiDrumInfo;
 import com.digero.maestro.view.ProjectFrame;
 
 public class NoteFilterSequencerWrapper extends SequencerWrapper {
@@ -39,12 +42,19 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 		return filter;
 	}
 
-	public void setNoteSolo(int track, int noteId, boolean solo) {
+	public void setNoteSolo(int track, int noteId, boolean solo, AbcPart part) {
 		if (solo != filter.getNoteSolo(noteId)) {
 			//boolean midi = !(this instanceof LotroSequencerWrapper);
 			//System.out.println((midi?"MIDI":"ABC")+" Setting track " + track + " solo to " + solo+" for note "+noteId);
 			sequencer.setTrackSolo(track, solo);
-			filter.setNoteSolo(noteId, solo);
+			if (part == null) {
+				filter.setNoteSolo(noteId, solo);
+			} else {
+				DrumNoteMap map = part.getDrumMap(track);
+				LotroCombiDrumInfo.CombiDrumHit c = map.resolveCombi(noteId);
+				if (c != null) filter.setNoteSolo(noteId, c. firstNote().id, c.secondNote().id, solo);
+				else           filter.setNoteSolo(noteId, solo);
+			}
 			fireChangeEvent(SequencerProperty.TRACK_ACTIVE);
 		}
 	}
@@ -55,9 +65,17 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 		filter.clearSolos();
 	}
 
-	public void clearNoteSolo(int noteId) {
+	public void clearNoteSolo(int noteId, int track, AbcPart part) {
 		if (filter.getNoteSolo(noteId)) {
-			filter.setNoteSolo(noteId, false);
+			if (part == null) {
+				filter.setNoteSolo(noteId, false);
+			} else {
+				DrumNoteMap map = part.getDrumMap(track);
+				LotroCombiDrumInfo.CombiDrumHit c = map.resolveCombi(noteId);
+				if (c != null) filter.setNoteSolo(noteId, c.firstNote().id, c.secondNote().id, false);
+				else filter.setNoteSolo(noteId, false);
+			}
+
 			fireChangeEvent(SequencerProperty.TRACK_ACTIVE);
 		}
 	}

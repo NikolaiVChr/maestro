@@ -9,8 +9,8 @@ import com.digero.common.midi.MidiConstants;
  */
 public class PassThroughDrumNoteMap extends DrumNoteMap {
 
-    public PassThroughDrumNoteMap() {
-        super();
+    public PassThroughDrumNoteMap(LotroCombiDrumInfo combiInfo) {
+        super(combiInfo);
     }
 
     protected PassThroughDrumNoteMap(PassThroughDrumNoteMap orig) {

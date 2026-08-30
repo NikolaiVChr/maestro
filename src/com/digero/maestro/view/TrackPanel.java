@@ -5,43 +5,22 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.NavigableMap;
-import java.util.TreeMap;
 import java.util.prefs.Preferences;
 
-import javax.swing.BorderFactory;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JMenu;
-import javax.swing.JMenuBar;
-import javax.swing.JMenuItem;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JSpinner;
-import javax.swing.LookAndFeel;
-import javax.swing.SpinnerNumberModel;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
+import javax.sound.midi.MidiChannel;
+import javax.sound.midi.Synthesizer;
+import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
 
 import com.digero.common.abc.LotroInstrument;
-import com.digero.common.midi.MidiConstants;
-import com.digero.common.midi.Note;
-import com.digero.common.midi.NoteFilterSequencerWrapper;
-import com.digero.common.midi.SequencerEvent;
+import com.digero.common.midi.*;
 import com.digero.common.midi.SequencerEvent.SequencerProperty;
-import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.util.ExtensionFileFilter;
 import com.digero.common.util.ICompileConstants;
 import com.digero.common.util.IDiscardable;
@@ -51,18 +30,14 @@ import com.digero.common.util.FileParseException;
 import com.digero.common.util.Util;
 import com.digero.common.view.ColorTable;
 import com.digero.common.view.UIText;
-import com.digero.maestro.abc.AbcPart;
-import com.digero.maestro.abc.AbcPartEvent;
+import com.digero.maestro.abc.*;
 import com.digero.maestro.abc.AbcPartEvent.AbcPartProperty;
-import com.digero.maestro.abc.AbcSongEvent;
 import com.digero.maestro.abc.AbcSongEvent.AbcSongProperty;
-import com.digero.maestro.abc.DrumNoteMap;
-import com.digero.maestro.abc.PartSection;
 import com.digero.maestro.midi.BentMidiNoteEvent;
-import com.digero.maestro.midi.MidiNoteEvent;
 import com.digero.maestro.midi.NoteEvent;
 import com.digero.maestro.midi.SequenceDataCache;
 import com.digero.maestro.midi.TrackInfo;
+import com.digero.maestro.util.XmlUtil;
 import com.formdev.flatlaf.themes.FlatMacDarkLaf;
 
 import info.clearthought.layout.TableLayout;
@@ -577,6 +552,13 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		exportItem.addActionListener(e -> {
 			if (!abcPart.isStudentPart() && !abcPart.isJauntyHandKnellsPart()) {
 				saveDrumMapping();
+			}
+		});
+		JMenuItem editItem = drumMapMenu.add(new JMenuItem(UIText.get("maestro.drum.menu.edit.combis")));
+		editItem.addActionListener(e -> {
+			if (abcPart == null) return;
+			if (!abcPart.isStudentPart() && !abcPart.isJauntyHandKnellsPart()) {
+				editDrumCombis();
 			}
 		});
 		
@@ -1098,6 +1080,234 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		return true;
 	}
 
+	private void editDrumCombis() {
+		LotroCombiDrumInfo combiInfo = abcPart.getAbcSong().getCombiInfo();
+		if (combiInfo == null) return;
+		boolean previewEnabled = abcSequencer != null;
+		if (previewEnabled) {
+			abcSequencer.stop();
+		}
+		final JDialog dlg = new JDialog(SwingUtilities.getWindowAncestor(this),
+				UIText.get("maestro.drum.combo.edit.dialog.title"), Dialog.ModalityType.APPLICATION_MODAL);
+
+		// existing combos list
+		final DefaultListModel<LotroCombiDrumInfo.CombiDrumHit> listModel = new DefaultListModel<>();
+		Runnable refillList = () -> {
+			listModel.clear();
+			combiInfo.libraryEntries().stream()
+					.map(Map.Entry::getValue)
+					.sorted(Comparator.comparing(c -> label(c).toLowerCase()))
+					.forEach(listModel::addElement);
+		};
+		refillList.run();
+
+		final JList<LotroCombiDrumInfo.CombiDrumHit> list = new JList<>(listModel);
+		list.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		list.setVisibleRowCount(10);
+		list.setCellRenderer(new DefaultListCellRenderer() {
+			@Override
+			public Component getListCellRendererComponent(JList<?> l, Object v,
+														  int i, boolean sel, boolean foc) {
+				super.getListCellRendererComponent(l, v, i, sel, foc);
+				if (v instanceof LotroCombiDrumInfo.CombiDrumHit c) {
+					String t = label(c) + "   (" + drumName(c.firstNote().id)
+							+ " + " + drumName(c.secondNote().id) + ")";
+					if (c.locked()) t += UIText.get("maestro.drum.combo.edit.builtin");
+					setText(t);
+				}
+				return this;
+			}
+		});
+
+		// new-combo controls (real drums only, no None, no combos)
+		LotroDrumInfo[] drums = LotroDrumInfo.ALL_DRUMS.stream()
+				.filter(d -> d != LotroDrumInfo.DISABLED)
+				.toArray(LotroDrumInfo[]::new);
+		final JComboBox<LotroDrumInfo> pick1 = new JComboBox<>(drums);
+		final JComboBox<LotroDrumInfo> pick2 = new JComboBox<>(drums);
+		pick1.setMaximumRowCount(20);
+		pick2.setMaximumRowCount(20);
+		final JTextField nameField = new JTextField(14);
+
+		final JButton previewNew = new JButton(UIText.get("maestro.drum.combo.edit.btn.preview"));
+		previewNew.setEnabled(previewEnabled);
+		previewNew.addActionListener(e -> {
+			if (!previewEnabled) return;
+			LotroDrumInfo a = (LotroDrumInfo) pick1.getSelectedItem();
+			LotroDrumInfo b = (LotroDrumInfo) pick2.getSelectedItem();
+			if (a != null && b != null) previewCombo(a.note.id, b.note.id);
+		});
+
+		final JButton addBtn = new JButton(UIText.get("maestro.drum.combo.edit.btn.add.combo"));
+		addBtn.addActionListener(e -> {
+			LotroDrumInfo a = (LotroDrumInfo) pick1.getSelectedItem();
+			LotroDrumInfo b = (LotroDrumInfo) pick2.getSelectedItem();
+			if (a == null || b == null) return;
+			if (a.note == b.note) {
+				JOptionPane.showMessageDialog(dlg,
+						UIText.get("maestro.drum.combo.edit.pick.two.different.drums"),
+						UIText.get("maestro.drum.combo.edit.dialog.title"), JOptionPane.INFORMATION_MESSAGE);
+				return;
+			}
+			String nm = XmlUtil.sanitizeStringForXMLSaving(nameField.getText().trim());
+			Note before = combiInfo.libraryKeyForPair(a.note, b.note);   // was it already there?
+			Note key = combiInfo.addToLibrary(a.note, b.note, nm.isEmpty() ? null : nm);
+			if (key == null) {
+				JOptionPane.showMessageDialog(dlg,
+						UIText.get("maestro.drum.combo.edit.library.is.full"),
+						UIText.get("maestro.drum.combo.edit.dialog.title"), JOptionPane.WARNING_MESSAGE);
+			} else {
+				if (before != null) {
+					JOptionPane.showMessageDialog(dlg,
+							UIText.get("maestro.drum.combo.edit.that.pair.already.exists.as.0", label(combiInfo.get(key.id))),
+							UIText.get("maestro.drum.combo.edit.dialog.title"), JOptionPane.INFORMATION_MESSAGE);
+				} else {
+					refillList.run();               // reflect the add in this dialog
+					nameField.setText("");
+					list.setSelectedValue(combiInfo.get(key.id), true);
+				}
+			}
+			// addToLibrary already fired libraryChanged -> open DrumPanel dropdowns refreshed
+		});
+
+		// preview an existing combo
+		final JButton previewSel = new JButton(UIText.get("maestro.drum.combo.edit.btn.preview.selected"));
+		previewSel.setEnabled(false);
+		previewSel.addActionListener(e -> {
+			var sel = list.getSelectedValue();
+			if (sel != null) previewCombo(sel.firstNote().id, sel.secondNote().id);
+		});
+		list.addListSelectionListener(e ->
+				previewSel.setEnabled(previewEnabled && list.getSelectedValue() != null));
+
+		final JButton deleteBtn = new JButton(UIText.get("maestro.drum.combo.edit.btn.delete.selected"));
+		deleteBtn.setEnabled(false);
+		deleteBtn.addActionListener(e -> {
+			var sel = list.getSelectedValue();
+			if (sel == null) return;
+			if (sel.locked()) return;   // built-ins never deletable (button also disabled below)
+
+			Note key = combiInfo.libraryKeyForPair(sel.firstNote(), sel.secondNote());
+			if (key == null) return;
+
+			int uses = countUsesInSong(key.id);
+			if (uses > 0) {
+				JOptionPane.showMessageDialog(dlg,
+						UIText.get("maestro.drum.combo.edit.this.combo.is.in.use", uses),
+						UIText.get("maestro.drum.combo.edit.delete.combo.failed"), JOptionPane.INFORMATION_MESSAGE);
+				// if (r != JOptionPane.YES_OPTION) return;
+				// clearUsesInSong(key.id);// set those map slots to DISABLED
+			} else {
+				combiInfo.removeFromLibrary(key);   // needs to exist - see below
+				refillList.run();
+			}
+		});
+		list.addListSelectionListener(e -> {
+			var s = list.getSelectedValue();
+			deleteBtn.setEnabled(s != null && !s.locked());
+			previewSel.setEnabled(previewEnabled && s != null);
+		});
+
+
+		//  layout
+		JPanel newRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 4));
+		newRow.add(new JLabel(UIText.get("maestro.drum.combo.edit.hit.1")));
+		newRow.add(pick1);
+		newRow.add(new JLabel(UIText.get("maestro.drum.combo.edit.hit.2")));
+		newRow.add(pick2);
+		newRow.add(new JLabel(UIText.get("maestro.drum.combo.edit.name")));
+		newRow.add(nameField);
+		newRow.add(previewNew);
+		newRow.add(addBtn);
+
+		JPanel listPanel = new JPanel(new BorderLayout(4, 4));
+		listPanel.add(new JLabel(UIText.get("maestro.drum.combo.edit.combos.in.this.song.s.library")), BorderLayout.NORTH);
+		listPanel.add(new JScrollPane(list), BorderLayout.CENTER);
+		JPanel southPanel = new JPanel(new FlowLayout());
+		listPanel.add(southPanel, BorderLayout.SOUTH);
+		southPanel.add(previewSel);
+		southPanel.add(deleteBtn);
+
+		JButton closeBtn = new JButton(UIText.get("maestro.drum.combo.edit.close"));
+		closeBtn.addActionListener(e -> dlg.dispose());
+		JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+		bottom.add(closeBtn);
+
+		JPanel content = new JPanel(new BorderLayout(8, 8));
+		content.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+		content.add(listPanel, BorderLayout.CENTER);
+		content.add(newRow, BorderLayout.NORTH);
+		content.add(bottom, BorderLayout.SOUTH);
+
+		dlg.setContentPane(content);
+		dlg.pack();
+		dlg.setLocationRelativeTo(this);
+		dlg.setVisible(true);
+	}
+
+	private int countUsesInSong(int hit) {
+		int uses = 0;
+		if (hit == Note.REST.id) return uses;
+		AbcSong song = abcPart.getAbcSong();
+		for (AbcPart part : song.getParts()) {
+			int tCount = part.getTrackCount();
+			for (int t = 0; t < tCount; t++) {
+				DrumNoteMap map = part.peekDrumMap(t);//this method wont create a map if its null
+				if (map == null) continue;
+				if (map.getKeyFor((byte)hit, t, part, song) != Note.REST.id) {
+					uses++;
+				}
+			}
+		}
+		return uses;
+	}
+
+	// combo display name, falling back to the pair when unnamed
+	private static String label(LotroCombiDrumInfo.CombiDrumHit c) {
+		return (c.name() != null && !c.name().isEmpty())
+				? c.name() : (UIText.get("maestro.drum.combo.edit.combi.0.1", c.firstNote().id,c.secondNote().id));
+	}
+	private static String drumName(int id) {
+		LotroDrumInfo d = LotroDrumInfo.getById(id);
+		return d != null ? d.toString() : String.valueOf(id);
+	}
+
+	private static final int SYNTH_DRUM_PROGRAM = MidiInstrument.SYNTH_DRUM.id();   // 118
+	private static final int PREVIEW_VELOCITY = 127;
+	private static final int PREVIEW_MS = 750;
+
+	private void previewCombo(int id1, int id2) {
+		Synthesizer synth = LotroSequencerWrapper.getLotroSynth();
+		if (synth == null || !synth.isOpen()) return;
+
+		MidiChannel[] chans = synth.getChannels();
+		// pick the channel Maestro uses for drums — see note below
+		MidiChannel ch = chans[MidiConstants.CHANNEL_COUNT_ABC-1];
+		int oldProgram = ch.getProgram();
+		int oldChannelVolume = ch.getController(MidiConstants.CHANNEL_VOLUME_CONTROLLER_COARSE);
+		int oldChannelExpr = ch.getController(MidiConstants.CHANNEL_EXPRESSION_CONTROLLER);
+		boolean oldMono = ch.getMono();
+		ch.programChange(SYNTH_DRUM_PROGRAM);
+		ch.controlChange(MidiConstants.CHANNEL_VOLUME_CONTROLLER_COARSE, 127);
+		ch.controlChange(MidiConstants.CHANNEL_EXPRESSION_CONTROLLER, 127);
+		ch.setMono(true);
+
+		ch.noteOn(id1, PREVIEW_VELOCITY);
+		ch.noteOn(id2, PREVIEW_VELOCITY);
+
+		// note-off after a short delay, on the EDT, so it doesn't hang the dialog
+		javax.swing.Timer t = new javax.swing.Timer(PREVIEW_MS, e -> {
+			ch.noteOff(id1);
+			ch.noteOff(id2);
+			ch.programChange(oldProgram);
+			ch.controlChange(MidiConstants.CHANNEL_VOLUME_CONTROLLER_COARSE, oldChannelVolume);
+			ch.controlChange(MidiConstants.CHANNEL_EXPRESSION_CONTROLLER, oldChannelExpr);
+			ch.setMono(oldMono);
+		});
+		t.setRepeats(false);
+		t.start();
+	}
+
 	@Override
 	public void discard() {
 		for (int i = getComponentCount() - 1; i >= 0; --i) {
@@ -1266,6 +1476,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 
 		@Override
 		protected boolean isNotePlayable(NoteEvent ne, int addition) {
+			// this method is not called, but its inheritors are.
 			int midId = transposeNote(ne.note.id + addition, ne.getStartTick());
 			int lowId = midId;
 			int highId = midId;

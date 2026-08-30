@@ -19,7 +19,7 @@ public class StudentFXNoteMap extends DrumNoteMap {
 	private static final String MAP_PREFS_KEY = "StudentFXNoteMap.map";
 
     public StudentFXNoteMap() {
-        super();
+        super((LotroCombiDrumInfo) null);
     }
 
     protected StudentFXNoteMap(StudentFXNoteMap orig) {
@@ -76,11 +76,26 @@ public class StudentFXNoteMap extends DrumNoteMap {
 	}
 
 	@Override
+	protected boolean supportsCombis() {
+		return false;
+	}
+
+	@Override
+	protected LotroInstrument getLotroInstrument() {
+		return LotroInstrument.STUDENT_FIDDLE;
+	}
+
+	@Override
 	public boolean equals(Object obj) {
 		if (obj == null || obj.getClass() != this.getClass())
 			return false;
 
 		return Arrays.equals(map, ((StudentFXNoteMap) obj).map);
+	}
+
+	@Override
+	public int hashCode() {
+		return Arrays.hashCode(map);
 	}
 
 	@Override

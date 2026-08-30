@@ -7,11 +7,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.StringTokenizer;
+import java.util.*;
+import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
 import javax.swing.event.ChangeEvent;
@@ -33,23 +30,29 @@ import com.digero.maestro.util.SaveUtil;
 import com.digero.maestro.util.XmlUtil;
 
 public class DrumNoteMap implements IDiscardable {
+	protected static final Logger log = Logger.getLogger("drumHitMap");
+
 	public static final String FILE_SUFFIX = Util.DRUMMAP_FILE_EXTENSION_NO_DOT;
 	protected static final byte DISABLED_NOTE_ID = (byte) LotroDrumInfo.DISABLED.note.id;
 	private static final String MAP_PREFS_KEY = "DrumNoteMap.map";
+	private final LotroCombiDrumInfo combiInfo;
 
 	protected byte[] map = null;
 	private List<ChangeListener> listeners = null;
 
-    public DrumNoteMap() {
+	private List<String> lastLoadCombiWarnings = new ArrayList<>();
 
+    public DrumNoteMap(LotroCombiDrumInfo combiInfo) {
+		this.combiInfo = combiInfo;
     }
 
     protected DrumNoteMap(DrumNoteMap orig) {
-        if (orig.map != null) {
-            map = Arrays.copyOf(orig.map, orig.map.length);
-        }
-        listeners = null;
-    }
+		if (orig.map != null) {
+			map = Arrays.copyOf(orig.map, orig.map.length);
+		}
+		listeners = null;
+		this.combiInfo = orig.combiInfo;
+	}
 
     /**
      * Subclasses MUST implement this.
@@ -62,10 +65,35 @@ public class DrumNoteMap implements IDiscardable {
 		return "drumMap";
 	}
 
-	public boolean isModified() {
-		return map != null;
+	/**
+	 * Returns true if this map supports combis.
+	 */
+	protected boolean supportsCombis() {
+		return true;
 	}
 
+	/**
+	 *  The combo this map assigns to a marker id, or null if it isn't a combi here.
+	 */
+	public LotroCombiDrumInfo.CombiDrumHit resolveCombi(int lotroId) {
+		if (!supportsCombis()) return null;
+		Note n = Note.fromId(lotroId);
+		if (n == null || !supportsCombis()) return null;
+		return combiInfo.get(lotroId);
+	}
+
+	/**
+	 * Returns true if the given lotroId is a combi.
+	 */
+	public boolean isCombiNote(int lotroId) {
+		if (!supportsCombis()) return false;
+		return resolveCombi(lotroId) != null;
+	}
+
+	/**
+	 * Returns the lotroId for the given midiNoteId.
+	 * The lotroId might be key to a combo.
+	 */
 	public byte get(int midiNoteId) {
 		if (midiNoteId < 0 || midiNoteId > Byte.MAX_VALUE) {
 			throw new IllegalArgumentException();
@@ -78,6 +106,23 @@ public class DrumNoteMap implements IDiscardable {
 		ensureMap();
 
 		return map[midiNoteId];
+	}
+
+	/**
+	 * Returns the midiId for the given lotroNoteId.
+	 * The lotroNoteId might be key to a combo.
+	 */
+	public int getKeyFor(byte lotroId, int track, AbcPart part, AbcSong song) {
+		if (map == null) return DISABLED_NOTE_ID;
+		SortedSet<Integer> notesInUse = song.getSequenceInfo().getTrackInfo(track).getNotesInUse();
+		for (byte key : map) {
+			if (key == DISABLED_NOTE_ID) continue;
+			if (map[key] == lotroId) {
+				//if (!part.isPercussionNoteEnabled(track, (int)key)) continue;//we get preview error if it gets enabled after deletion even if combobox show 'None'. So dont uncomment.
+				if (notesInUse.contains((int)key)) return key;
+			}
+		}
+		return DISABLED_NOTE_ID;
 	}
 
 	public void set(int midiNoteId, int value) {
@@ -98,6 +143,10 @@ public class DrumNoteMap implements IDiscardable {
 
 	protected byte getDefaultMapping(byte noteId) {
 		return DISABLED_NOTE_ID;
+	}
+
+	protected LotroInstrument getLotroInstrument() {
+		return LotroInstrument.BASIC_DRUM;
 	}
 
 	protected void ensureMap() {
@@ -134,10 +183,9 @@ public class DrumNoteMap implements IDiscardable {
 
 	@Override
 	public boolean equals(Object obj) {
-		if (obj == null || obj.getClass() != this.getClass())
-			return false;
-
-		return Arrays.equals(map, ((DrumNoteMap) obj).map);
+		if (obj == null || obj.getClass() != this.getClass()) return false;
+		DrumNoteMap o = (DrumNoteMap) obj;
+		return Arrays.equals(map, o.map);
 	}
 
 	@Override
@@ -145,36 +193,69 @@ public class DrumNoteMap implements IDiscardable {
 		return Arrays.hashCode(map);
 	}
 
+	/**
+	 * Not default map.
+	 */
+	public boolean isModified() {
+		return map != null;
+	}
+
+	/** Persist this map's assignments as the default for future new drum tracks. */
+	public void saveTemplate() {
+		save(LotroCombiDrumInfo.drumPrefs);
+	}
+
+	/** Load the saved new-track default into this map, if one exists and is valid. */
+	public void loadTemplate() {
+		load(LotroCombiDrumInfo.drumPrefs);
+	}
+
+	/**
+	 * Save drummap to prefs.
+	 */
 	public void save(Preferences prefs) {
 		ensureMap();
 		prefs.putByteArray(MAP_PREFS_KEY, map);
 	}
 
+	/**
+	 * Load drummap from prefs.
+	 */
 	public void load(Preferences prefs) {
-		setLoadedByteArray(prefs.getByteArray(MAP_PREFS_KEY, null), LotroInstrument.BASIC_DRUM);
+		setLoadedByteArray(prefs.getByteArray(MAP_PREFS_KEY, null), getLotroInstrument());
 	}
 
+	/**
+	 * Install a loaded drum-map byte array, replacing any library id that is neither a
+	 * playable drum nor a known combo marker with the failsafe default.
+	 */
 	protected void setLoadedByteArray(byte[] bytes, LotroInstrument lotroInstrument) {
 		if (bytes != null && bytes.length == MidiConstants.NOTE_COUNT) {
 			map = bytes;
 			byte[] failsafe = null;
 			for (int i = 0; i < map.length; i++) {
-				if (map[i] != DISABLED_NOTE_ID && !lotroInstrument.isPlayable(map[i], false)) {
-					if (failsafe == null) {
-						failsafe = getFailsafeDefault();
-					}
+				if (map[i] != DISABLED_NOTE_ID
+						&& !lotroInstrument.isPlayable(map[i], false)
+						&& !isCombiNote(map[i])) {          // keep combo markers too
+					if (failsafe == null) failsafe = getFailsafeDefault();
 					map[i] = failsafe[i];
 				}
 			}
 		}
 	}
 
+	/**
+	 * Save a drummap belonging to a specific instrument on specific track to txt file.
+	 */
 	public void save(File outputFile) throws IOException {
 		try (PrintStream outStream = new PrintStream(outputFile)) {
 			save(outStream);
 		}
 	}
 
+	/**
+	 * Save a drummap belonging to a specific instrument on specific track to txt printstream.
+	 */
 	public void save(PrintStream out) {
 		ensureMap();
 
@@ -189,12 +270,28 @@ public class DrumNoteMap implements IDiscardable {
 				Note.MIN_PLAYABLE.id, Note.MIN_PLAYABLE.abc, //
 				Note.MAX_PLAYABLE.id, Note.MAX_PLAYABLE.abc);
 		out.println();
-		out.format("%% Xtra Drum IDs are in the range %d (%s) to %d (%s)", //
-				LotroCombiDrumInfo.minCombi.id, LotroCombiDrumInfo.minCombi.abc, //
-				LotroCombiDrumInfo.maxCombi.id, LotroCombiDrumInfo.maxCombi.abc);
-		out.println();
+		if (supportsCombis()) {
+			ArrayList<Map.Entry<Note, LotroCombiDrumInfo.CombiDrumHit>> combiKeys = new ArrayList<>(combiInfo.libraryEntries());
+			combiKeys.sort(java.util.Comparator.comparingInt(n -> n.getKey().id));
+			if (!combiKeys.isEmpty()) {
+				out.println();
+				out.println("% Combi (Xtra) drums - each expands to two drum hits when played");
+				out.println("% Format: %combi <markerId> = <drumId> + <drumId> : <name>");
+				out.println("% Do not edit [builtin] combis, they cannot be changed anyway");
+				out.println("% Older Maestro versions ignore %combi lines");
+				out.println();
+				for (Map.Entry<Note, LotroCombiDrumInfo.CombiDrumHit> e : combiKeys) {
+					LotroCombiDrumInfo.CombiDrumHit c = e.getValue();
+					String tag = c.locked() ? "  % [builtin]" : "";
+					out.format("%%combi %d = %d + %d : %s%s%n",
+							e.getKey().id, c.firstNote().id, c.secondNote().id,
+							c.name() == null ? "" : c.name(), tag);
+				}
+				out.println();
+			}
+		}
 		out.println("% A LOTRO Drum ID of -1 indicates that the drum is not mapped");
-		out.println("% Comments begin with %");
+		out.println("% Comments begin with %, but %combi are not comments for Maestro v4.6.23 and later");
 		out.println();
 
 		int maxDrumLen = MidiDrum.INVALID.name.length();
@@ -214,97 +311,216 @@ public class DrumNoteMap implements IDiscardable {
 			if (note == null)
 				note = LotroDrumInfo.DISABLED.note;
 
-			LotroDrumInfo lotroDrum = LotroDrumInfo.getById(note.id);
-			if (lotroDrum == null)
-				lotroDrum = LotroDrumInfo.DISABLED;
-
 			String drumName = drum.name;
 			if (drumName.equals(MidiDrum.INVALID.name))
 				drumName = "(" + drumName + ")";
 
-			out.format("%2d => %2d  %% %-" + maxDrumLen + "s => %s", midiNoteId, note.id, drumName, lotroDrum);
+			String label;
+			LotroCombiDrumInfo.CombiDrumHit c = supportsCombis() ? resolveCombi(note.id) : null;
+			if (c != null) {
+				label = (c.name() != null && !c.name().isEmpty())
+						? c.name() : ("combi " + c.firstNote().id + "+" + c.secondNote().id);
+			} else {
+				LotroDrumInfo d = LotroDrumInfo.getById(note.id);
+				label = String.valueOf(d == null ? LotroDrumInfo.DISABLED : d);
+			}
+			out.format("%2d => %2d  %% %-" + maxDrumLen + "s => %s", midiNoteId, note.id, drumName, label);
 			out.println();
 		}
 	}
 
+	/**
+	 * Load a drummap belonging to a specific instrument on specific track from txt file.
+	 */
 	public void load(File inputFile) throws IOException, FileParseException {
 		try (FileInputStream inputStream = new FileInputStream(inputFile)) {
 			load(inputStream, inputFile.getName());
 		}
 	}
 
+	/**
+	 * Load a drummap belonging to a specific instrument on specific track from txt inputstream.
+	 */
 	public void load(InputStream inputStream) throws IOException, FileParseException {
 		load(inputStream, null);
+	}
+
+	/**
+	 * Parse a single line from txt that contain a combi note.
+	 */
+	private void parseCombiDirective(String line, String fileName, int lineNumber, Map<Integer,Integer> fileMarkerRemap) throws FileParseException {
+		// %combi <markerId> = <id1> + <id2> [ : name ]
+		String body = line.substring(6).trim();
+		String name = null;
+		int colon = body.indexOf(':');
+		if (colon >= 0) {
+			name = body.substring(colon + 1).trim();
+			int hash = name.indexOf('%');            // drop any trailing comment from the name
+			if (hash >= 0) name = name.substring(0, hash).trim();
+			body = body.substring(0, colon).trim();
+		}
+		int markerId, id1, id2;
+		try {
+			StringTokenizer t = new StringTokenizer(body, " \t=+");
+			markerId = Integer.parseInt(t.nextToken());
+			id1 = Integer.parseInt(t.nextToken());
+			id2 = Integer.parseInt(t.nextToken());
+			if (t.hasMoreTokens())
+				throw new FileParseException("Invalid %combi (too many tokens)", fileName, lineNumber);
+		} catch (NoSuchElementException nse) {
+			throw new FileParseException("Invalid %combi (too few tokens)", fileName, lineNumber);
+		} catch (NumberFormatException nfe) {
+			throw new FileParseException("Invalid %combi note ID", fileName, lineNumber);
+		}
+
+		Note n1 = Note.fromId(id1);
+		Note n2 = Note.fromId(id2);
+		if (n1 == null || n2 == null)
+			throw new FileParseException("Invalid %combi component note", fileName, lineNumber);
+
+
+		Note marker = Note.fromId(markerId);
+		if (marker == null || !LotroCombiDrumInfo.isValidKeyId(markerId))
+			throw new FileParseException("Invalid %combi marker id", fileName, lineNumber);
+
+		// Merge the pair into the library (dedups by content), get the library id it lives at,
+		// and remap the file's marker onto it.
+		Note builtin = combiInfo.libraryKeyForPair(n1, n2);   // built-ins are in library, locked
+		Note libId = (builtin != null) ? builtin : combiInfo.mergeQuiet(n1, n2, name);
+		if (libId != null) {
+			fileMarkerRemap.put(markerId, libId.id);
+		} else {
+			// library full: degrade this assignment to the first component
+			fileMarkerRemap.put(markerId, LotroInstrument.BASIC_DRUM.isPlayable((byte) id1) ? id1 : DISABLED_NOTE_ID);
+			lastLoadCombiWarnings.add(name != null && !name.isEmpty() ? name : (id1 + "+" + id2));
+		}
 	}
 
 	private void load(InputStream inputStream, String inputFileName) throws IOException, FileParseException {
 		if (map == null)
 			map = new byte[MidiConstants.NOTE_COUNT];
-
 		Arrays.fill(map, DISABLED_NOTE_ID);
+		Map<Integer,Integer> fileMarkerRemap = new HashMap<>();
+		List<String> lines = new ArrayList<>();
+		try (BufferedReader rdr = new BufferedReader(new InputStreamReader(inputStream))) {
+			String l;
+			while ((l = rdr.readLine()) != null)
+				lines.add(l);
+		}
 
-		BufferedReader rdr = new BufferedReader(new InputStreamReader(inputStream));
-		String line;
+		lastLoadCombiWarnings = new ArrayList<>();
 		int lineNumber = 0;
-		while ((line = rdr.readLine()) != null) {
-			lineNumber++;
-
-			int commentIndex = line.indexOf('%');
-			if (commentIndex >= 0) {
-				line = line.substring(0, commentIndex);
+		if (supportsCombis()) {
+			for (String raw : lines) {
+				lineNumber++;
+				String t = raw.trim();
+				if (t.length() >= 6 && t.regionMatches(true, 0, "%combi", 0, 6)) {
+					parseCombiDirective(t, inputFileName, lineNumber, fileMarkerRemap);
+				}
 			}
+		}
+
+		// assignment lines.
+		lineNumber = 0;
+		for (String raw : lines) {
+			lineNumber++;
+			String line = raw;
+			int commentIndex = line.indexOf('%');
+			if (commentIndex >= 0)
+				line = line.substring(0, commentIndex);
 			line = line.trim();
 			if (line.isEmpty())
 				continue;
 
 			byte midiNote;
-			byte lotroNote;
+			int lotroNote;
 			try {
 				StringTokenizer tokenizer = new StringTokenizer(line, " \t=>");
 				midiNote = Byte.parseByte(tokenizer.nextToken());
-				lotroNote = Byte.parseByte(tokenizer.nextToken());
-				if (tokenizer.hasMoreTokens()) {
+				lotroNote = Integer.parseInt(tokenizer.nextToken());
+				if (tokenizer.hasMoreTokens())
 					throw new FileParseException("Invalid line (too many tokens)", inputFileName, lineNumber);
-				}
 			} catch (NoSuchElementException nse) {
 				throw new FileParseException("Invalid line (too few tokens)", inputFileName, lineNumber);
 			} catch (NumberFormatException nfe) {
 				throw new FileParseException("Invalid note ID", inputFileName, lineNumber);
 			}
 
-			if (midiNote < MidiConstants.LOWEST_NOTE_ID || midiNote > MidiConstants.HIGHEST_NOTE_ID) {
+			Integer remapped = fileMarkerRemap.get(lotroNote);
+			if (remapped != null) lotroNote = remapped;
+
+			if (midiNote < MidiConstants.LOWEST_NOTE_ID || midiNote > MidiConstants.HIGHEST_NOTE_ID)
 				throw new FileParseException("MIDI note is invalid", inputFileName, lineNumber);
-			}
-			if (lotroNote != DISABLED_NOTE_ID && !LotroInstrument.BASIC_DRUM.isPlayable(lotroNote)) {
+
+			if (lotroNote < -1 || lotroNote > Note.MAX.id) {
 				throw new FileParseException("ABC note is invalid", inputFileName, lineNumber);
 			}
+			if (lotroNote != DISABLED_NOTE_ID
+					&& !getLotroInstrument().isPlayable(lotroNote, false)
+					&& !isCombiNote(lotroNote)) {
+				map[midiNote] = DISABLED_NOTE_ID;
+				log.info("Note " + lotroNote + " in drummap is not mappable");
+				continue;
+			}
 
-			map[midiNote] = lotroNote;
+			map[midiNote] = (byte) lotroNote;
 		}
-
+		if (supportsCombis()) {
+			combiInfo.saveLibrary();        // persist anything mergeQuiet added
+			combiInfo.fireLibraryChanged(); // refresh dropdowns once
+		}
 		fireChangeEvent();
 	}
 
+	/**
+	 * Get the last warnings encountered when loading a drummap from XML.
+	 * Not used yet.
+	 */
+	public List<String> getLastLoadCombiWarnings() {
+		return lastLoadCombiWarnings;
+	}
+
+	/**
+	 * Save a drummap belonging to a specific instrument on specific track to XML.
+	 */
 	public void saveToXml(Element ele) {
-		if (map == null)
-			return;
+		if (map == null) return;
 
 		for (int midiId = 0; midiId < MidiConstants.NOTE_COUNT; midiId++) {
 			int lotroId = get(midiId);
-			if (lotroId == DISABLED_NOTE_ID)
-				continue;
+			if (lotroId == DISABLED_NOTE_ID) continue;
 
 			Element noteEle = ele.getOwnerDocument().createElement("note");
 			ele.appendChild(noteEle);
 			noteEle.setAttribute("id", String.valueOf(midiId));
-			noteEle.setAttribute("lotroId", String.valueOf(lotroId));
+
+			if (isCombiNote(lotroId)) {
+				LotroCombiDrumInfo.CombiDrumHit c = resolveCombi(lotroId);
+				if (c != null) {
+					if (c.locked()) {
+						noteEle.setAttribute("lotroId", String.valueOf(lotroId));
+					} else {
+						noteEle.setAttribute("lotroId", String.valueOf(c.firstNote().id));
+						noteEle.setAttribute("lotroId2", String.valueOf(c.secondNote().id));
+						if (c.name() != null && !c.name().isEmpty())
+							noteEle.setAttribute("combiName", c.name());
+					}
+				} else {
+					noteEle.setAttribute("lotroId", String.valueOf(lotroId));
+				}
+			} else {
+				noteEle.setAttribute("lotroId", String.valueOf(lotroId));
+			}
 		}
 	}
 
-	public static DrumNoteMap loadFromXml(Element ele, Version fileVersion) throws FileParseException {
+	/**
+	 * Load a drummap belonging to a specific instrument on specific track from XML.
+	 */
+	public static DrumNoteMap loadFromXml(Element ele, Version fileVersion, LotroCombiDrumInfo combiInfo) throws FileParseException {
 		try {
 			boolean isPassthrough = SaveUtil.parseValue(ele, "@isPassthrough", false);
-			DrumNoteMap retVal = isPassthrough ? new PassThroughDrumNoteMap() : new DrumNoteMap();
+			DrumNoteMap retVal = isPassthrough ? new PassThroughDrumNoteMap(combiInfo) : new DrumNoteMap(combiInfo);
 			retVal.loadFromXmlInternal(ele, fileVersion, LotroInstrument.BASIC_DRUM);
 			return retVal;
 		} catch (XPathExpressionException e) {
@@ -312,19 +528,40 @@ public class DrumNoteMap implements IDiscardable {
 		}
 	}
 
+	/**
+	 * Load a drummap belonging to a specific instrument on specific track from XML.
+	 */
 	protected void loadFromXmlInternal(Element ele, Version fileVersion, LotroInstrument lotroInstrument)
 			throws FileParseException, XPathExpressionException {
-		if (map == null)
-			map = new byte[MidiConstants.NOTE_COUNT];
-
+		assert lotroInstrument == getLotroInstrument():"loadFromXmlInternal instrument mismatch";
+		if (map == null) map = new byte[MidiConstants.NOTE_COUNT];
 		Arrays.fill(map, DISABLED_NOTE_ID);
 
 		for (Element noteEle : XmlUtil.selectElements(ele, "note")) {
-			int midiId = SaveUtil.parseValue(noteEle, "@id", DISABLED_NOTE_ID);
-			byte lotroId = SaveUtil.parseValue(noteEle, "@lotroId", DISABLED_NOTE_ID);
-			if (midiId >= 0 && midiId < map.length && lotroInstrument.isPlayable(lotroId, false)) {
-				map[midiId] = lotroId;
+			int midiId = SaveUtil.parseValue(noteEle, "@id", (int) DISABLED_NOTE_ID);
+			int lotroId = SaveUtil.parseValue(noteEle, "@lotroId", (int) DISABLED_NOTE_ID);
+			int combi2  = SaveUtil.parseValue(noteEle, "@lotroId2", (int) DISABLED_NOTE_ID);
+
+			if (midiId < 0 || midiId >= map.length) continue;
+
+			if (supportsCombis() && combi2 != DISABLED_NOTE_ID) {
+				Note n1 = Note.fromId(lotroId), n2 = Note.fromId(combi2);
+				if (n1 != null && n2 != null
+						&& getLotroInstrument().isPlayable((byte) lotroId, false)
+						&& getLotroInstrument().isPlayable((byte) combi2, false)) {
+					// allocate a local marker for this pair (dedup within this map by content)
+					String name = SaveUtil.parseValue(noteEle, "@combiName", (String) null);
+					Note marker = combiInfo.mergeQuiet(n1, n2, name);
+					map[midiId] = (marker != null) ? (byte) marker.id : (byte) lotroId;
+					if (marker == null) lastLoadCombiWarnings.add("(library full) " + (name != null ? name : n1.id + "+" + n2.id));
+				}
+			} else if (getLotroInstrument().isPlayable((byte) lotroId, false) || isCombiNote(lotroId)) {
+				map[midiId] = (byte) lotroId;
 			}
+		}
+		if (supportsCombis()) {
+			combiInfo.saveLibrary();
+			combiInfo.fireLibraryChanged();
 		}
 	}
 

@@ -156,6 +156,8 @@ public enum LotroInstrument
 	}
 
     /**
+	 * Test if a lotro instrument can play this note.
+	 * For drum it does NOT check if there exist a combo hit for this note.
      * Never call this from a student part with studentOverride == true.
      */
 	public boolean isPlayable(int noteId, boolean studentChromatic) {
@@ -169,12 +171,17 @@ public enum LotroInstrument
 		}
 		return isPlayable(noteId);
 	}
-	
+
+	/**
+	 * Test if a lotro instrument can play this note.
+	 * For drum it does NOT check if there exist a combo hit for this note.
+	 */
 	public boolean isPlayable(int noteId) {
+		boolean basic = noteId >= lowestPlayable.id && noteId <= highestPlayable.id;
 		if (this == BASIC_DRUM) {
-			return noteId >= lowestPlayable.id && noteId <= LotroCombiDrumInfo.maxCombi.id;
+			return basic;// || LotroCombiDrumInfo.noteIdIsFixed(noteId) // Its confusing to include combo hits, so we just check what lotro can play.
 		}
-		return noteId >= lowestPlayable.id && noteId <= highestPlayable.id;
+		return basic;
 	}
 
 	@Override
