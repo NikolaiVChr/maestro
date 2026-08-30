@@ -58,11 +58,9 @@ Release notes after 4.6.21 should be in markdown format. Keep the version header
 This changelog is only partial, to see all the way back to v1.0.0 go here:
   https://maestro.miraheze.org/wiki/Version_history
 
-Version 4.6.23
-* This is a beta release, feel free to help and test.
+Version 4.6.24
 * Added support for custom drum combos in drum-maps.
 * Added editor for drum combos. Access it in drummap menu. It will stop preview playback, but will allow midi playback to continue.
-* Things to test: Jaunty FX and Student FX should still work. New editor should work. Export and import of drum-maps should work. Old projects should have correct drum sounds. Old drum-maps should work.
 
 Version 4.6.22
 * Downloads of the apps are now found on github. [https://github.com/NikolaiVChr/maestro/releases](https://github.com/NikolaiVChr/maestro/releases)
