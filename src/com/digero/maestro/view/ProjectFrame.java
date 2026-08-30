@@ -3685,13 +3685,13 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				return false;
 			}
 		} catch (FileNotFoundException e) {
-			log.warning(e.getMessage());
+			log.log(Level.WARNING, "Failed to create expanded midi file", e);
 			JOptionPane.showMessageDialog(this, UIText.get("maestro.failed.to.create.file.0", e.getMessage()), UIText.get("maestro.failed.to.create.file"),
 					JOptionPane.ERROR_MESSAGE);
 
 			return false;
 		} catch (InvalidMidiDataException | IOException | FileParseException e) {
-			log.severe(e.getMessage());
+			log.log(Level.SEVERE, "Failed to export expanded midi file", e);
 			JOptionPane.showMessageDialog(this, e.getMessage(), UIText.get("maestro.error"), JOptionPane.ERROR_MESSAGE);
 			return false;
 		}

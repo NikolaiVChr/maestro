@@ -102,7 +102,7 @@ public class SoundFontDownloader {
         if (!dir.exists()) {
             boolean madeDirs = dir.mkdirs();
             if (!madeDirs) {
-                log.warning("Failed to create common Maestro folder");
+                log.severe("Failed to create common Maestro folder");
                 return null;
             }
         }

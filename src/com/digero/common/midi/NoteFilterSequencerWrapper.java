@@ -3,6 +3,7 @@ package com.digero.common.midi;
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
@@ -159,7 +160,7 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 		try {
 			prefsNode.flush();
 		} catch (BackingStoreException e) {
-			log.warning(e.getMessage());
+			log.log(Level.WARNING, "Failed to flush custom SF2 setting to prefs",e.getMessage());
 		}
 
 		closeDevice();

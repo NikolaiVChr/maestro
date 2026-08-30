@@ -181,12 +181,12 @@ public class LotroCombiDrumInfo {
 		if (existing != null) return existing;
 		Note key = allocateLibraryKey();
 		if (key == null) {
-			log.warning("Library FULL, combo not added: " + n1.id + "+" + n2.id
+			log.warning("Library full, combo not added: " + n1.id + "+" + n2.id
 					+ (name != null ? " (" + name + ")" : ""));
 			return null;
 		}
 		library.put(key, new CombiDrumHit(n1, n2, name, false));
-		log.info("Library ADD id=" + key.id + " pair=" + n1.id + "+" + n2.id
+		log.info("Library added id=" + key.id + " pair=" + n1.id + "+" + n2.id
 				+ " name=" + (name == null ? "" : name));
 		saveLibrary();
 		fireLibraryChanged();
@@ -207,7 +207,7 @@ public class LotroCombiDrumInfo {
 		Note key = allocateLibraryKey();
 		if (key == null) return null;
 		library.put(key, new CombiDrumHit(n1, n2, name, false));
-		log.info("Library MERGE id=" + key.id + " pair=" + n1.id + "+" + n2.id
+		log.info("Library merged id=" + key.id + " pair=" + n1.id + "+" + n2.id
 				+ " name=" + (name == null ? "" : name) + " (from file load)");
 		return key;  // no saveLibrary, no fireLibraryChanged
 	}
@@ -223,7 +223,7 @@ public class LotroCombiDrumInfo {
 		if (ex == null || ex.locked()) return false;
 		CombiDrumHit existing = library.remove(key);
 		if (existing == null) return false;
-		log.info("Library REMOVE id=" + key.id + " pair=" + existing.firstNote().id + "+" + existing.secondNote().id
+		log.info("Library removed id=" + key.id + " pair=" + existing.firstNote().id + "+" + existing.secondNote().id
 				+ " name=" + (existing.name() == null ? "" : existing.name()));
 		saveLibrary();
 		fireLibraryChanged();
