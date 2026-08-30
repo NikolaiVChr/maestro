@@ -10,6 +10,8 @@ on:
 
 permissions:
   contents: write        # required for the gh CLI to create/update the draft release
+  id-token: write        # mint the OIDC token for Sigstore keyless signing
+  attestations: write    # persist the attestation to the repo
 
 jobs:
   build:
@@ -37,6 +39,19 @@ jobs:
       - name: Run Ant Distribute
         working-directory: distribute
         run: ant Distribute
+      - name: Stamp
+        shell: pwsh
+        run: |
+          $origin = "Built by github.com/$env:GITHUB_REPOSITORY"
+          $installer = New-Object -ComObject WindowsInstaller.Installer
+          Get-ChildItem distribute/output/*.msi | ForEach-Object {
+            Set-ItemProperty $_.FullName -Name IsReadOnly -Value $false
+            $si = $installer.SummaryInformation($_.FullName, 20)
+            $si.Property(6) = $origin
+            $si.Persist()
+            [void][Runtime.InteropServices.Marshal]::ReleaseComObject($si)
+            "Stamped $($_.Name): $origin"
+          }
 
       # Uploads each artifact to VirusTotal via its REST API (no third-party action).
       # Informational only: it records a permalink + verdict, never fails the build.
@@ -125,6 +140,15 @@ jobs:
           }
           
           Get-Content defender-notes.md >> $env:GITHUB_STEP_SUMMARY
+
+      # Anyone with Github CLI can run this command to verify this repo made the build and action:
+      #   gh attestation verify Maestro_v4.6.22.msi --repo NikolaiVChr/maestro
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: |
+            distribute/output/*.msi
+            distribute/output/*.zip
 
       # Attaches the MSI + ZIP to a versioned draft release, using this version's
       # changelog section of readme.txt (plus the VirusTotal summary, if any) as the
