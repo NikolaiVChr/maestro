@@ -2,6 +2,11 @@ name: Build Draft Release
 
 on:
   workflow_dispatch:
+    inputs:
+      beta:
+        description: "Beta build"
+        type: boolean
+        default: false
 
 permissions:
   contents: write        # required for the gh CLI to create/update the draft release
@@ -132,6 +137,15 @@ jobs:
           zip=$(ls distribute/output/Maestro_v*.zip | head -n1)
           ver=$(basename "$zip" .zip | sed -E 's/^Maestro_v//')
           tag="v$ver"
+          
+          # Beta builds get a distinct tag/title and are marked as pre-release.
+          title_suffix=""
+          prerelease=""
+          if [ "${{ inputs.beta }}" = "true" ]; then
+            tag="$tag-beta"
+            title_suffix=" (beta)"
+            prerelease="--prerelease"
+          fi
 
           # Extract this version's changelog block from readme.txt:
           #  - strip trailing CR (readme is CRLF)
@@ -180,6 +194,6 @@ jobs:
 
           echo "Releasing Maestro $ver as draft $tag"
           gh release create "$tag" distribute/output/*.msi distribute/output/*.zip distribute/readme.txt \
-            --draft \
-            --title "Maestro $ver" \
+            --draft $prerelease \
+            --title "Maestro $ver$title_suffix" \
             --notes-file release-notes.md
