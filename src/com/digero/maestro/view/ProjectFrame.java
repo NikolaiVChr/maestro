@@ -35,9 +35,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -222,6 +220,19 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private static volatile String feed = "";
 	private static volatile String feedFull = "";
     private PreviewExportWorker previewWorker = null;
+
+	/**
+	 * Monotonic id bumped on every preview rebuild request in refreshPreviewSequence.
+	 * The preview loaded in abcSequencer is current only when previewAppliedSeq equals
+	 * previewRequestSeq. Using an id instead of a boolean is what makes it correct when
+	 * two builds overlap: a build carries the id of the request it was built for, so an
+	 * older build finishing can never mark a newer edit's state current.
+	 * Both fields are touched only on the EDT (refreshPreviewSequence / applyPreview /
+	 * PreviewExportWorker.done), so no synchronization is needed.
+	 */
+	private long previewRequestSeq = 0;
+	/** The previewRequestSeq whose build is currently loaded in abcSequencer; -1 = none. */
+	private long previewAppliedSeq = -1;
 
     // these properties have in common that they stop UI
     // listeners in doing all their work:
@@ -2770,12 +2781,22 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		if (newAbcPreviewMode != abcPreviewMode || runningNow != shouldBeRunning) {
 			if (shouldBeRunning && newAbcPreviewMode) {
-				if (!refreshPreviewSequence(true)) {
+
+				// If the preview is still current (e.g. the background rebuild kicked
+				// off when we switched to MIDI has since finished), reuse it instead of
+				// re-running the full export synchronously on the EDT.
+				// Only rebuild when it's not current or nothing is loaded.
+				boolean ready = (previewAppliedSeq == previewRequestSeq) && abcSequencer.isLoaded();
+				if (!ready) {
+					ready = refreshPreviewSequence(true);
+				}
+				if (!ready) {
 					shouldBeRunning = false;
 
 					SequencerWrapper oldSequencer = abcPreviewMode ? abcSequencer : sequencer;
 					oldSequencer.stop();
 				}
+
 			} else if (abcSong != null && abcSong.getActivePartCount() > 0) {
 				// for histogram. The condition is due to it might be
                 // refreshPreviewSequence thats calling us, and we
@@ -2825,14 +2846,16 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         private final AbcSong mySong;
         private final boolean lotroInstruments;
         private final boolean oldVelocities;
+		private final long requestSeq;
         private Throwable backgroundException = null;
 
-        public PreviewExportWorker(AbcSong mySong, boolean lotroInstruments, boolean oldVelocities, int pan) throws AbcConversionException {
+        public PreviewExportWorker(AbcSong mySong, boolean lotroInstruments, boolean oldVelocities, int pan, long requestSeq) throws AbcConversionException {
             this.mySong = new AbcSong(mySong);
             this.myExporter = this.mySong.getAbcExporter();
             this.myExporter.stereoPan = pan;
             this.lotroInstruments = lotroInstruments;
             this.oldVelocities = oldVelocities;
+			this.requestSeq = requestSeq;
         }
 
         /**
@@ -2862,10 +2885,15 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 return;
             }
             try {
-                // This check is to guard against preview generated on worker thread,
-                // but while that happens, the user sends a new file to Maestro via Windows
-                // explorer. So we check if the abcSong matches.
-                if (abcSong == mySong.origSong) applyPreview(get(), myExporter);
+				// Apply only if this build is still the latest requested one - a newer
+				// edit may have superseded it while it ran - and the song still matches.
+				// Otherwise the result is stale: don't load it and don't stamp it current.
+				// The abcsong check is to guard against preview generated on worker thread,
+				// but while that happens, the user sends a new file to Maestro via Windows
+				// explorer. So we check if the abcSong matches.
+				if (requestSeq == previewRequestSeq && abcSong == mySong.origSong) {
+					applyPreview(get(), myExporter, requestSeq);
+				}
             } catch (ExecutionException e) {
                 Throwable cause = e.getCause() != null ? e.getCause() : e;
                 log.log(Level.WARNING, "Error exporting preview", cause);
@@ -2893,7 +2921,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
     /**
      * Runs only in Swing Thread
      */
-    private void applyPreview(SequenceInfo previewSequenceInfo, AbcExporter exporter) {
+    private void applyPreview(SequenceInfo previewSequenceInfo, AbcExporter exporter, long appliedRequestSeq) {
         abcPreviewStartTick = exporter.getExportStartTick();
         abcPreviewTempoFactor = abcSequencer.getTempoFactor();
         abcBarLabel.setBarNumberCache(exporter.getTimingInfo());
@@ -2974,6 +3002,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             arrangementView.setDissonance(previewSequenceInfo.dissonance);
             histogram = previewSequenceInfo.histogram;
             updateStereo();// we call this here to benefit PanVisualizerPanel
+
+			// Success: the abcSequencer now holds the build for this request id.
+			previewAppliedSeq = appliedRequestSeq;
         } catch (InvalidMidiDataException e) {
             log.log(Level.WARNING, "Error after exporting preview", e);
             sequencer.stop();
@@ -2992,6 +3023,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             log.log(Level.SEVERE, "refreshPreviewSequence: not on Swing thread", new RuntimeException());
             return false;
         }
+
+		// Each rebuild request gets a new monotonic id. The preview counts as current
+		// only once applyPreview stamps this id into previewAppliedSeq.
+		final long requestSeq = ++previewRequestSeq;
+
         PreviewExportWorker oldWorker = null;
         if (previewWorker != null) {
             if (!previewWorker.isDone()) {
@@ -3011,6 +3047,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             arrangementView.setHistogram(new PolyphonyHistogram());
             arrangementView.setDissonance(new DissonanceDetector(null));
             histogram = null;
+			previewAppliedSeq = -1;
             updatePreviewMode(false);
             setSourceChangeEnabled(true);
             return false;
@@ -3023,7 +3060,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 abcSong.setReducedFilesize(saveSettings.reducedFilesize);
                 abcSong.setUseRestsInChords(saveSettings.useRestsInChords);
                 // abcSong.setShowPruned(saveSettings.showPruned);
-                previewWorker = new PreviewExportWorker(abcSong, !failedToLoadLotroInstruments, false, prefs.getInt("stereoPan", defaultStereo));
+                previewWorker = new PreviewExportWorker(abcSong, !failedToLoadLotroInstruments, false, prefs.getInt("stereoPan", defaultStereo), requestSeq);
                 setSourceChangeEnabled(false);
                 previewWorker.execute();
             } catch (AbcConversionException e) {
@@ -3041,12 +3078,22 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         try {
             if (oldWorker != null) {
                 try {
-                    oldWorker.get();
+					// The cancelled worker runs on its own deep copy of the AbcSong
+					// (PreviewExportWorker copies it; AbcSong's copy ctor nulls abcExporter),
+					// so it cannot touch the exporter this immediate build uses, the old
+					// "wait so getAbcExporter can't corrupt shared state" reason is gone.
+					// Give it a brief bounded moment to unwind after cancel(true) so we don't
+					// run two exports on the same cores, but never freeze the EDT waiting.
+					// If it finishes anyway its done() is requestSeq-guarded and won't apply.
+					oldWorker.get(2, TimeUnit.SECONDS);
                     // doInBackground has now finished
-                    // wait even though its canceled cause
-                    // getBacExporter might change abcExporter and
-                    // mess up its internal state
-                } catch (Throwable ignored) {
+				} catch (TimeoutException te) {
+					// Cancelled worker didn't stop in time. Don't block the EDT waiting
+					// on it; the immediate rebuild below builds from current state anyway,
+					// and the stale worker's done() is guarded by requestSeq so it can't
+					// apply over us.
+					log.log(Level.WARNING, "Cancelled preview worker did not finish in time; proceeding", te);
+				} catch (Throwable ignored) {
                 }
             }
 
@@ -3058,7 +3105,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
             AbcExporter exporter = abcSong.getAbcExporter();
             exporter.stereoPan = prefs.getInt("stereoPan", defaultStereo);
             SequenceInfo previewSequenceInfo = SequenceInfo.fromAbcParts(exporter, !failedToLoadLotroInstruments, false);
-            applyPreview(previewSequenceInfo, exporter);
+            applyPreview(previewSequenceInfo, exporter, requestSeq);
             setSourceChangeEnabled(true);
             return true;
         } catch(Exception e) {
