@@ -31,7 +31,7 @@ public class SoundFontDownloader {
     // Update URL and SHA256 if you release a new version of the soundfont
     // Do not download sha256 dynamically for security reasons, keep it hardcoded.
     private static final String SF2_URL = "https://github.com/NikolaiVChr/mver/releases/download/v4.6.24/LotroInstruments.sf2";
-    private static final String EXPECTED_SHA256 = "00de443b4e2e80c973a458a7e35c6271bd57b639e07c25fd52fdce13909c3e80";
+    private static final String EXPECTED_SHA256 = "09c081c183227615937377dd97cca8a2fa1f7b9a60e4909491ebe402caded535";
 
     // We append the first 8 chars of the hash to the filename to support multiple versions side-by-side
     // so users of multiple zip versions also don't have to download for each release.
