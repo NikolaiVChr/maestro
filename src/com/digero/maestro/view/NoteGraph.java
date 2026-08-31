@@ -512,10 +512,18 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 		if (bitmapRebuildTimer != null) {
 			bitmapRebuildTimer.stop();
 		}
-		bitmapRebuildTimer = new Timer(BITMAP_DEBOUNCE_MS, e -> {
-			bitmapRebuildTimer = null;
+		final Timer[] self = new Timer[1];               // holder so the lambda can see its own timer
+		self[0] = new Timer(BITMAP_DEBOUNCE_MS, e -> {
+			// When timer fires, it queues this lambda to run on the EDT,
+			// its not ran instantly.
+			// Inbetween the timer firing and lambda running, bitmapRebuildTimer may have been replaced
+			// so check if we're still the current timer before nulling the timer.
+			if (bitmapRebuildTimer == self[0]) {         // only clear if a newer one hasn't replaced us
+				bitmapRebuildTimer = null;
+			}
 			repaint();
 		});
+		bitmapRebuildTimer = self[0];
 		bitmapRebuildTimer.setRepeats(false);
 		bitmapRebuildTimer.start();
 	}
