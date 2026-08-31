@@ -20,17 +20,11 @@ public interface AbcConstants {
 	int MAX_TEMPO = (int)(ONE_MINUTE_MICROS / SHORTEST_NOTE_MICROS);
 	int MIN_TEMPO = (int)((ONE_MINUTE_MICROS + LONGEST_NOTE_MICROS / 2) / LONGEST_NOTE_MICROS); // Round up
 
-	// Modifications to the ABC note lengths to sound more like the instruments in the game
-	double NON_SUSTAINED_NOTE_HOLD_SECONDS = 1.5d;
-	double SUSTAINED_NOTE_HOLD_SECONDS = 0.0d;// A little hold to get the release to sound more like lotros linear.
-												// Lowered to 0.075s from 0.1s in
-												// 2.5.0
-	double NOTE_RELEASE_SECONDS = 0.2d;// Sadly this is linear 0.5s dB release, not linear 0.2s power release like in
+	double NOTE_RELEASE_SECONDS = 0.2d; // Sadly this is linear 0.5s dB release, not linear 0.2s power release like in
 										// lotro. In Gervill the release ends at -60 dB, assuming java8 kept same: 
 										// So choosing 75 ms hold and 625 ms will give
 										// -2.5 dB at 100 ms, -7.2 dB at 150 ms, -12 dB at 200 ms.
 										// Lotro: -3 dB at 100 ms, -6 dB at 150 ms, -infinite at 200 ms.
-	double STUDENT_FX_MIN_SECONDS = 1.5d;
 
 	// MIDI Preview controller values
 	int MIDI_REVERB = 0;// Changed to 0 from 3 in 2.5.0
@@ -101,4 +95,53 @@ public interface AbcConstants {
 
         return 60000L;
     }
+
+	/**
+	 * Modifications to the ABC note lengths to sound more like the instruments in the game
+	 * Return micros.
+ 	 */
+	static long getNonSustainedNoteHoldMicros(LotroInstrument instr) {
+		switch(instr) {
+            case SPRIGHTLY_FIDDLE -> {
+                return 1_800_000L;
+            }
+			case BASIC_DRUM -> {
+				return 1_000_000L;
+			}
+			case BASIC_LUTE -> {
+				return 1_100_000L;
+			}
+			case BASIC_COWBELL -> {
+				return 300_000L;
+			}
+			case MOOR_COWBELL -> {
+				return 300_000L;
+			}
+			case MISTY_MOUNTAIN_HARP -> {
+				return 1_500_000L;
+			}
+			case BASIC_THEORBO -> {
+				return 900_000L;
+			}
+			case BASIC_HARP -> {
+				return 1_300_000L;
+			}
+			case BRUSQUE_BASSOON -> {
+				return 510_000L;
+			}
+			case LUTE_OF_AGES -> {
+				return 1_300_000L;
+			}
+			case STUDENT_FIDDLE -> {
+				return 2_000_000L;
+			}
+			case TRAVELLERS_TRUSTY_FIDDLE -> {
+				return 1_400_000L;
+			}
+			case JAUNTY_HAND_KNELLS -> {
+				return 1_600_000L;
+			}
+        }
+		return 1_500_000L;
+	}
 }

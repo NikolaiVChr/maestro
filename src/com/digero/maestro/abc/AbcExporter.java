@@ -413,8 +413,11 @@ public class AbcExporter {
 
                         // Shorten the note to end at the same time that the next one starts
                         long endTick = on.getEndTick();
-                        if (on.note.id == ne.note.id && on.getEndTick() > ne.getStartTick())
+                        if (on.note.id == ne.note.id && on.getEndTick() > ne.getStartTick()) {
+                            // the note starting now, has an ongoing note with same pitch
+                            // we stop the ongoing note here.
                             endTick = ne.getStartTick();
+                        }
 
                         if (endTick <= ne.getStartTick()) {
                             // This note has been turned off
@@ -434,27 +437,21 @@ public class AbcExporter {
 
                     long endTick = ne.getTieEnd().getEndTick();
 
-                    // Lengthen to match the note lengths used in the game
+                    // Match the note lengths used in lotro for non-sustained notes
                     if (useLotroInstruments) {
                         boolean sustainable = part.getInstrument().isSustainable(ne.note.id);
-                        double extraSeconds = 0.0d;
-                        if (sustainable) {
-                            // This is better match lotro linear power decay, since our midi playback is linear dB decay instead.
-                            extraSeconds = AbcConstants.SUSTAINED_NOTE_HOLD_SECONDS;
-                        } else if (part.getInstrument() == LotroInstrument.STUDENT_FIDDLE) {
-                            // This is to not stop fx noise before it has played out
-                            extraSeconds = AbcConstants.STUDENT_FX_MIN_SECONDS;
-                        } else {
+
+                        if (!sustainable) {
                             // This is to not stop plucked/drum note before it has played out
-                            extraSeconds = AbcConstants.NON_SUSTAINED_NOTE_HOLD_SECONDS;
-                        }
-                        if (extraSeconds > 0.0d) {
+                            long micros = AbcConstants.getNonSustainedNoteHoldMicros(part.getInstrument());
+
                             if (organic) {
-                                endTick = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(endTick)
-                                        + qtm.multiplyByExportTempoFactor((long) (extraSeconds * TimingInfo.ONE_SECOND_MICROS)));
+                                endTick = qtm.microsToTickOrganic(
+                                          qtm.tickToMicrosOrganic(ne.getStartTick()) + qtm.multiplyByExportTempoFactor(micros)
+                                            );
                             } else {
-                                endTick = qtm.microsToTick(qtm.tickToMicros(endTick)
-                                        + qtm.multiplyByExportTempoFactor((long) (extraSeconds * TimingInfo.ONE_SECOND_MICROS)));
+                                endTick = qtm.microsToTick(qtm.tickToMicros(ne.getStartTick())
+                                        + qtm.multiplyByExportTempoFactor(micros));
                             }
                         }
                     }
