@@ -413,8 +413,11 @@ public class AbcExporter {
 
                         // Shorten the note to end at the same time that the next one starts
                         long endTick = on.getEndTick();
-                        if (on.note.id == ne.note.id && on.getEndTick() > ne.getStartTick())
+                        if (on.note.id == ne.note.id && on.getEndTick() > ne.getStartTick()) {
+                            // the note starting now, has an ongoing note with same pitch
+                            // we stop the ongoing note here.
                             endTick = ne.getStartTick();
+                        }
 
                         if (endTick <= ne.getStartTick()) {
                             // This note has been turned off
@@ -434,27 +437,21 @@ public class AbcExporter {
 
                     long endTick = ne.getTieEnd().getEndTick();
 
-                    // Lengthen to match the note lengths used in the game
+                    // Match the note lengths used in lotro for non-sustained notes
                     if (useLotroInstruments) {
                         boolean sustainable = part.getInstrument().isSustainable(ne.note.id);
-                        double extraSeconds = 0.0d;
-                        if (sustainable) {
-                            // This is better match lotro linear power decay, since our midi playback is linear dB decay instead.
-                            extraSeconds = AbcConstants.SUSTAINED_NOTE_HOLD_SECONDS;
-                        } else if (part.getInstrument() == LotroInstrument.STUDENT_FIDDLE) {
-                            // This is to not stop fx noise before it has played out
-                            extraSeconds = AbcConstants.STUDENT_FX_MIN_SECONDS;
-                        } else {
+
+                        if (!sustainable) {
                             // This is to not stop plucked/drum note before it has played out
-                            extraSeconds = AbcConstants.NON_SUSTAINED_NOTE_HOLD_SECONDS;
-                        }
-                        if (extraSeconds > 0.0d) {
+                            long micros = AbcConstants.getNonSustainedNoteHoldMicros(part.getInstrument());
+
                             if (organic) {
-                                endTick = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(endTick)
-                                        + qtm.multiplyByExportTempoFactor((long) (extraSeconds * TimingInfo.ONE_SECOND_MICROS)));
+                                endTick = qtm.microsToTickOrganic(
+                                          qtm.tickToMicrosOrganic(ne.getStartTick()) + qtm.multiplyByExportTempoFactor(micros)
+                                            );
                             } else {
-                                endTick = qtm.microsToTick(qtm.tickToMicros(endTick)
-                                        + qtm.multiplyByExportTempoFactor((long) (extraSeconds * TimingInfo.ONE_SECOND_MICROS)));
+                                endTick = qtm.microsToTick(qtm.tickToMicros(ne.getStartTick())
+                                        + qtm.multiplyByExportTempoFactor(micros));
                             }
                         }
                     }
@@ -2219,42 +2216,47 @@ public class AbcExporter {
 	}
 
 	private List<MidiNoteEvent> expandXtraDrumNotes(AbcPart part, int trackNumber) {
-		boolean specialDrumNotes = false;
-		if (part.getInstrument() == LotroInstrument.BASIC_DRUM) {
-			TrackInfo tInfo = part.getAbcSong().getSequenceInfo().getTrackInfo(trackNumber);
-			for (int inNo : tInfo.getNotesInUse()) {
-				byte outNo = part.getDrumMap(trackNumber).get(inNo);
-				if (outNo > part.getInstrument().highestPlayable.id) {
-					specialDrumNotes = true;
-					break;
-				}
-			}
-		}
-		List<MidiNoteEvent> listOfNotes = new ArrayList<>(part.getTrackEvents(trackNumber));
+        DrumNoteMap dm = part.getDrumMap(trackNumber);
 
-		if (specialDrumNotes) {
-			List<MidiNoteEvent> extraList = new ArrayList<>();
-			List<MidiNoteEvent> removeList = new ArrayList<>();
-			for (MidiNoteEvent ne : listOfNotes) {
-				Note possibleCombiNote = part.mapNote(trackNumber, ne.note.id, ne.getStartTick());
-				if (possibleCombiNote != null && LotroCombiDrumInfo.noteIdIsXtraNote(possibleCombiNote.id)) {
-					MidiNoteEvent extra1 = LotroCombiDrumInfo.getId1(ne, possibleCombiNote, ne.midiPan);
-					MidiNoteEvent extra2 = LotroCombiDrumInfo.getId2(ne, possibleCombiNote, ne.midiPan);
-					extraList.add(extra1);
-					extraList.add(extra2);
-					removeList.add(ne);
-					// Notice that bent notes on chromatic tracks are treated as only 1 note here
-				} else if (possibleCombiNote != null && possibleCombiNote.id > LotroCombiDrumInfo.maxCombi.id) {
-					// Just for safety, should never land here.
-					logNotes.severe("Just for safety, should never land here: "+ne);
-					removeList.add(ne);
-				}
-			}
-			listOfNotes.removeAll(removeList);
-			listOfNotes.addAll(extraList);
-		}
+        boolean specialDrumNotes = false;
+        if (part.getInstrument() == LotroInstrument.BASIC_DRUM) {
+            TrackInfo tInfo = part.getAbcSong().getSequenceInfo().getTrackInfo(trackNumber);
+            for (int inNo : tInfo.getNotesInUse()) {
+                byte outNo = dm.get(inNo);
+                if (dm.isCombiNote(outNo)) {
+                    specialDrumNotes = true;
+                    break;
+                }
+            }
+        }
+        List<MidiNoteEvent> listOfNotes = new ArrayList<>(part.getTrackEvents(trackNumber));
+        if (!specialDrumNotes) return listOfNotes;
+
+        List<MidiNoteEvent> extraList = new ArrayList<>();
+        List<MidiNoteEvent> removeList = new ArrayList<>();
+        for (MidiNoteEvent ne : listOfNotes) {
+            Note mapped = part.mapNote(trackNumber, ne.note.id, ne.getStartTick());
+            if (mapped == null) continue;
+
+            LotroCombiDrumInfo.CombiDrumHit c = dm.resolveCombi(mapped.id);
+            if (c != null) {
+                extraList.add(makeHit(ne, c.firstNote(),  ne.midiPan));
+                extraList.add(makeHit(ne, c.secondNote(), ne.midiPan));
+                removeList.add(ne);
+                // Notice that bent notes on chromatic tracks are treated as only 1 note here
+            }
+        }
+        listOfNotes.removeAll(removeList);
+        listOfNotes.addAll(extraList);
+
 		return listOfNotes;
 	}
+
+    private static MidiNoteEvent makeHit(MidiNoteEvent ne, Note n, int pan) {
+        MidiNoteEvent e = new MidiNoteEvent(n, ne.velocity, ne.getStartTick(), ne.getEndTick(), ne.getTempoCache(), pan);
+        e.alreadyMapped = true;
+        return e;
+    }
 	
 	/**
 	 * Combine the tracks into one, separate into chords.

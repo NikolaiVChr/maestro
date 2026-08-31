@@ -9,7 +9,6 @@ import java.util.*;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.logging.Logger;
-import java.util.prefs.Preferences;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -95,7 +94,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	private int enabledTrackCount = 0;
 	private int previewSequenceTrackNumber = -1;
 	private final ListenerList<AbcPartEvent> listeners;
-	private final Preferences drumPrefs = Preferences.userNodeForPackage(AbcPart.class).node("drums");
+
 
 	private int noteMax = AbcConstants.MAX_CHORD_NOTES;
 	public List<TreeMap<Float, PartSection>> sections;
@@ -590,7 +589,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 
 		Element drumMapEle = XmlUtil.selectSingleElement(trackEle, DrumNoteMap.getXmlName());
 		if (drumMapEle != null) {
-			drumNoteMap[t] = DrumNoteMap.loadFromXml(drumMapEle, fileVersion);
+			drumNoteMap[t] = DrumNoteMap.loadFromXml(drumMapEle, fileVersion, abcSong.getCombiInfo());
 			if (drumNoteMap[t] != null)
 				drumNoteMap[t].addChangeListener(drumMapChangeListener);
 		}
@@ -1667,18 +1666,33 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		return abcSong.getSequenceInfo().getTrackInfo(track).isDrumTrack();
 	}
 
+	/**
+	 * Returns the DrumNoteMap for the given track. If the track is not a drum track, returns null.
+	 * If the map does not exist, then one is created, to avoid that use peekDrumMap() instead.
+	 */
 	public DrumNoteMap getDrumMap(int track) {
-        if (discarded) return new PassThroughDrumNoteMap();
+        if (discarded) return new PassThroughDrumNoteMap(abcSong.getCombiInfo());
 		if (drumNoteMap[track] == null) {
-			// For non-drum tracks, just use a straight pass-through
 			if (!abcSong.getSequenceInfo().getTrackInfo(track).isDrumTrack()) {
-				drumNoteMap[track] = new PassThroughDrumNoteMap();
+				// For non-drum tracks, just use a straight pass-through
+				drumNoteMap[track] = new PassThroughDrumNoteMap(abcSong.getCombiInfo());
 			} else {
-				drumNoteMap[track] = new DrumNoteMap();
-				drumNoteMap[track].load(drumPrefs);
+				drumNoteMap[track] = new DrumNoteMap(abcSong.getCombiInfo());
+				if (abcSong.getCombiInfo() != null && abcSong.getCombiInfo().usePrefs) {
+					drumNoteMap[track].loadTemplate();
+				}
 			}
 			drumNoteMap[track].addChangeListener(drumMapChangeListener);
 		}
+		return drumNoteMap[track];
+	}
+
+	/**
+	 * Returns the DrumNoteMap for the given track. If the track is not a drum track, returns null.
+	 * Will return null, if the map does not exist.
+	 */
+	public DrumNoteMap peekDrumMap(int track) {
+		if (discarded) return null;
 		return drumNoteMap[track];
 	}
 
@@ -1704,6 +1718,9 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
         if (discarded) return new JauntyHandKnellsFXNoteMap();
         if (jauntyHandKnellsFXNoteMap[track] == null) {
             jauntyHandKnellsFXNoteMap[track] = new JauntyHandKnellsFXNoteMap();
+			if (abcSong.getCombiInfo() != null && abcSong.getCombiInfo().usePrefs) {
+				jauntyHandKnellsFXNoteMap[track].loadTemplate();
+			}
             jauntyHandKnellsFXNoteMap[track].addChangeListener(drumMapChangeListener);
         }
         return jauntyHandKnellsFXNoteMap[track];
@@ -1717,22 +1734,18 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
                 // Don't write pass-through drum maps to the prefs node
 				// these are used for non-drum tracks and their mapping
 				// isn't desirable to save.
-				if (!(map instanceof PassThroughDrumNoteMap) && !(map instanceof StudentFXNoteMap))
-					map.save(drumPrefs);
+				if (!(map instanceof PassThroughDrumNoteMap) && !(map instanceof StudentFXNoteMap)) {
+					// consider when the map is a JauntyHandKnellsFXNoteMap if that should save template..
+					if (abcSong.getCombiInfo() != null && abcSong.getCombiInfo().usePrefs) {
+						map.saveTemplate();
+					}
+				}
 
 				abcSong.setMixDirty(true);// Some drum sounds might have been toggled, so need to recompute mixTimings
 				fireChangeEvent(AbcPartProperty.DRUM_MAPPING);
 			}
 		}
 	};
-	
-	
-	
-	
-
-	Preferences getDrumPrefs() {
-		return drumPrefs;
-	}
 
 	public boolean isDrumPlayable(int track, int drumId) {
 		if (isCowbellPart())

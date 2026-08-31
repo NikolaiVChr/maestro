@@ -903,12 +903,9 @@ public class AbcToMidi {
                     } catch (Throwable e) {
                         // In case getDura returns null, we get a class cast exception.
                         log.warning("Unable to find duration for note "+lotroNoteId+" in "+info.getInstrument().friendlyName+", "+e.getMessage());
+						noteEndTickTmp = noteStartTick + AbcConstants.getNonSustainedNoteHoldMicros(info.getInstrument()) * PPQN / MPQN;
                     }
                 }
-				double extraSeconds = sustainable ? AbcConstants.SUSTAINED_NOTE_HOLD_SECONDS
-						: AbcConstants.NON_SUSTAINED_NOTE_HOLD_SECONDS;
-
-				if (!skipExtra) noteEndTickTmp += extraSeconds * AbcConstants.ONE_SECOND_MICROS * PPQN / MPQN;
 			}
 			MidiEvent noteOff = MidiFactory.createNoteOffEventEx(noteId, channel,
 					info.getDynamics().getVol(useLotroInstruments), Math.round(noteEndTickTmp));

@@ -1,0 +1,223 @@
+name: Build Draft Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      beta:
+        description: "Beta build"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write        # required for the gh CLI to create/update the draft release
+  id-token: write        # mint the OIDC token for Sigstore keyless signing
+  attestations: write    # persist the attestation to the repo
+
+jobs:
+  build:
+    name: Build MSI + ZIP (Windows, Ant)
+    runs-on: windows-latest
+
+    env:
+      MAVEN_ARGS: -B                                   # setup-java also appends -ntp
+      VT_API_KEY: ${{ secrets.VIRUSTOTAL_API_KEY }}    # empty on forks -> scan step is skipped
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Oracle JDK 25.0.4
+        uses: actions/setup-java@v5
+        with:
+          distribution: oracle    # Oracle JDK (No-Fee Terms license), includes jmods
+          java-version: '25.0.4'  # if Oracle later drops this archived patch, use '25' for latest
+          cache: maven
+        # setup-java exports JAVA_HOME, which build.xml reads via ${env.JAVA_HOME}.
+
+      # Ant + Maven are preinstalled on windows-latest. Distribute runs
+      # mvn clean install, then jpackage + WiX to produce the MSI and ZIP.
+      - name: Run Ant Distribute
+        working-directory: distribute
+        run: ant Distribute
+      - name: Stamp
+        shell: pwsh
+        run: |
+          $origin = "Built by github.com/$env:GITHUB_REPOSITORY"
+          $installer = New-Object -ComObject WindowsInstaller.Installer
+          Get-ChildItem distribute/output/*.msi | ForEach-Object {
+            Set-ItemProperty $_.FullName -Name IsReadOnly -Value $false
+            $si = $installer.SummaryInformation($_.FullName, 20)
+            $si.Property(6) = $origin
+            $si.Persist()
+            [void][Runtime.InteropServices.Marshal]::ReleaseComObject($si)
+            "Stamped $($_.Name): $origin"
+          }
+
+      # Uploads each artifact to VirusTotal via its REST API (no third-party action).
+      # Informational only: it records a permalink + verdict, never fails the build.
+      # Skipped automatically when the VIRUSTOTAL_API_KEY secret is not set.
+      - name: Scan artifacts on VirusTotal
+        if: env.VT_API_KEY != ''
+        shell: bash
+        run: |
+          echo "## VirusTotal scan" > vt-notes.md
+
+          scan () {
+            f="$1"; name=$(basename "$f")
+            sha=$(sha256sum "$f" | cut -d' ' -f1)
+            link="https://www.virustotal.com/gui/file/$sha"
+
+            # 1) request a large-file upload URL (handles any size up to 650 MB)
+            up=$(curl -sS -H "x-apikey: $VT_API_KEY" \
+                   https://www.virustotal.com/api/v3/files/upload_url | jq -r '.data')
+
+            # 2) upload the file and grab the analysis id
+            aid=$(curl -sS -H "x-apikey: $VT_API_KEY" \
+                   --form "file=@$f" "$up" | jq -r '.data.id // empty')
+
+            if [ -z "$aid" ]; then
+              echo "- \`$name\` — upload to VirusTotal failed" >> vt-notes.md
+              return
+            fi
+
+            # 3) poll briefly for a verdict; never fail the build if it is slow
+            stats=""
+            for _ in $(seq 1 9); do
+              sleep 20
+              resp=$(curl -sS -H "x-apikey: $VT_API_KEY" \
+                       "https://www.virustotal.com/api/v3/analyses/$aid")
+              if [ "$(echo "$resp" | jq -r '.data.attributes.status')" = "completed" ]; then
+                stats=$(echo "$resp" | jq -r '.data.attributes.stats
+                          | "\(.malicious) malicious / \(.suspicious) suspicious / \(.harmless + .undetected) clean"')
+                break
+              fi
+            done
+
+            if [ -n "$stats" ]; then
+              echo "- [\`$name\`]($link) — $stats" >> vt-notes.md
+            else
+              echo "- [\`$name\`]($link) — analysis still running; open the link for results" >> vt-notes.md
+            fi
+          }
+
+          for f in distribute/output/*.msi distribute/output/*.zip; do scan "$f"; done
+          cat vt-notes.md >> "$GITHUB_STEP_SUMMARY"
+
+      # Scans each artifact with Microsoft Defender, which is built into the Windows
+      # runner. No API key, no upload, no third-party service. Informational only:
+      # it never fails the build (unsigned installers can trip AV heuristics).
+      - name: Scan artifacts with Microsoft Defender
+        shell: pwsh
+        run: |
+          $mp = "$env:ProgramFiles\Windows Defender\MpCmdRun.exe"
+          "## Microsoft Defender scan" | Out-File defender-notes.md -Encoding utf8
+          
+          if (-not (Test-Path $mp)) {
+            "- Microsoft Defender not available on this runner; skipped." | Add-Content defender-notes.md
+            Get-Content defender-notes.md >> $env:GITHUB_STEP_SUMMARY
+            exit 0
+          }
+          
+          # Refresh signatures (best effort) and record the version used.
+          & $mp -SignatureUpdate *> $null
+          $sig = (Get-MpComputerStatus -ErrorAction SilentlyContinue).AntivirusSignatureVersion
+          if ($sig) { "_Signature version: $($sig)_" | Add-Content defender-notes.md; "" | Add-Content defender-notes.md }
+          
+          Get-ChildItem distribute/output/*.msi, distribute/output/*.zip | ForEach-Object {
+            $name = $_.Name
+            # ScanType 3 = custom file scan; -DisableRemediation scans inside archives
+            # and reports detections without quarantining.
+            $out = & $mp -Scan -ScanType 3 -File $_.FullName -DisableRemediation 2>&1
+            switch ($LASTEXITCODE) {
+              0 { "- $name : clean" | Add-Content defender-notes.md }
+              2 {
+                  "- $name : THREAT reported by Defender" | Add-Content defender-notes.md
+                  ($out | Select-String -Pattern 'Threat|Trojan|found|detected') |
+                    ForEach-Object { "    - $($_.Line.Trim())" | Add-Content defender-notes.md }
+                }
+              default { "- $name : scan inconclusive (exit $LASTEXITCODE)" | Add-Content defender-notes.md }
+            }
+          }
+          
+          Get-Content defender-notes.md >> $env:GITHUB_STEP_SUMMARY
+
+      # Anyone with Github CLI can run this command to verify this repo made the build and action:
+      #   gh attestation verify Maestro_v4.6.22.msi --repo NikolaiVChr/maestro
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: |
+            distribute/output/*.msi
+            distribute/output/*.zip
+
+      # Attaches the MSI + ZIP to a versioned draft release, using this version's
+      # changelog section of readme.txt (plus the VirusTotal summary, if any) as the
+      # release notes. gh is the official GitHub CLI, preinstalled on the runner.
+      - name: Publish to draft release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          zip=$(ls distribute/output/Maestro_v*.zip | head -n1)
+          ver=$(basename "$zip" .zip | sed -E 's/^Maestro_v//')
+          tag="v$ver"
+          
+          # Beta builds get a distinct tag/title and are marked as pre-release.
+          title_suffix=""
+          prerelease=""
+          if [ "${{ inputs.beta }}" = "true" ]; then
+            tag="$tag-beta"
+            title_suffix=" (beta)"
+            prerelease="--prerelease"
+          fi
+
+          # Extract this version's changelog block from readme.txt:
+          #  - strip trailing CR (readme is CRLF)
+          #  - start after the version header line (matches "Version X.Y.Z",
+          #    "## X.Y.Z", "## Version X.Y.Z", "vX.Y.Z", ...)
+          #  - stop at the next version header or end of file
+          notes=$(awk -v ver="$ver" '
+            { sub(/\r$/, "") }
+            /^#*[[:space:]]*([Vv]ersion[[:space:]]+|[vV])?[0-9]+\.[0-9]+([.][0-9]+)?[[:space:]]*$/ {
+              v = $0; gsub(/[^0-9.]/, "", v)
+              if (v == ver)  { grab = 1; next }
+              else if (grab) { exit }
+              else           { next }
+            }
+            grab { print }
+          ' distribute/readme.txt)
+
+          # Fall back to the whole file if the section was not found.
+          if [ -z "$notes" ]; then notes="See the attached readme.txt for release notes."; fi
+
+          # Lead with an automated-build note, then this version's changelog.
+          {
+            echo "_Automated GitHub release build (commit ${GITHUB_SHA::7})._"
+            echo
+            printf '%s\n' "$notes"
+            echo
+            echo "[Wiki manual link](https://maestro.miraheze.org)"
+            echo
+          } > release-notes.md
+
+          # Append the VirusTotal summary if the scan step produced one.
+          if [ -f vt-notes.md ]; then { echo; cat vt-notes.md; } >> release-notes.md; fi
+          if [ -f defender-notes.md ]; then { echo; cat defender-notes.md; } >> release-notes.md; fi
+
+          # Only replace an existing release if it is still a draft; never
+          # clobber one that has already been published.
+          if state=$(gh release view "$tag" --json isDraft -q .isDraft 2>/dev/null); then
+            if [ "$state" = "true" ]; then
+              echo "Existing draft $tag found - replacing it."
+              gh release delete "$tag" --yes --cleanup-tag 2>/dev/null || true
+            else
+              echo "::warning::Release $tag is already published; leaving it untouched and skipping upload."
+              exit 0
+            fi
+          fi
+
+          echo "Releasing Maestro $ver as draft $tag"
+          gh release create "$tag" distribute/output/*.msi distribute/output/*.zip distribute/readme.txt \
+            --draft $prerelease \
+            --title "Maestro $ver$title_suffix" \
+            --notes-file release-notes.md

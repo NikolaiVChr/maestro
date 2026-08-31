@@ -28,18 +28,15 @@ public class NoteFilterTransceiver implements Transceiver, MidiConstants, ICompi
 	}
 
 	public void setNoteSolo(int drumId, boolean solo) {
-		// Handle solo for Xtra notes - also add the two underlying 'real' notes to the solo set
-		if (LotroCombiDrumInfo.noteIdIsXtraNote(drumId)) {
-			int id1 = LotroCombiDrumInfo.firstNotes.get(Note.fromId(drumId)).id;
-			int id2 = LotroCombiDrumInfo.secondNotes.get(Note.fromId(drumId)).id;
-			solos.set(id1, solo);
-			solos.set(id2, solo);
-		}
-
 		solos.set(drumId, solo);
+		if (solo) turnOffInactiveNotes();
+	}
 
-		if (solo)
-			turnOffInactiveNotes();
+	public void setNoteSolo(int markerId, int component1, int component2, boolean solo) {
+		if (component1 >= 0) solos.set(component1, solo);
+		if (component2 >= 0) solos.set(component2, solo);
+		solos.set(markerId, solo);
+		if (solo) turnOffInactiveNotes();
 	}
 
 	public void clearSolos() {

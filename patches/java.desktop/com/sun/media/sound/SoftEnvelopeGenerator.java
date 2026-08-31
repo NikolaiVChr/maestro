@@ -148,25 +148,23 @@ public final class SoftEnvelopeGenerator implements SoftProcess {
                             stage[i] = EG_END;
                             continue;
                         }
-                        // force 200ms release duration
-                        // Original code used this.release[i][0] (exponential timecents)
-                        double durationSeconds = 0.200;
-                        stage_count[i] = (int)(durationSeconds / control_time);
 
-                        //stage_count[i] = (int)(Math.pow(2,
-                        //        this.release[i][0] / 1200.0) / control_time);
-                        //stage_count[i]
-                         //       += (int)(this.release2[i][0]/(control_time * 1000));
+                        // Honor the SF2 releaseVolEnv (timecents)
+                        // Default release (-12000tc -> -Infinity) is caught by
+                        // the early-exit above, so release[i][0] is finite here.
+                        stage_count[i] = (int)(Math.pow(2,
+                                this.release[i][0] / 1200.0) / control_time);
+                        stage_count[i]
+                                += (int)(this.release2[i][0] / (control_time * 1000));
+
                         if (stage_count[i] < 0)
                             stage_count[i] = 0;
                         // stage_v[i] = out[i][0];
                         stage_ix[i] = 0;
 
-                        // calc start point of release
-                        // We need to join the new curve smoothly at the current volume level.
-                        // New Curve: out = sqrt(1 - m)
-                        // Inverse:   m = 1 - out^2
-
+                        // Join the release curve smoothly at the current level.
+                        // Curve (in EG_RELEASE): out = (1 - m)^0.1
+                        // Inverse for the join:  m = 1 - out^10
                         double currentOut = out[i][0];
                         double m = 1.0 - Math.pow(currentOut, 10.0d);
 
