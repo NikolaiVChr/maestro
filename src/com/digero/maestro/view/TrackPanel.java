@@ -1281,7 +1281,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		if (synth == null || !synth.isOpen()) return;
 
 		MidiChannel[] chans = synth.getChannels();
-		// pick the channel Maestro uses for drums — see note below
+
 		MidiChannel ch = chans[MidiConstants.CHANNEL_COUNT_ABC-1];
 		int oldProgram = ch.getProgram();
 		int oldChannelVolume = ch.getController(MidiConstants.CHANNEL_VOLUME_CONTROLLER_COARSE);

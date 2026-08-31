@@ -1,6 +1,7 @@
 package com.digero.maestro.abc;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Logger;
 import java.util.prefs.BackingStoreException;
@@ -17,7 +18,8 @@ public class LotroCombiDrumInfo {
 	public record CombiDrumHit(Note firstNote, Note secondNote, String name, boolean locked) {
 	}
 
-	private final Map<Note, CombiDrumHit> library = new HashMap<>();
+	// preview generation can access library from another thread. Just to be safe we use ConcurrentHashMap.
+	private final Map<Note, CombiDrumHit> library = new ConcurrentHashMap<>();
 
 	// Keep this as it is for backwards compatibility:
 	public static final Preferences drumPrefs = Preferences.userNodeForPackage(AbcPart.class).node("drums");
@@ -28,6 +30,9 @@ public class LotroCombiDrumInfo {
 	}
 	public void removeLibraryListener(Runnable r) {
 		libraryListeners.remove(r);
+	}
+	public void removeAllListeners() {
+		libraryListeners.clear();
 	}
 	void fireLibraryChanged() {
 		libraryListeners.forEach(Runnable::run);
@@ -95,6 +100,15 @@ public class LotroCombiDrumInfo {
 	}
 
 	/**
+	 *  Copy - own library, shared immutable entries, never persists (abc preview use).
+	 */
+	public LotroCombiDrumInfo(LotroCombiDrumInfo other) {
+		this.usePrefs = false;                        // a copy is a throwaway; never write prefs
+		this.library.putAll(other.library);           // ConcurrentHashMap.putAll - entries are immutable records
+		// listeners: no copy - a preview copy has no UI observers
+	}
+
+	/**
 	 * Return an available key slot. Or null is library is full.
 	 */
 	private Note allocateLibraryKey() {
@@ -159,7 +173,7 @@ public class LotroCombiDrumInfo {
 	public boolean noteIdIsLocked(int noteId) {
 		if (isPlayableHit(noteId)) return false;
 		Note n = Note.fromId(noteId);
-		return n != null && library.containsKey(n) && library.get(n).locked();   // locked only — the universal ones
+		return n != null && library.containsKey(n) && library.get(n).locked();   // locked only, the old Xtra ones
 	}
 
 	/**

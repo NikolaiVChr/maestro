@@ -8,6 +8,14 @@ public class StringCleaner {
 
 	public static boolean cleanABC = true;
 
+	/**
+	 * Clean a string for any chars that are not allowed in Windows file names,
+	 * or that give songbooks issues.
+	 *
+	 * See also XmlUtil.sanitizeStringForXMLSaving()
+	 *
+	 * @param before Expects a string for a file name, without the file extension.
+	 */
 	public static String cleanForFileName(String before) {
 		// System.out.println("Orig file: "+before);
 		String after = replaceUmlaut(before);
@@ -23,6 +31,13 @@ public class StringCleaner {
 		return after;
 	}
 
+	/**
+	 * Clean a string for any chars that give songbook or lotro issues
+	 * when used inside abc files.
+	 *
+	 * See also XmlUtil.sanitizeStringForXMLSaving()
+	 *
+	 */
 	public static String cleanForABC(String before) {
 		if (before == null)
 			return "";

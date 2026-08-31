@@ -51,8 +51,9 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 			if (part == null) {
 				filter.setNoteSolo(noteId, solo);
 			} else {
-				DrumNoteMap map = part.getDrumMap(track);
-				LotroCombiDrumInfo.CombiDrumHit c = map.resolveCombi(noteId);
+				DrumNoteMap map = part.peekDrumMap(track);
+				LotroCombiDrumInfo.CombiDrumHit c = null;
+				if (map != null) c = map.resolveCombi(noteId);
 				if (c != null) filter.setNoteSolo(noteId, c. firstNote().id, c.secondNote().id, solo);
 				else           filter.setNoteSolo(noteId, solo);
 			}
@@ -71,8 +72,9 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 			if (part == null) {
 				filter.setNoteSolo(noteId, false);
 			} else {
-				DrumNoteMap map = part.getDrumMap(track);
-				LotroCombiDrumInfo.CombiDrumHit c = map.resolveCombi(noteId);
+				DrumNoteMap map = part.peekDrumMap(track);
+				LotroCombiDrumInfo.CombiDrumHit c = null;
+				if (map != null) c = map.resolveCombi(noteId);
 				if (c != null) filter.setNoteSolo(noteId, c.firstNote().id, c.secondNote().id, false);
 				else filter.setNoteSolo(noteId, false);
 			}

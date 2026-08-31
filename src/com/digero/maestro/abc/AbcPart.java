@@ -1666,6 +1666,10 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		return abcSong.getSequenceInfo().getTrackInfo(track).isDrumTrack();
 	}
 
+	/**
+	 * Returns the DrumNoteMap for the given track. If the track is not a drum track, returns null.
+	 * If the map does not exist, then one is created, to avoid that use peekDrumMap() instead.
+	 */
 	public DrumNoteMap getDrumMap(int track) {
         if (discarded) return new PassThroughDrumNoteMap(abcSong.getCombiInfo());
 		if (drumNoteMap[track] == null) {
@@ -1683,6 +1687,10 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		return drumNoteMap[track];
 	}
 
+	/**
+	 * Returns the DrumNoteMap for the given track. If the track is not a drum track, returns null.
+	 * Will return null, if the map does not exist.
+	 */
 	public DrumNoteMap peekDrumMap(int track) {
 		if (discarded) return null;
 		return drumNoteMap[track];

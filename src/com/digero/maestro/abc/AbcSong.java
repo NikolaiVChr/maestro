@@ -226,6 +226,10 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
         CountIn.setLastCountIn(null);
 
+		if (combiInfo != null) {
+			combiInfo.removeAllListeners();
+		}
+
 		/*
 		 * if (sequenceInfo != null) { // Make life easier for Garbage Collector for (TrackInfo ti :
 		 * sequenceInfo.getTrackList()) { for (NoteEvent ne : ti.getEvents()) { ne.resetAllPruned(); } } }
@@ -1933,7 +1937,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
      */
     public AbcSong(AbcSong other) {
         // Immutable/Shared Fields
-		this.combiInfo = other.combiInfo;
         this.title = other.title;
         this.composer = other.composer;
         this.transcriber = other.transcriber;
@@ -2002,6 +2005,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         this.mixDirty = true; // Force regeneration
 
         // Deep Copies
+		this.combiInfo = new LotroCombiDrumInfo(other.combiInfo);
+
         if (other.tuneBars != null) {
             this.tuneBars = new TreeMap<>();
             for (Entry<Float, TuneLine> entry : other.tuneBars.entrySet()) {
