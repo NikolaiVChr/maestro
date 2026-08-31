@@ -72,6 +72,11 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 	private final LeanJLabel currentCountLabel;
     private final JButton peakButton;
 
+    // Cache of the last values rendered into currentCountLabel, so the per-tick
+    // sequencer listener can skip UIText.get()/MessageFormat when nothing changed.
+    private int lastCountNotes = Integer.MIN_VALUE;
+    private int lastCountMax = Integer.MIN_VALUE;
+
 	private AbcSong abcSong;
     private PolyphonyHistogram histogram = null;
 
@@ -185,22 +190,46 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
     /**
      * Called by sequencer updates, abcPart updates and preview mode toggle.
      */
-	public void updateCountLabel() {
+    public void updateCountLabel() {
         if (histogram != null) {
             if (histogram.isDirty()) {
                 histogram.sumUp(abcSong);
                 histoGraph.invalidateNoteCache();
             }
             int notes = histogram.get(abcSequencer.getThumbPosition());// Must be abcSeq, due to tuneeditor can change micros from this call
-            currentCountLabel.setText(UIText.get("maestro.polyphony.notes.peak", notes,histogram.max()));
+            int max = histogram.max();
+
+            if (notes != lastCountNotes || max != lastCountMax) {
+                // Only rebuild the label text when a displayed value actually changed.
+                lastCountNotes = notes;
+                lastCountMax = max;
+                currentCountLabel.setText(UIText.get("maestro.polyphony.notes.peak", notes, max));
+            }
         } else {
+            // Reset the cache so returning to the count branch always re-renders.
+            lastCountNotes = Integer.MIN_VALUE;
+            lastCountMax = Integer.MIN_VALUE;
             currentCountLabel.setText(UIText.get("maestro.polyphony.no.preview.data"));
         }
-	}
+    }
 
 	private Listener<SequencerEvent> sequencerListener = e -> {
-		
-		histoGraph.repaint();
+        // The polyphony panel is only shown in ABC preview mode. While it's hidden
+        // (e.g. during source-MIDI playback) it must do no per-tick work - in
+        // particular updateCountLabel(), which rebuilds PolyphonyHistogram.sumUp()
+        // every tick because the dirty flag is only cleared on the graph's paint path,
+        // and a hidden graph never paints.
+        if (!abcPreviewMode || !show)
+            return;
+
+        SequencerEvent.SequencerProperty p = e.getProperty();
+
+        // POSITION/DRAG_POSITION fire on every playback tick. histoGraph already
+        // region-repaints itself for those via NoteGraph.onEvent, so a full repaint
+        // here just defeats that optimization. But always refresh the count label.
+        if (p != SequencerEvent.SequencerProperty.POSITION && p != SequencerEvent.SequencerProperty.DRAG_POSITION) {
+            histoGraph.repaint();
+        }
 		
 		//if (e.getProperty().isInMask(SequencerProperty.THUMB_POSITION_MASK)) {
 			updateCountLabel();

@@ -1568,15 +1568,26 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private class MainSequencerListener implements Listener<SequencerEvent> {
 		@Override
 		public void onEvent(SequencerEvent evt) {
-			scheduleUiRefresh();
-			if (evt.getProperty() == SequencerProperty.IS_RUNNING) {
+
+			SequencerProperty property = evt.getProperty();
+
+			// POSITION and DRAG_POSITION fire on every playback timer tick. Nothing in
+			// refreshUiState() depends on playback position (the moving cursor and the
+			// bar/time readout have their own listeners), so scheduling a full UI refresh
+			// here rebuilds borders/labels and repaints panels every tick. Only schedule
+			// the refresh for structural events.
+			if (property != SequencerProperty.POSITION
+					&& property != SequencerProperty.DRAG_POSITION) {
+				scheduleUiRefresh();
+			}
+			if (property == SequencerProperty.IS_RUNNING) {
 				if (sequencer.isRunning()) {
 					abcSequencer.stop();
 				}
 			} else if (!echoingPosition) {
 				try {
 					echoingPosition = true;
-					if (evt.getProperty() == SequencerProperty.POSITION) {
+					if (property == SequencerProperty.POSITION) {
 						if (abcSequencer.getTickLength() < abcPreviewStartTick) {
 							// I don't fully understand how this can happen, bug report here:
 							// https://discord.com/channels/1127545258729803797/1132590018985201664/1465902468419551324
@@ -1586,14 +1597,14 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 						abcSequencer.setTickPosition(Util.clamp(sequencer.getTickPosition(),
 								Math.min(abcPreviewStartTick,abcSequencer.getTickLength()),
 								abcSequencer.getTickLength()));
-					} else if (evt.getProperty() == SequencerProperty.DRAG_POSITION) {
+					} else if (property == SequencerProperty.DRAG_POSITION) {
 						if (abcSequencer.getTickLength() < abcPreviewStartTick) {
 							log.severe("MainSequencerListener: tick-length mismatch.");
 							abcPreviewStartTick = 0L;
 						}
 						abcSequencer.setDragTick(
 								Util.clamp(sequencer.getDragTick(), Math.min(abcPreviewStartTick,abcSequencer.getTickLength()), abcSequencer.getTickLength()));
-					} else if (evt.getProperty() == SequencerProperty.IS_DRAGGING) {
+					} else if (property == SequencerProperty.IS_DRAGGING) {
 						abcSequencer.setDragging(sequencer.isDragging());
 					}
 				} finally {
@@ -1606,20 +1617,28 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private class AbcSequencerListener implements Listener<SequencerEvent> {
 		@Override
 		public void onEvent(SequencerEvent evt) {
-			scheduleUiRefresh();
-			if (evt.getProperty() == SequencerProperty.IS_RUNNING) {
+			SequencerProperty property = evt.getProperty();
+
+			// See MainSequencerListener: skip the full UI refresh for the per-tick
+			// POSITION/DRAG_POSITION events; only structural events need it.
+			if (property != SequencerProperty.POSITION
+					&& property != SequencerProperty.DRAG_POSITION) {
+				scheduleUiRefresh();
+			}
+
+			if (property == SequencerProperty.IS_RUNNING) {
 				if (abcSequencer.isRunning()) {
 					sequencer.stop();
 				}
 			} else if (!echoingPosition) {
 				try {
 					echoingPosition = true;
-					if (evt.getProperty() == SequencerProperty.POSITION) {
+					if (property == SequencerProperty.POSITION) {
 						sequencer.setTickPosition(
 								Util.clamp(abcSequencer.getTickPosition(), 0, sequencer.getTickLength()));
-					} else if (evt.getProperty() == SequencerProperty.DRAG_POSITION) {
+					} else if (property == SequencerProperty.DRAG_POSITION) {
 						sequencer.setDragTick(Util.clamp(abcSequencer.getDragTick(), 0, sequencer.getTickLength()));
-					} else if (evt.getProperty() == SequencerProperty.IS_DRAGGING) {
+					} else if (property == SequencerProperty.IS_DRAGGING) {
 						sequencer.setDragging(abcSequencer.isDragging());
 					}
 				} finally {
