@@ -60,7 +60,10 @@ This changelog is only partial, to see all the way back to v1.0.0 go here:
 
 Version 4.6.24
 * Added support for custom drum combos in drum-maps.
-* Added editor for drum combos. Access it in drummap menu. It will stop preview playback, but will allow midi playback to continue.
+* Added editor for drum combos. Access it in the drum-map menu. It will stop preview playback, but will allow midi playback to continue.
+* Better simulate lotro not stopping samples that already are running, so a series of fast lute note with same pitch will now allow the previous to keep playing at full volume till their sample ends. This requires an updated soundfont that will download first time this version is ran.
+* Significant less CPU usage during audio playback.
+* Fix that when skipping in song, the highlighted current notes could stay highlighted, even though the song was now having new position.
 
 Version 4.6.22
 * Downloads of the apps are now found on github. [https://github.com/NikolaiVChr/maestro/releases](https://github.com/NikolaiVChr/maestro/releases)

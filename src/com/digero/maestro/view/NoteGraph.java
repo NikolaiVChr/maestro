@@ -423,6 +423,21 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 		// Repaint the parts that need it
 		if (evt.getProperty() == SequencerProperty.POSITION) {
 			final long currentSongPos = sequencer.getDelayedPosition();
+			long delta = currentSongPos - songPos;
+			boolean discontinuous = songPos < 0L
+					|| delta < 0L                                             // jumped backward
+					|| delta > 4L * SequencerWrapper.UPDATE_FREQUENCY_MICROS; // jumped forward more than a few frames
+
+			if (!sequencer.isDragging() && discontinuous) {
+				songPos = currentSongPos;
+				lastPaintedMinSongPos = -1;   // reset so next paint doesn't trust stale span
+				lastPaintedSongPos = -1;
+				repaint();                    // full repaint: erases all old highlights, draws all new
+				//if we dont do this then all highlighted notes that start outside new window will stay highlighted
+				//until next repaint or song playback window reaches them again.
+				return;
+			}
+
 			final long leftSongPos = Math.min(currentSongPos, Math.min(lastPaintedMinSongPos, songPos));
 			final long rightSongPos = Math.max(currentSongPos, Math.max(lastPaintedSongPos, songPos))
 					+ SequencerWrapper.UPDATE_FREQUENCY_MICROS;
