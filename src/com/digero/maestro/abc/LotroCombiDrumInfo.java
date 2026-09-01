@@ -16,6 +16,9 @@ public class LotroCombiDrumInfo {
 	protected final boolean usePrefs;// Auto-exporter wont use prefs, so it wont save or load library of combis.
 
 	public record CombiDrumHit(Note firstNote, Note secondNote, String name, boolean locked) {
+		public String toString() {
+			return name+" "+firstNote.id+"+"+secondNote.id;
+		}
 	}
 
 	// preview generation can access library from another thread. Just to be safe we use ConcurrentHashMap.
@@ -36,6 +39,24 @@ public class LotroCombiDrumInfo {
 	}
 	void fireLibraryChanged() {
 		libraryListeners.forEach(Runnable::run);
+	}
+
+	/**
+	 * Create instance. usePrefs: true to enable load/save library from prefs.
+	 */
+	public LotroCombiDrumInfo(boolean usePrefs) {
+		seedLockedBuiltins();
+		this.usePrefs = usePrefs;
+		if (this.usePrefs) loadLibrary(drumPrefs);
+	}
+
+	/**
+	 *  Copy - own library, shared immutable entries, never persists (abc preview use).
+	 */
+	public LotroCombiDrumInfo(LotroCombiDrumInfo other) {
+		this.usePrefs = false;                        // a copy is a throwaway; never write prefs
+		this.library.putAll(other.library);           // ConcurrentHashMap.putAll - entries are immutable records
+		// listeners: no copy - a preview copy has no UI observers
 	}
 
 	/**
@@ -88,24 +109,6 @@ public class LotroCombiDrumInfo {
 		// we need this as a static also, and static doesn't have access to library.
 		// hence why its hardcoded here. Only used by LotroInstrument.
 		return noteId >= Note.Cs5.id && noteId <= Note.B5.id;
-	}
-
-	/**
-	 * Create instance. usePrefs: true to enable load/save library from prefs.
-	 */
-	public LotroCombiDrumInfo(boolean usePrefs) {
-		seedLockedBuiltins();
-		this.usePrefs = usePrefs;
-		if (this.usePrefs) loadLibrary(drumPrefs);
-	}
-
-	/**
-	 *  Copy - own library, shared immutable entries, never persists (abc preview use).
-	 */
-	public LotroCombiDrumInfo(LotroCombiDrumInfo other) {
-		this.usePrefs = false;                        // a copy is a throwaway; never write prefs
-		this.library.putAll(other.library);           // ConcurrentHashMap.putAll - entries are immutable records
-		// listeners: no copy - a preview copy has no UI observers
 	}
 
 	/**
@@ -242,6 +245,24 @@ public class LotroCombiDrumInfo {
 		saveLibrary();
 		fireLibraryChanged();
 		return true;
+	}
+
+	/** Total custom-combo slots (excludes the locked built-ins). */
+	public static int customCapacity() {
+		int high = Note.MAX.id - LotroInstrument.BASIC_DRUM.highestPlayable.id; // 84..127 region incl. locked band top
+		int low  = LotroInstrument.BASIC_DRUM.lowestPlayable.id - 1;            // 1..35
+		int locked = 11;                                                        // seeded built-ins
+		return high + low - locked;                                            // ~79
+	}
+
+	/** Current count of user (unlocked) combos. */
+	public int customCount() {
+		int n = 0;
+		for (CombiDrumHit c : library.values()) if (!c.locked()) {
+			n++;
+			//System.out.println(n+" "+c);
+		}
+		return n;
 	}
 
 	/**

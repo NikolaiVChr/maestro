@@ -59,8 +59,8 @@ This changelog is only partial, to see all the way back to v1.0.0 go here:
   https://maestro.miraheze.org/wiki/Version_history
 
 Version 4.6.24
-* Added support for custom drum combos in drum-maps.
-* Added editor for custom drum combos, up to 80. Access it in the drum-map menu. It will stop preview playback, but will allow midi playback to continue.
+* Added support for custom drum combos in drum-maps. Maestro can hold 79, but if loading a project and maestro is full, project will be degraded. Recommend to never exceed 70 combos.
+* Added editor for custom drum combos, up to 79. Access it in the drum-map menu. It will stop preview playback, but will allow midi playback to continue.
 * Better simulate lotro not stopping samples that already are running, so a series of fast lute note with same pitch will now allow the previous to keep playing at full volume till their sample ends. This requires an updated soundfont that will download first time this version is ran.
 * Significant less CPU usage during audio playback.
 * Fix that when skipping in song, the highlighted current notes could stay highlighted, even though the song was now having new position.

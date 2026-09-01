@@ -75,6 +75,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
     public static final String NEWER_VERSION_WARNING_ID = "Never Version";
     public static final String KNOWN_ISSUE_WARNING_ID = "Known Issue";
     public static final String TEMPO_ISSUE_WARNING_ID = "Tempo Issue";
+	public static final String COMBO_ISSUE_WARNING_ID = "Too many drum combos";
 
     private String title = "";
 	private String composer = "";
@@ -535,6 +536,29 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 					loadedLyrics.add(new LyricLine(tick, text, tickEnd));
 				}
 				if (!loadedLyrics.isEmpty()) lyricLines = loadedLyrics;
+			}
+
+			List<String> combiWarnings = new ArrayList<>();
+			for (AbcPart part : parts) {
+				for (int t = 0; t < part.getTrackCount(); t++) {
+					DrumNoteMap dm = part.peekDrumMap(t);
+					if (dm != null) combiWarnings.addAll(dm.getLastLoadCombiWarnings());
+				}
+			}
+			if (!combiWarnings.isEmpty()) {
+				String message = UIText.get("maestro.warning.combi.degraded.0.1",
+						file.getName(), String.join(", ", combiWarnings));
+				log.warning("Combi library full while loading " + file.getName()
+						+ " - degraded: " + String.join(", ", combiWarnings));   // always logged, batch-visible
+				if (warningHandler != null) {
+					WarningHandler.WarningAction action = warningHandler.handleWarning(COMBO_ISSUE_WARNING_ID, UIText.get("maestro.warning.combi.degraded.full"), message);
+					if (action == WarningHandler.WarningAction.SKIP_FILE) {
+						throw new FileParseException("Skipped file (combo issue) by user request. Project needs to be reviewed in Maestro.", projectFile.getName());
+					}
+				} else {
+					JOptionPane.showMessageDialog(null, message,
+							UIText.get("maestro.warning.combi.degraded.full"), JOptionPane.WARNING_MESSAGE);
+				}
 			}
 		} catch (XPathExpressionException e) {
 			log.log(Level.SEVERE, "XPath error", e);

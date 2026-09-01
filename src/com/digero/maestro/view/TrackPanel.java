@@ -1138,6 +1138,19 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 			if (a != null && b != null) previewCombo(a.note.id, b.note.id);
 		});
 
+		final JLabel counter = new JLabel();
+		Runnable updateCounter = () -> {
+			int used = combiInfo.customCount();
+			int cap  = LotroCombiDrumInfo.customCapacity();
+			counter.setText(UIText.get("maestro.drum.combo.edit.count.0.1", used, cap));  // "12 / 79 combos"
+			Color fg;
+			if      (used <  cap * 80 / 100) fg = new Color(0, 140, 0);   // green
+			else if (used <  cap * 90 / 100) fg = new Color(180, 140, 0); // yellow/amber
+			else                             fg = new Color(200, 0, 0);   // red
+			counter.setForeground(fg);
+		};
+		updateCounter.run();
+
 		final JButton addBtn = new JButton(UIText.get("maestro.drum.combo.edit.btn.add.combo"));
 		addBtn.addActionListener(e -> {
 			LotroDrumInfo a = (LotroDrumInfo) pick1.getSelectedItem();
@@ -1167,6 +1180,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 					list.setSelectedValue(combiInfo.get(key.id), true);
 				}
 			}
+			updateCounter.run();
 			// addToLibrary already fired libraryChanged -> open DrumPanel dropdowns refreshed
 		});
 
@@ -1200,6 +1214,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 			} else {
 				combiInfo.removeFromLibrary(key);   // needs to exist - see below
 				refillList.run();
+				updateCounter.run();
 			}
 		});
 		list.addListSelectionListener(e -> {
@@ -1225,6 +1240,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		listPanel.add(new JScrollPane(list), BorderLayout.CENTER);
 		JPanel southPanel = new JPanel(new FlowLayout());
 		listPanel.add(southPanel, BorderLayout.SOUTH);
+		southPanel.add(counter);
 		southPanel.add(previewSel);
 		southPanel.add(deleteBtn);
 
