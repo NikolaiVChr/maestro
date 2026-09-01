@@ -7,6 +7,10 @@ on:
         description: "Beta build"
         type: boolean
         default: false
+      defender:
+        description: "Scan with defender"
+        type: boolean
+        default: true
 
 permissions:
   contents: write        # required for the gh CLI to create/update the draft release
@@ -107,6 +111,7 @@ jobs:
       # runner. No API key, no upload, no third-party service. Informational only:
       # it never fails the build (unsigned installers can trip AV heuristics).
       - name: Scan artifacts with Microsoft Defender
+        if: ${{ inputs.defender }}
         shell: pwsh
         run: |
           $mp = "$env:ProgramFiles\Windows Defender\MpCmdRun.exe"
