@@ -101,7 +101,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	public List<TreeMap<Long, PartSection>> sectionsTicked = null;
 	public List<PartSection> nonSection;
 	public List<boolean[]> sectionsModified;
-	public int delay = 0;// ms
+	private int delay = 0;// ms, -1000 to 1000
 	public int conclusionFermata = 0;// ms
 	private int typeNumber = 0;// -1 for when instr do not match or string dont start with instr, 0 when instr
 								// match but no number, positive number when it has number.
@@ -2049,4 +2049,20 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
     public MidiEvent getPanEvent() {
         return panEvent;
     }
+
+	/**
+	 *
+	 * @return delay in milliconds. Will be in -1000 to 1000 range.
+	 */
+	public int getDelay() {
+		return delay;
+	}
+
+	/**
+	 * Remember to call delayEdited() to fire the listener after setting this.
+	 * @param delay delay in milliconds. Should be in -1000 to 1000 range.
+	 */
+	public void setDelay(int delay) {
+		this.delay = Math.clamp(delay, -1000, 1000);
+	}
 }

@@ -898,14 +898,17 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 	public void exportAbc(File exportFile, String appName) throws IOException, AbcConversionException {
 		boolean delayEnabled = false;
+		int minDelay = 0;
 		for (AbcPart part : parts) {
-			if (part.delay != 0) {
+			if (part.getDelay() != 0) {
 				delayEnabled = true;
-				break;
+				if (part.getDelay() < minDelay) {
+					minDelay = part.getDelay();
+				}
 			}
 		}
 		try (FileOutputStream out = new FileOutputStream(exportFile)) {
-			getAbcExporter().exportToAbc(out, delayEnabled, appName);
+			getAbcExporter().exportToAbc(out, delayEnabled, appName, minDelay);
 			if (firstExportTime == null) firstExportTime = new Date();
 		}
         setFileMetadata(exportFile.toPath(), appName);
@@ -1889,7 +1892,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         }
         for(AbcPart part : parts) {
             if (part.getEnabledTrackCount() == 0) continue;
-            if (part.delay != 0) return true;
+            if (part.getDelay() != 0) return true;
             if (part.getNoteMax() != 6) return true;
             if (badger && part.getBadgerPrio() != AbcPart.badgerPrioHighest) return true;
             if (part.conclusionFermata != 0) return true;
