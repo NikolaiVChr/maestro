@@ -392,10 +392,61 @@
 59 Ride Cymbal Edge
 88 Applause
 
-
-
-
-# I most often see these in midi files, so they should be made next if ever get around to it:
-
 =GS=TR-808 Drum Kit
+#
+# Roland SC-8850, 1999
+# Source: Roland SC-8850 Owner's Manual
+#         "SC-8850 Drum Set (3)", p. 189
+#         PC 26 — TR-808 [Pro]
+#         https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf
+#
+26 Finger Snap 2
+35 TR-808 Kick 2
+36 TR-808 Kick 1
+37 TR-808 Rim Shot
+38 TR-808 Snare 1
+39 Hand Clap
+40 TR-808 Snare 2
+41 TR-808 Low Tom 2
+42 TR-808 Closed Hi-Hat 2
+43 TR-808 Low Tom 1
+44 TR-808 Closed Hi-Hat
+45 TR-808 Mid Tom 2
+46 TR-808 Open Hi-Hat
+47 TR-808 Mid Tom 1
+48 TR-808 High Tom 2
+49 TR-808 Crash Cymbal
+50 TR-808 High Tom 1
+51 TR-606 Ride Cymbal
+56 TR-808 Cowbell
+62 TR-808 High Conga
+63 TR-808 Mute Conga
+64 TR-808 Low Conga
+70 TR-808 Maracas
+75 TR-808 Claves
+
 =GS=TR-909 Drum Kit
+#
+# Roland SC-8850, 1999
+# Source: Roland SC-8850 Owner's Manual
+#         "SC-8850 Drum Set (4)", p. 190
+#         PC 31 — TR-909 [Pro]
+#         https://cdn.roland.com/assets/media/pdf/SC-8850_OM.pdf
+#
+35 TR-909 Kick 2
+36 TR-909 Kick 1
+37 TR-909 Rim
+38 TR-909 Snare 1
+39 TR-909 Hand Clap
+40 TR-909 Snare 2
+41 TR-909 Low Tom 2
+42 TR-707 Closed Hi-Hat
+43 TR-909 Low Tom 1
+44 TR-707 Closed Hi-Hat
+45 TR-909 Mid Tom 2
+46 TR-909 Open Hi-Hat
+47 TR-909 Mid Tom 1
+48 TR-909 High Tom 2
+49 TR-909 Crash Cymbal
+50 TR-909 High Tom 1
+51 TR-909 Ride Cymbal
