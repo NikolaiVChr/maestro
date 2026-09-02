@@ -39,7 +39,7 @@ public class MaestroMain {
 	private static Logger log;
 	public static final String APP_NAME = "Maestro";
 	public static final String WIKI_URL = "https://maestro.miraheze.org/wiki/Main_Page";
-	public static final String DOWNLOAD_URL = "https://drive.google.com/drive/folders/1CigT_AloFP34lZbIEvb4CsqGmBL8vodu";
+	public static final String DOWNLOAD_URL = "https://github.com/NikolaiVChr/maestro/releases";
 	public static Version APP_VERSION = new Version(0, 0, 0);
 
 	private static ProjectFrame mainWindow = null;

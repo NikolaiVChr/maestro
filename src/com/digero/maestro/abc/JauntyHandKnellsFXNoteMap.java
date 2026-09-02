@@ -15,7 +15,7 @@ public class JauntyHandKnellsFXNoteMap extends DrumNoteMap {
 	private static final String MAP_PREFS_KEY = "JauntyHandKnellsFXNoteMap.map";
 
     public JauntyHandKnellsFXNoteMap() {
-        super();
+        super((LotroCombiDrumInfo) null);
     }
 
     protected JauntyHandKnellsFXNoteMap(JauntyHandKnellsFXNoteMap orig) {
@@ -70,10 +70,11 @@ public class JauntyHandKnellsFXNoteMap extends DrumNoteMap {
     protected byte getDefaultMapping(byte noteId) {
         byte octaveDelta = (byte) (LotroInstrument.JAUNTY_HAND_KNELLS.octaveDelta * 12);
         if (noteId >= LotroInstrument.JAUNTY_HAND_KNELLS.lowestPlayable.id + octaveDelta
-                && noteId <= LotroInstrument.JAUNTY_HAND_KNELLS.highestPlayable.id + octaveDelta)
-            return (byte) (noteId - octaveDelta);
-        else
-            return DISABLED_NOTE_ID;
+                && noteId <= LotroInstrument.JAUNTY_HAND_KNELLS.highestPlayable.id + octaveDelta) {
+			return (byte) (noteId - octaveDelta);
+		} else {
+			return DISABLED_NOTE_ID;
+		}
     }
 
     /**
@@ -99,6 +100,11 @@ public class JauntyHandKnellsFXNoteMap extends DrumNoteMap {
 	}
 
 	@Override
+	public int hashCode() {
+		return Arrays.hashCode(map);
+	}
+
+	@Override
 	public void save(Preferences prefs) {
 		ensureMap();
 		prefs.putByteArray(MAP_PREFS_KEY, map);
@@ -110,15 +116,24 @@ public class JauntyHandKnellsFXNoteMap extends DrumNoteMap {
 	}
 
 	@Override
+	protected boolean supportsCombis() {
+		return false;
+	}
+
+	@Override
+	protected LotroInstrument getLotroInstrument() {
+		return LotroInstrument.JAUNTY_HAND_KNELLS;
+	}
+
+	@Override
 	public void saveToXml(Element ele) {
-		if (map == null) {
-			return;
-		}
+		// do not check for empty map here on purpose
 
 		for (int midiId = 0; midiId < MidiConstants.NOTE_COUNT; midiId++) {
 			int lotroId = get(midiId);
-			if (lotroId == DISABLED_NOTE_ID)
+			if (lotroId == DISABLED_NOTE_ID) {
 				continue;
+			}
 
 			Element noteEle = ele.getOwnerDocument().createElement("note");
 			ele.appendChild(noteEle);

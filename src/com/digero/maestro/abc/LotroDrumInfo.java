@@ -65,20 +65,8 @@ public class LotroDrumInfo extends LotroEventInfo<LotroDrumInfo> {
 		add(Note.As4, "Conga High");
 		add(Note.B4, "Conga Mid");
 		add(Note.C5, "Slap");
-		add(Note.Cs5, "Xtra Bass Rock");
-		add(Note.D5, "Xtra Snare Rock");
-		add(Note.Ds5, "Xtra Crash Cymbal");
-		add(Note.E5, "Xtra Snare March 1");
-		add(Note.F5, "Xtra Bass Concert");
-		add(Note.Fs5, "Xtra Bass Metal");
-		add(Note.G5, "Xtra Snare March 2");
-		add(Note.Gs5, "Xtra Bass March");
-		add(Note.A5, "Xtra Bass Boomy");
-		add(Note.As5, "Xtra Snare Tribal");
-		add(Note.B5, "Xtra Clap");
-		// add(Note.A6, "Xtra Reverse Cymbal");
 
-		int noteCount = Note.MAX_PLAYABLE.id - Note.MIN_PLAYABLE.id + 1 + LotroCombiDrumInfo.combiNoteCount;
+		int noteCount = Note.MAX_PLAYABLE.id - Note.MIN_PLAYABLE.id + 1;
 		if (byId.size() < noteCount) {
 			List<Integer> unassigned = new ArrayList<>(noteCount);
 			for (int id = Note.MIN_PLAYABLE.id; id <= Note.MAX_PLAYABLE.id; id++) {

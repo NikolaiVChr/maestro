@@ -423,6 +423,21 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 		// Repaint the parts that need it
 		if (evt.getProperty() == SequencerProperty.POSITION) {
 			final long currentSongPos = sequencer.getDelayedPosition();
+			long delta = currentSongPos - songPos;
+			boolean discontinuous = songPos < 0L
+					|| delta < 0L                                             // jumped backward
+					|| delta > 4L * SequencerWrapper.UPDATE_FREQUENCY_MICROS; // jumped forward more than a few frames
+
+			if (!sequencer.isDragging() && discontinuous) {
+				songPos = currentSongPos;
+				lastPaintedMinSongPos = -1;   // reset so next paint doesn't trust stale span
+				lastPaintedSongPos = -1;
+				repaint();                    // full repaint: erases all old highlights, draws all new
+				//if we dont do this then all highlighted notes that start outside new window will stay highlighted
+				//until next repaint or song playback window reaches them again.
+				return;
+			}
+
 			final long leftSongPos = Math.min(currentSongPos, Math.min(lastPaintedMinSongPos, songPos));
 			final long rightSongPos = Math.max(currentSongPos, Math.max(lastPaintedSongPos, songPos))
 					+ SequencerWrapper.UPDATE_FREQUENCY_MICROS;
@@ -512,10 +527,18 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 		if (bitmapRebuildTimer != null) {
 			bitmapRebuildTimer.stop();
 		}
-		bitmapRebuildTimer = new Timer(BITMAP_DEBOUNCE_MS, e -> {
-			bitmapRebuildTimer = null;
+		final Timer[] self = new Timer[1];               // holder so the lambda can see its own timer
+		self[0] = new Timer(BITMAP_DEBOUNCE_MS, e -> {
+			// When timer fires, it queues this lambda to run on the EDT,
+			// its not ran instantly.
+			// Inbetween the timer firing and lambda running, bitmapRebuildTimer may have been replaced
+			// so check if we're still the current timer before nulling the timer.
+			if (bitmapRebuildTimer == self[0]) {         // only clear if a newer one hasn't replaced us
+				bitmapRebuildTimer = null;
+			}
 			repaint();
 		});
+		bitmapRebuildTimer = self[0];
 		bitmapRebuildTimer.setRepeats(false);
 		bitmapRebuildTimer.start();
 	}

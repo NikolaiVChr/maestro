@@ -68,13 +68,14 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	
 	public static final String MSX_FILE_DESCRIPTION = UIText.get("maestro.0.project", MaestroMain.APP_NAME);
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = UIText.get("maestro.0.projects", MaestroMain.APP_NAME);
-	public static final Version SONG_FILE_VERSION = new Version(4, 6, 15, 300);// Keep build above 117 to make earlier
+	public static final Version SONG_FILE_VERSION = new Version(4, 6, 23, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
 
     public static final String NEWER_VERSION_WARNING_ID = "Never Version";
     public static final String KNOWN_ISSUE_WARNING_ID = "Known Issue";
     public static final String TEMPO_ISSUE_WARNING_ID = "Tempo Issue";
+	public static final String COMBO_ISSUE_WARNING_ID = "Too many drum combos";
 
     private String title = "";
 	private String composer = "";
@@ -152,6 +153,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private final SaveAndExportSettings saveAndExportSettings;
     private CountIn countIn = null;
 
+	private final LotroCombiDrumInfo combiInfo;
+
     public AbcSong(File file, PartAutoNumberer partAutoNumberer, PartNameTemplate partNameTemplate,
 			ExportFilenameTemplate exportFilenameTemplate, InstrNameSettings instrNameSettings,
 			FileResolver fileResolver, MiscSettings miscSettings, SaveAndExportSettings saveAndExportSettings)
@@ -165,6 +168,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
                    FileResolver fileResolver, MiscSettings miscSettings, boolean saveMSXwhenSourceChange,
                    SaveAndExportSettings saveAndExportSettings, boolean ignoreMidiText, WarningHandler warningHandler)
 			throws IOException, InvalidMidiDataException, FileParseException, SAXException {
+
+		combiInfo = new LotroCombiDrumInfo(!ignoreMidiText);//only load prefs when not in auto-export mode.
+
 
         parts = new ListModelWrapper<>(new DefaultListModel<>());
 
@@ -220,6 +226,10 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		lyricLines = null;
 
         CountIn.setLastCountIn(null);
+
+		if (combiInfo != null) {
+			combiInfo.removeAllListeners();
+		}
 
 		/*
 		 * if (sequenceInfo != null) { // Make life easier for Garbage Collector for (TrackInfo ti :
@@ -526,6 +536,29 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 					loadedLyrics.add(new LyricLine(tick, text, tickEnd));
 				}
 				if (!loadedLyrics.isEmpty()) lyricLines = loadedLyrics;
+			}
+
+			List<String> combiWarnings = new ArrayList<>();
+			for (AbcPart part : parts) {
+				for (int t = 0; t < part.getTrackCount(); t++) {
+					DrumNoteMap dm = part.peekDrumMap(t);
+					if (dm != null) combiWarnings.addAll(dm.getLastLoadCombiWarnings());
+				}
+			}
+			if (!combiWarnings.isEmpty()) {
+				String message = UIText.get("maestro.warning.combi.degraded.0.1",
+						file.getName(), String.join(", ", combiWarnings));
+				log.warning("Combi library full while loading " + file.getName()
+						+ " - degraded: " + String.join(", ", combiWarnings));   // always logged, batch-visible
+				if (warningHandler != null) {
+					WarningHandler.WarningAction action = warningHandler.handleWarning(COMBO_ISSUE_WARNING_ID, UIText.get("maestro.warning.combi.degraded.full"), message);
+					if (action == WarningHandler.WarningAction.SKIP_FILE) {
+						throw new FileParseException("Skipped file (combo issue) by user request. Project needs to be reviewed in Maestro.", projectFile.getName());
+					}
+				} else {
+					JOptionPane.showMessageDialog(null, message,
+							UIText.get("maestro.warning.combi.degraded.full"), JOptionPane.WARNING_MESSAGE);
+				}
 			}
 		} catch (XPathExpressionException e) {
 			log.log(Level.SEVERE, "XPath error", e);
@@ -865,14 +898,17 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 	public void exportAbc(File exportFile, String appName) throws IOException, AbcConversionException {
 		boolean delayEnabled = false;
+		int minDelay = 0;
 		for (AbcPart part : parts) {
-			if (part.delay != 0) {
+			if (part.getDelay() != 0) {
 				delayEnabled = true;
-				break;
+				if (part.getDelay() < minDelay) {
+					minDelay = part.getDelay();
+				}
 			}
 		}
 		try (FileOutputStream out = new FileOutputStream(exportFile)) {
-			getAbcExporter().exportToAbc(out, delayEnabled, appName);
+			getAbcExporter().exportToAbc(out, delayEnabled, appName, minDelay);
 			if (firstExportTime == null) firstExportTime = new Date();
 		}
         setFileMetadata(exportFile.toPath(), appName);
@@ -1431,6 +1467,10 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			listeners.fire(new AbcSongEvent(this, property, part));
 	}
 
+	public LotroCombiDrumInfo getCombiInfo() {
+		return combiInfo;
+	}
+
 	public QuantizedTimingInfo getAbcTimingInfo() throws AbcConversionException {
 		if (timingInfo == null //
 				|| timingInfo.getExportTempoFactord() != getTempoFactor() //
@@ -1852,7 +1892,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         }
         for(AbcPart part : parts) {
             if (part.getEnabledTrackCount() == 0) continue;
-            if (part.delay != 0) return true;
+            if (part.getDelay() != 0) return true;
             if (part.getNoteMax() != 6) return true;
             if (badger && part.getBadgerPrio() != AbcPart.badgerPrioHighest) return true;
             if (part.conclusionFermata != 0) return true;
@@ -1992,6 +2032,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         this.mixDirty = true; // Force regeneration
 
         // Deep Copies
+		this.combiInfo = new LotroCombiDrumInfo(other.combiInfo);
+
         if (other.tuneBars != null) {
             this.tuneBars = new TreeMap<>();
             for (Entry<Float, TuneLine> entry : other.tuneBars.entrySet()) {
