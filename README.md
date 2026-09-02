@@ -20,7 +20,8 @@
   <img src="https://img.shields.io/github/last-commit/NikolaiVChr/maestro" alt="Last commit" />
   <img src="https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white" alt="Java 21" />
   <img src="https://img.shields.io/badge/Windows-supported-0078D6?logo=windows&logoColor=white" alt="Windows" />
-  <img src="https://img.shields.io/badge/Linux-supported-FCC624?logo=linux&logoColor=black" alt="Linux" />
+  <img src="https://img.shields.io/badge/Linux-supported-FCC624?logo=linux&logoColor=white" alt="Linux" />
+  <img src="https://img.shields.io/badge/macOS-supported-000000?logo=apple&logoColor=white" alt="macOS" />
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license" /></a>
 </p>
 
@@ -28,10 +29,6 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/-Java-ED8B00?logo=openjdk&logoColor=white" alt="Java" />
-  <img src="https://img.shields.io/badge/-C%2B%2B-00599C?logo=cplusplus&logoColor=white" alt="C++" />
-  <img src="https://img.shields.io/badge/-XSLT-6A4C93?logo=xml&logoColor=white" alt="XSLT" />
-  <img src="https://img.shields.io/badge/-Makefile-427819?logo=gnu&logoColor=white" alt="Makefile" />
-  <img src="https://img.shields.io/badge/-Shell-4EAA25?logo=gnu-bash&logoColor=white" alt="Shell" />
   <img src="https://img.shields.io/badge/-HTML-E34F26?logo=html5&logoColor=white" alt="HTML" />
   <img src="https://img.shields.io/badge/-Markdown-000000?logo=markdown&logoColor=white" alt="Markdown" />
 </p>
@@ -79,11 +76,6 @@ It can be used to:
 * Review timing and instrumentation.
 * Follow an arrangement while listening to it.
 * Check multi-part songs before a band performance.
-
-## Requirements
-
-* **Java 21 or newer**
-* **Windows** or **Linux**
 
 See the [latest releases](https://github.com/NikolaiVChr/maestro/releases) for current builds.
 
