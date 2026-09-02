@@ -94,7 +94,7 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 			badgerButton.setText(text);
 		});
 
-		delayField = new JTextField(String.format(Locale.US, "%.3f", part.delay * 0.001f).replace(',', '.'));
+		delayField = new JTextField(String.format(Locale.US, "%.3f", part.getDelay() * 0.001f).replace(',', '.'));
 		delayField.setHorizontalAlignment(SwingConstants.CENTER);
 		Dimension fieldSize = delayField.getPreferredSize();
 		fieldSize.height = h;
@@ -253,17 +253,17 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 	private void validateDelayInput() {
 		try {
 			float delay = Float.parseFloat(delayField.getText().replace(',', '.'));
-			if (delay >= 0.000f && delay <= 1.00f) {
+			if (delay >= -1.000f && delay <= 1.000f) {
 				int val = (int) (delay * 1000);
-				if (part.delay != val) {
-					part.delay = val;
+				if (part.getDelay() != val) {
+					part.setDelay(val);
 					part.delayEdited();
 				}
 			}
-		} catch (NumberFormatException nfe) {
+		} catch (NumberFormatException ignored) {
 
 		}
-		delayField.setText(String.format(Locale.US, "%.3f", part.delay * 0.001f).replace(',', '.'));
+		delayField.setText(String.format(Locale.US, "%.3f", part.getDelay() * 0.001f).replace(',', '.'));
 	}
 	
 	private void validateFermataInput() {
@@ -276,7 +276,7 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 					part.conclusionFermataEdited();
 				}
 			}
-		} catch (NumberFormatException nfe) {
+		} catch (NumberFormatException ignored) {
 	
 		}
 		conclusionFermataField.setText(String.format(Locale.US, "%.3f", part.conclusionFermata * 0.001f).replace(',', '.'));
@@ -291,7 +291,7 @@ public class PartEditorItem extends PartsListItem implements IDiscardable, Table
 					part.maxEdited();
 				}
 			}
-		} catch (NumberFormatException nfe) {
+		} catch (NumberFormatException ignored) {
 
 		}
 		maxField.setText(String.format("%d", part.getNoteMax()));

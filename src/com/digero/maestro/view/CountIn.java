@@ -339,7 +339,6 @@ public class CountIn {
             List<LotroDrumInfo> usableDIs = new ArrayList<>();
             for (LotroDrumInfo di : LotroDrumInfo.ALL_DRUMS) {
                 if (di.note == Note.REST) continue;
-                if (di.note.id >= LotroCombiDrumInfo.minCombi.id) continue;
                 usableDIs.add(di);
             }
             JComboBox<LotroDrumInfo> hitBox = new JComboBox<>(usableDIs.toArray(new LotroDrumInfo[]{}));

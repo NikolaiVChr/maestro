@@ -66,6 +66,10 @@ public class DissonancePanel extends JPanel implements IDiscardable, TableLayout
 	private final LeanJLabel currentCountLabel;
     private final JButton peakButton;
 
+	// Cache of the last values rendered into currentCountLabel (see HistogramPanel).
+	private int lastScore = Integer.MIN_VALUE;
+	private int lastScoreMax = Integer.MIN_VALUE;
+
 	private final AbcSong abcSong;
     private DissonanceDetector dissonanceDetector = null;
 
@@ -175,22 +179,37 @@ public class DissonancePanel extends JPanel implements IDiscardable, TableLayout
 	}
 
     /**
-     * Called by sequencer updates, abcPart updates and preview mode toggle.
-     */
+	 * Called by sequencer updates, abcPart updates and preview mode toggle.
+	 */
 	public void updateCountLabel() {
-        if (dissonanceDetector != null) {
-            int notes = dissonanceDetector.get(abcSequencer.getThumbTick(), abcSong).getTotalScore();// Must be abcSeq, due to tuneeditor can change micros from this call
-            currentCountLabel.setText(UIText.get("maestro.dissonance.0.score.peak.1", notes, dissonanceDetector.max(abcSong)));
-        } else {
-            currentCountLabel.setText(UIText.get("maestro.dissonance.no.preview.data"));
-        }
+		if (dissonanceDetector != null) {
+			int notes = dissonanceDetector.get(abcSequencer.getThumbTick(), abcSong).getTotalScore();// Must be abcSeq, due to tuneeditor can change micros from this call
+			int max = dissonanceDetector.max(abcSong);
+			if (notes != lastScore || max != lastScoreMax) {
+				lastScore = notes;
+				lastScoreMax = max;
+				currentCountLabel.setText(UIText.get("maestro.dissonance.0.score.peak.1", notes, max));
+			}
+		} else {
+			lastScore = Integer.MIN_VALUE;
+			lastScoreMax = Integer.MIN_VALUE;
+			currentCountLabel.setText(UIText.get("maestro.dissonance.no.preview.data"));
+		}
 	}
 
 	private final Listener<SequencerEvent> sequencerListener = e -> {
-		
-		dissoGraph.repaint();
+		// See HistogramPanel: no per-tick work while the panel is hidden.
+		if (!abcPreviewMode || !show)
+			return;
 
-        updateCountLabel();
+		SequencerEvent.SequencerProperty p = e.getProperty();
+
+		// See HistogramPanel: dissoGraph region-repaints itself for POSITION via
+		// NoteGraph.onEvent; only full-repaint on the rarer structural events.
+		if (p != SequencerEvent.SequencerProperty.POSITION && p != SequencerEvent.SequencerProperty.DRAG_POSITION) {
+			dissoGraph.repaint();
+		}
+		updateCountLabel();
 	};
 
     public void setDissonance(DissonanceDetector dissonanceDetector) {

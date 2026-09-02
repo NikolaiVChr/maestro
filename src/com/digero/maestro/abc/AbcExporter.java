@@ -165,13 +165,22 @@ public class AbcExporter {
             //System.out.println("\nDoing stereo spread");
 			lastChannelUsedInPreview = -1;			
 			long lastEnd = 0L;
+
+            int minDelay = 0;
+            for (AbcPart part : parts) {
+                if (part.getDelay() != 0) {
+                    if (part.getDelay() < minDelay) {
+                        minDelay = part.getDelay();
+                    }
+                }
+            }
 			for (AbcPart part : panSortedParts) {
 				
 				if (part.getEnabledTrackCount() > 0 || (countIn != null && countIn.micros > 0L && countIn.part == part)) {
 					int pan = panner.get(part.getInstrument(), stereoPan, part.getUserPan(), -1);
                     //System.out.println(part.getInstrument()+" -> "+(pan-64));
 					ExportTrackInfo inf = exportPartToPreview(part, sequence, pan,
-							useLotroInstruments, chordsMade, countIn);
+							useLotroInstruments, chordsMade, countIn, minDelay);
 					infoList.add(inf);
 					lastEnd = Math.max(lastEnd, inf.endOfTrack);
 					logPreview.fine(part.getTitle()+" assigned to channel "+inf.channel+" on track "+inf.trackNumber);
@@ -251,14 +260,12 @@ public class AbcExporter {
 
 	ExportTrackInfo exportPartToPreview(AbcPart part, Sequence sequence,
                                         int pan, boolean useLotroInstruments,
-                                        Map<AbcPart, List<Chord>> chordsMade, CountIn countIn) throws AbcConversionException {
+                                        Map<AbcPart, List<Chord>> chordsMade, CountIn countIn, int minDelay) throws AbcConversionException {
 		List<Chord> chords = chordsMade.get(part);
 
-		Triple<Integer, Integer, Long> trackNumber = exportPartToMidi(part, sequence, chords, pan, useLotroInstruments, countIn);
+		Triple<Integer, Integer, Long> trackNumber = exportPartToMidi(part, sequence, chords, pan, useLotroInstruments, countIn, minDelay);
 
 		List<AbcNoteEvent> noteEvents = new ArrayList<>(chords.size());
-
-        long delayMicros = part.delay * 1000L;
 		
 		for (Chord chord : chords) {
 			for (int i = 0; i < chord.size(); i++) {
@@ -294,7 +301,7 @@ public class AbcExporter {
 	}
 
 	private Triple<Integer, Integer, Long> exportPartToMidi(AbcPart part, Sequence out, List<Chord> chords, int pan,
-                                                            boolean useLotroInstruments, CountIn countIn) {
+                                                            boolean useLotroInstruments, CountIn countIn, int minDelay) {
         part.numberOfExportedNotes = 0;
         int trackNumber = out.getTracks().length;
         //part.setPreviewSequenceTrackNumber(trackNumber);//since part is here a copy for threaded reasons, we set this in projectFrame now.
@@ -328,6 +335,7 @@ public class AbcExporter {
 
         long lastEnd = 0L;
 
+        MidiEvent lastCountin = null;
         long countInMicros = 0L;//all track notes will be delayed by this
         if (countIn != null) {
             long minimumMicro = AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM());
@@ -343,7 +351,14 @@ public class AbcExporter {
                 long hitMicros = countInMicros / hits;
                 if (countIn.part == part) {
                     if (hitMicros >= minimumMicro) {
+                        long drumDelayMicros = 0;
                         long tick = exportStartTick;
+                        if (part.getDelay() - minDelay != 0) {
+                            drumDelayMicros = (part.getDelay() - minDelay) * 1000L;
+                            tick = organic
+                                    ? qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(exportStartTick) + drumDelayMicros)
+                                    : qtm.microsToTickABC(qtm.tickToMicrosABC(exportStartTick) + drumDelayMicros);
+                        }
                         logPreview.info("Count-in for preview: hitMicros: " + hitMicros);
                         for (CountIn.CountInDynamics dyn : countIn.pattern.dynamics) {
                             Dynamics volume = dyn.dynamics;
@@ -356,8 +371,9 @@ public class AbcExporter {
                             } else {
                                 tick = qtm.microsToTickABC(qtm.tickToMicrosABC(tick) + hitMicros);
                             }
-                            track.add(MidiFactory.createNoteOffEventEx(countIn.hit.note.id, channel,
-                                    0, tick));
+                            lastCountin = MidiFactory.createNoteOffEventEx(countIn.hit.note.id, channel,
+                                    0, tick);
+                            track.add(lastCountin);
                             lastEnd = tick;
                         }
                     } else {
@@ -370,7 +386,7 @@ public class AbcExporter {
                 }
             }
         }
-
+        boolean first = true;
         if (chords != null) {
             // chords can be null if no tracks are selected, but there is a count-in on this drum
 
@@ -381,13 +397,14 @@ public class AbcExporter {
                 noteDelta = part.getInstrument().octaveDelta * 12;
 
             long delayMicros = 0;
-            if (part.delay != 0) {
+            if (part.getDelay()-minDelay != 0) {
                 // Make delay on instrument be audible in preview
-                delayMicros = qtm.multiplyByExportTempoFactor(part.delay * 1000L);
+                delayMicros = qtm.multiplyByExportTempoFactor((part.getDelay()-minDelay) * 1000L);
             }
             if (countInMicros > 0L) {
                 delayMicros += qtm.multiplyByExportTempoFactor(countInMicros);
             }
+            logPreview.warning(part.getPartNumber()+" "+part.getInstrument()+": delayMicro "+delayMicros);
 
             for (Chord chord : chords) {
                 Dynamics dynamics = chord.calcDynamics(part.getAbcSong().dynamicsMethod);
@@ -413,8 +430,11 @@ public class AbcExporter {
 
                         // Shorten the note to end at the same time that the next one starts
                         long endTick = on.getEndTick();
-                        if (on.note.id == ne.note.id && on.getEndTick() > ne.getStartTick())
+                        if (on.note.id == ne.note.id && on.getEndTick() > ne.getStartTick()) {
+                            // the note starting now, has an ongoing note with same pitch
+                            // we stop the ongoing note here.
                             endTick = ne.getStartTick();
+                        }
 
                         if (endTick <= ne.getStartTick()) {
                             // This note has been turned off
@@ -434,27 +454,21 @@ public class AbcExporter {
 
                     long endTick = ne.getTieEnd().getEndTick();
 
-                    // Lengthen to match the note lengths used in the game
+                    // Match the note lengths used in lotro for non-sustained notes
                     if (useLotroInstruments) {
                         boolean sustainable = part.getInstrument().isSustainable(ne.note.id);
-                        double extraSeconds = 0.0d;
-                        if (sustainable) {
-                            // This is better match lotro linear power decay, since our midi playback is linear dB decay instead.
-                            extraSeconds = AbcConstants.SUSTAINED_NOTE_HOLD_SECONDS;
-                        } else if (part.getInstrument() == LotroInstrument.STUDENT_FIDDLE) {
-                            // This is to not stop fx noise before it has played out
-                            extraSeconds = AbcConstants.STUDENT_FX_MIN_SECONDS;
-                        } else {
+
+                        if (!sustainable) {
                             // This is to not stop plucked/drum note before it has played out
-                            extraSeconds = AbcConstants.NON_SUSTAINED_NOTE_HOLD_SECONDS;
-                        }
-                        if (extraSeconds > 0.0d) {
+                            long micros = AbcConstants.getNonSustainedNoteHoldMicros(part.getInstrument());
+
                             if (organic) {
-                                endTick = qtm.microsToTickOrganic(qtm.tickToMicrosOrganic(endTick)
-                                        + qtm.multiplyByExportTempoFactor((long) (extraSeconds * TimingInfo.ONE_SECOND_MICROS)));
+                                endTick = qtm.microsToTickOrganic(
+                                          qtm.tickToMicrosOrganic(ne.getStartTick()) + qtm.multiplyByExportTempoFactor(micros)
+                                            );
                             } else {
-                                endTick = qtm.microsToTick(qtm.tickToMicros(endTick)
-                                        + qtm.multiplyByExportTempoFactor((long) (extraSeconds * TimingInfo.ONE_SECOND_MICROS)));
+                                endTick = qtm.microsToTick(qtm.tickToMicros(ne.getStartTick())
+                                        + qtm.multiplyByExportTempoFactor(micros));
                             }
                         }
                     }
@@ -485,6 +499,12 @@ public class AbcExporter {
                      play the first note(s).
                      */
                     onTick = Math.max(onTick, exportStartTick);
+                    if (first && lastCountin != null && onTick < lastCountin.getTick()) {
+                        // there is be rounding differences between last countin hit and first note.
+                        // we fix it here:
+                        lastCountin.setTick(onTick);
+                    }
+                    first = false;
                     track.add(MidiFactory.createNoteOnEventEx(ne.note.id + noteDelta, channel,
                             dynamics.getVol(useLotroInstruments), onTick));
                     notesOn.add(ne);
@@ -512,7 +532,7 @@ public class AbcExporter {
 		return new Triple<>(trackNumber, channel, lastEnd);
 	}
 
-	public void exportToAbc(OutputStream os, boolean delayEnabled, String appName) throws AbcConversionException {
+	public void exportToAbc(OutputStream os, boolean delayEnabled, String appName, int minDelay) throws AbcConversionException {
 				
 		// accountForSustain is true so that songbooks wont stop their timer before last note has finished sounding.
 		// lengthenToBar is false for opposite reason, so reporting the correct duration to songbooks.
@@ -587,9 +607,9 @@ public class AbcExporter {
 			for (AbcPart part : parts) {
 				if (part.getEnabledTrackCount() > 0 || (part.getAbcSong().getCountIn() != null && part.getAbcSong().getCountIn().micros > 0L && part.getAbcSong().getCountIn().part == part)) {
 					if (organic) {
-						exportPartToAbcOrganic(part, out, delayEnabled, histogram, quanFractions);
+						exportPartToAbcOrganic(part, out, delayEnabled, histogram, quanFractions, minDelay);
 					} else {
-						exportPartToAbc(part, out, delayEnabled, histogram);
+						exportPartToAbc(part, out, delayEnabled, histogram, minDelay);
 					}
 				}
 			}
@@ -627,7 +647,7 @@ public class AbcExporter {
 	}
 
 	private void exportPartToAbcOrganic(AbcPart part, PrintStream out,
-			boolean delayEnabled, PolyphonyHistogram histogram, int[] quanFractions) throws AbcConversionException {
+                                        boolean delayEnabled, PolyphonyHistogram histogram, int[] quanFractions, int minDelay) throws AbcConversionException {
 
         //long L = (qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? 16L : 8L;
         long Q = qtm.getPrimaryExportTempoBPM();
@@ -774,23 +794,21 @@ public class AbcExporter {
             }
 
 			// the 100 is so the delay is always larger than 60 ms, even if its 0 ms.
-			int delayMicro = (part.delay+100)*1000 + (int) countInMicros;
-			
-			int delayMicro2 = 0;
-            if (delayMicro > 7 * AbcConstants.ONE_SECOND_MICROS) {
-                delayMicro2 = delayMicro;
-                delayMicro /= 2;
-                delayMicro2 = delayMicro2 - delayMicro;
-            }
+			long delayMicro = (part.getDelay()+100L-minDelay)*1000L + countInMicros;
+            logAbc.warning(part.getPartNumber()+" "+part.getInstrument()+"delayMicro "+delayMicro+" = ("+part.getDelay()+"+100+"+(-minDelay)+")*1000+"+countInMicros);
+            final long MAX_REST_MICROS = 7 * AbcConstants.ONE_SECOND_MICROS;
+            long parts = (delayMicro + MAX_REST_MICROS - 1) / MAX_REST_MICROS;   // ceil division
+            if (parts < 1) parts = 1;
+            long base = delayMicro / parts;        // each piece ~equal, all well above the 60ms floor
+            long remainder = delayMicro % parts;   // distribute the leftover micros
 
-			if (useMicroAccuracy) delayed.append("z" + delayMicro);
-            else delayed.append("z" + microToMilliCeil(delayMicro,oneMicro,oneMilli));
-            if (delayMicro2 > 0) {
-                if (useMicroAccuracy) delayed.append("z" + delayMicro2);
-                else delayed.append("z" + microToMilliCeil(delayMicro2,oneMicro,oneMilli));
-                logAbc.info("Delaying by " + delayMicro2 + " micros.");
+            for (int i = 0; i < parts; i++) {
+                long rest = base + (i < remainder ? 1L : 0L);   // spread remainder 1 micro at a time
+                if (useMicroAccuracy) delayed.append("z" + rest);
+                else delayed.append("z" + microToMilliCeil(rest,oneMicro,oneMilli));
+                delayed.append(" ");
             }
-            delayed.append(" | \n");
+            delayed.append("| \n");
             if (countIn != null && countIn.part == part) {
                 /*
                  Count-in on songs where the first note is delayed,
@@ -1389,7 +1407,7 @@ public class AbcExporter {
     }
 
 	private void exportPartToAbc(AbcPart part, PrintStream out,
-			boolean delayEnabled, PolyphonyHistogram histogram) throws AbcConversionException {
+                                 boolean delayEnabled, PolyphonyHistogram histogram, int minDelay) throws AbcConversionException {
 		List<Chord> chords = combineAndQuantize(part, false, histogram);
 
 		StringBuilder outBuilder = exportPartHeaderToAbc(part, null, 0);
@@ -1485,23 +1503,25 @@ public class AbcExporter {
 
 
 			// the 100 is so the delay is always larger than 60 ms, even if its 0 ms.
-			int delayMicro = (part.delay+100)*1000 + (int) countInMicros;
-			
+			long delayMicro = (part.getDelay()+100L-minDelay)*1000L + countInMicros;
+            logAbc.warning(part.getPartNumber()+" "+part.getInstrument()+"delayMicro "+delayMicro+" = ("+part.getDelay()+"+100+"+(-minDelay)+")*1000+"+countInMicros);
 			// Reduce the fraction
 			//int gcd = Util.gcd(delayMicro, oneMicro);
 			//delayMicro /= gcd;
 			//int oneMicro2 = oneMicro / gcd;
 
-            int delayMicro2 = 0;
-            if (delayMicro > 7 * AbcConstants.ONE_SECOND_MICROS) {
-                delayMicro2 = delayMicro;
-                delayMicro /= 2;
-                delayMicro2 = delayMicro2 - delayMicro;
-            }
+            final long MAX_REST_MICROS = 7 * AbcConstants.ONE_SECOND_MICROS;
+            long parts = (delayMicro + MAX_REST_MICROS - 1) / MAX_REST_MICROS;   // ceil division
+            if (parts < 1) parts = 1;
+            long base = delayMicro / parts;        // each piece ~equal, all well above the 60ms floor
+            long remainder = delayMicro % parts;   // distribute the leftover micros
 
-            out.print("z" + delayMicro + "/" + oneMicro);
-            if (delayMicro2 > 0) out.print(" z" + delayMicro2 + "/" + oneMicro);
-            out.println(" | ");
+            for (int i = 0; i < parts; i++) {
+                long rest = base + (i < remainder ? 1L : 0L);   // spread remainder 1 micro at a time
+                out.print("z" + rest + "/" + oneMicro);
+                out.print(" ");
+            }
+            out.println("| ");
 
             if (countIn != null && countIn.part == part) {
                 /*
@@ -2219,42 +2239,47 @@ public class AbcExporter {
 	}
 
 	private List<MidiNoteEvent> expandXtraDrumNotes(AbcPart part, int trackNumber) {
-		boolean specialDrumNotes = false;
-		if (part.getInstrument() == LotroInstrument.BASIC_DRUM) {
-			TrackInfo tInfo = part.getAbcSong().getSequenceInfo().getTrackInfo(trackNumber);
-			for (int inNo : tInfo.getNotesInUse()) {
-				byte outNo = part.getDrumMap(trackNumber).get(inNo);
-				if (outNo > part.getInstrument().highestPlayable.id) {
-					specialDrumNotes = true;
-					break;
-				}
-			}
-		}
-		List<MidiNoteEvent> listOfNotes = new ArrayList<>(part.getTrackEvents(trackNumber));
+        DrumNoteMap dm = part.getDrumMap(trackNumber);
 
-		if (specialDrumNotes) {
-			List<MidiNoteEvent> extraList = new ArrayList<>();
-			List<MidiNoteEvent> removeList = new ArrayList<>();
-			for (MidiNoteEvent ne : listOfNotes) {
-				Note possibleCombiNote = part.mapNote(trackNumber, ne.note.id, ne.getStartTick());
-				if (possibleCombiNote != null && LotroCombiDrumInfo.noteIdIsXtraNote(possibleCombiNote.id)) {
-					MidiNoteEvent extra1 = LotroCombiDrumInfo.getId1(ne, possibleCombiNote, ne.midiPan);
-					MidiNoteEvent extra2 = LotroCombiDrumInfo.getId2(ne, possibleCombiNote, ne.midiPan);
-					extraList.add(extra1);
-					extraList.add(extra2);
-					removeList.add(ne);
-					// Notice that bent notes on chromatic tracks are treated as only 1 note here
-				} else if (possibleCombiNote != null && possibleCombiNote.id > LotroCombiDrumInfo.maxCombi.id) {
-					// Just for safety, should never land here.
-					logNotes.severe("Just for safety, should never land here: "+ne);
-					removeList.add(ne);
-				}
-			}
-			listOfNotes.removeAll(removeList);
-			listOfNotes.addAll(extraList);
-		}
+        boolean specialDrumNotes = false;
+        if (part.getInstrument() == LotroInstrument.BASIC_DRUM) {
+            TrackInfo tInfo = part.getAbcSong().getSequenceInfo().getTrackInfo(trackNumber);
+            for (int inNo : tInfo.getNotesInUse()) {
+                byte outNo = dm.get(inNo);
+                if (dm.isCombiNote(outNo)) {
+                    specialDrumNotes = true;
+                    break;
+                }
+            }
+        }
+        List<MidiNoteEvent> listOfNotes = new ArrayList<>(part.getTrackEvents(trackNumber));
+        if (!specialDrumNotes) return listOfNotes;
+
+        List<MidiNoteEvent> extraList = new ArrayList<>();
+        List<MidiNoteEvent> removeList = new ArrayList<>();
+        for (MidiNoteEvent ne : listOfNotes) {
+            Note mapped = part.mapNote(trackNumber, ne.note.id, ne.getStartTick());
+            if (mapped == null) continue;
+
+            LotroCombiDrumInfo.CombiDrumHit c = dm.resolveCombi(mapped.id);
+            if (c != null) {
+                extraList.add(makeHit(ne, c.firstNote(),  ne.midiPan));
+                extraList.add(makeHit(ne, c.secondNote(), ne.midiPan));
+                removeList.add(ne);
+                // Notice that bent notes on chromatic tracks are treated as only 1 note here
+            }
+        }
+        listOfNotes.removeAll(removeList);
+        listOfNotes.addAll(extraList);
+
 		return listOfNotes;
 	}
+
+    private static MidiNoteEvent makeHit(MidiNoteEvent ne, Note n, int pan) {
+        MidiNoteEvent e = new MidiNoteEvent(n, ne.velocity, ne.getStartTick(), ne.getEndTick(), ne.getTempoCache(), pan);
+        e.alreadyMapped = true;
+        return e;
+    }
 	
 	/**
 	 * Combine the tracks into one, separate into chords.

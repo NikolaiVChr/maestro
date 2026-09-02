@@ -628,7 +628,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		int msb = rpnMSBMap.get(port, channel, tick, index);
 		int lsb = rpnLSBMap.get(port, channel, tick, index);
 		if (msb != DEFAULT_RPN_NULL && lsb == DEFAULT_RPN_NULL) {// && rpnLSBMap.getEntries(channel,0L, tick).isEmpty()
-			log.severe(fileName+": Channel "+channel+", RPN being utilized while LSB is default (NULL)! Using effective value of 0 LSB.");
+			log.warning(fileName+": Channel "+channel+", RPN being utilized while LSB is default (NULL)! Using effective value of 0 LSB.");
 			lsb = 0;
 		}
 		return (msb << 7) | lsb;

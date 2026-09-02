@@ -54,10 +54,6 @@ public class XmlUtil {
 	private XmlUtil() {
 	}
 
-	//
-	// Document
-	//
-
 	public static Document createDocument() {
 		try {
 			return DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument();
@@ -131,7 +127,14 @@ public class XmlUtil {
 
 	    return out.toString();
 	}
-	
+
+	/**
+	 * Clean a string for any chars that are not allowed in XML 1.1 UTF-8.
+	 *
+	 * See also StringCleaner.cleanForFileName()
+	 * and StringCleaner.cleanForABC()
+	 *
+	 */
 	public static String sanitizeStringForXMLSaving(String input) {
 	    if (input == null || input.isEmpty()) {
 	        return "";
