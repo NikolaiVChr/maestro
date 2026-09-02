@@ -2060,17 +2060,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				break;
 			case COUNT_IN:
 				setAbcSongModified(true);
-
-				//must be true so countin props get set on actual abcSong, not a copy:
-				refreshPreviewSequence(true);
-
-				if (abcSong != null) {
-					if (abcSong.getCountIn() != null) {
-						abcSequencer.setCountInMicros(abcSong.getCountIn().micros);
-						break;
-					}
-				}
-				abcSequencer.setCountInMicros(0L);
+				refreshPreviewSequence(false);
+				// apply preview will set the delay on wrapper, so that playhead gets delayed by countin.
 				break;
 			case EXPORT_FILE:
 				// Don't care
@@ -2856,9 +2847,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 // the wrong part.
                 p.setPreviewSequenceTrackNumber(-1);
             }
+			AbcSong songCopy = null;
             if (previewSequenceInfo.getLastTrackInfos() != null) {
                 //System.out.println("\nApply preview:");
                 for (AbcExporter.ExportTrackInfo trackInfo : previewSequenceInfo.getLastTrackInfos()) {
+					if(trackInfo.part.getAbcSong() != null) songCopy = trackInfo.part.getAbcSong();
                     //threadsafe to do it here
                     trackInfo.part.setPreviewSequenceTrackNumber(trackInfo.trackNumber);
                     trackInfo.part.numberOfExportedNotes = trackInfo.numberOfExportedNotes;
@@ -2873,6 +2866,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 }
             }
             abcSequencer.setStartTick(abcPreviewStartTick);// Needed for MP3 and WAV exports.
+			if (songCopy != null && songCopy.getCountIn() != null) {
+				abcSequencer.setCountInMicros(songCopy.getCountIn().micros);
+			} else {
+				abcSequencer.setCountInMicros(0L);
+			}
 
             long lengthABC = abcSong.getSongLengthMicros();
 
@@ -2895,7 +2893,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
                 sequencer.stop();
 
             abcSequencer.setTickPosition(tick);
-            abcSequencer.setRunning(abcRunning);
+			abcSequencer.setRunning(abcRunning);
             previewSequenceInfo.histogram.setSequencer(abcSequencer);
             if (previewSequenceInfo.dissonance != null) previewSequenceInfo.dissonance.setSequencer(abcSequencer);
             arrangementView.setHistogram(previewSequenceInfo.histogram);
