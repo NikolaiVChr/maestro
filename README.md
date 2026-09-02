@@ -8,7 +8,7 @@
 <p align="center">
   <a href="https://discord.gg/f7hGqmY9xF"><img src="https://img.shields.io/discord/1496644400590094540?logo=discord&logoColor=white&label=Discord&color=5865F2" alt="Discord" /></a>
   <a href="https://maestro.miraheze.org"><img src="https://img.shields.io/badge/Wiki-maestro.miraheze.org-yellow?logo=googlechrome&logoColor=white" alt="Wiki" /></a>
-  <a href="https://github.com/NikolaiVChr/maestro/releases"><img src="https://img.shields.io/github/v/release/NikolaiVChr/maestro?label=Latest%20Release" alt="Latest release" /></a>
+  <a href="https://github.com/NikolaiVChr/maestro/releases/latest"><img src="https://img.shields.io/github/v/release/NikolaiVChr/maestro?label=Latest%20Release" alt="Latest release" /></a>
   <a href="https://github.com/NikolaiVChr/maestro/releases"><img src="https://img.shields.io/github/downloads/NikolaiVChr/maestro/total?label=Downloads" alt="Downloads" /></a>
 </p>
 
