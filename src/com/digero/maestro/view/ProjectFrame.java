@@ -614,13 +614,16 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			@Override
 			public void tempoResetRequested() {
 				if (abcSong != null) {
-					if (fireTempoListeners)
-						abcSong.setTempoBPM(songExportSettingsPanel.getTempo());
+					float tempoFactor = abcSong.getTempoFactor();
 
-					abcSequencer.setTempoFactor(abcSong.getTempoFactor());
-					refreshPreviewSequence(false);
+					songExportSettingsPanel.setTempo(
+							abcSong.getSequenceInfo().getPrimaryTempoBPM());
+
+					if (tempoFactor != 1.0f) {
+						refreshPreviewSequence(false);
+					}
 				} else {
-					abcSequencer.setTempoFactor(1.0f);
+					songExportSettingsPanel.setTempo(MidiConstants.DEFAULT_TEMPO_BPM);
 				}				
 			}
 
