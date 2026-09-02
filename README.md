@@ -1,3 +1,9 @@
+<p align="center">
+  <img src="resources/com/digero/common/icons/github_readme_banner_idea.png"
+       alt="Maestro and Abc Player — MIDI to ABC Music Tools for The Lord of the Rings Online"
+       width="100%" />
+</p>
+
 <!-- Project -->
 <p align="center">
   <a href="https://discord.gg/f7hGqmY9xF"><img src="https://img.shields.io/discord/1496644400590094540?logo=discord&logoColor=white&label=Discord&color=5865F2" alt="Discord" /></a>
@@ -8,9 +14,9 @@
 
 <!-- Development -->
 <p align="center">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license" /></a>
   <a href="https://github.com/NikolaiVChr/maestro/graphs/contributors"><img src="https://img.shields.io/github/contributors/NikolaiVChr/maestro?style=flat" alt="Contributors" /></a>
   <img src="https://img.shields.io/github/last-commit/NikolaiVChr/maestro" alt="Last commit" />
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license" /></a>
 </p>
 
 <!-- Technologies / Formats -->
