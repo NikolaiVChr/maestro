@@ -66,6 +66,7 @@ Version 4.6.24
 * Fix that when skipping in song, the highlighted current notes could stay highlighted, even though the song was now having new position.
 * Added TR-808 and TR-909 drum kit hit names.
 * Allow part delay to be negative.
+* Highlight parts when hover over note tracks.
 
 Version 4.6.22
 * Downloads of the apps are now found on github. [https://github.com/NikolaiVChr/maestro/releases](https://github.com/NikolaiVChr/maestro/releases)

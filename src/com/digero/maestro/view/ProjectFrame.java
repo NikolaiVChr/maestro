@@ -459,6 +459,18 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		}
 	}
 
+	public void highlightPartsForTrack(int trackNumber) {
+		if (songPartsListPanel != null) {
+			songPartsListPanel.highlightPartsForTrack(trackNumber);
+		}
+	}
+
+	public void clearPartsTrackHighlight(int trackNumber) {
+		if (songPartsListPanel != null) {
+			songPartsListPanel.clearTrackHighlight(trackNumber);
+		}
+	}
+
 	public static class SequencerInitException extends RuntimeException {
 		public SequencerInitException(Throwable cause) { super(cause); }
 	}
@@ -686,7 +698,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
 	private void generateMidiPartsAndControlsPanel() {
-		arrangementView = new ArrangementView(sequencer, partAutoNumberer, abcSequencer, miscSettings.showMaxPolyphony, miscSettings.dissEnabled);
+		arrangementView = new ArrangementView(sequencer, partAutoNumberer, abcSequencer, miscSettings.showMaxPolyphony, miscSettings.dissEnabled, this);
 		arrangementView.setPoeticalLyricsAdvancement(saveSettings.countUpLyrics);
 		arrangementView.setPoeticalLyricsTimestampEveryLine(saveSettings.lyricsTimestampEveryLine);
 		arrangementView.addSettingsActionListener(e -> doSettingsDialog(SettingsDialog.NUMBERING_TAB));

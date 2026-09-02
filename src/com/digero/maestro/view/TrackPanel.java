@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
 import javax.sound.midi.MidiChannel;
@@ -46,6 +47,7 @@ import info.clearthought.layout.TableLayoutConstraints;
 import net.miginfocom.swing.MigLayout;
 
 public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConstants, ICompileConstants, ArrangementViewItem {
+	protected static final Logger log = Logger.getLogger("view.trackPanel");
 
 	private static final String DRUM_NOTE_MAP_DIR_PREF_KEY = "DrumNoteMap.directory";
 
@@ -122,6 +124,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 	private JPanel noteGraphPanel;
 	private TrackNoteGraph noteGraph;
 	private ArrayList<DrumPanel> drumlinePanels;
+	public ProjectFrame projectFrame = null;
 
 	private Listener<AbcPartEvent> abcListener;
 	private Listener<AbcSongEvent> songListener;
@@ -283,7 +286,22 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 					soloMidiTrack = -1;
 				}
 			}
-			
+
+			@Override
+			public void mouseEntered(MouseEvent e) {
+				if (projectFrame != null) {
+					int trackNumber = trackInfo.getTrackNumber();
+					projectFrame.highlightPartsForTrack(trackNumber);   // route to parts panel
+				}
+			}
+
+			@Override
+			public void mouseExited(MouseEvent e) {
+				if (projectFrame != null) {
+					int trackNumber = trackInfo.getTrackNumber();
+					projectFrame.clearPartsTrackHighlight(trackNumber);
+				}
+			}
 		});
 		
 		noteGraphPanel.add(noteGraph, "grow 10000 1000");

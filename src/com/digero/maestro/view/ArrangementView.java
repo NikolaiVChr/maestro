@@ -55,7 +55,8 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 
     private final JSlider panSlider;
     private final PanVisualizerPanel panPanel;
-    private boolean suppressPanEvents = false;
+	private final ProjectFrame projectFrame;
+	private boolean suppressPanEvents = false;
 
     private AbcPart abcPart;// The currently selected abcPart in left PartsList
 	private final PartAutoNumberer partAutoNumberer;
@@ -121,11 +122,14 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
     private boolean firePanListener = true;
 
     public ArrangementView(NoteFilterSequencerWrapper sequencer, PartAutoNumberer partAutoNumberer,
-                           SequencerWrapper abcSequencer, boolean showMaxPolyphony, boolean showDissonance) {
+                           SequencerWrapper abcSequencer, boolean showMaxPolyphony, boolean showDissonance,
+						   ProjectFrame projectFrame) {
 		super();// y  part-header, zoom, tracks
         TableLayout mainLayout = new TableLayout(//layout
                 new double[]{FILL, PREFERRED},  // x  tracks, note
                 new double[]{PREFERRED, FILL});
+
+		this.projectFrame = projectFrame;
 
         mainLayout.setHGap(HGAP);
         mainLayout.setVGap(VGAP);
@@ -894,7 +898,9 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 				int trackNumber = track.getTrackNumber();
 				if (track.hasEvents()) {
 					if (!trackPanels.containsKey(trackNumber)) {
-						trackPanels.put(trackNumber, new TrackPanel(track, sequencer, abcPart, abcSequencer, controlLayout));
+						TrackPanel tp = new TrackPanel(track, sequencer, abcPart, abcSequencer, controlLayout);
+						trackPanels.put(trackNumber, tp);
+						tp.projectFrame = projectFrame;
 					}
 					TrackPanel trackPanel = trackPanels.get(trackNumber);
 					trackPanel.setAbcPart(abcPart);

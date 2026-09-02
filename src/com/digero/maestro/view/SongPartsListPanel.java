@@ -55,6 +55,8 @@ public class SongPartsListPanel extends JPanel implements IDiscardable, TableLay
 	private int dropInsertIndex = -1;
 	private final PanelTransferHandler handler;
 
+	private int hoveredTrack = -1;
+
 	public SongPartsListPanel(SequencerWrapper abcSequencer, MiscSettings miscSettings) {
 		this.abcSequencer = abcSequencer;
 		this.miscSettings = miscSettings;
@@ -153,6 +155,7 @@ public class SongPartsListPanel extends JPanel implements IDiscardable, TableLay
 		if (model.getSize() == 0) {
 			selectedIndex = -1;
 			selectedPart = null;
+			hoveredTrack = -1;
 		}
 
 		for (int i = 0; i < model.getSize(); i++) {
@@ -176,6 +179,12 @@ public class SongPartsListPanel extends JPanel implements IDiscardable, TableLay
 
 		parts.add(idx, item);
 		add(item);
+
+		if (hoveredTrack != -1) {
+			item.setTrackHighlight(part.isTrackEnabled(hoveredTrack));
+		} else {
+			item.setTrackHighlight(false);
+		}
 	}
 
 	private void updateTrackNumbers() {
@@ -579,5 +588,20 @@ public class SongPartsListPanel extends JPanel implements IDiscardable, TableLay
 	        g2.drawLine(0, y, getWidth(), y);
 	        g2.dispose();
 	    }
+	}
+
+	public void highlightPartsForTrack(int trackNumber) {
+		for (PartsListItem item : parts) {
+			boolean uses = item.getPart().isTrackEnabled(trackNumber);
+			item.setTrackHighlight(uses);
+		}
+		hoveredTrack = trackNumber;
+	}
+
+	public void clearTrackHighlight(final int trackNumber) {
+		if (hoveredTrack == trackNumber) {
+			hoveredTrack = -1;
+			for (PartsListItem item : parts) item.setTrackHighlight(false);
+		}
 	}
 }
