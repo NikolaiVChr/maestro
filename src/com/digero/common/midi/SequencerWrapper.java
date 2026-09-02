@@ -310,7 +310,6 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
              */
             micros -= SynthesizerFactory.PLAYBACK_LATENCY_MICROS;
             micros -= abcSeq.getCountInMicros();
-			log.warning("countin micros: "+abcSeq.getCountInMicros());
             micros = Math.max(0L, micros);
         }
 

@@ -404,7 +404,7 @@ public class AbcExporter {
             if (countInMicros > 0L) {
                 delayMicros += qtm.multiplyByExportTempoFactor(countInMicros);
             }
-            logPreview.warning(part.getPartNumber()+" "+part.getInstrument()+": delayMicro "+delayMicros);
+            //logPreview.warning(part.getPartNumber()+" "+part.getInstrument()+": delayMicro "+delayMicros);
 
             for (Chord chord : chords) {
                 Dynamics dynamics = chord.calcDynamics(part.getAbcSong().dynamicsMethod);
@@ -795,7 +795,7 @@ public class AbcExporter {
 
 			// the 100 is so the delay is always larger than 60 ms, even if its 0 ms.
 			long delayMicro = (part.getDelay()+100L-minDelay)*1000L + countInMicros;
-            logAbc.warning(part.getPartNumber()+" "+part.getInstrument()+"delayMicro "+delayMicro+" = ("+part.getDelay()+"+100+"+(-minDelay)+")*1000+"+countInMicros);
+            //logAbc.warning(part.getPartNumber()+" "+part.getInstrument()+"delayMicro "+delayMicro+" = ("+part.getDelay()+"+100+"+(-minDelay)+")*1000+"+countInMicros);
             final long MAX_REST_MICROS = 7 * AbcConstants.ONE_SECOND_MICROS;
             long parts = (delayMicro + MAX_REST_MICROS - 1) / MAX_REST_MICROS;   // ceil division
             if (parts < 1) parts = 1;
@@ -1504,7 +1504,7 @@ public class AbcExporter {
 
 			// the 100 is so the delay is always larger than 60 ms, even if its 0 ms.
 			long delayMicro = (part.getDelay()+100L-minDelay)*1000L + countInMicros;
-            logAbc.warning(part.getPartNumber()+" "+part.getInstrument()+"delayMicro "+delayMicro+" = ("+part.getDelay()+"+100+"+(-minDelay)+")*1000+"+countInMicros);
+            //logAbc.warning(part.getPartNumber()+" "+part.getInstrument()+"delayMicro "+delayMicro+" = ("+part.getDelay()+"+100+"+(-minDelay)+")*1000+"+countInMicros);
 			// Reduce the fraction
 			//int gcd = Util.gcd(delayMicro, oneMicro);
 			//delayMicro /= gcd;
