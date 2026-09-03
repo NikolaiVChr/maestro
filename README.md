@@ -13,7 +13,6 @@
   <img src="https://img.shields.io/badge/Windows-supported-0078D6?logo=windows&logoColor=white" alt="Windows" />
   <img src="https://img.shields.io/badge/Linux-supported-FCC624?logo=linux&logoColor=white" alt="Linux" />
   <img src="https://img.shields.io/badge/macOS-supported-000000?logo=apple&logoColor=white" alt="macOS" />
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT license" /></a>
 </p>
 
 
@@ -39,4 +38,4 @@ They are currently maintained and further developed by **Aifel of Meriadoc** and
 
 Lotro instrument names and samples are from Lord of the Rings Online.  
 
-XG, GS and GM2 instrument and drum kit names — excluding individual drum hit names, are largely based on data from **[Jazz-soft](https://github.com/jazz-soft/JZZ-midi-GM)**.
+XG, GS and GM2 instrument and drum kit names, excluding individual drum hit names, are largely based on data from **[Jazz-soft](https://github.com/jazz-soft/JZZ-midi-GM)**.
