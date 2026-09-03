@@ -1,7 +1,6 @@
 package com.digero.maestro.view;
 
-import java.awt.Component;
-import java.awt.Insets;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
@@ -87,6 +86,7 @@ public class SongExportSettingsPanel extends JPanel {
                 UIText.get("maestro.html.b.export.abc.b.br.ctrl.e.html"),
                 "abcfile_32.png",
                 SwingConstants.LEFT);
+        this.exportButton.setPreferredSize(new Dimension(300, this.exportButton.getPreferredSize().height));
 
         this.exportSuccessfulLabel = createJLabel(
                 UIText.get("maestro.exported"),

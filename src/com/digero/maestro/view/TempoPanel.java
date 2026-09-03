@@ -106,7 +106,7 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
 		tempoGraph.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER_HORIZ.get()));
 		setBackground(ColorTable.TEMPO_BACKGROUND.get());
 
-		JLabel titleLabel = new JLabel(UIText.get("maestro.tempo"));
+		JLabel titleLabel = new JLabel(UIText.get("maestro.tempoGraph.tempo"));
 		titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
 		titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD));
 		titleLabel.setForeground(ColorTable.PANEL_TEXT_DISABLED.get());

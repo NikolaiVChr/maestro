@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="resources/com/digero/common/icons/github_readme_banner_idea.png"
+  <img src="distribute/github_readme_banner_idea.png"
        alt="Maestro and Abc Player — MIDI to ABC Music Tools for The Lord of the Rings Online"
        width="100%" />
 </p>
