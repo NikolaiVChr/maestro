@@ -35,6 +35,14 @@ public class UIText {
     private static final @NonNls String LANG_DE_NAME = "Deutsch";
     private static final @NonNls String mainKey = "locale";
 
+    /**
+     * App convention: numeric arguments in UI text are always
+     * formatted in en-US, regardless of the selected UI language. This matches how
+     * numbers are formatted all other places in the app. Do not replace this with the
+     * selected locale (for now), the fixed locale here is intentional.
+     */
+    private static final Locale NUMBER_LOCALE = Locale.US;
+
     static {
         //Preferences.userNodeForPackage(MaestroMain.class).node("miscSettings").remove(mainKey);
         locale = Preferences.userNodeForPackage(MaestroMain.class).node("miscSettings").get(mainKey, null); //NON-NLS
@@ -107,7 +115,7 @@ public class UIText {
         // if parameters are actually passed.
         if (args.length > 0) {
             // This expects "It''s {0}"
-            return MessageFormat.format(value, args);
+            return MessageFormat.format(value, args, NUMBER_LOCALE);
         } else {
             // This expects "It's time" (no escaping needed)
             return value;
