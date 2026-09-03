@@ -2991,7 +2991,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 					// (PreviewExportWorker copies it; AbcSong's copy ctor nulls abcExporter),
 					// so it cannot touch the exporter this immediate build uses, the old
 					// "wait so getAbcExporter can't corrupt shared state" reason is gone.
-					// Give it a brief bounded moment to unwind after cancel(true) so we don't
+					// We give it a brief bounded moment to unwind after cancel(true) so we don't
 					// run two exports on the same cores, but never freeze the EDT waiting.
 					// If it finishes anyway its done() is requestSeq-guarded and won't apply.
 					oldWorker.get(2, TimeUnit.SECONDS);
