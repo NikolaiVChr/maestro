@@ -369,7 +369,8 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 			AffineTransform scrnXForm;
 			if (noteW <= 0 || scrnW <= 0 || scrnH <= 0) {
 				// The song doesn't seem to be loaded yet, we don't cache the transform
-				log.severe("NoteGraph transform could not be calculated");
+				String tracker = trackInfo==null?"No track: ":trackInfo.getTrackNumber()+" ("+trackInfo.getName()+"): ";
+				log.warning(tracker+"NoteGraph transform could not be calculated. noteW=" + noteW+" scrnW="+scrnW+" scrnH="+scrnH+" class="+getClass().getName());
 				invalidateTransform();
 				return new AffineTransform();
 			} else {
@@ -412,6 +413,11 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 
 	@Override
 	public void onEvent(SequencerEvent evt) {
+		if (getWidth() <= 0 || getHeight() <= 0) {
+			// DissonancePanel will get in here when not shown.
+			return;
+		}
+
 		if (evt.getProperty() == SequencerProperty.LENGTH) {
 			invalidateTransform();
 		}
