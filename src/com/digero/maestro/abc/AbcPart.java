@@ -281,8 +281,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			if (!playRight[track])
 				trackEle.setAttribute("playRight", String.valueOf(playRight[track]));
 
-            boolean fx = isFX(track);
-            boolean studentFX = fx && isStudentPart();
+            boolean isFx = isFX(track);
+            boolean studentFX = isFx && isStudentPart();
 
 			TreeMap<Float, PartSection> tree = sections.get(track);
 			if (tree != null) {
@@ -301,7 +301,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 					SaveUtil.appendChildTextElement(sectionEle, "dialogLine", String.valueOf(ps.dialogLine));
 					SaveUtil.appendChildTextElement(sectionEle, "resetVelocities", String.valueOf(ps.resetVelocities));
 					AbcHelper.saveDoublingToXML(ps, sectionEle, instrument.isPercussion || studentFX);
-					if (!fx && !instrument.isPercussion && (ps.fromPitch != minDefault || ps.toPitch != Note.MAX)) {
+					if (!isFx && !instrument.isPercussion && (ps.fromPitch != minDefault || ps.toPitch != Note.MAX)) {
                         SaveUtil.appendChildTextElement(sectionEle, "fromPitch", String.valueOf(ps.fromPitch.id));
 						SaveUtil.appendChildTextElement(sectionEle, "toPitch", String.valueOf(ps.toPitch.id));
 					}
@@ -315,19 +315,19 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				if (instrument.sustainable && !studentFX) SaveUtil.appendChildTextElement(sectionEle, "legato", String.valueOf(ps.legato));
 				SaveUtil.appendChildTextElement(sectionEle, "resetVelocities", String.valueOf(ps.resetVelocities));
 				AbcHelper.saveDoublingToXML(ps, sectionEle, instrument.isPercussion || studentFX);
-				if (!fx && !instrument.isPercussion && (ps.fromPitch != minDefault || ps.toPitch != Note.MAX)) {
+				if (!isFx && !instrument.isPercussion && (ps.fromPitch != minDefault || ps.toPitch != Note.MAX)) {
 					SaveUtil.appendChildTextElement(sectionEle, "fromPitch", String.valueOf(ps.fromPitch.id));
 					SaveUtil.appendChildTextElement(sectionEle, "toPitch", String.valueOf(ps.toPitch.id));
 				}
 			}
 			
 			if (isStudentPart()) {
-				trackEle.setAttribute("fx", String.valueOf(fx));
+				trackEle.setAttribute("fx", String.valueOf(isFx));
 				trackEle.setAttribute("studentOverride", String.valueOf(isStudentFromABC()));
 			} else if (isJauntyHandKnellsPart()) {
-                trackEle.setAttribute("fx", String.valueOf(fx));
+                trackEle.setAttribute("fx", String.valueOf(isFx));
             }
-            if (instrument.isPercussion || ((isStudentPart() || isJauntyHandKnellsPart()) && fx)) {
+            if (instrument.isPercussion || ((isStudentPart() || isJauntyHandKnellsPart()) && isFx)) {
 				saveDrumHitsToXML(ele, doc, track, trackEle);
 			}
 		}
@@ -546,7 +546,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				// Now set the track info
 				trackEnabled[t] = true;
 				enabledTrackCount++;
-				boolean fx = SaveUtil.parseValue(trackEle, "@fx", false);
+				boolean isFx = SaveUtil.parseValue(trackEle, "@fx", false);
 				studentFromABC = SaveUtil.parseValue(trackEle, "@studentOverride", false);
 				trackTranspose[t] = SaveUtil.parseValue(trackEle, "transpose", trackTranspose[t]);
                 /*
@@ -569,14 +569,14 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				} else if (new Version(3, 2, 9, 300).compareTo(fileVersion) > 0 && isStudentPart()) {
 					// compat handling
 					loadDrumHitsFromXML(fileVersion, trackEle, t);
-					fx = studentFxNoteMap[t] != null;
-					setFX(t, fx);
+					isFx = studentFxNoteMap[t] != null;
+					setFX(t, isFx);
 				} else if (isStudentPart()) {
-					if (fx) loadDrumHitsFromXML(fileVersion, trackEle, t);
-					setFX(t, fx);
+					if (isFx) loadDrumHitsFromXML(fileVersion, trackEle, t);
+					setFX(t, isFx);
 				} else if (isJauntyHandKnellsPart()) {
-                    if (fx) loadDrumHitsFromXML(fileVersion, trackEle, t);
-                    setFX(t, fx);
+                    if (isFx) loadDrumHitsFromXML(fileVersion, trackEle, t);
+                    setFX(t, isFx);
                 }
 			}
 		} catch (XPathExpressionException e) {
