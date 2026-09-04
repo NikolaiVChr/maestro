@@ -33,6 +33,7 @@ import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
 import javax.xml.xpath.XPathExpressionException;
 
+import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.VersionsWithIssues;
 import com.digero.common.util.*;
 import com.digero.common.view.UIText;
@@ -394,7 +395,11 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			sequenceInfo = null;
 			String name = sourceFile.getName().toLowerCase();
 			boolean isAbc = name.endsWith(Util.ABC_FILE_EXTENSION) || name.endsWith(Util.TXT_FILE_EXTENSION);
+			int attempts = 0;
 			while (sequenceInfo == null) {
+				if (++attempts > 20) {
+					throw new FileParseException("Gave up loading source file after " + (attempts - 1) + " attempts", name);
+				}
 				tryToLoadFromFile(fileResolver, isAbc, miscSettings, warningHandler);
 
 				if (newSourceFile == null)
@@ -481,7 +486,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 			handleTuneSections(songEle, fileVersion);
 
-			loadPartsFromXML(songEle, fileVersion, sorted);
+			loadPartsFromXML(songEle, fileVersion, sorted, warningHandler);
 
 			Version def = new Version(0,0,0);
 			Version maestroVersion = SaveUtil.parseValue(songEle, "@maestroVersion", def);
@@ -710,10 +715,10 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	}
 
 	@SuppressWarnings("HardCodedStringLiteral")
-	private void loadPartsFromXML(Element songEle, Version fileVersion, boolean autoSorted)
+	private void loadPartsFromXML(Element songEle, Version fileVersion, boolean autoSorted, WarningHandler warningHandler)
 			throws XPathExpressionException, FileParseException {
 		for (Element ele : XmlUtil.selectElements(songEle, "part")) {
-			AbcPart part = AbcPart.loadFromXml(this, ele, fileVersion);
+			AbcPart part = AbcPart.loadFromXml(this, ele, fileVersion, warningHandler);
 			
 			parts.add(part);
 			part.convertSectionsToLongTrees();
@@ -721,17 +726,22 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		}
 		// Since parts with zero part numbers will be assigned 999,
 		// and 999 could be assigned already, we iterate till we find a free number:
-		Set<Integer> pNumbers = new HashSet<>();
-		for (AbcPart part : parts) {
-			int pN = part.getPartNumber();
-			while (pNumbers.contains(pN)) {
-				pN--;
-				if (pN < 1) {
-					throw new RuntimeException("Part number error");
+		suppressPartSort = true;
+		try {
+			Set<Integer> pNumbers = new HashSet<>();
+			for (AbcPart part : parts) {
+				int pN = part.getPartNumber();
+				while (pNumbers.contains(pN)) {
+					pN--;
+					if (pN < 1) {
+						throw new RuntimeException("Part number error");
+					}
+					part.setPartNumber(pN);
 				}
-				part.setPartNumber(pN);
+				pNumbers.add(pN);
 			}
-			pNumbers.add(pN);
+		} finally {
+			suppressPartSort = false;
 		}
         partAutoNumberer.assignManualPartNumber(parts);// convert all null values to booleans.
 		if (autoSorted) {
@@ -1033,7 +1043,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 	public void setMood(String mood) {
 		mood = Util.emptyIfNull(mood);
-		if (!this.genre.equals(mood)) {
+		if (!this.mood.equals(mood)) {
 			this.mood = mood;
 			fireChangeEvent(AbcSongProperty.MOOD);
 		}
@@ -1873,7 +1883,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	 * Only used by abc tools
 	 */
 	public int getMaxPartPoly() {
-		int poly = 6;
+		int poly = AbcConstants.MAX_CHORD_NOTES;
 		for (AbcPart part : parts) {
 			if (part.getMaxPoly() > poly) {
 				poly = part.getMaxPoly();
@@ -1893,7 +1903,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         for(AbcPart part : parts) {
             if (part.getEnabledTrackCount() == 0) continue;
             if (part.getDelay() != 0) return true;
-            if (part.getNoteMax() != 6) return true;
+            if (part.getNoteMax() != AbcConstants.MAX_CHORD_NOTES) return true;
             if (badger && part.getBadgerPrio() != AbcPart.badgerPrioHighest) return true;
             if (part.conclusionFermata != 0) return true;
         }

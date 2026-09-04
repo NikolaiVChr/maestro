@@ -37,7 +37,6 @@ import com.digero.maestro.midi.SequenceDataCache.TempoEvent;
 import com.digero.maestro.midi.SequenceInfo;
 import com.digero.maestro.view.TrackPanel.TrackDimensions;
 
-@SuppressWarnings("serial")
 public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConstants, ArrangementViewItem {
 	// 0 1 2 3
 	// +---+-------------------+-----------+---------------------+
@@ -231,7 +230,6 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
 	private int tempoToNoteId(int tempoMPQ, int minBPM, int maxBPM) {
 		int bpm = (int) Math.round(MidiUtils.convertTempo(tempoMPQ));
 
-        // TODO: abcSong.getAbcTimingInfo().multiplyByExportTempoFactor():
 		float tempoFactor = getCurrentTempoFactor();
 		minBPM = Math.round(minBPM * tempoFactor);
 		maxBPM = Math.round(maxBPM * tempoFactor);

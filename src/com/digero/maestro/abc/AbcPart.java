@@ -168,7 +168,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 
 	@Override
 	public void discard() {
-		abcSong.removeSongListener(songListener);
+		if (abcSong != null)
+			abcSong.removeSongListener(songListener);
 		listeners.discard();
 		for (int i = 0; i < drumNoteMap.length; i++) {
 			if (drumNoteMap[i] != null) {
@@ -191,6 +192,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		sections = null;
 		sectionsTicked = null;
 		sectionsModified = null;
+		//nonSection = null; never expected to be null
 		delay = 0;
 		conclusionFermata = 0;
 		discarded = true;
@@ -386,14 +388,14 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		}
 	}
 
-	public static AbcPart loadFromXml(AbcSong abcSong, Element ele, Version fileVersion) throws FileParseException {
+	public static AbcPart loadFromXml(AbcSong abcSong, Element ele, Version fileVersion, WarningHandler warningHandler) throws FileParseException {
 		AbcPart part = new AbcPart(abcSong);
-		part.initFromXml(ele, fileVersion);
+		part.initFromXml(ele, fileVersion, warningHandler);
 		return part;
 	}
 
 	@SuppressWarnings("HardCodedStringLiteral")
-	private void initFromXml(Element ele, Version fileVersion) throws FileParseException {
+	private void initFromXml(Element ele, Version fileVersion, WarningHandler warningHandler) throws FileParseException {
 		try {
 			partNumber = SaveUtil.parseValue(ele, "@id", partNumber);
 			if (partNumber == 0) partNumber = 999;
@@ -482,10 +484,15 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				}
 				trackNames.set(t, xmlTrackName);
 				if (!abcSong.getSequenceInfo().getTrackInfo(t).hasEvents()) {
-                    Component parent = (getFrames().length > 0) ? getFrames()[0] : null;
-					JOptionPane.showMessageDialog(parent,
-							UIText.get("maestro.0.has.a.midi.track.track.1.selected.that.has.no.notes", title, t),
-							UIText.get("maestro.warning.for.0", abcSong.getTitle()), JOptionPane.WARNING_MESSAGE);
+					if (warningHandler != null) {
+						// Abc Tools just get a log
+						log.warning(UIText.get("maestro.0.has.a.midi.track.track.1.selected.that.has.no.notes", title, t));
+					} else {
+						Component parent = (getFrames().length > 0) ? getFrames()[0] : null;
+						JOptionPane.showMessageDialog(parent,
+								UIText.get("maestro.0.has.a.midi.track.track.1.selected.that.has.no.notes", title, t),
+								UIText.get("maestro.warning.for.0", abcSong.getTitle()), JOptionPane.WARNING_MESSAGE);
+					}
 				}
 
 				TreeMap<Float, PartSection> tree = sections.get(t);
@@ -918,8 +925,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 					if (mapNoteEvent(t, ne) != null && shouldPlay(ne, t)) {
 						if (ne.getStartTick() < startTick) {
 							startTick = ne.getStartTick();
-							break;
-						}						
+						}
+						break;
 					}
 				}
 			}
@@ -1085,19 +1092,33 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			// System.out.println(" "+"matching old title at least: "+typeNumber);
 		}
 		if (typeNumberNew != typeNumber) {
-			Pair<LotroInstrument, MatchResult> result = LotroInstrument.matchInstrument(title);
-
 			String typeString = " " + typeNumberNew;
 			if (typeNumberNew == 0) {
 				typeString = "";
 			}
-			// System.out.println(" "+"Setting: "+result.second.group()+typeString);
+
+			// The title matches either the full instrument name or its nickname; we got here
+			// only because getTypeNumberMatchingTitle() found one of the two at offset 0.
+			String instrPart = null;
+			Pair<LotroInstrument, MatchResult> result = LotroInstrument.matchInstrument(title);
+			if (result != null && result.second != null && result.second.group() != null) {
+				instrPart = result.second.group();
+			} else {
+				Integer[] nick = matchNick(instrNameSettings.getInstrNick(instrument), title);
+				if (nick != null && nick[0] == 0) {
+					instrPart = title.substring(0, nick[1]);
+				}
+			}
+
+			if (instrPart == null) {
+				// Should be unreachable; leave both title and typeNumber untouched and report failure.
+				log.severe("setTypeNumber: no instrument name or nick in title \"" + title + "\"");
+				return false;
+			}
+
+			// System.out.println(" "+"Setting: "+instrPart+typeString);
 			typeNumber = typeNumberNew;
-			assert result != null;// saw a null pointer here, hence the asserts
-			assert result.second != null;
-			assert result.second.group() != null;
-			setTitle(result.second.group() + typeString);// no need to check for null, as that is done in
-															// isTypeNumberMatchingTitle/getTypeNumberMatchingTitle
+			setTitle(instrPart + typeString);
 		} else {
 			// System.out.println(" "+"Same, not setting "+typeNumber);
 		}
@@ -1548,8 +1569,10 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	}
 
 	public void setMuted(boolean muted) {
-		this.muted = muted;
-        fireChangeEvent(AbcPartProperty.EXCLUSION);
+		if (this.muted != muted) {
+			this.muted = muted;
+			fireChangeEvent(AbcPartProperty.EXCLUSION);
+		}
 	}
 
 	public boolean isSoloed() {
@@ -1557,8 +1580,10 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	}
 
 	public void setSoloed(boolean soloed) {
-		this.soloed = soloed;
-        fireChangeEvent(AbcPartProperty.EXCLUSION);
+		if (this.soloed != soloed) {
+			this.soloed = soloed;
+			fireChangeEvent(AbcPartProperty.EXCLUSION);
+		}
 	}
 	
 	public boolean isActive() {
