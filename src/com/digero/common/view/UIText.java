@@ -115,7 +115,7 @@ public class UIText {
         // if parameters are actually passed.
         if (args.length > 0) {
             // This expects "It''s {0}"
-            return MessageFormat.format(value, args, NUMBER_LOCALE);
+            return new MessageFormat(value, NUMBER_LOCALE).format(args);
         } else {
             // This expects "It's time" (no escaping needed)
             return value;

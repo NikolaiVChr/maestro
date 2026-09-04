@@ -18,7 +18,7 @@
 
 # Maestro and Abc Player
 
-**Maestro**, **Abc Player** and **Abc tools** are music tools for [The Lord of the Rings Online](https://www.lotro.com/).
+**Maestro**, **Abc Player** and **Abc Tools** are music apps for [The Lord of the Rings Online](https://www.lotro.com/).
 
 See the [latest releases](https://github.com/NikolaiVChr/maestro/releases) for downloads.
 
