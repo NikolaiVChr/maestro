@@ -696,6 +696,10 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		if (!getAudible(track, tickStart)) {
 			return null;
 		}
+		if (noteId < Note.MIN.id || noteId > Note.MAX.id) {
+			// extra check for invalid noteid that can make drum-map throw exception.
+			return null;
+		}
 		if (!isChromatic(track)) {
 			if (!isPercussionNoteEnabled(track, noteId))
 				return null;
@@ -725,7 +729,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			noteId += getTranspose(track, tickStart);
 			Pair<Integer,Integer> limits = getSectionPitchLimits(track, tickStart);
 
-			if (noteId > limits.second || noteId < limits.first) {
+			if (noteId + getInstrument().octaveDelta * 12 > limits.second || noteId + getInstrument().octaveDelta * 12 < limits.first) {
 				return null;
 			}
 			int lowest = instrument.lowestPlayable.id;
