@@ -16,14 +16,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.swing.BoxLayout;
-import javax.swing.DefaultListModel;
-import javax.swing.JComponent;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.SwingUtilities;
-import javax.swing.TransferHandler;
+import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
@@ -300,7 +293,7 @@ public class SongPartsListPanel extends JPanel implements IDiscardable, TableLay
 	}
 	
 	public void restoreSoloMuteState(List<Pair<Boolean, Boolean>> soloMuteState) {
-		int len = soloMuteState.size() < parts.size()? soloMuteState.size() : parts.size();
+		int len = Math.min(soloMuteState.size(), parts.size());
 		for (int i = 0; i < len; i++) {
 			Pair<Boolean, Boolean> soloMute = soloMuteState.get(i);
 			PartsListItem item = parts.get(i);
@@ -397,12 +390,12 @@ public class SongPartsListPanel extends JPanel implements IDiscardable, TableLay
 	};
 	
 	public static class PanelTransferHandler extends TransferHandler {
-        /** This global flag is true when any D&D is in progress. */
+        /** This global flag is true when any DnD is in progress. */
         public static volatile boolean isDragInProgress = false;
 
 		SongPartsListPanel main;
-		private boolean canImport;
-		private boolean export;
+		private final boolean canImport;
+		private final boolean export;
 		
 		PanelTransferHandler(SongPartsListPanel main, boolean canImport, boolean export) {
 			super();
@@ -417,14 +410,16 @@ public class SongPartsListPanel extends JPanel implements IDiscardable, TableLay
 			
 		    if (!export) return null;
 
-            isDragInProgress = true;
-			main.getRootPane().setCursor(DragSource.DefaultMoveDrop);
-
 		    int panelIndex = main.model.indexOf(((PartsListItem) c.getParent()).getPart()); 
 		    if (panelIndex == -1) {
-		        System.out.println("Warning: Item not found in model!");
+		        log.warning("Warning: Item not found in model!");
 		        return null;
 		    }
+
+			isDragInProgress = true;
+			JRootPane root = main.getRootPane();
+			if (root != null)
+				root.setCursor(DragSource.DefaultMoveDrop);
 
 		    //System.out.println("Panel Index: " + panelIndex);
 		    return new CustomTransferable(String.valueOf(panelIndex)); 
@@ -450,7 +445,7 @@ public class SongPartsListPanel extends JPanel implements IDiscardable, TableLay
 	            handleDrop(target, partId, dropPt);
 	            return true;
 	        } catch (Exception e) {
-	            e.printStackTrace();
+	            log.log(Level.WARNING, "Error importing DnD data", e);
 	            return false;
 	        }
 	    }
