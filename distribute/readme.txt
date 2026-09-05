@@ -58,8 +58,7 @@ Release notes after 4.6.21 should be in markdown format. Keep the version header
 This changelog is only partial, to see all the way back to v1.0.0 go here:
   https://maestro.miraheze.org/wiki/Version_history
 
-Version 4.6.24
-* This is a beta release, feel free to help and test.
+Version 4.6.25
 * Significant less CPU usage during audio playback.
 * Allow part delay to be negative.
 * Highlight connected parts when hover over note tracks.
