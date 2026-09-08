@@ -34,7 +34,7 @@ public final class LocaleManager {
             Locale.GERMAN);
 
     private static volatile Locale locale = Locale.ENGLISH;
-    private static boolean initialized = false;
+    private static volatile boolean initialized = false;
 
     private static final String LANGUAGE_SELECTION_MESSAGE = "Language/Langue/Sprache";
     private static final String LANGUAGE_SELECTION_TITLE = "Maestro Language";
@@ -58,12 +58,10 @@ public final class LocaleManager {
         // Retrieve the stored locale preference, if any.
         String lang = PREFS.get("locale", null);
 
-        // Migrate legacy locale setting "US" to Locale.ENGLISH
+        // legacy locale setting "US" to Locale.ENGLISH
         final String LEGACY_LOCALE_US = "US";
         if (LEGACY_LOCALE_US.equalsIgnoreCase(lang)) {
-            LOGGER.log(Level.INFO, "Migrating legacy locale setting US to " + Locale.ENGLISH);
             lang = Locale.ENGLISH.getLanguage();
-            PREFS.put("locale", lang);
         }
 
         final String selectedLanguage = lang;
@@ -161,10 +159,6 @@ public final class LocaleManager {
      * @return A list of supported locales.
      */
     public static List<Locale> getSupportedLocales() {
-        return List.copyOf(SUPPORTED_LOCALES);
-    }
-
-    public static String getLanguageSelectionMessage() {
-        return LANGUAGE_SELECTION_MESSAGE;
+        return SUPPORTED_LOCALES;
     }
 }
