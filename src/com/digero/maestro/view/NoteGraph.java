@@ -38,6 +38,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
 import com.digero.common.abc.Dynamics;
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.ITempoCache;
 import com.digero.common.midi.Note;
 import com.digero.common.midi.SequencerEvent;
@@ -49,7 +50,6 @@ import com.digero.common.util.Pair;
 import com.digero.common.util.Util;
 import com.digero.common.view.BarNumberLabel;
 import com.digero.common.view.ColorTable;
-import com.digero.common.view.UIText;
 import com.digero.maestro.midi.BentMidiNoteEvent;
 import com.digero.maestro.midi.NoteEvent;
 import com.digero.maestro.midi.SequenceDataCache;

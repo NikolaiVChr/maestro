@@ -9,11 +9,11 @@ import java.util.TreeMap;
 
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.abc.LotroInstrumentSampleDuration;
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.LotroSequencerWrapper;
 import com.digero.common.midi.Note;
 import com.digero.common.midi.SequencerEvent;
 import com.digero.common.util.Listener;
-import com.digero.common.view.UIText;
 import com.digero.maestro.midi.AbcNoteEvent;
 import com.digero.maestro.midi.Chord;
 import com.digero.maestro.midi.SequenceDataCache;

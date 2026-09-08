@@ -1,10 +1,10 @@
 package com.digero.maestro.view;
 
-import com.digero.common.view.UIText;
-
 import static javax.swing.SwingConstants.CENTER;
 
 import javax.swing.JTextField;
+
+import com.digero.common.i18n.UIText;
 
 public class NonSectionEditorLine extends SectionEditorLine {
 	

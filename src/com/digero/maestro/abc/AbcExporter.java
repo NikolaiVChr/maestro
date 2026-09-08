@@ -19,12 +19,12 @@ import javax.sound.midi.Sequence;
 import javax.sound.midi.Track;
 
 import com.digero.common.abc.*;
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.*;
 import com.digero.common.util.Pair;
 import com.digero.common.util.Quad;
 import com.digero.common.util.Triple;
 import com.digero.common.util.Util;
-import com.digero.common.view.UIText;
 import com.digero.maestro.MaestroMain;
 import com.digero.maestro.abc.QuantizedTimingInfo.TimingInfoEvent;
 import com.digero.maestro.midi.*;

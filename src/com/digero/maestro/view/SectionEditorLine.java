@@ -12,7 +12,8 @@ import javax.swing.JTextField;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
-import com.digero.common.view.UIText;
+import com.digero.common.i18n.UIText;
+
 import info.clearthought.layout.TableLayout;
 
 class SectionEditorLine implements Comparable<SectionEditorLine> {

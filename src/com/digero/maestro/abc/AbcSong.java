@@ -35,7 +35,6 @@ import javax.xml.xpath.XPathExpressionException;
 
 import com.digero.common.abc.VersionsWithIssues;
 import com.digero.common.util.*;
-import com.digero.common.view.UIText;
 import com.digero.maestro.view.*;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
@@ -46,6 +45,7 @@ import com.digero.common.abc.LotroInstrument;
 import com.digero.common.abc.StringCleaner;
 import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.abctomidi.AbcToMidi;
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.TimeSignature;
 import com.digero.maestro.MaestroMain;

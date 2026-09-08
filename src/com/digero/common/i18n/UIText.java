@@ -1,4 +1,4 @@
-package com.digero.common.view;
+package com.digero.common.i18n;
 
 import com.digero.maestro.MaestroMain;
 import org.jetbrains.annotations.NonNls;
@@ -23,10 +23,7 @@ import java.util.prefs.Preferences;
  * And best wait AFTER the first use of Swing thread.
  * And after Logging has been init.
  * 
- * @deprecated Use {@link com.digero.common.i18n.I18n} and
- *             {@link com.digero.common.i18n.LocaleManager} instead.
  */
-@Deprecated(forRemoval = true)
 public class UIText {
     private static final Logger log = Logger.getLogger("locale"); // NON-NLS
     private static String locale = null;

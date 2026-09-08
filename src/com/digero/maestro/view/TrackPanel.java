@@ -19,6 +19,7 @@ import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
 
 import com.digero.common.abc.LotroInstrument;
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.*;
 import com.digero.common.midi.SequencerEvent.SequencerProperty;
 import com.digero.common.util.ExtensionFileFilter;
@@ -29,7 +30,6 @@ import com.digero.common.util.Pair;
 import com.digero.common.util.FileParseException;
 import com.digero.common.util.Util;
 import com.digero.common.view.ColorTable;
-import com.digero.common.view.UIText;
 import com.digero.maestro.abc.*;
 import com.digero.maestro.abc.AbcPartEvent.AbcPartProperty;
 import com.digero.maestro.abc.AbcSongEvent.AbcSongProperty;

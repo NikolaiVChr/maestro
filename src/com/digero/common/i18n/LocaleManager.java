@@ -1,5 +1,6 @@
 package com.digero.common.i18n;
 
+import java.awt.GraphicsEnvironment;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.lang.reflect.InvocationTargetException;
@@ -48,10 +49,16 @@ public final class LocaleManager {
      * Otherwise, the user will be prompted to select a locale.
      */
     public static synchronized void init() {
+        if(GraphicsEnvironment.isHeadless()) {
+            LOGGER.info("Running in headless mode, skipping locale selection dialog.");
+            return;
+        }
+
         if (initialized) {
             return;
         }
 
+        // Retrieve the stored locale preference, if any.
         String lang = PREFS.get("locale", null);
 
         // Migrate legacy locale setting "US" to Locale.ENGLISH
@@ -64,6 +71,7 @@ public final class LocaleManager {
 
         final String selectedLanguage = lang;
 
+        // Determine the locale to use: either the stored preference or prompt the user.
         locale = SUPPORTED_LOCALES.stream()
                 .filter(l -> l.getLanguage().equals(selectedLanguage))
                 .findFirst()

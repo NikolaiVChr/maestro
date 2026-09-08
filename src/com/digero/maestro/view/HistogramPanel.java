@@ -1,6 +1,5 @@
 package com.digero.maestro.view;
 
-import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcPart;
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
@@ -18,6 +17,7 @@ import java.util.Map.Entry;
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.Note;
 import com.digero.common.midi.SequencerEvent;
 import com.digero.common.midi.SequencerWrapper;
