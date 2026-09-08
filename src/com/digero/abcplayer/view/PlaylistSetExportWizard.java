@@ -36,12 +36,12 @@ import javax.swing.SwingWorker;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
-import com.digero.common.view.UIText;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 
 import com.digero.abcplayer.SetFilenameTemplate;
 import com.digero.common.abctomidi.AbcInfo;
+import com.digero.common.i18n.UIText;
 import com.digero.common.util.Util;
 import com.digero.maestro.abc.ExportFilenameTemplate;
 

@@ -1,9 +1,10 @@
 package com.digero.abcplayer.view;
 
 import com.digero.common.abctomidi.AbcInfo;
+import com.digero.common.i18n.UIText;
 import com.digero.common.util.ExtensionFileFilter;
 import com.digero.common.util.Util;
-import com.digero.common.view.UIText;
+
 import net.miginfocom.swing.MigLayout;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;

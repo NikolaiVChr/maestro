@@ -25,10 +25,10 @@ import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.border.EmptyBorder;
 
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.Note;
 import com.digero.common.util.Listener;
 import com.digero.common.view.PatchedJScrollPane;
-import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcPartEvent;
 import com.digero.maestro.abc.AbcPartEvent.AbcPartProperty;

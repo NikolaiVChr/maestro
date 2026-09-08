@@ -61,6 +61,7 @@ import com.digero.common.abc.LotroInstrument;
 import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.abctomidi.AbcToMidi;
 import com.digero.common.abctomidi.FileAndData;
+import com.digero.common.i18n.UIText;
 import com.digero.common.icons.IconLoader;
 import com.digero.common.midi.*;
 import com.digero.common.midi.SequencerEvent.SequencerProperty;
@@ -83,7 +84,6 @@ import com.digero.common.view.SongPositionBar;
 import com.digero.common.view.SongPositionLabel;
 import com.digero.common.view.TempoBar;
 
-import com.digero.common.view.UIText;
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
 import net.miginfocom.swing.MigLayout;

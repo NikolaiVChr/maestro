@@ -19,6 +19,7 @@ import javax.swing.JProgressBar;
 import javax.swing.SwingUtilities;
 
 import com.digero.abcplayer.MidiToWav;
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.LotroSequencerWrapper;
 import com.digero.common.util.ExtensionFileFilter;
 import com.digero.common.util.Util;

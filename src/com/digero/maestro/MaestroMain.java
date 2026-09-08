@@ -22,6 +22,7 @@ import java.util.prefs.Preferences;
 
 import javax.swing.*;
 
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.SynthesizerFactory;
 import com.digero.common.util.AppInfo;
 import com.digero.common.util.Logging;
@@ -29,7 +30,6 @@ import com.digero.common.util.SoundFontDownloader;
 import com.digero.common.util.Themer;
 import com.digero.common.util.Util;
 import com.digero.common.util.Version;
-import com.digero.common.view.UIText;
 import com.digero.maestro.view.MiscSettings;
 import com.digero.maestro.view.ProjectFrame;
 

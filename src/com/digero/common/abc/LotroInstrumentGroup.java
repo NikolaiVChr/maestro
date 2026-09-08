@@ -1,6 +1,6 @@
 package com.digero.common.abc;
 
-import com.digero.common.view.UIText;
+import com.digero.common.i18n.UIText;
 
 public enum LotroInstrumentGroup {
 	PLUCKED_STRINGS(UIText.get("common.plucked.strings")), //

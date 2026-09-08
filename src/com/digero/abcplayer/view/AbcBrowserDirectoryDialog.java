@@ -18,8 +18,8 @@ import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
+import com.digero.common.i18n.UIText;
 import com.digero.common.util.Util;
-import com.digero.common.view.UIText;
 
 @SuppressWarnings("serial")
 public class AbcBrowserDirectoryDialog extends JDialog {

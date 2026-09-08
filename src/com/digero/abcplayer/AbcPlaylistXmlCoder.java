@@ -9,11 +9,11 @@ import java.util.List;
 
 import javax.swing.JOptionPane;
 
-import com.digero.common.view.UIText;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import com.digero.common.abctomidi.AbcInfo;
+import com.digero.common.i18n.UIText;
 import com.digero.common.util.FileParseException;
 import com.digero.common.util.Version;
 import com.digero.maestro.util.SaveUtil;

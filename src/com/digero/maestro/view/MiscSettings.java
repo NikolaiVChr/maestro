@@ -4,8 +4,8 @@ import java.util.Arrays;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.NoteFilterSequencerWrapper;
-import com.digero.common.view.UIText;
 
 public class MiscSettings {
 	public boolean showMaxPolyphony = true;

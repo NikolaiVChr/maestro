@@ -9,7 +9,7 @@ import javax.swing.BorderFactory;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 
-import com.digero.common.view.UIText;
+import com.digero.common.i18n.UIText;
 
 public class SongPartsPanel extends JPanel {
 

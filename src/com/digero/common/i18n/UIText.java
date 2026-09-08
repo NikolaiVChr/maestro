@@ -1,4 +1,4 @@
-package com.digero.common.view;
+package com.digero.common.i18n;
 
 import com.digero.maestro.MaestroMain;
 import org.jetbrains.annotations.NonNls;

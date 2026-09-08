@@ -6,9 +6,9 @@ import java.util.prefs.Preferences;
 
 import javax.swing.*;
 
+import com.digero.common.i18n.UIText;
 import com.digero.common.util.Themer;
 
-import com.digero.common.view.UIText;
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
 

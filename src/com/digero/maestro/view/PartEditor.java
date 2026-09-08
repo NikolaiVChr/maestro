@@ -7,9 +7,9 @@ import java.io.Serial;
 import javax.swing.DefaultListModel;
 import javax.swing.JDialog;
 
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.util.Listener;
-import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcPartEvent;
 import com.digero.maestro.abc.AbcSongEvent;

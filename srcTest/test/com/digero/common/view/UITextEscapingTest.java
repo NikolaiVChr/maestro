@@ -2,6 +2,8 @@ package com.digero.common.view;
 
 import org.junit.jupiter.api.Test;
 
+import com.digero.common.i18n.UIText;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.net.URL;
