@@ -156,35 +156,6 @@ public final class LocaleManager {
     }
 
     /**
-     * Sets the preferred locale. If the preferred locale is not supported, an
-     * IllegalArgumentException is thrown.
-     * 
-     * @param preferredLocale The preferred locale to set.
-     */
-    public static void setPreferredLocale(Locale preferredLocale) {
-        if (!SUPPORTED_LOCALES.contains(preferredLocale)) {
-            throw new IllegalArgumentException("Unsupported locale: " + preferredLocale);
-        }
-
-        PREFS.put("locale", preferredLocale.getLanguage());
-        LOGGER.info("Locale changed to " + preferredLocale + " it will take effect after restart.");
-    }
-
-    /**
-     * Removes the preferred locale, if it exists.
-     * 
-     * @return true if a preferred locale existed and was removed, false otherwise.
-     */
-    public static boolean removePreferredLocale() {
-        boolean existed = PREFS.get("locale", null) != null;
-        PREFS.remove("locale");
-        if (existed) {
-            LOGGER.info("Locale preference removed, default will be used.");
-        }
-        return existed;
-    }
-
-    /**
      * Returns a list of supported locales.
      * 
      * @return A list of supported locales.

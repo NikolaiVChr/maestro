@@ -38,7 +38,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.logging.Level;
-import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import java.util.prefs.Preferences;
 
@@ -61,6 +60,7 @@ import com.digero.common.abc.LotroInstrument;
 import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.abctomidi.AbcToMidi;
 import com.digero.common.abctomidi.FileAndData;
+import com.digero.common.i18n.LocaleManager;
 import com.digero.common.i18n.UIText;
 import com.digero.common.icons.IconLoader;
 import com.digero.common.midi.*;
@@ -139,6 +139,9 @@ public class AbcPlayer extends JFrame implements TableLayoutConstants, MidiConst
 		
 		if (!tools) Logging.configure(APP_NAME);
 		log = Logger.getLogger("view");
+
+		LocaleManager.init();
+		UIText.init();
 
 		File sf2 = SoundFontDownloader.ensureSoundFontExists();
 

@@ -1,20 +1,12 @@
 package com.digero.common.i18n;
 
-import com.digero.maestro.MaestroMain;
-import org.jetbrains.annotations.NonNls;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.PropertyKey;
 
-import javax.swing.*;
-import java.awt.*;
-import java.lang.reflect.InvocationTargetException;
 import java.text.MessageFormat;
 import java.util.Locale;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
-import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.prefs.Preferences;
 
 /**
  * Utility class for handling UI text localization and retrieval.
@@ -29,7 +21,6 @@ public class UIText {
 
     private static ResourceBundle resourceBundle;
     private static boolean initialized;
-    private static String locale = null;
 
     /**
      * App convention: numeric arguments in UI text are always
@@ -73,7 +64,7 @@ public class UIText {
         try {
             value = resourceBundle.getString(key);
         } catch (MissingResourceException e) {
-            LOGGER.warning("Failed to load UI text for key \"" + key + "\", locale is " + locale);
+            LOGGER.warning("Failed to load UI text for key \"" + key + "\", locale is " + resourceBundle.getLocale());
             return "!" + key + "!";
         }
 

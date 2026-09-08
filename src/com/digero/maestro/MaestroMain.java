@@ -22,6 +22,7 @@ import java.util.prefs.Preferences;
 
 import javax.swing.*;
 
+import com.digero.common.i18n.LocaleManager;
 import com.digero.common.i18n.UIText;
 import com.digero.common.midi.SynthesizerFactory;
 import com.digero.common.util.AppInfo;
@@ -112,6 +113,9 @@ public class MaestroMain {
 
         Logging.configure(APP_NAME);//should be after "return" so that each instance that just sends a file to running maestro, dont create new log file.
         log = Logger.getLogger("");//must be after configure()
+
+		LocaleManager.init();
+		UIText.init();
 
 
 		File sf2 = SoundFontDownloader.ensureSoundFontExists();
