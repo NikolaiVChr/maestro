@@ -26,6 +26,7 @@ import javax.swing.event.DocumentListener;
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.abc.LotroInstrumentNick;
 import com.digero.common.abc.StringCleaner;
+import com.digero.common.i18n.LocaleManager;
 import com.digero.common.i18n.UIText;
 import com.digero.common.midi.NoteFilterSequencerWrapper;
 import com.digero.common.util.ExtensionFileFilter;
@@ -38,7 +39,6 @@ import com.digero.maestro.abc.*;
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
 
-@SuppressWarnings("serial")
 public class SettingsDialog extends JDialog implements TableLayoutConstants {
     protected static final Logger log = Logger.getLogger("misc.settings");
 
@@ -1151,15 +1151,38 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
             }
         });
 
-		final JLabel langLabel = new JLabel("Language/Sprache/Langue"); //NON-NLS
-		final JComboBox<String> langBox = new JComboBox<>(new String[]{UIText.LANG_EN, UIText.LANG_FR, UIText.LANG_DE});
-		langBox.setToolTipText("<html>Changes take effect after restarting Maestro.<br><br>Änderungen werden nach einem Neustart von Maestro wirksam.<br><br>Les changements prendront effet après un redémarrage de Maestro.</html>");
-		langLabel.setToolTipText("<html>Changes take effect after restarting Maestro.<br><br>Änderungen werden nach einem Neustart von Maestro wirksam.<br><br>Les changements prendront effet après un redémarrage de Maestro.</html>");
+		String langLabelText = UIText.get("maestro.options.language");
+		String tooltip = UIText.get("maestro.options.language.tooltip");
+
+		final JLabel langLabel = new JLabel(langLabelText);
+		langLabel.setToolTipText(tooltip);
+
+		// Get the list of supported locales and their display names for the combo box
+		List<Locale> supportedLocales = LocaleManager.getSupportedLocales();
+		String[] languages = supportedLocales.stream()
+        	.map(locale -> locale.getDisplayLanguage(locale))
+        	.toArray(String[]::new);
+		
+		// Create the combo box for language selection
+		final JComboBox<String> langBox = new JComboBox<>(languages);
+		langBox.setToolTipText(tooltip);
 		langBox.setEditable(false);
-		langBox.setSelectedItem(miscSettings.locale==null?UIText.LANG_EN:miscSettings.locale.toLowerCase());
+
+		// Determine the selected language for the combo box based on miscSettings.locale
+		String selectedLanguage = miscSettings.locale == null ? Locale.ENGLISH.getLanguage(): miscSettings.locale.toLowerCase(Locale.ROOT);
+		int selectedIndex = 0;
+		for (int i = 0; i < supportedLocales.size(); i++) {
+			if (supportedLocales.get(i).getLanguage().equals(selectedLanguage)) {
+				selectedIndex = i;
+				break;
+			}
+		}
+		langBox.setSelectedIndex(selectedIndex);
+
+		// Add action listener to update miscSettings.locale when the user selects a new language
 		langBox.addActionListener(e -> {
-			String item = langBox.getSelectedItem().toString();
-			miscSettings.locale = item;
+			Locale selectedLocale = supportedLocales.get(langBox.getSelectedIndex());
+    		miscSettings.locale = selectedLocale.getLanguage();
 		});
 		
 		TableLayout layout = new TableLayout();
