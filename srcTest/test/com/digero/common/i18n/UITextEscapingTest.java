@@ -1,8 +1,7 @@
-package com.digero.common.view;
+package com.digero.common.i18n;
 
-import org.junit.jupiter.api.Test;
-
-import com.digero.common.i18n.UIText;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -23,9 +22,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
+import org.junit.jupiter.api.Test;
 
 /**
  * Verifies apostrophe escaping and placeholder consistency in the uitext*.properties
@@ -65,8 +62,9 @@ class UITextEscapingTest {
                 try {
                     new MessageFormat(value);
                 } catch (IllegalArgumentException e) {
-                    violations.add(describe(file, key, value,
-                            "is not a valid MessageFormat pattern: " + e.getMessage()));
+                    violations.add(
+                        describe(file, key, value, "is not a valid MessageFormat pattern: " + e.getMessage())
+                    );
                     continue;
                 }
 
@@ -76,11 +74,19 @@ class UITextEscapingTest {
                 //    '<', '>' or '{' is fine: those regions simply contain no {n}, so nothing is lost.
                 Set<Integer> swallowed = swallowedPlaceholderIndices(value);
                 if (!swallowed.isEmpty()) {
-                    violations.add(describe(file, key, value,
-                            "has placeholder(s) " + swallowed + " trapped inside a quoted region; "
-                                    + "a lone ' opened a quote MessageFormat will treat as literal text. "
-                                    + "Double the intended-literal apostrophe as '' (leave deliberate "
-                                    + "'<' / '{' literal-quoting as is)"));
+                    violations.add(
+                        describe(
+                            file,
+                            key,
+                            value,
+                            "has placeholder(s) " +
+                                swallowed +
+                                " trapped inside a quoted region; " +
+                                "a lone ' opened a quote MessageFormat will treat as literal text. " +
+                                "Double the intended-literal apostrophe as '' (leave deliberate " +
+                                "'<' / '{' literal-quoting as is)"
+                        )
+                    );
                 }
             }
         }
@@ -99,7 +105,7 @@ class UITextEscapingTest {
     void nonTemplatesShouldNotDoubleApostrophes() throws Exception {
         // Keys that ARE passed through MessageFormat despite having no {n} placeholder.
         Set<String> formattedWithoutPlaceholders = Set.of(
-                // "example.key.formatted.but.no.braces"
+            // "example.key.formatted.but.no.braces"
         );
 
         List<String> violations = new ArrayList<>();
@@ -111,10 +117,16 @@ class UITextEscapingTest {
                 if (formattedWithoutPlaceholders.contains(key)) continue;
 
                 if (value.contains("''")) {
-                    violations.add(describe(file, key, value,
-                            "has '' but no placeholder; if this key is only ever read raw it will "
-                            + "show two apostrophes. If it is formatted with args, add it to the "
-                            + "allow-list in this test"));
+                    violations.add(
+                        describe(
+                            file,
+                            key,
+                            value,
+                            "has '' but no placeholder; if this key is only ever read raw it will " +
+                                "show two apostrophes. If it is formatted with args, add it to the " +
+                                "allow-list in this test"
+                        )
+                    );
                 }
             }
         }
@@ -138,8 +150,7 @@ class UITextEscapingTest {
             if (BASE_BUNDLE_NAME.equals(f.getFileName().toString())) baseFile = f;
             else localized.add(f);
         }
-        assertNotNull(baseFile,
-                "Could not find base bundle " + BASE_BUNDLE_NAME + " among the discovered files.");
+        assertNotNull(baseFile, "Could not find base bundle " + BASE_BUNDLE_NAME + " among the discovered files.");
 
         // Precompute the base argument-index set for every key that actually has placeholders.
         Map<String, Set<Integer>> baseArgs = new TreeMap<>();
@@ -166,8 +177,10 @@ class UITextEscapingTest {
                 Set<Integer> unexpected = new TreeSet<>(actual);
                 unexpected.removeAll(expected);
 
-                StringBuilder msg = new StringBuilder("placeholder set ").append(actual)
-                        .append(" does not match base ").append(expected);
+                StringBuilder msg = new StringBuilder("placeholder set ")
+                    .append(actual)
+                    .append(" does not match base ")
+                    .append(expected);
                 if (!missing.isEmpty()) msg.append("; missing ").append(missing);
                 if (!unexpected.isEmpty()) msg.append("; unexpected ").append(unexpected);
 
@@ -222,11 +235,11 @@ class UITextEscapingTest {
             char c = value.charAt(i);
             if (c == '\'') {
                 if (i + 1 < value.length() && value.charAt(i + 1) == '\'') {
-                    out.append('\'');   // literal apostrophe, quote state unchanged
+                    out.append('\''); // literal apostrophe, quote state unchanged
                     i += 2;
                     continue;
                 }
-                inQuote = !inQuote;     // lone quote toggles the region
+                inQuote = !inQuote; // lone quote toggles the region
                 i++;
                 continue;
             }
@@ -240,11 +253,19 @@ class UITextEscapingTest {
 
     private static List<Path> discoverBundleFiles() throws Exception {
         URL base = UITextEscapingTest.class.getResource(BASE_BUNDLE_RESOURCE);
-        assertNotNull(base, "Could not find " + BASE_BUNDLE_RESOURCE + " on the test classpath. "
-                + "Ensure resources are copied to the build output before tests run.");
+        assertNotNull(
+            base,
+            "Could not find " +
+                BASE_BUNDLE_RESOURCE +
+                " on the test classpath. " +
+                "Ensure resources are copied to the build output before tests run."
+        );
         if (!"file".equals(base.getProtocol())) {
-            fail("Expected the bundle on the filesystem during tests but found: " + base
-                    + ". Run tests against exploded resources (the normal Maven/Gradle layout).");
+            fail(
+                "Expected the bundle on the filesystem during tests but found: " +
+                    base +
+                    ". Run tests against exploded resources (the normal Maven/Gradle layout)."
+            );
         }
         Path baseFile = Path.of(base.toURI());
         Path dir = baseFile.getParent();
