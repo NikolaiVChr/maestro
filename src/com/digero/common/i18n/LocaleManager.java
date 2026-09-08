@@ -70,7 +70,7 @@ public final class LocaleManager {
 
         // Determine the locale to use: either the stored preference or prompt the user.
         locale = SUPPORTED_LOCALES.stream()
-                .filter(l -> l.getLanguage().equals(selectedLanguage))
+                .filter(l -> l.getLanguage().equalsIgnoreCase(selectedLanguage))
                 .findFirst()
                 .orElseGet(() -> {
                     if (GraphicsEnvironment.isHeadless()) {
