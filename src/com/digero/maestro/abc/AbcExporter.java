@@ -40,6 +40,8 @@ public class AbcExporter {
     private boolean organic = false;
 	private boolean organic2 = false;
     private boolean upgraded = false;
+    private int singleStageVer = 2;
+
 	private static final int MAX_RAID = 24; // Max number of parts that in any case can be played in lotro
 
     /*
@@ -2522,6 +2524,40 @@ public class AbcExporter {
 
 		breakLongNotesOrganic(part, events, softMaxDurationMicros);
 
+        if (singleStageVer == 0 && !part.getInstrument().isPercussion) {
+            // remove all notes not in a drum/cowbell part if its zero duration
+            // this has been commented out since some songs seem to have zero dura
+            // notes that is meant to be heard and not editing mistakes.
+            // Virtually impossible to distinguish them. So we do like
+            // multi-stages and keep them all.
+            int zeros = 0;
+            for (AbcNoteEvent ne : events) {
+                if (ne.note != Note.REST && ne.endABCMicros == ne.startABCMicros) zeros++;
+            }
+            // A track that has many zero-length notes probably is that way by purpose
+            // so if more than 2 of the notes is zero duration, we dont delete them.
+            if (zeros > 2) {
+                events.removeIf(ne -> {
+                    if (ne.note == Note.REST || ne.endABCMicros != ne.startABCMicros) return false;
+                    if (ne.tiesFrom != null) ne.tiesFrom.tiesTo = null;
+                    if (ne.tiesTo != null) ne.tiesTo.tiesFrom = null;
+                    part.numberOfRemovedNotesZeros++;
+                    if (logNotes.isLoggable(Level.FINER))
+                        logNotes.finer(part.getTitle() + " Removed zero dura note (" + ne.note.abc + ")");
+                    return true;
+                });
+            } else if (zeros > 0) {
+                logNotes.warning(part.getAbcSong().getTitle() + " (" + part.getTitle() + "): "
+                        + zeros + " of " + events.size() + " notes are zero duration, keeping them");
+            }
+
+            if (events.isEmpty()) {
+                logNotes.warning(part.getAbcSong().getTitle() + " (" + part.getTitle()
+                        + "): every note was zero duration, nothing to export");
+                return new ArrayList<>();
+            }
+        }
+
 		List<ChordOrganic> chords = new ArrayList<>(events.size() / 2);
 		List<AbcNoteEvent> tmpEvents = new ArrayList<>();
 
@@ -2548,12 +2584,12 @@ public class AbcExporter {
 				// Note that ne can be a rest from cut up initial rest
 
                 if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+ ": Processing note i="+i+" micros:"+Util.formatDurationM(ne.startABCMicros)+"-"+Util.formatDurationM(ne.endABCMicros)+" "+ne.note);
-				
-				// remove zero duration notes if longer notes start at same time in curr chord
-				if (curChord.getLongestEndMicros() > curChord.getStartMicros()) {
-					for (int j = 0; j < curChord.size(); j++) {
-						AbcNoteEvent jne = curChord.get(j);
-						if (jne.endABCMicros == jne.startABCMicros) {
+
+                // remove zero duration notes if longer notes start at same time in curr chord
+                if (singleStageVer < 2 && curChord.getLongestEndMicros() > curChord.getStartMicros()) {
+                    for (int j = 0; j < curChord.size(); j++) {
+                        AbcNoteEvent jne = curChord.get(j);
+                        if (jne.endABCMicros == jne.startABCMicros) {
                             if (part.getInstrument().isPercussion && jne.note != Note.REST) {
                                 // Zero-length drum notes are legitimate in the source MIDI (if the notes originate from drum notes).
                                 // LOTRO plays the sample in full as long as the note is at least minimumMicros. Lengthen rather
@@ -2562,23 +2598,24 @@ public class AbcExporter {
                                 jne.setEndTick(qtm.microsToTickABCOrganic(jne.endABCMicros));
                                 continue;
                             }
-							// this note is zero duration and others in the chord is not
-							curChord.remove(jne);
+                            // this note is zero duration and others in the chord is not
+                            curChord.remove(jne);
                             part.numberOfRemovedNotesZeros++;
                             if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+" Removed zero dura note ("+jne.note.abc+")");
-							if (jne.tiesFrom != null) {
-								jne.tiesFrom.tiesTo = null;
-							}
-							if (jne.tiesTo != null) {
-								jne.tiesTo.tiesFrom = null;
-							}
-							j = -1;//should be careful when removing item from something we are iterating over..
-						}
-					}
-					// A removal will have changed the chord's duration
-					curChord.recalcEndMicros();
-				}
-				
+                            if (jne.tiesFrom != null) {
+                                jne.tiesFrom.tiesTo = null;
+                            }
+                            if (jne.tiesTo != null) {
+                                jne.tiesTo.tiesFrom = null;
+                            }
+                            j = -1;//should be careful when removing item from something we are iterating over..
+                        }
+                    }
+                    // A removal will have changed the chord's duration
+                    curChord.recalcEndMicros();
+                }
+
+                // Apply early start
 				if (curChord.early != null) {
 					//must be AFTER 'remove zero among longer'
 					//is BEFORE pruning to save pruning twice
@@ -2588,9 +2625,28 @@ public class AbcExporter {
 					i--;
 					continue MAIN;
 				}
+
+                // Repair zero duration notes
+                //
+                // Source-zero notes are already gone unless there is many of them (pre-pass just below breakLongNotesOrganic), so
+                // anything zero here was collapsed by quantization and should survive to the
+                // below-minimumMicros handling that extends short chords.
+                if (singleStageVer > 1) {
+                    for (int j = 0; j < curChord.size(); j++) {
+                        AbcNoteEvent jne = curChord.get(j);
+                        if (jne.endABCMicros == jne.startABCMicros) {
+                            jne.endABCMicros = jne.startABCMicros + minimumMicros;
+                            jne.setEndTick(qtm.microsToTickABCOrganic(jne.endABCMicros));
+                            if (logNotes.isLoggable(Level.FINER))
+                                logNotes.finer(part.getTitle() + " Restored quantization-collapsed note (" + jne.note.abc + ")");
+                        }
+                    }
+                    // An extension will have changed the chord's duration
+                    curChord.recalcEndMicros();
+                }
 				
-				// We prune AFTER removed shorter zero notes, so they dont take up slot from
-				// 6 max notes.
+				// We prune after Repair zero duration notes, so they get chance to not be pruned.
+                // And after removing zero dura notes in chords to they dont take slots in pruning.
 				List<AbcNoteEvent> deadnotes = curChord.pruneWithMicros(part.getInstrument().sustainable,
 						part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion,
 						part, useRestToShortenChords);
@@ -2920,8 +2976,11 @@ public class AbcExporter {
 									break;
 								}
 							}
-							if ((ne2 == null || ne1RoomMicros > minimumMicros*2) && ne1.endABCMicros > minEndMicros
-									&& (minEndMicros-neMicroStart < minimumMicros/2)) {//  || ne1Micros > minimumMicros*2
+                            long proposedDelayMicros = minEndMicros - neMicroStart;
+							if ((ne2 == null || ne1RoomMicros - proposedDelayMicros >= minimumMicros) // next chord has room to be shortened
+                                    && ne1.endABCMicros > minEndMicros // next chord will not become negative duration
+									&& proposedDelayMicros < minimumMicros/2 // next chord will maximum be 30 ms delayed
+                                    ) {//  || ne1Micros > minimumMicros*2
 								// delay start of next chord up to 30 ms
 								long oldStartMicros = ne.startABCMicros;
 								for (int ii = i; ii < events.size(); ii++) {
@@ -2933,13 +2992,18 @@ public class AbcExporter {
 										// should be ok to do this even if tiesFrom is non-null
 										// since the tiesFrom has been expanded to end here
 										if (over.endABCMicros-over.startABCMicros == 0L) {
+                                            // It already has a duration of 0, we keep that 0, while shifting the note forward.
 											over.endABCMicros = minEndMicros;
 											over.setEndTick(qtm.microsToTickABCOrganic(minEndMicros));
 										}
 										over.startABCMicros = minEndMicros;
 										over.setStartTick(qtm.microsToTickABCOrganic(minEndMicros));
-										
-										// TODO: Delaying start of next
+
+                                        // Only the start moves; the end stays put, so the note is trimmed at the
+                                        // front by up to minimumMicros/2 rather than shifted whole. Moving the end
+                                        // too would push into the following chord and cascade, which is why this
+                                        // branch is gated so tightly. ne1RoomMicros above guarantees ne1 - the
+                                        // shortest note in the group - still clears minimumMicros after the trim.
 									}
 								}
 								
@@ -3255,36 +3319,54 @@ public class AbcExporter {
 
             if (logNotes.isLoggable(Level.FINE)) logNotes.fine("Last chord processing..");
 			
-			// The last Chord has all the notes it will get. But before continuing,
-			// normalize the chord so that all notes end at the same time
+			// The last Chord has all the notes it will get.
+
 			if (curChord.early != null) {
 				curChord.setEarlyStartMicros(useRestToShortenChords);
 				if (prevChord != null) prevChord.recalcEndMicros();
                 if (logNotes.isLoggable(Level.FINE)) logNotes.fine("Last chord: early start");
 			}
-			
-			
-			// remove zero duration notes if longer notes start at same time
-			if (curChord.getLongestEndMicros() > curChord.getStartMicros()) {
-				for (int j = 0; j < curChord.size(); j++) {
-					AbcNoteEvent jne = curChord.get(j);
-					if (jne.endABCMicros == jne.startABCMicros) {
-						// this note is zero duration and others in the chord is not
-						curChord.remove(jne);
-                        part.numberOfRemovedNotesZeros++;
-                        if (logNotes.isLoggable(Level.FINEST)) logNotes.finest("Last chord: remove a zero dura note");
-						if (jne.tiesFrom != null) {
-							jne.tiesFrom.tiesTo = null;
-						}
-						if (jne.tiesTo != null) {
-							jne.tiesTo.tiesFrom = null;
-						}
-						j=-1;
-					}
-				}
-				// The removal will have changed the chord's duration
-				curChord.recalcEndMicros();
-			}
+
+
+            if (singleStageVer < 2) {
+                // remove zero duration notes if longer notes start at same time
+                if (curChord.getLongestEndMicros() > curChord.getStartMicros()) {
+                    for (int j = 0; j < curChord.size(); j++) {
+                        AbcNoteEvent jne = curChord.get(j);
+                        if (jne.endABCMicros == jne.startABCMicros) {
+                            // this note is zero duration and others in the chord is not
+                            curChord.remove(jne);
+                            part.numberOfRemovedNotesZeros++;
+                            if (logNotes.isLoggable(Level.FINEST))
+                                logNotes.finest("Last chord: remove a zero dura note");
+                            if (jne.tiesFrom != null) {
+                                jne.tiesFrom.tiesTo = null;
+                            }
+                            if (jne.tiesTo != null) {
+                                jne.tiesTo.tiesFrom = null;
+                            }
+                            j = -1;
+                        }
+                    }
+                }
+            } else {
+                // Repair zero duration notes
+                //
+                // Source-zero notes are already gone unless there is many of them (pre-pass just below breakLongNotesOrganic), so
+                // anything zero here was collapsed by quantization and should survive to the
+                // below-minimumMicros handling that extends short chords.
+                for (int j = 0; j < curChord.size(); j++) {
+                    AbcNoteEvent jne = curChord.get(j);
+                    if (jne.endABCMicros == jne.startABCMicros) {
+                        jne.endABCMicros = jne.startABCMicros + minimumMicros;
+                        jne.setEndTick(qtm.microsToTickABCOrganic(jne.endABCMicros));
+                        if (logNotes.isLoggable(Level.FINER))
+                            logNotes.finer(part.getTitle() + " Restored quantization-collapsed note (" + jne.note.abc + ")");
+                    }
+                }
+            }
+            // An extension/removal will have changed the chord's duration
+            curChord.recalcEndMicros();
 			
 			
 			// Last chord needs to be pruned as that hasn't happened yet. Since its the last we don't pass useRestToShortenChords.
@@ -3580,7 +3662,7 @@ public class AbcExporter {
         long spanMicros = chords.isEmpty() ? 0L
                 : chords.getLast().getEndMicros() - chords.getFirst().getStartMicros();
 
-        File f = new File("D:/Users/changeme/Documents/organic-single-stage-metrics.txt");
+        File f = new File("C:/Users/changeme/Documents/organic-single-stage-metrics.txt");
         try (FileWriter fWriter = new FileWriter(f, true)) {
             fWriter.append("METRICS " + part.getAbcSong().getTitle() + "|" + part.getTitle()
                     + " chords=" + chords.size()
@@ -3591,6 +3673,7 @@ public class AbcExporter {
                     + " worstEarly=" + worstEarly + " worstLate=" + worstLate
                     + " short=" + shortChords + " shortfall=" + shortfall
                     + " lost=" + lost.size() + " lostMicros=" + lostMicros
+                    + " numberOfRemovedNotesZeros=" + part.numberOfRemovedNotesZeros
                     + "\n");
 
             for (int k = 0; k < lost.size() && k < MAX_ISSUE_LINES_PER_PART; k++) {
@@ -3605,6 +3688,7 @@ public class AbcExporter {
                         + " tiesFrom=" + (note.tiesFrom != null) + " tiesTo=" + (note.tiesTo != null) + "\n");
             }
         } catch (Exception e) {
+            logNotes.log(Level.SEVERE, "Error writing metrics file", e);
             System.exit(1);
         }
     }
@@ -7379,6 +7463,14 @@ public class AbcExporter {
 
     public void setUpgraded(boolean upgraded) {
         this.upgraded = upgraded;
+    }
+
+    public void setSingleStageVer(int singleStageVer) {
+        this.singleStageVer = singleStageVer;
+    }
+
+    public int getSingleStageVer() {
+        return singleStageVer;
     }
 
 	public boolean isUseRestsInChords() {

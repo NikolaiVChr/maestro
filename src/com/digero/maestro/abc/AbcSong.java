@@ -69,7 +69,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	
 	public static final String MSX_FILE_DESCRIPTION = UIText.get("maestro.0.project", MaestroMain.APP_NAME);
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = UIText.get("maestro.0.projects", MaestroMain.APP_NAME);
-	public static final Version SONG_FILE_VERSION = new Version(4, 6, 23, 300);// Keep build above 117 to make earlier
+	public static final Version SONG_FILE_VERSION = new Version(4, 6, 26, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
 
@@ -98,7 +98,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private boolean organic = false;
 	private boolean organic2 = false;
     private boolean upgraded = false;
-	private int mixVersion = 2;// TODO: make UI?
+	private int singleStageVer = 2;//old projects default to 1, new projects use this. Not exposed in UI.
+	private int mixVersion = 2;// Not exposed in UI.
 	private boolean priorityActive = false;
 	private boolean skipSilenceAtStart = true;
 	private boolean deleteMinimalNotes = false;
@@ -461,11 +462,12 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			organic2 = SaveUtil.parseValue(songEle, "exportSettings/@organic-multi-stage", false);
             int orgVersion = SaveUtil.parseValue(songEle, "exportSettings/@organic-version", 1);
             if (organic && organic2) {
-                if (orgVersion == 2) upgraded = true;
-                else upgraded = false;
-            } else {
+				if (orgVersion == 2) upgraded = true;
+				else upgraded = false;
+			} else {
                 upgraded = false;
             }
+			singleStageVer = SaveUtil.parseValue(songEle, "exportSettings/@organic-singlestage-version", 1);
 			tripletTiming = SaveUtil.parseValue(songEle, "exportSettings/@tripletTiming", tripletTiming);
 
 			mixTiming = SaveUtil.parseValue(songEle, "exportSettings/@mixTiming", false);// default false as old
@@ -868,9 +870,11 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		exportSettingsEle.setAttribute("mixTiming", String.valueOf(mixTiming));
 		exportSettingsEle.setAttribute("organic", String.valueOf(organic));
 		exportSettingsEle.setAttribute("organic-multi-stage", String.valueOf(organic2));
-        if (organic && organic2 && upgraded) {
-            exportSettingsEle.setAttribute("organic-version", String.valueOf(2));
+        if (organic && organic2) {
+            exportSettingsEle.setAttribute("organic-version", String.valueOf(upgraded?2:1));
         }
+		exportSettingsEle.setAttribute("organic-singlestage-version", String.valueOf(singleStageVer));
+
 		if (mixTiming) {
 			exportSettingsEle.setAttribute("combinePriorities", String.valueOf(priorityActive));
 			// exportSettingsEle.setAttribute("mixVersion", String.valueOf(mixVersion));
@@ -1529,6 +1533,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         if (abcExporter.isUpgraded() != upgraded)
             abcExporter.setUpgraded(upgraded);
 
+		if (abcExporter.getSingleStageVer() != singleStageVer)
+			abcExporter.setSingleStageVer(singleStageVer);
+
         // from settings:
 
         if (abcExporter.isSkipSilenceAtStart() != skipSilenceAtStart)
@@ -1973,6 +1980,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         this.newSourceFile = other.newSourceFile;
         this.allPans = other.allPans;//pointer copy
         this.upgraded = other.upgraded;
+		this.singleStageVer = other.singleStageVer;
 
         // read-only/shared services.
         this.sequenceInfo = other.sequenceInfo;// lets assume the midi don't change while we work, then this is immutable
