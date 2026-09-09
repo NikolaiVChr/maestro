@@ -877,6 +877,7 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
 				UIText.get("maestro.options.reduce.exported.abc.file.size"));
         reduceFileSizeCheckBox.setToolTipText(UIText.get("maestro.options.tip.reduced.filesize"));
         reduceFileSizeCheckBox.setSelected(saveSettings.reducedFilesize);
+		reduceFileSizeCheckBox.setEnabled(false);
         reduceFileSizeCheckBox.addActionListener(
                 e -> saveSettings.reducedFilesize = reduceFileSizeCheckBox.isSelected());
 
@@ -934,8 +935,8 @@ public class SettingsDialog extends JDialog implements TableLayoutConstants {
         layout.insertRow(++row, PREFERRED);
         panel.add(warnSamePartsCheckBox, "0, " + row);
 
-        layout.insertRow(++row, PREFERRED);
-        panel.add(reduceFileSizeCheckBox, "0, " + row);
+        //layout.insertRow(++row, PREFERRED);
+        //panel.add(reduceFileSizeCheckBox, "0, " + row);
 
 		layout.insertRow(++row, PREFERRED);
 		panel.add(countUpLyricsCheckBox, "0, " + row);
