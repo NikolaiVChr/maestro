@@ -100,6 +100,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
     private boolean upgraded = false;
 	private int singleStageVer = 2;//old projects default to 1, new projects use this. Not exposed in UI.
 	private int mixVersion = 2;// Not exposed in UI.
+	private int mergeVersion = 2;// Not exposed in UI.
 	private boolean priorityActive = false;
 	private boolean skipSilenceAtStart = true;
 	private boolean deleteMinimalNotes = false;
@@ -467,6 +468,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			} else {
                 upgraded = false;
             }
+			mergeVersion = SaveUtil.parseValue(songEle, "exportSettings/@merge-version", 1);
 			singleStageVer = SaveUtil.parseValue(songEle, "exportSettings/@organic-singlestage-version", 1);
 			tripletTiming = SaveUtil.parseValue(songEle, "exportSettings/@tripletTiming", tripletTiming);
 
@@ -874,6 +876,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
             exportSettingsEle.setAttribute("organic-version", String.valueOf(upgraded?2:1));
         }
 		exportSettingsEle.setAttribute("organic-singlestage-version", String.valueOf(singleStageVer));
+		exportSettingsEle.setAttribute("merge-version", String.valueOf(mergeVersion));
 
 		if (mixTiming) {
 			exportSettingsEle.setAttribute("combinePriorities", String.valueOf(priorityActive));
@@ -1535,6 +1538,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 		if (abcExporter.getSingleStageVer() != singleStageVer)
 			abcExporter.setSingleStageVer(singleStageVer);
+
+		if (abcExporter.getMergeVersion() != mergeVersion)
+			abcExporter.setMergeVersion(mergeVersion);
 
         // from settings:
 

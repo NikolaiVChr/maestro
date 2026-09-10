@@ -36,6 +36,7 @@ public class AbcExporter {
 	private static final Logger logNotes = Logger.getLogger("export.notes");//processing and fitting of notes to lotros abc format
 	private static final Logger logAbc = Logger.getLogger("export.abc");//creation of abc
 	private static final Logger logPreview = Logger.getLogger("export.preview");//creation of preview midi
+    private AbcMerger merger;
 
     private boolean organic = false;
 	private boolean organic2 = false;
@@ -1953,7 +1954,7 @@ public class AbcExporter {
 		}
 
 		// Remove duplicate notes
-		removeDuplicateNotes(events, part.getInstrument());
+		merger.removeDuplicateNotes(events, part.getInstrument());
 		
 		Collections.sort(events);// needed due to duplicate adding thirds
 
@@ -2429,13 +2430,13 @@ public class AbcExporter {
 		}
 
 		// Remove duplicate notes
-		removeDuplicateNotes(events, part.getInstrument());
+		merger.removeDuplicateNotes(events, part.getInstrument());
 		
 		Collections.sort(events);// needed due to removeDuplicateNotes adding thirds
 		
 		/*
 		// Verify duplicates does not exist
-		removeDuplicateNotesVerify(events, part.getInstrument());
+		merger.removeDuplicateNotesVerify(events, part.getInstrument());
 		*/
 		
 		boolean useRestToShortenChords = part.getInstrument().sustainable && useRestsInChords;
@@ -6165,166 +6166,6 @@ public class AbcExporter {
         return segments;
     }
 
-	/**
-	 * Remove duplicate notes that play at the same time (comes from combining tracks into same part)
-	 * 
-	 * @param events All the notes from all the combined tracks
-     */
-	private void removeDuplicateNotes(List<AbcNoteEvent> events, LotroInstrument instrument) {
-		// If prioritizeLongNotes is true, then notes that are subset of the other but lower or equal value
-		// will just be deleted if sustained.
-		// If false, then the 2 notes will become 2 or 3 notes,
-		// where the middle (subset) will have the volume of the loudest.
-		// Some listening tests convinced me that false is the way to go.
-		final boolean prioritizeUninteruptedLongNotes = false;
-		
-		List<AbcNoteEvent> notesOn = new ArrayList<>();
-		List<AbcNoteEvent> thirds = new ArrayList<>();
-		List<AbcNoteEvent> trash = new ArrayList<>();
-		Iterator<AbcNoteEvent> neIter = events.iterator();
-		dupLoop: while (neIter.hasNext()) {
-			AbcNoteEvent second = neIter.next();//second
-			List<AbcNoteEvent> thirdsOn = new ArrayList<>();
-			Iterator<AbcNoteEvent> onIter = notesOn.iterator();
-			while (onIter.hasNext()) {
-				AbcNoteEvent first = onIter.next();//first
-				if (first.getEndTick() <= second.getStartTick() && (first.getLengthTicks() > 0 || first.getStartTick() < second.getStartTick())) {
-					// First note has already been turned off
-					onIter.remove();
-				} else if (first.note.id == second.note.id) {
-					if (first.getStartTick() == second.getStartTick()) {
-						// If they start at the same time, remove the second event.
-						
-						if (second.getLengthTicks() == 0) {
-							neIter.remove();
-							continue dupLoop;
-						} else if (first.getLengthTicks() == 0) {
-							onIter.remove();
-							trash.add(first);
-						} else {
-							
-							// Lengthen the first one if it's shorter than the second one.
-							if (first.getEndTick() <= second.getEndTick()) {
-								first.setEndTick(second.getEndTick());
-								if (second.velocity > first.velocity) {
-									first.velocity = second.velocity;// due to this, NoteEvent.velocity is not final
-								}
-							}
-							
-							if (!instrument.isSustainable(first.note.id) && second.velocity > first.velocity) {
-								first.velocity = second.velocity;// due to this, NoteEvent.velocity is not final
-							}
-							
-							// Remove the duplicate second note
-							neIter.remove();
-							continue dupLoop;
-						}
-					} else if (first.getStartTick() < second.getStartTick()) {
-						// Otherwise, if they don't start at the same time, but first started first:
-
-						if (second.getEndTick() <= first.getEndTick()) {
-							// second is subset of first
-							if (second.getLengthTicks() == 0) {
-								neIter.remove();
-								continue dupLoop;
-							} else if (instrument.isSustainable(first.note.id)) {
-															
-								if (prioritizeUninteruptedLongNotes && Dynamics.fromMidiVelocity(second.velocity).abcVol <= Dynamics.fromMidiVelocity(first.velocity).abcVol) {
-									// remove second
-									// we only do this if second has lower or equal volume
-									neIter.remove();
-									continue dupLoop;
-								}
-								// else we stop first, insert second, and add new third if needed (with firsts volume) after second to finish first.
-								long thirdEnd = first.getEndTick(); 
-								first.setEndTick(second.getStartTick());
-								onIter.remove();
-								if (first.velocity > second.velocity) {
-									second.velocity = first.velocity;
-								}
-								if (thirdEnd > second.getEndTick()) {
-									AbcNoteEvent third = new AbcNoteEvent(first.note, first.velocity, second.getEndTick(), thirdEnd, qtm, first.origNote);
-									thirds.add(third);
-									thirdsOn.add(third);
-								}
-							} else {
-								// keep both, so end first where second start	
-								first.setEndTick(second.getStartTick());
-								onIter.remove();
-							}
-						} else if (second.getEndTick() > first.getEndTick()) {
-							// second extend beyond first
-							
-							if (!instrument.isSustainable(first.note.id) || Dynamics.fromMidiVelocity(second.velocity) != Dynamics.fromMidiVelocity(first.velocity)) {
-								// we break first, and start second
-								first.setEndTick(second.getStartTick());
-								onIter.remove();
-							} else {
-								// sustained and same abc volume
-								// we extend first to cover both, and discard second
-								first.setEndTick(second.getEndTick());
-								neIter.remove();
-								continue dupLoop;
-							}
-						}
-					} else {
-						if (first.getStartTick() < second.getEndTick()) {
-							// Otherwise, if they don't start at the same time, but second started first, which means first was a third
-							
-							if (second.getLengthTicks() == 0) {
-								neIter.remove();
-								continue dupLoop;
-							}
-							
-							if (second.getEndTick() > first.getEndTick()) {
-								// extend first to match seconds end
-								first.setEndTick(second.getEndTick());
-							}
-							
-							// since we know that there has been inserted a subset note where
-							// second starts, we dont need to care about the start. Also we know that it
-							// will process third before the subset, so we don't have to worry about subset being extended
-							// as long as second is removed here. And its safe
-							// to remove second as long as its sustained. If its not sustained we shorten it so it dont extend into the third.
-							if (instrument.isSustainable(first.note.id)) {
-								neIter.remove();
-								continue dupLoop;
-							} else if (second.getEndTick() > first.getStartTick()) {
-								// shorten second to end where first begin
-								// second will then be processed against the subset later in the loop
-								second.setEndTick(first.getStartTick());
-							}
-						}
-					}
-				}
-			}
-			notesOn.addAll(thirdsOn);//must be before adding ne
-			notesOn.add(second);
-		}
-		events.addAll(thirds);
-		events.removeAll(trash);
-	}
-
-    @Deprecated
-	private void removeDuplicateNotesVerify(List<AbcNoteEvent> events, LotroInstrument instrument) {
-		List<AbcNoteEvent> notesOn = new ArrayList<>();
-        //second
-        for (AbcNoteEvent ne : events) {
-            Iterator<AbcNoteEvent> onIter = notesOn.iterator();
-            while (onIter.hasNext()) {
-                AbcNoteEvent on = onIter.next();//first
-                if (on.getEndTick() <= ne.getStartTick() && (on.getLengthTicks() > 0 || on.getStartTick() < ne.getStartTick())) {
-                    // First note has already been turned off
-                    onIter.remove();
-                } else if (on.note.id == ne.note.id) {
-                    logNotes.severe("OOPSIE ");
-                    System.exit(0);
-                }
-            }
-            notesOn.add(ne);
-        }
-	}
-
 	private void breakLongNotes(AbcPart part, List<AbcNoteEvent> events) {
 		for (int i = 0; i < events.size(); i++) {
 			AbcNoteEvent ne = events.get(i);
@@ -7480,4 +7321,13 @@ public class AbcExporter {
 	public void setUseRestsInChords(boolean useRestsInChords) {
 		this.useRestsInChords = useRestsInChords;
 	}
+
+    public void setMergeVersion(int mergeVersion) {
+        this.merger = new AbcMerger(mergeVersion);
+    }
+
+    public int getMergeVersion() {
+        if (merger == null) return 0;
+        return merger.getMergeVersion();
+    }
 }

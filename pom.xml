@@ -14,6 +14,9 @@
 		 -->
 		<sourceDirectory>src</sourceDirectory>
 		<testSourceDirectory>srcTest/test</testSourceDirectory>
+		<testResources>
+			<testResource><directory>srcTest/resources</directory></testResource>
+		</testResources>
 		<resources>
 			<resource>
 				<directory>resources</directory>
