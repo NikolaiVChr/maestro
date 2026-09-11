@@ -5,8 +5,8 @@ import java.util.Collections;
 import java.util.List;
 
 import com.aifel.abctools.AbcTools;
+import com.digero.common.i18n.UIText;
 import com.digero.common.util.Version;
-import com.digero.common.view.UIText;
 import com.digero.maestro.MaestroMain;
 import org.jetbrains.annotations.NotNull;
 

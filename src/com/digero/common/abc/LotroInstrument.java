@@ -26,10 +26,10 @@ import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.MidiInstrument;
 import com.digero.common.midi.Note;
 import com.digero.common.util.Pair;
-import com.digero.common.view.UIText;
 import com.digero.maestro.abc.LotroCombiDrumInfo;
 
 @SuppressWarnings("HardCodedStringLiteral")

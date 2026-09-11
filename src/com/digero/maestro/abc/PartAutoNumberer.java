@@ -7,7 +7,7 @@ import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 import com.digero.common.abc.LotroInstrument;
-import com.digero.common.view.UIText;
+import com.digero.common.i18n.UIText;
 import com.digero.maestro.util.ListModelWrapper;
 
 /**

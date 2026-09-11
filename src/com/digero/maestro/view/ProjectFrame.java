@@ -56,13 +56,13 @@ import com.digero.common.abc.AbcConstants;
 import com.digero.common.midi.*;
 import com.digero.common.util.*;
 import com.digero.common.view.ColorSelector;
-import com.digero.common.view.UIText;
 import com.digero.maestro.abc.DissonanceDetector;
 import com.digero.maestro.midi.SequenceDataCache;
 import org.xml.sax.SAXException;
 import org.xml.sax.SAXParseException;
 
 import com.digero.common.abc.StringCleaner;
+import com.digero.common.i18n.UIText;
 import com.digero.common.icons.IconLoader;
 import com.digero.common.midi.SequencerEvent.SequencerProperty;
 import com.digero.common.view.AboutDialog;

@@ -1,5 +1,6 @@
 package com.digero.maestro.view;
 
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.Note;
 import com.digero.common.midi.SequencerEvent;
 import com.digero.common.midi.SequencerWrapper;
@@ -7,7 +8,6 @@ import com.digero.common.util.IDiscardable;
 import com.digero.common.util.Listener;
 import com.digero.common.view.ColorTable;
 import com.digero.common.view.LeanJLabel;
-import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.abc.DissonanceDetector;
 import com.digero.maestro.midi.FakeNoteEvent;

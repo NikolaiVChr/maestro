@@ -1,8 +1,8 @@
 package com.digero.maestro.view;
 
 import com.digero.common.abc.Dynamics;
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.Note;
-import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.LotroCombiDrumInfo;
 import com.digero.maestro.abc.LotroDrumInfo;

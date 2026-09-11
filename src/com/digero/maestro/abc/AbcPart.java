@@ -21,7 +21,6 @@ import javax.xml.xpath.XPathExpressionException;
 
 import com.digero.common.midi.PanGenerator;
 import com.digero.common.util.*;
-import com.digero.common.view.UIText;
 import com.digero.maestro.view.CountIn;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.*;
@@ -30,6 +29,7 @@ import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.Dynamics;
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.abc.LotroInstrumentSampleDuration;
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.MidiConstants;
 import com.digero.common.midi.MidiDrum;
 import com.digero.common.midi.Note;

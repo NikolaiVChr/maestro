@@ -13,9 +13,9 @@ import java.util.stream.Collectors;
 
 import com.digero.abcplayer.view.PlaylistSetExportWizard.SetExportSettings;
 import com.digero.common.abctomidi.AbcInfo;
+import com.digero.common.i18n.UIText;
 import com.digero.common.util.Pair;
 import com.digero.common.util.Util;
-import com.digero.common.view.UIText;
 import com.digero.maestro.abc.ExportFilenameTemplate;
 
 public class SetFilenameTemplate {
