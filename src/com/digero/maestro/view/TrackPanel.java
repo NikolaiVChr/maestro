@@ -435,6 +435,9 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 				updateBadTooltipText();
 				updateTitleText();
 				updateColors();
+			} else if (e.getProperty() == AbcSongProperty.TIMINGS_MULTI) {
+				// needed to remove/add the priorityBoxes
+				updateState();
 			}
 		});
 
@@ -776,7 +779,7 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 	}
 
 	private boolean isPriorityEnabled() {
-		return abcPart.getAbcSong().isMixTiming() && abcPart.getAbcSong().isPriorityActive()
+		return !abcPart.getAbcSong().isOrganic() && abcPart.getAbcSong().isMixTiming() && abcPart.getAbcSong().isPriorityActive()
 				&& abcPart.getEnabledTrackCount() > 1; // &&
 														// abcPart.getAbcSong().isMixTiming()
 	}
