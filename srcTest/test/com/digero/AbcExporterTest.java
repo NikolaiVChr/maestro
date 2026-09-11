@@ -13,9 +13,7 @@ import javax.sound.midi.*;
 
 import com.digero.common.abc.LotroInstrument;
 import com.digero.maestro.view.SettingsDialog;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.*;
 
 import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.Note;
@@ -28,7 +26,6 @@ import com.digero.maestro.midi.BentAbcNoteEvent;
 import com.digero.maestro.midi.BentMidiNoteEvent;
 import com.digero.maestro.midi.SequenceInfo;
 import com.digero.maestro.view.MiscSettings;
-import org.junit.jupiter.api.TestInfo;
 
 class AbcExporterTest {
 
@@ -101,10 +98,10 @@ class AbcExporterTest {
         qtmField.set(exporter, qtm);
 
         // 6. Unlock methods
-        testMethod = AbcExporter.class.getDeclaredMethod("expandPitchBendsOrganicImproved", AbcNoteEvent.class);
+        testMethod = AbcExporter.class.getDeclaredMethod("expandPitchBendsOrganic", AbcNoteEvent.class);
         testMethod.setAccessible(true);
 
-        createGridMethod = AbcExporter.class.getDeclaredMethod("createGridVersion2", List.class, long.class, AbcPart.class, long.class);
+        createGridMethod = AbcExporter.class.getDeclaredMethod("createGridV2", List.class, long.class, AbcPart.class, long.class);
         createGridMethod.setAccessible(true);
 
         createSnapMethod = AbcExporter.class.getDeclaredMethod("snapNotesToGrid", List.class, NavigableSet.class, long.class, AbcPart.class);
@@ -201,7 +198,7 @@ class AbcExporterTest {
 
         var events = createNotes(
                 new NoteDef(1000, 2000, Note.C4),
-                new NoteDef(1040, 1540, Note.D4)
+                new NoteDef(1050, 1550, Note.D4)
         );
 
         NavigableSet<Long> grid = invokeCreateGrid(events, minMicros, barTicks);
@@ -231,18 +228,64 @@ class AbcExporterTest {
     }
 
     @Test
+    @DisplayName("Grid: Double grace note must not straddle its main chord")
+    void testDoubleGraceDoesNotStraddleChord() throws Exception {
+        long minMicros = 60000;
+
+        // Two coincident grace notes score WEIGHT_GRACE each, so the candidate sums to
+        // WEIGHT_SOLO and misses the "c.weight == WEIGHT_GRACE" backward-bounce branch.
+        // With the chord at 1040 weighing 20 it is placed on the grid first, so when the
+        // grace candidate is evaluated the floor is the export start (no floorConflict)
+        // and the chord is the ceiling (40ms above -> ceilConflict).
+        //
+        // Their endABCMicros has already been inflated to 1060 by the minimum-duration
+        // rule, past the chord onset. So anything that moves their START backward while
+        // leaving that end alone makes them span the chord - an overlap the source did
+        // not have (1000-1040 ends exactly where the chord begins).
+        var events = createNotes(
+                new NoteDef(1000, 1040, Note.C4),   // grace 1 (40ms)
+                new NoteDef(1000, 1040, Note.E4),   // grace 2 (40ms)
+                new NoteDef(1040, 1250, Note.G4),   // chord note 1 (210ms)
+                new NoteDef(1040, 1270, Note.B4)    // chord note 2 (230ms)
+        );
+
+        NavigableSet<Long> grid = invokeCreateGrid(events, minMicros, barTicks);
+        List<AbcNoteEvent> snapped = invokeSnapGrid(events, minMicros, grid);
+
+        assertEquals(4, snapped.size(), "No note should be dropped");
+
+        // Current design: grace chords are excluded from the backward bounce and merge
+        // into the main chord instead. If that decision changes, these four move to
+        // 980 / 980 / 1040 / 1040 -- but the straddle check below must hold either way.
+        assertEquals(1040, snapped.get(0).getStartTick(), "Grace 1 merged into the chord");
+        assertEquals(1040, snapped.get(1).getStartTick(), "Grace 2 merged into the chord");
+        assertEquals(1040, snapped.get(2).getStartTick(), "Chord note 1");
+        assertEquals(1040, snapped.get(3).getStartTick(), "Chord note 2");
+
+        // The invariant, independent of which design we settle on.
+        long chordStart = snapped.get(2).getStartTick();
+        for (int i = 0; i < 2; i++) {
+            AbcNoteEvent g = snapped.get(i);
+            assertFalse(g.getStartTick() < chordStart && g.getEndTick() > chordStart,
+                    "Grace note " + (i + 1) + " must not span the chord onset");
+        }
+    }
+
+    @Test
     @DisplayName("Grid: Arpeggio (Snap vs Bounce)")
     void testArpeggio() throws Exception {
         long minMicros = 60000;
 
         // N1: 1000. Anchor.
-        // N2: 1020. 20ms gap. 20 < 30 (Halfway). Should SNAP to 1000.
-        // N3: 1040. 40ms gap. 40 > 30 (Halfway). Should BOUNCE to 1060.
-
+        // N2: 1025. 25ms after the anchor. Under 45ms -> crushes to 1000.
+        // N3: 1050. 50ms from the grid line, but only 25ms after the note actually
+        //     played at 1025. Inter-onset interval is what the ear hears, so it is
+        //     part of the same strum and collapses too. Half-restoring a gesture
+        //     sounds worse than collapsing all of it.
         var events = createNotes(
                 new NoteDef(1000, 2000, Note.C4),
-                new NoteDef(1020, 2020, Note.D4),
-                new NoteDef(1040, 2040, Note.E4)
+                new NoteDef(1025, 2040, Note.D4),
+                new NoteDef(1050, 2050, Note.E4)
         );
 
         NavigableSet<Long> grid = invokeCreateGrid(events, minMicros, barTicks);
@@ -250,7 +293,7 @@ class AbcExporterTest {
 
         assertEquals(1000, snapped.get(0).getStartTick());
         assertEquals(1000, snapped.get(1).getStartTick()); // Snapped (Block Chord)
-        assertEquals(1060, snapped.get(2).getStartTick()); // Bounced (Arpeggio)
+        assertEquals(1000, snapped.get(2).getStartTick()); // Collapsed with the group
     }
 
     @Test
@@ -260,7 +303,7 @@ class AbcExporterTest {
 
         var events = createNotes(
                 new NoteDef(1000, 2000, Note.C4),
-                new NoteDef(1041, 2000, Note.D4),
+                new NoteDef(1046, 2000, Note.D4),
                 new NoteDef(1081, 2000, Note.C2),
                 new NoteDef(1121, 2000, Note.D2),
                 new NoteDef(1161, 2000, Note.E4)
@@ -270,10 +313,10 @@ class AbcExporterTest {
         List<AbcNoteEvent> snapped = invokeSnapGrid(events, minMicros, grid);
 
         assertEquals(1000, snapped.get(0).getStartTick());
-        assertEquals(1060, snapped.get(1).getStartTick()); // Bounced (Arpeggio)
-        assertEquals(1120, snapped.get(2).getStartTick()); // Bounced (Arpeggio cascade)
-        assertEquals(1180, snapped.get(3).getStartTick()); // Snapped
-        assertEquals(1180, snapped.get(4).getStartTick()); // Snapped
+        assertEquals(1060, snapped.get(1).getStartTick()); // Bounced (14ms drift, within budget)
+        assertEquals(1060, snapped.get(2).getStartTick()); // Collapsed (39ms drift, over budget)
+        assertEquals(1121, snapped.get(3).getStartTick()); // 61ms clear of 1060, kept as played
+        assertEquals(1121, snapped.get(4).getStartTick()); // Collapsed onto note 4
     }
 
     @Test
@@ -305,16 +348,17 @@ class AbcExporterTest {
         long minMicros = 60000;
 
         // N1: 1000. Anchor.
-        // N2: 1020. 20ms gap. 20 < 30 (Halfway). Should SNAP to 1000.
-        // N3: 1040. 40ms gap. 40 > 30 (Halfway). Should BOUNCE to 1060.
-
+        // N2: 1010. 10ms gap -> crushes to 1000, sets lastCrushedTime.
+        // N3: 1059. 49ms after the note played at 1010, so outside arpeggioWindow:
+        //     a genuinely separate onset. 59ms from the anchor clears distanceOk,
+        //     and the 1ms drift is well inside budget -> bounces to 1060.
         var events = createNotes(
                 new NoteDef(1000, 2000, Note.C4),
                 new NoteDef(1000, 2000, Note.D4),
-                new NoteDef(1020, 2000, Note.C2),
-                new NoteDef(1020, 2000, Note.C5),
-                new NoteDef(1040, 2000, Note.D2),
-                new NoteDef(1040, 2000, Note.E4)
+                new NoteDef(1010, 2000, Note.C2),
+                new NoteDef(1010, 2000, Note.C5),
+                new NoteDef(1059, 2000, Note.D2),
+                new NoteDef(1059, 2000, Note.E4)
         );
 
         NavigableSet<Long> grid = invokeCreateGrid(events, minMicros, barTicks);
@@ -539,10 +583,10 @@ class AbcExporterTest {
         var events = createNotes(
                 //Arpeggio
                 new NoteDef(1000, 2000, Note.C4),
-                new NoteDef(1040, 2000, Note.D4),
-                new NoteDef(1080, 2000, Note.E2),
+                new NoteDef(1050, 2000, Note.D4),
+                new NoteDef(1100, 2000, Note.E2),
                 new NoteDef(1120, 2000, Note.F2),
-                new NoteDef(1160, 2000, Note.G2),
+                new NoteDef(1170, 2000, Note.G2),
 
                 // slide
                 new NoteDef(2000, 2060, Note.C4),
@@ -585,14 +629,15 @@ class AbcExporterTest {
         assertEquals(1180, snapped.get(4).getStartTick(), "Arp 5 (Cascade)");
 
         // --- 2. Slide (Pairwise Snapping) ---
-        // 30ms gaps are too tight to bounce, so they snap to the nearest bin
-        assertEquals(2000, snapped.get(5).getStartTick(), "Slide 1");
-        assertEquals(2000, snapped.get(6).getStartTick(), "Slide 2 (Snap to 2000)");
-        assertEquals(2080, snapped.get(7).getStartTick(), "Slide 3");
-        assertEquals(2140, snapped.get(8).getStartTick(), "Slide 4");
-        assertEquals(2140, snapped.get(9).getStartTick(), "Slide 5");
-        assertEquals(2200, snapped.get(10).getStartTick(), "Slide 6");
-        assertEquals(2200, snapped.get(11).getStartTick(), "Slide 7");
+        // 30ms gaps: every other note lands exactly on the 60ms lattice from 2000 and
+        // needs no adjustment; the ones between crush back 30ms onto the previous line.
+        assertEquals(2000, snapped.get(5).getStartTick(), "Slide 1 (Anchor)");
+        assertEquals(2000, snapped.get(6).getStartTick(), "Slide 2 (Crushed)");
+        assertEquals(2060, snapped.get(7).getStartTick(), "Slide 3 (Exactly 60ms, no conflict)");
+        assertEquals(2060, snapped.get(8).getStartTick(), "Slide 4 (Crushed)");
+        assertEquals(2120, snapped.get(9).getStartTick(), "Slide 5 (Exactly 60ms, no conflict)");
+        assertEquals(2120, snapped.get(10).getStartTick(), "Slide 6 (Crushed)");
+        assertEquals(2180, snapped.get(11).getStartTick(), "Slide 7 (Exactly 60ms, no conflict)");
 
         // --- 3. Grace Note (Backward Bounce) ---
         // The grace note (3000) is pushed back by the strong chord at 3040
@@ -609,6 +654,44 @@ class AbcExporterTest {
         assertEquals(4160, snapped.get(19).getStartTick(), "Overlap 3");
         assertEquals(4240, snapped.get(20).getStartTick(), "Overlap 4");
         assertEquals(4320, snapped.get(21).getStartTick(), "Overlap 5");
+    }
+
+    @Test
+    @DisplayName("Grid: Collapse must use the conflicting line, not the floor")
+    void testCollapseIgnoresFloorWhenOnlyCeilConflicts() throws Exception {
+        long minMicros = 60000;
+
+        // The chord at 1120 carries weight 20, so it sorts ahead of every single note
+        // and is already on the grid when the note at 1080 is evaluated.
+        //
+        // N1 1000: anchor.
+        // N2 1040: 40ms gap, fails distanceOk (needs > 1045) -> crushes to 1000,
+        //          setting lastCrushedTime = 1040.
+        // N3 1080: floor is 1000, 80ms below -> NO floorConflict.
+        //          ceil is 1120, 40ms above -> ceilConflict.
+        //          IOI from the note played at 1040 is 40ms, inside arpeggioWindow,
+        //          so the group collapse check fires.
+        //
+        // It must collapse onto 1060, moving the
+        // note 20ms backward. Before there was a bug merging into the floor instead, dragging it 80ms backward,
+        // further than a collapse can ever move a note when floorConflict holds.
+        var events = createNotes(
+                new NoteDef(1000, 2000, Note.C4),
+                new NoteDef(1040, 2000, Note.D4),
+                new NoteDef(1080, 2000, Note.E4),
+                new NoteDef(1120, 2000, Note.G4),
+                new NoteDef(1120, 2000, Note.B4)
+        );
+
+        NavigableSet<Long> grid = invokeCreateGrid(events, minMicros, barTicks);
+        List<AbcNoteEvent> snapped = invokeSnapGrid(events, minMicros, grid);
+
+        assertEquals(5, snapped.size(), "No note should be dropped");
+        assertEquals(1000, snapped.get(0).getStartTick(), "Anchor");
+        assertEquals(1000, snapped.get(1).getStartTick(), "Crushed into the anchor");
+        assertEquals(1060, snapped.get(2).getStartTick(), "Collapsed into the free slot between the conflicting line, and the distant floor");
+        assertEquals(1120, snapped.get(3).getStartTick(), "Chord note 1");
+        assertEquals(1120, snapped.get(4).getStartTick(), "Chord note 2");
     }
 
     // ==================================================================================

@@ -1,5 +1,6 @@
 package com.digero.maestro.abc;
 
+import com.digero.common.util.DebuggingOnly;
 import com.digero.common.abc.Dynamics;
 import com.digero.common.abc.LotroInstrument;
 import com.digero.maestro.midi.AbcNoteEvent;
@@ -292,7 +293,8 @@ public class AbcMerger {
         return false;
     }
 
-    @Deprecated
+    @SuppressWarnings("unused")
+    @DebuggingOnly
     void removeDuplicateNotesVerify(List<AbcNoteEvent> events, LotroInstrument instrument) {
         List<AbcNoteEvent> notesOn = new ArrayList<>();
         //second

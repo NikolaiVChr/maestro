@@ -67,7 +67,9 @@ Version 4.6.26
 * Better simulate lotro not stopping samples that already are running, so e.g. a series of fast lute note with same pitch will now allow the previous to keep playing at full volume till their sample ends. This requires an updated soundfont that will download first time this version is ran.
 * Fix that when skipping in song, the highlighted current notes could stay highlighted, even though the song was now having new position.
 * Added TR-808 and TR-909 drum kit hit names.
-* Timing improvement to organic single-stage.
+* Minor timing improvement to organic single-stage.
+* Some notes in organic multi-stage 2 are now slightly better timed.
+* For newly created projects, small volume improvement can happen when merging multiple tracks into same abc part.
 * Removed the option to reduce abc filesize.
 * Improved dissonance graph.
 

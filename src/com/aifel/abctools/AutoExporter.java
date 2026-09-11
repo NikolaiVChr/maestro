@@ -36,10 +36,7 @@ import com.digero.common.util.Util;
 import com.digero.common.util.WarningHandler;
 import com.digero.common.view.UIText;
 import com.digero.maestro.MaestroMain;
-import com.digero.maestro.abc.AbcSong;
-import com.digero.maestro.abc.ExportFilenameTemplate;
-import com.digero.maestro.abc.PartAutoNumberer;
-import com.digero.maestro.abc.PartNameTemplate;
+import com.digero.maestro.abc.*;
 import com.digero.maestro.midi.Chord;
 import com.digero.maestro.util.FileResolver;
 import com.digero.maestro.util.XmlUtil;
@@ -351,6 +348,11 @@ public class AutoExporter implements WarningHandler {
 		} else {
 			appendToField(UIText.get("abctools.p.p.p.exports.cancelled.p"));
 			log.info("Auto exports cancelled");
+		}
+		if (AbcExporter.GRID_STATS_ENABLED) {
+			for (String line : AbcExporter.GRID_STATS.reportLines()) {
+				System.out.println(line);
+			}
 		}
         inProgress = false;
 		SwingUtilities.invokeLater(() -> {
