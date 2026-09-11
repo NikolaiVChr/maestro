@@ -46,7 +46,7 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 			MiscSettings miscSettings, boolean oldVelocities, boolean ignoreMidiText, int usingNewMidiLayout)
 			throws InvalidMidiDataException {
 		this.sequenceInfo = parent;
-		// TempoCache tempoCache = new TempoCache(parent.getSequence());
+		// SequencerWrapper.TempoCacheSlow tempoCache = new SequencerWrapper.TempoCacheSlow(parent.getSequence());
 		this.trackNumber = trackNumber;
 
 
