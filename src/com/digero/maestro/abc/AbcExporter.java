@@ -5800,7 +5800,7 @@ public class AbcExporter {
         // when cutting up too long notes, this is the minimum buffer they are allowed to exceed max with.
         long maxSustainBuffer = minimumMicros * 2;
         long maxSustain = LotroInstrumentSampleDuration.getSafeDuration(part.getInstrument());
-        boolean sustained = part.getInstrument().sustainable;
+        boolean sustained = part.getInstrument().isSustainable(ne.note.id);
 
         List<AbcNoteEvent> segments = new ArrayList<>();
         segments.add(ne);
@@ -5846,6 +5846,16 @@ public class AbcExporter {
                 } else {
                     ne2 = ne;
                 }
+            } else if (!rest && !sustained) {
+
+                // end it prematurely
+                //
+                // Matches breakLongNotes(): "restart note unless non-sustainable, then end
+                // it premature". Neither a tie nor a restart is a continuation here.
+
+                ne.endABCMicros = ceilMicros;
+                ne.setEndTick(ceilTick);
+                break;
             } else if (!rest && (drone || canReachFuture)) {
 
                 // split and tie
@@ -5871,7 +5881,6 @@ public class AbcExporter {
                 //
                 // all rests come in here, drones do not
                 //
-
                 ne2 = new AbcNoteEvent(ne.note, ne.velocity, ceilTick, ne.getEndTick(), qtm, ne.origNote);
                 ne2.startABCMicros = ceilMicros;
                 ne2.endABCMicros = ne.endABCMicros;
