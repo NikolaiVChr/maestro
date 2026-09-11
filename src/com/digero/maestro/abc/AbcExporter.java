@@ -2526,6 +2526,8 @@ public class AbcExporter {
 		breakLongNotesOrganic(part, events, softMaxDurationMicros);
 
         if (singleStageVer == 0 && !part.getInstrument().isPercussion) {
+            // disabled for now by the 'singleStageVer == 0' flag.
+
             // remove all notes not in a drum/cowbell part if its zero duration
             // this has been commented out since some songs seem to have zero dura
             // notes that is meant to be heard and not editing mistakes.

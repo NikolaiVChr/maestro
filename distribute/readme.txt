@@ -59,6 +59,7 @@ This changelog is only partial, to see all the way back to v1.0.0 go here:
   https://maestro.miraheze.org/wiki/Version_history
 
 Version 4.6.26
+* This is a **beta release**, feel free to help and test.
 * Significant less CPU usage during audio playback.
 * Allow part delay to be negative.
 * Highlight connected parts when hover over note tracks.
@@ -69,7 +70,7 @@ Version 4.6.26
 * Added TR-808 and TR-909 drum kit hit names.
 * Minor timing improvement to organic single-stage.
 * Some notes in organic multi-stage 2 are now slightly better timed.
-* For newly created projects, small volume improvement can happen when merging multiple tracks into same abc part.
+* For newly created projects, minor volume improvement sometimes when merging multiple tracks into same abc part.
 * Removed the option to reduce abc filesize.
 * Improved dissonance graph.
 
