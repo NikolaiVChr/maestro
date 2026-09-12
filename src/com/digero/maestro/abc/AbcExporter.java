@@ -4662,15 +4662,19 @@ public class AbcExporter {
         }
 
         if (GRID_STATS_ENABLED) {
-            // Measured here, at the seam: every merge, bounce and collapse has happened,
-            // and nothing below this point reassigns notes to a different line.
             Set<Integer> pitches = new HashSet<>();
+            Set<Long> onsets = new HashSet<>();
             for (GridPoint2 gp : grid) {
                 int n = gp.starts.size();
                 if (n == 0) continue;
                 pitches.clear();
-                for (AbcNoteEvent note : gp.starts) pitches.add(note.note.id);
+                onsets.clear();
+                for (AbcNoteEvent note : gp.starts) {
+                    pitches.add(note.note.id);
+                    onsets.add(note.initStartABCMicros);
+                }
                 GRID_STATS.lineOccupancy(n, n - pitches.size());
+                GRID_STATS.lineOnsets(onsets.size());
             }
         }
 
@@ -4688,6 +4692,8 @@ public class AbcExporter {
             long diff = curr - prev;
 
             if (diff > maxSustain) {
+
+                final int sizeBeforeSplit = finalGrid.size();
 
                 // The grid segments might be larger than sample lengths
                 // Cut it up
@@ -4739,12 +4745,23 @@ public class AbcExporter {
                     diff = curr - prev;
                 }
 
+                if (GRID_STATS_ENABLED) GRID_STATS.sweepSplit(finalGrid.size() - sizeBeforeSplit);
+
                 finalGrid.add(curr);
                 prev = curr;
 
             } else if (diff < minimumMicros) {
                 // The gap is illegally small. We must drop 'curr'.
                 // Rescue all notes bound to this point and snap them to the safe 'prev' anchor.
+                if (GRID_STATS_ENABLED) {
+                    for (AbcNoteEvent n : currPoint.starts) {
+                        GRID_STATS.sweepRebindStart(n.initStartABCMicros - prev, statsLabel, currPoint.micros());
+                    }
+                    for (AbcNoteEvent n : currPoint.ends) {
+                        GRID_STATS.sweepRebindEnd(n.initEndABCMicros - prev);
+                    }
+                    GRID_STATS.sweepDrop(diff);
+                }
                 for (AbcNoteEvent n : currPoint.starts) n.startABCMicros = prev;
                 for (AbcNoteEvent n : currPoint.ends) n.endABCMicros = prev;
 

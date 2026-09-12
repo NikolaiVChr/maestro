@@ -49,7 +49,40 @@ public final class GridStats {
     private final long[] intervalError = new long[BUCKETS];
     private final long[] notesPerLine = new long[9]; // 1, 2, ... 8+ (index 0 unused)
     private long occupiedLines, notesOnLines, duplicatePitchNotes;
+    private final long[] onsetsPerLine = new long[6]; // 1, 2, ... 5+ distinct played onsets
+    private long sweepDropped, sweepStarts, sweepEnds;
+    private final long[] sweepDropGap = new long[BUCKETS];
+    private final long[] sweepStartError = new long[BUCKETS];
+    private final long[] sweepEndError = new long[BUCKETS];
+    private final List<String> sweepExamples = new ArrayList<>();
+    private long sweepSplitLines;
 
+    /** Lines inserted to bridge a gap longer than the instrument's sample can hold. */
+    synchronized void sweepSplit(int lines) { sweepSplitLines += lines; }
+
+    synchronized void sweepDrop(long gap) {
+        sweepDropped++;
+        sweepDropGap[bucket(gap)]++;
+    }
+
+    /** delta = played onset minus where the sweep put it. Total error, not the last hop. */
+    synchronized void sweepRebindStart(long delta, String label, long micros) {
+        sweepStarts++;
+        sweepStartError[bucket(delta)]++;
+        if (Math.abs(delta) >= 60_000L && sweepExamples.size() < MAX_EXEMPLARS) {
+            sweepExamples.add(label + " @" + micros + "us start moved " + delta + "us from played");
+        }
+    }
+
+    synchronized void sweepRebindEnd(long delta) {
+        sweepEnds++;
+        sweepEndError[bucket(delta)]++;
+    }
+
+    /** How many separately-played onsets ended up on one line. 3+ is a collapsed figure. */
+    synchronized void lineOnsets(int distinctOnsets) {
+        onsetsPerLine[Math.min(distinctOnsets, onsetsPerLine.length - 1)]++;
+    }
     /**
      * One onset line: how many notes start on it, and how many of those are pitch
      * duplicates of another note on the same line. Duplicates are the ones that
@@ -293,6 +326,30 @@ public final class GridStats {
         out.add(String.format(Locale.ROOT, "pitch duplicates on a shared line: %d (%s of notes)",
                 duplicatePitchNotes, pct(duplicatePitchNotes, notesOnLines)));
 
+        StringBuilder ons = new StringBuilder();
+        long fused = 0, linesWithOnsets = 0;
+        for (int i = 1; i < onsetsPerLine.length; i++) {
+            if (onsetsPerLine[i] == 0) continue;
+            ons.append("  ").append(i).append(i == onsetsPerLine.length - 1 ? "+" : "")
+                    .append("x=").append(onsetsPerLine[i]);
+            linesWithOnsets += onsetsPerLine[i];
+            if (i >= 3) fused += onsetsPerLine[i];
+        }
+        out.add("distinct played onsets per line (1x = a chord, 3x+ = a flattened figure):");
+        out.add("   " + (ons.length() == 0 ? "(none)" : ons));
+        out.add(String.format(Locale.ROOT, "lines fusing 3+ separate onsets: %d (%s of lines)",
+                fused, pct(fused, linesWithOnsets)));
+
+        out.add("-- final sweep (grid repairing itself) --");
+        out.add(String.format(Locale.ROOT, "lines dropped as too close: %d  <-- expect 0", sweepDropped));
+        out.add("   dropped gap(ms): " + hist(sweepDropGap));
+        out.add(String.format(Locale.ROOT, "starts rebound: %d  error from played(ms): %s",
+                sweepStarts, hist(sweepStartError)));
+        out.add(String.format(Locale.ROOT, "ends rebound:   %d  error from played(ms): %s",
+                sweepEnds, hist(sweepEndError)));
+        for (String s : sweepExamples) out.add("    " + s);
+        out.add(String.format(Locale.ROOT, "lines inserted for sustain: %d", sweepSplitLines));
+
         out.add("-- conflict block reconciliation --");
         out.add(String.format(Locale.ROOT, "entered=%d  exits=%d  unaccounted=%d  <-- expect 0",
                 conflictEntered, conflictExits, conflictEntered - conflictExits));
@@ -347,6 +404,12 @@ public final class GridStats {
         long[] local = localDisplaced.get();
         local[0] = local[1] = 0; // other threads' locals persist; harmless since endPart diffs
         Arrays.fill(notesPerLine, 0);
+        Arrays.fill(onsetsPerLine, 0);
         occupiedLines = notesOnLines = duplicatePitchNotes = 0;
+        sweepDropped = sweepStarts = sweepEnds = sweepSplitLines = 0;
+        Arrays.fill(sweepDropGap, 0);
+        Arrays.fill(sweepStartError, 0);
+        Arrays.fill(sweepEndError, 0);
+        sweepExamples.clear();
     }
 }
