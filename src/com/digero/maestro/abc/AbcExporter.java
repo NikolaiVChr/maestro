@@ -3035,7 +3035,7 @@ public class AbcExporter {
 									ne.tiesFrom.tiesTo = null;
 								}
 								if (ne.tiesTo != null) {
-									if (!part.getInstrument().sustainable) {
+									if (!part.getInstrument().isSustainable(ne.note.id)) {
 										// If non-sustained then should remove ne.tiesTo
 										// we do this by a hack when setting from to itself
 										// then we later just skip the notes from being added.
@@ -3067,7 +3067,7 @@ public class AbcExporter {
 											// the next chord will be too short; we remove it
 											
 											if (ne.tiesTo != null) {
-												if (!part.getInstrument().sustainable) {
+												if (!part.getInstrument().isSustainable(ne.note.id)) {
 													// If non-sustained then should remove ne.tiesTo
 													// we do this by a hack when setting from to itself
 													// then we just skip the notes from being added.
@@ -3106,7 +3106,7 @@ public class AbcExporter {
 								// so its more than just a gracenote, we remove next instead.
 								// TODO: Could investigate if could delay start of next.
 								if (ne.tiesTo != null) {
-									if (!part.getInstrument().sustainable) {
+									if (!part.getInstrument().isSustainable(ne.note.id)) {
 										// If non-sustained then should remove ne.tiesTo
 										// we do this by a hack when setting from to itself
 										// then we just skip the notes from being added.
@@ -5034,7 +5034,7 @@ public class AbcExporter {
 	        }
 	        
 	        //	Check that the shift does not exceed max relative to the original end.
-	        if (part.getInstrument().sustainable && Math.abs(candidateEnd - note.endABCMicros) > minimumMicros * 3L/2L) {//90 ms
+	        if (part.getInstrument().isSustainable(note.note.id) && Math.abs(candidateEnd - note.endABCMicros) > minimumMicros * 3L/2L) {//90 ms
 	        	//System.out.println(parts.get(0).getAbcSong().getTitle()+": End grid was too far from note end:"+(Math.abs(candidateEnd - note.origEndABCMicros)/(double)minimumMicros));
                 if (logNotes.isLoggable(Level.FINER)) logNotes.finer("dropping4 "+Util.formatDurationM(note.startABCMicros)+" - "+Util.formatDurationM(note.endABCMicros));
                 gridDeletion++;
@@ -5091,7 +5091,7 @@ public class AbcExporter {
             }
 
             //	Check that the shift does not exceed max relative to the original end.
-            if (part.getInstrument().sustainable && Math.abs(candidateEnd - note.initEndABCMicros) > minimumMicros * 3L / 2L) {
+            if (part.getInstrument().isSustainable(note.note.id) && Math.abs(candidateEnd - note.initEndABCMicros) > minimumMicros * 3L / 2L) {
                 gridDeletion++;
                 continue;
             }
