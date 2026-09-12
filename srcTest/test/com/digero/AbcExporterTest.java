@@ -256,7 +256,7 @@ class AbcExporterTest {
 
         // Current design: grace chords are excluded from the backward bounce and merge
         // into the main chord instead. If that decision changes, these four move to
-        // 980 / 980 / 1040 / 1040 -- but the straddle check below must hold either way.
+        // 980 / 980 / 1040 / 1040 - but the straddle check below must hold either way.
         assertEquals(1040, snapped.get(0).getStartTick(), "Grace 1 merged into the chord");
         assertEquals(1040, snapped.get(1).getStartTick(), "Grace 2 merged into the chord");
         assertEquals(1040, snapped.get(2).getStartTick(), "Chord note 1");
@@ -268,6 +268,40 @@ class AbcExporterTest {
             AbcNoteEvent g = snapped.get(i);
             assertFalse(g.getStartTick() < chordStart && g.getEndTick() > chordStart,
                     "Grace note " + (i + 1) + " must not span the chord onset");
+        }
+    }
+
+    @Test
+    @DisplayName("Grid: END overwrite must not break minimum spacing")
+    void testEndOverwriteMustNotBreakMinimumSpacing() throws Exception {
+        long minMicros = 60_000L;
+
+        // N1 anchors a start line at 1000 (weight 10).
+        // N2..N4 end together at 1030 (weight 3). Their blocker is that weight-10 line,
+        //   too heavy to overwrite, so the fallback lays a safety line at 1000+60 = 1060
+        //   with WEIGHT_END = 1.
+        // N5..N6 end together at 1050 (weight 2). Floor 1000 is 50ms away, ceiling 1060 is
+        //   10ms away, both conflict. The closer one is the weight-1 safety line, so we test
+        //   it is not overwritten and a point not appears at 1050.
+        var events = createNotes(
+                new NoteDef(1000, 2000, Note.C4),   // start anchor at 1000
+                new NoteDef(900, 1030, Note.D4),    // \
+                new NoteDef(900, 1030, Note.E4),    //  > weight-3 end candidate at 1030
+                new NoteDef(900, 1030, Note.G4),    // /
+                new NoteDef(900, 1050, Note.A4),    // \ weight-2 end candidate at 1050
+                new NoteDef(900, 1050, Note.B4)     // /
+        );
+
+        NavigableSet<Long> grid = invokeCreateGrid(events, minMicros, barTicks);
+
+        Long prev = null;
+        for (Long point : grid) {
+            if (prev != null) {
+                assertTrue(point - prev >= minMicros,
+                        "Grid spacing " + (point - prev) + "us < " + minMicros
+                                + "us between " + prev + " and " + point + " in " + grid);
+            }
+            prev = point;
         }
     }
 

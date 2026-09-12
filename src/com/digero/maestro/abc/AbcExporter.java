@@ -4217,6 +4217,11 @@ public class AbcExporter {
         final int type;   // TYPE_START or TYPE_END
         int weight = 0;
 
+        // True once the main loop has handled this candidate. Set through the sorted
+        // `candidates` list but read through `startCandidates`, both hold the same object
+        // references, so the two views must never be split into copies.
+        boolean placed = false;
+
         // True while every note binned here scored WEIGHT_GRACE. Two coincident grace
         // notes sum to WEIGHT_SOLO, so weight alone cannot identify them.
         boolean graceOnly = true;
@@ -4272,13 +4277,14 @@ public class AbcExporter {
         long maxSustain = LotroInstrumentSampleDuration.getSafeDuration(part.getInstrument());
         long minPreferredSustain = 4L * TimingInfo.ONE_SECOND_MICROS;
         long minSustain = 2L * TimingInfo.ONE_SECOND_MICROS;
-        boolean sustained = part.getInstrument().sustainable;
 
         //System.err.println("createGridV2: maxSustainBuffer="+maxSustainBuffer+" maxSustain="+maxSustain+" minPreferredSustain="+minPreferredSustain+" minSustain="+minSustain+" sustained="+sustained);
 
 
-        // Using maps first to sum weights of coincident events
-        Map<Long, Candidate2> startCandidates = new HashMap<>();
+        // Using maps first to sum weights of coincident events.
+        // startCandidates is a TreeMap so isSnowplowPathClear can walk forward in time
+        // rather than forward in the weight-sorted list.
+        TreeMap<Long, Candidate2> startCandidates = new TreeMap<>();
         Map<Long, Candidate2> endCandidates = new HashMap<>();
 
         for (AbcNoteEvent note : events) {
@@ -4294,9 +4300,8 @@ public class AbcExporter {
             note.startABCMicros = rawStartMicros;
             note.endABCMicros = rawEndMicros;
 
-            if (!sustained) {
-                // note.endABCMicros = Math.max(
-            }
+            // We don't give plucked notes minimum dura like in single-stage. Due to how we here
+            // process starts seperate from ends, it would not improve anything.
             note.endABCMicros = Math.max(note.endABCMicros, note.startABCMicros + minimumMicros);
 
             // Determine start weight
@@ -4344,8 +4349,17 @@ public class AbcExporter {
         final long firstMicros = getExportStartMicrosABC();
         grid.add(new GridPoint2(firstMicros, 0, Integer.MAX_VALUE));
 
-        // The absolute last microsecond of the track
-        long endOfTrack = candidates.getLast().micros;
+        // The absolute last microsecond of the track.
+        // Derived from the notes, not from candidates.getLast(): that list is sorted by
+        // weight descending, so its tail is the lowest-weight candidate, not the latest one.
+        // A song ending on a chord gives that chord weight 2+, which sorts ahead of any
+        // single note ending earlier, so getLast() would name the wrong moment.
+        // endABCMicros keeps this correct even if the adjusted end
+        // is ever shortened below the raw one.
+        long endOfTrack = 0L;
+        for (AbcNoteEvent note : events) {
+            endOfTrack = Math.max(endOfTrack, note.endABCMicros);
+        }
 
         // Tracks the time of the last note that failed a bounce and was forced to crush
         long lastCrushedTime = -1L;
@@ -4357,6 +4371,7 @@ public class AbcExporter {
                 // backward gracenote bounce might have removed all notes from c
                 continue;
             }
+            c.placed = true;
 
             long time = c.micros;
 
@@ -4447,7 +4462,7 @@ public class AbcExporter {
 
                     // Look-Ahead Check
                     if (isOkToBounce) {
-                        boolean chainSafe = isSnowplowPathClear(i, bounceTime, candidates, grid, minimumMicros, MAX_BOUNCE_DRIFT, firstMicros);
+                        boolean chainSafe = isSnowplowPathClear(time, bounceTime, startCandidates, grid, minimumMicros, MAX_BOUNCE_DRIFT, firstMicros);
                         if (!chainSafe) {
                             isOkToBounce = false; // The future is blocked. Abort the bounce!
                             if (GRID_STATS_ENABLED) GRID_STATS.refusedPath(c.notes.size());
@@ -4457,9 +4472,10 @@ public class AbcExporter {
                     // Check if very last note can bounce without requiring its ending to go past end of track.
                     if (isOkToBounce) {
                         for (AbcNoteEvent note : c.notes) {
-                            // If this note ends at the absolute edge of the track, and bouncing
-                            // forward leaves it with zero/negative duration or an illegal micro-gap...
-                            if (note.initEndABCMicros == endOfTrack && (note.initEndABCMicros - bounceTime < minimumMicros)) {
+                            // A note running to the edge of the track cannot be extended to make
+                            // room, so bouncing its start forward can only shorten it. Refuse if
+                            // that would leave it under the minimum.
+                            if (note.endABCMicros >= endOfTrack && (note.endABCMicros - bounceTime < minimumMicros)) {
                                 isOkToBounce = false; // Abort the bounce. Crush backward instead.
                                 if (GRID_STATS_ENABLED) GRID_STATS.refusedTrackEnd(c.notes.size());
                                 break;
@@ -4588,16 +4604,29 @@ public class AbcExporter {
 
                 boolean added = false;
                 if (blocker != null && blocker.weight() < c.weight()) {
-                    // Overwrite weak blocker
-                    grid.remove(blocker);
-                    GridPoint2 newPoint = new GridPoint2(time, 0, c.weight());
+                    // When floorConflict and ceilConflict are both set, there are two lines
+                    // too close to `time` and we only remove one of them. Putting a point at
+                    // `time` would then sit inside minimumMicros of the one still standing.
+                    // Only proceed if that other line is far enough away - which it always is
+                    // when only one conflict is set.
+                    // We don't need to check other blockers than ceil and floor, since when
+                    // they were placed they also checked themselves for blockers.
+                    GridPoint2 survivor = (blocker == floor) ? ceil : floor;
+                    boolean survivorSafe = survivor == null
+                            || Math.abs(time - survivor.micros()) >= minimumMicros;
 
-                    // Drag all notes attached to the old blocker to the new time!
-                    newPoint.absorb(blocker);
-                    newPoint.mergeCandidate(c);
+                    if (survivorSafe) {
+                        // Overwrite weak blocker
+                        grid.remove(blocker);
+                        GridPoint2 newPoint = new GridPoint2(time, 0, c.weight());
 
-                    grid.add(newPoint);
-                    added = true;
+                        // Drag all notes attached to the old blocker to the new time
+                        newPoint.absorb(blocker);
+                        newPoint.mergeCandidate(c);
+
+                        grid.add(newPoint);
+                        added = true;
+                    }
                 }
 
                 // Fallback for rejected end candidates
@@ -4820,28 +4849,41 @@ public class AbcExporter {
     /**
      * Used by multi-stage 2
      *
-     * Simulates the snowplow chain reaction. Returns false if a leapfrogged note
-     * hits a wall, meaning the current bounce must be aborted.
+     * A note is about to be moved forward to proposedBounceTime. Any note starting between
+     * its old and new position is now too close and must move forward as well, which can
+     * push the note after that, and so on. This walks that chain without changing anything.
+     *
+     * Returns false if some note in the chain cannot be placed - it would end up too far
+     * from where it was played, or its slot is occupied. The caller must then abandon the
+     * original move rather than start a chain it cannot finish.
      */
-    private boolean isSnowplowPathClear(int currentIndex, long proposedBounceTime, List<Candidate2> candidates, TreeSet<GridPoint2> grid, long minimumMicros, long maxDriftMicros, long exportStartTime) {
-        long simTarget = proposedBounceTime;
+    private boolean isSnowplowPathClear(long currentTime, long proposedBounceTime, NavigableMap<Long, Candidate2> startCandidates, TreeSet<GridPoint2> grid, long minimumMicros, long maxDriftMicros, long exportStartTime) {
+        // tailMap returns a live view: startCandidates must not be structurally modified
+        // once the main loop has begun. It is fully populated before the loop starts.
+
+        // How far along the timeline the chain has reached so far.
+        long chainTip = proposedBounceTime;
 
         // Look ahead at upcoming candidates
-        for (int j = currentIndex + 1; j < candidates.size(); j++) {
-            Candidate2 futureC = candidates.get(j);
+        for (Candidate2 futureC : startCandidates.tailMap(currentTime, false).values()) {
             if (futureC.type != TYPE_START) continue;
 
-            // If the future note is safely past our simulated target, the chain is clear.
-            if (futureC.micros >= simTarget) return true;
+            // Already positioned by an earlier pass, so it is a fixed grid point.
+            // isValidBounce2 below sees it in the grid; pushing it again would count it twice.
+            if (futureC.placed) continue;
 
-            // futureC is trapped. It must bounce to the next slot.
-            simTarget += minimumMicros;
+            // This note starts at or after where the chain has reached, so it needs no room
+            // made for it - and neither does anything after it.
+            if (futureC.micros >= chainTip) return true;
 
-            // The chain would carry this note further off the beat than we allow.
-            if (simTarget - futureC.micros > maxDriftMicros) return false;
+            // It sits inside the space we need, so it has to move to the next free slot.
+            chainTip += minimumMicros;
 
-            // The forced destination is blocked by a heavy chord
-            if (!isValidBounce2(simTarget, futureC.micros, minimumMicros, grid, futureC.weight, true, exportStartTime)) {
+            // That slot is further from where this note was actually played than we allow.
+            if (chainTip - futureC.micros > maxDriftMicros) return false;
+
+            if (!isValidBounce2(chainTip, futureC.micros, minimumMicros, grid, futureC.weight, true, exportStartTime)) {
+                // Something heavier already owns that slot, or it is otherwise unusable.
                 return false;
             }
         }
