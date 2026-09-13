@@ -2772,7 +2772,11 @@ public class AbcExporter {
 						ne.tiesFrom.setEndTick(qtm.microsToTickABCOrganic(curChord.getStartMicros()));
 					}
 					// Its too complex to move current chord into next cords position, so we do the opposite:					
-                    if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+" Turned arpeggio into block chord (early start)");
+                    if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()
+                            + " Turned arpeggio into block chord (early start): " + ne.note
+                            + " moved " + ((ne.startABCMicros - curChord.getStartMicros()) / 1000) + " ms early"
+                            + ", curChordRoom=" + (curChordRoomMicros / 1000) + " ms"
+                            + ", arp=" + curChord.arp);
 					ne.startABCMicros = curChord.getStartMicros();
 					ne.setStartTick(qtm.microsToTickABCOrganic(ne.startABCMicros));
 					curChord.add(ne);// we note that this will later be pruned (again)
@@ -2913,7 +2917,7 @@ public class AbcExporter {
 				long oldCurEndMicro = curChord.getEndMicros();
 				if (curChord.getEndMicros() < nextChord.getStartMicros()) {
 					long restMicros = nextChord.getStartMicros() - oldCurEndMicro;
-					if (restMicros <= minimumMicros && curChord.expandedMicros == null) {
+					if (restMicros < minimumMicros && curChord.expandedMicros == null) {
 						curChord.setEndMicrosExpand(nextChord.getStartMicros());//TODO: breakup elongated notes
 						
 						// later we might undo some of this; expandedMicros is how much we are allowed to undo.
@@ -2928,15 +2932,19 @@ public class AbcExporter {
 				if (curChord.getEndMicros() < minEndMicros && !curChord.dontMove2) {
 					long earlyCurrMicro = curChord.getEndMicros() - minimumMicros;
                     if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+": curChord too short. ends at "+curChord.getEndMicros()+", ideal end at "+minEndMicros);
+
+                    boolean restBeforeCurrHasRoom = prevRestChord != null
+                            && earlyCurrMicro - prevRestChord.getStartMicros() > minimumMicros;
+
 					// test if we should early start curr chord
-					if (!useRestToShortenChords && ne2 != null && ne1RoomMicros < minimumMicros
+					if (!useRestToShortenChords
+                            && (ne2 != null && ne1RoomMicros < minimumMicros) || restBeforeCurrHasRoom
 							&& curStartMicro - earlyCurrMicro < minimumMicros/2) {
-						// Both curr and ne does not have enough room.
+						// Both curr and ne does not have enough room. Or ne is there but there is also a rest before curr that can absorb the expansion.
 						// We need less than half of minimum though
-						if (prevRestChord != null
-								&& earlyCurrMicro - prevRestChord.getStartMicros() > minimumMicros) {
+						if (restBeforeCurrHasRoom) {
 							// There is a rest before curr that can be expanded into
-							curChord.early = earlyCurrMicro;//TODO: breakup elongated notes
+							curChord.early = earlyCurrMicro;
 							curChord.dontMove2 = true;
                             if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+": Early start of 1st of two trills/gliss notes (rest). cur_early="
 										+ Util.formatDurationM(earlyCurrMicro)+" cur_start="+Util.formatDurationM(curChord.getStartMicros())
@@ -3017,7 +3025,8 @@ public class AbcExporter {
 								i--;
                                 if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+" Delayed sequential chord by "+ ((minEndMicros-neMicroStart)/1000)+" ms 1");
 								continue MAIN;
-							} else if (!isRattle && ne2 != null && (isRattle(part, ne) || (ne1RoomMicros < minimumMicros
+							} else if (!isRattle && ne2 != null && !curChord.isRest()
+                                    && (isRattle(part, ne) || (ne1RoomMicros < minimumMicros
 									&& neMicros < minimumMicros))) {
 								// Both curr and next chord does not have enough room or curChord is rattle(s)
 								// ne is fairly short (or rattle) and will have to go
@@ -3130,7 +3139,7 @@ public class AbcExporter {
 								//so rest of next chords notes will also be removed.
 								continue MAIN;
 							}
-							// give up and schedule curr chord for deletion, it likely contains a grace note
+							// give up and schedule curr chord for deletion, it likely contains a grace note or initial rest
 							curChord.setEndMicrosRetract(curChord.getStartMicros());
 							curChord.delete = true;
                             part.numberOfRemovedNotesFromFitting += curChord.sizeReal();
