@@ -4373,6 +4373,9 @@ public class AbcExporter {
         // Tracks the time of the last note that failed a bounce and was forced to crush
         long lastCrushedTime = -1L;
 
+        // Only used for debug stats
+        long lastShiftMicros = -1L;
+
         for (int i = 0; i < candidates.size(); i++) {
             Candidate2 c = candidates.get(i);
 
@@ -4511,10 +4514,15 @@ public class AbcExporter {
                     } else {
                         if (GRID_STATS_ENABLED) {
                             if (isOkToBounce) GRID_STATS.refusedValid(c.notes.size());
-                            GRID_STATS.crush(c.notes.size(), time - floor.micros());
                         }
-                        // Force into Block Chord: Snap to floor.
-                        floor.mergeCandidate(c);
+                        if (ceilConflict && ceil.micros - time <= minimumMicros/4) {
+                            if (GRID_STATS_ENABLED) GRID_STATS.crush(c.notes.size(), time - ceil.micros());// could be seperate logging
+                            ceil.mergeCandidate(c);
+                        } else {
+                            // Force into Block Chord: Snap to floor.
+                            if (GRID_STATS_ENABLED) GRID_STATS.crush(c.notes.size(), time - floor.micros());
+                            floor.mergeCandidate(c);
+                        }
                         lastCrushedTime = time;
                     }
                 } else if (c.graceOnly && c.notes.size() == 1 && ceil != null && ceilConflict) {
@@ -4614,6 +4622,25 @@ public class AbcExporter {
                         lastCrushedTime = time;
                     }
                 } else {
+                    // Lone short note: a floor behind, nothing within minimumMicros ahead.
+                    // Not an ornament, there is nothing to lead into, and it cannot start a
+                    // arp, so the 45ms arpeggio rule does not apply. Pure nearest slot at
+                    // minimumMicros/2. Merging to the floor would also stretch it by up to
+                    // 59ms, since its end does not move with it, while the forward slot shifts
+                    // start and end together and keeps the duration at minimumMicros.
+                    boolean floorIsNearer = floor != null && time - floor.micros() <= minimumMicros / 2;
+                    long forwardSlot = floor.micros() + minimumMicros;
+                    if (!floorIsNearer && isValidBounce2(forwardSlot, time, minimumMicros, grid, c.weight, true, firstMicros)) {
+                        applyBounce2(grid, forwardSlot, c, minimumMicros, 0);
+                        if (GRID_STATS_ENABLED) GRID_STATS.plainMerge(c.notes.size(), time - forwardSlot);
+                        lastCrushedTime = -1;
+                    } else {
+                        floor.mergeCandidate(c);
+                        if (GRID_STATS_ENABLED) GRID_STATS.plainMerge(c.notes.size(), time - floor.micros());
+                        lastCrushedTime = time;
+                    }
+                }/*
+                else {
                     GridPoint2 blocker = floorConflict ? floor : ceil;
                     if (blocker != null) {
                         blocker.mergeCandidate(c);
@@ -4623,7 +4650,7 @@ public class AbcExporter {
                     }
                     lastCrushedTime = time;
                 }
-
+                */
             } else if (c.type == TYPE_END) {
                 // Ending conflicts (Overwrites and fallbacks)
                 if (GRID_STATS_ENABLED) GRID_STATS.exitEndCandidate(c.notes.size());
@@ -4658,6 +4685,49 @@ public class AbcExporter {
 
                         grid.add(newPoint);
                         added = true;
+                    }
+                }
+
+                // The required end lands inside minimumMicros of the ceiling, so it cannot
+                // become a line of its own and the merge in the branch below would push it up into the
+                // ceiling, stretching the note. If the line behind is own start,
+                // shift the whole note back while keeping ending at late as allowed.
+                // The length stays at minimumMicros.
+                if (!added && !floorConflict && ceilConflict && floor != null && part.getInstrument().isSustainable(c.notes.getFirst().note.id)) {
+                    boolean floorIsOwnStart = floor.starts.size() == c.notes.size();
+                    for (AbcNoteEvent n : c.notes) {
+                        if (n.startABCMicros != floor.micros()) {
+                            floorIsOwnStart = false;
+                            break;
+                        }
+                    }
+
+                    long newStart = ceil.micros() - 2L * minimumMicros;
+                    long newEnd = ceil.micros() - minimumMicros;
+                    GridPoint2 floorOfFloor = grid.lower(new GridPoint2(floor.micros(), 0, 0));
+
+                    boolean roomBelow = floorOfFloor != null
+                            && newStart - floorOfFloor.micros() >= minimumMicros;
+                    boolean shiftOk = floor.micros() - newStart <= MAX_BOUNCE_DRIFT
+                            && newStart < floor.micros();
+
+                    if (floorIsOwnStart && roomBelow && shiftOk) {
+                        long shift = floor.micros() - newStart;
+                        long gapToPrev = lastShiftMicros < 0 ? -1L : newStart - lastShiftMicros;
+
+                        grid.remove(floor);
+                        floor.moveTo(newStart);
+                        grid.add(floor);
+
+                        GridPoint2 endPoint = new GridPoint2(newEnd, 0, WEIGHT_END);
+                        endPoint.mergeCandidate(c);
+                        grid.add(endPoint);
+                        added = true;
+
+                        lastShiftMicros = newStart;
+                        if (GRID_STATS_ENABLED) {
+                            GRID_STATS.endShiftedWholeNote(c.notes.size(), shift, gapToPrev, statsLabel, newStart);
+                        }
                     }
                 }
 
@@ -5152,6 +5222,11 @@ public class AbcExporter {
         AbcNoteEvent[] lastNoteOfPitch = new AbcNoteEvent[129];
         int gridDeletion = 0;
 
+        final String statsLabel = !GRID_STATS_ENABLED ? "" :
+                (part.getAbcSong() == null ? "?" : part.getAbcSong().getTitle())
+                        + " / #" + part.getPartNumber() + " " + part.getTitle()
+                        + " [" + part.getInstrument() + "]";
+
         for (AbcNoteEvent note : notes) {
             // Notes condemned by the grid generator
             if (note.startABCMicros == Long.MIN_VALUE) {
@@ -5165,13 +5240,37 @@ public class AbcExporter {
 
             // Check that the shift does not exceed max relative to the original start.
             // Protects against events getting dragged across massive rests
-            if (Math.abs(candidateStart - note.initStartABCMicros) > getMaxStartShiftMicros(originalDuration, minimumMicros)) {
+            long maxShift = minimumMicros;
+            if (Math.abs(candidateStart - note.initStartABCMicros) > maxShift) {
+                if (GRID_STATS_ENABLED) {
+                    GRID_STATS.gridStartDeletion++;
+                    GRID_STATS.startDriftDelete(
+                            Math.abs(candidateStart - note.initStartABCMicros),
+                            candidateStart < note.initStartABCMicros,
+                            originalDuration, maxShift, minimumMicros,
+                            statsLabel, note.initStartABCMicros);
+                }
                 gridDeletion++;
                 continue;
             }
 
-            //	Check that the shift does not exceed max relative to the original end.
-            if (part.getInstrument().isSustainable(note.note.id) && Math.abs(candidateEnd - note.initEndABCMicros) > minimumMicros * 3L / 2L) {
+            // Check that the shift does not exceed max relative to the original end.
+            // Measured from mandatoryEnd, not initEndABCMicros: a note played shorter than
+            // minimumMicros was already stretched to it before the grid saw it, and charging
+            // that stretch as drift leaves a short note almost no budget, which deleted in
+            // average 1 per song for one ordinary grid step.
+            long mandatoryEnd = Math.max(note.initEndABCMicros, note.initStartABCMicros + minimumMicros);
+            if (part.getInstrument().isSustainable(note.note.id)
+                    && Math.abs(candidateEnd - mandatoryEnd) > minimumMicros * 3L / 2L) {
+                if (GRID_STATS_ENABLED) {
+                    GRID_STATS.gridEndDeletion++;
+                    GRID_STATS.endDriftDelete(
+                            Math.abs(candidateEnd - note.initEndABCMicros),
+                            Math.abs(candidateEnd - mandatoryEnd),
+                            originalDuration,
+                            minimumMicros,
+                            statsLabel, note.initStartABCMicros);
+                }
                 gridDeletion++;
                 continue;
             }

@@ -58,6 +58,87 @@ public final class GridStats {
     private long sweepSplitLines;
     private long fwdExactLanding, fwdExactLandingOverwrite, fwdExactLandingEndsChain;
     private final long[] fwdExactLandingWeight = new long[6]; // 1, 2, 3-5, 6-10, 11-20, 21+
+    public int gridStartDeletion, gridEndDeletion;
+    private long endDriftDeleted;
+    private final long[] endDriftRaw = new long[BUCKETS];        // |candidateEnd - initEnd|
+    private final long[] endDriftResidual = new long[BUCKETS];   // |candidateEnd - mandatoryEnd|
+    private final long[] endDriftDuration = new long[BUCKETS];   // the note's own played duration
+    private long endDriftShorterThanMin;
+    private final List<String> endDriftExamples = new ArrayList<>();
+    private long startDriftDeleted, startDriftBackward, startDriftOverMinimum;
+    private final long[] startDriftShift = new long[BUCKETS];
+    private final long[] startDriftDuration = new long[BUCKETS];
+    private final long[] startDriftTier = new long[3]; // budget 36ms / 45ms / 60ms
+    private final List<String> startDriftExamples = new ArrayList<>();
+    private long endShiftedNotes, endShiftedCandidates, shiftAdjacent, shiftWithPrev;
+    private final long[] endShiftedDist = new long[BUCKETS];
+    private final long[] shiftGapToPrev = new long[BUCKETS];
+    private final List<String> endShiftedExamples = new ArrayList<>();
+
+    /**
+     * A note whose required end could not become a line - it sat inside minimumMicros of
+     * the ceiling - so the whole note was shifted back one slot instead of having its end
+     * merged up into that ceiling.
+     *
+     * gapToPrevShift is the distance to the previous shifted note in the same part, or -1
+     * for the first. Isolated shifts are harmless; consecutive ones alternate, because the
+     * end line a shift creates sits exactly minimumMicros below the next start and denies
+     * the following note the room it needs.
+     */
+    synchronized void endShiftedWholeNote(int notes, long shift, long gapToPrevShift,
+                                          String label, long micros) {
+        endShiftedCandidates++;
+        endShiftedNotes += notes;
+        endShiftedDist[bucket(shift)]++;
+        if (gapToPrevShift >= 0) {
+            shiftWithPrev++;
+            shiftGapToPrev[bucket(gapToPrevShift)]++;
+            if (gapToPrevShift < 60_000L) shiftAdjacent++;
+        }
+        if (endShiftedExamples.size() < MAX_EXEMPLARS) {
+            endShiftedExamples.add(label + " @" + micros + "us shift=-" + shift
+                    + "us gapToPrev=" + gapToPrevShift + " notes=" + notes);
+        }
+    }
+
+    /**
+     * A note deleted by the start-drift check. The check guards against notes dragged
+     * across long rests, which the v2 grid cannot do - every path is bounded by
+     * minimumMicros. startDriftOverMinimum should therefore be 0; anything else means
+     * a path exists that I have not accounted for.
+     */
+    synchronized void startDriftDelete(long shift, boolean backward, long duration,
+                                       long maxShift, long minimumMicros, String label, long micros) {
+        startDriftDeleted++;
+        startDriftShift[bucket(shift)]++;
+        startDriftDuration[bucket(duration)]++;
+        if (backward) startDriftBackward++;
+        if (shift >= minimumMicros) startDriftOverMinimum++;
+        startDriftTier[maxShift <= 36_000L ? 0 : (maxShift <= 45_000L ? 1 : 2)]++;
+        if (startDriftExamples.size() < MAX_EXEMPLARS) {
+            startDriftExamples.add(label + " @" + micros + "us dur=" + duration
+                    + " shift=" + (backward ? "-" : "+") + shift + " budget=" + maxShift);
+        }
+    }
+
+    /**
+     * A note deleted by the end-drift check. mandatoryEnd is where the minimum-duration
+     * rule already forced the end to, so residual is the drift the grid is actually
+     * responsible for. If residual is small while raw is large, the check is punishing
+     * notes for being short rather than for moving.
+     */
+    synchronized void endDriftDelete(long raw, long residual, long duration, long minimumMicros,
+                                     String label, long micros) {
+        endDriftDeleted++;
+        endDriftRaw[bucket(raw)]++;
+        endDriftResidual[bucket(residual)]++;
+        endDriftDuration[bucket(duration)]++;
+        if (duration < minimumMicros) endDriftShorterThanMin++;
+        if (endDriftExamples.size() < MAX_EXEMPLARS) {
+            endDriftExamples.add(label + " @" + micros + "us dur=" + duration
+                    + " raw=" + raw + " residual=" + residual);
+        }
+    }
 
     /**
      * A forward bounce landed exactly on an existing line. The line's weight says whether
@@ -389,6 +470,26 @@ public final class GridStats {
         out.add(String.format(Locale.ROOT, "exact match=%d  new anchor=%d  end candidates=%d  UNHANDLED=%d",
                 exitExactMatch, exitNewAnchor, exitEndCandidate, exitUnhandled));
 
+        out.add("== snap to grid ==");
+        out.add(String.format(Locale.ROOT, "deletedDueToStartDrift=%d  deletedDueToEndDrift=%d",
+                gridStartDeletion, gridEndDeletion));
+        out.add("-- end-drift deletions --");
+        out.add(String.format(Locale.ROOT, "deleted=%d  of which played shorter than minimumMicros: %d (%s)",
+                endDriftDeleted, endDriftShorterThanMin, pct(endDriftShorterThanMin, endDriftDeleted)));
+        out.add("   played duration(ms): " + hist(endDriftDuration));
+        out.add("   drift from raw end(ms): " + hist(endDriftRaw));
+        out.add("   drift from mandatory end(ms): " + hist(endDriftResidual));
+        for (String s : endDriftExamples) out.add("    " + s);
+        out.add("-- start-drift deletions --");
+        out.add(String.format(Locale.ROOT, "deleted=%d  backward=%d (%s)  shift >= minimumMicros: %d  <-- expect 0",
+                startDriftDeleted, startDriftBackward, pct(startDriftBackward, startDriftDeleted),
+                startDriftOverMinimum));
+        out.add(String.format(Locale.ROOT, "   budget tier: 36ms=%d  45ms=%d  60ms=%d",
+                startDriftTier[0], startDriftTier[1], startDriftTier[2]));
+        out.add("   shift(ms): " + hist(startDriftShift));
+        out.add("   played duration(ms): " + hist(startDriftDuration));
+        for (String s : startDriftExamples) out.add("    " + s);
+
         out.add("-- ungoverned displacement by instrument --");
         out.add("   (crush to floor, group collapse, plain merge)");
         instrumentTally.entrySet().stream()
@@ -398,6 +499,14 @@ public final class GridStats {
                 .forEach(e -> out.add(String.format(Locale.ROOT, "  %6s  %8d/%-9d  %s",
                         pct(e.getValue()[1], e.getValue()[0]),
                         e.getValue()[1], e.getValue()[0], e.getKey())));
+
+        out.add("-- whole-note shift (end had nowhere legal to land) --");
+        out.add(String.format(Locale.ROOT, "shifted=%d notes in %d candidates", endShiftedNotes, endShiftedCandidates));
+        out.add("   onset moved back(ms): " + hist(endShiftedDist));
+        out.add(String.format(Locale.ROOT, "   within 4 slots of the previous shift: %d of %d (%s)",
+                shiftAdjacent, shiftWithPrev, pct(shiftAdjacent, shiftWithPrev)));
+        out.add("   gap to previous shift(ms): " + hist(shiftGapToPrev));
+        for (String s : endShiftedExamples) out.add("    " + s);
 
         out.add("-- worst individual parts, ungoverned displacement >= 30ms --");
         partTally.entrySet().stream()
@@ -448,5 +557,23 @@ public final class GridStats {
         fwdExactLandingOverwrite = 0;
         fwdExactLandingEndsChain = 0;
         Arrays.fill(fwdExactLandingWeight, 0);
+        gridStartDeletion = gridEndDeletion = 0;
+        endDriftDeleted = endDriftShorterThanMin = 0;
+        Arrays.fill(endDriftRaw, 0);
+        Arrays.fill(endDriftResidual, 0);
+        Arrays.fill(endDriftDuration, 0);
+        endDriftExamples.clear();
+        startDriftDeleted = startDriftBackward = startDriftOverMinimum = 0;
+        Arrays.fill(startDriftShift, 0);
+        Arrays.fill(startDriftDuration, 0);
+        Arrays.fill(startDriftTier, 0);
+        startDriftExamples.clear();
+        endShiftedNotes = endShiftedCandidates = 0;
+        Arrays.fill(endShiftedDist, 0);
+        endShiftedExamples.clear();
+        endShiftedNotes = endShiftedCandidates = shiftAdjacent = shiftWithPrev = 0;
+        Arrays.fill(endShiftedDist, 0);
+        Arrays.fill(shiftGapToPrev, 0);
+        endShiftedExamples.clear();
     }
 }
