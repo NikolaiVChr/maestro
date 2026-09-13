@@ -56,6 +56,29 @@ public final class GridStats {
     private final long[] sweepEndError = new long[BUCKETS];
     private final List<String> sweepExamples = new ArrayList<>();
     private long sweepSplitLines;
+    private long fwdExactLanding, fwdExactLandingOverwrite, fwdExactLandingEndsChain;
+    private final long[] fwdExactLandingWeight = new long[6]; // 1, 2, 3-5, 6-10, 11-20, 21+
+
+    /**
+     * A forward bounce landed exactly on an existing line. The line's weight says whether
+     * that is harmless (an end or safety marker) or a real chord whose voicing changes.
+     * Its depth says whether a running chain quietly terminates here, since a merge keeps
+     * the existing point's depth and discards the one applyBounce2 was handed.
+     */
+    synchronized void forwardExactLanding(int neighborWeight, int candidateWeight, int neighborDepth) {
+        fwdExactLanding++;
+        if (neighborWeight < candidateWeight) fwdExactLandingOverwrite++;
+        if (neighborDepth == 0) fwdExactLandingEndsChain++;
+
+        int b;
+        if (neighborWeight <= 1) b = 0;
+        else if (neighborWeight == 2) b = 1;
+        else if (neighborWeight <= 5) b = 2;
+        else if (neighborWeight <= 10) b = 3;
+        else if (neighborWeight <= 20) b = 4;
+        else b = 5;
+        fwdExactLandingWeight[b]++;
+    }
 
     /** Lines inserted to bridge a gap longer than the instrument's sample can hold. */
     synchronized void sweepSplit(int lines) { sweepSplitLines += lines; }
@@ -290,6 +313,16 @@ public final class GridStats {
         out.add(String.format(Locale.ROOT, "refused: drift=%d  path=%d  trackEnd=%d  invalid=%d",
                 refusedDrift, refusedPath, refusedTrackEnd, refusedValid));
 
+        String[] wNames = {"w1", "w2", "w3-5", "w6-10", "w11-20", "w21+"};
+        StringBuilder wl = new StringBuilder();
+        for (int i = 0; i < fwdExactLandingWeight.length; i++) {
+            if (fwdExactLandingWeight[i] == 0) continue;
+            wl.append("  ").append(wNames[i]).append('=').append(fwdExactLandingWeight[i]);
+        }
+        out.add(String.format(Locale.ROOT, "landed exactly (simulation) on an existing line: %d  (overwrote it: %d, ended a chain: %d)",
+                fwdExactLanding, fwdExactLandingOverwrite, fwdExactLandingEndsChain));
+        out.add("   line weight:" + (wl.length() == 0 ? " (none)" : wl));
+
         out.add("-- displacement without a bounce --");
         out.add(String.format(Locale.ROOT, "crush back to floor=%d  >=30ms: %s", crushBack, over(crushBackDist, 6)));
         out.add("    " + hist(crushBackDist));
@@ -411,5 +444,9 @@ public final class GridStats {
         Arrays.fill(sweepStartError, 0);
         Arrays.fill(sweepEndError, 0);
         sweepExamples.clear();
+        fwdExactLanding = 0;
+        fwdExactLandingOverwrite = 0;
+        fwdExactLandingEndsChain = 0;
+        Arrays.fill(fwdExactLandingWeight, 0);
     }
 }

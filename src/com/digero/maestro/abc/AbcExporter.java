@@ -4493,6 +4493,17 @@ public class AbcExporter {
                         }
                     }*/
 
+                    if (GRID_STATS_ENABLED && isOkToBounce) {
+                        // Counted before isValidBounce2 so it still reports while forward
+                        // landings are forbidden, otherwise the gate hides the very cases
+                        // we are trying to measure.
+                        // This is simulation only, currently blocked.
+                        GridPoint2 landed = grid.floor(new GridPoint2(bounceTime, 0, 0));
+                        if (landed != null && landed.micros() == bounceTime) {
+                            GRID_STATS.forwardExactLanding(landed.weight(), c.weight, landed.bounceDepth());
+                        }
+                    }
+
                     if (isOkToBounce && isValidBounce2(bounceTime, time, minimumMicros, grid, c.weight, true, firstMicros)) {
                         applyBounce2(grid, bounceTime, c, minimumMicros, floor.bounceDepth() + 1);
                         if (GRID_STATS_ENABLED) GRID_STATS.forwardBounce(c.notes.size(), bounceTime - time);
@@ -4517,8 +4528,13 @@ public class AbcExporter {
                         if (GRID_STATS_ENABLED) GRID_STATS.graceBounce(c.notes.size());
 
                         for (AbcNoteEvent note : c.notes) {
-                            if (note.initEndABCMicros <= ceil.micros()) {
-                                // No original overlap with main note
+                            long overlap = note.initEndABCMicros - ceil.micros();
+                            if (overlap <= minimumMicros / 2) {
+                                // No overlap in the source, or one smaller than the fusion
+                                // window - the two ends are heard as the same moment, so it
+                                // was not played deliberately. Snap the end to the main onset
+                                // rather than carrying an end that was inflated from a start
+                                // this note no longer has.
                                 Candidate2 endCand = endCandidates.get(note.endABCMicros);
 
                                 // Stop gracenote(s) from having their own end candidate
@@ -4529,8 +4545,7 @@ public class AbcExporter {
                                 note.endABCMicros = ceil.micros(); // Snap end to main note start
                                 ceil.ends.add(note);
                             }
-                            // If note.initEndABCMicros > ceil.micros(), we leave it untouched
-                            // to preserve the intentional overlap.
+                            // A larger overlap was played on purpose. Leave it untouched.
                         }
 
                         lastCrushedTime = -1;
@@ -4545,7 +4560,14 @@ public class AbcExporter {
                         }
                         lastCrushedTime = time;
                     }
-                } else if (ceilConflict && !floorConflict && floor != null && !c.graceOnly) {
+                } else if (ceilConflict && !floorConflict && floor != null) {
+                    // Grace chords are admitted. They miss the grace branch above because
+                    // coincident graces sum past WEIGHT_GRACE, and they used to straddle the
+                    // chord they ornament because this branch does no end handling. The end
+                    // merge below now pulls their end onto the main onset, and the fusion
+                    // window keeps the step back under minimumMicros/2, so they get the same
+                    // treatment a single grace would.
+
                     // Blocked from ahead. The floor is already at least minimumMicros below,
                     // so this note is a separate onset; only the heavier candidate above is in
                     // the way. Step back to the last legal slot rather than merging into the heavy,
@@ -4635,6 +4657,32 @@ public class AbcExporter {
                         newPoint.mergeCandidate(c);
 
                         grid.add(newPoint);
+                        added = true;
+                    }
+                }
+
+                if (!added && blocker != null) {
+                    // If merging into the blocker still leaves every note at least minimumMicros
+                    // long, just merge. The safety line below exists to rescue notes that would
+                    // become too short; adding a grid point when it is not needed pushes the note past
+                    // whatever starts next - which for an ornament means swallowing the note it
+                    // ornaments. The end candidate was keyed from the note's original start, so
+                    // this is where a start that has since moved gets accounted for.
+
+                    boolean mergeKeepsDuration = true;
+                    for (AbcNoteEvent n : c.notes) {
+                        if (blocker.micros() - n.startABCMicros < minimumMicros) {
+                            mergeKeepsDuration = false;
+                            break;
+                        }
+                    }
+
+                    // Only merge when it is the smaller move; past the halfway point the safety
+                    // line below lands nearer the note's real end.
+                    boolean mergeIsNearer = (time - blocker.micros()) <= minimumMicros / 2;
+
+                    if (mergeKeepsDuration && mergeIsNearer) {
+                        blocker.mergeCandidate(c);
                         added = true;
                     }
                 }
@@ -4859,16 +4907,21 @@ public class AbcExporter {
         GridPoint2 key = new GridPoint2(bounceTime, 0, 0);
         GridPoint2 neighbor = forward ? grid.ceiling(key) : grid.floor(key);
 
-        // A space is only naturally safe if it's empty, or if the neighbor is at least 60ms away.
-        // We explicitly forbid landing exactly on a neighbor here.
+        // A space is only naturally safe if it's empty, or if the neighbour is at least 60ms away.
+        // Landing exactly on a neighbour is allowed only when bouncing backward: there the caller
+        // is the grace branch, whose only alternative is deleting the ornament, so a merge is the
+        // lesser loss. Forward callers still have a crush-to-floor fallback, and merging an
+        // arpeggio note into whatever chord already holds that line changes that chord's voicing,
+        // and under shared chord velocity, at that chord's dynamic.
         boolean spaceSafe = neighbor == null
+                || (!forward && neighbor.micros() == bounceTime)
                 || Math.abs(neighbor.micros() - bounceTime) >= minimumMicros;
 
         // Can we overwrite a weak neighbor?
         int neighborWeight = (neighbor == null) ? 0 : neighbor.weight();
         boolean weightSafe = neighborWeight < weight;
 
-        // To bounce, the direction and distance must be okay, AND we must either have
+        // To bounce, the direction and distance must be okay, and we must either have
         // safe empty space, or be strong enough to crush the existing weak candidate.
         return directionOk && reasonable && (spaceSafe || weightSafe);
     }
@@ -5162,7 +5215,17 @@ public class AbcExporter {
 
             if (assertionsEnabled) {
                 assert grid.contains(note.startABCMicros) : "Start time " + note.startABCMicros + " is not on the grid!";
-                assert grid.contains(note.endABCMicros) : "End time " + note.endABCMicros + " is not on the grid!";
+                if (!grid.contains(note.endABCMicros)) {
+                    Long below = grid.floor(note.endABCMicros);
+                    Long above = grid.ceiling(note.endABCMicros);
+                    throw new AssertionError("End time " + note.endABCMicros + " is not on the grid!"
+                            + " part=" + part
+                            + " pitch=" + note.note.id
+                            + " start=" + note.startABCMicros
+                            + " init=" + note.initStartABCMicros + ".." + note.initEndABCMicros
+                            + " gridBelow=" + below + " (gap " + (below == null ? -1 : note.endABCMicros - below) + ")"
+                            + " gridAbove=" + above + " (gap " + (above == null ? -1 : above - note.endABCMicros) + ")");
+                }
                 assert note.endABCMicros > note.startABCMicros : "Note duration was <= 0!";
                 assert (note.endABCMicros - note.startABCMicros) >= minimumMicros : "Note duration " + (note.endABCMicros - note.startABCMicros) + " is shorter than minimumMicros!";
 

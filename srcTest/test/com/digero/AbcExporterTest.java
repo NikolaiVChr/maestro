@@ -257,8 +257,8 @@ class AbcExporterTest {
         // Current design: grace chords are excluded from the backward bounce and merge
         // into the main chord instead. If that decision changes, these four move to
         // 980 / 980 / 1040 / 1040 - but the straddle check below must hold either way.
-        assertEquals(1040, snapped.get(0).getStartTick(), "Grace 1 merged into the chord");
-        assertEquals(1040, snapped.get(1).getStartTick(), "Grace 2 merged into the chord");
+        assertEquals(980, snapped.get(0).getStartTick(), "Grace 1 not merged into the chord");
+        assertEquals(980, snapped.get(1).getStartTick(), "Grace 2 not merged into the chord");
         assertEquals(1040, snapped.get(2).getStartTick(), "Chord note 1");
         assertEquals(1040, snapped.get(3).getStartTick(), "Chord note 2");
 
