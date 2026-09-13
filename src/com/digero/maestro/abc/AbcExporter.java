@@ -4478,6 +4478,7 @@ public class AbcExporter {
                         }
                     }
 
+                    /*
                     // Check if very last note can bounce without requiring its ending to go past end of track.
                     if (isOkToBounce) {
                         for (AbcNoteEvent note : c.notes) {
@@ -4490,7 +4491,7 @@ public class AbcExporter {
                                 break;
                             }
                         }
-                    }
+                    }*/
 
                     if (isOkToBounce && isValidBounce2(bounceTime, time, minimumMicros, grid, c.weight, true, firstMicros)) {
                         applyBounce2(grid, bounceTime, c, minimumMicros, floor.bounceDepth() + 1);
