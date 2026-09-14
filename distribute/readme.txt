@@ -60,7 +60,7 @@ This changelog is only partial, to see all the way back to v1.0.0 go here:
 
 Version 4.6.27
 * This is a **beta release**, feel free to help and test.
-* Significant less CPU usage during audio playback.
+* Significant less CPU usage during audio playback on some PCs.
 * Allow part delay to be negative.
 * Highlight connected parts when hover over note tracks.
 * Added support for custom drum combos in drum-maps. Maestro can hold 79, but if loading a project and maestro is full, the project will be degraded. Recommend to never exceed 70 combos.
@@ -73,6 +73,7 @@ Version 4.6.27
 * For newly created projects, minor volume improvement sometimes when merging multiple tracks into same abc part.
 * Removed the option to reduce abc filesize.
 * Improved dissonance graph.
+* Fixed a bug in multi-stage 2, where a plucked note could be restarted after it had ended. This could also cause wonkyness in polyphony graph.
 
 Version 4.6.22
 * Downloads of the apps are now found on github. [https://github.com/NikolaiVChr/maestro/releases](https://github.com/NikolaiVChr/maestro/releases)
