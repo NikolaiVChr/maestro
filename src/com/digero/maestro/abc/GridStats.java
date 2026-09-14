@@ -74,6 +74,48 @@ public final class GridStats {
     private final long[] endShiftedDist = new long[BUCKETS];
     private final long[] shiftGapToPrev = new long[BUCKETS];
     private final List<String> endShiftedExamples = new ArrayList<>();
+    private long dissonanceClusters, dissonancePairs, dissonanceDropped;
+    private long dissonanceKeptOverlap, dissonanceKeptBothLong, dissonanceSkippedBend;
+    private final long[] dissonanceClusterSize = new long[9];   // 2, 3, ... 8+
+    private final long[] dissonanceDroppedInterval = new long[3]; // unused, 1, 2 semitones
+    private long tieOnSnappedDuration, tieOnOrigDuration;
+    private long bothLongSnapped, bothLongOrig;
+    private final List<String> dissonanceExamples = new ArrayList<>();
+
+    synchronized void dissonanceCluster(int size) {
+        dissonanceClusters++;
+        dissonanceClusterSize[Math.min(size, dissonanceClusterSize.length - 1)]++;
+    }
+
+    synchronized void dissonanceSkippedBend(int notes) { dissonanceSkippedBend += notes; }
+
+    /**
+     * One candidate/survivor pair that reached the comparison. Records which escape fired,
+     * and - for the two tests that read post-grid durations - whether they would have
+     * answered differently on the notes as played.
+     */
+    synchronized void dissonancePair(boolean keptOverlap, boolean bothLongSnappedNow,
+                                     boolean bothLongOrigNow, boolean dropped, int interval,
+                                     String label, long micros) {
+        dissonancePairs++;
+        if (keptOverlap) dissonanceKeptOverlap++;
+        if (bothLongSnappedNow) bothLongSnapped++;
+        if (bothLongOrigNow) bothLongOrig++;
+        if (bothLongSnappedNow && !keptOverlap) dissonanceKeptBothLong++;
+        if (dropped) {
+            dissonanceDropped++;
+            if (interval >= 1 && interval <= 2) dissonanceDroppedInterval[interval]++;
+            if (dissonanceExamples.size() < MAX_EXEMPLARS) {
+                dissonanceExamples.add(label + " @" + micros + "us interval=" + interval);
+            }
+        }
+    }
+
+    /** Does the importance sort have a tie at the top under each duration source? */
+    synchronized void dissonanceSortTie(boolean snappedTie, boolean origTie) {
+        if (snappedTie) tieOnSnappedDuration++;
+        if (origTie) tieOnOrigDuration++;
+    }
 
     /**
      * A note whose required end could not become a line - it sat inside minimumMicros of
@@ -508,6 +550,28 @@ public final class GridStats {
         out.add("   gap to previous shift(ms): " + hist(shiftGapToPrev));
         for (String s : endShiftedExamples) out.add("    " + s);
 
+        out.add("-- collapsed dissonance --");
+        out.add(String.format(Locale.ROOT, "clusters>=2: %d  dissonant pairs: %d  dropped: %d",
+                dissonanceClusters, dissonancePairs, dissonanceDropped));
+        StringBuilder cs = new StringBuilder();
+        for (int i = 2; i < dissonanceClusterSize.length; i++) {
+            if (dissonanceClusterSize[i] > 0) {
+                cs.append("  ").append(i).append(i == dissonanceClusterSize.length - 1 ? "+" : "")
+                        .append("n=").append(dissonanceClusterSize[i]);
+            }
+        }
+        out.add("   cluster size:" + (cs.length() == 0 ? " (none)" : cs));
+        out.add(String.format(Locale.ROOT, "   dropped by interval: minor2nd=%d  major2nd=%d",
+                dissonanceDroppedInterval[1], dissonanceDroppedInterval[2]));
+        out.add(String.format(Locale.ROOT, "   kept by original overlap: %d   kept by both-long: %d",
+                dissonanceKeptOverlap, dissonanceKeptBothLong));
+        out.add(String.format(Locale.ROOT, "   both-long on snapped durations: %d   on played durations: %d  <-- gap is the grid stretching them",
+                bothLongSnapped, bothLongOrig));
+        out.add(String.format(Locale.ROOT, "   importance sort tied at the top: snapped=%d  played=%d  (of %d clusters)",
+                tieOnSnappedDuration, tieOnOrigDuration, dissonanceClusters));
+        out.add(String.format(Locale.ROOT, "   notes exempted as bent/origNote-null: %d", dissonanceSkippedBend));
+        for (String s : dissonanceExamples) out.add("    " + s);
+
         out.add("-- worst individual parts, ungoverned displacement >= 30ms --");
         partTally.entrySet().stream()
                 .filter(e -> e.getValue()[0] >= 100)
@@ -575,5 +639,12 @@ public final class GridStats {
         Arrays.fill(endShiftedDist, 0);
         Arrays.fill(shiftGapToPrev, 0);
         endShiftedExamples.clear();
+        dissonanceClusters = dissonancePairs = dissonanceDropped = 0;
+        dissonanceKeptOverlap = dissonanceKeptBothLong = dissonanceSkippedBend = 0;
+        tieOnSnappedDuration = tieOnOrigDuration = 0;
+        bothLongSnapped = bothLongOrig = 0;
+        Arrays.fill(dissonanceClusterSize, 0);
+        Arrays.fill(dissonanceDroppedInterval, 0);
+        dissonanceExamples.clear();
     }
 }

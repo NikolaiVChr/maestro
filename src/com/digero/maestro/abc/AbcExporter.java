@@ -3814,7 +3814,8 @@ public class AbcExporter {
             events = snapNotesToGrid(events, grid, minimumMicros, part);
         }
 
-        events = removeCollapsedDissonance(events, part);
+        part.numberOfRemovedNotesForSafety = 0;
+        //events = removeCollapsedDissonance(events, part); disabled for now.
 
 		List<Chord> chords = chordifyOrganic(events, grid, part, useRestToShortenChords, minimumMicros);
 		
@@ -5572,6 +5573,8 @@ public class AbcExporter {
      */
     private List<AbcNoteEvent> removeCollapsedDissonance(List<AbcNoteEvent> events, AbcPart part) {
         part.numberOfRemovedNotesForSafety = 0;
+        final String statsLabel = (part.getAbcSong() == null ? "?" : part.getAbcSong().getTitle())
+                + " / #" + part.getPartNumber() + " " + part.getTitle() + " [" + part.getInstrument() + "]";
 
         if (part.getInstrument().isPercussion) return events;//drums and cowbells only
 
@@ -5595,6 +5598,21 @@ public class AbcExporter {
                 continue;
             }
 
+            if (GRID_STATS_ENABLED) {
+                GRID_STATS.dissonanceCluster(cluster.size());
+                // Does the top of the ranking tie? The sort reads snapped durations, which the
+                // grid has just equalised, so a tie means the ranking fell through to velocity.
+                long maxSnapped = Long.MIN_VALUE, maxOrig = Long.MIN_VALUE;
+                int nSnapped = 0, nOrig = 0;
+                for (AbcNoteEvent e : cluster) {
+                    long s = e.endABCMicros - e.startABCMicros;
+                    long o = e.initEndABCMicros - e.initStartABCMicros;
+                    if (s > maxSnapped) { maxSnapped = s; nSnapped = 1; } else if (s == maxSnapped) nSnapped++;
+                    if (o > maxOrig) { maxOrig = o; nOrig = 1; } else if (o == maxOrig) nOrig++;
+                }
+                GRID_STATS.dissonanceSortTie(nSnapped > 1, nOrig > 1);
+            }
+
             // Sort by original importance (length/velocity) so we drop the weak ones
             cluster.sort(Comparator.comparingLong((AbcNoteEvent e) -> e.endABCMicros - e.startABCMicros)
                     .thenComparingInt(AbcNoteEvent::getVelocity).reversed());
@@ -5603,6 +5621,7 @@ public class AbcExporter {
 
             for (AbcNoteEvent candidate : cluster) {
                 if (candidate.getOrigBend() != null || (candidate.origNote instanceof BentMidiNoteEvent) || candidate.origNote == null) {
+                    if (GRID_STATS_ENABLED) GRID_STATS.dissonanceSkippedBend(1);
                     survivors.add(candidate);
                     continue;
                 }
@@ -5612,33 +5631,36 @@ public class AbcExporter {
                     if (survivor.getOrigBend() != null || survivor.origNote instanceof BentMidiNoteEvent || survivor.origNote == null) {
                         continue;
                     }
-
                     // Check if they were originally sequential
                     long overlapMicros = getOrigOverlap(candidate, survivor);
-
-                    // If they overlapped significantly in the original, they are intended harmony/dissonance.
-                    if (overlapMicros > 20_000L) {
-                        continue; // Keep both, don't check for dissonance
-                    }
-
-                    // Check for dissonance
                     int interval = Math.abs(candidate.note.id - survivor.note.id);
-                    if (interval <= 2 && interval > 0) { // Major 2nd or minor 2nd
+                    boolean dissonant = interval == 1;// minor second
+                    boolean keptOverlap = overlapMicros > 20_000L;
 
-                        long durCandidate = candidate.endABCMicros - candidate.startABCMicros;
-                        long durSurvivor = survivor.endABCMicros - survivor.startABCMicros;
+                    long durCandidate = candidate.endABCMicros - candidate.startABCMicros;
+                    long durSurvivor = survivor.endABCMicros - survivor.startABCMicros;
+                    boolean bothLongSnapped = durCandidate > 100_000L && durSurvivor > 100_000L;
+                    boolean bothLongOrig =
+                            (candidate.initEndABCMicros - candidate.initStartABCMicros) > 100_000L
+                                    && (survivor.initEndABCMicros - survivor.initStartABCMicros) > 100_000L;
 
-                        if (durCandidate > 100_000L && durSurvivor > 100_000L) {
-                            continue; // Keep both
-                        }
+                    boolean willDrop = dissonant && !keptOverlap && !bothLongSnapped;
 
-                        // They crashed into each other and sound bad.
-                        // Since we sorted by velocity/importance, survivor is better.
-                        // Drop candidate.
-                        keepCandidate = false;
-                        part.numberOfRemovedNotesForSafety++;
-                        break;
+                    if (GRID_STATS_ENABLED && dissonant) {
+                        GRID_STATS.dissonancePair(keptOverlap, bothLongSnapped, bothLongOrig,
+                                willDrop, interval, statsLabel, candidate.startABCMicros);
                     }
+
+                    if (keptOverlap) continue;// If they overlapped significantly in the original, they are intended harmony/dissonance.
+                    if (!dissonant || dissonant) continue;
+                    if (bothLongSnapped) continue;
+
+                    // They crashed into each other and sound bad.
+                    // Since we sorted by velocity/importance, survivor is better.
+                    // Drop candidate.
+                    keepCandidate = false;
+                    part.numberOfRemovedNotesForSafety++;
+                    break;
                 }
                 if (keepCandidate) {
                     survivors.add(candidate);
@@ -5651,6 +5673,10 @@ public class AbcExporter {
         return cleaned;
     }
 
+    /**
+     * Return overlap as positive number.
+     * If return is negative or zero, it means that the notes are not overlapping.
+     */
     private long getOrigOverlap(AbcNoteEvent candidate, AbcNoteEvent survivor) {
         long startC = candidate.origNote.getStartMicros();//relying on its datacache to be a SequenceDataCache,
         long endC   = candidate.origNote.getEndMicros();//  which it is for MidiNoteEvents.
@@ -5658,13 +5684,7 @@ public class AbcExporter {
         long startS = survivor.origNote.getStartMicros();
         long endS   = survivor.origNote.getEndMicros();
 
-        long overlap = 0;
-        if (startC < startS) {
-            overlap = endC - startS; // Candidate started first
-        } else {
-            overlap = endS - startC; // Survivor started first
-        }
-        return overlap;
+        return Math.min(endC, endS) - Math.max(startC, startS);
     }
 
     /**
