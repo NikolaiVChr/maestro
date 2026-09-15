@@ -69,11 +69,11 @@ Version 4.6.28
 * Fix that when skipping in song, the highlighted current notes could stay highlighted, even though the song was now having new position.
 * Added TR-808 and TR-909 drum kit hit names.
 * Minor timing improvement to organic single-stage.
-* Some notes in organic multi-stage 2 are now slightly better timed.
+* Some notes in organic multi-stage 2 are now better timed.
 * For newly created projects, minor volume improvement sometimes when merging multiple tracks into same abc part.
 * Removed the option to reduce abc filesize.
 * Improved dissonance graph.
-* Fixed a bug in multi-stage 2, where a plucked note could be restarted after it had ended. This could also cause wonkyness in polyphony graph.
+* Fixed a bug in multi-stage 2, where a plucked note could be restarted after it had ended. Also cause of polyphony graph giving counter-intuitive output.
 
 Version 4.6.22
 * Downloads of the apps are now found on github. [https://github.com/NikolaiVChr/maestro/releases](https://github.com/NikolaiVChr/maestro/releases)

@@ -3803,25 +3803,30 @@ public class AbcExporter {
 	
 		final long minimumMicros = quanFractions[2];
 
-		NavigableSet<Long> grid = upgraded?createGridV2(events, minimumMicros, part, part.getAbcSong().getSequenceInfo().getDataCache().getBarLengthTicks()):createGrid(events, minimumMicros, part, useRestToShortenChords);
+		NavigableSet<Long> grid = null;
 
         if (upgraded) {
+            // lay out the grid and snap to it in same go
+            grid = createGridV2(events, minimumMicros, part, part.getAbcSong().getSequenceInfo().getDataCache().getBarLengthTicks());
+
+            // despite the name, it just checks that notes were not snapped too far from origin (then deletion)
+            // or same pitch share same time (then fix).
             events = snapNotesToGrid3(events, grid, minimumMicros, part);
-            /*
-            boolean sustained = part.getInstrument().sustainable;
-            if (sustained) {
-                events = snapNotesToGridSustained(events, grid, minimumMicros, part);
-            } else {
-                events = snapNotesToGridFixed(events, grid, minimumMicros, part);
-            }
-             */
         } else {
+            // lay out the grid
+            grid = createGrid(events, minimumMicros, part, useRestToShortenChords);
+
+            // snap notes to the grid
             events = snapNotesToGrid(events, grid, minimumMicros, part);
         }
 
+        // Check that notes that overlap now, and didn't in source midi is not dissonant,
+        // and if they are, delete one of them.
         part.numberOfRemovedNotesForSafety = 0;
-        //events = removeCollapsedDissonance(events, part); // disabled for now.
+        //events = removeCollapsedDissonance(events, part); // disabled for now. It works, but it's not needed.
 
+        // Put all the notes in chords, break up too long notes, prune if more than 6, and put in rests.
+        // Note the grid is already prepared for note break-ups, no two points on the grid is too far from each other.
 		List<Chord> chords = chordifyOrganic(events, grid, part, useRestToShortenChords, minimumMicros);
 		
 		return chords;
@@ -5261,13 +5266,7 @@ public class AbcExporter {
     }
 
     /**
-     *
-     * Part of organic multi-stage 2 path
-     *
-     */
-
-    /**
-     * Part of multi-stage organic path
+     * Part of multi-stage 1/2 organic path
      *
      * @param barTicks bar tick duration
      * @param idealMicros origin point
@@ -5562,231 +5561,6 @@ public class AbcExporter {
         assert prevNote == null || prevNote.endABCMicros <= candidateStart
                 : "Same-pitch overlap on pitch " + pitch;
         return gridDeletion;
-    }
-
-    /**
-     *
-     * Part of organic multi-stage 2 path for sustained instruments
-     *
-     */
-    private List<AbcNoteEvent> snapNotesToGridSustained(List<AbcNoteEvent> notes, NavigableSet<Long> grid, long minimumMicros, AbcPart part) {
-        List<AbcNoteEvent> snappedNotes = new ArrayList<>(notes.size());
-        AbcNoteEvent[] lastNoteOfPitch = new AbcNoteEvent[129]; // Tracks the last note for each MIDI pitch
-        int gridDeletion = 0;
-
-        for (AbcNoteEvent note : notes) {
-            long originalDuration = note.endABCMicros - note.startABCMicros;
-
-            // Snap Start to nearest grid point
-            Long floor = grid.floor(note.startABCMicros);
-            Long ceiling = grid.ceiling(note.startABCMicros);
-            long candidateStart = note.startABCMicros;
-
-            if (floor != null && ceiling != null) {
-                candidateStart = (note.startABCMicros - floor <= ceiling - note.startABCMicros) ? floor : ceiling;
-            } else if (floor != null) {
-                candidateStart = floor;
-            } else if (ceiling != null) {
-                candidateStart = ceiling;
-            } else {
-                continue; // No grid points exist at all
-            }
-
-            // Shield against snapping across massive gaps (like a 2-minute rest)
-            if (Math.abs(candidateStart - note.startABCMicros) > getMaxStartShiftMicros(originalDuration, minimumMicros)) {
-                gridDeletion++;
-                continue;
-            }
-
-            // Snap end to nearest grid point
-            long expectedEnd = note.endABCMicros;
-            Long endFloor = grid.floor(expectedEnd);
-            Long endCeiling = grid.ceiling(expectedEnd);
-            long candidateEnd = expectedEnd;
-
-            if (endFloor != null && endCeiling != null) {
-                candidateEnd = (expectedEnd - endFloor <= endCeiling - expectedEnd) ? endFloor : endCeiling;
-            } else if (endFloor != null) {
-                candidateEnd = endFloor;
-            } else if (endCeiling != null) {
-                candidateEnd = endCeiling;
-            }
-
-            // Prevent the end of a note from dragging long
-            if (Math.abs(candidateEnd - expectedEnd) > minimumMicros * 3L / 2L) {
-                gridDeletion++;
-                continue;
-            }
-
-            // Enforce valid duration on the grid
-            if (candidateEnd <= candidateStart) {
-                Long higher = grid.higher(candidateStart);
-                Long lower = grid.lower(candidateStart);
-
-                // Fetch prevNote early to protect it from backward expansion collision
-                int pitch = note.note.id;
-                if (pitch == -1) pitch = 128;
-                AbcNoteEvent prevNote = lastNoteOfPitch[pitch];
-
-                boolean canExpandBackward = (lower != null);
-                if (canExpandBackward && prevNote != null && lower < prevNote.endABCMicros) {
-                    canExpandBackward = false;
-                }
-
-                long distHigher = (higher != null) ? (higher - candidateStart) : Long.MAX_VALUE;
-                long distLower = canExpandBackward ? (candidateStart - lower) : Long.MAX_VALUE;
-
-                if (higher == null && !canExpandBackward) {
-                    gridDeletion++;
-                    continue;
-                }
-
-                long maxAcceptableDuration = Math.max(originalDuration * 5L/4L, minimumMicros * 2L);
-                boolean higherIsTooLong = distHigher > maxAcceptableDuration;
-                boolean lowerIsTooLong = distLower > maxAcceptableDuration;
-
-                if (lowerIsTooLong) canExpandBackward = false;
-
-                if (!canExpandBackward && higherIsTooLong) {
-                    gridDeletion++;
-                    continue; // Cannot expand safely in either direction. Drop the event.
-                }
-
-                // Expand into the adjacent grid interval that best matches original duration
-                if (distHigher != Long.MAX_VALUE && !higherIsTooLong && (!canExpandBackward || Math.abs(distHigher - originalDuration) <= Math.abs(distLower - originalDuration))) {
-                    candidateEnd = higher;
-                } else if (canExpandBackward) {
-                    long oldStart = candidateStart;
-                    candidateStart = lower;
-                    candidateEnd = oldStart;
-                } else {
-                    gridDeletion++;
-                    continue; // Failsafe drop
-                }
-            }
-
-            // Resolve same-pitch overlap
-            int pitch = note.note.id;
-            if (pitch == -1) pitch = 128;
-            AbcNoteEvent prevNote = lastNoteOfPitch[pitch];
-
-            if (prevNote != null && prevNote.endABCMicros > candidateStart) {
-                if (prevNote.startABCMicros >= candidateStart) {
-                    // The previous note is completely eclipsed by the new one on the grid.
-                    snappedNotes.remove(prevNote);
-                    gridDeletion++;
-                } else {
-                    // Truncate the previous note to end exactly when this new one begins.
-                    prevNote.endABCMicros = candidateStart;
-                    prevNote.setEndTick(qtm.microsToTickABCOrganic(candidateStart));
-                    assert prevNote.endABCMicros - prevNote.startABCMicros > 0;
-                }
-            }
-
-            note.setStartTick(qtm.microsToTickABCOrganic(candidateStart));
-            note.startABCMicros = candidateStart;
-            note.setEndTick(qtm.microsToTickABCOrganic(candidateEnd));
-            note.endABCMicros = candidateEnd;
-
-            assert note.endABCMicros - note.startABCMicros > 0;
-
-            snappedNotes.add(note);
-            lastNoteOfPitch[pitch] = note;
-        }
-
-        /*
-        for (AbcNoteEvent note : snappedNotes) {
-            System.out.println("sus_Snapped note " + note.note.id + ": " + note.startABCMicros + " to " + note.endABCMicros + " micros");
-        }
-        */
-
-        part.numberOfRemovedNotesFromFitting = gridDeletion;
-        return snappedNotes;
-    }
-
-    /**
-     *
-     * Part of organic multi-stage 2 path for plucked/percussive instruments
-     *
-     */
-    private List<AbcNoteEvent> snapNotesToGridFixed(List<AbcNoteEvent> notes, NavigableSet<Long> grid, long minimumMicros, AbcPart part) {
-        List<AbcNoteEvent> snappedNotes = new ArrayList<>(notes.size());
-        AbcNoteEvent[] lastNoteOfPitch = new AbcNoteEvent[129];
-        int gridDeletion = 0;
-
-        // Short uniform duration for plucked/percussive instruments.
-
-        for (AbcNoteEvent note : notes) {
-            long originalDuration = note.endABCMicros - note.startABCMicros;
-            // Snap Start (nearest-neighbor)
-            Long floor = grid.floor(note.startABCMicros);
-            Long ceiling = grid.ceiling(note.startABCMicros);
-            long candidateStart = note.startABCMicros;
-
-            if (floor != null && ceiling != null) {
-                candidateStart = (note.startABCMicros - floor <= ceiling - note.startABCMicros) ? floor : ceiling;
-            } else if (floor != null) {
-                candidateStart = floor;
-            } else if (ceiling != null) {
-                candidateStart = ceiling;
-            } else {
-                continue; // No grid points exist at all
-            }
-
-            // Shield against snapping events across massive rests
-            if (Math.abs(candidateStart - note.startABCMicros) > getMaxStartShiftMicros(originalDuration, minimumMicros)) {
-                gridDeletion++;
-                continue;
-            }
-
-            // Apply Duration (Snap end to the next available grid point)
-            Long nextGridPoint = grid.higher(candidateStart);
-            long candidateEnd;
-            if (nextGridPoint != null) {
-                candidateEnd = nextGridPoint;
-            } else {
-                // Fallback for the absolute last note on the grid
-                candidateEnd = candidateStart + minimumMicros;
-            }
-
-            // Resolve overlaps
-            int pitch = note.note.id;
-            if (pitch == -1) pitch = 128;
-            AbcNoteEvent prevNote = lastNoteOfPitch[pitch];
-
-            if (prevNote != null && prevNote.endABCMicros > candidateStart) {
-                if (prevNote.startABCMicros >= candidateStart) {
-                    // The notes crossed paths or snapped to the exact same point.
-                    // The new one entirely eclipses the previous note.
-                    snappedNotes.remove(prevNote);
-                    gridDeletion++;
-                } else {
-                    // Truncate previous note to end exactly when this new one begins
-                    prevNote.endABCMicros = candidateStart;
-                    prevNote.setEndTick(Math.max(prevNote.getStartTick() + 1, qtm.microsToTickABCOrganic(candidateStart)));
-                    assert prevNote.endABCMicros - prevNote.startABCMicros > 0;
-                }
-            }
-
-            note.setStartTick(qtm.microsToTickABCOrganic(candidateStart));
-            note.startABCMicros = candidateStart;
-            note.setEndTick(Math.max(note.getStartTick() + 1L, qtm.microsToTickABCOrganic(candidateEnd)));
-            note.endABCMicros = candidateEnd;
-
-            assert note.endABCMicros - note.startABCMicros > 0;
-
-            snappedNotes.add(note);
-            lastNoteOfPitch[pitch] = note;
-        }
-
-        /*
-        for (AbcNoteEvent note : snappedNotes) {
-            System.out.println("fix_Snapped note " + note.note.id + ": " + note.startABCMicros + " to " + note.endABCMicros + " micros");
-        }
-        */
-
-        part.numberOfRemovedNotesFromFitting = gridDeletion;
-        return snappedNotes;
     }
 
     /**
