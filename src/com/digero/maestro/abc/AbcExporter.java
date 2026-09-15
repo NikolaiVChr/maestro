@@ -5444,6 +5444,9 @@ public class AbcExporter {
 
         final String statsLabel = !GRID_STATS_ENABLED ? "" : statsLabel(part);
 
+        notes.sort(Comparator.comparingLong((AbcNoteEvent n) -> n.startABCMicros)
+                .thenComparingLong(n -> n.endABCMicros));
+
         for (AbcNoteEvent note : notes) {
             // Notes condemned by the grid generator
             if (note.startABCMicros == Long.MIN_VALUE) {
@@ -5502,22 +5505,9 @@ public class AbcExporter {
                 }
             }
 
-            // Resolve same-pitch overlaps
             int pitch = note.note.id;
             if (pitch == -1) pitch = 128;
-            AbcNoteEvent prevNote = lastNoteOfPitch[pitch];
-
-            if (prevNote != null && prevNote.endABCMicros > candidateStart) {
-                if (prevNote.startABCMicros >= candidateStart) {
-                    // The new note completely eclipses the old one. Delete the old one.
-                    snappedNotes.remove(prevNote);
-                    gridDeletion++;
-                } else {
-                    // Truncate the previous note to the new note's start
-                    prevNote.endABCMicros = candidateStart;
-                    prevNote.setEndTick(Math.max(prevNote.getStartTick() + 1, qtm.microsToTickABCOrganic(candidateStart)));
-                }
-            }
+            gridDeletion = snapSamePitch(gridDeletion, lastNoteOfPitch, candidateStart, snappedNotes, pitch, note);
 
             note.setStartTick(qtm.microsToTickABCOrganic(candidateStart));
             note.startABCMicros = candidateStart;
@@ -5542,10 +5532,6 @@ public class AbcExporter {
                 }
                 assert note.endABCMicros > note.startABCMicros : "Note duration was <= 0!";
                 assert (note.endABCMicros - note.startABCMicros) >= minimumMicros : "Note duration " + (note.endABCMicros - note.startABCMicros) + " is shorter than minimumMicros!";
-
-                if (prevNote != null && snappedNotes.contains(prevNote)) {
-                    assert prevNote.endABCMicros <= note.startABCMicros : "Same-pitch overlap detected on pitch " + pitch;
-                }
             }
 
             snappedNotes.add(note);
@@ -5554,6 +5540,28 @@ public class AbcExporter {
 
         part.numberOfRemovedNotesFromFitting = gridDeletion;
         return snappedNotes;
+    }
+
+    private int snapSamePitch(int gridDeletion, AbcNoteEvent[] lastNoteOfPitch, long candidateStart, List<AbcNoteEvent> snappedNotes, int pitch, AbcNoteEvent note) {
+        // Resolve same-pitch overlaps (assumes notes are sorted by start time and then duration)
+        AbcNoteEvent prevNote = lastNoteOfPitch[pitch];
+
+        if (prevNote != null && prevNote.endABCMicros > candidateStart) {
+            if (prevNote.startABCMicros >= candidateStart) {
+                // The new note completely eclipses the old one. Delete the old one.
+                snappedNotes.remove(prevNote);
+                gridDeletion++;
+                prevNote = null;
+            } else {
+                // Truncate the previous note to the new note's start
+                prevNote.endABCMicros = candidateStart;
+                prevNote.setEndTick(Math.max(prevNote.getStartTick() + 1, qtm.microsToTickABCOrganic(candidateStart)));
+                assert prevNote.endABCMicros - prevNote.startABCMicros > 0;
+            }
+        }
+        assert prevNote == null || prevNote.endABCMicros <= candidateStart
+                : "Same-pitch overlap on pitch " + pitch;
+        return gridDeletion;
     }
 
     /**
