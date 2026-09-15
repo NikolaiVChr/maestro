@@ -534,7 +534,7 @@ public class AbcExporter {
 	}
 
 	public void exportToAbc(OutputStream os, boolean delayEnabled, String appName, int minDelay) throws AbcConversionException {
-				
+		// AbcExporter.GRID_STATS.reset();
 		// accountForSustain is true so that songbooks wont stop their timer before last note has finished sounding.
 		// lengthenToBar is false for opposite reason, so reporting the correct duration to songbooks.
 		Pair<Long, Long> startEnd = getSongStartEndTick(false, true);
@@ -623,6 +623,11 @@ public class AbcExporter {
                         "An I/O error occurred while writing the ABC file; the output may be incomplete.");
             }
 		}
+		/*
+        for (String line : AbcExporter.GRID_STATS.reportLines()) {
+            System.out.println(line);
+        }
+        */
 	}
 
 	private void outputBadger(PrintStream out) {
@@ -4239,6 +4244,18 @@ public class AbcExporter {
         // notes sum to WEIGHT_SOLO, so weight alone cannot identify them.
         boolean graceOnly = true;
 
+        @Override
+        public String toString() {
+            return "Candidate2{" +
+                    "micros=" + micros +
+                    ", type=" + type +
+                    ", weight=" + weight +
+                    ", placed=" + placed +
+                    ", graceOnly=" + graceOnly +
+                    ", notes=" + notes.size() +
+                    '}';
+        }
+
         // Instead of a single note, we hold all notes participating in this event
         final List<AbcNoteEvent> notes = new ArrayList<>();
 
@@ -4459,7 +4476,20 @@ public class AbcExporter {
 
                 if (c.weight >= WEIGHT_SOLO && floorConflict) {
                     // Forward bounce (solos/arpeggios)
-                    boolean distanceOk = floor.micros() + minimumMicros * 3L / 4L < time;
+
+                    // The 45ms rule is an arpeggio rule: expanding a fast run onto the lattice
+                    // sounds worse than the block chord it becomes. A run needs a third note.
+                    // Two notes are not a run, so nearest slot applies instead.
+                    //
+                    // A pair means: the line behind was not itself displaced or fused, nothing
+                    // was crushed just before, and nothing follows close enough to join.
+                    Long nextStart = startCandidates.higherKey(time);
+                    boolean pairOnly = floor.bounceDepth() == 0
+                            && (lastCrushedTime == -1L || time < lastCrushedTime || time - lastCrushedTime > arpeggioWindow)
+                            && (nextStart == null || nextStart - time >= minimumMicros);
+
+                    long blockChordThreshold = pairOnly ? minimumMicros / 2 : minimumMicros * 3L / 4L;
+                    boolean distanceOk = floor.micros() + blockChordThreshold < time;
                     boolean snowplowActive = floor.bounceDepth() > 0;
 
                     long bounceTime = floor.micros() + minimumMicros;
@@ -4712,7 +4742,7 @@ public class AbcExporter {
                         break; }
                 }
                 if (!added && !floorConflict && ceilConflict && floor != null && allSustain) {
-                    boolean floorIsOwnStart = floor.starts.size() == c.notes.size();
+                    boolean floorIsOwnStart = true;
                     for (AbcNoteEvent n : c.notes) {
                         if (n.startABCMicros != floor.micros()) {
                             floorIsOwnStart = false;
@@ -4725,6 +4755,23 @@ public class AbcExporter {
 
                     long stretch = ceil.micros() - time;              // cost of merging the end up
                     long shift   = floor.micros() - newStart;         // cost of moving the onset
+
+                    if (floorIsOwnStart) {
+                        // Notes that fused onto one line keep separate end candidates when their
+                        // raw ends differ, so a size match is too strict. Require instead that
+                        // every note on the line ends close enough to this candidate to follow
+                        // it onto the same new end line.
+                        for (AbcNoteEvent n : floor.starts) {
+                            if (Math.abs(n.endABCMicros - time) >= minimumMicros/3) {
+                                floorIsOwnStart = false;
+                                break;
+                            }
+                            if (n.initStartABCMicros - newStart >= minimumMicros) {
+                                floorIsOwnStart = false;
+                                break;
+                            }
+                        }
+                    }
 
                     // Only shift when the onset move is smaller than the stretch it avoids.
                     // A 15ms note facing a 55ms stretch is worth a 5ms shift; an 80ms note

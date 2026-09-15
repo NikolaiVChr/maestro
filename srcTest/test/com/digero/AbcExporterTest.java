@@ -350,7 +350,7 @@ class AbcExporterTest {
         assertEquals(1060, snapped.get(1).getStartTick()); // Bounced (14ms drift, within budget)
         assertEquals(1060, snapped.get(2).getStartTick()); // Collapsed (39ms drift, over budget)
         assertEquals(1121, snapped.get(3).getStartTick()); // 61ms clear of 1060, kept as played
-        assertEquals(1121, snapped.get(4).getStartTick()); // Collapsed onto note 4
+        assertEquals(1181, snapped.get(4).getStartTick()); // Snapped to nearest free spot
     }
 
     @Test

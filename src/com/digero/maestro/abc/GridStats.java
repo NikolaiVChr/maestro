@@ -840,5 +840,10 @@ public final class GridStats {
         Arrays.fill(endSafetyCeilDist, 0);
         Arrays.fill(endLastMergeDistFwd, 0);
         Arrays.fill(endLastMergeDistBack, 0);
+        collapseOutOfOrder = 0;
+        conflictEntered = conflictExits = 0;
+        exitExactMatch = exitNewAnchor = exitEndCandidate = exitUnhandled = 0;
+        lrMergeBlocker = lrMergeCeil = lrNewLine = lrCeilFallback = 0;
+        Arrays.fill(intervalError, 0);
     }
 }
