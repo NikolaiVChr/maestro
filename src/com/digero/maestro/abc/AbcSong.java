@@ -2033,7 +2033,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         }
 
         // Fields not needed by worker
-        this.projectFile = null;
+        this.projectFile = other.projectFile;// needed by STATS in abcexporter
         this.exportFile = null;
 
         this.origSong = other;

@@ -35,7 +35,8 @@ public final class GridStats {
     private final long[] crushFwdDist = new long[BUCKETS];
 
     private long plainMerge;
-    private final long[] plainMergeDist = new long[BUCKETS];
+    private final long[] plainMergeDistFwd = new long[BUCKETS];
+    private final long[] plainMergeDistBack = new long[BUCKETS];
 
     private long reliefBounce, relief, reliefCeilNotHeavier;
     private long reliefRefDrift, reliefRefNoRoom, reliefRefInvalid;
@@ -58,7 +59,6 @@ public final class GridStats {
     private long sweepSplitLines;
     private long fwdExactLanding, fwdExactLandingOverwrite, fwdExactLandingEndsChain;
     private final long[] fwdExactLandingWeight = new long[6]; // 1, 2, 3-5, 6-10, 11-20, 21+
-    public int gridStartDeletion, gridEndDeletion;
     private long endDriftDeleted;
     private final long[] endDriftRaw = new long[BUCKETS];        // |candidateEnd - initEnd|
     private final long[] endDriftResidual = new long[BUCKETS];   // |candidateEnd - mandatoryEnd|
@@ -81,6 +81,123 @@ public final class GridStats {
     private long tieOnSnappedDuration, tieOnOrigDuration;
     private long bothLongSnapped, bothLongOrig;
     private final List<String> dissonanceExamples = new ArrayList<>();
+    private final Map<String, long[]> partInput = new HashMap<>();   // label -> {notes, candidates}
+    // -- TYPE_END branch exits --
+    private long endOverwrite, endMergeBlocker, endLastMerge, endLastAdded;
+    private long endOverwriteFwd, endMergeBlockerFwd, endLastMergeFwd;
+    private final long[] endOverwriteDist = new long[BUCKETS];
+    private final long[] endMergeBlockerDist = new long[BUCKETS];
+    private final long[] endLastMergeDist = new long[BUCKETS];
+    private final List<String> endLastAddedExamples = new ArrayList<>();
+    private long endSafetyLine, endSafetyExists;
+    private long endMovedStarts, endMovedStartsGrace;
+    private long endMovedByShift, endMovedByOverwrite;
+    private final long[] endMovedStartDist = new long[BUCKETS];
+    private final long[] endMovedStartDistGrace = new long[BUCKETS];
+    private long safetyLineNonSustain, safetyLineMergeWasLegal, safetyLineMixedSustain;
+    private long endSafetyCeil, endSafetyCeilRefusedPlucked, endSafetyCeilNoRoom;
+    private final long[] endSafetyCeilDist = new long[BUCKETS];
+    private final long[] endLastMergeDistFwd  = new long[BUCKETS];
+    private final long[] endLastMergeDistBack = new long[BUCKETS];
+    private long lrMergeBlocker, lrMergeCeil, lrNewLine, lrCeilFallback;
+
+    synchronized void lastResortArm(int arm, int notes) {
+        switch (arm) {
+            case 1 -> lrMergeBlocker += notes;
+            case 2 -> lrMergeCeil += notes;
+            case 3 -> lrNewLine += notes;
+            case 4 -> lrCeilFallback += notes;
+        }
+    }
+
+    /**
+     * A line laid at ceil - minimumMicros so an end could stop short of the ceiling instead of
+     * being pushed up to it. The mirror of the floor-side safety line. Without it a ceiling
+     * merge is the only option offered, and mergeIsNearer cannot reject it because the
+     * distance is negative.
+     */
+    synchronized void endSafetyLineCeil(int notes, long saved) {
+        endSafetyCeil += notes;
+        endSafetyCeilDist[bucket(saved)] += notes;
+    }
+
+    /** Refused because the notes do not sustain, so the written length is not heard. */
+    synchronized void endSafetyCeilRefusedPlucked(int notes) { endSafetyCeilRefusedPlucked += notes; }
+
+    /** Refused because the slot is blocked or would leave the note under minimumMicros. */
+    synchronized void endSafetyCeilNoRoom(int notes) { endSafetyCeilNoRoom += notes; }
+
+    /**
+     * A safety line laid for notes that do not sustain, where merging down into the blocker
+     * would also have been legal. The line is created only to give the note a legal written
+     * length - which a plucked sample does not need, since it plays out regardless - so every
+     * one of these is a grid line that constrains later candidates for nothing.
+     */
+    synchronized void safetyLineNonSustain(int notes, boolean mergeWasLegal) {
+        safetyLineNonSustain += notes;
+        if (mergeWasLegal) safetyLineMergeWasLegal += notes;
+    }
+
+    /** An end candidate whose notes disagree about sustain - Student's Fiddle territory. */
+    synchronized void safetyLineMixedSustain(int notes) { safetyLineMixedSustain += notes; }
+
+    /**
+     * A note whose onset was moved by end-candidate processing rather than by anything about
+     * its own start: either the whole-note shift moving its line back, or an END overwrite
+     * absorbing the line it sat on.
+     */
+    synchronized void endMovedStart(long delta, boolean grace, boolean byShift) {
+        endMovedStarts++;
+        endMovedStartDist[bucket(delta)]++;
+        if (grace) {
+            endMovedStartsGrace++;
+            endMovedStartDistGrace[bucket(delta)]++;
+        }
+        if (byShift) endMovedByShift++; else endMovedByOverwrite++;
+    }
+
+    synchronized void endSafetyLine(int notes)   { endSafetyLine += notes; }
+    synchronized void endSafetyExists(int notes) { endSafetyExists += notes; }
+
+    /** The end candidate outweighed the blocking line and replaced it at its own position. */
+    synchronized void endOverwriteWeakBlocker(int notes, long delta, String label, long micros) {
+        endOverwrite += notes;
+        endOverwriteDist[bucket(delta)] += notes;
+        if (delta < 0) endOverwriteFwd += notes;
+    }
+
+    /** Merged into the blocker because that still left every note at least minimumMicros long
+     *  and it was the nearer of the two legal ends. */
+    synchronized void endMergeWithBlocker(int notes, long delta, String label, long micros) {
+        endMergeBlocker += notes;
+        endMergeBlockerDist[bucket(delta)] += notes;
+        if (delta < 0) endMergeBlockerFwd += notes;
+    }
+
+    /**
+     * No other branch took it: strapped to the blocker so it does not fall off the grid.
+     * Unlike endMergeWithBlocker this is unconditional, so the move can be any size.
+     * delta = time - blocker.micros(): positive pulls the end back, negative pushes it forward.
+     */
+    synchronized void endLastResortMerge(int notes, long delta, String label, long micros) {
+        endLastMerge += notes;
+        if (delta < 0) {
+            endLastMergeFwd += notes;
+            endLastMergeDistFwd[bucket(delta)] += notes;
+        } else {
+            endLastMergeDistBack[bucket(delta)] += notes;
+        }
+    }
+
+    /** No blocker at all, so a fresh line was created at the candidate's own position.
+     *  Rare by construction - entering the branch requires a conflict, and a conflict
+     *  implies a blocker - so the exemplars are worth reading if this is ever non-zero. */
+    synchronized void endLastResortAdded(int notes, String label, long micros) {
+        endLastAdded += notes;
+        if (endLastAddedExamples.size() < MAX_EXEMPLARS) {
+            endLastAddedExamples.add(label + " @" + micros + "us notes=" + notes);
+        }
+    }
 
     synchronized void dissonanceCluster(int size) {
         dissonanceClusters++;
@@ -257,6 +374,11 @@ public final class GridStats {
      */
     synchronized void classifyStart(AbcExporter.Candidate2 sc, long graceThreshold, boolean percussion, String label) {
         notesSeen += sc.notes.size();
+
+        long[] pi = partInput.computeIfAbsent(label, k -> new long[2]);
+        pi[0] += sc.notes.size();
+        pi[1]++;
+
         boolean allShort = true;
         long minDur = Long.MAX_VALUE, maxDur = Long.MIN_VALUE;
         for (AbcNoteEvent n : sc.notes) {
@@ -294,8 +416,11 @@ public final class GridStats {
 
     /** delta = time - target. Positive means the note was pulled backward. */
     synchronized void crush(int notes, long delta) {
-        if (delta >= 0) { crushBack += notes; addDisplacement(crushBackDist, delta, notes); }
-        else { crushFwd += notes; addDisplacement(crushFwdDist, delta, notes); }
+        if (delta >= 0) {
+            crushBack += notes; addDisplacement(crushBackDist, delta, notes);
+        } else {
+            crushFwd += notes; addDisplacement(crushFwdDist, delta, notes);
+        }
         conflictExits += notes;
     }
 
@@ -305,9 +430,16 @@ public final class GridStats {
         conflictExits += notes;
     }
 
+    /**
+     * delta positive when back
+     */
     synchronized void plainMerge(int notes, long delta) {
         plainMerge += notes;
-        addDisplacement(plainMergeDist, delta, notes);
+        if (delta >= 0) {
+            addDisplacement(plainMergeDistBack, delta, notes);
+        } else {
+            addDisplacement(plainMergeDistFwd, delta, notes);
+        }
         conflictExits += notes;
     }
 
@@ -453,8 +585,11 @@ public final class GridStats {
         out.add("    " + hist(crushFwdDist));
         out.add(String.format(Locale.ROOT, "group collapse=%d  >=30ms: %s  (out-of-order rejected: %d)",
                 collapseMerge, over(collapseDist, 6), collapseOutOfOrder));
-        out.add(String.format(Locale.ROOT, "plain merge=%d  >=30ms: %s", plainMerge, over(plainMergeDist, 6)));
-        out.add("    " + hist(plainMergeDist));
+        out.add(String.format(Locale.ROOT, "plain merge=%d", plainMerge));
+        out.add(String.format(Locale.ROOT, "  fwd  >=30ms: %s", over(plainMergeDistFwd, 6)));
+        out.add("    " + hist(plainMergeDistFwd));
+        out.add(String.format(Locale.ROOT, "  back >=30ms: %s", over(plainMergeDistBack, 6)));
+        out.add("    " + hist(plainMergeDistBack));
 
         out.add("-- relief branch (crowded by a heavier chord just ahead in timeline) --");
         long reliefRefTotal = reliefRefDrift + reliefRefNoRoom + reliefRefInvalid;
@@ -513,8 +648,6 @@ public final class GridStats {
                 exitExactMatch, exitNewAnchor, exitEndCandidate, exitUnhandled));
 
         out.add("== snap to grid ==");
-        out.add(String.format(Locale.ROOT, "deletedDueToStartDrift=%d  deletedDueToEndDrift=%d",
-                gridStartDeletion, gridEndDeletion));
         out.add("-- end-drift deletions --");
         out.add(String.format(Locale.ROOT, "deleted=%d  of which played shorter than minimumMicros: %d (%s)",
                 endDriftDeleted, endDriftShorterThanMin, pct(endDriftShorterThanMin, endDriftDeleted)));
@@ -550,6 +683,44 @@ public final class GridStats {
         out.add("   gap to previous shift(ms): " + hist(shiftGapToPrev));
         for (String s : endShiftedExamples) out.add("    " + s);
 
+        out.add("-- end candidate exits --");
+        out.add(String.format(Locale.ROOT, "overwrote weak blocker=%d (fwd %d)  merged with blocker=%d (fwd %d)",
+                endOverwrite, endOverwriteFwd, endMergeBlocker, endMergeBlockerFwd));
+        out.add("   overwrite dist(ms): " + hist(endOverwriteDist));
+        out.add("   merge dist(ms): " + hist(endMergeBlockerDist));
+        out.add(String.format(Locale.ROOT, "last resort merge=%d   last resort new line=%d  <-- expect 0",
+                endLastMerge, endLastAdded));
+        out.add(String.format(Locale.ROOT, "   fwd=%d  >=30ms: %s", endLastMergeFwd, over(endLastMergeDistFwd, 6)));
+        out.add("     " + hist(endLastMergeDistFwd));
+        out.add(String.format(Locale.ROOT, "   back=%d  >=30ms: %s", endLastMerge - endLastMergeFwd, over(endLastMergeDistBack, 6)));
+        out.add("     " + hist(endLastMergeDistBack));
+        out.add(String.format(Locale.ROOT, "   arms: blocker=%d  ceil(conflict)=%d  new line=%d  ceil(fallback)=%d",
+                lrMergeBlocker, lrMergeCeil, lrNewLine, lrCeilFallback));
+        for (String s : endLastAddedExamples) out.add("    " + s);
+        out.add(String.format(Locale.ROOT, "safety line added=%d   merged onto existing safety position=%d",
+                endSafetyLine, endSafetyExists));
+        out.add(String.format(Locale.ROOT, "safety line (ceiling side)=%d   refused: plucked=%d  no room=%d",
+                endSafetyCeil, endSafetyCeilRefusedPlucked, endSafetyCeilNoRoom));
+        out.add("   stretch avoided(ms): " + hist(endSafetyCeilDist));
+        out.add(String.format(Locale.ROOT, "whole-note shift=%d", endShiftedNotes));
+        out.add(String.format(Locale.ROOT, "   accounted: %d of %d entering the end branch  <-- expect equal",
+                endOverwrite + endMergeBlocker + endLastMerge + endLastAdded
+                        + endSafetyLine + endSafetyCeil + endSafetyExists + endShiftedNotes,
+                exitEndCandidate));
+        out.add(String.format(Locale.ROOT, "safety line added=%d   merged onto existing safety position=%d",
+                endSafetyLine, endSafetyExists));
+        out.add(String.format(Locale.ROOT, "   of which all notes non-sustaining: %d (%s)  - merging down was legal for %d",
+                safetyLineNonSustain, pct(safetyLineNonSustain, endSafetyLine), safetyLineMergeWasLegal));
+        out.add(String.format(Locale.ROOT, "   candidates with mixed sustain: %d", safetyLineMixedSustain));
+
+        out.add("-- onsets moved by end processing --");
+        out.add(String.format(Locale.ROOT, "starts moved=%d  (whole-note shift=%d, END overwrite=%d)",
+                endMovedStarts, endMovedByShift, endMovedByOverwrite));
+        out.add(String.format(Locale.ROOT, "   of which grace-length: %d (%s)",
+                endMovedStartsGrace, pct(endMovedStartsGrace, endMovedStarts)));
+        out.add("   all(ms): " + hist(endMovedStartDist));
+        out.add("   grace(ms): " + hist(endMovedStartDistGrace));
+
         out.add("-- collapsed dissonance --");
         out.add(String.format(Locale.ROOT, "clusters>=2: %d  dissonant pairs: %d  dropped: %d",
                 dissonanceClusters, dissonancePairs, dissonanceDropped));
@@ -582,6 +753,13 @@ public final class GridStats {
                 .forEach(e -> out.add(String.format(Locale.ROOT, "  %6s  %6d/%-6d  %s",
                         pct(e.getValue()[1], e.getValue()[0]),
                         e.getValue()[1], e.getValue()[0], e.getKey())));
+        /*
+        out.add("-- per-part input (notes, startCandidates) --");
+        partInput.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(e -> out.add(String.format(Locale.ROOT, "  %d\t%d\t%s",
+                        e.getValue()[0], e.getValue()[1], e.getKey())));
+        */
         out.add("===================================");
         return out;
     }
@@ -597,7 +775,8 @@ public final class GridStats {
         Arrays.fill(collapseDist, 0);
         Arrays.fill(crushBackDist, 0);
         Arrays.fill(crushFwdDist, 0);
-        Arrays.fill(plainMergeDist, 0);
+        Arrays.fill(plainMergeDistBack, 0);
+        Arrays.fill(plainMergeDistFwd, 0);
         reliefBounce = reliefCeilNotHeavier = 0;
         reliefRefDrift = reliefRefNoRoom = reliefRefInvalid = 0;
         Arrays.fill(reliefDist, 0);
@@ -621,7 +800,6 @@ public final class GridStats {
         fwdExactLandingOverwrite = 0;
         fwdExactLandingEndsChain = 0;
         Arrays.fill(fwdExactLandingWeight, 0);
-        gridStartDeletion = gridEndDeletion = 0;
         endDriftDeleted = endDriftShorterThanMin = 0;
         Arrays.fill(endDriftRaw, 0);
         Arrays.fill(endDriftResidual, 0);
@@ -646,5 +824,21 @@ public final class GridStats {
         Arrays.fill(dissonanceClusterSize, 0);
         Arrays.fill(dissonanceDroppedInterval, 0);
         dissonanceExamples.clear();
+        partInput.clear();
+        endOverwrite = endMergeBlocker = endLastMerge = endLastAdded = 0;
+        endOverwriteFwd = endMergeBlockerFwd = endLastMergeFwd = 0;
+        endSafetyLine = endSafetyExists = 0;
+        Arrays.fill(endOverwriteDist, 0);
+        Arrays.fill(endMergeBlockerDist, 0);
+        Arrays.fill(endLastMergeDist, 0);
+        endLastAddedExamples.clear();
+        endMovedStarts = endMovedStartsGrace = endMovedByShift = endMovedByOverwrite = 0;
+        Arrays.fill(endMovedStartDist, 0);
+        Arrays.fill(endMovedStartDistGrace, 0);
+        safetyLineNonSustain = safetyLineMergeWasLegal = safetyLineMixedSustain = 0;
+        endSafetyCeil = endSafetyCeilRefusedPlucked = endSafetyCeilNoRoom = 0;
+        Arrays.fill(endSafetyCeilDist, 0);
+        Arrays.fill(endLastMergeDistFwd, 0);
+        Arrays.fill(endLastMergeDistBack, 0);
     }
 }
