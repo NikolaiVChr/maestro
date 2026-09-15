@@ -109,6 +109,9 @@ public class AbcNoteEvent extends NoteEvent {
 		return next;
 	}
 
+	/* Deliberately not implemented: chordifyOrganic and unmixRestAndNotes rely on
+	 * List.remove/indexOf matching by identity. Two segments can agree on tick range,
+	 * pitch and velocity, so value equality would make them remove the wrong element. */
 	/*@Override
 	public boolean equals(Object obj) {
 		if (obj instanceof AbcNoteEvent) {

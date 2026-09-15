@@ -5735,7 +5735,7 @@ public class AbcExporter {
 		
 		// Add rests between the notes
 		List<AbcNoteEvent> rests = new ArrayList<>(events.size());
-		List<AbcNoteEvent> restTrash = new ArrayList<>();
+        Set<AbcNoteEvent> restTrash = new HashSet<>();//removeAll(hashset) faster than removeAll(ArrayList)
 		List<AbcNoteEvent> potentialTrash = new ArrayList<>();
 		long lastEndMicros = 0L;
 		long lastEndTick = 0L;// prevChordsShortest ending
@@ -5870,7 +5870,7 @@ public class AbcExporter {
 					// One of the notes that was removed might be any in this chord,
 					// so we go steps back and re-process
 					i = startI-1;
-					chords.remove(curChord);
+                    chords.removeLast();//remove curChord
 					curChord = null;
 					continue;
 				}
@@ -5884,7 +5884,7 @@ public class AbcExporter {
 				if (!deadnotes.isEmpty()) {
 					// we go steps back and re-process
 					i = startI-1;
-					chords.remove(curChord);
+					chords.removeLast();//remove curChord
 					curChord = null;					
 					continue;
 				}
@@ -5988,6 +5988,7 @@ public class AbcExporter {
 				curChord.remove(note);
 				eventSegments.remove(note);
 				removedStuff = true;
+                continue;
 			}
 			for (AbcNoteEvent note2 : tmp) {
 				if (note != note2 && note.note == note2.note) {
