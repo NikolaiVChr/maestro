@@ -3808,6 +3808,10 @@ public class AbcExporter {
 		NavigableSet<Long> grid = null;
 
         if (upgraded) {
+            // For the rest of this pipeline we will work with micros.
+            // Ticks will only be used to create the ABC preview midi.
+            initABCMicros(events);
+
             // Thin runs too dense for the lattice before the grid sees them. Without this a
             // fast slide is crushed onto one line as a cluster of six or more pitches, where
             // single-stage thins it to the notes that can actually be articulated.
@@ -4308,22 +4312,22 @@ public class AbcExporter {
      * a run of them is a rhythm, and thinning it would remove beats.
      *
      * Each voice is then thinned independently on the same 60ms clock, so parallel voices keep
-     * their survivors together and a dyad slide comes out as dyads. The first and last note of
-     * a voice are always kept, the last is what the slide arrives at.
+     * their survivors together, and a dyad slide comes out as dyads. The first and last note of
+     * a voice are always kept; the last is what the slide arrives at.
      *
      * Runs before createGridV2. Deciding that material cannot be articulated is a
-     * judgement about the source, not about grid geometry, and it needs time-ordered lookahead
+     * judgment about the source, not about grid geometry, and it needs time-ordered lookahead
      * which the weight-sorted candidate loop cannot provide.
      */
     private List<AbcNoteEvent> thinDenseRuns(List<AbcNoteEvent> events, long minimumMicros, AbcPart part) {
 
-        // --- knobs -------------------------------------------------------------------------
+        // --- Constants --------------------------------------------------------------------
         // Set false to measure without deleting: voices are still found and every note that
         // would be dropped is still recorded in GRID_STATS.
         final boolean THIN_ENABLED = true;
 
         // Largest gap between consecutive notes of one voice. Pitch continuity does most of
-        // the discriminating now, so this can be looser than the old chain gap; it mainly
+        // the discriminating now; it mainly
         // needs to admit the slightly longer step a slide often takes into its arrival note.
         final long VOICE_MAX_ONSET_GAP = minimumMicros* 5L/6L;
 
@@ -4365,7 +4369,7 @@ public class AbcExporter {
         TreeMap<Long, List<AbcNoteEvent>> byOnset = new TreeMap<>();
         for (AbcNoteEvent note : events) {
             if (note.note == Note.REST) continue;
-            byOnset.computeIfAbsent(qtm.tickToMicrosABCOrganic(note.getStartTick()), k -> new ArrayList<>()).add(note);
+            byOnset.computeIfAbsent(note.startABCMicros, k -> new ArrayList<>()).add(note);
         }
 
         class Voice {
@@ -4395,7 +4399,7 @@ public class AbcExporter {
             // Each voice may take at most one note per onset, or a chord would fold into one voice.
             Set<Voice> taken = Collections.newSetFromMap(new IdentityHashMap<>());
             for (AbcNoteEvent note : onset.getValue()) {
-                long dur = qtm.tickToMicrosABCOrganic(note.getEndTick()) - time;
+                long dur = note.endABCMicros - time;
                 boolean isLong = dur > VOICE_MAX_NOTE_MICROS;
 
                 Voice best = null;
@@ -4433,7 +4437,7 @@ public class AbcExporter {
         String label = GRID_STATS_ENABLED ? statsLabel(part) : "";
         for (Voice v : finished) {
             thinVoice(v.notes, v.times, doomed, THIN_SPACING, VOICE_MIN_NOTES, VOICE_MIN_NOTES_STACCATO,
-                    STACCATO_OVERLAP_TOLERANCE, VOICE_MAX_NOTE_MICROS, label);
+                    STACCATO_OVERLAP_TOLERANCE, VOICE_MAX_NOTE_MICROS, label, part.getInstrument());
         }
 
         if (!THIN_ENABLED || doomed.isEmpty()) return events;
@@ -4450,12 +4454,12 @@ public class AbcExporter {
      * and always the last. One refinement, taken from single-stage: a short note that would
      * otherwise survive yields if the next note is close and is itself certain to survive
      * (long, or the run's final note). The two cannot both hold a line, and the arrival note
-     * is the one the gesture is aiming at - keeping the short one would only drag the arrival
+     * is the one the gesture is aiming at, keeping the short one would only drag the arrival
      * note backward onto it.
      */
     private void thinVoice(List<AbcNoteEvent> notes, List<Long> times, Set<AbcNoteEvent> doomed,
                            long thinSpacing, int minNotes, int minNotesStaccato, long overlapTolerance,
-                           long maxNoteMicros, String label) {
+                           long maxNoteMicros, String label, LotroInstrument instrument) {
 
         int n = notes.size();
         if (n < minNotesStaccato) return;
@@ -4464,7 +4468,7 @@ public class AbcExporter {
         // unambiguously a line and may be thinned at a shorter length.
         boolean staccato = true;
         for (int i = 0; i < n - 1; i++) {
-            long end = qtm.tickToMicrosABCOrganic(notes.get(i).getEndTick());
+            long end = notes.get(i).endABCMicros;
             if (end > times.get(i + 1) + overlapTolerance) {
                 staccato = false;
                 break;
@@ -4483,7 +4487,7 @@ public class AbcExporter {
             long t = times.get(i);
             AbcNoteEvent note = notes.get(i);
 
-            if (qtm.tickToMicrosABCOrganic(note.getEndTick()) - t > maxNoteMicros) {
+            if (note.endABCMicros - t > maxNoteMicros) {
                 lastKept = t;
                 lastKeptIdx = i;
                 continue;
@@ -4494,15 +4498,17 @@ public class AbcExporter {
             if (!drop) {
                 long tNext = times.get(i + 1);
                 boolean nextIsLast = (i + 1 == n - 1);
-                boolean nextIsLong = qtm.tickToMicrosABCOrganic(notes.get(i + 1).getEndTick()) - tNext > maxNoteMicros;
+                boolean nextIsLong = notes.get(i + 1).endABCMicros - tNext > maxNoteMicros;
 
                 if ((nextIsLast || nextIsLong) && tNext - t < thinSpacing) {
                     // Yielding to the arrival note. If the previous survivor ends before the
                     // arrival, dropping this note would leave a hole there, which the grid then
                     // renders as a rest. A slide is legato, so let the survivor sound through.
                     AbcNoteEvent prev = notes.get(lastKeptIdx);
-                    if (qtm.tickToMicrosABCOrganic(prev.getEndTick()) < tNext) {
-                        prev.setEndTick(qtm.microsToTickABCOrganic(tNext));
+                    if (prev.initEndABCMicros < tNext) {
+                        if (GRID_STATS_ENABLED) GRID_STATS.yieldExtension(tNext - prev.initEndABCMicros);
+                        prev.initEndABCMicros = tNext;
+                        prev.endABCMicros = tNext;
                     }
                     drop = true;
                 }
@@ -4517,7 +4523,42 @@ public class AbcExporter {
                 lastKeptIdx = i;
             }
         }
-        if (GRID_STATS_ENABLED) GRID_STATS.voiceThinned(n, dropped);
+        if (GRID_STATS_ENABLED) {
+            GRID_STATS.voiceThinned(n, dropped);
+
+            long lastEnd = notes.get(n - 1).endABCMicros;
+            long duration = lastEnd - times.get(0);
+            long meanGap = (times.get(n - 1) - times.get(0)) / (n - 1);
+
+            int maxInterval = 0, reversals = 0, lastSign = 0;
+            for (int i = 1; i < n; i++) {
+                int delta = notes.get(i).note.id - notes.get(i - 1).note.id;
+                maxInterval = Math.max(maxInterval, Math.abs(delta));
+                int sign = Integer.signum(delta);
+                if (sign != 0 && lastSign != 0 && sign != lastSign) reversals++;
+                if (sign != 0) lastSign = sign;
+            }
+            GRID_STATS.voiceProfile(duration, meanGap, maxInterval, reversals, n, dropped, instrument.toString());
+        }
+    }
+
+    /**
+     * Part of organic multi-stage 2 path.
+     *
+     * The one place ticks become micros. Everything after this - the thinning pre-pass,
+     * createGridV2, snapNotesToGrid3 - reads and writes the micros fields only. Ticks are a
+     * lossy projection of micros, so converting back and forth loses time; converting once
+     * and staying in micros does not.
+     */
+    private void initABCMicros(List<AbcNoteEvent> events) {
+        for (AbcNoteEvent note : events) {
+            long rawStart = qtm.tickToMicrosABCOrganic(note.getStartTick());
+            long rawEnd = qtm.tickToMicrosABCOrganic(note.getEndTick());
+            note.initStartABCMicros = rawStart;
+            note.initEndABCMicros = rawEnd;// Might get modified by thinVoices
+            note.startABCMicros = rawStart;
+            note.endABCMicros = rawEnd;
+        }
     }
 
     /**
@@ -4557,17 +4598,9 @@ public class AbcExporter {
         Map<Long, Candidate2> endCandidates = new HashMap<>();
 
         for (AbcNoteEvent note : events) {
-            long rawStartMicros = qtm.tickToMicrosABCOrganic(note.getStartTick());
-            long rawEndMicros = qtm.tickToMicrosABCOrganic(note.getEndTick());
+            long rawStartMicros = note.initStartABCMicros;
+            long rawEndMicros = note.initEndABCMicros;
             long rawDuration = rawEndMicros - rawStartMicros;
-
-            // Lock in the immutable original times for future safety checks
-            note.initStartABCMicros = rawStartMicros;
-            note.initEndABCMicros = rawEndMicros;
-
-            // Set the mutable times
-            note.startABCMicros = rawStartMicros;
-            note.endABCMicros = rawEndMicros;
 
             // We don't give plucked notes minimum dura like in single-stage. Due to how we here
             // process starts seperate from ends, it would not improve anything.
@@ -4617,6 +4650,7 @@ public class AbcExporter {
         final long firstMicros = getExportStartMicrosABC();
         grid.add(new GridPoint2(firstMicros, 0, Integer.MAX_VALUE));
 
+        /*
         // The absolute last microsecond of the track.
         // Derived from the notes, not from candidates.getLast(): that list is sorted by
         // weight descending, so its tail is the lowest-weight candidate, not the latest one.
@@ -4628,6 +4662,7 @@ public class AbcExporter {
         for (AbcNoteEvent note : events) {
             endOfTrack = Math.max(endOfTrack, note.endABCMicros);
         }
+        */
 
         // Tracks the time of the last note that failed a bounce and was forced to crush
         long lastCrushedTime = -1L;
@@ -4718,7 +4753,7 @@ public class AbcExporter {
 
                     // The 45ms rule is an arpeggio rule: expanding a fast run onto the lattice
                     // sounds worse than the block chord it becomes. A run needs a third note.
-                    // Two notes are not a run, so nearest slot applies instead.
+                    // Two notes are not a run, so the nearest free spot applies instead.
                     //
                     // A pair means: the line behind was not itself displaced or fused, nothing
                     // was crushed just before, and nothing follows close enough to join.
@@ -5257,6 +5292,8 @@ public class AbcExporter {
                 }
                 GRID_STATS.lineOccupancy(n, n - pitches.size());
                 GRID_STATS.lineOnsets(onsets.size());
+
+                if (onsets.size() >= 3) classifyStack(gp, minimumMicros, part);
             }
         }
 
@@ -7533,5 +7570,43 @@ public class AbcExporter {
         }
         return song + " {" + src + "} / #" + part.getPartNumber() + " " + part.getTitle()
                 + " [" + part.getInstrument() + "]";
+    }
+
+    /**
+     * A line holding three or more played onsets has flattened a figure. Ask what kind, using
+     * the same two signals the thinning pre-pass uses: do the notes overlap, and how far apart
+     * are consecutive pitches. Overlapping, wide steps: a strum, and stacking is what it should
+     * be. Released or small steps: a run that should have been thinned and was not.
+     */
+    private void classifyStack(GridPoint2 gp, long minimumMicros, AbcPart part) {
+        List<AbcNoteEvent> byOnset = new ArrayList<>(gp.starts);
+        byOnset.sort(Comparator.comparingLong((AbcNoteEvent x) -> x.initStartABCMicros)
+                .thenComparingInt(x -> x.note.id));
+
+        int released = 0, steps = 0, small = 0, wide = 0;
+        long spanMicros = byOnset.getLast().initStartABCMicros - byOnset.getFirst().initStartABCMicros;
+        boolean allShort = true;
+
+        for (int i = 0; i < byOnset.size(); i++) {
+            AbcNoteEvent a = byOnset.get(i);
+            if (a.initEndABCMicros - a.initStartABCMicros >= minimumMicros) allShort = false;
+
+            // Compare with the next note that starts later, skipping chord-mates at the same onset.
+            AbcNoteEvent b = null;
+            for (int j = i + 1; j < byOnset.size(); j++) {
+                if (byOnset.get(j).initStartABCMicros > a.initStartABCMicros) { b = byOnset.get(j); break; }
+            }
+            if (b == null) break;
+
+            steps++;
+            if (a.initEndABCMicros <= b.initStartABCMicros + minimumMicros / 12) released++;
+            int interval = Math.abs(b.note.id - a.note.id);
+            if (interval >= 1 && interval <= 2) small++; else if (interval >= 3) wide++;
+        }
+
+        boolean strum = released == 0 && wide > small;
+        boolean run   = released == steps || small > wide;
+        GRID_STATS.stackedFigure(byOnset.size(), spanMicros, strum, run, allShort,
+                part.getInstrument().isPercussion, statsLabel(part), gp.micros());
     }
 }

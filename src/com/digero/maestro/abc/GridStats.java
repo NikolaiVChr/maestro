@@ -100,11 +100,63 @@ public final class GridStats {
     private final long[] endLastMergeDistFwd  = new long[BUCKETS];
     private final long[] endLastMergeDistBack = new long[BUCKETS];
     private long lrMergeBlocker, lrMergeCeil, lrNewLine, lrCeilFallback;
+    // -- voices
     private long voicesFound, voicesThinned, thinnedNotes;
     private final long[] voiceLength = new long[12];         // 4 .. 15+
     private final long[] thinnedGapToKept = new long[BUCKETS];
     private final List<String> thinnedExamples = new ArrayList<>();
     private long voicesStaccato;
+    // -- voice profile: what the thinned runs actually look like --
+    private final long[] voiceDuration    = new long[11];   // played span: 0-99ms, 100-199 ... 900-999, 1000+
+    private final long[] voiceMeanGap     = new long[10];   // mean onset spacing: 0-4, 5-9 ... 40-44, 45+
+    private final long[] voiceMaxInterval = new long[5];    // widest step: 1, 2, 3, 4 (index 0 unused)
+    private final long[] voiceReversals   = new long[4];    // direction changes: 0, 1, 2-3, 4+
+    private final long[] voiceSurvival    = new long[5];    // kept/total: <25%, <50%, <75%, <100%, 100%
+    private long yieldExtensions, yieldExtendedMicros;
+    private final Map<String, long[]> thinnedByInstrument = new HashMap<>();   // {voices, notes dropped}
+    private long stackStrum, stackRun, stackMixed, stackPercussion, stackAllShort;
+    private final long[] stackSpan = new long[13];   // played span, 5ms buckets to 60+
+    private final List<String> stackRunExamples = new ArrayList<>();
+
+    synchronized void stackedFigure(int notes, long spanMicros, boolean strum, boolean run,
+                                    boolean allShort, boolean percussion, String label, long micros) {
+        if (percussion) { stackPercussion++; return; }
+        if (strum) stackStrum++;
+        else if (run) {
+            stackRun++;
+            if (stackRunExamples.size() < MAX_EXEMPLARS) {
+                stackRunExamples.add(label + " @" + micros + "us notes=" + notes + " span=" + spanMicros + "us");
+            }
+        } else stackMixed++;
+        if (allShort) stackAllShort++;
+        stackSpan[bucket(spanMicros)]++;
+    }
+
+    /**
+     * One thinned voice, described. Duration and gap say whether it is a flick or a passage,
+     * maxInterval whether it is chromatic (1), diatonic (2) or an arpeggio (3-4), reversals
+     * whether it is a slide (0) or a trill (many), survival how hard it was hit.
+     */
+    synchronized void voiceProfile(long durationMicros, long meanGapMicros, int maxInterval,
+                                   int reversals, int total, int dropped, String instrument) {
+        voiceDuration[(int) Math.min(durationMicros / 100_000L, voiceDuration.length - 1)]++;
+        voiceMeanGap[(int) Math.min(meanGapMicros / 5_000L, voiceMeanGap.length - 1)]++;
+        voiceMaxInterval[Math.min(Math.max(maxInterval, 1), voiceMaxInterval.length - 1)]++;
+        voiceReversals[reversals == 0 ? 0 : reversals == 1 ? 1 : reversals <= 3 ? 2 : 3]++;
+        int kept = total - dropped;
+        int pct = kept * 100 / total;
+        voiceSurvival[pct >= 100 ? 4 : pct >= 75 ? 3 : pct >= 50 ? 2 : pct >= 25 ? 1 : 0]++;
+
+        long[] t = thinnedByInstrument.computeIfAbsent(instrument, k -> new long[2]);
+        t[0]++;
+        t[1] += dropped;
+    }
+
+    /** A survivor extended to reach the arrival note it yielded to. */
+    synchronized void yieldExtension(long extendedByMicros) {
+        yieldExtensions++;
+        yieldExtendedMicros += extendedByMicros;
+    }
 
     synchronized void voiceFound(int length, boolean staccato) {
         voicesFound++;
@@ -567,6 +619,16 @@ public final class GridStats {
         inst[1] += over;
     }
 
+    private static String fixedHist(long[] a, int step, String lastLabel) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < a.length; i++) {
+            if (a[i] == 0) continue;
+            String lbl = (i == a.length - 1) ? lastLabel : (i * step) + "-" + ((i + 1) * step - 1);
+            sb.append("  ").append(lbl).append("=").append(a[i]);
+        }
+        return sb.length() == 0 ? "(none)" : sb.toString();
+    }
+
     /** Returns the report as individual lines, so callers can emit one log record each. */
     /** Returns the report as individual lines, so callers can emit one log record each. */
     public synchronized List<String> reportLines() {
@@ -576,10 +638,25 @@ public final class GridStats {
                 voicesFound, voicesStaccato, voicesThinned, thinnedNotes, pct(thinnedNotes, notesSeen)));
         StringBuilder vl = new StringBuilder();
         for (int i = 0; i < voiceLength.length; i++) {
-            if (voiceLength[i] > 0) vl.append("  ").append(i + 4).append(i == voiceLength.length - 1 ? "+" : "").append("=").append(voiceLength[i]);
+            if (voiceLength[i] > 0) vl.append("  ").append(i + 3).append(i == voiceLength.length - 1 ? "+" : "").append("=").append(voiceLength[i]);
         }
         out.add("   voice length:" + (vl.length() == 0 ? " (none)" : vl));
         out.add("   gap to last kept(ms): " + hist(thinnedGapToKept));
+        out.add("   duration(ms): " + fixedHist(voiceDuration, 100, "1000+"));
+        out.add("   mean onset gap(ms): " + fixedHist(voiceMeanGap, 5, "45+"));
+        out.add(String.format(Locale.ROOT, "   widest step: 1st=%d  2nd=%d  3rd=%d  4th=%d",
+                voiceMaxInterval[1], voiceMaxInterval[2], voiceMaxInterval[3], voiceMaxInterval[4]));
+        out.add(String.format(Locale.ROOT, "   direction changes: none=%d  one=%d  2-3=%d  4+=%d   (none = slide, many = trill)",
+                voiceReversals[0], voiceReversals[1], voiceReversals[2], voiceReversals[3]));
+        out.add(String.format(Locale.ROOT, "   survival: <25%%=%d  <50%%=%d  <75%%=%d  <100%%=%d  all=%d",
+                voiceSurvival[0], voiceSurvival[1], voiceSurvival[2], voiceSurvival[3], voiceSurvival[4]));
+        out.add(String.format(Locale.ROOT, "   yield extensions: %d  avg %dms",
+                yieldExtensions, yieldExtensions == 0 ? 0 : yieldExtendedMicros / yieldExtensions / 1000));
+        out.add("   by instrument (voices / notes dropped):");
+        thinnedByInstrument.entrySet().stream()
+                .sorted((a, b) -> Long.compare(b.getValue()[1], a.getValue()[1]))
+                .forEach(e -> out.add(String.format(Locale.ROOT, "     %6d / %-6d %s",
+                        e.getValue()[0], e.getValue()[1], e.getKey())));
         for (String s : thinnedExamples) out.add("    " + s);
 
         out.add("===== createGridV2 statistics =====");
@@ -664,6 +741,12 @@ public final class GridStats {
         out.add("   " + (ons.length() == 0 ? "(none)" : ons));
         out.add(String.format(Locale.ROOT, "lines fusing 3+ separate onsets: %d (%s of lines)",
                 fused, pct(fused, linesWithOnsets)));
+
+        out.add("-- flattened figures (3+ played onsets on one line) --");
+        out.add(String.format(Locale.ROOT, "strum=%d  run=%d  mixed=%d  percussion=%d   all notes short: %d",
+                stackStrum, stackRun, stackMixed, stackPercussion, stackAllShort));
+        out.add("   played span(ms): " + hist(stackSpan));
+        for (String s : stackRunExamples) out.add("    " + s);
 
         out.add("-- final sweep (grid repairing itself) --");
         out.add(String.format(Locale.ROOT, "lines dropped as too close: %d  <-- expect 0", sweepDropped));
@@ -883,6 +966,15 @@ public final class GridStats {
         Arrays.fill(voiceLength, 0);
         Arrays.fill(thinnedGapToKept, 0);
         thinnedExamples.clear();
-
+        Arrays.fill(voiceDuration, 0);
+        Arrays.fill(voiceMeanGap, 0);
+        Arrays.fill(voiceMaxInterval, 0);
+        Arrays.fill(voiceReversals, 0);
+        Arrays.fill(voiceSurvival, 0);
+        yieldExtensions = yieldExtendedMicros = 0;
+        thinnedByInstrument.clear();
+        stackStrum = stackRun = stackMixed = stackPercussion = stackAllShort = 0;
+        Arrays.fill(stackSpan, 0);
+        stackRunExamples.clear();
     }
 }
