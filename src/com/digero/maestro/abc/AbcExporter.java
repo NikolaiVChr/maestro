@@ -2297,10 +2297,11 @@ public class AbcExporter {
 		for (int t = 0; t < part.getTrackCount(); t++) {
 			if (part.isTrackEnabled(t)) {
 				List<MidiNoteEvent> listOfNotes = expandXtraDrumNotes(part, t);
-				
+
 				applyLegato(part, t, listOfNotes);
 				
 				for (MidiNoteEvent ne : listOfNotes) {
+                    //System.out.println("note(track, "+((int)Math.round(ne.getStartMicros()/1000.0))+", "+((int)Math.round((ne.getEndMicros()-ne.getStartMicros())/1000.0))+", Note."+ne.note.name()+");");
 					// Skip notes that are outside the play range.
 					if (ne.getEndTick() <= exportStartTick) {//  || ne.getStartTick() >= exportEndTick
 						//if (part.mapNoteEvent(t, ne) != null && part.shouldPlay(ne, t)) System.out.println(metadata.getSongTitle()+": Skipping note that are outside songs time range.\n"+ne);
@@ -3807,6 +3808,11 @@ public class AbcExporter {
 		NavigableSet<Long> grid = null;
 
         if (upgraded) {
+            // Thin runs too dense for the lattice before the grid sees them. Without this a
+            // fast slide is crushed onto one line as a cluster of six or more pitches, where
+            // single-stage thins it to the notes that can actually be articulated.
+            events = thinDenseRuns(events, minimumMicros, part);
+
             // lay out the grid and snap to it in same go
             grid = createGridV2(events, minimumMicros, part, part.getAbcSong().getSequenceInfo().getDataCache().getBarLengthTicks());
 
@@ -4286,6 +4292,233 @@ public class AbcExporter {
     public static final GridStats GRID_STATS = new GridStats();
     // true to output multistage 2 info from createGridV2 when AutoExporter has ran.
     public static final boolean GRID_STATS_ENABLED = false;
+
+
+    /**
+     * Part of organic multi-stage 2 path.
+     *
+     * Thins runs too dense for the lattice, before the grid sees them. Without this a fast
+     * slide is crushed onto one line as a cluster of six or more pitches; single-stage instead
+     * drops what cannot be articulated and keeps the gesture legible.
+     *
+     * Notes are first assigned to voices: a note joins the voice whose last pitch is nearest,
+     * within a small interval, if that voice was last heard a moment ago. A slide is one voice;
+     * a slide in parallel thirds is two voices side by side; a melody an octave away never
+     * matches on interval and so is never touched. Repeated notes (interval 0) do not join -
+     * a run of them is a rhythm, and thinning it would remove beats.
+     *
+     * Each voice is then thinned independently on the same 60ms clock, so parallel voices keep
+     * their survivors together and a dyad slide comes out as dyads. The first and last note of
+     * a voice are always kept, the last is what the slide arrives at.
+     *
+     * Runs before createGridV2. Deciding that material cannot be articulated is a
+     * judgement about the source, not about grid geometry, and it needs time-ordered lookahead
+     * which the weight-sorted candidate loop cannot provide.
+     */
+    private List<AbcNoteEvent> thinDenseRuns(List<AbcNoteEvent> events, long minimumMicros, AbcPart part) {
+
+        // --- knobs -------------------------------------------------------------------------
+        // Set false to measure without deleting: voices are still found and every note that
+        // would be dropped is still recorded in GRID_STATS.
+        final boolean THIN_ENABLED = true;
+
+        // Largest gap between consecutive notes of one voice. Pitch continuity does most of
+        // the discriminating now, so this can be looser than the old chain gap; it mainly
+        // needs to admit the slightly longer step a slide often takes into its arrival note.
+        final long VOICE_MAX_ONSET_GAP = minimumMicros* 5L/6L;
+
+        // Largest step, in semitones, that continues a voice. 1 is chromatic, 2 also admits
+        // diatonic runs. Higher starts admitting arpeggios, which the 45ms rule already owns.
+        final int VOICE_MAX_INTERVAL = 2;
+
+        // Longer than this is not run material but what the run arrives at. It may end a voice
+        // and is never dropped, but nothing may join a voice after it.
+        final long VOICE_MAX_NOTE_MICROS = 3L * minimumMicros;
+
+        // Spacing between survivors. Slightly more than minimumMicros: the first survivor may
+        // bounce forward before the next one is placed, and two notes exactly one slot apart
+        // can then end up conflicting. The margin buys room for that.
+        final long THIN_SPACING = minimumMicros;
+
+        // A run of overlapping notes could still be a slow strum that happened to move in small
+        // steps, so it needs four notes before it is trusted as a line. A run whose notes release
+        // before the next begins is unambiguously a line, and three is enough.
+        final int VOICE_MIN_NOTES = 4;
+        final int VOICE_MIN_NOTES_STACCATO = 3;
+
+        // A note may run this far past the next onset and still count as released. Real playing
+        // rarely lands to the microsecond, and a millisecond of overlap is not sustain.
+        final long STACCATO_OVERLAP_TOLERANCE = minimumMicros / 12;   // 5ms
+
+        // Interval limit for a voice whose notes have all released before the next began.
+        // Such notes are sequential by construction, nobody plays a chord as staggered
+        // staccato, so the limit only needs to keep a melody in another register out, and
+        // it can be wide enough to admit triad arpeggios, which contain a major third.
+        final int VOICE_MAX_INTERVAL_STACCATO = 4;
+        // -----------------------------------------------------------------------------------
+
+        // Excluded for the same reason percussion is excluded from grace weighting: a short
+        // drum hit is a hit, not an ornament, and a deleted one leaves silence.
+        if (part.getInstrument().isPercussion || events.size() < VOICE_MIN_NOTES) return events;
+
+        // Played onsets in time order, grouped so a chord hands one note to each voice at most.
+        TreeMap<Long, List<AbcNoteEvent>> byOnset = new TreeMap<>();
+        for (AbcNoteEvent note : events) {
+            if (note.note == Note.REST) continue;
+            byOnset.computeIfAbsent(qtm.tickToMicrosABCOrganic(note.getStartTick()), k -> new ArrayList<>()).add(note);
+        }
+
+        class Voice {
+            final List<AbcNoteEvent> notes = new ArrayList<>();
+            final List<Long> times = new ArrayList<>();
+            int lastPitch;
+            long lastTime;
+            boolean closed;   // ended on a long note; nothing may join after it
+            long lastEnd;
+            boolean staccato = true;   // every step so far released before the next began
+        }
+        List<Voice> active = new ArrayList<>();
+        List<Voice> finished = new ArrayList<>();
+
+        for (Map.Entry<Long, List<AbcNoteEvent>> onset : byOnset.entrySet()) {
+            long time = onset.getKey();
+
+            // Retire voices this onset can no longer reach.
+            for (Iterator<Voice> it = active.iterator(); it.hasNext();) {
+                Voice v = it.next();
+                if (v.closed || time - v.lastTime > VOICE_MAX_ONSET_GAP) {
+                    it.remove();
+                    finished.add(v);
+                }
+            }
+
+            // Each voice may take at most one note per onset, or a chord would fold into one voice.
+            Set<Voice> taken = Collections.newSetFromMap(new IdentityHashMap<>());
+            for (AbcNoteEvent note : onset.getValue()) {
+                long dur = qtm.tickToMicrosABCOrganic(note.getEndTick()) - time;
+                boolean isLong = dur > VOICE_MAX_NOTE_MICROS;
+
+                Voice best = null;
+                int bestInterval = Integer.MAX_VALUE;
+                for (Voice v : active) {
+                    if (taken.contains(v)) continue;
+                    boolean released = v.lastEnd <= time + STACCATO_OVERLAP_TOLERANCE;
+                    int limit = (v.staccato && released) ? VOICE_MAX_INTERVAL_STACCATO : VOICE_MAX_INTERVAL;
+                    int interval = Math.abs(note.note.id - v.lastPitch);
+                    if (interval < 1 || interval > limit) continue;
+                    if (interval < bestInterval) {
+                        best = v;
+                        bestInterval = interval;
+                    }
+                }
+
+                if (best == null) {
+                    if (isLong) continue;   // a long note may end a run but does not start one
+                    best = new Voice();
+                    active.add(best);
+                }
+                best.notes.add(note);
+                best.times.add(time);
+                best.lastPitch = note.note.id;
+                best.lastTime = time;
+                best.closed = isLong;
+                best.staccato = best.staccato && (best.notes.size() == 1 || best.lastEnd <= time + STACCATO_OVERLAP_TOLERANCE);
+                best.lastEnd = time + dur;
+                taken.add(best);
+            }
+        }
+        finished.addAll(active);
+
+        Set<AbcNoteEvent> doomed = Collections.newSetFromMap(new IdentityHashMap<>());
+        String label = GRID_STATS_ENABLED ? statsLabel(part) : "";
+        for (Voice v : finished) {
+            thinVoice(v.notes, v.times, doomed, THIN_SPACING, VOICE_MIN_NOTES, VOICE_MIN_NOTES_STACCATO,
+                    STACCATO_OVERLAP_TOLERANCE, VOICE_MAX_NOTE_MICROS, label);
+        }
+
+        if (!THIN_ENABLED || doomed.isEmpty()) return events;
+
+        List<AbcNoteEvent> kept = new ArrayList<>(events.size() - doomed.size());
+        for (AbcNoteEvent note : events) {
+            if (!doomed.contains(note)) kept.add(note);
+        }
+        return kept;
+    }
+
+    /**
+     * Keeps the first note, then every note at least minimumMicros after the last survivor,
+     * and always the last. One refinement, taken from single-stage: a short note that would
+     * otherwise survive yields if the next note is close and is itself certain to survive
+     * (long, or the run's final note). The two cannot both hold a line, and the arrival note
+     * is the one the gesture is aiming at - keeping the short one would only drag the arrival
+     * note backward onto it.
+     */
+    private void thinVoice(List<AbcNoteEvent> notes, List<Long> times, Set<AbcNoteEvent> doomed,
+                           long thinSpacing, int minNotes, int minNotesStaccato, long overlapTolerance,
+                           long maxNoteMicros, String label) {
+
+        int n = notes.size();
+        if (n < minNotesStaccato) return;
+
+        // Staccato: every note releases before the next begins, within tolerance. Those are
+        // unambiguously a line and may be thinned at a shorter length.
+        boolean staccato = true;
+        for (int i = 0; i < n - 1; i++) {
+            long end = qtm.tickToMicrosABCOrganic(notes.get(i).getEndTick());
+            if (end > times.get(i + 1) + overlapTolerance) {
+                staccato = false;
+                break;
+            }
+        }
+
+        int required = staccato ? minNotesStaccato : minNotes;
+        if (n < required) return;
+        if (GRID_STATS_ENABLED) GRID_STATS.voiceFound(n, staccato);
+
+        long lastKept = times.get(0);
+        int lastKeptIdx = 0;
+        int dropped = 0;
+
+        for (int i = 1; i < n - 1; i++) {
+            long t = times.get(i);
+            AbcNoteEvent note = notes.get(i);
+
+            if (qtm.tickToMicrosABCOrganic(note.getEndTick()) - t > maxNoteMicros) {
+                lastKept = t;
+                lastKeptIdx = i;
+                continue;
+            }
+
+            boolean drop = t - lastKept < thinSpacing;
+
+            if (!drop) {
+                long tNext = times.get(i + 1);
+                boolean nextIsLast = (i + 1 == n - 1);
+                boolean nextIsLong = qtm.tickToMicrosABCOrganic(notes.get(i + 1).getEndTick()) - tNext > maxNoteMicros;
+
+                if ((nextIsLast || nextIsLong) && tNext - t < thinSpacing) {
+                    // Yielding to the arrival note. If the previous survivor ends before the
+                    // arrival, dropping this note would leave a hole there, which the grid then
+                    // renders as a rest. A slide is legato, so let the survivor sound through.
+                    AbcNoteEvent prev = notes.get(lastKeptIdx);
+                    if (qtm.tickToMicrosABCOrganic(prev.getEndTick()) < tNext) {
+                        prev.setEndTick(qtm.microsToTickABCOrganic(tNext));
+                    }
+                    drop = true;
+                }
+            }
+
+            if (drop) {
+                doomed.add(note);
+                dropped++;
+                if (GRID_STATS_ENABLED) GRID_STATS.thinnedNote(t - lastKept, label, t);
+            } else {
+                lastKept = t;
+                lastKeptIdx = i;
+            }
+        }
+        if (GRID_STATS_ENABLED) GRID_STATS.voiceThinned(n, dropped);
+    }
 
     /**
      *

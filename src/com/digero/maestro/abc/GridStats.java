@@ -100,6 +100,29 @@ public final class GridStats {
     private final long[] endLastMergeDistFwd  = new long[BUCKETS];
     private final long[] endLastMergeDistBack = new long[BUCKETS];
     private long lrMergeBlocker, lrMergeCeil, lrNewLine, lrCeilFallback;
+    private long voicesFound, voicesThinned, thinnedNotes;
+    private final long[] voiceLength = new long[12];         // 4 .. 15+
+    private final long[] thinnedGapToKept = new long[BUCKETS];
+    private final List<String> thinnedExamples = new ArrayList<>();
+    private long voicesStaccato;
+
+    synchronized void voiceFound(int length, boolean staccato) {
+        voicesFound++;
+        if (staccato) voicesStaccato++;
+        voiceLength[Math.min(length - 3, voiceLength.length - 1)]++;
+    }
+
+    synchronized void voiceThinned(int length, int dropped) {
+        if (dropped > 0) voicesThinned++;
+    }
+
+    synchronized void thinnedNote(long gapToKept, String label, long micros) {
+        thinnedNotes++;
+        thinnedGapToKept[bucket(gapToKept)]++;
+        if (thinnedExamples.size() < MAX_EXEMPLARS) {
+            thinnedExamples.add(label + " @" + micros + "us gap=" + gapToKept + "us");
+        }
+    }
 
     synchronized void lastResortArm(int arm, int notes) {
         switch (arm) {
@@ -548,6 +571,17 @@ public final class GridStats {
     /** Returns the report as individual lines, so callers can emit one log record each. */
     public synchronized List<String> reportLines() {
         List<String> out = new ArrayList<>();
+        out.add("-- dense run thinning (voices) --");
+        out.add(String.format(Locale.ROOT, "voices found=%d (staccato=%d)  thinned=%d  notes dropped=%d (%s of all notes)",
+                voicesFound, voicesStaccato, voicesThinned, thinnedNotes, pct(thinnedNotes, notesSeen)));
+        StringBuilder vl = new StringBuilder();
+        for (int i = 0; i < voiceLength.length; i++) {
+            if (voiceLength[i] > 0) vl.append("  ").append(i + 4).append(i == voiceLength.length - 1 ? "+" : "").append("=").append(voiceLength[i]);
+        }
+        out.add("   voice length:" + (vl.length() == 0 ? " (none)" : vl));
+        out.add("   gap to last kept(ms): " + hist(thinnedGapToKept));
+        for (String s : thinnedExamples) out.add("    " + s);
+
         out.add("===== createGridV2 statistics =====");
         out.add(String.format(Locale.ROOT, "parts=%d  startCandidates=%d  notes=%d", parts, startCands, notesSeen));
 
@@ -845,5 +879,10 @@ public final class GridStats {
         exitExactMatch = exitNewAnchor = exitEndCandidate = exitUnhandled = 0;
         lrMergeBlocker = lrMergeCeil = lrNewLine = lrCeilFallback = 0;
         Arrays.fill(intervalError, 0);
+        voicesFound = voicesStaccato = voicesThinned = thinnedNotes = 0;
+        Arrays.fill(voiceLength, 0);
+        Arrays.fill(thinnedGapToKept, 0);
+        thinnedExamples.clear();
+
     }
 }
