@@ -4561,6 +4561,15 @@ public class AbcExporter {
         }
     }
 
+    private void tickFromABCMicros(List<AbcNoteEvent> events) {
+        for (AbcNoteEvent note : events) {
+            long tickStart = qtm.microsToTickABCOrganic(note.startABCMicros);
+            long tickEnd = qtm.microsToTickABCOrganic(note.endABCMicros);
+            note.setStartTick(tickStart);
+            note.setEndTick(tickEnd);
+        }
+    }
+
     /**
      *
      * Part of organic multi-stage 2 path

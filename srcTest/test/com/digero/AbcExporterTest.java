@@ -32,6 +32,7 @@ class AbcExporterTest {
     private AbcExporter exporter;
     private AbcPart part; // Can be null
     private Method testMethod;// expandPitchBendsOrganicImproved
+    private Method createInitMethod; // createGridVersion2
     private Method createGridMethod; // createGridVersion2
     private Method createSnapMethod;// snap to grid
     private FakeQTM qtm;
@@ -101,6 +102,9 @@ class AbcExporterTest {
         testMethod = AbcExporter.class.getDeclaredMethod("expandPitchBendsOrganic", AbcNoteEvent.class);
         testMethod.setAccessible(true);
 
+        createInitMethod = AbcExporter.class.getDeclaredMethod("initABCMicros", List.class);
+        createInitMethod.setAccessible(true);
+
         createGridMethod = AbcExporter.class.getDeclaredMethod("createGridV2", List.class, long.class, AbcPart.class, long.class);
         createGridMethod.setAccessible(true);
 
@@ -118,7 +122,15 @@ class AbcExporterTest {
 
     // Helper to invoke the private createGridVersion2
     @SuppressWarnings("unchecked")
+    private void invokeCreateGrid(List<AbcNoteEvent> events) throws Exception {
+        createInitMethod.invoke(exporter, events);
+        System.err.flush();
+    }
+
+    // Helper to invoke the private createGridVersion2
+    @SuppressWarnings("unchecked")
     private NavigableSet<Long> invokeCreateGrid(List<AbcNoteEvent> events, long minMicros, long barTicks) throws Exception {
+        invokeCreateGrid(events);
         NavigableSet<Long> set = (NavigableSet<Long>) createGridMethod.invoke(exporter, events, minMicros, part, barTicks);
         System.err.flush();
         return set;
