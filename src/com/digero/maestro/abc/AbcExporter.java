@@ -2639,7 +2639,8 @@ public class AbcExporter {
                 // Source-zero notes are already gone unless there is many of them (pre-pass just below breakLongNotesOrganic), so
                 // anything zero here was collapsed by quantization and should survive to the
                 // below-minimumMicros handling that extends short chords.
-                if (singleStageVer > 1) {
+                if (singleStageVer == 0) {
+                    // disabled as it prevent the thining of fast slides, which is a feature of org singlestage.
                     for (int j = 0; j < curChord.size(); j++) {
                         AbcNoteEvent jne = curChord.get(j);
                         if (jne.endABCMicros == jne.startABCMicros) {
