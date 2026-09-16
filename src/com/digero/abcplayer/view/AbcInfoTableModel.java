@@ -8,7 +8,7 @@ import java.util.List;
 import javax.swing.table.AbstractTableModel;
 
 import com.digero.common.abctomidi.AbcInfo;
-import com.digero.common.view.UIText;
+import com.digero.common.i18n.UIText;
 
 public class AbcInfoTableModel extends AbstractTableModel {
 

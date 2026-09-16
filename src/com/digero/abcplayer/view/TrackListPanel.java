@@ -28,13 +28,13 @@ import javax.swing.UIManager;
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.abctomidi.AbcRegion;
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.SequencerEvent;
 import com.digero.common.midi.SequencerEvent.SequencerProperty;
 import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.util.Listener;
 import com.digero.common.view.InstrumentComboBox;
 
-import com.digero.common.view.UIText;
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
 

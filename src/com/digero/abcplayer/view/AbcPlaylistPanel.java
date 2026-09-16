@@ -42,6 +42,7 @@ import com.digero.abcplayer.view.AbcPlaylistPanel.PlaylistEvent.PlaylistEventTyp
 import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.abctomidi.AbcToMidi;
 import com.digero.common.abctomidi.FileAndData;
+import com.digero.common.i18n.UIText;
 import com.digero.common.icons.IconLoader;
 import com.digero.common.util.AbcFileTreeModel;
 import com.digero.common.util.AbcFileTreeModel.AbcSongFileNode;
@@ -51,7 +52,6 @@ import com.digero.common.util.FileParseException;
 import com.digero.common.util.Util;
 import com.digero.common.view.AbcPlaylistTreeCellRenderer;
 import com.digero.common.view.HintTextField;
-import com.digero.common.view.UIText;
 import com.digero.maestro.util.XmlUtil;
 
 import net.miginfocom.swing.MigLayout;

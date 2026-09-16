@@ -48,6 +48,7 @@ import javax.swing.text.View;
 import com.digero.abcplayer.AbcPlayer;
 import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.abctomidi.AbcRegion;
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.Note;
 import com.digero.common.midi.SequencerEvent.SequencerProperty;
 import com.digero.common.midi.SequencerWrapper;
@@ -55,7 +56,6 @@ import com.digero.common.util.NullCaret;
 import com.digero.common.util.Themer;
 import com.digero.common.util.Util;
 import com.digero.common.view.ColorTable;
-import com.digero.common.view.UIText;
 
 public class HighlightAbcNotesFrame extends JFrame {
 	private final SequencerWrapper sequencer;

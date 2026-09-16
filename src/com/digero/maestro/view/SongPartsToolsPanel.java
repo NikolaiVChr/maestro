@@ -6,7 +6,7 @@ import java.awt.GridLayout;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 
-import com.digero.common.view.UIText;
+import com.digero.common.i18n.UIText;
 
 final class SongPartsToolsPanel extends JPanel {
 

@@ -11,9 +11,9 @@ import java.util.prefs.Preferences;
 import javax.sound.midi.*;
 import javax.sound.midi.MidiDevice.Info;
 
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.SequencerEvent.SequencerProperty;
 import com.digero.common.util.AppInfo;
-import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.DrumNoteMap;
 import com.digero.maestro.abc.LotroCombiDrumInfo;

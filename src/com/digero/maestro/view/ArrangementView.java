@@ -14,6 +14,7 @@ import javax.swing.event.DocumentListener;
 
 import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.LotroInstrument;
+import com.digero.common.i18n.UIText;
 import com.digero.common.icons.IconLoader;
 import com.digero.common.midi.NoteFilterSequencerWrapper;
 import com.digero.common.midi.PanGenerator;
@@ -27,7 +28,6 @@ import com.digero.common.util.Util;
 import com.digero.common.view.ColorTable;
 import com.digero.common.view.InstrumentComboBox;
 import com.digero.common.view.PatchedJScrollPane;
-import com.digero.common.view.UIText;
 import com.digero.common.view.WrapLayout;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcPartEvent;

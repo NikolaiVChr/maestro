@@ -9,9 +9,9 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.digero.common.abc.LotroInstrument;
+import com.digero.common.i18n.UIText;
 import com.digero.common.util.Pair;
 import com.digero.common.util.Util;
-import com.digero.common.view.UIText;
 import com.digero.maestro.view.SettingsDialog.MockMetadataSource;
 import org.jetbrains.annotations.NotNull;
 
