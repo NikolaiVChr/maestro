@@ -5384,6 +5384,17 @@ public class AbcExporter {
                 GRID_STATS.lineOccupancy(n, n - pitches.size());
                 GRID_STATS.lineOnsets(onsets.size());
 
+                // Several notes of one pitch on a line are a roll about to be collapsed to a
+                // single hit by the same-pitch resolution. Count the worst pitch on this line.
+                if (n > pitches.size()) {
+                    Map<Integer, Integer> perPitch = new HashMap<>();
+                    for (AbcNoteEvent note : gp.starts) {
+                        perPitch.merge(note.note.id, 1, Integer::sum);
+                    }
+                    int worst = 0;
+                    for (int c : perPitch.values()) worst = Math.max(worst, c);
+                    if (worst >= 2) GRID_STATS.samePitchRun(worst);
+                }
                 if (onsets.size() >= 3) classifyStack(gp, minimumMicros, part);
             }
         }
@@ -5868,7 +5879,7 @@ public class AbcExporter {
 
             int pitch = note.note.id;
             if (pitch == -1) pitch = 128;
-            gridDeletion = snapSamePitch(gridDeletion, lastNoteOfPitch, candidateStart, snappedNotes, pitch, note);
+            gridDeletion = snapSamePitch(gridDeletion, lastNoteOfPitch, candidateStart, snappedNotes, pitch, note, part);
 
             note.setStartTick(qtm.microsToTickABCOrganic(candidateStart));
             note.startABCMicros = candidateStart;
@@ -5903,7 +5914,7 @@ public class AbcExporter {
         return snappedNotes;
     }
 
-    private int snapSamePitch(int gridDeletion, AbcNoteEvent[] lastNoteOfPitch, long candidateStart, List<AbcNoteEvent> snappedNotes, int pitch, AbcNoteEvent note) {
+    private int snapSamePitch(int gridDeletion, AbcNoteEvent[] lastNoteOfPitch, long candidateStart, List<AbcNoteEvent> snappedNotes, int pitch, AbcNoteEvent note, AbcPart part) {
         // Resolve same-pitch overlaps (assumes notes are sorted by start time and then duration)
         AbcNoteEvent prevNote = lastNoteOfPitch[pitch];
 
@@ -5912,11 +5923,16 @@ public class AbcExporter {
                 // The new note completely eclipses the old one. Delete the old one.
                 snappedNotes.remove(prevNote);
                 gridDeletion++;
+                if (GRID_STATS_ENABLED) GRID_STATS.samePitchDelete(part.getInstrument().isPercussion,
+                        prevNote.origNote == null ? null : prevNote.origNote.note.id,
+                        note.origNote == null ? null : note.origNote.note.id,
+                        prevNote.initStartABCMicros == note.initStartABCMicros);
                 prevNote = null;
             } else {
                 // Truncate the previous note to the new note's start
                 prevNote.endABCMicros = candidateStart;
                 prevNote.setEndTick(Math.max(prevNote.getStartTick() + 1, qtm.microsToTickABCOrganic(candidateStart)));
+                if (GRID_STATS_ENABLED) GRID_STATS.samePitchTruncate();
                 assert prevNote.endABCMicros - prevNote.startABCMicros > 0;
             }
         }

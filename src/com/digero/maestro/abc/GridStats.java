@@ -118,6 +118,46 @@ public final class GridStats {
     private final long[] stackSpan = new long[13];   // played span, 5ms buckets to 60+
     private final List<String> stackRunExamples = new ArrayList<>();
     private final long[] thinBackwardMove = new long[BUCKETS];
+    private long samePitchDeleted, samePitchDeletedPerc, samePitchTruncated;
+    private final long[] samePitchRunLength = new long[9];   // 2, 3 ... 8+ hits collapsing to one
+    private long samePitchSameOrig, samePitchDiffOrig, samePitchNoOrig;
+    private long samePitchSameOnset;
+
+    /**
+     * A note removed because another of the same pitch already occupies its position.
+     *
+     * On percussion the usual cause is mapping: two MIDI drums mapped to one ABC drum, or a
+     * combo mapping expanding one hit into notes another mapping also produced. Those arrive
+     * from different MIDI pitches, and dropping the surplus is correct. Two notes from the
+     * SAME MIDI pitch are the same drum struck twice - the grid crushed the strikes together
+     * and one is now gone, which is a roll losing a hit.
+     */
+    synchronized void samePitchDelete(boolean percussion, Integer prevOrig, Integer curOrig, boolean sameOnset) {
+        samePitchDeleted++;
+        if (percussion) samePitchDeletedPerc++;
+        if (prevOrig == null || curOrig == null) samePitchNoOrig++;
+        else if (prevOrig.equals(curOrig)) samePitchSameOrig++;
+        else samePitchDiffOrig++;
+        if (sameOnset) samePitchSameOnset++;
+    }
+
+    /**
+     * A note removed because another of the same pitch already occupies its position. On a
+     * pitched part this is a genuine duplicate. On percussion it is usually a roll: several
+     * hits crushed onto one line become one hit, and the roll is gone.
+     */
+    synchronized void samePitchDelete(boolean percussion) {
+        samePitchDeleted++;
+        if (percussion) samePitchDeletedPerc++;
+    }
+
+    /** The previous note of this pitch shortened to end where this one begins. Two attacks kept. */
+    synchronized void samePitchTruncate() { samePitchTruncated++; }
+
+    /** How many notes of one pitch collapsed onto a single line. */
+    synchronized void samePitchRun(int hits) {
+        samePitchRunLength[Math.min(hits, samePitchRunLength.length - 1)]++;
+    }
 
     /** A survivor pulled back onto its slot so later notes are not pushed along. */
     synchronized void thinBackwardMove(long micros) { thinBackwardMove[bucket(micros)]++; }
@@ -747,6 +787,21 @@ public final class GridStats {
         out.add(String.format(Locale.ROOT, "lines fusing 3+ separate onsets: %d (%s of lines)",
                 fused, pct(fused, linesWithOnsets)));
 
+        out.add("-- same-pitch resolution --");
+        out.add(String.format(Locale.ROOT, "deleted=%d (percussion %d)   truncated to two attacks=%d",
+                samePitchDeleted, samePitchDeletedPerc, samePitchTruncated));
+        StringBuilder sp = new StringBuilder();
+        for (int i = 2; i < samePitchRunLength.length; i++) {
+            if (samePitchRunLength[i] > 0) sp.append("  ").append(i)
+                    .append(i == samePitchRunLength.length - 1 ? "+" : "").append("=").append(samePitchRunLength[i]);
+        }
+        out.add("   hits of one pitch collapsing onto one line:" + (sp.length() == 0 ? " (none)" : sp));
+        out.add(String.format(Locale.ROOT, "deleted=%d (percussion %d)",
+                samePitchDeleted, samePitchDeletedPerc));
+        out.add(String.format(Locale.ROOT, "   same MIDI pitch (a strike lost): %d   different MIDI pitch (mapping): %d   no origNote: %d",
+                samePitchSameOrig, samePitchDiffOrig, samePitchNoOrig));
+        out.add(String.format(Locale.ROOT, "   already simultaneous when played: %d", samePitchSameOnset));
+
         out.add("-- flattened figures (3+ played onsets on one line) --");
         out.add(String.format(Locale.ROOT, "strum=%d  run=%d  mixed=%d  percussion=%d   all notes short: %d",
                 stackStrum, stackRun, stackMixed, stackPercussion, stackAllShort));
@@ -982,5 +1037,8 @@ public final class GridStats {
         Arrays.fill(stackSpan, 0);
         stackRunExamples.clear();
         Arrays.fill(thinBackwardMove, 0);
+        samePitchDeleted = samePitchDeletedPerc = samePitchTruncated = 0;
+        Arrays.fill(samePitchRunLength, 0);
+        samePitchSameOrig = samePitchDiffOrig = samePitchNoOrig = samePitchSameOnset = 0;
     }
 }
