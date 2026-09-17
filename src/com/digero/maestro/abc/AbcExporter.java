@@ -2302,6 +2302,7 @@ public class AbcExporter {
 				
 				for (MidiNoteEvent ne : listOfNotes) {
                     //System.out.println("note(track, "+((int)Math.round(ne.getStartMicros()/1000.0))+", "+((int)Math.round((ne.getEndMicros()-ne.getStartMicros())/1000.0))+", Note."+ne.note.name()+");");
+                    //System.out.println("start: "+((int)Math.round(ne.getStartMicros()/1000.0))+", dura: "+((int)Math.round((ne.getEndMicros()-ne.getStartMicros())/1000.0))+", Note: "+ne.note.name()+");");
 					// Skip notes that are outside the play range.
 					if (ne.getEndTick() <= exportStartTick) {//  || ne.getStartTick() >= exportEndTick
 						//if (part.mapNoteEvent(t, ne) != null && part.shouldPlay(ne, t)) System.out.println(metadata.getSongTitle()+": Skipping note that are outside songs time range.\n"+ne);
@@ -4329,7 +4330,7 @@ public class AbcExporter {
         // Largest gap between consecutive notes of one voice. Pitch continuity does most of
         // the discriminating now; it mainly
         // needs to admit the slightly longer step a slide often takes into its arrival note.
-        final long VOICE_MAX_ONSET_GAP = minimumMicros* 5L/6L;
+        final long VOICE_MAX_ONSET_GAP = minimumMicros * 5L / 6L;
 
         // Largest step, in semitones, that continues a voice. 1 is chromatic, 2 also admits
         // diatonic runs. Higher starts admitting arpeggios, which the 45ms rule already owns.
@@ -4477,6 +4478,9 @@ public class AbcExporter {
 
         int required = staccato ? minNotesStaccato : minNotes;
         if (n < required) return;
+
+        for (AbcNoteEvent note : notes) note.notGrace = true;
+
         if (GRID_STATS_ENABLED) GRID_STATS.voiceFound(n, staccato);
 
         long lastKept = times.get(0);
@@ -4497,10 +4501,16 @@ public class AbcExporter {
 
             if (!drop) {
                 long tNext = times.get(i + 1);
+                long nextDur = notes.get(i + 1).endABCMicros - tNext;
                 boolean nextIsLast = (i + 1 == n - 1);
-                boolean nextIsLong = notes.get(i + 1).endABCMicros - tNext > maxNoteMicros;
+                boolean nextIsLong = nextDur > maxNoteMicros;
 
-                if ((nextIsLast || nextIsLong) && tNext - t < thinSpacing) {
+                // The last note of a run is an arrival only if it can hold a slot of its own.
+                // A short last note is just the tail of the run, and yielding to it stretches
+                // the previous survivor across two slots for nothing.
+                boolean nextIsArrival = nextIsLong || (nextIsLast && nextDur >= thinSpacing);
+
+                if (nextIsArrival && tNext - t < thinSpacing) {
                     // Yielding to the arrival note. If the previous survivor ends before the
                     // arrival, dropping this note would leave a hole there, which the grid then
                     // renders as a rest. A slide is legato, so let the survivor sound through.
@@ -4617,7 +4627,7 @@ public class AbcExporter {
 
             // Determine start weight
             int sWeight;
-            if (rawDuration < GRACE_THRESHOLD && !part.getInstrument().isPercussion) {
+            if (rawDuration < GRACE_THRESHOLD && !part.getInstrument().isPercussion) {//  && !note.notGrace
                 sWeight = WEIGHT_GRACE;
             } else if (rawDuration <= SHORT_NOTE_THRESHOLD) {
                 sWeight = WEIGHT_SOLO;

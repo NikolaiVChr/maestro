@@ -28,7 +28,13 @@ public class AbcNoteEvent extends NoteEvent {
 	public long continues = 0;// Tick length that this continues as in seperate split note(s). Beyond ties.
 	private Integer origBend = null;// The bend that was in effect when this noteEvent was 'born'. Its used only by pruning algorithm.
 	//public float fromHowManyTracks = 1.0f;// Let pruning system know this note originate from multiple tracks, so it can be prioritized.
-	
+
+	/**
+	 * Set by the thinning multistage 2 pre-pass on notes it kept from a run. Such a note is short but it is
+	 * not an ornament, it is a step in a figure, so the grid must not give it grace weight,
+	 * which would let it bounce backward out of position past unrelated material.
+	 */
+	public boolean notGrace = false;
 
 	public AbcNoteEvent(Note note, int velocity, long startTick, long endTick, ITempoCache tempoCache, MidiNoteEvent origNote) {
 		super(note, velocity, startTick, endTick, tempoCache);
