@@ -117,6 +117,10 @@ public final class GridStats {
     private long stackStrum, stackRun, stackMixed, stackPercussion, stackAllShort;
     private final long[] stackSpan = new long[13];   // played span, 5ms buckets to 60+
     private final List<String> stackRunExamples = new ArrayList<>();
+    private final long[] thinBackwardMove = new long[BUCKETS];
+
+    /** A survivor pulled back onto its slot so later notes are not pushed along. */
+    synchronized void thinBackwardMove(long micros) { thinBackwardMove[bucket(micros)]++; }
 
     synchronized void stackedFigure(int notes, long spanMicros, boolean strum, boolean run,
                                     boolean allShort, boolean percussion, String label, long micros) {
@@ -652,6 +656,7 @@ public final class GridStats {
                 voiceSurvival[0], voiceSurvival[1], voiceSurvival[2], voiceSurvival[3], voiceSurvival[4]));
         out.add(String.format(Locale.ROOT, "   yield extensions: %d  avg %dms",
                 yieldExtensions, yieldExtensions == 0 ? 0 : yieldExtendedMicros / yieldExtensions / 1000));
+        out.add("   survivor pulled back(ms): " + hist(thinBackwardMove));
         out.add("   by instrument (voices / notes dropped):");
         thinnedByInstrument.entrySet().stream()
                 .sorted((a, b) -> Long.compare(b.getValue()[1], a.getValue()[1]))
@@ -976,5 +981,6 @@ public final class GridStats {
         stackStrum = stackRun = stackMixed = stackPercussion = stackAllShort = 0;
         Arrays.fill(stackSpan, 0);
         stackRunExamples.clear();
+        Arrays.fill(thinBackwardMove, 0);
     }
 }

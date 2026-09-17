@@ -4323,6 +4323,12 @@ public class AbcExporter {
     private List<AbcNoteEvent> thinDenseRuns(List<AbcNoteEvent> events, long minimumMicros, AbcPart part) {
 
         // --- Constants --------------------------------------------------------------------
+
+        // System out how notes are being processed.
+        // enable only when testing on a single part and max a couple of second of a song or test midi.
+        final boolean THINNER_DEBUG = false;
+
+
         // Set false to measure without deleting: voices are still found and every note that
         // would be dropped is still recorded in GRID_STATS.
         final boolean THIN_ENABLED = true;
@@ -4368,8 +4374,12 @@ public class AbcExporter {
 
         // Played onsets in time order, grouped so a chord hands one note to each voice at most.
         TreeMap<Long, List<AbcNoteEvent>> byOnset = new TreeMap<>();
+
+        if (THINNER_DEBUG) System.out.println("Starting prepass");
+
         for (AbcNoteEvent note : events) {
             if (note.note == Note.REST) continue;
+            if (THINNER_DEBUG) System.out.println(debugNote(note));
             byOnset.computeIfAbsent(note.startABCMicros, k -> new ArrayList<>()).add(note);
         }
 
@@ -4381,25 +4391,39 @@ public class AbcExporter {
             boolean closed;   // ended on a long note; nothing may join after it
             long lastEnd;
             boolean staccato = true;   // every step so far released before the next began
+
+            @Override
+            public String toString() {
+                return "Voice{" +
+                        "notesSize=" + notes.size() +
+                        ", lastPitch=" + lastPitch +
+                        ", lastTime=" + lastTime +
+                        ", closed=" + closed +
+                        ", lastEnd=" + lastEnd +
+                        ", staccato=" + staccato +
+                        '}';
+            }
         }
         List<Voice> active = new ArrayList<>();
         List<Voice> finished = new ArrayList<>();
 
         for (Map.Entry<Long, List<AbcNoteEvent>> onset : byOnset.entrySet()) {
             long time = onset.getKey();
-
+            if (THINNER_DEBUG) System.out.println("processing onset "+time);
             // Retire voices this onset can no longer reach.
             for (Iterator<Voice> it = active.iterator(); it.hasNext();) {
                 Voice v = it.next();
                 if (v.closed || time - v.lastTime > VOICE_MAX_ONSET_GAP) {
                     it.remove();
                     finished.add(v);
+                    if (THINNER_DEBUG) System.out.println("  retiring voice " + v);
                 }
             }
 
             // Each voice may take at most one note per onset, or a chord would fold into one voice.
             Set<Voice> taken = Collections.newSetFromMap(new IdentityHashMap<>());
             for (AbcNoteEvent note : onset.getValue()) {
+                if (THINNER_DEBUG) System.out.println("processing note " + debugNote(note));
                 long dur = note.endABCMicros - time;
                 boolean isLong = dur > VOICE_MAX_NOTE_MICROS;
 
@@ -4410,15 +4434,22 @@ public class AbcExporter {
                     boolean released = v.lastEnd <= time + STACCATO_OVERLAP_TOLERANCE;
                     int limit = (v.staccato && released) ? VOICE_MAX_INTERVAL_STACCATO : VOICE_MAX_INTERVAL;
                     int interval = Math.abs(note.note.id - v.lastPitch);
-                    if (interval < 1 || interval > limit) continue;
+                    if (interval < 1 || interval > limit) {
+                        if (THINNER_DEBUG) System.out.println("  interval=" + interval + ": continue");
+                        continue;
+                    }
                     if (interval < bestInterval) {
                         best = v;
                         bestInterval = interval;
                     }
+                    if (THINNER_DEBUG) System.out.println("  best= " + best+" bestInterval="+bestInterval);
                 }
 
                 if (best == null) {
-                    if (isLong) continue;   // a long note may end a run but does not start one
+                    if (isLong) {
+                        if (THINNER_DEBUG) System.out.println("  isLong: continue");
+                        continue;   // a long note may end a run but does not start one
+                    }
                     best = new Voice();
                     active.add(best);
                 }
@@ -4430,6 +4461,7 @@ public class AbcExporter {
                 best.staccato = best.staccato && (best.notes.size() == 1 || best.lastEnd <= time + STACCATO_OVERLAP_TOLERANCE);
                 best.lastEnd = time + dur;
                 taken.add(best);
+                if (THINNER_DEBUG) System.out.println("  best= " + best);
             }
         }
         finished.addAll(active);
@@ -4445,9 +4477,18 @@ public class AbcExporter {
 
         List<AbcNoteEvent> kept = new ArrayList<>(events.size() - doomed.size());
         for (AbcNoteEvent note : events) {
-            if (!doomed.contains(note)) kept.add(note);
+            if (!doomed.contains(note)) {
+                kept.add(note);
+                if (THINNER_DEBUG) System.out.println("  kept: "+debugNote(note));
+            } else {
+                if (THINNER_DEBUG) System.out.println("  doomed: "+debugNote(note));
+            }
         }
         return kept;
+    }
+
+    private String debugNote(AbcNoteEvent note) {
+        return "note{"+note.note+" "+note.startABCMicros+" to "+note.endABCMicros+" hashcode"+note.hashCode()+"}";
     }
 
     /**
@@ -4467,8 +4508,13 @@ public class AbcExporter {
 
         // Staccato: every note releases before the next begins, within tolerance. Those are
         // unambiguously a line and may be thinned at a shorter length.
-        boolean staccato = true;
-        for (int i = 0; i < n - 1; i++) {
+        //
+        // The last note has nothing after it to release before, so it is judged on its own
+        // length instead: a voice that ends on a long sustain is not a staccato figure, it is
+        // a run arriving somewhere. Without this a ten-note slide into a half-second note
+        // reads as staccato purely because the loop never reaches the sustain.
+        boolean staccato = notes.get(n - 1).endABCMicros - times.get(n - 1) <= maxNoteMicros;
+        for (int i = 0; staccato && i < n - 1; i++) {
             long end = notes.get(i).endABCMicros;
             if (end > times.get(i + 1) + overlapTolerance) {
                 staccato = false;
@@ -4483,7 +4529,12 @@ public class AbcExporter {
 
         if (GRID_STATS_ENABLED) GRID_STATS.voiceFound(n, staccato);
 
-        long lastKept = times.get(0);
+        // How far back this pass may move a survivor's onset to reach its slot. The grid would
+        // move it further than this anyway - a crush goes back up to minimumMicros - but there
+        // it lands on top of another note. Moving it here lands it on a slot of its own.
+        final long backwardBudget = thinSpacing * 2L / 3L;
+
+        long lastKept = times.get(0);   // placed position of the last survivor, not its played one
         int lastKeptIdx = 0;
         int dropped = 0;
 
@@ -4497,7 +4548,9 @@ public class AbcExporter {
                 continue;
             }
 
-            boolean drop = t - lastKept < thinSpacing;
+            // The earliest slot this note could occupy after the last survivor.
+            long target = lastKept + thinSpacing;
+            boolean drop = t < target;
 
             if (!drop) {
                 long tNext = times.get(i + 1);
@@ -4529,7 +4582,26 @@ public class AbcExporter {
                 dropped++;
                 if (GRID_STATS_ENABLED) GRID_STATS.thinnedNote(t - lastKept, label, t);
             } else {
-                lastKept = t;
+                // Pull the survivor back onto its slot, but only when that lets the next note
+                // in the voice survive too. Moving it back otherwise displaces an onset for
+                // nothing, and it can let a note through near the end of the run that then
+                // sits too close to the note the run arrives at.
+                long tNextNote = times.get(i + 1);
+                boolean moveHelps = (t - target <= backwardBudget)
+                        && (tNextNote - t < thinSpacing)
+                        && (tNextNote - target >= thinSpacing);
+
+                if (moveHelps) {
+                    long dura = note.initEndABCMicros - note.initStartABCMicros;
+                    if (GRID_STATS_ENABLED) GRID_STATS.thinBackwardMove(t - target);
+                    note.initStartABCMicros = target;
+                    note.startABCMicros = target;
+                    note.initEndABCMicros = target + dura;
+                    note.endABCMicros = target + dura;
+                    lastKept = target;
+                } else {
+                    lastKept = t;
+                }
                 lastKeptIdx = i;
             }
         }
