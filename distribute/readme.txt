@@ -61,6 +61,7 @@ This changelog is only partial, to see all the way back to v1.0.0 go here:
 Version 4.6.29
 * This is a **beta release**, feel free to help and test.
 * Significant less CPU usage during audio playback on some PCs.
+* Faster startup of Maestro if custom soundfont is installed, but not selected.
 * Allow part delay to be negative.
 * Highlight connected parts when hover over note tracks.
 * Added support for custom drum combos in drum-maps. Maestro can hold 79, but if loading a project and maestro is full, the project will be degraded. Recommend to never exceed 70 combos.
