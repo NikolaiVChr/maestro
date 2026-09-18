@@ -95,14 +95,23 @@ public class LotroSequencerWrapper extends NoteFilterSequencerWrapper {
 
 	@Override
 	public void setPosition(long position) {
+		long before = getPosition();
 		super.setPosition(position);
-		if (sequencer.isRunning()) injectPatchChanges(false);
+		// Only re-inject when the position actually moved.
+		if (position != before && sequencer.isRunning())
+			injectPatchChanges(false);
 	}
 
 	@Override
 	public void setTickPosition(long tick) {
+		long before = getTickPosition();
 		super.setTickPosition(tick);
-		if (sequencer.isRunning()) injectPatchChanges(false);
+		// Only re-inject when the position actually moved. super.setTickPosition() is a
+		// no-op when the tick is unchanged, but this override used to fire the full
+		// patch/pan injection regardless, and the ABC-preview position echo calls this
+		// on every playback tick, so it was flooding the MIDI device ~20x/second.
+		if (tick != before && sequencer.isRunning())
+			injectPatchChanges(false);
 	}
 
 	@Override
