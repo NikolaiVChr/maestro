@@ -1131,10 +1131,17 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 														  int i, boolean sel, boolean foc) {
 				super.getListCellRendererComponent(l, v, i, sel, foc);
 				if (v instanceof LotroCombiDrumInfo.CombiDrumHit c) {
-					String t = label(c) + "   (" + drumName(c.firstNote().id)
-							+ " + " + drumName(c.secondNote().id) + ")";
-					if (c.locked()) t += UIText.get("maestro.drum.combo.edit.builtin");
-					setText(t);
+					String base = label(c) + "   (" + drumNameNoAbc(c.firstNote().id)
+							+ " + " + drumNameNoAbc(c.secondNote().id) + ")";
+					if (c.locked()) {
+						// grey, italic, smaller tag, visually secondary to the name
+						setText("<html>" + base
+								+ " <span style='color:gray;font-style:italic;'>"
+								+ UIText.get("maestro.drum.combo.edit.builtin")   // "built-in"
+								+ "</span></html>");
+					} else {
+						setText(base);
+					}
 				}
 				return this;
 			}
@@ -1176,31 +1183,18 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		addBtn.addActionListener(e -> {
 			LotroDrumInfo a = (LotroDrumInfo) pick1.getSelectedItem();
 			LotroDrumInfo b = (LotroDrumInfo) pick2.getSelectedItem();
-			if (a == null || b == null) return;
-			if (a.note == b.note) {
-				JOptionPane.showMessageDialog(dlg,
-						UIText.get("maestro.drum.combo.edit.pick.two.different.drums"),
-						UIText.get("maestro.drum.combo.edit.dialog.title"), JOptionPane.INFORMATION_MESSAGE);
-				return;
-			}
-			String nm = XmlUtil.sanitizeStringForXMLSaving(nameField.getText().trim());
-			Note before = combiInfo.libraryKeyForPair(a.note, b.note);   // was it already there?
-			Note key = combiInfo.addToLibrary(a.note, b.note, nm.isEmpty() ? null : nm);
-			if (key == null) {
-				JOptionPane.showMessageDialog(dlg,
-						UIText.get("maestro.drum.combo.edit.library.is.full"),
-						UIText.get("maestro.drum.combo.edit.dialog.title"), JOptionPane.WARNING_MESSAGE);
-			} else {
-				if (before != null) {
-					JOptionPane.showMessageDialog(dlg,
-							UIText.get("maestro.drum.combo.edit.that.pair.already.exists.as.0", label(combiInfo.get(key.id))),
-							UIText.get("maestro.drum.combo.edit.dialog.title"), JOptionPane.INFORMATION_MESSAGE);
-				} else {
-					refillList.run();               // reflect the add in this dialog
-					nameField.setText("");
-					list.setSelectedValue(combiInfo.get(key.id), true);
+			/*
+			test code for filling library
+			for (LotroDrumInfo a : drums) {
+				for (LotroDrumInfo b : drums) {
+					addCombo(a, b, dlg, nameField, combiInfo, refillList, list);
+				}
+				if (combiInfo.customCount() == 79) {
+					break;
 				}
 			}
+			*/
+			if (addCombo(a, b, dlg, nameField, combiInfo, refillList, list)) return;
 			updateCounter.run();
 			// addToLibrary already fired libraryChanged -> open DrumPanel dropdowns refreshed
 		});
@@ -1282,6 +1276,35 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 		dlg.setVisible(true);
 	}
 
+	private boolean addCombo(LotroDrumInfo a, LotroDrumInfo b, JDialog dlg, JTextField nameField, LotroCombiDrumInfo combiInfo, Runnable refillList, JList<LotroCombiDrumInfo.CombiDrumHit> list) {
+		if (a == null || b == null) return true;
+		if (a.note == b.note) {
+			JOptionPane.showMessageDialog(dlg,
+					UIText.get("maestro.drum.combo.edit.pick.two.different.drums"),
+					UIText.get("maestro.drum.combo.edit.dialog.title"), JOptionPane.INFORMATION_MESSAGE);
+			return true;
+		}
+		String nm = XmlUtil.sanitizeStringForXMLSaving(nameField.getText().trim());
+		Note before = combiInfo.libraryKeyForPair(a.note, b.note);   // was it already there?
+		Note key = combiInfo.addToLibrary(a.note, b.note, nm.isEmpty() ? null : nm);
+		if (key == null) {
+			JOptionPane.showMessageDialog(dlg,
+					UIText.get("maestro.drum.combo.edit.library.is.full"),
+					UIText.get("maestro.drum.combo.edit.dialog.title"), JOptionPane.WARNING_MESSAGE);
+		} else {
+			if (before != null) {
+				JOptionPane.showMessageDialog(dlg,
+						UIText.get("maestro.drum.combo.edit.that.pair.already.exists.as.0", label(combiInfo.get(key.id))),
+						UIText.get("maestro.drum.combo.edit.dialog.title"), JOptionPane.INFORMATION_MESSAGE);
+			} else {
+				refillList.run();               // reflect the add in this dialog
+				nameField.setText("");
+				list.setSelectedValue(combiInfo.get(key.id), true);
+			}
+		}
+		return false;
+	}
+
 	private int countUsesInSong(int hit) {
 		int uses = 0;
 		if (hit == Note.REST.id) return uses;
@@ -1307,6 +1330,10 @@ public class TrackPanel extends JPanel implements IDiscardable, TableLayoutConst
 	private static String drumName(int id) {
 		LotroDrumInfo d = LotroDrumInfo.getById(id);
 		return d != null ? d.toString() : String.valueOf(id);
+	}
+	private static String drumNameNoAbc(int id) {
+		LotroDrumInfo d = LotroDrumInfo.getById(id);
+		return d != null ? d.nameMinimal : String.valueOf(id);
 	}
 
 	private static final int SYNTH_DRUM_PROGRAM = MidiInstrument.SYNTH_DRUM.id();   // 118

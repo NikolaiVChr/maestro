@@ -158,6 +158,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 	private final LotroCombiDrumInfo combiInfo;
 
+	private boolean degraded = false;
+
     public AbcSong(File file, PartAutoNumberer partAutoNumberer, PartNameTemplate partNameTemplate,
 			ExportFilenameTemplate exportFilenameTemplate, InstrNameSettings instrNameSettings,
 			FileResolver fileResolver, MiscSettings miscSettings, SaveAndExportSettings saveAndExportSettings)
@@ -568,11 +570,22 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 					JOptionPane.showMessageDialog(null, message,
 							UIText.get("maestro.warning.combi.degraded.full"), JOptionPane.WARNING_MESSAGE);
 				}
+				degraded = true;
 			}
 		} catch (XPathExpressionException e) {
 			log.log(Level.SEVERE, "XPath error", e);
 			throw new FileParseException("XPath error: " + e.getMessage(), file == null?null:file.getName());
 		}
+	}
+
+	/**
+	 * If the project msx had some drum combos that there was not room to put
+	 * into the combo library, then the song is degraded.
+	 *
+	 * Be careful about saving a degraded project, its combos that were not loaded will be lost forever.
+	 */
+	public boolean isDegraded() {
+		return degraded;
 	}
 
 	private boolean isFileNewer(Version fileVersion) {

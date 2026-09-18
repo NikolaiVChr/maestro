@@ -2462,7 +2462,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			
 			// abcSong.setShowPruned(saveSettings.showPruned);
 
-			setAbcSongModified(midiResolved);
+			setAbcSongModified(midiResolved);//  || abcSong.isDegraded() // if we dont mark it modified when degraded, there is less chance the user will save it and make the orig msx corrupt.
 			midiResolved = false;
 			updateTitle();
             arrangementView.scrollToTop();
