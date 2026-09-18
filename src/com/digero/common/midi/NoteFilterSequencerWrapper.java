@@ -153,7 +153,7 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 		}
 		boolean customAvailable = false;
 		String customKey = SynthesizerFactory.customMidiSoundfontFilename;
-		if (SynthesizerFactory.getCustomMIDIAudioSynthesizer() != null) {
+		if (SynthesizerFactory.customSoundbankFileExists()) {
 			prefsNode.putLong(customKey, new Date().getTime());
 			customAvailable = true;
 		} else {
