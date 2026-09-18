@@ -342,6 +342,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 		//SongExportSettingsPanel
 		songExportSettingsPanel = new SongExportSettingsPanel();
+		fireTimingListeners = false;
+		songExportSettingsPanel.setTimingMode(TimingMode.getFromSettings(saveSettings.defaultTiming));
+		fireTimingListeners = true;
 		songExportSettingsPanel.setActionListener(createSongExportSettingsListener());
 
         loadIcons();
