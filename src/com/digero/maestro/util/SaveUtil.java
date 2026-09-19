@@ -154,19 +154,13 @@ public class SaveUtil {
      * @param xpath        The XPath expression to locate the value.
      * @param defaultValue The default value to return if the node is not found.
      * @return The parsed Version value.
-     * @throws FileParseException         If the value cannot be parsed as a Version.
      * @throws XPathExpressionException   If an error occurs while evaluating the XPath expression.
      */
     public static Version parseValue(Node parent, String xpath, Version defaultValue)
             throws FileParseException, XPathExpressionException {
         String val = getNodeContent(parent, xpath);
         if (val == null) return defaultValue;
-
-        Version version = Version.parseVersion(val);
-        if (version == null)
-            throw createInvalidValueException(parent, xpath, val, "Could not parse version: " + val);
-
-        return version;
+        return Version.parseVersion(val);
     }
 
     public static byte[] parseValue(Node parent, String xpath, byte[] defaultValue)
