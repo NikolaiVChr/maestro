@@ -348,6 +348,7 @@ public class SongPartsListPanel extends JPanel implements IDiscardable, TableLay
         //log.warning(this.getClass().getTypeName()+" AbcPartEvent: "+e.getProperty());
 		switch (e.getProperty()) {
 			case TRACK_ENABLED:
+			case PART_NUMBER:
 			case INSTRUMENT:
 			case TITLE:
 				updateParts();
