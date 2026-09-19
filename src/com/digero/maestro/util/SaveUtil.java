@@ -2,12 +2,10 @@ package com.digero.maestro.util;
 
 import java.io.File;
 import java.util.HexFormat;
-
 import javax.xml.xpath.XPathExpressionException;
 
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.midi.KeySignature;
@@ -149,6 +147,15 @@ public class SaveUtil {
         return instrument;
     }
 
+    /**
+     * Parses a Version value from the given XML node.
+     *
+     * @param parent       The parent XML node.
+     * @param xpath        The XPath expression to locate the value.
+     * @param defaultValue The default value to return if the node is not found.
+     * @return The parsed Version value.
+     * @throws XPathExpressionException   If an error occurs while evaluating the XPath expression.
+     */
     public static Version parseValue(Node parent, String xpath, Version defaultValue)
             throws XPathExpressionException {
         String val = getNodeContent(parent, xpath);
@@ -182,27 +189,6 @@ public class SaveUtil {
         String fileName = (f == null) ? null : f.getName();
         return new FileParseException(message, fileName, XmlUtil.getLineNumber(node));
     }
-
-    @Deprecated
-	private static void clean(Node node) {
-		NodeList childNodes = node.getChildNodes();
-
-		for (int n = childNodes.getLength() - 1; n >= 0; n--) {
-			Node child = childNodes.item(n);
-			short nodeType = child.getNodeType();
-
-			if (nodeType == Node.ELEMENT_NODE)
-				clean(child);
-			else if (nodeType == Node.TEXT_NODE) {
-				String trimmedNodeVal = child.getNodeValue().trim();
-				if (trimmedNodeVal.isEmpty())
-					node.removeChild(child);
-				else
-					child.setNodeValue(trimmedNodeVal);
-			} else if (nodeType == Node.COMMENT_NODE)
-				node.removeChild(child);
-		}
-	}
 
     public static FileParseException missingValueException(Node node, String xpath) {
         String msg = "Missing required value \"" + xpath + "\" for <" + node.getNodeName() + "> element";
