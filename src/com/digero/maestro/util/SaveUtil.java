@@ -157,7 +157,7 @@ public class SaveUtil {
      * @throws XPathExpressionException   If an error occurs while evaluating the XPath expression.
      */
     public static Version parseValue(Node parent, String xpath, Version defaultValue)
-            throws FileParseException, XPathExpressionException {
+            throws XPathExpressionException {
         String val = getNodeContent(parent, xpath);
         if (val == null) return defaultValue;
 
