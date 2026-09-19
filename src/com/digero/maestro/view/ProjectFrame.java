@@ -2441,7 +2441,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				} else {
 					songPartsListPanel.selectPart(0);
 					boolean autoplay = miscSettings.autoplayOnOpen;
-					updatePreviewMode(true, autoplay);
+					boolean startWithAbcPreview = hasEnabledAbcNotes(abcSong);
+					updatePreviewMode(startWithAbcPreview, autoplay);
 					scheduleUiRefresh();
 				}
 			} else {
