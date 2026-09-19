@@ -21,8 +21,8 @@ public class LotroSequencerWrapper extends NoteFilterSequencerWrapper {
 	private static Synthesizer lotroSynth;
 	private static String loadLotroSynthError;
 	private long startTick = 0L;
-    private List<ExportTrackInfo> currentTrackInfos = null;
-    protected long countInMicros = 0L;
+	private List<ExportTrackInfo> currentTrackInfos = null;
+	protected long countInMicros = 0L;
 
 	static {
 		try {
@@ -32,10 +32,15 @@ public class LotroSequencerWrapper extends NoteFilterSequencerWrapper {
 			loadLotroSynthError = e.getMessage();
 		}
 	}
-	
+
 	public LotroSequencerWrapper() throws MidiUnavailableException {
 		super();
-        abcSeq = this;
+		abcSeq = this;
+	}
+
+	public void clearSequence() {
+		currentTrackInfos = null;
+		super.clearSequence();
 	}
 
     public void setCurrentTrackInfos(List<ExportTrackInfo> trackInfos) {

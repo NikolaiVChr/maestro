@@ -144,6 +144,8 @@ public class DissonancePanel extends JPanel implements IDiscardable, TableLayout
 			sequencer.removeChangeListener(sequencerListener);
 		if (abcSequencer != null)
 			abcSequencer.removeChangeListener(sequencerListener);
+		if (dissoGraph != null)
+			dissoGraph.discard();
 	}
 
     public void setShowPanel(boolean show) {

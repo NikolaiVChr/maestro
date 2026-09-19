@@ -152,6 +152,8 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 			sequencer.removeChangeListener(sequencerListener);
 		if (abcSequencer != null)
 			abcSequencer.removeChangeListener(sequencerListener);
+        if (histoGraph != null)
+            histoGraph.discard();
 	}
 
     public void setShowPanel(boolean show) {

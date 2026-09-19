@@ -4,6 +4,7 @@ import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.awt.event.*;
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Logger;
@@ -779,11 +780,15 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 	
 	public void closeAbcSong() {
 		clearTrackListPanel(true);
+		if (histogramPanel != null) histogramPanel.discard();
 		histogramPanel = null;
+		if (dissonancePanel != null) dissonancePanel.discard();
         dissonancePanel = null;
 		tempoPanel = null;
 		trackPanels.clear();
 		abcPart = null;
+		lyricLinesContent.setFromLyricLines(new ArrayList<>());
+		lyricLinesContent.abcSong = null;
 	}
 
 	/**
