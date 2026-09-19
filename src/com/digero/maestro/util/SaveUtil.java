@@ -160,7 +160,9 @@ public class SaveUtil {
             throws FileParseException, XPathExpressionException {
         String val = getNodeContent(parent, xpath);
         if (val == null) return defaultValue;
-        return Version.parseVersion(val);
+
+        Version version = Version.parseVersion(val);
+        return (version == null) ? defaultValue : version;
     }
 
     public static byte[] parseValue(Node parent, String xpath, byte[] defaultValue)
