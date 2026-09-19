@@ -2342,11 +2342,12 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		file = filetemp;
 		// end system for preventing cascading dialogs
 
-
 		file = Util.resolveShortcut(file);
 		allowOverwriteSaveFile = false;
 		allowOverwriteExportFile = false;
 		setAbcSongModified(false);
+
+		boolean openSucceeded = false;
 
 		log.info("Attempting to open "+file.getName());//dont reveal full path in log files
 		try {
@@ -2470,6 +2471,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			midiResolved = false;
 			updateTitle();
             arrangementView.scrollToTop();
+			openSucceeded = true;
 		} catch (SAXParseException e) {
 			String message = e.getMessage();
 			if (e.getLineNumber() >= 0) {
@@ -2485,12 +2487,27 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			midiResolved = false;
 		}
 		
-		// Don't update last opened list when reading tmp msx file for midi reloading
-		if (updateLastOpenedList && file.getAbsolutePath().endsWith(Util.MSX_FILE_EXTENSION)) {
-			recentlyOpenedList.addOpenedFile(file);
-			updateOpenRecentMenu();
+		// Don't add to recent projects if the file wasn't successfully opened or if it isn't an MSX file.
+		if (shouldAddToRecentProjects(file, updateLastOpenedList, openSucceeded)) {
+    		recentlyOpenedList.addOpenedFile(file);
+    		updateOpenRecentMenu();
 		}
+
 		inOpenFile = false;
+	}
+
+	/**
+	 * Determines whether the current project should be added to the recent projects list.
+	 *
+	 * @param file the project file
+	 * @param includeInRecentProjectsList whether the last opened list should be updated
+	 * @param openSucceeded whether the project was successfully opened
+	 * @return true if the project should be added to the recent projects list, false otherwise
+	 */
+	static boolean shouldAddToRecentProjects(File file, boolean includeInRecentProjectsList, boolean openSucceeded) {
+		return includeInRecentProjectsList
+            && openSucceeded
+            && file.getAbsolutePath().endsWith(Util.MSX_FILE_EXTENSION);
 	}
 
 	private void sendMIDIResets(MidiStandard standard) {
