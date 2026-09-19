@@ -238,7 +238,28 @@ public class XmlUtil {
 	        // Convert sanitized XML string back to an InputStream
 	        InputStream sanitizedStream = new ByteArrayInputStream(sanitizedXml.toString().getBytes(StandardCharsets.UTF_8));
 			LineNumberHandler handler = new LineNumberHandler();
-			SAXParserFactory.newInstance().newSAXParser().parse(sanitizedStream, handler);
+			try {
+				SAXParserFactory.newInstance()
+						.newSAXParser()
+						.parse(sanitizedStream, handler);
+			} catch (SAXParseException e) {
+				String version = getDeclaredXmlVersion(sanitizedXml.toString());
+
+				if (version != null
+						&& !version.equals("1.0")
+						&& !version.equals("1.1")) {
+					throw new SAXParseException(
+							"Unsupported XML version \"" + version
+									+ "\". Supported versions are 1.0 and 1.1.",
+							e.getPublicId(),
+							e.getSystemId(),
+							e.getLineNumber(),
+							e.getColumnNumber(),
+							e);
+				}
+
+				throw e;
+			}
 			return handler.getDocument();
 		} catch (ParserConfigurationException e) {
             log.log(Level.SEVERE, "Error parsing XML", e);
@@ -499,6 +520,24 @@ public class XmlUtil {
             }
         };
     }
+
+	/**
+     * Pattern to match the XML version declaration at the beginning of an XML document.
+     */
+	private static final Pattern XML_VERSION_PATTERN = Pattern.compile(
+        "^\\uFEFF?\\s*<\\?xml\\s+version\\s*=\\s*['\"]([^'\"]+)['\"]",
+        Pattern.CASE_INSENSITIVE);
+
+	/**
+     * Retrieves the declared XML version from the given XML string.
+     *
+     * @param xml The XML string to check.
+     * @return The declared XML version, or null if not found.
+     */
+	static String getDeclaredXmlVersion(String xml) {
+		Matcher matcher = XML_VERSION_PATTERN.matcher(xml);
+		return matcher.find() ? matcher.group(1) : null;
+	}
 
 	//
 	// Exceptions
