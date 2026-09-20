@@ -4667,6 +4667,28 @@ public class AbcExporter {
         final long GRACE_THRESHOLD = 50_000L; // 50ms
         final long SHORT_NOTE_THRESHOLD = minimumMicros * 3;
 
+        // Velocity (future)
+        //
+        // Weight distinguishes short notes (5) from everything else (10) and sums for chords
+        // Within a weight tier the sort falls through to micros,
+        // so at a conflict the earlier note anchors and the later one bends around it - regardless of
+        // which one has higher velocity. On merged parts, where a melody and a pad share one
+        // part, velocity is exactly the signal that would tell them apart.
+        // This is reminiscent of priority tracks in mix timings, except use velocity instead of user assigned.
+        //
+        // Two options:
+        //
+        //  - Velocity in the sort. Within a weight tier candidates currently
+        //    arrive in micros order. This could be done by giving candidates
+        //    a velocity bonus (largest_vel/2), but should scale down to zero for 60ms
+        //    or shorter notes, and the full bonus for notes longer than
+        //    SHORT_NOTE_THRESHOLD. This would change so many existing branches
+        //    in this method, that it would be more or less a whole new timing system.
+        //
+        //  - Velocity in the overwrite weak blocker comparisons, where blocker.weight() < c.weight() already
+        //    chooses between two notes. Will affect much fewer notes, but change is
+        //    limited in regard to how the method operates.
+
         // The window within which notes are considered part of the same group
         final long arpeggioWindow = 45_000L;
         final int MAX_BOUNCE_CHAIN = 2;
@@ -4799,38 +4821,6 @@ public class AbcExporter {
                 if (GRID_STATS_ENABLED) GRID_STATS.conflictEntered(c.notes.size());
                 // Conflicts (Bounces and block Chords)
 
-                // The Group Collapse Check
-                // Are we part of a fast group that just collapsed?
-                // Measured as the inter-onset interval from the last note actually played,
-                // not from the grid line: that is the interval the ear responds to, and it
-                // is what stops a fast gesture being half-restored and half-collapsed.
-                //
-                // The time >= lastCrushedTime guard is load-bearing. Candidates are sorted by
-                // weight first, so micros restarts at every weight tier - and grace notes,
-                // being the lightest, are evaluated last, near the top of the song, while
-                // lastCrushedTime still holds a timestamp from the end of it. Without the
-                // guard the subtraction goes negative and the window matches everything.
-                boolean partOfCollapsedGroup = (lastCrushedTime != -1L)
-                        && (time >= lastCrushedTime)
-                        && (time - lastCrushedTime <= arpeggioWindow);
-
-                if (GRID_STATS_ENABLED && lastCrushedTime != -1L && time < lastCrushedTime && floorConflict) {
-                    GRID_STATS.collapseOutOfOrder(c.notes.size());
-                }
-
-                // Requires floorConflict. Without it the floor is already at least
-                // minimumMicros away, so this note stands on its own by the lattice's own
-                // standard and is only in this block because something ahead of it is in the
-                // way. Collapsing it backward freely would let a later event decide an earlier
-                // note's position.
-                if (partOfCollapsedGroup && floorConflict) {
-                    // The group is collapsing. Force this note to the floor immediately.
-                    floor.mergeCandidate(c);
-                    if (GRID_STATS_ENABLED) GRID_STATS.collapse(c.notes.size(), time - floor.micros());
-                    lastCrushedTime = time; // Update the time so the next note knows we're still collapsing
-                    continue; // Skip all other bounce logic!
-                }
-
                 // The Leapfrog Trap Door
                 // If 3rd note evaluates and sees that 2nd snowplowed past it,
                 // 3rd must ride the snowplow, not crush backward into the past.
@@ -4926,45 +4916,45 @@ public class AbcExporter {
                 } else if (c.graceOnly && c.notes.size() == 1 && ceil != null && ceilConflict) {
                     // Backward bounce (grace notes)
 
-                    boolean isOkToBounceBackward = ceil.bounceDepth() < MAX_BOUNCE_CHAIN;
-                    long bounceTime = ceil.micros() - minimumMicros;
+                    // A grace this close to the note it decorates is not an ornament, it is an
+                    // artifact, a fingering overlap or a quantization accident. Reproducing it
+                    // as a separate attack 45ms earlier invents a gesture nobody played, and on
+                    // a plucked instrument that invention can ring for a second. Merge it instead,
+                    // and if it duplicates a pitch already on the line, the snapToGrid same-pitch pass will
+                    // drop it, which is the right outcome.
+                    if (ceil.micros() - time <= minimumMicros / 4) {
+                        ceil.mergeCandidate(c);
+                        if (GRID_STATS_ENABLED) GRID_STATS.graceMergedToMain(c.notes.size(), ceil.micros() - time);
+                    } else {
 
-                    if (isOkToBounceBackward && isValidBounce2(bounceTime, time, minimumMicros, grid, c.weight, false, firstMicros)) {
-                        applyBounce2(grid, bounceTime, c, minimumMicros, ceil.bounceDepth() + 1);
-                        if (GRID_STATS_ENABLED) GRID_STATS.graceBounce(c.notes.size());
+                        boolean isOkToBounceBackward = ceil.bounceDepth() < MAX_BOUNCE_CHAIN;
+                        long bounceTime = ceil.micros() - minimumMicros;
 
-                        for (AbcNoteEvent note : c.notes) {
-                            long overlap = note.initEndABCMicros - ceil.micros();
-                            if (overlap <= minimumMicros / 2) {
-                                // No overlap in the source, or one smaller than the fusion
-                                // window - the two ends are heard as the same moment, so it
-                                // was not played deliberately. Snap the end to the main onset
-                                // rather than carrying an end that was inflated from a start
-                                // this note no longer has.
+                        if (isOkToBounceBackward && isValidBounce2(bounceTime, time, minimumMicros, grid, c.weight, false, firstMicros)) {
+                            applyBounce2(grid, bounceTime, c, minimumMicros, ceil.bounceDepth() + 1);
+                            if (GRID_STATS_ENABLED) GRID_STATS.graceBounce(c.notes.size());
+
+                            for (AbcNoteEvent note : c.notes) {
+                                // A grace is always minimumMicros long once inflated, and the bounce
+                                // target is exactly that far below ceil - so the end lands on ceil.
                                 Candidate2 endCand = endCandidates.get(note.endABCMicros);
-
-                                // Stop gracenote(s) from having their own end candidate
-                                // put their endings into main notes candidate instead.
-                                if (endCand != null) {
-                                    endCand.notes.remove(note);
-                                }
-                                note.endABCMicros = ceil.micros(); // Snap end to main note start
+                                if (endCand != null) endCand.notes.remove(note);
+                                note.endABCMicros = ceil.micros();
                                 ceil.ends.add(note);
                             }
-                            // A larger overlap was played on purpose. Leave it untouched.
-                        }
 
-                        lastCrushedTime = -1;
-                    } else {
-                        // mark it for deletion by moving it to negative infinity.
-                        for (AbcNoteEvent note : c.notes) {
-                            note.startABCMicros = Long.MIN_VALUE;
+                            lastCrushedTime = -1;
+                        } else {
+                            // mark it for deletion by moving it to negative infinity.
+                            for (AbcNoteEvent note : c.notes) {
+                                note.startABCMicros = Long.MIN_VALUE;
+                            }
+                            if (GRID_STATS_ENABLED) GRID_STATS.graceDeleted(c.notes.size());
+                            if (logNotes.isLoggable(Level.FINEST)) {
+                                logNotes.finest("Deleted grace note at " + Util.formatDurationM(time) + " (No space available)");
+                            }
+                            lastCrushedTime = time;
                         }
-                        if (GRID_STATS_ENABLED) GRID_STATS.graceDeleted(c.notes.size());
-                        if (logNotes.isLoggable(Level.FINEST)) {
-                            logNotes.finest("Deleted grace note at " + Util.formatDurationM(time) + " (No space available)");
-                        }
-                        lastCrushedTime = time;
                     }
                 } else if (ceilConflict && !floorConflict && floor != null) {
                     // Grace chords are admitted. They miss the grace branch above because
@@ -5059,8 +5049,9 @@ public class AbcExporter {
                     blocker = (Math.abs(time - floor.micros()) < Math.abs(time - ceil.micros())) ? floor : ceil;
                 }
 
+                boolean isFloorForbidden = floorConflict && isFloorAlsoMyStart(c, floor);
                 boolean added = false;
-                if (blocker != null && blocker.weight() < c.weight()) {
+                if (blocker != null && blocker.weight() < c.weight() && !(blocker == floor && isFloorForbidden)) {
                     // When floorConflict and ceilConflict are both set, there are two lines
                     // too close to `time` and we only remove one of them. Putting a point at
                     // `time` would then sit inside minimumMicros of the one still standing.
@@ -5509,6 +5500,15 @@ public class AbcExporter {
         }
         if (GRID_STATS_ENABLED) GRID_STATS.endPart(statsLabel, statsInstrument, statsMark);
         return finalGrid;
+    }
+
+    private boolean isFloorAlsoMyStart(Candidate2 c, GridPoint2 floor) {
+        for (AbcNoteEvent note : c.notes) {
+            if (floor.micros() == note.startABCMicros) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void applyBounce2(TreeSet<GridPoint2> grid, long bounceTime, Candidate2 c, long minimumMicros, int newBounceDepth) {

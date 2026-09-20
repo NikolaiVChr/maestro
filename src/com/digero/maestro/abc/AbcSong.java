@@ -98,9 +98,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private boolean organic = false;
 	private boolean organic2 = false;
     private boolean upgraded = false;
-	private int singleStageVer = 2;//old projects default to 1, new projects use this. Not exposed in UI.
-	private int mixVersion = 2;// Not exposed in UI.
-	private int mergeVersion = 2;// Not exposed in UI.
+	private int singleStageVer = 2;// old projects default to 1, new projects use this. Not exposed in UI.
+	private int mixVersion = 2;// Not exposed in UI. Superior to 1, so always used.
+	private int mergeVersion = 2;// old projects default to 1, new projects use this. Not exposed in UI.
 	private boolean priorityActive = false;
 	private boolean skipSilenceAtStart = true;
 	private boolean deleteMinimalNotes = false;

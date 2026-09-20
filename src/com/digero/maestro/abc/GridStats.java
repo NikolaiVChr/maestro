@@ -122,6 +122,31 @@ public final class GridStats {
     private final long[] samePitchRunLength = new long[9];   // 2, 3 ... 8+ hits collapsing to one
     private long samePitchSameOrig, samePitchDiffOrig, samePitchNoOrig;
     private long samePitchSameOnset;
+    private long collapseOverrodeBounce;
+    private final long[] collapseOverrodeDist = new long[BUCKETS];
+    private long graceMergedToMain;
+    private final long[] graceMergeDist = new long[BUCKETS];
+
+    /**
+     * A grace so close to the note it decorates that merging onto it beat moving it back a
+     * whole slot. Within minimumMicros/4 the two are heard as one attack anyway, and the
+     * backward bounce would have separated them by more than they were ever apart.
+     */
+    synchronized void graceMergedToMain(int notes, long delta) {
+        graceMergedToMain += notes;
+        addDisplacement(graceMergeDist, delta, notes);
+        conflictExits += notes;
+    }
+
+    /**
+     * A collapsed note that would have bounced without the collapse rule: far enough past its
+     * floor to earn its own line, and within the drift cap. These are the only notes the rule
+     * actually changes - anything closer than the 45ms threshold would have crushed anyway.
+     */
+    synchronized void collapseOverrodeBounce(int notes, long delta) {
+        collapseOverrodeBounce += notes;
+        addDisplacement(collapseOverrodeDist, delta, notes);
+    }
 
     /**
      * A note removed because another of the same pitch already occupies its position.
@@ -741,6 +766,9 @@ public final class GridStats {
         out.add("    " + hist(crushFwdDist));
         out.add(String.format(Locale.ROOT, "group collapse=%d  >=30ms: %s  (out-of-order rejected: %d)",
                 collapseMerge, over(collapseDist, 6), collapseOutOfOrder));
+        out.add(String.format(Locale.ROOT, "   would have bounced without the rule: %d (%s)",
+                collapseOverrodeBounce, pct(collapseOverrodeBounce, collapseMerge)));
+        out.add("    " + hist(collapseOverrodeDist));
         out.add(String.format(Locale.ROOT, "plain merge=%d", plainMerge));
         out.add(String.format(Locale.ROOT, "  fwd  >=30ms: %s", over(plainMergeDistFwd, 6)));
         out.add("    " + hist(plainMergeDistFwd));
@@ -758,7 +786,9 @@ public final class GridStats {
         for (String s : reliefExamples) out.add("    " + s);
 
         out.add("-- grace notes --");
-        out.add(String.format(Locale.ROOT, "bounced back=%d  deleted=%d", graceBounce, graceDeleted));
+        out.add(String.format(Locale.ROOT, "bounced back=%d  merged to main=%d  deleted=%d",
+                graceBounce, graceMergedToMain, graceDeleted));
+        out.add("   merge dist(ms): " + hist(graceMergeDist));
 
         out.add("-- onset line occupancy --");
         StringBuilder occ = new StringBuilder();
@@ -1040,5 +1070,9 @@ public final class GridStats {
         samePitchDeleted = samePitchDeletedPerc = samePitchTruncated = 0;
         Arrays.fill(samePitchRunLength, 0);
         samePitchSameOrig = samePitchDiffOrig = samePitchNoOrig = samePitchSameOnset = 0;
+        collapseOutOfOrder = collapseOverrodeBounce = 0;
+        Arrays.fill(collapseOverrodeDist, 0);
+        graceMergedToMain = 0;
+        Arrays.fill(graceMergeDist, 0);
     }
 }

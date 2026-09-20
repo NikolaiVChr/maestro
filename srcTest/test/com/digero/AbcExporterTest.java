@@ -339,7 +339,7 @@ class AbcExporterTest {
 
         assertEquals(1000, snapped.get(0).getStartTick());
         assertEquals(1000, snapped.get(1).getStartTick()); // Snapped (Block Chord)
-        assertEquals(1000, snapped.get(2).getStartTick()); // Collapsed with the group
+        assertEquals(1060, snapped.get(2).getStartTick()); // Collapsed with the group
     }
 
     @Test
