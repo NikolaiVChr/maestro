@@ -69,6 +69,7 @@ public class AutoExporter implements WarningHandler {
 	private final Object txtFieldMutex = new Object();
 
     private final List<File> skippedProjects = Collections.synchronizedList(new ArrayList<>());
+	private final List<File> polyExceededProjects = Collections.synchronizedList(new ArrayList<>());
     //private List<File> highCandidates = new ArrayList<>();
     private final Object fileNamingLock = new Object();
 	private volatile int progressInt = 0;
@@ -273,6 +274,7 @@ public class AutoExporter implements WarningHandler {
         appendToField("<p></p>");
 
         skippedProjects.clear();
+		polyExceededProjects.clear();
         //highCandidates = new ArrayList<>();
 		setProgress(0);
 		cancel = false;
@@ -310,7 +312,10 @@ public class AutoExporter implements WarningHandler {
 
                         try {
                             // thread-safe
-                            exportProject(file.toFile());
+							ProjectInfo pInfo = exportProject(file.toFile());
+							if (pInfo.polyMaxExceeded) {
+								polyExceededProjects.add(file.toFile());
+							}
                         } catch (Throwable e) {
                             log.log(Level.WARNING, file.getFileName().toString(), e);
 
@@ -333,6 +338,12 @@ public class AutoExporter implements WarningHandler {
                 appendToField("<p><font color='orange'>" + f.getParent() + File.separator + f.getName()+"</font></p>");
             }
         }
+		if (!polyExceededProjects.isEmpty()) {
+			appendToField(UIText.get("abctools.p.p.p.0.poly.exceeded.project.files.p", polyExceededProjects.size()));
+			for (File f : polyExceededProjects) {
+				appendToField("<p><font color='red'>" + f.getParent() + File.separator + f.getName()+"</font></p>");
+			}
+		}
         /*
         if (!highCandidates.isEmpty()) {
             System.out.println("High candidates " + highCandidates.size() + " project files:");
@@ -447,9 +458,10 @@ public class AutoExporter implements WarningHandler {
         File oldMidi;
         File nestedProject;
         String appendText;
+		boolean polyMaxExceeded = false;
     }
 
-	private void exportProject(File project) throws Exception {
+	private ProjectInfo exportProject(File project) throws Exception {
         ProjectInfo pInfo = new ProjectInfo();
         pInfo.projectModified = false;
         pInfo.newNestedMidi = null;
@@ -570,7 +582,10 @@ public class AutoExporter implements WarningHandler {
         }
 
         try {
-            abcSong.exportAbc(exportFile, AbcTools.APP_NAME);
+            int polyMax = abcSong.exportAbc(exportFile, AbcTools.APP_NAME);
+			if (polyMax > PolyphonyHistogram.LOTRO_MAX) {
+				pInfo.polyMaxExceeded = true;
+			}
         } catch (Throwable t) {
             exportFile.delete();
             throw t;
@@ -628,6 +643,7 @@ public class AutoExporter implements WarningHandler {
 
         pInfo.appendText += UIText.get("abctools.p.nbsp.nbsp.as.0.p", exportFile.getName());
         appendToField(pInfo.appendText);
+		return pInfo;
 	}
 
 	/**

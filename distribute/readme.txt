@@ -58,7 +58,7 @@ Release notes after 4.6.21 should be in markdown format. Keep the version header
 This changelog is only partial, to see all the way back to v1.0.0 go here:
   https://maestro.miraheze.org/wiki/Version_history
 
-Version 4.6.29
+Version 4.6.30
 * This is a **beta release**, feel free to help and test.
 * Significant less CPU usage during audio playback on some PCs.
 * Faster startup of Maestro if custom soundfont is installed, but not selected.
@@ -71,6 +71,7 @@ Version 4.6.29
 * Added TR-808 and TR-909 drum kit hit names.
 * Minor timing improvement to organic single-stage.
 * Organic multi-stage 2 improved.
+* The Auto-exporter now lists projects with too high polyphony for Lotro. Remember, changes to organic between Maestro versions can increase the count.
 * For newly created projects, minor volume improvement sometimes when merging multiple tracks into same abc part.
 * Removed the option to reduce abc filesize.
 * Improved dissonance graph.

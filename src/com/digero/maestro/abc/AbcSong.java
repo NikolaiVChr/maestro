@@ -33,6 +33,7 @@ import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
 import javax.xml.xpath.XPathExpressionException;
 
+import com.aifel.abctools.AbcTools;
 import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.VersionsWithIssues;
 import com.digero.common.util.*;
@@ -926,7 +927,11 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		}
 	}
 
-	public void exportAbc(File exportFile, String appName) throws IOException, AbcConversionException {
+	/**
+	 *
+	 * @return polyphony max if called by AutoExporter
+	 */
+	public int exportAbc(File exportFile, String appName) throws IOException, AbcConversionException {
 		boolean delayEnabled = false;
 		int minDelay = 0;
 		for (AbcPart part : parts) {
@@ -938,10 +943,15 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			}
 		}
 		try (FileOutputStream out = new FileOutputStream(exportFile)) {
-			getAbcExporter().exportToAbc(out, delayEnabled, appName, minDelay);
+			PolyphonyHistogram poly = getAbcExporter().exportToAbc(out, delayEnabled, appName, minDelay);
 			if (firstExportTime == null) firstExportTime = new Date();
+			if (appName.contains(AbcTools.APP_NAME)) {
+				poly.sumUp(this);
+				return poly.maxAll();
+			}
 		}
         setFileMetadata(exportFile.toPath(), appName);
+		return -1;
 	}
 
     /**

@@ -50,7 +50,7 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 	
 	public static final int CLIP_MAX_NOTES = 80;// Show from 0 to 80 notes
 	public static final int ORANGE_NOTES   = 45;// Over or equal to 45 and they go orange color. The limit is 64, but emotes and dances also fill.
-	public static final int RED_NOTES      = 64;//Over or equal to 64, notes become red.
+	public static final int RED_NOTES      = PolyphonyHistogram.LOTRO_MAX;//Over or equal to 64, notes become red.
 	static final int EXTRA_COUNT_COLUMN_WIDTH = 50;
 	static final int HISTOGRAM_HEIGHT = 64;
 

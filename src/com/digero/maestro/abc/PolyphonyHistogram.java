@@ -43,6 +43,7 @@ public class PolyphonyHistogram   {
     private double average = 0;
     private int maxAll = 0;
     private long peakTick = 0L;
+	public final static int LOTRO_MAX = 64;
 
 	public static boolean enabled = true;// set to true to enable this system, set to false to save cpu power.
 	private final Listener<SequencerEvent> listener = new MyListener();

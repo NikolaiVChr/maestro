@@ -16,6 +16,7 @@ import javax.sound.midi.MidiEvent;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Track;
 
+import com.aifel.abctools.AbcTools;
 import com.digero.common.abc.*;
 import com.digero.common.midi.*;
 import com.digero.common.util.Pair;
@@ -240,11 +241,11 @@ public class AbcExporter {
 		for (AbcPart part : parts) {
 			if (part.getEnabledTrackCount() > 0) {
 				if (organic) {
-					Pair<List<Chord>,Boolean> chords = combineOrganic(part, true, histogram, quanFractions);
+					Pair<List<Chord>,Boolean> chords = combineOrganic(part, true, histogram, quanFractions, true);
 					chordsMade.put(part, chords.first);
                     dissonanceDetector.submitPart(part, chords.first);
 				} else {
-					List<Chord> chords = combineAndQuantize(part, true, histogram);
+					List<Chord> chords = combineAndQuantize(part, true, histogram, true);
 					chordsMade.put(part, chords);
                     dissonanceDetector.submitPart(part, chords);
 				}
@@ -533,7 +534,7 @@ public class AbcExporter {
 		return new Triple<>(trackNumber, channel, lastEnd);
 	}
 
-	public void exportToAbc(OutputStream os, boolean delayEnabled, String appName, int minDelay) throws AbcConversionException {
+	public PolyphonyHistogram exportToAbc(OutputStream os, boolean delayEnabled, String appName, int minDelay) throws AbcConversionException {
 		// AbcExporter.GRID_STATS.reset();
 		// accountForSustain is true so that songbooks wont stop their timer before last note has finished sounding.
 		// lengthenToBar is false for opposite reason, so reporting the correct duration to songbooks.
@@ -604,13 +605,13 @@ public class AbcExporter {
                     countIn.micros = countInMicros;
                 }
             }
-
+            boolean countHistogram = appName.contains(AbcTools.APP_NAME);
 			for (AbcPart part : parts) {
 				if (part.getEnabledTrackCount() > 0 || (part.getAbcSong().getCountIn() != null && part.getAbcSong().getCountIn().micros > 0L && part.getAbcSong().getCountIn().part == part)) {
 					if (organic) {
-						exportPartToAbcOrganic(part, out, delayEnabled, histogram, quanFractions, minDelay);
+						exportPartToAbcOrganic(part, out, delayEnabled, histogram, quanFractions, minDelay, countHistogram);
 					} else {
-						exportPartToAbc(part, out, delayEnabled, histogram, minDelay);
+						exportPartToAbc(part, out, delayEnabled, histogram, minDelay, countHistogram);
 					}
 				}
 			}
@@ -622,6 +623,7 @@ public class AbcExporter {
                 throw new AbcConversionException(
                         "An I/O error occurred while writing the ABC file; the output may be incomplete.");
             }
+            return histogram;
 		}
 		/*
         for (String line : AbcExporter.GRID_STATS.reportLines()) {
@@ -653,7 +655,7 @@ public class AbcExporter {
 	}
 
 	private void exportPartToAbcOrganic(AbcPart part, PrintStream out,
-                                        boolean delayEnabled, PolyphonyHistogram histogram, int[] quanFractions, int minDelay) throws AbcConversionException {
+                                        boolean delayEnabled, PolyphonyHistogram histogram, int[] quanFractions, int minDelay, boolean countHistogram) throws AbcConversionException {
 
         //long L = (qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? 16L : 8L;
         long Q = qtm.getPrimaryExportTempoBPM();
@@ -836,7 +838,7 @@ public class AbcExporter {
 		}
         builders.add(delayed);
 		
-		Pair<List<Chord>, Boolean> pair = combineOrganic(part, false, histogram, quanFractions);
+		Pair<List<Chord>, Boolean> pair = combineOrganic(part, false, histogram, quanFractions, countHistogram);
 		 
 		List<Chord> chords = pair.first;
 
@@ -1413,8 +1415,8 @@ public class AbcExporter {
     }
 
 	private void exportPartToAbc(AbcPart part, PrintStream out,
-                                 boolean delayEnabled, PolyphonyHistogram histogram, int minDelay) throws AbcConversionException {
-		List<Chord> chords = combineAndQuantize(part, false, histogram);
+                                 boolean delayEnabled, PolyphonyHistogram histogram, int minDelay, boolean countHistogram) throws AbcConversionException {
+		List<Chord> chords = combineAndQuantize(part, false, histogram, countHistogram);
 
 		StringBuilder outBuilder = exportPartHeaderToAbc(part, null, 0);
         out.print(outBuilder);
@@ -1768,7 +1770,7 @@ public class AbcExporter {
 	/**
 	 * Combine the tracks into one, quantize the note lengths, separate into chords.
 	 */
-	private List<Chord> combineAndQuantize(AbcPart part, boolean preview, PolyphonyHistogram histogram) throws AbcConversionException {
+	private List<Chord> combineAndQuantize(AbcPart part, boolean preview, PolyphonyHistogram histogram, boolean countHistogram) throws AbcConversionException {
         part.numberOfRemovedNotesFromPruning = 0;
 		// Combine the events from the enabled tracks
 		List<AbcNoteEvent> events = new ArrayList<>();
@@ -1836,7 +1838,7 @@ public class AbcExporter {
 			}
 		}
 		
-		if (events.isEmpty() && preview) {
+		if (events.isEmpty() && countHistogram) {
 			try {
 				histogram.count(part, new ArrayList<>(), organic, qtm);
 			} catch (IOException e) {
@@ -2090,7 +2092,7 @@ public class AbcExporter {
 		}
 		assert !curChord.hasRestAndNotes();
 		
-		if (preview) {
+		if (countHistogram) {
 			try {
 				histogram.count(part, chords, organic, qtm);
 			} catch (IOException e) {
@@ -2290,7 +2292,7 @@ public class AbcExporter {
 	/**
 	 * Combine the tracks into one, separate into chords.
 	 */
-	private Pair<List<Chord>, Boolean> combineOrganic(AbcPart part, boolean preview, PolyphonyHistogram histogram, int[] quanFractions) throws AbcConversionException {
+	private Pair<List<Chord>, Boolean> combineOrganic(AbcPart part, boolean preview, PolyphonyHistogram histogram, int[] quanFractions, boolean countHistogram) throws AbcConversionException {
         part.numberOfRemovedNotesForSafety = 0;
 		// Combine the events from the enabled tracks
 		List<AbcNoteEvent> events = new ArrayList<>();
@@ -2362,7 +2364,7 @@ public class AbcExporter {
 			}
 		}
 		
-		if (events.isEmpty() && preview) {
+		if (events.isEmpty() && countHistogram) {
 			try {
 				histogram.count(part, new ArrayList<>(), organic, qtm);
 			} catch (IOException e) {
@@ -2480,7 +2482,7 @@ public class AbcExporter {
 			part.setMaxPoly(6);
 		}
 		
-		if (preview) {
+		if (countHistogram) {
 			try {
 				histogram.count(part, chords, organic, qtm);
 			} catch (IOException e) {
