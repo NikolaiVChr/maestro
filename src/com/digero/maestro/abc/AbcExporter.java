@@ -2815,59 +2815,59 @@ public class AbcExporter {
 				
 				long curMinEndFitMicros = Math.min(minEndMicros, cutTarget);
 
-					for (int j = 0; j < curChord.size(); j++) {
-						AbcNoteEvent jne = curChord.get(j);
-                        if (logNotes.isLoggable(Level.FINER)) logNotes.finer(jne.note+" is on cutting table "
-									+Util.formatDurationM(jne.startABCMicros)+" - "+Util.formatDurationM(jne.endABCMicros)
-									+". curEndMicros="+Util.formatDurationM(curEndMicro)+" cutTarget="+Util.formatDurationM(cutTarget)+" curMinEndFitMicros="+Util.formatDurationM(curMinEndFitMicros));
-						if (!part.getInstrument().sustainable) {
-							// This might be a bit controversial
-							// But here we fix the duration on the chord to minimum or shorter,
-							// since instrument is not sustainable anyway.
-							// Controversial due to you can't later experiment by putting
-							// a sustained instrument on this part, it will be ruined for that purpose.
-							// But this will make fitting it all together easier.
-							jne.endABCMicros = curMinEndFitMicros;
-							jne.setEndTick(qtm.microsToTickABCOrganic(jne.endABCMicros));
-							logNotes.finer(jne.note+" curMinEndFitMicros="+curMinEndFitMicros+" tiesTo="+(jne.tiesTo!=null));
-							if (jne.tiesTo != null) {
-								AbcNoteEvent tie = jne;
-								while(tie.tiesTo != null) {
-									events.remove(tie.tiesTo);
-									if (tie.tiesTo == ne) {
-										reprocessCurrentNote = true;
-									}
-									AbcNoteEvent old = tie;
-									tie = tie.tiesTo;
-									old.tiesTo = null;
-								}
-							}
-						} else if (!useRestToShortenChords && jne.endABCMicros > cutTarget) {
-							long noteEndMicro = jne.endABCMicros;
-							if (noteEndMicro-cutTarget < minimumMicros/2 && jne.tiesTo == null) {
-								// note ends approx same time as cutTarget
-								// we make it end same time as cutTarget,
-								// chord might become slightly longer later.
-								jne.endABCMicros = cutTarget;
-								jne.setEndTick(qtm.microsToTickABCOrganic(jne.endABCMicros));
-								logNotes.finer(part.getTitle()+ ": Fit note ending to cut target. tiesTo="+(jne.tiesTo!=null));
-							} else {
-								// This note extends past the end of the chord; break it into two tied notes
-								AbcNoteEvent next = jne.splitWithTieAtTick(qtm.microsToTickABCOrganic(cutTarget), cutTarget);
+                for (int j = 0; j < curChord.size(); j++) {
+                    AbcNoteEvent jne = curChord.get(j);
+                    if (logNotes.isLoggable(Level.FINER)) logNotes.finer(jne.note+" is on cutting table "
+                                +Util.formatDurationM(jne.startABCMicros)+" - "+Util.formatDurationM(jne.endABCMicros)
+                                +". curEndMicros="+Util.formatDurationM(curEndMicro)+" cutTarget="+Util.formatDurationM(cutTarget)+" curMinEndFitMicros="+Util.formatDurationM(curMinEndFitMicros));
+                    if (!part.getInstrument().sustainable) {
+                        // This might be a bit controversial
+                        // But here we fix the duration on the chord to minimum or shorter,
+                        // since instrument is not sustainable anyway.
+                        // Controversial due to you can't later experiment by putting
+                        // a sustained instrument on this part, it will be ruined for that purpose.
+                        // But this will make fitting it all together easier.
+                        jne.endABCMicros = curMinEndFitMicros;
+                        jne.setEndTick(qtm.microsToTickABCOrganic(jne.endABCMicros));
+                        logNotes.finer(jne.note+" curMinEndFitMicros="+curMinEndFitMicros+" tiesTo="+(jne.tiesTo!=null));
+                        if (jne.tiesTo != null) {
+                            AbcNoteEvent tie = jne;
+                            while(tie.tiesTo != null) {
+                                events.remove(tie.tiesTo);
+                                if (tie.tiesTo == ne) {
+                                    reprocessCurrentNote = true;
+                                }
+                                AbcNoteEvent old = tie;
+                                tie = tie.tiesTo;
+                                old.tiesTo = null;
+                            }
+                        }
+                    } else if (!useRestToShortenChords && jne.endABCMicros > cutTarget) {
+                        long noteEndMicro = jne.endABCMicros;
+                        if (noteEndMicro-cutTarget < minimumMicros/2 && jne.tiesTo == null) {
+                            // note ends approx same time as cutTarget
+                            // we make it end same time as cutTarget,
+                            // chord might become slightly longer later.
+                            jne.endABCMicros = cutTarget;
+                            jne.setEndTick(qtm.microsToTickABCOrganic(jne.endABCMicros));
+                            logNotes.finer(part.getTitle()+ ": Fit note ending to cut target. tiesTo="+(jne.tiesTo!=null));
+                        } else {
+                            // This note extends past the end of the chord; break it into two tied notes
+                            AbcNoteEvent next = jne.splitWithTieAtTick(qtm.microsToTickABCOrganic(cutTarget), cutTarget);
 
-                                int ins = insertionIndexOrganic(events, next, i);
+                            int ins = insertionIndexOrganic(events, next, i);
 
-                                assert (ins >= i);
+                            assert (ins >= i);
 
-								// If we're inserting before the current note, back up and process the added
-								// note
-								if (ins == i)
-									reprocessCurrentNote = true;
-								assert next.note != Note.REST;
-								events.add(ins, next);
-							}
-						}
-					}
+                            // If we're inserting before the current note, back up and process the added
+                            // note
+                            if (ins == i)
+                                reprocessCurrentNote = true;
+                            assert next.note != Note.REST;
+                            events.add(ins, next);
+                        }
+                    }
+                }
 
 				// The shorter notes will have changed the chord's duration
 				curChord.recalcEndMicros();
@@ -2990,171 +2990,170 @@ public class AbcExporter {
 						int curValue = calcValue(curChord, part.getInstrument().sustainable);
 						long neMicroStart = ne.startABCMicros;
 
-							boolean isRattle = true;
-							for (AbcNoteEvent n : curChord.getNotes()) {
-								if (!isRattle(part,n)) {
-									isRattle = false;
-									break;
-								}
-							}
-                            long proposedDelayMicros = minEndMicros - neMicroStart;
-							if ((ne2 == null || ne1RoomMicros - proposedDelayMicros >= minimumMicros) // next chord has room to be shortened
-                                    && ne1.endABCMicros > minEndMicros // next chord will not become negative duration
-									&& proposedDelayMicros < minimumMicros/2 // next chord will maximum be 30 ms delayed
-                                    ) {//  || ne1Micros > minimumMicros*2
-								// delay start of next chord up to 30 ms
-								long oldStartMicros = ne.startABCMicros;
-								for (int ii = i; ii < events.size(); ii++) {
-									AbcNoteEvent over = events.get(ii);
-									if (over.startABCMicros > oldStartMicros) {
-										break;
-									}
-									if (over.startABCMicros == oldStartMicros) {
-										// should be ok to do this even if tiesFrom is non-null
-										// since the tiesFrom has been expanded to end here
-										if (over.endABCMicros-over.startABCMicros == 0L) {
-                                            // It already has a duration of 0, we keep that 0, while shifting the note forward.
-											over.endABCMicros = minEndMicros;
-											over.setEndTick(qtm.microsToTickABCOrganic(minEndMicros));
-										}
-										over.startABCMicros = minEndMicros;
-										over.setStartTick(qtm.microsToTickABCOrganic(minEndMicros));
+                        boolean isRattle = true;
+                        for (AbcNoteEvent n : curChord.getNotes()) {
+                            if (!isRattle(part,n)) {
+                                isRattle = false;
+                                break;
+                            }
+                        }
+                        long proposedDelayMicros = minEndMicros - neMicroStart;
+                        if ((ne2 == null || ne1RoomMicros - proposedDelayMicros >= minimumMicros) // next chord has room to be shortened
+                                && ne1.endABCMicros > minEndMicros // next chord will not become negative duration
+                                && proposedDelayMicros < minimumMicros/2 // next chord will maximum be 30 ms delayed
+                                ) {//  || ne1Micros > minimumMicros*2
+                            // delay start of next chord up to 30 ms
+                            long oldStartMicros = ne.startABCMicros;
+                            for (int ii = i; ii < events.size(); ii++) {
+                                AbcNoteEvent over = events.get(ii);
+                                if (over.startABCMicros > oldStartMicros) {
+                                    break;
+                                }
+                                if (over.startABCMicros == oldStartMicros) {
+                                    // should be ok to do this even if tiesFrom is non-null
+                                    // since the tiesFrom has been expanded to end here
+                                    if (over.endABCMicros-over.startABCMicros == 0L) {
+                                        // It already has a duration of 0, we keep that 0, while shifting the note forward.
+                                        over.endABCMicros = minEndMicros;
+                                        over.setEndTick(qtm.microsToTickABCOrganic(minEndMicros));
+                                    }
+                                    over.startABCMicros = minEndMicros;
+                                    over.setStartTick(qtm.microsToTickABCOrganic(minEndMicros));
 
-                                        // Only the start moves; the end stays put, so the note is trimmed at the
-                                        // front by up to minimumMicros/2 rather than shifted whole. Moving the end
-                                        // too would push into the following chord and cascade, which is why this
-                                        // branch is gated so tightly. ne1RoomMicros above guarantees ne1 - the
-                                        // shortest note in the group - still clears minimumMicros after the trim.
-									}
-								}
-								
-								//going back and forth between micros and ticks is not always 1:1, so we stop infinite loops by setting this
-								curChord.dontMove2 = true;
-								curChord.setEndMicrosExpand(minEndMicros);
-								
-								i--;
-                                if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+" Delayed sequential chord by "+ ((minEndMicros-neMicroStart)/1000)+" ms 1");
-								continue MAIN;
-							} else if (!isRattle && ne2 != null && !curChord.isRest()
-                                    && (isRattle(part, ne) || (ne1RoomMicros < minimumMicros
-									&& neMicros < minimumMicros))) {
-								// Both curr and next chord does not have enough room or curChord is rattle(s)
-								// ne is fairly short (or rattle) and will have to go
-								// TODO: I have doubt about the ties. ne might even be tied to curr chord.
-								//       And if its tiesTo is also there, removing it should instead
-								//       tie curr chord to the one after ne, and expand curr chord to ne2.
-								//       I also doubt if its smart at all. Maybe next chord has 4 notes
-								//       and current has 1 etc. etc.
-								//       Deleting a short note might not even allow curChord to exist anyway
-								//       As the ne after ne might be longer and should not be deleted.
-								events.remove(ne);
-                                part.numberOfRemovedNotesFromFitting++;
-								// TODO: these ties should perhaps prevent it from being removed, TBD
-								if (ne.tiesFrom != null) {
-									ne.tiesFrom.tiesTo = null;
-								}
-								if (ne.tiesTo != null) {
-									if (!part.getInstrument().isSustainable(ne.note.id)) {
-										// If non-sustained then should remove ne.tiesTo
-										// we do this by a hack when setting from to itself
-										// then we later just skip the notes from being added.
-										AbcNoteEvent tie = ne.tiesTo;
-										while (tie != null) {
-											tie.tiesFrom = tie;
-											tie = tie.tiesTo;
-										}
-									}
-									ne.tiesTo.tiesFrom = null;
-								}
-								// we don't use dontMove2 here, as we might want to get back in here with other ne.
-								i--;
+                                    // Only the start moves; the end stays put, so the note is trimmed at the
+                                    // front by up to minimumMicros/2 rather than shifted whole. Moving the end
+                                    // too would push into the following chord and cascade, which is why this
+                                    // branch is gated so tightly. ne1RoomMicros above guarantees ne1 - the
+                                    // shortest note in the group - still clears minimumMicros after the trim.
+                                }
+                            }
 
-                                if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+": Deleted ne, is second of two trills/gliss notes, dura="+Util.formatDurationM(ne1Micros));
-								continue MAIN;
-							} else if (curChord.arp > 1) {
-								boolean doable = true;
-								if (ne.note == Note.REST) doable = false;
-								if (ne.tiesFrom != null) {
-									doable = false;
-								}
-								for (AbcNoteEvent small : curChord.getNotes()) {									
-									if (small.note == ne.note) {
-										// next note cannot be added to block chord,
-										// as one with same pitch is there already
-										
-										if (ne1Micros < minimumMicros*3L/2L || part.getInstrument().isPercussion) {
-											// the next chord will be too short; we remove it
-											
-											if (ne.tiesTo != null) {
-												if (!part.getInstrument().isSustainable(ne.note.id)) {
-													// If non-sustained then should remove ne.tiesTo
-													// we do this by a hack when setting from to itself
-													// then we just skip the notes from being added.
-													AbcNoteEvent tie = ne.tiesTo;
-													while (tie != null) {
-														tie.tiesFrom = tie;
-														tie = tie.tiesTo;
-													}
-												}
-												ne.tiesTo.tiesFrom = null;
-											}
-											if (ne.tiesFrom != null) {
-												ne.tiesFrom.tiesTo = null;
-											}
-											events.remove(ne);
-											i--;
-                                            if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+": Removed short dura note just after arpeggio");
-											continue MAIN;
-										}
-										doable = false;
-										break;
-									}
-									
-								}
-								if (doable) {
-									ne.startABCMicros = curChord.getStartMicros();
-									ne.setStartTick(qtm.microsToTickABCOrganic(curChord.getStartMicros()));
-									curChord.add(ne);// we note that this will later be pruned (again)
-									curChord.arp += 1;
-									curChord.recalcEndMicros();
-                                    if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+": Included late arpeggio to block chord");
-									continue MAIN;
-								}
-							} else if (useRestToShortenChords && curValue > nextValue) {
-								// Curr chord has higher value than next chord
-								// so its more than just a gracenote, we remove next instead.
-								// TODO: Could investigate if could delay start of next.
-								if (ne.tiesTo != null) {
-									if (!part.getInstrument().isSustainable(ne.note.id)) {
-										// If non-sustained then should remove ne.tiesTo
-										// we do this by a hack when setting from to itself
-										// then we just skip the notes from being added.
-										AbcNoteEvent tie = ne.tiesTo;
-										while (tie != null) {
-											tie.tiesFrom = tie;
-											tie = tie.tiesTo;
-										}
-									}
-									ne.tiesTo.tiesFrom = null;
-								}
-								if (ne.tiesFrom != null) {
-									ne.tiesFrom.tiesTo = null;
-								}
-								events.remove(ne);
-								i--;
-								curChord.removeRests();// It might not need the rest anymore so we remove it. Might get re-added.
-								curChord.recalcEndMicros();
-                                if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+": Removed low value next chord");
-								//note that this will make next chord even lower value,
-								//so rest of next chords notes will also be removed.
-								continue MAIN;
-							}
-							// give up and schedule curr chord for deletion, it likely contains a grace note or initial rest
-							curChord.setEndMicrosRetract(curChord.getStartMicros());
-							curChord.delete = true;
-                            part.numberOfRemovedNotesFromFitting += curChord.sizeReal();
-                            if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+": Removed short dura chord with "+curChord.size()+" notes. "+Util.formatDurationM(curChord.getStartMicros()));
+                            //going back and forth between micros and ticks is not always 1:1, so we stop infinite loops by setting this
+                            curChord.dontMove2 = true;
+                            curChord.setEndMicrosExpand(minEndMicros);
 
+                            i--;
+                            if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+" Delayed sequential chord by "+ ((minEndMicros-neMicroStart)/1000)+" ms 1");
+                            continue MAIN;
+                        } else if (!isRattle && ne2 != null && !curChord.isRest()
+                                && (isRattle(part, ne) || (ne1RoomMicros < minimumMicros
+                                && neMicros < minimumMicros))) {
+                            // Both curr and next chord does not have enough room or curChord is rattle(s)
+                            // ne is fairly short (or rattle) and will have to go
+                            // TODO: I have doubt about the ties. ne might even be tied to curr chord.
+                            //       And if its tiesTo is also there, removing it should instead
+                            //       tie curr chord to the one after ne, and expand curr chord to ne2.
+                            //       I also doubt if its smart at all. Maybe next chord has 4 notes
+                            //       and current has 1 etc. etc.
+                            //       Deleting a short note might not even allow curChord to exist anyway
+                            //       As the ne after ne might be longer and should not be deleted.
+                            events.remove(ne);
+                            part.numberOfRemovedNotesFromFitting++;
+                            // TODO: these ties should perhaps prevent it from being removed, TBD
+                            if (ne.tiesFrom != null) {
+                                ne.tiesFrom.tiesTo = null;
+                            }
+                            if (ne.tiesTo != null) {
+                                if (!part.getInstrument().isSustainable(ne.note.id)) {
+                                    // If non-sustained then should remove ne.tiesTo
+                                    // we do this by a hack when setting from to itself
+                                    // then we later just skip the notes from being added.
+                                    AbcNoteEvent tie = ne.tiesTo;
+                                    while (tie != null) {
+                                        tie.tiesFrom = tie;
+                                        tie = tie.tiesTo;
+                                    }
+                                }
+                                ne.tiesTo.tiesFrom = null;
+                            }
+                            // we don't use dontMove2 here, as we might want to get back in here with other ne.
+                            i--;
+
+                            if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+": Deleted ne, is second of two trills/gliss notes, dura="+Util.formatDurationM(ne1Micros));
+                            continue MAIN;
+                        } else if (curChord.arp > 1) {
+                            boolean doable = true;
+                            if (ne.note == Note.REST) doable = false;
+                            if (ne.tiesFrom != null) {
+                                doable = false;
+                            }
+                            for (AbcNoteEvent small : curChord.getNotes()) {
+                                if (small.note == ne.note) {
+                                    // next note cannot be added to block chord,
+                                    // as one with same pitch is there already
+
+                                    if (ne1Micros < minimumMicros*3L/2L || part.getInstrument().isPercussion) {
+                                        // the next chord will be too short; we remove it
+
+                                        if (ne.tiesTo != null) {
+                                            if (!part.getInstrument().isSustainable(ne.note.id)) {
+                                                // If non-sustained then should remove ne.tiesTo
+                                                // we do this by a hack when setting from to itself
+                                                // then we just skip the notes from being added.
+                                                AbcNoteEvent tie = ne.tiesTo;
+                                                while (tie != null) {
+                                                    tie.tiesFrom = tie;
+                                                    tie = tie.tiesTo;
+                                                }
+                                            }
+                                            ne.tiesTo.tiesFrom = null;
+                                        }
+                                        if (ne.tiesFrom != null) {
+                                            ne.tiesFrom.tiesTo = null;
+                                        }
+                                        events.remove(ne);
+                                        i--;
+                                        if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+": Removed short dura note just after arpeggio");
+                                        continue MAIN;
+                                    }
+                                    doable = false;
+                                    break;
+                                }
+
+                            }
+                            if (doable) {
+                                ne.startABCMicros = curChord.getStartMicros();
+                                ne.setStartTick(qtm.microsToTickABCOrganic(curChord.getStartMicros()));
+                                curChord.add(ne);// we note that this will later be pruned (again)
+                                curChord.arp += 1;
+                                curChord.recalcEndMicros();
+                                if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+": Included late arpeggio to block chord");
+                                continue MAIN;
+                            }
+                        } else if (useRestToShortenChords && curValue > nextValue) {
+                            // Curr chord has higher value than next chord
+                            // so its more than just a gracenote, we remove next instead.
+                            // TODO: Could investigate if could delay start of next.
+                            if (ne.tiesTo != null) {
+                                if (!part.getInstrument().isSustainable(ne.note.id)) {
+                                    // If non-sustained then should remove ne.tiesTo
+                                    // we do this by a hack when setting from to itself
+                                    // then we just skip the notes from being added.
+                                    AbcNoteEvent tie = ne.tiesTo;
+                                    while (tie != null) {
+                                        tie.tiesFrom = tie;
+                                        tie = tie.tiesTo;
+                                    }
+                                }
+                                ne.tiesTo.tiesFrom = null;
+                            }
+                            if (ne.tiesFrom != null) {
+                                ne.tiesFrom.tiesTo = null;
+                            }
+                            events.remove(ne);
+                            i--;
+                            curChord.removeRests();// It might not need the rest anymore so we remove it. Might get re-added.
+                            curChord.recalcEndMicros();
+                            if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+": Removed low value next chord");
+                            //note that this will make next chord even lower value,
+                            //so rest of next chords notes will also be removed.
+                            continue MAIN;
+                        }
+                        // give up and schedule curr chord for deletion, it likely contains a grace note or initial rest
+                        curChord.setEndMicrosRetract(curChord.getStartMicros());
+                        curChord.delete = true;
+                        part.numberOfRemovedNotesFromFitting += curChord.sizeReal();
+                        if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+": Removed short dura chord with "+curChord.size()+" notes. "+Util.formatDurationM(curChord.getStartMicros()));
 					}
 				}
                 if (assertionsEnabled) assertSoftDura(curChord, minimumMicros*99/100);
@@ -3340,14 +3339,14 @@ public class AbcExporter {
 		while (reprocessLastChord) {
 
             if (logNotes.isLoggable(Level.FINE)) logNotes.fine("Last chord processing..");
-			
-			// The last Chord has all the notes it will get.
 
-			if (curChord.early != null) {
-				curChord.setEarlyStartMicros(useRestToShortenChords);
-				if (prevChord != null) prevChord.recalcEndMicros();
+            // The last Chord has all the notes it will get.
+
+            if (curChord.early != null) {
+                curChord.setEarlyStartMicros(useRestToShortenChords);
+                if (prevChord != null) prevChord.recalcEndMicros();
                 if (logNotes.isLoggable(Level.FINE)) logNotes.fine("Last chord: early start");
-			}
+            }
 
 
             if (singleStageVer < 2) {
@@ -3371,24 +3370,9 @@ public class AbcExporter {
                         }
                     }
                 }
-            } else {
-                // Repair zero duration notes
-                //
-                // Source-zero notes are already gone unless there is many of them (pre-pass just below breakLongNotesOrganic), so
-                // anything zero here was collapsed by quantization and should survive to the
-                // below-minimumMicros handling that extends short chords.
-                for (int j = 0; j < curChord.size(); j++) {
-                    AbcNoteEvent jne = curChord.get(j);
-                    if (jne.endABCMicros == jne.startABCMicros) {
-                        jne.endABCMicros = jne.startABCMicros + minimumMicros;
-                        jne.setEndTick(qtm.microsToTickABCOrganic(jne.endABCMicros));
-                        if (logNotes.isLoggable(Level.FINER))
-                            logNotes.finer(part.getTitle() + " Restored quantization-collapsed note (" + jne.note.abc + ")");
-                    }
-                }
+                // An extension/removal will have changed the chord's duration
+                curChord.recalcEndMicros();
             }
-            // An extension/removal will have changed the chord's duration
-            curChord.recalcEndMicros();
 			
 			
 			// Last chord needs to be pruned as that hasn't happened yet. Since its the last we don't pass useRestToShortenChords.
