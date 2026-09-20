@@ -2258,8 +2258,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		arrangementView.sidepanelVisible(false);
 		arrangementView.unZoom();
 		arrangementView.closeAbcSong();
-		
-		partEditor.setVisible(false);
+
+		partEditor.dispose();
 
 		songPartsListPanel.updateParts();
 		partEditor.updateParts();

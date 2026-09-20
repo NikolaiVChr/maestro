@@ -3,6 +3,7 @@ package com.digero.maestro.view;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.io.Serial;
+import java.util.logging.Logger;
 
 import javax.swing.DefaultListModel;
 import javax.swing.JDialog;
@@ -15,6 +16,7 @@ import com.digero.maestro.abc.AbcPartEvent;
 import com.digero.maestro.abc.AbcSongEvent;
 
 public class PartEditor extends JDialog {
+	protected static final Logger log = Logger.getLogger("view.PartEditor");
 	@Serial
     private static final long serialVersionUID = 2872004091137636859L;
 
@@ -46,6 +48,29 @@ public class PartEditor extends JDialog {
 		setMinimumSize(sz);		
 	}
 
+	/**
+	 * Wrapper for the song listener that is used in partsList.
+	 */
+	private final Listener<AbcSongEvent> songListener = e -> {
+		partsList.songListener.onEvent(e);
+
+		switch (e.getProperty()) {
+			case SONG_CLOSING:
+				dispose();
+				break;
+			default:
+				break;
+		}
+	};
+
+	@Override
+	public void setVisible(boolean b) {
+		if (b && !isVisible()) {
+			fitToParts();
+		}
+		super.setVisible(b);
+	}
+
     private final MouseAdapter blocker = new MouseAdapter() {};
 
     public void uiEnabled(boolean on) {
@@ -63,12 +88,19 @@ public class PartEditor extends JDialog {
 
 	public void setModel(DefaultListModel<AbcPart> listModel) {
 		partsList.setModel(listModel);
-		pack();
-		keepInScreen();
+		if (isVisible()) {
+			fitToParts();
+		}
 	}
 
 	public void updateParts() {
 		partsList.updateParts();
+		if (isVisible()) {
+			fitToParts();
+		}
+	}
+
+	private void fitToParts() {
 		// Since there is no scrollwindow we pack to be sure all parts can be seen
 		// with 24 parts, the windows is not too large for 1080 screen at 12 pt fonts.
 		pack();
@@ -113,7 +145,7 @@ public class PartEditor extends JDialog {
 	}
 
 	public Listener<AbcSongEvent> getSongListener() {
-		return partsList.songListener;
+		return songListener;
 	}
 
 	public Listener<AbcPartEvent> getPartListener() {
