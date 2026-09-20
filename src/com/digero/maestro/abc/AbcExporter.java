@@ -5347,7 +5347,7 @@ public class AbcExporter {
                 }
 
                 if (!added) {
-                    // Unreachable, just safety.
+                    // Unreachable.
                     if (GRID_STATS_ENABLED) {
                         GRID_STATS.endLastResortAdded(c.notes.size(), statsLabel, c.micros());
                     }
@@ -5502,6 +5502,11 @@ public class AbcExporter {
         return finalGrid;
     }
 
+    /**
+     * Part of multi-stage 2
+     *
+     * Returns true if the floor's time is also the start time of a note in the candidate.
+     */
     private boolean isFloorAlsoMyStart(Candidate2 c, GridPoint2 floor) {
         for (AbcNoteEvent note : c.notes) {
             if (floor.micros() == note.startABCMicros) {
@@ -5511,6 +5516,9 @@ public class AbcExporter {
         return false;
     }
 
+    /**
+     * Part of multi-stage 2
+     */
     private void applyBounce2(TreeSet<GridPoint2> grid, long bounceTime, Candidate2 c, long minimumMicros, int newBounceDepth) {
         GridPoint2 bKey = new GridPoint2(bounceTime, newBounceDepth, 0);
         GridPoint2 bCeil = grid.ceiling(bKey);
