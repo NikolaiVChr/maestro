@@ -281,6 +281,8 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 			//System.out.println("  caches -1");
 			return;
 		}
+		if (sequencer.getSequence() == null)
+			return;
 		cacheTickPosition = tick;
 		cacheMicrosPosition = -1L;
 		//System.out.println("  cacheMicros -1, cacheTick "+tick);
@@ -297,6 +299,8 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 			//System.out.println("  caches -1");
 			return;
 		}
+		if (sequencer.getSequence() == null)
+			return;
 		cacheTickPosition = -1L;
 		cacheMicrosPosition = micros;
 		//System.out.println("  cacheTick -1, cacheMicros "+micros);
@@ -363,5 +367,12 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 			}
 		}
 		super.setRunning(setRunning);
+	}
+
+	@Override
+	public void setSequence(Sequence sequence) throws InvalidMidiDataException {
+		cacheTickPosition = -1L;
+		cacheMicrosPosition = -1L;
+		super.setSequence(sequence);
 	}
 }
