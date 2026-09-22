@@ -126,7 +126,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private boolean allowOverwriteSaveFile = false;
 	private boolean allowOverwriteExportFile = false;
 	private NoteFilterSequencerWrapper sequencer;
-	private long firstMidiNoteTick = 0;
+	private long firstMidiNoteTick = 0L;
 	private VolumeTransceiver volumeTransceiver;
 	private LotroSequencerWrapper abcSequencer;
 	private VolumeTransceiver abcVolumeTransceiver;
@@ -2442,6 +2442,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 					songPartsListPanel.selectPart(0);
 					boolean autoplay = miscSettings.autoplayOnOpen;
 					boolean startWithAbcPreview = hasEnabledAbcNotes(abcSong);
+					if (!startWithAbcPreview && sequencer.isAtStart()) {
+						// No ABC preview, playback from source MIDI.
+						// Skip silence.
+						sequencer.setTickPosition(firstMidiNoteTick);
+					}
 					updatePreviewMode(startWithAbcPreview, autoplay);
 					scheduleUiRefresh();
 				}
