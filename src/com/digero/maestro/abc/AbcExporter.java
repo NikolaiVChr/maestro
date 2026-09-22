@@ -4376,6 +4376,7 @@ public class AbcExporter {
             long lastTime;
             boolean closed;   // ended on a long note; nothing may join after it
             long lastEnd;
+            //long prevEnd = Long.MIN_VALUE; // end of the note before the last one; 0 until two notes are in [Thin interval 3 slides]
             boolean staccato = true;   // every step so far released before the next began
 
             @Override
@@ -4418,6 +4419,7 @@ public class AbcExporter {
                 for (Voice v : active) {
                     if (taken.contains(v)) continue;
                     boolean released = v.lastEnd <= time + STACCATO_OVERLAP_TOLERANCE;
+                    //boolean released = v.prevEnd <= time + STACCATO_OVERLAP_TOLERANCE;// [Thin interval 3 slides]
                     int limit = (v.staccato && released) ? VOICE_MAX_INTERVAL_STACCATO : VOICE_MAX_INTERVAL;
                     int interval = Math.abs(note.note.id - v.lastPitch);
                     if (interval < 1 || interval > limit) {
@@ -4445,6 +4447,7 @@ public class AbcExporter {
                 best.lastTime = time;
                 best.closed = isLong;
                 best.staccato = best.staccato && (best.notes.size() == 1 || best.lastEnd <= time + STACCATO_OVERLAP_TOLERANCE);
+                //best.prevEnd = best.lastEnd;// [Thin interval 3 slides]
                 best.lastEnd = time + dur;
                 taken.add(best);
                 if (THINNER_DEBUG) System.out.println("  best= " + best);
@@ -4501,7 +4504,9 @@ public class AbcExporter {
         // reads as staccato purely because the loop never reaches the sustain.
         boolean staccato = notes.get(n - 1).endABCMicros - times.get(n - 1) <= maxNoteMicros;
         for (int i = 0; staccato && i < n - 1; i++) {
+        //for (int i = 0; staccato && i < n - 2; i++) {// [Thin interval 3 slides]
             long end = notes.get(i).endABCMicros;
+            //if (end > times.get(i + 2) + overlapTolerance) {// [Thin interval 3 slides]
             if (end > times.get(i + 1) + overlapTolerance) {
                 staccato = false;
                 break;
