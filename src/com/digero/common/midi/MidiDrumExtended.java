@@ -40,11 +40,19 @@ public class MidiDrumExtended {
 		return instance;
 	}
 
+	/**
+	 *
+	 * @param drumId Drum hit id
+	 * @param kit Kit name, for example "GS Standard Drum Kit"
+	 * @param standard Midi standard
+	 * @return Drum hit name
+	 */
 	public String fromId(int drumId, String kit, MidiStandard standard) {
 		String key = String.format("%s:%s%03d", standard, kit, drumId);
 		String hit = map.get(key);
 		if (hit == null) {
-			key = String.format("%s:%s%03d", standard, MidiInstrument.STANDARD_DRUM_KIT, drumId);
+			// Fallback to: std + " Standard Drum Kit"
+			key = String.format("%s:%s%03d", standard, standard.shortName+" "+MidiInstrument.STANDARD_DRUM_KIT, drumId);
 			hit = map.get(key);
 			if (hit != null) {
 				return hit;
@@ -52,6 +60,7 @@ public class MidiDrumExtended {
 		} else {
 			return hit;
 		}
+		// Fallback to GM/GM2
 		return MidiDrum.fromId(drumId).toString();
 	}
 	

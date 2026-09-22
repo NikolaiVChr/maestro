@@ -8,7 +8,7 @@
 #
 #
 
-=GS=Standard Drum Kit
+=GS=GS Standard Drum Kit
 #
 # Roland SC-8850, 1999
 # Source: Roland SC-8850 Owner's Manual
@@ -44,7 +44,7 @@
 24 Concert SD
 25 Snare Roll
 26 Finger Snap 2
-# Standard GS percussion range
+# Standard GM percussion range
 35 Standard 1 Kick 2
 36 Standard 1 Kick 1
 37 Side Stick
@@ -100,7 +100,7 @@
 126 House Snare
 127 House Snare 2
 
-=XG=Standard Drum Kit
+=XG=XG Standard Drum Kit
 #
 # Yamaha XG spec V 1.32 October 19, 1998
 #
