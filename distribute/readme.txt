@@ -58,6 +58,9 @@ Release notes after 4.6.21 should be in markdown format. Keep the version header
 This changelog is only partial, to see all the way back to v1.0.0 go here:
   https://maestro.miraheze.org/wiki/Version_history
 
+Version 4.7.2
+* Make Windows midi system able to playback GS midi more reliable.
+
 Version 4.7.1
 * Fix that when making or deleting a new part, it would reset playback of midi when abc preview was not available yet.
 
