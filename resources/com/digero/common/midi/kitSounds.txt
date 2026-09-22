@@ -66,6 +66,12 @@
 72 Long Low Whistle
 88 Applause 2
 # Notes 89-94 have no sound in SC-8850 STANDARD 1
+89 Silent
+90 Silent
+91 Silent
+92 Silent
+93 Silent
+94 Silent
 95 Room Snare 1
 96 Room Snare 2
 97 Standard 1 Snare 1
