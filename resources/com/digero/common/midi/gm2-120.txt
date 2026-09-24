@@ -1,5 +1,5 @@
 0
-	0	Standard Drum Kit
+	0	GM2 Standard Drum Kit
 	8	Room Drum Kit
 	16	Power Drum Kit
 	24	Electro Drum Kit

@@ -534,6 +534,9 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 		return getEventCount() + " notes";
 	}
 
+	/**
+	 * @return A string containing the names of the instruments used in this track, separated by commas.
+	 */
 	@Override
 	public String getInstrumentNames() {
 		if (isDrumTrack) {
@@ -603,6 +606,9 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 		return instruments.size();
 	}
 
+	/**
+	 * @return Number of instrument voices used in this track
+	 */
 	@Override
 	public int getInstrumentExCount() {
 		return instrumentExtensions.size();

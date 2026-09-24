@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
@@ -59,6 +60,13 @@ public class ExtensionMidiInstrument {
 
     public static ExtensionMidiInstrument getInstance() {
 		return instance;
+	}
+
+	/**
+	 * Key is string of MSB LSB Patch without space, all is 3 digits.
+	 */
+	public Map<String, String> getAllVoices(MidiStandard standard) {
+		return Collections.unmodifiableMap(maps.get(standard));
 	}
 
 	/**
@@ -132,7 +140,11 @@ public class ExtensionMidiInstrument {
 		if (instrName == null && !drumKit) {
 			return MidiInstrument.fromId(patch).name;
 		} else if (instrName == null) {
-			return MidiInstrument.STANDARD_DRUM_KIT;
+			String prefix = "";
+			if (extension == MidiStandard.XG || extension == MidiStandard.GM2 || extension == MidiStandard.GS) {
+				prefix = extension.shortName+" ";
+			}
+			return prefix+MidiInstrument.STANDARD_DRUM_KIT;
 		}
 		return instrName;
 	}

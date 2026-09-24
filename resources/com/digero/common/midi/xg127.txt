@@ -1,6 +1,6 @@
 0
-	0	Standard Drum Kit
-	1	Standard Drum Kit 2
+	0	XG Standard Drum Kit
+	1	XG Standard Drum Kit 2
 	2	Dry Drum Kit
 	3	Bright Drum Kit
 	4	Skim Drum Kit

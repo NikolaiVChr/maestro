@@ -76,6 +76,10 @@ public enum MidiDrum {
 	private static final MidiDrum[] values = values();
 	public static final int DRUM_ID_OFFSET = 27;
 
+	/**
+	 * @param id Drum hit id
+	 * @return Drum hit name (GM or GM2)
+	 */
 	public static MidiDrum fromId(int id) {
 		id -= DRUM_ID_OFFSET;
 		if (id < 0 || id >= values.length)
