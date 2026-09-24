@@ -63,7 +63,6 @@ import com.digero.maestro.util.FileResolver;
 import com.digero.maestro.util.ListModelWrapper;
 import com.digero.maestro.util.SaveUtil;
 import com.digero.maestro.util.XmlUtil;
-import com.digero.maestro.view.TimingMode;
 
 public class AbcSong implements IDiscardable, AbcMetadataSource {
 	protected static final Logger log = Logger.getLogger("song");
@@ -352,7 +351,30 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         note = "";
 	}
 
-	@SuppressWarnings("HardCodedStringLiteral")
+	/**
+	 * Initializes this song from a Maestro MSX project file.
+	 *
+	 * <p>The project XML is parsed, the referenced source MIDI or ABC file is loaded,
+	 * and the saved project settings, parts, tune sections, metadata, and other song
+	 * state are restored.
+	 *
+	 * <p>Project data may be interpreted differently depending on the saved file
+	 * version. Missing or invalid required values cause a {@link FileParseException}.
+	 * Warnings that do not prevent loading are delegated to the supplied
+	 * {@link WarningHandler}.
+	 *
+	 * @param file the MSX project file to load
+	 * @param fileResolver resolver used when a referenced source file cannot be found
+	 *                     or loaded
+	 * @param miscSettings settings used while loading the source MIDI or ABC file
+	 * @param calledFromTools whether the project is being loaded by a tool rather
+	 *                        than the normal Maestro UI
+	 * @param warningHandler handler for recoverable project warnings, or
+	 *                       {@code null} to use normal UI handling
+	 * @throws SAXException if the XML cannot be parsed
+	 * @throws IOException if the project file cannot be read
+	 * @throws FileParseException if the project contains invalid or unusable data
+	 */
 	private void initFromXml(File file, FileResolver fileResolver, MiscSettings miscSettings, boolean calledFromTools,
                              WarningHandler warningHandler)
 			throws SAXException, IOException, FileParseException {
@@ -364,7 +386,27 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				throw new FileParseException("Does not appear to be a valid Maestro file. Missing <song> root element.",
 						projectFile.getName());
 			}
-			Version fileVersion = SaveUtil.parseValue(songEle, "@fileVersion", SONG_FILE_VERSION);
+
+			// Parse the file version from the XML. This is used to check for compatibility with the current software version.
+			String fileVersionStr = SaveUtil.parseValue(songEle, "@fileVersion", (String) null);
+
+			Version fileVersion;
+
+			if (fileVersionStr == null) {
+				// If the file version is not specified, assume it is 2.5.0
+				fileVersion = new Version(2, 5, 0);
+			} else {
+				// Otherwise, parse the version from the XML string.
+				fileVersion = Version.parseVersion(fileVersionStr);
+
+				if (fileVersion == null) {
+					throw new FileParseException("Invalid file version \"" + fileVersionStr + "\"",
+					projectFile.getName(),
+					XmlUtil.getLineNumber(songEle));
+				}
+			}
+
+			
 
 			if (isFileNewer(fileVersion)) {
                 if (warningHandler != null) {
