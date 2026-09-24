@@ -2100,6 +2100,12 @@ public class AbcExporter {
 			}
 		}
         part.numberOfRemovedNotesFromPruning = prunedNotes;
+
+        if (chords.size() > 9950) {
+            logAbc.warning(part.getTitle()+": too many notes/chords. "+chords.size()+"/9950. 10000 is max, and we reserve 50 for countin and delay.");
+            ProjectFrame.feed(UIText.get("maestro.too.many.chords", part.getTitle(), chords.size()+50), "50 were added to the count to allow for count-in and delay.");
+        }
+
 		return chords;
 	}
 
@@ -2489,6 +2495,11 @@ public class AbcExporter {
 				throw new AbcConversionException("Failed to read instrument sample durations.", e);
 			}
 		}
+
+        if (chords.size() > 9950) {
+            logAbc.warning(part.getTitle()+": too many notes/chords. "+(chords.size()+50)+"/10000");
+            ProjectFrame.feed(UIText.get("maestro.too.many.chords", part.getTitle(), chords.size()+50), "50 were added to the count to allow for count-in and delay.");
+        }
 		
 		//Collections.sort(chords);
 		
