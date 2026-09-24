@@ -89,6 +89,8 @@ public class LotroInstrumentTest {
 		test(TRAVELLERS_TRUSTY_FIDDLE, "trusty fiddle 5");
 		test(TRAVELLERS_TRUSTY_FIDDLE, "TT fiddle 5");
 		test(TRAVELLERS_TRUSTY_FIDDLE, "travellers_fiddle");
+		test(TRAVELLERS_TRUSTY_FIDDLE, "travel fiddle");
+		test(TRAVELLERS_TRUSTY_FIDDLE, "travelfiddle");
 
 		test(BASIC_THEORBO, "Song - THEORBO");
 		test(BASIC_THEORBO, "Song - basic  theorbo");
