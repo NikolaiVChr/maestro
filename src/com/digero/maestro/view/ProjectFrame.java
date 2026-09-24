@@ -856,22 +856,27 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	 * Call this from AWT thread only
 	 */
 	public void showFeed() {
+		assert SwingUtilities.isEventDispatchThread();
+		String feedStr = null;
+		String tipStr = null;
 		synchronized(ProjectFrame.class) {
-			if (feed == null) {
-				feedLabel.setText(null);
-				feedLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
-			} else {
-				String dismiss = feed.isEmpty()?"": UIText.get("maestro.click.to.dismiss");
-				feedLabel.setText(feed + dismiss);
-				if (!feed.isEmpty()) {
-					feedLabel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Color.RED, 2), BorderFactory.createEmptyBorder(0, 2, 0, 2)));
-				} else {
-					feedLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
-				}
-			}
-			feedLabel.setToolTipText(feedFull);
-			playControlPanel.validate();
+			feedStr = feed;
+			tipStr = feedFull;
 		}
+		if (feedStr == null) {
+			feedLabel.setText(null);
+			feedLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+		} else {
+			String dismiss = feedStr.isEmpty()?"": UIText.get("maestro.click.to.dismiss");
+			feedLabel.setText(feedStr + dismiss);
+			if (!feedStr.isEmpty()) {
+				feedLabel.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Color.RED, 2), BorderFactory.createEmptyBorder(0, 2, 0, 2)));
+			} else {
+				feedLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+			}
+		}
+		feedLabel.setToolTipText(tipStr);
+		playControlPanel.validate();
 	}
 
 	/**
