@@ -60,6 +60,7 @@ This changelog is only partial, to see all the way back to v1.0.0 go here:
 
 Version 4.7.2
 * Make Windows midi system able to playback GS midi more reliable.
+* When having a project open and in abc preview mode, and then loading a midi, the tracks could be grey until part changes were made.
 
 Version 4.7.1
 * Fix that when making or deleting a new part, it would reset playback of midi when abc preview was not available yet.
