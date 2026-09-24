@@ -1729,6 +1729,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		playButton.setEnabled(midiLoaded && uiEnabled);
 		midiModeRadioButton.setEnabled((midiLoaded || hasAbcNotes) && uiEnabled);
 		abcModeRadioButton.setEnabled(hasAbcNotes && uiEnabled);
+		if (!hasAbcNotes && abcModeRadioButton.isSelected()) {
+			log.severe("AbcPreview selected, but no abc preview available! And no, do not fix it here.");
+		}
 		stopButton.setEnabled((midiLoaded && (sequencer.isRunning() || !sequencer.isAtStart()))
 				|| (abcSequencer.isLoaded() && (abcSequencer.isRunning() || !abcSequencer.isAtStart())) && uiEnabled);
 	}
@@ -2299,6 +2302,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		abcBarLabel.setInitialOffsetTick(abcPreviewStartTick);
 		abcPositionLabel.setInitialOffsetTick(abcPreviewStartTick);
 
+		updatePreviewMode(false, false);
 		setAbcSongModified(false);
 		scheduleUiRefresh();
 		updateTitle();
@@ -2434,34 +2438,34 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 				allowOverwriteSaveFile = true;
 			}
 
+			boolean autoplay = miscSettings.autoplayOnOpen;
 			if (abcSong.isFromAbcFile() || abcSong.isFromXmlFile()) {
+				// abc or msx
 				if (abcSong.getParts().isEmpty()) {
-					scheduleUiRefresh();
 					abcSong.createNewPart();
-				} else {
-					songPartsListPanel.selectPart(0);
-					boolean autoplay = miscSettings.autoplayOnOpen;
-					boolean startWithAbcPreview = hasEnabledAbcNotes(abcSong);
-					if (!startWithAbcPreview && sequencer.isAtStart()) {
-						// No ABC preview, playback from source MIDI.
-						// Skip silence.
-						sequencer.setTickPosition(firstMidiNoteTick);
-					}
-					updatePreviewMode(startWithAbcPreview, autoplay);
-					scheduleUiRefresh();
 				}
+
+				songPartsListPanel.selectPart(0);
+
+				boolean startWithAbcPreview = hasEnabledAbcNotes(abcSong);
+				if (!startWithAbcPreview && sequencer.isAtStart()) {
+					// No ABC preview, playback from source MIDI.
+					// Skip silence.
+					sequencer.setTickPosition(firstMidiNoteTick);
+				}
+				updatePreviewMode(startWithAbcPreview, autoplay);
 			} else {
-				scheduleUiRefresh();
+				// midi
 				if (abcSong.getParts().isEmpty()) {
 					abcSong.createNewPart();
 				}
-				
-				if (miscSettings.autoplayOnOpen) {
-					// Uncomment this line to preview lots of midis and skipping their intro:
-					//sequencer.setTickPosition(sequencer.getTickLength()/4L);
-					sequencer.start();
-				}
+
+				// Uncomment this line to preview lots of midis and skipping their intro:
+				//sequencer.setTickPosition(sequencer.getTickLength()/4L);
+
+				updatePreviewMode(false, autoplay);
 			}
+			scheduleUiRefresh();
 
 			abcSong.setSkipSilenceAtStart(saveSettings.skipSilenceAtStart);
 			abcSong.setDeleteMinimalNotes(saveSettings.deleteMinimalNotes);
@@ -2698,13 +2702,32 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
         return cache.tickToBarNumberFloat(tick);
     }
 
+	/**
+	 * Switch between abc preview mode and source playback.
+	 *
+	 * If the preview is not up to date or loaded, a new preview will be generated synchronously if 'newAbcPreviewMode' is true.
+	 *
+	 * @param abcPreviewModeNew true for abc preview mode
+	 */
 	private void updatePreviewMode(boolean abcPreviewModeNew) {
 		SequencerWrapper oldSequencer = abcPreviewMode ? abcSequencer : sequencer;
 		updatePreviewMode(abcPreviewModeNew, oldSequencer.isRunning());
 	}
 
+	/**
+	 * Switch between abc preview mode and source playback.
+	 * This method will not skip initial silence, do that before calling the method.
+	 *
+	 * If the preview is not up to date or loaded, a new preview will be generated synchronously if 'newAbcPreviewMode' is true.
+	 *
+	 * @param newAbcPreviewMode true for abc preview mode
+	 * @param shouldBeRunning true for starting sequencer if it's not running.
+	 */
 	private void updatePreviewMode(boolean newAbcPreviewMode, boolean shouldBeRunning) {
 		boolean runningNow = abcPreviewMode ? abcSequencer.isRunning() : sequencer.isRunning();
+
+		// Do not allow switching to abc preview if there is no preview possible.
+		if (newAbcPreviewMode && !hasEnabledAbcNotes(abcSong)) newAbcPreviewMode = false;
 
 		if (newAbcPreviewMode != abcPreviewMode || runningNow != shouldBeRunning) {
 			if (shouldBeRunning && newAbcPreviewMode) {
