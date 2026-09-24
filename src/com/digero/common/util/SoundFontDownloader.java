@@ -1,7 +1,7 @@
 package com.digero.common.util;
 
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.SynthesizerFactory;
-import com.digero.common.view.UIText;
 
 import javax.swing.*;
 import java.awt.*;

@@ -1,10 +1,10 @@
 package com.digero.maestro.view;
 
+import com.digero.common.i18n.UIText;
 import com.digero.common.util.LyricLine;
 import com.digero.common.util.Themer;
 import com.digero.common.util.Util;
 import com.digero.common.view.ColorTable;
-import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.abc.QuantizedTimingInfo;

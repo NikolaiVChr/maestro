@@ -5,8 +5,9 @@ import com.digero.abcplayer.MidiToWav;
 import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.abctomidi.AbcToMidi;
 import com.digero.common.abctomidi.FileAndData;
+import com.digero.common.i18n.UIText;
 import com.digero.common.util.Util;
-import com.digero.common.view.UIText;
+
 import net.miginfocom.swing.MigLayout;
 
 import javax.sound.midi.Sequence;

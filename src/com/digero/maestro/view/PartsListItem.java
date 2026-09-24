@@ -19,10 +19,10 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.TransferHandler;
 
+import com.digero.common.i18n.UIText;
 import com.digero.common.util.IDiscardable;
 import com.digero.common.util.Listener;
 import com.digero.common.view.ColorTable;
-import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcPartMetadataSource;
 

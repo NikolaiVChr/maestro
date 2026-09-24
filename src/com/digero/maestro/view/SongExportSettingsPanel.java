@@ -24,12 +24,12 @@ import javax.swing.JFormattedTextField;
 import javax.swing.JFormattedTextField.AbstractFormatter;
 import javax.swing.JLabel;
 
+import com.digero.common.i18n.UIText;
 import com.digero.common.icons.IconLoader;
 import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.MidiConstants;
 import com.digero.common.midi.TimeSignature;
 import com.digero.common.util.ICompileConstants;
-import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.midi.Chord;
 import com.digero.maestro.util.KeySignatureFormatter;

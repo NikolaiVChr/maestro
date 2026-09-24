@@ -1,7 +1,5 @@
 package com.digero.common.util;
 
-import com.digero.common.view.UIText;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -11,6 +9,8 @@ import javax.swing.event.TreeModelEvent;
 import javax.swing.event.TreeModelListener;
 import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
+
+import com.digero.common.i18n.UIText;
 
 // Implements a file tree for JTree, but the nodes directly
 // under the dummy root node are a list of directories.

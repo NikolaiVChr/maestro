@@ -1,9 +1,9 @@
 package com.digero.maestro.view;
 
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.PanGenerator;
 import com.digero.common.util.Themer;
 import com.digero.common.view.ColorTable;
-import com.digero.common.view.UIText;
 
 import javax.swing.*;
 import java.awt.*;

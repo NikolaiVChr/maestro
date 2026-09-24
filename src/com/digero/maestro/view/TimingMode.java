@@ -5,7 +5,7 @@ import java.util.Objects;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.Nullable;
 
-import com.digero.common.view.UIText;
+import com.digero.common.i18n.UIText;
 import com.digero.maestro.abc.AbcSong;
 
 public enum TimingMode {

@@ -1,10 +1,10 @@
 package com.digero.maestro.view;
 
-import com.digero.common.view.UIText;
-
 import java.awt.*;
 
 import javax.swing.*;
+
+import com.digero.common.i18n.UIText;
 
 public class DissonanceSettingsDialog extends JDialog {
 

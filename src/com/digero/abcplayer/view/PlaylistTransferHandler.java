@@ -1,7 +1,5 @@
 package com.digero.abcplayer.view;
 
-import com.digero.common.view.UIText;
-
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
@@ -12,6 +10,8 @@ import java.util.function.Consumer;
 import javax.swing.JComponent;
 import javax.swing.JTable;
 import javax.swing.TransferHandler;
+
+import com.digero.common.i18n.UIText;
 
 public class PlaylistTransferHandler extends TransferHandler {
 	

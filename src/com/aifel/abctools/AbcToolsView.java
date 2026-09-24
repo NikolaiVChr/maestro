@@ -1,6 +1,6 @@
 package com.aifel.abctools;
 
-import com.digero.common.view.UIText;
+import com.digero.common.i18n.UIText;
 import com.digero.maestro.midi.Chord;
 
 import javax.swing.*;

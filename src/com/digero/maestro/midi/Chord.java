@@ -30,9 +30,9 @@ import java.util.logging.Logger;
 
 import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.Dynamics;
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.ITempoCache;
 import com.digero.common.midi.Note;
-import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcPart;
 
 public class Chord implements AbcConstants, Comparable<Chord> {
