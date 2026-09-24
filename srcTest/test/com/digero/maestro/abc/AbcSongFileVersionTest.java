@@ -3,6 +3,8 @@ package com.digero.maestro.abc;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.digero.common.i18n.LocaleManager;
+import com.digero.common.i18n.UIText;
 import com.digero.common.util.FileParseException;
 import com.digero.common.util.WarningHandler;
 import com.digero.maestro.util.FileResolver;
@@ -62,6 +64,9 @@ class AbcSongFileVersionTest {
 
     @BeforeEach
     void createSourceMidi() throws Exception {
+        LocaleManager.init();
+        UIText.init();
+
         // Initialize test preferences.
         testPreferences = Preferences.userRoot().node("maestro-tests/" + UUID.randomUUID());
 
