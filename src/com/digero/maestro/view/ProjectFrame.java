@@ -2727,7 +2727,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		boolean runningNow = abcPreviewMode ? abcSequencer.isRunning() : sequencer.isRunning();
 
 		// Do not allow switching to abc preview if there is no preview possible.
-		if (newAbcPreviewMode && !hasEnabledAbcNotes(abcSong)) newAbcPreviewMode = false;
+		// The check for 'abcPreviewMode' is to avoid calling the method which has a loop.
+		if (newAbcPreviewMode && !abcPreviewMode && !hasEnabledAbcNotes(abcSong)) newAbcPreviewMode = false;
 
 		if (newAbcPreviewMode != abcPreviewMode || runningNow != shouldBeRunning) {
 			if (shouldBeRunning && newAbcPreviewMode) {
