@@ -45,6 +45,7 @@
 	</target>
 
     <target name="CompilePatches" description="Compile patched JDK classes">
+		<delete dir="../classes_patch" />
         <mkdir dir="../classes_patch" />
 
         <javac srcdir="../patches/java.desktop"
@@ -228,16 +229,23 @@
 		</exec>
 		<copy file="${jpackage}/AbcPlayer/app/AbcPlayer.cfg" tofile="${jpackage}/Maestro/app/AbcPlayer.cfg" />
 		<copy file="${jpackage}/AbcTools/app/AbcTools.cfg" tofile="${jpackage}/Maestro/app/AbcTools.cfg" />
-		<copy file="${jpackage}/AbcPlayer/AbcPlayer.exe" tofile="${build}/AbcPlayer.exe" />
-		<copy file="${jpackage}/AbcTools/AbcTools.exe" tofile="${build}/AbcTools.exe" />
-		<copy file="${jpackage}/Maestro/Maestro.exe" tofile="${build}/Maestro.exe" />
-		<copy todir="${build}/app">
+		<replaceregexp match="^\[Application\]" replace="[Application]${line.separator}win.norestart=true" byline="true">
+			<fileset dir="${jpackage}/Maestro/app">
+				<include name="Maestro.cfg" />
+				<include name="AbcPlayer.cfg" />
+				<include name="AbcTools.cfg" />
+			</fileset>
+		</replaceregexp>
+		<copy file="${jpackage}/AbcPlayer/AbcPlayer.exe" tofile="${build}/AbcPlayer.exe" overwrite="true"/>
+		<copy file="${jpackage}/AbcTools/AbcTools.exe" tofile="${build}/AbcTools.exe" overwrite="true" />
+		<copy file="${jpackage}/Maestro/Maestro.exe" tofile="${build}/Maestro.exe" overwrite="true" />
+		<copy todir="${build}/app" overwrite="true">
 			<fileset dir="${jpackage}/Maestro/app" />
 		</copy>
-		<copy todir="${build}/runtime">
+		<copy todir="${build}/runtime" overwrite="true">
 			<fileset dir="${jpackage}/Maestro/runtime" />
 		</copy>
-        <copy file="${build}/java.midi.patch.jar" tofile="${build}/app/java.midi.patch.jar" />
+        <copy file="${build}/java.midi.patch.jar" tofile="${build}/app/java.midi.patch.jar" overwrite="true"/>
 <!--		<delete dir="${jpackage}" />-->
 	</target>
 
@@ -334,6 +342,9 @@
         <exec executable="attrib" osfamily="windows" failonerror="false">
             <arg line="-r -s -h /s /d &quot;${jpackage}\*&quot;"/>
         </exec>
+		<exec executable="attrib" osfamily="windows" failonerror="false">
+			<arg line="-r -s -h /s /d &quot;${build}\*&quot;"/>
+		</exec>
     </target>
 
 	<target name="Distribute" depends="Installer,ZipFile" description="Make final ZIP and MSI files">
