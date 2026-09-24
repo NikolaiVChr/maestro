@@ -58,6 +58,9 @@ Release notes after 4.6.21 should be in markdown format. Keep the version header
 This changelog is only partial, to see all the way back to v1.0.0 go here:
   https://maestro.miraheze.org/wiki/Version_history
 
+Version 4.7.3
+* When loading projects, the project version number and xml version number is now checked for errors.
+
 Version 4.7.2
 * Make Windows midi system able to playback GS midi more reliable.
 * When having a project open and in abc preview mode, and then loading a midi, the tracks could be grey until part changes were made.
