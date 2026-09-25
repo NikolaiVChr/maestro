@@ -104,7 +104,7 @@ class AbcToMidiBehaviourTest {
 		void conversionIsDeterministic(AbcCase abcCase, Profile profile) {
 			String first = ConversionDump.run(abcCase, profile, true, new AbcInfo()).text();
 			String second = ConversionDump.run(abcCase, profile, true, new AbcInfo()).text();
-			assertEquals(first, second);
+			TextDiff.assertSameText(first, second, "Second conversion differs from the first");
 		}
 
 		@ParameterizedTest(name = "{0} {1}")
@@ -113,9 +113,9 @@ class AbcToMidiBehaviourTest {
 			ConversionDump.Result with = ConversionDump.run(abcCase, profile, true, new AbcInfo());
 			ConversionDump.Result without = ConversionDump.run(abcCase, profile, false, new AbcInfo());
 			assertEquals(with.error(), without.error());
-			assertEquals(with.sequence(), without.sequence());
-			assertEquals(with.abcInfo(), without.abcInfo());
-			assertEquals(with.log(), without.log());
+			TextDiff.assertSameText(with.sequence(), without.sequence(), "MIDI differs without regions");
+			TextDiff.assertSameText(with.abcInfo(), without.abcInfo(), "AbcInfo differs without regions");
+			TextDiff.assertSameText(with.log(), without.log(), "Log differs without regions");
 		}
 
 		/** Params.abcInfo can be reused (AbcToMidi resets it); nothing from the previous song may leak. */
@@ -129,7 +129,7 @@ class AbcToMidiBehaviourTest {
 
 			String fresh = ConversionDump.run(abcCase, profile, true, new AbcInfo()).text();
 			String afterReuse = ConversionDump.run(abcCase, profile, true, reused).text();
-			assertEquals(fresh, afterReuse);
+			TextDiff.assertSameText(fresh, afterReuse, "Reused AbcInfo gives a different result");
 		}
 	}
 

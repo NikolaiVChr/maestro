@@ -35,6 +35,9 @@ public class StringCleaner {
 	 * Clean a string for any chars that give songbook or lotro issues
 	 * when used inside abc files.
 	 *
+	 * Notice that abc allows for escaped percent sign with backslash to not mean a comment in metadata.
+	 * TODO: For now we ignore that here.
+	 *
 	 * See also XmlUtil.sanitizeStringForXMLSaving()
 	 *
 	 */

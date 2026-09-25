@@ -54,7 +54,7 @@ final class SnapshotStore {
 			Path actualFile = ACTUAL_DIR.resolve(id + ".golden.txt");
 			write(actualFile, actual);
 			// assertEquals with strings gives the IDE's side-by-side diff view
-			assertEquals(expected, actual,
+			TextDiff.assertSameText(expected, actual,
 					"Output differs from snapshot " + file + " (actual output written to " + actualFile + ")");
 		}
 	}

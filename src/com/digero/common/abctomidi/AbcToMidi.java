@@ -225,9 +225,7 @@ public class AbcToMidi {
 					continue;
 				}
 
-				int comment = line.indexOf('%');
-				if (comment >= 0)
-					line = line.substring(0, comment);
+				line = stripComment(line);
 				if (line.isBlank())
 					continue;
 
@@ -236,7 +234,7 @@ public class AbcToMidi {
 				Matcher infoMatcher = INFO_PATTERN.matcher(line);
 				if (infoMatcher.matches()) {
 					char type = Character.toUpperCase(infoMatcher.group(INFO_TYPE).charAt(0));
-					String value = infoMatcher.group(INFO_VALUE).trim();
+					String value = unescapePercent(infoMatcher.group(INFO_VALUE).trim());
 
 					abcInfo.setMetadata(type, value);
 
@@ -1043,6 +1041,24 @@ public class AbcToMidi {
 		}
 	}
 
+	/**
+	 * Removes a % comment. In ABC, % starts a comment anywhere on a line, including in information fields; \% is a
+	 * literal percent sign and doesn't start a comment.
+	 */
+	private static String stripComment(String line) {
+		for (int i = 0; i < line.length(); i++) {
+			if (line.charAt(i) == '%' && (i == 0 || line.charAt(i - 1) != '\\')) {
+				return line.substring(0, i);
+			}
+		}
+		return line;
+	}
+
+	/** Turns \% (a literal percent sign in ABC) into %. */
+	private static String unescapePercent(String value) {
+		return value.replace("\\%", "%");
+	}
+
 	private static String addGroup(Matcher m, boolean shouldReturn) {
 		if (shouldReturn) {
 			return m.group(NOTE_TIE);
@@ -1177,7 +1193,7 @@ public class AbcToMidi {
 				Matcher infoMatcher = INFO_PATTERN.matcher(line);
 				if (infoMatcher.matches()) {
 					char type = Character.toUpperCase(infoMatcher.group(INFO_TYPE).charAt(0));
-					String value = infoMatcher.group(INFO_VALUE).trim();
+					String value = unescapePercent(infoMatcher.group(INFO_VALUE).trim());
 
 					abcInfo.setMetadata(type, value);
 					

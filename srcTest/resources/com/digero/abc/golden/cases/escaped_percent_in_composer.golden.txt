@@ -24,7 +24,7 @@ divisionType=0.0 resolution=11520 tickLength=29689 tracks=2
   29689 META end_of_track
 == abcInfo
   title="Test"
-  composer="50\\"
+  composer="50% Me"
   transcriber=""
   genre="" mood=""
   primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
@@ -60,7 +60,7 @@ divisionType=0.0 resolution=11520 tickLength=29689 tracks=2
   29689 META end_of_track
 == abcInfo
   title="Test"
-  composer="50\\"
+  composer="50% Me"
   transcriber=""
   genre="" mood=""
   primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
@@ -93,7 +93,7 @@ divisionType=0.0 resolution=11520 tickLength=11520 tracks=2
   11520 META end_of_track
 == abcInfo
   title="Test"
-  composer="50\\"
+  composer="50% Me"
   transcriber=""
   genre="" mood=""
   primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
