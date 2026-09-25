@@ -11,9 +11,9 @@ import java.util.prefs.Preferences;
 import javax.sound.midi.*;
 import javax.sound.midi.MidiDevice.Info;
 
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.SequencerEvent.SequencerProperty;
 import com.digero.common.util.AppInfo;
-import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.DrumNoteMap;
 import com.digero.maestro.abc.LotroCombiDrumInfo;
@@ -153,7 +153,7 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 		}
 		boolean customAvailable = false;
 		String customKey = SynthesizerFactory.customMidiSoundfontFilename;
-		if (SynthesizerFactory.getCustomMIDIAudioSynthesizer() != null) {
+		if (SynthesizerFactory.customSoundbankFileExists()) {
 			prefsNode.putLong(customKey, new Date().getTime());
 			customAvailable = true;
 		} else {
@@ -266,5 +266,113 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 
 	public boolean isDefault() {
 		return deviceInUse == null;
+	}
+
+	long cacheTickPosition = -1L;
+	long cacheMicrosPosition = -1L;
+
+	@Override
+	public void setTickPosition(long tick) {
+		//System.out.println(getClass().getSimpleName()+".setTickPosition(" + tick + ")");
+		if (isRunning()) {
+			super.setTickPosition(tick);
+			cacheTickPosition = -1L;
+			cacheMicrosPosition = -1L;
+			//System.out.println("  caches -1");
+			return;
+		}
+		if (sequencer.getSequence() == null)
+			return;
+		cacheTickPosition = tick;
+		cacheMicrosPosition = -1L;
+		//System.out.println("  cacheMicros -1, cacheTick "+tick);
+		fireChangeEvent(SequencerProperty.POSITION);
+	}
+
+	@Override
+	public void setPosition(long micros) {
+		//System.out.println(getClass().getSimpleName()+".setPosition(" + micros + ")");
+		if (isRunning()) {
+			super.setPosition(micros);
+			cacheTickPosition = -1L;
+			cacheMicrosPosition = -1L;
+			//System.out.println("  caches -1");
+			return;
+		}
+		if (sequencer.getSequence() == null)
+			return;
+		cacheTickPosition = -1L;
+		cacheMicrosPosition = micros;
+		//System.out.println("  cacheTick -1, cacheMicros "+micros);
+		fireChangeEvent(SequencerProperty.POSITION);
+	}
+
+	@Override
+	public long getPosition() {
+		if (isRunning()) {
+			cacheMicrosPosition = -1L;
+			cacheTickPosition = -1L;
+			return super.getPosition();
+		}
+		if (cacheMicrosPosition != -1L) {
+			return cacheMicrosPosition;
+		}
+		if (cacheTickPosition != -1L) {
+			// A tick was cached while stopped (e.g. the ABC-preview echo). Convert to
+			// this sequence's micros, the two sequences share ticks, not micros, and
+			// memorize so repeated reads in the same tick don't reconvert.
+			cacheMicrosPosition = tickToMicros(cacheTickPosition);
+			return cacheMicrosPosition;
+		}
+		return super.getPosition();
+	}
+
+	@Override
+	public long getTickPosition() {
+		if (isRunning()) {
+			cacheMicrosPosition = -1L;
+			cacheTickPosition = -1L;
+			return super.getTickPosition();
+		}
+		if (cacheTickPosition != -1L) {
+			return cacheTickPosition;
+		}
+		if (cacheMicrosPosition != -1L) {
+			cacheTickPosition = microsToTick(cacheMicrosPosition);
+			return cacheTickPosition;
+		}
+		return super.getTickPosition();
+	}
+
+	@Override
+	public void setRunning(boolean setRunning) {
+		//System.out.println(getClass().getSimpleName()+".setRunning(" + setRunning + ")");
+		if (setRunning) {
+			long tick = cacheTickPosition;
+			long micros = cacheMicrosPosition;
+			// Clear before seeking: SequencerWrapper.setTickPosition() guards with
+			// "tick != getTickPosition()", and getTickPosition() is overridden here to
+			// return the cache. With the cache still populated the guard sees no change
+			// and skips the real seek, leaving the JDK sequencer wherever setSequence
+			// left it (tick 0) — playback then starts from the beginning.
+			cacheTickPosition = -1L;
+			cacheMicrosPosition = -1L;
+			//System.out.println("  caches -1");
+			if (tick != -1L) {
+				//System.out.println("  apply cacheTick "+tick);
+				super.setTickPosition(tick);
+			} else if (micros != -1L) {
+				//System.out.println("  apply cacheMicros "+micros);
+				super.setPosition(micros);
+			}
+		}
+		super.setRunning(setRunning);
+	}
+
+	@Override
+	public void setSequence(Sequence sequence) throws InvalidMidiDataException {
+		cacheTickPosition = -1L;
+		cacheMicrosPosition = -1L;
+		super.setSequence(sequence);
 	}
 }

@@ -1,10 +1,10 @@
 package com.digero.maestro.view;
 
-import com.digero.common.view.UIText;
-
 import java.awt.*;
 
 import javax.swing.*;
+
+import com.digero.common.i18n.UIText;
 
 public class DissonanceSettingsDialog extends JDialog {
 
@@ -81,27 +81,22 @@ public class DissonanceSettingsDialog extends JDialog {
         content.add(formPanel, BorderLayout.CENTER);
 
         // --- Button Panel ---
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        JButton btnOk = new JButton("OK");
-        JButton btnCancel = new JButton(UIText.get("maestro.dissonance.cancel"));
-        /*
-        JButton btnDefaults = new JButton("Restore Defaults");
+        JPanel buttonPanel = new JPanel(new BorderLayout());
+        JPanel presetPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
 
-        // Defaults Logic
-        btnDefaults.addActionListener(e -> {
-            // Hardcoded defaults based on your preference
-            spinMin2Factor.setValue(1);
-            spinMaj2Factor.setValue(1);
-            spinMaj7Factor.setValue(1);
-            spinMin7Factor.setValue(0);
-            spinTriFactor.setValue(0);
-            
-            spinMin2Threshold.setValue(1);
-            spinMin2Penalty.setValue(10);
-            spinMaj2Threshold.setValue(1);
-            spinMaj2Penalty.setValue(0);
-        });
-         */
+        JButton btnDefaults = new JButton(UIText.get("maestro.dissonance.defaults"));
+        JButton btnMinimal = new JButton(UIText.get("maestro.dissonance.minimal"));
+        btnDefaults.setToolTipText(UIText.get("maestro.dissonance.tip.defaults"));
+        btnMinimal.setToolTipText(UIText.get("maestro.dissonance.tip.minimal"));
+
+        // Load into the controls only. Nothing is written to settings until OK, so a
+        // preset can be tried and then cancelled.
+        btnDefaults.addActionListener(e -> loadPreset(MiscSettings.dissonanceDefaultPreset()));
+        btnMinimal.addActionListener(e -> loadPreset(MiscSettings.dissonanceMinimalPreset()));
+
+        JButton btnOk = new JButton(UIText.get("maestro.dissonance.ok"));
+        JButton btnCancel = new JButton(UIText.get("maestro.dissonance.cancel"));
 
         btnOk.addActionListener(e -> {
             saveSettings();
@@ -114,15 +109,31 @@ public class DissonanceSettingsDialog extends JDialog {
             setVisible(false);
         });
 
-        //buttonPanel.add(btnDefaults);
-        buttonPanel.add(btnCancel);
-        buttonPanel.add(btnOk);
+        presetPanel.add(btnDefaults);
+        presetPanel.add(btnMinimal);
+        actionPanel.add(btnCancel);
+        actionPanel.add(btnOk);
+        buttonPanel.add(presetPanel, BorderLayout.WEST);
+        buttonPanel.add(actionPanel, BorderLayout.EAST);
+
         content.add(buttonPanel, BorderLayout.SOUTH);
 
         pack();
         setLocationRelativeTo(parent);
         setResizable(false);
         updateControls();
+    }
+
+    private void loadPreset(MiscSettings.DissonancePreset p) {
+        chkExcludeShorts.setSelected(p.excludeShortestNotes());
+        spinMin2Factor.setValue(p.min2factor());
+        spinMaj7Factor.setValue(p.maj7factor());
+        spinMaj2Factor.setValue(p.maj2factor());
+        spinTriFactor.setValue(p.trifactor());
+        spinMin7Factor.setValue(p.min7factor());
+        spinMudFactor.setValue(p.mudfactor());
+        spinMin2Threshold.setValue(p.min2threshold());
+        spinMin2Penalty.setValue(p.min2penalty());
     }
 
     private void addHeader(JPanel panel, String text, int row) {

@@ -1,8 +1,6 @@
 package com.digero.maestro.abc;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
@@ -18,13 +16,14 @@ import javax.sound.midi.MidiEvent;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Track;
 
+import com.aifel.abctools.AbcTools;
 import com.digero.common.abc.*;
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.*;
 import com.digero.common.util.Pair;
 import com.digero.common.util.Quad;
 import com.digero.common.util.Triple;
 import com.digero.common.util.Util;
-import com.digero.common.view.UIText;
 import com.digero.maestro.MaestroMain;
 import com.digero.maestro.abc.QuantizedTimingInfo.TimingInfoEvent;
 import com.digero.maestro.midi.*;
@@ -38,10 +37,13 @@ public class AbcExporter {
 	private static final Logger logNotes = Logger.getLogger("export.notes");//processing and fitting of notes to lotros abc format
 	private static final Logger logAbc = Logger.getLogger("export.abc");//creation of abc
 	private static final Logger logPreview = Logger.getLogger("export.preview");//creation of preview midi
+    private AbcMerger merger;
 
     private boolean organic = false;
 	private boolean organic2 = false;
     private boolean upgraded = false;
+    private int singleStageVer = 2;
+
 	private static final int MAX_RAID = 24; // Max number of parts that in any case can be played in lotro
 
     /*
@@ -239,11 +241,11 @@ public class AbcExporter {
 		for (AbcPart part : parts) {
 			if (part.getEnabledTrackCount() > 0) {
 				if (organic) {
-					Pair<List<Chord>,Boolean> chords = combineOrganic(part, true, histogram, quanFractions);
+					Pair<List<Chord>,Boolean> chords = combineOrganic(part, true, histogram, quanFractions, true);
 					chordsMade.put(part, chords.first);
                     dissonanceDetector.submitPart(part, chords.first);
 				} else {
-					List<Chord> chords = combineAndQuantize(part, true, histogram);
+					List<Chord> chords = combineAndQuantize(part, true, histogram, true);
 					chordsMade.put(part, chords);
                     dissonanceDetector.submitPart(part, chords);
 				}
@@ -404,7 +406,7 @@ public class AbcExporter {
             if (countInMicros > 0L) {
                 delayMicros += qtm.multiplyByExportTempoFactor(countInMicros);
             }
-            logPreview.warning(part.getPartNumber()+" "+part.getInstrument()+": delayMicro "+delayMicros);
+            //logPreview.warning(part.getPartNumber()+" "+part.getInstrument()+": delayMicro "+delayMicros);
 
             for (Chord chord : chords) {
                 Dynamics dynamics = chord.calcDynamics(part.getAbcSong().dynamicsMethod);
@@ -532,8 +534,8 @@ public class AbcExporter {
 		return new Triple<>(trackNumber, channel, lastEnd);
 	}
 
-	public void exportToAbc(OutputStream os, boolean delayEnabled, String appName, int minDelay) throws AbcConversionException {
-				
+	public PolyphonyHistogram exportToAbc(OutputStream os, boolean delayEnabled, String appName, int minDelay) throws AbcConversionException {
+		// AbcExporter.GRID_STATS.reset();
 		// accountForSustain is true so that songbooks wont stop their timer before last note has finished sounding.
 		// lengthenToBar is false for opposite reason, so reporting the correct duration to songbooks.
 		Pair<Long, Long> startEnd = getSongStartEndTick(false, true);
@@ -603,13 +605,13 @@ public class AbcExporter {
                     countIn.micros = countInMicros;
                 }
             }
-
+            boolean countHistogram = appName.contains(AbcTools.APP_NAME);
 			for (AbcPart part : parts) {
 				if (part.getEnabledTrackCount() > 0 || (part.getAbcSong().getCountIn() != null && part.getAbcSong().getCountIn().micros > 0L && part.getAbcSong().getCountIn().part == part)) {
 					if (organic) {
-						exportPartToAbcOrganic(part, out, delayEnabled, histogram, quanFractions, minDelay);
+						exportPartToAbcOrganic(part, out, delayEnabled, histogram, quanFractions, minDelay, countHistogram);
 					} else {
-						exportPartToAbc(part, out, delayEnabled, histogram, minDelay);
+						exportPartToAbc(part, out, delayEnabled, histogram, minDelay, countHistogram);
 					}
 				}
 			}
@@ -621,7 +623,13 @@ public class AbcExporter {
                 throw new AbcConversionException(
                         "An I/O error occurred while writing the ABC file; the output may be incomplete.");
             }
+            return histogram;
 		}
+		/*
+        for (String line : AbcExporter.GRID_STATS.reportLines()) {
+            System.out.println(line);
+        }
+        */
 	}
 
 	private void outputBadger(PrintStream out) {
@@ -647,7 +655,7 @@ public class AbcExporter {
 	}
 
 	private void exportPartToAbcOrganic(AbcPart part, PrintStream out,
-                                        boolean delayEnabled, PolyphonyHistogram histogram, int[] quanFractions, int minDelay) throws AbcConversionException {
+                                        boolean delayEnabled, PolyphonyHistogram histogram, int[] quanFractions, int minDelay, boolean countHistogram) throws AbcConversionException {
 
         //long L = (qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? 16L : 8L;
         long Q = qtm.getPrimaryExportTempoBPM();
@@ -795,7 +803,7 @@ public class AbcExporter {
 
 			// the 100 is so the delay is always larger than 60 ms, even if its 0 ms.
 			long delayMicro = (part.getDelay()+100L-minDelay)*1000L + countInMicros;
-            logAbc.warning(part.getPartNumber()+" "+part.getInstrument()+"delayMicro "+delayMicro+" = ("+part.getDelay()+"+100+"+(-minDelay)+")*1000+"+countInMicros);
+            //logAbc.warning(part.getPartNumber()+" "+part.getInstrument()+"delayMicro "+delayMicro+" = ("+part.getDelay()+"+100+"+(-minDelay)+")*1000+"+countInMicros);
             final long MAX_REST_MICROS = 7 * AbcConstants.ONE_SECOND_MICROS;
             long parts = (delayMicro + MAX_REST_MICROS - 1) / MAX_REST_MICROS;   // ceil division
             if (parts < 1) parts = 1;
@@ -804,8 +812,8 @@ public class AbcExporter {
 
             for (int i = 0; i < parts; i++) {
                 long rest = base + (i < remainder ? 1L : 0L);   // spread remainder 1 micro at a time
-                if (useMicroAccuracy) delayed.append("z" + rest);
-                else delayed.append("z" + microToMilliCeil(rest,oneMicro,oneMilli));
+                if (useMicroAccuracy) delayed.append("z").append(rest);
+                else delayed.append("z").append(microToMilliCeil(rest, oneMicro, oneMilli));
                 delayed.append(" ");
             }
             delayed.append("| \n");
@@ -830,7 +838,7 @@ public class AbcExporter {
 		}
         builders.add(delayed);
 		
-		Pair<List<Chord>, Boolean> pair = combineOrganic(part, false, histogram, quanFractions);
+		Pair<List<Chord>, Boolean> pair = combineOrganic(part, false, histogram, quanFractions, countHistogram);
 		 
 		List<Chord> chords = pair.first;
 
@@ -881,7 +889,7 @@ public class AbcExporter {
                     bar.append(" |\n");
                     if (!reducedFilesize) {
                         long micros = (qtm.tickToMicrosABCOrganic(c.getStartTick()) - songStartMicros);
-                        bar.append(String.format(Locale.US, "%%  (%s) bar %.1f\n", Util.formatDuration(micros), part.getSequenceInfo().getDataCache().tickToBarNumberFloat(c.getStartTick())));
+                        bar.append(String.format(Locale.US, "%%  (%s) bar %.1f\n", Util.formatDuration(micros), part.getSequenceInfo().getDataCache().tickToBarNumberFloat(c.origStartTick)));
                     }
                 }
 
@@ -1024,7 +1032,7 @@ public class AbcExporter {
 			for (int j = 0; j < c.size(); j++) {
 				AbcNoteEvent evt = c.get(j);
 				if (evt.getLengthTicks() == 0) {
-					assert false : "Zero-length note:"+(evt.note);
+					assert false : part.getAbcSong().getTitle()+" ("+part.getTitle()+"): Zero-length note:"+(evt.note);
 					continue;
 				}
 
@@ -1407,8 +1415,8 @@ public class AbcExporter {
     }
 
 	private void exportPartToAbc(AbcPart part, PrintStream out,
-                                 boolean delayEnabled, PolyphonyHistogram histogram, int minDelay) throws AbcConversionException {
-		List<Chord> chords = combineAndQuantize(part, false, histogram);
+                                 boolean delayEnabled, PolyphonyHistogram histogram, int minDelay, boolean countHistogram) throws AbcConversionException {
+		List<Chord> chords = combineAndQuantize(part, false, histogram, countHistogram);
 
 		StringBuilder outBuilder = exportPartHeaderToAbc(part, null, 0);
         out.print(outBuilder);
@@ -1504,7 +1512,7 @@ public class AbcExporter {
 
 			// the 100 is so the delay is always larger than 60 ms, even if its 0 ms.
 			long delayMicro = (part.getDelay()+100L-minDelay)*1000L + countInMicros;
-            logAbc.warning(part.getPartNumber()+" "+part.getInstrument()+"delayMicro "+delayMicro+" = ("+part.getDelay()+"+100+"+(-minDelay)+")*1000+"+countInMicros);
+            //logAbc.warning(part.getPartNumber()+" "+part.getInstrument()+"delayMicro "+delayMicro+" = ("+part.getDelay()+"+100+"+(-minDelay)+")*1000+"+countInMicros);
 			// Reduce the fraction
 			//int gcd = Util.gcd(delayMicro, oneMicro);
 			//delayMicro /= gcd;
@@ -1712,21 +1720,21 @@ public class AbcExporter {
     private StringBuilder exportPartHeaderToAbc(AbcPart part, int[] quanFractions, int oneNoteIs) {
         StringBuilder out = new StringBuilder();
         out.append("\n");
-		out.append("X: " + part.getPartNumber()).append("\n");
+		out.append("X: ").append(part.getPartNumber()).append("\n");
 		if (metadata != null) {
-			out.append("T: " + StringCleaner.cleanForABC(metadata.getPartName(part))).append("\n");
+			out.append("T: ").append(StringCleaner.cleanForABC(metadata.getPartName(part))).append("\n");
 		} else {
-			out.append("T: " + StringCleaner.cleanForABC(part.getTitle())).append("\n");
+			out.append("T: ").append(StringCleaner.cleanForABC(part.getTitle())).append("\n");
 		}
 
-		out.append(AbcField.PART_NAME + StringCleaner.cleanForABC(part.getTitle())).append("\n");
+		out.append(AbcField.PART_NAME).append(StringCleaner.cleanForABC(part.getTitle())).append("\n");
 
 		// Since people might not use the instrument-name when they name a part,
 		// we add this so can choose the right instrument in abcPlayer and maestro when
 		// loading abc.
-		out.append(AbcField.MADE_FOR + part.getInstrument().friendlyName.trim()).append("\n");
-        if (part.getUserPan() != null) out.append(AbcField.USER_PAN + part.getUserPan().toString()).append("\n");
-        else out.append(AbcField.USER_PAN + "auto").append("\n");
+		out.append(AbcField.MADE_FOR).append(part.getInstrument().friendlyName.trim()).append("\n");
+        if (part.getUserPan() != null) out.append(AbcField.USER_PAN).append(part.getUserPan().toString()).append("\n");
+        else out.append(AbcField.USER_PAN).append("auto").append("\n");
 
         /*
         if (organic) {
@@ -1740,19 +1748,19 @@ public class AbcExporter {
             // Is really just needed when outputting each part to its own file.
             // But songbook indexers use them
 			if (!metadata.getComposer().isEmpty())
-				out.append("C: " + StringCleaner.cleanForABC(metadata.getComposer())).append("\n");
+				out.append("C: ").append(StringCleaner.cleanForABC(metadata.getComposer())).append("\n");
 
 			if (!metadata.getTranscriber().isEmpty())
-				out.append("Z: " + StringCleaner.cleanForABC(metadata.getTranscriber())).append("\n");
+				out.append("Z: ").append(StringCleaner.cleanForABC(metadata.getTranscriber())).append("\n");
 		}
 
-		out.append("M: " + qtm.getMeter()).append("\n");
-		out.append("Q: " + qtm.getPrimaryExportTempoBPM()).append("\n");
-		out.append("K: " + keySignature).append("\n");
+		out.append("M: ").append(qtm.getMeter()).append("\n");
+		out.append("Q: ").append(qtm.getPrimaryExportTempoBPM()).append("\n");
+		out.append("K: ").append(keySignature).append("\n");
 		if (organic) {
-            out.append("L: " + quanFractions[5]+"/"+quanFractions[6]).append("\n");
+            out.append("L: ").append(quanFractions[5]).append("/").append(quanFractions[6]).append("\n");
         } else {
-            out.append("L: " + ((qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? "1/16" : "1/8"));
+            out.append("L: ").append((qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? "1/16" : "1/8");
             out.append("\n");
         }
 		out.append("\n");
@@ -1762,7 +1770,7 @@ public class AbcExporter {
 	/**
 	 * Combine the tracks into one, quantize the note lengths, separate into chords.
 	 */
-	private List<Chord> combineAndQuantize(AbcPart part, boolean preview, PolyphonyHistogram histogram) throws AbcConversionException {
+	private List<Chord> combineAndQuantize(AbcPart part, boolean preview, PolyphonyHistogram histogram, boolean countHistogram) throws AbcConversionException {
         part.numberOfRemovedNotesFromPruning = 0;
 		// Combine the events from the enabled tracks
 		List<AbcNoteEvent> events = new ArrayList<>();
@@ -1830,7 +1838,7 @@ public class AbcExporter {
 			}
 		}
 		
-		if (events.isEmpty() && preview) {
+		if (events.isEmpty() && countHistogram) {
 			try {
 				histogram.count(part, new ArrayList<>(), organic, qtm);
 			} catch (IOException e) {
@@ -1953,7 +1961,7 @@ public class AbcExporter {
 		}
 
 		// Remove duplicate notes
-		removeDuplicateNotes(events, part.getInstrument());
+		merger.removeDuplicateNotes(events, part.getInstrument());
 		
 		Collections.sort(events);// needed due to duplicate adding thirds
 
@@ -2084,7 +2092,7 @@ public class AbcExporter {
 		}
 		assert !curChord.hasRestAndNotes();
 		
-		if (preview) {
+		if (countHistogram) {
 			try {
 				histogram.count(part, chords, organic, qtm);
 			} catch (IOException e) {
@@ -2092,6 +2100,12 @@ public class AbcExporter {
 			}
 		}
         part.numberOfRemovedNotesFromPruning = prunedNotes;
+
+        if (chords.size() > 9950) {
+            logAbc.warning(part.getTitle()+": too many notes/chords. "+chords.size()+"/9950. 10000 is max, and we reserve 50 for countin and delay.");
+            ProjectFrame.feed(UIText.get("maestro.too.many.chords", part.getTitle(), chords.size()+50), "50 were added to the count to allow for count-in and delay.");
+        }
+
 		return chords;
 	}
 
@@ -2284,17 +2298,19 @@ public class AbcExporter {
 	/**
 	 * Combine the tracks into one, separate into chords.
 	 */
-	private Pair<List<Chord>, Boolean> combineOrganic(AbcPart part, boolean preview, PolyphonyHistogram histogram, int quanFractions[]) throws AbcConversionException {
+	private Pair<List<Chord>, Boolean> combineOrganic(AbcPart part, boolean preview, PolyphonyHistogram histogram, int[] quanFractions, boolean countHistogram) throws AbcConversionException {
         part.numberOfRemovedNotesForSafety = 0;
 		// Combine the events from the enabled tracks
 		List<AbcNoteEvent> events = new ArrayList<>();
 		for (int t = 0; t < part.getTrackCount(); t++) {
 			if (part.isTrackEnabled(t)) {
 				List<MidiNoteEvent> listOfNotes = expandXtraDrumNotes(part, t);
-				
+
 				applyLegato(part, t, listOfNotes);
 				
 				for (MidiNoteEvent ne : listOfNotes) {
+                    //System.out.println("note(track, "+((int)Math.round(ne.getStartMicros()/1000.0))+", "+((int)Math.round((ne.getEndMicros()-ne.getStartMicros())/1000.0))+", Note."+ne.note.name()+");");
+                    //System.out.println("start: "+((int)Math.round(ne.getStartMicros()/1000.0))+", dura: "+((int)Math.round((ne.getEndMicros()-ne.getStartMicros())/1000.0))+", Note: "+ne.note.name()+");");
 					// Skip notes that are outside the play range.
 					if (ne.getEndTick() <= exportStartTick) {//  || ne.getStartTick() >= exportEndTick
 						//if (part.mapNoteEvent(t, ne) != null && part.shouldPlay(ne, t)) System.out.println(metadata.getSongTitle()+": Skipping note that are outside songs time range.\n"+ne);
@@ -2354,7 +2370,7 @@ public class AbcExporter {
 			}
 		}
 		
-		if (events.isEmpty() && preview) {
+		if (events.isEmpty() && countHistogram) {
 			try {
 				histogram.count(part, new ArrayList<>(), organic, qtm);
 			} catch (IOException e) {
@@ -2387,7 +2403,7 @@ public class AbcExporter {
 			}
 			
 
-			List<AbcNoteEvent> bentNotes = expandPitchBendsOrganicImproved(ne);
+			List<AbcNoteEvent> bentNotes = expandPitchBendsOrganic(ne);
 			
 			if (bentNotes != null) {
 				assert !bentNotes.contains(ne);
@@ -2429,13 +2445,13 @@ public class AbcExporter {
 		}
 
 		// Remove duplicate notes
-		removeDuplicateNotes(events, part.getInstrument());
+		merger.removeDuplicateNotes(events, part.getInstrument());
 		
 		Collections.sort(events);// needed due to removeDuplicateNotes adding thirds
 		
 		/*
 		// Verify duplicates does not exist
-		removeDuplicateNotesVerify(events, part.getInstrument());
+		merger.removeDuplicateNotesVerify(events, part.getInstrument());
 		*/
 		
 		boolean useRestToShortenChords = part.getInstrument().sustainable && useRestsInChords;
@@ -2472,13 +2488,18 @@ public class AbcExporter {
 			part.setMaxPoly(6);
 		}
 		
-		if (preview) {
+		if (countHistogram) {
 			try {
 				histogram.count(part, chords, organic, qtm);
 			} catch (IOException e) {
 				throw new AbcConversionException("Failed to read instrument sample durations.", e);
 			}
 		}
+
+        if (chords.size() > 9950) {
+            logAbc.warning(part.getTitle()+": too many notes/chords. "+(chords.size()+50)+"/10000");
+            ProjectFrame.feed(UIText.get("maestro.too.many.chords", part.getTitle(), chords.size()+50), "50 were added to the count to allow for count-in and delay.");
+        }
 		
 		//Collections.sort(chords);
 		
@@ -2499,13 +2520,66 @@ public class AbcExporter {
         part.numberOfRemovedNotesFromFitting = 0;
         part.numberOfRemovedNotesZeros = 0;
 
+        final boolean OUTPUT_METRICS = false;
+        java.util.Set<AbcNoteEvent> prunedAway = assertionsEnabled && OUTPUT_METRICS
+                ? java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>())
+                : null;
+
         for (AbcNoteEvent note : events) {
             note.startABCMicros = qtm.tickToMicrosABCOrganic(note.getStartTick());
             note.endABCMicros = qtm.tickToMicrosABCOrganic(note.getEndTick());
         }
+        java.util.Map<AbcNoteEvent, Long> trueOnset = null;
+        if (assertionsEnabled && OUTPUT_METRICS) {
+            trueOnset = new java.util.IdentityHashMap<>();
+            for (AbcNoteEvent note : events) trueOnset.put(note, note.startABCMicros);
+        }
+        java.util.Map<AbcNoteEvent, long[]> trueNote = null;
+        if (assertionsEnabled && OUTPUT_METRICS) {
+            trueNote = new java.util.IdentityHashMap<>();
+            for (AbcNoteEvent note : events) {
+                trueNote.put(note, new long[] { note.startABCMicros, note.endABCMicros - note.startABCMicros });
+            }
+        }
         final long songStartMicros = getExportStartMicrosABC();
 
 		breakLongNotesOrganic(part, events, softMaxDurationMicros);
+
+        if (singleStageVer == 0 && !part.getInstrument().isPercussion) {
+            // disabled for now by the 'singleStageVer == 0' flag.
+
+            // remove all notes not in a drum/cowbell part if its zero duration
+            // this has been commented out since some songs seem to have zero dura
+            // notes that is meant to be heard and not editing mistakes.
+            // Virtually impossible to distinguish them. So we do like
+            // multi-stages and keep them all.
+            int zeros = 0;
+            for (AbcNoteEvent ne : events) {
+                if (ne.note != Note.REST && ne.endABCMicros == ne.startABCMicros) zeros++;
+            }
+            // A track that has many zero-length notes probably is that way by purpose
+            // so if more than 2 of the notes is zero duration, we dont delete them.
+            if (zeros > 2) {
+                events.removeIf(ne -> {
+                    if (ne.note == Note.REST || ne.endABCMicros != ne.startABCMicros) return false;
+                    if (ne.tiesFrom != null) ne.tiesFrom.tiesTo = null;
+                    if (ne.tiesTo != null) ne.tiesTo.tiesFrom = null;
+                    part.numberOfRemovedNotesZeros++;
+                    if (logNotes.isLoggable(Level.FINER))
+                        logNotes.finer(part.getTitle() + " Removed zero dura note (" + ne.note.abc + ")");
+                    return true;
+                });
+            } else if (zeros > 0) {
+                logNotes.warning(part.getAbcSong().getTitle() + " (" + part.getTitle() + "): "
+                        + zeros + " of " + events.size() + " notes are zero duration, keeping them");
+            }
+
+            if (events.isEmpty()) {
+                logNotes.warning(part.getAbcSong().getTitle() + " (" + part.getTitle()
+                        + "): every note was zero duration, nothing to export");
+                return new ArrayList<>();
+            }
+        }
 
 		List<ChordOrganic> chords = new ArrayList<>(events.size() / 2);
 		List<AbcNoteEvent> tmpEvents = new ArrayList<>();
@@ -2513,12 +2587,11 @@ public class AbcExporter {
 		long minimumMicros = quanFractions[2];//often slightly above 60 ms
 		
 		// Combine notes that play at the same time into chords
-		
-		final boolean removeGliss = false;
+
 		ChordOrganic curChord = new ChordOrganic(events.getFirst(), qtm);
 		ChordOrganic prevChord = null;
 		ChordOrganic prevRestChord = null;
-		logNotes.finest(part.getTitle()+ ": Adding to curChord, note i=0 micros:"+Util.formatDurationM(events.getFirst().startABCMicros)+"-"+Util.formatDurationM(events.getFirst().endABCMicros)+" "+events.getFirst().note);
+		if (logNotes.isLoggable(Level.FINEST)) logNotes.finest(part.getTitle()+ ": Adding to curChord, note i=0 micros:"+Util.formatDurationM(events.getFirst().startABCMicros)+"-"+Util.formatDurationM(events.getFirst().endABCMicros)+" "+events.getFirst().note);
 		chords.add(curChord);
 		MAIN:for (int i = 1; i < events.size(); i++) {
 			AbcNoteEvent ne = events.get(i);
@@ -2527,51 +2600,81 @@ public class AbcExporter {
 				// This note starts at the same time as the rest of the notes in the chord
 				assert !curChord.isRest();
 				curChord.add(ne);
-				logNotes.finest(part.getTitle()+ ": Adding to curChord note i="+i+" micros:"+Util.formatDurationM(ne.startABCMicros)+"-"+Util.formatDurationM(ne.endABCMicros)+" "+ne.note);
+                if (logNotes.isLoggable(Level.FINEST)) logNotes.finest(part.getTitle()+ ": Adding to curChord note i="+i+" micros:"+Util.formatDurationM(ne.startABCMicros)+"-"+Util.formatDurationM(ne.endABCMicros)+" "+ne.note);
 			} else {								
 				// The curChord has all the notes it will get.
 				
 				// Note that ne can be a rest from cut up initial rest
-				
-				logNotes.finer(part.getTitle()+ ": Processing note i="+i+" micros:"+Util.formatDurationM(ne.startABCMicros)+"-"+Util.formatDurationM(ne.endABCMicros)+" "+ne.note);
-				
-				// remove zero duration notes if longer notes start at same time in curr chord
-				if (curChord.getLongestEndMicros() > curChord.getStartMicros()) {
-					for (int j = 0; j < curChord.size(); j++) {
-						AbcNoteEvent jne = curChord.get(j);
-						if (jne.endABCMicros == jne.startABCMicros) {
-							// this note is zero duration and others in the chord is not
-							curChord.remove(jne);
+
+                if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+ ": Processing note i="+i+" micros:"+Util.formatDurationM(ne.startABCMicros)+"-"+Util.formatDurationM(ne.endABCMicros)+" "+ne.note);
+
+                // remove zero duration notes if longer notes start at same time in curr chord
+                if (singleStageVer < 2 && curChord.getLongestEndMicros() > curChord.getStartMicros()) {
+                    for (int j = 0; j < curChord.size(); j++) {
+                        AbcNoteEvent jne = curChord.get(j);
+                        if (jne.endABCMicros == jne.startABCMicros) {
+                            if (part.getInstrument().isPercussion && jne.note != Note.REST) {
+                                // Zero-length drum notes are legitimate in the source MIDI (if the notes originate from drum notes).
+                                // LOTRO plays the sample in full as long as the note is at least minimumMicros. Lengthen rather
+                                // than delete, matching combineAndQuantize and processOrganic2.
+                                jne.endABCMicros = jne.startABCMicros + minimumMicros;
+                                jne.setEndTick(qtm.microsToTickABCOrganic(jne.endABCMicros));
+                                continue;
+                            }
+                            // this note is zero duration and others in the chord is not
+                            curChord.remove(jne);
                             part.numberOfRemovedNotesZeros++;
-							logNotes.finer(part.getTitle()+" Removed zero dura note ("+jne.note.abc+")");
-							if (jne.tiesFrom != null) {
-								jne.tiesFrom.tiesTo = null;
-							}
-							if (jne.tiesTo != null) {
-								jne.tiesTo.tiesFrom = null;
-							}
-							j = -1;//should be careful when removing item from something we are iterating over..
-						}
-					}
-					// A removal will have changed the chord's duration
-					curChord.recalcEndMicros();
-				}
-				
+                            if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+" Removed zero dura note ("+jne.note.abc+")");
+                            if (jne.tiesFrom != null) {
+                                jne.tiesFrom.tiesTo = null;
+                            }
+                            if (jne.tiesTo != null) {
+                                jne.tiesTo.tiesFrom = null;
+                            }
+                            j = -1;//should be careful when removing item from something we are iterating over..
+                        }
+                    }
+                    // A removal will have changed the chord's duration
+                    curChord.recalcEndMicros();
+                }
+
+                // Apply early start
 				if (curChord.early != null) {
 					//must be AFTER 'remove zero among longer'
 					//is BEFORE pruning to save pruning twice
 					curChord.setEarlyStartMicros(useRestToShortenChords);
 					if (prevChord != null) prevChord.recalcEndMicros();
-					logNotes.finer(part.getTitle()+ ": applying early start. curChord now start at "+Util.formatDurationM(curChord.getStartMicros()));
+                    if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+ ": applying early start. curChord now start at "+Util.formatDurationM(curChord.getStartMicros()));
 					i--;
 					continue MAIN;
 				}
+
+                // Repair zero duration notes
+                //
+                // Source-zero notes are already gone unless there is many of them (pre-pass just below breakLongNotesOrganic), so
+                // anything zero here was collapsed by quantization and should survive to the
+                // below-minimumMicros handling that extends short chords.
+                if (singleStageVer == 0) {
+                    // disabled as it prevent the thining of fast slides, which is a feature of org singlestage.
+                    for (int j = 0; j < curChord.size(); j++) {
+                        AbcNoteEvent jne = curChord.get(j);
+                        if (jne.endABCMicros == jne.startABCMicros) {
+                            jne.endABCMicros = jne.startABCMicros + minimumMicros;
+                            jne.setEndTick(qtm.microsToTickABCOrganic(jne.endABCMicros));
+                            if (logNotes.isLoggable(Level.FINER))
+                                logNotes.finer(part.getTitle() + " Restored quantization-collapsed note (" + jne.note.abc + ")");
+                        }
+                    }
+                    // An extension will have changed the chord's duration
+                    curChord.recalcEndMicros();
+                }
 				
-				// We prune AFTER removed shorter zero notes, so they dont take up slot from
-				// 6 max notes.
-				List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
+				// We prune after Repair zero duration notes, so they get chance to not be pruned.
+                // And after removing zero dura notes in chords to they dont take slots in pruning.
+				List<AbcNoteEvent> deadnotes = curChord.pruneWithMicros(part.getInstrument().sustainable,
 						part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion,
 						part, useRestToShortenChords);
+                if (assertionsEnabled && OUTPUT_METRICS) prunedAway.addAll(deadnotes);
 				removeNotes(events, deadnotes, part);
                 part.numberOfRemovedNotesFromPruning += deadnotes.size();
 
@@ -2579,13 +2682,13 @@ public class AbcExporter {
 					// One of the tiedTo notes that was pruned might be ne note,
 					// so we go one step back and re-process events.get(i)
 					i--;
-					logNotes.finer(part.getTitle()+ ": something was pruned");
+                    if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+ ": something was pruned");
 					continue MAIN;
 				}
 				
 				// Create a new chord
 				ChordOrganic nextChord = new ChordOrganic(ne, qtm);
-				logNotes.finer(part.getTitle()+ ": Create new chord. "+ne.note);
+                if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+ ": Create new chord. "+ne.note);
 				
 				
 				// we first identify the two next chords as they will look after being cut up:
@@ -2596,8 +2699,10 @@ public class AbcExporter {
 				long ne2Start = Long.MAX_VALUE;
 				ChordOrganic nextChordTmp = new ChordOrganic(ne, qtm);
 				for (int ii = i+1; ii < events.size(); ii++) {
-					// find the shortest non-zero dura notes coming next
-					// remember events are sorted not only by start tick, but also end tick
+                    // find the shortest non-zero dura notes coming next
+                    // events are ordered by startABCMicros; within a run of equal starts the
+                    // order is arbitrary, so ne1 is picked as a running minimum rather than
+                    // by position.
 					AbcNoteEvent over = events.get(ii);
 					if (ne2 != null && over.startABCMicros > ne2.startABCMicros) {
 						break;
@@ -2643,28 +2748,18 @@ public class AbcExporter {
 				long ne1Micros = ne1.endABCMicros - ne1.startABCMicros;
 				long ne2Micros = ne2 == null?0L:ne2.endABCMicros - ne2.startABCMicros;
 				
-				// handle fast glissando
-				boolean glissRemoved = deprecated1(part, events, minimumMicros, removeGliss, curChord, ne,
-						curChordRoomMicros, ne1RoomMicros, ne1Micros, ne2Micros);
-				
-				if (glissRemoved) {
-					logNotes.severe(part.getTitle()+ ": deprecated 1st");
-					i--;
-					continue MAIN; 
-				}
-				
 				// turn very fast arpeggio into block chord
 				if (ne.note != Note.REST
 						&& curChordRoomMicros < minimumMicros
 						&& (curChord.getEndMicros() > ne.startABCMicros || part.getInstrument().isPercussion)
-						&& !curChord.dontMove1 && !curChord.glissando && !curChord.isRest()) {
+						&& !curChord.dontMove1 && !curChord.isRest()) {
 					// curr end before next start prevents handling grace notes, they will be deleted later if they too short
 					for (AbcNoteEvent small : curChord.getNotes()) {
 						if (small.tiesTo != null) {
 							// curr chord has already been cut up, or broken up due to being long notes, skip it
 							i--;
 							curChord.dontMove1 = true;// to prevent infinite loop
-							logNotes.finer(part.getTitle()+" Keep arpeggio (ties involved)");
+                            if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+" Keep arpeggio (ties involved)");
 							continue MAIN;
 						}
 					}
@@ -2672,34 +2767,19 @@ public class AbcExporter {
 					boolean hasTieFrom = ne.tiesFrom != null;
 					boolean foundTieFrom = false;
 					for (AbcNoteEvent small : curChord.getNotes()) {
-						// make sure next chord dont have any notes with same pitch as one from curChord
-						/*
-						for (int ii = i; ii < events.size(); ii++) {
-							AbcNoteEvent next = events.get(ii);
-							if (next.startABCMicros > ne.endABCMicros) {
-								// no reason to check more notes
-								break;
-							}
-							not sure why I did this for next notes, when
-							we are going to come in here again anyway in next
-							iteration, if more notes needs this done.
-							*/
-							AbcNoteEvent next = ne; 
-							if (next.startABCMicros == ne.startABCMicros) {
-								if (next.note == small.note) {
-									logNotes.finer("Removing small note from curChord.");
-									removeFromCur.add(small);
-									if (next.tiesFrom == small) {
-										foundTieFrom = true;
-										next.tiesFrom = small.tiesFrom;
-										next.tiesFrom.tiesTo = next;
-									} else if (small.tiesFrom != null) {
-										small.tiesFrom.tiesTo = null;
-										small.tiesFrom = null;
-									}
-								}
-							}
-						//}
+						// make sure next note dont have same pitch as one from curChord
+                        if (ne.note == small.note) {
+                            if (logNotes.isLoggable(Level.FINER)) logNotes.finer("Removing small note from curChord.");
+                            removeFromCur.add(small);
+                            if (ne.tiesFrom == small) {
+                                foundTieFrom = true;
+                                ne.tiesFrom = small.tiesFrom;
+                                ne.tiesFrom.tiesTo = ne;
+                            } else if (small.tiesFrom != null) {
+                                small.tiesFrom.tiesTo = null;
+                                small.tiesFrom = null;
+                            }
+                        }
 					}
 					for(AbcNoteEvent small : removeFromCur) {
 						curChord.remove(small);
@@ -2713,7 +2793,11 @@ public class AbcExporter {
 						ne.tiesFrom.setEndTick(qtm.microsToTickABCOrganic(curChord.getStartMicros()));
 					}
 					// Its too complex to move current chord into next cords position, so we do the opposite:					
-					logNotes.finer(part.getTitle()+" Turned arpeggio into block chord (early start)");
+                    if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()
+                            + " Turned arpeggio into block chord (early start): " + ne.note
+                            + " moved " + ((ne.startABCMicros - curChord.getStartMicros()) / 1000) + " ms early"
+                            + ", curChordRoom=" + (curChordRoomMicros / 1000) + " ms"
+                            + ", arp=" + curChord.arp);
 					ne.startABCMicros = curChord.getStartMicros();
 					ne.setStartTick(qtm.microsToTickABCOrganic(ne.startABCMicros));
 					curChord.add(ne);// we note that this will later be pruned (again)
@@ -2721,7 +2805,7 @@ public class AbcExporter {
 					curChord.recalcEndMicros();
 					continue MAIN;
 				} else {
-					logNotes.finer("Not arp. curChord.dontMove1="+curChord.dontMove1+". curChord.isRest="+curChord.isRest()+", curChordRoomMicros<minimumMicros="+(curChordRoomMicros < minimumMicros)+", overlap="+(curChord.getEndMicros() > ne.startABCMicros));
+                    if (logNotes.isLoggable(Level.FINER)) logNotes.finer("Not arp. curChord.dontMove1="+curChord.dontMove1+". curChord.isRest="+curChord.isRest()+", curChordRoomMicros<minimumMicros="+(curChordRoomMicros < minimumMicros)+", overlap="+(curChord.getEndMicros() > ne.startABCMicros));
 				}
 				
 				long shortest = curChord.getEndMicros() - curChord.getStartMicros();
@@ -2730,7 +2814,7 @@ public class AbcExporter {
 				if (shortest < minimumMicros && space >= minimumMicros && ne.startABCMicros >= minEndMicros) {
 					// one or more notes in curChord is too short, but they have room to expand
 					curChord.setEndMicrosExpand(minEndMicros);
-					logNotes.finer(part.getTitle()+ ": Expanded");
+                    if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+ ": Expanded");
 				}
 				
 				
@@ -2741,67 +2825,66 @@ public class AbcExporter {
 				long cutTarget = Math.min(curEndMicro, ne.startABCMicros);
 				
 				long curMinEndFitMicros = Math.min(minEndMicros, cutTarget);
-				if (!curChord.glissando) {
-					for (int j = 0; j < curChord.size(); j++) {
-						AbcNoteEvent jne = curChord.get(j);
-						logNotes.finer(jne.note+" is on cutting table "
-									+Util.formatDurationM(jne.startABCMicros)+" - "+Util.formatDurationM(jne.endABCMicros)
-									+". curEndMicros="+Util.formatDurationM(curEndMicro)+" cutTarget="+Util.formatDurationM(cutTarget)+" curMinEndFitMicros="+Util.formatDurationM(curMinEndFitMicros));
-						if (!part.getInstrument().sustainable) {
-							// This might be a bit controversial
-							// But here we fix the duration on the chord to minimum or shorter,
-							// since instrument is not sustainable anyway.
-							// Controversial due to you can't later experiment by putting
-							// a sustained instrument on this part, it will be ruined for that purpose.
-							// But this will make fitting it all together easier.
-							jne.endABCMicros = curMinEndFitMicros;
-							jne.setEndTick(qtm.microsToTickABCOrganic(jne.endABCMicros));
-							logNotes.finer(jne.note+" curMinEndFitMicros="+curMinEndFitMicros+" tiesTo="+(jne.tiesTo!=null));
-							if (jne.tiesTo != null) {
-								AbcNoteEvent tie = jne;
-								while(tie.tiesTo != null) {
-									events.remove(tie.tiesTo);
-									if (tie.tiesTo == ne) {
-										reprocessCurrentNote = true;
-									}
-									AbcNoteEvent old = tie;
-									tie = tie.tiesTo;
-									old.tiesTo = null;
-								}
-							}
-						} else if (!useRestToShortenChords && jne.endABCMicros > cutTarget) {
-							long noteEndMicro = jne.endABCMicros;
-							if (noteEndMicro-cutTarget < minimumMicros/2 && jne.tiesTo == null) {
-								// note ends approx same time as cutTarget
-								// we make it end same time as cutTarget,
-								// chord might become slightly longer later.
-								jne.endABCMicros = cutTarget;
-								jne.setEndTick(qtm.microsToTickABCOrganic(jne.endABCMicros));
-								logNotes.finer(part.getTitle()+ ": Fit note ending to cut target. tiesTo="+(jne.tiesTo!=null));
-							} else {
-								// This note extends past the end of the chord; break it into two tied notes
-								AbcNoteEvent next = jne.splitWithTieAtTick(qtm.microsToTickABCOrganic(cutTarget), cutTarget);
-								
-								int ins = Collections.binarySearch(events, next);
-								if (ins < 0)
-									ins = -ins - 1;
-								
-								assert (ins >= i);
-								// If we're inserting before the current note, back up and process the added
-								// note
-								if (ins == i)
-									reprocessCurrentNote = true;
-								assert next.note != Note.REST;
-								events.add(ins, next);
-							}
-						}
-					}
-				}
+
+                for (int j = 0; j < curChord.size(); j++) {
+                    AbcNoteEvent jne = curChord.get(j);
+                    if (logNotes.isLoggable(Level.FINER)) logNotes.finer(jne.note+" is on cutting table "
+                                +Util.formatDurationM(jne.startABCMicros)+" - "+Util.formatDurationM(jne.endABCMicros)
+                                +". curEndMicros="+Util.formatDurationM(curEndMicro)+" cutTarget="+Util.formatDurationM(cutTarget)+" curMinEndFitMicros="+Util.formatDurationM(curMinEndFitMicros));
+                    if (!part.getInstrument().sustainable) {
+                        // This might be a bit controversial
+                        // But here we fix the duration on the chord to minimum or shorter,
+                        // since instrument is not sustainable anyway.
+                        // Controversial due to you can't later experiment by putting
+                        // a sustained instrument on this part, it will be ruined for that purpose.
+                        // But this will make fitting it all together easier.
+                        jne.endABCMicros = curMinEndFitMicros;
+                        jne.setEndTick(qtm.microsToTickABCOrganic(jne.endABCMicros));
+                        logNotes.finer(jne.note+" curMinEndFitMicros="+curMinEndFitMicros+" tiesTo="+(jne.tiesTo!=null));
+                        if (jne.tiesTo != null) {
+                            AbcNoteEvent tie = jne;
+                            while(tie.tiesTo != null) {
+                                events.remove(tie.tiesTo);
+                                if (tie.tiesTo == ne) {
+                                    reprocessCurrentNote = true;
+                                }
+                                AbcNoteEvent old = tie;
+                                tie = tie.tiesTo;
+                                old.tiesTo = null;
+                            }
+                        }
+                    } else if (!useRestToShortenChords && jne.endABCMicros > cutTarget) {
+                        long noteEndMicro = jne.endABCMicros;
+                        if (noteEndMicro-cutTarget < minimumMicros/2 && jne.tiesTo == null) {
+                            // note ends approx same time as cutTarget
+                            // we make it end same time as cutTarget,
+                            // chord might become slightly longer later.
+                            jne.endABCMicros = cutTarget;
+                            jne.setEndTick(qtm.microsToTickABCOrganic(jne.endABCMicros));
+                            logNotes.finer(part.getTitle()+ ": Fit note ending to cut target. tiesTo="+(jne.tiesTo!=null));
+                        } else {
+                            // This note extends past the end of the chord; break it into two tied notes
+                            AbcNoteEvent next = jne.splitWithTieAtTick(qtm.microsToTickABCOrganic(cutTarget), cutTarget);
+
+                            int ins = insertionIndexOrganic(events, next, i);
+
+                            assert (ins >= i);
+
+                            // If we're inserting before the current note, back up and process the added
+                            // note
+                            if (ins == i)
+                                reprocessCurrentNote = true;
+                            assert next.note != Note.REST;
+                            events.add(ins, next);
+                        }
+                    }
+                }
+
 				// The shorter notes will have changed the chord's duration
 				curChord.recalcEndMicros();
 				if (reprocessCurrentNote) {
 					i--;
-					logNotes.finest(part.getTitle()+ ": Chord was cut up, reprocessing..");
+                    if (logNotes.isLoggable(Level.FINEST)) logNotes.finest(part.getTitle()+ ": Chord was cut up, reprocessing..");
 					continue MAIN;
 				}
 				
@@ -2823,31 +2906,31 @@ public class AbcExporter {
 					tmpEvents.add(shortRest);
 					breakLongNotesOrganic(part, tmpEvents, softMaxDurationMicros);
 					if (!tmpEvents.isEmpty()) {
-						// If rest needed to be broken up, we just keep the first segment
-						// we wont get in here again due to condition for hadRestAndNotes()
-						int ins = Collections.binarySearch(events, tmpEvents.getFirst());
-						if (ins < 0)
-							ins = -ins - 1;
-						
-						assert (ins <= i);
-						
-						// back up and process again
+                        // If rest needed to be broken up, we just keep the first segment
+                        // we wont get in here again due to condition for hadRestAndNotes()
+                        int ins = insertionIndexOrganic(events, tmpEvents.getFirst(), i);
+
+                        assert (ins <= i);
+
+                        // The insertion at ins <= i shifts ne from i to i+1, so the plain
+                        // continue (which does i++) lands back on ne. Do not add i-- here,
+                        // that would land on the rest, which is already in curChord.
 						reprocessCurrentNote = true;
 						curChord.add(tmpEvents.getFirst());
 						events.add(ins, tmpEvents.getFirst());
 
 						if (curChord.size() > 6) {
 							// uncommon, less than 10 songs out of 1000 had this happen 
-							logNotes.finer(part.getAbcSong().getSongTitle()+": 6 note chord had rest added !!!!!!!!!!");
+                            if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getAbcSong().getSongTitle()+": 6 note chord had rest added !!!!!!!!!!");
 						}
 					}
-					logNotes.fine(part.getTitle()+ ": Inserted a rest into current chord to make it shorter newEndMicros="
+                    if (logNotes.isLoggable(Level.FINE)) logNotes.fine(part.getTitle()+ ": Inserted a rest into current chord to make it shorter newEndMicros="
 								+ Util.formatDurationM(Math.max(minEndMicros, nextChord.getStartMicros())));
 				}
 				curChord.recalcEndMicros();
 				if (reprocessCurrentNote) {
-					//i--;
-					logNotes.finest(part.getTitle()+ ": curChord was shortened using rests, reprocessing..");
+					//i--; skipped on purpose
+                    if (logNotes.isLoggable(Level.FINEST)) logNotes.finest(part.getTitle()+ ": curChord was shortened using rests, reprocessing..");
 					continue MAIN;
 				}
 				
@@ -2855,38 +2938,42 @@ public class AbcExporter {
 				long oldCurEndMicro = curChord.getEndMicros();
 				if (curChord.getEndMicros() < nextChord.getStartMicros()) {
 					long restMicros = nextChord.getStartMicros() - oldCurEndMicro;
-					if (restMicros <= minimumMicros && curChord.expandedMicros == null) {
+					if (restMicros < minimumMicros && curChord.expandedMicros == null) {
 						curChord.setEndMicrosExpand(nextChord.getStartMicros());//TODO: breakup elongated notes
 						
 						// later we might undo some of this; expandedMicros is how much we are allowed to undo.
 						curChord.expandedMicros = Math.min((oldCurEndMicro-curStartMicro)-minimumMicros, restMicros);
 						if (curChord.expandedMicros <= 0L) curChord.expandedMicros = null;
-						
-						logNotes.finest(part.getTitle()+ ": Bridged rest");
+
+                        if (logNotes.isLoggable(Level.FINEST)) logNotes.finest(part.getTitle()+ ": Bridged rest");
 					}
 				}
 				
 				// Handle curr chord if its shorter than 0.06s
 				if (curChord.getEndMicros() < minEndMicros && !curChord.dontMove2) {
 					long earlyCurrMicro = curChord.getEndMicros() - minimumMicros;
-					logNotes.finer(part.getTitle()+": curChord too short. ends at "+curChord.getEndMicros()+", ideal end at "+minEndMicros);
+                    if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+": curChord too short. ends at "+curChord.getEndMicros()+", ideal end at "+minEndMicros);
+
+                    boolean restBeforeCurrHasRoom = prevRestChord != null
+                            && earlyCurrMicro - prevRestChord.getStartMicros() > minimumMicros;
+
 					// test if we should early start curr chord
-					if (!useRestToShortenChords && ne2 != null && ne1RoomMicros < minimumMicros
+					if (!useRestToShortenChords
+                            && (ne2 != null && ne1RoomMicros < minimumMicros) || restBeforeCurrHasRoom
 							&& curStartMicro - earlyCurrMicro < minimumMicros/2) {
-						// Both curr and ne does not have enough room.
+						// Both curr and ne does not have enough room. Or ne is there but there is also a rest before curr that can absorb the expansion.
 						// We need less than half of minimum though
-						if (prevRestChord != null
-								&& earlyCurrMicro - prevRestChord.getStartMicros() > minimumMicros) {
+						if (restBeforeCurrHasRoom) {
 							// There is a rest before curr that can be expanded into
-							curChord.early = earlyCurrMicro;//TODO: breakup elongated notes
+							curChord.early = earlyCurrMicro;
 							curChord.dontMove2 = true;
-							logNotes.finer(part.getTitle()+": Early start of 1st of two trills/gliss notes (rest). cur_early="
+                            if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+": Early start of 1st of two trills/gliss notes (rest). cur_early="
 										+ Util.formatDurationM(earlyCurrMicro)+" cur_start="+Util.formatDurationM(curChord.getStartMicros())
 										+ " prev_end="+Util.formatDurationM(prevRestChord.getEndMicros()));
 							prevRestChord.setEndMicrosRetract(earlyCurrMicro);
 							if (assertionsEnabled) assertSoftDura(prevRestChord, minimumMicros*4/5);
-							
-							i--;							
+
+							i--;
 							continue MAIN;
 						} else if (prevRestChord == null && prevChord != null && prevChord.expandedMicros != null
 								&& prevChord.expandedMicros > curStartMicro - earlyCurrMicro) {
@@ -2894,197 +2981,193 @@ public class AbcExporter {
 							curChord.early = earlyCurrMicro;//TODO: breakup elongated notes
 							curChord.dontMove2 = true;
 							// any ties will still hold as there will be no gap
-							logNotes.finer(part.getTitle()+": Early start of 1st of two trills/gliss notes (chord). cur_early="
+                            if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+": Early start of 1st of two trills/gliss notes (chord). cur_early="
 										+ Util.formatDurationM(earlyCurrMicro)+" cur_start="+Util.formatDurationM(curChord.getStartMicros())
 										+ " prev_end="+Util.formatDurationM(prevChord.getEndMicros()));
 							prevChord.setEndMicrosRetract(earlyCurrMicro);
 							prevChord.expandedMicros = null;
 							if (assertionsEnabled) assertSoftDura(prevChord, minimumMicros*4/5);
-							i--;							
+							i--;
 							continue MAIN;
 						}
 					}
 					
-					// Else try to make it longer					
+					// Else try to make it longer
 					if (nextChord.getStartMicros() >= minEndMicros) {
 						curChord.setEndMicrosExpand(minEndMicros);
-						logNotes.finer(part.getTitle()+ ": trying to expand curChord to end at "+Util.formatDurationM(minEndMicros));
+                        if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+ ": trying to expand curChord to end at "+Util.formatDurationM(minEndMicros));
 					} else {
 						// there was not room for a larger chord
 						int curValue = calcValue(curChord, part.getInstrument().sustainable);
 						long neMicroStart = ne.startABCMicros;
-						if (!curChord.glissando) {
-							boolean isRattle = true;
-							for (AbcNoteEvent n : curChord.getNotes()) {
-								if (!isRattle(part,n)) {
-									isRattle = false;
-									break;
-								}
-							}
-							if ((ne2 == null || ne1RoomMicros > minimumMicros*2) && ne1.endABCMicros > minEndMicros
-									&& (minEndMicros-neMicroStart < minimumMicros/2)) {//  || ne1Micros > minimumMicros*2
-								// delay start of next chord up to 30 ms
-								long oldStartMicros = ne.startABCMicros;
-								for (int ii = i; ii < events.size(); ii++) {
-									AbcNoteEvent over = events.get(ii);
-									if (over.startABCMicros > oldStartMicros) {
-										break;
-									}
-									if (over.startABCMicros == oldStartMicros) {
-										// should be ok to do this even if tiesFrom is non-null
-										// since the tiesFrom has been expanded to end here
-										if (over.endABCMicros-over.startABCMicros == 0L) {
-											over.endABCMicros = minEndMicros;
-											over.setEndTick(qtm.microsToTickABCOrganic(minEndMicros));
-										}
-										over.startABCMicros = minEndMicros;
-										over.setStartTick(qtm.microsToTickABCOrganic(minEndMicros));
-										
-										// TODO: Delaying start of next
-									}
-								}
-								
-								//going back and forth between micros and ticks is not always 1:1, so we stop infinite loops by setting this
-								curChord.dontMove2 = true;
-								curChord.setEndMicrosExpand(minEndMicros);
-								
-								i--;
-								logNotes.finer(part.getTitle()+" Delayed sequential chord by "+ ((minEndMicros-neMicroStart)/1000)+" ms 1");
-								continue MAIN;
-							} else if (!isRattle && ne2 != null && (isRattle(part, ne) || (ne1RoomMicros < minimumMicros
-									&& neMicros < minimumMicros))) {
-								// Both curr and next chord does not have enough room or curChord is rattle(s)
-								// ne is fairly short (or rattle) and will have to go
-								// TODO: I have doubt about the ties. ne might even be tied to curr chord.
-								//       And if its tiesTo is also there, removing it should instead
-								//       tie curr chord to the one after ne, and expand curr chord to ne2.
-								//       I also doubt if its smart at all. Maybe next chord has 4 notes
-								//       and current has 1 etc. etc.
-								//       Deleting a short note might not even allow curChord to exist anyway
-								//       As the ne after ne might be longer and should not be deleted.
-								events.remove(ne);
-                                part.numberOfRemovedNotesFromFitting++;
-								// TODO: these ties should perhaps prevent it from being removed, TBD
-								if (ne.tiesFrom != null) {
-									ne.tiesFrom.tiesTo = null;
-								}
-								if (ne.tiesTo != null) {
-									if (!part.getInstrument().sustainable) {
-										// If non-sustained then should remove ne.tiesTo
-										// we do this by a hack when setting from to itself
-										// then we just skip the notes from being added.
-										AbcNoteEvent tie = ne.tiesTo;
-										while (tie != null) {
-											tie.tiesFrom = tie;
-											tie = tie.tiesTo;
-										}
-									}
-									ne.tiesTo.tiesFrom = null;
-								}
-								// we don't use dontMove2 here, as we might want to get back in here with other ne.
-								i--;
-								
-								logNotes.finer(part.getTitle()+": Deleted ne, is second of two trills/gliss notes, dura="+Util.formatDurationM(ne1Micros));
-								continue MAIN;
-							} else if (curChord.arp > 1) {
-								boolean doable = true;
-								if (ne.note == Note.REST) doable = false;
-								if (ne.tiesFrom != null) {
-									doable = false;
-								}
-								for (AbcNoteEvent small : curChord.getNotes()) {									
-									if (small.note == ne.note) {
-										// next note cannot be added to block chord,
-										// as one with same pitch is there already
-										
-										if (ne1Micros < minimumMicros*3L/2L || part.getInstrument().isPercussion) {
-											// the next chord will be too short; we remove it
-											
-											if (ne.tiesTo != null) {
-												if (!part.getInstrument().sustainable) {
-													// If non-sustained then should remove ne.tiesTo
-													// we do this by a hack when setting from to itself
-													// then we just skip the notes from being added.
-													AbcNoteEvent tie = ne.tiesTo;
-													while (tie != null) {
-														tie.tiesFrom = tie;
-														tie = tie.tiesTo;
-													}
-												}
-												ne.tiesTo.tiesFrom = null;
-											}
-											if (ne.tiesFrom != null) {
-												ne.tiesFrom.tiesTo = null;
-											}
-											events.remove(ne);
-											i--;
-											logNotes.finer(part.getTitle()+": Removed short dura note just after arpeggio");
-											continue MAIN;
-										}
-										doable = false;
-										break;
-									}
-									
-								}
-								if (doable) {
-									ne.startABCMicros = curChord.getStartMicros();
-									ne.setStartTick(qtm.microsToTickABCOrganic(curChord.getStartMicros()));
-									curChord.add(ne);// we note that this will later be pruned (again)
-									curChord.arp += 1;
-									curChord.recalcEndMicros();
-									logNotes.finer(part.getTitle()+": Included late arpeggio to block chord");
-									continue MAIN;
-								}
-							} else if (useRestToShortenChords && curValue > nextValue) {
-								// Curr chord has higher value than next chord
-								// so its more than just a gracenote, we remove next instead.
-								// TODO: Could investigate if could delay start of next.
-								if (ne.tiesTo != null) {
-									if (!part.getInstrument().sustainable) {
-										// If non-sustained then should remove ne.tiesTo
-										// we do this by a hack when setting from to itself
-										// then we just skip the notes from being added.
-										AbcNoteEvent tie = ne.tiesTo;
-										while (tie != null) {
-											tie.tiesFrom = tie;
-											tie = tie.tiesTo;
-										}
-									}
-									ne.tiesTo.tiesFrom = null;
-								}
-								if (ne.tiesFrom != null) {
-									ne.tiesFrom.tiesTo = null;
-								}
-								events.remove(ne);
-								i--;
-								curChord.removeRests();// It might not need the rest anymore so we remove it. Might get re-added.
-								curChord.recalcEndMicros();
-								logNotes.finer(part.getTitle()+": Removed low value next chord");
-								//note that this will make next chord even lower value,
-								//so rest of next chords notes will also be removed.
-								continue MAIN;
-							}
-							// give up and schedule curr chord for deletion, it likely contains a grace note
-							curChord.setEndMicrosRetract(curChord.getStartMicros());
-							curChord.delete = true;
-                            part.numberOfRemovedNotesFromFitting += curChord.sizeReal();
-							logNotes.finer(part.getTitle()+": Removed short dura chord with "+curChord.size()+" notes. "+Util.formatDurationM(curChord.getStartMicros()));
-							
-						} else {
-							// deprecated
-							logNotes.severe(part.getTitle()+ ": deprecated!!");
-							curChord.setEndMicrosExpand(minEndMicros);
-							
-							boolean reRun = deprecated2(part, events, minimumMicros, curChord, i, ne, ne1, ne2,
-									ne1RoomMicros, ne1Micros, minEndMicros, minEndMicros, neMicroStart);
-							
-							if (reRun) {
-								continue MAIN;
-							}
-						}
+
+                        boolean isRattle = true;
+                        for (AbcNoteEvent n : curChord.getNotes()) {
+                            if (!isRattle(part,n)) {
+                                isRattle = false;
+                                break;
+                            }
+                        }
+                        long proposedDelayMicros = minEndMicros - neMicroStart;
+                        if ((ne2 == null || ne1RoomMicros - proposedDelayMicros >= minimumMicros) // next chord has room to be shortened
+                                && ne1.endABCMicros > minEndMicros // next chord will not become negative duration
+                                && proposedDelayMicros < minimumMicros/2 // next chord will maximum be 30 ms delayed
+                                ) {//  || ne1Micros > minimumMicros*2
+                            // delay start of next chord up to 30 ms
+                            long oldStartMicros = ne.startABCMicros;
+                            for (int ii = i; ii < events.size(); ii++) {
+                                AbcNoteEvent over = events.get(ii);
+                                if (over.startABCMicros > oldStartMicros) {
+                                    break;
+                                }
+                                if (over.startABCMicros == oldStartMicros) {
+                                    // should be ok to do this even if tiesFrom is non-null
+                                    // since the tiesFrom has been expanded to end here
+                                    if (over.endABCMicros-over.startABCMicros == 0L) {
+                                        // It already has a duration of 0, we keep that 0, while shifting the note forward.
+                                        over.endABCMicros = minEndMicros;
+                                        over.setEndTick(qtm.microsToTickABCOrganic(minEndMicros));
+                                    }
+                                    over.startABCMicros = minEndMicros;
+                                    over.setStartTick(qtm.microsToTickABCOrganic(minEndMicros));
+
+                                    // Only the start moves; the end stays put, so the note is trimmed at the
+                                    // front by up to minimumMicros/2 rather than shifted whole. Moving the end
+                                    // too would push into the following chord and cascade, which is why this
+                                    // branch is gated so tightly. ne1RoomMicros above guarantees ne1 - the
+                                    // shortest note in the group - still clears minimumMicros after the trim.
+                                }
+                            }
+
+                            //going back and forth between micros and ticks is not always 1:1, so we stop infinite loops by setting this
+                            curChord.dontMove2 = true;
+                            curChord.setEndMicrosExpand(minEndMicros);
+
+                            i--;
+                            if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+" Delayed sequential chord by "+ ((minEndMicros-neMicroStart)/1000)+" ms 1");
+                            continue MAIN;
+                        } else if (!isRattle && ne2 != null && !curChord.isRest()
+                                && (isRattle(part, ne) || (ne1RoomMicros < minimumMicros
+                                && neMicros < minimumMicros))) {
+                            // Both curr and next chord does not have enough room or curChord is rattle(s)
+                            // ne is fairly short (or rattle) and will have to go
+                            // TODO: I have doubt about the ties. ne might even be tied to curr chord.
+                            //       And if its tiesTo is also there, removing it should instead
+                            //       tie curr chord to the one after ne, and expand curr chord to ne2.
+                            //       I also doubt if its smart at all. Maybe next chord has 4 notes
+                            //       and current has 1 etc. etc.
+                            //       Deleting a short note might not even allow curChord to exist anyway
+                            //       As the ne after ne might be longer and should not be deleted.
+                            events.remove(ne);
+                            part.numberOfRemovedNotesFromFitting++;
+                            // TODO: these ties should perhaps prevent it from being removed, TBD
+                            if (ne.tiesFrom != null) {
+                                ne.tiesFrom.tiesTo = null;
+                            }
+                            if (ne.tiesTo != null) {
+                                if (!part.getInstrument().isSustainable(ne.note.id)) {
+                                    // If non-sustained then should remove ne.tiesTo
+                                    // we do this by a hack when setting from to itself
+                                    // then we later just skip the notes from being added.
+                                    AbcNoteEvent tie = ne.tiesTo;
+                                    while (tie != null) {
+                                        tie.tiesFrom = tie;
+                                        tie = tie.tiesTo;
+                                    }
+                                }
+                                ne.tiesTo.tiesFrom = null;
+                            }
+                            // we don't use dontMove2 here, as we might want to get back in here with other ne.
+                            i--;
+
+                            if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+": Deleted ne, is second of two trills/gliss notes, dura="+Util.formatDurationM(ne1Micros));
+                            continue MAIN;
+                        } else if (curChord.arp > 1) {
+                            boolean doable = true;
+                            if (ne.note == Note.REST) doable = false;
+                            if (ne.tiesFrom != null) {
+                                doable = false;
+                            }
+                            for (AbcNoteEvent small : curChord.getNotes()) {
+                                if (small.note == ne.note) {
+                                    // next note cannot be added to block chord,
+                                    // as one with same pitch is there already
+
+                                    if (ne1Micros < minimumMicros*3L/2L || part.getInstrument().isPercussion) {
+                                        // the next chord will be too short; we remove it
+
+                                        if (ne.tiesTo != null) {
+                                            if (!part.getInstrument().isSustainable(ne.note.id)) {
+                                                // If non-sustained then should remove ne.tiesTo
+                                                // we do this by a hack when setting from to itself
+                                                // then we just skip the notes from being added.
+                                                AbcNoteEvent tie = ne.tiesTo;
+                                                while (tie != null) {
+                                                    tie.tiesFrom = tie;
+                                                    tie = tie.tiesTo;
+                                                }
+                                            }
+                                            ne.tiesTo.tiesFrom = null;
+                                        }
+                                        if (ne.tiesFrom != null) {
+                                            ne.tiesFrom.tiesTo = null;
+                                        }
+                                        events.remove(ne);
+                                        i--;
+                                        if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+": Removed short dura note just after arpeggio");
+                                        continue MAIN;
+                                    }
+                                    doable = false;
+                                    break;
+                                }
+
+                            }
+                            if (doable) {
+                                ne.startABCMicros = curChord.getStartMicros();
+                                ne.setStartTick(qtm.microsToTickABCOrganic(curChord.getStartMicros()));
+                                curChord.add(ne);// we note that this will later be pruned (again)
+                                curChord.arp += 1;
+                                curChord.recalcEndMicros();
+                                if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+": Included late arpeggio to block chord");
+                                continue MAIN;
+                            }
+                        } else if (useRestToShortenChords && curValue > nextValue) {
+                            // Curr chord has higher value than next chord
+                            // so its more than just a gracenote, we remove next instead.
+                            // TODO: Could investigate if could delay start of next.
+                            if (ne.tiesTo != null) {
+                                if (!part.getInstrument().isSustainable(ne.note.id)) {
+                                    // If non-sustained then should remove ne.tiesTo
+                                    // we do this by a hack when setting from to itself
+                                    // then we just skip the notes from being added.
+                                    AbcNoteEvent tie = ne.tiesTo;
+                                    while (tie != null) {
+                                        tie.tiesFrom = tie;
+                                        tie = tie.tiesTo;
+                                    }
+                                }
+                                ne.tiesTo.tiesFrom = null;
+                            }
+                            if (ne.tiesFrom != null) {
+                                ne.tiesFrom.tiesTo = null;
+                            }
+                            events.remove(ne);
+                            i--;
+                            curChord.removeRests();// It might not need the rest anymore so we remove it. Might get re-added.
+                            curChord.recalcEndMicros();
+                            if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+": Removed low value next chord");
+                            //note that this will make next chord even lower value,
+                            //so rest of next chords notes will also be removed.
+                            continue MAIN;
+                        }
+                        // give up and schedule curr chord for deletion, it likely contains a grace note or initial rest
+                        curChord.setEndMicrosRetract(curChord.getStartMicros());
+                        curChord.delete = true;
+                        part.numberOfRemovedNotesFromFitting += curChord.sizeReal();
+                        if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+": Removed short dura chord with "+curChord.size()+" notes. "+Util.formatDurationM(curChord.getStartMicros()));
 					}
 				}
-				assertSoftDura(curChord, minimumMicros*99/100);
+                if (assertionsEnabled) assertSoftDura(curChord, minimumMicros*99/100);
 				
 				//System.out.println(curChord.getEndMicros()+" < "+nextChord.getStartMicros());
 				
@@ -3105,9 +3188,9 @@ public class AbcExporter {
 							ChordOrganic restChord = new ChordOrganic(restEvent, qtm);
 							chords.add(restChord);
 							prevRestChord = restChord;//break long notes keep them sorted so this is last
-							assertSoftDura(restChord, minimumMicros*99/100);
+                            if (assertionsEnabled) assertSoftDura(restChord, minimumMicros*99/100);
 						}
-						logNotes.finest(part.getTitle()+ ": add rest: "+curChord.getEndMicros()+" - "+nextChord.getStartMicros());
+                        if (logNotes.isLoggable(Level.FINEST)) logNotes.finest(part.getTitle()+ ": add rest: "+curChord.getEndMicros()+" - "+nextChord.getStartMicros());
 					} else {
 						if (curChord.delete) {
 							// If we reach this code, then curr has been scheduled for deletion.
@@ -3129,19 +3212,19 @@ public class AbcExporter {
 								// this has the added benefit that if next chord is
 								// too short too, it will be longer.
 								nextChord.early = curChord.getEndMicros();//TODO: breakup elongated notes
-								logNotes.fine(part.getTitle()+ ": Early start A");
+                                if (logNotes.isLoggable(Level.FINE)) logNotes.fine(part.getTitle()+ ": Early start A");
 							} else if (found) {
 								chordToExpand.setEndMicrosExpand(ne.startABCMicros);//TODO: breakup elongated notes
-								logNotes.fine(part.getTitle()+ ": Prev ("+chordToExpand.getStartMicros()+") expanded to "+ne.startABCMicros+" isRest="+chordToExpand.isRest()+" isDeleted="+chordToExpand.delete);
+                                if (logNotes.isLoggable(Level.FINE)) logNotes.fine(part.getTitle()+ ": Prev ("+chordToExpand.getStartMicros()+") expanded to "+ne.startABCMicros+" isRest="+chordToExpand.isRest()+" isDeleted="+chordToExpand.delete);
 								//curChord = chordToExpand;
 							} else {
 								nextChord.early = curChord.getEndMicros();//TODO: breakup elongated notes
-								logNotes.fine(part.getTitle()+ ": Early start B");
+                                if (logNotes.isLoggable(Level.FINE)) logNotes.fine(part.getTitle()+ ": Early start B");
 							}
 							curChord = chordToExpand;
 						} else {
 							curChord.setEndMicrosExpand(ne.startABCMicros);//TODO: breakup elongated notes
-							logNotes.finest(part.getTitle()+ ": Chord expanded to fill gap");
+                            if (logNotes.isLoggable(Level.FINEST)) logNotes.finest(part.getTitle()+ ": Chord expanded to fill gap");
 						}
 						prevRestChord = null;
 						
@@ -3176,9 +3259,9 @@ public class AbcExporter {
 							} else if (ne.tiesFrom != null) {
 								ne.tiesFrom.endABCMicros = ne.startABCMicros;
 								ne.tiesFrom.setEndTick(qtm.microsToTickABCOrganic(ne.startABCMicros));
-								logNotes.finer(part.getTitle()+": Adjusting tiesFrom endMicros while shuffling ne into curr");
+                                if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+": Adjusting tiesFrom endMicros while shuffling ne into curr");
 							}
-							logNotes.fine(part.getTitle()+": Shuffle ne into curr");
+                            if (logNotes.isLoggable(Level.FINE)) logNotes.fine(part.getTitle()+": Shuffle ne into curr");
 							i--;
 							continue MAIN;
 						}
@@ -3265,53 +3348,57 @@ public class AbcExporter {
 		boolean reprocessLastChord = true;
 
 		while (reprocessLastChord) {
+
+            if (logNotes.isLoggable(Level.FINE)) logNotes.fine("Last chord processing..");
+
+            // The last Chord has all the notes it will get.
+
+            if (curChord.early != null) {
+                curChord.setEarlyStartMicros(useRestToShortenChords);
+                if (prevChord != null) prevChord.recalcEndMicros();
+                if (logNotes.isLoggable(Level.FINE)) logNotes.fine("Last chord: early start");
+            }
+
+
+            if (singleStageVer < 2) {
+                // remove zero duration notes if longer notes start at same time
+                if (curChord.getLongestEndMicros() > curChord.getStartMicros()) {
+                    for (int j = 0; j < curChord.size(); j++) {
+                        AbcNoteEvent jne = curChord.get(j);
+                        if (jne.endABCMicros == jne.startABCMicros) {
+                            // this note is zero duration and others in the chord is not
+                            curChord.remove(jne);
+                            part.numberOfRemovedNotesZeros++;
+                            if (logNotes.isLoggable(Level.FINEST))
+                                logNotes.finest("Last chord: remove a zero dura note");
+                            if (jne.tiesFrom != null) {
+                                jne.tiesFrom.tiesTo = null;
+                            }
+                            if (jne.tiesTo != null) {
+                                jne.tiesTo.tiesFrom = null;
+                            }
+                            j = -1;
+                        }
+                    }
+                }
+                // An extension/removal will have changed the chord's duration
+                curChord.recalcEndMicros();
+            }
 			
-			logNotes.fine("Last chord processing..");
 			
-			// The last Chord has all the notes it will get. But before continuing,
-			// normalize the chord so that all notes end at the same time
-			if (curChord.early != null) {
-				curChord.setEarlyStartMicros(useRestToShortenChords);
-				if (prevChord != null) prevChord.recalcEndMicros();
-				logNotes.fine("Last chord: early start");
-			}
-			
-			
-			// remove zero duration notes if longer notes start at same time
-			if (curChord.getLongestEndMicros() > curChord.getStartMicros()) {
-				for (int j = 0; j < curChord.size(); j++) {
-					AbcNoteEvent jne = curChord.get(j);
-					if (jne.endABCMicros == jne.startABCMicros) {
-						// this note is zero duration and others in the chord is not
-						curChord.remove(jne);
-                        part.numberOfRemovedNotesZeros++;
-						logNotes.finest("Last chord: remove a zero dura note");
-						if (jne.tiesFrom != null) {
-							jne.tiesFrom.tiesTo = null;
-						}
-						if (jne.tiesTo != null) {
-							jne.tiesTo.tiesFrom = null;
-						}
-						j=-1;
-					}
-				}
-				// The removal will have changed the chord's duration
-				curChord.recalcEndMicros();
-			}
-			
-			
-			// Last chord needs to be pruned as that hasn't happened yet.
-			List<AbcNoteEvent> deadnotes = curChord.prune(part.getInstrument().sustainable,
-					part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part);
+			// Last chord needs to be pruned as that hasn't happened yet. Since its the last we don't pass useRestToShortenChords.
+			List<AbcNoteEvent> deadnotes = curChord.pruneWithMicros(part.getInstrument().sustainable,
+					part.getInstrument() == LotroInstrument.BASIC_DRUM, part.getInstrument().isPercussion, part, false);
+            if (assertionsEnabled && OUTPUT_METRICS) prunedAway.addAll(deadnotes);
 			removeNotes(events, deadnotes, part);// we need to set the pruned flag for last chord too.
             part.numberOfRemovedNotesFromPruning += deadnotes.size();
 			curChord.recalcEndMicros();
-			
-			logNotes.fine(part.getTitle()+" final note ends at "+Util.formatDurationM(curChord.getEndMicros()-qtm.tickToMicrosABCOrganic(exportStartTick)));
+
+            if (logNotes.isLoggable(Level.FINE)) logNotes.fine(part.getTitle()+" final note ends at "+Util.formatDurationM(curChord.getEndMicros()-qtm.tickToMicrosABCOrganic(exportStartTick)));
 			
 			if (curChord.getEndMicros() < curChord.getStartMicros() + minimumMicros) {
 				curChord.setEndMicrosExpand(curChord.getStartMicros() + minimumMicros);
-				logNotes.fine("Last chord: expand dura");
+                if (logNotes.isLoggable(Level.FINE)) logNotes.fine("Last chord: expand dura");
 			}
 			
 			long targetEndMicros = curChord.getEndMicros();
@@ -3330,10 +3417,10 @@ public class AbcExporter {
 							// chord might become slightly longer later.
 							jne.endABCMicros = curChord.getEndMicros();
 							jne.setEndTick(qtm.microsToTickABCOrganic(curChord.getEndMicros()));
-							logNotes.finer(part.getTitle()+ ": Fit note ending to last chord ending");
+                            if (logNotes.isLoggable(Level.FINER)) logNotes.finer(part.getTitle()+ ": Fit note ending to last chord ending");
 						} else {
 							// This note extends past the end of the chord; break it into two tied notes
-							logNotes.finest("Last chord: cut up chord");
+                            if (logNotes.isLoggable(Level.FINEST)) logNotes.finest("Last chord: cut up chord");
 							AbcNoteEvent next = jne.splitWithTieAtTick(qtm.microsToTickABCOrganic(targetEndMicros), targetEndMicros);
 							if (nextChord == null) {
 								nextChord = new ChordOrganic(next, qtm);
@@ -3423,7 +3510,7 @@ public class AbcExporter {
 		chords.removeAll(trash);
 		
 		if (count > 0) {
-			logNotes.fine(part.getAbcSong().getSongTitle()+": deleting "+count+ " resting chords due to rest being too short !!!!!!");
+            if (logNotes.isLoggable(Level.FINE)) logNotes.fine(part.getAbcSong().getSongTitle()+": deleting "+count+ " resting chords due to rest being too short !!!!!!");
 		}
 		if (useRestToShortenChords) {
 			/*
@@ -3461,7 +3548,7 @@ public class AbcExporter {
 								//pre.endABCMicros--;//this can cause it to end before its chord
 							}
 							pre.setEndTick(qtm.microsToTickABCOrganic(curr.startABCMicros));
-							logNotes.fine(part.getTitle()+": normalizing note!1! tied="+(pre.tiesTo != null));
+                            if (logNotes.isLoggable(Level.FINE)) logNotes.fine(part.getTitle()+": normalizing note!1! tied="+(pre.tiesTo != null));
 						}
 					}
 				}
@@ -3519,25 +3606,151 @@ public class AbcExporter {
                 assert false:"Please notify Aifel that this occurred, thanks.";
             }
         }
+        boolean first = true;
+        for (ChordOrganic chord : chords) {
+            chord.syncNoteTicksFromMicros(first);
+            first = false;
+        }
+
+        if (assertionsEnabled && OUTPUT_METRICS) {
+            logPartMetrics(part, chords, events, prunedAway, trueOnset, minimumMicros, trueNote);
+        }
+
 		List<Chord> returnList = new ArrayList<>(chords.size());
 		returnList.addAll(chords);
 		return returnList;
 	}
+
+    /**
+     * One machine-diffable line per part, plus at most a few lines when something is
+     * actually wrong. Meant to be run over the whole corpus on two builds and compared
+     * with a script, not read
+     *
+     * grep "METRICS" and diff field by field.
+     *
+     * sig= is a checksum of every chord's start/end micros. If it matches between two
+     * builds the part is timing-identical and needs no further comparison, which is how
+     * the corpus run gets down to a readable number of parts.
+     */
+    private void logPartMetrics(AbcPart part, List<ChordOrganic> chords, List<AbcNoteEvent> events,
+                                Set<AbcNoteEvent> prunedAway, Map<AbcNoteEvent, Long> trueOnset,
+                                long minimumMicros, Map<AbcNoteEvent, long[]> trueNote) {
+        final int MAX_ISSUE_LINES_PER_PART = 3;
+        long early = 0, late = 0, worstEarly = 0, worstLate = 0;
+        int onsetN = 0;
+        long shortfall = 0, sig = 1469598103934665603L;
+        int shortChords = 0;
+
+        for (ChordOrganic chord : chords) {
+            sig = (sig ^ chord.getStartMicros()) * 1099511628211L;
+            sig = (sig ^ chord.getEndMicros())   * 1099511628211L;
+
+            long dura = chord.getEndMicros() - chord.getStartMicros();
+            if (dura > 0L && dura < minimumMicros) {
+                shortChords++;
+                shortfall += minimumMicros - dura;
+            }
+            for (AbcNoteEvent note : chord.getNotes()) {
+                Long t = trueOnset.get(note);// null for split tails; they have no true onset
+                if (t == null) continue;
+                long d = chord.getStartMicros() - t;
+                onsetN++;
+                if (d < 0) { early -= d; worstEarly = Math.max(worstEarly, -d); }
+                else       { late  += d; worstLate  = Math.max(worstLate, d); }
+            }
+        }
+
+        java.util.Set<AbcNoteEvent> placed = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+        for (ChordOrganic chord : chords) {
+            placed.addAll(chord.getNotes());
+        }
+        List<AbcNoteEvent> lost = new ArrayList<>();
+        for (AbcNoteEvent note : events) {
+            if (note.note == Note.REST || placed.contains(note)) continue;
+            if (prunedAway.contains(note)) continue;// deliberately discarded by the note cap
+            if (note.endABCMicros == note.startABCMicros && note.tiesTo != null) continue;// flattened head, tail carries it
+            lost.add(note);
+        }
+        long lostMicros = 0;
+        for (AbcNoteEvent note : lost) {
+            lostMicros += note.endABCMicros - note.startABCMicros;
+        }
+
+        long spanMicros = chords.isEmpty() ? 0L
+                : chords.getLast().getEndMicros() - chords.getFirst().getStartMicros();
+
+        File f = new File("C:/Users/changeme/Documents/organic-single-stage-metrics.txt");
+        try (FileWriter fWriter = new FileWriter(f, true)) {
+            fWriter.append("METRICS " + part.getAbcSong().getTitle() + "|" + part.getTitle()
+                    + " chords=" + chords.size()
+                    + " span=" + spanMicros
+                    + " sig=" + Long.toHexString(sig)
+                    + " onsetN=" + onsetN
+                    + " early=" + early + " late=" + late
+                    + " worstEarly=" + worstEarly + " worstLate=" + worstLate
+                    + " short=" + shortChords + " shortfall=" + shortfall
+                    + " lost=" + lost.size() + " lostMicros=" + lostMicros
+                    + " numberOfRemovedNotesZeros=" + part.numberOfRemovedNotesZeros
+                    + "\n");
+
+            for (int k = 0; k < lost.size() && k < MAX_ISSUE_LINES_PER_PART; k++) {
+                AbcNoteEvent note = lost.get(k);
+
+                long[] orig = trueNote.get(note);
+                fWriter.append("LOST " + part.getAbcSong().getTitle() + "|" + part.getTitle()
+                        + " " + note.note + " " + note.startABCMicros + "-" + note.endABCMicros
+                        + " dura=" + (note.endABCMicros - note.startABCMicros)
+                        + " srcDura=" + (orig == null ? -1 : orig[1])
+                        + " sustainable=" + part.getInstrument().sustainable
+                        + " tiesFrom=" + (note.tiesFrom != null) + " tiesTo=" + (note.tiesTo != null) + "\n");
+            }
+        } catch (Exception e) {
+            logNotes.log(Level.SEVERE, "Error writing metrics file", e);
+            System.exit(1);
+        }
+    }
 	
 	private void assertSoftDura(ChordOrganic chord, long minimum) {
-		if (chord == null) return;
-		chord.recalcEndMicros();
-		long chordDura = qtm.tickToMicrosABCOrganic(chord.getEndTick())-qtm.tickToMicrosABCOrganic(chord.getStartTick());
-		long maxEndTick = qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(chord.getStartTick()) + minimum);
-		long maxEndMicros = chord.getStartMicros() + minimum;
-		long tickMicro = qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(chord.getEndTick()) + 10000L)-chord.getEndTick();
-		if (chordDura > 0L && chordDura < minimum) {
-			// we dont assert due to tick resolution might be so coarse that its within margin
-			logNotes.fine(chordDura+" < "+minimum+" dontMove2="+chord.dontMove2+" delete="+chord.delete
-					+" endTick="+chord.getEndTick()+" maxEndTick="+maxEndTick+" 10ms="+tickMicro
-					+" endMicros="+chord.getEndMicros()+" maxEndMicros="+maxEndMicros);
-		}
-	}
+        if (chord == null) return;
+        // Measured in micros because that is what exportPartToAbcOrganic writes.
+        // The tick projection loses up to one tick at each end, so a chord expanded to
+        // exactly startMicros+minimumMicros reads as ~2 sub-tick units short there while
+        // being exactly right in the output.
+        long chordDura = chord.getEndMicros() - chord.getStartMicros();
+        if (chordDura <= 0L || chordDura >= minimum) return;
+
+        long maxEndTick = qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(chord.getStartTick()) + minimum);
+        long maxEndMicros = chord.getStartMicros() + minimum;
+        long tickMicro = qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(chord.getEndTick()) + 10000L)-chord.getEndTick();
+        logNotes.warning(chordDura+" < "+minimum+" dontMove2="+chord.dontMove2+" delete="+chord.delete
+                +" endTick="+chord.getEndTick()+" maxEndTick="+maxEndTick+" 10ms="+tickMicro
+                +" endMicros="+chord.getEndMicros()+" maxEndMicros="+maxEndMicros);
+    }
+
+    /**
+     * Insertion index for {@code toInsert} in {@code events}, searched outwards from {@code from}.
+     *
+     * Ordered on startABCMicros rather than through NoteEvent.compareTo. compareTo resolves
+     * on startTick then endTick, and processOrganic rewrites note end ticks in place while
+     * the notes are still in `events` (the cut loop drives a whole chord to a common end),
+     * so those keys are not maintained. Micros are the authoritative timeline here and do
+     * stay ordered.
+     *
+     * Only requires the run around the insertion point to be ordered, not the whole list.
+     *
+     * Only used by single-stage.
+     */
+    private int insertionIndexOrganic(List<AbcNoteEvent> events, AbcNoteEvent toInsert, int from) {
+        final long startMicros = toInsert.startABCMicros;
+        int k = Math.min(from, events.size());
+        while (k > 0 && events.get(k - 1).startABCMicros > startMicros) {
+            k--;
+        }
+        while (k < events.size() && events.get(k).startABCMicros <= startMicros) {
+            k++;
+        }
+        return k;
+    }
 	
 	private void assertNoteDuraOrganic1(AbcNoteEvent ne, long minimum) {
 		if (ne == null) return;
@@ -3590,24 +3803,39 @@ public class AbcExporter {
 	
 		final long minimumMicros = quanFractions[2];
 
-		NavigableSet<Long> grid = upgraded?createGridVersion3(events, minimumMicros, part, part.getAbcSong().getSequenceInfo().getDataCache().getBarLengthTicks()):createGrid(events, minimumMicros, part, useRestToShortenChords);
+		NavigableSet<Long> grid = null;
 
         if (upgraded) {
+            // For the rest of this pipeline we will work with micros.
+            // Ticks will only be used to create the ABC preview midi.
+            initABCMicros(events);
+
+            // Thin runs too dense for the lattice before the grid sees them. Without this a
+            // fast slide is crushed onto one line as a cluster of six or more pitches, where
+            // single-stage thins it to the notes that can actually be articulated.
+            events = thinDenseRuns(events, minimumMicros, part);
+
+            // lay out the grid and snap to it in same go
+            grid = createGridV2(events, minimumMicros, part, part.getAbcSong().getSequenceInfo().getDataCache().getBarLengthTicks());
+
+            // despite the name, it just checks that notes were not snapped too far from origin (then deletion)
+            // or same pitch share same time (then fix).
             events = snapNotesToGrid3(events, grid, minimumMicros, part);
-            /*
-            boolean sustained = part.getInstrument().sustainable;
-            if (sustained) {
-                events = snapNotesToGridSustained(events, grid, minimumMicros, part);
-            } else {
-                events = snapNotesToGridFixed(events, grid, minimumMicros, part);
-            }
-             */
         } else {
+            // lay out the grid
+            grid = createGrid(events, minimumMicros, part, useRestToShortenChords);
+
+            // snap notes to the grid
             events = snapNotesToGrid(events, grid, minimumMicros, part);
         }
 
-        events = removeCollapsedDissonance(events, part);
+        // Check that notes that overlap now, and didn't in source midi is not dissonant,
+        // and if they are, delete one of them.
+        part.numberOfRemovedNotesForSafety = 0;
+        //events = removeCollapsedDissonance(events, part); // disabled for now. It works, but it's not needed.
 
+        // Put all the notes in chords, break up too long notes, prune if more than 6, and put in rests.
+        // Note the grid is already prepared for note break-ups, no two points on the grid is too far from each other.
 		List<Chord> chords = chordifyOrganic(events, grid, part, useRestToShortenChords, minimumMicros);
 		
 		return chords;
@@ -3952,35 +4180,21 @@ public class AbcExporter {
 
     /**
      *
-     * Used by createGridVersion2() of multi-stage organic path
-     *
-     */
-    private record GridPoint(long micros, boolean isBounce, int weight) implements Comparable<GridPoint> {
-        @Override
-        public int compareTo(GridPoint o) {
-            return Long.compare(this.micros, o.micros);
-        }
-    }
-
-    record Candidate(long micros, int type, int weight, AbcNoteEvent note) {}
-
-    /**
-     *
-     * Used by createGridVersion3() of multi-stage 2 organic path
+     * Used by createGridV2() of multi-stage 2 organic path
      *
      */
     final int TYPE_START = 1;
     final int TYPE_END = 2;
-    class GridPoint3 implements Comparable<GridPoint3> {
+    class GridPoint2 implements Comparable<GridPoint2> {
         private long micros;
         private final int bounceDepth;
-        private final int weight;
+        private int weight;
 
         // A GridPoint can simultaneously be the start of some notes and the end of others.
         final List<AbcNoteEvent> starts = new ArrayList<>();
         final List<AbcNoteEvent> ends = new ArrayList<>();
 
-        public GridPoint3(long micros, int bounceDepth, int weight) {
+        public GridPoint2(long micros, int bounceDepth, int weight) {
             this.micros = micros;
             this.bounceDepth = bounceDepth;
             this.weight = weight;
@@ -3991,7 +4205,7 @@ public class AbcExporter {
         public int bounceDepth() { return bounceDepth; }
 
         // Binds a candidate's notes to this grid point and immediately updates their times to this point
-        public void mergeCandidate(Candidate3 c) {
+        public void mergeCandidate(Candidate2 c) {
             if (c.type == TYPE_START) {
                 this.starts.addAll(c.notes);
                 for (AbcNoteEvent note : c.notes) note.startABCMicros = this.micros;
@@ -3999,14 +4213,17 @@ public class AbcExporter {
                 this.ends.addAll(c.notes);
                 for (AbcNoteEvent note : c.notes) note.endABCMicros = this.micros;
             }
+            if (weight < Integer.MAX_VALUE) weight+=c.weight();
         }
 
         // Merges another GridPoint into this one (e.g., when a stronger blocker overwrites a weaker one)
-        public void absorb(GridPoint3 other) {
+        public void absorb(GridPoint2 other) {
             this.starts.addAll(other.starts);
             this.ends.addAll(other.ends);
             for (AbcNoteEvent note : other.starts) note.startABCMicros = this.micros;
             for (AbcNoteEvent note : other.ends) note.endABCMicros = this.micros;
+            if (weight < Integer.MAX_VALUE && other.weight < Integer.MAX_VALUE) weight+=other.weight();
+            else weight = Integer.MAX_VALUE;
         }
 
         /*
@@ -4019,27 +4236,52 @@ public class AbcExporter {
         }
 
         @Override
-        public int compareTo(GridPoint3 o) {
+        public int compareTo(GridPoint2 o) {
             return Long.compare(this.micros, o.micros);
         }
     }
 
-    static class Candidate3 {
+    /**
+     * Used by multi-stage 2
+     */
+    static class Candidate2 {
         long micros;
         final int type;   // TYPE_START or TYPE_END
         int weight = 0;
 
+        // True once the main loop has handled this candidate. Set through the sorted
+        // `candidates` list but read through `startCandidates`, both hold the same object
+        // references, so the two views must never be split into copies.
+        boolean placed = false;
+
+        // True while every note binned here scored WEIGHT_GRACE. Two coincident grace
+        // notes sum to WEIGHT_SOLO, so weight alone cannot identify them.
+        boolean graceOnly = true;
+
+        @Override
+        public String toString() {
+            return "Candidate2{" +
+                    "micros=" + micros +
+                    ", type=" + type +
+                    ", weight=" + weight +
+                    ", placed=" + placed +
+                    ", graceOnly=" + graceOnly +
+                    ", notes=" + notes.size() +
+                    '}';
+        }
+
         // Instead of a single note, we hold all notes participating in this event
         final List<AbcNoteEvent> notes = new ArrayList<>();
 
-        public Candidate3(long micros, int type) {
+        public Candidate2(long micros, int type) {
             this.micros = micros;
             this.type = type;
         }
 
-        public void addNote(AbcNoteEvent note, int addedWeight) {
+        public void addNote(AbcNoteEvent note, int addedWeight, boolean grace) {
             this.notes.add(note);
             this.weight += addedWeight;
+            if (!grace) this.graceOnly = false;
         }
 
         public int weight() { return weight; }
@@ -4047,12 +4289,377 @@ public class AbcExporter {
         public long micros() { return micros; }
     }
 
+
+    // Debug logging, meant to be machine analyzed.
+    public static final GridStats GRID_STATS = new GridStats();
+    // true to output multistage 2 info from createGridV2 when AutoExporter has ran.
+    public static final boolean GRID_STATS_ENABLED = false;
+
+
+    /**
+     * Part of organic multi-stage 2 path.
+     *
+     * Thins runs too dense for the lattice, before the grid sees them. Without this a fast
+     * slide is crushed onto one line as a cluster of six or more pitches; single-stage instead
+     * drops what cannot be articulated and keeps the gesture legible.
+     *
+     * Notes are first assigned to voices: a note joins the voice whose last pitch is nearest,
+     * within a small interval, if that voice was last heard a moment ago. A slide is one voice;
+     * a slide in parallel thirds is two voices side by side; a melody an octave away never
+     * matches on interval and so is never touched. Repeated notes (interval 0) do not join -
+     * a run of them is a rhythm, and thinning it would remove beats.
+     *
+     * Each voice is then thinned independently on the same 60ms clock, so parallel voices keep
+     * their survivors together, and a dyad slide comes out as dyads. The first and last note of
+     * a voice are always kept; the last is what the slide arrives at.
+     *
+     * Runs before createGridV2. Deciding that material cannot be articulated is a
+     * judgment about the source, not about grid geometry, and it needs time-ordered lookahead
+     * which the weight-sorted candidate loop cannot provide.
+     */
+    private List<AbcNoteEvent> thinDenseRuns(List<AbcNoteEvent> events, long minimumMicros, AbcPart part) {
+
+        // --- Constants --------------------------------------------------------------------
+
+        // System out how notes are being processed.
+        // enable only when testing on a single part and max a couple of second of a song or test midi.
+        final boolean THINNER_DEBUG = false;
+
+
+        // Set false to measure without deleting: voices are still found and every note that
+        // would be dropped is still recorded in GRID_STATS.
+        final boolean THIN_ENABLED = true;
+
+        // Largest gap between consecutive notes of one voice. Pitch continuity does most of
+        // the discriminating now; it mainly
+        // needs to admit the slightly longer step a slide often takes into its arrival note.
+        final long VOICE_MAX_ONSET_GAP = minimumMicros * 5L / 6L;
+
+        // Largest step, in semitones, that continues a voice. 1 is chromatic, 2 also admits
+        // diatonic runs. Higher starts admitting arpeggios, which the 45ms rule already owns.
+        final int VOICE_MAX_INTERVAL = 2;
+
+        // Longer than this is not run material but what the run arrives at. It may end a voice
+        // and is never dropped, but nothing may join a voice after it.
+        final long VOICE_MAX_NOTE_MICROS = 3L * minimumMicros;
+
+        // Spacing between survivors. Slightly more than minimumMicros: the first survivor may
+        // bounce forward before the next one is placed, and two notes exactly one slot apart
+        // can then end up conflicting. The margin buys room for that.
+        final long THIN_SPACING = minimumMicros;
+
+        // A run of overlapping notes could still be a slow strum that happened to move in small
+        // steps, so it needs four notes before it is trusted as a line. A run whose notes release
+        // before the next begins is unambiguously a line, and three is enough.
+        final int VOICE_MIN_NOTES = 4;
+        final int VOICE_MIN_NOTES_STACCATO = 3;
+
+        // A note may run this far past the next onset and still count as released. Real playing
+        // rarely lands to the microsecond, and a millisecond of overlap is not sustain.
+        final long STACCATO_OVERLAP_TOLERANCE = minimumMicros / 12;   // 5ms
+
+        // Interval limit for a voice whose notes have all released before the next began.
+        // Such notes are sequential by construction, nobody plays a chord as staggered
+        // staccato, so the limit only needs to keep a melody in another register out, and
+        // it can be wide enough to admit triad arpeggios, which contain a major third.
+        final int VOICE_MAX_INTERVAL_STACCATO = 4;
+        // -----------------------------------------------------------------------------------
+
+        // Excluded for the same reason percussion is excluded from grace weighting: a short
+        // drum hit is a hit, not an ornament, and a deleted one leaves silence.
+        if (part.getInstrument().isPercussion || events.size() < VOICE_MIN_NOTES) return events;
+
+        // Played onsets in time order, grouped so a chord hands one note to each voice at most.
+        TreeMap<Long, List<AbcNoteEvent>> byOnset = new TreeMap<>();
+
+        if (THINNER_DEBUG) System.out.println("Starting prepass");
+
+        for (AbcNoteEvent note : events) {
+            if (note.note == Note.REST) continue;
+            if (THINNER_DEBUG) System.out.println(debugNote(note));
+            byOnset.computeIfAbsent(note.startABCMicros, k -> new ArrayList<>()).add(note);
+        }
+
+        class Voice {
+            final List<AbcNoteEvent> notes = new ArrayList<>();
+            final List<Long> times = new ArrayList<>();
+            int lastPitch;
+            long lastTime;
+            boolean closed;   // ended on a long note; nothing may join after it
+            long lastEnd;
+            //long prevEnd = Long.MIN_VALUE; // end of the note before the last one; 0 until two notes are in [Thin interval 3 slides]
+            boolean staccato = true;   // every step so far released before the next began
+
+            @Override
+            public String toString() {
+                return "Voice{" +
+                        "notesSize=" + notes.size() +
+                        ", lastPitch=" + lastPitch +
+                        ", lastTime=" + lastTime +
+                        ", closed=" + closed +
+                        ", lastEnd=" + lastEnd +
+                        ", staccato=" + staccato +
+                        '}';
+            }
+        }
+        List<Voice> active = new ArrayList<>();
+        List<Voice> finished = new ArrayList<>();
+
+        for (Map.Entry<Long, List<AbcNoteEvent>> onset : byOnset.entrySet()) {
+            long time = onset.getKey();
+            if (THINNER_DEBUG) System.out.println("processing onset "+time);
+            // Retire voices this onset can no longer reach.
+            for (Iterator<Voice> it = active.iterator(); it.hasNext();) {
+                Voice v = it.next();
+                if (v.closed || time - v.lastTime > VOICE_MAX_ONSET_GAP) {
+                    it.remove();
+                    finished.add(v);
+                    if (THINNER_DEBUG) System.out.println("  retiring voice " + v);
+                }
+            }
+
+            // Each voice may take at most one note per onset, or a chord would fold into one voice.
+            Set<Voice> taken = Collections.newSetFromMap(new IdentityHashMap<>());
+            for (AbcNoteEvent note : onset.getValue()) {
+                if (THINNER_DEBUG) System.out.println("processing note " + debugNote(note));
+                long dur = note.endABCMicros - time;
+                boolean isLong = dur > VOICE_MAX_NOTE_MICROS;
+
+                Voice best = null;
+                int bestInterval = Integer.MAX_VALUE;
+                for (Voice v : active) {
+                    if (taken.contains(v)) continue;
+                    boolean released = v.lastEnd <= time + STACCATO_OVERLAP_TOLERANCE;
+                    //boolean released = v.prevEnd <= time + STACCATO_OVERLAP_TOLERANCE;// [Thin interval 3 slides]
+                    int limit = (v.staccato && released) ? VOICE_MAX_INTERVAL_STACCATO : VOICE_MAX_INTERVAL;
+                    int interval = Math.abs(note.note.id - v.lastPitch);
+                    if (interval < 1 || interval > limit) {
+                        if (THINNER_DEBUG) System.out.println("  interval=" + interval + ": continue");
+                        continue;
+                    }
+                    if (interval < bestInterval) {
+                        best = v;
+                        bestInterval = interval;
+                    }
+                    if (THINNER_DEBUG) System.out.println("  best= " + best+" bestInterval="+bestInterval);
+                }
+
+                if (best == null) {
+                    if (isLong) {
+                        if (THINNER_DEBUG) System.out.println("  isLong: continue");
+                        continue;   // a long note may end a run but does not start one
+                    }
+                    best = new Voice();
+                    active.add(best);
+                }
+                best.notes.add(note);
+                best.times.add(time);
+                best.lastPitch = note.note.id;
+                best.lastTime = time;
+                best.closed = isLong;
+                best.staccato = best.staccato && (best.notes.size() == 1 || best.lastEnd <= time + STACCATO_OVERLAP_TOLERANCE);
+                //best.prevEnd = best.lastEnd;// [Thin interval 3 slides]
+                best.lastEnd = time + dur;
+                taken.add(best);
+                if (THINNER_DEBUG) System.out.println("  best= " + best);
+            }
+        }
+        finished.addAll(active);
+
+        Set<AbcNoteEvent> doomed = Collections.newSetFromMap(new IdentityHashMap<>());
+        String label = GRID_STATS_ENABLED ? statsLabel(part) : "";
+        for (Voice v : finished) {
+            thinVoice(v.notes, v.times, doomed, THIN_SPACING, VOICE_MIN_NOTES, VOICE_MIN_NOTES_STACCATO,
+                    STACCATO_OVERLAP_TOLERANCE, VOICE_MAX_NOTE_MICROS, label, part.getInstrument());
+        }
+
+        if (!THIN_ENABLED || doomed.isEmpty()) return events;
+
+        List<AbcNoteEvent> kept = new ArrayList<>(events.size() - doomed.size());
+        for (AbcNoteEvent note : events) {
+            if (!doomed.contains(note)) {
+                kept.add(note);
+                if (THINNER_DEBUG) System.out.println("  kept: "+debugNote(note));
+            } else {
+                if (THINNER_DEBUG) System.out.println("  doomed: "+debugNote(note));
+            }
+        }
+        return kept;
+    }
+
+    private String debugNote(AbcNoteEvent note) {
+        return "note{"+note.note+" "+note.startABCMicros+" to "+note.endABCMicros+" hashcode"+note.hashCode()+"}";
+    }
+
+    /**
+     * Keeps the first note, then every note at least minimumMicros after the last survivor,
+     * and always the last. One refinement, taken from single-stage: a short note that would
+     * otherwise survive yields if the next note is close and is itself certain to survive
+     * (long, or the run's final note). The two cannot both hold a line, and the arrival note
+     * is the one the gesture is aiming at, keeping the short one would only drag the arrival
+     * note backward onto it.
+     */
+    private void thinVoice(List<AbcNoteEvent> notes, List<Long> times, Set<AbcNoteEvent> doomed,
+                           long thinSpacing, int minNotes, int minNotesStaccato, long overlapTolerance,
+                           long maxNoteMicros, String label, LotroInstrument instrument) {
+
+        int n = notes.size();
+        if (n < minNotesStaccato) return;
+
+        // Staccato: every note releases before the next begins, within tolerance. Those are
+        // unambiguously a line and may be thinned at a shorter length.
+        //
+        // The last note has nothing after it to release before, so it is judged on its own
+        // length instead: a voice that ends on a long sustain is not a staccato figure, it is
+        // a run arriving somewhere. Without this a ten-note slide into a half-second note
+        // reads as staccato purely because the loop never reaches the sustain.
+        boolean staccato = notes.get(n - 1).endABCMicros - times.get(n - 1) <= maxNoteMicros;
+        for (int i = 0; staccato && i < n - 1; i++) {
+        //for (int i = 0; staccato && i < n - 2; i++) {// [Thin interval 3 slides]
+            long end = notes.get(i).endABCMicros;
+            //if (end > times.get(i + 2) + overlapTolerance) {// [Thin interval 3 slides]
+            if (end > times.get(i + 1) + overlapTolerance) {
+                staccato = false;
+                break;
+            }
+        }
+
+        int required = staccato ? minNotesStaccato : minNotes;
+        if (n < required) return;
+
+        for (AbcNoteEvent note : notes) note.notGrace = true;
+
+        if (GRID_STATS_ENABLED) GRID_STATS.voiceFound(n, staccato);
+
+        // How far back this pass may move a survivor's onset to reach its slot. The grid would
+        // move it further than this anyway - a crush goes back up to minimumMicros - but there
+        // it lands on top of another note. Moving it here lands it on a slot of its own.
+        final long backwardBudget = thinSpacing * 2L / 3L;
+
+        long lastKept = times.get(0);   // placed position of the last survivor, not its played one
+        int lastKeptIdx = 0;
+        int dropped = 0;
+
+        for (int i = 1; i < n - 1; i++) {
+            long t = times.get(i);
+            AbcNoteEvent note = notes.get(i);
+
+            if (note.endABCMicros - t > maxNoteMicros) {
+                lastKept = t;
+                lastKeptIdx = i;
+                continue;
+            }
+
+            // The earliest slot this note could occupy after the last survivor.
+            long target = lastKept + thinSpacing;
+            boolean drop = t < target;
+
+            if (!drop) {
+                long tNext = times.get(i + 1);
+                long nextDur = notes.get(i + 1).endABCMicros - tNext;
+                boolean nextIsLast = (i + 1 == n - 1);
+                boolean nextIsLong = nextDur > maxNoteMicros;
+
+                // The last note of a run is an arrival only if it can hold a slot of its own.
+                // A short last note is just the tail of the run, and yielding to it stretches
+                // the previous survivor across two slots for nothing.
+                boolean nextIsArrival = nextIsLong || (nextIsLast && nextDur >= thinSpacing);
+
+                if (nextIsArrival && tNext - t < thinSpacing) {
+                    // Yielding to the arrival note. If the previous survivor ends before the
+                    // arrival, dropping this note would leave a hole there, which the grid then
+                    // renders as a rest. A slide is legato, so let the survivor sound through.
+                    AbcNoteEvent prev = notes.get(lastKeptIdx);
+                    if (prev.initEndABCMicros < tNext) {
+                        if (GRID_STATS_ENABLED) GRID_STATS.yieldExtension(tNext - prev.initEndABCMicros);
+                        prev.initEndABCMicros = tNext;
+                        prev.endABCMicros = tNext;
+                    }
+                    drop = true;
+                }
+            }
+
+            if (drop) {
+                doomed.add(note);
+                dropped++;
+                if (GRID_STATS_ENABLED) GRID_STATS.thinnedNote(t - lastKept, label, t);
+            } else {
+                // Pull the survivor back onto its slot, but only when that lets the next note
+                // in the voice survive too. Moving it back otherwise displaces an onset for
+                // nothing, and it can let a note through near the end of the run that then
+                // sits too close to the note the run arrives at.
+                long tNextNote = times.get(i + 1);
+                boolean moveHelps = (t - target <= backwardBudget)
+                        && (tNextNote - t < thinSpacing)
+                        && (tNextNote - target >= thinSpacing);
+
+                if (moveHelps) {
+                    long dura = note.initEndABCMicros - note.initStartABCMicros;
+                    if (GRID_STATS_ENABLED) GRID_STATS.thinBackwardMove(t - target);
+                    note.initStartABCMicros = target;
+                    note.startABCMicros = target;
+                    note.initEndABCMicros = target + dura;
+                    note.endABCMicros = target + dura;
+                    lastKept = target;
+                } else {
+                    lastKept = t;
+                }
+                lastKeptIdx = i;
+            }
+        }
+        if (GRID_STATS_ENABLED) {
+            GRID_STATS.voiceThinned(n, dropped);
+
+            long lastEnd = notes.get(n - 1).endABCMicros;
+            long duration = lastEnd - times.get(0);
+            long meanGap = (times.get(n - 1) - times.get(0)) / (n - 1);
+
+            int maxInterval = 0, reversals = 0, lastSign = 0;
+            for (int i = 1; i < n; i++) {
+                int delta = notes.get(i).note.id - notes.get(i - 1).note.id;
+                maxInterval = Math.max(maxInterval, Math.abs(delta));
+                int sign = Integer.signum(delta);
+                if (sign != 0 && lastSign != 0 && sign != lastSign) reversals++;
+                if (sign != 0) lastSign = sign;
+            }
+            GRID_STATS.voiceProfile(duration, meanGap, maxInterval, reversals, n, dropped, instrument.toString());
+        }
+    }
+
+    /**
+     * Part of organic multi-stage 2 path.
+     *
+     * The one place ticks become micros. Everything after this - the thinning pre-pass,
+     * createGridV2, snapNotesToGrid3 - reads and writes the micros fields only. Ticks are a
+     * lossy projection of micros, so converting back and forth loses time; converting once
+     * and staying in micros does not.
+     */
+    private void initABCMicros(List<AbcNoteEvent> events) {
+        for (AbcNoteEvent note : events) {
+            long rawStart = qtm.tickToMicrosABCOrganic(note.getStartTick());
+            long rawEnd = qtm.tickToMicrosABCOrganic(note.getEndTick());
+            note.initStartABCMicros = rawStart;
+            note.initEndABCMicros = rawEnd;// Might get modified by thinVoices
+            note.startABCMicros = rawStart;
+            note.endABCMicros = rawEnd;
+        }
+    }
+
+    private void tickFromABCMicros(List<AbcNoteEvent> events) {
+        for (AbcNoteEvent note : events) {
+            long tickStart = qtm.microsToTickABCOrganic(note.startABCMicros);
+            long tickEnd = qtm.microsToTickABCOrganic(note.endABCMicros);
+            note.setStartTick(tickStart);
+            note.setEndTick(tickEnd);
+        }
+    }
+
     /**
      *
      * Part of organic multi-stage 2 path
      *
      */
-    private NavigableSet<Long> createGridVersion3(List<AbcNoteEvent> events, long minimumMicros, AbcPart part, long barTicks) {
+    private NavigableSet<Long> createGridV2(List<AbcNoteEvent> events, long minimumMicros, AbcPart part, long barTicks) {
 
         final int WEIGHT_SOLO = 10;  // Fast notes
         final int WEIGHT_LONG = 10;  // Sustained notes
@@ -4062,45 +4669,61 @@ public class AbcExporter {
         final long GRACE_THRESHOLD = 50_000L; // 50ms
         final long SHORT_NOTE_THRESHOLD = minimumMicros * 3;
 
+        // Velocity (future)
+        //
+        // Weight distinguishes short notes (5) from everything else (10) and sums for chords
+        // Within a weight tier the sort falls through to micros,
+        // so at a conflict the earlier note anchors and the later one bends around it - regardless of
+        // which one has higher velocity. On merged parts, where a melody and a pad share one
+        // part, velocity is exactly the signal that would tell them apart.
+        // This is reminiscent of priority tracks in mix timings, except use velocity instead of user assigned.
+        //
+        // Two options:
+        //
+        //  - Velocity in the sort. Within a weight tier candidates currently
+        //    arrive in micros order. This could be done by giving candidates
+        //    a velocity bonus (largest_vel/2), but should scale down to zero for 60ms
+        //    or shorter notes, and the full bonus for notes longer than
+        //    SHORT_NOTE_THRESHOLD. This would change so many existing branches
+        //    in this method, that it would be more or less a whole new timing system.
+        //
+        //  - Velocity in the overwrite weak blocker comparisons, where blocker.weight() < c.weight() already
+        //    chooses between two notes. Will affect much fewer notes, but change is
+        //    limited in regard to how the method operates.
+
         // The window within which notes are considered part of the same group
         final long arpeggioWindow = 45_000L;
         final int MAX_BOUNCE_CHAIN = 2;
+        // How far forward a single note may bounce from where it was actually originally.
+        final long MAX_BOUNCE_DRIFT = 20_000L;
 
         // when cutting up too long notes, this is the minimum buffer they are allowed to exceed max with.
         long maxSustainBuffer = minimumMicros * 2;
         long maxSustain = LotroInstrumentSampleDuration.getSafeDuration(part.getInstrument());
         long minPreferredSustain = 4L * TimingInfo.ONE_SECOND_MICROS;
         long minSustain = 2L * TimingInfo.ONE_SECOND_MICROS;
-        boolean sustained = part.getInstrument().sustainable;
 
-        //System.err.println("createGridVersion3: maxSustainBuffer="+maxSustainBuffer+" maxSustain="+maxSustain+" minPreferredSustain="+minPreferredSustain+" minSustain="+minSustain+" sustained="+sustained);
+        //System.err.println("createGridV2: maxSustainBuffer="+maxSustainBuffer+" maxSustain="+maxSustain+" minPreferredSustain="+minPreferredSustain+" minSustain="+minSustain+" sustained="+sustained);
 
 
-        // Using maps first to sum weights of coincident events
-        Map<Long, Candidate3> startCandidates = new HashMap<>();
-        Map<Long, Candidate3> endCandidates = new HashMap<>();
+        // Using maps first to sum weights of coincident events.
+        // startCandidates is a TreeMap so isSnowplowPathClear can walk forward in time
+        // rather than forward in the weight-sorted list.
+        TreeMap<Long, Candidate2> startCandidates = new TreeMap<>();
+        Map<Long, Candidate2> endCandidates = new HashMap<>();
 
         for (AbcNoteEvent note : events) {
-            long rawStartMicros = qtm.tickToMicrosABCOrganic(note.getStartTick());
-            long rawEndMicros = qtm.tickToMicrosABCOrganic(note.getEndTick());
+            long rawStartMicros = note.initStartABCMicros;
+            long rawEndMicros = note.initEndABCMicros;
             long rawDuration = rawEndMicros - rawStartMicros;
 
-            // Lock in the immutable original times for future safety checks
-            note.initStartABCMicros = rawStartMicros;
-            note.initEndABCMicros = rawEndMicros;
-
-            // Set the mutable times
-            note.startABCMicros = rawStartMicros;
-            note.endABCMicros = rawEndMicros;
-
-            if (!sustained) {
-                note.endABCMicros = Math.max(note.endABCMicros, note.startABCMicros + minimumMicros);
-            }
+            // We don't give plucked notes minimum dura like in single-stage. Due to how we here
+            // process starts seperate from ends, it would not improve anything.
             note.endABCMicros = Math.max(note.endABCMicros, note.startABCMicros + minimumMicros);
 
             // Determine start weight
             int sWeight;
-            if (rawDuration < GRACE_THRESHOLD && !part.getInstrument().isPercussion) {
+            if (rawDuration < GRACE_THRESHOLD && !part.getInstrument().isPercussion) {//  && !note.notGrace
                 sWeight = WEIGHT_GRACE;
             } else if (rawDuration <= SHORT_NOTE_THRESHOLD) {
                 sWeight = WEIGHT_SOLO;
@@ -4109,47 +4732,73 @@ public class AbcExporter {
             }
 
             // Bin into candidates (adds the note and accumulates the weight)
-            startCandidates.computeIfAbsent(note.startABCMicros, t -> new Candidate3(t, TYPE_START))
-                    .addNote(note, sWeight);
+            startCandidates.computeIfAbsent(note.startABCMicros, t -> new Candidate2(t, TYPE_START))
+                    .addNote(note, sWeight, sWeight == WEIGHT_GRACE);
 
-            endCandidates.computeIfAbsent(note.endABCMicros, t -> new Candidate3(t, TYPE_END))
-                    .addNote(note, WEIGHT_END);
+            endCandidates.computeIfAbsent(note.endABCMicros, t -> new Candidate2(t, TYPE_END))
+                    .addNote(note, WEIGHT_END, false);
         }
 
         // Combine into a single list
-        List<Candidate3> candidates = new ArrayList<>(startCandidates.size() + endCandidates.size());
+        List<Candidate2> candidates = new ArrayList<>(startCandidates.size() + endCandidates.size());
         candidates.addAll(startCandidates.values());
         candidates.addAll(endCandidates.values());
 
+        final String statsInstrument = String.valueOf(part.getInstrument());
+        final String statsLabel = statsLabel(part);
+        final long[] statsMark = GRID_STATS_ENABLED ? GRID_STATS.mark() : null;
+        if (GRID_STATS_ENABLED) {
+            GRID_STATS.part(startCandidates.size());
+            boolean percussion = part.getInstrument().isPercussion;
+            for (Candidate2 sc : startCandidates.values()) {
+                GRID_STATS.classifyStart(sc, GRACE_THRESHOLD, percussion, statsLabel);
+            }
+        }
+
         // Sort (Solo > Long > Grace > End)
         candidates.sort(Comparator
-                .comparingInt(Candidate3::weight).reversed()
-                .thenComparingInt(Candidate3::type)
-                .thenComparingLong(Candidate3::micros));
+                .comparingInt(Candidate2::weight).reversed()
+                .thenComparingInt(Candidate2::type)
+                .thenComparingLong(Candidate2::micros));
 
-        TreeSet<GridPoint3> grid = new TreeSet<>();
+        TreeSet<GridPoint2> grid = new TreeSet<>();
         final long firstMicros = getExportStartMicrosABC();
-        grid.add(new GridPoint3(firstMicros, 0, Integer.MAX_VALUE));
+        grid.add(new GridPoint2(firstMicros, 0, Integer.MAX_VALUE));
 
-        // The absolute last microsecond of the track
-        long endOfTrack = candidates.getLast().micros;
+        /*
+        // The absolute last microsecond of the track.
+        // Derived from the notes, not from candidates.getLast(): that list is sorted by
+        // weight descending, so its tail is the lowest-weight candidate, not the latest one.
+        // A song ending on a chord gives that chord weight 2+, which sorts ahead of any
+        // single note ending earlier, so getLast() would name the wrong moment.
+        // endABCMicros keeps this correct even if the adjusted end
+        // is ever shortened below the raw one.
+        long endOfTrack = 0L;
+        for (AbcNoteEvent note : events) {
+            endOfTrack = Math.max(endOfTrack, note.endABCMicros);
+        }
+        */
 
         // Tracks the time of the last note that failed a bounce and was forced to crush
         long lastCrushedTime = -1L;
 
+        // Only used for debug stats
+        long lastShiftMicros = -1L;
+
         for (int i = 0; i < candidates.size(); i++) {
-            Candidate3 c = candidates.get(i);
+            Candidate2 c = candidates.get(i);
 
             if (c.notes.isEmpty()) {
                 // backward gracenote bounce might have removed all notes from c
                 continue;
             }
+            c.placed = true;
 
             long time = c.micros;
 
-            GridPoint3 searchKey = new GridPoint3(time, 0, 0);
-            GridPoint3 floor = grid.floor(searchKey);
-            GridPoint3 ceil = grid.ceiling(searchKey);
+            GridPoint2 searchKey = new GridPoint2(time, 0, 0);
+            GridPoint2 floor = grid.floor(searchKey);
+            GridPoint2 ceil = grid.ceiling(searchKey);
 
             boolean exactFloor = floor != null && time == floor.micros();
             boolean exactCeil = ceil != null && time == ceil.micros();
@@ -4161,28 +4810,18 @@ public class AbcExporter {
             if (isTaken) {
                 // Grid point already exists here.
                 // We just strap these notes to the existing anchor.
-                GridPoint3 exact = exactFloor ? floor : ceil;
+                GridPoint2 exact = exactFloor ? floor : ceil;
                 exact.mergeCandidate(c);
-
+                if (GRID_STATS_ENABLED) GRID_STATS.exitExactMatch(c.notes.size());
             } else if (!floorConflict && !ceilConflict) {
                 // Create a new anchor and strap notes to it.
-                GridPoint3 newPoint = new GridPoint3(time, 0, c.weight());
+                GridPoint2 newPoint = new GridPoint2(time, 0, 0);
                 newPoint.mergeCandidate(c);
                 grid.add(newPoint);
-
+                if (GRID_STATS_ENABLED) GRID_STATS.exitNewAnchor(c.notes.size());
             } else if (bouncingEnabled && c.type == TYPE_START) {
+                if (GRID_STATS_ENABLED) GRID_STATS.conflictEntered(c.notes.size());
                 // Conflicts (Bounces and block Chords)
-
-                // The Group Collapse Check
-                // Are we part of a fast group that just collapsed?
-                boolean partOfCollapsedGroup = (lastCrushedTime != -1L) && (time - lastCrushedTime <= arpeggioWindow);
-
-                if (partOfCollapsedGroup && floor != null) {
-                    // The group is collapsing. Force this note to the floor immediately.
-                    floor.mergeCandidate(c);
-                    lastCrushedTime = time; // Update the time so the next note knows we're still collapsing
-                    continue; // Skip all other bounce logic!
-                }
 
                 // The Leapfrog Trap Door
                 // If 3rd note evaluates and sees that 2nd snowplowed past it,
@@ -4194,105 +4833,375 @@ public class AbcExporter {
 
                 if (c.weight >= WEIGHT_SOLO && floorConflict) {
                     // Forward bounce (solos/arpeggios)
-                    boolean distanceOk = floor.micros() + minimumMicros * 3L / 4L < time;
-                    boolean snowplowActive = floor.bounceDepth() > 0;
-                    boolean underChainLimit = floor.bounceDepth() < MAX_BOUNCE_CHAIN;
 
-                    boolean isOkToBounce = (snowplowActive || distanceOk) && underChainLimit;
+                    // The 45ms rule is an arpeggio rule: expanding a fast run onto the lattice
+                    // sounds worse than the block chord it becomes. A run needs a third note.
+                    // Two notes are not a run, so the nearest free spot applies instead.
+                    //
+                    // A pair means: the line behind was not itself displaced or fused, nothing
+                    // was crushed just before, and nothing follows close enough to join.
+                    Long nextStart = startCandidates.higherKey(time);
+                    boolean pairOnly = floor.bounceDepth() == 0
+                            && (lastCrushedTime == -1L || time < lastCrushedTime || time - lastCrushedTime > arpeggioWindow)
+                            && (nextStart == null || nextStart - time >= minimumMicros);
+
+                    long blockChordThreshold = pairOnly ? minimumMicros / 2 : minimumMicros * 3L / 4L;
+                    boolean distanceOk = floor.micros() + blockChordThreshold < time;
+                    boolean snowplowActive = floor.bounceDepth() > 0;
+
                     long bounceTime = floor.micros() + minimumMicros;
+
+                    // Chain length is harmless: an even run one millisecond under the minimum lattice
+                    // forms an unbounded chain while moving every note by 1ms. Displacement is
+                    // what hurts. A bounce earned on distanceOk alone always lands within
+                    // minimumMicros/4, so this only bites once snowplowActive has taken over.
+                    boolean driftOk = (bounceTime - time) <= MAX_BOUNCE_DRIFT;
+
+                    boolean isOkToBounce = (snowplowActive || distanceOk) && driftOk;
+                    if (GRID_STATS_ENABLED && !driftOk && (snowplowActive || distanceOk)) {
+                        GRID_STATS.refusedDrift(c.notes.size());
+                    }
 
                     // Look-Ahead Check
                     if (isOkToBounce) {
-                        boolean chainSafe = isSnowplowPathClear(i, bounceTime, candidates, grid, minimumMicros, floor.bounceDepth() + 1, MAX_BOUNCE_CHAIN, firstMicros);
+                        boolean chainSafe = isSnowplowPathClear(time, bounceTime, startCandidates, grid, minimumMicros, MAX_BOUNCE_DRIFT, firstMicros);
                         if (!chainSafe) {
                             isOkToBounce = false; // The future is blocked. Abort the bounce!
+                            if (GRID_STATS_ENABLED) GRID_STATS.refusedPath(c.notes.size());
                         }
                     }
 
+                    /*
                     // Check if very last note can bounce without requiring its ending to go past end of track.
                     if (isOkToBounce) {
                         for (AbcNoteEvent note : c.notes) {
-                            // If this note ends at the absolute edge of the track, and bouncing
-                            // forward leaves it with zero/negative duration or an illegal micro-gap...
-                            if (note.initEndABCMicros == endOfTrack && (note.initEndABCMicros - bounceTime < minimumMicros)) {
+                            // A note running to the edge of the track cannot be extended to make
+                            // room, so bouncing its start forward can only shorten it. Refuse if
+                            // that would leave it under the minimum.
+                            if (note.endABCMicros >= endOfTrack && (note.endABCMicros - bounceTime < minimumMicros)) {
                                 isOkToBounce = false; // Abort the bounce. Crush backward instead.
+                                if (GRID_STATS_ENABLED) GRID_STATS.refusedTrackEnd(c.notes.size());
                                 break;
                             }
                         }
+                    }*/
+
+                    if (GRID_STATS_ENABLED && isOkToBounce) {
+                        // Counted before isValidBounce2 so it still reports while forward
+                        // landings are forbidden, otherwise the gate hides the very cases
+                        // we are trying to measure.
+                        // This is simulation only, currently blocked.
+                        GridPoint2 landed = grid.floor(new GridPoint2(bounceTime, 0, 0));
+                        if (landed != null && landed.micros() == bounceTime) {
+                            GRID_STATS.forwardExactLanding(landed.weight(), c.weight, landed.bounceDepth());
+                        }
                     }
 
-                    if (isOkToBounce && isValidBounce3(bounceTime, time, minimumMicros, grid, c.weight, true, firstMicros)) {
-                        applyBounce3(grid, bounceTime, c, minimumMicros, floor.bounceDepth() + 1);
+                    if (isOkToBounce && isValidBounce2(bounceTime, time, minimumMicros, grid, c.weight, true, firstMicros)) {
+                        applyBounce2(grid, bounceTime, c, minimumMicros, floor.bounceDepth() + 1);
+                        if (GRID_STATS_ENABLED) GRID_STATS.forwardBounce(c.notes.size(), bounceTime - time);
                         lastCrushedTime = -1;
                     } else {
-                        // Force into Block Chord: Snap to floor.
-                        floor.mergeCandidate(c);
+                        if (GRID_STATS_ENABLED) {
+                            if (isOkToBounce) GRID_STATS.refusedValid(c.notes.size());
+                        }
+                        if (ceilConflict && ceil.micros - time <= minimumMicros/4) {
+                            if (GRID_STATS_ENABLED) GRID_STATS.crush(c.notes.size(), time - ceil.micros());
+                            ceil.mergeCandidate(c);
+                        } else {
+                            // Force into Block Chord: Snap to floor.
+                            if (GRID_STATS_ENABLED) GRID_STATS.crush(c.notes.size(), time - floor.micros());
+                            floor.mergeCandidate(c);
+                        }
                         lastCrushedTime = time;
                     }
-                } else if (c.weight == WEIGHT_GRACE && ceil != null && ceilConflict) {
+                } else if (c.graceOnly && c.notes.size() == 1 && ceil != null && ceilConflict) {
                     // Backward bounce (grace notes)
 
-                    boolean isOkToBounceBackward = ceil.bounceDepth() < MAX_BOUNCE_CHAIN;
-                    long bounceTime = ceil.micros() - minimumMicros;
+                    // A grace this close to the note it decorates is not an ornament, it is an
+                    // artifact, a fingering overlap or a quantization accident. Reproducing it
+                    // as a separate attack 45ms earlier invents a gesture nobody played, and on
+                    // a plucked instrument that invention can ring for a second. Merge it instead,
+                    // and if it duplicates a pitch already on the line, the snapToGrid same-pitch pass will
+                    // drop it, which is the right outcome.
+                    if (ceil.micros() - time <= minimumMicros / 4) {
+                        ceil.mergeCandidate(c);
+                        if (GRID_STATS_ENABLED) GRID_STATS.graceMergedToMain(c.notes.size(), ceil.micros() - time);
+                    } else {
 
-                    if (isOkToBounceBackward && isValidBounce3(bounceTime, time, minimumMicros, grid, c.weight, false, firstMicros)) {
-                        applyBounce3(grid, bounceTime, c, minimumMicros, ceil.bounceDepth() + 1);
+                        boolean isOkToBounceBackward = ceil.bounceDepth() < MAX_BOUNCE_CHAIN;
+                        long bounceTime = ceil.micros() - minimumMicros;
 
-                        for (AbcNoteEvent note : c.notes) {
-                            if (note.initEndABCMicros <= ceil.micros()) {
-                                // No original overlap with main note
-                                Candidate3 endCand = endCandidates.get(note.endABCMicros);
+                        if (isOkToBounceBackward && isValidBounce2(bounceTime, time, minimumMicros, grid, c.weight, false, firstMicros)) {
+                            applyBounce2(grid, bounceTime, c, minimumMicros, ceil.bounceDepth() + 1);
+                            if (GRID_STATS_ENABLED) GRID_STATS.graceBounce(c.notes.size());
 
-                                // Stop gracenote(s) from having their own end candidate
-                                // put their endings into main notes candidate instead.
-                                if (endCand != null) {
-                                    endCand.notes.remove(note);
-                                }
-                                note.endABCMicros = ceil.micros(); // Snap end to main note start
+                            for (AbcNoteEvent note : c.notes) {
+                                // A grace is always minimumMicros long once inflated, and the bounce
+                                // target is exactly that far below ceil - so the end lands on ceil.
+                                Candidate2 endCand = endCandidates.get(note.endABCMicros);
+                                if (endCand != null) endCand.notes.remove(note);
+                                note.endABCMicros = ceil.micros();
                                 ceil.ends.add(note);
                             }
-                            // If note.initEndABCMicros > ceil.micros(), we leave it untouched
-                            // to preserve the intentional overlap.
-                        }
 
+                            lastCrushedTime = -1;
+                        } else {
+                            // mark it for deletion by moving it to negative infinity.
+                            for (AbcNoteEvent note : c.notes) {
+                                note.startABCMicros = Long.MIN_VALUE;
+                            }
+                            if (GRID_STATS_ENABLED) GRID_STATS.graceDeleted(c.notes.size());
+                            if (logNotes.isLoggable(Level.FINEST)) {
+                                logNotes.finest("Deleted grace note at " + Util.formatDurationM(time) + " (No space available)");
+                            }
+                            lastCrushedTime = time;
+                        }
+                    }
+                } else if (ceilConflict && !floorConflict && floor != null) {
+                    // Grace chords are admitted. They miss the grace branch above because
+                    // coincident graces sum past WEIGHT_GRACE, and they used to straddle the
+                    // chord they ornament because this branch does no end handling. The end
+                    // merge below now pulls their end onto the main onset, and the fusion
+                    // window keeps the step back under minimumMicros/2, so they get the same
+                    // treatment a single grace would.
+
+                    // Blocked from ahead. The floor is already at least minimumMicros below,
+                    // so this note is a separate onset; only the heavier candidate above is in
+                    // the way. Step back to the last legal slot rather than merging into the heavy,
+                    // which would alter that chord's voicing and drag the note forward onto a
+                    // line other parts may be synced to.
+                    //
+                    // The slot must be measured down from the ceiling, never up from the floor:
+                    // the floor can be arbitrarily far below.
+
+                    // Two attacks closer together than this fuse into a single perceived event -
+                    // a strummed chord reads as a chord, not an arpeggio. A note inside this window
+                    // of a heavier chord was that chord, however the MIDI staggered it.
+                    final long FUSION_WINDOW = minimumMicros / 2; // ~30ms
+
+                    long bounceTime = ceil.micros() - minimumMicros;
+
+                    // Was this played far enough before the chord to have been heard as its
+                    // own event? If not, it belongs to the chord and merges into it. Only a
+                    // genuinely separate onset earns being pulled back to make room.
+                    boolean separateEvent = (ceil.micros() - time) > FUSION_WINDOW;
+
+                    // Only step back into genuinely empty space. Without this, applyBounce2's
+                    // overwrite path could remove the floor and drag every note attached to it
+                    // forward, which is far worse than the merge we are avoiding.
+                    boolean freeSlotExists = (ceil.micros() - floor.micros()) >= 2L * minimumMicros;
+
+                    if (separateEvent && freeSlotExists && isValidBounce2(bounceTime, time, minimumMicros, grid, c.weight, false, firstMicros)) {
+                        // Depth 0 deliberately: this note was not pushed by a chain and must not
+                        // start one. A non-zero depth here would set snowplowActive for whatever
+                        // lands on this line next and let it bypass distanceOk.
+                        applyBounce2(grid, bounceTime, c, minimumMicros, 0);
+                        if (GRID_STATS_ENABLED) {
+                            GRID_STATS.relief(c.notes.size(), time - bounceTime, ceil.weight() > c.weight, statsLabel, time);
+                        }
                         lastCrushedTime = -1;
                     } else {
-                        // mark it for deletion by moving it to negative infinity.
-                        for (AbcNoteEvent note : c.notes) {
-                            note.startABCMicros = Long.MIN_VALUE;
+                        if (GRID_STATS_ENABLED) {
+                            if (!separateEvent) GRID_STATS.reliefRefusedDrift(c.notes.size(), time - bounceTime);
+                            else if (!freeSlotExists) GRID_STATS.reliefRefusedNoRoom(c.notes.size());
+                            else GRID_STATS.reliefRefusedInvalid(c.notes.size());
                         }
-                        if (logNotes.isLoggable(Level.FINEST)) {
-                            logNotes.finest("Deleted grace note at " + Util.formatDurationM(time) + " (No space available)");
-                        }
+                        // No room to step back. Merge into the blocker.
+                        ceil.mergeCandidate(c);
                         lastCrushedTime = time;
                     }
                 } else {
-                    GridPoint3 blocker = floorConflict ? floor : ceil;
-                    if (blocker != null) blocker.mergeCandidate(c);
+                    // Lone short note: a floor behind, nothing within minimumMicros ahead.
+                    // Not an ornament, there is nothing to lead into, and it cannot start a
+                    // arp, so the 45ms arpeggio rule does not apply. Pure nearest slot at
+                    // minimumMicros/2. Merging to the floor would also stretch it by up to
+                    // 59ms, since its end does not move with it, while the forward slot shifts
+                    // start and end together and keeps the duration at minimumMicros.
+                    boolean floorIsNearer = floor != null && time - floor.micros() <= minimumMicros / 2;
+                    long forwardSlot = floor.micros() + minimumMicros;
+                    if (!floorIsNearer && isValidBounce2(forwardSlot, time, minimumMicros, grid, c.weight, true, firstMicros)) {
+                        applyBounce2(grid, forwardSlot, c, minimumMicros, 0);
+                        if (GRID_STATS_ENABLED) GRID_STATS.plainMerge(c.notes.size(), time - forwardSlot);
+                        lastCrushedTime = -1;
+                    } else {
+                        floor.mergeCandidate(c);
+                        if (GRID_STATS_ENABLED) GRID_STATS.plainMerge(c.notes.size(), time - floor.micros());
+                        lastCrushedTime = time;
+                    }
+                }/*
+                else {
+                    GridPoint2 blocker = floorConflict ? floor : ceil;
+                    if (blocker != null) {
+                        blocker.mergeCandidate(c);
+                        if (GRID_STATS_ENABLED) GRID_STATS.plainMerge(c.notes.size(), time - blocker.micros());
+                    } else {
+                        if (GRID_STATS_ENABLED) GRID_STATS.exitUnhandled(c.notes.size());
+                    }
                     lastCrushedTime = time;
                 }
-
+                */
             } else if (c.type == TYPE_END) {
                 // Ending conflicts (Overwrites and fallbacks)
+                if (GRID_STATS_ENABLED) GRID_STATS.exitEndCandidate(c.notes.size());
 
-                GridPoint3 blocker = floorConflict ? floor : ceil;
+                GridPoint2 blocker = floorConflict ? floor : ceil;
                 if (floorConflict && ceilConflict) {
                     // pick the closest blocker
                     blocker = (Math.abs(time - floor.micros()) < Math.abs(time - ceil.micros())) ? floor : ceil;
                 }
 
+                boolean isFloorForbidden = floorConflict && isFloorAlsoMyStart(c, floor);
                 boolean added = false;
-                if (blocker != null && blocker.weight() < c.weight()) {
-                    // Overwrite weak blocker
-                    grid.remove(blocker);
-                    GridPoint3 newPoint = new GridPoint3(time, 0, c.weight());
+                if (blocker != null && blocker.weight() < c.weight() && !(blocker == floor && isFloorForbidden)) {
+                    // When floorConflict and ceilConflict are both set, there are two lines
+                    // too close to `time` and we only remove one of them. Putting a point at
+                    // `time` would then sit inside minimumMicros of the one still standing.
+                    // Only proceed if that other line is far enough away - which it always is
+                    // when only one conflict is set.
+                    // We don't need to check other blockers than ceil and floor, since when
+                    // they were placed they also checked themselves for blockers.
+                    GridPoint2 survivor = (blocker == floor) ? ceil : floor;
+                    boolean survivorSafe = survivor == null
+                            || Math.abs(time - survivor.micros()) >= minimumMicros;
 
-                    // Drag all notes attached to the old blocker to the new time!
-                    newPoint.absorb(blocker);
-                    newPoint.mergeCandidate(c);
+                    if (survivorSafe) {
+                        // Overwrite weak blocker
+                        grid.remove(blocker);
+                        GridPoint2 newPoint = new GridPoint2(time, 0, 0);
 
-                    grid.add(newPoint);
-                    added = true;
+                        if (GRID_STATS_ENABLED) {
+                            GRID_STATS.endOverwriteWeakBlocker(c.notes.size(), time - blocker.micros(), statsLabel, time);
+                            boolean perc = part.getInstrument().isPercussion;
+                            for (AbcNoteEvent n : blocker.starts) {
+                                long dur = n.initEndABCMicros - n.initStartABCMicros;
+                                GRID_STATS.endMovedStart(time - blocker.micros(), dur < GRACE_THRESHOLD && !perc, false);
+                            }
+                        }
+
+                        // Drag all notes attached to the old blocker to the new time
+                        newPoint.absorb(blocker);
+                        newPoint.mergeCandidate(c);
+
+                        grid.add(newPoint);
+                        added = true;
+                    }
+                }
+
+                // The required end lands inside minimumMicros of the ceiling, so it cannot
+                // become a line of its own and the merge in the branch below would push it up into the
+                // ceiling, stretching the note. If the line behind is own start,
+                // shift the whole note back while keeping ending at late as allowed.
+                // The length stays at minimumMicros.
+                boolean allSustain = true;
+                for (AbcNoteEvent n : c.notes) {
+                    if (!part.getInstrument().isSustainable(n.note.id)) {
+                        allSustain = false;
+                        break; }
+                }
+                if (!added && !floorConflict && ceilConflict && floor != null && allSustain) {
+                    boolean floorIsOwnStart = true;
+                    for (AbcNoteEvent n : c.notes) {
+                        if (n.startABCMicros != floor.micros()) {
+                            floorIsOwnStart = false;
+                            break;
+                        }
+                    }
+
+                    long newStart = ceil.micros() - 2L * minimumMicros;
+                    long newEnd = ceil.micros() - minimumMicros;
+
+                    long stretch = ceil.micros() - time;              // cost of merging the end up
+                    long shift   = floor.micros() - newStart;         // cost of moving the onset
+
+                    if (floorIsOwnStart) {
+                        // Notes that fused onto one line keep separate end candidates when their
+                        // raw ends differ, so a size match is too strict. Require instead that
+                        // every note on the line ends close enough to this candidate to follow
+                        // it onto the same new end line.
+                        for (AbcNoteEvent n : floor.starts) {
+                            if (Math.abs(n.endABCMicros - time) >= minimumMicros/3) {
+                                floorIsOwnStart = false;
+                                break;
+                            }
+                            if (n.initStartABCMicros - newStart >= minimumMicros) {
+                                floorIsOwnStart = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    // Only shift when the onset move is smaller than the stretch it avoids.
+                    // A 15ms note facing a 55ms stretch is worth a 5ms shift; an 80ms note
+                    // facing a 17ms stretch is not worth a 23ms one, and onset accuracy
+                    // matters more than duration, so this is the conservative direction.
+                    boolean shiftIsCheaper = shift < stretch;
+
+                    GridPoint2 floorOfFloor = grid.lower(new GridPoint2(floor.micros(), 0, 0));
+
+                    boolean roomBelow = floorOfFloor != null
+                            && newStart - floorOfFloor.micros() >= minimumMicros;
+                    boolean shiftOk = floor.micros() - newStart <= MAX_BOUNCE_DRIFT
+                            && newStart < floor.micros();
+
+                    if (floorIsOwnStart && roomBelow && shiftOk && shiftIsCheaper) {
+                        long gapToPrev = lastShiftMicros < 0 ? -1L : newStart - lastShiftMicros;
+
+                        // floorIsOwnStart guarantees floor.starts and c.notes are the same set,
+                        // so the notes whose onsets move here are exactly c.notes, which is why
+                        // endShiftedWholeNote's count is also the moved-onset count.
+                        if (GRID_STATS_ENABLED) {
+                            boolean perc = part.getInstrument().isPercussion;
+                            for (AbcNoteEvent n : floor.starts) {
+                                long dur = n.initEndABCMicros - n.initStartABCMicros;
+                                GRID_STATS.endMovedStart(shift, dur < GRACE_THRESHOLD && !perc, true);
+                            }
+                        }
+
+                        grid.remove(floor);
+                        floor.moveTo(newStart);
+                        grid.add(floor);
+
+                        GridPoint2 endPoint = new GridPoint2(newEnd, 0, 0);
+                        endPoint.mergeCandidate(c);
+                        endPoint.weight = WEIGHT_END;//weak weight on purpose
+                        grid.add(endPoint);
+                        added = true;
+
+                        lastShiftMicros = newStart;
+                        if (GRID_STATS_ENABLED) {
+                            GRID_STATS.endShiftedWholeNote(c.notes.size(), shift, gapToPrev, statsLabel, newStart);
+                        }
+                    }
+                }
+
+                boolean mergeKeepsDuration = true;
+                for (AbcNoteEvent n : c.notes) {
+                    if (blocker.micros() - n.startABCMicros < minimumMicros) {
+                        mergeKeepsDuration = false;
+                        break;
+                    }
+                }
+
+                if (!added && blocker != null) {
+                    // If merging into the blocker still leaves every note at least minimumMicros
+                    // long, just merge. The safety line below exists to rescue notes that would
+                    // become too short; adding a grid point when it is not needed pushes the note past
+                    // whatever starts next - which for an ornament means swallowing the note it
+                    // ornaments. The end candidate was keyed from the note's original start, so
+                    // this is where a start that has since moved gets accounted for.
+
+                    // Only merge when it is the smaller move; past the halfway point the safety
+                    // line below lands nearer the note's real end.
+                    boolean mergeIsNearer = Math.abs(time - blocker.micros()) <= minimumMicros / 2;
+
+                    if (mergeKeepsDuration && mergeIsNearer) {
+                        if (GRID_STATS_ENABLED) {
+                            GRID_STATS.endMergeWithBlocker(c.notes.size(), time - blocker.micros(), statsLabel, blocker.micros());
+                        }
+                        blocker.mergeCandidate(c);
+                        added = true;
+                    }
                 }
 
                 // Fallback for rejected end candidates
@@ -4308,37 +5217,197 @@ public class AbcExporter {
 
                     if (!safetyConflict && !safetyExists) {
                         // Add the safety line with low weight
-                        GridPoint3 safetyPoint = new GridPoint3(safetyTime, 0, WEIGHT_END);
+                        GridPoint2 safetyPoint = new GridPoint2(safetyTime, 0, 0);
                         safetyPoint.mergeCandidate(c);
+                        // This line sits at floor+minimumMicros,
+                        // a position nothing was played at, so it stays displaceable however
+                        // many endings it holds. Later merges build weight up from here.
+                        safetyPoint.weight = WEIGHT_END;
                         grid.add(safetyPoint);
+                        if (GRID_STATS_ENABLED) {
+                            GRID_STATS.endSafetyLine(c.notes.size());
+
+                            int sustainCount = 0;
+                            boolean mergeWasLegal = blocker != null;
+                            for (AbcNoteEvent n : c.notes) {
+                                if (part.getInstrument().isSustainable(n.note.id)) sustainCount++;
+                                if (mergeWasLegal && blocker.micros() - n.startABCMicros < minimumMicros) {
+                                    mergeWasLegal = false;
+                                }
+                            }
+                            if (sustainCount == 0) {
+                                GRID_STATS.safetyLineNonSustain(c.notes.size(), mergeWasLegal);
+                            } else if (sustainCount != c.notes.size()) {
+                                GRID_STATS.safetyLineMixedSustain(c.notes.size());
+                            }
+                        }
                         added = true;
                     } else if (safetyExists) {
                         ceil.mergeCandidate(c);
+                        if (GRID_STATS_ENABLED) {
+                            GRID_STATS.endSafetyExists(c.notes.size());
+                        }
                         added = true;
+                    }
+                }
+
+                // Fallback for rejected end candidates, ceiling side. The mirror of the floor
+                // fallback above: there the line goes at floor+minimumMicros, here at
+                // ceil-minimumMicros. Without it a ceiling merge is the only option offered,
+                // and mergeIsNearer cannot reject it because the distance is negative, so
+                // 354482 endings were being pushed 30-59ms forward with no alternative.
+                if (!added && ceilConflict && !floorConflict) {
+                    long safetyTime = ceil.micros() - minimumMicros;
+
+                    boolean safetyConflict = (floor != null && Math.abs(safetyTime - floor.micros()) < minimumMicros);
+                    boolean safetyExists = (floor != null && floor.micros() == safetyTime);
+
+                    boolean keepsDuration = true;
+                    for (AbcNoteEvent n : c.notes) {
+                        if (safetyTime - n.startABCMicros < minimumMicros) {
+                            keepsDuration = false;
+                            break;
+                        }
+                    }
+
+                    boolean safetyIsNearer = (ceil.micros() - time) > minimumMicros / 2;
+
+                    boolean durationHeard = false;
+                    for (AbcNoteEvent n : c.notes) {
+                        if (part.getInstrument().isSustainable(n.note.id)) {
+                            durationHeard = true;
+                            break;
+                        }
+                    }
+
+                    if (durationHeard && safetyIsNearer) {
+                        if (!safetyConflict && !safetyExists && keepsDuration) {
+                            GridPoint2 safetyPoint = new GridPoint2(safetyTime, 0, 0);
+                            safetyPoint.mergeCandidate(c);
+                            safetyPoint.weight = WEIGHT_END;
+                            grid.add(safetyPoint);
+                            added = true;
+                            if (GRID_STATS_ENABLED) {
+                                GRID_STATS.endSafetyLineCeil(c.notes.size(), ceil.micros() - time);
+                            }
+                        } else if (GRID_STATS_ENABLED) {
+                            GRID_STATS.endSafetyCeilNoRoom(c.notes.size());
+                        }
+                    } else if (GRID_STATS_ENABLED && safetyIsNearer) {
+                        GRID_STATS.endSafetyCeilRefusedPlucked(c.notes.size());
                     }
                 }
 
                 // Absolute last resort: just strap the end to the blocker so it doesn't fall off the grid
                 if (!added && blocker != null) {
-                    blocker.mergeCandidate(c);
+                    // Absolute last resort: strap the end to a blocker so it doesn't fall off the grid.
+                    //
+                    // All starts are placed before any end candidate, so every note's start is a
+                    // grid line and start < time < ceil. Two grid lines are at least minimumMicros
+                    // apart, so merging to ceil can never leave a note too short. Therefore
+                    // !mergeKeepsDuration implies blocker == floor, and since floor >= start and
+                    // any gap between them would be >= minimumMicros, it implies floor IS the
+                    // note's own start line. That is why the final else cannot be reached.
+                    if (mergeKeepsDuration) {
+                        if (GRID_STATS_ENABLED) {
+                            GRID_STATS.lastResortArm(1, c.notes.size());
+                            GRID_STATS.endLastResortMerge(c.notes.size(), time - blocker.micros(), statsLabel, blocker.micros());
+                        }
+                        blocker.mergeCandidate(c);
+                        added = true;
+                    } else if (floorConflict && ceilConflict) {
+                        if (GRID_STATS_ENABLED) {
+                            GRID_STATS.lastResortArm(2, c.notes.size());
+                            GRID_STATS.endLastResortMerge(c.notes.size(), time - ceil.micros(), statsLabel, ceil.micros());
+                        }
+                        ceil.mergeCandidate(c);
+                        added = true;
+                    } else if (floorConflict) {
+                        long newEndMicros = floor.micros() + minimumMicros;
+                        // ceil may now exist here - it just is not within minimumMicros of time.
+                        // That does not guarantee it is clear of floor+minimumMicros.
+                        if (ceil == null || ceil.micros() - newEndMicros >= minimumMicros) {
+                            if (GRID_STATS_ENABLED) {
+                                GRID_STATS.lastResortArm(3, c.notes.size());
+                                GRID_STATS.endLastResortMerge(c.notes.size(), time - newEndMicros, statsLabel, newEndMicros);
+                            }
+                            GridPoint2 newEnd = new GridPoint2(newEndMicros, 0, 0);
+                            newEnd.mergeCandidate(c);
+                            grid.add(newEnd);
+                        } else {
+                            if (GRID_STATS_ENABLED) {
+                                GRID_STATS.lastResortArm(4, c.notes.size());
+                                GRID_STATS.endLastResortMerge(c.notes.size(), time - ceil.micros(), statsLabel, ceil.micros());
+                            }
+                            ceil.mergeCandidate(c);
+                        }
+                        added = true;
+                    } else {
+                        // should never be reached
+                        assert false;
+                    }
                 }
+
+                if (!added) {
+                    // Unreachable.
+                    if (GRID_STATS_ENABLED) {
+                        GRID_STATS.endLastResortAdded(c.notes.size(), statsLabel, c.micros());
+                    }
+                    GridPoint2 endPoint = new GridPoint2(c.micros(), 0, 0);
+                    endPoint.mergeCandidate(c);
+                    grid.add(endPoint);
+                }
+            } else {
+                if (GRID_STATS_ENABLED) GRID_STATS.exitUnhandled(c.notes.size());
+            }
+        }
+
+        if (GRID_STATS_ENABLED) {
+            Set<Integer> pitches = new HashSet<>();
+            Set<Long> onsets = new HashSet<>();
+            for (GridPoint2 gp : grid) {
+                int n = gp.starts.size();
+                if (n == 0) continue;
+                pitches.clear();
+                onsets.clear();
+                for (AbcNoteEvent note : gp.starts) {
+                    pitches.add(note.note.id);
+                    onsets.add(note.initStartABCMicros);
+                }
+                GRID_STATS.lineOccupancy(n, n - pitches.size());
+                GRID_STATS.lineOnsets(onsets.size());
+
+                // Several notes of one pitch on a line are a roll about to be collapsed to a
+                // single hit by the same-pitch resolution. Count the worst pitch on this line.
+                if (n > pitches.size()) {
+                    Map<Integer, Integer> perPitch = new HashMap<>();
+                    for (AbcNoteEvent note : gp.starts) {
+                        perPitch.merge(note.note.id, 1, Integer::sum);
+                    }
+                    int worst = 0;
+                    for (int c : perPitch.values()) worst = Math.max(worst, c);
+                    if (worst >= 2) GRID_STATS.samePitchRun(worst);
+                }
+                if (onsets.size() >= 3) classifyStack(gp, minimumMicros, part);
             }
         }
 
         NavigableSet<Long> finalGrid = new TreeSet<>();
         if (grid.isEmpty()) return finalGrid;
 
-        Iterator<GridPoint3> it = grid.iterator();
+        Iterator<GridPoint2> it = grid.iterator();
         long prev = it.next().micros();
         finalGrid.add(prev);
 
         // ensure we don't have silence longer than sample lengths
         while (it.hasNext()) {
-            GridPoint3 currPoint = it.next(); // Grab the actual object
+            GridPoint2 currPoint = it.next(); // Grab the actual object
             long curr = currPoint.micros();
             long diff = curr - prev;
 
             if (diff > maxSustain) {
+
+                final int sizeBeforeSplit = finalGrid.size();
 
                 // The grid segments might be larger than sample lengths
                 // Cut it up
@@ -4390,12 +5459,23 @@ public class AbcExporter {
                     diff = curr - prev;
                 }
 
+                if (GRID_STATS_ENABLED) GRID_STATS.sweepSplit(finalGrid.size() - sizeBeforeSplit);
+
                 finalGrid.add(curr);
                 prev = curr;
 
             } else if (diff < minimumMicros) {
                 // The gap is illegally small. We must drop 'curr'.
                 // Rescue all notes bound to this point and snap them to the safe 'prev' anchor.
+                if (GRID_STATS_ENABLED) {
+                    for (AbcNoteEvent n : currPoint.starts) {
+                        GRID_STATS.sweepRebindStart(n.initStartABCMicros - prev, statsLabel, currPoint.micros());
+                    }
+                    for (AbcNoteEvent n : currPoint.ends) {
+                        GRID_STATS.sweepRebindEnd(n.initEndABCMicros - prev);
+                    }
+                    GRID_STATS.sweepDrop(diff);
+                }
                 for (AbcNoteEvent n : currPoint.starts) n.startABCMicros = prev;
                 for (AbcNoteEvent n : currPoint.ends) n.endABCMicros = prev;
 
@@ -4420,16 +5500,33 @@ public class AbcExporter {
                 lastLine = line;
             }
         }
-
+        if (GRID_STATS_ENABLED) GRID_STATS.endPart(statsLabel, statsInstrument, statsMark);
         return finalGrid;
     }
 
-    private void applyBounce3(TreeSet<GridPoint3> grid, long bounceTime, Candidate3 c, long minimumMicros, int newBounceDepth) {
-        GridPoint3 bKey = new GridPoint3(bounceTime, newBounceDepth, 0);
-        GridPoint3 bCeil = grid.ceiling(bKey);
-        GridPoint3 bFloor = grid.floor(bKey);
+    /**
+     * Part of multi-stage 2
+     *
+     * Returns true if the floor's time is also the start time of a note in the candidate.
+     */
+    private boolean isFloorAlsoMyStart(Candidate2 c, GridPoint2 floor) {
+        for (AbcNoteEvent note : c.notes) {
+            if (floor.micros() == note.startABCMicros) {
+                return true;
+            }
+        }
+        return false;
+    }
 
-        GridPoint3 blocker = null;
+    /**
+     * Part of multi-stage 2
+     */
+    private void applyBounce2(TreeSet<GridPoint2> grid, long bounceTime, Candidate2 c, long minimumMicros, int newBounceDepth) {
+        GridPoint2 bKey = new GridPoint2(bounceTime, newBounceDepth, 0);
+        GridPoint2 bCeil = grid.ceiling(bKey);
+        GridPoint2 bFloor = grid.floor(bKey);
+
+        GridPoint2 blocker = null;
 
         // Thanks to the 60ms strict spacing rule, the origin of the bounce
         // is exactly 60ms away, meaning it fails the '< minimumMicros' check.
@@ -4444,9 +5541,14 @@ public class AbcExporter {
             if (blocker.weight() < c.weight()) {
                 // We are stronger! Overwrite the blocker at the bounce site.
                 grid.remove(blocker);
-                GridPoint3 bp = new GridPoint3(bounceTime, newBounceDepth, c.weight());
+                GridPoint2 bp = new GridPoint2(bounceTime, newBounceDepth, 0);
 
                 // Absorb notes attached to the weak blocker, drag them to bounceTime
+                // Measured over 1000 songs: blocker.starts is always empty here. A line
+                // light enough for an end candidate to overwrite is a safety line or an
+                // end-created point, and those sit where nothing begins; a real start
+                // line weighs 10+ and outweighs any end candidate. absorb() still moves
+                // starts correctly in case that ever stops being true.
                 bp.absorb(blocker);
                 bp.mergeCandidate(c);
 
@@ -4458,7 +5560,7 @@ public class AbcExporter {
             }
         } else {
             // Free space at bounce destination
-            GridPoint3 bp = new GridPoint3(bounceTime, newBounceDepth, c.weight());
+            GridPoint2 bp = new GridPoint2(bounceTime, newBounceDepth, 0);
             bp.mergeCandidate(c);
             grid.add(bp);
 
@@ -4468,7 +5570,10 @@ public class AbcExporter {
         }
     }
 
-    private boolean isValidBounce3(long bounceTime, long originalTime, long minimumMicros, TreeSet<GridPoint3> grid, int weight, boolean forward, long exportStartTime) {
+    /**
+     * Used by multi-stage 2
+     */
+    private boolean isValidBounce2(long bounceTime, long originalTime, long minimumMicros, TreeSet<GridPoint2> grid, int weight, boolean forward, long exportStartTime) {
 
         if (bounceTime < exportStartTime) {
             return false;
@@ -4477,46 +5582,66 @@ public class AbcExporter {
         boolean directionOk = forward ? (bounceTime >= originalTime) : (bounceTime <= originalTime);
         boolean reasonable = Math.abs(bounceTime - originalTime) < (3 * minimumMicros / 2);
 
-        GridPoint3 key = new GridPoint3(bounceTime, 0, 0);
-        GridPoint3 neighbor = forward ? grid.ceiling(key) : grid.floor(key);
+        GridPoint2 key = new GridPoint2(bounceTime, 0, 0);
+        GridPoint2 neighbor = forward ? grid.ceiling(key) : grid.floor(key);
 
-        // A space is only naturally safe if it's empty, or if the neighbor is at least 60ms away.
-        // We explicitly forbid landing exactly on a neighbor here.
+        // A space is only naturally safe if it's empty, or if the neighbour is at least 60ms away.
+        // Landing exactly on a neighbour is allowed only when bouncing backward: there the caller
+        // is the grace branch, whose only alternative is deleting the ornament, so a merge is the
+        // lesser loss. Forward callers still have a crush-to-floor fallback, and merging an
+        // arpeggio note into whatever chord already holds that line changes that chord's voicing,
+        // and under shared chord velocity, at that chord's dynamic.
         boolean spaceSafe = neighbor == null
+                || (!forward && neighbor.micros() == bounceTime)
                 || Math.abs(neighbor.micros() - bounceTime) >= minimumMicros;
 
         // Can we overwrite a weak neighbor?
         int neighborWeight = (neighbor == null) ? 0 : neighbor.weight();
         boolean weightSafe = neighborWeight < weight;
 
-        // To bounce, the direction and distance must be okay, AND we must either have
+        // To bounce, the direction and distance must be okay, and we must either have
         // safe empty space, or be strong enough to crush the existing weak candidate.
         return directionOk && reasonable && (spaceSafe || weightSafe);
     }
 
-    // Simulates the snowplow chain reaction. Returns false if a leapfrogged note
-    // hits a wall, meaning the current bounce must be aborted.
-    private boolean isSnowplowPathClear(int currentIndex, long proposedBounceTime, List<Candidate3> candidates, TreeSet<GridPoint3> grid, long minimumMicros, int nextDepth, int maxChain, long exportStartTime) {
-        long simTarget = proposedBounceTime;
-        int simDepth = nextDepth;
+    /**
+     * Used by multi-stage 2
+     *
+     * A note is about to be moved forward to proposedBounceTime. Any note starting between
+     * its old and new position is now too close and must move forward as well, which can
+     * push the note after that, and so on. This walks that chain without changing anything.
+     *
+     * Returns false if some note in the chain cannot be placed - it would end up too far
+     * from where it was played, or its slot is occupied. The caller must then abandon the
+     * original move rather than start a chain it cannot finish.
+     */
+    private boolean isSnowplowPathClear(long currentTime, long proposedBounceTime, NavigableMap<Long, Candidate2> startCandidates, TreeSet<GridPoint2> grid, long minimumMicros, long maxDriftMicros, long exportStartTime) {
+        // tailMap returns a live view: startCandidates must not be structurally modified
+        // once the main loop has begun. It is fully populated before the loop starts.
+
+        // How far along the timeline the chain has reached so far.
+        long chainTip = proposedBounceTime;
 
         // Look ahead at upcoming candidates
-        for (int j = currentIndex + 1; j < candidates.size(); j++) {
-            Candidate3 futureC = candidates.get(j);
+        for (Candidate2 futureC : startCandidates.tailMap(currentTime, false).values()) {
             if (futureC.type != TYPE_START) continue;
 
-            // If the future note is safely past our simulated target, the chain is clear.
-            if (futureC.micros >= simTarget) return true;
+            // Already positioned by an earlier pass, so it is a fixed grid point.
+            // isValidBounce2 below sees it in the grid; pushing it again would count it twice.
+            if (futureC.placed) continue;
 
-            // futureC is trapped. It must bounce to the next slot.
-            simDepth++;
-            simTarget += minimumMicros;
+            // This note starts at or after where the chain has reached, so it needs no room
+            // made for it - and neither does anything after it.
+            if (futureC.micros >= chainTip) return true;
 
-            // Chain limit exceeded
-            if (simDepth > maxChain) return false;
+            // It sits inside the space we need, so it has to move to the next free slot.
+            chainTip += minimumMicros;
 
-            // The forced destination is blocked by a heavy chord
-            if (!isValidBounce3(simTarget, futureC.micros, minimumMicros, grid, futureC.weight, true, exportStartTime)) {
+            // That slot is further from where this note was actually played than we allow.
+            if (chainTip - futureC.micros > maxDriftMicros) return false;
+
+            if (!isValidBounce2(chainTip, futureC.micros, minimumMicros, grid, futureC.weight, true, exportStartTime)) {
+                // Something heavier already owns that slot, or it is otherwise unusable.
                 return false;
             }
         }
@@ -4524,385 +5649,7 @@ public class AbcExporter {
     }
 
     /**
-     *
-     * Part of organic multi-stage 2 path
-     *
-     */
-    @Deprecated
-    private NavigableSet<Long> createGridVersion2(List<AbcNoteEvent> events, long minimumMicros, AbcPart part, long barTicks) {
-
-        final int WEIGHT_SOLO = 10;  // Fast notes
-        final int WEIGHT_LONG = 10;  // Sustained notes
-        final int WEIGHT_GRACE = 5;  // Ornaments
-        final int WEIGHT_END = 1;    // Note endings
-
-        final long GRACE_THRESHOLD = 50_000L; // 50ms
-        final long SHORT_NOTE_THRESHOLD = minimumMicros * 3;
-
-        // when cutting up too long notes, this is the minimum buffer they are allowed to exceed max with.
-        long maxSustainBuffer = minimumMicros * 2;
-        long maxSustain = LotroInstrumentSampleDuration.getSafeDuration(part.getInstrument());
-        long minPreferredSustain = 4L * TimingInfo.ONE_SECOND_MICROS;
-        long minSustain = 2L * TimingInfo.ONE_SECOND_MICROS;
-        boolean sustained = part.getInstrument().sustainable;
-
-        //System.err.println("createGridVersion2: maxSustainBuffer="+maxSustainBuffer+" maxSustain="+maxSustain+" minPreferredSustain="+minPreferredSustain+" minSustain="+minSustain+" sustained="+sustained);
-
-        /*
-            If two note starts are 30 to 60 ms apart (arpeggio), keep the arpeggio instead of forcing them into
-            block chord as createGrid() would do. The new arpegio will be 60 ms instead, but thats barely noticable.
-            However only do it if there is not another note start within first note + 120 ms.
-         */
-        final boolean bouncingEnabled = true;
-
-
-        // Using maps first to sum weights of coincident events
-        Map<Long, Integer> startWeightMap = new HashMap<>();
-        Map<Long, Integer> endWeightMap = new HashMap<>();
-
-        for (AbcNoteEvent note : events) {
-
-            note.startABCMicros = qtm.tickToMicrosABCOrganic(note.getStartTick());
-            long rawEndMicros = qtm.tickToMicrosABCOrganic(note.getEndTick());
-            long rawDuration = rawEndMicros - note.startABCMicros;
-
-            int sWeight;
-            if (rawDuration < GRACE_THRESHOLD && !part.getInstrument().isPercussion) {
-                sWeight = WEIGHT_GRACE;
-            } else if (rawDuration <= SHORT_NOTE_THRESHOLD) {
-                sWeight = WEIGHT_SOLO;
-            } else {
-                sWeight = WEIGHT_LONG;
-            }
-
-            note.endABCMicros = rawEndMicros;
-            if (!sustained) {
-                note.endABCMicros = Math.max(note.endABCMicros, note.startABCMicros + minimumMicros);
-            }
-            note.endABCMicros = Math.max(note.endABCMicros, note.startABCMicros + minimumMicros);
-
-            startWeightMap.merge(note.startABCMicros, sWeight, Integer::sum);
-            endWeightMap.merge(note.endABCMicros, WEIGHT_END, Integer::sum);
-        }
-
-        List<Candidate> candidates = new ArrayList<>();
-        for (AbcNoteEvent note : events) {
-            int w = startWeightMap.getOrDefault(note.startABCMicros, 0);
-            candidates.add(new Candidate(note.startABCMicros, TYPE_START, w, note));
-        }
-        Set<Long> endTimes = new HashSet<>();
-        for (AbcNoteEvent note : events) {
-            endTimes.add(note.endABCMicros);
-        }
-        for (Long t : endTimes) {
-            int w = endWeightMap.getOrDefault(t, 0);
-            candidates.add(new Candidate(t, TYPE_END, w, null));
-        }
-
-        // 3. Sort (Solo > Long > Grace > End)
-        candidates.sort(Comparator
-                .comparingInt(Candidate::weight).reversed()
-                .thenComparingInt(Candidate::type)
-                .thenComparingLong(Candidate::micros));
-
-        TreeSet<GridPoint> grid = new TreeSet<>();
-        grid.add(new GridPoint(getExportStartMicrosABC(), false, Integer.MAX_VALUE));
-
-        for (Candidate c : candidates) {
-            long time = c.micros;
-
-            GridPoint searchKey = new GridPoint(time, false, 0);
-            GridPoint floor = grid.floor(searchKey);
-            GridPoint ceil = grid.ceiling(searchKey);
-
-            boolean floorConflict = (floor != null && Math.abs(time - floor.micros()) < minimumMicros);
-            boolean ceilConflict = (ceil != null && Math.abs(ceil.micros() - time) < minimumMicros);
-            boolean isTaken = (ceil != null && time == ceil.micros()) || (floor != null && time == floor.micros());
-
-            if (!floorConflict && !ceilConflict && !isTaken) {
-                grid.add(new GridPoint(time, false, c.weight()));
-            } else if (bouncingEnabled && c.type == TYPE_START && !isTaken) {
-
-                if (c.weight >= WEIGHT_SOLO && floor != null && floorConflict) {
-                    // Forward bounce (solos/arpeggios)
-
-                    // If the previous grid point was a bounce, we assume we are in a run/arpeggio chain
-                    // and should continue bouncing to preserve separation, even if the gap is small.
-                    boolean isOkToBounce = floor.isBounce() || floor.micros() + minimumMicros / 2 < time;
-                    long bounceTime = floor.micros() + minimumMicros;
-                    if (isOkToBounce && isValidBounce(bounceTime, time, minimumMicros, grid, c.weight, true)) {
-                        applyBounce(grid, bounceTime, c, minimumMicros);
-                    } else {
-                        // Snap to floor (block Chord)
-                        if (c.note() != null) {
-                            long duration = c.note().endABCMicros - c.note().startABCMicros;
-                            c.note().startABCMicros = floor.micros();
-                            c.note().endABCMicros = floor.micros() + duration;
-                        }
-                    }
-                } else if (c.weight == WEIGHT_GRACE && ceil != null && ceilConflict) {
-                    // Backward bounce (grace notes)
-
-                    long bounceTime = ceil.micros() - minimumMicros;
-
-                    if (isValidBounce(bounceTime, time, minimumMicros, grid, c.weight, false)) {
-                        applyBounce(grid, bounceTime, c, minimumMicros);
-                    } else {
-                        // mark it for deletion by moving it to negative infinity.
-                        if (c.note() != null) {
-                            c.note().startABCMicros = -Long.MAX_VALUE / 2;
-                            if (logNotes.isLoggable(Level.FINEST)) {
-                                logNotes.finest("Deleted grace note at " + Util.formatDurationM(time) + " (No space available)");
-                            }
-                        }
-                    }
-                }
-            } else if (c.type == TYPE_END && !isTaken) {
-                GridPoint blocker = null;
-                if (floorConflict) blocker = floor;
-                if (ceilConflict) blocker = ceil;
-
-                if (floorConflict && ceilConflict) {
-                    // pick the closest blocker
-                    blocker = (Math.abs(time - floor.micros()) < Math.abs(time - ceil.micros())) ? floor : ceil;
-                }
-
-                boolean added = false;
-                if (blocker.weight() < c.weight()) {
-                    // Overwrite weak blocker (it's guaranteed to also be an end)
-                    grid.remove(blocker);
-                    grid.add(new GridPoint(time, false, c.weight()));
-                    added = true;
-                }
-
-                // Fallback for rejected end candidates
-                // If we couldn't place the end line due to a floor conflict (too close to start?),
-                // and there is no ceiling nearby to snap to, we risk the note being deleted.
-                // We insert a safety end at exactly minimumMicros after the floor.
-                if (!added && floorConflict && !ceilConflict) {
-                    long safetyTime = floor.micros() + minimumMicros;
-
-                    // Verify safetyTime doesn't conflict with ceiling
-                    // (It effectively steals space from the gap)
-                    boolean safetyConflict = (ceil != null && Math.abs(ceil.micros() - safetyTime) < minimumMicros);
-
-                    // Also ensure we aren't adding a duplicate
-                    boolean safetyExists = (ceil != null && ceil.micros() == safetyTime);
-
-                    if (!safetyConflict && !safetyExists) {
-                        // Add the safety line with low weight (it's a fallback)
-                        grid.add(new GridPoint(safetyTime, false, WEIGHT_END));
-                    }
-                }
-            }
-        }
-
-        NavigableSet<Long> finalGrid = new TreeSet<>();
-        if (grid.isEmpty()) return finalGrid;
-
-        Iterator<GridPoint> it = grid.iterator();
-        long prev = it.next().micros();
-        finalGrid.add(prev);
-
-        // ensure we don't have silence longer than 5s
-        while (it.hasNext()) {
-            long curr = it.next().micros();
-            long diff = curr - prev;
-
-            if (diff > maxSustain) {
-
-                // The grid segments might be larger than 5.0 seconds
-                // Cut it up
-                while (diff > maxSustain) {
-                    long candidateTime;
-
-                    // gap just slightly too large (5s to 9.9995s)
-                    if (diff < maxSustain * 2L - 500L) {
-                        long midpoint = prev + diff / 2L;
-
-                        // limits
-                        long lowerBound = curr - maxSustain;
-                        long upperBound = prev + maxSustain;
-
-                        // musical Limits (Segments must be >= 2s)
-                        long minSegmentLen = minSustain;
-
-                        long musicalLowerBound = prev + minSegmentLen;
-                        long musicalUpperBound = curr - minSegmentLen;
-
-                        // Intersect to find the safe zone
-                        long safeMin = Math.max(lowerBound, musicalLowerBound);
-                        long safeMax = Math.min(upperBound, musicalUpperBound);
-
-                        if (safeMin <= midpoint && safeMax >= midpoint) {
-                            // Search for a bar line within the safe zone
-                            candidateTime = closestBarMicrosABC(barTicks, midpoint,
-                                    midpoint - safeMin,
-                                    safeMax - midpoint);
-                        } else {
-                            // Constraints are impossible
-                            // Fallback to midpoint
-                            candidateTime = midpoint;
-                        }
-                    } else {
-                        // big gap (> 9.9995s). slice off 5s chunks.
-                        candidateTime = closestBarMicrosABC(barTicks, prev + maxSustain,
-                                maxSustain-minPreferredSustain, 0L);
-                    }
-
-                    if (curr - candidateTime < maxSustainBuffer) {
-                        // we allow to go maxSustainBuffer over LONGEST_NOTE_MICROS
-                        break;
-                    }
-
-                    finalGrid.add(candidateTime);
-                    assert candidateTime > prev;
-                    prev = candidateTime;
-                    diff = curr - prev;
-                }
-
-                finalGrid.add(curr);
-                prev = curr;
-            } else if (diff < minimumMicros) {
-                // should normally not come in here
-            } else {
-                finalGrid.add(curr);
-                prev = curr;
-            }
-        }
-
-        boolean assertionsEnabled = false;
-        assert assertionsEnabled = true;
-
-        if (assertionsEnabled) {
-            // TODO: comment out when system more solid
-            Long lastLine = null;
-            for (Long line : finalGrid) {
-                if (lastLine != null) {
-                    assert line >= lastLine + minimumMicros : part.getTitle() + ": " + (line - lastLine) + " micros";
-                    assert line <= lastLine + maxSustain + maxSustainBuffer : part.getTitle() + ": " + ((line - lastLine) / 1000) + "ms " + line;
-                }
-                lastLine = line;
-            }
-        }
-
-        return finalGrid;
-    }
-
-    private boolean isValidBounce(long bounceTime, long originalTime, long minimumMicros, TreeSet<GridPoint> grid, int weight, boolean forward) {
-        boolean directionOk = forward ? (bounceTime >= originalTime) : (bounceTime <= originalTime);
-        boolean reasonable = Math.abs(bounceTime - originalTime) < (3 * minimumMicros / 2);
-
-        GridPoint key = new GridPoint(bounceTime, false, 0);
-        GridPoint neighbor = forward ? grid.ceiling(key) : grid.floor(key);
-
-        boolean spaceSafe = neighbor == null
-                || Math.abs(neighbor.micros() - bounceTime) >= minimumMicros
-                || neighbor.micros() == bounceTime;
-
-        // Can we overwrite a weak neighbor?
-        int neighborWeight = (neighbor == null) ? 0 : neighbor.weight();
-        boolean weightSafe = neighborWeight < weight;
-
-        return directionOk && reasonable && (spaceSafe || weightSafe);
-    }
-
-    private void applyBounce(TreeSet<GridPoint> grid, long time, Candidate c, long minimumMicros) {
-
-        // Clean up Neighbors (Make space for the Start)
-
-        GridPoint key = new GridPoint(time, false, 0);
-
-        GridPoint ceil = grid.ceiling(key);
-        if (ceil != null) {
-            if (ceil.micros() == time) {
-                if (ceil.weight() < c.weight) {
-                    grid.remove(ceil);
-                    if (logNotes.isLoggable(Level.FINEST)) {
-                        logNotes.finest("Overwriting weak grid line at " + Util.formatDurationM(ceil.micros()));
-                    }
-                } else {
-                    // Strong exact match: We cannot bounce "over" it.
-                    // Instead, we snap to this existing line.
-                    // We must still update the note and handle the end time here.
-                    updateNoteAndGridEnd(grid, time, c, minimumMicros);
-                    return;
-                }
-            } else if (Math.abs(ceil.micros() - time) < minimumMicros) {
-                // Close neighbor: Check weight
-                if (ceil.weight() < c.weight) {
-                    grid.remove(ceil);
-                    if (logNotes.isLoggable(Level.FINEST)) logNotes.finest("Overwriting weak grid line at " + Util.formatDurationM(ceil.micros()));
-                } else {
-                    // Neighbor is strong. Snap to it instead of creating new bounce.
-                    updateNoteAndGridEnd(grid, ceil.micros(), c, minimumMicros);
-                    return;
-                }
-            }
-        }
-
-        GridPoint floor = grid.floor(key);
-        if (floor != null && Math.abs(time - floor.micros()) < minimumMicros && floor.micros() != time) {
-            if (floor.weight() < c.weight) {
-                grid.remove(floor);
-            } else {
-                // Neighbor is strong. Snap to it.
-                updateNoteAndGridEnd(grid, floor.micros(), c, minimumMicros);
-                return;
-            }
-        }
-
-        grid.add(new GridPoint(time, true, c.weight));
-
-        updateNoteAndGridEnd(grid, time, c, minimumMicros);
-
-        if (logNotes.isLoggable(Level.FINEST)) {
-            logNotes.finest("Bounced " + Util.formatDurationM(time));
-        }
-    }
-
-    private void updateNoteAndGridEnd(TreeSet<GridPoint> grid, long time, Candidate c, long minimumMicros) {
-        if (c.note == null) return;
-
-        long duration = c.note().endABCMicros - c.note().startABCMicros;
-        long originalStart = c.note().startABCMicros;
-
-        // Update note
-        c.note().startABCMicros = time;
-        c.note().endABCMicros = time + duration;
-
-        // Only add the New End if we moved FORWARD (Delay).
-        // Forward bounce risks making the note too short if we don't move the end line.
-        if (time > originalStart) {
-            long newEnd = c.note().endABCMicros;
-            GridPoint endKey = new GridPoint(newEnd, false, 0);
-
-            // A. Check Ceiling (Future Neighbor) for the END
-            // If a grid line exists shortly after our new end, snap to it.
-            GridPoint ceil = grid.ceiling(endKey);
-            if (ceil != null && Math.abs(ceil.micros() - newEnd) < minimumMicros) {
-                c.note().endABCMicros = ceil.micros();
-                return; // Snapped to existing. Done.
-            }
-
-            // B. Check Floor (Past Neighbor / Ghost End) for the END
-            // If a grid line exists shortly before our new end, it's a conflict.
-            GridPoint floor = grid.floor(endKey);
-            if (floor != null && Math.abs(newEnd - floor.micros()) < minimumMicros) {
-                if (floor.weight() < 2) {
-                    grid.remove(floor); // Remove weak neighbor (e.g. the Ghost Old End)
-                } else {
-                    return; // Neighbor is strong. We can't add our end. Snap will handle it later.
-                }
-            }
-
-            // C. Add the New End (Weight 2 to beat remaining Ghosts)
-            grid.add(new GridPoint(newEnd, false, 2));
-        }
-    }
-
-    /**
-     * Part of multi-stage organic path
+     * Part of multi-stage 1/2 organic path
      *
      * @param barTicks bar tick duration
      * @param idealMicros origin point
@@ -5039,7 +5786,7 @@ public class AbcExporter {
 	        }
 	        
 	        //	Check that the shift does not exceed max relative to the original end.
-	        if (part.getInstrument().sustainable && Math.abs(candidateEnd - note.endABCMicros) > minimumMicros * 3L/2L) {//90 ms
+	        if (part.getInstrument().isSustainable(note.note.id) && Math.abs(candidateEnd - note.endABCMicros) > minimumMicros * 3L/2L) {//90 ms
 	        	//System.out.println(parts.get(0).getAbcSong().getTitle()+": End grid was too far from note end:"+(Math.abs(candidateEnd - note.origEndABCMicros)/(double)minimumMicros));
                 if (logNotes.isLoggable(Level.FINER)) logNotes.finer("dropping4 "+Util.formatDurationM(note.startABCMicros)+" - "+Util.formatDurationM(note.endABCMicros));
                 gridDeletion++;
@@ -5077,6 +5824,11 @@ public class AbcExporter {
         AbcNoteEvent[] lastNoteOfPitch = new AbcNoteEvent[129];
         int gridDeletion = 0;
 
+        final String statsLabel = !GRID_STATS_ENABLED ? "" : statsLabel(part);
+
+        notes.sort(Comparator.comparingLong((AbcNoteEvent n) -> n.startABCMicros)
+                .thenComparingLong(n -> n.endABCMicros));
+
         for (AbcNoteEvent note : notes) {
             // Notes condemned by the grid generator
             if (note.startABCMicros == Long.MIN_VALUE) {
@@ -5090,13 +5842,35 @@ public class AbcExporter {
 
             // Check that the shift does not exceed max relative to the original start.
             // Protects against events getting dragged across massive rests
-            if (Math.abs(candidateStart - note.initStartABCMicros) > getMaxStartShiftMicros(originalDuration, minimumMicros)) {
+            long maxShift = minimumMicros;
+            if (Math.abs(candidateStart - note.initStartABCMicros) > maxShift) {
+                if (GRID_STATS_ENABLED) {
+                    GRID_STATS.startDriftDelete(
+                            Math.abs(candidateStart - note.initStartABCMicros),
+                            candidateStart < note.initStartABCMicros,
+                            originalDuration, maxShift, minimumMicros,
+                            statsLabel, note.initStartABCMicros);
+                }
                 gridDeletion++;
                 continue;
             }
 
-            //	Check that the shift does not exceed max relative to the original end.
-            if (part.getInstrument().sustainable && Math.abs(candidateEnd - note.initEndABCMicros) > minimumMicros * 3L / 2L) {
+            // Check that the shift does not exceed max relative to the original end.
+            // Measured from mandatoryEnd, not initEndABCMicros: a note played shorter than
+            // minimumMicros was already stretched to it before the grid saw it, and charging
+            // that stretch as drift leaves a short note almost no budget, which deleted in
+            // average 1 per song for one ordinary grid step.
+            long mandatoryEnd = Math.max(note.initEndABCMicros, note.initStartABCMicros + minimumMicros);
+            if (part.getInstrument().isSustainable(note.note.id)
+                    && Math.abs(candidateEnd - mandatoryEnd) > minimumMicros * 3L / 2L) {
+                if (GRID_STATS_ENABLED) {
+                    GRID_STATS.endDriftDelete(
+                            Math.abs(candidateEnd - note.initEndABCMicros),
+                            Math.abs(candidateEnd - mandatoryEnd),
+                            originalDuration,
+                            minimumMicros,
+                            statsLabel, note.initStartABCMicros);
+                }
                 gridDeletion++;
                 continue;
             }
@@ -5113,22 +5887,9 @@ public class AbcExporter {
                 }
             }
 
-            // Resolve same-pitch overlaps
             int pitch = note.note.id;
             if (pitch == -1) pitch = 128;
-            AbcNoteEvent prevNote = lastNoteOfPitch[pitch];
-
-            if (prevNote != null && prevNote.endABCMicros > candidateStart) {
-                if (prevNote.startABCMicros >= candidateStart) {
-                    // The new note completely eclipses the old one. Delete the old one.
-                    snappedNotes.remove(prevNote);
-                    gridDeletion++;
-                } else {
-                    // Truncate the previous note to the new note's start
-                    prevNote.endABCMicros = candidateStart;
-                    prevNote.setEndTick(Math.max(prevNote.getStartTick() + 1, qtm.microsToTickABCOrganic(candidateStart)));
-                }
-            }
+            gridDeletion = snapSamePitch(gridDeletion, lastNoteOfPitch, candidateStart, snappedNotes, pitch, note, part);
 
             note.setStartTick(qtm.microsToTickABCOrganic(candidateStart));
             note.startABCMicros = candidateStart;
@@ -5140,13 +5901,19 @@ public class AbcExporter {
 
             if (assertionsEnabled) {
                 assert grid.contains(note.startABCMicros) : "Start time " + note.startABCMicros + " is not on the grid!";
-                assert grid.contains(note.endABCMicros) : "End time " + note.endABCMicros + " is not on the grid!";
+                if (!grid.contains(note.endABCMicros)) {
+                    Long below = grid.floor(note.endABCMicros);
+                    Long above = grid.ceiling(note.endABCMicros);
+                    throw new AssertionError("End time " + note.endABCMicros + " is not on the grid!"
+                            + " part=" + part
+                            + " pitch=" + note.note.id
+                            + " start=" + note.startABCMicros
+                            + " init=" + note.initStartABCMicros + ".." + note.initEndABCMicros
+                            + " gridBelow=" + below + " (gap " + (below == null ? -1 : note.endABCMicros - below) + ")"
+                            + " gridAbove=" + above + " (gap " + (above == null ? -1 : above - note.endABCMicros) + ")");
+                }
                 assert note.endABCMicros > note.startABCMicros : "Note duration was <= 0!";
                 assert (note.endABCMicros - note.startABCMicros) >= minimumMicros : "Note duration " + (note.endABCMicros - note.startABCMicros) + " is shorter than minimumMicros!";
-
-                if (prevNote != null && snappedNotes.contains(prevNote)) {
-                    assert prevNote.endABCMicros <= note.startABCMicros : "Same-pitch overlap detected on pitch " + pitch;
-                }
             }
 
             snappedNotes.add(note);
@@ -5157,229 +5924,31 @@ public class AbcExporter {
         return snappedNotes;
     }
 
-    /**
-     *
-     * Part of organic multi-stage 2 path for sustained instruments
-     *
-     */
-    private List<AbcNoteEvent> snapNotesToGridSustained(List<AbcNoteEvent> notes, NavigableSet<Long> grid, long minimumMicros, AbcPart part) {
-        List<AbcNoteEvent> snappedNotes = new ArrayList<>(notes.size());
-        AbcNoteEvent[] lastNoteOfPitch = new AbcNoteEvent[129]; // Tracks the last note for each MIDI pitch
-        int gridDeletion = 0;
+    private int snapSamePitch(int gridDeletion, AbcNoteEvent[] lastNoteOfPitch, long candidateStart, List<AbcNoteEvent> snappedNotes, int pitch, AbcNoteEvent note, AbcPart part) {
+        // Resolve same-pitch overlaps (assumes notes are sorted by start time and then duration)
+        AbcNoteEvent prevNote = lastNoteOfPitch[pitch];
 
-        for (AbcNoteEvent note : notes) {
-            long originalDuration = note.endABCMicros - note.startABCMicros;
-
-            // Snap Start to nearest grid point
-            Long floor = grid.floor(note.startABCMicros);
-            Long ceiling = grid.ceiling(note.startABCMicros);
-            long candidateStart = note.startABCMicros;
-
-            if (floor != null && ceiling != null) {
-                candidateStart = (note.startABCMicros - floor <= ceiling - note.startABCMicros) ? floor : ceiling;
-            } else if (floor != null) {
-                candidateStart = floor;
-            } else if (ceiling != null) {
-                candidateStart = ceiling;
-            } else {
-                continue; // No grid points exist at all
-            }
-
-            // Shield against snapping across massive gaps (like a 2-minute rest)
-            if (Math.abs(candidateStart - note.startABCMicros) > getMaxStartShiftMicros(originalDuration, minimumMicros)) {
+        if (prevNote != null && prevNote.endABCMicros > candidateStart) {
+            if (prevNote.startABCMicros >= candidateStart) {
+                // The new note completely eclipses the old one. Delete the old one.
+                snappedNotes.remove(prevNote);
                 gridDeletion++;
-                continue;
-            }
-
-            // Snap end to nearest grid point
-            long expectedEnd = note.endABCMicros;
-            Long endFloor = grid.floor(expectedEnd);
-            Long endCeiling = grid.ceiling(expectedEnd);
-            long candidateEnd = expectedEnd;
-
-            if (endFloor != null && endCeiling != null) {
-                candidateEnd = (expectedEnd - endFloor <= endCeiling - expectedEnd) ? endFloor : endCeiling;
-            } else if (endFloor != null) {
-                candidateEnd = endFloor;
-            } else if (endCeiling != null) {
-                candidateEnd = endCeiling;
-            }
-
-            // Prevent the end of a note from dragging long
-            if (Math.abs(candidateEnd - expectedEnd) > minimumMicros * 3L / 2L) {
-                gridDeletion++;
-                continue;
-            }
-
-            // Enforce valid duration on the grid
-            if (candidateEnd <= candidateStart) {
-                Long higher = grid.higher(candidateStart);
-                Long lower = grid.lower(candidateStart);
-
-                // Fetch prevNote early to protect it from backward expansion collision
-                int pitch = note.note.id;
-                if (pitch == -1) pitch = 128;
-                AbcNoteEvent prevNote = lastNoteOfPitch[pitch];
-
-                boolean canExpandBackward = (lower != null);
-                if (canExpandBackward && prevNote != null && lower < prevNote.endABCMicros) {
-                    canExpandBackward = false;
-                }
-
-                long distHigher = (higher != null) ? (higher - candidateStart) : Long.MAX_VALUE;
-                long distLower = canExpandBackward ? (candidateStart - lower) : Long.MAX_VALUE;
-
-                if (higher == null && !canExpandBackward) {
-                    gridDeletion++;
-                    continue;
-                }
-
-                long maxAcceptableDuration = Math.max(originalDuration * 5L/4L, minimumMicros * 2L);
-                boolean higherIsTooLong = distHigher > maxAcceptableDuration;
-                boolean lowerIsTooLong = distLower > maxAcceptableDuration;
-
-                if (lowerIsTooLong) canExpandBackward = false;
-
-                if (!canExpandBackward && higherIsTooLong) {
-                    gridDeletion++;
-                    continue; // Cannot expand safely in either direction. Drop the event.
-                }
-
-                // Expand into the adjacent grid interval that best matches original duration
-                if (distHigher != Long.MAX_VALUE && !higherIsTooLong && (!canExpandBackward || Math.abs(distHigher - originalDuration) <= Math.abs(distLower - originalDuration))) {
-                    candidateEnd = higher;
-                } else if (canExpandBackward) {
-                    long oldStart = candidateStart;
-                    candidateStart = lower;
-                    candidateEnd = oldStart;
-                } else {
-                    gridDeletion++;
-                    continue; // Failsafe drop
-                }
-            }
-
-            // Resolve same-pitch overlap
-            int pitch = note.note.id;
-            if (pitch == -1) pitch = 128;
-            AbcNoteEvent prevNote = lastNoteOfPitch[pitch];
-
-            if (prevNote != null && prevNote.endABCMicros > candidateStart) {
-                if (prevNote.startABCMicros >= candidateStart) {
-                    // The previous note is completely eclipsed by the new one on the grid.
-                    snappedNotes.remove(prevNote);
-                    gridDeletion++;
-                } else {
-                    // Truncate the previous note to end exactly when this new one begins.
-                    prevNote.endABCMicros = candidateStart;
-                    prevNote.setEndTick(qtm.microsToTickABCOrganic(candidateStart));
-                    assert prevNote.endABCMicros - prevNote.startABCMicros > 0;
-                }
-            }
-
-            note.setStartTick(qtm.microsToTickABCOrganic(candidateStart));
-            note.startABCMicros = candidateStart;
-            note.setEndTick(qtm.microsToTickABCOrganic(candidateEnd));
-            note.endABCMicros = candidateEnd;
-
-            assert note.endABCMicros - note.startABCMicros > 0;
-
-            snappedNotes.add(note);
-            lastNoteOfPitch[pitch] = note;
-        }
-
-        /*
-        for (AbcNoteEvent note : snappedNotes) {
-            System.out.println("sus_Snapped note " + note.note.id + ": " + note.startABCMicros + " to " + note.endABCMicros + " micros");
-        }
-        */
-
-        part.numberOfRemovedNotesFromFitting = gridDeletion;
-        return snappedNotes;
-    }
-
-    /**
-     *
-     * Part of organic multi-stage 2 path for plucked/percussive instruments
-     *
-     */
-    private List<AbcNoteEvent> snapNotesToGridFixed(List<AbcNoteEvent> notes, NavigableSet<Long> grid, long minimumMicros, AbcPart part) {
-        List<AbcNoteEvent> snappedNotes = new ArrayList<>(notes.size());
-        AbcNoteEvent[] lastNoteOfPitch = new AbcNoteEvent[129];
-        int gridDeletion = 0;
-
-        // Short uniform duration for plucked/percussive instruments.
-
-        for (AbcNoteEvent note : notes) {
-            long originalDuration = note.endABCMicros - note.startABCMicros;
-            // Snap Start (nearest-neighbor)
-            Long floor = grid.floor(note.startABCMicros);
-            Long ceiling = grid.ceiling(note.startABCMicros);
-            long candidateStart = note.startABCMicros;
-
-            if (floor != null && ceiling != null) {
-                candidateStart = (note.startABCMicros - floor <= ceiling - note.startABCMicros) ? floor : ceiling;
-            } else if (floor != null) {
-                candidateStart = floor;
-            } else if (ceiling != null) {
-                candidateStart = ceiling;
+                if (GRID_STATS_ENABLED) GRID_STATS.samePitchDelete(part.getInstrument().isPercussion,
+                        prevNote.origNote == null ? null : prevNote.origNote.note.id,
+                        note.origNote == null ? null : note.origNote.note.id,
+                        prevNote.initStartABCMicros == note.initStartABCMicros);
+                prevNote = null;
             } else {
-                continue; // No grid points exist at all
+                // Truncate the previous note to the new note's start
+                prevNote.endABCMicros = candidateStart;
+                prevNote.setEndTick(Math.max(prevNote.getStartTick() + 1, qtm.microsToTickABCOrganic(candidateStart)));
+                if (GRID_STATS_ENABLED) GRID_STATS.samePitchTruncate();
+                assert prevNote.endABCMicros - prevNote.startABCMicros > 0;
             }
-
-            // Shield against snapping events across massive rests
-            if (Math.abs(candidateStart - note.startABCMicros) > getMaxStartShiftMicros(originalDuration, minimumMicros)) {
-                gridDeletion++;
-                continue;
-            }
-
-            // Apply Duration (Snap end to the next available grid point)
-            Long nextGridPoint = grid.higher(candidateStart);
-            long candidateEnd;
-            if (nextGridPoint != null) {
-                candidateEnd = nextGridPoint;
-            } else {
-                // Fallback for the absolute last note on the grid
-                candidateEnd = candidateStart + minimumMicros;
-            }
-
-            // Resolve overlaps
-            int pitch = note.note.id;
-            if (pitch == -1) pitch = 128;
-            AbcNoteEvent prevNote = lastNoteOfPitch[pitch];
-
-            if (prevNote != null && prevNote.endABCMicros > candidateStart) {
-                if (prevNote.startABCMicros >= candidateStart) {
-                    // The notes crossed paths or snapped to the exact same point.
-                    // The new one entirely eclipses the previous note.
-                    snappedNotes.remove(prevNote);
-                    gridDeletion++;
-                } else {
-                    // Truncate previous note to end exactly when this new one begins
-                    prevNote.endABCMicros = candidateStart;
-                    prevNote.setEndTick(Math.max(prevNote.getStartTick() + 1, qtm.microsToTickABCOrganic(candidateStart)));
-                    assert prevNote.endABCMicros - prevNote.startABCMicros > 0;
-                }
-            }
-
-            note.setStartTick(qtm.microsToTickABCOrganic(candidateStart));
-            note.startABCMicros = candidateStart;
-            note.setEndTick(Math.max(note.getStartTick() + 1L, qtm.microsToTickABCOrganic(candidateEnd)));
-            note.endABCMicros = candidateEnd;
-
-            assert note.endABCMicros - note.startABCMicros > 0;
-
-            snappedNotes.add(note);
-            lastNoteOfPitch[pitch] = note;
         }
-
-        /*
-        for (AbcNoteEvent note : snappedNotes) {
-            System.out.println("fix_Snapped note " + note.note.id + ": " + note.startABCMicros + " to " + note.endABCMicros + " micros");
-        }
-        */
-
-        part.numberOfRemovedNotesFromFitting = gridDeletion;
-        return snappedNotes;
+        assert prevNote == null || prevNote.endABCMicros <= candidateStart
+                : "Same-pitch overlap on pitch " + pitch;
+        return gridDeletion;
     }
 
     /**
@@ -5388,6 +5957,7 @@ public class AbcExporter {
      */
     private List<AbcNoteEvent> removeCollapsedDissonance(List<AbcNoteEvent> events, AbcPart part) {
         part.numberOfRemovedNotesForSafety = 0;
+        final String statsLabel = statsLabel(part);
 
         if (part.getInstrument().isPercussion) return events;//drums and cowbells only
 
@@ -5411,6 +5981,21 @@ public class AbcExporter {
                 continue;
             }
 
+            if (GRID_STATS_ENABLED) {
+                GRID_STATS.dissonanceCluster(cluster.size());
+                // Does the top of the ranking tie? The sort reads snapped durations, which the
+                // grid has just equalised, so a tie means the ranking fell through to velocity.
+                long maxSnapped = Long.MIN_VALUE, maxOrig = Long.MIN_VALUE;
+                int nSnapped = 0, nOrig = 0;
+                for (AbcNoteEvent e : cluster) {
+                    long s = e.endABCMicros - e.startABCMicros;
+                    long o = e.initEndABCMicros - e.initStartABCMicros;
+                    if (s > maxSnapped) { maxSnapped = s; nSnapped = 1; } else if (s == maxSnapped) nSnapped++;
+                    if (o > maxOrig) { maxOrig = o; nOrig = 1; } else if (o == maxOrig) nOrig++;
+                }
+                GRID_STATS.dissonanceSortTie(nSnapped > 1, nOrig > 1);
+            }
+
             // Sort by original importance (length/velocity) so we drop the weak ones
             cluster.sort(Comparator.comparingLong((AbcNoteEvent e) -> e.endABCMicros - e.startABCMicros)
                     .thenComparingInt(AbcNoteEvent::getVelocity).reversed());
@@ -5419,6 +6004,7 @@ public class AbcExporter {
 
             for (AbcNoteEvent candidate : cluster) {
                 if (candidate.getOrigBend() != null || (candidate.origNote instanceof BentMidiNoteEvent) || candidate.origNote == null) {
+                    if (GRID_STATS_ENABLED) GRID_STATS.dissonanceSkippedBend(1);
                     survivors.add(candidate);
                     continue;
                 }
@@ -5428,33 +6014,36 @@ public class AbcExporter {
                     if (survivor.getOrigBend() != null || survivor.origNote instanceof BentMidiNoteEvent || survivor.origNote == null) {
                         continue;
                     }
-
                     // Check if they were originally sequential
                     long overlapMicros = getOrigOverlap(candidate, survivor);
-
-                    // If they overlapped significantly in the original, they are intended harmony/dissonance.
-                    if (overlapMicros > 20_000L) {
-                        continue; // Keep both, don't check for dissonance
-                    }
-
-                    // Check for dissonance
                     int interval = Math.abs(candidate.note.id - survivor.note.id);
-                    if (interval <= 2 && interval > 0) { // Major 2nd or minor 2nd
+                    boolean dissonant = interval == 1;// minor second
+                    boolean keptOverlap = overlapMicros > 20_000L;
 
-                        long durCandidate = candidate.endABCMicros - candidate.startABCMicros;
-                        long durSurvivor = survivor.endABCMicros - survivor.startABCMicros;
+                    long durCandidate = candidate.endABCMicros - candidate.startABCMicros;
+                    long durSurvivor = survivor.endABCMicros - survivor.startABCMicros;
+                    boolean bothLongSnapped = durCandidate > 100_000L && durSurvivor > 100_000L;
+                    boolean bothLongOrig =
+                            (candidate.initEndABCMicros - candidate.initStartABCMicros) > 100_000L
+                                    && (survivor.initEndABCMicros - survivor.initStartABCMicros) > 100_000L;
 
-                        if (durCandidate > 100_000L && durSurvivor > 100_000L) {
-                            continue; // Keep both
-                        }
+                    boolean willDrop = dissonant && !keptOverlap && !bothLongSnapped;
 
-                        // They crashed into each other and sound bad.
-                        // Since we sorted by velocity/importance, survivor is better.
-                        // Drop candidate.
-                        keepCandidate = false;
-                        part.numberOfRemovedNotesForSafety++;
-                        break;
+                    if (GRID_STATS_ENABLED && dissonant) {
+                        GRID_STATS.dissonancePair(keptOverlap, bothLongSnapped, bothLongOrig,
+                                willDrop, interval, statsLabel, candidate.startABCMicros);
                     }
+
+                    if (keptOverlap) continue;// If they overlapped significantly in the original, they are intended harmony/dissonance.
+                    if (!dissonant || dissonant) continue;
+                    if (bothLongSnapped) continue;
+
+                    // They crashed into each other and sound bad.
+                    // Since we sorted by velocity/importance, survivor is better.
+                    // Drop candidate.
+                    keepCandidate = false;
+                    part.numberOfRemovedNotesForSafety++;
+                    break;
                 }
                 if (keepCandidate) {
                     survivors.add(candidate);
@@ -5467,6 +6056,10 @@ public class AbcExporter {
         return cleaned;
     }
 
+    /**
+     * Return overlap as positive number.
+     * If return is negative or zero, it means that the notes are not overlapping.
+     */
     private long getOrigOverlap(AbcNoteEvent candidate, AbcNoteEvent survivor) {
         long startC = candidate.origNote.getStartMicros();//relying on its datacache to be a SequenceDataCache,
         long endC   = candidate.origNote.getEndMicros();//  which it is for MidiNoteEvents.
@@ -5474,13 +6067,7 @@ public class AbcExporter {
         long startS = survivor.origNote.getStartMicros();
         long endS   = survivor.origNote.getEndMicros();
 
-        long overlap = 0;
-        if (startC < startS) {
-            overlap = endC - startS; // Candidate started first
-        } else {
-            overlap = endS - startC; // Survivor started first
-        }
-        return overlap;
+        return Math.min(endC, endS) - Math.max(startC, startS);
     }
 
     /**
@@ -5531,7 +6118,7 @@ public class AbcExporter {
 		
 		// Add rests between the notes
 		List<AbcNoteEvent> rests = new ArrayList<>(events.size());
-		List<AbcNoteEvent> restTrash = new ArrayList<>();
+        Set<AbcNoteEvent> restTrash = new HashSet<>();//removeAll(hashset) faster than removeAll(ArrayList)
 		List<AbcNoteEvent> potentialTrash = new ArrayList<>();
 		long lastEndMicros = 0L;
 		long lastEndTick = 0L;// prevChordsShortest ending
@@ -5666,7 +6253,7 @@ public class AbcExporter {
 					// One of the notes that was removed might be any in this chord,
 					// so we go steps back and re-process
 					i = startI-1;
-					chords.remove(curChord);
+                    chords.removeLast();//remove curChord
 					curChord = null;
 					continue;
 				}
@@ -5680,7 +6267,7 @@ public class AbcExporter {
 				if (!deadnotes.isEmpty()) {
 					// we go steps back and re-process
 					i = startI-1;
-					chords.remove(curChord);
+					chords.removeLast();//remove curChord
 					curChord = null;					
 					continue;
 				}
@@ -5784,6 +6371,7 @@ public class AbcExporter {
 				curChord.remove(note);
 				eventSegments.remove(note);
 				removedStuff = true;
+                continue;
 			}
 			for (AbcNoteEvent note2 : tmp) {
 				if (note != note2 && note.note == note2.note) {
@@ -5849,7 +6437,7 @@ public class AbcExporter {
         // when cutting up too long notes, this is the minimum buffer they are allowed to exceed max with.
         long maxSustainBuffer = minimumMicros * 2;
         long maxSustain = LotroInstrumentSampleDuration.getSafeDuration(part.getInstrument());
-        boolean sustained = part.getInstrument().sustainable;
+        boolean sustained = part.getInstrument().isSustainable(ne.note.id);
 
         List<AbcNoteEvent> segments = new ArrayList<>();
         segments.add(ne);
@@ -5895,6 +6483,16 @@ public class AbcExporter {
                 } else {
                     ne2 = ne;
                 }
+            } else if (!rest && !sustained) {
+
+                // end it prematurely
+                //
+                // Matches breakLongNotes(): "restart note unless non-sustainable, then end
+                // it premature". Neither a tie nor a restart is a continuation here.
+
+                ne.endABCMicros = ceilMicros;
+                ne.setEndTick(ceilTick);
+                break;
             } else if (!rest && (drone || canReachFuture)) {
 
                 // split and tie
@@ -5920,7 +6518,6 @@ public class AbcExporter {
                 //
                 // all rests come in here, drones do not
                 //
-
                 ne2 = new AbcNoteEvent(ne.note, ne.velocity, ceilTick, ne.getEndTick(), qtm, ne.origNote);
                 ne2.startABCMicros = ceilMicros;
                 ne2.endABCMicros = ne.endABCMicros;
@@ -5968,320 +6565,6 @@ public class AbcExporter {
         }
         return segments;
     }
-
-    @Deprecated
-	private boolean deprecated1(AbcPart part, List<AbcNoteEvent> events, long minimumMicros,
-			boolean removeGliss, ChordOrganic curChord, AbcNoteEvent ne, long microsTillNext, long microsTillNext2,
-			long neMicros, long ne2Micros) {
-		if (removeGliss) {
-			if ((curChord.getEndTick() > ne.getStartTick() || (neMicros < minimumMicros && ne2Micros < minimumMicros))
-					&& curChord.getEndTick() < ne.getEndTick()
-					&& microsTillNext < minimumMicros
-					&& neMicros < minimumMicros * 4L
-					&& microsTillNext2 < minimumMicros
-					&& curChord.getLongestEndTick() < qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(curChord.getStartTick()) + minimumMicros * 4L)
-					&& !curChord.glissando) {
-			
-				
-				long curMinEnd = qtm.microsToTickABCOrganic(qtm.tickToMicrosABCOrganic(curChord.getStartTick()) + minimumMicros);
-				curChord.setEndTickRetract(curMinEnd);
-				curChord.setEndTickExpand(curMinEnd);
-				
-				logNotes.info(part.getTitle()+" Removed glissando note 1");
-				events.remove(ne);
-				curChord.glissando = true;
-
-				// TODO: these ties should perhaps prevent it from being removed, TBD
-				if (ne.tiesFrom != null) {
-					ne.tiesFrom.tiesTo = null;
-				}
-				if (ne.tiesTo != null) {
-					if (!part.getInstrument().sustainable) {
-						// If non-sustained then should remove ne.tiesTo
-						// we do this by a hack when setting from to itself
-						// then we just skip the notes from being added.
-						AbcNoteEvent tie = ne.tiesTo;
-						while (tie != null) {
-							tie.tiesFrom = tie;
-							tie = tie.tiesTo;
-						}
-					}
-					ne.tiesTo.tiesFrom = null;
-				}
-
-				return true;
-				
-			} else {
-				logNotes.info("Not gli: overlap="+(curChord.getEndTick() > ne.getStartTick())+" microsTillNext="+microsTillNext+" microsTillNext2="+microsTillNext2+" neMicros="+neMicros+" ne2Micros="+ne2Micros);
-			}
-		}
-		return false;
-	}
-
-    @Deprecated
-	private boolean deprecated2(AbcPart part, List<AbcNoteEvent> events, long minimumMicros, ChordOrganic curChord,
-			int i, AbcNoteEvent ne, AbcNoteEvent ne1, AbcNoteEvent ne2, long microsTillNext2, long neMicros,
-			long minEndMicro, long curMinEndTick, long neMicroStart) {
-
-		// curr chord was earlier detected as part of glissando
-		// force room for curr chord
-		
-		long oldNeStartTick = ne.getStartTick();
-		// iterate to find if any next notes has tiesFrom and if ends after next after next starts
-		boolean neTiesFrom = false;
-		boolean neEndsAfterNe2 = true;// with minimum margin
-		List<AbcNoteEvent> neChord = new ArrayList<>();
-		for (int ii = i; ii < events.size(); ii++) {
-			AbcNoteEvent over = events.get(ii);
-			if (over.getStartTick() > oldNeStartTick) {
-				break;
-			}
-			if (over.getStartTick() == oldNeStartTick) {
-				// should be ok to do this even if tiesFrom is non-null
-				// since the tiesFrom has been expanded to end here
-				if (over.tiesFrom != null) {
-					neTiesFrom = true;
-				}
-				if (ne2 != null && (over.getEndTick() <= ne2.getStartTick()
-						|| qtm.tickToMicrosABCOrganic(over.getEndTick()) - qtm.tickToMicrosABCOrganic(ne2.getStartTick()) < minimumMicros)) {
-					neEndsAfterNe2 = false;
-				}
-				neChord.add(over);
-			}
-		}
-		if (ne2 != null && ne2.getStartTick() >= curMinEndTick
-				&& microsTillNext2 > minimumMicros*2) {
-			// delay start of next note, it has room to expand on its own later if needed
-
-			// delay start of next chord minimum possible	
-			for (AbcNoteEvent over : neChord) {
-				// should be ok to do this even if tiesFrom is non-null
-				// since the tiesFrom has been expanded to end here
-				if (over.getLengthTicks() == 0L) {
-					over.setEndTick(curMinEndTick);
-				}
-				over.setStartTick(curMinEndTick);
-				
-				// TODO: Delaying start
-			}
-			curChord.dontMove2 = true;
-			i--;
-			logNotes.info(part.getTitle()+" Delayed short chord");
-			return true;
-		} else if (ne2 != null && ne2.getStartTick() >= curMinEndTick && neEndsAfterNe2
-				&& !neTiesFrom && part.getInstrument().sustainable) {
-			// Delay start of next note, parts of it are playing same time as the next after next,
-			// so its okay to set its start time same as next after next.
-			// Note if this happens it means ne2 start is not far into future else prev. condition would have triggered.
-			
-			// delay start of next chord till next after next
-			for (AbcNoteEvent over : neChord) {
-				if (over.getLengthTicks() == 0L) {
-					over.setEndTick(ne2.getStartTick());
-				}
-				over.setStartTick(ne2.getStartTick());
-				
-				// TODO: Delaying start
-			}								
-			curChord.dontMove2 = true;
-			//events.remove(ne);
-			//events.add(events.indexOf(ne2), ne);
-			i--;
-			logNotes.info(part.getTitle()+" Delayed staggered notes");
-			return true;
-		} else if ((ne2 == null || ne1.getEndTick() <= ne2.getStartTick()) && ne1.getEndTick() > curMinEndTick
-				&& (minEndMicro-neMicroStart < minimumMicros/3 || neMicros > minimumMicros*2)) {
-			// delay start of next chord, its likely not part of glissando after all (or anymore)
-			// there is plenty of room till next after next starts
-			for (AbcNoteEvent over : neChord) {
-				// should be ok to do this even if tiesFrom is non-null
-				// since the tiesFrom has been expanded to end here
-				if (over.getLengthTicks() == 0L) {
-					over.setEndTick(curMinEndTick);
-				}
-				over.setStartTick(curMinEndTick);
-				
-				// TODO: Delaying start
-			}
-			curChord.dontMove2 = true;
-			i--;
-			logNotes.info(part.getTitle()+" Delayed sequential chord by "+ ((minEndMicro-neMicroStart)/1000)+" ms 2");
-			return true;
-		} else {
-			// remove next note, it likely part of glissando
-			events.remove(ne);
-			i--;
-			// TODO: these ties should perhaps prevent it from being removed, TBD
-			if (ne.tiesFrom != null) {
-				ne.tiesFrom.tiesTo = null;
-			}
-			if (ne.tiesTo != null) {
-				ne.tiesTo.tiesFrom = null;
-			}
-			logNotes.info(part.getTitle()+" Removed glissando note 2 ");
-			return true;
-		}
-	}
-
-	/**
-	 * Remove duplicate notes that play at the same time (comes from combining tracks into same part)
-	 * 
-	 * @param events All the notes from all the combined tracks
-     */
-	private void removeDuplicateNotes(List<AbcNoteEvent> events, LotroInstrument instrument) {
-		// If prioritizeLongNotes is true, then notes that are subset of the other but lower or equal value
-		// will just be deleted if sustained.
-		// If false, then the 2 notes will become 2 or 3 notes,
-		// where the middle (subset) will have the volume of the loudest.
-		// Some listening tests convinced me that false is the way to go.
-		final boolean prioritizeUninteruptedLongNotes = false;
-		
-		List<AbcNoteEvent> notesOn = new ArrayList<>();
-		List<AbcNoteEvent> thirds = new ArrayList<>();
-		List<AbcNoteEvent> trash = new ArrayList<>();
-		Iterator<AbcNoteEvent> neIter = events.iterator();
-		dupLoop: while (neIter.hasNext()) {
-			AbcNoteEvent second = neIter.next();//second
-			List<AbcNoteEvent> thirdsOn = new ArrayList<>();
-			Iterator<AbcNoteEvent> onIter = notesOn.iterator();
-			while (onIter.hasNext()) {
-				AbcNoteEvent first = onIter.next();//first
-				if (first.getEndTick() <= second.getStartTick() && (first.getLengthTicks() > 0 || first.getStartTick() < second.getStartTick())) {
-					// First note has already been turned off
-					onIter.remove();
-				} else if (first.note.id == second.note.id) {
-					if (first.getStartTick() == second.getStartTick()) {
-						// If they start at the same time, remove the second event.
-						
-						if (second.getLengthTicks() == 0) {
-							neIter.remove();
-							continue dupLoop;
-						} else if (first.getLengthTicks() == 0) {
-							onIter.remove();
-							trash.add(first);
-						} else {
-							
-							// Lengthen the first one if it's shorter than the second one.
-							if (first.getEndTick() <= second.getEndTick()) {
-								first.setEndTick(second.getEndTick());
-								if (second.velocity > first.velocity) {
-									first.velocity = second.velocity;// due to this, NoteEvent.velocity is not final
-								}
-							}
-							
-							if (!instrument.isSustainable(first.note.id) && second.velocity > first.velocity) {
-								first.velocity = second.velocity;// due to this, NoteEvent.velocity is not final
-							}
-							
-							// Remove the duplicate second note
-							neIter.remove();
-							continue dupLoop;
-						}
-					} else if (first.getStartTick() < second.getStartTick()) {
-						// Otherwise, if they don't start at the same time, but first started first:
-
-						if (second.getEndTick() <= first.getEndTick()) {
-							// second is subset of first
-							if (second.getLengthTicks() == 0) {
-								neIter.remove();
-								continue dupLoop;
-							} else if (instrument.isSustainable(first.note.id)) {
-															
-								if (prioritizeUninteruptedLongNotes && Dynamics.fromMidiVelocity(second.velocity).abcVol <= Dynamics.fromMidiVelocity(first.velocity).abcVol) {
-									// remove second
-									// we only do this if second has lower or equal volume
-									neIter.remove();
-									continue dupLoop;
-								}
-								// else we stop first, insert second, and add new third if needed (with firsts volume) after second to finish first.
-								long thirdEnd = first.getEndTick(); 
-								first.setEndTick(second.getStartTick());
-								onIter.remove();
-								if (first.velocity > second.velocity) {
-									second.velocity = first.velocity;
-								}
-								if (thirdEnd > second.getEndTick()) {
-									AbcNoteEvent third = new AbcNoteEvent(first.note, first.velocity, second.getEndTick(), thirdEnd, qtm, first.origNote);
-									thirds.add(third);
-									thirdsOn.add(third);
-								}
-							} else {
-								// keep both, so end first where second start	
-								first.setEndTick(second.getStartTick());
-								onIter.remove();
-							}
-						} else if (second.getEndTick() > first.getEndTick()) {
-							// second extend beyond first
-							
-							if (!instrument.isSustainable(first.note.id) || Dynamics.fromMidiVelocity(second.velocity) != Dynamics.fromMidiVelocity(first.velocity)) {
-								// we break first, and start second
-								first.setEndTick(second.getStartTick());
-								onIter.remove();
-							} else {
-								// sustained and same abc volume
-								// we extend first to cover both, and discard second
-								first.setEndTick(second.getEndTick());
-								neIter.remove();
-								continue dupLoop;
-							}
-						}
-					} else {
-						if (first.getStartTick() < second.getEndTick()) {
-							// Otherwise, if they don't start at the same time, but second started first, which means first was a third
-							
-							if (second.getLengthTicks() == 0) {
-								neIter.remove();
-								continue dupLoop;
-							}
-							
-							if (second.getEndTick() > first.getEndTick()) {
-								// extend first to match seconds end
-								first.setEndTick(second.getEndTick());
-							}
-							
-							// since we know that there has been inserted a subset note where
-							// second starts, we dont need to care about the start. Also we know that it
-							// will process third before the subset, so we don't have to worry about subset being extended
-							// as long as second is removed here. And its safe
-							// to remove second as long as its sustained. If its not sustained we shorten it so it dont extend into the third.
-							if (instrument.isSustainable(first.note.id)) {
-								neIter.remove();
-								continue dupLoop;
-							} else if (second.getEndTick() > first.getStartTick()) {
-								// shorten second to end where first begin
-								// second will then be processed against the subset later in the loop
-								second.setEndTick(first.getStartTick());
-							}
-						}
-					}
-				}
-			}
-			notesOn.addAll(thirdsOn);//must be before adding ne
-			notesOn.add(second);
-		}
-		events.addAll(thirds);
-		events.removeAll(trash);
-	}
-
-    @Deprecated
-	private void removeDuplicateNotesVerify(List<AbcNoteEvent> events, LotroInstrument instrument) {
-		List<AbcNoteEvent> notesOn = new ArrayList<>();
-        //second
-        for (AbcNoteEvent ne : events) {
-            Iterator<AbcNoteEvent> onIter = notesOn.iterator();
-            while (onIter.hasNext()) {
-                AbcNoteEvent on = onIter.next();//first
-                if (on.getEndTick() <= ne.getStartTick() && (on.getLengthTicks() > 0 || on.getStartTick() < ne.getStartTick())) {
-                    // First note has already been turned off
-                    onIter.remove();
-                } else if (on.note.id == ne.note.id) {
-                    logNotes.severe("OOPSIE ");
-                    System.exit(0);
-                }
-            }
-            notesOn.add(ne);
-        }
-	}
 
 	private void breakLongNotes(AbcPart part, List<AbcNoteEvent> events) {
 		for (int i = 0; i < events.size(); i++) {
@@ -6423,10 +6706,15 @@ public class AbcExporter {
 			}
 		}
 	}
-	
-	/**
-	 * Used by single-stage organic
-	 *
+
+    /**
+     * Used by single-stage and multi-stage 1 organic.
+     *
+     * NOTE: the Collections.binarySearch calls below are tick-domain and that is safe here,
+     * unlike in processOrganic. Callers are: processOrganic, which runs before any
+     * retiming so ticks still correspond exactly to micros; processOrganic,
+     * which pass a freshly-cleared single-element tmpEvents.
+     * Do not call this with a partially-retimed events list.
      */
 	private void breakLongNotesOrganic(AbcPart part, List<AbcNoteEvent> events, long softMaxDurationMicros) {
 		TreeSet<Long> startPoints = new TreeSet<>();
@@ -6676,7 +6964,7 @@ public class AbcExporter {
             Note newNote = Note.fromId(pitch);
             if (newNote == null || newNote == Note.REST) {
                 // Pitch out of range
-                logNotes.warning("Dropping entire bent note as it was bent out of range. pitch="+pitch);
+                logNotes.warning(part.getAbcSong().getTitle()+": Dropping entire bent note as it was bent out of range. pitch="+pitch);
                 return new ArrayList<>();
             } else {
                 // Only create if length > 0 (TreeMap ensures start < nextStart)
@@ -6702,67 +6990,12 @@ public class AbcExporter {
     }
 	
 	/**
-	 * Split all BentNoteEvents into multiple quantized NoteEvents
-	 * 
-	 * @param part Abc Part
-	 * @param ne   The note event to be processed
-	 * @return List of multiple NoteEvents
-	 */
-    @Deprecated
-	private List<AbcNoteEvent> expandPitchBendsOrganic(AbcPart part, AbcNoteEvent ne) {
-		// Handle pitch bend by subdividing tone into shorter notes.
-		if (ne instanceof BentAbcNoteEvent be) {
-            int noteID = be.note.id;
-			assert be.note != Note.REST;
-			int startPitch = noteID;
-			List<AbcNoteEvent> benders = new ArrayList<>();
-			AbcNoteEvent current = null;
-            long minimumDura = AbcConstants.getShortestNoteMicros(qtm.getPrimaryExportTempoBPM());
-
-			Integer bend = null;
-			for (long tick = be.getStartTick(); tick < be.getEndTick();
-					tick = be.getNextBend(qtm.microsToTickABCOrganicRoundUp(
-							qtm.tickToMicrosABCOrganic(tick) + minimumDura*65L/60L), bend)
-                    ) {
-                // Faction 65/60 makes bends more detailed as they are much less susceptible to
-                // micro/tick rounding inaccuracies.
-				bend = be.getBend(tick);
-                if (bend == null) {
-                    // Since all bent notes have a bend at start tick,
-                    // and that start tick might have been quantized to lower tick.
-                    // Make sure we grab that initial value here.
-                    // For organic this shouldn't happen, is a legacy/mix issue.
-                    bend = be.bends.firstEntry().getValue();
-                }
-                noteID = startPitch + bend;
-                if (current == null) {
-					current = createBentSubNote(be, noteID, current, tick, bend);
-					if (current == null)
-						return new ArrayList<>();
-					benders.add(current);
-				} else {
-					if (current.note.id != noteID) {
-						current = createBentSubNote(be, noteID, current, tick, bend);
-						if (current == null)
-							return new ArrayList<>();
-						benders.add(current);
-					}
-				}
-			}
-
-			return benders;
-		} else {
-			return null;
-		}
-	}
-
-    /**
      * Split all BentNoteEvents into multiple NoteEvents
      *
      * @param ne   The note event to be processed
      * @return List of multiple NoteEvents
      */
-    private List<AbcNoteEvent> expandPitchBendsOrganicImproved(AbcNoteEvent ne) {
+    private List<AbcNoteEvent> expandPitchBendsOrganic(AbcNoteEvent ne) {
         /*
             Stuff this method does
             ---
@@ -7005,7 +7238,7 @@ public class AbcExporter {
 		}
 		Note newNote = Note.fromId(noteID);
 		if (newNote == null || newNote == Note.REST) {
-			System.out.println("Note removed, pitch bend out of range: "+noteID);
+			logAbc.warning("Note removed, pitch bend out of range: "+noteID);
 			return null;
 		}
 		AbcNoteEvent sub = new AbcNoteEvent(newNote, be.velocity, tick, be.getEndTick(), be.getTempoCache(), be.origNote);
@@ -7418,6 +7651,14 @@ public class AbcExporter {
         this.upgraded = upgraded;
     }
 
+    public void setSingleStageVer(int singleStageVer) {
+        this.singleStageVer = singleStageVer;
+    }
+
+    public int getSingleStageVer() {
+        return singleStageVer;
+    }
+
 	public boolean isUseRestsInChords() {
 		return useRestsInChords;
 	}
@@ -7425,4 +7666,64 @@ public class AbcExporter {
 	public void setUseRestsInChords(boolean useRestsInChords) {
 		this.useRestsInChords = useRestsInChords;
 	}
+
+    public void setMergeVersion(int mergeVersion) {
+        this.merger = new AbcMerger(mergeVersion);
+    }
+
+    public int getMergeVersion() {
+        if (merger == null) return 0;
+        return merger.getMergeVersion();
+    }
+
+    private static String statsLabel(AbcPart part) {
+        if (part.getAbcSong() == null) return "Unit-test label";
+        String song = part.getAbcSong().getTitle();
+        // Titles are not unique across projects - 948 distinct titles over ~1000 songs.
+        // Without a file-level discriminator two projects merge into one map entry.
+        String src = "No-project";
+        if (part.getAbcSong().getProjectFile() != null) {
+            src = part.getAbcSong().getProjectFile().getParentFile().getName() + File.separator + part.getAbcSong().getProjectFile().getName();
+        }
+        return song + " {" + src + "} / #" + part.getPartNumber() + " " + part.getTitle()
+                + " [" + part.getInstrument() + "]";
+    }
+
+    /**
+     * A line holding three or more played onsets has flattened a figure. Ask what kind, using
+     * the same two signals the thinning pre-pass uses: do the notes overlap, and how far apart
+     * are consecutive pitches. Overlapping, wide steps: a strum, and stacking is what it should
+     * be. Released or small steps: a run that should have been thinned and was not.
+     */
+    private void classifyStack(GridPoint2 gp, long minimumMicros, AbcPart part) {
+        List<AbcNoteEvent> byOnset = new ArrayList<>(gp.starts);
+        byOnset.sort(Comparator.comparingLong((AbcNoteEvent x) -> x.initStartABCMicros)
+                .thenComparingInt(x -> x.note.id));
+
+        int released = 0, steps = 0, small = 0, wide = 0;
+        long spanMicros = byOnset.getLast().initStartABCMicros - byOnset.getFirst().initStartABCMicros;
+        boolean allShort = true;
+
+        for (int i = 0; i < byOnset.size(); i++) {
+            AbcNoteEvent a = byOnset.get(i);
+            if (a.initEndABCMicros - a.initStartABCMicros >= minimumMicros) allShort = false;
+
+            // Compare with the next note that starts later, skipping chord-mates at the same onset.
+            AbcNoteEvent b = null;
+            for (int j = i + 1; j < byOnset.size(); j++) {
+                if (byOnset.get(j).initStartABCMicros > a.initStartABCMicros) { b = byOnset.get(j); break; }
+            }
+            if (b == null) break;
+
+            steps++;
+            if (a.initEndABCMicros <= b.initStartABCMicros + minimumMicros / 12) released++;
+            int interval = Math.abs(b.note.id - a.note.id);
+            if (interval >= 1 && interval <= 2) small++; else if (interval >= 3) wide++;
+        }
+
+        boolean strum = released == 0 && wide > small;
+        boolean run   = released == steps || small > wide;
+        GRID_STATS.stackedFigure(byOnset.size(), spanMicros, strum, run, allShort,
+                part.getInstrument().isPercussion, statsLabel(part), gp.micros());
+    }
 }

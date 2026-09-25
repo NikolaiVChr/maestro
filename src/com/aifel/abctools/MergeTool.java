@@ -33,9 +33,9 @@ import javax.swing.filechooser.FileSystemView;
 import com.aifel.abctools.AbcTools.AbcFileFilter;
 
 import com.digero.common.abc.LotroInstrument;
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.SynthesizerFactory;
 import com.digero.common.util.Util;
-import com.digero.common.view.UIText;
 
 public class MergeTool {
 	private static final Logger log = Logger.getLogger("util");

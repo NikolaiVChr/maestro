@@ -46,7 +46,7 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 			MiscSettings miscSettings, boolean oldVelocities, boolean ignoreMidiText, int usingNewMidiLayout)
 			throws InvalidMidiDataException {
 		this.sequenceInfo = parent;
-		// TempoCache tempoCache = new TempoCache(parent.getSequence());
+		// SequencerWrapper.TempoCacheSlow tempoCache = new SequencerWrapper.TempoCacheSlow(parent.getSequence());
 		this.trackNumber = trackNumber;
 
 
@@ -403,7 +403,7 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 			// All bent notes that span more than an octave (or whatever the option is set to)
             // will already here be split into small pieces.
 			if (Math.abs(be.getMaxBend() - be.getMinBend()) > miscSettings.maxRangeForNewBendMethod) {
-				List<MidiNoteEvent> prematureSplit = be.split();
+				List<MidiNoteEvent> prematureSplit = be.split(parent.getFileName()+", track "+trackNumber);
 				noteEvents.addAll(prematureSplit);
                 toBeRemoved.add(be);
 			} else {
@@ -534,6 +534,9 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 		return getEventCount() + " notes";
 	}
 
+	/**
+	 * @return A string containing the names of the instruments used in this track, separated by commas.
+	 */
 	@Override
 	public String getInstrumentNames() {
 		if (isDrumTrack) {
@@ -603,6 +606,9 @@ public class TrackInfo implements MidiConstants, GenericTrackInfo {
 		return instruments.size();
 	}
 
+	/**
+	 * @return Number of instrument voices used in this track
+	 */
 	@Override
 	public int getInstrumentExCount() {
 		return instrumentExtensions.size();

@@ -1,5 +1,6 @@
 package com.digero.maestro.view;
 
+import com.digero.common.midi.*;
 import com.digero.maestro.abc.*;
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
@@ -18,13 +19,7 @@ import java.util.logging.Logger;
 import javax.swing.*;
 
 import com.digero.common.abc.LotroInstrument;
-import com.digero.common.midi.MidiDrum;
-import com.digero.common.midi.MidiDrumExtended;
-import com.digero.common.midi.Note;
-import com.digero.common.midi.NoteFilterSequencerWrapper;
-import com.digero.common.midi.SequencerEvent;
 import com.digero.common.midi.SequencerEvent.SequencerProperty;
-import com.digero.common.midi.SequencerWrapper;
 import com.digero.common.util.ICompileConstants;
 import com.digero.common.util.IDiscardable;
 import com.digero.common.util.Listener;
@@ -115,13 +110,20 @@ public class DrumPanel extends JPanel implements ArrangementViewItem, IDiscardab
 		checkBox.setOpaque(false);
 
 		String title = trackInfo.getTrackNumber() + ". " + trackInfo.getName();
-		String instr;
+		String instr = null;
 		if (info.isDrumTrack()) {
 			if (trackInfo.getInstrumentExCount() == 1) {
 				String kit = trackInfo.getInstrumentNames();
 				instr = MidiDrumExtended.getInstance().fromId(drumId, kit, info.getSequenceInfo().standard);
 			} else {
-				instr = MidiDrum.fromId(drumId).name;
+				// More than one kit, so we just return standard kit hit name
+				String kit = MidiInstrument.STANDARD_DRUM_KIT;
+				if (info.getSequenceInfo().standard == MidiStandard.GS || info.getSequenceInfo().standard == MidiStandard.XG || info.getSequenceInfo().standard == MidiStandard.GM2) {
+					kit = info.getSequenceInfo().standard.shortName + " " + kit;
+					instr = MidiDrumExtended.getInstance().fromId(drumId, kit, info.getSequenceInfo().standard);
+				}
+				if (instr == null)
+					instr = MidiDrum.fromId(drumId).name;
 			}
 		} else {
 			instr = Note.fromId(drumNoteId).abc;

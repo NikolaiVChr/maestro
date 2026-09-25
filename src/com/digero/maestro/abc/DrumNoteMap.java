@@ -474,7 +474,6 @@ public class DrumNoteMap implements IDiscardable {
 
 	/**
 	 * Get the last warnings encountered when loading a drummap from XML.
-	 * Not used yet.
 	 */
 	public List<String> getLastLoadCombiWarnings() {
 		return lastLoadCombiWarnings;

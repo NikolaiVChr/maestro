@@ -26,10 +26,10 @@ import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.MidiInstrument;
 import com.digero.common.midi.Note;
 import com.digero.common.util.Pair;
-import com.digero.common.view.UIText;
 import com.digero.maestro.abc.LotroCombiDrumInfo;
 
 @SuppressWarnings("HardCodedStringLiteral")
@@ -56,7 +56,7 @@ public enum LotroInstrument
 	TRAVELLERS_TRUSTY_FIDDLE ( "Traveller's Trusty Fiddle", false, "common.instrument.ttf",
             MidiInstrument.PIZZICATO_STRINGS,    1,      false,    -3.0f,
             "Travell?er'?s? (Trusty)? Fiddle", "Trusty Fiddle", "TT Fiddle",
-            "(fidèle)? violon (de)? voyageur", "violon v", "TTF", "geige des reisenden", "geige dr"),
+            "(fidèle)? violon (de)? voyageur", "violon v", "TTF", "geige des reisenden", "geige dr", "travel fiddle"),
     JAUNTY_HAND_KNELLS       ( "Jaunty Hand-knells",        false, "common.instrument.jauntyknells",
             MidiInstrument.GLOCKENSPIEL,         3,      false,     2.0f,
             "Hand-? knells", "Jaunty", "(Jaunty)? (Hand)?-?knells?", "JAUNTY_HAND_KNELLS", "JHK",

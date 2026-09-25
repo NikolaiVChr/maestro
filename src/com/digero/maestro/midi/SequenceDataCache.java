@@ -691,6 +691,9 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 			// No voice changes yet on this channel, return default.
 			// TODO: Should we instead set LMB, LSB and patch to zero and let fromId handle it?
 			if (drumKit) {
+				if (MidiStandard.GS == standard) return MidiStandard.GS.shortName+" "+MidiInstrument.STANDARD_DRUM_KIT;
+				if (MidiStandard.XG == standard) return MidiStandard.XG.shortName+" "+MidiInstrument.STANDARD_DRUM_KIT;
+				if (MidiStandard.GM2 == standard) return MidiStandard.GM2.shortName+" "+MidiInstrument.STANDARD_DRUM_KIT;
 				return MidiInstrument.STANDARD_DRUM_KIT;
 			} else {
 				return MidiInstrument.PIANO.toString();

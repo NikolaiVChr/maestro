@@ -168,7 +168,9 @@ public class TimingInfo {
      * Used to make preview midi.
      */
 	public int getExportTempoMPQ() {
-		return tempoMPQ * origTempo/newTempo;
+		// to avoid overlow, do the calc with long
+		// It becomes a non-overflowed int as long as minTempo stays 5 bpm, so don't lower it.
+		return (int) ((long) tempoMPQ * origTempo / newTempo);
 	}
 
 	public int getExportTempoBPM() {

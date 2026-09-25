@@ -29,17 +29,14 @@ import com.digero.common.abc.StringCleaner;
 import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.abctomidi.AbcToMidi;
 import com.digero.common.abctomidi.FileAndData;
+import com.digero.common.i18n.UIText;
 import com.digero.common.util.ExtensionFileFilter;
 import com.digero.common.util.LotroFileParseException;
 import com.digero.common.util.FileParseException;
 import com.digero.common.util.Util;
 import com.digero.common.util.WarningHandler;
-import com.digero.common.view.UIText;
 import com.digero.maestro.MaestroMain;
-import com.digero.maestro.abc.AbcSong;
-import com.digero.maestro.abc.ExportFilenameTemplate;
-import com.digero.maestro.abc.PartAutoNumberer;
-import com.digero.maestro.abc.PartNameTemplate;
+import com.digero.maestro.abc.*;
 import com.digero.maestro.midi.Chord;
 import com.digero.maestro.util.FileResolver;
 import com.digero.maestro.util.XmlUtil;
@@ -72,6 +69,7 @@ public class AutoExporter implements WarningHandler {
 	private final Object txtFieldMutex = new Object();
 
     private final List<File> skippedProjects = Collections.synchronizedList(new ArrayList<>());
+	private final List<File> polyExceededProjects = Collections.synchronizedList(new ArrayList<>());
     //private List<File> highCandidates = new ArrayList<>();
     private final Object fileNamingLock = new Object();
 	private volatile int progressInt = 0;
@@ -276,6 +274,7 @@ public class AutoExporter implements WarningHandler {
         appendToField("<p></p>");
 
         skippedProjects.clear();
+		polyExceededProjects.clear();
         //highCandidates = new ArrayList<>();
 		setProgress(0);
 		cancel = false;
@@ -313,7 +312,10 @@ public class AutoExporter implements WarningHandler {
 
                         try {
                             // thread-safe
-                            exportProject(file.toFile());
+							ProjectInfo pInfo = exportProject(file.toFile());
+							if (pInfo.polyMaxExceeded) {
+								polyExceededProjects.add(file.toFile());
+							}
                         } catch (Throwable e) {
                             log.log(Level.WARNING, file.getFileName().toString(), e);
 
@@ -336,6 +338,12 @@ public class AutoExporter implements WarningHandler {
                 appendToField("<p><font color='orange'>" + f.getParent() + File.separator + f.getName()+"</font></p>");
             }
         }
+		if (!polyExceededProjects.isEmpty()) {
+			appendToField(UIText.get("abctools.p.p.p.0.poly.exceeded.project.files.p", polyExceededProjects.size()));
+			for (File f : polyExceededProjects) {
+				appendToField("<p><font color='red'>" + f.getParent() + File.separator + f.getName()+"</font></p>");
+			}
+		}
         /*
         if (!highCandidates.isEmpty()) {
             System.out.println("High candidates " + highCandidates.size() + " project files:");
@@ -351,6 +359,11 @@ public class AutoExporter implements WarningHandler {
 		} else {
 			appendToField(UIText.get("abctools.p.p.p.exports.cancelled.p"));
 			log.info("Auto exports cancelled");
+		}
+		if (AbcExporter.GRID_STATS_ENABLED) {
+			for (String line : AbcExporter.GRID_STATS.reportLines()) {
+				System.out.println(line);
+			}
 		}
         inProgress = false;
 		SwingUtilities.invokeLater(() -> {
@@ -445,9 +458,10 @@ public class AutoExporter implements WarningHandler {
         File oldMidi;
         File nestedProject;
         String appendText;
+		boolean polyMaxExceeded = false;
     }
 
-	private void exportProject(File project) throws Exception {
+	private ProjectInfo exportProject(File project) throws Exception {
         ProjectInfo pInfo = new ProjectInfo();
         pInfo.projectModified = false;
         pInfo.newNestedMidi = null;
@@ -473,30 +487,41 @@ public class AutoExporter implements WarningHandler {
 		boolean oldOrganic = abcSong.isOrganic();
 		boolean oldOrganic2 = abcSong.isOrganic2();
         boolean oldOrganic2v2 = abcSong.isUpgraded();
+		boolean oldSwing = abcSong.isTripletTiming();
+		boolean oldPrio = abcSong.isPriorityActive();
         Chord.CalcDynamics oldDyna = abcSong.dynamicsMethod;
+
+		boolean tmpMix = oldMix;
+		boolean tmpOrganic = oldOrganic;
+		boolean tmpOrganic2 = oldOrganic2;
+		boolean tmpOrganic2v2 = oldOrganic2v2;
+		boolean tmpSwing = oldSwing;
+		boolean tmpPrio = oldPrio;
+
         if (frame.getForceLegacyTimingSelected()) {
             if (oldMix || oldOrganic) timingModified = frame.getSaveMSXtimingSelected();
-            abcSong.setMixTiming(false);
-            abcSong.setOrganic(false);
+            tmpMix = false;
+            tmpOrganic = false;
         } else if (frame.getForceMixTimingSelected()) {
 			if (oldOrganic || !oldMix) timingModified = frame.getSaveMSXtimingSelected();
-			abcSong.setMixTiming(true);
-            abcSong.setOrganic(false);
+			tmpMix = true;
+			tmpOrganic = false;
 		} else if (frame.getForceOrganicSelected()) {
 			if (!oldOrganic || oldOrganic2) timingModified = frame.getSaveMSXtimingSelected();
-			abcSong.setOrganic(true);
-            abcSong.setOrganic2(false);
+			tmpOrganic = true;
+			tmpOrganic2 = false;
 		} else if (frame.getForceOrganic2Selected()) {
 			if (!oldOrganic || !oldOrganic2 || oldOrganic2v2) timingModified = frame.getSaveMSXtimingSelected();
-            abcSong.setOrganic(true);
-			abcSong.setOrganic2(true);
-            abcSong.setUpgraded(false);
+			tmpOrganic = true;
+			tmpOrganic2 = true;
+			tmpOrganic2v2 = false;
 		} else if (frame.getForceOrganic2v2Selected()) {
             if (!oldOrganic || !oldOrganic2 || !oldOrganic2v2) timingModified = frame.getSaveMSXtimingSelected();
-            abcSong.setOrganic(true);
-            abcSong.setOrganic2(true);
-            abcSong.setUpgraded(true);
+			tmpOrganic = true;
+			tmpOrganic2 = true;
+			tmpOrganic2v2 = true;
         }
+		abcSong.setTimings(tmpOrganic, tmpOrganic2, tmpMix, tmpSwing, tmpPrio, tmpOrganic2v2);
         if (frame.getForceVolumeMethodSelected()) {
             if (oldDyna != frame.getVolumeMethodSelected()) {
                 dynaModified = frame.isSaveMSXvolumeSelected();
@@ -557,7 +582,10 @@ public class AutoExporter implements WarningHandler {
         }
 
         try {
-            abcSong.exportAbc(exportFile, AbcTools.APP_NAME);
+            int polyMax = abcSong.exportAbc(exportFile, AbcTools.APP_NAME);
+			if (polyMax > PolyphonyHistogram.LOTRO_MAX) {
+				pInfo.polyMaxExceeded = true;
+			}
         } catch (Throwable t) {
             exportFile.delete();
             throw t;
@@ -571,10 +599,7 @@ public class AutoExporter implements WarningHandler {
 		
 		if (!frame.getSaveMSXtimingSelected()) {
 			// Don't save forced timing changes to project file
-			abcSong.setMixTiming(oldMix);
-			abcSong.setOrganic(oldOrganic);
-			abcSong.setOrganic2(oldOrganic2);
-            abcSong.setUpgraded(oldOrganic2v2);
+			abcSong.setTimings(oldOrganic, oldOrganic2, oldMix, oldSwing, oldPrio, oldOrganic2v2);
 		}
 
         if (!frame.isSaveMSXvolumeSelected()) {
@@ -618,6 +643,7 @@ public class AutoExporter implements WarningHandler {
 
         pInfo.appendText += UIText.get("abctools.p.nbsp.nbsp.as.0.p", exportFile.getName());
         appendToField(pInfo.appendText);
+		return pInfo;
 	}
 
 	/**

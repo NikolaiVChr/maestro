@@ -1,6 +1,8 @@
 package com.digero.maestro.abc;
 
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.xml.xpath.XPathExpressionException;
 
@@ -14,12 +16,15 @@ import com.digero.maestro.util.SaveUtil;
 public class AbcHelper {
 
 	static Integer[] matchNick(String nick, String title) {
-		if (title.contains(nick)) {
-			int startingPosition = title.indexOf(nick);
-			int endingPosition = startingPosition + nick.length();
-            return new Integer[]{ startingPosition, endingPosition };
-		}
-		return null;
+		if (nick == null || nick.isEmpty() || title == null)
+			return null;
+
+		Matcher m = Pattern.compile(Pattern.quote(nick),
+				Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE).matcher(title);
+		if (!m.find())
+			return null;
+
+		return new Integer[]{ m.start(), m.end() };
 	}
 
 	@SuppressWarnings("HardCodedStringLiteral")
@@ -42,8 +47,10 @@ public class AbcHelper {
 		ps.doubling[2] = SaveUtil.parseValue(sectionEle, "double1OctUp", false);
 		ps.doubling[3] = SaveUtil.parseValue(sectionEle, "double2OctUp", false);
 		ps.resetVelocities = SaveUtil.parseValue(sectionEle, "resetVelocities", false);
-		ps.fromPitch = Note.fromId(SaveUtil.parseValue(sectionEle, "fromPitch", Note.C0.id));
+		ps.fromPitch = Note.fromId(SaveUtil.parseValue(sectionEle, "fromPitch", AbcPart.minDefault.id));
+		if (ps.fromPitch == null) ps.fromPitch = AbcPart.minDefault;
 		ps.toPitch = Note.fromId(SaveUtil.parseValue(sectionEle, "toPitch", Note.MAX.id));
+		if (ps.toPitch == null) ps.toPitch = Note.MAX;
 		boolean fadeout = SaveUtil.parseValue(sectionEle, "fadeout", false);
 		int fade = SaveUtil.parseValue(sectionEle, "fade", 0);
 		if (fade != 0) {

@@ -33,9 +33,10 @@ import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
 import javax.xml.xpath.XPathExpressionException;
 
+import com.aifel.abctools.AbcTools;
+import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.VersionsWithIssues;
 import com.digero.common.util.*;
-import com.digero.common.view.UIText;
 import com.digero.maestro.view.*;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.Document;
@@ -46,6 +47,7 @@ import com.digero.common.abc.LotroInstrument;
 import com.digero.common.abc.StringCleaner;
 import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.abctomidi.AbcToMidi;
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.TimeSignature;
 import com.digero.maestro.MaestroMain;
@@ -61,14 +63,13 @@ import com.digero.maestro.util.FileResolver;
 import com.digero.maestro.util.ListModelWrapper;
 import com.digero.maestro.util.SaveUtil;
 import com.digero.maestro.util.XmlUtil;
-import com.digero.maestro.view.TimingMode;
 
 public class AbcSong implements IDiscardable, AbcMetadataSource {
 	protected static final Logger log = Logger.getLogger("song");
 	
 	public static final String MSX_FILE_DESCRIPTION = UIText.get("maestro.0.project", MaestroMain.APP_NAME);
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = UIText.get("maestro.0.projects", MaestroMain.APP_NAME);
-	public static final Version SONG_FILE_VERSION = new Version(4, 6, 23, 300);// Keep build above 117 to make earlier
+	public static final Version SONG_FILE_VERSION = new Version(4, 6, 26, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
 
@@ -97,7 +98,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private boolean organic = false;
 	private boolean organic2 = false;
     private boolean upgraded = false;
-	private int mixVersion = 2;// TODO: make UI?
+	private int singleStageVer = 2;// old projects default to 1, new projects use this. Not exposed in UI.
+	private int mixVersion = 2;// Not exposed in UI. Superior to 1, so always used.
+	private int mergeVersion = 2;// old projects default to 1, new projects use this. Not exposed in UI.
 	private boolean priorityActive = false;
 	private boolean skipSilenceAtStart = true;
 	private boolean deleteMinimalNotes = false;
@@ -154,6 +157,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
     private CountIn countIn = null;
 
 	private final LotroCombiDrumInfo combiInfo;
+
+	private boolean degraded = false;
 
     public AbcSong(File file, PartAutoNumberer partAutoNumberer, PartNameTemplate partNameTemplate,
 			ExportFilenameTemplate exportFilenameTemplate, InstrNameSettings instrNameSettings,
@@ -346,7 +351,30 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         note = "";
 	}
 
-	@SuppressWarnings("HardCodedStringLiteral")
+	/**
+	 * Initializes this song from a Maestro MSX project file.
+	 *
+	 * <p>The project XML is parsed, the referenced source MIDI or ABC file is loaded,
+	 * and the saved project settings, parts, tune sections, metadata, and other song
+	 * state are restored.
+	 *
+	 * <p>Project data may be interpreted differently depending on the saved file
+	 * version. Missing or invalid required values cause a {@link FileParseException}.
+	 * Warnings that do not prevent loading are delegated to the supplied
+	 * {@link WarningHandler}.
+	 *
+	 * @param file the MSX project file to load
+	 * @param fileResolver resolver used when a referenced source file cannot be found
+	 *                     or loaded
+	 * @param miscSettings settings used while loading the source MIDI or ABC file
+	 * @param calledFromTools whether the project is being loaded by a tool rather
+	 *                        than the normal Maestro UI
+	 * @param warningHandler handler for recoverable project warnings, or
+	 *                       {@code null} to use normal UI handling
+	 * @throws SAXException if the XML cannot be parsed
+	 * @throws IOException if the project file cannot be read
+	 * @throws FileParseException if the project contains invalid or unusable data
+	 */
 	private void initFromXml(File file, FileResolver fileResolver, MiscSettings miscSettings, boolean calledFromTools,
                              WarningHandler warningHandler)
 			throws SAXException, IOException, FileParseException {
@@ -358,7 +386,27 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				throw new FileParseException("Does not appear to be a valid Maestro file. Missing <song> root element.",
 						projectFile.getName());
 			}
-			Version fileVersion = SaveUtil.parseValue(songEle, "@fileVersion", SONG_FILE_VERSION);
+
+			// Parse the file version from the XML. This is used to check for compatibility with the current software version.
+			String fileVersionStr = SaveUtil.parseValue(songEle, "@fileVersion", (String) null);
+
+			Version fileVersion;
+
+			if (fileVersionStr == null) {
+				// If the file version is not specified, assume it is 2.5.0
+				fileVersion = new Version(2, 5, 0);
+			} else {
+				// Otherwise, parse the version from the XML string.
+				fileVersion = Version.parseVersion(fileVersionStr);
+
+				if (fileVersion == null) {
+					throw new FileParseException("Invalid file version \"" + fileVersionStr + "\"",
+					projectFile.getName(),
+					XmlUtil.getLineNumber(songEle));
+				}
+			}
+
+			
 
 			if (isFileNewer(fileVersion)) {
                 if (warningHandler != null) {
@@ -394,7 +442,11 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			sequenceInfo = null;
 			String name = sourceFile.getName().toLowerCase();
 			boolean isAbc = name.endsWith(Util.ABC_FILE_EXTENSION) || name.endsWith(Util.TXT_FILE_EXTENSION);
+			int attempts = 0;
 			while (sequenceInfo == null) {
+				if (++attempts > 20) {
+					throw new FileParseException("Gave up loading source file after " + (attempts - 1) + " attempts", name);
+				}
 				tryToLoadFromFile(fileResolver, isAbc, miscSettings, warningHandler);
 
 				if (newSourceFile == null)
@@ -456,11 +508,13 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			organic2 = SaveUtil.parseValue(songEle, "exportSettings/@organic-multi-stage", false);
             int orgVersion = SaveUtil.parseValue(songEle, "exportSettings/@organic-version", 1);
             if (organic && organic2) {
-                if (orgVersion == 2) upgraded = true;
-                else upgraded = false;
-            } else {
+				if (orgVersion == 2) upgraded = true;
+				else upgraded = false;
+			} else {
                 upgraded = false;
             }
+			mergeVersion = SaveUtil.parseValue(songEle, "exportSettings/@merge-version", 1);
+			singleStageVer = SaveUtil.parseValue(songEle, "exportSettings/@organic-singlestage-version", 1);
 			tripletTiming = SaveUtil.parseValue(songEle, "exportSettings/@tripletTiming", tripletTiming);
 
 			mixTiming = SaveUtil.parseValue(songEle, "exportSettings/@mixTiming", false);// default false as old
@@ -479,9 +533,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 			priorityActive = SaveUtil.parseValue(songEle, "exportSettings/@combinePriorities", false);
 
-			handleTuneSections(songEle, fileVersion);
+			handleTuneSections(songEle, fileVersion, file.getName());
 
-			loadPartsFromXML(songEle, fileVersion, sorted);
+			loadPartsFromXML(songEle, fileVersion, sorted, warningHandler, file.getName());
 
 			Version def = new Version(0,0,0);
 			Version maestroVersion = SaveUtil.parseValue(songEle, "@maestroVersion", def);
@@ -559,11 +613,22 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 					JOptionPane.showMessageDialog(null, message,
 							UIText.get("maestro.warning.combi.degraded.full"), JOptionPane.WARNING_MESSAGE);
 				}
+				degraded = true;
 			}
 		} catch (XPathExpressionException e) {
 			log.log(Level.SEVERE, "XPath error", e);
 			throw new FileParseException("XPath error: " + e.getMessage(), file == null?null:file.getName());
 		}
+	}
+
+	/**
+	 * If the project msx had some drum combos that there was not room to put
+	 * into the combo library, then the song is degraded.
+	 *
+	 * Be careful about saving a degraded project, its combos that were not loaded will be lost forever.
+	 */
+	public boolean isDegraded() {
+		return degraded;
 	}
 
 	private boolean isFileNewer(Version fileVersion) {
@@ -663,7 +728,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	 *
      */
 	@SuppressWarnings("HardCodedStringLiteral")
-	private void handleTuneSections(Element songElement, Version fileVersion) throws XPathExpressionException, FileParseException {
+	private void handleTuneSections(Element songElement, Version fileVersion, String filename) throws XPathExpressionException, FileParseException {
 		float lastEnd = 0;
 		for (Element tuneEle : XmlUtil.selectElements(songElement, "tuneSection")) {
 			TuneLine tl = new TuneLine();
@@ -694,7 +759,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			}
 		}
         if (lastEnd > 200_000f) { // Limit to 200k bars to prevent OOM
-            log.warning("Tune section endBar too large: " + lastEnd + ". Clamping to 200,000.");
+            log.warning(filename+": Tune section endBar too large: " + lastEnd + ". Clamping to 200,000.");
             lastEnd = 200_000f;
         }
 		boolean[] booleanArray = new boolean[(int)(lastEnd) + 1];
@@ -710,10 +775,10 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	}
 
 	@SuppressWarnings("HardCodedStringLiteral")
-	private void loadPartsFromXML(Element songEle, Version fileVersion, boolean autoSorted)
+	private void loadPartsFromXML(Element songEle, Version fileVersion, boolean autoSorted, WarningHandler warningHandler, String filename)
 			throws XPathExpressionException, FileParseException {
 		for (Element ele : XmlUtil.selectElements(songEle, "part")) {
-			AbcPart part = AbcPart.loadFromXml(this, ele, fileVersion);
+			AbcPart part = AbcPart.loadFromXml(this, ele, fileVersion, warningHandler, filename);
 			
 			parts.add(part);
 			part.convertSectionsToLongTrees();
@@ -721,17 +786,22 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		}
 		// Since parts with zero part numbers will be assigned 999,
 		// and 999 could be assigned already, we iterate till we find a free number:
-		Set<Integer> pNumbers = new HashSet<>();
-		for (AbcPart part : parts) {
-			int pN = part.getPartNumber();
-			while (pNumbers.contains(pN)) {
-				pN--;
-				if (pN < 1) {
-					throw new RuntimeException("Part number error");
+		suppressPartSort = true;
+		try {
+			Set<Integer> pNumbers = new HashSet<>();
+			for (AbcPart part : parts) {
+				int pN = part.getPartNumber();
+				while (pNumbers.contains(pN)) {
+					pN--;
+					if (pN < 1) {
+						throw new RuntimeException("Part number error");
+					}
+					part.setPartNumber(pN);
 				}
-				part.setPartNumber(pN);
+				pNumbers.add(pN);
 			}
-			pNumbers.add(pN);
+		} finally {
+			suppressPartSort = false;
 		}
         partAutoNumberer.assignManualPartNumber(parts);// convert all null values to booleans.
 		if (autoSorted) {
@@ -858,9 +928,12 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		exportSettingsEle.setAttribute("mixTiming", String.valueOf(mixTiming));
 		exportSettingsEle.setAttribute("organic", String.valueOf(organic));
 		exportSettingsEle.setAttribute("organic-multi-stage", String.valueOf(organic2));
-        if (organic && organic2 && upgraded) {
-            exportSettingsEle.setAttribute("organic-version", String.valueOf(2));
+        if (organic && organic2) {
+            exportSettingsEle.setAttribute("organic-version", String.valueOf(upgraded?2:1));
         }
+		exportSettingsEle.setAttribute("organic-singlestage-version", String.valueOf(singleStageVer));
+		exportSettingsEle.setAttribute("merge-version", String.valueOf(mergeVersion));
+
 		if (mixTiming) {
 			exportSettingsEle.setAttribute("combinePriorities", String.valueOf(priorityActive));
 			// exportSettingsEle.setAttribute("mixVersion", String.valueOf(mixVersion));
@@ -896,7 +969,11 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		}
 	}
 
-	public void exportAbc(File exportFile, String appName) throws IOException, AbcConversionException {
+	/**
+	 *
+	 * @return polyphony max if called by AutoExporter
+	 */
+	public int exportAbc(File exportFile, String appName) throws IOException, AbcConversionException {
 		boolean delayEnabled = false;
 		int minDelay = 0;
 		for (AbcPart part : parts) {
@@ -908,10 +985,15 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			}
 		}
 		try (FileOutputStream out = new FileOutputStream(exportFile)) {
-			getAbcExporter().exportToAbc(out, delayEnabled, appName, minDelay);
+			PolyphonyHistogram poly = getAbcExporter().exportToAbc(out, delayEnabled, appName, minDelay);
 			if (firstExportTime == null) firstExportTime = new Date();
+			if (appName.contains(AbcTools.APP_NAME)) {
+				poly.sumUp(this);
+				return poly.maxAll();
+			}
 		}
         setFileMetadata(exportFile.toPath(), appName);
+		return -1;
 	}
 
     /**
@@ -1033,7 +1115,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 	public void setMood(String mood) {
 		mood = Util.emptyIfNull(mood);
-		if (!this.genre.equals(mood)) {
+		if (!this.mood.equals(mood)) {
 			this.mood = mood;
 			fireChangeEvent(AbcSongProperty.MOOD);
 		}
@@ -1159,6 +1241,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			this.tempoFactor = tempoFactor;
 			this.newTempo = newTempo;
 			this.origTempo = origTempo;
+			setMixDirty(true);
 			fireChangeEvent(AbcSongProperty.TEMPO_FACTOR);
 		}
 	}
@@ -1233,26 +1316,34 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		return mixVersion;
 	}
 
-	public void setMixTiming(boolean mixTiming) {
-		if (this.mixTiming != mixTiming) {
-			this.mixTiming = mixTiming;
-			fireChangeEvent(AbcSongProperty.MIX_TIMING);
-            fireChangeEvent(AbcSongProperty.TIMINGS_MULTI);
-		}
+	public boolean isPriorityActive() {
+		return priorityActive;
 	}
 
+	public boolean isOrganic() {
+		return organic;
+	}
+
+	/**
+	 * @return true if multistage enabled, organic also.
+	 */
+	public boolean isOrganic2() {
+		return organic2;
+	}
+
+	/**
+	 * @return true if multistage 2 enabled, requires organic2 and organic also.
+	 */
+	public boolean isUpgraded() {
+		return upgraded;
+	}
+
+	/**
+	 * Keep this for future use.
+	 */
 	public void setMixVersion(int mixVersion) {
 		if (this.mixVersion != mixVersion) {
 			this.mixVersion = mixVersion;
-			fireChangeEvent(AbcSongProperty.MIX_TIMING);// We can use same event as for mixtiming
-            fireChangeEvent(AbcSongProperty.TIMINGS_MULTI);
-		}
-	}
-
-	public void setTripletTiming(boolean tripletTiming) {
-		if (this.tripletTiming != tripletTiming) {
-			this.tripletTiming = tripletTiming;
-			fireChangeEvent(AbcSongProperty.TRIPLET_TIMING);
             fireChangeEvent(AbcSongProperty.TIMINGS_MULTI);
 		}
 	}
@@ -1266,37 +1357,31 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         boolean changed = false;
         if (this.tripletTiming != swing) {
             this.tripletTiming = swing;
-            fireChangeEvent(AbcSongProperty.TRIPLET_TIMING);
+			setMixDirty(true);
             changed = true;
         }
         if (this.mixTiming != mix) {
             this.mixTiming = mix;
-            fireChangeEvent(AbcSongProperty.MIX_TIMING);
+			setMixDirty(true);
             changed = true;
         }
         if (this.priorityActive != prio) {
             setMixDirty(true);
             this.priorityActive = prio;
-            fireChangeEvent(AbcSongProperty.MIX_TIMING_COMBINE_PRIORITIES);
             changed = true;
         }
-        boolean orgChanged = false;
         if (organic != org) {
             organic = org;
-            orgChanged = true;
             changed = true;
         }
         if (organic2 != org2) {
             organic2 = org2;
-            orgChanged = true;
             changed = true;
         }
         if (upgraded != upgr) {
             upgraded = upgr;
-            orgChanged = true;
             changed = true;
         }
-        if (orgChanged) fireChangeEvent(AbcSongProperty.ORGANIC);
         if (changed) fireChangeEvent(AbcSongProperty.TIMINGS_MULTI);
     }
 
@@ -1516,6 +1601,12 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         if (abcExporter.isUpgraded() != upgraded)
             abcExporter.setUpgraded(upgraded);
 
+		if (abcExporter.getSingleStageVer() != singleStageVer)
+			abcExporter.setSingleStageVer(singleStageVer);
+
+		if (abcExporter.getMergeVersion() != mergeVersion)
+			abcExporter.setMergeVersion(mergeVersion);
+
         // from settings:
 
         if (abcExporter.isSkipSilenceAtStart() != skipSilenceAtStart)
@@ -1617,64 +1708,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			}
 		}
 	}
-
-	public boolean isPriorityActive() {
-		return priorityActive;
-	}
-
-	public void setPriorityActive(boolean priorityActive) {
-		if (this.priorityActive != priorityActive) {
-			setMixDirty(true);
-			this.priorityActive = priorityActive;
-			fireChangeEvent(AbcSongProperty.MIX_TIMING_COMBINE_PRIORITIES);
-            fireChangeEvent(AbcSongProperty.TIMINGS_MULTI);
-		}
-	}
-	
-	public void setOrganic(boolean org) {
-		if (organic != org) {
-			organic = org;
-			fireChangeEvent(AbcSongProperty.ORGANIC);
-            fireChangeEvent(AbcSongProperty.TIMINGS_MULTI);
-		}
-	}
-	
-	/**
-	 * Set if multistage should be used when organic is enabled
-	 * 
-	 * @param multistage boolean for multistage
-	 */
-	public void setOrganic2(boolean multistage) {
-		if (organic2 != multistage) {
-			organic2 = multistage;
-			fireChangeEvent(AbcSongProperty.ORGANIC);
-            fireChangeEvent(AbcSongProperty.TIMINGS_MULTI);
-		}
-	}
-	
-	public boolean isOrganic() {
-		return organic;		
-	}
-	
-	/**
-	 * 
-	 * @return true if multistage enabled
-	 */
-	public boolean isOrganic2() {
-		return organic2;		
-	}
-
-    public boolean isUpgraded() {
-        return upgraded;
-    }
-
-    public void setUpgraded(boolean upgr) {
-        if (upgraded != upgr) {
-            upgraded = upgr;
-            fireChangeEvent(AbcSongProperty.ORGANIC);
-            fireChangeEvent(AbcSongProperty.TIMINGS_MULTI);
-        }
-    }
 
     public String getStats() {
         String str = "";
@@ -1804,6 +1837,10 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		return instrNameSettings;
 	}
 
+	/**
+	 *
+	 * @return true if QuantizedTimingInfo needs to be regenerated.
+	 */
 	public boolean isMixDirty() {
 		return mixDirty;
 	}
@@ -1822,6 +1859,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
     public void setUsingOldTempos(boolean onlyFirstTrackTempos) {
         usingOldTempos = onlyFirstTrackTempos;
+		setMixDirty(true);
     }
 	
 	public QuantizedTimingInfo getQTM() {
@@ -1873,7 +1911,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	 * Only used by abc tools
 	 */
 	public int getMaxPartPoly() {
-		int poly = 6;
+		int poly = AbcConstants.MAX_CHORD_NOTES;
 		for (AbcPart part : parts) {
 			if (part.getMaxPoly() > poly) {
 				poly = part.getMaxPoly();
@@ -1893,7 +1931,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         for(AbcPart part : parts) {
             if (part.getEnabledTrackCount() == 0) continue;
             if (part.getDelay() != 0) return true;
-            if (part.getNoteMax() != 6) return true;
+            if (part.getNoteMax() != AbcConstants.MAX_CHORD_NOTES) return true;
             if (badger && part.getBadgerPrio() != AbcPart.badgerPrioHighest) return true;
             if (part.conclusionFermata != 0) return true;
         }
@@ -2013,6 +2051,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         this.newSourceFile = other.newSourceFile;
         this.allPans = other.allPans;//pointer copy
         this.upgraded = other.upgraded;
+		this.singleStageVer = other.singleStageVer;
 
         // read-only/shared services.
         this.sequenceInfo = other.sequenceInfo;// lets assume the midi don't change while we work, then this is immutable
@@ -2029,7 +2068,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         // objects that needs to be generated by worker or here
         this.listeners = new ListenerList<>();
         this.abcExporter = null; // Will be regenerated by the worker
-        this.mixDirty = true; // Force regeneration
+        this.mixDirty = true; // Force regeneration of QTM
 
         // Deep Copies
 		this.combiInfo = new LotroCombiDrumInfo(other.combiInfo);
@@ -2059,7 +2098,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         }
 
         // Fields not needed by worker
-        this.projectFile = null;
+        this.projectFile = other.projectFile;// needed by STATS in abcexporter
         this.exportFile = null;
 
         this.origSong = other;

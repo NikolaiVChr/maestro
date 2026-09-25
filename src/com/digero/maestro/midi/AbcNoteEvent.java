@@ -28,7 +28,13 @@ public class AbcNoteEvent extends NoteEvent {
 	public long continues = 0;// Tick length that this continues as in seperate split note(s). Beyond ties.
 	private Integer origBend = null;// The bend that was in effect when this noteEvent was 'born'. Its used only by pruning algorithm.
 	//public float fromHowManyTracks = 1.0f;// Let pruning system know this note originate from multiple tracks, so it can be prioritized.
-	
+
+	/**
+	 * Set by the thinning multistage 2 pre-pass on notes it kept from a run. Such a note is short but it is
+	 * not an ornament, it is a step in a figure, so the grid must not give it grace weight,
+	 * which would let it bounce backward out of position past unrelated material.
+	 */
+	public boolean notGrace = false;
 
 	public AbcNoteEvent(Note note, int velocity, long startTick, long endTick, ITempoCache tempoCache, MidiNoteEvent origNote) {
 		super(note, velocity, startTick, endTick, tempoCache);
@@ -74,9 +80,19 @@ public class AbcNoteEvent extends NoteEvent {
 	 * Only called directly by multi-stage organic
 	 */
 	public AbcNoteEvent splitWithTieAtTick(long splitPointTick, long splitPointMicros) {
-		assert splitPointTick >= startTick:"split before beginning ("+splitPointTick+","+Util.formatDurationM(splitPointMicros)+") "+ this;
-		assert splitPointTick != startTick:"split at beginning ("+splitPointTick+","+Util.formatDurationM(splitPointMicros)+") "+ this;
-		assert splitPointTick < endTick:"split after end";
+		if (splitPointMicros == -1L) {
+			// Tick-domain caller (non-organic): ticks are authoritative.
+			assert splitPointTick >= startTick:"split before beginning ("+splitPointTick+","+Util.formatDurationM(splitPointMicros)+") "+ this;
+			assert splitPointTick != startTick:"split at beginning ("+splitPointTick+","+Util.formatDurationM(splitPointMicros)+") "+ this;
+			assert splitPointTick < endTick:"split after end";
+		} else {
+			// Micros-domain caller (organic): ticks are a lossy projection of micros, so a
+			// legal micros split point can violate the tick preconditions purely because
+			// microsToTick() collapsed both ends onto the same tick.
+			assert splitPointMicros > startABCMicros:"split at or before beginning ("+Util.formatDurationM(splitPointMicros)+") "+ this;
+			assert splitPointMicros < endABCMicros:"split at or after end ("+Util.formatDurationM(splitPointMicros)+") "+ this;
+		}
+
 
 		AbcNoteEvent next = new AbcNoteEvent(note, velocity, splitPointTick, endTick, tempoCache, this.origNote);
 		setEndTick(splitPointTick);
@@ -98,7 +114,10 @@ public class AbcNoteEvent extends NoteEvent {
 		next.continues = this.continues;
 		return next;
 	}
-	
+
+	/* Deliberately not implemented: chordifyOrganic and unmixRestAndNotes rely on
+	 * List.remove/indexOf matching by identity. Two segments can agree on tick range,
+	 * pitch and velocity, so value equality would make them remove the wrong element. */
 	/*@Override
 	public boolean equals(Object obj) {
 		if (obj instanceof AbcNoteEvent) {
@@ -142,6 +161,7 @@ public class AbcNoteEvent extends NoteEvent {
 	}
 	
 	public AbcNoteEvent copy() {
+		assert tiesFrom == null && tiesTo == null : "copy() of a tied note loses the tie: " + this;
 		if (this instanceof BentAbcNoteEvent) {
 			BentAbcNoteEvent c = new BentAbcNoteEvent(note, velocity, startTick, endTick, tempoCache, (BentMidiNoteEvent)(this.origNote));
 			if (origBend != null) c.setOrigBend(origBend);

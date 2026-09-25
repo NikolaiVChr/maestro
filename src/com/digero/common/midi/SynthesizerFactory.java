@@ -193,6 +193,24 @@ public class SynthesizerFactory {
 	}
 
 	public static final String customMidiSoundfontFilename = "midi.sf2";
+
+	/**
+	 * Cheap check
+	 */
+	public static boolean customSoundbankFileExists() {
+		if (customMidisynth != null || customSoundfont != null)
+			return true;
+		try {
+			File dataDir = getCommonDataDirectory();
+			if (dataDir == null)
+				return false;
+			return new File(dataDir, customMidiSoundfontFilename).exists();
+		} catch (Throwable t) {
+			log.log(Level.WARNING, "Failed to check for custom midi SF2 soundbank", t);
+			return false;
+		}
+	}
+
 	public static Soundbank getCustomSoundbank() throws InvalidMidiDataException, IOException {
 		if (customSoundfont == null) {
 			try {

@@ -34,7 +34,7 @@ public class SaveAndExportSettings {
 		// showPruned = prefs.getBoolean("showPruned", showPruned);
 		convertABCStringsToBasicAscii = prefs.getBoolean("convertABCStringsToBasicAscii",
 				convertABCStringsToBasicAscii);
-        reducedFilesize = prefs.getBoolean("reducedFilesize", reducedFilesize);
+        reducedFilesize = false;//prefs.getBoolean("reducedFilesize", reducedFilesize);
 		countUpLyrics = prefs.getBoolean("countUpLyrics", countUpLyrics);
 		lyricsTimestampEveryLine = prefs.getBoolean("lyricsTimestampEveryLine", lyricsTimestampEveryLine);
 	}

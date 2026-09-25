@@ -1,6 +1,5 @@
 package com.digero.maestro.view;
 
-import com.digero.common.view.UIText;
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
 
@@ -16,6 +15,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.CompoundBorder;
 
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.MidiUtils;
 import com.digero.common.midi.Note;
 import com.digero.common.midi.SequencerEvent;
@@ -37,7 +37,6 @@ import com.digero.maestro.midi.SequenceDataCache.TempoEvent;
 import com.digero.maestro.midi.SequenceInfo;
 import com.digero.maestro.view.TrackPanel.TrackDimensions;
 
-@SuppressWarnings("serial")
 public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConstants, ArrangementViewItem {
 	// 0 1 2 3
 	// +---+-------------------+-----------+---------------------+
@@ -106,7 +105,7 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
 		tempoGraph.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, ColorTable.PANEL_BORDER_HORIZ.get()));
 		setBackground(ColorTable.TEMPO_BACKGROUND.get());
 
-		JLabel titleLabel = new JLabel(UIText.get("maestro.tempo"));
+		JLabel titleLabel = new JLabel(UIText.get("maestro.tempoGraph.tempo"));
 		titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 20, 0, 0));
 		titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD));
 		titleLabel.setForeground(ColorTable.PANEL_TEXT_DISABLED.get());
@@ -231,7 +230,6 @@ public class TempoPanel extends JPanel implements IDiscardable, TableLayoutConst
 	private int tempoToNoteId(int tempoMPQ, int minBPM, int maxBPM) {
 		int bpm = (int) Math.round(MidiUtils.convertTempo(tempoMPQ));
 
-        // TODO: abcSong.getAbcTimingInfo().multiplyByExportTempoFactor():
 		float tempoFactor = getCurrentTempoFactor();
 		minBPM = Math.round(minBPM * tempoFactor);
 		maxBPM = Math.round(maxBPM * tempoFactor);

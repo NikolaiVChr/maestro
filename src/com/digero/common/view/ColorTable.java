@@ -133,6 +133,10 @@ public enum ColorTable {
 	PANEL_TEXT_NO_PERCUSSION_MATCH(new Color(0x777777),
 			"Track title, not current part, drum track title if current instrument not percussion and vice versa"),
 
+	HOVER_ACCENT(new Color(255, 150, 20),
+			"Part highlight color in parts list when hover over track"),
+
+
 	/** Track panels background */
 	CENTER_BACKGROUND(GRAPH_BACKGROUND_DISABLED,
 			"Area under bottom track, and center area background in Maestro when no song is loaded."),

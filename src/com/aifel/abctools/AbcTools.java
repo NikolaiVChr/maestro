@@ -11,6 +11,8 @@ import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 import javax.swing.SwingUtilities;
 
+import com.digero.common.i18n.LocaleManager;
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.SynthesizerFactory;
 import com.digero.common.util.AppInfo;
 import com.digero.common.util.Logging;
@@ -40,6 +42,9 @@ public class AbcTools {
         AppInfo.APP_NAME = APP_NAME;
 		Logging.configure(APP_NAME);
 		log = Logger.getLogger("view");
+
+		LocaleManager.init();
+		UIText.init();
 
 		File sf2 = SoundFontDownloader.ensureSoundFontExists();
 

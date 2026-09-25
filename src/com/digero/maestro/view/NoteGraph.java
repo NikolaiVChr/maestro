@@ -28,6 +28,8 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
@@ -38,6 +40,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 
 import com.digero.common.abc.Dynamics;
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.ITempoCache;
 import com.digero.common.midi.Note;
 import com.digero.common.midi.SequencerEvent;
@@ -49,15 +52,14 @@ import com.digero.common.util.Pair;
 import com.digero.common.util.Util;
 import com.digero.common.view.BarNumberLabel;
 import com.digero.common.view.ColorTable;
-import com.digero.common.view.UIText;
 import com.digero.maestro.midi.BentMidiNoteEvent;
 import com.digero.maestro.midi.NoteEvent;
 import com.digero.maestro.midi.SequenceDataCache;
 import com.digero.maestro.midi.SequenceInfo;
 import com.digero.maestro.midi.TrackInfo;
 
-@SuppressWarnings("serial")
 public abstract class NoteGraph extends JPanel implements Listener<SequencerEvent>, IDiscardable {
+	protected static final Logger log = Logger.getLogger("view.noteGraph");
 	protected final SequencerWrapper sequencer;
 	protected SequenceInfo sequenceInfo;
 	protected TrackInfo trackInfo;
@@ -366,7 +368,11 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 
 			AffineTransform scrnXForm;
 			if (noteW <= 0 || scrnW <= 0 || scrnH <= 0) {
-				scrnXForm = new AffineTransform();
+				// The song doesn't seem to be loaded yet, we don't cache the transform
+				String tracker = trackInfo==null?"No track: ":trackInfo.getTrackNumber()+" ("+trackInfo.getName()+"): ";
+				log.warning(tracker+"NoteGraph transform could not be calculated. noteW=" + noteW+" scrnW="+scrnW+" scrnH="+scrnH+" class="+getClass().getName());
+				invalidateTransform();
+				return new AffineTransform();
 			} else {
 				scrnXForm = new AffineTransform(scrnW, 0, 0, scrnH, scrnX, scrnY);
 				try {
@@ -374,7 +380,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 					noteXForm.invert();
 					scrnXForm.concatenate(noteXForm);
 				} catch (NoninvertibleTransformException e) {
-					e.printStackTrace();
+					log.log(Level.SEVERE, "Notegraph transform could not be inverted", e);
 					scrnXForm.setToIdentity();
 				}
 			}
@@ -407,6 +413,11 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 
 	@Override
 	public void onEvent(SequencerEvent evt) {
+		if (getWidth() <= 0 || getHeight() <= 0) {
+			// DissonancePanel will get in here when not shown.
+			return;
+		}
+
 		if (evt.getProperty() == SequencerProperty.LENGTH) {
 			invalidateTransform();
 		}
@@ -492,11 +503,15 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 			case IS_LOADED:
 			case SEQUENCE:
 				invalidateNoteCache();
+				invalidateTransform();
 				repaint();
 				break;
 			case IS_RUNNING:
 			case LENGTH:
 			case TRACK_ACTIVE:
+			case SONG_ENDED:
+				repaint();
+				break;
 			default:
 				repaint();
 				break;
@@ -1027,7 +1042,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 				clipPosStart = (long) Math.floor(Math.min(leftPoint.x, rightPoint.x));
 				clipPosEnd = (long) Math.ceil(Math.max(leftPoint.x, rightPoint.x));
 			} catch (NoninvertibleTransformException e) {
-				e.printStackTrace();
+				log.log(Level.SEVERE, "Notegraph transform could not be inverted (clipbounds)", e);
 			}
 		}
 		//System.out.println(" clipPosStart="+Util.formatDuration(clipPosStart)+" clipPosEnd="+Util.formatDuration(clipPosEnd));
@@ -1366,7 +1381,7 @@ public abstract class NoteGraph extends JPanel implements Listener<SequencerEven
 					ret = sequencer.getLength() - 1;
 				return ret;
 			} catch (NoninvertibleTransformException e1) {
-				e1.printStackTrace();
+				log.log(Level.SEVERE, "Notegraph transform could not be inverted (mouse)", e1);
 				return 0;
 			}
 		}

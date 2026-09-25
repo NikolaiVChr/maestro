@@ -20,7 +20,7 @@ public class LotroDrumInfo extends LotroEventInfo<LotroDrumInfo> {
 	private static final Map<Integer, LotroDrumInfo> byId = new HashMap<>();
 	private static final SortedMap<String, SortedSet<LotroDrumInfo>> byCategory = new TreeMap<>();
 
-	public static final LotroDrumInfo DISABLED = new LotroDrumInfo(Note.REST, noneName, "#None");
+	public static final LotroDrumInfo DISABLED = new LotroDrumInfo(Note.REST, noneName, "#None", noneName);
 	public static final List<LotroDrumInfo> ALL_DRUMS;
 
 	static {
@@ -114,20 +114,24 @@ public class LotroDrumInfo extends LotroEventInfo<LotroDrumInfo> {
 			// add the "1" to the name of the existing element
 			Note prevNote = categorySet.first().note;
 			String prevName = category + " 1 (" + prevNote.abc + ")";
-			LotroDrumInfo prevInfo = new LotroDrumInfo(prevNote, prevName, category);
+			LotroDrumInfo prevInfo = new LotroDrumInfo(prevNote, prevName, category, category + " 1");
 			categorySet.clear();
 			categorySet.add(prevInfo);
 			byId.put(prevNote.id, prevInfo);
 		}
 
 		String name;
+		String nameMinimal;
+
 		if (categorySet.isEmpty()) {
 			// If this is the first item in the category, don't add its number to the list
 			name = category + " (" + note.abc + ")";
+			nameMinimal = category;
 		} else {
 			name = category + " " + (categorySet.size() + 1) + " (" + note.abc + ")";
+			nameMinimal = category + " " + (categorySet.size() + 1);
 		}
-		LotroDrumInfo info = new LotroDrumInfo(note, name, category);
+		LotroDrumInfo info = new LotroDrumInfo(note, name, category, nameMinimal);
 
 		categorySet.add(info);
 		byId.put(note.id, info);
@@ -167,11 +171,13 @@ public class LotroDrumInfo extends LotroEventInfo<LotroDrumInfo> {
 	public final Note note;
 	public final String name;
 	public final String category;
+	public final String nameMinimal;
 
-	private LotroDrumInfo(Note note, String name, String category) {
+	private LotroDrumInfo(Note note, String name, String category, String nameMinimal) {
 		this.note = note;
 		this.name = name;
 		this.category = category;
+		this.nameMinimal = nameMinimal;
 	}
 
     @Override

@@ -17,8 +17,8 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 
 import com.digero.common.abc.LotroInstrument;
+import com.digero.common.i18n.UIText;
 import com.digero.common.util.IDiscardable;
-import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcPartMetadataSource;
 

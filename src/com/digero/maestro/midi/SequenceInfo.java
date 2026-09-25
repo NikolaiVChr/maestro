@@ -320,7 +320,7 @@ public class SequenceInfo implements MidiConstants {
 						}
 					} else if (meta.getType() == META_PORT_NAME) {
 						byte[] data = meta.getData();
-						log.warning(fileName+": Named port " + new String(data));//abc tools also use this line, no icu in jar, so dont call charset analyser.
+						log.info(fileName+": Named port " + new String(data));//abc tools also use this line, no icu in jar, so dont call charset analyser.
 					}
 				}
 			}

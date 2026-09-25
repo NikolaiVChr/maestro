@@ -31,6 +31,7 @@ import javax.swing.JTextField;
 import javax.swing.border.Border;
 
 import com.digero.abcplayer.AbcPlayer;
+import com.digero.common.i18n.UIText;
 import com.digero.common.util.Util;
 
 @SuppressWarnings("serial")

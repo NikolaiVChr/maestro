@@ -108,7 +108,7 @@ public class BentMidiNoteEvent extends MidiNoteEvent {
      * notes that have a big pitch range.
      * Samples the pitch curve at ~25ms intervals, selecting the dominant pitch for each segment.
      */
-    public List<MidiNoteEvent> split() {
+    public List<MidiNoteEvent> split(String titleAndPart) {
         List<MidiNoteEvent> splits = new ArrayList<>();
 
         // Filters out high-frequency noise but preserves slides/runs for tempo slow-down.
@@ -158,7 +158,7 @@ public class BentMidiNoteEvent extends MidiNoteEvent {
                 // TODO: can happen with the midi WonderousStories.mid and Proud Mary
                 // possible solution: allow negative note ids for bent midi notes
                 // but its really a midi issue, so maybe its best we drop this entire bent note..
-				log.warning("Dropping entire bent note as it was bent out of range. note.id="+note.id+" bend="+dominantBend);
+				log.warning(titleAndPart+": Dropping entire bent note as it was bent out of range. note.id="+note.id+" bend="+dominantBend);
                 return new ArrayList<>();
             }
 

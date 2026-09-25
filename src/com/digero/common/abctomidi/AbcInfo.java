@@ -20,6 +20,7 @@ import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.AbcField;
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.abc.VersionsWithIssues;
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.IBarNumberCache;
 import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.TimeSignature;
@@ -27,7 +28,6 @@ import com.digero.common.util.AppInfo;
 import com.digero.common.util.FileParseException;
 import com.digero.common.util.Util;
 import com.digero.common.util.WarningHandler;
-import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcExporter;
 
 import javax.sound.midi.MidiEvent;

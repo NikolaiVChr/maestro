@@ -1,5 +1,6 @@
 package com.digero.maestro.view;
 
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.Note;
 import com.digero.common.midi.SequencerEvent;
 import com.digero.common.midi.SequencerWrapper;
@@ -7,7 +8,6 @@ import com.digero.common.util.IDiscardable;
 import com.digero.common.util.Listener;
 import com.digero.common.view.ColorTable;
 import com.digero.common.view.LeanJLabel;
-import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcSong;
 import com.digero.maestro.abc.DissonanceDetector;
 import com.digero.maestro.midi.FakeNoteEvent;
@@ -144,6 +144,8 @@ public class DissonancePanel extends JPanel implements IDiscardable, TableLayout
 			sequencer.removeChangeListener(sequencerListener);
 		if (abcSequencer != null)
 			abcSequencer.removeChangeListener(sequencerListener);
+		if (dissoGraph != null)
+			dissoGraph.discard();
 	}
 
     public void setShowPanel(boolean show) {
@@ -206,7 +208,15 @@ public class DissonancePanel extends JPanel implements IDiscardable, TableLayout
 
 		// See HistogramPanel: dissoGraph region-repaints itself for POSITION via
 		// NoteGraph.onEvent; only full-repaint on the rarer structural events.
-		if (p != SequencerEvent.SequencerProperty.POSITION && p != SequencerEvent.SequencerProperty.DRAG_POSITION) {
+		if (p == SequencerEvent.SequencerProperty.TRACK_ACTIVE) {
+			if(dissonanceDetector != null) dissonanceDetector.setDirty();
+			// Rebuild now: repaint() only queues, and updateCountLabel() below calls
+			// get()/max(), which run analyze() and clear the dirty flag. By paint time
+			// getEvents() would see isDirty()==false and keep the stale event list.
+			dissoGraph.recalcPolyphonyEvents();
+			dissoGraph.invalidateNoteCache();
+			dissoGraph.repaint();
+		} else if (p != SequencerEvent.SequencerProperty.POSITION && p != SequencerEvent.SequencerProperty.DRAG_POSITION) {
 			dissoGraph.repaint();
 		}
 		updateCountLabel();

@@ -58,14 +58,34 @@ Release notes after 4.6.21 should be in markdown format. Keep the version header
 This changelog is only partial, to see all the way back to v1.0.0 go here:
   https://maestro.miraheze.org/wiki/Version_history
 
-Version 4.6.24
-* Added support for custom drum combos in drum-maps. Maestro can hold 79, but if loading a project and maestro is full, project will be degraded. Recommend to never exceed 70 combos.
+Version 4.7.3
+* When loading projects, the project version number and xml version number is now checked for errors.
+* Maestro and Abc Player will now warn if a part is too large for lotro.
+
+Version 4.7.2
+* Make Windows midi system able to playback GS midi more reliable.
+* When having a project open and in abc preview mode, and then loading a midi, the tracks could be grey until part changes were made.
+
+Version 4.7.1
+* Fix that when making or deleting a new part, it would reset playback of midi when abc preview was not available yet.
+
+Version 4.7.0
+* Significant less CPU usage during audio playback on some PCs.
+* Faster startup of Maestro if custom soundfont is installed, but not selected.
+* Allow part delay to be negative.
+* Highlight connected parts when hover over note tracks.
+* Added support for custom drum combos in drum-maps. Maestro can hold 79, but if loading a project and maestro is full, the project will be degraded. Recommend to never exceed 70 combos.
 * Added editor for custom drum combos, up to 79. Access it in the drum-map menu. It will stop preview playback, but will allow midi playback to continue.
-* Better simulate lotro not stopping samples that already are running, so a series of fast lute note with same pitch will now allow the previous to keep playing at full volume till their sample ends. This requires an updated soundfont that will download first time this version is ran.
-* Significant less CPU usage during audio playback.
+* Better simulate lotro not stopping samples that already are running, so e.g. a series of fast lute note with same pitch will now allow the previous to keep playing at full volume till their sample ends. This requires an updated soundfont that will download first time this version is ran.
 * Fix that when skipping in song, the highlighted current notes could stay highlighted, even though the song was now having new position.
 * Added TR-808 and TR-909 drum kit hit names.
-* Allow part delay to be negative.
+* Minor timing improvement to organic single-stage.
+* Organic multi-stage 2 improved.
+* The Auto-exporter now lists projects with too high polyphony for Lotro. Remember, changes to organic between Maestro versions can increase the count.
+* For newly created projects, minor volume improvement sometimes when merging multiple tracks into same abc part.
+* Removed the option to reduce abc filesize.
+* Improved dissonance graph.
+* Fixed a bug in multi-stage 2, where a plucked note could be restarted after it had ended. Also cause of polyphony graph giving counter-intuitive output.
 
 Version 4.6.22
 * Downloads of the apps are now found on github. [https://github.com/NikolaiVChr/maestro/releases](https://github.com/NikolaiVChr/maestro/releases)

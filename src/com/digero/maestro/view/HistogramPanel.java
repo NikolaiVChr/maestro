@@ -1,6 +1,5 @@
 package com.digero.maestro.view;
 
-import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcPart;
 import info.clearthought.layout.TableLayout;
 import info.clearthought.layout.TableLayoutConstants;
@@ -18,6 +17,7 @@ import java.util.Map.Entry;
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.Note;
 import com.digero.common.midi.SequencerEvent;
 import com.digero.common.midi.SequencerWrapper;
@@ -50,7 +50,7 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 	
 	public static final int CLIP_MAX_NOTES = 80;// Show from 0 to 80 notes
 	public static final int ORANGE_NOTES   = 45;// Over or equal to 45 and they go orange color. The limit is 64, but emotes and dances also fill.
-	public static final int RED_NOTES      = 64;//Over or equal to 64, notes become red.
+	public static final int RED_NOTES      = PolyphonyHistogram.LOTRO_MAX;//Over or equal to 64, notes become red.
 	static final int EXTRA_COUNT_COLUMN_WIDTH = 50;
 	static final int HISTOGRAM_HEIGHT = 64;
 
@@ -152,6 +152,8 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
 			sequencer.removeChangeListener(sequencerListener);
 		if (abcSequencer != null)
 			abcSequencer.removeChangeListener(sequencerListener);
+        if (histoGraph != null)
+            histoGraph.discard();
 	}
 
     public void setShowPanel(boolean show) {
@@ -227,7 +229,15 @@ public class HistogramPanel extends JPanel implements IDiscardable, TableLayoutC
         // POSITION/DRAG_POSITION fire on every playback tick. histoGraph already
         // region-repaints itself for those via NoteGraph.onEvent, so a full repaint
         // here just defeats that optimization. But always refresh the count label.
-        if (p != SequencerEvent.SequencerProperty.POSITION && p != SequencerEvent.SequencerProperty.DRAG_POSITION) {
+        if (p == SequencerEvent.SequencerProperty.TRACK_ACTIVE) {
+            if (histogram != null) histogram.setDirty();
+            // Rebuild now: repaint() only queues, and updateCountLabel() below calls
+            // get()/max(), which run analyze() and clear the dirty flag. By paint time
+            // getEvents() would see isDirty()==false and keep the stale event list.
+            histoGraph.recalcPolyphonyEvents();
+            histoGraph.invalidateNoteCache();
+            histoGraph.repaint();
+        } else if (p != SequencerEvent.SequencerProperty.POSITION && p != SequencerEvent.SequencerProperty.DRAG_POSITION) {
             histoGraph.repaint();
         }
 		

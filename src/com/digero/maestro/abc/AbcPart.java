@@ -21,7 +21,6 @@ import javax.xml.xpath.XPathExpressionException;
 
 import com.digero.common.midi.PanGenerator;
 import com.digero.common.util.*;
-import com.digero.common.view.UIText;
 import com.digero.maestro.view.CountIn;
 import org.jetbrains.annotations.NotNull;
 import org.w3c.dom.*;
@@ -30,6 +29,7 @@ import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.Dynamics;
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.abc.LotroInstrumentSampleDuration;
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.MidiConstants;
 import com.digero.common.midi.MidiDrum;
 import com.digero.common.midi.Note;
@@ -168,7 +168,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 
 	@Override
 	public void discard() {
-		abcSong.removeSongListener(songListener);
+		if (abcSong != null)
+			abcSong.removeSongListener(songListener);
 		listeners.discard();
 		for (int i = 0; i < drumNoteMap.length; i++) {
 			if (drumNoteMap[i] != null) {
@@ -191,6 +192,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		sections = null;
 		sectionsTicked = null;
 		sectionsModified = null;
+		//nonSection = null; never expected to be null
 		delay = 0;
 		conclusionFermata = 0;
 		discarded = true;
@@ -279,8 +281,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			if (!playRight[track])
 				trackEle.setAttribute("playRight", String.valueOf(playRight[track]));
 
-            boolean fx = isFX(track);
-            boolean studentFX = fx && isStudentPart();
+            boolean isFx = isFX(track);
+            boolean studentFX = isFx && isStudentPart();
 
 			TreeMap<Float, PartSection> tree = sections.get(track);
 			if (tree != null) {
@@ -299,7 +301,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 					SaveUtil.appendChildTextElement(sectionEle, "dialogLine", String.valueOf(ps.dialogLine));
 					SaveUtil.appendChildTextElement(sectionEle, "resetVelocities", String.valueOf(ps.resetVelocities));
 					AbcHelper.saveDoublingToXML(ps, sectionEle, instrument.isPercussion || studentFX);
-					if (!fx && !instrument.isPercussion && (ps.fromPitch != minDefault || ps.toPitch != Note.MAX)) {
+					if (!isFx && !instrument.isPercussion && (ps.fromPitch != minDefault || ps.toPitch != Note.MAX)) {
                         SaveUtil.appendChildTextElement(sectionEle, "fromPitch", String.valueOf(ps.fromPitch.id));
 						SaveUtil.appendChildTextElement(sectionEle, "toPitch", String.valueOf(ps.toPitch.id));
 					}
@@ -313,19 +315,19 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				if (instrument.sustainable && !studentFX) SaveUtil.appendChildTextElement(sectionEle, "legato", String.valueOf(ps.legato));
 				SaveUtil.appendChildTextElement(sectionEle, "resetVelocities", String.valueOf(ps.resetVelocities));
 				AbcHelper.saveDoublingToXML(ps, sectionEle, instrument.isPercussion || studentFX);
-				if (!fx && !instrument.isPercussion && (ps.fromPitch != minDefault || ps.toPitch != Note.MAX)) {
+				if (!isFx && !instrument.isPercussion && (ps.fromPitch != minDefault || ps.toPitch != Note.MAX)) {
 					SaveUtil.appendChildTextElement(sectionEle, "fromPitch", String.valueOf(ps.fromPitch.id));
 					SaveUtil.appendChildTextElement(sectionEle, "toPitch", String.valueOf(ps.toPitch.id));
 				}
 			}
 			
 			if (isStudentPart()) {
-				trackEle.setAttribute("fx", String.valueOf(fx));
+				trackEle.setAttribute("fx", String.valueOf(isFx));
 				trackEle.setAttribute("studentOverride", String.valueOf(isStudentFromABC()));
 			} else if (isJauntyHandKnellsPart()) {
-                trackEle.setAttribute("fx", String.valueOf(fx));
+                trackEle.setAttribute("fx", String.valueOf(isFx));
             }
-            if (instrument.isPercussion || ((isStudentPart() || isJauntyHandKnellsPart()) && fx)) {
+            if (instrument.isPercussion || ((isStudentPart() || isJauntyHandKnellsPart()) && isFx)) {
 				saveDrumHitsToXML(ele, doc, track, trackEle);
 			}
 		}
@@ -386,14 +388,14 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 		}
 	}
 
-	public static AbcPart loadFromXml(AbcSong abcSong, Element ele, Version fileVersion) throws FileParseException {
+	public static AbcPart loadFromXml(AbcSong abcSong, Element ele, Version fileVersion, WarningHandler warningHandler, String filename) throws FileParseException {
 		AbcPart part = new AbcPart(abcSong);
-		part.initFromXml(ele, fileVersion);
+		part.initFromXml(ele, fileVersion, warningHandler, filename);
 		return part;
 	}
 
 	@SuppressWarnings("HardCodedStringLiteral")
-	private void initFromXml(Element ele, Version fileVersion) throws FileParseException {
+	private void initFromXml(Element ele, Version fileVersion, WarningHandler warningHandler, String filename) throws FileParseException {
 		try {
 			partNumber = SaveUtil.parseValue(ele, "@id", partNumber);
 			if (partNumber == 0) partNumber = 999;
@@ -482,10 +484,15 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				}
 				trackNames.set(t, xmlTrackName);
 				if (!abcSong.getSequenceInfo().getTrackInfo(t).hasEvents()) {
-                    Component parent = (getFrames().length > 0) ? getFrames()[0] : null;
-					JOptionPane.showMessageDialog(parent,
-							UIText.get("maestro.0.has.a.midi.track.track.1.selected.that.has.no.notes", title, t),
-							UIText.get("maestro.warning.for.0", abcSong.getTitle()), JOptionPane.WARNING_MESSAGE);
+					if (warningHandler != null) {
+						// Abc Tools just get a log
+						log.warning(UIText.get("maestro.0.has.a.midi.track.track.1.selected.that.has.no.notes", title, t));
+					} else {
+						Component parent = (getFrames().length > 0) ? getFrames()[0] : null;
+						JOptionPane.showMessageDialog(parent,
+								UIText.get("maestro.0.has.a.midi.track.track.1.selected.that.has.no.notes", title, t),
+								UIText.get("maestro.warning.for.0", abcSong.getTitle()), JOptionPane.WARNING_MESSAGE);
+					}
 				}
 
 				TreeMap<Float, PartSection> tree = sections.get(t);
@@ -505,7 +512,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 					}
 				}
                 if (lastEnd > 200_000f) { // Limit to 200k bars to prevent OOM
-                    log.warning("Section endBar too large: " + lastEnd + ". Clamping to 200,000.");
+                    log.warning(filename+": Section endBar too large: " + lastEnd + ". Clamping to 200,000.");
                     lastEnd = 200_000f;
                 }
 				boolean[] booleanArray = new boolean[(int)(lastEnd) + 1];
@@ -539,7 +546,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				// Now set the track info
 				trackEnabled[t] = true;
 				enabledTrackCount++;
-				boolean fx = SaveUtil.parseValue(trackEle, "@fx", false);
+				boolean isFx = SaveUtil.parseValue(trackEle, "@fx", false);
 				studentFromABC = SaveUtil.parseValue(trackEle, "@studentOverride", false);
 				trackTranspose[t] = SaveUtil.parseValue(trackEle, "transpose", trackTranspose[t]);
                 /*
@@ -562,14 +569,14 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 				} else if (new Version(3, 2, 9, 300).compareTo(fileVersion) > 0 && isStudentPart()) {
 					// compat handling
 					loadDrumHitsFromXML(fileVersion, trackEle, t);
-					fx = studentFxNoteMap[t] != null;
-					setFX(t, fx);
+					isFx = studentFxNoteMap[t] != null;
+					setFX(t, isFx);
 				} else if (isStudentPart()) {
-					if (fx) loadDrumHitsFromXML(fileVersion, trackEle, t);
-					setFX(t, fx);
+					if (isFx) loadDrumHitsFromXML(fileVersion, trackEle, t);
+					setFX(t, isFx);
 				} else if (isJauntyHandKnellsPart()) {
-                    if (fx) loadDrumHitsFromXML(fileVersion, trackEle, t);
-                    setFX(t, fx);
+                    if (isFx) loadDrumHitsFromXML(fileVersion, trackEle, t);
+                    setFX(t, isFx);
                 }
 			}
 		} catch (XPathExpressionException e) {
@@ -664,15 +671,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
             // preview generation, do not want to trigger one for each part.
 			fireChangeEvent(AbcPartProperty.BASE_TRANSPOSE, false);
 		}
-		if (e.getProperty() == AbcSongProperty.MIX_TIMING_COMBINE_PRIORITIES
-				|| e.getProperty() == AbcSongProperty.MIX_TIMING) {
-            // TODO: Perhaps we should consider deleting this call
-            //       I might be missing something, but I do not think
-            //       it is needed. For example when open new project,
-            //       this gets fired once per part, even though the
-            //       track priorities themselves don't change.
-            //       For now I just set previewRelated to false.
-			fireChangeEvent(AbcPartProperty.TRACK_PRIORITY, false);
+		if (e.getProperty() == AbcSongProperty.TIMINGS_MULTI) {
+			//e.getSource().setMixDirty(true);
 		}
 	};
 
@@ -687,6 +687,10 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	 */
 	public Note mapNote(int track, int noteId, long tickStart) {
 		if (!getAudible(track, tickStart)) {
+			return null;
+		}
+		if (noteId < Note.MIN.id || noteId > Note.MAX.id) {
+			// extra check for invalid noteid that can make drum-map throw exception.
 			return null;
 		}
 		if (!isChromatic(track)) {
@@ -718,7 +722,7 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			noteId += getTranspose(track, tickStart);
 			Pair<Integer,Integer> limits = getSectionPitchLimits(track, tickStart);
 
-			if (noteId > limits.second || noteId < limits.first) {
+			if (noteId + getInstrument().octaveDelta * 12 > limits.second || noteId + getInstrument().octaveDelta * 12 < limits.first) {
 				return null;
 			}
 			int lowest = instrument.lowestPlayable.id;
@@ -918,8 +922,8 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 					if (mapNoteEvent(t, ne) != null && shouldPlay(ne, t)) {
 						if (ne.getStartTick() < startTick) {
 							startTick = ne.getStartTick();
-							break;
-						}						
+						}
+						break;
 					}
 				}
 			}
@@ -1085,19 +1089,33 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 			// System.out.println(" "+"matching old title at least: "+typeNumber);
 		}
 		if (typeNumberNew != typeNumber) {
-			Pair<LotroInstrument, MatchResult> result = LotroInstrument.matchInstrument(title);
-
 			String typeString = " " + typeNumberNew;
 			if (typeNumberNew == 0) {
 				typeString = "";
 			}
-			// System.out.println(" "+"Setting: "+result.second.group()+typeString);
+
+			// The title matches either the full instrument name or its nickname; we got here
+			// only because getTypeNumberMatchingTitle() found one of the two at offset 0.
+			String instrPart = null;
+			Pair<LotroInstrument, MatchResult> result = LotroInstrument.matchInstrument(title);
+			if (result != null && result.second != null && result.second.group() != null) {
+				instrPart = result.second.group();
+			} else {
+				Integer[] nick = matchNick(instrNameSettings.getInstrNick(instrument), title);
+				if (nick != null && nick[0] == 0) {
+					instrPart = title.substring(0, nick[1]);
+				}
+			}
+
+			if (instrPart == null) {
+				// Should be unreachable; leave both title and typeNumber untouched and report failure.
+				log.severe("setTypeNumber: no instrument name or nick in title \"" + title + "\"");
+				return false;
+			}
+
+			// System.out.println(" "+"Setting: "+instrPart+typeString);
 			typeNumber = typeNumberNew;
-			assert result != null;// saw a null pointer here, hence the asserts
-			assert result.second != null;
-			assert result.second.group() != null;
-			setTitle(result.second.group() + typeString);// no need to check for null, as that is done in
-															// isTypeNumberMatchingTitle/getTypeNumberMatchingTitle
+			setTitle(instrPart + typeString);
 		} else {
 			// System.out.println(" "+"Same, not setting "+typeNumber);
 		}
@@ -1548,8 +1566,10 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	}
 
 	public void setMuted(boolean muted) {
-		this.muted = muted;
-        fireChangeEvent(AbcPartProperty.EXCLUSION);
+		if (this.muted != muted) {
+			this.muted = muted;
+			fireChangeEvent(AbcPartProperty.EXCLUSION);
+		}
 	}
 
 	public boolean isSoloed() {
@@ -1557,8 +1577,10 @@ public class AbcPart implements AbcPartMetadataSource, NumberedAbcPart, IDiscard
 	}
 
 	public void setSoloed(boolean soloed) {
-		this.soloed = soloed;
-        fireChangeEvent(AbcPartProperty.EXCLUSION);
+		if (this.soloed != soloed) {
+			this.soloed = soloed;
+			fireChangeEvent(AbcPartProperty.EXCLUSION);
+		}
 	}
 	
 	public boolean isActive() {

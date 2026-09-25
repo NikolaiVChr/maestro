@@ -11,23 +11,20 @@ import java.util.logging.Logger;
  * 
  *  Be careful, any exceptions thrown from here, wont stop execution and won't be printed in console. It will just fail.
  */
-public class VolumeTransceiver implements Transceiver, MidiConstants
-{
+public class VolumeTransceiver implements Transceiver, MidiConstants {
 	private static final Logger log = Logger.getLogger("playback.midi");
 	private Receiver receiver;
 	private int volume = MAX_VOLUME;
 	private MidiStandard standard = MidiStandard.GM;
 
-	public VolumeTransceiver()
-	{
+	public VolumeTransceiver() {
 	}
 
 	public void setStandard(MidiStandard standard) {
 		this.standard = standard;
 	}
 
-	public void setVolume(int volume)
-	{
+	public void setVolume(int volume) {
 		if (volume < 0 || volume > MAX_VOLUME)
 			throw new IllegalArgumentException();
 
@@ -40,8 +37,7 @@ public class VolumeTransceiver implements Transceiver, MidiConstants
 		return volume;
 	}
 
-	@Override public void close()
-	{
+	@Override public void close() {
 	}
 
 	@Override public Receiver getReceiver()
@@ -49,28 +45,24 @@ public class VolumeTransceiver implements Transceiver, MidiConstants
 		return receiver;
 	}
 
-	@Override public void setReceiver(Receiver receiver)
-	{
+	@Override public void setReceiver(Receiver receiver) {
 		this.receiver = receiver;
 		sendDeviceVolume();
 	}
 
-	private void sendDeviceVolume()
-	{
+	private void sendDeviceVolume() {
 		//System.out.println("sendDeviceVolume "+volume);
 		passOn(MidiFactory.createDeviceVolumeMessage(volume), -1);
 	}
 	
-	private void passOn(MidiMessage message, long timeStamp)
-	{
+	private void passOn(MidiMessage message, long timeStamp) {
 		if (receiver != null)
 		{
 			receiver.send(message, timeStamp);
 		}
 	}
 	
-	@Override public void send(MidiMessage message, long timeStamp)
-	{
+	@Override public void send(MidiMessage message, long timeStamp) {
 		boolean systemReset = false;
 		//System.out.println(timeStamp+": VolumeTransceiver want to send to midi player: "+MidiUtils.midiMessageToString(message));
 		boolean usingWindowsMidiMapper = NoteFilterSequencerWrapper.deviceInUse == null;
@@ -89,6 +81,12 @@ public class VolumeTransceiver implements Transceiver, MidiConstants
 						// We are using windows MIDI mapper
 						// It's a GS midi, some of them sadly have lsb changes, we don't allow that.
 						//return;
+						if (m.getData2() != 0) {
+							try {
+								message = new ShortMessage(ShortMessage.CONTROL_CHANGE, channel, BANK_SELECT_LSB, 0);
+							} catch (InvalidMidiDataException ignored) {
+							}
+						}
 					} else if (usingSF2) {
 						//System.out.println("Dropping LSB " + m.getData2() + " on GS for sf2. Channel " + channel);
 						return;
@@ -106,7 +104,8 @@ public class VolumeTransceiver implements Transceiver, MidiConstants
 					if (m.getData2() == 127) {
                         try {
 							receiver.send(MidiFactory.createControllerEvent((byte)BANK_SELECT_LSB, 0, m.getChannel(), 0L).getMessage(), -1);
-                            m.setMessage(ShortMessage.CONTROL_CHANGE, m.getChannel(), BANK_SELECT_MSB, 1);
+							message = new ShortMessage(ShortMessage.CONTROL_CHANGE, m.getChannel(), BANK_SELECT_MSB, 1);
+							//m.setMessage(ShortMessage.CONTROL_CHANGE, m.getChannel(), BANK_SELECT_MSB, 1);// this will mutate orig sequence
                         } catch (InvalidMidiDataException ignored) {
                         }
                     } else {
@@ -173,7 +172,7 @@ public class VolumeTransceiver implements Transceiver, MidiConstants
 				log.log(level,"Not handling sysex: "+MidiUtils.formatBytesHexOnly(sysex));
 			}
 		}
-		//System.out.println("Passing on: "+MidiUtils.midiMessageToString(message));
+		//System.out.println("Sending to win midi system: "+MidiUtils.midiMessageToString(message) +"\nTimestamp: "+timeStamp+"\n");
 		//System.out.println(" -> sent.");
 		passOn(message, timeStamp);
 		if (systemReset) {

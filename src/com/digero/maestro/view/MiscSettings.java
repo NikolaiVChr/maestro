@@ -1,11 +1,11 @@
 package com.digero.maestro.view;
 
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
 import com.digero.common.midi.NoteFilterSequencerWrapper;
-import com.digero.common.view.UIText;
 
 public class MiscSettings {
 	public boolean showMaxPolyphony = true;
@@ -13,7 +13,7 @@ public class MiscSettings {
 	public boolean showBadger = false;
 	//public boolean allBadger = false;
 	public String theme = "Flat Light";
-	public String locale = UIText.LANG_EN;
+	public String locale = Locale.ENGLISH.getLanguage();
 	public int fontSize = 12;
 	public int maxRangeForNewBendMethod = 12;
 	public boolean autoplayOnOpen = true;
@@ -26,14 +26,14 @@ public class MiscSettings {
 
     public boolean dissEnabled = false;
 	public boolean excludeShortestNotes = true;
-    public int min2factor = 1;
-    public int maj2factor = 0;
-    public int maj7factor = 1;
-    public int min7factor = 0;
-    public int trifactor = 0;
-	public int mudfactor = 0;
-    public int min2threshold = 1;
-    public int min2penalty = 10;
+	public int min2factor = 6;    // was 1
+	public int maj2factor = 2;    // was 0
+	public int maj7factor = 3;    // was 1
+	public int trifactor  = 1;    // was 0
+	public int min7factor = 1;    // was 0
+	public int mudfactor = 0;         // was 0
+	public int min2threshold = 1;
+	public int min2penalty = 5;   // was 10
     //public int maj2threshold = 1;
     //public int maj2penalty = 0;
 
@@ -57,6 +57,34 @@ public class MiscSettings {
 		saveToPrefs();
 	}
 
+	/**
+	 * A dissonance weighting preset. Values only: applying it to the spinners is the
+	 * dialog's job, so a preset can be previewed and then cancelled.
+	 */
+	public record DissonancePreset(boolean excludeShortestNotes, int min2factor, int maj7factor,
+								   int maj2factor, int trifactor, int min7factor, int mudfactor,
+								   int min2threshold, int min2penalty) {
+	}
+
+	/**
+	 * Shows harmonic tension, not just collisions. Minor 2nds dominate, with sevenths and
+	 * the tritone contributing lightly so that genuinely thick writing reads higher than
+	 * clean writing. Calibrated against DissonancePanel's 50 clip: five simultaneous
+	 * minor 2nds fill the bar.
+	 */
+	public static DissonancePreset dissonanceDefaultPreset() {
+		return new DissonancePreset(true, 6, 3, 2, 1, 1, 0, 1, 5);
+	}
+
+	/**
+	 * Only the genuinely jarring: minor 2nds beating inside the critical band. Sevenths,
+	 * tritones and bass mud are silent, so ordinary dominant-seventh harmony leaves the
+	 * graph flat and only real clashes show.
+	 */
+	public static DissonancePreset dissonanceMinimalPreset() {
+		return new DissonancePreset(true, 10, 0, 0, 0, 0, 0, 1, 8);
+	}
+
 	@SuppressWarnings("HardCodedStringLiteral")
 	private void loadPrefs(Preferences prefs) {
 		showMaxPolyphony = prefs.getBoolean("showMaxPolyphony", showMaxPolyphony);
@@ -65,9 +93,9 @@ public class MiscSettings {
 		ignoreExpressionMessages = prefs.getBoolean("ignoreExpressionMessages", ignoreExpressionMessages);
 		theme = prefs.get("theme", theme);
 		locale = prefs.get("locale", locale);
-		if ("FR".equals(locale)) locale = UIText.LANG_FR;
-		if ("DE".equals(locale)) locale = UIText.LANG_DE;
-		if ("US".equals(locale)) locale = UIText.LANG_EN;
+		if ("FR".equals(locale)) locale = Locale.FRENCH.getLanguage();
+		if ("DE".equals(locale)) locale = Locale.GERMAN.getLanguage();
+		if ("US".equals(locale)) locale = Locale.ENGLISH.getLanguage();
 		fontSize = prefs.getInt("fontSize", fontSize);
 		maxRangeForNewBendMethod = prefs.getInt("maxRangeForNewBendMethod", maxRangeForNewBendMethod);
 		if (maxRangeForNewBendMethod == 24) maxRangeForNewBendMethod = 16;// Due to student fiddle we can't go to 24.

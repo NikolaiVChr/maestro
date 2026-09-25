@@ -19,10 +19,10 @@ import javax.swing.JPanel;
 import javax.swing.SwingUtilities;
 import javax.swing.TransferHandler;
 
+import com.digero.common.i18n.UIText;
 import com.digero.common.util.IDiscardable;
 import com.digero.common.util.Listener;
 import com.digero.common.view.ColorTable;
-import com.digero.common.view.UIText;
 import com.digero.maestro.abc.AbcPart;
 import com.digero.maestro.abc.AbcPartMetadataSource;
 
@@ -75,6 +75,9 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 	protected Color unselectedFg;
 
 	protected Color unselectedBg;
+
+	private boolean selected = false;
+	private boolean trackHighlight = false;
 
 	protected Listener<PartsListItemEvent> itemListener = null;
 	
@@ -288,14 +291,50 @@ public class PartsListItem extends JPanel implements IDiscardable, TableLayoutCo
 	}
 
 	void setSelected(boolean selected) {
-		setBackground(selected ? selectedBg : unselectedBg);
-		setForeground(selected ? selectedFg : unselectedFg);
-		title.setForeground(selected ? selectedFg : unselectedFg);
+		if (this.selected != selected) {
+			this.selected = selected;
+			updateColors();
+		}
 	}
 
 	@Override
 	public void discard() {
 
+	}
+
+	void setTrackHighlight(boolean on) {
+		if (trackHighlight != on) {
+			trackHighlight = on;
+			updateColors();
+		}
+	}
+
+	private void updateColors() {
+		Color bg;
+		Color fg;
+		if (selected && trackHighlight) {
+			bg = blend(selectedBg, ColorTable.HOVER_ACCENT.get(), 0.55f);   // selected orange, but stronger base
+			fg = selectedFg;
+		} else if (selected) {
+			bg = selectedBg;  fg = selectedFg;
+		} else if (trackHighlight) {
+			bg = blend(unselectedBg, ColorTable.HOVER_ACCENT.get(), 0.35f); // unselected orange, lighter mix
+			fg = unselectedFg;
+		} else {
+			bg = unselectedBg;  fg = unselectedFg;
+		}
+		setBackground(bg);
+		setForeground(fg);
+		title.setForeground(fg);
+	}
+
+	/** Linear blend: ratio=0 -> a, ratio=1 -> b. */
+	private static Color blend(Color a, Color b, float ratio) {
+		float inv = 1f - ratio;
+		return new Color(
+				Math.round(a.getRed()   * inv + b.getRed()   * ratio),
+				Math.round(a.getGreen() * inv + b.getGreen() * ratio),
+				Math.round(a.getBlue()  * inv + b.getBlue()  * ratio));
 	}
 
 	public AbcPart getPart() {
