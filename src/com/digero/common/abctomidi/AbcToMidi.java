@@ -747,7 +747,7 @@ public class AbcToMidi {
 							float lengthSeconds = info.getWholeNoteTime() * (numerator_abc / (float) denominator_abc);
 
 							throwExceptionsIfEnabled(enableLotroErrors, fileName, lineNumber, m, abcNoteL, noteLetter,
-									lengthSeconds, info.getPrimaryTempoBPM());
+									lengthSeconds, lotroSeconds(info, numerator_abc, denominator_abc), info.getPrimaryTempoBPM());
 							if (!inChord) partChordsNumber++;
 							if (enableLotroErrors && partChordsNumber > 10_000) {
 								throw new LotroFileParseException("Too many chords/notes/rests in "+info.getTitle()+". Max is 10000.",
@@ -1006,7 +1006,7 @@ public class AbcToMidi {
 			float lengthSeconds = info.getWholeNoteTime() * (numerator_abc / (float) denominator_abc);
 
 			throwExceptionsIfEnabled(enableLotroErrors, fileName, lineNumber, m, abcNoteL, abcNoteAcc, noteLetter,
-					octaveStr, lengthSeconds, true, info.getPrimaryTempoBPM());
+					octaveStr, lengthSeconds, lotroSeconds(info, numerator_abc, denominator_abc), true, info.getPrimaryTempoBPM());
 			int lineAndColumn = (lineNumber << 16) | m.start();
 			tiedNotes.put(noteId, lineAndColumn);
 		} else {
@@ -1015,7 +1015,7 @@ public class AbcToMidi {
 			float lengthSeconds = info.getWholeNoteTime() * (numerator_abc / (float) denominator_abc);
 
 			throwExceptionsIfEnabled(enableLotroErrors, fileName, lineNumber, m, abcNoteL, abcNoteAcc, noteLetter,
-					octaveStr, lengthSeconds, false, info.getPrimaryTempoBPM());
+					octaveStr, lengthSeconds, lotroSeconds(info, numerator_abc, denominator_abc), false, info.getPrimaryTempoBPM());
 
 			// Lengthen to match the note lengths used in the game
 			double noteEndTickTmp = noteEndTick;
@@ -1047,11 +1047,15 @@ public class AbcToMidi {
 		}
 	}
 
+	/**
+	 * @param lengthSeconds Used for the 8 s maximum (float, as before; not verified against LotRO)
+	 * @param lotroSeconds  LotRO's own calculation, used for the 60 ms minimum (verified in game)
+	 */
 	private static void throwExceptionsIfEnabled(final boolean enableLotroErrors, String fileName, int lineNumber,
-												 Matcher m, String abcNoteL, char noteLetter, float lengthSeconds, int bpm) throws LotroFileParseException {
+												 Matcher m, String abcNoteL, char noteLetter, float lengthSeconds, double lotroSeconds, int bpm) throws LotroFileParseException {
 		// Using double for lengthSeconds can result in rounding errors in 17 decimal
 		// place.
-		if (enableLotroErrors && lengthSeconds < AbcConstants.SHORTEST_NOTE_SECONDS_FLOAT) {
+		if (enableLotroErrors && lotroSeconds < AbcConstants.SHORTEST_NOTE_SECONDS) {
 			throw new LotroFileParseException("Rest's duration is too short (" + String.format(Locale.US, "%.3f", lengthSeconds)
 					+ "s)(" + noteLetter + abcNoteL + ")", fileName, lineNumber, m.start());
             /*
@@ -1069,13 +1073,16 @@ public class AbcToMidi {
 	 * Very important: These methods now use float for lengthSeconds to simulate how
 	 * lotro calculates note durations. It should now fail when it really in abc is 0.06
 	 * but inside lotro it is 0.599999
+	 *
+	 * @param lengthSeconds Used for the 8 s maximum (float, as before; not verified against LotRO)
+	 * @param lotroSeconds  LotRO's own calculation, used for the 60 ms minimum (verified in game)
 	 */
 	private static void throwExceptionsIfEnabled(final boolean enableLotroErrors, String fileName, int lineNumber,
 												 Matcher m, String abcNoteL, String abcNoteAcc, char noteLetter, String octaveStr, float lengthSeconds,
-												 boolean shouldAddGroup, int bpm) throws LotroFileParseException {
+												 double lotroSeconds, boolean shouldAddGroup, int bpm) throws LotroFileParseException {
 		// Using double for lengthSeconds can result in rounding errors in 17 decimal
 		// place.
-		if (enableLotroErrors && lengthSeconds < AbcConstants.SHORTEST_NOTE_SECONDS_FLOAT) {
+		if (enableLotroErrors && lotroSeconds < AbcConstants.SHORTEST_NOTE_SECONDS) {
 			throw new LotroFileParseException(
 					"Note's duration is too short (" + String.format(Locale.US, "%.3f", lengthSeconds) + "s)(" + abcNoteAcc
 							+ noteLetter + octaveStr + abcNoteL + addGroup(m, shouldAddGroup) + ")",
@@ -1111,6 +1118,22 @@ public class AbcToMidi {
 	/** Turns \% (a literal percent sign in ABC) into %. */
 	private static String unescapePercent(String value) {
 		return value.replace("\\%", "%");
+	}
+
+	/** LotRO's length of a note or rest with the written length n/d, see AbcConstants.lotroNoteSeconds. */
+	private static double lotroSeconds(TuneInfo info, long n, long d) {
+		return AbcConstants.lotroNoteSeconds(n, d, info.getLNum(), info.getLDenom(), info.getPrimaryTempoBPM(),
+				info.getMeterDenominator());
+	}
+
+	/**
+	 * Seconds for a message. Near the 60 ms limit all digits are shown, because there the difference is in the last
+	 * digits (LotRO refuses 0.05999999999999999, which would otherwise print as 0.060).
+	 */
+	private static String formatSeconds(double seconds) {
+		if (Math.abs(seconds - AbcConstants.SHORTEST_NOTE_SECONDS) < 0.0005)
+			return Double.toString(seconds);
+		return String.format(Locale.US, "%.3f", seconds);
 	}
 
 	private static String addGroup(Matcher m, boolean shouldReturn) {

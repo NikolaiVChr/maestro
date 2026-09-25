@@ -43,7 +43,7 @@ public interface AbcConstants {
 		int[] strangeBPM = {9, 11, 13, 15, 18, 22, 26, 30, 36, 37, 43, 44, 45,
                 51, 52, 60, 72, 74, 86, 88, 90, 102, 104, 120, 144, 148, 172,
                 176, 180, 204, 208, 240, 288, 296, 344, 352, 360, 408, 416, 480,
-                576, 592, 688, 704, 720};
+                576, 592, 688, 704, 720, 960};
 		for (int strange : strangeBPM) {
 			if (strange == bpm) {
 				return true;
@@ -53,9 +53,29 @@ public interface AbcConstants {
 		// The strange tempos are an odd 'bug' in lotros music system
 		// Its eight series starting with 9, 11, 13, 15, 37, 43, 45, 51
 		// Each series is continued by multiplying with 2 all the time
-		// Have only included up to 800 bpm
+		// Have only included up to 1000 bpm
 		
 		return false;
+	}
+
+	/**
+	 * LotRO's own calculation of a note's or rest's length in seconds, as used for its 60 ms minimum. Confirmed
+	 * against 164 in-game tests (see LotroMinimumLengthTest): LotRO refuses a note when this is below
+	 * {@link #SHORTEST_NOTE_SECONDS}.
+	 * <p>
+	 * It must be computed exactly like this: in double, L: as one value first, then in this order. The rounding of
+	 * this order is what makes LotRO refuse some notes of exactly 60 ms (the "strange" tempos).
+	 *
+	 * @param n                The note's written length numerator (without tuplets or broken rhythm)
+	 * @param d                The note's written length denominator
+	 * @param lNum             L: numerator
+	 * @param lDen             L: denominator
+	 * @param bpm              Q:
+	 * @param meterDenominator The N in M:x/N. A power of two in practice, so where it's multiplied in doesn't matter.
+	 */
+	static double lotroNoteSeconds(long n, long d, long lNum, long lDen, int bpm, int meterDenominator) {
+		double l = (double) lNum / lDen;
+		return (double) n / d * l * 60 / bpm * meterDenominator;
 	}
 
     static long getShortestNoteMicros(int bpm) {

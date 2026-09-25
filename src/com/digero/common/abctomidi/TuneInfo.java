@@ -242,6 +242,11 @@ class TuneInfo {
 		return ppqn;
 	}
 
+	/** The N in M:x/N, exactly as written (LotRO uses it for note lengths). */
+	public int getMeterDenominator() {
+		return meterDenominator;
+	}
+
 	public boolean isCompoundMeter() {
 		return compoundMeter;
 	}

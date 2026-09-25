@@ -32,6 +32,9 @@ import com.digero.maestro.view.GenericTrackInfo;
 import com.digero.maestro.view.MiscSettings;
 import com.digero.maestro.view.ProjectFrame;
 
+import static com.digero.common.abc.AbcConstants.SHORTEST_NOTE_SECONDS;
+import static com.digero.common.abc.AbcConstants.lotroNoteSeconds;
+
 @SuppressWarnings({"AssertWithSideEffects"})
 public class AbcExporter {
 	private static final Logger logNotes = Logger.getLogger("export.notes");//processing and fitting of notes to lotros abc format
@@ -1280,6 +1283,7 @@ public class AbcExporter {
             int oneMicro = (int) (M * TimingInfo.ONE_SECOND_MICROS * 60L / Q);
 
             float time = ((M*60.0f * idealMinimum)/((float)oneMicro*Q));
+            //if (lotroNoteSeconds(idealMinimum, 1, 1, oneMicro, Q, M) < SHORTEST_NOTE_SECONDS) { // TODO: enable this when verified its an improvement
             if (time < 0.06f) {
                 if (!AbcConstants.isStrangeBPM(Q)) {
                     //System.out.println(parts.getFirst().getAbcSong().getTitle()+": Ideal minimum is "+idealMinimum+" micros (not strange)");
