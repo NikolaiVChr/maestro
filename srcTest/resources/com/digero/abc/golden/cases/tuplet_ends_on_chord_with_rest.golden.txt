@@ -41,7 +41,7 @@ divisionType=0.0 resolution=11520 tickLength=30998 tracks=2
   #1 line=6 cols=[4,5) ticks=3840..7680 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
   #2 line=6 cols=[5,9) ticks=7680..11520 CHORD track=1 bar=0 tiesFrom=- tiesTo=-
   #3 line=6 cols=[6,7) ticks=7680..11520 note=64 track=1 bar=0 tiesFrom=- tiesTo=-
-  #4 line=6 cols=[7,8) ticks=7680..13440 REST track=1 bar=0 tiesFrom=- tiesTo=-
+  #4 line=6 cols=[7,8) ticks=7680..11520 REST track=1 bar=0 tiesFrom=- tiesTo=-
   #5 line=6 cols=[10,11) ticks=11520..17280 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
 == log: empty
 
@@ -85,7 +85,7 @@ divisionType=0.0 resolution=11520 tickLength=30998 tracks=2
   #1 line=6 cols=[4,5) ticks=3840..7680 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
   #2 line=6 cols=[5,9) ticks=7680..11520 CHORD track=1 bar=0 tiesFrom=- tiesTo=-
   #3 line=6 cols=[6,7) ticks=7680..11520 note=64 track=1 bar=0 tiesFrom=- tiesTo=-
-  #4 line=6 cols=[7,8) ticks=7680..13440 REST track=1 bar=0 tiesFrom=- tiesTo=-
+  #4 line=6 cols=[7,8) ticks=7680..11520 REST track=1 bar=0 tiesFrom=- tiesTo=-
   #5 line=6 cols=[10,11) ticks=11520..17280 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
 == log: empty
 
@@ -126,6 +126,6 @@ divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
   #1 line=6 cols=[4,5) ticks=3840..7680 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
   #2 line=6 cols=[5,9) ticks=7680..11520 CHORD track=1 bar=0 tiesFrom=- tiesTo=-
   #3 line=6 cols=[6,7) ticks=7680..11520 note=64 track=1 bar=0 tiesFrom=- tiesTo=-
-  #4 line=6 cols=[7,8) ticks=7680..13440 REST track=1 bar=0 tiesFrom=- tiesTo=-
+  #4 line=6 cols=[7,8) ticks=7680..11520 REST track=1 bar=0 tiesFrom=- tiesTo=-
   #5 line=6 cols=[10,11) ticks=11520..17280 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
 == log: empty

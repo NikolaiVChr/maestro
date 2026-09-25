@@ -40,7 +40,7 @@ divisionType=0.0 resolution=11520 tickLength=29970 tracks=2
   #0 line=6 cols=[6,7) ticks=0..3840 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
   #1 line=6 cols=[7,13) ticks=3840..11520 CHORD track=1 bar=0 tiesFrom=- tiesTo=-
   #2 line=6 cols=[8,10) ticks=3840..11520 note=64 track=1 bar=0 tiesFrom=- tiesTo=-
-  #3 line=6 cols=[10,12) ticks=3840..15360 note=67 track=1 bar=0 tiesFrom=- tiesTo=-
+  #3 line=6 cols=[10,12) ticks=3840..11520 note=67 track=1 bar=0 tiesFrom=- tiesTo=-
   #4 line=6 cols=[14,15) ticks=11520..17280 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
 == log: empty
 
@@ -83,7 +83,7 @@ divisionType=0.0 resolution=11520 tickLength=29970 tracks=2
   #0 line=6 cols=[6,7) ticks=0..3840 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
   #1 line=6 cols=[7,13) ticks=3840..11520 CHORD track=1 bar=0 tiesFrom=- tiesTo=-
   #2 line=6 cols=[8,10) ticks=3840..11520 note=64 track=1 bar=0 tiesFrom=- tiesTo=-
-  #3 line=6 cols=[10,12) ticks=3840..15360 note=67 track=1 bar=0 tiesFrom=- tiesTo=-
+  #3 line=6 cols=[10,12) ticks=3840..11520 note=67 track=1 bar=0 tiesFrom=- tiesTo=-
   #4 line=6 cols=[14,15) ticks=11520..17280 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
 == log: empty
 
@@ -105,8 +105,8 @@ divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
   3840 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
   3840 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
   11520 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
   11520 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
-  15360 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
   17280 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
   17280 META end_of_track
 == abcInfo
@@ -123,6 +123,6 @@ divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
   #0 line=6 cols=[6,7) ticks=0..3840 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
   #1 line=6 cols=[7,13) ticks=3840..11520 CHORD track=1 bar=0 tiesFrom=- tiesTo=-
   #2 line=6 cols=[8,10) ticks=3840..11520 note=64 track=1 bar=0 tiesFrom=- tiesTo=-
-  #3 line=6 cols=[10,12) ticks=3840..15360 note=67 track=1 bar=0 tiesFrom=- tiesTo=-
+  #3 line=6 cols=[10,12) ticks=3840..11520 note=67 track=1 bar=0 tiesFrom=- tiesTo=-
   #4 line=6 cols=[14,15) ticks=11520..17280 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
 == log: empty

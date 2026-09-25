@@ -448,11 +448,15 @@ public class AbcToMidi {
 									throw new FileParseException("Unexpected '" + ch + "'", fileName, lineNumber, i);
 								}
 								if (i != chordCloseIndex) {
-									// Only possible if something like a +volume+ skipped over the ']' the
-									// look-ahead in '[' found, so the chord length we applied belongs to another ']'
-									//throw new FileParseException("Mismatched ']' in chord", fileName, lineNumber, i);
+									// For now this branch should never run.
+									throw new FileParseException("Mismatched ']' in chord", fileName, lineNumber, i);
 								}
 								inChord = false;
+
+								if (tuplet != null && tuplet.r == 0) {
+									// A tuplet that ended on this chord have now applied to all of its notes. Now the tuplet is done.
+									tuplet = null;
+								}
 
 								int chordLenEnd = i + 1 + chordLenStr.length();
 								if (generateRegions) {
@@ -673,12 +677,7 @@ public class AbcToMidi {
 								tuplet.r--;
 							numerator *= tuplet.q;
 							denominator *= tuplet.p;
-							if (tuplet.r == 0) {
-								partChordsNumber += tuplet.r;
-								if (enableLotroErrors && partChordsNumber > 10_000) {
-									throw new LotroFileParseException("Too many chords/notes/rests in "+info.getTitle()+". Max is 10000.",
-											fileName, lineNumber, i);
-								}
+							if (tuplet.r == 0 && !inChord) {
 								tuplet = null;
 							}
 						}
