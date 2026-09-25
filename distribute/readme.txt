@@ -59,11 +59,11 @@ This changelog is only partial, to see all the way back to v1.0.0 go here:
   https://maestro.miraheze.org/wiki/Version_history
 
 Version 4.7.3
-* When loading projects, the project version number and xml version number is now checked for errors.
+* When loading projects, the project version number and XML version number are now checked for errors.
 * Maestro and Abc Player will now warn if a part is too large for lotro.
 
 Version 4.7.2
-* Make Windows midi system able to playback GS midi more reliable.
+* Make Windows midi system able to play back GS midi more reliable.
 * When having a project open and in abc preview mode, and then loading a midi, the tracks could be grey until part changes were made.
 
 Version 4.7.1

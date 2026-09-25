@@ -669,7 +669,7 @@ public class AbcToMidi {
 
 							throwExceptionsIfEnabled(enableLotroErrors, fileName, lineNumber, m, abcNoteL, noteLetter,
 									lengthSeconds, info.getPrimaryTempoBPM());
-							partChordsNumber++;
+							if (!inChord) partChordsNumber++;
 							if (enableLotroErrors && partChordsNumber > 10_000) {
 								throw new LotroFileParseException("Too many chords/notes/rests in "+info.getTitle()+". Max is 10000.",
 										fileName, lineNumber, i);
@@ -809,7 +809,7 @@ public class AbcToMidi {
 							handleNoteTie(useLotroInstruments, enableLotroErrors, info, track, channel, PPQN, tiedNotes,
 									noteOffEvents, fileName, lineNumber, m, numerator_abc, denominator_abc, abcNoteL,
 									abcNoteAcc, curTempoBPM, chordStartTick, noteEndTick, noteLetter, octaveStr, noteId, lotroNoteId, info.getInstrument());
-							partChordsNumber++;
+							if (!inChord) partChordsNumber++;
 							if (enableLotroErrors && partChordsNumber > 10_000) {
 								throw new LotroFileParseException("Too many chords/notes/rests in "+info.getTitle()+". Max is 10000.",
 										fileName, lineNumber, i);
