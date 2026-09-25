@@ -1,0 +1,17 @@
+# AbcToMidi golden snapshot. Re-record with: mvn test -Dabc.golden.update=true (and review the diff before committing)
+case note_length_no_slash
+
+### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
+== EXCEPTION FileParseException: Error reading note_length_no_slash.abc on line 4, column 3:
+"1" is not a valid note length (example of valid note length: 1/4)
+== log: empty
+
+### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
+== EXCEPTION FileParseException: Error reading note_length_no_slash.abc on line 4, column 3:
+"1" is not a valid note length (example of valid note length: 1/4)
+== log: empty
+
+### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
+== EXCEPTION FileParseException: Error reading note_length_no_slash.abc on line 4, column 3:
+"1" is not a valid note length (example of valid note length: 1/4)
+== log: empty

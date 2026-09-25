@@ -1,0 +1,163 @@
+# AbcToMidi golden snapshot. Re-record with: mvn test -Dabc.golden.update=true (and review the diff before committing)
+case chord_shortest_note_wins
+
+### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=34838 tracks=2
+-- track 0 (5 events)
+  0 META tempo mpq=500000
+  0 META text type=0x03 "Test"
+  0 META type=0x58 data=04021808
+  0 META type=0x59 data=0000
+  0 META end_of_track
+-- track 1 (21 events)
+  0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=64 d2=106 [LotroShortMessage]
+  0 META text type=0x03 "Test"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  5760 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  5760 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  5760 NOTE_OFF ch=0 d1=64 d2=106 [LotroShortMessage]
+  5760 NOTE_ON ch=0 d1=64 d2=106 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=64 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=64 d2=106 [LotroShortMessage]
+  14400 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  14400 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  32850 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  34838 NOTE_OFF ch=0 d1=64 d2=106 [LotroShortMessage]
+  34838 META end_of_track
+== abcInfo
+  title="Test"
+  composer=""
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
+  hasTriplets=false hasMixTimings=false barCount=1 partCount=2 partSetups=2..2 empty=false
+  sourceFiles=[chord_shortest_note_wins.abc]
+  part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+== regions (10)
+  #0 line=6 cols=[0,5) ticks=0..5760 CHORD track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=6 cols=[3,4) ticks=0..5760 note=64 track=1 bar=0 tiesFrom=- tiesTo=-
+  #2 line=6 cols=[1,3) ticks=0..11520 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #3 line=6 cols=[6,11) ticks=5760..11520 CHORD track=1 bar=0 tiesFrom=- tiesTo=-
+  #4 line=6 cols=[7,8) ticks=5760..11520 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #5 line=6 cols=[8,10) ticks=5760..17280 note=64 track=1 bar=0 tiesFrom=- tiesTo=-
+  #6 line=6 cols=[12,18) ticks=11520..14400 CHORD track=1 bar=0 tiesFrom=- tiesTo=-
+  #7 line=6 cols=[13,15) ticks=11520..14400 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #8 line=6 cols=[15,17) ticks=11520..23040 note=64 track=1 bar=0 tiesFrom=- tiesTo=-
+  #9 line=6 cols=[19,20) ticks=14400..20160 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+== log: empty
+
+### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=34838 tracks=2
+-- track 0 (5 events)
+  0 META tempo mpq=500000
+  0 META text type=0x03 "Test"
+  0 META type=0x58 data=04021808
+  0 META type=0x59 data=0000
+  0 META end_of_track
+-- track 1 (21 events)
+  0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=64 d2=106 [LotroShortMessage]
+  0 META text type=0x03 "Test"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  5760 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  5760 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  5760 NOTE_OFF ch=0 d1=64 d2=106 [LotroShortMessage]
+  5760 NOTE_ON ch=0 d1=64 d2=106 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=64 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=64 d2=106 [LotroShortMessage]
+  14400 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  14400 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  32850 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  34838 NOTE_OFF ch=0 d1=64 d2=106 [LotroShortMessage]
+  34838 META end_of_track
+== abcInfo
+  title="Test"
+  composer=""
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
+  hasTriplets=false hasMixTimings=false barCount=1 partCount=2 partSetups=2..2 empty=false
+  sourceFiles=[chord_shortest_note_wins.abc]
+  part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+== regions (10)
+  #0 line=6 cols=[0,5) ticks=0..5760 CHORD track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=6 cols=[3,4) ticks=0..5760 note=64 track=1 bar=0 tiesFrom=- tiesTo=-
+  #2 line=6 cols=[1,3) ticks=0..11520 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #3 line=6 cols=[6,11) ticks=5760..11520 CHORD track=1 bar=0 tiesFrom=- tiesTo=-
+  #4 line=6 cols=[7,8) ticks=5760..11520 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #5 line=6 cols=[8,10) ticks=5760..17280 note=64 track=1 bar=0 tiesFrom=- tiesTo=-
+  #6 line=6 cols=[12,18) ticks=11520..14400 CHORD track=1 bar=0 tiesFrom=- tiesTo=-
+  #7 line=6 cols=[13,15) ticks=11520..14400 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #8 line=6 cols=[15,17) ticks=11520..23040 note=64 track=1 bar=0 tiesFrom=- tiesTo=-
+  #9 line=6 cols=[19,20) ticks=14400..20160 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+== log
+  WARNING: chord_shortest_note_wins.abc: Overlapping note c2, lotro might not play part 1 correctly. Overlap ticks=5760.0 11520.0 - 5760.0 11520.0 0.25s
+  WARNING: chord_shortest_note_wins.abc: Overlapping note e2, lotro might not play part 1 correctly. Overlap ticks=5760.0 17280.0 - 11520.0 23040.0 0.5s
+
+### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=23040 tracks=2
+-- track 0 (5 events)
+  0 META tempo mpq=500000
+  0 META text type=0x03 "Test"
+  0 META type=0x58 data=04021808
+  0 META type=0x59 data=0000
+  0 META end_of_track
+-- track 1 (18 events)
+  0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
+  0 META text type=0x03 "Test"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  5760 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
+  5760 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  5760 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  5760 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
+  14400 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  14400 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  20160 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  23040 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
+  23040 META end_of_track
+== abcInfo
+  title="Test"
+  composer=""
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
+  hasTriplets=false hasMixTimings=false barCount=1 partCount=2 partSetups=2..2 empty=false
+  sourceFiles=[chord_shortest_note_wins.abc]
+  part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+== regions (10)
+  #0 line=6 cols=[0,5) ticks=0..5760 CHORD track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=6 cols=[3,4) ticks=0..5760 note=64 track=1 bar=0 tiesFrom=- tiesTo=-
+  #2 line=6 cols=[1,3) ticks=0..11520 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #3 line=6 cols=[6,11) ticks=5760..11520 CHORD track=1 bar=0 tiesFrom=- tiesTo=-
+  #4 line=6 cols=[7,8) ticks=5760..11520 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #5 line=6 cols=[8,10) ticks=5760..17280 note=64 track=1 bar=0 tiesFrom=- tiesTo=-
+  #6 line=6 cols=[12,18) ticks=11520..14400 CHORD track=1 bar=0 tiesFrom=- tiesTo=-
+  #7 line=6 cols=[13,15) ticks=11520..14400 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #8 line=6 cols=[15,17) ticks=11520..23040 note=64 track=1 bar=0 tiesFrom=- tiesTo=-
+  #9 line=6 cols=[19,20) ticks=14400..20160 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+== log: empty

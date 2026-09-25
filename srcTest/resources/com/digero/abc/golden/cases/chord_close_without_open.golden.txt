@@ -1,0 +1,17 @@
+# AbcToMidi golden snapshot. Re-record with: mvn test -Dabc.golden.update=true (and review the diff before committing)
+case chord_close_without_open
+
+### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
+== EXCEPTION FileParseException: Error reading chord_close_without_open.abc on line 7, column 2:
+Unexpected ']'
+== log: empty
+
+### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
+== EXCEPTION FileParseException: Error reading chord_close_without_open.abc on line 7, column 2:
+Unexpected ']'
+== log: empty
+
+### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
+== EXCEPTION FileParseException: Error reading chord_close_without_open.abc on line 7, column 2:
+Unexpected ']'
+== log: empty

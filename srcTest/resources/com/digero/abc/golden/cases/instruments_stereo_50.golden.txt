@@ -1,0 +1,545 @@
+# AbcToMidi golden snapshot. Re-record with: mvn test -Dabc.golden.update=true (and review the diff before committing)
+case instruments_stereo_50
+
+### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=43189 tracks=9
+-- track 0 (5 events)
+  0 META tempo mpq=500000
+  0 META text type=0x03 "Test"
+  0 META type=0x58 data=04021808
+  0 META type=0x59 data=0000
+  0 META end_of_track
+-- track 1 (15 events)
+  0 PROGRAM_CHANGE ch=0 d1=46 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=36 d2=106 [LotroShortMessage]
+  0 META text type=0x03 "Harp"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=86 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  5760 NOTE_ON ch=0 d1=48 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  17280 NOTE_ON ch=0 d1=72 d2=106 [LotroShortMessage]
+  25267 NOTE_OFF ch=0 d1=36 d2=106 [LotroShortMessage]
+  25846 NOTE_OFF ch=0 d1=48 d2=106 [LotroShortMessage]
+  33457 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  42959 NOTE_OFF ch=0 d1=72 d2=106 [LotroShortMessage]
+  42959 META end_of_track
+-- track 2 (15 events)
+  0 PROGRAM_CHANGE ch=1 d1=109 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=1 d1=36 d2=106 [LotroShortMessage]
+  0 META text type=0x03 "Bagpipe"
+  0 CONTROL_CHANGE ch=1 d1=10 d2=33 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=1 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=1 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=1 d1=93 d2=0 [LotroShortMessage]
+  5760 NOTE_OFF ch=1 d1=36 d2=106 [LotroShortMessage]
+  5760 NOTE_ON ch=1 d1=48 d2=106 [LotroShortMessage]
+  11520 NOTE_OFF ch=1 d1=48 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=1 d1=60 d2=106 [LotroShortMessage]
+  17280 NOTE_OFF ch=1 d1=60 d2=106 [LotroShortMessage]
+  17280 NOTE_ON ch=1 d1=72 d2=106 [LotroShortMessage]
+  23040 NOTE_OFF ch=1 d1=72 d2=106 [LotroShortMessage]
+  23040 META end_of_track
+-- track 3 (15 events)
+  0 PROGRAM_CHANGE ch=2 d1=73 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=2 d1=36 d2=106 [LotroShortMessage]
+  0 META text type=0x03 "Flute"
+  0 CONTROL_CHANGE ch=2 d1=10 d2=95 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=2 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=2 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=2 d1=93 d2=0 [LotroShortMessage]
+  5760 NOTE_OFF ch=2 d1=36 d2=106 [LotroShortMessage]
+  5760 NOTE_ON ch=2 d1=48 d2=106 [LotroShortMessage]
+  11520 NOTE_OFF ch=2 d1=48 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=2 d1=60 d2=106 [LotroShortMessage]
+  17280 NOTE_OFF ch=2 d1=60 d2=106 [LotroShortMessage]
+  17280 NOTE_ON ch=2 d1=72 d2=106 [LotroShortMessage]
+  23040 NOTE_OFF ch=2 d1=72 d2=106 [LotroShortMessage]
+  23040 META end_of_track
+-- track 4 (15 events)
+  0 PROGRAM_CHANGE ch=3 d1=32 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=3 d1=36 d2=106 [LotroShortMessage]
+  0 META text type=0x03 "Theorbo"
+  0 CONTROL_CHANGE ch=3 d1=10 d2=74 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=3 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=3 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=3 d1=93 d2=0 [LotroShortMessage]
+  5760 NOTE_ON ch=3 d1=48 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=3 d1=60 d2=106 [LotroShortMessage]
+  17280 NOTE_ON ch=3 d1=72 d2=106 [LotroShortMessage]
+  19124 NOTE_OFF ch=3 d1=36 d2=106 [LotroShortMessage]
+  24884 NOTE_OFF ch=3 d1=48 d2=106 [LotroShortMessage]
+  30644 NOTE_OFF ch=3 d1=60 d2=106 [LotroShortMessage]
+  36404 NOTE_OFF ch=3 d1=72 d2=106 [LotroShortMessage]
+  36404 META end_of_track
+-- track 5 (15 events)
+  0 PROGRAM_CHANGE ch=4 d1=118 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=4 d1=36 d2=106 [LotroShortMessage]
+  0 META text type=0x03 "Drum"
+  0 CONTROL_CHANGE ch=4 d1=10 d2=64 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=4 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=4 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=4 d1=93 d2=0 [LotroShortMessage]
+  5760 NOTE_ON ch=4 d1=48 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=4 d1=60 d2=106 [LotroShortMessage]
+  17280 NOTE_ON ch=4 d1=72 d2=106 [LotroShortMessage]
+  20568 NOTE_OFF ch=4 d1=48 d2=106 [LotroShortMessage]
+  21996 NOTE_OFF ch=4 d1=36 d2=106 [LotroShortMessage]
+  23357 NOTE_OFF ch=4 d1=60 d2=106 [LotroShortMessage]
+  24165 NOTE_OFF ch=4 d1=72 d2=106 [LotroShortMessage]
+  24165 META end_of_track
+-- track 6 (15 events)
+  0 PROGRAM_CHANGE ch=5 d1=120 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=5 d1=36 d2=106 [LotroShortMessage]
+  0 META text type=0x03 "Student Fiddle"
+  0 CONTROL_CHANGE ch=5 d1=10 d2=97 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=5 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=5 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=5 d1=93 d2=0 [LotroShortMessage]
+  5760 NOTE_OFF ch=5 d1=36 d2=106 [LotroShortMessage]
+  5760 NOTE_ON ch=5 d1=48 d2=106 [LotroShortMessage]
+  11520 NOTE_OFF ch=5 d1=48 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=5 d1=60 d2=106 [LotroShortMessage]
+  17280 NOTE_OFF ch=5 d1=60 d2=106 [LotroShortMessage]
+  17280 NOTE_ON ch=5 d1=72 d2=106 [LotroShortMessage]
+  23040 NOTE_OFF ch=5 d1=72 d2=106 [LotroShortMessage]
+  23040 META end_of_track
+-- track 7 (15 events)
+  0 PROGRAM_CHANGE ch=6 d1=27 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=6 d1=36 d2=106 [LotroShortMessage]
+  0 META text type=0x03 "Misty Mountain Harp"
+  0 CONTROL_CHANGE ch=6 d1=10 d2=42 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=6 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=6 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=6 d1=93 d2=0 [LotroShortMessage]
+  5760 NOTE_ON ch=6 d1=48 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=6 d1=60 d2=106 [LotroShortMessage]
+  17280 NOTE_ON ch=6 d1=72 d2=106 [LotroShortMessage]
+  31006 NOTE_OFF ch=6 d1=36 d2=106 [LotroShortMessage]
+  31559 NOTE_OFF ch=6 d1=48 d2=106 [LotroShortMessage]
+  38116 NOTE_OFF ch=6 d1=60 d2=106 [LotroShortMessage]
+  43189 NOTE_OFF ch=6 d1=72 d2=106 [LotroShortMessage]
+  43189 META end_of_track
+-- track 8 (15 events)
+  0 PROGRAM_CHANGE ch=7 d1=71 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=7 d1=36 d2=106 [LotroShortMessage]
+  0 META text type=0x03 "Clarinet"
+  0 CONTROL_CHANGE ch=7 d1=10 d2=35 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=7 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=7 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=7 d1=93 d2=0 [LotroShortMessage]
+  5760 NOTE_OFF ch=7 d1=36 d2=106 [LotroShortMessage]
+  5760 NOTE_ON ch=7 d1=48 d2=106 [LotroShortMessage]
+  11520 NOTE_OFF ch=7 d1=48 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=7 d1=60 d2=106 [LotroShortMessage]
+  17280 NOTE_OFF ch=7 d1=60 d2=106 [LotroShortMessage]
+  17280 NOTE_ON ch=7 d1=72 d2=106 [LotroShortMessage]
+  23040 NOTE_OFF ch=7 d1=72 d2=106 [LotroShortMessage]
+  23040 META end_of_track
+== abcInfo
+  title="Test"
+  composer=""
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
+  hasTriplets=false hasMixTimings=false barCount=1 partCount=9 partSetups=9..9 empty=false
+  sourceFiles=[instruments_stereo_50.abc]
+  part 0: number=0 name="Harp" fullName="Test Harp" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Harp" fullName="Test Harp" instrument=BASIC_HARP madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=86 [LotroShortMessage]
+  part 2: number=2 name="Bagpipe" fullName="Test Bagpipe" instrument=BASIC_BAGPIPE madeFor=false userPan=null lines=7..13 pan=0 CONTROL_CHANGE ch=1 d1=10 d2=33 [LotroShortMessage]
+  part 3: number=3 name="Flute" fullName="Test Flute" instrument=BASIC_FLUTE madeFor=false userPan=null lines=14..20 pan=0 CONTROL_CHANGE ch=2 d1=10 d2=95 [LotroShortMessage]
+  part 4: number=4 name="Theorbo" fullName="Test Theorbo" instrument=BASIC_THEORBO madeFor=false userPan=null lines=21..27 pan=0 CONTROL_CHANGE ch=3 d1=10 d2=74 [LotroShortMessage]
+  part 5: number=5 name="Drum" fullName="Test Drum" instrument=BASIC_DRUM madeFor=false userPan=null lines=28..34 pan=0 CONTROL_CHANGE ch=4 d1=10 d2=64 [LotroShortMessage]
+  part 6: number=6 name="Student Fiddle" fullName="Test Student Fiddle" instrument=STUDENT_FIDDLE madeFor=false userPan=null lines=35..41 pan=0 CONTROL_CHANGE ch=5 d1=10 d2=97 [LotroShortMessage]
+  part 7: number=7 name="Misty Mountain Harp" fullName="Test Misty Mountain Harp" instrument=MISTY_MOUNTAIN_HARP madeFor=false userPan=null lines=42..48 pan=0 CONTROL_CHANGE ch=6 d1=10 d2=42 [LotroShortMessage]
+  part 8: number=8 name="Clarinet" fullName="Test Clarinet" instrument=BASIC_CLARINET madeFor=false userPan=null lines=49..55 pan=0 CONTROL_CHANGE ch=7 d1=10 d2=35 [LotroShortMessage]
+== regions (32)
+  #0 line=6 cols=[0,2) ticks=0..5760 note=36 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=13 cols=[0,2) ticks=0..5760 note=36 track=2 bar=0 tiesFrom=- tiesTo=-
+  #2 line=20 cols=[0,2) ticks=0..5760 note=36 track=3 bar=0 tiesFrom=- tiesTo=-
+  #3 line=27 cols=[0,2) ticks=0..5760 note=36 track=4 bar=0 tiesFrom=- tiesTo=-
+  #4 line=34 cols=[0,2) ticks=0..5760 note=36 track=5 bar=0 tiesFrom=- tiesTo=-
+  #5 line=41 cols=[0,2) ticks=0..5760 note=36 track=6 bar=0 tiesFrom=- tiesTo=-
+  #6 line=48 cols=[0,2) ticks=0..5760 note=36 track=7 bar=0 tiesFrom=- tiesTo=-
+  #7 line=55 cols=[0,2) ticks=0..5760 note=36 track=8 bar=0 tiesFrom=- tiesTo=-
+  #8 line=6 cols=[3,4) ticks=5760..11520 note=48 track=1 bar=0 tiesFrom=- tiesTo=-
+  #9 line=13 cols=[3,4) ticks=5760..11520 note=48 track=2 bar=0 tiesFrom=- tiesTo=-
+  #10 line=20 cols=[3,4) ticks=5760..11520 note=48 track=3 bar=0 tiesFrom=- tiesTo=-
+  #11 line=27 cols=[3,4) ticks=5760..11520 note=48 track=4 bar=0 tiesFrom=- tiesTo=-
+  #12 line=34 cols=[3,4) ticks=5760..11520 note=48 track=5 bar=0 tiesFrom=- tiesTo=-
+  #13 line=41 cols=[3,4) ticks=5760..11520 note=48 track=6 bar=0 tiesFrom=- tiesTo=-
+  #14 line=48 cols=[3,4) ticks=5760..11520 note=48 track=7 bar=0 tiesFrom=- tiesTo=-
+  #15 line=55 cols=[3,4) ticks=5760..11520 note=48 track=8 bar=0 tiesFrom=- tiesTo=-
+  #16 line=6 cols=[5,6) ticks=11520..17280 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #17 line=13 cols=[5,6) ticks=11520..17280 note=60 track=2 bar=0 tiesFrom=- tiesTo=-
+  #18 line=20 cols=[5,6) ticks=11520..17280 note=60 track=3 bar=0 tiesFrom=- tiesTo=-
+  #19 line=27 cols=[5,6) ticks=11520..17280 note=60 track=4 bar=0 tiesFrom=- tiesTo=-
+  #20 line=34 cols=[5,6) ticks=11520..17280 note=60 track=5 bar=0 tiesFrom=- tiesTo=-
+  #21 line=41 cols=[5,6) ticks=11520..17280 note=60 track=6 bar=0 tiesFrom=- tiesTo=-
+  #22 line=48 cols=[5,6) ticks=11520..17280 note=60 track=7 bar=0 tiesFrom=- tiesTo=-
+  #23 line=55 cols=[5,6) ticks=11520..17280 note=60 track=8 bar=0 tiesFrom=- tiesTo=-
+  #24 line=6 cols=[7,9) ticks=17280..23040 note=72 track=1 bar=0 tiesFrom=- tiesTo=-
+  #25 line=13 cols=[7,9) ticks=17280..23040 note=72 track=2 bar=0 tiesFrom=- tiesTo=-
+  #26 line=20 cols=[7,9) ticks=17280..23040 note=72 track=3 bar=0 tiesFrom=- tiesTo=-
+  #27 line=27 cols=[7,9) ticks=17280..23040 note=72 track=4 bar=0 tiesFrom=- tiesTo=-
+  #28 line=34 cols=[7,9) ticks=17280..23040 note=72 track=5 bar=0 tiesFrom=- tiesTo=-
+  #29 line=41 cols=[7,9) ticks=17280..23040 note=72 track=6 bar=0 tiesFrom=- tiesTo=-
+  #30 line=48 cols=[7,9) ticks=17280..23040 note=72 track=7 bar=0 tiesFrom=- tiesTo=-
+  #31 line=55 cols=[7,9) ticks=17280..23040 note=72 track=8 bar=0 tiesFrom=- tiesTo=-
+== log: empty
+
+### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=43189 tracks=9
+-- track 0 (5 events)
+  0 META tempo mpq=500000
+  0 META text type=0x03 "Test"
+  0 META type=0x58 data=04021808
+  0 META type=0x59 data=0000
+  0 META end_of_track
+-- track 1 (15 events)
+  0 PROGRAM_CHANGE ch=0 d1=46 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=36 d2=106 [LotroShortMessage]
+  0 META text type=0x03 "Harp"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=86 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  5760 NOTE_ON ch=0 d1=48 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  17280 NOTE_ON ch=0 d1=72 d2=106 [LotroShortMessage]
+  25267 NOTE_OFF ch=0 d1=36 d2=106 [LotroShortMessage]
+  25846 NOTE_OFF ch=0 d1=48 d2=106 [LotroShortMessage]
+  33457 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  42959 NOTE_OFF ch=0 d1=72 d2=106 [LotroShortMessage]
+  42959 META end_of_track
+-- track 2 (15 events)
+  0 PROGRAM_CHANGE ch=1 d1=109 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=1 d1=36 d2=106 [LotroShortMessage]
+  0 META text type=0x03 "Bagpipe"
+  0 CONTROL_CHANGE ch=1 d1=10 d2=33 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=1 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=1 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=1 d1=93 d2=0 [LotroShortMessage]
+  5760 NOTE_OFF ch=1 d1=36 d2=106 [LotroShortMessage]
+  5760 NOTE_ON ch=1 d1=48 d2=106 [LotroShortMessage]
+  11520 NOTE_OFF ch=1 d1=48 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=1 d1=60 d2=106 [LotroShortMessage]
+  17280 NOTE_OFF ch=1 d1=60 d2=106 [LotroShortMessage]
+  17280 NOTE_ON ch=1 d1=72 d2=106 [LotroShortMessage]
+  23040 NOTE_OFF ch=1 d1=72 d2=106 [LotroShortMessage]
+  23040 META end_of_track
+-- track 3 (15 events)
+  0 PROGRAM_CHANGE ch=2 d1=73 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=2 d1=36 d2=106 [LotroShortMessage]
+  0 META text type=0x03 "Flute"
+  0 CONTROL_CHANGE ch=2 d1=10 d2=95 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=2 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=2 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=2 d1=93 d2=0 [LotroShortMessage]
+  5760 NOTE_OFF ch=2 d1=36 d2=106 [LotroShortMessage]
+  5760 NOTE_ON ch=2 d1=48 d2=106 [LotroShortMessage]
+  11520 NOTE_OFF ch=2 d1=48 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=2 d1=60 d2=106 [LotroShortMessage]
+  17280 NOTE_OFF ch=2 d1=60 d2=106 [LotroShortMessage]
+  17280 NOTE_ON ch=2 d1=72 d2=106 [LotroShortMessage]
+  23040 NOTE_OFF ch=2 d1=72 d2=106 [LotroShortMessage]
+  23040 META end_of_track
+-- track 4 (15 events)
+  0 PROGRAM_CHANGE ch=3 d1=32 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=3 d1=36 d2=106 [LotroShortMessage]
+  0 META text type=0x03 "Theorbo"
+  0 CONTROL_CHANGE ch=3 d1=10 d2=74 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=3 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=3 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=3 d1=93 d2=0 [LotroShortMessage]
+  5760 NOTE_ON ch=3 d1=48 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=3 d1=60 d2=106 [LotroShortMessage]
+  17280 NOTE_ON ch=3 d1=72 d2=106 [LotroShortMessage]
+  19124 NOTE_OFF ch=3 d1=36 d2=106 [LotroShortMessage]
+  24884 NOTE_OFF ch=3 d1=48 d2=106 [LotroShortMessage]
+  30644 NOTE_OFF ch=3 d1=60 d2=106 [LotroShortMessage]
+  36404 NOTE_OFF ch=3 d1=72 d2=106 [LotroShortMessage]
+  36404 META end_of_track
+-- track 5 (15 events)
+  0 PROGRAM_CHANGE ch=4 d1=118 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=4 d1=36 d2=106 [LotroShortMessage]
+  0 META text type=0x03 "Drum"
+  0 CONTROL_CHANGE ch=4 d1=10 d2=64 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=4 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=4 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=4 d1=93 d2=0 [LotroShortMessage]
+  5760 NOTE_ON ch=4 d1=48 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=4 d1=60 d2=106 [LotroShortMessage]
+  17280 NOTE_ON ch=4 d1=72 d2=106 [LotroShortMessage]
+  20568 NOTE_OFF ch=4 d1=48 d2=106 [LotroShortMessage]
+  21996 NOTE_OFF ch=4 d1=36 d2=106 [LotroShortMessage]
+  23357 NOTE_OFF ch=4 d1=60 d2=106 [LotroShortMessage]
+  24165 NOTE_OFF ch=4 d1=72 d2=106 [LotroShortMessage]
+  24165 META end_of_track
+-- track 6 (15 events)
+  0 PROGRAM_CHANGE ch=5 d1=120 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=5 d1=36 d2=106 [LotroShortMessage]
+  0 META text type=0x03 "Student Fiddle"
+  0 CONTROL_CHANGE ch=5 d1=10 d2=97 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=5 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=5 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=5 d1=93 d2=0 [LotroShortMessage]
+  5760 NOTE_OFF ch=5 d1=36 d2=106 [LotroShortMessage]
+  5760 NOTE_ON ch=5 d1=48 d2=106 [LotroShortMessage]
+  11520 NOTE_OFF ch=5 d1=48 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=5 d1=60 d2=106 [LotroShortMessage]
+  17280 NOTE_OFF ch=5 d1=60 d2=106 [LotroShortMessage]
+  17280 NOTE_ON ch=5 d1=72 d2=106 [LotroShortMessage]
+  23040 NOTE_OFF ch=5 d1=72 d2=106 [LotroShortMessage]
+  23040 META end_of_track
+-- track 7 (15 events)
+  0 PROGRAM_CHANGE ch=6 d1=27 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=6 d1=36 d2=106 [LotroShortMessage]
+  0 META text type=0x03 "Misty Mountain Harp"
+  0 CONTROL_CHANGE ch=6 d1=10 d2=42 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=6 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=6 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=6 d1=93 d2=0 [LotroShortMessage]
+  5760 NOTE_ON ch=6 d1=48 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=6 d1=60 d2=106 [LotroShortMessage]
+  17280 NOTE_ON ch=6 d1=72 d2=106 [LotroShortMessage]
+  31006 NOTE_OFF ch=6 d1=36 d2=106 [LotroShortMessage]
+  31559 NOTE_OFF ch=6 d1=48 d2=106 [LotroShortMessage]
+  38116 NOTE_OFF ch=6 d1=60 d2=106 [LotroShortMessage]
+  43189 NOTE_OFF ch=6 d1=72 d2=106 [LotroShortMessage]
+  43189 META end_of_track
+-- track 8 (15 events)
+  0 PROGRAM_CHANGE ch=7 d1=71 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=7 d1=36 d2=106 [LotroShortMessage]
+  0 META text type=0x03 "Clarinet"
+  0 CONTROL_CHANGE ch=7 d1=10 d2=35 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=7 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=7 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=7 d1=93 d2=0 [LotroShortMessage]
+  5760 NOTE_OFF ch=7 d1=36 d2=106 [LotroShortMessage]
+  5760 NOTE_ON ch=7 d1=48 d2=106 [LotroShortMessage]
+  11520 NOTE_OFF ch=7 d1=48 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=7 d1=60 d2=106 [LotroShortMessage]
+  17280 NOTE_OFF ch=7 d1=60 d2=106 [LotroShortMessage]
+  17280 NOTE_ON ch=7 d1=72 d2=106 [LotroShortMessage]
+  23040 NOTE_OFF ch=7 d1=72 d2=106 [LotroShortMessage]
+  23040 META end_of_track
+== abcInfo
+  title="Test"
+  composer=""
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
+  hasTriplets=false hasMixTimings=false barCount=1 partCount=9 partSetups=9..9 empty=false
+  sourceFiles=[instruments_stereo_50.abc]
+  part 0: number=0 name="Harp" fullName="Test Harp" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Harp" fullName="Test Harp" instrument=BASIC_HARP madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=86 [LotroShortMessage]
+  part 2: number=2 name="Bagpipe" fullName="Test Bagpipe" instrument=BASIC_BAGPIPE madeFor=false userPan=null lines=7..13 pan=0 CONTROL_CHANGE ch=1 d1=10 d2=33 [LotroShortMessage]
+  part 3: number=3 name="Flute" fullName="Test Flute" instrument=BASIC_FLUTE madeFor=false userPan=null lines=14..20 pan=0 CONTROL_CHANGE ch=2 d1=10 d2=95 [LotroShortMessage]
+  part 4: number=4 name="Theorbo" fullName="Test Theorbo" instrument=BASIC_THEORBO madeFor=false userPan=null lines=21..27 pan=0 CONTROL_CHANGE ch=3 d1=10 d2=74 [LotroShortMessage]
+  part 5: number=5 name="Drum" fullName="Test Drum" instrument=BASIC_DRUM madeFor=false userPan=null lines=28..34 pan=0 CONTROL_CHANGE ch=4 d1=10 d2=64 [LotroShortMessage]
+  part 6: number=6 name="Student Fiddle" fullName="Test Student Fiddle" instrument=STUDENT_FIDDLE madeFor=false userPan=null lines=35..41 pan=0 CONTROL_CHANGE ch=5 d1=10 d2=97 [LotroShortMessage]
+  part 7: number=7 name="Misty Mountain Harp" fullName="Test Misty Mountain Harp" instrument=MISTY_MOUNTAIN_HARP madeFor=false userPan=null lines=42..48 pan=0 CONTROL_CHANGE ch=6 d1=10 d2=42 [LotroShortMessage]
+  part 8: number=8 name="Clarinet" fullName="Test Clarinet" instrument=BASIC_CLARINET madeFor=false userPan=null lines=49..55 pan=0 CONTROL_CHANGE ch=7 d1=10 d2=35 [LotroShortMessage]
+== regions (32)
+  #0 line=6 cols=[0,2) ticks=0..5760 note=36 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=13 cols=[0,2) ticks=0..5760 note=36 track=2 bar=0 tiesFrom=- tiesTo=-
+  #2 line=20 cols=[0,2) ticks=0..5760 note=36 track=3 bar=0 tiesFrom=- tiesTo=-
+  #3 line=27 cols=[0,2) ticks=0..5760 note=36 track=4 bar=0 tiesFrom=- tiesTo=-
+  #4 line=34 cols=[0,2) ticks=0..5760 note=36 track=5 bar=0 tiesFrom=- tiesTo=-
+  #5 line=41 cols=[0,2) ticks=0..5760 note=36 track=6 bar=0 tiesFrom=- tiesTo=-
+  #6 line=48 cols=[0,2) ticks=0..5760 note=36 track=7 bar=0 tiesFrom=- tiesTo=-
+  #7 line=55 cols=[0,2) ticks=0..5760 note=36 track=8 bar=0 tiesFrom=- tiesTo=-
+  #8 line=6 cols=[3,4) ticks=5760..11520 note=48 track=1 bar=0 tiesFrom=- tiesTo=-
+  #9 line=13 cols=[3,4) ticks=5760..11520 note=48 track=2 bar=0 tiesFrom=- tiesTo=-
+  #10 line=20 cols=[3,4) ticks=5760..11520 note=48 track=3 bar=0 tiesFrom=- tiesTo=-
+  #11 line=27 cols=[3,4) ticks=5760..11520 note=48 track=4 bar=0 tiesFrom=- tiesTo=-
+  #12 line=34 cols=[3,4) ticks=5760..11520 note=48 track=5 bar=0 tiesFrom=- tiesTo=-
+  #13 line=41 cols=[3,4) ticks=5760..11520 note=48 track=6 bar=0 tiesFrom=- tiesTo=-
+  #14 line=48 cols=[3,4) ticks=5760..11520 note=48 track=7 bar=0 tiesFrom=- tiesTo=-
+  #15 line=55 cols=[3,4) ticks=5760..11520 note=48 track=8 bar=0 tiesFrom=- tiesTo=-
+  #16 line=6 cols=[5,6) ticks=11520..17280 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #17 line=13 cols=[5,6) ticks=11520..17280 note=60 track=2 bar=0 tiesFrom=- tiesTo=-
+  #18 line=20 cols=[5,6) ticks=11520..17280 note=60 track=3 bar=0 tiesFrom=- tiesTo=-
+  #19 line=27 cols=[5,6) ticks=11520..17280 note=60 track=4 bar=0 tiesFrom=- tiesTo=-
+  #20 line=34 cols=[5,6) ticks=11520..17280 note=60 track=5 bar=0 tiesFrom=- tiesTo=-
+  #21 line=41 cols=[5,6) ticks=11520..17280 note=60 track=6 bar=0 tiesFrom=- tiesTo=-
+  #22 line=48 cols=[5,6) ticks=11520..17280 note=60 track=7 bar=0 tiesFrom=- tiesTo=-
+  #23 line=55 cols=[5,6) ticks=11520..17280 note=60 track=8 bar=0 tiesFrom=- tiesTo=-
+  #24 line=6 cols=[7,9) ticks=17280..23040 note=72 track=1 bar=0 tiesFrom=- tiesTo=-
+  #25 line=13 cols=[7,9) ticks=17280..23040 note=72 track=2 bar=0 tiesFrom=- tiesTo=-
+  #26 line=20 cols=[7,9) ticks=17280..23040 note=72 track=3 bar=0 tiesFrom=- tiesTo=-
+  #27 line=27 cols=[7,9) ticks=17280..23040 note=72 track=4 bar=0 tiesFrom=- tiesTo=-
+  #28 line=34 cols=[7,9) ticks=17280..23040 note=72 track=5 bar=0 tiesFrom=- tiesTo=-
+  #29 line=41 cols=[7,9) ticks=17280..23040 note=72 track=6 bar=0 tiesFrom=- tiesTo=-
+  #30 line=48 cols=[7,9) ticks=17280..23040 note=72 track=7 bar=0 tiesFrom=- tiesTo=-
+  #31 line=55 cols=[7,9) ticks=17280..23040 note=72 track=8 bar=0 tiesFrom=- tiesTo=-
+== log: empty
+
+### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
+-- track 0 (5 events)
+  0 META tempo mpq=500000
+  0 META text type=0x03 "Test"
+  0 META type=0x58 data=04021808
+  0 META type=0x59 data=0000
+  0 META end_of_track
+-- track 1 (12 events)
+  0 PROGRAM_CHANGE ch=0 d1=46 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=36 d2=80 [LotroShortMessage]
+  0 META text type=0x03 "Harp"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=86 [LotroShortMessage]
+  5760 NOTE_OFF ch=0 d1=36 d2=80 [LotroShortMessage]
+  5760 NOTE_ON ch=0 d1=48 d2=80 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=48 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  17280 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  17280 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  23040 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  23040 META end_of_track
+-- track 2 (12 events)
+  0 PROGRAM_CHANGE ch=1 d1=109 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=1 d1=48 d2=80 [LotroShortMessage]
+  0 META text type=0x03 "Bagpipe"
+  0 CONTROL_CHANGE ch=1 d1=10 d2=33 [LotroShortMessage]
+  5760 NOTE_OFF ch=1 d1=48 d2=80 [LotroShortMessage]
+  5760 NOTE_ON ch=1 d1=60 d2=80 [LotroShortMessage]
+  11520 NOTE_OFF ch=1 d1=60 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=1 d1=72 d2=80 [LotroShortMessage]
+  17280 NOTE_OFF ch=1 d1=72 d2=80 [LotroShortMessage]
+  17280 NOTE_ON ch=1 d1=84 d2=80 [LotroShortMessage]
+  23040 NOTE_OFF ch=1 d1=84 d2=80 [LotroShortMessage]
+  23040 META end_of_track
+-- track 3 (12 events)
+  0 PROGRAM_CHANGE ch=2 d1=73 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=2 d1=60 d2=80 [LotroShortMessage]
+  0 META text type=0x03 "Flute"
+  0 CONTROL_CHANGE ch=2 d1=10 d2=95 [LotroShortMessage]
+  5760 NOTE_OFF ch=2 d1=60 d2=80 [LotroShortMessage]
+  5760 NOTE_ON ch=2 d1=72 d2=80 [LotroShortMessage]
+  11520 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=2 d1=84 d2=80 [LotroShortMessage]
+  17280 NOTE_OFF ch=2 d1=84 d2=80 [LotroShortMessage]
+  17280 NOTE_ON ch=2 d1=96 d2=80 [LotroShortMessage]
+  23040 NOTE_OFF ch=2 d1=96 d2=80 [LotroShortMessage]
+  23040 META end_of_track
+-- track 4 (12 events)
+  0 PROGRAM_CHANGE ch=3 d1=32 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=3 d1=24 d2=80 [LotroShortMessage]
+  0 META text type=0x03 "Theorbo"
+  0 CONTROL_CHANGE ch=3 d1=10 d2=74 [LotroShortMessage]
+  5760 NOTE_OFF ch=3 d1=24 d2=80 [LotroShortMessage]
+  5760 NOTE_ON ch=3 d1=36 d2=80 [LotroShortMessage]
+  11520 NOTE_OFF ch=3 d1=36 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=3 d1=48 d2=80 [LotroShortMessage]
+  17280 NOTE_OFF ch=3 d1=48 d2=80 [LotroShortMessage]
+  17280 NOTE_ON ch=3 d1=60 d2=80 [LotroShortMessage]
+  23040 NOTE_OFF ch=3 d1=60 d2=80 [LotroShortMessage]
+  23040 META end_of_track
+-- track 5 (12 events)
+  0 PROGRAM_CHANGE ch=4 d1=118 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=4 d1=36 d2=80 [LotroShortMessage]
+  0 META text type=0x03 "Drum"
+  0 CONTROL_CHANGE ch=4 d1=10 d2=64 [LotroShortMessage]
+  5760 NOTE_OFF ch=4 d1=36 d2=80 [LotroShortMessage]
+  5760 NOTE_ON ch=4 d1=48 d2=80 [LotroShortMessage]
+  11520 NOTE_OFF ch=4 d1=48 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=4 d1=60 d2=80 [LotroShortMessage]
+  17280 NOTE_OFF ch=4 d1=60 d2=80 [LotroShortMessage]
+  17280 NOTE_ON ch=4 d1=72 d2=80 [LotroShortMessage]
+  23040 NOTE_OFF ch=4 d1=72 d2=80 [LotroShortMessage]
+  23040 META end_of_track
+-- track 6 (12 events)
+  0 PROGRAM_CHANGE ch=5 d1=120 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=5 d1=48 d2=80 [LotroShortMessage]
+  0 META text type=0x03 "Student Fiddle"
+  0 CONTROL_CHANGE ch=5 d1=10 d2=97 [LotroShortMessage]
+  5760 NOTE_OFF ch=5 d1=48 d2=80 [LotroShortMessage]
+  5760 NOTE_ON ch=5 d1=60 d2=80 [LotroShortMessage]
+  11520 NOTE_OFF ch=5 d1=60 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=5 d1=72 d2=80 [LotroShortMessage]
+  17280 NOTE_OFF ch=5 d1=72 d2=80 [LotroShortMessage]
+  17280 NOTE_ON ch=5 d1=84 d2=80 [LotroShortMessage]
+  23040 NOTE_OFF ch=5 d1=84 d2=80 [LotroShortMessage]
+  23040 META end_of_track
+-- track 7 (12 events)
+  0 PROGRAM_CHANGE ch=6 d1=27 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=6 d1=36 d2=80 [LotroShortMessage]
+  0 META text type=0x03 "Misty Mountain Harp"
+  0 CONTROL_CHANGE ch=6 d1=10 d2=42 [LotroShortMessage]
+  5760 NOTE_OFF ch=6 d1=36 d2=80 [LotroShortMessage]
+  5760 NOTE_ON ch=6 d1=48 d2=80 [LotroShortMessage]
+  11520 NOTE_OFF ch=6 d1=48 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=6 d1=60 d2=80 [LotroShortMessage]
+  17280 NOTE_OFF ch=6 d1=60 d2=80 [LotroShortMessage]
+  17280 NOTE_ON ch=6 d1=72 d2=80 [LotroShortMessage]
+  23040 NOTE_OFF ch=6 d1=72 d2=80 [LotroShortMessage]
+  23040 META end_of_track
+-- track 8 (12 events)
+  0 PROGRAM_CHANGE ch=7 d1=71 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=7 d1=48 d2=80 [LotroShortMessage]
+  0 META text type=0x03 "Clarinet"
+  0 CONTROL_CHANGE ch=7 d1=10 d2=35 [LotroShortMessage]
+  5760 NOTE_OFF ch=7 d1=48 d2=80 [LotroShortMessage]
+  5760 NOTE_ON ch=7 d1=60 d2=80 [LotroShortMessage]
+  11520 NOTE_OFF ch=7 d1=60 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=7 d1=72 d2=80 [LotroShortMessage]
+  17280 NOTE_OFF ch=7 d1=72 d2=80 [LotroShortMessage]
+  17280 NOTE_ON ch=7 d1=84 d2=80 [LotroShortMessage]
+  23040 NOTE_OFF ch=7 d1=84 d2=80 [LotroShortMessage]
+  23040 META end_of_track
+== abcInfo
+  title="Test"
+  composer=""
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
+  hasTriplets=false hasMixTimings=false barCount=1 partCount=9 partSetups=9..9 empty=false
+  sourceFiles=[instruments_stereo_50.abc]
+  part 0: number=0 name="Harp" fullName="Test Harp" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Harp" fullName="Test Harp" instrument=BASIC_HARP madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=86 [LotroShortMessage]
+  part 2: number=2 name="Bagpipe" fullName="Test Bagpipe" instrument=BASIC_BAGPIPE madeFor=false userPan=null lines=7..13 pan=0 CONTROL_CHANGE ch=1 d1=10 d2=33 [LotroShortMessage]
+  part 3: number=3 name="Flute" fullName="Test Flute" instrument=BASIC_FLUTE madeFor=false userPan=null lines=14..20 pan=0 CONTROL_CHANGE ch=2 d1=10 d2=95 [LotroShortMessage]
+  part 4: number=4 name="Theorbo" fullName="Test Theorbo" instrument=BASIC_THEORBO madeFor=false userPan=null lines=21..27 pan=0 CONTROL_CHANGE ch=3 d1=10 d2=74 [LotroShortMessage]
+  part 5: number=5 name="Drum" fullName="Test Drum" instrument=BASIC_DRUM madeFor=false userPan=null lines=28..34 pan=0 CONTROL_CHANGE ch=4 d1=10 d2=64 [LotroShortMessage]
+  part 6: number=6 name="Student Fiddle" fullName="Test Student Fiddle" instrument=STUDENT_FIDDLE madeFor=false userPan=null lines=35..41 pan=0 CONTROL_CHANGE ch=5 d1=10 d2=97 [LotroShortMessage]
+  part 7: number=7 name="Misty Mountain Harp" fullName="Test Misty Mountain Harp" instrument=MISTY_MOUNTAIN_HARP madeFor=false userPan=null lines=42..48 pan=0 CONTROL_CHANGE ch=6 d1=10 d2=42 [LotroShortMessage]
+  part 8: number=8 name="Clarinet" fullName="Test Clarinet" instrument=BASIC_CLARINET madeFor=false userPan=null lines=49..55 pan=0 CONTROL_CHANGE ch=7 d1=10 d2=35 [LotroShortMessage]
+== regions (32)
+  #0 line=6 cols=[0,2) ticks=0..5760 note=36 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=13 cols=[0,2) ticks=0..5760 note=48 track=2 bar=0 tiesFrom=- tiesTo=-
+  #2 line=20 cols=[0,2) ticks=0..5760 note=60 track=3 bar=0 tiesFrom=- tiesTo=-
+  #3 line=27 cols=[0,2) ticks=0..5760 note=24 track=4 bar=0 tiesFrom=- tiesTo=-
+  #4 line=34 cols=[0,2) ticks=0..5760 note=36 track=5 bar=0 tiesFrom=- tiesTo=-
+  #5 line=41 cols=[0,2) ticks=0..5760 note=48 track=6 bar=0 tiesFrom=- tiesTo=-
+  #6 line=48 cols=[0,2) ticks=0..5760 note=36 track=7 bar=0 tiesFrom=- tiesTo=-
+  #7 line=55 cols=[0,2) ticks=0..5760 note=48 track=8 bar=0 tiesFrom=- tiesTo=-
+  #8 line=6 cols=[3,4) ticks=5760..11520 note=48 track=1 bar=0 tiesFrom=- tiesTo=-
+  #9 line=13 cols=[3,4) ticks=5760..11520 note=60 track=2 bar=0 tiesFrom=- tiesTo=-
+  #10 line=20 cols=[3,4) ticks=5760..11520 note=72 track=3 bar=0 tiesFrom=- tiesTo=-
+  #11 line=27 cols=[3,4) ticks=5760..11520 note=36 track=4 bar=0 tiesFrom=- tiesTo=-
+  #12 line=34 cols=[3,4) ticks=5760..11520 note=48 track=5 bar=0 tiesFrom=- tiesTo=-
+  #13 line=41 cols=[3,4) ticks=5760..11520 note=60 track=6 bar=0 tiesFrom=- tiesTo=-
+  #14 line=48 cols=[3,4) ticks=5760..11520 note=48 track=7 bar=0 tiesFrom=- tiesTo=-
+  #15 line=55 cols=[3,4) ticks=5760..11520 note=60 track=8 bar=0 tiesFrom=- tiesTo=-
+  #16 line=6 cols=[5,6) ticks=11520..17280 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #17 line=13 cols=[5,6) ticks=11520..17280 note=72 track=2 bar=0 tiesFrom=- tiesTo=-
+  #18 line=20 cols=[5,6) ticks=11520..17280 note=84 track=3 bar=0 tiesFrom=- tiesTo=-
+  #19 line=27 cols=[5,6) ticks=11520..17280 note=48 track=4 bar=0 tiesFrom=- tiesTo=-
+  #20 line=34 cols=[5,6) ticks=11520..17280 note=60 track=5 bar=0 tiesFrom=- tiesTo=-
+  #21 line=41 cols=[5,6) ticks=11520..17280 note=72 track=6 bar=0 tiesFrom=- tiesTo=-
+  #22 line=48 cols=[5,6) ticks=11520..17280 note=60 track=7 bar=0 tiesFrom=- tiesTo=-
+  #23 line=55 cols=[5,6) ticks=11520..17280 note=72 track=8 bar=0 tiesFrom=- tiesTo=-
+  #24 line=6 cols=[7,9) ticks=17280..23040 note=72 track=1 bar=0 tiesFrom=- tiesTo=-
+  #25 line=13 cols=[7,9) ticks=17280..23040 note=84 track=2 bar=0 tiesFrom=- tiesTo=-
+  #26 line=20 cols=[7,9) ticks=17280..23040 note=96 track=3 bar=0 tiesFrom=- tiesTo=-
+  #27 line=27 cols=[7,9) ticks=17280..23040 note=60 track=4 bar=0 tiesFrom=- tiesTo=-
+  #28 line=34 cols=[7,9) ticks=17280..23040 note=72 track=5 bar=0 tiesFrom=- tiesTo=-
+  #29 line=41 cols=[7,9) ticks=17280..23040 note=84 track=6 bar=0 tiesFrom=- tiesTo=-
+  #30 line=48 cols=[7,9) ticks=17280..23040 note=72 track=7 bar=0 tiesFrom=- tiesTo=-
+  #31 line=55 cols=[7,9) ticks=17280..23040 note=84 track=8 bar=0 tiesFrom=- tiesTo=-
+== log: empty

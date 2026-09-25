@@ -1,0 +1,17 @@
+# AbcToMidi golden snapshot. Re-record with: mvn test -Dabc.golden.update=true (and review the diff before committing)
+case broken_at_line_end
+
+### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
+== EXCEPTION FileParseException: Error reading broken_at_line_end.abc on line 7, column 3:
+Broken rhythm unfinished at end of line
+== log: empty
+
+### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
+== EXCEPTION FileParseException: Error reading broken_at_line_end.abc on line 7, column 3:
+Broken rhythm unfinished at end of line
+== log: empty
+
+### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
+== EXCEPTION FileParseException: Error reading broken_at_line_end.abc on line 7, column 3:
+Broken rhythm unfinished at end of line
+== log: empty

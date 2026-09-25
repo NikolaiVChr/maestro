@@ -81,6 +81,10 @@ public class AbcToMidi {
 	private static final int NOTE_BROKEN_RHYTHM = 6;
 	private static final int NOTE_TIE = 7;
 
+	private static final Pattern CHORD_LENGTH_PATTERN = Pattern.compile("(\\d+)?(//?\\d*)?");
+	private static final int CHORD_LEN_NUMER = 1;
+	private static final int CHORD_LEN_DENOM = 2;
+
 	/**
 	 * Maps a note name (a, b, c, etc.) to the number of semitones it is above the beginning of the octave (c)
 	 */
@@ -365,6 +369,12 @@ public class AbcToMidi {
 					Matcher m = NOTE_PATTERN.matcher(line);
 					int i = 0;
 					boolean inChord = false;
+					// Length multiplier from the suffix after the current chord's ']' (e.g. [ceg]3/4), applied to
+					// every note in the chord. Stays 1/1 when the chord has no suffix or we're not in a chord.
+					int chordLenNumerator = 1;
+					int chordLenDenominator = 1;
+					String chordLenStr = "";
+					int chordCloseIndex = -1; // Index of the current chord's ']'; -1 if the chord is unclosed
 					Tuplet tuplet = null;
 					int brokenRhythmNumerator = 1; // The numerator of the note after the broken rhythm sign
 					int brokenRhythmDenominator = 1; // The denominator of the note after the broken rhythm sign
@@ -397,6 +407,27 @@ public class AbcToMidi {
 								chordSize = 0;
 								inChord = true;
 								chordStartIndex = i;
+
+								// Look ahead past the matching ']' for a chord length suffix, because the notes inside
+								// the chord are turned into MIDI events before we reach the ']'.
+								chordLenNumerator = 1;
+								chordLenDenominator = 1;
+								chordLenStr = "";
+								chordCloseIndex = line.indexOf(']', i + 1);
+								if (chordCloseIndex >= 0) {
+									Matcher chordLenMatcher = CHORD_LENGTH_PATTERN.matcher(line);
+									chordLenMatcher.region(chordCloseIndex + 1, line.length());
+									chordLenMatcher.lookingAt(); // Always succeeds; may be an empty match
+									chordLenNumerator = parseLengthNumerator(chordLenMatcher.group(CHORD_LEN_NUMER));
+									chordLenDenominator = parseLengthDenominator(chordLenMatcher.group(CHORD_LEN_DENOM));
+									chordLenStr = chordLenMatcher.group();
+									if (chordLenNumerator == 0 || chordLenDenominator == 0) {
+										throw new FileParseException("Invalid chord length: " + chordLenStr, fileName,
+												lineNumber, chordCloseIndex + 1);
+									}
+								}
+								// If there's no ']' on this line, the "Chord not closed" check at the end of the line reports it
+
 								partChordsNumber++;
 								if (enableLotroErrors && partChordsNumber > 10_000) {
 									throw new LotroFileParseException("Too many chords/notes/rests in "+info.getTitle()+". Max is 10000.",
@@ -408,12 +439,25 @@ public class AbcToMidi {
 								if (!inChord) {
 									throw new FileParseException("Unexpected '" + ch + "'", fileName, lineNumber, i);
 								}
+								if (i != chordCloseIndex) {
+									// Only possible if something like a +volume+ skipped over the ']' the
+									// look-ahead in '[' found, so the chord length we applied belongs to another ']'
+									//throw new FileParseException("Mismatched ']' in chord", fileName, lineNumber, i);
+								}
 								inChord = false;
 
+								int chordLenEnd = i + 1;// + chordLenStr.length();
 								if (generateRegions) {
-									abcInfo.addRegion(new AbcRegion(lineNumberForRegions, chordStartIndex, i + 1,
+									abcInfo.addRegion(new AbcRegion(lineNumberForRegions, chordStartIndex, chordLenEnd,
 											Math.round(chordStartTick), Math.round(chordEndTick), null, trackIndex));
 								}
+
+								// Skip the chord length suffix; the for-loop's i++ lands on chordLenEnd
+								//i = chordLenEnd - 1;
+								chordLenNumerator = 1;
+								chordLenDenominator = 1;
+								chordLenStr = "";
+								chordCloseIndex = -1;
 
 								chordStartTick = chordEndTick;
                                 log.finer("chordStartTick ]="+chordStartTick);
@@ -542,29 +586,17 @@ public class AbcToMidi {
 						}
 
 						// Parse the note
+
+						// fraction with broken rhythm, tuplet and tempo changes applied
 						int numerator;
 						int denominator;
+
+						// actual fraction as written
 						int numerator_abc;
 						int denominator_abc;
-						try {
-							numerator = (m.group(NOTE_LEN_NUMER) == null) ? 1 : Integer.parseInt(m.group(NOTE_LEN_NUMER));
-						} catch (NumberFormatException nfe) {
-							numerator = 4;// should not happen
-						}
-						String denom = m.group(NOTE_LEN_DENOM);
-						if (denom == null)
-							denominator = 1;
-						else if (denom.equals("/"))
-							denominator = 2;
-						else if (denom.equals("//"))
-							denominator = 4;
-						else {
-							try {
-								denominator = Integer.parseInt(denom.substring(1));
-							} catch (NumberFormatException nfe) {
-								denominator = 4;// should not happen
-							}
-						}
+
+						numerator = parseLengthNumerator(m.group(NOTE_LEN_NUMER));
+						denominator = parseLengthDenominator(m.group(NOTE_LEN_DENOM));
 
 						String abcNoteL = "";
 						if (m.group(NOTE_LEN_NUMER) != null) {
@@ -573,6 +605,14 @@ public class AbcToMidi {
 						if (m.group(NOTE_LEN_DENOM) != null) {
 							abcNoteL += m.group(NOTE_LEN_DENOM);
 						}
+
+						// Apply the chord's length suffix, e.g. [ceg]3/4 or [c2eg]3/4 (the latter gives c 6/4, e and g 3/4)
+						if (inChord && !chordLenStr.isEmpty()) {
+							//numerator *= chordLenNumerator;
+							//denominator *= chordLenDenominator;
+							//abcNoteL += "*" + chordLenStr; // Shows the effective length in error messages, e.g. "c2*3/4"
+						}
+
 						String abcNoteAcc = "";
 						if (m.group(NOTE_ACCIDENTAL) != null) {
 							abcNoteAcc = m.group(NOTE_ACCIDENTAL);
@@ -992,6 +1032,37 @@ public class AbcToMidi {
 			return m.group(NOTE_TIE);
 		}
 		return "";
+	}
+
+	/**
+	 * Parses the numerator part of an ABC note length ("3" in "c3/4"). A missing numerator means 1.
+	 */
+	private static int parseLengthNumerator(String numer) {
+		if (numer == null)
+			return 1;
+		try {
+			return Integer.parseInt(numer);
+		} catch (NumberFormatException nfe) {
+			return 4;// should not happen
+		}
+	}
+
+	/**
+	 * Parses the denominator part of an ABC note length ("/4" in "c3/4"). A missing denominator means 1, "/" means 2
+	 * and "//" means 4.
+	 */
+	private static int parseLengthDenominator(String denom) {
+		if (denom == null)
+			return 1;
+		else if (denom.equals("/"))
+			return 2;
+		else if (denom.equals("//"))
+			return 4;
+		try {
+			return Integer.parseInt(denom.substring(1));
+		} catch (NumberFormatException nfe) {
+			return 4;// should not happen
+		}
 	}
 
 	/**

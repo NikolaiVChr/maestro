@@ -1,0 +1,17 @@
+# AbcToMidi golden snapshot. Re-record with: mvn test -Dabc.golden.update=true (and review the diff before committing)
+case tuplet_p_too_small
+
+### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
+== EXCEPTION FileParseException: Error reading tuplet_p_too_small.abc on line 7, column 1:
+Invalid tuplet
+== log: empty
+
+### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
+== EXCEPTION FileParseException: Error reading tuplet_p_too_small.abc on line 7, column 1:
+Invalid tuplet
+== log: empty
+
+### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
+== EXCEPTION FileParseException: Error reading tuplet_p_too_small.abc on line 7, column 1:
+Invalid tuplet
+== log: empty

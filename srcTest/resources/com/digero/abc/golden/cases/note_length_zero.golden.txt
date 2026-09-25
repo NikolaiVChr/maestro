@@ -1,0 +1,17 @@
+# AbcToMidi golden snapshot. Re-record with: mvn test -Dabc.golden.update=true (and review the diff before committing)
+case note_length_zero
+
+### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
+== EXCEPTION FileParseException: Error reading note_length_zero.abc on line 4, column 3:
+The numerator of the note length must be positive (example of valid note length: 3/8)
+== log: empty
+
+### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
+== EXCEPTION FileParseException: Error reading note_length_zero.abc on line 4, column 3:
+The numerator of the note length must be positive (example of valid note length: 3/8)
+== log: empty
+
+### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
+== EXCEPTION FileParseException: Error reading note_length_zero.abc on line 4, column 3:
+The numerator of the note length must be positive (example of valid note length: 3/8)
+== log: empty
