@@ -418,8 +418,13 @@ public class AbcToMidi {
 									Matcher chordLenMatcher = CHORD_LENGTH_PATTERN.matcher(line);
 									chordLenMatcher.region(chordCloseIndex + 1, line.length());
 									chordLenMatcher.lookingAt(); // Always succeeds; may be an empty match
-									chordLenNumerator = parseLengthNumerator(chordLenMatcher.group(CHORD_LEN_NUMER));
-									chordLenDenominator = parseLengthDenominator(chordLenMatcher.group(CHORD_LEN_DENOM));
+									try {
+										chordLenNumerator = parseLengthNumerator(chordLenMatcher.group(CHORD_LEN_NUMER));
+										chordLenDenominator = parseLengthDenominator(chordLenMatcher.group(CHORD_LEN_DENOM));
+									} catch (IllegalArgumentException e) {
+										throw new FileParseException("Invalid chord length: " + chordLenMatcher.group(),
+														fileName, lineNumber, chordCloseIndex + 1);
+									}
 									chordLenStr = chordLenMatcher.group();
 									if (enableLotroErrors && !chordLenStr.isEmpty()) {
 										throw new LotroFileParseException("LotRO doesn't support a duration after a chord ("
@@ -600,8 +605,14 @@ public class AbcToMidi {
 						int numerator_abc;
 						int denominator_abc;
 
-						numerator = parseLengthNumerator(m.group(NOTE_LEN_NUMER));
-						denominator = parseLengthDenominator(m.group(NOTE_LEN_DENOM));
+						try {
+							numerator = parseLengthNumerator(m.group(NOTE_LEN_NUMER));
+							denominator = parseLengthDenominator(m.group(NOTE_LEN_DENOM));
+						} catch (IllegalArgumentException e) {
+							throw new FileParseException("Invalid note length: "
+								+ Objects.requireNonNullElse(m.group(NOTE_LEN_NUMER), "")
+								+ Objects.requireNonNullElse(m.group(NOTE_LEN_DENOM), ""), fileName, lineNumber, m.start());
+						}
 
 						String abcNoteL = "";
 						if (m.group(NOTE_LEN_NUMER) != null) {
@@ -1045,11 +1056,10 @@ public class AbcToMidi {
 	private static int parseLengthNumerator(String numer) {
 		if (numer == null)
 			return 1;
-		try {
-			return Integer.parseInt(numer);
-		} catch (NumberFormatException nfe) {
-			return 4;// should not happen
-		}
+		int value = Integer.parseInt(numer); // NumberFormatException is an IllegalArgumentException
+		if (value < 1)
+			throw new IllegalArgumentException("Length must be positive: " + numer);
+		return value;
 	}
 
 	/**
@@ -1063,11 +1073,12 @@ public class AbcToMidi {
 			return 2;
 		else if (denom.equals("//"))
 			return 4;
-		try {
-			return Integer.parseInt(denom.substring(1));
-		} catch (NumberFormatException nfe) {
-			return 4;// should not happen
-		}
+		else if (denom.startsWith("//"))
+			throw new IllegalArgumentException("\"//\" can't be followed by a number: " + denom);
+		int value = Integer.parseInt(denom.substring(1)); // NumberFormatException is an IllegalArgumentException
+		if (value < 1)
+			throw new IllegalArgumentException("Length must be positive: " + denom);
+		return value;
 	}
 
 	/**
