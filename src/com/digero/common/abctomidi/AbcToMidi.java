@@ -147,6 +147,7 @@ public class AbcToMidi {
 		Map<Integer, AbcRegion> tiedRegions = new HashMap<>();
 
 		Map<Integer, Integer> tiedNotes = new HashMap<>(); // noteId => (line << 16) | column
+		Map<Integer, Double> tiedNoteEndTicks = new HashMap<>(); // noteId => end of the tied note so far, see below
 		Map<Integer, Integer> accidentals = new HashMap<>(); // noteId => deltaNoteId
 
 		List<MidiEvent> noteOffEvents = new ArrayList<>();
@@ -859,9 +860,23 @@ public class AbcToMidi {
                                 log.finer(" start note dura="+lengthSeconds+"s, end="+noteEndTick+", start="+chordStartTick);
                             }
 							notesOn.add(new Triple<>(lotroNoteId, noteEndTick, abcNoteAcc+noteLetter+octaveStr+abcNoteL));
+
+							// Like Lotro (tested in game): a tied note joins the next note of the same pitch, wherever
+							// that is, and sounds from the first note's start for the sum of their lengths. The later
+							// note makes no sound of its own. For a tie to the directly following note, that is the
+							// same as the later note's own end.
+							double tieEndTick = noteEndTick;
+							Double tiedSoFar = tiedNoteEndTicks.get(noteId);
+							if (tiedSoFar != null)
+								tieEndTick = tiedSoFar + (noteEndTick - chordStartTick);
+							if (m.group(NOTE_TIE) != null)
+								tiedNoteEndTicks.put(noteId, tieEndTick);
+							else
+								tiedNoteEndTicks.remove(noteId);
+
 							handleNoteTie(useLotroInstruments, enableLotroErrors, info, track, channel, PPQN, tiedNotes,
 									noteOffEvents, fileName, lineNumber, m, numerator_abc, denominator_abc, abcNoteL,
-									abcNoteAcc, curTempoBPM, chordStartTick, noteEndTick, noteLetter, octaveStr, noteId, lotroNoteId, info.getInstrument());
+									abcNoteAcc, curTempoBPM, chordStartTick, tieEndTick, noteLetter, octaveStr, noteId, lotroNoteId, info.getInstrument());
 							if (!inChord) partChordsNumber++;
 							if (enableLotroErrors && partChordsNumber > 10_000) {
 								throw new LotroFileParseException("Too many chords/notes/rests in "+info.getTitle()+". Max is 10000.",

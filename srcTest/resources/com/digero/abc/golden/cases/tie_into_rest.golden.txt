@@ -73,7 +73,7 @@ divisionType=0.0 resolution=11520 tickLength=29970 tracks=2
 
 ### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
 == sequence
-divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
+divisionType=0.0 resolution=11520 tickLength=11520 tracks=2
 -- track 0 (5 events)
   0 META tempo mpq=500000
   0 META text type=0x03 "Test"
@@ -85,8 +85,8 @@ divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
   0 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
-  17280 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
-  17280 META end_of_track
+  11520 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  11520 META end_of_track
 == abcInfo
   title="Test"
   composer=""

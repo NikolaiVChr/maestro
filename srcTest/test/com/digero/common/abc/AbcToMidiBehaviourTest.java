@@ -298,7 +298,6 @@ class AbcToMidiBehaviourTest {
 					off(7 * q / 8, 67)), noteEvents(s));
 		}
 
-		@Disabled("TODO")
 		@Test
 		void tupletAppliesToEveryNoteOfItsLastChord() throws Exception {
 			Sequence s = convert(tune("semantic", "(3c d[e2g] c|"));
@@ -307,23 +306,7 @@ class AbcToMidiBehaviourTest {
 					on(2 * q / 3, 67), off(q, 67), on(q, 60), off(4 * q / 3, 64), off(3 * q / 2, 60)), noteEvents(s));
 		}
 
-		@Disabled("TODO")
-		@Test
-		void tieMustContinueOnTheNextNote() {
-			assertThrows(FileParseException.class, () -> convert(tune("semantic", "c- d c|")));
-			assertThrows(FileParseException.class, () -> convert(tune("semantic", "c-z c|")));
-		}
-
-		@Disabled("TODO")
-		@Test
-		void tieMayContinueAfterItsChordEnds() throws Exception {
-			// The tied c2 outlasts its chord ([c2-z] lasts z); the continuation starts where c2 ends
-			Sequence s = convert(tune("semantic", "[c2-z]z c d|"));
-			long q = s.getResolution();
-			assertEquals(List.of(on(0, 60), on(3 * q / 2, 62)), noteOns(s));
-		}
-
-		@Disabled("TODO: consider carefully")
+		@Disabled("lotro wont play this")
 		@Test
 		void tiedNoteKeepsItsAccidentalAcrossTheBarLine() throws Exception {
 			Sequence s = convert(tune("semantic", "^c-|c c|"));
@@ -332,7 +315,36 @@ class AbcToMidiBehaviourTest {
 			assertEquals(List.of(on(0, 61), off(q, 61), on(q, 60), off(3 * q / 2, 60)), noteEvents(s));
 		}
 
-		@Disabled("TODO")
+		@Test
+		void tieJoinsTheNextSamePitchForTheSumOfTheirLengths() throws Exception {
+			// Tested in LotRO: c- d c sounds like c-[cd]. The c lasts 2 eighths from its start; the last c is silent.
+			Sequence s = convert(tune("semantic", "c- d c|"));
+			long q = s.getResolution();
+			assertEquals(List.of(on(0, 60), on(q / 2, 62), off(q, 60), off(q, 62)), noteEvents(s));
+		}
+
+		@Test
+		void tieOverRestAlsoLastsTheSumOfTheLengths() throws Exception {
+			// Tested in LotRO: c- z c e sounds like c for 2 eighths, then silence; the last c makes no sound
+			Sequence s = convert(tune("semantic", "c-z c d|"));
+			long q = s.getResolution();
+			assertEquals(List.of(on(0, 60), off(q, 60), on(3 * q / 2, 62), off(2 * q, 62)), noteEvents(s));
+		}
+
+		@Test
+		void tieMayContinueAfterItsChordEnds() throws Exception {
+			// The tied c2 outlasts its chord ([c2-z] lasts z); the continuation starts where c2 ends
+			Sequence s = convert(tune("semantic", "[c2-z]z c d|"));
+			long q = s.getResolution();
+			assertEquals(List.of(on(0, 60), on(3 * q / 2, 62)), noteOns(s));
+		}
+
+		@Test
+		void tieAcrossBarLineDoesNotKeepTheAccidental() {
+			// Tested in LotRO: ^c-|c doesn't play. The bar line resets the sharp, so C# and C don't connect.
+			assertThrows(FileParseException.class, () -> convert(tune("semantic", "^c-|c d|")));
+		}
+
 		@Test
 		void escapedPercentIsKeptInTitle() throws Exception {
 			AbcInfo info = new AbcInfo();
@@ -341,14 +353,14 @@ class AbcToMidiBehaviourTest {
 			assertEquals(com.digero.common.abc.LotroInstrument.BASIC_HARP, info.getPartInstrument(1));
 		}
 
-		@Disabled("TODO")
+		@Disabled("Waits for bug: the LotRO length check must use the length after tuplets and broken rhythm")
 		@Test
 		void lotroLengthLimitIncludesTuplets() {
 			assertThrows(LotroFileParseException.class,
 					() -> ConversionDump.convert(tune("semantic", "(3c/4d/4e/4 c|"), Profile.LOTRO_STRICT));
 		}
 
-		@Disabled("TODO")
+		@Disabled("Waits for fix: (TuneInfo.newPart resets to the file header) and a LotRO check of that behaviour")
 		@Test
 		void partStartsFromTheFileHeader() throws Exception {
 			// File header K:D; part 2 sets K:C; part 3 has no K: and must be back in D, not C
