@@ -2,16 +2,16 @@
 case tuplet_ratio_at_end_of_line
 
 ### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
-== EXCEPTION FileParseException: Error reading tuplet_ratio_at_end_of_line.abc on line 7, column 4:
-Unknown/unexpected character '3'
+== EXCEPTION FileParseException: Error reading tuplet_ratio_at_end_of_line.abc on line 7, column 7:
+Tuplet not finished by end of line
 == log: empty
 
 ### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
-== EXCEPTION FileParseException: Error reading tuplet_ratio_at_end_of_line.abc on line 7, column 4:
-Unknown/unexpected character '3'
+== EXCEPTION FileParseException: Error reading tuplet_ratio_at_end_of_line.abc on line 7, column 7:
+Tuplet not finished by end of line
 == log: empty
 
 ### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
-== EXCEPTION FileParseException: Error reading tuplet_ratio_at_end_of_line.abc on line 7, column 4:
-Unknown/unexpected character '3'
+== EXCEPTION FileParseException: Error reading tuplet_ratio_at_end_of_line.abc on line 7, column 7:
+Tuplet not finished by end of line
 == log: empty

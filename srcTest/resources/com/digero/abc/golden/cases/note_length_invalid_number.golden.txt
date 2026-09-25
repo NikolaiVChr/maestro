@@ -3,15 +3,15 @@ case note_length_invalid_number
 
 ### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
 == EXCEPTION FileParseException: Error reading note_length_invalid_number.abc on line 4, column 3:
-For input string: "x"
+Invalid number in L: field: "1/x"
 == log: empty
 
 ### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
 == EXCEPTION FileParseException: Error reading note_length_invalid_number.abc on line 4, column 3:
-For input string: "x"
+Invalid number in L: field: "1/x"
 == log: empty
 
 ### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
 == EXCEPTION FileParseException: Error reading note_length_invalid_number.abc on line 4, column 3:
-For input string: "x"
+Invalid number in L: field: "1/x"
 == log: empty

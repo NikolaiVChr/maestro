@@ -3,15 +3,15 @@ case meter_invalid_number
 
 ### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
 == EXCEPTION FileParseException: Error reading meter_invalid_number.abc on line 3, column 3:
-For input string: "a"
+Invalid number in M: field: "a/4"
 == log: empty
 
 ### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
 == EXCEPTION FileParseException: Error reading meter_invalid_number.abc on line 3, column 3:
-For input string: "a"
+Invalid number in M: field: "a/4"
 == log: empty
 
 ### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
 == EXCEPTION FileParseException: Error reading meter_invalid_number.abc on line 3, column 3:
-For input string: "a"
+Invalid number in M: field: "a/4"
 == log: empty

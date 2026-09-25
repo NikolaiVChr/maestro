@@ -3,15 +3,15 @@ case x_not_a_number
 
 ### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
 == EXCEPTION FileParseException: Error reading x_not_a_number.abc on line 1, column 3:
-For input string: "abc"
+Invalid number in X: field: "abc"
 == log: empty
 
 ### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
 == EXCEPTION FileParseException: Error reading x_not_a_number.abc on line 1, column 3:
-For input string: "abc"
+Invalid number in X: field: "abc"
 == log: empty
 
 ### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
 == EXCEPTION FileParseException: Error reading x_not_a_number.abc on line 1, column 3:
-For input string: "abc"
+Invalid number in X: field: "abc"
 == log: empty

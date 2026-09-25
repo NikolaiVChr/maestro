@@ -2,16 +2,16 @@
 case tempo_change_mid_part
 
 ### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
-== EXCEPTION FileParseException: Error reading tempo_change_mid_part.abc on line 8:
-The tempo must be the same for all parts of the song
+== EXCEPTION FileParseException: Error reading tempo_change_mid_part.abc on line 8, column 3:
+The tempo can't be changed with Q: in the middle of a part
 == log: empty
 
 ### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
-== EXCEPTION FileParseException: Error reading tempo_change_mid_part.abc on line 8:
-The tempo must be the same for all parts of the song
+== EXCEPTION FileParseException: Error reading tempo_change_mid_part.abc on line 8, column 3:
+The tempo can't be changed with Q: in the middle of a part
 == log: empty
 
 ### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
-== EXCEPTION FileParseException: Error reading tempo_change_mid_part.abc on line 8:
-The tempo must be the same for all parts of the song
+== EXCEPTION FileParseException: Error reading tempo_change_mid_part.abc on line 8, column 3:
+The tempo can't be changed with Q: in the middle of a part
 == log: empty

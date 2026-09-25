@@ -346,6 +346,23 @@ class AbcToMidiBehaviourTest {
 		}
 
 		@Test
+		void sameNoteTwiceInAChordPlaysOnlyTheFirst() throws Exception {
+			// Tested in LotRO: [c2c4], [c4c2] and [^c2_d4] each play only the first note, for its own length
+			long q = convert(tune("semantic", "c|")).getResolution();
+			assertEquals(List.of(on(0, 60), off(q, 60)), noteEvents(convert(tune("semantic", "[c2c] z2|"))));
+			assertEquals(List.of(on(0, 60), off(q / 2, 60)), noteEvents(convert(tune("semantic", "[cc2] z2|"))));
+			assertEquals(List.of(on(0, 61), off(q, 61)), noteEvents(convert(tune("semantic", "[^c2_d] z2|"))));
+		}
+
+		@Test
+		void ignoredSameNoteDoesNotShortenTheChord() throws Exception {
+			// Tested in LotRO: in [c4c2] d4 the d starts when the c4 ends; the ignored c2 doesn't end the chord
+			Sequence s = convert(tune("semantic", "[c2c] d|"));
+			long q = s.getResolution();
+			assertEquals(List.of(on(0, 60), off(q, 60), on(q, 62), off(3 * q / 2, 62)), noteEvents(s));
+		}
+
+		@Test
 		void escapedPercentIsKeptInTitle() throws Exception {
 			AbcInfo info = new AbcInfo();
 			ConversionDump.run(tune("semantic", header("T:100\\% Harp"), "c|"), Profile.PLAIN_MIDI, false, info);

@@ -2,16 +2,16 @@
 case meter_change_other_denominator
 
 ### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
-== EXCEPTION FileParseException: Error reading meter_change_other_denominator.abc on line 8:
-The default note length must be the same for all parts of the song
+== EXCEPTION FileParseException: Error reading meter_change_other_denominator.abc on line 8, column 3:
+The meter denominator (the N in M:x/N) must be the same throughout the song
 == log: empty
 
 ### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
-== EXCEPTION FileParseException: Error reading meter_change_other_denominator.abc on line 8:
-The default note length must be the same for all parts of the song
+== EXCEPTION FileParseException: Error reading meter_change_other_denominator.abc on line 8, column 3:
+The meter denominator (the N in M:x/N) must be the same throughout the song
 == log: empty
 
 ### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
-== EXCEPTION FileParseException: Error reading meter_change_other_denominator.abc on line 8:
-The default note length must be the same for all parts of the song
+== EXCEPTION FileParseException: Error reading meter_change_other_denominator.abc on line 8, column 3:
+The meter denominator (the N in M:x/N) must be the same throughout the song
 == log: empty

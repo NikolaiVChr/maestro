@@ -97,9 +97,12 @@ class TuneInfo {
 
 	public float getWholeNoteTime() {
 		if (this.noteDivisorNum > 0) {
-			return (this.meterDenominator * this.noteDivisorNum * 60.0f / (this.primaryTempoBPM * this.noteDivisorDenom));
+			// long products: e.g. Q:1000 with L:1/2834674 overflowed int. Where the int products didn't overflow, the
+			// float result is bit-identical (the LotRO float emulation depends on that).
+			return ((long) this.meterDenominator * this.noteDivisorNum * 60.0f
+					/ ((long) this.primaryTempoBPM * this.noteDivisorDenom));
 		} else {
-            float L = ((this.meterNumerator / (float)this.meterDenominator) < 0.75f ? 1f / 16 : 1f / 8);
+			float L = ((this.meterNumerator / (float)this.meterDenominator) < 0.75f ? 1f / 16 : 1f / 8);
 			return (this.meterDenominator * L * 60.0f) / this.primaryTempoBPM;
 		}
 	}

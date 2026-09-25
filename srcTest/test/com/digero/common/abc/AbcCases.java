@@ -337,6 +337,13 @@ final class AbcCases {
 		c.add(tune("meter_invalid_number", header("M:a/4"), "c d|"));
 		c.add(tune("note_length_invalid_number", header("L:1/x"), "c d|"));
 
+		// Large length numbers (fine L: denominators). Every note is well under 8 s; the products of the numbers
+		// used to overflow int, giving negative lengths.
+		c.add(tune("large_l_plain", header("L:1/2834674"), "c1417337 d1417337 e2834674|"));
+		c.add(tune("large_l_broken_rhythm", header("L:1/2834674"), "c1417337>>>d1417337 e1417337|"));
+		c.add(tune("large_l_fast_tempo", header("L:1/2834674", "Q:1000"), "c5669348 d5669348|"));
+		c.add(tune("large_l_tuplet_fast_tempo", header("L:1/909090", "Q:400"), "(3c454545d454545e454545 c454545>>>d454545|"));
+
 		return c;
 	}
 
