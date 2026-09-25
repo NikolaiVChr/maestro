@@ -289,6 +289,11 @@ final class AbcCases {
 		c.add(tune("tie_flat_across_bar", "_B-|B c|"));
 		c.add(tune("tie_accidental_across_bar_in_chord", "[^c-e]|[ce] d|"));
 		c.add(tune("tie_key_signature_across_bar", header("K:D"), "f-|f d|"));
+		// LotRO's reading, which Maestro follows: an accidental lasts until the bar line, so a continuation after
+		// the bar must repeat it. Within the measure it may be repeated or not.
+		c.add(tune("tie_accidental_same_bar", "^c-c d|"));
+		c.add(tune("tie_accidental_retyped_same_bar", "^c-^c d|"));
+		c.add(tune("tie_accidental_retyped_across_bar", "^c-|^c d|"));
 
 		// 4: % starts a comment in info fields too (ABC 2.1); \% is a literal percent
 		c.add(tune("percent_in_title", header("T:100% Harp"), "c d|"));

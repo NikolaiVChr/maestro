@@ -18,8 +18,8 @@ divisionType=0.0 resolution=11520 tickLength=46969 tracks=2
   1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  18450 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
   23040 NOTE_ON ch=0 d1=62 d2=106 [LotroShortMessage]
-  29970 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
   46969 NOTE_OFF ch=0 d1=62 d2=106 [LotroShortMessage]
   46969 META end_of_track
 == abcInfo
@@ -55,8 +55,8 @@ divisionType=0.0 resolution=11520 tickLength=46969 tracks=2
   1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  18450 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
   23040 NOTE_ON ch=0 d1=62 d2=106 [LotroShortMessage]
-  29970 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
   46969 NOTE_OFF ch=0 d1=62 d2=106 [LotroShortMessage]
   46969 META end_of_track
 == abcInfo

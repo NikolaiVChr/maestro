@@ -3,7 +3,7 @@ case tie_over_other_note
 
 ### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
 == sequence
-divisionType=0.0 resolution=11520 tickLength=29970 tracks=2
+divisionType=0.0 resolution=11520 tickLength=29689 tracks=2
 -- track 0 (5 events)
   0 META tempo mpq=500000
   0 META text type=0x03 "Test"
@@ -19,9 +19,9 @@ divisionType=0.0 resolution=11520 tickLength=29970 tracks=2
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_ON ch=0 d1=62 d2=106 [LotroShortMessage]
+  18450 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
   29689 NOTE_OFF ch=0 d1=62 d2=106 [LotroShortMessage]
-  29970 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
-  29970 META end_of_track
+  29689 META end_of_track
 == abcInfo
   title="Test"
   composer=""
@@ -40,7 +40,7 @@ divisionType=0.0 resolution=11520 tickLength=29970 tracks=2
 
 ### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
 == sequence
-divisionType=0.0 resolution=11520 tickLength=29970 tracks=2
+divisionType=0.0 resolution=11520 tickLength=29689 tracks=2
 -- track 0 (5 events)
   0 META tempo mpq=500000
   0 META text type=0x03 "Test"
@@ -56,9 +56,9 @@ divisionType=0.0 resolution=11520 tickLength=29970 tracks=2
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_ON ch=0 d1=62 d2=106 [LotroShortMessage]
+  18450 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
   29689 NOTE_OFF ch=0 d1=62 d2=106 [LotroShortMessage]
-  29970 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
-  29970 META end_of_track
+  29689 META end_of_track
 == abcInfo
   title="Test"
   composer=""

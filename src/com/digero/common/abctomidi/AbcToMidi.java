@@ -147,6 +147,7 @@ public class AbcToMidi {
 		Map<Integer, AbcRegion> tiedRegions = new HashMap<>();
 
 		Map<Integer, Integer> tiedNotes = new HashMap<>(); // noteId => (line << 16) | column
+		Map<Integer, Double> tiedNoteStartTicks = new HashMap<>(); // noteId => start of the tie's first note
 		Map<Integer, Double> tiedNoteEndTicks = new HashMap<>(); // noteId => end of the tied note so far, see below
 		Map<Integer, Integer> accidentals = new HashMap<>(); // noteId => deltaNoteId
 
@@ -789,17 +790,17 @@ public class AbcToMidi {
 							// check for invalid overlapping notes
 							Iterator<Triple<Integer, Double, String>> notesOnIter = notesOn.iterator();
 							while (notesOnIter.hasNext()) {
-                                Triple<Integer, Double, String> soundingNote = notesOnIter.next();
+								Triple<Integer, Double, String> soundingNote = notesOnIter.next();
 								if (soundingNote.second <= chordStartTick) {
 									notesOnIter.remove();
 								}
 							}
-							for (Triple<Integer,Double, String> soundingNote : notesOn) {
+							for (Triple<Integer, Double, String> soundingNote : notesOn) {
 								if (lotroNoteId == soundingNote.first && chordStartTick + 0.0001d < soundingNote.second && enableLotroErrors) {
 									// 0.0001 is for rounding errors
-                                    double lengthSeconds = info.getWholeNoteTime() * (numerator_abc / (double) denominator_abc);// the overlapping note duration
-									log.warning(fileName+": Overlapping note "+soundingNote.third+", lotro might not play part "
-											+info.getPartNumber()+" correctly. Overlap ticks="+(soundingNote.second-chordStartTick)+" "+soundingNote.second+" - "+chordStartTick+" "+noteEndTick+ " "+lengthSeconds+"s");
+									double lengthSeconds = info.getWholeNoteTime() * (numerator_abc / (double) denominator_abc);// the overlapping note duration
+									log.warning(fileName + ": Overlapping note " + soundingNote.third + ", lotro might not play part "
+											+ info.getPartNumber() + " correctly. Overlap ticks=" + (soundingNote.second - chordStartTick) + " " + soundingNote.second + " - " + chordStartTick + " " + noteEndTick + " " + lengthSeconds + "s");
 									// This should maybe give a warning instead, not catastrophic failure
 									/*
 									throw new LotroFileParseException("Overlapping note, lotro might not play part "
@@ -855,28 +856,31 @@ public class AbcToMidi {
 								track.add(MidiFactory.createNoteOnEventEx(noteId, channel,
 										info.getDynamics().getVol(useLotroInstruments), Math.round(chordStartTick)));
 							}
-                            if (info.getPartNumber() == 211 && noteEndTick > 812281 && noteEndTick < 812282) {
-                                double lengthSeconds = info.getWholeNoteTime() * (numerator_abc / (double) denominator_abc);
-                                log.finer(" start note dura="+lengthSeconds+"s, end="+noteEndTick+", start="+chordStartTick);
-                            }
-							notesOn.add(new Triple<>(lotroNoteId, noteEndTick, abcNoteAcc+noteLetter+octaveStr+abcNoteL));
+
+							notesOn.add(new Triple<>(lotroNoteId, noteEndTick, abcNoteAcc + noteLetter + octaveStr + abcNoteL));
 
 							// Like Lotro (tested in game): a tied note joins the next note of the same pitch, wherever
 							// that is, and sounds from the first note's start for the sum of their lengths. The later
 							// note makes no sound of its own. For a tie to the directly following note, that is the
 							// same as the later note's own end.
 							double tieEndTick = noteEndTick;
+							double tieStartTick = chordStartTick;
 							Double tiedSoFar = tiedNoteEndTicks.get(noteId);
-							if (tiedSoFar != null)
+							if (tiedSoFar != null) {
 								tieEndTick = tiedSoFar + (noteEndTick - chordStartTick);
-							if (m.group(NOTE_TIE) != null)
+								tieStartTick = tiedNoteStartTicks.get(noteId);
+							}
+							if (m.group(NOTE_TIE) != null) {
 								tiedNoteEndTicks.put(noteId, tieEndTick);
-							else
+								tiedNoteStartTicks.put(noteId, tieStartTick);
+							} else {
 								tiedNoteEndTicks.remove(noteId);
+								tiedNoteStartTicks.remove(noteId);
+							}
 
 							handleNoteTie(useLotroInstruments, enableLotroErrors, info, track, channel, PPQN, tiedNotes,
 									noteOffEvents, fileName, lineNumber, m, numerator_abc, denominator_abc, abcNoteL,
-									abcNoteAcc, curTempoBPM, chordStartTick, tieEndTick, noteLetter, octaveStr, noteId, lotroNoteId, info.getInstrument());
+									abcNoteAcc, curTempoBPM, tieStartTick, tieEndTick, noteLetter, octaveStr, noteId, lotroNoteId, info.getInstrument());
 							if (!inChord) partChordsNumber++;
 							if (enableLotroErrors && partChordsNumber > 10_000) {
 								throw new LotroFileParseException("Too many chords/notes/rests in "+info.getTitle()+". Max is 10000.",
@@ -987,6 +991,7 @@ public class AbcToMidi {
                     try {
                         // This makes long notes on plucked and percussion notes shorter so they match the sample,
                         // which in turn makes the duration display show correct length.
+						// TODO: This also loses duration if using abc as source for maestro. :(
                         int sampleID = info.getInstrument() == LotroInstrument.BASIC_COWBELL || info.getInstrument() == LotroInstrument.MOOR_COWBELL?AbcConstants.COWBELL_NOTE_ID:lotroNoteId;
                         long lengthMicros = LotroInstrumentSampleDuration.getDura(info.getInstrument().friendlyName, sampleID);
                         noteEndTickTmp = noteStartTick + lengthMicros * PPQN / MPQN;

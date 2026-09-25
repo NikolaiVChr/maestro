@@ -353,11 +353,11 @@ class AbcToMidiBehaviourTest {
 			assertEquals(com.digero.common.abc.LotroInstrument.BASIC_HARP, info.getPartInstrument(1));
 		}
 
-		@Disabled("Waits for bug: the LotRO length check must use the length after tuplets and broken rhythm")
 		@Test
-		void lotroLengthLimitIncludesTuplets() {
-			assertThrows(LotroFileParseException.class,
-					() -> ConversionDump.convert(tune("semantic", "(3c/4d/4e/4 c|"), Profile.LOTRO_STRICT));
+		void lotroLengthLimitUsesTheWrittenLength() throws Exception {
+			// Tested in LotRO: (3c/4d/4e/4 plays, although each note lasts only 0.042 s. LotRO checks the written
+			// c/4 (0.0625 s), not the length after the tuplet.
+			ConversionDump.convert(tune("semantic", "(3c/4d/4e/4 c|"), Profile.LOTRO_STRICT);
 		}
 
 		@Disabled("Waits for fix: (TuneInfo.newPart resets to the file header) and a LotRO check of that behaviour")
