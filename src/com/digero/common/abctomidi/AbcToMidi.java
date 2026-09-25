@@ -421,6 +421,11 @@ public class AbcToMidi {
 									chordLenNumerator = parseLengthNumerator(chordLenMatcher.group(CHORD_LEN_NUMER));
 									chordLenDenominator = parseLengthDenominator(chordLenMatcher.group(CHORD_LEN_DENOM));
 									chordLenStr = chordLenMatcher.group();
+									if (enableLotroErrors && !chordLenStr.isEmpty()) {
+										throw new LotroFileParseException("LotRO doesn't support a duration after a chord ("
+												+ chordLenStr + "); write the length on each note in the chord instead",
+												fileName, lineNumber, chordCloseIndex + 1);
+									}
 									if (chordLenNumerator == 0 || chordLenDenominator == 0) {
 										throw new FileParseException("Invalid chord length: " + chordLenStr, fileName,
 												lineNumber, chordCloseIndex + 1);
@@ -446,14 +451,14 @@ public class AbcToMidi {
 								}
 								inChord = false;
 
-								int chordLenEnd = i + 1;// + chordLenStr.length();
+								int chordLenEnd = i + 1 + chordLenStr.length();
 								if (generateRegions) {
 									abcInfo.addRegion(new AbcRegion(lineNumberForRegions, chordStartIndex, chordLenEnd,
 											Math.round(chordStartTick), Math.round(chordEndTick), null, trackIndex));
 								}
 
 								// Skip the chord length suffix; the for-loop's i++ lands on chordLenEnd
-								//i = chordLenEnd - 1;
+								i = chordLenEnd - 1;
 								chordLenNumerator = 1;
 								chordLenDenominator = 1;
 								chordLenStr = "";
@@ -608,9 +613,9 @@ public class AbcToMidi {
 
 						// Apply the chord's length suffix, e.g. [ceg]3/4 or [c2eg]3/4 (the latter gives c 6/4, e and g 3/4)
 						if (inChord && !chordLenStr.isEmpty()) {
-							//numerator *= chordLenNumerator;
-							//denominator *= chordLenDenominator;
-							//abcNoteL += "*" + chordLenStr; // Shows the effective length in error messages, e.g. "c2*3/4"
+							numerator *= chordLenNumerator;
+							denominator *= chordLenDenominator;
+							abcNoteL += "*" + chordLenStr; // Shows the effective length in error messages, e.g. "c2*3/4"
 						}
 
 						String abcNoteAcc = "";

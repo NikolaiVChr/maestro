@@ -277,12 +277,18 @@ class AbcToMidiBehaviourTest {
 		}
 
 		@Test
-		void lotroDoNotAllowChordLengthSuffix() {
-			assertThrows(FileParseException.class,
-					() -> ConversionDump.convert(tune("semantic", "[c2e]3/4 g|"), Profile.LOTRO_STRICT));
+		void chordLengthSuffixIsALotroError() {
+			LotroFileParseException e = assertThrows(LotroFileParseException.class,
+					() -> ConversionDump.convert(tune("semantic", "[ceg]3/4 c|"), Profile.LOTRO_STRICT));
+			assertEquals(true, e.getMessage().contains("3/4"), e.getMessage());
 		}
 
-		@Disabled("Enable after applying the chord length suffix change ([ceg]3/4)")
+		@Test
+		void chordWithoutLengthSuffixIsFineForLotro() throws Exception {
+			Sequence s = ConversionDump.convert(tune("semantic", "[c3/4e3/4g3/4] c|"), Profile.LOTRO_STRICT);
+			assertEquals(4, noteOns(s).size());
+		}
+
 		@Test
 		void chordLengthSuffixMultipliesEveryNote() throws Exception {
 			Sequence s = convert(tune("semantic", "[c2e]3/4 g|"));

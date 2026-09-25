@@ -168,10 +168,10 @@ final class AbcCases {
 		c.add(tune("chord_slur_inside", "[(ce)] d|"));
 		c.add(tune("chord_dynamics_inside", "[+f+ce] d|"));
 		c.add(tune("chord_empty", "[] c|"));
-		// Valid ABC, not supported by the original code. Expected to change when chord length suffixes are added.
 		c.add(tune("chord_length_suffix_fraction", "[ceg]3/4 c|"));
 		c.add(tune("chord_length_suffix_integer", "[ceg]2 c|"));
 		c.add(tune("chord_length_suffix_mixed", "[c2eg]3/4 c|"));
+		c.add(tune("chord_length_suffix_short", "[c2eg]/ [abf]// c|"));
 
 		// ------------------------------------------------------------ ties
 		c.add(tune("tie_simple", "c-c d|"));
