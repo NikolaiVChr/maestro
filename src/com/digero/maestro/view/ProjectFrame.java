@@ -857,8 +857,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	 */
 	public void showFeed() {
 		assert SwingUtilities.isEventDispatchThread();
-		String feedStr = null;
-		String tipStr = null;
+		final String feedStr;
+		final String tipStr;
 		synchronized(ProjectFrame.class) {
 			feedStr = feed;
 			tipStr = feedFull;
