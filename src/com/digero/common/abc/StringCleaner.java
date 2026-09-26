@@ -35,18 +35,18 @@ public class StringCleaner {
 	 * Clean a string for any chars that give songbook or lotro issues
 	 * when used inside abc files.
 	 *
-	 * Notice that abc allows for escaped percent sign with backslash to not mean a comment in metadata.
-	 * TODO: For now we ignore that here.
-	 *
 	 * See also XmlUtil.sanitizeStringForXMLSaving()
 	 *
 	 */
 	public static String cleanForABC(String before) {
 		if (before == null)
 			return "";
+		// percent sign means comment, so either should be escaped with \% or use pct. We use pct, so songbooks don't need to change.
+		// we always do it, no matter if cleaning is on or off.
+		String after = before.replace("%", "pct");
 		if (cleanABC) {
 			// System.out.println("Orig: "+before);
-			String after = replaceUmlaut(before);
+			after = replaceUmlaut(after);
 			after = convertCyrillic(after);
 			after = convertToBasicAscii(after);
 			// System.out.println("New : "+after);
