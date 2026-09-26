@@ -506,7 +506,36 @@ class AbcToMidiBehaviourTest {
 			ConversionDump.convert(tune("semantic", "(3c/4d/4e/4 c|"), Profile.LOTRO_STRICT);
 		}
 
-		@Disabled("Waits for fix: (TuneInfo.newPart resets to the file header) and a LotRO check of that behaviour")
+		@Test
+		void partWithoutLUsesTheDefaultNoteLength() throws Exception {
+			// Tested in LotRO: c64 in a part without L: fails (16 s at the default L:1/8), both after a part with
+			// L:1/64 and with L:1/64 before the first X:. It would be 2 s with L:1/64.
+			Sequence afterPart = convert(AbcCase.of("semantic", "X:1", "T:One", "M:4/4", "Q:120", "L:1/64", "K:C", "c64|",
+					"X:2", "T:Two", "M:4/4", "Q:120", "K:C", "c64|"));
+			Sequence afterFileHeader = convert(AbcCase.of("semantic", "L:1/64", "X:1", "T:One", "M:4/4", "Q:120", "K:C",
+					"c64|"));
+			long q = afterPart.getResolution(); // c64 at L:1/8 = 8 whole notes = 32 quarters
+			assertEquals(List.of(on(0, 60), off(32 * q, 60)), noteEvents(afterPart, 2));
+			assertEquals(List.of(on(0, 60), off(32 * q, 60)), noteEvents(afterFileHeader, 1));
+		}
+
+		@Test
+		void partWithoutLOrMUsesTheFileHeaderNotThePreviousPart() throws Exception {
+			// Tested in LotRO. L:1/64 before the first X: applies to a part without M: and L: (c64 = 2 s, not 16 s)
+			Sequence length = convert(AbcCase.of("semantic", "M:4/4", "L:1/64", "X:1", "T:One", "M:4/4", "Q:120", "L:1/8",
+					"K:C", "c64|", "X:2", "T:Two", "Q:120", "K:C", "c64|"));
+			long q = length.getResolution(); // c64 at L:1/64 = 1 whole note = 4 quarters
+			assertEquals(List.of(on(0, 60), off(4 * q, 60)), noteEvents(length, 2));
+			// M:2/4 before the first X: applies to a part without M:, so its default length is 1/16 (c40 = 5 s)
+			Sequence fromFile = convert(AbcCase.of("semantic", "M:2/4", "X:1", "T:One", "M:4/4", "Q:120", "K:C", "c40|",
+					"X:2", "T:Two", "Q:120", "K:C", "c40|"));
+			assertEquals(List.of(on(0, 60), off(10 * q, 60)), noteEvents(fromFile, 2));
+			// ... but the previous part's M:2/4 doesn't carry over: default M:4/4, length 1/8 (c40 = 10 s)
+			Sequence fromPart = convert(AbcCase.of("semantic", "X:1", "T:One", "M:2/4", "Q:120", "K:C", "c40|",
+					"X:2", "T:Two", "Q:120", "K:C", "c40|"));
+			assertEquals(List.of(on(0, 60), off(20 * q, 60)), noteEvents(fromPart, 2));
+		}
+
 		@Test
 		void partStartsFromTheFileHeader() throws Exception {
 			// File header K:D; part 2 sets K:C; part 3 has no K: and must be back in D, not C

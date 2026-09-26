@@ -3,7 +3,7 @@ case part_meter_does_not_carry_over
 
 ### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
 == sequence
-divisionType=0.0 resolution=11520 tickLength=26809 tracks=3
+divisionType=0.0 resolution=11520 tickLength=29689 tracks=3
 -- track 0 (5 events)
   0 META tempo mpq=500000
   0 META text type=0x03 "One"
@@ -30,10 +30,10 @@ divisionType=0.0 resolution=11520 tickLength=26809 tracks=3
   1 CONTROL_CHANGE ch=1 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=1 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=1 d1=93 d2=0 [LotroShortMessage]
-  2880 NOTE_OFF ch=1 d1=60 d2=106 [LotroShortMessage]
-  2880 NOTE_ON ch=1 d1=62 d2=106 [LotroShortMessage]
-  5760 NOTE_OFF ch=1 d1=62 d2=106 [LotroShortMessage]
-  26809 META end_of_track
+  5760 NOTE_OFF ch=1 d1=60 d2=106 [LotroShortMessage]
+  5760 NOTE_ON ch=1 d1=62 d2=106 [LotroShortMessage]
+  11520 NOTE_OFF ch=1 d1=62 d2=106 [LotroShortMessage]
+  29689 META end_of_track
 == abcInfo
   title="One"
   composer=""
@@ -47,14 +47,14 @@ divisionType=0.0 resolution=11520 tickLength=26809 tracks=3
   part 2: number=2 name="Two" fullName="Two" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=6..8 pan=0 CONTROL_CHANGE ch=1 d1=10 d2=46 [LotroShortMessage]
 == regions (4)
   #0 line=5 cols=[0,1) ticks=0..2880 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
-  #1 line=8 cols=[0,1) ticks=0..2880 note=60 track=2 bar=0 tiesFrom=- tiesTo=-
+  #1 line=8 cols=[0,1) ticks=0..5760 note=60 track=2 bar=0 tiesFrom=- tiesTo=-
   #2 line=5 cols=[2,3) ticks=2880..5760 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
-  #3 line=8 cols=[2,3) ticks=2880..5760 note=62 track=2 bar=0 tiesFrom=- tiesTo=-
+  #3 line=8 cols=[2,3) ticks=5760..11520 note=62 track=2 bar=1 tiesFrom=- tiesTo=-
 == log: empty
 
 ### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
 == sequence
-divisionType=0.0 resolution=11520 tickLength=26809 tracks=3
+divisionType=0.0 resolution=11520 tickLength=29689 tracks=3
 -- track 0 (5 events)
   0 META tempo mpq=500000
   0 META text type=0x03 "One"
@@ -81,10 +81,10 @@ divisionType=0.0 resolution=11520 tickLength=26809 tracks=3
   1 CONTROL_CHANGE ch=1 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=1 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=1 d1=93 d2=0 [LotroShortMessage]
-  2880 NOTE_OFF ch=1 d1=60 d2=106 [LotroShortMessage]
-  2880 NOTE_ON ch=1 d1=62 d2=106 [LotroShortMessage]
-  5760 NOTE_OFF ch=1 d1=62 d2=106 [LotroShortMessage]
-  26809 META end_of_track
+  5760 NOTE_OFF ch=1 d1=60 d2=106 [LotroShortMessage]
+  5760 NOTE_ON ch=1 d1=62 d2=106 [LotroShortMessage]
+  11520 NOTE_OFF ch=1 d1=62 d2=106 [LotroShortMessage]
+  29689 META end_of_track
 == abcInfo
   title="One"
   composer=""
@@ -98,14 +98,14 @@ divisionType=0.0 resolution=11520 tickLength=26809 tracks=3
   part 2: number=2 name="Two" fullName="Two" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=6..8 pan=0 CONTROL_CHANGE ch=1 d1=10 d2=46 [LotroShortMessage]
 == regions (4)
   #0 line=5 cols=[0,1) ticks=0..2880 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
-  #1 line=8 cols=[0,1) ticks=0..2880 note=60 track=2 bar=0 tiesFrom=- tiesTo=-
+  #1 line=8 cols=[0,1) ticks=0..5760 note=60 track=2 bar=0 tiesFrom=- tiesTo=-
   #2 line=5 cols=[2,3) ticks=2880..5760 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
-  #3 line=8 cols=[2,3) ticks=2880..5760 note=62 track=2 bar=0 tiesFrom=- tiesTo=-
+  #3 line=8 cols=[2,3) ticks=5760..11520 note=62 track=2 bar=1 tiesFrom=- tiesTo=-
 == log: empty
 
 ### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
 == sequence
-divisionType=0.0 resolution=11520 tickLength=5760 tracks=3
+divisionType=0.0 resolution=11520 tickLength=11520 tracks=3
 -- track 0 (5 events)
   0 META tempo mpq=500000
   0 META text type=0x03 "One"
@@ -126,10 +126,10 @@ divisionType=0.0 resolution=11520 tickLength=5760 tracks=3
   0 NOTE_ON ch=1 d1=60 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Two"
   0 CONTROL_CHANGE ch=1 d1=10 d2=46 [LotroShortMessage]
-  2880 NOTE_OFF ch=1 d1=60 d2=80 [LotroShortMessage]
-  2880 NOTE_ON ch=1 d1=62 d2=80 [LotroShortMessage]
-  5760 NOTE_OFF ch=1 d1=62 d2=80 [LotroShortMessage]
-  5760 META end_of_track
+  5760 NOTE_OFF ch=1 d1=60 d2=80 [LotroShortMessage]
+  5760 NOTE_ON ch=1 d1=62 d2=80 [LotroShortMessage]
+  11520 NOTE_OFF ch=1 d1=62 d2=80 [LotroShortMessage]
+  11520 META end_of_track
 == abcInfo
   title="One"
   composer=""
@@ -143,7 +143,7 @@ divisionType=0.0 resolution=11520 tickLength=5760 tracks=3
   part 2: number=2 name="Two" fullName="Two" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=6..8 pan=0 CONTROL_CHANGE ch=1 d1=10 d2=46 [LotroShortMessage]
 == regions (4)
   #0 line=5 cols=[0,1) ticks=0..2880 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
-  #1 line=8 cols=[0,1) ticks=0..2880 note=60 track=2 bar=0 tiesFrom=- tiesTo=-
+  #1 line=8 cols=[0,1) ticks=0..5760 note=60 track=2 bar=0 tiesFrom=- tiesTo=-
   #2 line=5 cols=[2,3) ticks=2880..5760 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
-  #3 line=8 cols=[2,3) ticks=2880..5760 note=62 track=2 bar=0 tiesFrom=- tiesTo=-
+  #3 line=8 cols=[2,3) ticks=5760..11520 note=62 track=2 bar=1 tiesFrom=- tiesTo=-
 == log: empty

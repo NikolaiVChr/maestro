@@ -36,16 +36,16 @@ divisionType=0.0 resolution=11520 tickLength=35456 tracks=4
   29970 META end_of_track
 -- track 3 (11 events)
   0 PROGRAM_CHANGE ch=2 d1=24 d2=0 [LotroShortMessage]
-  0 NOTE_ON ch=2 d1=65 d2=106 [LotroShortMessage]
+  0 NOTE_ON ch=2 d1=66 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Three"
   0 CONTROL_CHANGE ch=2 d1=10 d2=88 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=93 d2=0 [LotroShortMessage]
-  11520 NOTE_OFF ch=2 d1=65 d2=106 [LotroShortMessage]
-  11520 NOTE_ON ch=2 d1=60 d2=106 [LotroShortMessage]
-  23040 NOTE_OFF ch=2 d1=60 d2=106 [LotroShortMessage]
-  29970 META end_of_track
+  11520 NOTE_OFF ch=2 d1=66 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=2 d1=61 d2=106 [LotroShortMessage]
+  23040 NOTE_OFF ch=2 d1=61 d2=106 [LotroShortMessage]
+  35456 META end_of_track
 == abcInfo
   title="One"
   composer=""
@@ -61,10 +61,10 @@ divisionType=0.0 resolution=11520 tickLength=35456 tracks=4
 == regions (6)
   #0 line=6 cols=[0,1) ticks=0..11520 note=66 track=1 bar=0 tiesFrom=- tiesTo=-
   #1 line=10 cols=[0,1) ticks=0..11520 note=65 track=2 bar=0 tiesFrom=- tiesTo=-
-  #2 line=13 cols=[0,1) ticks=0..11520 note=65 track=3 bar=0 tiesFrom=- tiesTo=-
+  #2 line=13 cols=[0,1) ticks=0..11520 note=66 track=3 bar=0 tiesFrom=- tiesTo=-
   #3 line=6 cols=[2,3) ticks=11520..23040 note=61 track=1 bar=0 tiesFrom=- tiesTo=-
   #4 line=10 cols=[2,3) ticks=11520..23040 note=60 track=2 bar=0 tiesFrom=- tiesTo=-
-  #5 line=13 cols=[2,3) ticks=11520..23040 note=60 track=3 bar=0 tiesFrom=- tiesTo=-
+  #5 line=13 cols=[2,3) ticks=11520..23040 note=61 track=3 bar=0 tiesFrom=- tiesTo=-
 == log: empty
 
 ### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
@@ -102,16 +102,16 @@ divisionType=0.0 resolution=11520 tickLength=35456 tracks=4
   29970 META end_of_track
 -- track 3 (11 events)
   0 PROGRAM_CHANGE ch=2 d1=24 d2=0 [LotroShortMessage]
-  0 NOTE_ON ch=2 d1=65 d2=106 [LotroShortMessage]
+  0 NOTE_ON ch=2 d1=66 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Three"
   0 CONTROL_CHANGE ch=2 d1=10 d2=88 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=93 d2=0 [LotroShortMessage]
-  11520 NOTE_OFF ch=2 d1=65 d2=106 [LotroShortMessage]
-  11520 NOTE_ON ch=2 d1=60 d2=106 [LotroShortMessage]
-  23040 NOTE_OFF ch=2 d1=60 d2=106 [LotroShortMessage]
-  29970 META end_of_track
+  11520 NOTE_OFF ch=2 d1=66 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=2 d1=61 d2=106 [LotroShortMessage]
+  23040 NOTE_OFF ch=2 d1=61 d2=106 [LotroShortMessage]
+  35456 META end_of_track
 == abcInfo
   title="One"
   composer=""
@@ -127,10 +127,10 @@ divisionType=0.0 resolution=11520 tickLength=35456 tracks=4
 == regions (6)
   #0 line=6 cols=[0,1) ticks=0..11520 note=66 track=1 bar=0 tiesFrom=- tiesTo=-
   #1 line=10 cols=[0,1) ticks=0..11520 note=65 track=2 bar=0 tiesFrom=- tiesTo=-
-  #2 line=13 cols=[0,1) ticks=0..11520 note=65 track=3 bar=0 tiesFrom=- tiesTo=-
+  #2 line=13 cols=[0,1) ticks=0..11520 note=66 track=3 bar=0 tiesFrom=- tiesTo=-
   #3 line=6 cols=[2,3) ticks=11520..23040 note=61 track=1 bar=0 tiesFrom=- tiesTo=-
   #4 line=10 cols=[2,3) ticks=11520..23040 note=60 track=2 bar=0 tiesFrom=- tiesTo=-
-  #5 line=13 cols=[2,3) ticks=11520..23040 note=60 track=3 bar=0 tiesFrom=- tiesTo=-
+  #5 line=13 cols=[2,3) ticks=11520..23040 note=61 track=3 bar=0 tiesFrom=- tiesTo=-
 == log: empty
 
 ### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
@@ -162,12 +162,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=4
   23040 META end_of_track
 -- track 3 (8 events)
   0 PROGRAM_CHANGE ch=2 d1=24 d2=0 [LotroShortMessage]
-  0 NOTE_ON ch=2 d1=65 d2=80 [LotroShortMessage]
+  0 NOTE_ON ch=2 d1=66 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Three"
   0 CONTROL_CHANGE ch=2 d1=10 d2=88 [LotroShortMessage]
-  11520 NOTE_OFF ch=2 d1=65 d2=80 [LotroShortMessage]
-  11520 NOTE_ON ch=2 d1=60 d2=80 [LotroShortMessage]
-  23040 NOTE_OFF ch=2 d1=60 d2=80 [LotroShortMessage]
+  11520 NOTE_OFF ch=2 d1=66 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=2 d1=61 d2=80 [LotroShortMessage]
+  23040 NOTE_OFF ch=2 d1=61 d2=80 [LotroShortMessage]
   23040 META end_of_track
 == abcInfo
   title="One"
@@ -184,8 +184,8 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=4
 == regions (6)
   #0 line=6 cols=[0,1) ticks=0..11520 note=66 track=1 bar=0 tiesFrom=- tiesTo=-
   #1 line=10 cols=[0,1) ticks=0..11520 note=65 track=2 bar=0 tiesFrom=- tiesTo=-
-  #2 line=13 cols=[0,1) ticks=0..11520 note=65 track=3 bar=0 tiesFrom=- tiesTo=-
+  #2 line=13 cols=[0,1) ticks=0..11520 note=66 track=3 bar=0 tiesFrom=- tiesTo=-
   #3 line=6 cols=[2,3) ticks=11520..23040 note=61 track=1 bar=0 tiesFrom=- tiesTo=-
   #4 line=10 cols=[2,3) ticks=11520..23040 note=60 track=2 bar=0 tiesFrom=- tiesTo=-
-  #5 line=13 cols=[2,3) ticks=11520..23040 note=60 track=3 bar=0 tiesFrom=- tiesTo=-
+  #5 line=13 cols=[2,3) ticks=11520..23040 note=61 track=3 bar=0 tiesFrom=- tiesTo=-
 == log: empty

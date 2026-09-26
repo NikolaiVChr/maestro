@@ -161,6 +161,7 @@ public class AbcToMidi {
 		abcInfo.abcTrackInfos = new ArrayList<>();
 		for (FileAndData fileAndData : filesData) {
 			track = null;
+			info.newFile();
 			String fileName = fileAndData.file.getName();
 			abcInfo.addSourceFile(fileAndData.file);
 			int lineNumber = 0;
@@ -261,6 +262,9 @@ public class AbcToMidi {
 								info.newPart(Integer.parseInt(value));
 								trackNumber++;
 								partStartLine = lineNumber;
+								// The part starts from the file header's meter, so a meter error in a part without M: points here
+								meterChangeLine = lineNumber;
+								meterChangeColumn = 0;
 								chordStartTick = 0;
 								chordEndTick = 0;
 								abcInfo.setPartNumber(trackNumber, info.getPartNumber());
@@ -295,7 +299,7 @@ public class AbcToMidi {
 								info.setNoteDivisor(value);
 								break;
 							case 'M':
-								info.setMeter(value);
+								info.setMeter(value, track == null);
 								meterChangeLine = lineNumber;
 								meterChangeColumn = infoMatcher.start(INFO_VALUE);
 								break;

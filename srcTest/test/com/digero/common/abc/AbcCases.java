@@ -368,7 +368,8 @@ final class AbcCases {
 		c.add(tune("lotro_broken_rhythm_too_short", "c>>>d/ c|"));
 		c.add(tune("lotro_broken_rhythm_too_long", "c24>c8|"));
 
-		// 6: whether a part without K:/L:/M: uses the file header or the previous part (not decided yet)
+		// 6: every part starts from the file header's K:, M: and L: (before the first X:), not from the previous part.
+		// An M: in a header without its own L: gives the default length. (Tested in LotRO.)
 		c.add(of("part_length_does_not_carry_over", concat(
 				new String[] { "X:1", "T:One", "M:4/4", "L:1/4", "Q:120", "K:C", "c d|" },
 				new String[] { "X:2", "T:Two", "c d|" })));
@@ -382,6 +383,10 @@ final class AbcCases {
 				new String[] { "X:3", "T:Three", "f c|" })));
 		c.add(of("file_header_per_file", "X:1", "T:One", "M:4/4", "L:1/8", "Q:120", "K:D", "f c|")
 				.plusFile("second.abc", "X:2", "T:Two", "M:4/4", "L:1/8", "Q:120", "f c|"));
+		// A part without M: gets the file header's meter, not the previous part's 6/8: an error, pointing at its X:
+		c.add(of("part_meter_denominator_from_file_header", concat(
+				new String[] { "X:1", "T:One", "M:6/8", "L:1/8", "Q:120", "K:C", "c d|" },
+				new String[] { "X:2", "T:Two", "Q:120", "K:C", "c d|" })));
 
 		// 8: input that used to be accepted silently
 		c.add(tune("note_length_zero_numerator", "c0 d|"));

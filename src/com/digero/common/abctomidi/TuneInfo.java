@@ -29,6 +29,16 @@ class TuneInfo {
     private int noteDivisorDenom;
     private int tickFactor = 16;
 
+	// Tested in LotRO: every part starts from the K:, M: and L: of the file header (before the first X:), not from
+	// the previous part. And as in ABC 2.1, an M: in a header without an L: in that header gives the default length.
+	private boolean inFileHeader;
+	private KeySignature fileKey;
+	private int fileMeterNumerator;
+	private int fileMeterDenominator;
+	private int fileNoteDivisorNum;
+	private int fileNoteDivisorDenom;
+	private boolean noteDivisorSetInHeader; // An L: in the current header (the file's or the part's)
+
     public TuneInfo() {
 		partNumber = 0;
 		title = "";
@@ -46,6 +56,19 @@ class TuneInfo {
         calcPPQN();
 	}
 
+	/** A new file starts: its header (before its first X:) starts from the defaults. */
+	public void newFile() {
+		inFileHeader = true;
+		key = KeySignature.C_MAJOR;
+		meterNumerator = 4;
+		meterDenominator = 4;
+		compoundMeter = false;
+		noteDivisorNum = -1;
+		noteDivisorDenom = 1;
+		noteDivisorSetInHeader = false;
+		calcPPQN();
+	}
+
 	public void newPart(int partNumber) {
 		this.partNumber = partNumber;
 		instrument = LotroInstrument.DEFAULT_INSTRUMENT;
@@ -54,6 +77,23 @@ class TuneInfo {
 		title = "";
 		titleIsFromExtendedInfo = false;
 		curPartTempoMap.clear();
+		if (inFileHeader) {
+			// The first X: of the file ends its header
+			inFileHeader = false;
+			fileKey = key;
+			fileMeterNumerator = meterNumerator;
+			fileMeterDenominator = meterDenominator;
+			fileNoteDivisorNum = noteDivisorNum;
+			fileNoteDivisorDenom = noteDivisorDenom;
+		}
+		key = fileKey;
+		meterNumerator = fileMeterNumerator;
+		meterDenominator = fileMeterDenominator;
+		compoundMeter = (meterNumerator % 3) == 0;
+		noteDivisorNum = fileNoteDivisorNum;
+		noteDivisorDenom = fileNoteDivisorDenom;
+		noteDivisorSetInHeader = false;
+		calcPPQN();
 	}
 
 	public void setTitle(String title, boolean fromExtendedInfo) {
@@ -69,6 +109,7 @@ class TuneInfo {
 
 	public void setNoteDivisor(String str) {
 		parseNoteDivisor(str);
+		noteDivisorSetInHeader = true;
 		calcPPQN();
 	}
 
@@ -107,7 +148,7 @@ class TuneInfo {
 		}
 	}
 
-	public void setMeter(String str) {
+	public void setMeter(String str, boolean inHeader) {
 		str = str.trim();
 		if (str.equals("C")) {
 			meterNumerator = 4;
@@ -124,7 +165,10 @@ class TuneInfo {
 			meterNumerator = Integer.parseInt(parts[0]);
 			meterDenominator = Integer.parseInt(parts[1]);
 		}
-
+		if (inHeader && !noteDivisorSetInHeader) {
+			noteDivisorNum = -1;
+			noteDivisorDenom = 1;
+		}
 		calcPPQN();
 		this.compoundMeter = (meterNumerator % 3) == 0;
 	}
