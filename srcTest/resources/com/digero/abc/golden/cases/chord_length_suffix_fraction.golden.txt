@@ -21,10 +21,10 @@ divisionType=0.0 resolution=11520 tickLength=23318 tracks=2
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   4320 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  4320 NOTE_OFF ch=0 d1=64 d2=106 [LotroShortMessage]
+  4320 NOTE_OFF ch=0 d1=67 d2=106 [LotroShortMessage]
   4320 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
-  21007 NOTE_OFF ch=0 d1=67 d2=106 [LotroShortMessage]
-  22770 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
-  23318 NOTE_OFF ch=0 d1=64 d2=106 [LotroShortMessage]
+  10080 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
   23318 META end_of_track
 == abcInfo
   title="Test"

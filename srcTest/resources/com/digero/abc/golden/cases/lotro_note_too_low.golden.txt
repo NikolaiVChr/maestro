@@ -18,9 +18,9 @@ divisionType=0.0 resolution=11520 tickLength=29952 tracks=2
   1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  5760 NOTE_OFF ch=0 d1=24 d2=106 [LotroShortMessage]
   5760 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
-  24210 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
-  29952 NOTE_OFF ch=0 d1=24 d2=106 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
   29952 META end_of_track
 == abcInfo
   title="Test"
@@ -36,7 +36,7 @@ divisionType=0.0 resolution=11520 tickLength=29952 tracks=2
   #0 line=6 cols=[0,3) ticks=0..5760 note=24 track=1 bar=0 tiesFrom=- tiesTo=-
   #1 line=6 cols=[4,5) ticks=5760..11520 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
 == log
-  WARNING: Unable to find duration for note 24 in Lute of Ages, Cannot invoke "java.lang.Long.longValue()" because the return value of "com.digero.common.abc.LotroInstrumentSampleDuration.getDura(String, int)" is null
+  WARNING: Unable to find duration for note 24 in Lute of Ages
 
 ### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
 == EXCEPTION LotroFileParseException: Error reading lotro_note_too_low.abc on line 7, column 1:

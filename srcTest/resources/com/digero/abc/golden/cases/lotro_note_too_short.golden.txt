@@ -20,7 +20,7 @@ divisionType=0.0 resolution=11520 tickLength=19170 tracks=2
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   720 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
   720 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
-  19170 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  6480 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
   19170 META end_of_track
 == abcInfo
   title="Test"

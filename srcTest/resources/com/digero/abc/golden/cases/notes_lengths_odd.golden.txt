@@ -34,7 +34,7 @@ divisionType=0.0 resolution=11520 tickLength=33570 tracks=2
   transcriber=""
   genre="" mood=""
   primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
-  hasTriplets=false hasMixTimings=false barCount=1 partCount=2 partSetups=2..2 empty=false
+  hasTriplets=true hasMixTimings=false barCount=1 partCount=2 partSetups=2..2 empty=false
   sourceFiles=[notes_lengths_odd.abc]
   part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
   part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
@@ -79,7 +79,7 @@ divisionType=0.0 resolution=11520 tickLength=33570 tracks=2
   transcriber=""
   genre="" mood=""
   primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
-  hasTriplets=false hasMixTimings=false barCount=1 partCount=2 partSetups=2..2 empty=false
+  hasTriplets=true hasMixTimings=false barCount=1 partCount=2 partSetups=2..2 empty=false
   sourceFiles=[notes_lengths_odd.abc]
   part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
   part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
@@ -121,7 +121,7 @@ divisionType=0.0 resolution=11520 tickLength=107280 tracks=2
   transcriber=""
   genre="" mood=""
   primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
-  hasTriplets=false hasMixTimings=false barCount=1 partCount=2 partSetups=2..2 empty=false
+  hasTriplets=true hasMixTimings=false barCount=1 partCount=2 partSetups=2..2 empty=false
   sourceFiles=[notes_lengths_odd.abc]
   part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
   part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]

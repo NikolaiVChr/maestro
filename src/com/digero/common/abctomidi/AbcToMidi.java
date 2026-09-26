@@ -151,6 +151,7 @@ public class AbcToMidi {
 		Map<Integer, Integer> tiedNotes = new HashMap<>(); // noteId => (line << 16) | column
 		Map<Integer, Double> tiedNoteStartTicks = new HashMap<>(); // noteId => start of the tie's first note
 		Map<Integer, Double> tiedNoteEndTicks = new HashMap<>(); // noteId => end of the tied note so far, see below
+		Map<Integer, LotroInstrument> trackInstruments = new HashMap<>(); // trackIndex => instrument it plays, see endTrack
 		Map<Integer, Integer> accidentals = new HashMap<>(); // noteId => deltaNoteId
 
 		List<MidiEvent> noteOffEvents = new ArrayList<>();
@@ -251,9 +252,6 @@ public class AbcToMidi {
 								}
 
 								accidentals.clear();
-								if (!noteOffEvents.isEmpty() && track != null) {
-									track.add(MidiFactory.createEndOfTrackEvent(noteOffEvents.getLast().getTick()));
-								}
 								noteOffEvents.clear();
 								notesOn.clear();
 
@@ -366,15 +364,17 @@ public class AbcToMidi {
 									partStartLine);
 						}
 						track = seq.createTrack();
+						trackInstruments.put(trackIndex, info.getInstrument());
 						track.add(MidiFactory.createLotroChangeEvent(info.getInstrument().midi.id(), channel, 0));
 						abcInfo.abcTrackInfos.add(new ExportTrackInfo(0, null, null, channel, info.getInstrument().midi.id(),Long.MAX_VALUE, 0,0,0,0,0,0, null));
 						if (useLotroInstruments) {
-							track.add(MidiFactory.createChannelVolumeEvent(MidiConstants.MAX_VOLUME, channel, 1));
-							track.add(MidiFactory.createReverbControlEvent(AbcConstants.MIDI_REVERB, channel, 1));
-							track.add(MidiFactory.createChorusControlEvent(AbcConstants.MIDI_CHORUS, channel, 1));
+							track.add(MidiFactory.createChannelVolumeEvent(MidiConstants.MAX_VOLUME, channel, 1L));
+							track.add(MidiFactory.createReverbControlEvent(AbcConstants.MIDI_REVERB, channel, 1L));
+							track.add(MidiFactory.createChorusControlEvent(AbcConstants.MIDI_CHORUS, channel, 1L));
 						}
 
-						abcInfo.setPartInstrument(trackNumber, info.getInstrument());
+						// The header is done: info has the part's instrument. Definitive means it came from %%made-for.
+						abcInfo.setPartInstrument(trackNumber, info.getInstrument(), info.isInstrumentDefinitiveSet());
 
 					}
 
@@ -707,16 +707,19 @@ public class AbcToMidi {
 							}
 						}
 
+						// Try to guess if this note is using triplet timing. Before the tempo scaling below, which
+						// would hide the 3 when a tempo is a multiple of 3 (e.g. Q:120).
+						// TODO: sorry, but this is crap. The whole song should not be swing just because it find a triplet
+						//       somewhere in the song. Some day this have to be improved. ~Aifel
+						if ((denominator % 3 == 0) && (numerator % 3 != 0)) {
+							abcInfo.setHasTriplets(true);
+						}
+
 						// Convert back to the original tempo
 						int curTempoBPM = info.getCurrentTempoBPM(Math.round(chordStartTick));
 						int primaryTempoBPM = info.getPrimaryTempoBPM();
 						numerator = multiplyLength(numerator, curTempoBPM, fileName, lineNumber, m.start());
 						denominator = multiplyLength(denominator, primaryTempoBPM, fileName, lineNumber, m.start());
-
-						// Try to guess if this note is using triplet timing
-						if ((denominator % 3 == 0) && (numerator % 3 != 0)) {
-							abcInfo.setHasTriplets(true);
-						}
 
 						double noteEndTick = chordStartTick
 								+ (double) info.getTickFactor() * DEFAULT_NOTE_TICKS * numerator * info.getLNum() / ((double) denominator * info.getLDenom());
@@ -949,8 +952,12 @@ public class AbcToMidi {
 						lineAndColumn & 0xFFFF);
 			}
 		}
-		if (!noteOffEvents.isEmpty() && track != null) {
-			track.add(MidiFactory.createEndOfTrackEvent(noteOffEvents.getLast().getTick()));
+
+		// Done here for all parts at once, when all tempo changes are known
+		Track[] partTracks = seq.getTracks();
+		for (int t = 1; t < partTracks.length; t++) {
+			endTrack(partTracks[t], trackInstruments.get(t), useLotroInstruments, info.getAllPartsTempoMap(), PPQN,
+					info.getPrimaryTempoBPM());
 		}
 
 		abcInfo.setPartEndLine(trackNumber, lineNumberForRegions);
@@ -991,11 +998,16 @@ public class AbcToMidi {
 		if (MidiFactory.isSupportedMidiKeyMode(abcInfo.getKeySignature().mode))
 			tracks[0].add(MidiFactory.createKeySignatureEvent(abcInfo.getKeySignature(), 0));
 
-
+		// The song's length, including the ring-out of plucked notes; needs the tempo events added above
+		abcInfo.setSongLengthMicros(seq.getMicrosecondLength());
 
 		return seq;
 	}
 
+	/**
+	 * Records a tie, or ends the note: its note-off goes at its written end (for a tie, the end of the whole tied
+	 * note). A plucked note that rings shorter than written and is last in track is cut later, in endTrack.
+	 */
 	private static void handleNoteTie(boolean useLotroInstruments, final boolean enableLotroErrors, TuneInfo info,
 									  Track track, int channel, long PPQN, Map<Integer, Integer> tiedNotes, List<MidiEvent> noteOffEvents,
 									  String fileName, int lineNumber, Matcher m, long numerator_abc, long denominator_abc, String abcNoteL,
@@ -1010,36 +1022,13 @@ public class AbcToMidi {
 			int lineAndColumn = (lineNumber << 16) | m.start();
 			tiedNotes.put(noteId, lineAndColumn);
 		} else {
-			double MPQN = MidiUtils.convertTempo(curTempoBPM);
-			// double lengthMicros = (noteEndTick - chordStartTick) * MPQN / PPQN;
 			float lengthSeconds = info.getWholeNoteTime() * (numerator_abc / (float) denominator_abc);
 
 			throwExceptionsIfEnabled(enableLotroErrors, fileName, lineNumber, m, abcNoteL, abcNoteAcc, noteLetter,
 					octaveStr, lengthSeconds, lotroSeconds(info, numerator_abc, denominator_abc), false, info.getPrimaryTempoBPM());
 
-			// Lengthen to match the note lengths used in the game
-			double noteEndTickTmp = noteEndTick;
-			if (useLotroInstruments) {
-				boolean sustainable = info.getInstrument().isSustainable(lotroNoteId);
-				boolean skipExtra = false;
-				if (!sustainable) {
-					try {
-						// This makes long notes on plucked and percussion notes shorter so they match the sample,
-						// which in turn makes the duration display show correct length.
-						// TODO: This also loses duration if using abc as source for maestro. :(
-						int sampleID = info.getInstrument() == LotroInstrument.BASIC_COWBELL || info.getInstrument() == LotroInstrument.MOOR_COWBELL?AbcConstants.COWBELL_NOTE_ID:lotroNoteId;
-						long lengthMicros = LotroInstrumentSampleDuration.getDura(info.getInstrument().friendlyName, sampleID);
-						noteEndTickTmp = noteStartTick + lengthMicros * PPQN / MPQN;
-						skipExtra = true;
-					} catch (Throwable e) {
-						// In case getDura returns null, we get a class cast exception.
-						log.warning("Unable to find duration for note "+lotroNoteId+" in "+info.getInstrument().friendlyName+", "+e.getMessage());
-						noteEndTickTmp = noteStartTick + AbcConstants.getNonSustainedNoteHoldMicros(info.getInstrument()) * PPQN / MPQN;
-					}
-				}
-			}
 			MidiEvent noteOff = MidiFactory.createNoteOffEventEx(noteId, channel,
-					info.getDynamics().getVol(useLotroInstruments), Math.round(noteEndTickTmp));
+					info.getDynamics().getVol(useLotroInstruments), Math.round(noteEndTick));
 			track.add(noteOff);
 			noteOffEvents.add(noteOff);
 
@@ -1056,7 +1045,7 @@ public class AbcToMidi {
 		// Using double for lengthSeconds can result in rounding errors in 17 decimal
 		// place.
 		if (enableLotroErrors && lotroSeconds < AbcConstants.SHORTEST_NOTE_SECONDS) {
-			throw new LotroFileParseException("Rest's duration is too short (" + String.format(Locale.US, "%.3f", lengthSeconds)
+			throw new LotroFileParseException("Rest's duration is too short (" + formatSeconds(lotroSeconds)
 					+ "s)(" + noteLetter + abcNoteL + ")", fileName, lineNumber, m.start());
             /*
 		} else if (enableLotroErrors && AbcConstants.getShortestNoteMicros(bpm) > 60000L && ((float) lengthSeconds) == ((float) AbcConstants.SHORTEST_NOTE_SECONDS)) {
@@ -1070,8 +1059,7 @@ public class AbcToMidi {
 	}
 
 	/**
-	 * Very important: These methods now use float for lengthSeconds to simulate how
-	 * lotro calculates note durations. It should now fail when it really in abc is 0.06
+	 * Very important: It should now fail when it really in abc is 0.06
 	 * but inside lotro it is 0.599999
 	 *
 	 * @param lengthSeconds Used for the 8 s maximum (float, as before; not verified against LotRO)
@@ -1084,16 +1072,9 @@ public class AbcToMidi {
 		// place.
 		if (enableLotroErrors && lotroSeconds < AbcConstants.SHORTEST_NOTE_SECONDS) {
 			throw new LotroFileParseException(
-					"Note's duration is too short (" + String.format(Locale.US, "%.3f", lengthSeconds) + "s)(" + abcNoteAcc
+					"Note's duration is too short (" + formatSeconds(lotroSeconds) + "s)(" + abcNoteAcc
 							+ noteLetter + octaveStr + abcNoteL + addGroup(m, shouldAddGroup) + ")",
 					fileName, lineNumber, m.start());
-		/*
-        } else if (enableLotroErrors && AbcConstants.getShortestNoteMicros(bpm) > 60000L && ((float) lengthSeconds) == ((float) AbcConstants.SHORTEST_NOTE_SECONDS)) {
-			throw new LotroParseException(
-					"Note's duration is too short (" + String.format(Locale.US, "%.3f", lengthSeconds) + "s)(" + abcNoteAcc
-							+ noteLetter + octaveStr + abcNoteL + addGroup(m, shouldAddGroup) + ")",
-					fileName, lineNumber, m.start());
-		 */
 		} else if (enableLotroErrors && lengthSeconds > AbcConstants.LONGEST_NOTE_SECONDS) {
 			throw new LotroFileParseException(
 					"Note's duration is too long (" + String.format(Locale.US, "%.3f", lengthSeconds) + "s)(" + abcNoteAcc
@@ -1141,6 +1122,112 @@ public class AbcToMidi {
 			return m.group(NOTE_TIE);
 		}
 		return "";
+	}
+
+	/**
+	 * Ends a part's track where its last sound stops.
+	 * <p>
+	 * A non-sustained LotRO instrument (e.g. lute) rings for its sample length from its attack, however long the note
+	 * is written. So with LotRO instruments a plucked note's sound ends where its sample runs out, and the track ends
+	 * where the last sound ends. That keeps the sequence length equal to the song duration Maestro writes
+	 * (%%song-duration). Only a plucked note written to last beyond that end is cut, to the end; every other note keeps
+	 * its written length (none is lengthened: the soundfont's decay plays out a short note).
+	 * Otherwise, and for sustained notes, the track ends at its last note-off.
+	 * <p>
+	 * A tied note is one note-on and one note-off here, so its sample is counted from its first attack.
+	 *
+	 * @param instrument The instrument the track plays (its program change)
+	 * @param tempoMap   Tick -> BPM of the sequence's tempo events
+	 */
+	private static void endTrack(Track track, LotroInstrument instrument, boolean useLotroInstruments,
+								 NavigableMap<Long, Integer> tempoMap, long ppqn, int defaultBpm) {
+		if (track.size() > 0) {
+			// JDK's Track keeps its end-of-track as the last event and only ever moves it later (not in the
+			// Javadoc, so it's checked here). The cuts below can make the track end earlier, so an end-of-track is
+			// taken out here and added again at the new end.
+			MidiEvent eot = track.get(track.size() - 1);
+			if (MidiUtils.isMetaEndOfTrack(eot.getMessage()))
+				track.remove(eot);
+		}
+
+		// Where the track's sound stops. A plucked note rings until its sample runs out, however long it is written;
+		// every other event, sustained note-offs included, counts at its own tick.
+		boolean useSampleLengths = useLotroInstruments && instrument != null;
+		boolean cowbell = instrument == LotroInstrument.BASIC_COWBELL || instrument == LotroInstrument.MOOR_COWBELL;
+		Map<Integer, Long> sampleMicros = new HashMap<>(); // sample ID => length; one lookup per pitch
+		Map<Integer, Deque<Long>> noteStarts = new HashMap<>(); // pitch => note-on ticks not yet ended
+		List<MidiEvent> pluckedNoteOffs = new ArrayList<>();
+		long end = 0;
+		for (int i = 0; i < track.size(); i++) {
+			MidiEvent event = track.get(i);
+			long soundEnd = event.getTick();
+			if (useSampleLengths && event.getMessage() instanceof ShortMessage sm) {
+				int pitch = sm.getData1();
+				if (sm.getCommand() == ShortMessage.NOTE_ON) {
+					noteStarts.computeIfAbsent(pitch, k -> new ArrayDeque<>()).add(event.getTick());
+				} else if (sm.getCommand() == ShortMessage.NOTE_OFF) {
+					Deque<Long> starts = noteStarts.get(pitch);
+					Long start = (starts == null) ? null : starts.poll();
+					if (start != null && !instrument.isSustainable(pitch)) { // With LotRO instruments the MIDI pitch is the LotRO note
+						int sampleId = cowbell ? AbcConstants.COWBELL_NOTE_ID : pitch;
+						long micros = sampleMicros.computeIfAbsent(sampleId, id -> sampleMicros(instrument, id));
+						soundEnd = ticksAfter(start, micros / 1_000_000.0, tempoMap, ppqn, defaultBpm);
+						pluckedNoteOffs.add(event);
+					}
+				}
+			}
+			end = Math.max(end, soundEnd);
+		}
+
+		// Only a useSampleLengths note that is written to last beyond that is cut, to the end of the track. Notes that end
+		// earlier keep their written length, even when that is longer than their sample.
+		for (MidiEvent noteOff : pluckedNoteOffs) {
+			if (noteOff.getTick() > end) {
+				track.remove(noteOff);
+				noteOff.setTick(end);
+				track.add(noteOff);
+			}
+		}
+		track.add(MidiFactory.createEndOfTrackEvent(end));
+	}
+
+	/** Length of an instrument's sample for a note, in microseconds. */
+	private static long sampleMicros(LotroInstrument instrument, int sampleId) {
+		// getDura returns null for a note the instrument has no sample for. That is checked here rather than caught as
+		// an exception: the JVM may throw a NullPointerException without its message once the code is JIT-compiled
+		// (OmitStackTraceInFastThrow), so the text of the warning would depend on how warm the JVM is.
+		Long micros;
+		try {
+			micros = LotroInstrumentSampleDuration.getDura(instrument.friendlyName, sampleId);
+		} catch (Exception e) {
+			micros = null; // No sample table for the instrument; the message isn't used, for the same reason
+		}
+		if (micros == null) {
+			log.warning("Unable to find duration for note " + sampleId + " in " + instrument.friendlyName);
+			return AbcConstants.getNonSustainedNoteHoldMicros(instrument);
+		}
+		return micros;
+	}
+
+	/**
+	 * The tick that lies the given number of seconds after startTick, following the tempo changes in between.
+	 *
+	 * @param tempoMap   Tick -> BPM, as used for the sequence's tempo events (60,000,000 / BPM microseconds per quarter)
+	 * @param defaultBpm The tempo before the first entry (the sequence's default when there are none)
+	 */
+	static long ticksAfter(long startTick, double seconds, NavigableMap<Long, Integer> tempoMap, long ppqn,
+						   int defaultBpm) {
+		long tick = startTick;
+		double remaining = seconds;
+		while (true) {
+			Map.Entry<Long, Integer> tempo = tempoMap.floorEntry(tick);
+			double ticksPerSecond = (tempo == null ? defaultBpm : tempo.getValue()) / 60.0 * ppqn;
+			Long nextChange = tempoMap.higherKey(tick);
+			if (nextChange == null || (nextChange - tick) / ticksPerSecond >= remaining)
+				return tick + Math.round(remaining * ticksPerSecond);
+			remaining -= (nextChange - tick) / ticksPerSecond;
+			tick = nextChange;
+		}
 	}
 
 	/**
@@ -1248,6 +1335,8 @@ public class AbcToMidi {
 	public static AbcInfo parseAbcMetadata(List<FileAndData> abc) throws FileParseException {
 		AbcInfo abcInfo = new AbcInfo();
 		int trackNumber = 0;
+		// Same instrument rules as convert(): %%made-for wins, then %%part-name, then the first T: that names one
+		boolean instrumentSet = false;
 		String fileName = null;
 		for (FileAndData fileAndData : abc) {
 			fileName = fileAndData.file.getName();
@@ -1269,16 +1358,23 @@ public class AbcToMidi {
 						if (field == AbcField.PART_NAME) {
 							abcInfo.setPartName(trackNumber, value, true);
 							LotroInstrument instrument = LotroInstrument.findInstrumentName(value, null);
-							if (!abcInfo.getPartInstrumentFromMadeFor(trackNumber) && instrument != null)
+							if (!abcInfo.getPartInstrumentFromMadeFor(trackNumber) && instrument != null) {
 								abcInfo.setPartInstrument(trackNumber, instrument);
+								instrumentSet = true;
+							}
 						} else if (field == AbcField.MADE_FOR) {
 							LotroInstrument instrument = LotroInstrument.findInstrumentName(value, null);
-							if (instrument != null)
+							if (instrument != null) {
 								abcInfo.setPartInstrument(trackNumber, instrument, true /*made for*/);
+								instrumentSet = true;
+							}
 						}
 					}
 					continue;
 				}
+
+				// Same comment handling as convert(), so the playlist shows the same titles
+				line = stripComment(line);
 
 				Matcher infoMatcher = INFO_PATTERN.matcher(line);
 				if (infoMatcher.matches()) {
@@ -1290,12 +1386,20 @@ public class AbcToMidi {
 					try {
 						switch(type) {
 							case 'X': // New part
+								instrumentSet = false;
 								trackNumber++;
 								abcInfo.setPartNumber(trackNumber,  Integer.parseInt(value));
 								abcInfo.setPartStartLine(trackNumber, lineNumber);
 								break;
 							case 'T':
 								abcInfo.setPartName(trackNumber, value, false);
+								if (!instrumentSet) {
+									LotroInstrument instrument = LotroInstrument.findInstrumentName(value, null);
+									if (instrument != null) {
+										abcInfo.setPartInstrument(trackNumber, instrument);
+										instrumentSet = true;
+									}
+								}
 								break;
 							default:
 								break;

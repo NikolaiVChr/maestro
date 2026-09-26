@@ -72,6 +72,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 	private String songComposer = null;
 	private String songTranscriber = null;
 	private String songDuration = null;
+	private long songLengthMicros = 0;
 	private String genre = null;
 	private String mood = null;
 	private String exportTimestamp = null;
@@ -102,6 +103,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		songComposer = null;
 		songTranscriber = null;
 		songDuration = null;
+		songLengthMicros = 0;
 		genre = null;
 		mood = null;
 		exportTimestamp = null;
@@ -274,8 +276,10 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		if (info == null || info.name == null)
 			return "Track " + trackIndex;
 
+		// Only a name that starts with the common T: prefix can lose it. The header track (0) gets the tune's title,
+		// which may come from %%part-name and be shorter than the prefix.
 		if (info.nameIsFromExtendedInfo || titlePrefix == null || titlePrefix.isEmpty()
-				|| titlePrefix.length() == info.name.length())
+				|| titlePrefix.length() == info.name.length() || !info.name.startsWith(titlePrefix))
 			return info.name;
 
 		return info.name.substring(titlePrefix.length()).trim();
@@ -451,7 +455,8 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
                 isOrganic2 = Boolean.parseBoolean(value.trim());
                 break;
             case ORGANIC_VERSION:
-                isV2 = Integer.parseInt(value.trim()) == 2;
+                //isV2 = Integer.parseInt(value.trim()) == 2;
+				isV2 = "2".equals(value.trim());
                 break;
             case SONG_DURATION:
                 songDuration = value.trim();
@@ -656,5 +661,18 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		}
 		
 		return inf;
+	}
+
+	/**
+	 * The length of the converted song in microseconds, including the ring-out of plucked notes: the same as the
+	 * sequence's length, and what %%song-duration says for an ABC exported by Maestro. 0 until AbcToMidi has converted
+	 * the song (e.g. for the playlist's parseAbcMetadata).
+	 */
+	public long getSongLengthMicros() {
+		return songLengthMicros;
+	}
+
+	void setSongLengthMicros(long songLengthMicros) {
+		this.songLengthMicros = songLengthMicros;
 	}
 }

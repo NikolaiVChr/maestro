@@ -20,9 +20,9 @@ divisionType=0.0 resolution=11520 tickLength=35449 tracks=2
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
   5760 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
   11520 NOTE_ON ch=0 d1=62 d2=106 [LotroShortMessage]
-  24210 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
-  35449 NOTE_OFF ch=0 d1=62 d2=106 [LotroShortMessage]
+  17280 NOTE_OFF ch=0 d1=62 d2=106 [LotroShortMessage]
   35449 META end_of_track
 == abcInfo
   title="Test"
@@ -61,9 +61,9 @@ divisionType=0.0 resolution=11520 tickLength=35449 tracks=2
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
   5760 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
   11520 NOTE_ON ch=0 d1=62 d2=106 [LotroShortMessage]
-  24210 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
-  35449 NOTE_OFF ch=0 d1=62 d2=106 [LotroShortMessage]
+  17280 NOTE_OFF ch=0 d1=62 d2=106 [LotroShortMessage]
   35449 META end_of_track
 == abcInfo
   title="Test"

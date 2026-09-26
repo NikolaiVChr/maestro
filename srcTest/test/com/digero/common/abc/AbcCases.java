@@ -53,6 +53,11 @@ final class AbcCases {
 		return of(name, concat(header, body));
 	}
 
+	/** The default header followed by extended %% field lines (still in the header, before the first note). */
+	static String[] extended(String... fieldLines) {
+		return concat(DEFAULT_HEADER, fieldLines);
+	}
+
 	/** One part (X: to notes) with the given number and title. */
 	static String[] part(int number, String title, String... body) {
 		return concat(new String[] { "X:" + number, "T:" + title, "M:4/4", "L:1/8", "Q:120", "K:C" }, body);
@@ -261,13 +266,70 @@ final class AbcCases {
 				.plusFile("second.abc", part(2, "Song - Two", "e f|")));
 
 		// ------------------------------------------------------------ extended %% fields
-		// The field names are best guesses; if AbcField doesn't know one, the snapshot records that it was ignored.
-		// Real exported files (AbcToMidiFileSnapshotTest) cover these properly.
+		// The names are AbcField's: the enum name in lower case with - for _, in any case, then a space and the value.
+		// TEMPO is "%%Q:". Maestro writes these; real exported files (AbcToMidiFileSnapshotTest) cover them too.
 		c.add(tune("extended_fields", concat(header(),
-				new String[] { "%%song-title Custom Title", "%%song-composer Someone", "%%song-transcriber Me",
-						"%%part-name Lead", "%%made-for Basic Flute" }),
+						new String[] { "%%song-title Custom Title", "%%song-composer Someone", "%%song-transcriber Me",
+								"%%part-name Lead", "%%made-for Basic Flute" }),
 				"c d|"));
 		c.add(tune("extended_tempo_change", "c d|", "%%Q: 90", "e f|"));
+		c.add(tune("extended_tempo_change_twice", "c d|", "%%Q: 60", "e|", "%%Q: 240", "f g|"));
+		c.add(tune("extended_tempo_before_first_note", extended("%%Q: 60"), "c d|"));
+		c.add(tune("extended_tempo_lower_case", "c d|", "%%q: 90", "e f|"));
+		c.add(tune("extended_tempo_no_space", "c d|", "%%Q:90", "e f|"));
+		c.add(of("extended_tempo_in_second_part", concat(part(1, "Song - One", "c d e f|"),
+				part(2, "Song - Two", "c d|", "%%Q: 60", "e f|"))));
+		c.add(tune("extended_field_upper_case", extended("%%SONG-TITLE Loud Title", "%%PART-NAME Loud Harp"), "c d|"));
+		c.add(tune("extended_unknown_field", extended("%%unknown-field something", "%%MIDI program 1"), "c d|"));
+
+		// part-name: the part's name, and like T: it picks the instrument and a left/right/center pan
+		c.add(tune("extended_part_name_instrument", extended("%%part-name Lead Harp"), "c d|"));
+		c.add(tune("extended_part_name_wins_over_title", header("T:Test Flute"), "%%part-name Harp", "c d|"));
+		c.add(tune("extended_part_name_pan_left", extended("%%part-name Lute left"), "c d|"));
+		c.add(tune("extended_part_name_pan_right", extended("%%part-name Lute right"), "c d|"));
+		c.add(tune("extended_part_name_pan_center", extended("%%part-name Lute center"), "c d|"));
+		c.add(of("extended_part_name_before_title", "X:1", "%%part-name Harp", "T:Test Flute", "M:4/4", "L:1/8",
+				"Q:120", "K:C", "c d|"));
+		c.add(tune("extended_part_name_empty", extended("%%part-name"), "c d|"));
+		c.add(tune("extended_part_name_in_body", "c d|", "%%part-name Harp", "e f|"));
+		c.add(of("extended_part_name_per_part", concat(part(1, "Song - One", "%%part-name Harp", "c d|"),
+				part(2, "Song - Two", "%%part-name Flute", "e f|"))));
+
+		// made-for: the instrument, stronger than part-name and T:
+		c.add(tune("extended_made_for_before_part_name", extended("%%made-for Basic Flute", "%%part-name Harp"),
+				"c d|"));
+		c.add(tune("extended_made_for_after_part_name", extended("%%part-name Harp", "%%made-for Basic Flute"),
+				"c d|"));
+		c.add(tune("extended_made_for_unknown_instrument", extended("%%made-for Kazoo"), "c d|"));
+		c.add(tune("extended_made_for_in_body", "c d|", "%%made-for Basic Harp", "e f|"));
+
+		// user-pan: 0..127 or auto; stronger than the pan from part-name
+		c.add(tune("extended_user_pan", extended("%%user-pan 30"), "c d|"));
+		c.add(tune("extended_user_pan_too_high", extended("%%user-pan 200"), "c d|"));
+		c.add(tune("extended_user_pan_too_low", extended("%%user-pan -5"), "c d|"));
+		c.add(tune("extended_user_pan_not_a_number", extended("%%user-pan abc"), "c d|"));
+		c.add(tune("extended_user_pan_decimal", extended("%%user-pan 64.5"), "c d|"));
+		c.add(tune("extended_user_pan_auto_after_part_name", extended("%%part-name Lute left", "%%user-pan auto"),
+				"c d|"));
+		c.add(tune("extended_user_pan_before_part_name", extended("%%user-pan 100", "%%part-name Lute left"), "c d|"));
+
+		// swing-rhythm sets hasTriplets; without it, hasTriplets is guessed from the note lengths
+		c.add(tune("extended_swing_rhythm_true", extended("%%swing-rhythm true"), "c d e f|"));
+		c.add(tune("extended_swing_rhythm_false_with_triplet", extended("%%swing-rhythm false"), "(3cde f|"));
+		c.add(tune("extended_swing_rhythm_not_a_boolean", extended("%%swing-rhythm yes"), "(3cde f|"));
+		c.add(tune("triplet_guess_q90", header("Q:90"), "(3cde f|"));
+		c.add(tune("triplet_guess_q100", header("Q:100"), "(3cde f|"));
+		c.add(tune("triplet_guess_after_tempo_change", "c d|", "%%Q: 100", "e f|"));
+		c.add(tune("extended_mix_timings", extended("%%mix-timings true"), "c d|"));
+		c.add(tune("extended_organic_version_not_a_number", extended("%%organic-version two"), "c d|"));
+
+		// Quirks, recorded as they are today
+		c.add(tune("extended_field_with_colon_is_ignored", extended("%%song-title: Colon Title"), "c d|"));
+		c.add(tune("extended_tempo_without_colon_is_ignored", "c d|", "%%Q 60", "e f|"));
+		c.add(tune("extended_tempo_not_a_number_is_ignored", "c d|", "%%Q: fast", "e f|"));
+		c.add(tune("extended_tempo_zero_is_ignored", "c d|", "%%Q: 0", "e f|"));
+		c.add(tune("extended_escaped_percent_is_kept", extended("%%song-title 100\\% Harp"), "c d|"));
+		c.add(tune("extended_percent_is_not_a_comment", extended("%%part-name Lute % left"), "c d|"));
 
 		// 1: a tuplet must apply to every note of its last chord
 		c.add(tune("tuplet_ends_on_chord", "(3c d[eg] c|"));
@@ -275,14 +337,14 @@ final class AbcCases {
 		c.add(tune("tuplet_p_q_r_ends_on_chord", "(3:2:2c[e2g2] c|"));
 		c.add(tune("tuplet_ends_on_chord_with_rest", "(3c d[ez] c|"));
 
-		// 2: a tie must continue on the very next note of that pitch, starting where the tied note ends
+		// 2: a tie joins the next note of the same pitch, wherever it is, for the sum of their lengths (tested in LotRO)
 		c.add(tune("tie_over_other_note", "c- d c|"));
 		c.add(tune("tie_over_other_chord", "[c-e] [dg] c|"));
 		c.add(tune("tie_continuation_starts_early", "[c2-z] c d|"));
 		c.add(tune("tie_long_note_in_rest_chord", "[c2-z]z c d|"));
 		c.add(tune("tie_over_other_note_next_line", "c- d", "c|"));
 
-		// 3: a note tied across a bar line keeps its accidental; only that note
+		// 3: a bar line resets the accidental, so after the bar the continuation must repeat it (tested in LotRO)
 		c.add(tune("tie_accidental_across_bar", "^c-|c d|"));
 		c.add(tune("tie_accidental_across_bar_then_same_note", "^c-|c c|"));
 		c.add(tune("tie_accidental_across_bar_explicit_natural", "^c-|=c d|"));
@@ -300,13 +362,13 @@ final class AbcCases {
 		c.add(tune("escaped_percent_in_title", header("T:100\\% Harp"), "c d|"));
 		c.add(tune("escaped_percent_in_composer", concat(header(), new String[] { "C:50\\% Me % comment" }), "c d|"));
 
-		// 5: the LotRO length limits apply to the played length, including tuplets and broken rhythm
+		// 5: LotRO's length limits apply to the written length, not the played one (tested in LotRO)
 		c.add(tune("lotro_tuplet_too_short", "(3c/4d/4e/4 c|"));
 		c.add(tune("lotro_tuplet_long_enough", "(3c/2d/2e/2 c|"));
 		c.add(tune("lotro_broken_rhythm_too_short", "c>>>d/ c|"));
 		c.add(tune("lotro_broken_rhythm_too_long", "c24>c8|"));
 
-		// 6: each X: part starts from the file header, not from the previous part
+		// 6: whether a part without K:/L:/M: uses the file header or the previous part (not decided yet)
 		c.add(of("part_length_does_not_carry_over", concat(
 				new String[] { "X:1", "T:One", "M:4/4", "L:1/4", "Q:120", "K:C", "c d|" },
 				new String[] { "X:2", "T:Two", "c d|" })));

@@ -2,13 +2,9 @@ package com.digero.common.abc;
 
 import static com.digero.common.abc.AbcCases.header;
 import static com.digero.common.abc.AbcCases.tune;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NavigableSet;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Stream;
 
 import javax.sound.midi.MidiEvent;
@@ -18,6 +14,8 @@ import javax.sound.midi.Track;
 
 import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.abctomidi.AbcRegion;
+import com.digero.common.abctomidi.AbcToMidi;
+import com.digero.common.midi.MidiUtils;
 import com.digero.common.midi.Note;
 import com.digero.common.util.LotroFileParseException;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,6 +48,11 @@ class AbcToMidiBehaviourTest {
 
 	static Stream<AbcCase> casesInRange() {
 		return AbcCases.all().stream().filter(c -> !OUT_OF_RANGE_CASES.contains(c.name()));
+	}
+
+	static Stream<AbcCase> casesWithLotroAndPlainMidi() {
+		return AbcCases.all().stream()
+				.filter(c -> c.profiles().contains(Profile.LOTRO) && c.profiles().contains(Profile.PLAIN_MIDI));
 	}
 
 	static Stream<Arguments> caseProfiles() {
@@ -89,6 +92,55 @@ class AbcToMidiBehaviourTest {
 			}
 			assertEquals(List.of(), outside, "Notes outside C2..C5 (" + Note.MIN_PLAYABLE.id + ".."
 					+ Note.MAX_PLAYABLE.id + "); change the case, or add it to OUT_OF_RANGE_CASES if intended");
+		}
+
+		/**
+		 * The LotRO profile plays the same notes at the same times as plain MIDI. The only difference allowed: a plucked
+		 * note may end earlier (cut where its sample runs out), never later (it isn't lengthened to its sample).
+		 */
+		@ParameterizedTest(name = "{0}")
+		@MethodSource("com.digero.common.abc.AbcToMidiBehaviourTest#casesWithLotroAndPlainMidi")
+		void lotroInstrumentsOnlyCutPluckedNotes(AbcCase abcCase) throws Exception {
+			ConversionDump.Result lotro = ConversionDump.run(abcCase, Profile.LOTRO, false, new AbcInfo());
+			ConversionDump.Result plain = ConversionDump.run(abcCase, Profile.PLAIN_MIDI, false, new AbcInfo());
+			assertEquals(lotro.error(), plain.error());
+			if (lotro.error() != null)
+				return;
+			List<long[]> lotroNotes = notes(ConversionDump.convert(abcCase, Profile.LOTRO));
+			List<long[]> plainNotes = notes(ConversionDump.convert(abcCase, Profile.PLAIN_MIDI));
+			assertEquals(plainNotes.size(), lotroNotes.size(), "number of notes");
+			for (int i = 0; i < plainNotes.size(); i++) {
+				long[] l = lotroNotes.get(i), p = plainNotes.get(i);
+				assertEquals(p[1], l[1], "start of note " + i + " in track " + p[0]);
+				assertTrue(l[2] <= p[2], "note " + i + " in track " + p[0] + " ends at " + l[2]
+						+ " with LotRO instruments, later than its written end " + p[2]);
+			}
+		}
+
+		/**
+		 * {track, start, end} of every note, sorted by track, start, pitch. Pitch itself is left out: octave deltas and
+		 * cowbells change it between the profiles, but not the order of notes that start together.
+		 */
+		private static List<long[]> notes(Sequence sequence) {
+			List<long[]> notes = new ArrayList<>();
+			Track[] tracks = sequence.getTracks();
+			for (int t = 1; t < tracks.length; t++) {
+				Map<Integer, Deque<Long>> started = new HashMap<>();
+				List<long[]> trackNotes = new ArrayList<>(); // {track, start, end, pitch}
+				for (int i = 0; i < tracks[t].size(); i++) {
+					MidiEvent event = tracks[t].get(i);
+					if (event.getMessage() instanceof ShortMessage sm) {
+						if (sm.getCommand() == ShortMessage.NOTE_ON)
+							started.computeIfAbsent(sm.getData1(), k -> new ArrayDeque<>()).add(event.getTick());
+						else if (sm.getCommand() == ShortMessage.NOTE_OFF)
+							trackNotes.add(new long[] { t, started.get(sm.getData1()).poll(), event.getTick(), sm.getData1() });
+					}
+				}
+				trackNotes.sort(Comparator.<long[]>comparingLong(n -> n[1]).thenComparingLong(n -> n[3]));
+				for (long[] n : trackNotes)
+					notes.add(new long[] { n[0], n[1], n[2] });
+			}
+			return notes;
 		}
 
 		/** A renamed or removed case must not silently drop out of the exception list. */
@@ -363,6 +415,83 @@ class AbcToMidiBehaviourTest {
 		}
 
 		@Test
+		void pluckedNoteKeepsItsWrittenLength() throws Exception {
+			// Harp is non-sustained. A long note isn't cut to the harp sample, a short one isn't lengthened to it.
+			Sequence s = ConversionDump.convert(tune("semantic", header("T:Test Harp"), "c8 d|"), Profile.LOTRO);
+			long q = s.getResolution(); // c8 = 8 eighths = 4 quarters
+			assertEquals(List.of(on(0, 60), off(4 * q, 60), on(4 * q, 62), off(4 * q + q / 2, 62)), noteEvents(s));
+		}
+
+		@Test
+		void lastPluckedNoteIsCutWhereItsSampleRunsOut() throws Exception {
+			// c32 (8 s) is written longer than its harp sample, and nothing sounds after it. So the song ends where c's
+			// sample runs out, and c's note-off is moved there. d/ ends before that and keeps its written length.
+			Sequence s = ConversionDump.convert(tune("semantic", header("T:Test Harp"), "d/ c32|"), Profile.LOTRO);
+			long q = s.getResolution(); // d/ = q/4, c32 = 16 quarters
+			long cSoundEnd = q / 4 + harpSampleTicks(60, q);
+			assertTrue(cSoundEnd < q / 4 + 16 * q, "the test needs c's sample < 8 s");
+			assertEquals(List.of(on(0, 62), off(q / 4, 62), on(q / 4, 60), off(cSoundEnd, 60)), noteEvents(s));
+			assertEquals(cSoundEnd, s.getTickLength());
+		}
+
+		@Test
+		void withoutLotroInstrumentsTheSongEndsWithTheLastNote() throws Exception {
+			Sequence s = convert(tune("semantic", header("T:Test Harp"), "c32 d/|"));
+			long q = s.getResolution();
+			assertEquals(16 * q + q / 4, s.getTickLength());
+		}
+
+		/** Ticks of the harp's sample for a note, at Q:120 (as AbcToMidi computes it). */
+		private static long harpSampleTicks(int noteId, long q) {
+			long micros;
+			try {
+				micros = LotroInstrumentSampleDuration.getDura(LotroInstrument.BASIC_HARP.friendlyName, noteId);
+			} catch (Exception npe) {
+				micros = AbcConstants.getNonSustainedNoteHoldMicros(LotroInstrument.BASIC_HARP);
+			}
+			return Math.round(micros * q / MidiUtils.convertTempo(120));
+		}
+
+		@Test
+		void noteRangeIsOnlyCheckedWithLotroErrors() throws Exception {
+			// C,,, and c''' are outside LotRO's C2..C5. Only the strict profile (LotRO errors on) may complain.
+			AbcCase outOfRange = tune("semantic", "C,,, c'''|");
+			assertEquals(List.of(12, 96), noteOns(ConversionDump.convert(outOfRange, Profile.LOTRO)).stream()
+					.map(NoteEvent::pitch).toList());
+			assertEquals(List.of(12, 96), noteOns(convert(outOfRange)).stream().map(NoteEvent::pitch).toList());
+			assertThrows(LotroFileParseException.class, () -> ConversionDump.convert(outOfRange, Profile.LOTRO_STRICT));
+		}
+
+		@Test
+		void playlistReadsTitlesLikeTheConversion() throws Exception {
+			// parseAbcMetadata (the ABC Player's playlist) must handle % comments and \% like convert() does
+			for (String title : List.of("T:100\\% Harp", "T:100% Harp", "T:Song % a comment")) {
+				AbcCase abcCase = tune("semantic", header(title), "c|");
+				AbcInfo converted = new AbcInfo();
+				ConversionDump.run(abcCase, Profile.PLAIN_MIDI, false, converted);
+				assertEquals(converted.getTitle(), AbcToMidi.parseAbcMetadata(abcCase.filesData()).getTitle(), title);
+			}
+		}
+
+		@Test
+		void largeLengthNumbersGiveTheSameResultAsSmallOnes() throws Exception {
+			// The same music twice: L:1/2834674 with c1417337 is L:1/2 with c. Used to overflow int with >>>.
+			Sequence large = convert(tune("semantic", header("L:1/2834674"), "c1417337>>>d1417337 e1417337|"));
+			Sequence small = convert(tune("semantic", header("L:1/2"), "c>>>d e|"));
+			assertEquals(noteEvents(small), noteEvents(large));
+		}
+
+		@Test
+		void largeLDenominatorWithFastTempo() throws Exception {
+			// Q:1000 with L:1/2834674 used to overflow int in the LotRO length check (it reported -0.932 s)
+			Sequence large = ConversionDump.convert(tune("semantic", header("L:1/2834674", "Q:1000"), "c5669348 d5669348|"),
+					Profile.LOTRO_STRICT);
+			Sequence small = ConversionDump.convert(tune("semantic", header("L:1/2", "Q:1000"), "c4 d4|"),
+					Profile.LOTRO_STRICT);
+			assertEquals(noteEvents(small), noteEvents(large));
+		}
+
+		@Test
 		void escapedPercentIsKeptInTitle() throws Exception {
 			AbcInfo info = new AbcInfo();
 			ConversionDump.run(tune("semantic", header("T:100\\% Harp"), "c|"), Profile.PLAIN_MIDI, false, info);
@@ -384,6 +513,216 @@ class AbcToMidiBehaviourTest {
 			Sequence s = convert(AbcCase.of("semantic", "K:D", "X:1", "T:One", "f|", "X:2", "T:Two", "K:C", "f|",
 					"X:3", "T:Three", "f|"));
 			assertEquals(66, noteOns(s, 3).get(0).pitch());
+		}
+
+		@Test
+		void ringOutFollowsATempoChange() throws Exception {
+			// d/ ends (as written) after 0.125 s; there the tempo drops to 60, so the rest of its sample takes twice as
+			// many ticks per second as before
+			Sequence s = ConversionDump.convert(tune("semantic", header("T:Test Harp"), "c32 d/|", "%%Q: 60"),
+					Profile.LOTRO);
+			long q = s.getResolution();
+			double dSampleSeconds = LotroInstrumentSampleDuration.getDura(LotroInstrument.BASIC_HARP.friendlyName, 62)
+					/ 1_000_000.0;
+			assertTrue(dSampleSeconds > 0.125, "the test needs d's sample > 0.125 s");
+			// Q:60 -> one quarter (q ticks) per second
+			assertEquals(16 * q + q / 4 + Math.round((dSampleSeconds - 0.125) * q), s.getTickLength());
+		}
+
+		@Test
+		void abcInfoHasTheSongLengthIncludingTheRingOut() throws Exception {
+			AbcInfo info = new AbcInfo();
+			AbcToMidi.Params params = new AbcToMidi.Params(tune("semantic", header("T:Test Harp"), "c32 d/|").filesData());
+			params.abcInfo = info;
+			Sequence s = AbcToMidi.convert(params); // Default params: LotRO instruments on
+			assertEquals(s.getMicrosecondLength(), info.getSongLengthMicros());
+			// c32 is 8 s at Q:120; the song ends where d's sample runs out (1 tick is about 43 microseconds here)
+			long dSampleMicros = LotroInstrumentSampleDuration.getDura(LotroInstrument.BASIC_HARP.friendlyName, 62);
+			assertTrue(Math.abs(info.getSongLengthMicros() - (8_000_000 + dSampleMicros)) <= 50,
+					"song length " + info.getSongLengthMicros());
+		}
+
+		// ------------------------------------------------------------ extended %% fields
+
+		/** Converts with PLAIN_MIDI and returns the AbcInfo that convert() filled in. */
+		private static AbcInfo abcInfoOf(AbcCase abcCase) throws Exception {
+			AbcToMidi.Params params = new AbcToMidi.Params(abcCase.filesData());
+			Profile.PLAIN_MIDI.applyTo(params);
+			params.abcInfo = new AbcInfo();
+			AbcToMidi.convert(params);
+			return params.abcInfo;
+		}
+
+		@Test
+		void extendedTempoChangesTheTicksButNotTheRealTime() throws Exception {
+			// Notes after %%Q: 60 are scaled by 60/120 in ticks, and the tempo event halves the ticks per second
+			Sequence changed = convert(tune("semantic", "c d|", "%%Q: 60", "e f|"));
+			Sequence plain = convert(tune("semantic", "c d e f|"));
+			long q = changed.getResolution();
+			assertEquals(List.of(on(0, 60), on(q / 2, 62), on(q, 64), on(q + q / 4, 65)), noteOns(changed));
+			assertEquals(plain.getMicrosecondLength(), changed.getMicrosecondLength());
+		}
+
+		@Test
+		void extendedFieldNamesIgnoreCase() throws Exception {
+			assertEquals("Loud Title", abcInfoOf(tune("semantic", AbcCases.extended("%%SONG-TITLE Loud Title"), "c|"))
+					.getTitle());
+			assertEquals(noteEvents(convert(tune("semantic", "c d|", "%%Q: 60", "e f|"))),
+					noteEvents(convert(tune("semantic", "c d|", "%%q: 60", "e f|"))));
+		}
+
+		@Test
+		void partNameSetsTheNameInstrumentAndPan() throws Exception {
+			AbcInfo left = abcInfoOf(tune("semantic", AbcCases.extended("%%part-name Lead Harp left"), "c|"));
+			assertEquals("Lead Harp left", left.getPartName(1));
+			assertEquals(LotroInstrument.BASIC_HARP, left.getPartInstrument(1));
+			assertEquals(14, left.getUserPan(1)); // 0 + 14 and 127 - 13: kept for old songs
+			AbcInfo right = abcInfoOf(tune("semantic", AbcCases.extended("%%part-name Lute right"), "c|"));
+			assertEquals(114, right.getUserPan(1));
+		}
+
+		@Test
+		void partNameWinsOverTheTitleInEitherOrder() throws Exception {
+			AbcInfo titleFirst = abcInfoOf(tune("semantic", header("T:Test Flute"), "%%part-name Harp", "c|"));
+			assertEquals("Harp", titleFirst.getPartName(1));
+			assertEquals(LotroInstrument.BASIC_HARP, titleFirst.getPartInstrument(1));
+			AbcInfo partNameFirst = abcInfoOf(AbcCase.of("semantic", "X:1", "%%part-name Harp", "T:Test Flute", "K:C",
+					"c|"));
+			assertEquals("Harp", partNameFirst.getPartName(1));
+			assertEquals(LotroInstrument.BASIC_HARP, partNameFirst.getPartInstrument(1));
+		}
+
+		@Test
+		void headerTrackNameWorksWhenPartNameIsShorterThanTheTitle() throws Exception {
+			// Track 0 gets the tune's title, here "Harp" from %%part-name, while the T: prefix is "Test Flute".
+			// getPartName(0) used to cut the prefix off anyway: StringIndexOutOfBoundsException.
+			AbcInfo info = abcInfoOf(AbcCase.of("semantic", "X:1", "%%part-name Harp", "T:Test Flute", "K:C", "c|"));
+			assertEquals("Harp", info.getPartName(0));
+			AbcInfo empty = abcInfoOf(tune("semantic", AbcCases.extended("%%part-name"), "c|"));
+			assertEquals("", empty.getPartName(0));
+		}
+
+		@Test
+		void playlistPicksTheSameInstrumentAsTheConversion() throws Exception {
+			// The rule: %%made-for wins, then %%part-name, then the first T: that names an instrument, else the default.
+			// The playlist (parseAbcMetadata) must follow it too, and both must say whether it came from %%made-for.
+			record Expect(AbcCase abcCase, LotroInstrument instrument, boolean madeFor) {
+			}
+			List<Expect> expectations = List.of(
+					new Expect(tune("title", header("T:Test Harp"), "c|"), LotroInstrument.BASIC_HARP, false),
+					new Expect(tune("no_instrument", "c|"), LotroInstrument.DEFAULT_INSTRUMENT, false),
+					new Expect(tune("part_name", AbcCases.extended("%%part-name Harp"), "c|"),
+							LotroInstrument.BASIC_HARP, false),
+					new Expect(tune("made_for", AbcCases.extended("%%made-for Basic Flute"), "c|"),
+							LotroInstrument.BASIC_FLUTE, true),
+					new Expect(tune("made_for_then_part_name",
+							AbcCases.extended("%%made-for Basic Flute", "%%part-name Harp"), "c|"),
+							LotroInstrument.BASIC_FLUTE, true),
+					new Expect(tune("part_name_then_made_for",
+							AbcCases.extended("%%part-name Harp", "%%made-for Basic Flute"), "c|"),
+							LotroInstrument.BASIC_FLUTE, true),
+					new Expect(tune("title_then_made_for", header("T:Test Harp"), "%%made-for Basic Flute", "c|"),
+							LotroInstrument.BASIC_FLUTE, true),
+					new Expect(tune("title_then_part_name", header("T:Test Flute"), "%%part-name Harp", "c|"),
+							LotroInstrument.BASIC_HARP, false),
+					new Expect(AbcCase.of("part_name_then_title", "X:1", "%%part-name Harp", "T:Test Flute", "K:C", "c|"),
+							LotroInstrument.BASIC_HARP, false),
+					new Expect(AbcCase.of("two_titles", "X:1", "T:Test Harp", "T:Test Flute", "K:C", "c|"),
+							LotroInstrument.BASIC_HARP, false),
+					new Expect(AbcCase.of("made_for_then_title", "X:1", "%%made-for Basic Horn", "T:Test Harp", "K:C",
+							"c|"), LotroInstrument.BASIC_HORN, true));
+
+			for (Expect e : expectations) {
+				String what = e.abcCase().name();
+				AbcInfo converted = abcInfoOf(e.abcCase());
+				AbcInfo playlist = AbcToMidi.parseAbcMetadata(e.abcCase().filesData());
+				assertEquals(e.instrument(), converted.getPartInstrument(1), what + ": conversion");
+				assertEquals(e.instrument(), playlist.getPartInstrument(1), what + ": playlist");
+				assertEquals(e.madeFor(), converted.getPartInstrumentFromMadeFor(1), what + ": conversion made-for");
+				assertEquals(e.madeFor(), playlist.getPartInstrumentFromMadeFor(1), what + ": playlist made-for");
+			}
+		}
+
+		@Test
+		void playlistPicksTheInstrumentOfEveryPart() throws Exception {
+			// Each X: starts over: part 2's T: must not be blocked by part 1's %%made-for
+			AbcCase song = AbcCase.of("semantic", AbcCase.concat(
+					AbcCases.part(1, "Song - One", "%%made-for Basic Horn", "c|"),
+					AbcCases.part(2, "Song - Harp", "c|"),
+					AbcCases.part(3, "Song - Three", "c|")));
+			AbcInfo converted = abcInfoOf(song);
+			AbcInfo playlist = AbcToMidi.parseAbcMetadata(song.filesData());
+			for (int part = 1; part <= 3; part++) {
+				assertEquals(converted.getPartInstrument(part), playlist.getPartInstrument(part), "part " + part);
+				assertEquals(converted.getPartInstrumentFromMadeFor(part), playlist.getPartInstrumentFromMadeFor(part),
+						"part " + part);
+			}
+			assertEquals(List.of(LotroInstrument.BASIC_HORN, LotroInstrument.BASIC_HARP,
+					LotroInstrument.DEFAULT_INSTRUMENT), List.of(playlist.getPartInstrument(1),
+					playlist.getPartInstrument(2), playlist.getPartInstrument(3)));
+		}
+
+		@Test
+		void madeForWinsOverPartNameInEitherOrder() throws Exception {
+			for (String[] fields : List.of(new String[] { "%%made-for Basic Flute", "%%part-name Harp" },
+					new String[] { "%%part-name Harp", "%%made-for Basic Flute" })) {
+				AbcInfo info = abcInfoOf(tune("semantic", AbcCases.extended(fields), "c|"));
+				assertEquals(LotroInstrument.BASIC_FLUTE, info.getPartInstrument(1), String.join(", ", fields));
+				assertEquals("Harp", info.getPartName(1), String.join(", ", fields));
+			}
+		}
+
+		@Test
+		void userPanIsClampedAndAutoOrGarbageMeansNone() throws Exception {
+			assertEquals(30, userPan("%%user-pan 30"));
+			assertEquals(127, userPan("%%user-pan 200"));
+			assertEquals(0, userPan("%%user-pan -5"));
+			assertEquals(null, userPan("%%user-pan abc"));
+			assertEquals(null, userPan("%%user-pan 64.5"));
+			assertEquals(null, userPan("%%part-name Lute left", "%%user-pan auto"));
+		}
+
+		@Test
+		void userPanWinsOverThePanFromPartName() throws Exception {
+			assertEquals(100, userPan("%%user-pan 100", "%%part-name Lute left"));
+		}
+
+		private static Integer userPan(String... fields) throws Exception {
+			return abcInfoOf(tune("semantic", AbcCases.extended(fields), "c|")).getUserPan(1);
+		}
+
+		@Test
+		void swingRhythmOverridesTheTripletGuess() throws Exception {
+			assertEquals(true, abcInfoOf(tune("semantic", AbcCases.extended("%%swing-rhythm true"), "c d e f|"))
+					.hasTriplets());
+			assertEquals(false, abcInfoOf(tune("semantic", AbcCases.extended("%%swing-rhythm false"), "(3cde f|"))
+					.hasTriplets());
+		}
+
+		@Test
+		void tripletGuessDoesNotDependOnTheTempo() throws Exception {
+			// The guess looked for a 3 in the note length after the tempo scaling, so Q:90 and Q:120 hid it
+			for (String tempo : List.of("Q:90", "Q:100", "Q:120", "Q:125"))
+				assertEquals(true, abcInfoOf(tune("semantic", header(tempo), "(3cde f|")).hasTriplets(), tempo);
+			// ... and a tempo change to 100 in a Q:120 tune looked like a triplet (100/120 = 5/6)
+			assertEquals(false, abcInfoOf(tune("semantic", "c d|", "%%Q: 100", "e f|")).hasTriplets());
+		}
+
+		@Test
+		void mixTimingsAndSongDurationAreRead() throws Exception {
+			AbcInfo info = abcInfoOf(
+					tune("semantic", AbcCases.extended("%%mix-timings true", "%%song-duration 3:14"), "c|"));
+			assertEquals(true, info.hasMixTimings());
+			assertEquals("3:14", info.getSongDurationStr());
+		}
+
+		@Test
+		void badOrganicVersionDoesNotStopTheSong() throws Exception {
+			// Used to throw NumberFormatException out of convert(), which isn't a FileParseException
+			AbcInfo info = abcInfoOf(tune("semantic", AbcCases.extended("%%organic-version two"), "c|"));
+			assertEquals(false, info.isOrganicV2());
+			assertEquals(true, abcInfoOf(tune("semantic", AbcCases.extended("%%organic-version 2"), "c|"))
+					.isOrganicV2());
 		}
 	}
 }
