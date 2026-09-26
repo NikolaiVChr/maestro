@@ -1,5 +1,5 @@
 # AbcToMidi golden snapshot. Re-record with: mvn test -Dabc.golden.update=true (and review the diff before committing)
-case tie_continuation_starts_early
+case lotro_tie_continuation_at_other_volume
 
 ### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
 == sequence
@@ -18,9 +18,9 @@ divisionType=0.0 resolution=11520 tickLength=35449 tracks=2
   1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
-  11520 NOTE_ON ch=0 d1=62 d2=106 [LotroShortMessage]
-  17280 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
-  17280 NOTE_OFF ch=0 d1=62 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=62 d2=123 [LotroShortMessage]
+  17280 NOTE_OFF ch=0 d1=60 d2=123 [LotroShortMessage]
+  17280 NOTE_OFF ch=0 d1=62 d2=123 [LotroShortMessage]
   35449 META end_of_track
 == abcInfo
   title="Test"
@@ -29,15 +29,15 @@ divisionType=0.0 resolution=11520 tickLength=35449 tracks=2
   genre="" mood=""
   primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
   hasTriplets=false hasMixTimings=false barCount=1 partCount=2 partSetups=2..2 empty=false
-  sourceFiles=[tie_continuation_starts_early.abc]
+  sourceFiles=[lotro_tie_continuation_at_other_volume.abc]
   part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
   part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
 == regions (5)
   #0 line=6 cols=[0,6) ticks=0..5760 CHORD track=1 bar=0 tiesFrom=- tiesTo=-
   #1 line=6 cols=[4,5) ticks=0..5760 REST track=1 bar=0 tiesFrom=- tiesTo=-
   #2 line=6 cols=[1,4) ticks=0..11520 note=60 track=1 bar=0 tiesFrom=- tiesTo=#3
-  #3 line=6 cols=[7,8) ticks=5760..11520 note=60 track=1 bar=0 tiesFrom=#2 tiesTo=-
-  #4 line=6 cols=[9,10) ticks=11520..17280 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
+  #3 line=6 cols=[12,13) ticks=5760..11520 note=60 track=1 bar=0 tiesFrom=#2 tiesTo=-
+  #4 line=6 cols=[14,15) ticks=11520..17280 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
 == log: empty
 
 ### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
@@ -57,9 +57,9 @@ divisionType=0.0 resolution=11520 tickLength=35449 tracks=2
   1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
-  11520 NOTE_ON ch=0 d1=62 d2=106 [LotroShortMessage]
-  17280 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
-  17280 NOTE_OFF ch=0 d1=62 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=62 d2=123 [LotroShortMessage]
+  17280 NOTE_OFF ch=0 d1=60 d2=123 [LotroShortMessage]
+  17280 NOTE_OFF ch=0 d1=62 d2=123 [LotroShortMessage]
   35449 META end_of_track
 == abcInfo
   title="Test"
@@ -68,15 +68,15 @@ divisionType=0.0 resolution=11520 tickLength=35449 tracks=2
   genre="" mood=""
   primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
   hasTriplets=false hasMixTimings=false barCount=1 partCount=2 partSetups=2..2 empty=false
-  sourceFiles=[tie_continuation_starts_early.abc]
+  sourceFiles=[lotro_tie_continuation_at_other_volume.abc]
   part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
   part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
 == regions (5)
   #0 line=6 cols=[0,6) ticks=0..5760 CHORD track=1 bar=0 tiesFrom=- tiesTo=-
   #1 line=6 cols=[4,5) ticks=0..5760 REST track=1 bar=0 tiesFrom=- tiesTo=-
   #2 line=6 cols=[1,4) ticks=0..11520 note=60 track=1 bar=0 tiesFrom=- tiesTo=#3
-  #3 line=6 cols=[7,8) ticks=5760..11520 note=60 track=1 bar=0 tiesFrom=#2 tiesTo=-
-  #4 line=6 cols=[9,10) ticks=11520..17280 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
+  #3 line=6 cols=[12,13) ticks=5760..11520 note=60 track=1 bar=0 tiesFrom=#2 tiesTo=-
+  #4 line=6 cols=[14,15) ticks=11520..17280 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
 == log: empty
 
 ### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
@@ -93,9 +93,9 @@ divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
   0 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
-  11520 NOTE_ON ch=0 d1=62 d2=80 [LotroShortMessage]
-  17280 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
-  17280 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=62 d2=112 [LotroShortMessage]
+  17280 NOTE_OFF ch=0 d1=60 d2=112 [LotroShortMessage]
+  17280 NOTE_OFF ch=0 d1=62 d2=112 [LotroShortMessage]
   17280 META end_of_track
 == abcInfo
   title="Test"
@@ -104,13 +104,13 @@ divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
   genre="" mood=""
   primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
   hasTriplets=false hasMixTimings=false barCount=1 partCount=2 partSetups=2..2 empty=false
-  sourceFiles=[tie_continuation_starts_early.abc]
+  sourceFiles=[lotro_tie_continuation_at_other_volume.abc]
   part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
   part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
 == regions (5)
   #0 line=6 cols=[0,6) ticks=0..5760 CHORD track=1 bar=0 tiesFrom=- tiesTo=-
   #1 line=6 cols=[4,5) ticks=0..5760 REST track=1 bar=0 tiesFrom=- tiesTo=-
   #2 line=6 cols=[1,4) ticks=0..11520 note=60 track=1 bar=0 tiesFrom=- tiesTo=#3
-  #3 line=6 cols=[7,8) ticks=5760..11520 note=60 track=1 bar=0 tiesFrom=#2 tiesTo=-
-  #4 line=6 cols=[9,10) ticks=11520..17280 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
+  #3 line=6 cols=[12,13) ticks=5760..11520 note=60 track=1 bar=0 tiesFrom=#2 tiesTo=-
+  #4 line=6 cols=[14,15) ticks=11520..17280 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
 == log: empty

@@ -18,10 +18,7 @@ import javax.sound.midi.Sequence;
 import javax.sound.midi.ShortMessage;
 import javax.sound.midi.Track;
 
-import com.digero.common.abc.AbcConstants;
-import com.digero.common.abc.AbcField;
-import com.digero.common.abc.LotroInstrument;
-import com.digero.common.abc.LotroInstrumentSampleDuration;
+import com.digero.common.abc.*;
 import com.digero.common.midi.MidiConstants;
 import com.digero.common.midi.MidiFactory;
 import com.digero.common.midi.MidiUtils;
@@ -93,6 +90,13 @@ public class AbcToMidi {
 	// Lots of prime factors for divisibility goodness
 	static final long DEFAULT_NOTE_TICKS = (2 * 2 * 2 * 2 * 2 * 2) * (3 * 3) * 5;
 
+	/**
+	 * The share of all notes and rests that must have triplet timing before the song is guessed to use triplets
+	 * (AbcInfo.hasTriplets, which makes Maestro export with a grid that suits triplets and swing, but not regular
+	 * notes). %%swing-rhythm overrides the guess.
+	 */
+	static final double TRIPLET_GUESS_MIN_SHARE = 0.05;// 5%. 100% includes all the rests.
+
 	public static List<String> readLines(File inputFile) throws IOException {
 		// Note: ABC files are technically ISO-8859-1 by standard, but often UTF-8 in practice.
 		// Java 18+ defaults to UTF-8. To be safe given the international user base:
@@ -142,6 +146,9 @@ public class AbcToMidi {
 
 		int partChordsNumber = 0;
 
+		int guessNotes = 0; // All notes and rests, for the triplet guess
+		int guessTripletNotes = 0; // Those with triplet timing
+
 		int chordStartIndex = 0;
 		double chordStartTick = 0;
 		double chordEndTick = 0;
@@ -156,6 +163,7 @@ public class AbcToMidi {
 
 		List<MidiEvent> noteOffEvents = new ArrayList<>();
 		List<Triple<Integer, Double, String>> notesOn = new ArrayList<>();
+		Map<Integer, Dynamics> attackDynamics = new HashMap<>(); // lotroNoteId => volume when it was last attacked
 
 		int lineNumberForRegions = -1;
 		abcInfo.abcTrackInfos = new ArrayList<>();
@@ -255,6 +263,7 @@ public class AbcToMidi {
 								accidentals.clear();
 								noteOffEvents.clear();
 								notesOn.clear();
+								attackDynamics.clear();
 
 								if (trackNumber > 0)
 									abcInfo.setPartEndLine(trackNumber, lineNumberForRegions - 1);
@@ -711,12 +720,11 @@ public class AbcToMidi {
 							}
 						}
 
-						// Try to guess if this note is using triplet timing. Before the tempo scaling below, which
-						// would hide the 3 when a tempo is a multiple of 3 (e.g. Q:120).
-						// TODO: sorry, but this is crap. The whole song should not be swing just because it find a triplet
-						//       somewhere in the song. Some day this have to be improved. ~Aifel
+						// Count the notes with triplet timing, for the guess at the end. Before the tempo scaling
+						// below, which would hide the 3 when a tempo is a multiple of 3 (e.g. Q:120).
+						guessNotes++;
 						if ((denominator % 3 == 0) && (numerator % 3 != 0)) {
-							abcInfo.setHasTriplets(true);
+							guessTripletNotes++;
 						}
 
 						// Convert back to the original tempo
@@ -835,17 +843,22 @@ public class AbcToMidi {
 									notesOnIter.remove();
 								}
 							}
+							// A note that continues a tie is not a new attack (tested in LotRO: it makes no sound), so it can't overlap
+							boolean continuesTie = tiedNotes.containsKey(noteId);
 							for (Triple<Integer,Double, String> soundingNote : notesOn) {
-								if (lotroNoteId == soundingNote.first && chordStartTick + 0.0001d < soundingNote.second && enableLotroErrors) {
+								if (!continuesTie && lotroNoteId == soundingNote.first && chordStartTick + 0.0001d < soundingNote.second && enableLotroErrors) {
+									// Tested in LotRO: a note that starts again while it still sounds, with a different volume
+									// than it started with, makes LotRO play nothing of the part. Without a volume change it plays.
+									if (info.getDynamics() != attackDynamics.get(lotroNoteId)) {
+										throw new LotroFileParseException("Note " + abcNoteAcc + noteLetter + octaveStr + abcNoteL
+												+ " starts again while " + soundingNote.third + " still sounds, at another volume (+"
+												+ info.getDynamics() + "+). LotRO then plays nothing of part " + info.getPartNumber(),
+												fileName, lineNumber, m.start());
+									}
 									// 0.0001 is for rounding errors
 									double lengthSeconds = info.getWholeNoteTime() * (numerator_abc / (double) denominator_abc);// the overlapping note duration
 									log.warning(fileName+": Overlapping note "+soundingNote.third+", lotro might not play part "
 											+info.getPartNumber()+" correctly. Overlap ticks="+(soundingNote.second-chordStartTick)+" "+soundingNote.second+" - "+chordStartTick+" "+noteEndTick+ " "+lengthSeconds+"s");
-									// This should maybe give a warning instead, not catastrophic failure
-									/*
-									throw new LotroFileParseException("Overlapping note, lotro might not play part "
-											+info.getPartNumber()+" correctly.", fileName, lineNumber, m.start());
-									 */
 								}
 							}
 
@@ -888,6 +901,7 @@ public class AbcToMidi {
 							}
 
 							if (!tiedNotes.containsKey(noteId)) {
+								attackDynamics.put(lotroNoteId, info.getDynamics());
 								if (info.getPpqn() != PPQN) {
 									throw new FileParseException(
 											"The meter denominator (the N in M:x/N) must be the same throughout the song",
@@ -1001,6 +1015,11 @@ public class AbcToMidi {
 		tracks[0].add(MidiFactory.createTimeSignatureEvent(abcInfo.getTimeSignature(), 0));
 		if (MidiFactory.isSupportedMidiKeyMode(abcInfo.getKeySignature().mode))
 			tracks[0].add(MidiFactory.createKeySignatureEvent(abcInfo.getKeySignature(), 0));
+
+		// The song uses triplets only if a real share of its notes has triplet timing: one triplet among thousands
+		// of regular notes must not give the whole song a triplet grid
+		if (guessNotes > 0 && guessTripletNotes >= guessNotes * TRIPLET_GUESS_MIN_SHARE)
+			abcInfo.setHasTriplets(true);
 
 		// The song's length, including the ring-out of plucked notes; needs the tempo events added above
 		abcInfo.setSongLengthMicros(seq.getMicrosecondLength());

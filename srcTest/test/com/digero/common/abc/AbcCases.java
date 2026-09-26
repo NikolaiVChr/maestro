@@ -222,6 +222,9 @@ final class AbcCases {
 		c.add(tune("lotro_tied_too_long", "c20-c20|"));
 		c.add(tune("lotro_too_many_chord_notes", "[CEGcegc'] c|"));
 		c.add(tune("lotro_overlapping_notes", "[c2c] d|"));
+		// Tested in LotRO: a sounding note started again at another volume silences the part; a tie continuation doesn't
+		c.add(tune("lotro_restart_at_other_volume", "[c2z] +ff+ c d|"));
+		c.add(tune("lotro_tie_continuation_at_other_volume", "[c2-z] +ff+ c d|"));
 		// 10,001 notes: only the strict profile, otherwise the snapshot would be enormous
 		c.add(tune("lotro_too_many_notes", "c/ ".repeat(10_001)).only(Profile.LOTRO_STRICT));
 

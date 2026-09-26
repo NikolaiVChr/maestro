@@ -398,6 +398,20 @@ class AbcToMidiBehaviourTest {
 		}
 
 		@Test
+		void noteRestartedAtAnotherVolumeWhileItSoundsIsALotroError() throws Exception {
+			// Tested in LotRO: the c2 still sounds when c starts again. With +ff+ in between the part plays nothing.
+			LotroFileParseException e = assertThrows(LotroFileParseException.class,
+					() -> ConversionDump.convert(tune("semantic", "[c2z] +ff+ c d|"), Profile.LOTRO_STRICT));
+			assertTrue(e.getMessage().contains("+ff+"), e.getMessage());
+			// ... but it plays without a volume change, with +mf+ (already the volume), or with +ff+ before both
+			for (String body : List.of("[c2z] c d|", "[c2z] +mf+ c d|", "+ff+ [c2z] c d|"))
+				ConversionDump.convert(tune("semantic", body), Profile.LOTRO_STRICT);
+			// ... and a tie continuation is no new attack, so a volume change before it is fine (TD4-TD6)
+			for (String body : List.of("[c2-z] +ff+ c d|", "c- +ff+ c d|", "c- d +ff+ c|"))
+				ConversionDump.convert(tune("semantic", body), Profile.LOTRO_STRICT);
+		}
+
+		@Test
 		void sameNoteTwiceInAChordPlaysOnlyTheFirst() throws Exception {
 			// Tested in LotRO: [c2c4], [c4c2] and [^c2_d4] each play only the first note, for its own length
 			long q = convert(tune("semantic", "c|")).getResolution();
@@ -726,6 +740,15 @@ class AbcToMidiBehaviourTest {
 					.hasTriplets());
 			assertEquals(false, abcInfoOf(tune("semantic", AbcCases.extended("%%swing-rhythm false"), "(3cde f|"))
 					.hasTriplets());
+		}
+
+		@Test
+		void oneTripletAmongManyRegularNotesIsNotATripletSong() throws Exception {
+			// hasTriplets makes Maestro export with a triplet grid, which is worse for regular notes
+			String regular = "c d e f g a b c' ".repeat(10) + "|"; // 80 regular notes
+			assertEquals(false, abcInfoOf(tune("semantic", "(3cde " + regular)).hasTriplets());
+			// ... but a song that is mostly triplets is
+			assertEquals(true, abcInfoOf(tune("semantic", "(3cde (3cde (3cde c d|")).hasTriplets());
 		}
 
 		@Test
