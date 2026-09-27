@@ -286,6 +286,13 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		keySignature = (ICompileConstants.SHOW_KEY_FIELD) ? abcInfo.getKeySignature() : KeySignature.C_MAJOR;
 		timeSignature = abcInfo.getTimeSignature();
 
+		if (sequenceInfo.getDataCache() != null) {
+			copyright = sequenceInfo.getDataCache().getCopyright();
+			lyrics = sequenceInfo.getDataCache().getLyrics();
+		} else {
+			lyrics = "";
+		}
+
 		int t = 0;
 		// Since parts with zero part numbers will be assigned 999,
 		// and 999 could be assigned already, we iterate till we find a free number:
@@ -346,7 +353,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		mood = abcInfo.getMood();
 		dynamicsMethod = Chord.CalcDynamics.LOUDEST;
 		setTempoFactor(abcInfo.getPrimaryTempoBPM(), abcInfo.getPrimaryTempoBPM());
-		lyrics = "";
 		lyricLines = null;
         note = "";
 	}

@@ -62,6 +62,7 @@ Version 4.7.3
 * When loading projects, the project version number and XML version number are now checked for errors.
 * Maestro and Abc Player will now warn if a part is too large for lotro.
 * ABC Player now interprets ABC files closer to how LotRO plays them, with clearer error messages.
+* ABC lyrics are now shown in time with the music in Maestro, and ABC files using accents, decorations and other common syntax now play the way they do in LotRO.
 
 Version 4.7.2
 * Make Windows midi system able to play back GS midi more reliable.

@@ -211,6 +211,11 @@ final class AbcCases {
 		c.add(tune("unknown_character", "c ! d|"));
 		c.add(tune("guitar_chord_text", "\"C\"c d|"));
 		c.add(tune("grace_notes", "{g}c d|"));
+		c.add(tune("decoration_volume", "+ppp+c d e f !fff!c d e f|"));
+		c.add(tune("decoration_first", "!f!c d e f g a b c'|"));
+		c.add(tune("decoration_ends_part", "c d e f !trill!g a b c'|", "c d e f g a b c'|"));
+		c.add(tune("lyrics", concat(header(), new String[] { "W:", "W:1. Verse one" }), "c d|", "w: la la", "e f|",
+				"  w:la-la_ la % comment", "W:2. Verse two"));
 
 		// ------------------------------------------------------------ LotRO limits (interesting in LOTRO_STRICT)
 		c.add(tune("lotro_note_too_low", "C,, c|"));

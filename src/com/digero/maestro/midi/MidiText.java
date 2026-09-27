@@ -2,6 +2,7 @@ package com.digero.maestro.midi;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -39,6 +40,7 @@ public class MidiText {
 	// language="" means only if language english is specified do we prefer western charset
 	String language = "";
 	Format lastType = null;
+	private boolean fromAbc = false;
 
 	private Map<Charset,Integer> csStats = new HashMap<>();
 	private int csTotal = 0;
@@ -49,6 +51,14 @@ public class MidiText {
 	}
 
 	/**
+	 * The MIDI came from AbcToMidi. Its track 0 then holds the W: lines, the lyrics without timing, and they are shown
+	 * along with the lyrics of the winning track. Track 0 only wins when no other track has lyrics.
+	 */
+	public void setFromAbc(boolean fromAbc) {
+		this.fromAbc = fromAbc;
+	}
+
+	/**
 	 * Autodetect encoding and decode
 	 */
 	private String decode(byte[] data) {
@@ -56,6 +66,11 @@ public class MidiText {
 	}
 
 	private String decode(byte[] data, boolean storeCharset) {
+		if (fromAbc) {
+			// AbcToMidi writes all text as UTF-8 (MidiFactory.createTextMetaEvent), so there's nothing to detect
+			if (storeCharset) mainCharset = StandardCharsets.UTF_8;
+			return new String(data, StandardCharsets.UTF_8);
+		}
 		Pair<String, Charset> result = MidiUtils.decodeMidiText(data, 
 				   "ENGL".equalsIgnoreCase(language)
 				|| "EN".equalsIgnoreCase(language)
@@ -446,9 +461,13 @@ public class MidiText {
 	 * Or sometimes they are just copies.
 	 */
 	private int calcWinningTrack() {
+		// From ABC, track 0 has the W: lines; it's shown anyway, so it only wins when no other track has lyrics
+		boolean otherTrackHasLyrics = trackStats.entrySet().stream().anyMatch(e -> e.getKey() != 0 && e.getValue() > 0);
 		int winner = 0;
 		int count = 0;
 		for (Entry<Integer, Integer> entry : trackStats.entrySet()) {
+			if (fromAbc && entry.getKey() == 0 && otherTrackHasLyrics)
+				continue;
 			if (entry.getValue() >= count) {
 				winner = entry.getKey();
 				count = entry.getValue();

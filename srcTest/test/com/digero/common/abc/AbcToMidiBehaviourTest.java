@@ -7,14 +7,12 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.util.*;
 import java.util.stream.Stream;
 
-import javax.sound.midi.MidiEvent;
-import javax.sound.midi.Sequence;
-import javax.sound.midi.ShortMessage;
-import javax.sound.midi.Track;
+import javax.sound.midi.*;
 
 import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.abctomidi.AbcRegion;
 import com.digero.common.abctomidi.AbcToMidi;
+import com.digero.common.midi.MidiConstants;
 import com.digero.common.midi.MidiUtils;
 import com.digero.common.midi.Note;
 import com.digero.common.util.LotroFileParseException;
@@ -409,6 +407,119 @@ class AbcToMidiBehaviourTest {
 			// ... and a tie continuation is no new attack, so a volume change before it is fine (TD4-TD6)
 			for (String body : List.of("[c2-z] +ff+ c d|", "c- +ff+ c d|", "c- d +ff+ c|"))
 				ConversionDump.convert(tune("semantic", body), Profile.LOTRO_STRICT);
+		}
+
+		/** "tick:text" of every lyric event in a track, the tick in eighths (Q:120, L:1/8). */
+		private static List<String> lyrics(Sequence sequence, int trackIndex) {
+			List<String> lyrics = new ArrayList<>();
+			long eighth = sequence.getResolution() / 2;
+			Track track = sequence.getTracks()[trackIndex];
+			for (int i = 0; i < track.size(); i++) {
+				if (track.get(i).getMessage() instanceof javax.sound.midi.MetaMessage mm && mm.getType() == 0x05)
+					lyrics.add(track.get(i).getTick() / eighth + ":" + new String(mm.getData(),
+							java.nio.charset.StandardCharsets.UTF_8));
+			}
+			return lyrics;
+		}
+
+		@Test
+		void lyricsAreSungToTheNotesAbove() throws Exception {
+			// One syllable per note; - splits a word, a space ends it (Maestro's MidiText reads them like karaoke)
+			assertEquals(List.of("0:hel", "1:lo ", "2:world ", "3:wide "),
+					lyrics(convert(tune("semantic", "c d e f|", "w:hel-lo world wide")), 1));
+			// Rests and tie continuations get no syllable, a chord gets one
+			assertEquals(List.of("0:a ", "2:b ", "4:c "),
+					lyrics(convert(tune("semantic", "c z d- d [ceg] z|", "w:a b c")), 1));
+			// _ holds a syllable over the next note, * skips a note, ~ joins words, \- is a hyphen
+			assertEquals(List.of("0:A", "2:le ", "4:1. Ti ", "5:e-mail "),
+					lyrics(convert(tune("semantic", "c d e f g a|", "w:A_le * 1.~Ti e\\-mail")), 1));
+			// | goes on at the next bar
+			assertEquals(List.of("0:one ", "4:two "), lyrics(convert(tune("semantic", "c d e f|g a|", "w:one | two")), 1));
+		}
+
+		@Test
+		void onlyTheFirstVerseIsSung() throws Exception {
+			// More w: lines under the same notes are later verses; LotRO plays no repeats, so only verse 1 fits.
+			// A w: line after earlier lyrics starts a new line (/)
+			assertEquals(List.of("0:one ", "1:two ", "2:/three ", "3:four "), lyrics(convert(tune("semantic",
+					"c d|", "w:one two", "w:uno dos", "e f|", "w:three four", "w:tres cuatro")), 1));
+			// Syllables beyond the notes are dropped
+			assertEquals(List.of("0:a ", "1:b "), lyrics(convert(tune("semantic", "c d|", "w:a b c d")), 1));
+		}
+
+		@Test
+		void lyricsDontChangeTheNotes() throws Exception {
+			// w: lines are lyrics under the notes above them, W: lines are lyrics after the tune
+			Sequence withLyrics = convert(tune("semantic", header(), "c d-|", "w: la la~la", "d e|", "w:la_ la", "W:1. La la la"));
+			Sequence without = convert(tune("semantic", header(), "c d-|", "d e|"));
+			assertEquals(noteEvents(without), noteEvents(withLyrics));
+		}
+
+		@Test
+		void verseLinesKeepTheirOrder() throws Exception {
+			// On one tick Maestro's MidiText sorts lyric lines by their text, so each W: line gets a tick of its own
+			Sequence s = convert(tune("semantic", header(), "W:b", "W:a", "c d|", "W:d", "W:c"));
+			List<Long> ticks = new ArrayList<>();
+			List<String> lines = new ArrayList<>();
+			for (int i = 0; i < s.getTracks()[0].size(); i++) {
+				MidiEvent e = s.getTracks()[0].get(i);
+				if (e.getMessage() instanceof javax.sound.midi.MetaMessage mm && mm.getType() == 0x05) {
+					ticks.add(e.getTick());
+					lines.add(new String(mm.getData(), java.nio.charset.StandardCharsets.UTF_8));
+				}
+			}
+			assertEquals(List.of("<b", "<a", "<d", "<c"), lines);
+			assertEquals(ticks.stream().distinct().sorted().toList(), ticks, "one tick per line, in file order");
+		}
+
+		@Test
+		void textEscapesAreDecoded() throws Exception {
+			// ABC 2.1 text strings in lyrics: mnemonics, HTML entities and unicode. \~ is a tilde (not a space), \\ a
+			// backslash before the - that splits a word
+			assertEquals(List.of("0:N\u00f3s ", "1:\u00f1u ", "2:a\\", "3:b "),
+					lyrics(convert(tune("semantic", "c d e f|", "w:N\\'os \\~nu a\\\\-b")), 1));
+		}
+
+		@Test
+		void syntaxLotroPlaysOnChangesNoNotes() throws Exception {
+			// Tested in LotRO: chord symbols, grace notes, ~ . , endings, V: and a T: in the body all play
+			List<NoteEvent> plain = noteEvents(convert(tune("semantic", "c d e f g a b c'|")));
+			for (String body : List.of("\"C\"c d e f \"G7\"g a b c'|", "{g}c d e f g a b c'|",
+					"~c d .e f g a b c'|", "[1 c d e f :|[2 g a b c'|]", "|: c d e f |1 g a b c' :|2 |]", "c d e f [|g a b c'|"))
+				assertEquals(plain, noteEvents(convert(tune("semantic", body))), body);
+			assertEquals(plain, noteEvents(convert(tune("semantic", "c d e f|", "T:Second section", "V:1 treble",
+					"g a b c'|"))));
+		}
+
+		@Test
+		void sectionTitleNamesNothing() throws Exception {
+			// A T: after the notes (a section title) must not rename the part, change its instrument or the song title
+			AbcCase song = tune("semantic", header("T:Song - Harp"), "c d|", "T:Song - Flute section", "e f|");
+			AbcInfo converted = abcInfoOf(song);
+			AbcInfo playlist = AbcToMidi.parseAbcMetadata(song.filesData());
+			for (AbcInfo info : List.of(converted, playlist)) {
+				assertEquals("Song - Harp", info.getTitle());
+				assertEquals(LotroInstrument.BASIC_HARP, info.getPartInstrument(1));
+			}
+		}
+
+		@Test
+		void spacerYIsALotroError() throws Exception {
+			// Tested in LotRO: a part with y plays nothing
+			assertThrows(LotroFileParseException.class,
+					() -> ConversionDump.convert(tune("semantic", "c d y e f|"), Profile.LOTRO_STRICT));
+			assertEquals(noteEvents(convert(tune("semantic", "c d e f|"))), noteEvents(convert(tune("semantic", "c d y e f|"))));
+		}
+
+		@Test
+		void decorationIsALotroError() throws Exception {
+			// Tested in LotRO: from a !decoration! on, the part is silent, also on later lines and after +mf+
+			for (String body : List.of("!f!c d e f|", "c d e f !trill!g a b c'|"))
+				assertThrows(LotroFileParseException.class, () -> ConversionDump.convert(tune("semantic", body),
+						Profile.LOTRO_STRICT), body);
+			// Without LotRO errors the decorations are skipped and the notes play
+			assertEquals(noteEvents(convert(tune("semantic", "c d e f g a b c'|"))),
+					noteEvents(convert(tune("semantic", "!f!c d e f !trill!g a b c'|"))));
 		}
 
 		@Test

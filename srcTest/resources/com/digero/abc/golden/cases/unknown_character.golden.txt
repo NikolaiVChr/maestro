@@ -3,15 +3,15 @@ case unknown_character
 
 ### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
 == EXCEPTION FileParseException: Error reading unknown_character.abc on line 7, column 3:
-Unknown/unexpected character '!'
+There is no matching '!'
 == log: empty
 
 ### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
 == EXCEPTION FileParseException: Error reading unknown_character.abc on line 7, column 3:
-Unknown/unexpected character '!'
+There is no matching '!'
 == log: empty
 
 ### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
 == EXCEPTION FileParseException: Error reading unknown_character.abc on line 7, column 3:
-Unknown/unexpected character '!'
+There is no matching '!'
 == log: empty

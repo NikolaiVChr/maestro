@@ -35,6 +35,18 @@ public class MidiFactory implements MidiConstants {
 		}
 	}
 
+	public static MidiEvent createTextMetaEvent(int metaType, String text, long tick) {
+		try {
+			MetaMessage meta = new MetaMessage();
+			byte[] data = text.getBytes(StandardCharsets.UTF_8);
+			meta.setMessage(metaType, data, data.length);
+			return new MidiEvent(meta, tick);
+		} catch (InvalidMidiDataException e) {
+			System.err.println("Failed to create text event: " + e.getMessage());
+			return null;
+		}
+	}
+
 	/**
 	 * Expects UTF-8 string
 	 */

@@ -98,6 +98,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 		tickResolution = song.getResolution();
 
 		midiText = new MidiText(this);
+		midiText.setFromAbc(standard == MidiStandard.ABC);
 		
 		/*
 		 * We need to be able to know which tracks have drum notes. We also need to know what instrument voices are used
@@ -621,7 +622,7 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 
 		songLengthTicks = lastTick;
 		
-		if (!ignoreMidiText && standard != MidiStandard.ABC) log.info("Lyrics stats: "+midiText.getTextStats());
+		if (!ignoreMidiText) log.info("Lyrics stats: "+midiText.getTextStats());
 	}
 
 	private int getRPN(int port, int channel, long tick, long index) {
