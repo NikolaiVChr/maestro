@@ -491,7 +491,7 @@ public class AbcToMidi {
 										// [1 [2 ... : the start of a numbered ending. Tested in LotRO: it plays on, and plays
 										// no repeats, so every ending plays once, one after the other
 										int end = skipEndingNumber(line, i + 1);
-										repeats.ending(line.substring(i + 1, end + 1));
+										repeats.ending(checkEnding(line.substring(i + 1, end + 1), enableLotroErrors, fileName, lineNumber, i));
 										i = end;
 										break;
 									}
@@ -693,7 +693,8 @@ public class AbcToMidi {
 									}
 									int endingEnd = skipEndingNumber(line, i + 1); // |1 |2 : a numbered ending
 									if (endingEnd > i)
-										repeats.ending(line.substring(i + 1, endingEnd + 1));
+										repeats.ending(checkEnding(line.substring(i + 1, endingEnd + 1), enableLotroErrors, fileName,
+												lineNumber, i + 1));
 									i = endingEnd;
 									break;
 
@@ -747,7 +748,8 @@ public class AbcToMidi {
 									i = signEnd - 1;
 									int nextEndingEnd = skipEndingNumber(line, i + 1); // :|2 : a numbered ending
 									if (nextEndingEnd > i)
-										repeats.ending(line.substring(i + 1, nextEndingEnd + 1));
+										repeats.ending(checkEnding(line.substring(i + 1, nextEndingEnd + 1), enableLotroErrors,
+												fileName, lineNumber, i + 1));
 									i = nextEndingEnd;
 									break;
 
@@ -1541,6 +1543,19 @@ public class AbcToMidi {
 				words.append(' ');
 		}
 		return words.toString().trim();
+	}
+
+	/**
+	 * The numbers of an ending, checked for LotRO: tested in LotRO, it gives an error for part with an ending for
+	 * several passes ([1,3 [1-2); [1 [2 play on.
+	 */
+	private static String checkEnding(String numbers, boolean enableLotroErrors, String fileName, int lineNumber,
+									  int column) throws LotroFileParseException {
+		if (enableLotroErrors && !numbers.chars().allMatch(Character::isDigit)) {
+			throw new LotroFileParseException("LotRO plays nothing of a part with an ending for several passes ("
+					+ numbers + "); write the ending out for each pass", fileName, lineNumber, column);
+		}
+		return numbers;
 	}
 
 	/** The numbers of an ending: 1, 1,3 or 1-3 (ABC 2.1 also allows e.g. 1,3,5-7). */

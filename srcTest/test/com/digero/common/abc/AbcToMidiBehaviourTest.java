@@ -525,6 +525,11 @@ class AbcToMidiBehaviourTest {
 			assertEquals("cdcece", playedWithRepeats("|: c [1 d :| [2-3 e :| |]"));
 			// Endings without a repeat play once, one after the other
 			assertEquals("cde", playedWithRepeats("c [1 d | [2 e |]"));
+			// Tested in LotRO: it plays nothing of a part with an ending for several passes; [1 [2 play on
+			for (String body : List.of("c d [1,3 e f | [2 g a |] b c'|", "c d [1-2 e f | g a b c'|]", "c |1,2 d :|"))
+				assertThrows(LotroFileParseException.class,
+						() -> ConversionDump.convert(tune("semantic", body), Profile.LOTRO_STRICT), body);
+			ConversionDump.convert(tune("semantic", "c [1 d | [2 e |]"), Profile.LOTRO_STRICT);
 		}
 
 		@Test
