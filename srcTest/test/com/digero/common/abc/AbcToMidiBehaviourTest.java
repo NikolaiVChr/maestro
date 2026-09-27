@@ -720,11 +720,57 @@ class AbcToMidiBehaviourTest {
 		void syntaxLotroPlaysOnChangesNoNotes() throws Exception {
 			// Tested in LotRO: chord symbols, grace notes, ~ . , endings, V: and a T: in the body all play
 			List<NoteEvent> plain = noteEvents(convert(tune("semantic", "c d e f g a b c'|")));
-			for (String body : List.of("\"C\"c d e f \"G7\"g a b c'|", "{g}c d e f g a b c'|",
+			for (String body : List.of("\"C\"c d e f \"G7\"g a b c'|", "!f!c d e f !trill!g a b c'|",
 					"~c d .e f g a b c'|", "[1 c d e f :|[2 g a b c'|]", "|: c d e f |1 g a b c' :|2 |]", "c d e f [|g a b c'|"))
 				assertEquals(plain, noteEvents(convert(tune("semantic", body))), body);
 			assertEquals(plain, noteEvents(convert(tune("semantic", "c d e f|", "T:Second section", "V:1 treble",
 					"g a b c'|"))));
+		}
+
+		@Test
+		void graceNotesTakeBrokenRhythmAndNothingButNotes() throws Exception {
+			// {g>a}: legal in ABC 2.1 (4.12). g gets 3/2 and a 1/2 of the written length, so g lasts 3 times a
+			Sequence s = convert(tune("semantic", "{g>a}c4|"));
+			double shortest = s.getResolution() * 2 * AbcToMidi.GRACE_NOTE_SECONDS; // a, at Q:120
+			assertEquals(List.of(on(0, 67), on(Math.round(3 * shortest), 69), on(Math.round(4 * shortest), 60)),
+					noteOns(s));
+			// Spaces and a tie to the note change nothing
+			assertEquals(noteOns(convert(tune("semantic", "{ga}c4|"))), noteOns(convert(tune("semantic", "{g a-}c4|"))));
+			// Anything else in the braces is an error, in every mode (Z, a rest, a sign, nothing)
+			for (String body : List.of("{Z}c|", "{z}c|", "{x}c|", "{}c|", "{/}c|", "{g!}c|", "{H}c|", "{g>}c|")) {
+				for (Profile profile : Profile.values()) {
+					assertThrows(FileParseException.class,
+							() -> ConversionDump.convert(tune("semantic", body), profile), body + " " + profile);
+				}
+			}
+		}
+
+		@Test
+		void graceNotesArePlayedBeforeTheNote() throws Exception {
+			// {g}c : on the beat, GRACE_NOTE_SECONDS long whatever the note's length; the note starts after it
+			Sequence s = convert(tune("semantic", "{g}c d|"));
+			long q = s.getResolution(); // Q:120, so a quarter note is 0.5 s
+			double graceTicks = q * 2 * AbcToMidi.GRACE_NOTE_SECONDS;
+			long g = Math.round(graceTicks);
+			assertEquals(List.of(on(0, 67), off(g, 67), on(g, 60), off(q / 2, 60), on(q / 2, 62), off(q, 62)),
+					noteEvents(s));
+			assertEquals(List.of(on(0, 67), on(g, 60)), noteOns(convert(tune("semantic", "{g}c8|"))));
+			assertEquals(List.of(on(0, 67), on(g, 60)), noteOns(convert(tune("semantic", "{/g}c|"))));
+			// Several: the shortest lasts GRACE_NOTE_SECONDS, the others by their written lengths
+			assertEquals(List.of(on(0, 67), on(g, 65), on(Math.round(2 * graceTicks), 60)),
+					noteOns(convert(tune("semantic", "{gf}c2|"))));
+			assertEquals(List.of(on(0, 67), on(Math.round(2 * graceTicks), 69), on(Math.round(3 * graceTicks), 60)),
+					noteOns(convert(tune("semantic", "{g2a}c4|"))));
+			// Never more than half the note
+			assertEquals(List.of(on(0, 67), on(q / 16, 60), on(q / 8, 62)), noteOns(convert(tune("semantic", "{g}c/4 d|"))));
+			// Before a chord they come before all of it; before a rest they aren't played
+			assertEquals(List.of(on(0, 67), on(g, 60), on(g, 64)), noteOns(convert(tune("semantic", "{g}[ce]|"))));
+			assertEquals(List.of(on(q, 60)), noteOns(convert(tune("semantic", "{g}z2 c|"))));
+			// A grace note's accidental isn't kept for the notes after it
+			assertEquals(List.of(on(0, 66), on(g, 65)), noteOns(convert(tune("semantic", "{^f}f|"))));
+			// Tested in LotRO: it plays on without them, so with LotRO errors they're not played
+			assertEquals(noteEvents(ConversionDump.convert(tune("semantic", "c d e f|"), Profile.LOTRO_STRICT)),
+					noteEvents(ConversionDump.convert(tune("semantic", "{g}c d e f|"), Profile.LOTRO_STRICT)));
 		}
 
 		@Test

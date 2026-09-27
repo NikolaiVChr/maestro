@@ -10,14 +10,16 @@ divisionType=0.0 resolution=11520 tickLength=29689 tracks=2
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
   0 META end_of_track
--- track 1 (11 events)
+-- track 1 (13 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
-  0 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=67 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  1498 NOTE_OFF ch=0 d1=67 d2=106 [LotroShortMessage]
+  1498 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
   5760 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
   5760 NOTE_ON ch=0 d1=62 d2=106 [LotroShortMessage]
   11520 NOTE_OFF ch=0 d1=62 d2=106 [LotroShortMessage]
@@ -33,7 +35,7 @@ divisionType=0.0 resolution=11520 tickLength=29689 tracks=2
   part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
   part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
 == regions (2)
-  #0 line=6 cols=[3,4) ticks=0..5760 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #0 line=6 cols=[3,4) ticks=1498..5760 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
   #1 line=6 cols=[5,6) ticks=5760..11520 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
 == log: empty
 
@@ -82,11 +84,13 @@ divisionType=0.0 resolution=11520 tickLength=11520 tracks=2
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
   0 META end_of_track
--- track 1 (8 events)
+-- track 1 (10 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
-  0 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  1498 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
+  1498 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
   5760 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
   5760 NOTE_ON ch=0 d1=62 d2=80 [LotroShortMessage]
   11520 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
@@ -102,6 +106,6 @@ divisionType=0.0 resolution=11520 tickLength=11520 tracks=2
   part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
   part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
 == regions (2)
-  #0 line=6 cols=[3,4) ticks=0..5760 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #0 line=6 cols=[3,4) ticks=1498..5760 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
   #1 line=6 cols=[5,6) ticks=5760..11520 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
 == log: empty

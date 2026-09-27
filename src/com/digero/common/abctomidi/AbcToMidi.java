@@ -93,6 +93,13 @@ public class AbcToMidi {
 	 */
 	static final double TRIPLET_GUESS_MIN_SHARE = 0.05;// 5%. 100% includes all the rests.
 
+	/**
+	 * How long the shortest grace note in a group lasts. ABC 2.1 (4.12) leaves the length to the program. In folk music
+	 * grace notes are as short as possible (cuts, taps, pipe gracenotes); this is a little over LotRO's shortest note
+	 * ({@link AbcConstants#SHORTEST_NOTE_SECONDS}), so a Maestro transcription for LotRO can keep them.
+	 */
+	public static final double GRACE_NOTE_SECONDS = 0.065;
+
 	public static List<String> readLines(File inputFile) throws IOException {
 		// Note: ABC files are technically ISO-8859-1 by standard, but often UTF-8 in practice.
 		// Java 18+ defaults to UTF-8. To be safe given the international user base:
@@ -519,6 +526,8 @@ public class AbcToMidi {
 					int nextBrokenNumerator = 1;
 					int nextBrokenDenominator = 1;
 					int chordCloseIndex = -1; // Index of the current chord's ']'; -1 if the chord is unclosed
+					List<double[]> graceNotes = new ArrayList<>(); // {noteId, written length} of grace notes before the next note
+					double attackOffset = 0; // The current note or chord starts after its grace notes
 					Tuplet tuplet = null;
 					int brokenRhythmNumerator = 1; // The numerator of the note after the broken rhythm sign
 					int brokenRhythmDenominator = 1; // The denominator of the note after the broken rhythm sign
@@ -739,6 +748,7 @@ public class AbcToMidi {
 									i = chordLenEnd - 1;
 
 									chordStartTick = chordEndTick;
+									attackOffset = 0;
 									log.finer("chordStartTick ]="+chordStartTick);
 									break;
 
@@ -882,7 +892,10 @@ public class AbcToMidi {
 								}
 
 								case '{': {
-									// {g} grace notes. LotRO plays on (tested); they are not played here.
+									// {g} {/g} {a>b} grace notes (ABC 2.1, 4.12). LotRO plays on without them (tested), so with
+									// LotRO errors they're not played. Else they're played before the next note, on the beat
+									// (ABC leaves their length to the program: GRACE_NOTE_SECONDS). Checked in every mode, so a
+									// mistake in the braces is an error even where they aren't played.
 									if (inChord) {
 										throw new FileParseException("Unexpected '" + ch + "' inside a chord", fileName,
 												lineNumber, i);
@@ -891,6 +904,60 @@ public class AbcToMidi {
 									if (j < 0) {
 										throw new FileParseException("There is no matching '}'", fileName, lineNumber, i);
 									}
+									int k = i + 1;
+									if (k < j && line.charAt(k) == '/')
+										k++; // {/g} acciaccatura: played the same
+									List<double[]> group = new ArrayList<>(); // {noteId, written length}
+									// A grace note's accidental isn't kept for the notes after it
+									Map<Integer, Integer> graceAccidentals = new HashMap<>(accidentals);
+									double nextFactor = 1; // A broken rhythm's factor for the next grace note
+									Matcher grace = NOTE_PATTERN.matcher(line);
+									while (k < j) {
+										char c = line.charAt(k);
+										if (c == ' ' || c == '\t') {
+											k++;
+											continue;
+										}
+										grace.region(k, j);
+										if (!grace.lookingAt()) {
+											throw new FileParseException("Unexpected '" + c + "' in grace notes", fileName,
+													lineNumber, k);
+										}
+										char letter = grace.group(NOTE_LETTER).charAt(0);
+										if (letter == 'z' || letter == 'x') {
+											throw new FileParseException("Unexpected rest '" + letter + "' in grace notes",
+													fileName, lineNumber, k);
+										}
+										double weight;
+										try {
+											weight = nextFactor * parseLengthNumerator(grace.group(NOTE_LEN_NUMER))
+													/ parseLengthDenominator(grace.group(NOTE_LEN_DENOM));
+										} catch (IllegalArgumentException e) {
+											throw new FileParseException("Invalid grace note length", fileName, lineNumber, k);
+										}
+										nextFactor = 1;
+										String broken = grace.group(NOTE_BROKEN_RHYTHM);
+										if (broken != null) {
+											// a>b : a 3/2 and b 1/2 of their lengths, as for notes
+											double factor = 1 << broken.length();
+											double longer = (2 * factor - 1) / factor;
+											weight *= (broken.charAt(0) == '>') ? longer : 1 / factor;
+											nextFactor = (broken.charAt(0) == '>') ? 1 / factor : longer;
+										}
+										// A tie (a grace note tied to the note) changes nothing here
+										group.add(new double[] { notePitch(grace, info, graceAccidentals, useLotroInstruments)[0],
+												weight });
+										k = grace.end();
+									}
+									if (group.isEmpty()) {
+										throw new FileParseException("No grace notes in the braces", fileName, lineNumber, i);
+									}
+									if (nextFactor != 1) {
+										throw new FileParseException("A broken rhythm needs a grace note after it", fileName,
+												lineNumber, j);
+									}
+									if (!enableLotroErrors && !repeats.skipping)
+										graceNotes.addAll(group);
 									i = j;
 									break;
 								}
@@ -1126,6 +1193,7 @@ public class AbcToMidi {
 						}
 
 						if (repeats.skipping) {
+							graceNotes.clear();
 							// A note of an ending that this pass doesn't play: it takes no time. It keeps its place in the w:
 							// lyrics, which are written for the notes as they stand.
 							char letter = m.group(NOTE_LETTER).charAt(0);
@@ -1187,42 +1255,11 @@ public class AbcToMidi {
 								abcInfo.addRegion(new AbcRegion(lineNumberForRegions, m.start(), m.end(),
 										Math.round(chordStartTick), Math.round(noteEndTick), Note.REST, trackIndex));
 							}
+							graceNotes.clear(); // Grace notes before a rest aren't played
 						} else {
-							int octave = Character.isUpperCase(noteLetter) ? 3 : 4;
-							if (octaveStr.indexOf('\'') >= 0)
-								octave += octaveStr.length();
-							else if (octaveStr.indexOf(',') >= 0)
-								octave -= octaveStr.length();
-
-							int noteId;
-							int lotroNoteId;
-
-							lotroNoteId = noteId = (octave + 1) * 12
-									+ CHR_NOTE_DELTA[Character.toLowerCase(noteLetter) - 'a'];
-							if (!useLotroInstruments)
-								noteId += 12 * info.getInstrument().octaveDelta;
-
-							if (m.group(NOTE_ACCIDENTAL) != null) {
-								if (m.group(NOTE_ACCIDENTAL).startsWith("_"))
-									accidentals.put(noteId, -m.group(NOTE_ACCIDENTAL).length());
-								else if (m.group(NOTE_ACCIDENTAL).startsWith("^"))
-									accidentals.put(noteId, m.group(NOTE_ACCIDENTAL).length());
-								else if (m.group(NOTE_ACCIDENTAL).equals("="))
-									accidentals.put(noteId, 0);
-							}
-
-							int noteDelta;
-							if (accidentals.containsKey(noteId)) {
-								noteDelta = accidentals.get(noteId);
-							} else {
-								// Use the key signature to determine the accidental
-								noteDelta = info.getKey().getDefaultAccidental(noteId).deltaNoteId;
-							}
-							lotroNoteId += noteDelta;
-							noteId += noteDelta;
-							// K: transpose= octave= or a clef with +8/-8 (never with LotRO errors: LotRO refuses them)
-							lotroNoteId += info.getTranspose();
-							noteId += info.getTranspose();
+							int[] pitch = notePitch(m, info, accidentals, useLotroInstruments);
+							int noteId = pitch[0];
+							int lotroNoteId = pitch[1];
 
 							if (enableLotroErrors && lotroNoteId < Note.MIN_PLAYABLE.id)
 								throw new LotroFileParseException("Note is too low", fileName, lineNumber, m.start());
@@ -1252,6 +1289,31 @@ public class AbcToMidi {
 									lotroNoteId = AbcConstants.COWBELL_NOTE_ID;
 								}
 							}
+
+							// Grace notes before this note or chord: on the beat, taking their time from the note, which starts
+							// after them. The shortest one lasts GRACE_NOTE_SECONDS, the others by their written lengths; all
+							// of them together at most half the note. Not before a tied note's continuation.
+							if (!graceNotes.isEmpty() && (!inChord || chordSize == 1) && !tiedNotes.containsKey(noteId)) {
+								double totalWeight = 0;
+								double shortestWeight = Double.MAX_VALUE;
+								for (double[] grace : graceNotes) {
+									totalWeight += grace[1];
+									shortestWeight = Math.min(shortestWeight, grace[1]);
+								}
+								double ticksPerSecond = info.getPrimaryTempoBPM() * PPQN / 60.0;
+								double graceTicks = Math.min(GRACE_NOTE_SECONDS * ticksPerSecond * totalWeight / shortestWeight,
+										(noteEndTick - chordStartTick) / 2);
+								double graceTick = chordStartTick;
+								int volume = info.getDynamics().getVol(useLotroInstruments);
+								for (double[] grace : graceNotes) {
+									double graceEnd = graceTick + graceTicks * grace[1] / totalWeight;
+									track.add(MidiFactory.createNoteOnEventEx((int) grace[0], channel, volume, Math.round(graceTick)));
+									track.add(MidiFactory.createNoteOffEventEx((int) grace[0], channel, volume, Math.round(graceEnd)));
+									graceTick = graceEnd;
+								}
+								attackOffset = graceTicks;
+							}
+							graceNotes.clear();
 
 							// check for invalid overlapping notes
 							Iterator<Triple<Integer, Double, String>> notesOnIter = notesOn.iterator();
@@ -1301,7 +1363,7 @@ public class AbcToMidi {
 
 							if (generateRegions) {
 								AbcRegion region = new AbcRegion(lineNumberForRegions, m.start(), m.end(),
-										Math.round(chordStartTick), Math.round(noteEndTick), Note.fromId(noteId),
+										Math.round(chordStartTick + attackOffset), Math.round(noteEndTick), Note.fromId(noteId),
 										trackIndex);
 
 								abcInfo.addRegion(region);
@@ -1320,19 +1382,19 @@ public class AbcToMidi {
 
 							// A syllable goes here. Also on a tied note: in w: lyrics tied notes are separate notes (ABC 2.1, 5.1)
 							if (!inChord || chordSize == 1)
-								lyricNote(lyricNotes, lineIndex, m.start(), lyricBar).ticks.put(repeats.pass, Math.round(chordStartTick));
+								lyricNote(lyricNotes, lineIndex, m.start(), lyricBar).ticks.put(repeats.pass,
+										Math.round(chordStartTick + attackOffset));
 
 							if (!tiedNotes.containsKey(noteId)) {
 								attackDynamics.put(lotroNoteId, info.getDynamics());
-								lastAttackTick = Math.round(chordStartTick);
-								lastAttackTick = Math.round(chordStartTick);
+								lastAttackTick = Math.round(chordStartTick + attackOffset);
 								if (info.getPpqn() != PPQN) {
 									throw new FileParseException(
 											"The meter denominator (the N in M:x/N) must be the same throughout the song",
 											fileName, meterChangeLine, meterChangeColumn);
 								}
 								track.add(MidiFactory.createNoteOnEventEx(noteId, channel,
-										info.getDynamics().getVol(useLotroInstruments), Math.round(chordStartTick)));
+										info.getDynamics().getVol(useLotroInstruments), Math.round(chordStartTick + attackOffset)));
 							}
 
 							notesOn.add(new Triple<>(lotroNoteId, noteEndTick, abcNoteAcc+noteLetter+octaveStr+abcNoteL));
@@ -1370,6 +1432,7 @@ public class AbcToMidi {
 
 						if (!inChord) {
 							chordStartTick = noteEndTick;
+							attackOffset = 0;
 							log.finer("chordStartTick n="+chordStartTick);
 						}
 						i = m.end();
@@ -1571,6 +1634,46 @@ public class AbcToMidi {
 		if (Math.abs(seconds - AbcConstants.SHORTEST_NOTE_SECONDS) < 0.0005)
 			return Double.toString(seconds);
 		return String.format(Locale.US, "%.3f", seconds);
+	}
+
+	/**
+	 * The pitch of the note in the matcher: {noteId, lotroNoteId}. noteId has the instrument's octave when LotRO
+	 * instruments aren't used. A written accidental (^ _ =) is put in accidentals: in ABC it holds to the end of the bar.
+	 */
+	private static int[] notePitch(Matcher m, TuneInfo info, Map<Integer, Integer> accidentals,
+								   boolean useLotroInstruments) {
+		char noteLetter = m.group(NOTE_LETTER).charAt(0);
+		String octaveStr = Objects.requireNonNullElse(m.group(NOTE_OCTAVE), "");
+		int octave = Character.isUpperCase(noteLetter) ? 3 : 4;
+		if (octaveStr.indexOf('\'') >= 0)
+			octave += octaveStr.length();
+		else if (octaveStr.indexOf(',') >= 0)
+			octave -= octaveStr.length();
+
+		int lotroNoteId = (octave + 1) * 12 + CHR_NOTE_DELTA[Character.toLowerCase(noteLetter) - 'a'];
+		int noteId = lotroNoteId;
+		if (!useLotroInstruments)
+			noteId += 12 * info.getInstrument().octaveDelta;
+
+		String accidental = m.group(NOTE_ACCIDENTAL);
+		if (accidental != null) {
+			if (accidental.startsWith("_"))
+				accidentals.put(noteId, -accidental.length());
+			else if (accidental.startsWith("^"))
+				accidentals.put(noteId, accidental.length());
+			else if (accidental.equals("="))
+				accidentals.put(noteId, 0);
+		}
+
+		int noteDelta;
+		if (accidentals.containsKey(noteId)) {
+			noteDelta = accidentals.get(noteId);
+		} else {
+			// Use the key signature to determine the accidental
+			noteDelta = info.getKey().getDefaultAccidental(noteId).deltaNoteId;
+		}
+		// K: transpose= octave= or a clef with +8/-8 (never with LotRO errors: LotRO refuses them)
+		return new int[] { noteId + noteDelta + info.getTranspose(), lotroNoteId + noteDelta + info.getTranspose() };
 	}
 
 	/** A note's place in the source file, for lyricNotes: its line index and column. Sorts in the order of the file. */
