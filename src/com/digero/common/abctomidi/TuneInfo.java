@@ -1,13 +1,13 @@
 package com.digero.common.abctomidi;
 
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.NavigableMap;
-import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.digero.common.abc.Dynamics;
 import com.digero.common.abc.LotroInstrument;
+import com.digero.common.midi.KeyMode;
 import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.TimeSignature;
 
@@ -16,6 +16,7 @@ class TuneInfo {
 	private String title;
 	private boolean titleIsFromExtendedInfo;
 	private KeySignature key;
+	private int transpose; // Semitones added to every note, from K: (transpose=, octave=, a clef with +8 or -8)
 	private long ppqn;
 	private int primaryTempoBPM;
 	private final NavigableMap<Long, Integer> curPartTempoMap = new TreeMap<>(); // Tick -> BPM
@@ -35,6 +36,7 @@ class TuneInfo {
 	// the previous part. And as in ABC 2.1, an M: in a header without an L: in that header gives the default length.
 	private boolean inFileHeader;
 	private KeySignature fileKey;
+	private int fileTranspose;
 	private int fileMeterNumerator;
 	private int fileMeterDenominator;
 	private int fileNoteDivisorNum;
@@ -62,6 +64,7 @@ class TuneInfo {
 	public void newFile() {
 		inFileHeader = true;
 		key = KeySignature.C_MAJOR;
+		transpose = 0;
 		meterNumerator = 4;
 		meterDenominator = 4;
 		compoundMeter = false;
@@ -83,12 +86,14 @@ class TuneInfo {
 			// The first X: of the file ends its header
 			inFileHeader = false;
 			fileKey = key;
+			fileTranspose = transpose;
 			fileMeterNumerator = meterNumerator;
 			fileMeterDenominator = meterDenominator;
 			fileNoteDivisorNum = noteDivisorNum;
 			fileNoteDivisorDenom = noteDivisorDenom;
 		}
 		key = fileKey;
+		transpose = fileTranspose;
 		meterNumerator = fileMeterNumerator;
 		meterDenominator = fileMeterDenominator;
 		compoundMeter = (meterNumerator % 3) == 0;
@@ -105,8 +110,63 @@ class TuneInfo {
 		}
 	}
 
-	public void setKey(String str) {
-		this.key = new KeySignature(str);
+	/** Clef words in K: (ABC 2.1, 4.6), e.g. bass, clef=treble-8, alto1. */
+	private static final Pattern CLEF_PATTERN = Pattern.compile("(clef=)?(treble|alto|tenor|bass|perc|none)\\d?([+-]8)?");
+	/** Mode words after the key: C maj, D mix, E dor ... (the first three letters count). */
+
+	/**
+	 * K: key [mode] [clef and transposition] (ABC 2.1, 3.1.14 and 4.6). The clef and middle= only change how the
+	 * music is printed; transpose=, octave= and a clef with +8 or -8 change what is played (getTranspose). K:none and
+	 * an empty K: have no key signature; K:HP and K:Hp are the highland pipes (F#, C#, G natural: like D).
+	 *
+	 * @return What LotRO doesn't take: the words after the key and its mode, or none/HP/Hp; "" if nothing
+	 */
+	public String setKey(String str) {
+		String[] words = str.trim().isEmpty() ? new String[0] : str.trim().split("\\s+");
+		List<String> notForLotro = new ArrayList<>();
+		String keyText = null;
+		int shift = 0;
+		boolean shifted = false;
+		for (int w = 0; w < words.length; w++) {
+			String word = words[w];
+			String lower = word.toLowerCase(Locale.ROOT);
+			if (w == 0 && (lower.equals("none") || word.equals("HP") || word.equals("Hp"))) {
+				keyText = lower.equals("none") ? "C" : "D";
+				notForLotro.add(word);
+			} else if (w == 0 && !lower.contains("=") && !CLEF_PATTERN.matcher(lower).matches()) {
+				keyText = word;
+			} else if (w == 1 && keyText != null && notForLotro.isEmpty() && KeyMode.parseMode(word) != null) {
+				keyText += " " + word; // D mix
+			} else if (lower.equals("exp") || lower.matches("[_^=].*")) {
+				throw new IllegalArgumentException("Explicit accidentals in K: aren't supported: " + str);
+			} else {
+				notForLotro.add(word);
+				Matcher clef = CLEF_PATTERN.matcher(lower);
+				if (clef.matches()) {
+					if (clef.group(3) != null) {
+						shift += clef.group(3).startsWith("+") ? 12 : -12;
+						shifted = true;
+					}
+				} else if (lower.startsWith("transpose=") || lower.startsWith("t=")) {
+					shift += Integer.parseInt(lower.substring(lower.indexOf('=') + 1));
+					shifted = true;
+				} else if (lower.startsWith("octave=")) {
+					shift += 12 * Integer.parseInt(lower.substring(lower.indexOf('=') + 1));
+					shifted = true;
+				} else if (!lower.matches("(middle|m|stafflines|staffscale|style|cue|name|subname|sname|nm|snm)=.*")) {
+					throw new IllegalArgumentException("Invalid key signature: " + str);
+				}
+			}
+		}
+		this.key = (keyText == null) ? KeySignature.C_MAJOR : new KeySignature(keyText);
+		if (shifted)
+			this.transpose = shift;
+		return String.join(" ", notForLotro);
+	}
+
+	/** Semitones to add to every note (K: transpose=, octave=, a clef with +8 or -8). */
+	public int getTranspose() {
+		return transpose;
 	}
 
 	public void setNoteDivisor(String str) {

@@ -388,7 +388,12 @@ public class AbcToMidi {
 								lastVerseText = value;
 								break;
 							case 'K':
-								info.setKey(value);
+								String notForLotro = info.setKey(value);
+								if (enableLotroErrors && !notForLotro.isEmpty()) {
+									throw new LotroFileParseException("LotRO refuses a part with \"" + notForLotro
+											+ "\" in K:; write only the key, e.g. K:G or K:D mix", fileName, lineNumber,
+											infoMatcher.start(INFO_VALUE));
+								}
 								break;
 							case 'L':
 								// The note length doesn't affect the PPQN, so it may differ between parts
@@ -1215,6 +1220,9 @@ public class AbcToMidi {
 							}
 							lotroNoteId += noteDelta;
 							noteId += noteDelta;
+							// K: transpose= octave= or a clef with +8/-8 (never with LotRO errors: LotRO refuses them)
+							lotroNoteId += info.getTranspose();
+							noteId += info.getTranspose();
 
 							if (enableLotroErrors && lotroNoteId < Note.MIN_PLAYABLE.id)
 								throw new LotroFileParseException("Note is too low", fileName, lineNumber, m.start());

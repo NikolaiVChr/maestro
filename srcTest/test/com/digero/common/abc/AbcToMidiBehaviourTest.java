@@ -492,13 +492,13 @@ class AbcToMidiBehaviourTest {
 						() -> ConversionDump.convert(tune("semantic", body), Profile.LOTRO_STRICT), body);
 		}
 
-		/** The notes played with Params.expandRepeats, as letters (c d e f g a b). */
+		/** The notes played with Params.expandRepeats, in ABC (c d e ...). */
 		private String playedWithRepeats(String... body) throws Exception {
 			Sequence s = convert(tune("semantic", body).with(p -> p.expandRepeats = true));
-			StringBuilder letters = new StringBuilder();
+			StringBuilder notes = new StringBuilder();
 			for (NoteEvent note : noteOns(s))
-				letters.append("c.d.ef.g.a.b".charAt(note.pitch() - 60));
-			return letters.toString();
+				notes.append(Note.fromId(note.pitch()).abc);
+			return notes.toString();
 		}
 
 		@Test
@@ -644,6 +644,34 @@ class AbcToMidiBehaviourTest {
 			// Tested in LotRO: it refuses the part
 			assertThrows(LotroFileParseException.class, () -> ConversionDump
 					.convert(tune("semantic", "c d e f|", "w:one two", "+:three four"), Profile.LOTRO_STRICT));
+		}
+
+		@Test
+		void keyFieldTakesClefAndTransposition() throws Exception {
+			// The clef and middle= change only the print; K:none has no key signature; HP / Hp play like D (ABC 2.1)
+			for (String key : List.of("K:C clef=bass", "K:C treble", "K:C bass middle=d", "K:none", "K:", "K:C stafflines=5"))
+				assertEquals(List.of(65, 67), pitches(key, "f g|"), key);
+			assertEquals(List.of(66, 61, 67), pitches("K:HP", "f c g|"));
+			assertEquals(List.of(66, 61, 67), pitches("K:Hp", "f c g|"));
+			// transpose=, octave= and a clef with +8 or -8 change what's played
+			assertEquals(List.of(62), pitches("K:C transpose=2", "c|"));
+			assertEquals(List.of(48), pitches("K:C octave=-1", "c|"));
+			assertEquals(List.of(48), pitches("K:C treble-8", "c|"));
+			assertEquals(List.of(67), pitches("K:G clef=bass t=-5 octave=1", "c|"));
+			// A mode may follow the key, also after a space
+			assertEquals(List.of(66, 72), pitches("K:D mix clef=treble", "f c'|"));
+			// Tested in LotRO: it refuses anything more than the key and its mode
+			for (String key : List.of("K:C clef=bass", "K:C treble", "K:none", "K:G transpose=2"))
+				assertThrows(LotroFileParseException.class,
+						() -> ConversionDump.convert(tune("semantic", header(key), "c|"), Profile.LOTRO_STRICT), key);
+			ConversionDump.convert(tune("semantic", header("K:D mix"), "c|"), Profile.LOTRO_STRICT);
+			// Unknown words and explicit accidentals (not supported yet) are errors
+			assertThrows(FileParseException.class, () -> convert(tune("semantic", header("K:C foo"), "c|")));
+			assertThrows(FileParseException.class, () -> convert(tune("semantic", header("K:G ^c"), "c|")));
+		}
+
+		private List<Integer> pitches(String key, String body) throws Exception {
+			return noteOns(convert(tune("semantic", header(key), body))).stream().map(NoteEvent::pitch).toList();
 		}
 
 		@Test
