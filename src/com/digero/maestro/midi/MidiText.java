@@ -289,7 +289,8 @@ public class MidiText {
 						// we assume that a sentence was broken up, and we stitch it.
 
 						// Found hyphen. Stitching them together:
-						if (fragment.sylineBytes != null && fragment.sylineBytes.length > 0) {
+						// Found hyphen. Stitching them together (sylineBytes isn't set yet, it's taken from data below):
+						if (data.length - offset > 0) {
 							fragment.reaction = Reaction.SYLLABLE; // Downgrade to a simple syllable
 							log.fine("Merged hyphenated newline (converted to syllable): " + last);
 						}
