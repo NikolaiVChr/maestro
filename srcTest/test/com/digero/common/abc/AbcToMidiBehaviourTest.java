@@ -12,7 +12,6 @@ import javax.sound.midi.*;
 import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.abctomidi.AbcRegion;
 import com.digero.common.abctomidi.AbcToMidi;
-import com.digero.common.midi.MidiConstants;
 import com.digero.common.midi.MidiUtils;
 import com.digero.common.midi.Note;
 import com.digero.common.util.LotroFileParseException;
@@ -427,8 +426,11 @@ class AbcToMidiBehaviourTest {
 			// One syllable per note; - splits a word, a space ends it (Maestro's MidiText reads them like karaoke)
 			assertEquals(List.of("0:hel", "1:lo ", "2:world ", "3:wide "),
 					lyrics(convert(tune("semantic", "c d e f|", "w:hel-lo world wide")), 1));
-			// Rests and tie continuations get no syllable, a chord gets one
+			// Rests get no syllable, a chord gets one. Tied notes are separate notes (ABC 2.1, 5.1): _ holds a syllable
+			// over the tied note
 			assertEquals(List.of("0:a ", "2:b ", "4:c "),
+					lyrics(convert(tune("semantic", "c z d- d [ceg] z|", "w:a b_ c")), 1));
+			assertEquals(List.of("0:a ", "2:b ", "3:c "),
 					lyrics(convert(tune("semantic", "c z d- d [ceg] z|", "w:a b c")), 1));
 			// _ holds a syllable over the next note, * skips a note, ~ joins words, \- is a hyphen
 			assertEquals(List.of("0:A", "2:le ", "4:1. Ti ", "5:e-mail "),
@@ -440,11 +442,107 @@ class AbcToMidiBehaviourTest {
 		@Test
 		void onlyTheFirstVerseIsSung() throws Exception {
 			// More w: lines under the same notes are later verses; LotRO plays no repeats, so only verse 1 fits.
-			// A w: line after earlier lyrics starts a new line (/)
-			assertEquals(List.of("0:one ", "1:two ", "2:/three ", "3:four "), lyrics(convert(tune("semantic",
-					"c d|", "w:one two", "w:uno dos", "e f|", "w:three four", "w:tres cuatro")), 1));
+			// A w: line after earlier lyrics starts a new line (/). The verses that aren't sung follow as lines of
+			// text, verse by verse, after the last note started (so Maestro shows them)
+			assertEquals(List.of("0:one ", "1:two ", "2:/three ", "3:four ", "3:/uno dos", "3:/tres cuatro"),
+					lyrics(convert(tune("semantic", "c d|", "w:one two", "w:uno dos", "e f|", "w:three four",
+							"w:tres cuatro")), 1));
+			// As words: - and _ join syllables, ~ is a space, \- a hyphen
+			assertEquals(List.of("0:a ", "1:b ", "1:/1. Jesus Cristo de-mais"), lyrics(convert(tune("semantic", "c d|",
+					"w:a b", "w:1.~Je-sus Cris_to | de\\-mais")), 1));
+			// A word that runs on to the next w: line (Cris-) keeps its hyphen, so MidiText joins the next syllable to it
+			// instead of starting a new line there
+			assertEquals(List.of("0:one ", "1:Cris-", "2:/t\u00e3o ", "3:two "), lyrics(convert(tune("semantic",
+					"c d|", "w:one Cris-", "e f|", "w:t\u00e3o two")), 1));
 			// Syllables beyond the notes are dropped
 			assertEquals(List.of("0:a ", "1:b "), lyrics(convert(tune("semantic", "c d|", "w:a b c d")), 1));
+		}
+
+		@Test
+		void brokenRhythmWorksWithChords() throws Exception {
+			// [ce]>d : the chord is dotted, the note after it halved; c>[ce] the other way round
+			Sequence s = convert(tune("semantic", "[ce]>d f|"));
+			long q = s.getResolution();
+			assertEquals(List.of(on(0, 60), on(0, 64), on(3 * q / 4, 62), on(q, 65)), noteOns(s));
+			s = convert(tune("semantic", "c>[ce] d|"));
+			assertEquals(List.of(on(0, 60), on(3 * q / 4, 60), on(3 * q / 4, 64), on(q, 62)), noteOns(s));
+			// Not tested in LotRO: with LotRO errors it's an error, as it always was
+			assertThrows(FileParseException.class,
+					() -> ConversionDump.convert(tune("semantic", "[ce]>d f|"), Profile.LOTRO_STRICT));
+		}
+
+		@Test
+		void inlineFieldsApplyFromWhereTheyAre() throws Exception {
+			// [K:G] sharpens every f from there on; [L:1/4] doubles the length of the notes after it
+			Sequence s = convert(tune("semantic", "f [K:G] f [L:1/4] c d|"));
+			long q = s.getResolution();
+			assertEquals(List.of(on(0, 65), on(q / 2, 66), on(q, 60), on(2 * q, 62)), noteOns(s));
+			// Fields that play no part are skipped
+			assertEquals(List.of(60, 62), noteOns(convert(tune("semantic", "c [P:A] [I:foo] d|"))).stream()
+					.map(NoteEvent::pitch).toList());
+			// Q: can't change the tempo in the middle of a part, inline or not
+			assertThrows(FileParseException.class, () -> convert(tune("semantic", "c [Q:200] d|")));
+		}
+
+		/** The notes played with Params.expandRepeats, as letters (c d e f g a b). */
+		private String playedWithRepeats(String... body) throws Exception {
+			Sequence s = convert(tune("semantic", body).with(p -> p.expandRepeats = true));
+			StringBuilder letters = new StringBuilder();
+			for (NoteEvent note : noteOns(s))
+				letters.append("c.d.ef.g.a.b".charAt(note.pitch() - 60));
+			return letters.toString();
+		}
+
+		@Test
+		void repeatsPlayOnceWithoutExpandRepeats() throws Exception {
+			// As in LotRO, which plays no repeats: every ending plays, one after the other
+			Sequence s = convert(tune("semantic", "|: c d |1 e :|2 f |]"));
+			assertEquals(List.of(60, 62, 64, 65), noteOns(s).stream().map(NoteEvent::pitch).toList());
+		}
+
+		@Test
+		void repeatsArePlayedWithExpandRepeats() throws Exception {
+			assertEquals("cdcde", playedWithRepeats("|: c d :| e |"));
+			// Without |: from the part's start, or from the last double bar or :| (ABC 2.1, 4.8)
+			assertEquals("cdcde", playedWithRepeats("c d :| e |"));
+			assertEquals("cdedef", playedWithRepeats("c || d e :| f |"));
+			assertEquals("cdcdeef", playedWithRepeats("c d :| e :| f |"));
+			// :: :|: and :||: end one repeat and start the next
+			assertEquals("ccdd", playedWithRepeats("|: c :: d :|"));
+			assertEquals("ccdd", playedWithRepeats("|: c :|: d :|"));
+			assertEquals("ccdd", playedWithRepeats("|: c :||: d :|"));
+			// Over several lines, and the section is played again from mid-line
+			assertEquals("cdefdefg", playedWithRepeats("c |: d e |", "f :| g |]"));
+		}
+
+		@Test
+		void endingsArePlayedOnTheirPass() throws Exception {
+			assertEquals("cdecdf", playedWithRepeats("|: c d |1 e :|2 f |]"));
+			assertEquals("cdce", playedWithRepeats("|: c [1 d :| [2 e |]"));
+			assertEquals("cdcecf", playedWithRepeats("|: c [1 d :| [2 e :| [3 f |]"));
+			// [1,3 and [2-3: an ending for more passes (ABC 2.1, 4.10)
+			assertEquals("cdcecdf", playedWithRepeats("|: c [1,3 d :| [2 e :| f |]"));
+			assertEquals("cdcece", playedWithRepeats("|: c [1 d :| [2-3 e :| |]"));
+			// Endings without a repeat play once, one after the other
+			assertEquals("cde", playedWithRepeats("c [1 d | [2 e |]"));
+		}
+
+		@Test
+		void verseOneIsSungOnEveryPass() throws Exception {
+			// Later verses are for the times the part is played again (ABC 2.1, 5.2), not for repeats in it: they follow as
+			// text after the last note started
+			Sequence s = convert(tune("semantic", "|: c d :|", "w:one two", "w:three four").with(p -> p.expandRepeats = true));
+			assertEquals(List.of("0:one ", "1:two ", "2:/one ", "3:two ", "3:/three four"), lyrics(s, 1));
+			// The syllables go to the notes as written; a note the pass doesn't play drops its syllable
+			s = convert(tune("semantic", "|: c d |", "w:a b", "w:e f", "[1 e :| [2 f |]", "w:c *", "w:* g")
+					.with(p -> p.expandRepeats = true));
+			assertEquals(List.of("0:a ", "1:b ", "2:/c ", "3:/a ", "4:b ", "5:/e f", "5:/g"), lyrics(s, 1));
+			// A hymn with a repeated second half: verse 1 on both passes, verse 2 as text
+			s = convert(tune("semantic", "c |: d e :|", "w:1.~a b c", "w:2.~x y z").with(p -> p.expandRepeats = true));
+			assertEquals(List.of("0:1. a ", "1:b ", "2:c ", "3:/b ", "4:c ", "4:/2. x y z"), lyrics(s, 1));
+			// A W: line in a repeated section is written once
+			s = convert(tune("semantic", header(), "|: c |", "W:Verse", "d :|").with(p -> p.expandRepeats = true));
+			assertEquals(List.of("0:<Verse"), lyrics(s, 0));
 		}
 
 		@Test

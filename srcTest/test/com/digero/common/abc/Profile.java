@@ -7,9 +7,9 @@ import com.digero.common.abctomidi.AbcToMidi;
  * profile, so a refactoring that only breaks e.g. the LotRO sample-length path is still caught.
  */
 enum Profile {
-	/** LotRO instruments and sample lengths, LotRO errors off (like the ABC Player). */
+	/** LotRO instruments and sample lengths, LotRO errors off (like Maestro reading an ABC file). */
 	LOTRO(true, false),
-	/** LotRO instruments and sample lengths, LotRO errors on (like Maestro's validation). */
+	/** LotRO instruments and sample lengths, LotRO errors on (like the ABC Player). */
 	LOTRO_STRICT(true, true),
 	/** Plain MIDI: no sample-length adjustment, octave deltas applied, no LotRO errors. */
 	PLAIN_MIDI(false, false);

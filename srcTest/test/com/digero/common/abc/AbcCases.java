@@ -8,8 +8,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.digero.common.abc.LotroInstrument;
-
 /**
  * The hand-written inputs for the snapshot tests. Each case aims at one feature or one error path of AbcToMidi, so a
  * failing snapshot points at what changed.
@@ -194,6 +192,9 @@ final class AbcCases {
 
 		// ------------------------------------------------------------ bars
 		c.add(tune("bars_variants", "c|d||e|]f|:g:|a::|b:::|c|"));
+		// Maestro plays the repeats of a song made from an ABC file (Params.expandRepeats)
+		c.add(tune("repeats_expanded", "|: c d |1 e :|2 f |]", "w:a b c", "w:d e * f", "|: g :: a :|")
+				.with(p -> p.expandRepeats = true));
 		c.add(tune("bar_colon_without_pipe", "c:d|"));
 		c.add(tune("bar_bracket_pipe", "[|c d|"));
 		c.add(tune("bars_many", "c d|e f|g a|b c'|c' b|a g|"));

@@ -69,7 +69,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	
 	public static final String MSX_FILE_DESCRIPTION = UIText.get("maestro.0.project", MaestroMain.APP_NAME);
 	public static final String MSX_FILE_DESCRIPTION_PLURAL = UIText.get("maestro.0.projects", MaestroMain.APP_NAME);
-	public static final Version SONG_FILE_VERSION = new Version(4, 6, 26, 300);// Keep build above 117 to make earlier
+	public static final Version SONG_FILE_VERSION = new Version(4, 7, 3, 300);// Keep build above 117 to make earlier
 																				// Maestro releases know msx is
 																				// made by newer version.
 
@@ -86,6 +86,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private String note = "";// not continuously updated
     private String lyrics = "";// not continuously updated
 	private List<LyricLine> lyricLines = null;// not continuously updated
+	private boolean abcRepeatsExpanded = false;
 	private boolean badger = false;
 	private float tempoFactor = 1.0f;
 	private int newTempo = 120;
@@ -274,6 +275,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		AbcToMidi.Params params = new AbcToMidi.Params(file);
 		params.abcInfo = abcInfo;
 		params.useLotroInstruments = false;
+		abcRepeatsExpanded = true; // New songs play the repeats; saved in the project
+		params.expandRepeats = abcRepeatsExpanded;
 		// params.stereo = false;
 		usingOldVelocities = true;// The abc volumes are tuned to old volume scheme
 		usingOldTempos = true;
@@ -436,7 +439,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			usingOldTempos     = SaveUtil.parseValue(songEle, "importSettings/@useOldTempos", true);    // before
 			usingNewMidiLayout = SaveUtil.parseValue(songEle, "importSettings/@useNewMidiLayout", 0);    // tryToLoadFromFile
 			ignoreZeroChannelVolume = SaveUtil.parseValue(songEle, "importSettings/@ignoreZeroChannelVolume", false);
-			
+			abcRepeatsExpanded = SaveUtil.parseValue(songEle, "importSettings/@abcRepeatsExpanded", false);
+
 			sourceFile = SaveUtil.parseValue(songEle, "sourceFile", (File) null);
 			if (sourceFile == null) {
 				throw SaveUtil.missingValueException(songEle, "<sourceFile>");
@@ -663,6 +667,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				params.abcInfo = abcInfo;
 				params.useLotroInstruments = false;
                 params.warningHandler = warningHandler;
+				params.expandRepeats = abcRepeatsExpanded;
 				// params.stereo = false;
 				usingOldVelocities = true;// The abc volumes are tuned to old volume scheme
 				usingOldTempos = true;
@@ -956,6 +961,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		importSettingsEle.setAttribute("useOldVelocities", String.valueOf(usingOldVelocities));
 		importSettingsEle.setAttribute("useOldTempos", String.valueOf(usingOldTempos));
 		importSettingsEle.setAttribute("useNewMidiLayout", String.valueOf(usingNewMidiLayout));
+		importSettingsEle.setAttribute("abcRepeatsExpanded", String.valueOf(abcRepeatsExpanded));
 		if (ignoreZeroChannelVolume) importSettingsEle.setAttribute("ignoreZeroChannelVolume", String.valueOf(ignoreZeroChannelVolume)); 
 		if (importSettingsEle.getAttributes().getLength() > 0 || importSettingsEle.getChildNodes().getLength() > 0)
 			songEle.appendChild(importSettingsEle);
