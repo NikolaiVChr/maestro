@@ -460,15 +460,19 @@ class AbcToMidiBehaviourTest {
 
 		@Test
 		void brokenRhythmWorksWithChords() throws Exception {
-			// [ce]>d : the chord is dotted, the note after it halved; c>[ce] the other way round
+			// [ce]>d : the chord is dotted, the note after it halved
 			Sequence s = convert(tune("semantic", "[ce]>d f|"));
 			long q = s.getResolution();
 			assertEquals(List.of(on(0, 60), on(0, 64), on(3 * q / 4, 62), on(q, 65)), noteOns(s));
+			// c>[ce] : the other way round, the whole chord halved (ABC 2.1)
 			s = convert(tune("semantic", "c>[ce] d|"));
 			assertEquals(List.of(on(0, 60), on(3 * q / 4, 60), on(3 * q / 4, 64), on(q, 62)), noteOns(s));
-			// Not tested in LotRO: with LotRO errors it's an error, as it always was
+			assertTrue(noteEvents(s).contains(off(q, 64)), noteEvents(s).toString());
+			// LotRO refuses [ce]>d, and halves only the chord's first note in c>[ce] (both tested): errors
 			assertThrows(FileParseException.class,
 					() -> ConversionDump.convert(tune("semantic", "[ce]>d f|"), Profile.LOTRO_STRICT));
+			assertThrows(LotroFileParseException.class,
+					() -> ConversionDump.convert(tune("semantic", "c>[ce] d|"), Profile.LOTRO_STRICT));
 		}
 
 		@Test
@@ -482,6 +486,10 @@ class AbcToMidiBehaviourTest {
 					.map(NoteEvent::pitch).toList());
 			// Q: can't change the tempo in the middle of a part, inline or not
 			assertThrows(FileParseException.class, () -> convert(tune("semantic", "c [Q:200] d|")));
+			// Tested in LotRO: it refuses a part with an inline field
+			for (String body : List.of("f [K:G] f|", "c [L:1/4] d|", "c d|[M:3/4] e f g|", "c [P:A] d|", "c [I:x] d|"))
+				assertThrows(LotroFileParseException.class,
+						() -> ConversionDump.convert(tune("semantic", body), Profile.LOTRO_STRICT), body);
 		}
 
 		/** The notes played with Params.expandRepeats, as letters (c d e f g a b). */
@@ -525,6 +533,12 @@ class AbcToMidiBehaviourTest {
 			assertEquals("cdcece", playedWithRepeats("|: c [1 d :| [2-3 e :| |]"));
 			// Endings without a repeat play once, one after the other
 			assertEquals("cde", playedWithRepeats("c [1 d | [2 e |]"));
+			// Tested in LotRO: :: and :||: play, :|: and :|] are refused
+			for (String body : List.of("|: c d :: e f :|", "|: c d :||: e f :|"))
+				ConversionDump.convert(tune("semantic", body), Profile.LOTRO_STRICT);
+			for (String body : List.of("|: c d :|: e f :|", "|: c d :|] e f|"))
+				assertThrows(FileParseException.class,
+						() -> ConversionDump.convert(tune("semantic", body), Profile.LOTRO_STRICT), body);
 			// Tested in LotRO: it plays nothing of a part with an ending for several passes; [1 [2 play on
 			for (String body : List.of("c d [1,3 e f | [2 g a |] b c'|", "c d [1-2 e f | g a b c'|]", "c |1,2 d :|"))
 				assertThrows(LotroFileParseException.class,
@@ -548,6 +562,23 @@ class AbcToMidiBehaviourTest {
 			// A W: line in a repeated section is written once
 			s = convert(tune("semantic", header(), "|: c |", "W:Verse", "d :|").with(p -> p.expandRepeats = true));
 			assertEquals(List.of("0:<Verse"), lyrics(s, 0));
+		}
+
+		@Test
+		void tempoWithTextIsALotroError() throws Exception {
+			// Q:"Allegro" 1/4=120 : the text is skipped. Tested in LotRO: it refuses the part.
+			assertEquals(90, abcInfoOf(tune("semantic", header("Q:\"Allegro\" 1/4=90"), "c d|")).getPrimaryTempoBPM());
+			assertThrows(LotroFileParseException.class, () -> ConversionDump
+					.convert(tune("semantic", header("Q:\"Allegro\" 1/4=90"), "c d|"), Profile.LOTRO_STRICT));
+		}
+
+		@Test
+		void symbolLinesAreSkipped() throws Exception {
+			// s: lines hold decorations for the notes above, like w: for lyrics. Tested in LotRO: it plays on.
+			for (Profile profile : Profile.values()) {
+				Sequence s = ConversionDump.convert(tune("semantic", "c d e f|", "s:!f! * * *"), profile);
+				assertEquals(4, noteOns(s).size(), profile.toString());
+			}
 		}
 
 		@Test

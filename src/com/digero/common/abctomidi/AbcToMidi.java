@@ -262,6 +262,9 @@ public class AbcToMidi {
 					lyricLines.put(lineIndex, line.stripLeading().substring(2));
 					continue;
 				}
+				// Symbol lines (s:): decorations for the notes above, like w: for lyrics. LotRO plays on (tested).
+				if (line.stripLeading().startsWith("s:"))
+					continue;
 
 				int chordSize = 0;
 
@@ -359,6 +362,11 @@ public class AbcToMidi {
 								meterChangeColumn = infoMatcher.start(INFO_VALUE);
 								break;
 							case 'Q': {
+								if (enableLotroErrors && value.indexOf('"') >= 0) {
+									throw new LotroFileParseException("LotRO refuses a part with text in Q: (" + value
+											+ "); use only the tempo, e.g. Q:120", fileName, lineNumber,
+											infoMatcher.start(INFO_VALUE));
+								}
 								int tempo = info.getPrimaryTempoBPM();
 								info.setPrimaryTempoBPM(value);
 								if (seq != null && (info.getPrimaryTempoBPM() != tempo)) {
@@ -455,8 +463,8 @@ public class AbcToMidi {
 					int chordLenDenominator = 1;
 					String chordLenStr = "";
 					// Broken rhythm on the current chord, before it (c>[ce]) or after it ([ce]>d), applied to every note in
-					// the chord; the note after the chord gets its part when the chord ends. Not tested in LotRO, so with
-					// LotRO errors they're errors, as they always were.
+					// the chord as in ABC 2.1; the note after the chord gets its part when the chord ends. LotRO plays
+					// neither like that (tested), so with LotRO errors they're errors.
 					long chordBrokenNumerator = 1;
 					long chordBrokenDenominator = 1;
 					String chordBrokenStr = ""; // The > or < after the chord
@@ -497,10 +505,15 @@ public class AbcToMidi {
 									}
 									if (i + 2 < line.length() && Character.isLetter(line.charAt(i + 1)) && line.charAt(i + 2) == ':') {
 										// [K:G] [L:1/16] [M:3/4] : an inline field (ABC 2.1, 3.1), the same as a field on a
-										// line of its own. Not tested in LotRO.
+										// line of its own. Tested in LotRO: it refuses the part.
 										int close = line.indexOf(']', i + 3);
 										if (close < 0) {
 											throw new FileParseException("There is no matching ']'", fileName, lineNumber, i);
+										}
+										if (enableLotroErrors) {
+											throw new LotroFileParseException("LotRO refuses a part with an inline field ("
+													+ line.substring(i, close + 1) + "); put the field on a line of its own",
+													fileName, lineNumber, i);
 										}
 										char field = Character.toUpperCase(line.charAt(i + 1));
 										String value = line.substring(i + 3, close).trim();
@@ -553,8 +566,9 @@ public class AbcToMidi {
 									nextBrokenDenominator = 1;
 									if (brokenRhythmDenominator != 1 || brokenRhythmNumerator != 1) {
 										if (enableLotroErrors) {
-											throw new FileParseException("Can't have broken rhythm (< or >) within a chord",
-													fileName, lineNumber, i);
+											throw new LotroFileParseException("LotRO shortens only the first note of a chord after "
+													+ "broken rhythm (c>[ce]), the others keep their length; write the lengths "
+													+ "on the notes instead", fileName, lineNumber, i);
 										}
 										// c>[ce] : the chord gets the second part of the broken rhythm
 										chordBrokenNumerator = brokenRhythmNumerator;
@@ -715,8 +729,8 @@ public class AbcToMidi {
 									while (i + colons < line.length() && line.charAt(i + colons) == ':')
 										colons++;
 
-									// After the whole sign: :| ::| and, not tested in LotRO (with LotRO errors they're errors, as
-									// they always were): :|: :||: :|] and ::
+									// After the whole sign: :| ::| :: and :||: (LotRO plays them, tested), and :|: :|] (LotRO
+									// refuses them, tested: with LotRO errors they're errors)
 									int signEnd;
 									if (pipe >= 0) {
 										signEnd = pipe + 1;
@@ -729,7 +743,7 @@ public class AbcToMidi {
 												&& (line.charAt(signEnd) == ':' || line.charAt(signEnd) == ']')) {
 											signEnd++; // :|: the same, or :|] the end of a section
 										}
-									} else if (colons >= 2 && !enableLotroErrors) {
+									} else if (colons >= 2) {
 										signEnd = i + colons; // :: the end of one repeat and the start of the next
 									} else {
 										throw new FileParseException("Expected to see '|' after parsing '" + ch + "'", fileName,
@@ -1678,7 +1692,7 @@ public class AbcToMidi {
 	private static boolean endingFollows(List<String> lines, int lineIndex, int column, int pass) {
 		for (int l = lineIndex; l < lines.size(); l++) {
 			String line = stripComment(lines.get(l));
-			if (XINFO_PATTERN.matcher(line).matches() || line.stripLeading().startsWith("w:"))
+			if (XINFO_PATTERN.matcher(line).matches() || line.stripLeading().startsWith("w:") || line.stripLeading().startsWith("s:"))
 				continue;
 			Matcher info = INFO_PATTERN.matcher(line);
 			if (info.matches()) {
