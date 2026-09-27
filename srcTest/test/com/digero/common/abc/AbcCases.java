@@ -420,6 +420,83 @@ final class AbcCases {
 		c.add(tune("large_l_fast_tempo", header("L:1/2834674", "Q:1000"), "c5669348 d5669348|"));
 		c.add(tune("large_l_tuplet_fast_tempo", header("L:1/909090", "Q:400"), "(3c454545d454545e454545 c454545>>>d454545|"));
 
+		// ------------------------------------------------------------ ABC 2.1 syntax (added 2026-09-26/27)
+		// Standard ABC with LotRO errors off; with them on, a LotRO error for what LotRO refuses (tested in game, B1-B37)
+
+		// Repeats (Maestro: Params.expandRepeats). Without it they play once, as in LotRO.
+		c.add(tune("repeats_ending_list", "|: c [1,3 d :|[2 e :|] f|").with(p -> p.expandRepeats = true));
+		c.add(tune("repeats_ending_range", "|: c [1-2 d :|[3 e |] f|").with(p -> p.expandRepeats = true));
+		c.add(tune("repeats_ending_list_not_expanded", "|: c [1,3 d :|[2 e :|] f|"));
+		c.add(tune("repeats_end_without_start", "c d :| e f|").with(p -> p.expandRepeats = true));
+		c.add(tune("repeats_end_start_variants", "|: c :|: d :||: e :|] f|").with(p -> p.expandRepeats = true));
+		c.add(tune("repeats_endings_across_lines", "|: c d |1 e", "f :|2 g", "a |]").with(p -> p.expandRepeats = true));
+		c.add(tune("repeats_from_mid_line", "c |: d e :| f|").with(p -> p.expandRepeats = true));
+		// Verse 1 is sung on every pass; verses 2 and more are text lines after the last note (ABC 2.1, 5.2)
+		c.add(tune("repeats_verses", "|: c d e f :|", "w:one two three four", "w:five six sev-en")
+				.with(p -> p.expandRepeats = true));
+
+		// Inline fields
+		c.add(tune("inline_key", "f f [K:G] f f|"));
+		c.add(tune("inline_note_length", "c d [L:1/16] e f g a|"));
+		c.add(tune("inline_meter", "c d e f|[M:3/4] g a b|"));
+		c.add(tune("inline_part_and_instruction", "c [P:A] d [I:linebreak $] e f|"));
+		c.add(tune("inline_unclosed", "c [K:G d|"));
+
+		// Broken rhythm and chords (broken_before_chord above)
+		c.add(tune("broken_after_chord", "[ce]>d e|"));
+
+		// Layout, decorations and rests that change nothing (or stop LotRO)
+		c.add(tune("score_line_break", "c d $ e f|"));
+		c.add(tune("back_quote_in_beam", "c`d`e f|"));
+		c.add(tune("invisible_bar", "c d [|] e f|"));
+		c.add(tune("dotted_bar", "c d .| e f|"));
+		c.add(tune("symbol_line", "c d e f|", "s:!f! * * *"));
+		c.add(tune("letter_decorations", "Tc Hd Le Mf Og Pa Sb uc vd|"));
+		c.add(tune("plus_decorations", "+fermata+c +accent+d +trill+e|"));
+		c.add(tune("plus_old_chord", "+ceg+ c|"));
+		c.add(tune("multi_measure_rest", "Z c|Z2 d|"));
+		c.add(tune("multi_measure_rest_3_4", header("M:3/4"), "Z c|"));
+
+		// Header fields
+		c.add(tune("tempo_word", header("Q:\"Allegro\""), "c d e f|"));
+		c.add(tune("tempo_word_with_value", header("Q:\"Allegro\" 1/4=100"), "c d e f|"));
+		c.add(tune("tempo_word_unknown", header("Q:\"Fast-ish\""), "c d e f|"));
+		c.add(tune("meter_none", header("M:none"), "c d e f g a b c'|"));
+		c.add(tune("field_continuation", "c d e f|", "w:one two", "+:three four"));
+		c.add(tune("field_continuation_w_upper", concat(header(), new String[] { "W:A verse that", "+:goes on" }),
+				"c d|"));
+
+		// K: with clef and transposition (ABC 2.1, 4.6)
+		c.add(tune("key_clef_bass", header("K:C clef=bass middle=d"), "c d|"));
+		c.add(tune("key_transpose", header("K:C transpose=2"), "c d|"));
+		c.add(tune("key_octave", header("K:C octave=-1"), "c d|"));
+		c.add(tune("key_treble_minus_8", header("K:C treble-8"), "c d|"));
+		c.add(tune("key_none", header("K:none"), "f c|"));
+		c.add(tune("key_empty", header("K:"), "f c|"));
+		c.add(tune("key_highland_pipes", header("K:HP"), "f c g|"));
+		c.add(tune("key_mode_after_space", header("K:D mix"), "f c|"));
+		c.add(tune("key_explicit_accidentals", header("K:G ^c"), "c d|"));
+		c.add(tune("key_clef_only_keeps_key", header("K:G"), "f|", "K:bass", "f|"));
+		c.add(tune("key_treble_after_treble_minus_8", header("K:G treble-8"), "f|", "K:treble", "f|"));
+
+		// Grace notes (grace_notes above): 65 ms on the beat, at most half the note; not played with LotRO errors
+		c.add(tune("grace_notes_several", "{gfe}c2 d|"));
+		c.add(tune("grace_notes_lengths", "{g2a}c4 {g>a}c4|"));
+		c.add(tune("grace_notes_slash", "{/g}c d|"));
+		c.add(tune("grace_notes_before_chord", "{g}[ce] d|"));
+		c.add(tune("grace_notes_before_rest", "{g}z c|"));
+		c.add(tune("grace_notes_short_note", "{g}c/4 d|"));
+		c.add(tune("grace_notes_accidental", "{^f}f f|"));
+		c.add(tune("grace_notes_rest_inside", "{Z}c d|"));
+
+		// Lyrics
+		c.add(tune("lyrics_tied_note", "c-c d e|", "w:one two three"));
+		c.add(tune("lyrics_word_across_lines", "c d|", "w:hel-", "e f|", "w:lo you"));
+		c.add(tune("lyrics_text_escapes", "c d e f|", "w:caf\\'e na\\\"ive &eacute;t&eacute; \\u00e9"));
+
+		// Not ABC 2.1: a tie apart from its note (Nottingham Music Database); LotRO refuses it too
+		c.add(tune("tie_after_space", "c2 -c2 d|"));
+
 		return c;
 	}
 

@@ -395,7 +395,21 @@ public class AbcToMidi {
 								lastVerseText = value;
 								break;
 							case 'K':
-								String notForLotro = info.setKey(value);
+								String notForLotro;
+								try {
+									notForLotro = info.setKey(value);
+								} catch (TuneInfo.KeyWordException e) {
+									// Tested in LotRO (B23, B38): K:G ^c, K:C exp ^f and K:C foo play nothing
+									if (enableLotroErrors)
+										notForLotro = e.word;
+									else
+										throw e;
+								}
+								if (enableLotroErrors && value.isBlank()) {
+									// Tested in LotRO (B38): an empty K:, in the header or the tune, plays nothing
+									throw new LotroFileParseException("LotRO refuses a part with an empty K:; write the key, "
+											+ "e.g. K:C", fileName, lineNumber, infoMatcher.start(INFO_VALUE));
+								}
 								if (enableLotroErrors && !notForLotro.isEmpty()) {
 									throw new LotroFileParseException("LotRO refuses a part with \"" + notForLotro
 											+ "\" in K:; write only the key, e.g. K:G or K:D mix", fileName, lineNumber,

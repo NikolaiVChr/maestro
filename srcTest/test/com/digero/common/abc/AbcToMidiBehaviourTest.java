@@ -664,13 +664,39 @@ class AbcToMidiBehaviourTest {
 			for (String key : List.of("K:C clef=bass", "K:C treble", "K:none", "K:G transpose=2"))
 				assertThrows(LotroFileParseException.class,
 						() -> ConversionDump.convert(tune("semantic", header(key), "c|"), Profile.LOTRO_STRICT), key);
+			// Tested in LotRO (B38): an empty K:, in the header or the tune, plays nothing
+			assertThrows(LotroFileParseException.class,
+					() -> ConversionDump.convert(tune("semantic", header("K:"), "c|"), Profile.LOTRO_STRICT));
+			assertThrows(LotroFileParseException.class,
+					() -> ConversionDump.convert(tune("semantic", header("K:G"), "f|", "K:", "f|"), Profile.LOTRO_STRICT));
 			ConversionDump.convert(tune("semantic", header("K:D mix"), "c|"), Profile.LOTRO_STRICT);
-			// Unknown words and explicit accidentals (not supported yet) are errors
-			assertThrows(FileParseException.class, () -> convert(tune("semantic", header("K:C foo"), "c|")));
-			assertThrows(FileParseException.class, () -> convert(tune("semantic", header("K:G ^c"), "c|")));
+			// Unknown words and explicit accidentals (not supported yet) are errors. Tested in LotRO (B23, B38): it
+			// refuses them too
+			for (String key : List.of("K:C foo", "K:G ^c", "K:C exp ^f")) {
+				assertThrows(FileParseException.class, () -> convert(tune("semantic", header(key), "c|")), key);
+				LotroFileParseException e = assertThrows(LotroFileParseException.class,
+						() -> ConversionDump.convert(tune("semantic", header(key), "c|"), Profile.LOTRO_STRICT), key);
+				assertTrue(e.getMessage().contains("\"" + key.substring(key.indexOf(' ') + 1) + "\" in K:"), e.getMessage());
+			}
 		}
 
-		private List<Integer> pitches(String key, String body) throws Exception {
+		@Test
+		void laterKeyFieldChangesOnlyWhatItNames() throws Exception {
+			// A clef never changes the key signature: a K: with only a clef or transposition keeps the key
+			for (String change : List.of("[K:clef=bass]", "[K:bass]", "[K:treble middle=B]"))
+				assertEquals(List.of(66, 66), pitches("K:G", "f " + change + " f|"), change);
+			assertEquals(List.of(66, 54), pitches("K:G", "f [K:octave=-1] f|"));
+			// An empty K: or K:none has no key signature
+			assertEquals(List.of(66, 65), pitches("K:G", "f [K:none] f|"));
+			assertEquals(List.of(66, 65), pitches("K:G", "f|", "K:", "f|"));
+			// Clef, transpose= and octave= each stay until a K: names them again
+			assertEquals(List.of(54, 54), pitches("K:G octave=-1", "f [K:D] f|"));
+			assertEquals(List.of(54, 66), pitches("K:G treble-8", "f [K:treble] f|"));
+			assertEquals(List.of(54, 66), pitches("K:G treble-8", "f [K:octave=1] f|"));
+			assertEquals(List.of(68, 68), pitches("K:G transpose=2", "f [K:clef=bass] f|"));
+		}
+
+		private List<Integer> pitches(String key, String... body) throws Exception {
 			return noteOns(convert(tune("semantic", header(key), body))).stream().map(NoteEvent::pitch).toList();
 		}
 

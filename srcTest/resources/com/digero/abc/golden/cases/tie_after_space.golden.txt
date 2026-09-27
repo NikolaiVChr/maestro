@@ -1,0 +1,17 @@
+# AbcToMidi golden snapshot. Re-record with: mvn test -Dabc.golden.update=true (and review the diff before committing)
+case tie_after_space
+
+### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
+== EXCEPTION FileParseException: Error reading tie_after_space.abc on line 7, column 4:
+Unknown/unexpected character '-'
+== log: empty
+
+### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
+== EXCEPTION FileParseException: Error reading tie_after_space.abc on line 7, column 4:
+Unknown/unexpected character '-'
+== log: empty
+
+### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
+== EXCEPTION FileParseException: Error reading tie_after_space.abc on line 7, column 4:
+Unknown/unexpected character '-'
+== log: empty
