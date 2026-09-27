@@ -172,6 +172,11 @@ public class AbcToMidi {
 		long lastAttackTick = -1; // Where the part's last note started, for W: lines after the notes
 		// The next W: line's tick at the earliest. Each line gets a tick of its own: on one tick MidiText sorts by text.
 		long nextVerseTick = 0;
+		// For +: after a W: line: its text, and its event once written (null while it waits in pendingVerseLines)
+		String lastVerseText = "";
+		MidiEvent lastVerseEvent = null;
+		char lastField = 0; // The field on the line before (w for w:), for a +: line; 0 after a line of music
+		int lastLyricLine = -1; // Line index of the last w: line, for a +: line after it
 
 		int lineNumberForRegions = -1;
 		abcInfo.abcTrackInfos = new ArrayList<>();
@@ -260,6 +265,35 @@ public class AbcToMidi {
 				// field, with no timing.)
 				if (line.stripLeading().startsWith("w:")) {
 					lyricLines.put(lineIndex, line.stripLeading().substring(2));
+					lastField = 'w';
+					lastLyricLine = lineIndex;
+					continue;
+				}
+				// +: continues the field on the line before (ABC 2.1, 3.3), with a space between. Tested in LotRO: it
+				// refuses the part.
+				if (line.startsWith("+:")) {
+					if (enableLotroErrors) {
+						throw new LotroFileParseException("LotRO refuses a part with a +: field continuation; put the field "
+								+ "on one line", fileName, lineNumber, 0);
+					}
+					String more = line.substring(2).trim();
+					if (lastField == 'w') {
+						// Only once: a repeat going back reads it again
+						if (verseLineIndexes.add(lineIndex))
+							lyricLines.put(lastLyricLine, lyricLines.get(lastLyricLine) + " " + more);
+					} else if (lastField == 'W' && verseLineIndexes.add(lineIndex)) {
+						lastVerseText = lastVerseText + " " + more;
+						String joined = AbcText.decode(lastVerseText);
+						if (lastVerseEvent == null && !pendingVerseLines.isEmpty()) {
+							pendingVerseLines.set(pendingVerseLines.size() - 1, joined);
+						} else if (lastVerseEvent != null) {
+							seq.getTracks()[0].remove(lastVerseEvent);
+							lastVerseEvent = MidiFactory.createTextMetaEvent(MidiConstants.META_LYRIC, "<" + joined,
+									lastVerseEvent.getTick());
+							seq.getTracks()[0].add(lastVerseEvent);
+						}
+					}
+					// Other fields (T: N: H: ...) keep the text of their first line
 					continue;
 				}
 				// Symbol lines (s:): decorations for the notes above, like w: for lyrics. LotRO plays on (tested).
@@ -272,6 +306,7 @@ public class AbcToMidi {
 				if (infoMatcher.matches()) {
 					char type = Character.toUpperCase(infoMatcher.group(INFO_TYPE).charAt(0));
 					String value = unescapePercent(infoMatcher.group(INFO_VALUE).trim());
+					lastField = type;
 
 					// A T: after the part's notes started is a section title (ABC 2.1). LotRO plays on (tested), and it
 					// doesn't name the song or the part.
@@ -342,12 +377,15 @@ public class AbcToMidi {
 									// Already written, before a repeat went back
 								} else if (track == null) {
 									pendingVerseLines.add(AbcText.decode(value));
+									lastVerseEvent = null;
 								} else {
 									long tick = Math.max(nextVerseTick, lastAttackTick + 1);
-									seq.getTracks()[0].add(MidiFactory.createTextMetaEvent(MidiConstants.META_LYRIC,
-											"<" + AbcText.decode(value), tick));
+									lastVerseEvent = MidiFactory.createTextMetaEvent(MidiConstants.META_LYRIC,
+											"<" + AbcText.decode(value), tick);
+									seq.getTracks()[0].add(lastVerseEvent);
 									nextVerseTick = tick + 1;
 								}
+								lastVerseText = value;
 								break;
 							case 'K':
 								info.setKey(value);
@@ -357,6 +395,10 @@ public class AbcToMidi {
 								info.setNoteDivisor(value);
 								break;
 							case 'M':
+								if (enableLotroErrors && value.equalsIgnoreCase("none")) {
+									throw new LotroFileParseException("LotRO refuses a part with M:none; give a meter, e.g. M:4/4",
+											fileName, lineNumber, infoMatcher.start(INFO_VALUE));
+								}
 								info.setMeter(value, track == null);
 								meterChangeLine = lineNumber;
 								meterChangeColumn = infoMatcher.start(INFO_VALUE);
@@ -451,6 +493,7 @@ public class AbcToMidi {
 					}
 
 					Matcher m = NOTE_PATTERN.matcher(line);
+					lastField = 0;
 					musicLines.add(lineIndex);
 					repeats.musicLine(lineIndex);
 					int i = startColumn;
@@ -546,6 +589,19 @@ public class AbcToMidi {
 											throw new FileParseException(message, fileName, lineNumber, i + 3);
 										}
 										i = close;
+										break;
+									}
+									if (line.startsWith("[|]", i)) {
+										// [|] : an invisible bar line (ABC 2.1, 4.8). Tested in LotRO: it refuses the part.
+										if (enableLotroErrors) {
+											throw new LotroFileParseException("LotRO refuses a part with an invisible bar line [|]; "
+													+ "use |", fileName, lineNumber, i);
+										}
+										lyricBar++;
+										if (trackNumber == 1)
+											abcInfo.addBar(Math.round(chordStartTick));
+										accidentals.clear();
+										i += 2;
 										break;
 									}
 									if (i + 1 < line.length() && line.charAt(i + 1) == '|') {
@@ -772,10 +828,18 @@ public class AbcToMidi {
 									if (j < 0) {
 										throw new FileParseException("There is no matching '+'", fileName, lineNumber, i);
 									}
+									String decoration = line.substring(i + 1, j);
 									try {
-										info.setDynamics(line.substring(i + 1, j));
+										info.setDynamics(decoration);
 									} catch (IllegalArgumentException iae) {
-										throw new FileParseException("Unsupported +decoration+", fileName, lineNumber, i);
+										// +trill+ +fermata+ ... : the ABC 2.0 form of !trill! (ABC 2.1, 4.14). Tested in LotRO: it
+										// plays nothing of the part. Only notes (+ceg+, a chord in ABC 1.6) stay an error.
+										if (enableLotroErrors) {
+											throw new LotroFileParseException("LotRO plays nothing of a part with +" + decoration
+													+ "+; only the volumes +pppp+ to +ffff+ work", fileName, lineNumber, i);
+										}
+										if (decoration.isEmpty() || decoration.matches("[_^=A-Ga-g,'0-9/]*"))
+											throw new FileParseException("Unsupported +decoration+", fileName, lineNumber, i);
 									}
 
 									if (enableLotroErrors && inChord) {
@@ -831,6 +895,68 @@ public class AbcToMidi {
 									// Decorations. LotRO plays on (tested); they change nothing here.
 									break;
 
+								case '$': // Score line break (ABC 2.1, 4.1)
+								case '`': // Back quote in a beam, e.g. A`B`c (ABC 2.1, 4.7)
+									// Layout only, they change nothing that's played. Tested in LotRO: it plays the part up to
+									// the sign, and nothing after it.
+									if (enableLotroErrors) {
+										throw new LotroFileParseException("LotRO stops playing the part at '" + ch
+												+ "' (layout only); leave it out", fileName, lineNumber, i);
+									}
+									break;
+
+								case 'Z': {
+									// Z Z4 : a rest of 1 or 4 whole bars (ABC 2.1, 4.5). Tested in LotRO: it refuses the part.
+									if (enableLotroErrors) {
+										throw new LotroFileParseException("LotRO refuses a part with a multi-measure rest Z; "
+												+ "write the rest out, e.g. z8 for a bar of 4/4 with L:1/8", fileName, lineNumber, i);
+									}
+									if (inChord) {
+										throw new FileParseException("Unexpected '" + ch + "' inside a chord", fileName,
+												lineNumber, i);
+									}
+									int j = i + 1;
+									while (j < line.length() && Character.isDigit(line.charAt(j)))
+										j++;
+									int bars = (j > i + 1) ? Integer.parseInt(line.substring(i + 1, j)) : 1;
+									if (!repeats.skipping && bars > 0) {
+										// Whole-note ticks times the bar's length, at the current tempo like a note
+										double barTicks = (double) info.getTickFactor() * DEFAULT_NOTE_TICKS * info.getBarNumerator()
+												* info.getCurrentTempoBPM(Math.round(chordStartTick))
+												/ ((double) info.getBarDenominator() * info.getPrimaryTempoBPM());
+										for (int bar = 1; bar < bars; bar++) {
+											// The bar lines inside the rest; the one after it is written
+											lyricBar++;
+											if (trackNumber == 1)
+												abcInfo.addBar(Math.round(chordStartTick + bar * barTicks));
+										}
+										if (generateRegions) {
+											abcInfo.addRegion(new AbcRegion(lineNumberForRegions, i, j, Math.round(chordStartTick),
+													Math.round(chordStartTick + bars * barTicks), Note.REST, trackIndex));
+										}
+										chordStartTick += bars * barTicks;
+										chordEndTick = chordStartTick;
+									}
+									i = j - 1;
+									break;
+								}
+
+								case 'H': // Fermata
+								case 'L': // Accent
+								case 'M': // Lower mordent
+								case 'O': // Coda
+								case 'P': // Upper mordent
+								case 'S': // Segno
+								case 'T': // Trill
+								case 'u': // Up-bow
+								case 'v': // Down-bow
+									// Decorations in short form (ABC 2.1, 4.14); they change nothing here. Tested in LotRO
+									// (T H u v): it refuses the part.
+									if (enableLotroErrors) {
+										throw new LotroFileParseException("LotRO refuses a part with the decoration '" + ch
+												+ "'; leave it out", fileName, lineNumber, i);
+									}
+									break;
 								case 'y':
 									// Spacer. Tested in LotRO: it plays nothing of the part.
 									if (enableLotroErrors) {

@@ -573,6 +573,80 @@ class AbcToMidiBehaviourTest {
 		}
 
 		@Test
+		void layoutAndDecorationsAreSkipped() throws Exception {
+			// $ line break, ` in a beam, [|] invisible bar, +trill+ (ABC 2.0 decoration): nothing that's played
+			for (String body : List.of("c d|$ e f|", "c`d e f|", "c d[|]e f|", "+trill+c d e f|", "c +fermata+d e f|")) {
+				Sequence s = convert(tune("semantic", body));
+				assertEquals(List.of(60, 62, 64, 65), noteOns(s).stream().map(NoteEvent::pitch).toList(), body);
+				// With LotRO errors they're errors (tested): LotRO refuses [|], plays nothing with +trill+, and stops
+				// playing at $ and `
+				assertThrows(LotroFileParseException.class,
+						() -> ConversionDump.convert(tune("semantic", body), Profile.LOTRO_STRICT), body);
+			}
+			// [|] is a bar line: it ends an accidental
+			assertEquals(List.of(61, 60), noteOns(convert(tune("semantic", "^c[|]c|"))).stream().map(NoteEvent::pitch)
+					.toList());
+			// +ceg+ (a chord in ABC 1.6) stays an error
+			assertThrows(FileParseException.class, () -> convert(tune("semantic", "+ceg+ d|")));
+		}
+
+		@Test
+		void multiMeasureRestLastsWholeBars() throws Exception {
+			// Z2 : 2 bars of rest (4/4 here), Z : 1 bar
+			Sequence s = convert(tune("semantic", "c8|Z2|c8|Z|c8|"));
+			long q = s.getResolution();
+			assertEquals(List.of(on(0, 60), on(12 * q, 60), on(20 * q, 60)), noteOns(s));
+			// Tested in LotRO: it refuses the part
+			assertThrows(LotroFileParseException.class,
+					() -> ConversionDump.convert(tune("semantic", "c8|Z2|c8|"), Profile.LOTRO_STRICT));
+		}
+
+		@Test
+		void letterDecorationsAreSkipped() throws Exception {
+			// T H L M O P S u v : decorations in short form (ABC 2.1, 4.14)
+			for (String body : List.of("Tc Hd ue vf|", "Lc Md Oe Pf|Sc d e f|")) {
+				Sequence s = convert(tune("semantic", body));
+				assertEquals(60, noteOns(s).getFirst().pitch(), body);
+				assertEquals(body.startsWith("T") ? 4 : 8, noteOns(s).size(), body);
+				// Tested in LotRO (T H u v): it refuses the part
+				assertThrows(LotroFileParseException.class,
+						() -> ConversionDump.convert(tune("semantic", body), Profile.LOTRO_STRICT), body);
+			}
+		}
+
+		@Test
+		void tempoWordSetsTheTempo() throws Exception {
+			// Q:"Allegro" : a tempo word without a tempo (ABC 2.1, 3.1.8) sets a typical tempo; an unknown text keeps it
+			assertEquals(130, abcInfoOf(tune("semantic", header("Q:\"Allegro\""), "c d|")).getPrimaryTempoBPM());
+			assertEquals(90, abcInfoOf(tune("semantic", header("Q:\"Andante con moto\""), "c d|")).getPrimaryTempoBPM());
+			assertEquals(120, abcInfoOf(tune("semantic", header("Q:\"Swing!\""), "c d|")).getPrimaryTempoBPM());
+			// With a tempo, the tempo counts
+			assertEquals(100, abcInfoOf(tune("semantic", header("Q:\"Allegro\" 1/4=100"), "c d|")).getPrimaryTempoBPM());
+		}
+
+		@Test
+		void freeMeterIsTimedAs4_4() throws Exception {
+			// M:none : free meter (ABC 2.1, 3.1.6), timed as 4/4 with the default L:1/8
+			Sequence s = convert(tune("semantic", header("M:none", "-L"), "c d e f|"));
+			long q = s.getResolution();
+			assertEquals(List.of(on(0, 60), on(q / 2, 62), on(q, 64), on(3 * q / 2, 65)), noteOns(s));
+			// Tested in LotRO: it refuses the part
+			assertThrows(LotroFileParseException.class, () -> ConversionDump
+					.convert(tune("semantic", header("M:none"), "c d e f|"), Profile.LOTRO_STRICT));
+		}
+
+		@Test
+		void fieldContinuationJoinsTheLines() throws Exception {
+			// +: continues the field before it, with a space between (ABC 2.1, 3.3)
+			Sequence s = convert(tune("semantic", header(), "c d e f|", "w:one two", "+:three four", "W:A long", "+:line"));
+			assertEquals(List.of("0:one ", "1:two ", "2:three ", "3:four "), lyrics(s, 1));
+			assertEquals(List.of("3:<A long line"), lyrics(s, 0));
+			// Tested in LotRO: it refuses the part
+			assertThrows(LotroFileParseException.class, () -> ConversionDump
+					.convert(tune("semantic", "c d e f|", "w:one two", "+:three four"), Profile.LOTRO_STRICT));
+		}
+
+		@Test
 		void symbolLinesAreSkipped() throws Exception {
 			// s: lines hold decorations for the notes above, like w: for lyrics. Tested in LotRO: it plays on.
 			for (Profile profile : Profile.values()) {

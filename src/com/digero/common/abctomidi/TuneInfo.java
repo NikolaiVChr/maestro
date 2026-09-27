@@ -1,5 +1,7 @@
 package com.digero.common.abctomidi;
 
+import java.util.Locale;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -150,7 +152,8 @@ class TuneInfo {
 
 	public void setMeter(String str, boolean inHeader) {
 		str = str.trim();
-		if (str.equals("C")) {
+		if (str.equals("C") || str.equalsIgnoreCase("none")) {
+			// M:none is free meter (ABC 2.1, 3.1.6): no bars to keep, so the timing is that of 4/4 (default L:1/8)
 			meterNumerator = 4;
 			meterDenominator = 4;
 		} else if (str.equals("C|")) {
@@ -173,6 +176,15 @@ class TuneInfo {
 		this.compoundMeter = (meterNumerator % 3) == 0;
 	}
 
+	/** The bar's length as a fraction of a whole note: getBarNumerator() / getBarDenominator() (M:6/8 gives 6/8). */
+	public int getBarNumerator() {
+		return meterNumerator;
+	}
+
+	public int getBarDenominator() {
+		return meterDenominator;
+	}
+
 	public TimeSignature getMeter() {
 		try {
 			return new TimeSignature(meterNumerator, meterDenominator);
@@ -181,7 +193,32 @@ class TuneInfo {
 		}
 	}
 
+	/**
+	 * Tempo words (Q:"Allegro"), each at a typical beats per minute. ABC 2.1 (3.1.8) allows a text without a tempo but
+	 * gives no values.
+	 */
+	private static final Map<String, Integer> TEMPO_WORDS = Map.ofEntries(Map.entry("larghissimo", 24),
+			Map.entry("grave", 40), Map.entry("largo", 50), Map.entry("lento", 55), Map.entry("larghetto", 63),
+			Map.entry("adagio", 70), Map.entry("adagietto", 75), Map.entry("andante", 90), Map.entry("andantino", 95),
+			Map.entry("moderato", 110), Map.entry("allegretto", 115), Map.entry("allegro", 130),
+			Map.entry("vivace", 165), Map.entry("presto", 180), Map.entry("prestissimo", 200));
+
 	private int parseTempo(String str) {
+		// "Allegro" 1/4=120 or 1/4=120 "Allegro": the text goes; without a tempo, a tempo word sets it (else it stays)
+		int quote = str.indexOf('"');
+		if (quote >= 0) {
+			int close = str.indexOf('"', quote + 1);
+			String text = str.substring(quote + 1, close < 0 ? str.length() : close).trim().toLowerCase(Locale.ROOT);
+			str = (str.substring(0, quote) + " " + (close < 0 ? "" : str.substring(close + 1))).trim();
+			if (str.isEmpty()) {
+				for (String word : text.split("[^\\p{L}]+")) {
+					Integer bpm = TEMPO_WORDS.get(word);
+					if (bpm != null)
+						return bpm;
+				}
+				return primaryTempoBPM;
+			}
+		}
 		try {
 			// Apparently LotRO ignores the tempo note length (e.g. Q: 1/4=120)
 			String[] parts = str.split("=");
