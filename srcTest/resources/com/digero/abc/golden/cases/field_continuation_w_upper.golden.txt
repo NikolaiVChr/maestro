@@ -4,13 +4,14 @@ case field_continuation_w_upper
 ### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
 == sequence
 divisionType=0.0 resolution=11520 tickLength=29689 tracks=2
--- track 0 (6 events)
+-- track 0 (7 events)
   0 META text type=0x05 "<A verse that goes on"
   0 META tempo mpq=500000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
-  0 META end_of_track
+  1 META text type=0x05 "@TTest"
+  1 META end_of_track
 -- track 1 (11 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
@@ -40,19 +41,20 @@ divisionType=0.0 resolution=11520 tickLength=29689 tracks=2
 
 ### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
 == EXCEPTION LotroFileParseException: Error reading field_continuation_w_upper.abc on line 8, column 1:
-LotRO refuses a part with a +: field continuation; put the field on one line
+Lotro refuses a part with a +: field continuation; put the field on one line
 == log: empty
 
 ### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
 == sequence
 divisionType=0.0 resolution=11520 tickLength=11520 tracks=2
--- track 0 (6 events)
+-- track 0 (7 events)
   0 META text type=0x05 "<A verse that goes on"
   0 META tempo mpq=500000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
-  0 META end_of_track
+  1 META text type=0x05 "@TTest"
+  1 META end_of_track
 -- track 1 (8 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]

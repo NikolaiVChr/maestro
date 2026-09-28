@@ -551,8 +551,10 @@ public class MidiText {
 					break;
 				case INFO:
 					str.append("Info: ").append(decode(fraction.sylineBytes)).append("\n");
+					//break; // bug. not fixed as it would make comparing lyrics to notes (where lyrics used to live) fail, and populate notes.
 				case META_LINE:
 					str.append(fraction.prefix).append(decode(fraction.sylineBytes)).append("\n");
+					break;
 				default:
 					break;
 			}

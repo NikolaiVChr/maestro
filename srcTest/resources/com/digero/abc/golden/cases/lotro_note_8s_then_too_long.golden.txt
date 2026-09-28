@@ -4,7 +4,8 @@ case lotro_note_8s_then_too_long
 ### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
 == sequence
 divisionType=0.0 resolution=11520 tickLength=202770 tracks=2
--- track 0 (5 events)
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
   0 META tempo mpq=500000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=04021808
@@ -45,7 +46,8 @@ Note's duration is too long (8.250s)(c33)
 ### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
 == sequence
 divisionType=0.0 resolution=11520 tickLength=374400 tracks=2
--- track 0 (5 events)
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
   0 META tempo mpq=500000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=04021808

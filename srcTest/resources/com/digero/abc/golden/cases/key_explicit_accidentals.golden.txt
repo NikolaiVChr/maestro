@@ -8,7 +8,7 @@ Explicit accidentals in K: aren't supported: G ^c
 
 ### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
 == EXCEPTION LotroFileParseException: Error reading key_explicit_accidentals.abc on line 6, column 3:
-LotRO refuses a part with "^c" in K:; write only the key, e.g. K:G or K:D mix
+Lotro refuses a part with "^c" in K:; write only the key, e.g. K:G or K:D mix
 == log: empty
 
 ### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)

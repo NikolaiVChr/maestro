@@ -4,7 +4,8 @@ case tabs
 ### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
 == sequence
 divisionType=0.0 resolution=11520 tickLength=34838 tracks=2
--- track 0 (5 events)
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
   0 META tempo mpq=500000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=04021808
@@ -43,7 +44,8 @@ divisionType=0.0 resolution=11520 tickLength=34838 tracks=2
 ### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
 == sequence
 divisionType=0.0 resolution=11520 tickLength=34838 tracks=2
--- track 0 (5 events)
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
   0 META tempo mpq=500000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=04021808
@@ -82,7 +84,8 @@ divisionType=0.0 resolution=11520 tickLength=34838 tracks=2
 ### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
 == sequence
 divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
--- track 0 (5 events)
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
   0 META tempo mpq=500000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=04021808

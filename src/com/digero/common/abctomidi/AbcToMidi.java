@@ -76,6 +76,17 @@ public class AbcToMidi {
 	private static final int INFO_TYPE = 1;
 	private static final int INFO_VALUE = 2;
 
+	/**
+	 * Information fields about the tune (ABC 2.1, 3.1) with their labels, written as MidiText header lines ("@I") in
+	 * track 0, see writeInfoLines.
+	 */
+	private static final Map<Character, String> INFO_LABELS = Map.ofEntries(Map.entry('A', "Area"),
+			Map.entry('B', "Book"), Map.entry('C', "Composer"), Map.entry('D', "Discography"), Map.entry('F', "File"),
+			Map.entry('G', "Group"), Map.entry('H', "History"), Map.entry('N', "Notes"), Map.entry('O', "Origin"),
+			Map.entry('R', "Rhythm"), Map.entry('S', "Source"), Map.entry('Z', "Transcription"));
+	/** N: lines that are Maestro's own (AbcInfo): the instrument setup and genre/mood. */
+	private static final Pattern MAESTRO_NOTE_PATTERN = Pattern.compile("(?i)ts\\s.*|genre:.*|mood:.*");
+
 	private static final Pattern XINFO_PATTERN = Pattern.compile("^\\s*%%([A-Za-z\\-]+)((:?)|\\s)\\s*(.*)\\s*$");
 	private static final int XINFO_FIELD = 1;
 	private static final int XINFO_COLON = 3;
@@ -313,13 +324,19 @@ public class AbcToMidi {
 		// Lyrics without timing (W:), each a lyric line in track 0. Before the part's notes they wait here for its track.
 		List<String> pendingVerseLines = new ArrayList<>();
 		long lastAttackTick = -1; // Where the part's last note started, for W: lines after the notes
-		// The next W: line's tick at the earliest. Each line gets a tick of its own: on one tick MidiText sorts by text.
+		// The next W: line's tick at the earliest. Each line gets a tick of its own: on an equal tick MidiText's order of
+		// lines is not defined.
 		long nextVerseTick = 0;
 		// For +: after a W: line: its text, and its event once written (null while it waits in pendingVerseLines)
 		String lastVerseText = "";
 		MidiEvent lastVerseEvent = null;
 		char lastField = 0; // The field on the line before (w for w:), for a +: line; 0 after a line of music
 		int lastLyricLine = -1; // Line index of the last w: line, for a +: line after it
+		// Information fields ("Composer: ..."), in the file's order; see writeInfoLines. Lines already read are kept by
+		// their region line number, so a repeat going back doesn't read them again.
+		List<String> infoLines = new ArrayList<>();
+		Set<Integer> infoLineNumbers = new HashSet<>();
+		int partTitles = 0; // T: lines in the part's header: the first names the part, the others are other titles
 
 		int lineNumberForRegions = -1;
 		abcInfo.abcTrackInfos = new ArrayList<>();
@@ -435,8 +452,12 @@ public class AbcToMidi {
 									lastVerseEvent.getTick());
 							seq.getTracks()[0].add(lastVerseEvent);
 						}
+					} else if (INFO_LABELS.containsKey(lastField) && !infoLines.isEmpty()
+							&& infoLines.getLast().startsWith(INFO_LABELS.get(lastField) + ": ")
+							&& infoLineNumbers.add(lineNumberForRegions)) {
+						infoLines.set(infoLines.size() - 1, infoLines.getLast() + " " + AbcText.decode(more));
 					}
-					// Other fields (T: N: H: ...) keep the text of their first line
+					// Other fields (T: K: ...) keep the text of their first line
 					continue;
 				}
 				// Symbol lines (s:): decorations for the notes above, like w: for lyrics. Lotro plays on (tested).
@@ -449,14 +470,28 @@ public class AbcToMidi {
 				if (infoMatcher.matches()) {
 					char type = Character.toUpperCase(infoMatcher.group(INFO_TYPE).charAt(0));
 					String value = unescapePercent(infoMatcher.group(INFO_VALUE).trim());
+					char previousField = lastField;
 					lastField = type;
 
-					// A T: after the part's notes started is a section title (ABC 2.1). Lotro plays on (tested), and it
+					// A T: after the part's notes started is a section title (ABC 2.1). LotRO plays on (tested), and it
 					// doesn't name the song or the part.
 					if (type == 'T' && track != null)
 						continue;
 
 					abcInfo.setMetadata(type, value);
+
+					// Information about the tune. H: lines in a row are one text (ABC 1.6: H: may go on over several
+					// lines); other fields in a row are one each, e.g. two C: for two composers.
+					String infoLabel = INFO_LABELS.get(type);
+					if (infoLabel != null && infoLineNumbers.add(lineNumberForRegions)
+							&& !(type == 'N' && MAESTRO_NOTE_PATTERN.matcher(value).matches())) {
+						String text = AbcText.decode(value);
+						if (type == 'H' && previousField == 'H' && !infoLines.isEmpty()
+								&& infoLines.getLast().startsWith(infoLabel + ": "))
+							infoLines.set(infoLines.size() - 1, infoLines.getLast() + " " + text);
+						else
+							infoLines.add(infoLabel + ": " + text);
+					}
 
 					try {
 						switch (type) {
@@ -501,8 +536,12 @@ public class AbcToMidi {
 									info.setInstrument(instrumentOverrideMap.get(trackNumber), false);
 								}
 								partChordsNumber = 0;
+								partTitles = 0;
 								break;
 							case 'T':
+								// More T: lines in the header are other titles of the tune
+								if (partTitles++ > 0 && infoLineNumbers.add(lineNumberForRegions))
+									infoLines.add("Also known as: " + AbcText.decode(value));
 								info.setTitle(value, false);
 								abcInfo.setPartName(trackNumber, value, false);
 								// In standard ABC, T: is the song's title: it doesn't name an instrument
@@ -519,7 +558,8 @@ public class AbcToMidi {
 								// Lyrics without timing, e.g. all verses: each W: line is a lyric line of its own (MidiText's
 								// LINE) in track 0, which Maestro shows with the sung lyrics (MidiText.setFromAbc). Before the
 								// notes they go on tick 0, else after the last note that started, so no track gets longer.
-								// notes they go on tick 0, else after the last note that started, so no track gets longer.
+								// One tick per line: on an equal tick MidiText's order of lines is not defined. (The header
+								// lines, see writeInfoLines, take the ticks left free.)
 								if (!verseLineIndexes.add(lineIndex)) {
 									// Already written, before a repeat went back
 								} else if (track == null) {
@@ -1678,6 +1718,8 @@ public class AbcToMidi {
 					info.getAllPartsTempoMap(), PPQN, info.getPrimaryTempoBPM());
 		}
 
+		writeInfoLines(seq.getTracks()[0], AbcText.decode(abcInfo.getTitle()), infoLines);
+
 		PanGenerator panner = new PanGenerator();
 
 		Track[] tracks = seq.getTracks();
@@ -1954,8 +1996,8 @@ public class AbcToMidi {
 		for (Verse verse : verses)
 			newLine |= addLyrics(track, verse.slots(), verse.text(), newLine);
 
-		// Each line on a tick of its own, as on one tick MidiText sorts by text; / starts a new line (MidiText's
-		// NEWLINE_NEW, in the text and in the timed lines alike)
+		// Each line on a tick of its own, as on an equal tick MidiText's order is not defined; / starts a new line
+		// (MidiText's NEWLINE_NEW, in the text and in the timed lines alike)
 		long tick = Math.max(0, unsungTick);
 		for (List<String> verseLines : unsung.values()) {
 			for (String line : verseLines) {
@@ -2455,6 +2497,42 @@ public class AbcToMidi {
 
 	/** "hymn" as a word anywhere in the files (T:Hymn, R:hymn, N:from a hymnal): its accompaniment is full chords. */
 	private static final Pattern HYMN_PATTERN = Pattern.compile("\\bhymn", Pattern.CASE_INSENSITIVE);
+
+	/**
+	 * The song's title and the information fields, as MidiText's header lines in track 0, which Maestro shows above the
+	 * lyrics ("Title: ...", "Info: Composer: ..."). They are lyric events, not text events: MidiText drops text events
+	 * that look like chord names, like a tune called "G". Track 0 is enough: MidiText takes header lines from every
+	 * track, only the lyrics from the winning one. The same line (C: in every part of a LotRO file) is written once.
+	 * <p>
+	 * Every text event in track 0 has a tick of its own, so MidiText's order of them never depends on how it sorts
+	 * events on an equal tick: the header lines take the first ticks from 0 that the W: lines haven't taken.
+	 */
+	private static void writeInfoLines(Track track0, String title, List<String> infoLines) {
+		Set<Long> usedTicks = new HashSet<>();
+		for (int i = 0; i < track0.size(); i++) {
+			if (track0.get(i).getMessage() instanceof MetaMessage meta && isMidiTextType(meta.getType()))
+				usedTicks.add(track0.get(i).getTick());
+		}
+		List<String> lines = new ArrayList<>();
+		if (!title.isBlank())
+			lines.add("@T" + title);
+		for (String line : new LinkedHashSet<>(infoLines)) {
+			if (!line.equals("Also known as: " + title))
+				lines.add("@I" + line);
+		}
+		long tick = 0;
+		for (String line : lines) {
+			while (usedTicks.contains(tick))
+				tick++;
+			track0.add(MidiFactory.createTextMetaEvent(MidiConstants.META_LYRIC, line, tick++));
+		}
+	}
+
+	/** Meta event types that Maestro's MidiText reads as text: text, lyric, marker, cue point, M-Live. */
+	private static boolean isMidiTextType(int type) {
+		return type == MidiConstants.META_TEXT || type == MidiConstants.META_LYRIC || type == MidiConstants.META_MARKER
+				|| type == MidiConstants.META_CUE_POINT || type == MidiConstants.META_M_LIVE;
+	}
 
 	private static boolean isHymn(List<FileAndData> filesData) {
 		for (FileAndData fileAndData : filesData) {

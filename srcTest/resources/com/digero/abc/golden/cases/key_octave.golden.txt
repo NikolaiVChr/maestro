@@ -4,7 +4,8 @@ case key_octave
 ### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
 == sequence
 divisionType=0.0 resolution=11520 tickLength=24862 tracks=2
--- track 0 (5 events)
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
   0 META tempo mpq=500000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=04021808
@@ -39,13 +40,14 @@ divisionType=0.0 resolution=11520 tickLength=24862 tracks=2
 
 ### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
 == EXCEPTION LotroFileParseException: Error reading key_octave.abc on line 6, column 3:
-LotRO refuses a part with "octave=-1" in K:; write only the key, e.g. K:G or K:D mix
+Lotro refuses a part with "octave=-1" in K:; write only the key, e.g. K:G or K:D mix
 == log: empty
 
 ### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
 == sequence
 divisionType=0.0 resolution=11520 tickLength=11520 tracks=2
--- track 0 (5 events)
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
   0 META tempo mpq=500000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=04021808

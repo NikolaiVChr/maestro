@@ -4,7 +4,8 @@ case tempo_cut_time_quarter_beat
 ### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
 == sequence
 divisionType=0.0 resolution=23040 tickLength=39090 tracks=2
--- track 0 (5 events)
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
   0 META tempo mpq=1000000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=02011808
@@ -45,13 +46,14 @@ divisionType=0.0 resolution=23040 tickLength=39090 tracks=2
 
 ### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
 == EXCEPTION LotroFileParseException: Error reading tempo_cut_time_quarter_beat.abc on line 5, column 3:
-LotRO plays Q:1/4=120 as 120 beats of 1/2 a minute (the meter's beat), whatever the note length; for this tempo write Q:1/2=60
+Lotro plays Q:1/4=120 as 120 beats of 1/2 a minute (the meter's beat), whatever the note length; for this tempo write Q:1/2=60
 == log: empty
 
 ### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
 == sequence
 divisionType=0.0 resolution=23040 tickLength=23040 tracks=2
--- track 0 (5 events)
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
   0 META tempo mpq=1000000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=02011808

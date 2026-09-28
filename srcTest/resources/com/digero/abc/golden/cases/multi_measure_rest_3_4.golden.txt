@@ -4,7 +4,8 @@ case multi_measure_rest_3_4
 ### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
 == sequence
 divisionType=0.0 resolution=11520 tickLength=53010 tracks=2
--- track 0 (5 events)
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
   0 META tempo mpq=500000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=03021808
@@ -37,13 +38,14 @@ divisionType=0.0 resolution=11520 tickLength=53010 tracks=2
 
 ### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
 == EXCEPTION LotroFileParseException: Error reading multi_measure_rest_3_4.abc on line 7, column 1:
-LotRO refuses a part with a multi-measure rest Z; write the rest out, e.g. z8 for a bar of 4/4 with L:1/8
+Lotro refuses a part with a multi-measure rest Z; write the rest out, e.g. z8 for a bar of 4/4 with L:1/8
 == log: empty
 
 ### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
 == sequence
 divisionType=0.0 resolution=11520 tickLength=40320 tracks=2
--- track 0 (5 events)
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
   0 META tempo mpq=500000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=03021808

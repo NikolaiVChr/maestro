@@ -12,6 +12,7 @@ import javax.sound.midi.*;
 import com.digero.common.abctomidi.AbcInfo;
 import com.digero.common.abctomidi.AbcRegion;
 import com.digero.common.abctomidi.AbcToMidi;
+import com.digero.common.midi.MidiConstants;
 import com.digero.common.midi.MidiUtils;
 import com.digero.common.midi.Note;
 import com.digero.common.util.LotroFileParseException;
@@ -408,17 +409,67 @@ class AbcToMidiBehaviourTest {
 				ConversionDump.convert(tune("semantic", body), Profile.LOTRO_STRICT);
 		}
 
-		/** "tick:text" of every lyric event in a track, the tick in eighths (Q:120, L:1/8). */
+		/**
+		 * "tick:text" of every lyric event in a track, the tick in eighths (Q:120, L:1/8). Without the header lines
+		 * (@T title, @I information fields), see {@link #headerLines}.
+		 */
 		private static List<String> lyrics(Sequence sequence, int trackIndex) {
 			List<String> lyrics = new ArrayList<>();
 			long eighth = sequence.getResolution() / 2;
 			Track track = sequence.getTracks()[trackIndex];
 			for (int i = 0; i < track.size(); i++) {
-				if (track.get(i).getMessage() instanceof javax.sound.midi.MetaMessage mm && mm.getType() == 0x05)
-					lyrics.add(track.get(i).getTick() / eighth + ":" + new String(mm.getData(),
-							java.nio.charset.StandardCharsets.UTF_8));
+				if (track.get(i).getMessage() instanceof javax.sound.midi.MetaMessage mm && mm.getType() == 0x05) {
+					String text = new String(mm.getData(), java.nio.charset.StandardCharsets.UTF_8);
+					if (!text.startsWith("@"))
+						lyrics.add(track.get(i).getTick() / eighth + ":" + text);
+				}
 			}
 			return lyrics;
+		}
+
+		/**
+		 * The header lines (@T title, @I information fields) in track 0, in tick order. Checks that every lyric event
+		 * in track 0 (header lines and W: lines) has a tick of its own.
+		 */
+		private static List<String> headerLines(Sequence sequence) {
+			List<String> lines = new ArrayList<>();
+			List<Long> ticks = new ArrayList<>();
+			List<Long> allTicks = new ArrayList<>();
+			Track track = sequence.getTracks()[0];
+			for (int i = 0; i < track.size(); i++) {
+				if (track.get(i).getMessage() instanceof javax.sound.midi.MetaMessage mm && mm.getType() == 0x05) {
+					String text = new String(mm.getData(), java.nio.charset.StandardCharsets.UTF_8);
+					allTicks.add(track.get(i).getTick());
+					if (text.startsWith("@")) {
+						lines.add(text);
+						ticks.add(track.get(i).getTick());
+					}
+				}
+			}
+			assertEquals(ticks.stream().sorted().toList(), ticks, "header lines in order");
+			assertEquals((long) allTicks.size(), allTicks.stream().distinct().count(), "one tick per lyric event: " + allTicks);
+			return lines;
+		}
+
+		@Test
+		void informationFieldsBecomeHeaderLines() throws Exception {
+			// Maestro shows them above the lyrics: "Title: ..." and "Info: Composer: ..." (MidiText)
+			Sequence s = convert(AbcCase.of("semantic", "X:1", "T:Down the Hill", "T:An Cnoc", "R:air", "C:Anon", "C:Trad",
+					"H:Originally in Gdor", "H:and in 6/8.", "N:TS 1, 1", "N:genre: folk", "S:O'Neill's", "+:1903",
+					"Z:Me \\'e", "M:4/4", "L:1/8", "Q:120", "K:C", "c d|", "N:Played slowly", "X:2", "T:Down the Hill",
+					"C:Anon", "M:4/4", "L:1/8", "Q:120", "K:C", "e f|"));
+			// A second T: is another title, C: lines are one each, H: lines in a row are one text, +: joins, N:
+			// lines of Maestro's own are left out, and a line that comes again (C: in the second part) is written once
+			assertEquals(List.of("@TDown the Hill", "@IAlso known as: An Cnoc", "@IRhythm: air", "@IComposer: Anon",
+					"@IComposer: Trad", "@IHistory: Originally in Gdor and in 6/8.", "@ISource: O'Neill's 1903",
+					"@ITranscription: Me \u00e9", "@INotes: Played slowly"), headerLines(s));
+			// A repeat going back doesn't write a field in the tune again
+			s = convert(tune("semantic", "|: c |", "N:Twice?", "d :|").with(p -> p.expandRepeats = true));
+			assertEquals(List.of("@TTest", "@INotes: Twice?"), headerLines(s));
+			// W: lines before the notes take ticks 0 and 1, so the header lines go on 2 and 3
+			s = convert(tune("semantic", header(), "C:Anon", "W:one", "W:two", "c d|"));
+			assertEquals(List.of("@TTest", "@IComposer: Anon"), headerLines(s));
+			assertEquals(List.of("0:<one", "0:<two"), lyrics(s, 0));
 		}
 
 		@Test
@@ -907,13 +958,14 @@ class AbcToMidiBehaviourTest {
 
 		@Test
 		void verseLinesKeepTheirOrder() throws Exception {
-			// On one tick Maestro's MidiText sorts lyric lines by their text, so each W: line gets a tick of its own
+			// On an equal tick Maestro's MidiText's order of lyric lines is not defined, so each W: line gets a tick of its own
 			Sequence s = convert(tune("semantic", header(), "W:b", "W:a", "c d|", "W:d", "W:c"));
 			List<Long> ticks = new ArrayList<>();
 			List<String> lines = new ArrayList<>();
 			for (int i = 0; i < s.getTracks()[0].size(); i++) {
 				MidiEvent e = s.getTracks()[0].get(i);
-				if (e.getMessage() instanceof javax.sound.midi.MetaMessage mm && mm.getType() == 0x05) {
+				if (e.getMessage() instanceof javax.sound.midi.MetaMessage mm && mm.getType() == MidiConstants.META_LYRIC
+						&& mm.getData()[0] == '<') {
 					ticks.add(e.getTick());
 					lines.add(new String(mm.getData(), java.nio.charset.StandardCharsets.UTF_8));
 				}
