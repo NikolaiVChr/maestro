@@ -462,9 +462,23 @@ final class AbcCases {
 		c.add(tune("tempo_word_with_value", header("Q:\"Allegro\" 1/4=100"), "c d e f|"));
 		c.add(tune("tempo_word_unknown", header("Q:\"Fast-ish\""), "c d e f|"));
 		c.add(tune("meter_none", header("M:none"), "c d e f g a b c'|"));
+		// The Q: note length is the beat (ABC 2.1, 3.1.8) with Params.specTempo (a Maestro project setting); LotRO,
+		// and Maestro without it, take the meter's denominator whatever it says (A15)
+		c.add(tune("tempo_compound_beat", header("M:6/8", "Q:3/8=120"), "c d e f g a|").with(p -> p.specTempo = true));
+		c.add(tune("tempo_compound_beat_without_spec_tempo", header("M:6/8", "Q:3/8=120"), "c d e f g a|"));
+		c.add(tune("tempo_cut_time_quarter_beat", header("M:2/2", "Q:1/4=120"), "c d e f|").with(p -> p.specTempo = true));
+		c.add(tune("tempo_several_beats", header("M:5/4", "Q:1/4 3/8 1/4 3/8=40"), "c d e f g|")
+				.with(p -> p.specTempo = true));
+		c.add(tune("tempo_compound_default", header("M:6/8", "-Q"), "c d e f g a|").with(p -> p.specTempo = true));
+		c.add(of("tempo_before_meter", "X:1", "T:Test", "Q:3/8=120", "M:6/8", "L:1/8", "K:C", "c d e f g a|")
+				.with(p -> p.specTempo = true));
 		c.add(tune("field_continuation", "c d e f|", "w:one two", "+:three four"));
 		c.add(tune("field_continuation_w_upper", concat(header(), new String[] { "W:A verse that", "+:goes on" }),
 				"c d|"));
+		// Standard pitch (Params.standardPitch, Maestro with standard ABC): C is middle C, and T: names no instrument
+		c.add(tune("standard_pitch", header("T:The Flute Player"), "C c|").with(p -> p.standardPitch = true));
+		c.add(tune("standard_pitch_made_for", extended("%%made-for Basic Flute"), "C c|")
+				.with(p -> p.standardPitch = true));
 
 		// K: with clef and transposition (ABC 2.1, 4.6)
 		c.add(tune("key_clef_bass", header("K:C clef=bass middle=d"), "c d|"));

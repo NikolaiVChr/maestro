@@ -2573,6 +2573,10 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	}
 
 	private boolean reloadWithNewSource(File newSource) {
+		if (newSource == null) {
+			log.log(Level.WARNING, "No new source file to reload the project with");
+			return false;
+		}
 		List<Pair<Boolean, Boolean>> soloMuteState = songPartsListPanel.getSoloMuteStates();
 		File originalMsx = abcSong.getProjectFile();
 		File oldSource = abcSong.getSourceFile();
@@ -2594,13 +2598,17 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			log.log(Level.SEVERE, "Failed to create temporary MSX file for saving project state", e);
 			return false;
 		}
-		
+
+		// A different source: how to read it (if ABC) is decided again when the tmp project is loaded
+		Object[] oldAbcReading = Objects.equals(newSource, oldSource) ? null : abcSong.resetAbcReading();
 		abcSong.setProjectFile(tmpMsx);
 		abcSong.setSourceFile(newSource);
 
 		if (!finishSave(false)) {
 			abcSong.setProjectFile(originalMsx);
 			abcSong.setSourceFile(oldSource);
+			if (oldAbcReading != null)
+				abcSong.restoreAbcReading(oldAbcReading);
 			log.log(Level.SEVERE, "Failed to save temporary MSX file");
 			return false;
 		}
@@ -2618,7 +2626,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		openFile(tmpMsx, false);
 		if (abcSong != null) {
 			abcSong.setProjectFile(originalMsx);
-			setAbcSongModified(newSource != oldSource || modified);	
+			setAbcSongModified(!Objects.equals(newSource, oldSource) || modified);
 			updateTitle();
 		}
 		
@@ -3116,6 +3124,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 	private void commitAllFields() {
 		try {
+			arrangementView.stopEditingLyrics();
 			abcSong.setNote(arrangementView.getTextnote(), false);
 			if (arrangementView.isLyricsModified()) abcSong.setLyricLines(arrangementView.getLyricLines(), false);
 			else abcSong.setLyricLines(null, false);

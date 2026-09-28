@@ -37,7 +37,11 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 
     private static final String CORRUPT_ABC_WARNING_ID = UIText.get("common.possible.corrupt.abc");
 
-    private static class PartInfo {
+	public boolean hasTimingInfo() {
+		return hasTimingsInfo;
+	}
+
+	private static class PartInfo {
         private MidiEvent panEvent = null;
         private int number = 1;
 		private LotroInstrument instrument = LotroInstrument.DEFAULT_INSTRUMENT;
@@ -66,6 +70,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 	private boolean hasTriplets = false;
 	private boolean hasTripletsSet = false;
 	private boolean hasMixTimings = false;
+	private boolean hasTimingsInfo = false;
 	private String issue = null;
 
 	private String songTitle = null;
@@ -99,6 +104,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		hasTriplets = false;
 		hasTripletsSet = false;
 		hasMixTimings = false;
+		hasTimingsInfo = false;
 		songTitle = null;
 		songComposer = null;
 		songTranscriber = null;
@@ -447,16 +453,20 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
                 break;
             case MIX_TIMINGS:
                 hasMixTimings = Boolean.parseBoolean(value.trim());
+				hasTimingsInfo = true;
                 break;
             case ORGANIC:
                 isOrganic = Boolean.parseBoolean(value.trim());
+				hasTimingsInfo = true;
                 break;
             case ORGANIC_MULTI_STAGE:
                 isOrganic2 = Boolean.parseBoolean(value.trim());
+				hasTimingsInfo = true;
                 break;
             case ORGANIC_VERSION:
                 //isV2 = Integer.parseInt(value.trim()) == 2;
 				isV2 = "2".equals(value.trim());
+				hasTimingsInfo = true;
                 break;
             case SONG_DURATION:
                 songDuration = value.trim();

@@ -86,7 +86,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private String note = "";// not continuously updated
     private String lyrics = "";// not continuously updated
 	private List<LyricLine> lyricLines = null;// not continuously updated
-	private boolean abcRepeatsExpanded = false;
+	private int abcImportVersion = 1;
+	private Boolean abcStandardPitch = null;
 	private boolean badger = false;
 	private float tempoFactor = 1.0f;
 	private int newTempo = 120;
@@ -230,6 +231,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		ignoreMidiText = false;
 
 		lyricLines = null;
+		lyrics = "";
 
         CountIn.setLastCountIn(null);
 
@@ -246,6 +248,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private void initFromMidi(File file, MiscSettings miscSettings, SaveAndExportSettings saveSettings)
 			throws IOException, InvalidMidiDataException, FileParseException {
 		sourceFile = file;
+		abcImportVersion = 2; // If later switch source file to abc: New songs play the repeats and dont use wrong tempo; saved in the project
 		usingOldVelocities = miscSettings.ignoreExpressionMessages;
 		TimingMode mode = TimingMode.getFromSettings(saveSettings.defaultTiming);
 		setTimings(mode.organic, mode.multistage, mode.mixTimings, mode.swing, mode.priority, mode.upgraded);
@@ -275,8 +278,12 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		AbcToMidi.Params params = new AbcToMidi.Params(file);
 		params.abcInfo = abcInfo;
 		params.useLotroInstruments = false;
-		abcRepeatsExpanded = true; // New songs play the repeats; saved in the project
-		params.expandRepeats = abcRepeatsExpanded;
+		abcImportVersion = 2; // New songs play the repeats and dont use wrong tempo; saved in the project
+		params.expandRepeats = abcImportVersion > 1;
+		params.specTempo = abcImportVersion > 1;
+		// Standard ABC (folk tunes) plays at its written pitch; ABC made for LotRO keeps its instrument octaves. Saved.
+		abcStandardPitch = !AbcToMidi.isMadeForLotro(params.filesData);
+		params.standardPitch = abcImportVersion > 1 && abcStandardPitch;
 		// params.stereo = false;
 		usingOldVelocities = true;// The abc volumes are tuned to old volume scheme
 		usingOldTempos = true;
@@ -346,10 +353,15 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 
 		tripletTiming = abcInfo.hasTriplets();
-		mixTiming = abcInfo.hasMixTimings();
-		organic = abcInfo.isOrganic();
-		organic2 = abcInfo.isOrganic2();
-        upgraded = abcInfo.isOrganicV2();
+		if (abcInfo.hasTimingInfo()) {
+			mixTiming = abcInfo.hasMixTimings();
+			organic = abcInfo.isOrganic();
+			organic2 = abcInfo.isOrganic2();
+			upgraded = abcInfo.isOrganicV2();
+		} else {
+			TimingMode tm = TimingMode.getFromSettings(saveAndExportSettings.defaultTiming);
+			setTimings(tm.organic, tm.multistage, tm.mixTimings, tm.swing, tm.priority, tm.upgraded);
+		}
 		priorityActive = false;
 		transcriber = abcInfo.getTranscriber();
 		genre = abcInfo.getGenre();
@@ -439,7 +451,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			usingOldTempos     = SaveUtil.parseValue(songEle, "importSettings/@useOldTempos", true);    // before
 			usingNewMidiLayout = SaveUtil.parseValue(songEle, "importSettings/@useNewMidiLayout", 0);    // tryToLoadFromFile
 			ignoreZeroChannelVolume = SaveUtil.parseValue(songEle, "importSettings/@ignoreZeroChannelVolume", false);
-			abcRepeatsExpanded = SaveUtil.parseValue(songEle, "importSettings/@abcRepeatsExpanded", false);
+			abcImportVersion = SaveUtil.parseValue(songEle, "importSettings/@abcImportVersion", 1);
+			String standardPitch = SaveUtil.parseValue(songEle, "importSettings/@abcStandardPitch", (String) null);
+			abcStandardPitch = (standardPitch == null) ? null : Boolean.valueOf(standardPitch);
 
 			sourceFile = SaveUtil.parseValue(songEle, "sourceFile", (File) null);
 			if (sourceFile == null) {
@@ -667,18 +681,30 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				params.abcInfo = abcInfo;
 				params.useLotroInstruments = false;
                 params.warningHandler = warningHandler;
-				params.expandRepeats = abcRepeatsExpanded;
+				params.expandRepeats = abcImportVersion > 1;
+				params.specTempo = abcImportVersion > 1;
+				if (abcImportVersion > 1 && abcStandardPitch == null) {
+					// Not decided for this source yet (a MIDI project whose source became this ABC file): decide once,
+					// saved with the project
+					abcStandardPitch = !AbcToMidi.isMadeForLotro(params.filesData);
+				}
+				params.standardPitch = abcImportVersion > 1 && Boolean.TRUE.equals(abcStandardPitch);
 				// params.stereo = false;
 				usingOldVelocities = true;// The abc volumes are tuned to old volume scheme
 				usingOldTempos = true;
 				usingNewMidiLayout = 1;
 				sequenceInfo = SequenceInfo.fromAbc(params, miscSettings, usingOldVelocities, ignoreMidiText, usingNewMidiLayout);
 
-				organic = abcInfo.isOrganic();
-				organic2 = abcInfo.isOrganic2();
-                upgraded = abcInfo.isOrganicV2();
+				if (abcInfo.hasTimingInfo()) {
+					mixTiming = abcInfo.hasMixTimings();
+					organic = abcInfo.isOrganic();
+					organic2 = abcInfo.isOrganic2();
+					upgraded = abcInfo.isOrganicV2();
+				} else {
+					TimingMode tm = TimingMode.getFromSettings(saveAndExportSettings.defaultTiming);
+					setTimings(tm.organic, tm.multistage, tm.mixTimings, tm.swing, tm.priority, tm.upgraded);
+				}
 				tripletTiming = abcInfo.hasTriplets();
-				mixTiming = abcInfo.hasMixTimings();
 				priorityActive = false;
 				transcriber = abcInfo.getTranscriber();
 			} else {
@@ -961,8 +987,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		importSettingsEle.setAttribute("useOldVelocities", String.valueOf(usingOldVelocities));
 		importSettingsEle.setAttribute("useOldTempos", String.valueOf(usingOldTempos));
 		importSettingsEle.setAttribute("useNewMidiLayout", String.valueOf(usingNewMidiLayout));
-		importSettingsEle.setAttribute("abcRepeatsExpanded", String.valueOf(abcRepeatsExpanded));
-		if (ignoreZeroChannelVolume) importSettingsEle.setAttribute("ignoreZeroChannelVolume", String.valueOf(ignoreZeroChannelVolume)); 
+		importSettingsEle.setAttribute("abcImportVersion", String.valueOf(abcImportVersion));
+		if (abcStandardPitch != null) importSettingsEle.setAttribute("abcStandardPitch", String.valueOf(abcStandardPitch));
+		if (ignoreZeroChannelVolume) importSettingsEle.setAttribute("ignoreZeroChannelVolume", String.valueOf(ignoreZeroChannelVolume));
 		if (importSettingsEle.getAttributes().getLength() > 0 || importSettingsEle.getChildNodes().getLength() > 0)
 			songEle.appendChild(importSettingsEle);
 	}
@@ -1482,6 +1509,22 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			ret = sourceFile.getName();
 		}
 		return ret;
+	}
+
+	/**
+	 * The source is replaced by a different file: how to read it, if it's ABC, is decided again when it's loaded
+	 * (tryToLoadFromFile). Returns what to restore if the replacement fails.
+	 */
+	public Object[] resetAbcReading() {
+		Object[] previous = { abcImportVersion, abcStandardPitch };
+		abcImportVersion = 2; // Repeats played, Q: note length counts
+		abcStandardPitch = null; // Detected on load
+		return previous;
+	}
+
+	public void restoreAbcReading(Object[] previous) {
+		abcImportVersion = (Integer) previous[0];
+		abcStandardPitch = (Boolean) previous[1];
 	}
 
 	public File getProjectFile() {
@@ -2064,6 +2107,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         this.allPans = other.allPans;//pointer copy
         this.upgraded = other.upgraded;
 		this.singleStageVer = other.singleStageVer;
+		this.mergeVersion = other.mergeVersion;
+		this.abcImportVersion = other.abcImportVersion;
+		this.abcStandardPitch = other.abcStandardPitch;
 
         // read-only/shared services.
         this.sequenceInfo = other.sequenceInfo;// lets assume the midi don't change while we work, then this is immutable

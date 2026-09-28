@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.logging.Logger;
+import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -20,10 +21,7 @@ import com.digero.common.midi.MidiUtils;
 import com.digero.common.midi.Note;
 import com.digero.common.midi.PanGenerator;
 import com.digero.common.midi.SequencerWrapper;
-import com.digero.common.util.LotroFileParseException;
-import com.digero.common.util.FileParseException;
-import com.digero.common.util.Triple;
-import com.digero.common.util.WarningHandler;
+import com.digero.common.util.*;
 import com.digero.maestro.abc.AbcExporter.ExportTrackInfo;
 
 public class AbcToMidi {
@@ -44,6 +42,19 @@ public class AbcToMidi {
 		public AbcInfo abcInfo = null;
 		public WarningHandler warningHandler;
 		public boolean expandRepeats = false;
+		/**
+		 * Read Q: as ABC 2.1 does: its note length is the beat (Q:3/8=120 in 6/8 is 120 dotted quarters a minute), and
+		 * without Q: a 6/8 9/8 12/8 tune gets 120 dotted quarters. LotRO takes the meter's denominator as the beat
+		 * whatever Q: says, so this is off by default, for existing projects and the ABC Player (it has no effect with
+		 * LotRO errors on).
+		 */
+		public boolean specTempo = false;
+		/**
+		 * Play each note at its ABC 2.1 pitch (C is middle C), and don't take the instrument from T:. For standard ABC,
+		 * like folk tunes, where T: is the song's title. Off for ABC made for LotRO, where the octave depends on the
+		 * instrument named in the title (see {@link #isMadeForLotro(List)}).
+		 */
+		public boolean standardPitch = false;
 
 		public Params(File file) throws IOException {
 			this.filesData = new ArrayList<>();
@@ -121,14 +132,120 @@ public class AbcToMidi {
 		}
 	}
 
+	/** A LotRO instrument's full name, e.g. "Basic Lute" or "Lute of Ages" (spaces may be _ or missing). */
+	private static final Pattern INSTRUMENT_FULL_NAME_PATTERN;
+	static {
+		StringJoiner names = new StringJoiner("|", "\\b(?:", ")\\b");
+		for (LotroInstrument instrument : LotroInstrument.values()) {
+			StringJoiner words = new StringJoiner("[\\s_]*");
+			for (String word : instrument.friendlyName.split(" "))
+				words.add(Pattern.quote(word));
+			names.add(words.toString());
+		}
+		INSTRUMENT_FULL_NAME_PATTERN = Pattern.compile(names.toString(), Pattern.CASE_INSENSITIVE);
+	}
+
+	/** Text in square brackets, e.g. the [flute] in BruTE's titles. */
+	private static final Pattern BRACKETED_PATTERN = Pattern.compile("\\[([^\\[\\]]*)\\]");
+
+	/** A chord symbol: "G", "Am", "D7", "F#m7b5", "Bbmaj7", "C/E", "Gsus4" (not an annotation like "^text"). */
+	private static final Pattern CHORD_SYMBOL_PATTERN = Pattern.compile(
+			"\"[A-G][#b]?(?:m|min|maj|dim|aug|sus|add|[0-9]|[+\\-()])*(?:/[A-G][#b]?)?\"");
+
+	/**
+	 * Whether the files were made for LotRO (by Maestro, BruTE, ABC Tools or by hand), with each part's octaves written
+	 * for the instrument in its title; else they're standard ABC, for Params.standardPitch.
+	 * <ol>
+	 * <li>Made for LotRO if any of: an extended field of Maestro and the ABC Player (%%song-title, %%part-name,
+	 * %%made-for, %%abc-creator ...); BruTE ("% Produced with Bruzo's Transcoding Environment", "Z: Transcribed with
+	 * BruTE"); a LotRO instrument's full name in T: (Basic Lute, Lute of Ages), or just an instrument's name in square
+	 * brackets ([flute], [Lute]).
+	 * <li>Else standard ABC if any of: chord symbols ("Am"), voices (V:), the background fields of tune collections (B:
+	 * D: F: H: O: R: S:), or a note LotRO can't play (below C, or above c').
+	 * <li>Else made for LotRO: the reading Maestro always used (a LotRO file read as standard would move every part's
+	 * </ol>
+	 * Not signs: an instrument word elsewhere in a title ("Bass Reeves", "(fiddle tune)", "[Bass line]"), as folk
+	 * titles have them, and +p+ volume marks, which are ABC too (ABC 2.0's decorations, ABC 2.1 with I:decoration +).
+	 */
+	public static boolean isMadeForLotro(List<FileAndData> filesData) {
+		boolean standardSign = false;
+		for (FileAndData fileAndData : filesData) {
+			for (String line : fileAndData.lines) {
+				String lower = line.trim().toLowerCase(Locale.ROOT);
+				if (lower.startsWith("%%")) {
+					Matcher xInfo = XINFO_PATTERN.matcher(line);
+					if (xInfo.matches() && AbcField.fromString(xInfo.group(XINFO_FIELD) + xInfo.group(XINFO_COLON)) != null)
+						return true;
+				} else if (lower.startsWith("%")) {
+					if (lower.contains("bruzo"))
+						return true;
+				} else if (INFO_PATTERN.matcher(line.trim()).matches()) {
+					if (lower.startsWith("z:") && lower.contains("brute"))
+						return true;
+					if (lower.startsWith("t:") && isLotroTitle(line.trim().substring(2)))
+						return true;
+					// Voices, and the background fields of tune collections (book, discography, file, history,
+					// origin, rhythm, source), which LotRO/BruTE tools don't write (C: N: Z: they do)
+					if ("vbdfhors".indexOf(lower.charAt(0)) >= 0)
+						standardSign = true;
+				} else if (CHORD_SYMBOL_PATTERN.matcher(stripComment(line)).find() || hasNoteOutsideLotroRange(line)) {
+					standardSign = true;
+				}
+			}
+		}
+		return !standardSign;
+	}
+
+	/** What in a music line isn't notes: quoted text, !decorations!, +decorations+ and inline fields ([K:G]). */
+	private static final Pattern NOT_NOTES_PATTERN = Pattern.compile("\"[^\"]*\"|![^!]*!|\\+[^+]*\\+|\\[[A-Za-z]:[^\\]]*\\]");
+
+	/** A note with its accidental and octave marks. */
+	private static final Pattern NOTE_OCTAVE_PATTERN = Pattern.compile("(\\^{1,2}|_{1,2}|=)?([A-Ga-g])(,+|'+)?");
+
+	/** A note LotRO can't play: below C, or above c' (the range of its instruments' ABC). */
+	private static boolean hasNoteOutsideLotroRange(String musicLine) {
+		Matcher note = NOTE_OCTAVE_PATTERN.matcher(NOT_NOTES_PATTERN.matcher(stripComment(musicLine)).replaceAll(" "));
+		while (note.find()) {
+			String octave = note.group(3);
+			if (octave == null)
+				continue;
+			char letter = note.group(2).charAt(0);
+			boolean sharp = note.group(1) != null && note.group(1).startsWith("^");
+			if (octave.startsWith("'")) {
+				// c' is LotRO's highest note; anything above it, ^c' included
+				if (octave.length() > 1 || letter != 'c' || sharp)
+					return true;
+			} else if (octave.length() > (Character.isUpperCase(letter) ? 1 : 2)) {
+				return true; // Below C, (C,, or c,,,)
+			}
+		}
+		return false;
+	}
+
+	private static boolean isLotroTitle(String title) {
+		if (INSTRUMENT_FULL_NAME_PATTERN.matcher(title).find())
+			return true;
+		Matcher bracketed = BRACKETED_PATTERN.matcher(title);
+		while (bracketed.find()) {
+			// Only a name: the whole text in the brackets
+			String text = bracketed.group(1).trim();
+			Pair<LotroInstrument, MatchResult> match = LotroInstrument.matchInstrument(text);
+			if (match != null && match.second.start() == 0 && match.second.end() == text.length())
+				return true;
+		}
+		return false;
+	}
+
 	public static Sequence convert(Params params) throws FileParseException {
 		return convert(params.filesData, params.useLotroInstruments, params.instrumentOverrideMap, params.abcInfo,
-				params.enableLotroErrors, params.stereo, params.generateRegions, params.expandRepeats, params.warningHandler);
+				params.enableLotroErrors, params.stereo, params.generateRegions, params.expandRepeats, params.specTempo,
+				params.standardPitch, params.warningHandler);
 	}
 
 	private static Sequence convert(List<FileAndData> filesData, boolean useLotroInstruments,
 									Map<Integer, LotroInstrument> instrumentOverrideMap, AbcInfo abcInfo, final boolean enableLotroErrors,
-									final int stereo, final boolean generateRegions, final boolean expandRepeats, WarningHandler warningHandler) throws FileParseException {
+									final int stereo, final boolean generateRegions, final boolean expandRepeats, boolean specTempo,
+									boolean standardPitch, WarningHandler warningHandler) throws FileParseException {
 		if (abcInfo == null)
 			abcInfo = new AbcInfo();
 		else
@@ -137,6 +254,8 @@ public class AbcToMidi {
 		abcInfo.warningHandler = warningHandler;
 
 		TuneInfo info = new TuneInfo();
+		info.setStandardTempo(specTempo && !enableLotroErrors);
+		info.setStandardPitch(standardPitch && !enableLotroErrors);
 		Sequence seq = null;
 		Track track = null;
 
@@ -146,6 +265,10 @@ public class AbcToMidi {
 		// Where the meter (and with it the PPQN) last changed, for the "must be the same" error
 		int meterChangeLine = 0;
 		int meterChangeColumn = 0;
+		// The Q: of the header being read, checked when the header ends (ABC 2.1 lets M: come after it)
+		String headerTempo = null;
+		int headerTempoLine = 0;
+		int headerTempoColumn = 0;
 
 		int partChordsNumber = 0;
 
@@ -367,7 +490,9 @@ public class AbcToMidi {
 							case 'T':
 								info.setTitle(value, false);
 								abcInfo.setPartName(trackNumber, value, false);
-								if (instrumentOverrideMap == null || !instrumentOverrideMap.containsKey(trackNumber)) {
+								// In standard ABC, T: is the song's title: it doesn't name an instrument
+								if (!info.isStandardPitch()
+										&& (instrumentOverrideMap == null || !instrumentOverrideMap.containsKey(trackNumber))) {
 									if (!info.isInstrumentSet()) {
 										LotroInstrument instrument = LotroInstrument.findInstrumentName(value, null);
 										if (instrument != null)
@@ -437,14 +562,16 @@ public class AbcToMidi {
 								}
 								int tempo = info.getPrimaryTempoBPM();
 								info.setPrimaryTempoBPM(value);
-								if (seq != null && (info.getPrimaryTempoBPM() != tempo)) {
-									if (track != null) {
+								if (track != null) {
+									if (info.getPrimaryTempoBPM() != tempo) {
 										throw new FileParseException("The tempo can't be changed with Q: in the middle of a part",
 												fileName, lineNumber, infoMatcher.start(INFO_VALUE));
 									}
-									throw new FileParseException("All parts must have the same tempo (Q:" + info.getPrimaryTempoBPM()
-											+ " here, Q:" + tempo + " in the earlier parts)", fileName, lineNumber,
-											infoMatcher.start(INFO_VALUE));
+								} else {
+									// Checked when the header ends
+									headerTempo = value;
+									headerTempoLine = lineNumber;
+									headerTempoColumn = infoMatcher.start(INFO_VALUE);
 								}
 								break;
 							}
@@ -465,6 +592,31 @@ public class AbcToMidi {
 						if (instrumentOverrideMap != null && instrumentOverrideMap.containsKey(trackNumber)) {
 							info.setInstrument(instrumentOverrideMap.get(trackNumber), false);
 						}
+					}
+
+					// The part's first line of notes: its header has just ended. (Its track is made further down.)
+					boolean headerEnded = (track == null);
+					if (headerEnded) {
+						// The tempo is known now, whatever the order of Q: and M:
+						info.endHeader();
+						double beat = info.getTempoBeat();
+						int denominator = info.getBarDenominator();
+						if (enableLotroErrors && headerTempo != null && beat > 0
+								&& Math.abs(beat * denominator - 1) > 1e-9) {
+							// Tested in LotRO (B15): the beat is the meter's denominator, whatever the note length
+							long asLotro = Math.round(info.getTempoBeatsPerMinute() * beat * denominator);
+							throw new LotroFileParseException("LotRO plays Q:" + headerTempo + " as "
+									+ info.getTempoBeatsPerMinute() + " beats of 1/" + denominator
+									+ " a minute (the meter's beat), whatever the note length; for this tempo write Q:1/"
+									+ denominator + "=" + asLotro, fileName, headerTempoLine, headerTempoColumn);
+						}
+						if (seq != null && info.getPrimaryTempoBPM() != abcInfo.getPrimaryTempoBPM()) {
+							throw new FileParseException("All parts must have the same tempo (Q:" + info.getPrimaryTempoBPM()
+									+ " here, Q:" + abcInfo.getPrimaryTempoBPM() + " in the earlier parts)", fileName,
+									(headerTempo != null) ? headerTempoLine : lineNumber,
+									(headerTempo != null) ? headerTempoColumn : 0);
+						}
+						headerTempo = null;
 					}
 
 					if (seq == null) {
@@ -1666,7 +1818,9 @@ public class AbcToMidi {
 
 		int lotroNoteId = (octave + 1) * 12 + CHR_NOTE_DELTA[Character.toLowerCase(noteLetter) - 'a'];
 		int noteId = lotroNoteId;
-		if (!useLotroInstruments)
+		if (info.isStandardPitch())
+			noteId += 12; // ABC 2.1: C is middle C (MIDI 60); LotRO's ABC is an octave lower, before the instrument's shift
+		else if (!useLotroInstruments)
 			noteId += 12 * info.getInstrument().octaveDelta;
 
 		String accidental = m.group(NOTE_ACCIDENTAL);

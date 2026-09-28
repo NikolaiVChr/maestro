@@ -625,6 +625,128 @@ class AbcToMidiBehaviourTest {
 		}
 
 		@Test
+		void tempoNoteLengthIsTheBeat() throws Exception {
+			// Q:3/8=120 is 120 dotted quarters a minute (ABC 2.1, 3.1.8), with Params.specTempo (a Maestro project
+			// setting). The tempo played is in beats of the meter's denominator (the MIDI's quarter notes), so in 6/8
+			// that's 360 eighths.
+			assertEquals(360, tempo("M:6/8", "Q:3/8=120"));
+			assertEquals(60, tempo("M:2/2", "Q:1/4=120"));
+			assertEquals(120, tempo("M:4/4", "Q:1/4=120"));
+			assertEquals(200, tempo("M:5/4", "Q:1/4 3/8 1/4 3/8=40")); // A beat of several lengths: 5/4
+			assertEquals(120, tempo("M:6/8", "Q:120")); // Without a note length, the meter's denominator (as LotRO)
+			// Without Q: 120 beats, a dotted quarter in 6/8 9/8 12/8; a tempo word likewise
+			assertEquals(360, tempo("M:6/8", "-Q"));
+			assertEquals(120, tempo("M:3/4", "-Q"));
+			assertEquals(120, tempo("M:4/4", "-Q"));
+			assertEquals(390, tempo("M:6/8", "Q:\"Allegro\""));
+			// M: may come after Q: in the header
+			AbcCase late = AbcCase.of("semantic", "X:1", "T:Test", "Q:3/8=120", "M:6/8", "L:1/8", "K:C", "c d|");
+			assertEquals(360, abcInfoOf(specTempo(late)).getPrimaryTempoBPM());
+			// What's played: a bar of 6/8 at Q:3/8=120 lasts as long as at Q:360
+			long bar = convert(tune("semantic", header("M:6/8", "Q:360"), "c6|")).getMicrosecondLength();
+			assertEquals(bar, convert(specTempo(tune("semantic", header("M:6/8", "Q:3/8=120"), "c6|"))).getMicrosecondLength());
+			assertEquals(bar, convert(specTempo(tune("semantic", header("M:6/8", "-Q"), "c6|"))).getMicrosecondLength());
+			// Parts must still have the same tempo
+			assertThrows(FileParseException.class, () -> convert(specTempo(AbcCase.of("semantic", AbcCase.concat(
+					AbcCases.part(1, "One", "c d|"), new String[] { "X:2", "T:Two", "M:4/4", "L:1/8", "Q:1/8=120", "K:C", "c d|" })))));
+			// Without specTempo (the default, and existing projects), the meter's denominator, as in LotRO
+			assertEquals(120, abcInfoOf(tune("semantic", header("M:6/8", "Q:3/8=120"), "c d|")).getPrimaryTempoBPM());
+			assertEquals(120, abcInfoOf(tune("semantic", header("M:6/8", "-Q"), "c d|")).getPrimaryTempoBPM());
+		}
+
+		@Test
+		void tempoNoteLengthIsALotroErrorUnlessItIsTheBeat() throws Exception {
+			// Tested in LotRO (B15): it plays Q:3/8=120 in 6/8 as 120 eighths a minute; that's an error saying so
+			LotroFileParseException e = assertThrows(LotroFileParseException.class, () -> ConversionDump
+					.convert(tune("semantic", header("M:6/8", "Q:3/8=120"), "c d|"), Profile.LOTRO_STRICT));
+			assertTrue(e.getMessage().contains("Q:1/8=360"), e.getMessage());
+			assertThrows(LotroFileParseException.class, () -> ConversionDump
+					.convert(tune("semantic", header("M:2/2", "Q:1/4=120"), "c d|"), Profile.LOTRO_STRICT));
+			// The meter's beat is fine; without Q: or without a note length, LotRO's reading (no error)
+			for (String[] fields : List.of(new String[] { "M:6/8", "Q:1/8=120" }, new String[] { "M:4/4", "Q:1/4=120" },
+					new String[] { "M:6/8", "Q:120" }, new String[] { "M:6/8", "-Q" })) {
+				AbcInfo info = new AbcInfo();
+				ConversionDump.run(tune("semantic", header(fields), "c d|"), Profile.LOTRO_STRICT, false, info);
+				assertEquals(120, info.getPrimaryTempoBPM(), String.join(" ", fields));
+			}
+		}
+
+		private int tempo(String meter, String tempo) throws Exception {
+			return abcInfoOf(specTempo(tune("semantic", header(meter, tempo), "c d|"))).getPrimaryTempoBPM();
+		}
+
+		private static AbcCase specTempo(AbcCase abcCase) {
+			return abcCase.with(p -> p.specTempo = true);
+		}
+
+		@Test
+		void standardPitchIsTheWrittenPitch() throws Exception {
+			// LotRO's reading: C is C3, and T: picks the instrument, which shifts the octave (a flute two up)
+			AbcCase flute = tune("semantic", header("T:The Flute Player"), "C c|");
+			assertEquals(List.of(72, 84), notePitches(flute));
+			// Params.standardPitch (standard ABC, e.g. folk tunes): C is middle C (ABC 2.1), and T: is just a title
+			assertEquals(List.of(60, 72), notePitches(standardPitch(flute)));
+			assertEquals(LotroInstrument.DEFAULT_INSTRUMENT, abcInfoOf(standardPitch(flute)).getPartInstrument(1));
+			// %%made-for still picks the instrument, but not the octave
+			AbcCase madeFor = tune("semantic", AbcCases.extended("%%made-for Basic Flute"), "C c|");
+			assertEquals(LotroInstrument.BASIC_FLUTE, abcInfoOf(standardPitch(madeFor)).getPartInstrument(1));
+			assertEquals(List.of(60, 72), notePitches(standardPitch(madeFor)));
+			// K: transposition still counts (ABC 2.1, 4.6)
+			assertEquals(List.of(48), notePitches(standardPitch(tune("semantic", header("K:C octave=-1"), "C|"))));
+			// With LotRO errors (the ABC Player), always LotRO's reading
+			assertEquals(noteEvents(ConversionDump.convert(flute, Profile.LOTRO_STRICT)),
+					noteEvents(ConversionDump.convert(standardPitch(flute), Profile.LOTRO_STRICT)));
+		}
+
+		private List<Integer> notePitches(AbcCase abcCase) throws Exception {
+			return noteOns(convert(abcCase)).stream().map(NoteEvent::pitch).toList();
+		}
+
+		private static AbcCase standardPitch(AbcCase abcCase) {
+			return abcCase.with(p -> p.standardPitch = true);
+		}
+
+		@Test
+		void filesMadeForLotroAreRecognised() {
+			// 1. Any sure sign of LotRO: Maestro's extended fields, BruTE, a LotRO instrument in the title
+			List<String[]> lotro = List.of(new String[] { "%%song-title Song" }, new String[] { "%%part-name Lute" },
+					new String[] { "%%abc-creator Maestro v2.5.0" }, new String[] { "%%made-for Basic Flute" },
+					new String[] { "% Produced with Bruzo's Transcoding Environment 2.0 alpha" },
+					new String[] { "X:1", "T: test1  1/14 [flute] 0:10", "Z: Transcribed with BruTE 64 300 1" },
+					new String[] { "X:1", "T: test1  1/14 [flute] 0:10" }, new String[] { "X:1", "T:Song [Lute]" },
+					new String[] { "X:1", "T: Concert-Rachmaninoff[Basic Lute](10:04)" },
+					new String[] { "X:1", "T:Lute of Ages solo" }, new String[] { "X:1", "T:Song - Basic Fiddle" },
+					// ... wins over signs of standard ABC
+					new String[] { "X:1", "T:Song [Lute]", "R:reel", "K:C", "\"Am\"c d|" });
+			for (String[] lines : lotro)
+				assertTrue(madeForLotro(lines), String.join(" / ", lines));
+			// 2. Else any sign of standard ABC: chord symbols, voices, background fields, a note LotRO can't play
+			List<String[]> standard = List.of(new String[] { "X:1", "T:Tune", "K:G", "\"G\"G2 B d \"D7\"c2 A F|" },
+					new String[] { "X:1", "T:Tune", "K:C", "V:1", "c d|", "V:2", "C D|" },
+					new String[] { "X:1", "T:Haste to the Wedding (jig)", "R:jig", "K:D", "d2f fed|" },
+					new String[] { "X:1", "T:The Kesh (fiddle tune)", "O:Ireland", "K:G", "c d|" },
+					new String[] { "X:1", "T:Tune", "S:Played by someone", "K:C", "c d|" },
+					new String[] { "X:1", "T:Bass Reeves", "K:C", "c d e' f|" }, // e' is above LotRO's c'
+					new String[] { "X:1", "T:Reel [Bass line]", "K:C", "C,, D|" }, // Below LotRO's C,
+					new String[] { "X:1", "T:Hornpipe [for Horn]", "K:C", "c ^c' d|" });
+			for (String[] lines : standard)
+				assertFalse(madeForLotro(lines), String.join(" / ", lines));
+			// 3. Else LotRO's reading, as Maestro always did: instrument words in a folk title and volume marks
+			// (ABC too) are no signs either way
+			List<String[]> noSigns = List.of(new String[] { "X:1", "T:The Piper's Farewell", "K:C", "c d|" },
+					new String[] { "X:1", "T:Morpeth Rant (Fiddle)", "K:D", "c d|" },
+					new String[] { "X:1", "K:C", "+fff+ c d +p+ e|" }, new String[] { "X:1", "T:Tune", "K:C", "c d|" },
+					// LotRO's range: C, to c' (quoted text, decorations and inline fields aren't notes)
+					new String[] { "X:1", "K:C", "C, c' \"^e''\" !g''! [K:C clef=bass] d|" });
+			for (String[] lines : noSigns)
+				assertTrue(madeForLotro(lines), String.join(" / ", lines));
+		}
+
+		private static boolean madeForLotro(String... lines) {
+			return AbcToMidi.isMadeForLotro(AbcCase.of("detect", lines).filesData());
+		}
+
+		@Test
 		void freeMeterIsTimedAs4_4() throws Exception {
 			// M:none : free meter (ABC 2.1, 3.1.6), timed as 4/4 with the default L:1/8
 			Sequence s = convert(tune("semantic", header("M:none", "-L"), "c d e f|"));
@@ -1010,6 +1132,7 @@ class AbcToMidiBehaviourTest {
 		private static AbcInfo abcInfoOf(AbcCase abcCase) throws Exception {
 			AbcToMidi.Params params = new AbcToMidi.Params(abcCase.filesData());
 			Profile.PLAIN_MIDI.applyTo(params);
+			abcCase.tweak().accept(params);
 			params.abcInfo = new AbcInfo();
 			AbcToMidi.convert(params);
 			return params.abcInfo;

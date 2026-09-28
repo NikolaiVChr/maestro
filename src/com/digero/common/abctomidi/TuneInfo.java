@@ -21,7 +21,15 @@ class TuneInfo {
 	private int transposeShift; // transpose= or t=
 	private int octaveShift; // octave=, in semitones
 	private long ppqn;
-	private int primaryTempoBPM;
+	private int primaryTempoBPM; // In beats of the meter's denominator (M:6/8: eighths), like the MIDI's quarter notes
+	// Q: as written (ABC 2.1, 3.1.8): the beat as a fraction of a whole note, and the beats per minute. The beat is 0
+	// for Q:120 (the meter's denominator, as in LotRO) and FELT_BEAT for a tempo word or the default tempo.
+	private double tempoBeat;
+	private int tempoBeatsPerMinute = 120;
+	private boolean standardTempo; // The Q: note length counts, as in ABC 2.1 (LotRO errors off); LotRO ignores it
+	private boolean standardPitch; // C is middle C, whatever the instrument (ABC 2.1); LotRO's octave depends on it
+	private boolean tempoGiven; // A Q: so far
+	private boolean allPartsTempoFixed; // The first part's header has ended: its tempo is the song's
 	private final NavigableMap<Long, Integer> curPartTempoMap = new TreeMap<>(); // Tick -> BPM
 	private final NavigableMap<Long, Integer> allPartsTempoMap = new TreeMap<>(); // Tick -> BPM
 	private LotroInstrument instrument;
@@ -231,6 +239,8 @@ class TuneInfo {
 
 	public void setMeter(String str, boolean inHeader) {
 		str = str.trim();
+		boolean wasCompound = isCompoundForTempo();
+		int oldDenominator = meterDenominator;
 		if (str.equals("C") || str.equalsIgnoreCase("none")) {
 			// M:none is free meter (ABC 2.1, 3.1.6): no bars to keep, so the timing is that of 4/4 (default L:1/8)
 			meterNumerator = 4;
@@ -253,6 +263,17 @@ class TuneInfo {
 		}
 		calcPPQN();
 		this.compoundMeter = (meterNumerator % 3) == 0;
+		if (inHeader && (meterDenominator != oldDenominator || isCompoundForTempo() != wasCompound)) {
+			// ABC 2.1 lets M: come after Q: in a header: work the tempo out again for this meter
+			int bpm = toMeterBeats(tempoBeat, tempoBeatsPerMinute);
+			if (bpm != primaryTempoBPM) {
+				if (Integer.valueOf(primaryTempoBPM).equals(curPartTempoMap.get(0L)))
+					curPartTempoMap.put(0L, bpm);
+				if (!allPartsTempoFixed && Integer.valueOf(primaryTempoBPM).equals(allPartsTempoMap.get(0L)))
+					allPartsTempoMap.put(0L, bpm);
+				primaryTempoBPM = bpm;
+			}
+		}
 	}
 
 	/** The bar's length as a fraction of a whole note: getBarNumerator() / getBarDenominator() (M:6/8 gives 6/8). */
@@ -282,7 +303,28 @@ class TuneInfo {
 			Map.entry("moderato", 110), Map.entry("allegretto", 115), Map.entry("allegro", 130),
 			Map.entry("vivace", 165), Map.entry("presto", 180), Map.entry("prestissimo", 200));
 
-	private int parseTempo(String str) {
+	/** A tempo word's or the default tempo's beat: a quarter, or a dotted quarter in 6/8 9/8 12/8 (per denominator). */
+	private static final double FELT_BEAT = -1;
+
+	/** Beats of the meter's denominator per minute: the tempo that is played (and written to the MIDI). */
+	private int toMeterBeats(double beat, int beatsPerMinute) {
+		if (!standardTempo || beat == 0)
+			return beatsPerMinute;
+		if (beat == FELT_BEAT)
+			return isCompoundForTempo() ? 3 * beatsPerMinute : beatsPerMinute;
+		return (int) Math.max(1, Math.round(beatsPerMinute * beat * meterDenominator));
+	}
+
+	/** 6/8 9/8 12/8 (and 6/4 ...): the felt beat is three of the denominator. 3/4 and 3/8 are not compound. */
+	private boolean isCompoundForTempo() {
+		return meterNumerator % 3 == 0 && meterNumerator > 3;
+	}
+
+	/**
+	 * Q: (ABC 2.1, 3.1.8): [text] [beat[ beat...]=]bpm [text], e.g. Q:1/4=120, Q:3/8=120, Q:1/4 3/8=40, Q:"Allegro".
+	 * Sets tempoBeat and tempoBeatsPerMinute.
+	 */
+	private void parseTempo(String str) {
 		// "Allegro" 1/4=120 or 1/4=120 "Allegro": the text goes; without a tempo, a tempo word sets it (else it stays)
 		int quote = str.indexOf('"');
 		if (quote >= 0) {
@@ -292,20 +334,26 @@ class TuneInfo {
 			if (str.isEmpty()) {
 				for (String word : text.split("[^\\p{L}]+")) {
 					Integer bpm = TEMPO_WORDS.get(word);
-					if (bpm != null)
-						return bpm;
+					if (bpm != null) {
+						tempoBeat = FELT_BEAT;
+						tempoBeatsPerMinute = bpm;
+						return;
+					}
 				}
-				return primaryTempoBPM;
+				if (!tempoGiven)
+					tempoBeat = FELT_BEAT; // An unknown word: the default tempo
+				return;
 			}
 		}
 		try {
-			// Apparently LotRO ignores the tempo note length (e.g. Q: 1/4=120)
 			String[] parts = str.split("=");
 			int bpm;
+			double beat = 0;
 			if (parts.length == 1) {
-				bpm = Integer.parseInt(parts[0]);
+				bpm = Integer.parseInt(parts[0].trim());
 			} else if (parts.length == 2) {
-				bpm = Integer.parseInt(parts[1]);
+				bpm = Integer.parseInt(parts[1].trim());
+				beat = parseTempoBeat(parts[0]);
 			} else {
 				throw new IllegalArgumentException("Unable to read tempo");
 			}
@@ -313,14 +361,80 @@ class TuneInfo {
 			if (bpm < 1 || bpm > 10000)
 				throw new IllegalArgumentException("Tempo \"" + bpm + "\" is out of range (expected 1-10000)");
 
-			return bpm;
+			tempoBeat = beat;
+			tempoBeatsPerMinute = bpm;
 		} catch (NumberFormatException nfe) {
 			throw new IllegalArgumentException("Unable to read tempo");
 		}
 	}
 
+	/**
+	 * The beat of Q: as a fraction of a whole note: 1/4, 3/8, or several added up (1/4 3/8). 0 if it isn't note
+	 * lengths (e.g. the old Q:C=120), which then counts as the meter's denominator, as before.
+	 */
+	private static double parseTempoBeat(String str) {
+		double beat = 0;
+		for (String length : str.trim().split("\\s+")) {
+			String[] fraction = length.split("/");
+			try {
+				int numerator = Integer.parseInt(fraction[0]);
+				int denominator = (fraction.length == 2) ? Integer.parseInt(fraction[1]) : 1;
+				if (fraction.length > 2 || numerator < 1 || denominator < 1)
+					return 0;
+				beat += numerator / (double) denominator;
+			} catch (NumberFormatException e) {
+				return 0;
+			}
+		}
+		return beat;
+	}
+
+	/** Notes play at their ABC 2.1 pitch and T: names no instrument (Params.standardPitch). */
+	public void setStandardPitch(boolean standardPitch) {
+		this.standardPitch = standardPitch;
+	}
+
+	public boolean isStandardPitch() {
+		return standardPitch;
+	}
+
+	/** Q: follows ABC 2.1 (LotRO errors off): its note length is the beat. Else as in LotRO: the meter's denominator. */
+	public void setStandardTempo(boolean standardTempo) {
+		this.standardTempo = standardTempo;
+	}
+
+	/** The beat of the last Q:, as a fraction of a whole note; 0 for Q:120, FELT_BEAT (negative) for a tempo word. */
+	public double getTempoBeat() {
+		return tempoBeat;
+	}
+
+	/** The beats per minute of the last Q:, as written. */
+	public int getTempoBeatsPerMinute() {
+		return tempoBeatsPerMinute;
+	}
+
+	/**
+	 * A part's header ends (its first notes). Without any Q: so far, ABC 2.1 gives no tempo: 120 beats a minute, the
+	 * beat being a dotted quarter in 6/8 9/8 12/8 when the Q: note length counts (as in LotRO otherwise: eighths).
+	 */
+	public void endHeader() {
+		if (!tempoGiven && standardTempo) {
+			tempoBeat = FELT_BEAT;
+			primaryTempoBPM = toMeterBeats(tempoBeat, tempoBeatsPerMinute);
+			if (primaryTempoBPM != tempoBeatsPerMinute) {
+				// The MIDI's default tempo is 120, so only another one needs a tempo event
+				curPartTempoMap.putIfAbsent(0L, primaryTempoBPM);
+				if (!allPartsTempoFixed)
+					allPartsTempoMap.putIfAbsent(0L, primaryTempoBPM);
+			}
+		}
+		allPartsTempoFixed = true;
+	}
+
 	public void setPrimaryTempoBPM(String str) {
-		this.primaryTempoBPM = parseTempo(str);
+		parseTempo(str);
+		tempoGiven = true;
+		this.primaryTempoBPM = toMeterBeats(tempoBeat, tempoBeatsPerMinute);
 		if (!allPartsTempoMap.containsKey(0L))
 			allPartsTempoMap.put(0L, this.primaryTempoBPM);
 		if (!curPartTempoMap.containsKey(0L))
@@ -328,8 +442,15 @@ class TuneInfo {
 	}
 
 	public void addTempoEvent(long tick, String str) {
-		allPartsTempoMap.put(tick, parseTempo(str));
-		curPartTempoMap.put(tick, parseTempo(str));
+		// %%Q: (Maestro's tempo changes). The written Q: stays what getTempoBeat() and endHeader() see.
+		double beat = tempoBeat;
+		int beatsPerMinute = tempoBeatsPerMinute;
+		parseTempo(str);
+		int bpm = toMeterBeats(tempoBeat, tempoBeatsPerMinute);
+		tempoBeat = beat;
+		tempoBeatsPerMinute = beatsPerMinute;
+		allPartsTempoMap.put(tick, bpm);
+		curPartTempoMap.put(tick, bpm);
 	}
 
 	public int getCurrentTempoBPM(long tick) {
