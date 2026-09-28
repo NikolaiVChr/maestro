@@ -572,7 +572,7 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 		revertButton.setToolTipText(UIText.get("maestro.sidepanel.reload.lyrics.from.midi.source.discards.edits"));
 		revertButton.addActionListener(e -> {
 			if (abcPart != null) {
-				// Fetch original MIDI/project text
+				// Fetch original MIDI/project text (never null; empty if the source has no lyrics)
 				List<LyricLine> lines = abcPart.getSequenceInfo().getDataCache().getLyricLines();
 
 				int result = JOptionPane.showConfirmDialog(
@@ -584,6 +584,8 @@ public class ArrangementView extends JPanel implements ICompileConstants, TableL
 						JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 
 				if (result == JOptionPane.YES_OPTION) {
+					// setFromLyricLines cancels any in-progress edit, so it can't be
+					// committed back over the reverted rows afterwards.
 					lyricLinesContent.setFromLyricLines(lines);
 					abcPart.getAbcSong().notifyLyricLinesModified();
 					lyricLinesContent.modified = false;

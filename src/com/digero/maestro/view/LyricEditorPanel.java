@@ -23,8 +23,10 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.logging.Logger;
 
 public class LyricEditorPanel extends JPanel {
+    protected static final Logger logL = Logger.getLogger("view.ArrangementView");
     private final LyricTable table;
     private final LyricTableModel model;
     private int highlightedRow = -1;
@@ -50,6 +52,18 @@ public class LyricEditorPanel extends JPanel {
     public void stopEditing() {
         if (table.isEditing()) {
             table.getCellEditor().stopCellEditing();
+        }
+    }
+
+    /**
+     * Discards any in-progress edit without writing it to the model.
+     * Must run before the model's rows are replaced: JTable does NOT end an edit on
+     * fireTableDataChanged(), so a surviving editor would later commit its old text
+     * into whatever row now sits at its editing index (possibly in another song).
+     */
+    private void cancelEditing() {
+        if (table.isEditing()) {
+            table.getCellEditor().cancelCellEditing();
         }
     }
 
@@ -150,13 +164,17 @@ public class LyricEditorPanel extends JPanel {
     }
 
     public void setFromLyricLines(List<LyricLine> lines) {
+        cancelEditing();
         model.setLines(Objects.requireNonNullElseGet(lines, ArrayList::new));
     }
 
     public List<LyricLine> getLyricLines() {
         List<LyricLine> lines = model.getLines();
         if (lines.isEmpty()) return null;
-        return lines;
+        // Hand out a snapshot, never the model's live list. Callers (AbcSong.setLyricLines,
+        // and through it the AbcSong copy used by worker threads) must not alias a list
+        // the table keeps mutating on the EDT.
+        return new ArrayList<>(lines);
     }
 
     public String getPoeticalLyrics(QuantizedTimingInfo qtm, boolean organic, AbcPart part, boolean countUp, boolean allTimestamps) {
@@ -628,8 +646,12 @@ public class LyricEditorPanel extends JPanel {
         private final String[] columnNames = {"Tick", "Lyrics"};
 
         public void setLines(List<LyricLine> newLines) {
+            // Snapshot first: if newLines is (or is backed by) our own list,
+            // clear() would empty it before addAll() reads it.
+            List<LyricLine> snapshot = new ArrayList<>(newLines);
             lines.clear();
-            lines.addAll(newLines);
+            lines.addAll(snapshot);
+            logL.fine("Lyric lines replaced: " + snapshot.size() + " lines");
             fireTableDataChanged();
         }
 
@@ -715,7 +737,7 @@ public class LyricEditorPanel extends JPanel {
 
         @Override
         public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-            if (columnIndex == 1) {
+            if (columnIndex == 1 && rowIndex >= 0 && rowIndex < lines.size()) {
                 LyricLine old = lines.get(rowIndex);
                 String newText = (String) aValue;
                 if (!old.text().equals(newText)) {

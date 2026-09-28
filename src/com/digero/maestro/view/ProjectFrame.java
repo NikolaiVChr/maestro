@@ -2225,6 +2225,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		sequencer.stop();
 		abcSequencer.stop();
 
+		// Commit an in-progress lyric edit while it still belongs to this song.
+		// This fires USER_LYRICS -> setAbcSongModified(true), so the save prompt below
+		// sees it. Afterwards no editor can survive into the next project.
+		arrangementView.stopEditingLyrics();
+
 		boolean promptSave = isAbcSongModified() && (saveSettings.promptSaveNewSong || abcSong.getProjectFile() != null);
 		if (promptSave) {
 			String message;
