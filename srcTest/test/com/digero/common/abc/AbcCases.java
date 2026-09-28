@@ -480,6 +480,31 @@ final class AbcCases {
 		c.add(tune("standard_pitch_made_for", extended("%%made-for Basic Flute"), "C c|")
 				.with(p -> p.standardPitch = true));
 
+		// Chord symbols as an accompaniment (Params.chordAccompaniment, Maestro): bass and chords tracks
+		c.add(tune("chord_accompaniment_waltz", header("M:3/4", "L:1/4"), "\"G\"G B d|\"D7\"c A F|\"G\"G3|]")
+				.with(p -> p.chordAccompaniment = true));
+		c.add(tune("chord_accompaniment_jig", header("M:6/8"), "|:\"D\"d2f fed|\"G\"B2d \"A7\"cBA:|")
+				.with(p -> { p.chordAccompaniment = true; p.expandRepeats = true; }));
+		c.add(tune("chord_accompaniment_bass_and_text", header("L:1/4"), "\"C\"c \"a.\"d \"G/B\"e \"^text\"f|\"Fine\"c4|]")
+				.with(p -> p.chordAccompaniment = true));
+		// One chord a bar of 2/4: the bass on beat 1, the chord's notes on beat 2. "Cxyz" isn't a chord: Eb continues.
+		c.add(tune("chord_accompaniment_qualities", header("M:2/4", "L:1/4"),
+				"\"Cm\"c c|\"C7\"c c|\"Cmaj7\"c c|\"Cm7\"c c|\"Cdim\"c c|\"Cdim7\"c c|\"Cm7b5\"c c|\"Caug\"c c|",
+				"\"Csus4\"c c|\"Csus2\"c c|\"C6\"c c|\"C5\"c c|\"F#m\"c c|\"Bb7\"c c|\"Eb\"c c|\"Cxyz\"c c|]")
+				.with(p -> p.chordAccompaniment = true));
+		// A chord chart: chords over invisible rests (x), no notes of its own
+		c.add(tune("chord_accompaniment_chart_x", header("L:1/4"), "\"G\"x4|\"D7\"x4|\"G\"x2 \"C\"x2|\"G\"x4|]")
+				.with(p -> p.chordAccompaniment = true));
+		// A chord chart: chords over rests (z), no notes of its own
+		c.add(tune("chord_accompaniment_chart_z", header("L:1/4"), "\"G\"z4|\"D7\"z4|\"G\"z2 \"C\"z2|\"G\"z4|]")
+				.with(p -> p.chordAccompaniment = true));
+		// A hymn: full chords (bass and chord together, held). Also a quick chord (D7 for a beat) in the jig above.
+		c.add(tune("chord_accompaniment_hymn", header("T:Evening Hymn", "M:3/4", "L:1/4"),
+				"\"G\"G2 B|\"C\"c2 A|\"G\"B \"D7\"A F|\"G\"G3|]").with(p -> p.chordAccompaniment = true));
+		// Only the first part has chords: its bass and chords tracks come after both parts
+		c.add(of("chord_accompaniment_two_parts", concat(part(1, "Song - Tune", "\"G\"G2 B2 \"C\"c2 \"D\"d2|"),
+				part(2, "Song - Second", "B,2 D2 E2 F2|"))).with(p -> p.chordAccompaniment = true));
+
 		// K: with clef and transposition (ABC 2.1, 4.6)
 		c.add(tune("key_clef_bass", header("K:C clef=bass middle=d"), "c d|"));
 		c.add(tune("key_transpose", header("K:C transpose=2"), "c d|"));

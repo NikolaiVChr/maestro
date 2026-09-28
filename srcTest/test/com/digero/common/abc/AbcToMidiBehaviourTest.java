@@ -747,6 +747,72 @@ class AbcToMidiBehaviourTest {
 		}
 
 		@Test
+		void chordSymbolsBecomeAnAccompaniment() throws Exception {
+			// Params.chordAccompaniment (Maestro): a bass track (theorbo) with the chord's root on the first beat of each
+			// bar and at each chord, and a chords track (lute) with the chord on the other beats. Chords from C3, bass C2.
+			// 3/4: bass, then the chord once, held to the end of the bar
+			AbcCase waltz = chords(tune("semantic", header("M:3/4", "L:1/4"), "\"G\"G B d|\"D7\"c A F|"));
+			Sequence s = convert(waltz);
+			long q = s.getResolution();
+			assertEquals(4, s.getTracks().length); // Track 0, the melody, the bass, the chords
+			assertEquals(List.of(on(0, 43), on(3 * q, 38)), noteOns(s, 2));
+			assertEquals(List.of(on(q, 55), off(3 * q, 55)), noteEvents(s, 3).stream().filter(e -> e.pitch() == 55).toList());
+			assertEquals(List.of(), pitchesAt(noteOns(s, 3), 2 * q)); // Held, not struck again
+			assertEquals(List.of(50, 54, 57, 60), pitchesAt(noteOns(s, 3), 4 * q));
+			assertEquals(List.of(), pitchesAt(noteOns(s, 3), 3 * q)); // The bass's beat
+			// 4/4: root, chord, the chord's fifth in the bass, chord (Cdim: its fifth is Gb)
+			Sequence four = convert(chords(tune("semantic", header("L:1/4"), "\"G\"G B d B|\"Cdim\"c4|")));
+			assertEquals(List.of(on(0, 43), on(2 * q, 38), on(4 * q, 36), on(6 * q, 42)), noteOns(four, 2));
+			assertEquals(List.of(55, 59, 62), pitchesAt(noteOns(four, 3), q));
+			assertEquals(List.of(55, 59, 62), pitchesAt(noteOns(four, 3), 3 * q));
+			AbcInfo info = abcInfoOf(waltz);
+			assertEquals("Test - Bass", info.getPartName(2));
+			assertEquals(LotroInstrument.BASIC_THEORBO, info.getPartInstrument(2));
+			assertEquals("Test - Chords", info.getPartName(3));
+			assertEquals(LotroInstrument.LUTE_OF_AGES, info.getPartInstrument(3));
+			// In 6/8 the beat is a dotted quarter
+			Sequence jig = convert(chords(tune("semantic", header("M:6/8"), "\"D\"d2f fed|")));
+			assertEquals(List.of(on(0, 38)), noteOns(jig, 2));
+			assertEquals(List.of(50, 54, 57), pitchesAt(noteOns(jig, 3), 3 * q / 2));
+			// A chord in mid-bar gets the bass; /B is the bass note (and beat 3 the fifth, D)
+			Sequence mid = convert(chords(tune("semantic", header("L:1/4"), "\"C\"c \"G/B\"d e f|")));
+			assertEquals(List.of(on(0, 36), on(q, 47), on(2 * q, 38)), noteOns(mid, 2));
+			assertEquals(List.of(55, 59, 62), pitchesAt(noteOns(mid, 3), 3 * q));
+			// A chord of a beat or less has no beat of its own: it's struck with its bass (C here), a longer one isn't
+			assertEquals(List.of(48, 52, 55), pitchesAt(noteOns(mid, 3), 0));
+			assertEquals(List.of(), pitchesAt(noteOns(mid, 3), q)); // G/B's bass beat
+			// A hymn ("hymn" anywhere in the file): the bass and the full chord together, held; in 4/4 also on beat 3
+			Sequence hymn = convert(chords(tune("semantic", header("T:Evening Hymn", "L:1/4"), "\"G\"G B d B|\"C\"c2 \"D7\"d2|")));
+			assertEquals(List.of(on(0, 43), on(2 * q, 43), on(4 * q, 36), on(6 * q, 38)), noteOns(hymn, 2));
+			assertEquals(List.of(55, 59, 62), pitchesAt(noteOns(hymn, 3), 0));
+			assertEquals(List.of(55, 59, 62), pitchesAt(noteOns(hymn, 3), 2 * q));
+			assertEquals(List.of(), pitchesAt(noteOns(hymn, 3), q));
+			// Held from each strike to the next (B, 59, is only in the G chord)
+			assertEquals(List.of(on(0, 59), off(2 * q, 59), on(2 * q, 59), off(4 * q, 59)),
+					noteEvents(hymn, 3).stream().filter(e -> e.pitch() == 59).toList());
+			// K: transposition moves the chords too: C is played as D (root D, fifth A)
+			assertEquals(List.of(on(0, 38), on(2 * q, 45)),
+					noteOns(convert(chords(tune("semantic", header("K:C transpose=2"), "\"C\"c8|"))), 2));
+			// Each pass of a repeat
+			AbcCase repeated = chords(tune("semantic", header("L:1/4"), "|:\"G\"G4:|")).with(p -> p.expandRepeats = true);
+			assertEquals(List.of(on(0, 43), on(2 * q, 38), on(4 * q, 43), on(6 * q, 38)), noteOns(convert(repeated), 2));
+			// Text that isn't a chord name makes no accompaniment
+			assertEquals(2, convert(chords(tune("semantic", "\"a.\"c \"^text\"d \"Fine\"e f|"))).getTracks().length);
+			// Without the flag, or with LotRO errors (LotRO plays no chords), none
+			assertEquals(2, convert(tune("semantic", "\"G\"G B d|")).getTracks().length);
+			assertEquals(2, ConversionDump.convert(chords(tune("semantic", "\"G\"G B d|")), Profile.LOTRO_STRICT)
+					.getTracks().length);
+		}
+
+		private static AbcCase chords(AbcCase abcCase) {
+			return abcCase.with(p -> p.chordAccompaniment = true);
+		}
+
+		private static List<Integer> pitchesAt(List<NoteEvent> events, long tick) {
+			return events.stream().filter(e -> e.tick() == tick).map(NoteEvent::pitch).toList();
+		}
+
+		@Test
 		void freeMeterIsTimedAs4_4() throws Exception {
 			// M:none : free meter (ABC 2.1, 3.1.6), timed as 4/4 with the default L:1/8
 			Sequence s = convert(tune("semantic", header("M:none", "-L"), "c d e f|"));

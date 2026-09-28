@@ -281,6 +281,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		abcImportVersion = 2; // New songs play the repeats and dont use wrong tempo; saved in the project
 		params.expandRepeats = abcImportVersion > 1;
 		params.specTempo = abcImportVersion > 1;
+		params.chordAccompaniment = abcImportVersion > 1;
 		// Standard ABC (folk tunes) plays at its written pitch; ABC made for LotRO keeps its instrument octaves. Saved.
 		abcStandardPitch = !AbcToMidi.isMadeForLotro(params.filesData);
 		params.standardPitch = abcImportVersion > 1 && abcStandardPitch;
@@ -682,6 +683,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				params.useLotroInstruments = false;
                 params.warningHandler = warningHandler;
 				params.expandRepeats = abcImportVersion > 1;
+				params.chordAccompaniment = abcImportVersion > 1;
 				params.specTempo = abcImportVersion > 1;
 				if (abcImportVersion > 1 && abcStandardPitch == null) {
 					// Not decided for this source yet (a MIDI project whose source became this ABC file): decide once,

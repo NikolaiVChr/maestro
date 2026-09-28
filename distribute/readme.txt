@@ -65,6 +65,7 @@ Version 4.7.3
 * When importing ABC files into maestro, and they are not meant for lotro (exported by maestro or BruTE), they are now interpreted closer to abc 2.1 standard.
 * ABC lyrics are now shown in time with the music in Maestro, and ABC files using accents, decorations and other common syntax now play the way they do in LotRO.
 * ABC files from folk tune collections now import at the right tempo (e.g. jigs written as Q:3/8=120) and the right octave, whatever instrument you assign. Also now support repeats and other abc spec features. Projects made before keep how they sounded.
+* Chord symbols in ABC files loaded into maestro, ("G", "Am", "D7") now become a bass part and a chords part.
 
 Version 4.7.2
 * Make Windows midi system able to play back GS midi more reliable.
