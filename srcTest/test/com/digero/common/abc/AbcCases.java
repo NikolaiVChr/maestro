@@ -218,7 +218,7 @@ final class AbcCases {
 		c.add(tune("lyrics", concat(header(), new String[] { "W:", "W:1. Verse one" }), "c d|", "w: la la", "e f|",
 				"  w:la-la_ la % comment", "W:2. Verse two"));
 
-		// ------------------------------------------------------------ LotRO limits (interesting in LOTRO_STRICT)
+		// ------------------------------------------------------------ Lotro limits (interesting in LOTRO_STRICT)
 		c.add(tune("lotro_note_too_low", "C,, c|"));
 		c.add(tune("lotro_note_too_high", "c'' c|"));
 		c.add(tune("lotro_note_too_short", "c/8 c|"));
@@ -228,7 +228,7 @@ final class AbcCases {
 		c.add(tune("lotro_tied_too_long", "c20-c20|"));
 		c.add(tune("lotro_too_many_chord_notes", "[CEGcegc'] c|"));
 		c.add(tune("lotro_overlapping_notes", "[c2c] d|"));
-		// Tested in LotRO: a sounding note started again at another volume silences the part; a tie continuation doesn't
+		// Tested in Lotro: a sounding note started again at another volume silences the part; a tie continuation doesn't
 		c.add(tune("lotro_restart_at_other_volume", "[c2z] +ff+ c d|"));
 		c.add(tune("lotro_tie_continuation_at_other_volume", "[c2-z] +ff+ c d|"));
 		// 10,001 notes: only the strict profile, otherwise the snapshot would be enormous
@@ -346,21 +346,21 @@ final class AbcCases {
 		c.add(tune("tuplet_p_q_r_ends_on_chord", "(3:2:2c[e2g2] c|"));
 		c.add(tune("tuplet_ends_on_chord_with_rest", "(3c d[ez] c|"));
 
-		// 2: a tie joins the next note of the same pitch, wherever it is, for the sum of their lengths (tested in LotRO)
+		// 2: a tie joins the next note of the same pitch, wherever it is, for the sum of their lengths (tested in Lotro)
 		c.add(tune("tie_over_other_note", "c- d c|"));
 		c.add(tune("tie_over_other_chord", "[c-e] [dg] c|"));
 		c.add(tune("tie_continuation_starts_early", "[c2-z] c d|"));
 		c.add(tune("tie_long_note_in_rest_chord", "[c2-z]z c d|"));
 		c.add(tune("tie_over_other_note_next_line", "c- d", "c|"));
 
-		// 3: a bar line resets the accidental, so after the bar the continuation must repeat it (tested in LotRO)
+		// 3: a bar line resets the accidental, so after the bar the continuation must repeat it (tested in Lotro)
 		c.add(tune("tie_accidental_across_bar", "^c-|c d|"));
 		c.add(tune("tie_accidental_across_bar_then_same_note", "^c-|c c|"));
 		c.add(tune("tie_accidental_across_bar_explicit_natural", "^c-|=c d|"));
 		c.add(tune("tie_flat_across_bar", "_B-|B c|"));
 		c.add(tune("tie_accidental_across_bar_in_chord", "[^c-e]|[ce] d|"));
 		c.add(tune("tie_key_signature_across_bar", header("K:D"), "f-|f d|"));
-		// LotRO's reading, which Maestro follows: an accidental lasts until the bar line, so a continuation after
+		// Lotro's reading, which Maestro follows: an accidental lasts until the bar line, so a continuation after
 		// the bar must repeat it. Within the measure it may be repeated or not.
 		c.add(tune("tie_accidental_same_bar", "^c-c d|"));
 		c.add(tune("tie_accidental_retyped_same_bar", "^c-^c d|"));
@@ -371,14 +371,14 @@ final class AbcCases {
 		c.add(tune("escaped_percent_in_title", header("T:100\\% Harp"), "c d|"));
 		c.add(tune("escaped_percent_in_composer", concat(header(), new String[] { "C:50\\% Me % comment" }), "c d|"));
 
-		// 5: LotRO's length limits apply to the written length, not the played one (tested in LotRO)
+		// 5: Lotro's length limits apply to the written length, not the played one (tested in Lotro)
 		c.add(tune("lotro_tuplet_too_short", "(3c/4d/4e/4 c|"));
 		c.add(tune("lotro_tuplet_long_enough", "(3c/2d/2e/2 c|"));
 		c.add(tune("lotro_broken_rhythm_too_short", "c>>>d/ c|"));
 		c.add(tune("lotro_broken_rhythm_too_long", "c24>c8|"));
 
 		// 6: every part starts from the file header's K:, M: and L: (before the first X:), not from the previous part.
-		// An M: in a header without its own L: gives the default length. (Tested in LotRO.)
+		// An M: in a header without its own L: gives the default length. (Tested in Lotro.)
 		c.add(of("part_length_does_not_carry_over", concat(
 				new String[] { "X:1", "T:One", "M:4/4", "L:1/4", "Q:120", "K:C", "c d|" },
 				new String[] { "X:2", "T:Two", "c d|" })));
@@ -421,9 +421,9 @@ final class AbcCases {
 		c.add(tune("large_l_tuplet_fast_tempo", header("L:1/909090", "Q:400"), "(3c454545d454545e454545 c454545>>>d454545|"));
 
 		// ------------------------------------------------------------ ABC 2.1 syntax (added 2026-09-26/27)
-		// Standard ABC with LotRO errors off; with them on, a LotRO error for what LotRO refuses (tested in game, B1-B37)
+		// Standard ABC with Lotro errors off; with them on, a Lotro error for what Lotro refuses (tested in game, B1-B37)
 
-		// Repeats (Maestro: Params.expandRepeats). Without it they play once, as in LotRO.
+		// Repeats (Maestro: Params.expandRepeats). Without it they play once, as in Lotro.
 		c.add(tune("repeats_ending_list", "|: c [1,3 d :|[2 e :|] f|").with(p -> p.expandRepeats = true));
 		c.add(tune("repeats_ending_range", "|: c [1-2 d :|[3 e |] f|").with(p -> p.expandRepeats = true));
 		c.add(tune("repeats_ending_list_not_expanded", "|: c [1,3 d :|[2 e :|] f|"));
@@ -445,7 +445,7 @@ final class AbcCases {
 		// Broken rhythm and chords (broken_before_chord above)
 		c.add(tune("broken_after_chord", "[ce]>d e|"));
 
-		// Layout, decorations and rests that change nothing (or stop LotRO)
+		// Layout, decorations and rests that change nothing (or stop Lotro)
 		c.add(tune("score_line_break", "c d $ e f|"));
 		c.add(tune("back_quote_in_beam", "c`d`e f|"));
 		c.add(tune("invisible_bar", "c d [|] e f|"));
@@ -462,7 +462,7 @@ final class AbcCases {
 		c.add(tune("tempo_word_with_value", header("Q:\"Allegro\" 1/4=100"), "c d e f|"));
 		c.add(tune("tempo_word_unknown", header("Q:\"Fast-ish\""), "c d e f|"));
 		c.add(tune("meter_none", header("M:none"), "c d e f g a b c'|"));
-		// The Q: note length is the beat (ABC 2.1, 3.1.8) with Params.specTempo (a Maestro project setting); LotRO,
+		// The Q: note length is the beat (ABC 2.1, 3.1.8) with Params.specTempo (a Maestro project setting); Lotro,
 		// and Maestro without it, take the meter's denominator whatever it says (A15)
 		c.add(tune("tempo_compound_beat", header("M:6/8", "Q:3/8=120"), "c d e f g a|").with(p -> p.specTempo = true));
 		c.add(tune("tempo_compound_beat_without_spec_tempo", header("M:6/8", "Q:3/8=120"), "c d e f g a|"));
@@ -518,7 +518,7 @@ final class AbcCases {
 		c.add(tune("key_clef_only_keeps_key", header("K:G"), "f|", "K:bass", "f|"));
 		c.add(tune("key_treble_after_treble_minus_8", header("K:G treble-8"), "f|", "K:treble", "f|"));
 
-		// Grace notes (grace_notes above): 65 ms on the beat, at most half the note; not played with LotRO errors
+		// Grace notes (grace_notes above): 65 ms on the beat, at most half the note; not played with Lotro errors
 		c.add(tune("grace_notes_several", "{gfe}c2 d|"));
 		c.add(tune("grace_notes_lengths", "{g2a}c4 {g>a}c4|"));
 		c.add(tune("grace_notes_slash", "{/g}c d|"));
@@ -533,7 +533,7 @@ final class AbcCases {
 		c.add(tune("lyrics_word_across_lines", "c d|", "w:hel-", "e f|", "w:lo you"));
 		c.add(tune("lyrics_text_escapes", "c d e f|", "w:caf\\'e na\\\"ive &eacute;t&eacute; \\u00e9"));
 
-		// Not ABC 2.1: a tie apart from its note (Nottingham Music Database); LotRO refuses it too
+		// Not ABC 2.1: a tie apart from its note (Nottingham Music Database); Lotro refuses it too
 		c.add(tune("tie_after_space", "c2 -c2 d|"));
 
 		return c;

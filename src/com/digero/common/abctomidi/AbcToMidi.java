@@ -128,6 +128,14 @@ public class AbcToMidi {
 	 */
 	public static final double GRACE_NOTE_SECONDS = 0.065;
 
+	/**
+	 * Ornaments that are played, by their decoration name (ABC 2.1, 4.14); T, M, P and ~ are the short forms. ABC leaves
+	 * how to play them to the program: here in steps of GRACE_NOTE_SECONDS, see ornamentNotes.
+	 */
+	private static final Map<String, String> ORNAMENTS = Map.of("trill", "trill", "roll", "roll", "lowermordent",
+			"lowermordent", "mordent", "lowermordent", "uppermordent", "uppermordent", "pralltriller", "uppermordent",
+			"turn", "turn", "invertedturn", "invertedturn");
+
 	public static List<String> readLines(File inputFile) throws IOException {
 		// Note: ABC files are technically ISO-8859-1 by standard, but often UTF-8 in practice.
 		// Java 18+ defaults to UTF-8. To be safe given the international user base:
@@ -180,6 +188,7 @@ public class AbcToMidi {
 	 * <li>Else standard ABC if any of: chord symbols ("Am"), voices (V:), the background fields of tune collections (B:
 	 * D: F: H: O: R: S:), or a note Lotro can't play (below C, or above c').
 	 * <li>Else made for Lotro: the reading Maestro always used (a Lotro file read as standard would move every part's
+	 * octave and lose its instruments).
 	 * </ol>
 	 * Not signs: an instrument word elsewhere in a title ("Bass Reeves", "(fiddle tune)", "[Bass line]"), as folk
 	 * titles have them, and +p+ volume marks, which are ABC too (ABC 2.0's decorations, ABC 2.1 with I:decoration +).
@@ -473,7 +482,7 @@ public class AbcToMidi {
 					char previousField = lastField;
 					lastField = type;
 
-					// A T: after the part's notes started is a section title (ABC 2.1). LotRO plays on (tested), and it
+					// A T: after the part's notes started is a section title (ABC 2.1). Lotro plays on (tested), and it
 					// doesn't name the song or the part.
 					if (type == 'T' && track != null)
 						continue;
@@ -597,6 +606,13 @@ public class AbcToMidi {
 								}
 								break;
 							case 'L':
+								// Tested in Lotro (B40): an L: line after the part's first notes changes nothing, the notes
+								// after it keep the header's L:
+								if (enableLotroErrors && track != null) {
+									throw new LotroFileParseException("Lotro ignores an L: after the part's first notes; "
+											+ "put it in the header or write the lengths on the notes", fileName, lineNumber,
+											infoMatcher.start(INFO_VALUE));
+								}
 								// The note length doesn't affect the PPQN, so it may differ between parts
 								info.setNoteDivisor(value);
 								break;
@@ -749,6 +765,7 @@ public class AbcToMidi {
 					int chordCloseIndex = -1; // Index of the current chord's ']'; -1 if the chord is unclosed
 					List<double[]> graceNotes = new ArrayList<>(); // {noteId, written length} of grace notes before the next note
 					double attackOffset = 0; // The current note or chord starts after its grace notes
+					String ornament = null; // The decoration before the next note, if it's one that is played (ORNAMENTS)
 					Tuplet tuplet = null;
 					int brokenRhythmNumerator = 1; // The numerator of the note after the broken rhythm sign
 					int brokenRhythmDenominator = 1; // The denominator of the note after the broken rhythm sign
@@ -1080,6 +1097,8 @@ public class AbcToMidi {
 										}
 										if (decoration.isEmpty() || decoration.matches("[_^=A-Ga-g,'0-9/]*"))
 											throw new FileParseException("Unsupported +decoration+", fileName, lineNumber, i);
+										if (!repeats.skipping && ORNAMENTS.containsKey(decoration))
+											ornament = ORNAMENTS.get(decoration);
 									}
 
 									if (enableLotroErrors && inChord) {
@@ -1119,6 +1138,9 @@ public class AbcToMidi {
 										throw new LotroFileParseException("Lotro plays nothing of a part from a !decoration! on ("
 												+ line.substring(i, j + 1) + "); use +f+ style for volume", fileName, lineNumber, i);
 									}
+									String decorationName = line.substring(i + 1, j);
+									if (!repeats.skipping && ORNAMENTS.containsKey(decorationName))
+										ornament = ORNAMENTS.get(decorationName);
 									i = j;
 									break;
 								}
@@ -1195,8 +1217,12 @@ public class AbcToMidi {
 								}
 
 								case '~': // Roll
+									// Lotro plays on (tested) and plays the note plain, so with Lotro errors it changes nothing
+									if (!enableLotroErrors && !repeats.skipping)
+										ornament = "roll";
+									break;
 								case '.': // Staccato
-									// Decorations. Lotro plays on (tested); they change nothing here.
+									// A decoration. Lotro plays on (tested); it changes nothing here.
 									break;
 
 								case '$': // Score line break (ABC 2.1, 4.1)
@@ -1254,17 +1280,19 @@ public class AbcToMidi {
 								case 'T': // Trill
 								case 'u': // Up-bow
 								case 'v': // Down-bow
-									// Decorations in short form (ABC 2.1, 4.14); they change nothing here. Tested in Lotro
-									// (T H u v): it refuses the part.
+									// Decorations in short form (ABC 2.1, 4.14). T M P are ornaments that are played, the others
+									// change nothing here. Tested in Lotro (T H u v): it refuses the part.
 									if (enableLotroErrors) {
 										throw new LotroFileParseException("Lotro refuses a part with the decoration '" + ch
 												+ "'; leave it out", fileName, lineNumber, i);
 									}
+									if (!repeats.skipping && (ch == 'T' || ch == 'M' || ch == 'P'))
+										ornament = (ch == 'T') ? "trill" : (ch == 'M') ? "lowermordent" : "uppermordent";
 									break;
 								case 'y':
-									// Spacer. Tested in Lotro: it plays nothing of the part.
+									// Spacer. Tested in Lotro (B58): it refuses the part.
 									if (enableLotroErrors) {
-										throw new LotroFileParseException("Lotro doesn't play a part with the spacer 'y'",
+										throw new LotroFileParseException("Lotro refuses a part with the spacer 'y'; leave it out",
 												fileName, lineNumber, i);
 									}
 									break;
@@ -1425,6 +1453,7 @@ public class AbcToMidi {
 						}
 
 						if (repeats.skipping) {
+							ornament = null;
 							graceNotes.clear();
 							// A note of an ending that this pass doesn't play: it takes no time. It keeps its place in the w:
 							// lyrics, which are written for the notes as they stand.
@@ -1488,6 +1517,7 @@ public class AbcToMidi {
 										Math.round(chordStartTick), Math.round(noteEndTick), Note.REST, trackIndex));
 							}
 							graceNotes.clear(); // Grace notes before a rest aren't played
+							ornament = null;
 						} else {
 							int[] pitch = notePitch(m, info, accidentals, useLotroInstruments);
 							int noteId = pitch[0];
@@ -1547,6 +1577,31 @@ public class AbcToMidi {
 							}
 							graceNotes.clear();
 
+							// Where the note's sound starts, for its region and syllable: after its grace notes, before its
+							// ornament
+							double soundOffset = attackOffset;
+
+							// An ornament: quick notes in steps of GRACE_NOTE_SECONDS, taking their time from the note, which
+							// sounds after them (see ornamentNotes). Not on a chord, a tied note's continuation or a drum.
+							if (ornament != null && !inChord && !tiedNotes.containsKey(noteId)
+									&& !info.getInstrument().isPercussion) {
+								double ticksPerSecond = info.getPrimaryTempoBPM() * PPQN / 60.0;
+								Map<Integer, Integer> neighbourAccidentals = new HashMap<>(accidentals);
+								int upper = neighbourPitch(m, 1, info, neighbourAccidentals, useLotroInstruments);
+								int lower = neighbourPitch(m, -1, info, neighbourAccidentals, useLotroInstruments);
+								double tick = chordStartTick + attackOffset;
+								int volume = info.getDynamics().getVol(useLotroInstruments);
+								for (double[] note : ornamentNotes(ornament, noteId, upper, lower, noteEndTick - tick,
+										GRACE_NOTE_SECONDS * ticksPerSecond)) {
+									track.add(MidiFactory.createNoteOnEventEx((int) note[0], channel, volume, Math.round(tick)));
+									track.add(MidiFactory.createNoteOffEventEx((int) note[0], channel, volume,
+											Math.round(tick + note[1])));
+									tick += note[1];
+								}
+								attackOffset = tick - chordStartTick;
+							}
+							ornament = null;
+
 							// check for invalid overlapping notes
 							Iterator<Triple<Integer, Double, String>> notesOnIter = notesOn.iterator();
 							while (notesOnIter.hasNext()) {
@@ -1595,7 +1650,7 @@ public class AbcToMidi {
 
 							if (generateRegions) {
 								AbcRegion region = new AbcRegion(lineNumberForRegions, m.start(), m.end(),
-										Math.round(chordStartTick + attackOffset), Math.round(noteEndTick), Note.fromId(noteId),
+										Math.round(chordStartTick + soundOffset), Math.round(noteEndTick), Note.fromId(noteId),
 										trackIndex);
 
 								abcInfo.addRegion(region);
@@ -1615,7 +1670,7 @@ public class AbcToMidi {
 							// A syllable goes here. Also on a tied note: in w: lyrics tied notes are separate notes (ABC 2.1, 5.1)
 							if (!inChord || chordSize == 1)
 								lyricNote(lyricNotes, lineIndex, m.start(), lyricBar).ticks.put(repeats.pass,
-										Math.round(chordStartTick + attackOffset));
+										Math.round(chordStartTick + soundOffset));
 
 							if (!tiedNotes.containsKey(noteId)) {
 								attackDynamics.put(lotroNoteId, info.getDynamics());
@@ -1920,6 +1975,85 @@ public class AbcToMidi {
 		}
 		// K: transpose= octave= or a clef with +8/-8 (never with Lotro errors: Lotro refuses them)
 		return new int[] { noteId + noteDelta + info.getTranspose(), lotroNoteId + noteDelta + info.getTranspose() };
+	}
+
+	/**
+	 * The pitch of the note a step above (1) or below (-1) the matched one in the scale: the next letter, with the key
+	 * signature and the bar's accidentals (e.g. above B in K:F is c, above ^c in K:C is d).
+	 */
+	private static int neighbourPitch(Matcher m, int step, TuneInfo info, Map<Integer, Integer> accidentals,
+									  boolean useLotroInstruments) {
+		char letter = m.group(NOTE_LETTER).charAt(0);
+		String octaveStr = Objects.requireNonNullElse(m.group(NOTE_OCTAVE), "");
+		int octave = Character.isUpperCase(letter) ? 3 : 4;
+		if (octaveStr.indexOf('\'') >= 0)
+			octave += octaveStr.length();
+		else if (octaveStr.indexOf(',') >= 0)
+			octave -= octaveStr.length();
+		int degree = octave * 7 + "CDEFGAB".indexOf(Character.toUpperCase(letter)) + step;
+		int newOctave = Math.floorDiv(degree, 7);
+		char newLetter = "CDEFGAB".charAt(Math.floorMod(degree, 7));
+		String neighbour = (newOctave >= 4)
+				? Character.toLowerCase(newLetter) + "'".repeat(newOctave - 4)
+				: newLetter + ",".repeat(3 - newOctave);
+		Matcher n = NOTE_PATTERN.matcher(neighbour);
+		if (!n.matches())
+			return notePitch(m, info, accidentals, useLotroInstruments)[0]; // Beyond ABC's octave marks: no neighbour
+		return notePitch(n, info, accidentals, useLotroInstruments)[0];
+	}
+
+	/**
+	 * The quick notes of an ornament, each {pitch, ticks}, played from the note's start; the note itself sounds after
+	 * them for the rest of its length (at least one step). Folk style, starting on the note. An ornament that doesn't
+	 * fit the note is left out.
+	 * <ul>
+	 * <li>trill: note, upper, note, upper ... for the whole note</li>
+	 * <li>roll (~, Irish): the note in three parts, the second starting with a cut (upper), the third with a tap
+	 * (lower)</li>
+	 * <li>lowermordent (M, !mordent!): note, lower; uppermordent (P, !pralltriller!): note, upper</li>
+	 * <li>turn: upper, note, lower; invertedturn: lower, note, upper</li>
+	 * </ul>
+	 *
+	 * @param ticks The note's length, from where the ornament starts (after its grace notes)
+	 * @param step  GRACE_NOTE_SECONDS in ticks
+	 */
+	static List<double[]> ornamentNotes(String ornament, int note, int upper, int lower, double ticks, double step) {
+		List<double[]> notes = new ArrayList<>();
+		int steps = (int) (ticks / step + 1e-9);
+		switch (ornament) {
+			case "trill" -> {
+				// An even count, ending on the upper note: the note itself comes last
+				int count = (steps - 1) / 2 * 2;
+				for (int k = 0; k < count; k++)
+					notes.add(new double[] { (k % 2 == 0) ? note : upper, step });
+			}
+			case "roll" -> {
+				double third = ticks / 3;
+				if (third >= 2 * step) {
+					notes.add(new double[] { note, third });
+					notes.add(new double[] { upper, step });
+					notes.add(new double[] { note, third - step });
+					notes.add(new double[] { lower, step });
+				}
+			}
+			case "lowermordent", "uppermordent" -> {
+				if (steps >= 3) {
+					notes.add(new double[] { note, step });
+					notes.add(new double[] { ornament.equals("lowermordent") ? lower : upper, step });
+				}
+			}
+			case "turn", "invertedturn" -> {
+				if (steps >= 4) {
+					boolean turn = ornament.equals("turn");
+					notes.add(new double[] { turn ? upper : lower, step });
+					notes.add(new double[] { note, step });
+					notes.add(new double[] { turn ? lower : upper, step });
+				}
+			}
+			default -> {
+			}
+		}
+		return notes;
 	}
 
 	/** A note's place in the source file, for lyricNotes: its line index and column. Sorts in the order of the file. */
@@ -2502,7 +2636,7 @@ public class AbcToMidi {
 	 * The song's title and the information fields, as MidiText's header lines in track 0, which Maestro shows above the
 	 * lyrics ("Title: ...", "Info: Composer: ..."). They are lyric events, not text events: MidiText drops text events
 	 * that look like chord names, like a tune called "G". Track 0 is enough: MidiText takes header lines from every
-	 * track, only the lyrics from the winning one. The same line (C: in every part of a LotRO file) is written once.
+	 * track, only the lyrics from the winning one. The same line (C: in every part of a Lotro file) is written once.
 	 * <p>
 	 * Every text event in track 0 has a tick of its own, so MidiText's order of them never depends on how it sorts
 	 * events on an equal tick: the header lines take the first ticks from 0 that the W: lines haven't taken.

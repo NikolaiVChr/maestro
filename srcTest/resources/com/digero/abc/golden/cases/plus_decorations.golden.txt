@@ -3,7 +3,7 @@ case plus_decorations
 
 ### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
 == sequence
-divisionType=0.0 resolution=11520 tickLength=34838 tracks=2
+divisionType=0.0 resolution=11520 tickLength=37833 tracks=2
 -- track 0 (6 events)
   0 META text type=0x05 "@TTest"
   0 META tempo mpq=500000
@@ -11,7 +11,7 @@ divisionType=0.0 resolution=11520 tickLength=34838 tracks=2
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
   0 META end_of_track
--- track 1 (13 events)
+-- track 1 (17 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Test"
@@ -23,8 +23,12 @@ divisionType=0.0 resolution=11520 tickLength=34838 tracks=2
   5760 NOTE_ON ch=0 d1=62 d2=106 [LotroShortMessage]
   11520 NOTE_OFF ch=0 d1=62 d2=106 [LotroShortMessage]
   11520 NOTE_ON ch=0 d1=64 d2=106 [LotroShortMessage]
+  13018 NOTE_OFF ch=0 d1=64 d2=106 [LotroShortMessage]
+  13018 NOTE_ON ch=0 d1=65 d2=106 [LotroShortMessage]
+  14515 NOTE_OFF ch=0 d1=65 d2=106 [LotroShortMessage]
+  14515 NOTE_ON ch=0 d1=64 d2=106 [LotroShortMessage]
   17280 NOTE_OFF ch=0 d1=64 d2=106 [LotroShortMessage]
-  34838 META end_of_track
+  37833 META end_of_track
 == abcInfo
   title="Test"
   composer=""
@@ -56,7 +60,7 @@ divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
   0 META end_of_track
--- track 1 (10 events)
+-- track 1 (14 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Test"
@@ -65,6 +69,10 @@ divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
   5760 NOTE_ON ch=0 d1=62 d2=80 [LotroShortMessage]
   11520 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
   11520 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
+  13018 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
+  13018 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
+  14515 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
+  14515 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
   17280 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
   17280 META end_of_track
 == abcInfo
