@@ -760,6 +760,10 @@ public class AbcToMidi {
 								}
 								lastVerseText = value;
 								break;
+							case 'I':
+								// I:linebreak and I:decoration (ABC 2.1) are kept; others (I:MIDI ...) change nothing here
+								info.applyInstruction(value);
+								break;
 							case 'K':
 								String notForLotro;
 								try {
@@ -1010,6 +1014,7 @@ public class AbcToMidi {
 										try {
 											switch (field) {
 												case 'K' -> info.setKey(value);
+												case 'I' -> info.applyInstruction(value);
 												case 'L' -> info.setNoteDivisor(value);
 												case 'M' -> {
 													info.setMeter(value, false);
@@ -1026,7 +1031,7 @@ public class AbcToMidi {
 													}
 												}
 												default -> {
-													// Other fields (P: V: I: r: ...) change nothing that is played
+													// Other fields (P: V: r: ...) change nothing that is played
 												}
 											}
 										} catch (IllegalArgumentException e) {

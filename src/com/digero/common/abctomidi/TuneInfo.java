@@ -11,7 +11,7 @@ import com.digero.common.midi.KeyMode;
 import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.TimeSignature;
 
-class TuneInfo {
+public class TuneInfo {
 	private int partNumber;
 	private String title;
 	private boolean titleIsFromExtendedInfo;
@@ -55,6 +55,9 @@ class TuneInfo {
 	private int fileNoteDivisorNum;
 	private int fileNoteDivisorDenom;
 	private boolean noteDivisorSetInHeader; // An L: in the current header (the file's or the part's)
+	// I:linebreak and I:decoration (ABC 2.1): every part starts from the file header's
+	private AbcInstructions instructions = new AbcInstructions();
+	private AbcInstructions fileInstructions = new AbcInstructions();
 
     public TuneInfo() {
 		partNumber = 0;
@@ -86,6 +89,7 @@ class TuneInfo {
 		noteDivisorNum = -1;
 		noteDivisorDenom = 1;
 		noteDivisorSetInHeader = false;
+		instructions = new AbcInstructions();
 		calcPPQN();
 	}
 
@@ -108,6 +112,7 @@ class TuneInfo {
 			fileMeterDenominator = meterDenominator;
 			fileNoteDivisorNum = noteDivisorNum;
 			fileNoteDivisorDenom = noteDivisorDenom;
+			fileInstructions = instructions;
 		}
 		key = fileKey;
 		clefShift = fileClefShift;
@@ -119,7 +124,23 @@ class TuneInfo {
 		noteDivisorNum = fileNoteDivisorNum;
 		noteDivisorDenom = fileNoteDivisorDenom;
 		noteDivisorSetInHeader = false;
+		instructions = fileInstructions.copy();
 		calcPPQN();
+	}
+
+	/**
+	 * An I: field's value (on its own line or inline): keeps I:linebreak and I:decoration, for this part from here on (or,
+	 * in the file header, for every part).
+	 *
+	 * @return Whether it was one of those
+	 */
+	public boolean applyInstruction(String instruction) {
+		return instructions.apply(instruction);
+	}
+
+	/** The I:linebreak and I:decoration instructions that apply here. */
+	public AbcInstructions getInstructions() {
+		return instructions;
 	}
 
 	public void setTitle(String title, boolean fromExtendedInfo) {
