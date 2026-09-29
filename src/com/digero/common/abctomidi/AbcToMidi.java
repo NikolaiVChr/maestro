@@ -72,8 +72,9 @@ public class AbcToMidi {
 		/**
 		 * Play what ABC 2.1 (2011) says where Lotro plays it otherwise, and take the ABC 2.1 syntax Lotro doesn't
 		 * know. For standard ABC in Maestro, set like standardPitch; off for files made for Lotro, existing projects and
-		 * the ABC Player (it has no effect with Lotro errors on). NOT IMPLEMENTED YET: see AbcToMidiBehaviourTest
-		 * .Standard2011 for what it will do.
+		 * the ABC Player (it has no effect with Lotro errors on). Done: a broken rhythm with a chord (c>[ce], [ce]>d), a
+		 * chord's length (its first note's) and a unison (the longer note).
+		 * The rest is still to do: see AbcToMidiBehaviourTest.Standard2011, whose tests of it are @Disabled.
 		 */
 		public boolean standard2011 = false;
 
@@ -1698,9 +1699,13 @@ public class AbcToMidi {
 						double noteEndTick = chordStartTick
 								+ (double) info.getTickFactor() * DEFAULT_NOTE_TICKS * numerator * info.getLNum() / ((double) denominator * info.getLDenom());
 						log.finer("noteEndTick="+noteEndTick);
-						// A chord is as long as its shortest note
+						// A chord is as long as its shortest note, as Lotro plays it (tested, B31). ABC 2.1 (4.17, standard2011):
+						// "the chord duration is that of the first note". Either way each note sounds for its own length.
 						double chordEndTickBeforeThisNote = chordEndTick; // Restored if this note turns out to be ignored
-						if (chordEndTick == chordStartTick || noteEndTick < chordEndTick) {
+						if (abc21 && inChord) {
+							if (chordSize == 1)
+								chordEndTick = noteEndTick;
+						} else if (chordEndTick == chordStartTick || noteEndTick < chordEndTick) {
 							chordEndTick = noteEndTick;
 							log.finer("chordEndTick="+noteEndTick);
 						} else {
@@ -1753,6 +1758,19 @@ public class AbcToMidi {
 							// Checked before the cowbell code, which gives all cowbell notes the same pitch.
 							if (inChord && !chordNoteIds.add(lotroNoteId)) {
 								chordEndTick = chordEndTickBeforeThisNote;
+								// ABC 2.1 (4.17, standard2011): a unison, both notes sound. One MIDI channel can't sound a
+								// pitch twice, so the longer one plays: the first note's note-off moves to this one's end.
+								if (abc21 && !tied) {
+									for (MidiEvent noteOff : noteOffEvents) {
+										if (((ShortMessage) noteOff.getMessage()).getData1() == noteId
+												&& noteOff.getTick() > chordStartTick && noteOff.getTick() < Math.round(noteEndTick)) {
+											track.remove(noteOff);
+											noteOff.setTick(Math.round(noteEndTick));
+											track.add(noteOff);
+											break;
+										}
+									}
+								}
 								i = m.end();// required, otherwise the loop will find the same note again and never end
 								continue;
 							}

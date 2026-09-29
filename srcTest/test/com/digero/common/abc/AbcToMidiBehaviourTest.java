@@ -280,7 +280,6 @@ class AbcToMidiBehaviourTest {
 				return tempos;
 			}
 
-			@Disabled(NOT_YET)
 			@Test
 			void chordLastsAsLongAsItsFirstNote() throws Exception {
 				// Lotro (tested, B31): a chord lasts as long as its shortest note, so g follows the e
@@ -297,7 +296,6 @@ class AbcToMidiBehaviourTest {
 						noteOns(convert(standard(tune("semantic", "[ce2] g|")))));
 			}
 
-			@Disabled(NOT_YET)
 			@Test
 			void unisonPlaysTheLongerNote() throws Exception {
 				// Lotro (tested): the same pitch twice in a chord plays only the first, for its own length
