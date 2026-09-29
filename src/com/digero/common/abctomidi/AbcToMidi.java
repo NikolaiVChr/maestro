@@ -51,10 +51,11 @@ public class AbcToMidi {
 		public WarningHandler warningHandler;
 		public boolean expandRepeats = false;
 		/**
-		 * Read Q: as ABC 2.1 does: its note length is the beat (Q:3/8=120 in 6/8 is 120 dotted quarters a minute), and
-		 * without Q: a 6/8 9/8 12/8 tune gets 120 dotted quarters. Lotro takes the meter's denominator as the beat
-		 * whatever Q: says, so this is off by default, for existing projects and the ABC Player (it has no effect with
-		 * Lotro errors on).
+		 * Read Q: as ABC 2.1 does: its note length is the beat (Q:3/8=120 in 6/8 is 120 dotted quarters a minute),
+		 * Q:120 and Q:C=120 count unit note lengths (L:, 10.1: L:1/8 Q:120 is 120 eighths a minute), and without Q: a
+		 * 6/8 9/8 12/8 tune gets 120 dotted quarters. Lotro takes the meter's denominator as the beat whatever Q: says,
+		 * so this is off by default, for existing projects and the ABC Player (it has no effect with Lotro errors on).
+		 * Maestro's own %%Q: counts the meter's beats either way.
 		 */
 		public boolean specTempo = false;
 		/**

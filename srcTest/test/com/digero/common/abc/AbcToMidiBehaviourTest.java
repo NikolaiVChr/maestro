@@ -385,22 +385,34 @@ class AbcToMidiBehaviourTest {
 				return noteOns(convert(abcCase)).stream().map(NoteEvent::pitch).toList();
 			}
 
-			@Disabled(NOT_YET)
 			@Test
 			void tempoWithoutNoteLengthCountsUnitNotes() throws Exception {
 				// Lotro and every Lotro file: Q:120 is 120 beats of the meter's denominator. M:4/4 L:1/8 Q:120 c8
 				// (a whole note) = 4 quarters at 120 a minute = 2 s.
 				assertEquals(2_000_000L, convert(tune("semantic", "c8|")).getMicrosecondLength());
 				// ABC 2.1 (10.1): Q:120 and Q:C=120 are deprecated forms of "120 unit note-lengths (L:) per minute",
-				// and programs should accept them: 8 eighths at 120 a minute = 4 s
-				assertEquals(4_000_000L, convert(standard(tune("semantic", "c8|"))).getMicrosecondLength());
+				// and programs should accept them: 8 eighths at 120 a minute = 4 s. By Params.specTempo (the Q: note
+				// length counts), not standard2011.
+				assertEquals(4_000_000L, convert(specTempo(tune("semantic", "c8|"))).getMicrosecondLength());
 				assertEquals(4_000_000L,
-						convert(standard(tune("semantic", header("Q:C=120"), "c8|"))).getMicrosecondLength());
+						convert(specTempo(tune("semantic", header("Q:C=120"), "c8|"))).getMicrosecondLength());
+				assertEquals(2_000_000L, convert(standard(tune("semantic", "c8|"))).getMicrosecondLength());
+				// The header's L:, also one after the Q:; without L: the default (1/16 in 2/4: 16 sixteenths at 120 = 8 s)
+				assertEquals(8_000_000L, convert(specTempo(tune("semantic", AbcCase.concat(header("-L"),
+						new String[] { "L:1/16" }), "c16|"))).getMicrosecondLength());
+				assertEquals(8_000_000L,
+						convert(specTempo(tune("semantic", header("M:2/4", "-L"), "c16|"))).getMicrosecondLength());
 				// With L:1/4 the two readings are the same; a note length in Q: counts as before
 				assertEquals(2_000_000L,
-						convert(standard(tune("semantic", header("L:1/4"), "c4|"))).getMicrosecondLength());
+						convert(specTempo(tune("semantic", header("L:1/4"), "c4|"))).getMicrosecondLength());
 				assertEquals(2_000_000L,
-						convert(standard(tune("semantic", header("Q:1/4=120"), "c8|"))).getMicrosecondLength());
+						convert(specTempo(tune("semantic", header("Q:1/4=120"), "c8|"))).getMicrosecondLength());
+				// Maestro's own %%Q: counts the meter's beats, as before
+				assertEquals(List.of("0:1000000", "11520:500000"),
+						tempos(convert(specTempo(tune("semantic", "c d|", "%%Q: 120", "e f|")))));
+				// With Lotro errors: the meter's beats (Lotro's reading), the same as without specTempo
+				assertEquals(tempos(ConversionDump.convert(tune("semantic", "c8|"), Profile.ABC_PLAYER_STRICT)),
+						tempos(ConversionDump.convert(specTempo(tune("semantic", "c8|")), Profile.ABC_PLAYER_STRICT)));
 			}
 
 			@Disabled(NOT_YET)
@@ -996,7 +1008,9 @@ class AbcToMidiBehaviourTest {
 			assertEquals(60, tempo("M:2/2", "Q:1/4=120"));
 			assertEquals(120, tempo("M:4/4", "Q:1/4=120"));
 			assertEquals(200, tempo("M:5/4", "Q:1/4 3/8 1/4 3/8=40")); // A beat of several lengths: 5/4
-			assertEquals(120, tempo("M:6/8", "Q:120")); // Without a note length, the meter's denominator (as Lotro)
+			// Without a note length, unit notes (ABC 2.1, 10.1): 120 eighths, in 4/4 60 quarters
+			assertEquals(120, tempo("M:6/8", "Q:120"));
+			assertEquals(60, tempo("M:4/4", "Q:120"));
 			// Without Q: 120 beats, a dotted quarter in 6/8 9/8 12/8; a tempo word likewise
 			assertEquals(360, tempo("M:6/8", "-Q"));
 			assertEquals(120, tempo("M:3/4", "-Q"));
@@ -1011,7 +1025,7 @@ class AbcToMidiBehaviourTest {
 			assertEquals(bar, convert(specTempo(tune("semantic", header("M:6/8", "-Q"), "c6|"))).getMicrosecondLength());
 			// Parts must still have the same tempo
 			assertThrows(FileParseException.class, () -> convert(specTempo(AbcCase.of("semantic", AbcCase.concat(
-					AbcCases.part(1, "One", "c d|"), new String[] { "X:2", "T:Two", "M:4/4", "L:1/8", "Q:1/8=120", "K:C", "c d|" })))));
+					AbcCases.part(1, "One", "c d|"), new String[] { "X:2", "T:Two", "M:4/4", "L:1/8", "Q:1/4=120", "K:C", "c d|" })))));
 			// Without specTempo (the default, and existing projects), the meter's denominator, as in Lotro
 			assertEquals(120, abcInfoOf(tune("semantic", header("M:6/8", "Q:3/8=120"), "c d|")).getPrimaryTempoBPM());
 			assertEquals(120, abcInfoOf(tune("semantic", header("M:6/8", "-Q"), "c d|")).getPrimaryTempoBPM());

@@ -568,7 +568,8 @@ final class AbcCases {
 				.with(p -> p.standard2011 = true));
 		c.add(tune("accidentals_double_sharp_other_octave", "^^c c' C|"));
 		c.add(tune("accidentals_double_sharp_other_octave_std2011", "^^c c' C|").with(p -> p.standard2011 = true));
-		// F2f: Q:120 without a note length counts unit notes (L:), 10.1. Lotro: beats of the meter's denominator.
+		// F2f: Q:120 without a note length counts unit notes (L:), 10.1. Lotro: beats of the meter's denominator. By
+		// Params.specTempo, not standard2011: the _std2011 twins stay as Lotro's reading; MAESTRO_NEW_STANDARD has both.
 		c.add(tune("tempo_without_length", "c8|"));
 		c.add(tune("tempo_without_length_std2011", "c8|").with(p -> p.standard2011 = true));
 		c.add(tune("tempo_c_equals", header("Q:C=120"), "c8|"));

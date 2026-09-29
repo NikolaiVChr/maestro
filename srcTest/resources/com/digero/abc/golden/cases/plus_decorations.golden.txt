@@ -137,12 +137,12 @@ divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
 divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
 -- track 0 (6 events)
   0 META text type=0x05 "@TTest"
-  0 META tempo mpq=500000
+  0 META tempo mpq=1000000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
   0 META end_of_track
--- track 1 (14 events)
+-- track 1 (22 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Test"
@@ -151,10 +151,18 @@ divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
   5760 NOTE_ON ch=0 d1=74 d2=80 [LotroShortMessage]
   11520 NOTE_OFF ch=0 d1=74 d2=80 [LotroShortMessage]
   11520 NOTE_ON ch=0 d1=76 d2=80 [LotroShortMessage]
-  13018 NOTE_OFF ch=0 d1=76 d2=80 [LotroShortMessage]
-  13018 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
+  12269 NOTE_OFF ch=0 d1=76 d2=80 [LotroShortMessage]
+  12269 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
+  13018 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
+  13018 NOTE_ON ch=0 d1=76 d2=80 [LotroShortMessage]
+  13766 NOTE_OFF ch=0 d1=76 d2=80 [LotroShortMessage]
+  13766 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
   14515 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
   14515 NOTE_ON ch=0 d1=76 d2=80 [LotroShortMessage]
+  15264 NOTE_OFF ch=0 d1=76 d2=80 [LotroShortMessage]
+  15264 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
+  16013 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
+  16013 NOTE_ON ch=0 d1=76 d2=80 [LotroShortMessage]
   17280 NOTE_OFF ch=0 d1=76 d2=80 [LotroShortMessage]
   17280 META end_of_track
 == abcInfo
@@ -162,7 +170,7 @@ divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
   composer=""
   transcriber=""
   genre="" mood=""
-  primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
+  primaryTempoBPM=60 timeSignature=4/4 keySignature=C maj
   hasTriplets=false hasMixTimings=false barCount=1 partCount=2 partSetups=2..2 empty=false
   sourceFiles=[plus_decorations.abc]
   part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0

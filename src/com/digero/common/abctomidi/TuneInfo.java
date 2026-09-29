@@ -23,7 +23,8 @@ public class TuneInfo {
 	private long ppqn;
 	private int primaryTempoBPM; // In beats of the meter's denominator (M:6/8: eighths), like the MIDI's quarter notes
 	// Q: as written (ABC 2.1, 3.1.8): the beat as a fraction of a whole note, and the beats per minute. The beat is 0
-	// for Q:120 (the meter's denominator, as in LotRO) and FELT_BEAT for a tempo word or the default tempo.
+	// for Q:120 (the meter's denominator, as in LotRO), UNIT_NOTE_BEAT for Q:120 and Q:C=120 when the Q: note length
+	// counts (ABC 2.1, 10.1: unit note lengths, L:) and FELT_BEAT for a tempo word or the default tempo.
 	private double tempoBeat;
 	private int tempoBeatsPerMinute = 120;
 	private boolean standardTempo; // The Q: note length counts, as in ABC 2.1 (LotRO errors off); LotRO ignores it
@@ -300,14 +301,19 @@ public class TuneInfo {
 		this.compoundMeter = (meterNumerator % 3) == 0;
 		if (inHeader && (meterDenominator != oldDenominator || isCompoundForTempo() != wasCompound)) {
 			// ABC 2.1 lets M: come after Q: in a header: work the tempo out again for this meter
-			int bpm = toMeterBeats(tempoBeat, tempoBeatsPerMinute);
-			if (bpm != primaryTempoBPM) {
-				if (Integer.valueOf(primaryTempoBPM).equals(curPartTempoMap.get(0L)))
-					curPartTempoMap.put(0L, bpm);
-				if (!allPartsTempoFixed && Integer.valueOf(primaryTempoBPM).equals(allPartsTempoMap.get(0L)))
-					allPartsTempoMap.put(0L, bpm);
-				primaryTempoBPM = bpm;
-			}
+			retempo();
+		}
+	}
+
+	/** Works the tempo out again from the last Q:, after a header field that changes it (M: or L: after Q:). */
+	private void retempo() {
+		int bpm = toMeterBeats(tempoBeat, tempoBeatsPerMinute);
+		if (bpm != primaryTempoBPM) {
+			if (Integer.valueOf(primaryTempoBPM).equals(curPartTempoMap.get(0L)))
+				curPartTempoMap.put(0L, bpm);
+			if (!allPartsTempoFixed && Integer.valueOf(primaryTempoBPM).equals(allPartsTempoMap.get(0L)))
+				allPartsTempoMap.put(0L, bpm);
+			primaryTempoBPM = bpm;
 		}
 	}
 
@@ -340,6 +346,8 @@ public class TuneInfo {
 
 	/** A tempo word's or the default tempo's beat: a quarter, or a dotted quarter in 6/8 9/8 12/8 (per denominator). */
 	private static final double FELT_BEAT = -1;
+	/** The beat of Q:120 and Q:C=120 when the Q: note length counts: the unit note length, L: (ABC 2.1, 10.1). */
+	private static final double UNIT_NOTE_BEAT = -2;
 
 	/** Beats of the meter's denominator per minute: the tempo that is played (and written to the MIDI). */
 	private int toMeterBeats(double beat, int beatsPerMinute) {
@@ -347,6 +355,8 @@ public class TuneInfo {
 			return beatsPerMinute;
 		if (beat == FELT_BEAT)
 			return isCompoundForTempo() ? 3 * beatsPerMinute : beatsPerMinute;
+		if (beat == UNIT_NOTE_BEAT)
+			beat = getLNum() / (double) getLDenom();
 		return (int) Math.max(1, Math.round(beatsPerMinute * beat * meterDenominator));
 	}
 
@@ -358,8 +368,11 @@ public class TuneInfo {
 	/**
 	 * Q: (ABC 2.1, 3.1.8): [text] [beat[ beat...]=]bpm [text], e.g. Q:1/4=120, Q:3/8=120, Q:1/4 3/8=40, Q:"Allegro".
 	 * Sets tempoBeat and tempoBeatsPerMinute.
+	 *
+	 * @param qField From a Q: field, where Q:120 and Q:C=120 count unit note lengths when the Q: note length counts
+	 *               (ABC 2.1, 10.1); not Maestro's %%Q:, which counts the meter's beats
 	 */
-	private void parseTempo(String str) {
+	private void parseTempo(String str, boolean qField) {
 		// "Allegro" 1/4=120 or 1/4=120 "Allegro": the text goes; without a tempo, a tempo word sets it (else it stays)
 		int quote = str.indexOf('"');
 		if (quote >= 0) {
@@ -384,11 +397,16 @@ public class TuneInfo {
 			String[] parts = str.split("=");
 			int bpm;
 			double beat = 0;
+			boolean unitNotes = qField && standardTempo;
 			if (parts.length == 1) {
 				bpm = Integer.parseInt(parts[0].trim());
+				if (unitNotes)
+					beat = UNIT_NOTE_BEAT; // Q:120
 			} else if (parts.length == 2) {
 				bpm = Integer.parseInt(parts[1].trim());
 				beat = parseTempoBeat(parts[0]);
+				if (unitNotes && parts[0].trim().equals("C"))
+					beat = UNIT_NOTE_BEAT; // Q:C=120
 			} else {
 				throw new IllegalArgumentException("Unable to read tempo");
 			}
@@ -438,7 +456,10 @@ public class TuneInfo {
 		this.standardTempo = standardTempo;
 	}
 
-	/** The beat of the last Q:, as a fraction of a whole note; 0 for Q:120, FELT_BEAT (negative) for a tempo word. */
+	/**
+	 * The beat of the last Q:, as a fraction of a whole note; 0 for Q:120 (the meter's beat), negative for a tempo word
+	 * (FELT_BEAT) or unit notes (UNIT_NOTE_BEAT).
+	 */
 	public double getTempoBeat() {
 		return tempoBeat;
 	}
@@ -450,7 +471,8 @@ public class TuneInfo {
 
 	/**
 	 * A part's header ends (its first notes). Without any Q: so far, ABC 2.1 gives no tempo: 120 beats a minute, the
-	 * beat being a dotted quarter in 6/8 9/8 12/8 when the Q: note length counts (as in LotRO otherwise: eighths).
+	 * beat being a dotted quarter in 6/8 9/8 12/8 when the Q: note length counts (as in LotRO otherwise: eighths). A
+	 * Q:120 that counts unit notes takes the header's L:, also one after the Q:.
 	 */
 	public void endHeader() {
 		if (!tempoGiven && standardTempo) {
@@ -462,12 +484,15 @@ public class TuneInfo {
 				if (!allPartsTempoFixed)
 					allPartsTempoMap.putIfAbsent(0L, primaryTempoBPM);
 			}
+		} else if (standardTempo && tempoBeat == UNIT_NOTE_BEAT) {
+			// Q:120 counts unit notes: an L: after the Q: in the header counts too
+			retempo();
 		}
 		allPartsTempoFixed = true;
 	}
 
 	public void setPrimaryTempoBPM(String str) {
-		parseTempo(str);
+		parseTempo(str, true);
 		tempoGiven = true;
 		this.primaryTempoBPM = toMeterBeats(tempoBeat, tempoBeatsPerMinute);
 		if (!allPartsTempoMap.containsKey(0L))
@@ -480,7 +505,7 @@ public class TuneInfo {
 		// %%Q: (Maestro's tempo changes). The written Q: stays what getTempoBeat() and endHeader() see.
 		double beat = tempoBeat;
 		int beatsPerMinute = tempoBeatsPerMinute;
-		parseTempo(str);
+			parseTempo(str, false);
 		int bpm = toMeterBeats(tempoBeat, tempoBeatsPerMinute);
 		tempoBeat = beat;
 		tempoBeatsPerMinute = beatsPerMinute;

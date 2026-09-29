@@ -188,7 +188,7 @@ divisionType=0.0 resolution=11520 tickLength=57600 tracks=2
 divisionType=0.0 resolution=11520 tickLength=57600 tracks=2
 -- track 0 (6 events)
   0 META text type=0x05 "@TTest"
-  0 META tempo mpq=500000
+  0 META tempo mpq=1000000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
@@ -223,7 +223,7 @@ divisionType=0.0 resolution=11520 tickLength=57600 tracks=2
   composer=""
   transcriber=""
   genre="" mood=""
-  primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
+  primaryTempoBPM=60 timeSignature=4/4 keySignature=C maj
   hasTriplets=false hasMixTimings=false barCount=1 partCount=2 partSetups=2..2 empty=false
   sourceFiles=[dynamics_bang_all_std2011.abc]
   part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0

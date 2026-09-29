@@ -198,47 +198,6 @@ divisionType=0.0 resolution=11520 tickLength=11520 tracks=3
 == log: empty
 
 ### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
-== sequence
-divisionType=0.0 resolution=11520 tickLength=11520 tracks=3
--- track 0 (6 events)
-  0 META text type=0x05 "@TOne"
-  0 META tempo mpq=500000
-  0 META text type=0x03 "One"
-  0 META type=0x58 data=02021808
-  0 META type=0x59 data=0000
-  0 META end_of_track
--- track 1 (8 events)
-  0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
-  0 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  0 META text type=0x03 "One"
-  0 CONTROL_CHANGE ch=0 d1=10 d2=82 [LotroShortMessage]
-  2880 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  2880 NOTE_ON ch=0 d1=74 d2=80 [LotroShortMessage]
-  5760 NOTE_OFF ch=0 d1=74 d2=80 [LotroShortMessage]
-  5760 META end_of_track
--- track 2 (8 events)
-  0 PROGRAM_CHANGE ch=1 d1=24 d2=0 [LotroShortMessage]
-  0 NOTE_ON ch=1 d1=72 d2=80 [LotroShortMessage]
-  0 META text type=0x03 "Two"
-  0 CONTROL_CHANGE ch=1 d1=10 d2=46 [LotroShortMessage]
-  5760 NOTE_OFF ch=1 d1=72 d2=80 [LotroShortMessage]
-  5760 NOTE_ON ch=1 d1=74 d2=80 [LotroShortMessage]
-  11520 NOTE_OFF ch=1 d1=74 d2=80 [LotroShortMessage]
-  11520 META end_of_track
-== abcInfo
-  title="One"
-  composer=""
-  transcriber=""
-  genre="" mood=""
-  primaryTempoBPM=120 timeSignature=2/4 keySignature=C maj
-  hasTriplets=false hasMixTimings=false barCount=1 partCount=3 partSetups=3..3 empty=false
-  sourceFiles=[part_meter_does_not_carry_over.abc]
-  part 0: number=0 name="One" fullName="One" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
-  part 1: number=1 name="One" fullName="One" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..5 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=82 [LotroShortMessage]
-  part 2: number=2 name="Two" fullName="Two" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=6..8 pan=0 CONTROL_CHANGE ch=1 d1=10 d2=46 [LotroShortMessage]
-== regions (4)
-  #0 line=5 cols=[0,1) ticks=0..2880 note=72 track=1 bar=0 tiesFrom=- tiesTo=-
-  #1 line=8 cols=[0,1) ticks=0..5760 note=72 track=2 bar=0 tiesFrom=- tiesTo=-
-  #2 line=5 cols=[2,3) ticks=2880..5760 note=74 track=1 bar=0 tiesFrom=- tiesTo=-
-  #3 line=8 cols=[2,3) ticks=5760..11520 note=74 track=2 bar=1 tiesFrom=- tiesTo=-
+== EXCEPTION FileParseException: Error reading part_meter_does_not_carry_over.abc on line 9, column 1:
+All parts must have the same tempo (Q:60 here, Q:30 in the earlier parts)
 == log: empty

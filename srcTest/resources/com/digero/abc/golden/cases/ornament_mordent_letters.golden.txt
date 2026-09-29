@@ -194,40 +194,56 @@ divisionType=0.0 resolution=11520 tickLength=46080 tracks=2
 divisionType=0.0 resolution=11520 tickLength=46080 tracks=2
 -- track 0 (6 events)
   0 META text type=0x05 "@TTest"
-  0 META tempo mpq=500000
+  0 META tempo mpq=1000000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
   0 META end_of_track
--- track 1 (32 events)
+-- track 1 (48 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
-  1498 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  1498 NOTE_ON ch=0 d1=71 d2=80 [LotroShortMessage]
-  2995 NOTE_OFF ch=0 d1=71 d2=80 [LotroShortMessage]
-  2995 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  749 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  749 NOTE_ON ch=0 d1=71 d2=80 [LotroShortMessage]
+  1498 NOTE_OFF ch=0 d1=71 d2=80 [LotroShortMessage]
+  1498 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
   11520 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
   11520 NOTE_ON ch=0 d1=74 d2=80 [LotroShortMessage]
-  13018 NOTE_OFF ch=0 d1=74 d2=80 [LotroShortMessage]
-  13018 NOTE_ON ch=0 d1=76 d2=80 [LotroShortMessage]
-  14515 NOTE_OFF ch=0 d1=76 d2=80 [LotroShortMessage]
-  14515 NOTE_ON ch=0 d1=74 d2=80 [LotroShortMessage]
+  12269 NOTE_OFF ch=0 d1=74 d2=80 [LotroShortMessage]
+  12269 NOTE_ON ch=0 d1=76 d2=80 [LotroShortMessage]
+  13018 NOTE_OFF ch=0 d1=76 d2=80 [LotroShortMessage]
+  13018 NOTE_ON ch=0 d1=74 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=0 d1=74 d2=80 [LotroShortMessage]
   23040 NOTE_ON ch=0 d1=76 d2=80 [LotroShortMessage]
-  24538 NOTE_OFF ch=0 d1=76 d2=80 [LotroShortMessage]
-  24538 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
+  23789 NOTE_OFF ch=0 d1=76 d2=80 [LotroShortMessage]
+  23789 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
+  24538 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
+  24538 NOTE_ON ch=0 d1=76 d2=80 [LotroShortMessage]
+  25286 NOTE_OFF ch=0 d1=76 d2=80 [LotroShortMessage]
+  25286 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
   26035 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
   26035 NOTE_ON ch=0 d1=76 d2=80 [LotroShortMessage]
-  27533 NOTE_OFF ch=0 d1=76 d2=80 [LotroShortMessage]
-  27533 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
+  26784 NOTE_OFF ch=0 d1=76 d2=80 [LotroShortMessage]
+  26784 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
+  27533 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
+  27533 NOTE_ON ch=0 d1=76 d2=80 [LotroShortMessage]
+  28282 NOTE_OFF ch=0 d1=76 d2=80 [LotroShortMessage]
+  28282 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
   29030 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
   29030 NOTE_ON ch=0 d1=76 d2=80 [LotroShortMessage]
-  30528 NOTE_OFF ch=0 d1=76 d2=80 [LotroShortMessage]
-  30528 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
+  29779 NOTE_OFF ch=0 d1=76 d2=80 [LotroShortMessage]
+  29779 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
+  30528 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
+  30528 NOTE_ON ch=0 d1=76 d2=80 [LotroShortMessage]
+  31277 NOTE_OFF ch=0 d1=76 d2=80 [LotroShortMessage]
+  31277 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
   32026 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
   32026 NOTE_ON ch=0 d1=76 d2=80 [LotroShortMessage]
+  32774 NOTE_OFF ch=0 d1=76 d2=80 [LotroShortMessage]
+  32774 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
+  33523 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
+  33523 NOTE_ON ch=0 d1=76 d2=80 [LotroShortMessage]
   34560 NOTE_OFF ch=0 d1=76 d2=80 [LotroShortMessage]
   34560 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
   46080 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
@@ -237,7 +253,7 @@ divisionType=0.0 resolution=11520 tickLength=46080 tracks=2
   composer=""
   transcriber=""
   genre="" mood=""
-  primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
+  primaryTempoBPM=60 timeSignature=4/4 keySignature=C maj
   hasTriplets=false hasMixTimings=false barCount=1 partCount=2 partSetups=2..2 empty=false
   sourceFiles=[ornament_mordent_letters.abc]
   part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0

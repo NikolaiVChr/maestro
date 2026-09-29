@@ -226,7 +226,7 @@ divisionType=0.0 resolution=11520 tickLength=28800 tracks=3
 divisionType=0.0 resolution=11520 tickLength=28800 tracks=3
 -- track 0 (6 events)
   0 META text type=0x05 "@TOne"
-  0 META tempo mpq=500000
+  0 META tempo mpq=1000000
   0 META text type=0x03 "One"
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
@@ -258,7 +258,7 @@ divisionType=0.0 resolution=11520 tickLength=28800 tracks=3
   composer=""
   transcriber=""
   genre="" mood=""
-  primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
+  primaryTempoBPM=60 timeSignature=4/4 keySignature=C maj
   hasTriplets=false hasMixTimings=false barCount=1 partCount=3 partSetups=3..3 empty=false
   sourceFiles=[parts_different_length.abc]
   part 0: number=0 name="One" fullName="One" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0

@@ -23,5 +23,5 @@ All parts must have the same tempo (Q:100 here, Q:120 in the earlier parts)
 
 ### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
 == EXCEPTION FileParseException: Error reading parts_different_tempo.abc on line 12, column 3:
-All parts must have the same tempo (Q:100 here, Q:120 in the earlier parts)
+All parts must have the same tempo (Q:50 here, Q:60 in the earlier parts)
 == log: empty
