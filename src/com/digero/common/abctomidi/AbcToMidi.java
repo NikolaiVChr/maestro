@@ -73,7 +73,8 @@ public class AbcToMidi {
 		 * Play what ABC 2.1 (2011) says where Lotro plays it otherwise, and take the ABC 2.1 syntax Lotro doesn't
 		 * know. For standard ABC in Maestro, set like standardPitch; off for files made for Lotro, existing projects and
 		 * the ABC Player (it has no effect with Lotro errors on). Done: a broken rhythm with a chord (c>[ce], [ce]>d), a
-		 * chord's length (its first note's) and a unison (the longer note).
+		 * chord's length (its first note's), a unison (the longer note), and an accidental in every octave
+		 * (I:propagate-accidentals, default pitch).
 		 * The rest is still to do: see AbcToMidiBehaviourTest.Standard2011, whose tests of it are @Disabled.
 		 */
 		public boolean standard2011 = false;
@@ -363,15 +364,6 @@ public class AbcToMidi {
 	/** A note with its accidental and octave marks. */
 	private static final Pattern NOTE_OCTAVE_PATTERN = Pattern.compile("(\\^{1,2}|_{1,2}|=)?([A-Ga-g])(,+|'+)?");
 
-	/** :|: or :|] (also after more colons, ::|:), which Lotro refuses (tested, B2 and B4). */
-	private static final Pattern REPEAT_LOTRO_REFUSES_PATTERN = Pattern.compile(":\\|[:\\]]");
-
-	/** A repeat sign Lotro refuses, outside quoted text, decorations and inline fields. */
-	private static boolean hasRepeatLotroRefuses(String musicLine) {
-		return REPEAT_LOTRO_REFUSES_PATTERN.matcher(NOT_NOTES_PATTERN.matcher(stripComment(musicLine)).replaceAll(" "))
-				.find();
-	}
-
 	/** A note Lotro can't play: below C, or above c' (the range of its instruments' ABC). */
 	private static boolean hasNoteOutsideLotroRange(String musicLine) {
 		Matcher note = NOTE_OCTAVE_PATTERN.matcher(NOT_NOTES_PATTERN.matcher(stripComment(musicLine)).replaceAll(" "));
@@ -430,6 +422,7 @@ public class AbcToMidi {
 		info.setStandardPitch(standardPitch && !enableLotroErrors);
 		// Play ABC 2.1 where Lotro plays it otherwise (Params.standard2011); with Lotro errors, Lotro's reading
 		final boolean abc21 = standard2011 && !enableLotroErrors;
+		info.setStandard2011(abc21);
 		Sequence seq = null;
 		Track track = null;
 
@@ -529,7 +522,10 @@ public class AbcToMidi {
 					AbcField field = AbcField
 							.fromString(xInfoMatcher.group(XINFO_FIELD) + xInfoMatcher.group(XINFO_COLON));
 
-					if (field == AbcField.TEMPO) {
+					if (field == null) {
+						// %%linebreak, %%propagate-accidentals ...: the same as I: (ABC 2.1, 3.1.17), see AbcInstructions
+						info.applyInstruction(xInfoMatcher.group(XINFO_FIELD) + " " + xInfoMatcher.group(XINFO_VALUE));
+					} else if (field == AbcField.TEMPO) {
 						try {
 							info.addTempoEvent(Math.round(chordStartTick), xInfoMatcher.group(XINFO_VALUE).trim());
 						} catch (IllegalArgumentException e) {
@@ -2184,7 +2180,8 @@ public class AbcToMidi {
 
 	/**
 	 * The pitch of the note in the matcher: {noteId, lotroNoteId}. noteId has the instrument's octave when Lotro
-	 * instruments aren't used. A written accidental (^ _ =) is put in accidentals: in ABC it holds to the end of the bar.
+	 * instruments aren't used. A written accidental (^ _ =) is put in accidentals: in ABC it holds to the end of the bar,
+	 * for the same note in the same octave (Lotro), in every octave or for this note only (info.getAccidentalScope).
 	 */
 	private static int[] notePitch(Matcher m, TuneInfo info, Map<Integer, Integer> accidentals,
 								   boolean useLotroInstruments) {
@@ -2206,19 +2203,28 @@ public class AbcToMidi {
 		else if (!useLotroInstruments)
 			noteId += 12 * info.getInstrument().octaveDelta;
 
+		// The key of accidentals: the note in its octave, or (propagate-accidentals pitch) the note in every octave,
+		// negative so the two can't meet
+		AbcInstructions.AccidentalScope scope = info.getAccidentalScope();
+		int accidentalKey = (scope == AbcInstructions.AccidentalScope.PITCH) ? Math.floorMod(noteId, 12) - 12 : noteId;
+		Integer written = null;
 		String accidental = m.group(NOTE_ACCIDENTAL);
 		if (accidental != null) {
 			if (accidental.startsWith("_"))
-				accidentals.put(noteId, -accidental.length());
+				written = -accidental.length();
 			else if (accidental.startsWith("^"))
-				accidentals.put(noteId, accidental.length());
+				written = accidental.length();
 			else if (accidental.equals("="))
-				accidentals.put(noteId, 0);
+				written = 0;
 		}
+		if (written != null && scope != AbcInstructions.AccidentalScope.NOT)
+			accidentals.put(accidentalKey, written);
 
 		int noteDelta;
-		if (accidentals.containsKey(noteId)) {
-			noteDelta = accidentals.get(noteId);
+		if (written != null) {
+			noteDelta = written;
+		} else if (accidentals.containsKey(accidentalKey)) {
+			noteDelta = accidentals.get(accidentalKey);
 		} else {
 			// Use the key signature to determine the accidental
 			noteDelta = info.getKey().getDefaultAccidental(noteId).deltaNoteId;

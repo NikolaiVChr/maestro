@@ -171,10 +171,10 @@ divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
   5760 NOTE_OFF ch=0 d1=74 d2=80 [LotroShortMessage]
-  5760 NOTE_ON ch=0 d1=84 d2=80 [LotroShortMessage]
-  11520 NOTE_OFF ch=0 d1=84 d2=80 [LotroShortMessage]
-  11520 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
-  17280 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  5760 NOTE_ON ch=0 d1=86 d2=80 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=86 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=62 d2=80 [LotroShortMessage]
+  17280 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
   17280 META end_of_track
 == abcInfo
   title="Test"
@@ -188,6 +188,6 @@ divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
   part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
 == regions (3)
   #0 line=6 cols=[0,3) ticks=0..5760 note=74 track=1 bar=0 tiesFrom=- tiesTo=-
-  #1 line=6 cols=[4,6) ticks=5760..11520 note=84 track=1 bar=0 tiesFrom=- tiesTo=-
-  #2 line=6 cols=[7,8) ticks=11520..17280 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=6 cols=[4,6) ticks=5760..11520 note=86 track=1 bar=0 tiesFrom=- tiesTo=-
+  #2 line=6 cols=[7,8) ticks=11520..17280 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
 == log: empty

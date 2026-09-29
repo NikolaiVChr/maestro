@@ -28,6 +28,7 @@ public class TuneInfo {
 	private int tempoBeatsPerMinute = 120;
 	private boolean standardTempo; // The Q: note length counts, as in ABC 2.1 (LotRO errors off); LotRO ignores it
 	private boolean standardPitch; // C is middle C, whatever the instrument (ABC 2.1); LotRO's octave depends on it
+	private boolean standard2011; // Params.standard2011 (and LotRO errors off): ABC 2.1 where LotRO plays otherwise
 	private boolean tempoGiven; // A Q: so far
 	private boolean allPartsTempoFixed; // The first part's header has ended: its tempo is the song's
 	private final NavigableMap<Long, Integer> curPartTempoMap = new TreeMap<>(); // Tick -> BPM
@@ -141,6 +142,19 @@ public class TuneInfo {
 	/** The I:linebreak and I:decoration instructions that apply here. */
 	public AbcInstructions getInstructions() {
 		return instructions;
+	}
+
+	/** Params.standard2011, and LotRO errors off. */
+	public void setStandard2011(boolean standard2011) {
+		this.standard2011 = standard2011;
+	}
+
+	/**
+	 * How far a written accidental reaches, to the end of the bar: with standard2011, as I:propagate-accidentals says
+	 * (ABC 2.1, 11.3; default: every octave). Else as LotRO plays it (tested, B66): the same note in the same octave.
+	 */
+	public AbcInstructions.AccidentalScope getAccidentalScope() {
+		return standard2011 ? instructions.getPropagateAccidentals() : AbcInstructions.AccidentalScope.OCTAVE;
 	}
 
 	public void setTitle(String title, boolean fromExtendedInfo) {

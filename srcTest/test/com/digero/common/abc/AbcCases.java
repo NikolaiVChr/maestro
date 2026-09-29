@@ -553,8 +553,8 @@ final class AbcCases {
 		// F2b: a unison sounds both notes (4.17); one MIDI channel can't, so the longer one plays. Lotro: the first.
 		c.add(tune("chord_unison_variants", "[cc2] z2 [c2c] z2 [^c_d2] z2|"));
 		c.add(tune("chord_unison_variants_std2011", "[cc2] z2 [c2c] z2 [^c_d2] z2|").with(p -> p.standard2011 = true));
-		// F2d: a tie carries its accidental over the bar line to the continuation only (staff notation). Lotro: the
-		// bar line ends it, so ^c-|c doesn't connect.
+		// F2d, no difference after all: ABC 2.1 (4.11) ties two notes of the same pitch, and the bar line ends the
+		// accidental, so ^c-|c doesn't connect in either reading (as in Lotro). The twins show that they agree.
 		c.add(tune("tie_accidental_across_bar_std2011", "^c-|c d|").with(p -> p.standard2011 = true));
 		c.add(tune("tie_accidental_across_bar_then_same_note_std2011", "^c-|c c|").with(p -> p.standard2011 = true));
 		c.add(tune("tie_key_signature_across_bar_std2011", header("K:D"), "=f-|f d|").with(p -> p.standard2011 = true));

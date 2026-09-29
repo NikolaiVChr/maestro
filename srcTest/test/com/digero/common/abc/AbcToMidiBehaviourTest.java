@@ -42,7 +42,9 @@ class AbcToMidiBehaviourTest {
 	 * the case tests.
 	 */
 	static final Set<String> OUT_OF_RANGE_CASES = Set.of("notes_octaves_extreme", "lotro_note_too_low",
-			"lotro_note_too_high");
+			"lotro_note_too_high",
+			// With Params.standard2011 an accidental reaches every octave: ^c c' plays c' sharp, above Lotro's c'
+			"accidentals_per_octave_std2011", "accidentals_double_sharp_other_octave_std2011", "standard_pitch_and_2011");
 
 	static Stream<AbcCase> casesInRange() {
 		return AbcCases.all().stream().filter(c -> !OUT_OF_RANGE_CASES.contains(c.name()));
@@ -318,34 +320,69 @@ class AbcToMidiBehaviourTest {
 						noteEvents(convert(standard(tune("semantic", "c- d c|")))));
 			}
 
-			@Disabled(NOT_YET)
 			@Test
-			void tieCarriesItsAccidentalOverTheBarLine() throws Exception {
-				// Lotro (tested): the bar line ends the sharp, so ^c-|c ties C# to C and doesn't connect (an error);
-				// the continuation must repeat the sharp
+			void tieNeedsTheSamePitchAfterTheBarLine() throws Exception {
+				// ABC 2.1 (4.11): a tie joins "two notes of the same pitch", within or between bars, and the bar line
+				// ends an accidental as always. So ^c-|c ties C# to C, which doesn't connect: an error, in both readings
+				// and as in Lotro (tested). The continuation repeats the sharp: ^c-|^c. (Staff notation carries the
+				// accidental over a tie; ABC doesn't say so, and Lotro doesn't: standard2011 changes nothing here.)
 				assertThrows(FileParseException.class, () -> convert(tune("semantic", "^c-|c d|")));
-				// Staff notation, which ABC 2.1 follows (it says nothing of it): a tie carries its accidental over the
-				// bar line to the continuation, and only to it. ^c-|c c : C# for a quarter, then a plain C.
-				Sequence s = convert(standard(tune("semantic", "^c-|c c|")));
+				assertThrows(FileParseException.class, () -> convert(standard(tune("semantic", "^c-|c d|"))));
+				Sequence s = convert(standard(tune("semantic", "^c-|^c d|")));
 				long q = s.getResolution();
-				assertEquals(List.of(on(0, 61), off(q, 61), on(q, 60), off(3 * q / 2, 60)), noteEvents(s));
-				// Repeating the sharp after the bar still works
-				assertEquals(noteEvents(convert(tune("semantic", "^c-|^c d|"))),
-						noteEvents(convert(standard(tune("semantic", "^c-|^c d|")))));
+				assertEquals(List.of(on(0, 61), off(q, 61), on(q, 62), off(3 * q / 2, 62)), noteEvents(s));
+				assertEquals(noteEvents(convert(tune("semantic", "^c-|^c d|"))), noteEvents(s));
+				// In the same bar the sharp still holds, so both ^c-c and ^c-^c are one C# (Lotro plays both)
+				for (String body : List.of("^c-c d|", "^c-^c d|")) {
+					assertEquals(List.of(on(0, 61), off(q, 61), on(q, 62), off(3 * q / 2, 62)),
+							noteEvents(convert(tune("semantic", body))), body);
+					assertEquals(noteEvents(convert(tune("semantic", body))),
+							noteEvents(convert(standard(tune("semantic", body)))), body);
+				}
 			}
 
-			@Disabled(NOT_YET)
 			@Test
 			void accidentalAppliesInEveryOctave() throws Exception {
-				// Lotro's reading (untested in Lotro, B66): an accidental applies in its own octave, to the bar line
-				assertEquals(List.of(61, 72, 48, 61),
-						noteOns(convert(tune("semantic", "^c c' C c|"))).stream().map(NoteEvent::pitch).toList());
+				// Lotro (tested, B66): an accidental applies in its own octave, to the bar line
+				assertEquals(List.of(61, 72, 48, 61), pitches(tune("semantic", "^c c' C c|")));
 				// ABC 2.1 (11.3, %%propagate-accidentals, default "pitch"): to the same note in every octave, to the
 				// bar line
-				assertEquals(List.of(61, 73, 49, 61),
-						noteOns(convert(standard(tune("semantic", "^c c' C c|")))).stream().map(NoteEvent::pitch).toList());
-				assertEquals(List.of(61, 72),
-						noteOns(convert(standard(tune("semantic", "^c|c'|")))).stream().map(NoteEvent::pitch).toList());
+				assertEquals(List.of(61, 73, 49, 61), pitches(standard(tune("semantic", "^c c' C c|"))));
+				assertEquals(List.of(61, 72), pitches(standard(tune("semantic", "^c|c'|"))));
+				// A later accidental, in any octave, replaces it in every octave
+				assertEquals(List.of(61, 71, 59), pitches(standard(tune("semantic", "^c _c' c|"))));
+			}
+
+			@Test
+			void propagateAccidentalsDirective() throws Exception {
+				// %%propagate-accidentals (ABC 2.1, 11.3), also as I: in the header or inline: octave (as Lotro plays it)
+				// or not (the accidental only on its own note)
+				assertEquals(List.of(61, 72, 61),
+						pitches(standard(tune("semantic", "%%propagate-accidentals octave", "^c c' c|"))));
+				assertEquals(List.of(61, 72, 61), pitches(standard(tune("semantic",
+						AbcCase.concat(header(), new String[] { "I:propagate-accidentals octave" }), "^c c' c|"))));
+				assertEquals(List.of(61, 72, 60),
+						pitches(standard(tune("semantic", "[I:propagate-accidentals not] ^c c' c|"))));
+				// From where it is: before it the default (pitch)
+				assertEquals(List.of(61, 73, 61, 60),
+						pitches(standard(tune("semantic", "^c c'|", "I:propagate-accidentals not", "^c c|"))));
+				// Without the flag, or with Lotro errors, Lotro's reading: octave, whatever the file says
+				assertEquals(List.of(61, 72, 61),
+						pitches(tune("semantic", "%%propagate-accidentals pitch", "^c c' c|")));
+				assertEquals(List.of(61, 72, 61), noteOns(ConversionDump.convert(standard(tune("semantic",
+						"%%propagate-accidentals not", "^c c' c|")), Profile.ABC_PLAYER_STRICT)).stream().map(NoteEvent::pitch)
+						.toList());
+				// The file header's directive applies to every tune
+				AbcCase book = AbcCase.of("semantic", AbcCase.concat(new String[] { "%%propagate-accidentals not" },
+						AbcCases.part(1, "One", "^c c|"), AbcCases.part(2, "Two", "^c c|")));
+				Sequence s = convert(standard(book));
+				assertEquals(List.of(61, 60), noteOns(s, 1).stream().map(NoteEvent::pitch).toList());
+				assertEquals(List.of(61, 60), noteOns(s, 2).stream().map(NoteEvent::pitch).toList());
+			}
+
+			/** The pitches of the notes of track 1, in order. */
+			private List<Integer> pitches(AbcCase abcCase) throws Exception {
+				return noteOns(convert(abcCase)).stream().map(NoteEvent::pitch).toList();
 			}
 
 			@Disabled(NOT_YET)

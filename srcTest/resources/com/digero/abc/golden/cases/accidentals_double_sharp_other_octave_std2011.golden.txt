@@ -3,7 +3,7 @@ case accidentals_double_sharp_other_octave_std2011
 
 ### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
 == sequence
-divisionType=0.0 resolution=11520 tickLength=31049 tracks=2
+divisionType=0.0 resolution=11520 tickLength=35712 tracks=2
 -- track 0 (6 events)
   0 META text type=0x05 "@TTest"
   0 META tempo mpq=500000
@@ -20,11 +20,11 @@ divisionType=0.0 resolution=11520 tickLength=31049 tracks=2
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=0 d1=62 d2=106 [LotroShortMessage]
-  5760 NOTE_ON ch=0 d1=72 d2=106 [LotroShortMessage]
-  11520 NOTE_OFF ch=0 d1=72 d2=106 [LotroShortMessage]
-  11520 NOTE_ON ch=0 d1=48 d2=106 [LotroShortMessage]
-  17280 NOTE_OFF ch=0 d1=48 d2=106 [LotroShortMessage]
-  31049 META end_of_track
+  5760 NOTE_ON ch=0 d1=74 d2=106 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=74 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=50 d2=106 [LotroShortMessage]
+  17280 NOTE_OFF ch=0 d1=50 d2=106 [LotroShortMessage]
+  35712 META end_of_track
 == abcInfo
   title="Test"
   composer=""
@@ -37,9 +37,10 @@ divisionType=0.0 resolution=11520 tickLength=31049 tracks=2
   part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
 == regions (3)
   #0 line=6 cols=[0,3) ticks=0..5760 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
-  #1 line=6 cols=[4,6) ticks=5760..11520 note=72 track=1 bar=0 tiesFrom=- tiesTo=-
-  #2 line=6 cols=[7,8) ticks=11520..17280 note=48 track=1 bar=0 tiesFrom=- tiesTo=-
-== log: empty
+  #1 line=6 cols=[4,6) ticks=5760..11520 note=74 track=1 bar=0 tiesFrom=- tiesTo=-
+  #2 line=6 cols=[7,8) ticks=11520..17280 note=50 track=1 bar=0 tiesFrom=- tiesTo=-
+== log
+  WARNING: Unable to find duration for note 74 in Lute of Ages
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
 == sequence
@@ -97,10 +98,10 @@ divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
   5760 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
-  5760 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  11520 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  11520 NOTE_ON ch=0 d1=48 d2=80 [LotroShortMessage]
-  17280 NOTE_OFF ch=0 d1=48 d2=80 [LotroShortMessage]
+  5760 NOTE_ON ch=0 d1=74 d2=80 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=74 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=50 d2=80 [LotroShortMessage]
+  17280 NOTE_OFF ch=0 d1=50 d2=80 [LotroShortMessage]
   17280 META end_of_track
 == abcInfo
   title="Test"
@@ -114,8 +115,8 @@ divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
   part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
 == regions (3)
   #0 line=6 cols=[0,3) ticks=0..5760 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
-  #1 line=6 cols=[4,6) ticks=5760..11520 note=72 track=1 bar=0 tiesFrom=- tiesTo=-
-  #2 line=6 cols=[7,8) ticks=11520..17280 note=48 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=6 cols=[4,6) ticks=5760..11520 note=74 track=1 bar=0 tiesFrom=- tiesTo=-
+  #2 line=6 cols=[7,8) ticks=11520..17280 note=50 track=1 bar=0 tiesFrom=- tiesTo=-
 == log: empty
 
 ### profile MAESTRO_NEW_LOTRO (useLotroInstruments=false, enableLotroErrors=false, Lotro Abc)
@@ -134,10 +135,10 @@ divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
   5760 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
-  5760 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  11520 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  11520 NOTE_ON ch=0 d1=48 d2=80 [LotroShortMessage]
-  17280 NOTE_OFF ch=0 d1=48 d2=80 [LotroShortMessage]
+  5760 NOTE_ON ch=0 d1=74 d2=80 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=74 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=50 d2=80 [LotroShortMessage]
+  17280 NOTE_OFF ch=0 d1=50 d2=80 [LotroShortMessage]
   17280 META end_of_track
 == abcInfo
   title="Test"
@@ -151,8 +152,8 @@ divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
   part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
 == regions (3)
   #0 line=6 cols=[0,3) ticks=0..5760 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
-  #1 line=6 cols=[4,6) ticks=5760..11520 note=72 track=1 bar=0 tiesFrom=- tiesTo=-
-  #2 line=6 cols=[7,8) ticks=11520..17280 note=48 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=6 cols=[4,6) ticks=5760..11520 note=74 track=1 bar=0 tiesFrom=- tiesTo=-
+  #2 line=6 cols=[7,8) ticks=11520..17280 note=50 track=1 bar=0 tiesFrom=- tiesTo=-
 == log: empty
 
 ### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
@@ -171,10 +172,10 @@ divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
   5760 NOTE_OFF ch=0 d1=74 d2=80 [LotroShortMessage]
-  5760 NOTE_ON ch=0 d1=84 d2=80 [LotroShortMessage]
-  11520 NOTE_OFF ch=0 d1=84 d2=80 [LotroShortMessage]
-  11520 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
-  17280 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  5760 NOTE_ON ch=0 d1=86 d2=80 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=86 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=62 d2=80 [LotroShortMessage]
+  17280 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
   17280 META end_of_track
 == abcInfo
   title="Test"
@@ -188,6 +189,6 @@ divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
   part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
 == regions (3)
   #0 line=6 cols=[0,3) ticks=0..5760 note=74 track=1 bar=0 tiesFrom=- tiesTo=-
-  #1 line=6 cols=[4,6) ticks=5760..11520 note=84 track=1 bar=0 tiesFrom=- tiesTo=-
-  #2 line=6 cols=[7,8) ticks=11520..17280 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=6 cols=[4,6) ticks=5760..11520 note=86 track=1 bar=0 tiesFrom=- tiesTo=-
+  #2 line=6 cols=[7,8) ticks=11520..17280 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
 == log: empty

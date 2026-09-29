@@ -72,6 +72,35 @@ class AbcInstructionsTest {
 	}
 
 	@Test
+	void propagateAccidentals() {
+		// ABC 2.1 (11.3): not, octave or pitch (the default); another value, or none, changes nothing
+		AbcInstructions instructions = new AbcInstructions();
+		assertEquals(AbcInstructions.AccidentalScope.PITCH, instructions.getPropagateAccidentals());
+		assertTrue(instructions.apply("propagate-accidentals not"));
+		assertEquals(AbcInstructions.AccidentalScope.NOT, instructions.getPropagateAccidentals());
+		assertTrue(instructions.apply("propagate-accidentals Octave"));
+		assertEquals(AbcInstructions.AccidentalScope.OCTAVE, instructions.getPropagateAccidentals());
+		assertTrue(instructions.apply("propagate-accidentals sometimes"));
+		assertTrue(instructions.apply("propagate-accidentals"));
+		assertEquals(AbcInstructions.AccidentalScope.OCTAVE, instructions.getPropagateAccidentals());
+		assertEquals(AbcInstructions.AccidentalScope.OCTAVE, instructions.copy().getPropagateAccidentals());
+		// %%writeout-accidentals only changes how a score is printed: not kept
+		assertFalse(instructions.apply("writeout-accidentals all"));
+	}
+
+	@Test
+	void accidentalScopeFollowsTheFileOnlyWithStandard2011() {
+		// Without Params.standard2011 LotRO's reading: the same octave, whatever the file says (B66)
+		TuneInfo info = new TuneInfo();
+		info.newFile();
+		info.applyInstruction("propagate-accidentals not");
+		info.newPart(1);
+		assertEquals(AbcInstructions.AccidentalScope.OCTAVE, info.getAccidentalScope());
+		info.setStandard2011(true);
+		assertEquals(AbcInstructions.AccidentalScope.NOT, info.getAccidentalScope());
+	}
+
+	@Test
 	void otherInstructionsAreNotKept() {
 		AbcInstructions instructions = new AbcInstructions();
 		assertFalse(instructions.apply("MIDI program 73"));

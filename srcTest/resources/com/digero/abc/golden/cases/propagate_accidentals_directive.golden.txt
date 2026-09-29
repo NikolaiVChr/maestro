@@ -173,8 +173,8 @@ divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
   5760 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
   5760 NOTE_ON ch=0 d1=84 d2=80 [LotroShortMessage]
   11520 NOTE_OFF ch=0 d1=84 d2=80 [LotroShortMessage]
-  11520 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
-  17280 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  17280 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
   17280 META end_of_track
 == abcInfo
   title="Test"
@@ -189,5 +189,5 @@ divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
 == regions (3)
   #0 line=7 cols=[0,2) ticks=0..5760 note=73 track=1 bar=0 tiesFrom=- tiesTo=-
   #1 line=7 cols=[3,5) ticks=5760..11520 note=84 track=1 bar=0 tiesFrom=- tiesTo=-
-  #2 line=7 cols=[6,7) ticks=11520..17280 note=73 track=1 bar=0 tiesFrom=- tiesTo=-
+  #2 line=7 cols=[6,7) ticks=11520..17280 note=72 track=1 bar=0 tiesFrom=- tiesTo=-
 == log: empty
