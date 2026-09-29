@@ -408,13 +408,14 @@ public class AbcToMidi {
 	public static Sequence convert(Params params) throws FileParseException {
 		return convert(params.filesData, params.useLotroInstruments, params.instrumentOverrideMap, params.abcInfo,
 				params.enableLotroErrors, params.stereo, params.generateRegions, params.expandRepeats, params.specTempo,
-				params.standardPitch, params.chordAccompaniment, params.warningHandler);
+				params.standardPitch, params.chordAccompaniment, params.standard2011, params.warningHandler);
 	}
 
 	private static Sequence convert(List<FileAndData> filesData, boolean useLotroInstruments,
 									Map<Integer, LotroInstrument> instrumentOverrideMap, AbcInfo abcInfo, final boolean enableLotroErrors,
 									final int stereo, final boolean generateRegions, final boolean expandRepeats, boolean specTempo,
-									boolean standardPitch, boolean chordAccompaniment, WarningHandler warningHandler)
+									boolean standardPitch, boolean chordAccompaniment, boolean standard2011,
+									WarningHandler warningHandler)
 			throws FileParseException {
 		if (abcInfo == null)
 			abcInfo = new AbcInfo();
@@ -426,6 +427,8 @@ public class AbcToMidi {
 		TuneInfo info = new TuneInfo();
 		info.setStandardTempo(specTempo && !enableLotroErrors);
 		info.setStandardPitch(standardPitch && !enableLotroErrors);
+		// Play ABC 2.1 where Lotro plays it otherwise (Params.standard2011); with Lotro errors, Lotro's reading
+		final boolean abc21 = standard2011 && !enableLotroErrors;
 		Sequence seq = null;
 		Track track = null;
 
@@ -949,6 +952,7 @@ public class AbcToMidi {
 					// neither like that (tested), so with Lotro errors they're errors.
 					long chordBrokenNumerator = 1;
 					long chordBrokenDenominator = 1;
+					boolean chordBrokenFirstNoteOnly = false; // c>[ce] as Lotro plays it: only c is shortened
 					String chordBrokenStr = ""; // The > or < after the chord
 					int nextBrokenNumerator = 1;
 					int nextBrokenDenominator = 1;
@@ -1059,6 +1063,7 @@ public class AbcToMidi {
 
 									chordBrokenNumerator = 1;
 									chordBrokenDenominator = 1;
+									chordBrokenFirstNoteOnly = false;
 									chordBrokenStr = "";
 									nextBrokenNumerator = 1;
 									nextBrokenDenominator = 1;
@@ -1068,9 +1073,12 @@ public class AbcToMidi {
 													+ "broken rhythm (c>[ce]), the others keep their length; write the lengths "
 													+ "on the notes instead", fileName, lineNumber, i);
 										}
-										// c>[ce] : the chord gets the second part of the broken rhythm
+										// c>[ce] : the chord gets the second part of the broken rhythm. ABC 2.1 (4.4, 4.17): the
+										// whole chord. Lotro (tested, B6 and B31): only the chord's first note, the others keep
+										// their length, and the next note follows the shortened one (the chord's shortest).
 										chordBrokenNumerator = brokenRhythmNumerator;
 										chordBrokenDenominator = brokenRhythmDenominator;
+										chordBrokenFirstNoteOnly = !abc21;
 										brokenRhythmNumerator = 1;
 										brokenRhythmDenominator = 1;
 									}
@@ -1114,10 +1122,19 @@ public class AbcToMidi {
 											throw new LotroFileParseException("Lotro refuses a part with a tie after a chord ([ce]-); "
 													+ "tie each note in the chord instead, e.g. [c-e-]", fileName, lineNumber, tieAt);
 										}
-										// [ce]>d : broken rhythm after the chord
+										// [ce]>d : broken rhythm after the chord. ABC 2.1 (4.4): like after a note. Lotro refuses
+										// it (tested, B5), so without standard2011 it's an error.
 										int brokenStart = tieAt + (chordTied ? 1 : 0);
+										if (!abc21 && brokenStart < line.length()
+												&& (line.charAt(brokenStart) == '>' || line.charAt(brokenStart) == '<')) {
+											String message = "Lotro refuses a part with a broken rhythm after a chord ([ce]>d); write "
+													+ "the lengths on the notes instead, e.g. [c3/2e3/2] d/";
+											if (enableLotroErrors)
+												throw new LotroFileParseException(message, fileName, lineNumber, brokenStart);
+											throw new FileParseException(message, fileName, lineNumber, brokenStart);
+										}
 										int brokenEnd = brokenStart;
-										while (!enableLotroErrors && brokenEnd < line.length()
+										while (brokenEnd < line.length()
 												&& (line.charAt(brokenEnd) == '>' || line.charAt(brokenEnd) == '<')
 												&& line.charAt(brokenEnd) == line.charAt(brokenStart))
 											brokenEnd++;
@@ -1631,8 +1648,11 @@ public class AbcToMidi {
 								denominator = multiplyLength(denominator, factor, fileName, lineNumber, m.start());
 							}
 						} else if (inChord) {
-							numerator = multiplyLength(numerator, chordBrokenNumerator, fileName, lineNumber, m.start());
-							denominator = multiplyLength(denominator, chordBrokenDenominator, fileName, lineNumber, m.start());
+							// c>[ce] as Lotro plays it (chordBrokenFirstNoteOnly): the chord's other notes keep their length
+							if (chordSize == 1 || !chordBrokenFirstNoteOnly) {
+								numerator = multiplyLength(numerator, chordBrokenNumerator, fileName, lineNumber, m.start());
+								denominator = multiplyLength(denominator, chordBrokenDenominator, fileName, lineNumber, m.start());
+							}
 						} else {
 							numerator = multiplyLength(numerator, brokenRhythmNumerator, fileName, lineNumber, m.start());
 							denominator = multiplyLength(denominator, brokenRhythmDenominator, fileName, lineNumber, m.start());

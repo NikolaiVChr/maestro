@@ -2,10 +2,12 @@ package com.digero.maestro.abc;
 
 import static java.awt.Frame.getFrames;
 
+import java.awt.*;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,8 +31,7 @@ import java.util.logging.Logger;
 import java.util.NavigableMap;
 
 import javax.sound.midi.InvalidMidiDataException;
-import javax.swing.DefaultListModel;
-import javax.swing.JOptionPane;
+import javax.swing.*;
 import javax.xml.xpath.XPathExpressionException;
 
 import com.aifel.abctools.AbcTools;
@@ -280,7 +281,14 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		params.useLotroInstruments = false;
 		abcImportVersion = 2; // New songs play the repeats and dont use wrong tempo; saved in the project
 		// Standard ABC (folk tunes) plays at its written pitch; ABC made for LotRO keeps its instrument octaves. Saved.
-		sourceAbcWasMadeForLotro = AbcToMidi.isMadeForLotro(params.filesData);//TODO: ask user
+		sourceAbcWasMadeForLotro = AbcToMidi.isMadeForLotro(params.filesData);
+		if (sourceAbcWasMadeForLotro == null) {
+			Boolean result = askMadeForLotro(file.getName());
+			if (result == null) {
+				throw new FileParseException("User did not decide on Abc type", file.getName());
+			}
+			sourceAbcWasMadeForLotro = result;
+		}
 		boolean standardAbc = abcImportVersion > 1 && Boolean.FALSE.equals(sourceAbcWasMadeForLotro);
 		params.standardPitch = standardAbc;
 		params.expandRepeats = standardAbc;
@@ -373,6 +381,48 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		setTempoFactor(abcInfo.getPrimaryTempoBPM(), abcInfo.getPrimaryTempoBPM());
 		lyricLines = null;
         note = "";
+	}
+
+	/**
+	 * Asks whether an ABC file that shows no sign either way (AbcToMidi.isMadeForLotro gave null) is made for Lotro.
+	 *
+	 * @return TRUE or FALSE, or null if the dialog was closed. Without a screen (headless): TRUE, the reading Maestro
+	 *         always used.
+	 */
+	private static Boolean askMadeForLotro(String fileName) {
+		if (GraphicsEnvironment.isHeadless())
+			return Boolean.TRUE;
+		Boolean[] answer = new Boolean[1];
+		Runnable ask = () -> {
+			Component parent = null;
+			for (Frame frame : Frame.getFrames()) {
+				if (frame.isVisible()) {
+					parent = frame;
+					break;
+				}
+			}
+			String[] options = { "Made for Lotro", "Standard ABC" };
+			int result = JOptionPane.showOptionDialog(parent,
+					"<html>Is " + fileName + " made for Lotro, or is it standard ABC (e.g. a folk tune)?<br>"
+							+ "Nothing in the file tells. ABC made for Lotro is written an octave lower than standard ABC,<br>"
+							+ "so the wrong choice puts every part an octave off and can be interpreted differently." +
+							  " The choice is saved with the project.</html>",
+					"ABC file type", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+			answer[0] = (result == 0) ? Boolean.TRUE : (result == 1) ? Boolean.FALSE : null;
+		};
+		if (SwingUtilities.isEventDispatchThread()) {
+			ask.run();
+		} else {
+			try {
+				SwingUtilities.invokeAndWait(ask);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				return null;
+			} catch (InvocationTargetException e) {
+				throw new RuntimeException(e.getCause());
+			}
+		}
+		return answer[0];
 	}
 
 	/**
@@ -688,6 +738,13 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 					// Not decided for this source yet (a MIDI project whose source became this ABC file): decide once,
 					// saved with the project
 					sourceAbcWasMadeForLotro = AbcToMidi.isMadeForLotro(params.filesData);
+					if (sourceAbcWasMadeForLotro == null) {
+						Boolean result = askMadeForLotro(newSourceFile.getName());
+						if (result == null) {
+							throw new FileParseException("User did not decide on Abc type", newSourceFile.getName());
+						}
+						sourceAbcWasMadeForLotro = result;
+					}
 				}
 				boolean standardAbc = abcImportVersion > 1 && Boolean.FALSE.equals(sourceAbcWasMadeForLotro);
 				params.standardPitch = standardAbc;

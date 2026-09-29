@@ -46,8 +46,8 @@ divisionType=0.0 resolution=11520 tickLength=34838 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION FileParseException: Error reading broken_after_chord_std2011.abc on line 7, column 5:
-Unknown/unexpected character '>'
+== EXCEPTION LotroFileParseException: Error reading broken_after_chord_std2011.abc on line 7, column 5:
+Lotro refuses a part with a broken rhythm after a chord ([ce]>d); write the lengths on the notes instead, e.g. [c3/2e3/2] d/
 == log: empty
 
 ### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)
