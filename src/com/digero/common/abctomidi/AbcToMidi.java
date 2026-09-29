@@ -1431,6 +1431,16 @@ public class AbcToMidi {
 											k++;
 											continue;
 										}
+										if (c == '(' || c == ')') {
+											// A slur over the grace notes, {(B/c/B/^A/)} (Village Music Project): layout only.
+											// ABC 2.1 (4.12) doesn't say; untested in Lotro.
+											if (enableLotroErrors) {
+												throw new LotroFileParseException("A slur inside grace notes is untested in Lotro; "
+														+ "leave it out", fileName, lineNumber, k);
+											}
+											k++;
+											continue;
+										}
 										grace.region(k, j);
 										if (!grace.lookingAt()) {
 											throw new FileParseException("Unexpected '" + c + "' in grace notes", fileName,

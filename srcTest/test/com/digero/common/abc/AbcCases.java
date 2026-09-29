@@ -531,6 +531,8 @@ final class AbcCases {
 		c.add(tune("grace_notes_short_note", "{g}c/4 d|"));
 		c.add(tune("grace_notes_accidental", "{^f}f f|"));
 		c.add(tune("grace_notes_rest_inside", "{Z}c d|"));
+		// A slur over grace notes (Village Music Project): layout only; with Lotro errors an error (untested)
+		c.add(tune("grace_notes_slurred", "B2 {(B/c/B/^A/)} Be B2|"));
 
 		// Lyrics
 		c.add(tune("lyrics_tied_note", "c-c d e|", "w:one two three"));

@@ -1399,6 +1399,14 @@ class AbcToMidiBehaviourTest {
 					noteOns(s));
 			// Spaces and a tie to the note change nothing
 			assertEquals(noteOns(convert(tune("semantic", "{ga}c4|"))), noteOns(convert(tune("semantic", "{g a-}c4|"))));
+			// Nor does a slur over them (Village Music Project), also with the slur going on out of the braces; with
+			// Lotro errors it's an error (untested in Lotro)
+			assertEquals(noteEvents(convert(tune("semantic", "{gfga}c4|"))),
+					noteEvents(convert(tune("semantic", "{(gf)(ga)}c4|"))));
+			assertEquals(noteEvents(convert(tune("semantic", "{/ga}c4 d|"))),
+					noteEvents(convert(tune("semantic", "{/(ga}c4) d|"))));
+			assertThrows(LotroFileParseException.class,
+					() -> ConversionDump.convert(tune("semantic", "{(ga)}c4|"), Profile.ABC_PLAYER_STRICT));
 			// Anything else in the braces is an error, in every mode (Z, a rest, a sign, nothing)
 			for (String body : List.of("{Z}c|", "{z}c|", "{x}c|", "{}c|", "{/}c|", "{g!}c|", "{H}c|", "{g>}c|")) {
 				for (Profile profile : Profile.values()) {
