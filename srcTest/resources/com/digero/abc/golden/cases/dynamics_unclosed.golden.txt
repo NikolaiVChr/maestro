@@ -1,17 +1,27 @@
 # AbcToMidi golden snapshot. Re-record with: mvn test -Dabc.golden.update=true (and review the diff before committing)
 case dynamics_unclosed
 
-### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
+### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
 == EXCEPTION FileParseException: Error reading dynamics_unclosed.abc on line 7, column 1:
 There is no matching '+'
 == log: empty
 
-### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
+### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
 == EXCEPTION FileParseException: Error reading dynamics_unclosed.abc on line 7, column 1:
 There is no matching '+'
 == log: empty
 
-### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
+### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)
+== EXCEPTION FileParseException: Error reading dynamics_unclosed.abc on line 7, column 1:
+There is no matching '+'
+== log: empty
+
+### profile MAESTRO_NEW_LOTRO (useLotroInstruments=false, enableLotroErrors=false, Lotro Abc)
+== EXCEPTION FileParseException: Error reading dynamics_unclosed.abc on line 7, column 1:
+There is no matching '+'
+== log: empty
+
+### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
 == EXCEPTION FileParseException: Error reading dynamics_unclosed.abc on line 7, column 1:
 There is no matching '+'
 == log: empty

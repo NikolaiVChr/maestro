@@ -1,0 +1,27 @@
+# AbcToMidi golden snapshot. Re-record with: mvn test -Dabc.golden.update=true (and review the diff before committing)
+case inline_tempo_change_std2011
+
+### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
+== EXCEPTION FileParseException: Error reading inline_tempo_change_std2011.abc on line 7, column 8:
+The tempo can't be changed with Q: in the middle of a part
+== log: empty
+
+### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
+== EXCEPTION LotroFileParseException: Error reading inline_tempo_change_std2011.abc on line 7, column 5:
+Lotro refuses a part with an inline field ([Q:60]); put the field on a line of its own
+== log: empty
+
+### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)
+== EXCEPTION FileParseException: Error reading inline_tempo_change_std2011.abc on line 7, column 8:
+The tempo can't be changed with Q: in the middle of a part
+== log: empty
+
+### profile MAESTRO_NEW_LOTRO (useLotroInstruments=false, enableLotroErrors=false, Lotro Abc)
+== EXCEPTION FileParseException: Error reading inline_tempo_change_std2011.abc on line 7, column 8:
+The tempo can't be changed with Q: in the middle of a part
+== log: empty
+
+### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
+== EXCEPTION FileParseException: Error reading inline_tempo_change_std2011.abc on line 7, column 8:
+The tempo can't be changed with Q: in the middle of a part
+== log: empty

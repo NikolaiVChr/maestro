@@ -15,7 +15,7 @@ import java.util.Map;
  * These are characterization cases: they record what the code does now, including errors and known quirks. The
  * snapshot is the expectation; nothing here asserts that the current behaviour is correct.
  * <p>
- * To add a case: add it here, run {@code mvn test -Dabc.golden.update=true}, and review the new .golden.txt file.
+ * To add a case: add it here, run {@code mvn test "-Dabc.golden.update=true"} in powershell, and review the new .golden.txt file.
  */
 final class AbcCases {
 	private AbcCases() {
@@ -232,7 +232,7 @@ final class AbcCases {
 		c.add(tune("lotro_restart_at_other_volume", "[c2z] +ff+ c d|"));
 		c.add(tune("lotro_tie_continuation_at_other_volume", "[c2-z] +ff+ c d|"));
 		// 10,001 notes: only the strict profile, otherwise the snapshot would be enormous
-		c.add(tune("lotro_too_many_notes", "c/ ".repeat(10_001)).only(Profile.LOTRO_STRICT));
+		c.add(tune("lotro_too_many_notes", "c/ ".repeat(10_001)).only(Profile.ABC_PLAYER_STRICT));
 
 		// ------------------------------------------------------------ instruments
 		String[] instrumentParts = concat(
@@ -250,8 +250,8 @@ final class AbcCases {
 		c.add(tune("instrument_override", header("T:Test Harp"), "c d e f|")
 				.with(p -> p.instrumentOverrideMap = Map.of(1, LotroInstrument.BASIC_FLUTE)));
 		// Cowbell notes are randomized when useLotroInstruments is on, unless tied
-		c.add(tune("cowbell", header("T:Test Cowbell"), "c d e|").only(Profile.PLAIN_MIDI));
-		c.add(tune("moor_cowbell", header("T:Test Moor Cowbell"), "c d e|").only(Profile.PLAIN_MIDI));
+		c.add(tune("cowbell", header("T:Test Cowbell"), "c d e|").only(Profile.MAESTRO_LEGACY));
+		c.add(tune("moor_cowbell", header("T:Test Moor Cowbell"), "c d e|").only(Profile.MAESTRO_LEGACY));
 		c.add(tune("cowbell_tied", header("T:Test Cowbell"), "c-c|"));
 
 		// ------------------------------------------------------------ parts and files
@@ -518,6 +518,10 @@ final class AbcCases {
 		c.add(tune("key_clef_only_keeps_key", header("K:G"), "f|", "K:bass", "f|"));
 		c.add(tune("key_treble_after_treble_minus_8", header("K:G treble-8"), "f|", "K:treble", "f|"));
 
+		// A tie after a chord ties every note in it (ABC 2.1, 4.11 and 4.17); Lotro refuses it (B65)
+		c.add(tune("tie_after_chord1", "[ce]2- [ce]2 [df]2- [df]2|"));
+		c.add(tune("tie_after_chord2", "[c2e2]- [c2e2] [d2f2]- [d2f2]|"));
+
 		// Grace notes (grace_notes above): 65 ms on the beat, at most half the note; not played with Lotro errors
 		c.add(tune("grace_notes_several", "{gfe}c2 d|"));
 		c.add(tune("grace_notes_lengths", "{g2a}c4 {g>a}c4|"));
@@ -535,6 +539,305 @@ final class AbcCases {
 
 		// Not ABC 2.1: a tie apart from its note (Nottingham Music Database); Lotro refuses it too
 		c.add(tune("tie_after_space", "c2 -c2 d|"));
+
+		// ------------------------------------------------------------ Params.standard2011 (added 2026-09-29)
+		// Where Lotro plays ABC otherwise than ABC 2.1 says (task list F2, F3). NOT IMPLEMENTED YET: today the _std2011
+		// snapshots are the same as their twins without the flag, the reading of Lotro. When it is implemented only
+		// the _std2011 snapshots change (and the broken rhythm with chords without the flag: Lotro's reading, F2l).
+		// Each has a twin without the flag, here or above.
+
+		// F2a: a chord lasts as long as its first note (4.17); Lotro: its shortest (chord_shortest_note_wins above)
+		c.add(tune("chord_first_note_longer", "[c2e] g [ce2] g|"));
+		c.add(tune("chord_first_note_longer_std2011", "[c2e] g [ce2] g|").with(p -> p.standard2011 = true));
+		c.add(tune("chord_shortest_note_wins_std2011", "[c2e] [ce2] [c/e2] c|").with(p -> p.standard2011 = true));
+		// F2b: a unison sounds both notes (4.17); one MIDI channel can't, so the longer one plays. Lotro: the first.
+		c.add(tune("chord_unison_variants", "[cc2] z2 [c2c] z2 [^c_d2] z2|"));
+		c.add(tune("chord_unison_variants_std2011", "[cc2] z2 [c2c] z2 [^c_d2] z2|").with(p -> p.standard2011 = true));
+		// F2d: a tie carries its accidental over the bar line to the continuation only (staff notation). Lotro: the
+		// bar line ends it, so ^c-|c doesn't connect.
+		c.add(tune("tie_accidental_across_bar_std2011", "^c-|c d|").with(p -> p.standard2011 = true));
+		c.add(tune("tie_accidental_across_bar_then_same_note_std2011", "^c-|c c|").with(p -> p.standard2011 = true));
+		c.add(tune("tie_key_signature_across_bar_std2011", header("K:D"), "=f-|f d|").with(p -> p.standard2011 = true));
+		// F2e: an accidental applies in every octave to the bar line (11.3, %%propagate-accidentals pitch). Lotro:
+		// in its own octave only (tested, B66).
+		c.add(tune("accidentals_per_octave_std2011", "^c c' C c|").with(p -> p.standard2011 = true));
+		c.add(tune("accidentals_other_octave_next_bar", "^c|c' ^c|c,|"));
+		c.add(tune("accidentals_other_octave_next_bar_std2011", "^c|c' ^c|c,|").with(p -> p.standard2011 = true));
+		c.add(tune("accidentals_key_natural_other_octave", header("K:D"), "=f F f|f F|"));
+		c.add(tune("accidentals_key_natural_other_octave_std2011", header("K:D"), "=f F f|f F|")
+				.with(p -> p.standard2011 = true));
+		c.add(tune("accidentals_double_sharp_other_octave", "^^c c' C|"));
+		c.add(tune("accidentals_double_sharp_other_octave_std2011", "^^c c' C|").with(p -> p.standard2011 = true));
+		// F2f: Q:120 without a note length counts unit notes (L:), 10.1. Lotro: beats of the meter's denominator.
+		c.add(tune("tempo_without_length", "c8|"));
+		c.add(tune("tempo_without_length_std2011", "c8|").with(p -> p.standard2011 = true));
+		c.add(tune("tempo_c_equals", header("Q:C=120"), "c8|"));
+		c.add(tune("tempo_c_equals_std2011", header("Q:C=120"), "c8|").with(p -> p.standard2011 = true));
+		c.add(tune("tempo_without_length_l_1_16", header("L:1/16"), "c16|"));
+		c.add(tune("tempo_without_length_l_1_16_std2011", header("L:1/16"), "c16|").with(p -> p.standard2011 = true));
+		c.add(tune("tempo_without_length_l_1_4_std2011", header("L:1/4"), "c4|").with(p -> p.standard2011 = true));
+		c.add(tune("tempo_without_length_6_8_std2011", header("M:6/8"), "c6|").with(p -> p.standard2011 = true));
+		c.add(tune("tempo_77_std2011", header("Q:77"), "c d e f|").with(p -> p.standard2011 = true));
+		c.add(tune("tempo_with_note_length_std2011", header("Q:1/4=100"), "c d e f|").with(p -> p.standard2011 = true));
+		// F2g: a blank line ends the tune (2.2.1); what follows up to the next X: is free text, and so is text before
+		// the first X: (2.2). Lotro plays on after a blank line (B14).
+		c.add(tune("blank_line_then_notes", "c d|", "", "e f|"));
+		c.add(tune("blank_line_then_notes_std2011", "c d|", "", "e f|").with(p -> p.standard2011 = true));
+		c.add(tune("blank_line_then_free_text", "c d|", "", "Notes: play it slowly."));
+		c.add(tune("blank_line_then_free_text_std2011", "c d|", "", "Notes: play it slowly.")
+				.with(p -> p.standard2011 = true));
+		c.add(tune("blank_lines_std2011", "cd|", "", "   ", "ef|").with(p -> p.standard2011 = true));
+		String[] book = concat(new String[] { "These are my tunes.", "(c) 2026 Me", "" }, part(1, "One", "c d|"),
+				new String[] { "", "Played at every session.", "" }, part(2, "Two", "e f|"));
+		c.add(of("free_text_around_tunes", book));
+		c.add(of("free_text_around_tunes_std2011", book).with(p -> p.standard2011 = true));
+		// The usual tune book: a blank line between the tunes
+		String[] blankBetween = concat(part(1, "One", "c d|"), new String[] { "" }, part(2, "Two", "e f|"));
+		c.add(of("parts_blank_line_between", blankBetween));
+		c.add(of("parts_blank_line_between_std2011", blankBetween).with(p -> p.standard2011 = true));
+		// F2l: a chord takes a broken rhythm like a note (4.4). Lotro halves only the chord's first note in c>[ce],
+		// and refuses [ce]>d.
+		c.add(tune("broken_before_chord_std2011", "c>[ce]|").with(p -> p.standard2011 = true));
+		c.add(tune("broken_after_chord_std2011", "[ce]>d e|").with(p -> p.standard2011 = true));
+		c.add(tune("broken_chord_variants", "c>[ce] d [ce]<d f [ce]>>d f|"));
+		c.add(tune("broken_chord_variants_std2011", "c>[ce] d [ce]<d f [ce]>>d f|").with(p -> p.standard2011 = true));
+		c.add(tune("broken_between_chords", "[ce]>[df] e|"));
+		c.add(tune("broken_between_chords_std2011", "[ce]>[df] e|").with(p -> p.standard2011 = true));
+		c.add(tune("broken_after_chord_with_length", "[c2e2]>d f [ce]2<d f|"));
+		c.add(tune("broken_after_chord_with_length_std2011", "[c2e2]>d f [ce]2<d f|").with(p -> p.standard2011 = true));
+		// F3a: !p! !f! (ABC 2.1) set the volume like +p+ +f+ (4.14). Lotro skips them without Lotro errors.
+		c.add(tune("dynamics_bang_all", "!pppp!c !ppp!c !pp!c !p!c !mp!c !mf!c !f!c !ff!c !fff!c !ffff!c|"));
+		c.add(tune("dynamics_bang_all_std2011", "!pppp!c !ppp!c !pp!c !p!c !mp!c !mf!c !f!c !ff!c !fff!c !ffff!c|")
+				.with(p -> p.standard2011 = true));
+		c.add(tune("decoration_volume_std2011", "+ppp+c d e f !fff!c d e f|").with(p -> p.standard2011 = true));
+		// F3b: accent and staccato are played (4.14); how much is to decide. Lotro: nothing.
+		c.add(tune("accent_and_staccato", "!accent!c Ld !>!e .f !staccato!g !tenuto!a b c'|"));
+		c.add(tune("accent_and_staccato_std2011", "!accent!c Ld !>!e .f !staccato!g !tenuto!a b c'|")
+				.with(p -> p.standard2011 = true));
+		c.add(tune("staccato_on_chord_and_tie", ".[ce] .c-c d|"));
+		c.add(tune("staccato_on_chord_and_tie_std2011", ".[ce] .c-c d|").with(p -> p.standard2011 = true));
+		// F3c: Q: may change the tempo mid-tune, on a line or inline (3.1.8). Without the flag: an error.
+		c.add(tune("tempo_change_mid_part_std2011", "c d|", "Q:90", "e f|").with(p -> p.standard2011 = true));
+		c.add(tune("inline_tempo_change", "c d [Q:60] e f|"));
+		c.add(tune("inline_tempo_change_std2011", "c d [Q:60] e f|").with(p -> p.standard2011 = true));
+		c.add(tune("tempo_change_with_length_std2011", "c d|", "Q:1/4=60", "e f|").with(p -> p.standard2011 = true));
+		// F3d: the meter's denominator may change mid-tune. Without the flag: an error.
+		c.add(tune("meter_change_other_denominator_std2011", "c d|", "M:6/8", "e f|").with(p -> p.standard2011 = true));
+		c.add(tune("inline_meter_other_denominator", "c d e f|[M:6/8] g a b|"));
+		c.add(tune("inline_meter_other_denominator_std2011", "c d e f|[M:6/8] g a b|").with(p -> p.standard2011 = true));
+		// F3e: K: with explicit accidentals (3.1.14). Without the flag: an error (A12).
+		c.add(tune("key_explicit_accidentals_std2011", header("K:G ^c"), "c f|").with(p -> p.standard2011 = true));
+		c.add(tune("key_exp", header("K:D exp _b"), "f c B|"));
+		c.add(tune("key_exp_std2011", header("K:D exp _b"), "f c B|").with(p -> p.standard2011 = true));
+		c.add(tune("key_mode_and_accidentals_std2011", header("K:Am ^g"), "g G a|").with(p -> p.standard2011 = true));
+		// F3f: A{g}<A is the same as A<{g}A (4.12). Without the flag: an error.
+		c.add(tune("grace_between_note_and_broken", "c{g}<d e|"));
+		c.add(tune("grace_between_note_and_broken_std2011", "c{g}<d e|").with(p -> p.standard2011 = true));
+		c.add(tune("grace_after_broken", "c<{g}d e|"));
+		c.add(tune("grace_after_broken_std2011", "c<{g}d e|").with(p -> p.standard2011 = true));
+		// F2c: kept in every mode: a tie joins the next note of its pitch wherever it is
+		c.add(tune("tie_over_other_note_std2011", "c- d c|").with(p -> p.standard2011 = true));
+		// The flag and standard pitch together, as Maestro sets them
+		c.add(tune("standard_pitch_and_2011", "[C2E] G ^C C' C, C|").with(p -> {
+			p.standardPitch = true;
+			p.standard2011 = true;
+		}));
+
+		// ------------------------------------------------------------ ornaments (A31)
+		// Played in steps of GRACE_NOTE_SECONDS, from the note's pitch; a chord or a rest plays plain. Lotro refuses
+		// T M P and !...!, plays nothing of a part with +trill+, and plays ~ plain.
+		c.add(tune("ornament_trill_lengths", "Tc4 Tc2 Tc Tc/|"));
+		c.add(tune("ornament_all_names", "!trill!c2 !roll!d2 !lowermordent!e2 !mordent!f2 !uppermordent!g2",
+				"!pralltriller!a2 !turn!b2 !invertedturn!c'2|"));
+		c.add(tune("ornament_plus_form", "+trill+c2 +mordent+d2 +turn+e2 +invertedturn+f2|"));
+		c.add(tune("ornament_roll_tilde", "~c2 ~d ~e4|"));
+		c.add(tune("ornament_mordent_letters", "Mc2 Pd2 Te2 f2|"));
+		c.add(tune("ornament_on_chord", "T[ce]2 !turn![df]2 c2|"));
+		c.add(tune("ornament_on_rest", "Tz2 c2|"));
+		c.add(tune("ornament_with_accidental", "T^c2 c2 !mordent!_B2 B2|"));
+		c.add(tune("ornament_in_key", header("K:D"), "Tf2 !turn!c2 Mb2|"));
+		c.add(tune("ornament_on_tied_note", "Tc2-c2 d2|"));
+		c.add(tune("ornament_in_tuplet", "(3Tcde c|"));
+		c.add(tune("ornament_and_grace_notes", "{g}Tc2 T{g}d2|"));
+		c.add(tune("ornament_broken_rhythm", "Tc>d !turn!e<f|"));
+		c.add(tune("ornament_lotro_range", "TC,2 Tc'2|"));
+		c.add(tune("ornament_unknown_skipped", "!wiggle!c2 +arpeggio+d2|"));
+		c.add(tune("ornament_fast_tempo", header("Q:300"), "Tc/ Td/ Te|"));
+		c.add(tune("ornament_two_on_one_note", "T!turn!c2 d|"));
+		c.add(tune("ornament_at_end_of_line", "c T", "d2|"));
+		c.add(tune("ornament_in_skipped_ending", "|: c |1 Td :|2 !turn!e |]").with(p -> p.expandRepeats = true));
+
+		// ------------------------------------------------------------ grace notes, more
+		c.add(tune("grace_notes_in_tuplet", "(3{g}cde c|"));
+		c.add(tune("grace_notes_before_tie_continuation", "c2-{g}c2 d|"));
+		c.add(tune("grace_notes_octaves", "{C,c'}c2 d|"));
+		c.add(tune("grace_notes_at_end_of_line", "c {g}", "d|"));
+		c.add(tune("grace_notes_tie_inside", "{g-}c d|"));
+		c.add(tune("grace_notes_long_group", "{gfedcBA}c4 d|"));
+		c.add(tune("grace_notes_lotro_range", "{C,,}c d|"));
+		c.add(tune("grace_notes_unclosed", "{gc d|"));
+		c.add(tune("grace_notes_empty", "{} c|"));
+		c.add(tune("grace_notes_rest_z", "{z}c|"));
+		c.add(tune("grace_notes_broken_at_end", "{g>}c|"));
+		c.add(tune("grace_notes_in_chord", "[{g}ce]|"));
+		c.add(tune("grace_notes_before_bar", "c {g}|d|"));
+		c.add(tune("grace_notes_fast_tempo", header("Q:300"), "{g}c/ {a}d/ e|"));
+
+		// ------------------------------------------------------------ Lotro errors not covered above
+		// y: a spacer, layout only (a width after it, y6, is abcm2ps, not ABC 2.1: A26). Lotro refuses it (B58).
+		c.add(tune("spacer_y", "c y d y e|"));
+		// Lotro's beat is the meter's denominator (B15): Q:1/8=120 in 4/4 is a Lotro error
+		c.add(tune("tempo_length_not_the_denominator", header("Q:1/8=120"), "c d e f|"));
+		c.add(tune("tempo_half_in_cut_time", header("M:2/2", "Q:1/2=60"), "c d e f|"));
+		c.add(tune("inline_field_lower_case", "c [k:G] f|"));
+		c.add(tune("inline_remark", "c [r:a remark] d|"));
+		c.add(tune("inline_field_in_chord", "[c[K:G]e]|"));
+
+		// ------------------------------------------------------------ information fields (A28)
+		// Written as MidiText header lines (@...) in track 0
+		c.add(tune("info_all_labels", concat(header(), new String[] { "A:Area", "B:Book", "C:Composer", "D:Record",
+				"F:http://example.com/tune.abc", "G:flute", "H:History", "N:A note", "O:Scotland", "R:Reel", "S:Source",
+				"Z:Me" }), "c d|"));
+		c.add(tune("info_history_lines", concat(header(), new String[] { "H:Written in 1800", "H:in Scotland",
+				"C:Someone", "H:A second history" }), "c d|"));
+		c.add(tune("info_two_composers", concat(header(), new String[] { "C:One", "C:Two" }), "c d|"));
+		c.add(tune("info_continuation", concat(header(), new String[] { "C:Someone", "+:and another" }), "c d|"));
+		c.add(tune("info_maestro_notes_hidden", concat(header(), new String[] { "N:TS 2, 1 2", "N:genre: folk",
+				"N:mood: calm", "N:A real note" }), "c d|"));
+		c.add(of("info_titles", "X:1", "T:Main Title", "T:Other Title", "T:Third", "M:4/4", "L:1/8", "Q:120", "K:C",
+				"c d|"));
+		c.add(tune("info_fields_in_body", "c d|", "N:A note in the tune", "C:Late composer", "e f|"));
+		c.add(tune("info_text_escapes", concat(header(), new String[] { "C:Andr\\'e & Jos\\\"e", "Z:caf&eacute; \\u00e9" }),
+				"c d|"));
+		c.add(tune("info_verses_before_and_after", concat(header(), new String[] { "W:Before the notes" }), "c d|",
+				"e f|", "W:After the notes", "W:", "W:Second verse"));
+		c.add(of("info_per_part", concat(part(1, "One", "C:First composer", "c d|"),
+				part(2, "Two", "C:Second composer", "e f|"))));
+
+		// ------------------------------------------------------------ fields and directives that aren't played
+		// r: a remark on a line of its own, skipped in every mode (Lotro plays on, B68). Errors today, all ABC 2.1:
+		// U: symbols in the notes (A35), m: macros (A36), a ! line break after I:linebreak ! (A25)
+		c.add(tune("user_defined_symbol", concat(header(), new String[] { "U:W=!trill!" }), "Wc2 d|"));
+		c.add(tune("info_remark_line", "c d|", "r:a remark", "e f|"));
+		c.add(tune("macro_field", concat(header(), new String[] { "m:~n2 = (3o/n/m/ n" }), "c d|"));
+		c.add(tune("instruction_linebreak_bang", concat(header(), new String[] { "I:linebreak !" }), "c d!e f|"));
+		c.add(tune("propagate_accidentals_directive", extended("%%propagate-accidentals not"), "^c c' c|"));
+		c.add(of("abc_version_line", concat(new String[] { "%abc-2.1" }, header(), new String[] { "c d|" })));
+		c.add(of("key_before_other_fields", "X:1", "T:Test", "K:D", "M:4/4", "L:1/8", "Q:120", "f c|"));
+		c.add(tune("directive_in_body", "c d|", "%%MIDI program 73", "e f|"));
+
+		// ------------------------------------------------------------ MIDI program of standard ABC (A30)
+		// Only with standard pitch (MidiProgramGuess); Lotro files keep their Lotro instrument's program
+		c.add(tune("midi_program_directive", extended("%%MIDI program 73"), "C D|").with(p -> p.standardPitch = true));
+		c.add(tune("midi_program_directive_lotro_file", extended("%%MIDI program 73"), "C D|"));
+		c.add(tune("midi_program_instruction", concat(header(), new String[] { "I:MIDI program 40" }), "C D|")
+				.with(p -> p.standardPitch = true));
+		c.add(tune("midi_program_instruction_equals", concat(header(), new String[] { "I:MIDI= program 40" }), "C D|")
+				.with(p -> p.standardPitch = true));
+		c.add(tune("midi_program_of_channel", extended("%%MIDI channel 2", "%%MIDI program 2 71"), "C D|")
+				.with(p -> p.standardPitch = true));
+		c.add(tune("midi_program_of_other_channel", extended("%%MIDI program 2 71"), "C D|")
+				.with(p -> p.standardPitch = true));
+		c.add(tune("midi_program_out_of_range", extended("%%MIDI program 200"), "C D|").with(p -> p.standardPitch = true));
+		c.add(tune("midi_channel_out_of_range", extended("%%MIDI channel 17"), "C D|").with(p -> p.standardPitch = true));
+		c.add(tune("midi_program_last_directive_wins", extended("%%MIDI program 73", "%%MIDI program 40"), "C D|")
+				.with(p -> p.standardPitch = true));
+		c.add(tune("midi_drums_channel_10", extended("%%MIDI channel 10"), "C,, D,, C,, D,, F,, F,,|")
+				.with(p -> p.standardPitch = true));
+		c.add(tune("midi_drums_with_kit", extended("%%MIDI channel 10", "%%MIDI program 25"), "C,, D,,|")
+				.with(p -> p.standardPitch = true));
+		c.add(tune("midi_drums_chord_symbols_skipped", extended("%%MIDI channel 10"), "\"G\"C,, D,, \"C\"C,, D,,|")
+				.with(p -> {
+					p.standardPitch = true;
+					p.chordAccompaniment = true;
+				}));
+		c.add(tune("midi_bassprog_chordprog", extended("%%MIDI bassprog 33", "%%MIDI chordprog 0"), "\"G\"G2 B2 \"C\"c4|")
+				.with(p -> {
+					p.standardPitch = true;
+					p.chordAccompaniment = true;
+				}));
+		c.add(tune("midi_bassprog_with_octave", extended("%%MIDI bassprog 33 octave=-1"), "\"G\"G2 B2 c4|")
+				.with(p -> {
+					p.standardPitch = true;
+					p.chordAccompaniment = true;
+				}));
+		c.add(of("midi_program_file_header", concat(new String[] { "%%MIDI program 73" }, part(1, "One", "C D|"),
+				part(2, "Two", "%%MIDI program 40", "E F|"))).with(p -> p.standardPitch = true));
+		c.add(tune("midi_program_highland_pipes", header("K:HP"), "F C G|").with(p -> p.standardPitch = true));
+		c.add(tune("midi_program_voice_name", concat(header(), new String[] { "V:1 name=\"Violin\"" }), "C D|")
+				.with(p -> p.standardPitch = true));
+		c.add(tune("midi_program_group", concat(header(), new String[] { "G:flute" }), "C D|")
+				.with(p -> p.standardPitch = true));
+		c.add(tune("midi_program_title_for", header("T:Air for the harp"), "C D|").with(p -> p.standardPitch = true));
+		c.add(tune("midi_program_first_name_wins", concat(header(), new String[] { "G:fiddle", "V:1 nm=Flute" }), "C D|")
+				.with(p -> p.standardPitch = true));
+		c.add(tune("midi_program_directive_beats_name", concat(header(), new String[] { "G:fiddle",
+				"%%MIDI program 73" }), "C D|").with(p -> p.standardPitch = true));
+		c.add(tune("midi_program_made_for_wins", extended("%%MIDI program 73", "%%made-for Basic Harp"), "C D|")
+				.with(p -> p.standardPitch = true));
+		c.add(tune("midi_program_in_body_ignored", "C D|", "%%MIDI program 73", "E F|")
+				.with(p -> p.standardPitch = true));
+
+		// ------------------------------------------------------------ voices (A13), as they are read today
+		c.add(tune("voices_in_body", "V:1", "c d e f|", "V:2", "C D E F|"));
+		c.add(tune("voices_inline", "[V:1] c d e f|", "[V:2] C D E F|"));
+		c.add(tune("voices_defined_in_header", concat(header(), new String[] { "V:1 name=\"Fiddle\"",
+				"V:2 name=\"Bass\" clef=bass" }), "V:1", "c d e f|", "V:2", "C, D, E, F,|"));
+		c.add(tune("voices_with_lyrics", "V:1", "c d|", "w:one two", "V:2", "e f|", "w:three four"));
+
+		// ------------------------------------------------------------ parts order (A16), as they are read today
+		c.add(tune("parts_order", concat(header(), new String[] { "P:ABA" }), "P:A", "c d|", "P:B", "e f|"));
+		c.add(tune("parts_order_expanded", concat(header(), new String[] { "P:ABA" }), "P:A", "c d|", "P:B", "e f|")
+				.with(p -> p.expandRepeats = true));
+		c.add(tune("parts_order_repeat_count", concat(header(), new String[] { "P:A2B" }), "P:A", "c d|", "P:B",
+				"e f|").with(p -> p.expandRepeats = true));
+		c.add(tune("parts_order_group", concat(header(), new String[] { "P:(AB)2" }), "P:A", "c d|", "P:B", "e f|")
+				.with(p -> p.expandRepeats = true));
+		c.add(tune("parts_order_dots", concat(header(), new String[] { "P:A.B.A" }), "P:A", "c d|", "P:B", "e f|")
+				.with(p -> p.expandRepeats = true));
+		c.add(tune("parts_order_missing_section", concat(header(), new String[] { "P:ABC" }), "P:A", "c d|", "P:B",
+				"e f|").with(p -> p.expandRepeats = true));
+		c.add(tune("parts_order_music_before_first_p", concat(header(), new String[] { "P:AB" }), "g a|", "P:A",
+				"c d|", "P:B", "e f|").with(p -> p.expandRepeats = true));
+		c.add(tune("parts_order_with_repeats", concat(header(), new String[] { "P:AB" }), "P:A", "|: c d :|", "P:B",
+				"e f|").with(p -> p.expandRepeats = true));
+
+		// ------------------------------------------------------------ lyrics, more
+		c.add(tune("lyrics_rests_and_graces", "c z {g}d e|", "w:one two three"));
+		c.add(tune("lyrics_star_skips_a_note", "c d e f|", "w:one * three four"));
+		c.add(tune("lyrics_bar_syncs", "c d|e f|", "w:one|three four"));
+		c.add(tune("lyrics_underscore_holds", "c d e f|", "w:one__ four"));
+		c.add(tune("lyrics_tilde_and_escaped_hyphen", "c d e|", "w:one~word two\\-three four"));
+		c.add(tune("lyrics_on_chords", "[ce] d [df]|", "w:one two three"));
+		c.add(tune("lyrics_more_syllables_than_notes", "c d|", "w:one two three four"));
+		c.add(tune("lyrics_before_notes", "w:early words", "c d|"));
+		c.add(tune("lyrics_with_ornaments", "Tc2 d2|", "w:one two"));
+
+		// ------------------------------------------------------------ dynamics, more
+		// Lotro takes +pppp+ and +ffff+ too
+		c.add(tune("dynamics_plus_extremes", "+pppp+c +ffff+d +mf+e|"));
+		c.add(tune("dynamics_hairpins", "!crescendo(!c d !crescendo)!e !<(!f !<)!g !diminuendo(!a !>)!b c'|"));
+		c.add(tune("dynamics_bang_in_chord", "[!f!ce] d|"));
+		c.add(tune("dynamics_before_bar", "c d +f+|e f|"));
+		c.add(tune("dynamics_across_repeat", "|: +p+c d +f+e f :|").with(p -> p.expandRepeats = true));
+
+		// ------------------------------------------------------------ chords and ties, more
+		c.add(tune("chord_tie_partial_continuation", "[ce]-[cg] d|"));
+		c.add(tune("chord_tie_across_bar", "[ce]-|[ce] d|"));
+		c.add(tune("chord_tie_into_single_note", "[ce]-c d|"));
+		c.add(tune("tie_across_repeat", "|: c2- :| c2 d|").with(p -> p.expandRepeats = true));
+		c.add(tune("tie_into_ending", "|: c |1 d- :|2 d e|]").with(p -> p.expandRepeats = true));
+		c.add(tune("tie_to_grace_note", "c-{c}c d|"));
+		c.add(tune("tie_in_tuplet", "(3c d e- e|"));
+		c.add(tune("tuplet_with_broken_rhythm", "(3c>d e f|"));
+
+		// ------------------------------------------------------------ repeats, more
+		c.add(tune("repeats_nested_start", "|: c |: d :| e :|").with(p -> p.expandRepeats = true));
+		c.add(tune("repeats_endings_without_repeat", "c |1 d |2 e |]").with(p -> p.expandRepeats = true));
+		c.add(tune("repeats_colons_at_line_start", "|: c d", ":: e f :|").with(p -> p.expandRepeats = true));
+		c.add(tune("repeats_three_endings", "|: c [1 d :|[2 e :|[3 f |]").with(p -> p.expandRepeats = true));
+		c.add(tune("repeats_start_only", "|: c d|e f|").with(p -> p.expandRepeats = true));
+		c.add(tune("repeats_multi_measure_rest", "|: Z c :|").with(p -> p.expandRepeats = true));
 
 		return c;
 	}

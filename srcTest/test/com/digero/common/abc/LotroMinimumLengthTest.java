@@ -80,10 +80,10 @@ class LotroMinimumLengthTest {
 				"L:" + o.lNum() + "/" + o.lDen(), "Q:" + o.q(), "K:C", "E" + o.n() + "/" + o.d() + " |]");
 		if (o.refusedByLotro()) {
 			LotroFileParseException e = assertThrows(LotroFileParseException.class,
-					() -> ConversionDump.convert(abc, Profile.LOTRO_STRICT));
+					() -> ConversionDump.convert(abc, Profile.ABC_PLAYER_STRICT));
 			assertTrue(e.getMessage().contains("too short"), e.getMessage());
 		} else {
-			ConversionDump.convert(abc, Profile.LOTRO_STRICT);
+			ConversionDump.convert(abc, Profile.ABC_PLAYER_STRICT);
 		}
 	}
 }

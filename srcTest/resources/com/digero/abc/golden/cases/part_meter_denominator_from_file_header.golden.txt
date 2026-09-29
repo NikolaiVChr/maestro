@@ -1,17 +1,27 @@
 # AbcToMidi golden snapshot. Re-record with: mvn test -Dabc.golden.update=true (and review the diff before committing)
 case part_meter_denominator_from_file_header
 
-### profile LOTRO (useLotroInstruments=true enableLotroErrors=false)
+### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
 == EXCEPTION FileParseException: Error reading part_meter_denominator_from_file_header.abc on line 8, column 1:
 The meter denominator (the N in M:x/N) must be the same throughout the song
 == log: empty
 
-### profile LOTRO_STRICT (useLotroInstruments=true enableLotroErrors=true)
+### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
 == EXCEPTION FileParseException: Error reading part_meter_denominator_from_file_header.abc on line 8, column 1:
 The meter denominator (the N in M:x/N) must be the same throughout the song
 == log: empty
 
-### profile PLAIN_MIDI (useLotroInstruments=false enableLotroErrors=false)
+### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)
+== EXCEPTION FileParseException: Error reading part_meter_denominator_from_file_header.abc on line 8, column 1:
+The meter denominator (the N in M:x/N) must be the same throughout the song
+== log: empty
+
+### profile MAESTRO_NEW_LOTRO (useLotroInstruments=false, enableLotroErrors=false, Lotro Abc)
+== EXCEPTION FileParseException: Error reading part_meter_denominator_from_file_header.abc on line 8, column 1:
+The meter denominator (the N in M:x/N) must be the same throughout the song
+== log: empty
+
+### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
 == EXCEPTION FileParseException: Error reading part_meter_denominator_from_file_header.abc on line 8, column 1:
 The meter denominator (the N in M:x/N) must be the same throughout the song
 == log: empty

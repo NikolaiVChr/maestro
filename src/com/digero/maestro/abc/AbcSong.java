@@ -87,7 +87,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
     private String lyrics = "";// not continuously updated
 	private List<LyricLine> lyricLines = null;// not continuously updated
 	private int abcImportVersion = 1;
-	private Boolean abcStandardPitch = null;
+	private Boolean sourceAbcWasMadeForLotro = null;
 	private boolean badger = false;
 	private float tempoFactor = 1.0f;
 	private int newTempo = 120;
@@ -279,12 +279,14 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		params.abcInfo = abcInfo;
 		params.useLotroInstruments = false;
 		abcImportVersion = 2; // New songs play the repeats and dont use wrong tempo; saved in the project
-		params.expandRepeats = abcImportVersion > 1;
-		params.specTempo = abcImportVersion > 1;
-		params.chordAccompaniment = abcImportVersion > 1;
 		// Standard ABC (folk tunes) plays at its written pitch; ABC made for LotRO keeps its instrument octaves. Saved.
-		abcStandardPitch = !AbcToMidi.isMadeForLotro(params.filesData);
-		params.standardPitch = abcImportVersion > 1 && abcStandardPitch;
+		sourceAbcWasMadeForLotro = AbcToMidi.isMadeForLotro(params.filesData);//TODO: ask user
+		boolean standardAbc = abcImportVersion > 1 && Boolean.FALSE.equals(sourceAbcWasMadeForLotro);
+		params.standardPitch = standardAbc;
+		params.expandRepeats = standardAbc;
+		params.specTempo = standardAbc;
+		params.chordAccompaniment = standardAbc;
+		params.standard2011 = standardAbc;
 		// params.stereo = false;
 		usingOldVelocities = true;// The abc volumes are tuned to old volume scheme
 		usingOldTempos = true;
@@ -303,55 +305,55 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		} else {
 			lyrics = "";
 		}
+		if (sourceAbcWasMadeForLotro) {
+			int t = 0;
+			// Since parts with zero part numbers will be assigned 999,
+			// and 999 could be assigned already, we iterate till we find a free number:
+			Set<Integer> pNumbers = new HashSet<>();
+			for (TrackInfo trackInfo : sequenceInfo.getTrackList()) {
+				if (!trackInfo.hasEvents()) {
+					t++;
+					continue;
+				}
 
-		int t = 0;
-		// Since parts with zero part numbers will be assigned 999,
-		// and 999 could be assigned already, we iterate till we find a free number:
-		Set<Integer> pNumbers = new HashSet<>();
-		for (TrackInfo trackInfo : sequenceInfo.getTrackList()) {
-			if (!trackInfo.hasEvents()) {
+				AbcPart newPart = new AbcPart(this);
+
+				newPart.setTitle(abcInfo.getPartName(t));
+				int pNumber = abcInfo.getPartNumber(t);
+				if (pNumber == 0) pNumber = 999;
+				while (pNumbers.contains(pNumber)) {
+					pNumber--;
+					if (pNumber < 1) {
+						throw new RuntimeException("Part number error");
+					}
+				}
+				pNumbers.add(pNumber);
+				newPart.setPartNumber(pNumber);
+				newPart.setPartNumberManuallyAssigned(true, true);// what is loaded from abc we consider manually assigned numbers
+				newPart.setTrackEnabled(t, true);
+				newPart.setUserPan(abcInfo.getUserPan(t));
+
+				Set<Integer> midiInstruments = trackInfo.getInstruments();
+				for (LotroInstrument lotroInst : LotroInstrument.values()) {
+					if (midiInstruments.contains(lotroInst.midi.id())) {
+						newPart.setInstrument(lotroInst);
+						break;
+					}
+				}
+				if (newPart.getInstrument() == LotroInstrument.STUDENT_FIDDLE) {
+					newPart.setStudentFromABC(true);
+				}
+				populateFirstNumbers();
+				newPart.firstNumber = partAutoNumberer.getFirstNumber(newPart.getInstrument());
+				int ins = Collections.binarySearch(parts, newPart, partAutoNumberer.getComparator());
+				if (ins < 0)
+					ins = -ins - 1;
+				parts.add(ins, newPart);
+
+				newPart.addAbcListener(abcPartListener);
 				t++;
-				continue;
 			}
-
-			AbcPart newPart = new AbcPart(this);
-
-			newPart.setTitle(abcInfo.getPartName(t));
-			int pNumber = abcInfo.getPartNumber(t);
-			if (pNumber == 0) pNumber = 999;
-			while (pNumbers.contains(pNumber)) {
-				pNumber--;
-				if (pNumber < 1) {
-					throw new RuntimeException("Part number error");
-				}
-			}
-			pNumbers.add(pNumber);
-			newPart.setPartNumber(pNumber);
-            newPart.setPartNumberManuallyAssigned(true, true);// what is loaded from abc we consider manually assigned numbers
-			newPart.setTrackEnabled(t, true);
-			newPart.setUserPan(abcInfo.getUserPan(t));
-
-			Set<Integer> midiInstruments = trackInfo.getInstruments();
-			for (LotroInstrument lotroInst : LotroInstrument.values()) {
-				if (midiInstruments.contains(lotroInst.midi.id())) {
-					newPart.setInstrument(lotroInst);
-					break;
-				}
-			}
-			if (newPart.getInstrument() == LotroInstrument.STUDENT_FIDDLE) {
-				newPart.setStudentFromABC(true);
-			}
-			populateFirstNumbers();
-			newPart.firstNumber = partAutoNumberer.getFirstNumber(newPart.getInstrument());
-			int ins = Collections.binarySearch(parts, newPart, partAutoNumberer.getComparator());
-			if (ins < 0)
-				ins = -ins - 1;
-			parts.add(ins, newPart);
-			
-			newPart.addAbcListener(abcPartListener);
-			t++;
 		}
-
 
 		tripletTiming = abcInfo.hasTriplets();
 		if (abcInfo.hasTimingInfo()) {
@@ -447,14 +449,13 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
                 }
 			}
 
-			dynamicsMethod = Chord.CalcDynamics.fromString(SaveUtil.parseValue(songEle, "exportSettings/@calcDynamics", Chord.CalcDynamics.LOUDEST.name()));
-			usingOldVelocities = SaveUtil.parseValue(songEle, "importSettings/@useOldVelocities", true);// must be
+			usingOldVelocities = SaveUtil.parseValue(songEle, "importSettings/@useOldVelocities", true);// must all be
 			usingOldTempos     = SaveUtil.parseValue(songEle, "importSettings/@useOldTempos", true);    // before
 			usingNewMidiLayout = SaveUtil.parseValue(songEle, "importSettings/@useNewMidiLayout", 0);    // tryToLoadFromFile
 			ignoreZeroChannelVolume = SaveUtil.parseValue(songEle, "importSettings/@ignoreZeroChannelVolume", false);
 			abcImportVersion = SaveUtil.parseValue(songEle, "importSettings/@abcImportVersion", 1);
-			String standardPitch = SaveUtil.parseValue(songEle, "importSettings/@abcStandardPitch", (String) null);
-			abcStandardPitch = (standardPitch == null) ? null : Boolean.valueOf(standardPitch);
+			String sourceMadeForLotro = SaveUtil.parseValue(songEle, "importSettings/@sourceAbcWasMadeForLotro", (String) null);
+			sourceAbcWasMadeForLotro = (sourceMadeForLotro == null) ? null : Boolean.valueOf(sourceMadeForLotro);
 
 			sourceFile = SaveUtil.parseValue(songEle, "sourceFile", (File) null);
 			if (sourceFile == null) {
@@ -528,7 +529,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			if (ICompileConstants.SHOW_KEY_FIELD)
 				keySignature = SaveUtil.parseValue(songEle, "exportSettings/@keySignature", keySignature);
 			timeSignature = SaveUtil.parseValue(songEle, "exportSettings/@timeSignature", timeSignature);
-			
+
+			dynamicsMethod = Chord.CalcDynamics.fromString(SaveUtil.parseValue(songEle, "exportSettings/@calcDynamics", Chord.CalcDynamics.LOUDEST.name()));
 			organic = SaveUtil.parseValue(songEle, "exportSettings/@organic", false);
 			organic2 = SaveUtil.parseValue(songEle, "exportSettings/@organic-multi-stage", false);
             int orgVersion = SaveUtil.parseValue(songEle, "exportSettings/@organic-version", 1);
@@ -682,21 +684,25 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				params.abcInfo = abcInfo;
 				params.useLotroInstruments = false;
                 params.warningHandler = warningHandler;
-				params.expandRepeats = abcImportVersion > 1;
-				params.chordAccompaniment = abcImportVersion > 1;
-				params.specTempo = abcImportVersion > 1;
-				if (abcImportVersion > 1 && abcStandardPitch == null) {
+				if (abcImportVersion > 1 && sourceAbcWasMadeForLotro == null) {
 					// Not decided for this source yet (a MIDI project whose source became this ABC file): decide once,
 					// saved with the project
-					abcStandardPitch = !AbcToMidi.isMadeForLotro(params.filesData);
+					sourceAbcWasMadeForLotro = AbcToMidi.isMadeForLotro(params.filesData);
 				}
-				params.standardPitch = abcImportVersion > 1 && Boolean.TRUE.equals(abcStandardPitch);
+				boolean standardAbc = abcImportVersion > 1 && Boolean.FALSE.equals(sourceAbcWasMadeForLotro);
+				params.standardPitch = standardAbc;
+				params.standard2011 =  standardAbc;
+				params.expandRepeats = standardAbc;
+				params.chordAccompaniment = standardAbc;
+				params.specTempo = standardAbc;
 				// params.stereo = false;
 				usingOldVelocities = true;// The abc volumes are tuned to old volume scheme
 				usingOldTempos = true;
 				usingNewMidiLayout = 1;
 				sequenceInfo = SequenceInfo.fromAbc(params, miscSettings, usingOldVelocities, ignoreMidiText, usingNewMidiLayout);
 
+				// The project xml has timings info already, they should be honored instead.
+				// But since this is set before the project read those, its fine.
 				if (abcInfo.hasTimingInfo()) {
 					mixTiming = abcInfo.hasMixTimings();
 					organic = abcInfo.isOrganic();
@@ -990,7 +996,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		importSettingsEle.setAttribute("useOldTempos", String.valueOf(usingOldTempos));
 		importSettingsEle.setAttribute("useNewMidiLayout", String.valueOf(usingNewMidiLayout));
 		importSettingsEle.setAttribute("abcImportVersion", String.valueOf(abcImportVersion));
-		if (abcStandardPitch != null) importSettingsEle.setAttribute("abcStandardPitch", String.valueOf(abcStandardPitch));
+		if (sourceAbcWasMadeForLotro != null) importSettingsEle.setAttribute("sourceAbcWasMadeForLotro", String.valueOf(sourceAbcWasMadeForLotro));
 		if (ignoreZeroChannelVolume) importSettingsEle.setAttribute("ignoreZeroChannelVolume", String.valueOf(ignoreZeroChannelVolume));
 		if (importSettingsEle.getAttributes().getLength() > 0 || importSettingsEle.getChildNodes().getLength() > 0)
 			songEle.appendChild(importSettingsEle);
@@ -1518,15 +1524,15 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	 * (tryToLoadFromFile). Returns what to restore if the replacement fails.
 	 */
 	public Object[] resetAbcReading() {
-		Object[] previous = { abcImportVersion, abcStandardPitch };
+		Object[] previous = { abcImportVersion, sourceAbcWasMadeForLotro};
 		abcImportVersion = 2; // Repeats played, Q: note length counts
-		abcStandardPitch = null; // Detected on load
+		sourceAbcWasMadeForLotro = null; // Detected on load
 		return previous;
 	}
 
 	public void restoreAbcReading(Object[] previous) {
 		abcImportVersion = (Integer) previous[0];
-		abcStandardPitch = (Boolean) previous[1];
+		sourceAbcWasMadeForLotro = (Boolean) previous[1];
 	}
 
 	public File getProjectFile() {
@@ -2111,7 +2117,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		this.singleStageVer = other.singleStageVer;
 		this.mergeVersion = other.mergeVersion;
 		this.abcImportVersion = other.abcImportVersion;
-		this.abcStandardPitch = other.abcStandardPitch;
+		this.sourceAbcWasMadeForLotro = other.sourceAbcWasMadeForLotro;
 
         // read-only/shared services.
         this.sequenceInfo = other.sequenceInfo;// lets assume the midi don't change while we work, then this is immutable

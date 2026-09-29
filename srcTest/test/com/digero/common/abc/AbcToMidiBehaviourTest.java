@@ -50,7 +50,7 @@ class AbcToMidiBehaviourTest {
 
 	static Stream<AbcCase> casesWithLotroAndPlainMidi() {
 		return AbcCases.all().stream()
-				.filter(c -> c.profiles().contains(Profile.LOTRO) && c.profiles().contains(Profile.PLAIN_MIDI));
+				.filter(c -> c.profiles().contains(Profile.ABC_PLAYER) && c.profiles().contains(Profile.MAESTRO_LEGACY));
 	}
 
 	static Stream<Arguments> caseProfiles() {
@@ -76,7 +76,7 @@ class AbcToMidiBehaviourTest {
 		@MethodSource("com.digero.common.abc.AbcToMidiBehaviourTest#casesInRange")
 		void notesStayWithinLotroRange(AbcCase abcCase) {
 			AbcInfo info = new AbcInfo();
-			ConversionDump.run(abcCase, Profile.LOTRO, true, info);
+			ConversionDump.run(abcCase, Profile.ABC_PLAYER, true, info);
 
 			List<String> outside = new ArrayList<>();
 			NavigableSet<AbcRegion> regions = info.getRegions();
@@ -99,13 +99,13 @@ class AbcToMidiBehaviourTest {
 		@ParameterizedTest(name = "{0}")
 		@MethodSource("com.digero.common.abc.AbcToMidiBehaviourTest#casesWithLotroAndPlainMidi")
 		void lotroInstrumentsOnlyCutPluckedNotes(AbcCase abcCase) throws Exception {
-			ConversionDump.Result lotro = ConversionDump.run(abcCase, Profile.LOTRO, false, new AbcInfo());
-			ConversionDump.Result plain = ConversionDump.run(abcCase, Profile.PLAIN_MIDI, false, new AbcInfo());
+			ConversionDump.Result lotro = ConversionDump.run(abcCase, Profile.ABC_PLAYER, false, new AbcInfo());
+			ConversionDump.Result plain = ConversionDump.run(abcCase, Profile.MAESTRO_LEGACY, false, new AbcInfo());
 			assertEquals(lotro.error(), plain.error());
 			if (lotro.error() != null)
 				return;
-			List<long[]> lotroNotes = notes(ConversionDump.convert(abcCase, Profile.LOTRO));
-			List<long[]> plainNotes = notes(ConversionDump.convert(abcCase, Profile.PLAIN_MIDI));
+			List<long[]> lotroNotes = notes(ConversionDump.convert(abcCase, Profile.ABC_PLAYER));
+			List<long[]> plainNotes = notes(ConversionDump.convert(abcCase, Profile.MAESTRO_LEGACY));
 			assertEquals(plainNotes.size(), lotroNotes.size(), "number of notes");
 			for (int i = 0; i < plainNotes.size(); i++) {
 				long[] l = lotroNotes.get(i), p = plainNotes.get(i);
@@ -175,7 +175,7 @@ class AbcToMidiBehaviourTest {
 			AbcCase previousSong = AbcCases.all().stream().filter(c -> c.name().equals("instruments_by_title"))
 					.findFirst().orElseThrow();
 			AbcInfo reused = new AbcInfo();
-			ConversionDump.run(previousSong, Profile.PLAIN_MIDI, true, reused);
+			ConversionDump.run(previousSong, Profile.MAESTRO_LEGACY, true, reused);
 
 			String fresh = ConversionDump.run(abcCase, profile, true, new AbcInfo()).text();
 			String afterReuse = ConversionDump.run(abcCase, profile, true, reused).text();
@@ -207,7 +207,7 @@ class AbcToMidiBehaviourTest {
 		}
 
 		private Sequence convert(AbcCase abcCase) throws Exception {
-			return ConversionDump.convert(abcCase, Profile.PLAIN_MIDI);
+			return ConversionDump.convert(abcCase, Profile.MAESTRO_LEGACY);
 		}
 
 		/** Note events of track 1, sorted by tick, then note-offs before note-ons, then pitch. */
@@ -238,6 +238,258 @@ class AbcToMidiBehaviourTest {
 
 		private static List<NoteEvent> noteOns(Sequence sequence, int trackIndex) {
 			return noteEvents(sequence, trackIndex).stream().filter(NoteEvent::on).toList();
+		}
+
+		/**
+		 * Params.standard2011: where Lotro plays ABC otherwise than ABC 2.1 (2011) says, or doesn't take ABC 2.1 syntax,
+		 * the flag plays the standard. Maestro sets it like standardPitch: for standard ABC (folk tunes), not for files
+		 * made for Lotro, existing projects or the ABC Player. Each test shows the reading without the flag (Lotro's,
+		 * as today) and with it (ABC 2.1). See section F of the task list.
+		 */
+		@Nested
+		@Disabled("Params.standard2011 is not implemented yet: these tests say what it will do")
+		class Standard2011 {
+
+			private static AbcCase standard(AbcCase abcCase) {
+				return abcCase.with(p -> p.standard2011 = true);
+			}
+
+			/** The note-on velocities of track 1, in order. */
+			private static List<Integer> velocities(Sequence sequence) {
+				List<Integer> velocities = new ArrayList<>();
+				Track track = sequence.getTracks()[1];
+				for (int i = 0; i < track.size(); i++) {
+					if (track.get(i).getMessage() instanceof ShortMessage sm && sm.getCommand() == ShortMessage.NOTE_ON)
+						velocities.add(sm.getData2());
+				}
+				return velocities;
+			}
+
+			/** "tick:microseconds per quarter" of each tempo event in track 0. */
+			private static List<String> tempos(Sequence sequence) {
+				List<String> tempos = new ArrayList<>();
+				Track track = sequence.getTracks()[0];
+				for (int i = 0; i < track.size(); i++) {
+					if (track.get(i).getMessage() instanceof MetaMessage mm && mm.getType() == 0x51) {
+						byte[] d = mm.getData();
+						tempos.add(track.get(i).getTick() + ":" + (((d[0] & 0xFF) << 16) | ((d[1] & 0xFF) << 8) | (d[2] & 0xFF)));
+					}
+				}
+				return tempos;
+			}
+
+			@Test
+			void chordLastsAsLongAsItsFirstNote() throws Exception {
+				// Lotro (tested, B31): a chord lasts as long as its shortest note, so g follows the e
+				Sequence s = convert(tune("semantic", "[c2e] g|"));
+				long q = s.getResolution();
+				assertEquals(List.of(on(0, 60), on(0, 64), on(q / 2, 67)), noteOns(s));
+				// ABC 2.1 (4.17): "the chord duration is that of the first note", so g follows the c2. Each note still
+				// sounds for its own length.
+				s = convert(standard(tune("semantic", "[c2e] g|")));
+				assertEquals(List.of(on(0, 60), on(0, 64), off(q / 2, 64), off(q, 60), on(q, 67), off(3 * q / 2, 67)),
+						noteEvents(s));
+				// The first note, not the longest: [ce2] lasts as long as its c
+				assertEquals(List.of(on(0, 60), on(0, 64), on(q / 2, 67)),
+						noteOns(convert(standard(tune("semantic", "[ce2] g|")))));
+			}
+
+			@Test
+			void unisonPlaysTheLongerNote() throws Exception {
+				// Lotro (tested): the same pitch twice in a chord plays only the first, for its own length
+				long q = convert(tune("semantic", "c|")).getResolution();
+				assertEquals(List.of(on(0, 60), off(q / 2, 60)), noteEvents(convert(tune("semantic", "[cc2] z2|"))));
+				// ABC 2.1 (4.17): a unison, both notes sound. One MIDI channel can't sound the same pitch twice, so the
+				// longer one plays; the chord's length is still its first note's (the rest starts after the c)
+				assertEquals(List.of(on(0, 60), off(q, 60)), noteEvents(convert(standard(tune("semantic", "[cc2] z2|")))));
+				assertEquals(List.of(on(0, 60), off(q, 60)), noteEvents(convert(standard(tune("semantic", "[c2c] z2|")))));
+				assertEquals(List.of(on(0, 61), off(q, 61)),
+						noteEvents(convert(standard(tune("semantic", "[^c_d2] z2|")))));
+			}
+
+			@Test
+			void tieOverOtherNotesStaysAsInLotro() throws Exception {
+				// Decided: kept in every mode. Lotro joins a tie to the next note of its pitch wherever it is (tested:
+				// c- d c is one c over the d). ABC 2.1 (4.11) only ties "two successive notes", so standard ABC never
+				// writes c- d c, and either reading plays it the same.
+				assertEquals(noteEvents(convert(tune("semantic", "c- d c|"))),
+						noteEvents(convert(standard(tune("semantic", "c- d c|")))));
+			}
+
+			@Test
+			void tieCarriesItsAccidentalOverTheBarLine() throws Exception {
+				// Lotro (tested): the bar line ends the sharp, so ^c-|c ties C# to C and doesn't connect (an error);
+				// the continuation must repeat the sharp
+				assertThrows(FileParseException.class, () -> convert(tune("semantic", "^c-|c d|")));
+				// Staff notation, which ABC 2.1 follows (it says nothing of it): a tie carries its accidental over the
+				// bar line to the continuation, and only to it. ^c-|c c : C# for a quarter, then a plain C.
+				Sequence s = convert(standard(tune("semantic", "^c-|c c|")));
+				long q = s.getResolution();
+				assertEquals(List.of(on(0, 61), off(q, 61), on(q, 60), off(3 * q / 2, 60)), noteEvents(s));
+				// Repeating the sharp after the bar still works
+				assertEquals(noteEvents(convert(tune("semantic", "^c-|^c d|"))),
+						noteEvents(convert(standard(tune("semantic", "^c-|^c d|")))));
+			}
+
+			@Test
+			void accidentalAppliesInEveryOctave() throws Exception {
+				// Lotro's reading (untested in Lotro, B66): an accidental applies in its own octave, to the bar line
+				assertEquals(List.of(61, 72, 48, 61),
+						noteOns(convert(tune("semantic", "^c c' C c|"))).stream().map(NoteEvent::pitch).toList());
+				// ABC 2.1 (11.3, %%propagate-accidentals, default "pitch"): to the same note in every octave, to the
+				// bar line
+				assertEquals(List.of(61, 73, 49, 61),
+						noteOns(convert(standard(tune("semantic", "^c c' C c|")))).stream().map(NoteEvent::pitch).toList());
+				assertEquals(List.of(61, 72),
+						noteOns(convert(standard(tune("semantic", "^c|c'|")))).stream().map(NoteEvent::pitch).toList());
+			}
+
+			@Test
+			void tempoWithoutNoteLengthCountsUnitNotes() throws Exception {
+				// Lotro and every Lotro file: Q:120 is 120 beats of the meter's denominator. M:4/4 L:1/8 Q:120 c8
+				// (a whole note) = 4 quarters at 120 a minute = 2 s.
+				assertEquals(2_000_000L, convert(tune("semantic", "c8|")).getMicrosecondLength());
+				// ABC 2.1 (10.1): Q:120 and Q:C=120 are deprecated forms of "120 unit note-lengths (L:) per minute",
+				// and programs should accept them: 8 eighths at 120 a minute = 4 s
+				assertEquals(4_000_000L, convert(standard(tune("semantic", "c8|"))).getMicrosecondLength());
+				assertEquals(4_000_000L,
+						convert(standard(tune("semantic", header("Q:C=120"), "c8|"))).getMicrosecondLength());
+				// With L:1/4 the two readings are the same; a note length in Q: counts as before
+				assertEquals(2_000_000L,
+						convert(standard(tune("semantic", header("L:1/4"), "c4|"))).getMicrosecondLength());
+				assertEquals(2_000_000L,
+						convert(standard(tune("semantic", header("Q:1/4=120"), "c8|"))).getMicrosecondLength());
+			}
+
+			@Test
+			void blankLineEndsTheTune() throws Exception {
+				// Lotro (tested, B14): it plays on after a blank line, so both lines play
+				assertEquals(4, noteOns(convert(tune("semantic", "c d|", "", "e f|"))).size());
+				// ABC 2.1 (2.2.1): a tune is "terminated by an empty line"; what follows up to the next X: is free
+				// text, not music
+				assertEquals(2, noteOns(convert(standard(tune("semantic", "c d|", "", "e f|")))).size());
+				assertEquals(2, noteOns(convert(standard(tune("semantic", "c d|", "", "Notes: play it slowly.")))).size());
+				assertThrows(FileParseException.class,
+						() -> convert(tune("semantic", "c d|", "", "Notes: play it slowly.")));
+				// Free text before the first X: too (ABC 2.1, 2.2): tune books start with a note and a copyright
+				AbcCase book = AbcCase.of("semantic", "These are my tunes.", "(c) 2026 Me", "", "X:1", "T:t", "M:4/4",
+						"L:1/8", "Q:120", "K:C", "c d|");
+				assertEquals(2, noteOns(convert(standard(book))).size());
+				assertThrows(FileParseException.class, () -> convert(book));
+			}
+
+			@Test
+			void brokenRhythmWithChords() throws Exception {
+				long q = convert(tune("semantic", "c|")).getResolution();
+				// Lotro (tested, B6 and B31): in c>[ce] only the chord's first note is halved, e keeps its length and
+				// sounds on after the chord; the next note follows the halved c
+				assertEquals(List.of(on(0, 60), off(3 * q / 4, 60), on(3 * q / 4, 60), on(3 * q / 4, 64), off(q, 60),
+						on(q, 62), off(5 * q / 4, 64), off(3 * q / 2, 62)), noteEvents(convert(tune("semantic", "c>[ce] d|"))));
+				// ... and it refuses [ce]>d: an error without the flag too
+				assertThrows(FileParseException.class, () -> convert(tune("semantic", "[ce]>d f|")));
+				// ABC 2.1 (4.4 and 4.17: a chord takes a broken rhythm like a note): the whole chord is halved ...
+				Sequence s = convert(standard(tune("semantic", "c>[ce] d|")));
+				assertEquals(List.of(on(0, 60), off(3 * q / 4, 60), on(3 * q / 4, 60), on(3 * q / 4, 64), off(q, 60),
+						off(q, 64), on(q, 62), off(3 * q / 2, 62)), noteEvents(s));
+				// ... or dotted, the note after it halved
+				s = convert(standard(tune("semantic", "[ce]>d f|")));
+				assertEquals(List.of(on(0, 60), on(0, 64), on(3 * q / 4, 62), on(q, 65)), noteOns(s));
+				// With Lotro errors both are errors, with or without the flag
+				assertThrows(FileParseException.class, () -> ConversionDump.convert(standard(tune("semantic", "[ce]>d f|")),
+						Profile.ABC_PLAYER_STRICT));
+				assertThrows(LotroFileParseException.class, () -> ConversionDump.convert(
+						standard(tune("semantic", "c>[ce] d|")), Profile.ABC_PLAYER_STRICT));
+			}
+
+			@Test
+			void dynamicsMarksSetTheVolume() throws Exception {
+				// Lotro: only the ABC 2.0 form +p+ +f+ sets the volume; !p! !f! (ABC 2.1) are skipped, so every note is
+				// at the default mf
+				List<Integer> plusForm = velocities(convert(tune("semantic", "+p+c +f+d|")));
+				List<Integer> mf = velocities(convert(tune("semantic", "c d|")));
+				assertEquals(mf, velocities(convert(tune("semantic", "!p!c !f!d|"))));
+				// ABC 2.1 (4.14): players "may be expected to implement the dynamics marks": !p! !f! as +p+ +f+
+				assertEquals(plusForm, velocities(convert(standard(tune("semantic", "!p!c !f!d|")))));
+				assertEquals(velocities(convert(tune("semantic", "+pppp+c +ffff+d|"))),
+						velocities(convert(standard(tune("semantic", "!pppp!c !ffff!d|")))));
+				// ABC 2.1 (4.14): players "may be expected to implement the dynamics marks": !p! !f! as +p+ +f+
+				assertEquals(plusForm, velocities(convert(standard(tune("semantic", "!p!c !f!d|")))));
+				assertEquals(velocities(convert(tune("semantic", "+ppp+c +fff+d|"))),
+						velocities(convert(standard(tune("semantic", "!ppp!c !fff!d|")))));
+				// !pppp! and !ffff! (ABC 2.1 has them, Dynamics doesn't) wait for A34
+			}
+
+			@Test
+			void accentAndStaccato() throws Exception {
+				// Lotro: an accent (L, !accent!, !>!) and a staccato dot (.) change nothing
+				Sequence plain = convert(tune("semantic", "c d e|"));
+				long q = plain.getResolution();
+				assertEquals(noteEvents(plain), noteEvents(convert(tune("semantic", "Lc .d e|"))));
+				// ABC 2.1 (4.14): players "may be expected to implement ... the accent mark and the staccato dot".
+				// How much is ours to choose (to decide): an accent one volume step louder than the notes around it,
+				// a staccato note sounding half its length (the next note starts on time)
+				List<Integer> accented = velocities(convert(standard(tune("semantic", "!accent!c d e|"))));
+				assertTrue(accented.get(0) > accented.get(1), accented.toString());
+				assertEquals(accented, velocities(convert(standard(tune("semantic", "Lc d e|")))));
+				assertEquals(accented, velocities(convert(standard(tune("semantic", "!>!c d e|")))));
+				assertEquals(List.of(on(0, 60), off(q / 2, 60), on(q / 2, 62), off(3 * q / 4, 62), on(q, 64),
+						off(3 * q / 2, 64)), noteEvents(convert(standard(tune("semantic", "c .d e|")))));
+			}
+
+			@Test
+			void tempoChangeInThePart() throws Exception {
+				// Without the flag Q: can't change the tempo after the part's notes started (an error)
+				assertThrows(FileParseException.class, () -> convert(tune("semantic", "c d|", "Q:60", "e f|")));
+				assertThrows(FileParseException.class, () -> convert(tune("semantic", "c d [Q:60] e f|")));
+				// ABC 2.1 (3.1.8, 3.2): Q: may change the tempo mid-tune, on a line or inline. The notes keep their
+				// ticks; a tempo event makes them slower from there.
+				for (AbcCase abcCase : List.of(tune("semantic", "c d|", "Q:60", "e f|"), tune("semantic", "c d [Q:60] e f|"))) {
+					Sequence s = convert(standard(abcCase));
+					long q = s.getResolution();
+					assertEquals(List.of("0:500000", q + ":1000000"), tempos(s));
+					assertEquals(List.of(on(0, 60), on(q / 2, 62), on(q, 64), on(3 * q / 2, 65)), noteOns(s));
+				}
+			}
+
+			@Test
+			void meterWithAnotherDenominatorInThePart() throws Exception {
+				// Without the flag the meter's denominator must stay the same in the song (an error)
+				assertThrows(FileParseException.class, () -> convert(tune("semantic", "c d|", "M:6/8", "e f|")));
+				// ABC 2.1 (3.2): the meter may change mid-tune. With the flag Q:120 counts unit notes, so the notes keep
+				// their lengths.
+				Sequence s = convert(standard(tune("semantic", "c d|", "M:6/8", "e f|")));
+				long q = s.getResolution();
+				assertEquals(List.of(on(0, 60), on(q / 2, 62), on(q, 64), on(3 * q / 2, 65)), noteOns(s));
+			}
+
+			@Test
+			void keyWithExplicitAccidentals() throws Exception {
+				// Without the flag: an error (A12)
+				assertThrows(FileParseException.class, () -> convert(tune("semantic", header("K:G ^c"), "c f|")));
+				// ABC 2.1 (3.1.14): K:G ^c is G major with a C sharp added; K:D exp _b has only the accidentals listed
+				assertEquals(List.of(61, 66), noteOns(convert(standard(tune("semantic", header("K:G ^c"), "c f|"))))
+						.stream().map(NoteEvent::pitch).toList());
+				assertEquals(List.of(65, 60, 58), noteOns(convert(standard(tune("semantic", header("K:D exp _b"),
+						"f c B|")))).stream().map(NoteEvent::pitch).toList());
+			}
+
+			@Test
+			void graceNotesBetweenANoteAndItsBrokenRhythm() throws Exception {
+				// Without the flag c{g}<d is an error (only c<{g}d works)
+				assertThrows(FileParseException.class, () -> convert(tune("semantic", "c{g}<d e|")));
+				// ABC 2.1 (4.12): "A<{g}A and A{g}<A are legal and equivalent"
+				assertEquals(noteEvents(convert(standard(tune("semantic", "c<{g}d e|")))),
+						noteEvents(convert(standard(tune("semantic", "c{g}<d e|")))));
+			}
+
+			@Test
+			void lotroErrorsWin() throws Exception {
+				// With Lotro errors on (the ABC Player) the flag changes nothing: Lotro's reading, or a Lotro error
+				assertEquals(noteEvents(ConversionDump.convert(tune("semantic", "[c2e] g|"), Profile.ABC_PLAYER_STRICT)),
+						noteEvents(ConversionDump.convert(standard(tune("semantic", "[c2e] g|")), Profile.ABC_PLAYER_STRICT)));
+				assertEquals(noteEvents(ConversionDump.convert(tune("semantic", "^c c' C c|"), Profile.ABC_PLAYER_STRICT)),
+						noteEvents(ConversionDump.convert(standard(tune("semantic", "^c c' C c|")), Profile.ABC_PLAYER_STRICT)));
+			}
 		}
 
 		@Test
@@ -329,13 +581,13 @@ class AbcToMidiBehaviourTest {
 		@Test
 		void chordLengthSuffixIsALotroError() {
 			LotroFileParseException e = assertThrows(LotroFileParseException.class,
-					() -> ConversionDump.convert(tune("semantic", "[ceg]3/4 c|"), Profile.LOTRO_STRICT));
+					() -> ConversionDump.convert(tune("semantic", "[ceg]3/4 c|"), Profile.ABC_PLAYER_STRICT));
 			assertEquals(true, e.getMessage().contains("3/4"), e.getMessage());
 		}
 
 		@Test
 		void chordWithoutLengthSuffixIsFineForLotro() throws Exception {
-			Sequence s = ConversionDump.convert(tune("semantic", "[c3/4e3/4g3/4] c|"), Profile.LOTRO_STRICT);
+			Sequence s = ConversionDump.convert(tune("semantic", "[c3/4e3/4g3/4] c|"), Profile.ABC_PLAYER_STRICT);
 			assertEquals(4, noteOns(s).size());
 		}
 
@@ -399,14 +651,14 @@ class AbcToMidiBehaviourTest {
 		void noteRestartedAtAnotherVolumeWhileItSoundsIsALotroError() throws Exception {
 			// Tested in Lotro: the c2 still sounds when c starts again. With +ff+ in between the part plays nothing.
 			LotroFileParseException e = assertThrows(LotroFileParseException.class,
-					() -> ConversionDump.convert(tune("semantic", "[c2z] +ff+ c d|"), Profile.LOTRO_STRICT));
+					() -> ConversionDump.convert(tune("semantic", "[c2z] +ff+ c d|"), Profile.ABC_PLAYER_STRICT));
 			assertTrue(e.getMessage().contains("+ff+"), e.getMessage());
 			// ... but it plays without a volume change, with +mf+ (already the volume), or with +ff+ before both
 			for (String body : List.of("[c2z] c d|", "[c2z] +mf+ c d|", "+ff+ [c2z] c d|"))
-				ConversionDump.convert(tune("semantic", body), Profile.LOTRO_STRICT);
+				ConversionDump.convert(tune("semantic", body), Profile.ABC_PLAYER_STRICT);
 			// ... and a tie continuation is no new attack, so a volume change before it is fine (TD4-TD6)
 			for (String body : List.of("[c2-z] +ff+ c d|", "c- +ff+ c d|", "c- d +ff+ c|"))
-				ConversionDump.convert(tune("semantic", body), Profile.LOTRO_STRICT);
+				ConversionDump.convert(tune("semantic", body), Profile.ABC_PLAYER_STRICT);
 		}
 
 		/**
@@ -521,9 +773,9 @@ class AbcToMidiBehaviourTest {
 			assertTrue(noteEvents(s).contains(off(q, 64)), noteEvents(s).toString());
 			// Lotro refuses [ce]>d, and halves only the chord's first note in c>[ce] (both tested): errors
 			assertThrows(FileParseException.class,
-					() -> ConversionDump.convert(tune("semantic", "[ce]>d f|"), Profile.LOTRO_STRICT));
+					() -> ConversionDump.convert(tune("semantic", "[ce]>d f|"), Profile.ABC_PLAYER_STRICT));
 			assertThrows(LotroFileParseException.class,
-					() -> ConversionDump.convert(tune("semantic", "c>[ce] d|"), Profile.LOTRO_STRICT));
+					() -> ConversionDump.convert(tune("semantic", "c>[ce] d|"), Profile.ABC_PLAYER_STRICT));
 		}
 
 		@Test
@@ -540,12 +792,12 @@ class AbcToMidiBehaviourTest {
 			// Tested in Lotro: it refuses a part with an inline field
 			for (String body : List.of("f [K:G] f|", "c [L:1/4] d|", "c d|[M:3/4] e f g|", "c [P:A] d|", "c [I:x] d|"))
 				assertThrows(LotroFileParseException.class,
-						() -> ConversionDump.convert(tune("semantic", body), Profile.LOTRO_STRICT), body);
+						() -> ConversionDump.convert(tune("semantic", body), Profile.ABC_PLAYER_STRICT), body);
 			// Tested in Lotro (B40): an L: line after the first notes changes nothing there, so it's a Lotro error; in
 			// the header it's fine
 			assertThrows(LotroFileParseException.class,
-					() -> ConversionDump.convert(tune("semantic", "c d|", "L:1/4", "e f|"), Profile.LOTRO_STRICT));
-			ConversionDump.convert(tune("semantic", header("L:1/4"), "c d|"), Profile.LOTRO_STRICT);
+					() -> ConversionDump.convert(tune("semantic", "c d|", "L:1/4", "e f|"), Profile.ABC_PLAYER_STRICT));
+			ConversionDump.convert(tune("semantic", header("L:1/4"), "c d|"), Profile.ABC_PLAYER_STRICT);
 			assertEquals(List.of(on(0, 60), on(q / 2, 62), on(q, 64), on(2 * q, 65)),
 					noteOns(convert(tune("semantic", "c d|", "L:1/4", "e f|"))));
 		}
@@ -593,15 +845,15 @@ class AbcToMidiBehaviourTest {
 			assertEquals("cde", playedWithRepeats("c [1 d | [2 e |]"));
 			// Tested in Lotro: :: and :||: play, :|: and :|] are refused
 			for (String body : List.of("|: c d :: e f :|", "|: c d :||: e f :|"))
-				ConversionDump.convert(tune("semantic", body), Profile.LOTRO_STRICT);
+				ConversionDump.convert(tune("semantic", body), Profile.ABC_PLAYER_STRICT);
 			for (String body : List.of("|: c d :|: e f :|", "|: c d :|] e f|"))
 				assertThrows(FileParseException.class,
-						() -> ConversionDump.convert(tune("semantic", body), Profile.LOTRO_STRICT), body);
+						() -> ConversionDump.convert(tune("semantic", body), Profile.ABC_PLAYER_STRICT), body);
 			// Tested in Lotro: it plays nothing of a part with an ending for several passes; [1 [2 play on
 			for (String body : List.of("c d [1,3 e f | [2 g a |] b c'|", "c d [1-2 e f | g a b c'|]", "c |1,2 d :|"))
 				assertThrows(LotroFileParseException.class,
-						() -> ConversionDump.convert(tune("semantic", body), Profile.LOTRO_STRICT), body);
-			ConversionDump.convert(tune("semantic", "c [1 d | [2 e |]"), Profile.LOTRO_STRICT);
+						() -> ConversionDump.convert(tune("semantic", body), Profile.ABC_PLAYER_STRICT), body);
+			ConversionDump.convert(tune("semantic", "c [1 d | [2 e |]"), Profile.ABC_PLAYER_STRICT);
 		}
 
 		@Test
@@ -627,7 +879,7 @@ class AbcToMidiBehaviourTest {
 			// Q:"Allegro" 1/4=120 : the text is skipped. Tested in Lotro: it refuses the part.
 			assertEquals(90, abcInfoOf(tune("semantic", header("Q:\"Allegro\" 1/4=90"), "c d|")).getPrimaryTempoBPM());
 			assertThrows(LotroFileParseException.class, () -> ConversionDump
-					.convert(tune("semantic", header("Q:\"Allegro\" 1/4=90"), "c d|"), Profile.LOTRO_STRICT));
+					.convert(tune("semantic", header("Q:\"Allegro\" 1/4=90"), "c d|"), Profile.ABC_PLAYER_STRICT));
 		}
 
 		@Test
@@ -640,7 +892,7 @@ class AbcToMidiBehaviourTest {
 				// With Lotro errors they're errors (tested): Lotro refuses [|], plays nothing with +trill+ (and any
 				// other +decoration+ that isn't a volume), and stops playing at $ and `
 				assertThrows(LotroFileParseException.class,
-						() -> ConversionDump.convert(tune("semantic", body), Profile.LOTRO_STRICT), body);
+						() -> ConversionDump.convert(tune("semantic", body), Profile.ABC_PLAYER_STRICT), body);
 			}
 			// [|] is a bar line: it ends an accidental
 			assertEquals(List.of(61, 60), noteOns(convert(tune("semantic", "^c[|]c|"))).stream().map(NoteEvent::pitch)
@@ -657,7 +909,7 @@ class AbcToMidiBehaviourTest {
 			assertEquals(List.of(on(0, 60), on(12 * q, 60), on(20 * q, 60)), noteOns(s));
 			// Tested in Lotro: it refuses the part
 			assertThrows(LotroFileParseException.class,
-					() -> ConversionDump.convert(tune("semantic", "c8|Z2|c8|"), Profile.LOTRO_STRICT));
+					() -> ConversionDump.convert(tune("semantic", "c8|Z2|c8|"), Profile.ABC_PLAYER_STRICT));
 		}
 
 		@Test
@@ -671,7 +923,7 @@ class AbcToMidiBehaviourTest {
 			// Tested in Lotro (T H u v): it refuses the part
 			for (String body : List.of("Tc Hd ue vf|", "Lc Md Oe Pf|Sc d e f|"))
 				assertThrows(LotroFileParseException.class,
-						() -> ConversionDump.convert(tune("semantic", body), Profile.LOTRO_STRICT), body);
+						() -> ConversionDump.convert(tune("semantic", body), Profile.ABC_PLAYER_STRICT), body);
 		}
 
 		@Test
@@ -718,15 +970,15 @@ class AbcToMidiBehaviourTest {
 		void tempoNoteLengthIsALotroErrorUnlessItIsTheBeat() throws Exception {
 			// Tested in Lotro (B15): it plays Q:3/8=120 in 6/8 as 120 eighths a minute; that's an error saying so
 			LotroFileParseException e = assertThrows(LotroFileParseException.class, () -> ConversionDump
-					.convert(tune("semantic", header("M:6/8", "Q:3/8=120"), "c d|"), Profile.LOTRO_STRICT));
+					.convert(tune("semantic", header("M:6/8", "Q:3/8=120"), "c d|"), Profile.ABC_PLAYER_STRICT));
 			assertTrue(e.getMessage().contains("Q:1/8=360"), e.getMessage());
 			assertThrows(LotroFileParseException.class, () -> ConversionDump
-					.convert(tune("semantic", header("M:2/2", "Q:1/4=120"), "c d|"), Profile.LOTRO_STRICT));
+					.convert(tune("semantic", header("M:2/2", "Q:1/4=120"), "c d|"), Profile.ABC_PLAYER_STRICT));
 			// The meter's beat is fine; without Q: or without a note length, Lotro's reading (no error)
 			for (String[] fields : List.of(new String[] { "M:6/8", "Q:1/8=120" }, new String[] { "M:4/4", "Q:1/4=120" },
 					new String[] { "M:6/8", "Q:120" }, new String[] { "M:6/8", "-Q" })) {
 				AbcInfo info = new AbcInfo();
-				ConversionDump.run(tune("semantic", header(fields), "c d|"), Profile.LOTRO_STRICT, false, info);
+				ConversionDump.run(tune("semantic", header(fields), "c d|"), Profile.ABC_PLAYER_STRICT, false, info);
 				assertEquals(120, info.getPrimaryTempoBPM(), String.join(" ", fields));
 			}
 		}
@@ -754,8 +1006,8 @@ class AbcToMidiBehaviourTest {
 			// K: transposition still counts (ABC 2.1, 4.6)
 			assertEquals(List.of(48), notePitches(standardPitch(tune("semantic", header("K:C octave=-1"), "C|"))));
 			// With Lotro errors (the ABC Player), always Lotro's reading
-			assertEquals(noteEvents(ConversionDump.convert(flute, Profile.LOTRO_STRICT)),
-					noteEvents(ConversionDump.convert(standardPitch(flute), Profile.LOTRO_STRICT)));
+			assertEquals(noteEvents(ConversionDump.convert(flute, Profile.ABC_PLAYER_STRICT)),
+					noteEvents(ConversionDump.convert(standardPitch(flute), Profile.ABC_PLAYER_STRICT)));
 		}
 
 		private List<Integer> notePitches(AbcCase abcCase) throws Exception {
@@ -768,7 +1020,7 @@ class AbcToMidiBehaviourTest {
 
 		@Test
 		void filesMadeForLotroAreRecognised() {
-			// 1. Any sure sign of Lotro: Maestro's extended fields, BruTE, a Lotro instrument in the title
+			// TRUE: any sure sign of Lotro: Maestro's extended fields, BruTE, a Lotro instrument in the title
 			List<String[]> lotro = List.of(new String[] { "%%song-title Song" }, new String[] { "%%part-name Lute" },
 					new String[] { "%%abc-creator Maestro v2.5.0" }, new String[] { "%%made-for Basic Flute" },
 					new String[] { "% Produced with Bruzo's Transcoding Environment 2.0 alpha" },
@@ -777,10 +1029,12 @@ class AbcToMidiBehaviourTest {
 					new String[] { "X:1", "T: Concert-Rachmaninoff[Basic Lute](10:04)" },
 					new String[] { "X:1", "T:Lute of Ages solo" }, new String[] { "X:1", "T:Song - Basic Fiddle" },
 					// ... wins over signs of standard ABC
-					new String[] { "X:1", "T:Song [Lute]", "R:reel", "K:C", "\"Am\"c d|" });
+					new String[] { "X:1", "T:Song [Lute]", "R:reel", "K:C", "\"Am\"c d|" },
+					new String[] { "X:1", "T:Song [Lute]", "M:6/8", "Q:3/8=120", "K:C", "Tc d|" });
 			for (String[] lines : lotro)
-				assertTrue(madeForLotro(lines), String.join(" / ", lines));
-			// 2. Else any sign of standard ABC: chord symbols, voices, background fields, a note Lotro can't play
+				assertEquals(Boolean.TRUE, madeForLotro(lines), String.join(" / ", lines));
+
+			// FALSE: else any sign of standard ABC: chord symbols, voices, background fields, a note Lotro can't play ...
 			List<String[]> standard = List.of(new String[] { "X:1", "T:Tune", "K:G", "\"G\"G2 B d \"D7\"c2 A F|" },
 					new String[] { "X:1", "T:Tune", "K:C", "V:1", "c d|", "V:2", "C D|" },
 					new String[] { "X:1", "T:Haste to the Wedding (jig)", "R:jig", "K:D", "d2f fed|" },
@@ -788,21 +1042,78 @@ class AbcToMidiBehaviourTest {
 					new String[] { "X:1", "T:Tune", "S:Played by someone", "K:C", "c d|" },
 					new String[] { "X:1", "T:Bass Reeves", "K:C", "c d e' f|" }, // e' is above Lotro's c'
 					new String[] { "X:1", "T:Reel [Bass line]", "K:C", "C,, D|" }, // Below Lotro's C,
-					new String[] { "X:1", "T:Hornpipe [for Horn]", "K:C", "c ^c' d|" });
+					new String[] { "X:1", "T:Hornpipe [for Horn]", "K:C", "c ^c' d|" },
+					// ... or ABC that Lotro refuses or plays otherwise (tested in Lotro). In the header: a Q: note length
+					// that isn't the meter's beat (B15; tune_001364: Q:3/8=120 in 6/8), also with Q: before M:, or with
+					// the file header's M:; several beats; a tempo word (B20)
+					new String[] { "X:1", "T:Tune", "M:6/8", "Q:3/8=120", "K:G", "G2 G GFG|" },
+					new String[] { "X:1", "T:Tune", "Q:3/8=120", "M:6/8", "K:G", "G2 G GFG|" },
+					new String[] { "M:6/8", "X:1", "T:Tune", "Q:3/8=120", "K:G", "G2 G GFG|" },
+					new String[] { "X:1", "T:Tune", "M:4/4", "Q:1/8=240", "K:C", "c d|" },
+					new String[] { "X:1", "T:Tune", "M:5/4", "Q:1/4 3/8=40", "K:C", "c d|" },
+					new String[] { "X:1", "T:Tune", "Q:\"Allegro\"", "K:C", "c d|" },
+					// ... K: with more than the key and mode (B23, B49), or empty (B38); M:none (B21); +: (B22); an L:
+					// after the notes (B40)
+					new String[] { "X:1", "T:Tune", "K:C clef=bass", "c d|" }, new String[] { "X:1", "K:HP", "c d|" },
+					new String[] { "X:1", "K:none", "c d|" }, new String[] { "X:1", "K:G ^c", "c d|" },
+					new String[] { "X:1", "K:", "c d|" }, new String[] { "X:1", "M:none", "K:C", "c d|" },
+					new String[] { "X:1", "K:C", "c d|", "w:one", "+:two" },
+					new String[] { "X:1", "L:1/8", "K:C", "c d|", "L:1/4", "e f|" },
+					// ... in the notes: :|: :|] (B2, B4), decorations (B12, B17, B50, B56), grace notes (B55), y (B58),
+					// Z (B16), $ (B36), ` (B37), [|] (B18), inline fields (B7-B10), a length or tie after a chord (B11,
+					// B65), a broken rhythm next to a chord (B5, B6)
+					new String[] { "X:1", "K:C", "|: c d :|: e f :|" }, new String[] { "X:1", "K:C", "|: c d ::|: e f :|" },
+					new String[] { "X:1", "K:C", "|: c d :|] e f|" }, new String[] { "X:1", "K:C", "!trill!c d|" },
+					new String[] { "X:1", "K:C", "!f!c d|" }, new String[] { "X:1", "K:C", "+trill+c d|" },
+					new String[] { "X:1", "K:C", "{g}c d|" }, new String[] { "X:1", "K:C", "Tc d|" },
+					new String[] { "X:1", "K:C", "c Hd|" }, new String[] { "X:1", "K:C", "uc vd|" },
+					new String[] { "X:1", "K:C", "c y d|" }, new String[] { "X:1", "K:C", "Z|c d|" },
+					new String[] { "X:1", "K:C", "c d $ e|" }, new String[] { "X:1", "K:C", "c`d e|" },
+					new String[] { "X:1", "K:C", "c [|] d|" }, new String[] { "X:1", "K:C", "c [K:G] f|" },
+					new String[] { "X:1", "K:C", "[ce]2 d|" }, new String[] { "X:1", "K:C", "[ce]- [ce] d|" },
+					new String[] { "X:1", "K:C", "[ce]>d e|" }, new String[] { "X:1", "K:C", "c>[ce] d|" },
+					// ... also in a file without X: (no free text there), and after free text
+					new String[] { "K:C", "Tc d|" },
+					new String[] { "My Tunes (c) 2026", "", "X:1", "R:reel", "K:C", "c d|" });
 			for (String[] lines : standard)
-				assertFalse(madeForLotro(lines), String.join(" / ", lines));
-			// 3. Else Lotro's reading, as Maestro always did: instrument words in a folk title and volume marks
-			// (ABC too) are no signs either way
+				assertEquals(Boolean.FALSE, madeForLotro(lines), String.join(" / ", lines));
+
+			// null: else nothing tells: the caller asks the user. Instrument words in a folk title and volume marks
+			// (ABC too) are no signs either way, nor is what Lotro plays as ABC 2.1 says, or plays plain
 			List<String[]> noSigns = List.of(new String[] { "X:1", "T:The Piper's Farewell", "K:C", "c d|" },
 					new String[] { "X:1", "T:Morpeth Rant (Fiddle)", "K:D", "c d|" },
-					new String[] { "X:1", "K:C", "+fff+ c d +p+ e|" }, new String[] { "X:1", "T:Tune", "K:C", "c d|" },
-					// Lotro's range: C, to c' (quoted text, decorations and inline fields aren't notes)
-					new String[] { "X:1", "K:C", "C, c' \"^e''\" !g''! [K:C clef=bass] d|" });
+					new String[] { "X:1", "K:C", "+fff+ c d +p+ e +pppp+f +ffff+g|" },
+					new String[] { "X:1", "K:C", "+p+c+f+d|" }, new String[] { "X:1", "T:Tune", "K:C", "c d|" },
+					// Lotro's range: C, to c' (quoted text isn't notes)
+					new String[] { "X:1", "K:C", "C, c' \"^e''\" d|" },
+					// Repeat signs Lotro plays (B1, B3, B59), and ending lists, which it plays silently (B28)
+					new String[] { "X:1", "K:C", "|: c d :| e f :: g a :||: b c' :|" },
+					new String[] { "X:1", "K:C", "|: c |1 d :|2 e |] [1 f | [2 g |]" },
+					new String[] { "X:1", "K:C", "c [1,3 d | [2 e |] c [1-2 d | e |]" },
+					// Only in the notes: not in quoted text, comments or lyrics
+					new String[] { "X:1", "K:C", "\"^:|: Tempo\"c d| % Z $ !f!", "w:Ma'am y T H" },
+					// Q: with the meter's beat (B15, B69: Q:1/4=60 plays), also in 2/2 and C|; the tempo alone
+					new String[] { "X:1", "M:4/4", "Q:1/4=120", "K:C", "c d|" },
+					new String[] { "X:1", "M:2/2", "Q:1/2=60", "K:C", "c d|" },
+					new String[] { "X:1", "M:C|", "Q:1/2=60", "K:C", "c d|" },
+					new String[] { "X:1", "M:6/8", "Q:1/8=240", "K:C", "c d|" }, new String[] { "X:1", "Q:120", "K:C", "c d|" },
+					// The key and its mode (B33), an L: in the header, ~ and . (played plain, B54), a tie, a chord
+					new String[] { "X:1", "L:1/4", "K: C maj", "c d|" }, new String[] { "X:1", "K:D mix", "c d|" },
+					new String[] { "X:1", "K:Am", "c d|" }, new String[] { "X:1", "K:F#m", "c d|" },
+					new String[] { "X:1", "K:Bb", "~c .d e-e [ceg]|" },
+					// Maestro's export without its %% lines (a hand-made file looks the same)
+					new String[] { "X: 1", "T: Song", "M: 4/4", "Q: 60", "K: C maj", "L: 1/4000000",
+							"+mf+ c1000000 z500000 [c1000000e1000000] |]" },
+					// Free text: before the first X: and after a blank line (a tune book's notes and copyright; its
+					// letters aren't decorations)
+					new String[] { "These are my Tunes. Hornpipes, Marches (c) 2026 Me $5", "", "X:1", "T:Tune", "K:C",
+							"c d|", "", "Played every Tuesday: Thanks to Mary!", "X:2", "T:Tune two", "K:C", "e f|" },
+					new String[] { "X:1", "K:C", "c d|", "", "Tc d|" });
 			for (String[] lines : noSigns)
-				assertTrue(madeForLotro(lines), String.join(" / ", lines));
+				assertNull(madeForLotro(lines), String.join(" / ", lines));
 		}
 
-		private static boolean madeForLotro(String... lines) {
+		private static Boolean madeForLotro(String... lines) {
 			return AbcToMidi.isMadeForLotro(AbcCase.of("detect", lines).filesData());
 		}
 
@@ -860,7 +1171,7 @@ class AbcToMidiBehaviourTest {
 			assertEquals(2, convert(chords(tune("semantic", "\"a.\"c \"^text\"d \"Fine\"e f|"))).getTracks().length);
 			// Without the flag, or with Lotro errors (Lotro plays no chords), none
 			assertEquals(2, convert(tune("semantic", "\"G\"G B d|")).getTracks().length);
-			assertEquals(2, ConversionDump.convert(chords(tune("semantic", "\"G\"G B d|")), Profile.LOTRO_STRICT)
+			assertEquals(2, ConversionDump.convert(chords(tune("semantic", "\"G\"G B d|")), Profile.ABC_PLAYER_STRICT)
 					.getTracks().length);
 		}
 
@@ -880,7 +1191,7 @@ class AbcToMidiBehaviourTest {
 			assertEquals(List.of(on(0, 60), on(q / 2, 62), on(q, 64), on(3 * q / 2, 65)), noteOns(s));
 			// Tested in Lotro: it refuses the part
 			assertThrows(LotroFileParseException.class, () -> ConversionDump
-					.convert(tune("semantic", header("M:none"), "c d e f|"), Profile.LOTRO_STRICT));
+					.convert(tune("semantic", header("M:none"), "c d e f|"), Profile.ABC_PLAYER_STRICT));
 		}
 
 		@Test
@@ -891,7 +1202,7 @@ class AbcToMidiBehaviourTest {
 			assertEquals(List.of("3:<A long line"), lyrics(s, 0));
 			// Tested in Lotro: it refuses the part
 			assertThrows(LotroFileParseException.class, () -> ConversionDump
-					.convert(tune("semantic", "c d e f|", "w:one two", "+:three four"), Profile.LOTRO_STRICT));
+					.convert(tune("semantic", "c d e f|", "w:one two", "+:three four"), Profile.ABC_PLAYER_STRICT));
 		}
 
 		@Test
@@ -911,19 +1222,19 @@ class AbcToMidiBehaviourTest {
 			// Tested in Lotro: it refuses anything more than the key and its mode
 			for (String key : List.of("K:C clef=bass", "K:C treble", "K:none", "K:G transpose=2"))
 				assertThrows(LotroFileParseException.class,
-						() -> ConversionDump.convert(tune("semantic", header(key), "c|"), Profile.LOTRO_STRICT), key);
+						() -> ConversionDump.convert(tune("semantic", header(key), "c|"), Profile.ABC_PLAYER_STRICT), key);
 			// Tested in Lotro (B38): an empty K:, in the header or the tune, plays nothing
 			assertThrows(LotroFileParseException.class,
-					() -> ConversionDump.convert(tune("semantic", header("K:"), "c|"), Profile.LOTRO_STRICT));
+					() -> ConversionDump.convert(tune("semantic", header("K:"), "c|"), Profile.ABC_PLAYER_STRICT));
 			assertThrows(LotroFileParseException.class,
-					() -> ConversionDump.convert(tune("semantic", header("K:G"), "f|", "K:", "f|"), Profile.LOTRO_STRICT));
-			ConversionDump.convert(tune("semantic", header("K:D mix"), "c|"), Profile.LOTRO_STRICT);
+					() -> ConversionDump.convert(tune("semantic", header("K:G"), "f|", "K:", "f|"), Profile.ABC_PLAYER_STRICT));
+			ConversionDump.convert(tune("semantic", header("K:D mix"), "c|"), Profile.ABC_PLAYER_STRICT);
 			// Unknown words and explicit accidentals (not supported yet) are errors. Tested in Lotro (B23, B38): it
 			// refuses them too
 			for (String key : List.of("K:C foo", "K:G ^c", "K:C exp ^f")) {
 				assertThrows(FileParseException.class, () -> convert(tune("semantic", header(key), "c|")), key);
 				LotroFileParseException e = assertThrows(LotroFileParseException.class,
-						() -> ConversionDump.convert(tune("semantic", header(key), "c|"), Profile.LOTRO_STRICT), key);
+						() -> ConversionDump.convert(tune("semantic", header(key), "c|"), Profile.ABC_PLAYER_STRICT), key);
 				assertTrue(e.getMessage().contains("\"" + key.substring(key.indexOf(' ') + 1) + "\" in K:"), e.getMessage());
 			}
 		}
@@ -1044,8 +1355,8 @@ class AbcToMidiBehaviourTest {
 			// A grace note's accidental isn't kept for the notes after it
 			assertEquals(List.of(on(0, 66), on(g, 65)), noteOns(convert(tune("semantic", "{^f}f|"))));
 			// Tested in Lotro: it plays on without them, so with Lotro errors they're not played
-			assertEquals(noteEvents(ConversionDump.convert(tune("semantic", "c d e f|"), Profile.LOTRO_STRICT)),
-					noteEvents(ConversionDump.convert(tune("semantic", "{g}c d e f|"), Profile.LOTRO_STRICT)));
+			assertEquals(noteEvents(ConversionDump.convert(tune("semantic", "c d e f|"), Profile.ABC_PLAYER_STRICT)),
+					noteEvents(ConversionDump.convert(tune("semantic", "{g}c d e f|"), Profile.ABC_PLAYER_STRICT)));
 		}
 
 		@Test
@@ -1084,8 +1395,135 @@ class AbcToMidiBehaviourTest {
 			// The syllable goes where the note starts, with its ornament
 			assertEquals(List.of("0:la ", "4:la "), lyrics(convert(tune("semantic", "Tc4 d|", "w:la la")), 1));
 			// With Lotro errors: ~ plays the note plain, as in Lotro (tested)
-			assertEquals(noteEvents(ConversionDump.convert(tune("semantic", "c3 d|"), Profile.LOTRO_STRICT)),
-					noteEvents(ConversionDump.convert(tune("semantic", "~c3 d|"), Profile.LOTRO_STRICT)));
+			assertEquals(noteEvents(ConversionDump.convert(tune("semantic", "c3 d|"), Profile.ABC_PLAYER_STRICT)),
+					noteEvents(ConversionDump.convert(tune("semantic", "~c3 d|"), Profile.ABC_PLAYER_STRICT)));
+		}
+
+		/** The program (MIDI patch) of each part's track, in track order. */
+		private static List<Integer> programs(Sequence sequence) {
+			List<Integer> programs = new ArrayList<>();
+			for (int t = 1; t < sequence.getTracks().length; t++) {
+				Track track = sequence.getTracks()[t];
+				for (int i = 0; i < track.size(); i++) {
+					if (track.get(i).getMessage() instanceof ShortMessage sm
+							&& sm.getCommand() == ShortMessage.PROGRAM_CHANGE) {
+						programs.add(sm.getData1());
+						break;
+					}
+				}
+			}
+			return programs;
+		}
+
+		/** The first part's program with standard pitch; the fields go in its header (T:t and K:C unless given). */
+		private int standardProgram(String... fields) throws Exception {
+			return programs(convert(part(true, fields))).getFirst();
+		}
+
+		/** One part with the given header fields (T:t and K:C unless given), then c d. */
+		private static AbcCase part(boolean standardPitch, String... fields) {
+			List<String> lines = new ArrayList<>(List.of("X:1"));
+			if (Arrays.stream(fields).noneMatch(f -> f.startsWith("T:")))
+				lines.add("T:t");
+			lines.addAll(List.of(fields));
+			lines.addAll(List.of("M:4/4", "L:1/8", "Q:120"));
+			if (Arrays.stream(fields).noneMatch(f -> f.startsWith("K:")))
+				lines.add("K:C");
+			lines.add("c d|");
+			return AbcCase.of("semantic", lines.toArray(String[]::new)).with(p -> p.standardPitch = standardPitch);
+		}
+
+		@Test
+		void standardAbcGetsAMidiProgramFromClues() throws Exception {
+			// %%MIDI program N or I:MIDI program N (abc2midi); program C N is channel C's, the part's channel is its
+			// %%MIDI channel, else 1
+			assertEquals(73, standardProgram("%%MIDI program 73"));
+			assertEquals(24, standardProgram("%%MIDI program 2 71"));
+			assertEquals(71, standardProgram("%%MIDI program 1 71"));
+			assertEquals(71, standardProgram("%%MIDI program 2 71", "%%MIDI channel 2"));
+			assertEquals(22, standardProgram("I:MIDI program 22"));
+			// K:HP, Highland pipes: bag pipe
+			assertEquals(109, standardProgram("K:HP"));
+			// An instrument's name in V: name=, G:, or a title after "for"; the first name wins
+			assertEquals(40, standardProgram("V:1 clef=bass name=\"Violin\""));
+			assertEquals(73, standardProgram("G:flute"));
+			assertEquals(40, standardProgram("G:fiddle and flute"));
+			assertEquals(66, standardProgram("G:tenor sax"));
+			assertEquals(40, standardProgram("T:Reel for fiddle"));
+			assertEquals(46, standardProgram("T:Air for the harp"));
+			// Elsewhere in a title a name is no clue; no clue: Nylon Guitar, as Lute of Ages gave before
+			assertEquals(24, standardProgram("T:The Flute Player"));
+			assertEquals(24, standardProgram());
+			// %%MIDI beats the pipes, the pipes beat a name
+			assertEquals(73, standardProgram("G:fiddle", "%%MIDI program 73", "K:HP"));
+			assertEquals(109, standardProgram("G:fiddle", "K:HP"));
+			// The file header's clues are every part's, a part's own clue wins
+			Sequence s = convert(AbcCase.of("semantic", "G:flute", "M:4/4", "L:1/8", "Q:120", "K:C", "", "X:1", "T:a", "c|",
+					"X:2", "T:b", "G:fiddle", "d|").with(p -> p.standardPitch = true));
+			assertEquals(List.of(73, 40), programs(s));
+			// A Lotro instrument that was set gives its own program
+			assertEquals(71, standardProgram("G:fiddle", "%%made-for Basic Clarinet"));
+			// Lotro files (no standard pitch): the program of the Lotro instrument, clues don't count
+			assertEquals(List.of(24), programs(convert(part(false, "%%MIDI program 73", "G:flute"))));
+			assertEquals(List.of(73), programs(convert(part(false, "T:Flute"))));
+		}
+
+		@Test
+		void midiChannelTenIsDrums() throws Exception {
+			// abc2midi: %%MIDI channel 10 is the drums, the notes General MIDI percussion (C,, bass drum, D,, snare)
+			Sequence s = convert(AbcCase.of("semantic", "X:1", "T:t", "%%MIDI channel 10", "M:4/4", "L:1/8", "Q:120", "K:C",
+					"C,, D,, TC,,2|").with(p -> p.standardPitch = true));
+			List<Integer> channels = new ArrayList<>();
+			List<Integer> pitches = new ArrayList<>();
+			for (int i = 0; i < s.getTracks()[1].size(); i++) {
+				if (s.getTracks()[1].get(i).getMessage() instanceof ShortMessage sm) {
+					channels.add(sm.getChannel());
+					if (sm.getCommand() == ShortMessage.NOTE_ON)
+						pitches.add(sm.getData1());
+				}
+			}
+			assertEquals(Set.of(9), new HashSet<>(channels), "every event on the drum channel");
+			assertEquals(List.of(36, 38, 36), pitches, "no ornament on a drum");
+			assertEquals(List.of(0), programs(s), "the standard kit");
+			// Another kit with program 10 N or program N
+			assertEquals(25, standardProgram("%%MIDI channel 10", "%%MIDI program 10 25"));
+			// Without standard pitch (Lotro files) nothing changes
+			s = convert(part(false, "%%MIDI channel 10"));
+			assertTrue(((ShortMessage) s.getTracks()[1].get(0).getMessage()).getChannel() != 9);
+		}
+
+		@Test
+		void accompanimentTakesBassprogAndChordprog() throws Exception {
+			// %%MIDI bassprog N [octave=N] and chordprog N (abc2midi); the melody keeps its own program
+			AbcCase song = AbcCase.of("semantic", "X:1", "T:t", "%%MIDI bassprog 45 octave=1", "%%MIDI chordprog 0", "M:4/4",
+					"L:1/8", "Q:120", "K:C", "\"G\"c d e f|").with(p -> {
+				p.standardPitch = true;
+				p.chordAccompaniment = true;
+			});
+			assertEquals(List.of(24, 45, 0), programs(convert(song)));
+			// Without them: Acoustic Bass and Nylon Guitar
+			song = AbcCase.of("semantic", "X:1", "T:t", "M:4/4", "L:1/8", "Q:120", "K:C", "\"G\"c d e f|").with(p -> {
+				p.standardPitch = true;
+				p.chordAccompaniment = true;
+			});
+			assertEquals(List.of(24, 32, 24), programs(convert(song)));
+		}
+
+		@Test
+		void tieAfterAChordTiesEveryNote() throws Exception {
+			// [ce]- (ABC 2.1, 4.11 and 4.17): c and e each tie to the next c and e, like [c-e-]
+			Sequence s = convert(tune("semantic", "[ce]2- [ce]2 d2 z2|"));
+			long q = s.getResolution();
+			assertEquals(List.of(on(0, 60), on(0, 64), off(2 * q, 60), off(2 * q, 64), on(2 * q, 62), off(3 * q, 62)),
+					noteEvents(s));
+			assertEquals(noteEvents(convert(tune("semantic", "[c-e-] [ce]|"))), noteEvents(convert(tune("semantic",
+					"[ce]- [ce]|"))));
+			// With a length and a broken rhythm after it
+			assertEquals(noteEvents(convert(tune("semantic", "[c2-e2-]>[ce] d|"))), noteEvents(convert(tune("semantic",
+					"[ce]2->[ce] d|"))));
+			// Tested in Lotro (B65): it refuses the part
+			assertThrows(LotroFileParseException.class,
+					() -> ConversionDump.convert(tune("semantic", "[ce]- [ce]|"), Profile.ABC_PLAYER_STRICT));
 		}
 
 		@Test
@@ -1104,7 +1542,7 @@ class AbcToMidiBehaviourTest {
 		void spacerYIsALotroError() throws Exception {
 			// Tested in Lotro: a part with y plays nothing
 			assertThrows(LotroFileParseException.class,
-					() -> ConversionDump.convert(tune("semantic", "c d y e f|"), Profile.LOTRO_STRICT));
+					() -> ConversionDump.convert(tune("semantic", "c d y e f|"), Profile.ABC_PLAYER_STRICT));
 			assertEquals(noteEvents(convert(tune("semantic", "c d e f|"))), noteEvents(convert(tune("semantic", "c d y e f|"))));
 		}
 
@@ -1113,7 +1551,7 @@ class AbcToMidiBehaviourTest {
 			// Tested in Lotro: from a !decoration! on, the part is silent, also on later lines and after +mf+
 			for (String body : List.of("!f!c d e f|", "c d e f !trill!g a b c'|"))
 				assertThrows(LotroFileParseException.class, () -> ConversionDump.convert(tune("semantic", body),
-						Profile.LOTRO_STRICT), body);
+						Profile.ABC_PLAYER_STRICT), body);
 			// Without Lotro errors the decorations that aren't ornaments are skipped and the notes play
 			assertEquals(noteEvents(convert(tune("semantic", "c d e f g a b c'|"))),
 					noteEvents(convert(tune("semantic", "!f!c d e f !fermata!g a b c'|"))));
@@ -1139,7 +1577,7 @@ class AbcToMidiBehaviourTest {
 		@Test
 		void pluckedNoteKeepsItsWrittenLength() throws Exception {
 			// Harp is non-sustained. A long note isn't cut to the harp sample, a short one isn't lengthened to it.
-			Sequence s = ConversionDump.convert(tune("semantic", header("T:Test Harp"), "c8 d|"), Profile.LOTRO);
+			Sequence s = ConversionDump.convert(tune("semantic", header("T:Test Harp"), "c8 d|"), Profile.ABC_PLAYER);
 			long q = s.getResolution(); // c8 = 8 eighths = 4 quarters
 			assertEquals(List.of(on(0, 60), off(4 * q, 60), on(4 * q, 62), off(4 * q + q / 2, 62)), noteEvents(s));
 		}
@@ -1148,7 +1586,7 @@ class AbcToMidiBehaviourTest {
 		void lastPluckedNoteIsCutWhereItsSampleRunsOut() throws Exception {
 			// c32 (8 s) is written longer than its harp sample, and nothing sounds after it. So the song ends where c's
 			// sample runs out, and c's note-off is moved there. d/ ends before that and keeps its written length.
-			Sequence s = ConversionDump.convert(tune("semantic", header("T:Test Harp"), "d/ c32|"), Profile.LOTRO);
+			Sequence s = ConversionDump.convert(tune("semantic", header("T:Test Harp"), "d/ c32|"), Profile.ABC_PLAYER);
 			long q = s.getResolution(); // d/ = q/4, c32 = 16 quarters
 			long cSoundEnd = q / 4 + harpSampleTicks(60, q);
 			assertTrue(cSoundEnd < q / 4 + 16 * q, "the test needs c's sample < 8 s");
@@ -1178,10 +1616,10 @@ class AbcToMidiBehaviourTest {
 		void noteRangeIsOnlyCheckedWithLotroErrors() throws Exception {
 			// C,,, and c''' are outside Lotro's C2..C5. Only the strict profile (Lotro errors on) may complain.
 			AbcCase outOfRange = tune("semantic", "C,,, c'''|");
-			assertEquals(List.of(12, 96), noteOns(ConversionDump.convert(outOfRange, Profile.LOTRO)).stream()
+			assertEquals(List.of(12, 96), noteOns(ConversionDump.convert(outOfRange, Profile.ABC_PLAYER)).stream()
 					.map(NoteEvent::pitch).toList());
 			assertEquals(List.of(12, 96), noteOns(convert(outOfRange)).stream().map(NoteEvent::pitch).toList());
-			assertThrows(LotroFileParseException.class, () -> ConversionDump.convert(outOfRange, Profile.LOTRO_STRICT));
+			assertThrows(LotroFileParseException.class, () -> ConversionDump.convert(outOfRange, Profile.ABC_PLAYER_STRICT));
 		}
 
 		@Test
@@ -1190,7 +1628,7 @@ class AbcToMidiBehaviourTest {
 			for (String title : List.of("T:100\\% Harp", "T:100% Harp", "T:Song % a comment")) {
 				AbcCase abcCase = tune("semantic", header(title), "c|");
 				AbcInfo converted = new AbcInfo();
-				ConversionDump.run(abcCase, Profile.PLAIN_MIDI, false, converted);
+				ConversionDump.run(abcCase, Profile.MAESTRO_LEGACY, false, converted);
 				assertEquals(converted.getTitle(), AbcToMidi.parseAbcMetadata(abcCase.filesData()).getTitle(), title);
 			}
 		}
@@ -1207,16 +1645,16 @@ class AbcToMidiBehaviourTest {
 		void largeLDenominatorWithFastTempo() throws Exception {
 			// Q:1000 with L:1/2834674 used to overflow int in the Lotro length check (it reported -0.932 s)
 			Sequence large = ConversionDump.convert(tune("semantic", header("L:1/2834674", "Q:1000"), "c5669348 d5669348|"),
-					Profile.LOTRO_STRICT);
+					Profile.ABC_PLAYER_STRICT);
 			Sequence small = ConversionDump.convert(tune("semantic", header("L:1/2", "Q:1000"), "c4 d4|"),
-					Profile.LOTRO_STRICT);
+					Profile.ABC_PLAYER_STRICT);
 			assertEquals(noteEvents(small), noteEvents(large));
 		}
 
 		@Test
 		void escapedPercentIsKeptInTitle() throws Exception {
 			AbcInfo info = new AbcInfo();
-			ConversionDump.run(tune("semantic", header("T:100\\% Harp"), "c|"), Profile.PLAIN_MIDI, false, info);
+			ConversionDump.run(tune("semantic", header("T:100\\% Harp"), "c|"), Profile.MAESTRO_LEGACY, false, info);
 			assertEquals("100% Harp", info.getTitle());
 			assertEquals(com.digero.common.abc.LotroInstrument.BASIC_HARP, info.getPartInstrument(1));
 		}
@@ -1225,7 +1663,7 @@ class AbcToMidiBehaviourTest {
 		void lotroLengthLimitUsesTheWrittenLength() throws Exception {
 			// Tested in Lotro: (3c/4d/4e/4 plays, although each note lasts only 0.042 s. Lotro checks the written
 			// c/4 (0.0625 s), not the length after the tuplet.
-			ConversionDump.convert(tune("semantic", "(3c/4d/4e/4 c|"), Profile.LOTRO_STRICT);
+			ConversionDump.convert(tune("semantic", "(3c/4d/4e/4 c|"), Profile.ABC_PLAYER_STRICT);
 		}
 
 		@Test
@@ -1271,7 +1709,7 @@ class AbcToMidiBehaviourTest {
 			// d/ ends (as written) after 0.125 s; there the tempo drops to 60, so the rest of its sample takes twice as
 			// many ticks per second as before
 			Sequence s = ConversionDump.convert(tune("semantic", header("T:Test Harp"), "c32 d/|", "%%Q: 60"),
-					Profile.LOTRO);
+					Profile.ABC_PLAYER);
 			long q = s.getResolution();
 			double dSampleSeconds = LotroInstrumentSampleDuration.getDura(LotroInstrument.BASIC_HARP.friendlyName, 62)
 					/ 1_000_000.0;
@@ -1298,7 +1736,7 @@ class AbcToMidiBehaviourTest {
 		/** Converts with PLAIN_MIDI and returns the AbcInfo that convert() filled in. */
 		private static AbcInfo abcInfoOf(AbcCase abcCase) throws Exception {
 			AbcToMidi.Params params = new AbcToMidi.Params(abcCase.filesData());
-			Profile.PLAIN_MIDI.applyTo(params);
+			Profile.MAESTRO_LEGACY.applyTo(params);
 			abcCase.tweak().accept(params);
 			params.abcInfo = new AbcInfo();
 			AbcToMidi.convert(params);

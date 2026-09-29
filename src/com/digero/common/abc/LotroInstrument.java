@@ -133,6 +133,7 @@ public enum LotroInstrument
 	public final boolean sustainable;
 	public final boolean isPercussion;
 	public final MidiInstrument midi;
+	/** Octaves above Lute of Ages */
 	public final int octaveDelta;
 	public final float dBVolumeAdjust;
 	private final String[] nicknameRegexes;

@@ -1,0 +1,27 @@
+# AbcToMidi golden snapshot. Re-record with: mvn test -Dabc.golden.update=true (and review the diff before committing)
+case tempo_change_mid_part_std2011
+
+### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
+== EXCEPTION FileParseException: Error reading tempo_change_mid_part_std2011.abc on line 8, column 3:
+The tempo can't be changed with Q: in the middle of a part
+== log: empty
+
+### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
+== EXCEPTION FileParseException: Error reading tempo_change_mid_part_std2011.abc on line 8, column 3:
+The tempo can't be changed with Q: in the middle of a part
+== log: empty
+
+### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)
+== EXCEPTION FileParseException: Error reading tempo_change_mid_part_std2011.abc on line 8, column 3:
+The tempo can't be changed with Q: in the middle of a part
+== log: empty
+
+### profile MAESTRO_NEW_LOTRO (useLotroInstruments=false, enableLotroErrors=false, Lotro Abc)
+== EXCEPTION FileParseException: Error reading tempo_change_mid_part_std2011.abc on line 8, column 3:
+The tempo can't be changed with Q: in the middle of a part
+== log: empty
+
+### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
+== EXCEPTION FileParseException: Error reading tempo_change_mid_part_std2011.abc on line 8, column 3:
+The tempo can't be changed with Q: in the middle of a part
+== log: empty
