@@ -533,16 +533,28 @@ class AbcToMidiBehaviourTest {
 				assertEquals(List.of(on(0, 60), on(q / 2, 62), on(q, 64), on(3 * q / 2, 65)), noteOns(s));
 			}
 
-			@Disabled(NOT_YET)
 			@Test
 			void keyWithExplicitAccidentals() throws Exception {
-				// Without the flag: an error (A12)
+				// Without the flag: an error (A12; Lotro refuses it, B23)
 				assertThrows(FileParseException.class, () -> convert(tune("semantic", header("K:G ^c"), "c f|")));
 				// ABC 2.1 (3.1.14): K:G ^c is G major with a C sharp added; K:D exp _b has only the accidentals listed
-				assertEquals(List.of(61, 66), noteOns(convert(standard(tune("semantic", header("K:G ^c"), "c f|"))))
-						.stream().map(NoteEvent::pitch).toList());
-				assertEquals(List.of(65, 60, 58), noteOns(convert(standard(tune("semantic", header("K:D exp _b"),
-						"f c B|")))).stream().map(NoteEvent::pitch).toList());
+				assertEquals(List.of(61, 66), pitches(standard(tune("semantic", header("K:G ^c"), "c f|"))));
+				assertEquals(List.of(65, 60, 58), pitches(standard(tune("semantic", header("K:D exp _b"), "f c B|"))));
+				// One replaces the key's (Norbeck: K:Dm =b, D minor with B natural), in every octave
+				assertEquals(List.of(59, 71, 70), pitches(standard(tune("semantic", header("K:Dm =b"), "B b _b|"))));
+				// A written accidental still wins, to the end of the bar
+				assertEquals(List.of(60, 60, 61), pitches(standard(tune("semantic", header("K:G ^c"), "=c c|c|"))));
+				// A K: with a key starts from its own accidentals; one with only a clef keeps them
+				assertEquals(List.of(61, 60), pitches(standard(tune("semantic", header("K:G ^c"), "c [K:G] c|"))));
+				assertEquals(List.of(61, 61), pitches(standard(tune("semantic", header("K:G ^c"), "c [K:treble] c|"))));
+				// Every part starts from the file header's
+				Sequence s = convert(standard(AbcCase.of("semantic", "K:F ^c", "", "X:1", "T:a", "M:4/4", "L:1/8", "Q:120",
+						"c B|", "X:2", "T:b", "M:4/4", "L:1/8", "Q:120", "c B|")));
+				assertEquals(List.of(61, 58), noteOns(s, 1).stream().map(NoteEvent::pitch).toList());
+				assertEquals(List.of(61, 58), noteOns(s, 2).stream().map(NoteEvent::pitch).toList());
+				// With Lotro errors: the Lotro error, with or without the flag
+				assertThrows(LotroFileParseException.class, () -> ConversionDump.convert(
+						standard(tune("semantic", header("K:G ^c"), "c f|")), Profile.ABC_PLAYER_STRICT));
 			}
 
 			@Disabled(NOT_YET)

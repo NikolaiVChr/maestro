@@ -2296,8 +2296,8 @@ public class AbcToMidi {
 		} else if (accidentals.containsKey(accidentalKey)) {
 			noteDelta = accidentals.get(accidentalKey);
 		} else {
-			// Use the key signature to determine the accidental
-			noteDelta = info.getKey().getDefaultAccidental(noteId).deltaNoteId;
+			// The key signature's accidental, or K:'s explicit one (K:G ^c, standard2011)
+			noteDelta = info.getKeyAccidental(noteLetter, noteId);
 		}
 		// K: transpose= octave= or a clef with +8/-8 (never with Lotro errors: Lotro refuses them)
 		return new int[] { noteId + noteDelta + info.getTranspose(), lotroNoteId + noteDelta + info.getTranspose() };

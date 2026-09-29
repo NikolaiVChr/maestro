@@ -16,6 +16,9 @@ public class TuneInfo {
 	private String title;
 	private boolean titleIsFromExtendedInfo;
 	private KeySignature key;
+	// K:G ^c, K:D exp _b (ABC 2.1, 3.1.14): an accidental per letter (c d e f g a b) that replaces the key's; null: the
+	// key's. Only with standard2011.
+	private Integer[] keyAccidentals = new Integer[7];
 	// Semitones added to every note, from K:. Separate, as a K: changes only what it names (ABC 2.1, 4.6)
 	private int clefShift; // A clef with +8 or -8
 	private int transposeShift; // transpose= or t=
@@ -49,6 +52,7 @@ public class TuneInfo {
 	// the previous part. And as in ABC 2.1, an M: in a header without an L: in that header gives the default length.
 	private boolean inFileHeader;
 	private KeySignature fileKey;
+	private Integer[] fileKeyAccidentals = new Integer[7];
 	private int fileClefShift;
 	private int fileTransposeShift;
 	private int fileOctaveShift;
@@ -82,6 +86,7 @@ public class TuneInfo {
 	public void newFile() {
 		inFileHeader = true;
 		key = KeySignature.C_MAJOR;
+		keyAccidentals = new Integer[7];
 		clefShift = 0;
 		transposeShift = 0;
 		octaveShift = 0;
@@ -107,6 +112,7 @@ public class TuneInfo {
 			// The first X: of the file ends its header
 			inFileHeader = false;
 			fileKey = key;
+			fileKeyAccidentals = keyAccidentals;
 			fileClefShift = clefShift;
 			fileTransposeShift = transposeShift;
 			fileOctaveShift = octaveShift;
@@ -117,6 +123,7 @@ public class TuneInfo {
 			fileInstructions = instructions;
 		}
 		key = fileKey;
+		keyAccidentals = fileKeyAccidentals.clone();
 		clefShift = fileClefShift;
 		transposeShift = fileTransposeShift;
 		octaveShift = fileOctaveShift;
@@ -185,6 +192,10 @@ public class TuneInfo {
 	 * an empty K: have no key signature; K:HP and K:Hp are the highland pipes (F#, C#, G natural: like D). A K: with
 	 * only a clef or transposition (K:bass, [K:octave=-1]) keeps the key, and each of clef, transpose= and octave=
 	 * stays until a K: names it again.
+	 * <p>
+	 * Explicit accidentals (ABC 2.1, 3.1.14), only with standard2011: K:G ^c is G major with C sharp added (or changed,
+	 * K:Dm =b); K:D exp _b has only the accidentals listed. Each is for its letter in every octave. Without
+	 * standard2011 they're an error (LotRO refuses them, B23). A K: with a key starts from the key's accidentals again.
 	 *
 	 * @return What LotRO doesn't take: the words after the key and its mode, or none/HP/Hp; "" if nothing
 	 */
@@ -192,6 +203,8 @@ public class TuneInfo {
 		String[] words = str.trim().isEmpty() ? new String[0] : str.trim().split("\\s+");
 		List<String> notForLotro = new ArrayList<>();
 		String keyText = null;
+		boolean explicitOnly = false; // exp
+		Map<Integer, Integer> listed = new LinkedHashMap<>(); // Letter index (c d e f g a b) -> semitones
 		for (int w = 0; w < words.length; w++) {
 			String word = words[w];
 			String lower = word.toLowerCase(Locale.ROOT);
@@ -203,8 +216,18 @@ public class TuneInfo {
 			} else if (w == 1 && keyText != null && notForLotro.isEmpty() && KeyMode.parseMode(word) != null) {
 				keyText += " " + word; // D mix
 			} else if (lower.equals("exp") || lower.matches("[_^=].*")) {
-				throw new KeyWordException("Explicit accidentals in K: aren't supported: " + str,
-						String.join(" ", Arrays.copyOfRange(words, w, words.length)));
+				Matcher accidental = KEY_ACCIDENTAL_PATTERN.matcher(lower);
+				if (!standard2011 || !(lower.equals("exp") || accidental.matches())) {
+					throw new KeyWordException("Explicit accidentals in K: aren't supported: " + str,
+							String.join(" ", Arrays.copyOfRange(words, w, words.length)));
+				}
+				if (lower.equals("exp")) {
+					explicitOnly = true;
+				} else {
+					String sign = accidental.group(1);
+					int semitones = sign.equals("=") ? 0 : sign.charAt(0) == '^' ? sign.length() : -sign.length();
+					listed.put(LETTERS.indexOf(accidental.group(2)), semitones);
+				}
 			} else {
 				notForLotro.add(word);
 				Matcher clef = CLEF_PATTERN.matcher(lower);
@@ -224,7 +247,35 @@ public class TuneInfo {
 			this.key = new KeySignature(keyText);
 		else if (words.length == 0)
 			this.key = KeySignature.C_MAJOR; // An empty K:
+		if (keyText != null || words.length == 0 || explicitOnly || !listed.isEmpty()) {
+			// A new key (or new accidentals) starts from the key's own; a K: with only a clef keeps them
+			if (keyText != null || words.length == 0)
+				keyAccidentals = new Integer[7];
+			else
+				keyAccidentals = keyAccidentals.clone();
+			if (explicitOnly)
+				Arrays.fill(keyAccidentals, 0);
+			for (Map.Entry<Integer, Integer> entry : listed.entrySet())
+				keyAccidentals[entry.getKey()] = entry.getValue();
+		}
 		return String.join(" ", notForLotro);
+	}
+
+	/** The letters of keyAccidentals, in order. */
+	private static final String LETTERS = "cdefgab";
+	/** An explicit accidental in K:, e.g. ^c, _B, =f, ^^f (lower case here). */
+	private static final Pattern KEY_ACCIDENTAL_PATTERN = Pattern.compile("(\\^\\^|\\^|__|_|=)([a-g])");
+
+	/**
+	 * The key's accidental for a note without one, in semitones: an explicit accidental of K: (standard2011), else the
+	 * key signature's.
+	 *
+	 * @param letter        The note's letter, either case
+	 * @param naturalNoteId The note without accidental (as KeySignature.getDefaultAccidental takes it)
+	 */
+	public int getKeyAccidental(char letter, int naturalNoteId) {
+		Integer explicit = keyAccidentals[LETTERS.indexOf(Character.toLowerCase(letter))];
+		return (explicit != null) ? explicit : key.getDefaultAccidental(naturalNoteId).deltaNoteId;
 	}
 
 	/** Semitones to add to every note (K: transpose=, octave=, a clef with +8 or -8). */
