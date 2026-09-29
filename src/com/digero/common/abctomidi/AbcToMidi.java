@@ -154,6 +154,10 @@ public class AbcToMidi {
 			"lowermordent", "mordent", "lowermordent", "uppermordent", "uppermordent", "pralltriller", "uppermordent",
 			"turn", "turn", "invertedturn", "invertedturn");
 
+	/** The dynamics marks !pppp! to !ffff! (ABC 2.1, 4.14), by name: the same volumes as +pppp+ to +ffff+. */
+	private static final Set<String> DYNAMICS_NAMES = Arrays.stream(Dynamics.values()).map(Enum::name)
+			.collect(java.util.stream.Collectors.toUnmodifiableSet());
+
 	public static List<String> readLines(File inputFile) throws IOException {
 		// Note: ABC files are technically ISO-8859-1 by standard, but often UTF-8 in practice.
 		// Java 18+ defaults to UTF-8. To be safe given the international user base:
@@ -1357,8 +1361,13 @@ public class AbcToMidi {
 												+ line.substring(i, j + 1) + "); use +f+ style for volume", fileName, lineNumber, i);
 									}
 									String decorationName = line.substring(i + 1, j);
-									if (!repeats.skipping && ORNAMENTS.containsKey(decorationName))
+									if (abc21 && DYNAMICS_NAMES.contains(decorationName)) {
+										// ABC 2.1 (4.14): players "may be expected to implement the dynamics marks": !p! as
+										// +p+. Lotro skips them, so only with standard2011.
+										info.setDynamics(decorationName);
+									} else if (!repeats.skipping && ORNAMENTS.containsKey(decorationName)) {
 										ornament = ORNAMENTS.get(decorationName);
+									}
 									i = j;
 									break;
 								}

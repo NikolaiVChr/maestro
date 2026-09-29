@@ -187,14 +187,14 @@ divisionType=0.0 resolution=11520 tickLength=46080 tracks=2
   17280 NOTE_OFF ch=0 d1=76 d2=16 [LotroShortMessage]
   17280 NOTE_ON ch=0 d1=77 d2=16 [LotroShortMessage]
   23040 NOTE_OFF ch=0 d1=77 d2=16 [LotroShortMessage]
-  23040 NOTE_ON ch=0 d1=72 d2=16 [LotroShortMessage]
-  28800 NOTE_OFF ch=0 d1=72 d2=16 [LotroShortMessage]
-  28800 NOTE_ON ch=0 d1=74 d2=16 [LotroShortMessage]
-  34560 NOTE_OFF ch=0 d1=74 d2=16 [LotroShortMessage]
-  34560 NOTE_ON ch=0 d1=76 d2=16 [LotroShortMessage]
-  40320 NOTE_OFF ch=0 d1=76 d2=16 [LotroShortMessage]
-  40320 NOTE_ON ch=0 d1=77 d2=16 [LotroShortMessage]
-  46080 NOTE_OFF ch=0 d1=77 d2=16 [LotroShortMessage]
+  23040 NOTE_ON ch=0 d1=72 d2=127 [LotroShortMessage]
+  28800 NOTE_OFF ch=0 d1=72 d2=127 [LotroShortMessage]
+  28800 NOTE_ON ch=0 d1=74 d2=127 [LotroShortMessage]
+  34560 NOTE_OFF ch=0 d1=74 d2=127 [LotroShortMessage]
+  34560 NOTE_ON ch=0 d1=76 d2=127 [LotroShortMessage]
+  40320 NOTE_OFF ch=0 d1=76 d2=127 [LotroShortMessage]
+  40320 NOTE_ON ch=0 d1=77 d2=127 [LotroShortMessage]
+  46080 NOTE_OFF ch=0 d1=77 d2=127 [LotroShortMessage]
   46080 META end_of_track
 == abcInfo
   title="Test"

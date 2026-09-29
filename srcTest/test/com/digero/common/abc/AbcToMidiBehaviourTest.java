@@ -456,23 +456,23 @@ class AbcToMidiBehaviourTest {
 						standard(tune("semantic", "c>[ce] d|")), Profile.ABC_PLAYER_STRICT));
 			}
 
-			@Disabled(NOT_YET)
 			@Test
 			void dynamicsMarksSetTheVolume() throws Exception {
 				// Lotro: only the ABC 2.0 form +p+ +f+ sets the volume; !p! !f! (ABC 2.1) are skipped, so every note is
 				// at the default mf
 				List<Integer> plusForm = velocities(convert(tune("semantic", "+p+c +f+d|")));
 				List<Integer> mf = velocities(convert(tune("semantic", "c d|")));
+				assertNotEquals(mf, plusForm);
 				assertEquals(mf, velocities(convert(tune("semantic", "!p!c !f!d|"))));
-				// ABC 2.1 (4.14): players "may be expected to implement the dynamics marks": !p! !f! as +p+ +f+
+				// ABC 2.1 (4.14): players "may be expected to implement the dynamics marks": !p! !f! as +p+ +f+,
+				// from pppp to ffff; the volume stays until the next mark
 				assertEquals(plusForm, velocities(convert(standard(tune("semantic", "!p!c !f!d|")))));
 				assertEquals(velocities(convert(tune("semantic", "+pppp+c +ffff+d|"))),
 						velocities(convert(standard(tune("semantic", "!pppp!c !ffff!d|")))));
-				// ABC 2.1 (4.14): players "may be expected to implement the dynamics marks": !p! !f! as +p+ +f+
-				assertEquals(plusForm, velocities(convert(standard(tune("semantic", "!p!c !f!d|")))));
-				assertEquals(velocities(convert(tune("semantic", "+ppp+c +fff+d|"))),
-						velocities(convert(standard(tune("semantic", "!ppp!c !fff!d|")))));
-				// !pppp! and !ffff! (ABC 2.1 has them, Dynamics doesn't) wait for A34
+				assertEquals(velocities(convert(tune("semantic", "+ppp+c d +fff+e|"))),
+						velocities(convert(standard(tune("semantic", "!ppp!c d !fff!e|")))));
+				// A mark Dynamics doesn't have (!sfz!) sets no volume
+				assertEquals(mf, velocities(convert(standard(tune("semantic", "!sfz!c d|")))));
 			}
 
 			@Disabled(NOT_YET)
