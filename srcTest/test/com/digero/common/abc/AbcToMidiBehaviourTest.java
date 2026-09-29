@@ -1539,6 +1539,20 @@ class AbcToMidiBehaviourTest {
 			// Elsewhere in a title a name is no clue; no clue: Nylon Guitar, as Lute of Ages gave before
 			assertEquals(24, standardProgram("T:The Flute Player"));
 			assertEquals(24, standardProgram());
+			// The tune's type in R: (the weakest clue): what usually plays it in sessions
+			assertEquals(40, standardProgram("R:reel"));
+			assertEquals(40, standardProgram("R:Strathspey"));
+			assertEquals(40, standardProgram("R:sl\\\"angpolska")); // Norbeck: its ABC escape decoded
+			assertEquals(73, standardProgram("R:jig"));
+			assertEquals(73, standardProgram("R:Slip Jig"));
+			assertEquals(73, standardProgram("R:slow air"));
+			assertEquals(21, standardProgram("R:hornpipe"));
+			assertEquals(21, standardProgram("R:Waltz"));
+			assertEquals(40, standardProgram("R:polon\\\"as")); // The Swedish polonäs, a fiddle tune
+			assertEquals(19, standardProgram("R:hymn"));
+			assertEquals(24, standardProgram("R:song"));
+			// An instrument's name beats it
+			assertEquals(46, standardProgram("R:reel", "G:harp"));
 			// %%MIDI beats the pipes, the pipes beat a name
 			assertEquals(73, standardProgram("G:fiddle", "%%MIDI program 73", "K:HP"));
 			assertEquals(109, standardProgram("G:fiddle", "K:HP"));

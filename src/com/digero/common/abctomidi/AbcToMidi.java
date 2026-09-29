@@ -40,7 +40,7 @@ public class AbcToMidi {
 		 * last note: will be shortened to lotro sample length
 		 * effect: midi tracks will get reverb and chorus set to zero
 		 * velocity: will use lotro dynamics for the midi volume
-		 * cowbells: randomized pitch instead of only 1 note
+		 * cowbells: randomized pitch instead of only 1 note (without it: 1 note, or with standardPitch the written pitch)
 		 */
 		public boolean useLotroInstruments = true;
 		public Map<Integer, LotroInstrument> instrumentOverrideMap = null;
@@ -696,6 +696,7 @@ public class AbcToMidi {
 							case 'V' -> partProgramClues.voice(value);
 							case 'T' -> partProgramClues.title(value);
 							case 'K' -> partProgramClues.key(value);
+							case 'R' -> partProgramClues.rhythm(value);
 							default -> {
 							}
 						}
@@ -1846,10 +1847,12 @@ public class AbcToMidi {
 										int max = info.getInstrument().highestPlayable.id;
 										lotroNoteId = noteId = min + (int) (Math.random() * (max - min));
 									}
-								} else {
+								} else if (!info.isStandardPitch()) {
+									// Lotro files and old projects: one pitch, as before (A37)
 									noteId = (info.getInstrument() == LotroInstrument.BASIC_COWBELL) ? 76 : 71;
 									lotroNoteId = AbcConstants.COWBELL_NOTE_ID;
 								}
+								// Else (standard ABC, ABC 2.1) every note sounds as written, like any other instrument
 							}
 
 							// Grace notes before this note or chord: on the beat, taking their time from the note, which starts

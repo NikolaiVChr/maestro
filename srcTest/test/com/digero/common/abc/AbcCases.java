@@ -780,6 +780,17 @@ final class AbcCases {
 				.with(p -> p.standardPitch = true));
 		c.add(tune("midi_program_in_body_ignored", "C D|", "%%MIDI program 73", "E F|")
 				.with(p -> p.standardPitch = true));
+		// The tune's type in R: (A41), the weakest clue; the file header's for every part, a part's own wins
+		c.add(tune("midi_program_rhythm", header("R:Slip Jig"), "C D|").with(p -> p.standardPitch = true));
+		c.add(of("midi_program_rhythm_file_header", concat(new String[] { "R:reel" }, part(1, "One", "C D|"),
+				part(2, "Two", "R:hornpipe", "E F|"))).with(p -> p.standardPitch = true));
+
+		// Cowbells (A37), Maestro only (the ABC Player's pitch is random): one pitch without standard pitch (as
+		// before), the written pitch with it
+		c.add(tune("cowbell_chord", extended("%%made-for Basic Cowbell"), "[ce] g c'|")
+				.only(Profile.MAESTRO_LEGACY, Profile.MAESTRO_NEW_LOTRO, Profile.MAESTRO_NEW_STANDARD));
+		c.add(tune("moor_cowbell_chord", extended("%%made-for Moor Cowbell"), "[ce] g c'|")
+				.only(Profile.MAESTRO_LEGACY, Profile.MAESTRO_NEW_LOTRO, Profile.MAESTRO_NEW_STANDARD));
 
 		// ------------------------------------------------------------ voices (A13), as they are read today
 		c.add(tune("voices_in_body", "V:1", "c d e f|", "V:2", "C D E F|"));

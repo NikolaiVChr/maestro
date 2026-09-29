@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.digero.common.abc.AbcText;
 import com.digero.common.midi.MidiInstrument;
 
 /**
@@ -25,6 +26,8 @@ import com.digero.common.midi.MidiInstrument;
  * <li>an instrument's name: in V: name= or nm= ("Violin"), in G: ("flute"), and in a T: after "for" ("Air for the
  * harp"). Elsewhere in a title a name is no clue: "The Flute Player" is a tune. (A name in square brackets, "[Flute]",
  * makes it a Lotro file: AbcToMidi.isMadeForLotro.) The first name wins.</li>
+ * <li>the tune's type in R:, by what usually plays it in sessions (RHYTHMS): reel, strathspey, polska ... Violin; jig,
+ * slide, air ... Flute; hornpipe, polka, waltz, march ... Accordion; hymn ... Church Organ</li>
  * <li>else Nylon Guitar, the program of Lute of Ages that every part had before</li>
  * </ol>
  * The chord accompaniment (Params.chordAccompaniment) takes %%MIDI bassprog N and chordprog N, else Acoustic Bass and
@@ -82,6 +85,20 @@ final class MidiProgramGuess {
 			name("kotos?", MidiInstrument.KOTO), //
 			name("kalimbas?|mbiras?", MidiInstrument.KALIMBA));
 
+	/**
+	 * The tune's type in R: (ABC 2.1: the rhythm, e.g. reel, jig, hornpipe) and the program of an instrument
+	 * that plays that kind of tune, so a collection of dance tunes doesn't all sound the same. The weakest clue: a
+	 * guess by what's usual in sessions. At the same place in a text the longer match wins ("slip jig").
+	 */
+	private static final List<Name> RHYTHMS = List.of( //
+			name("reels?|strathspeys?|flings?|highlands?|set ?dances?|schottisc?he?s?|reinlenders?",
+					MidiInstrument.VIOLIN), //
+			name("\\w*polska|polskas|polon.s|hambo|halling|springar|springleik|gangar", MidiInstrument.VIOLIN), //
+			name("(?:slip |single |double )?jigs?|slides?|airs?|slow airs?|laments?", MidiInstrument.FLUTE), //
+			name("hornpipes?|barn ?dances?|polkas?|mazurkas?|waltz(?:es)?|valses?|vals|marche?s?|marsch",
+					MidiInstrument.ACCORDION), //
+			name("hymns?|psalms?|chorales?", MidiInstrument.CHURCH_ORGAN));
+
 	/** A %%MIDI directive that sets a program or a channel; bassprog may go on with octave=N. */
 	private static final Pattern MIDI_DIRECTIVE = Pattern
 			.compile("(?i)MIDI(?:\\s*=)?\\s+(program|channel|bassprog|chordprog)\\s+(\\d+)(?:\\s+(\\d+))?\\b");
@@ -100,12 +117,22 @@ final class MidiProgramGuess {
 		return programOfName(text, false);
 	}
 
+
 	/** @param atStart The name must start the text */
 	private static Integer programOfName(String text, boolean atStart) {
+		return firstMatch(NAMES, text, atStart);
+	}
+
+	/** The program of the first tune type in an R: field's value, or null. */
+	static Integer programOfRhythm(String text) {
+		return firstMatch(RHYTHMS, text, false);
+	}
+
+	private static Integer firstMatch(List<Name> names, String text, boolean atStart) {
 		Integer program = null;
 		int start = Integer.MAX_VALUE;
 		int length = 0;
-		for (Name name : NAMES) {
+		for (Name name : names) {
 			Matcher m = name.pattern.matcher(text);
 			if (m.find() && (!atStart || m.start() == 0)
 					&& (m.start() < start || (m.start() == start && m.end() - m.start() > length))) {
@@ -153,6 +180,7 @@ final class MidiProgramGuess {
 		private Clue chordProgram = new Clue(); // %%MIDI chordprog N
 		private boolean highlandPipes; // K:HP
 		private Clue named = new Clue(); // The first instrument name
+		private Clue rhythm = new Clue(); // The first tune type in R:
 
 		/** The clues a part starts from: this file header's, which the part's own clues replace. */
 		Clues forPart() {
@@ -164,6 +192,7 @@ final class MidiProgramGuess {
 			part.chordProgram = chordProgram.inherit();
 			part.highlandPipes = highlandPipes;
 			part.named = named.inherit();
+			part.rhythm = rhythm.inherit();
 			return part;
 		}
 
@@ -225,6 +254,11 @@ final class MidiProgramGuess {
 			named.setFirst(programOfName(group));
 		}
 
+		/** An R: field's value (the tune's type: reel, jig ...), its ABC escapes decoded (sl\"angpolska). */
+		void rhythm(String value) {
+			rhythm.setFirst(programOfRhythm(AbcText.decode(value)));
+		}
+
 		/** A T: field's value: only a name after "for" is a clue. */
 		void title(String title) {
 			Matcher forName = FOR.matcher(title);
@@ -255,6 +289,8 @@ final class MidiProgramGuess {
 				return MidiInstrument.BAG_PIPE.id();
 			if (named.value != null)
 				return named.value;
+			if (rhythm.value != null)
+				return rhythm.value;
 			return DEFAULT_PROGRAM;
 		}
 
