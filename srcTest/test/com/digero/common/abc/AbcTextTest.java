@@ -45,6 +45,13 @@ class AbcTextTest {
 	}
 
 	@Test
+	void texBracesAroundAMnemonic() {
+		// Older files (Norbeck's) write {\aa}: the braces go with the mnemonic; other braces stay
+		assertEquals("Sågskära från Småland", AbcText.decode("S{\\aa}gsk\\\"ara fr{\\aa}n Sm{\\aa}land"));
+		assertEquals("{å {x} {\\q}", AbcText.decode("{\\aa {x} {\\q}"));
+	}
+
+	@Test
 	void unknownEscapesStayAsWritten() {
 		assertEquals("\\q \\'1 \\'q \\u12 &nosuch; & a;b &# \\", AbcText.decode("\\q \\'1 \\'q \\u12 &nosuch; & a;b &# \\"));
 	}

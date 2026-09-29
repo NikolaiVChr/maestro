@@ -98,6 +98,13 @@ public final class AbcText {
 				}
 			}
 			if (decoded != null) {
+				// {\aa}: TeX's braces around a mnemonic (not ABC 2.1, but common in older files, e.g. Norbeck's)
+				// go with it
+				if (out.length() > 0 && out.charAt(out.length() - 1) == '{' && end < text.length()
+						&& text.charAt(end) == '}' && c == '\\') {
+					out.setLength(out.length() - 1);
+					end++;
+				}
 				out.append(decoded);
 				i = end;
 			} else {

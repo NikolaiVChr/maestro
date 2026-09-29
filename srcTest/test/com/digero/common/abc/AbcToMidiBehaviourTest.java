@@ -475,7 +475,6 @@ class AbcToMidiBehaviourTest {
 				assertEquals(mf, velocities(convert(standard(tune("semantic", "!sfz!c d|")))));
 			}
 
-			@Disabled(NOT_YET)
 			@Test
 			void accentAndStaccato() throws Exception {
 				// Lotro: an accent (L, !accent!, !>!) and a staccato dot (.) change nothing
@@ -483,14 +482,27 @@ class AbcToMidiBehaviourTest {
 				long q = plain.getResolution();
 				assertEquals(noteEvents(plain), noteEvents(convert(tune("semantic", "Lc .d e|"))));
 				// ABC 2.1 (4.14): players "may be expected to implement ... the accent mark and the staccato dot".
-				// How much is ours to choose (to decide): an accent one volume step louder than the notes around it,
-				// a staccato note sounding half its length (the next note starts on time)
+				// How much is ours to choose: an accent AbcToMidi.ACCENT_DYNAMICS_STEPS louder than the notes around
+				// it (2: mf as ff, like MuseScore 4), a staccato note sounding AbcToMidi.STACCATO_LENGTH of its length
+				// (half; the next note starts on time)
 				List<Integer> accented = velocities(convert(standard(tune("semantic", "!accent!c d e|"))));
 				assertTrue(accented.get(0) > accented.get(1), accented.toString());
+				assertEquals(velocities(convert(tune("semantic", "+ff+c +mf+d e|"))), accented);
 				assertEquals(accented, velocities(convert(standard(tune("semantic", "Lc d e|")))));
 				assertEquals(accented, velocities(convert(standard(tune("semantic", "!>!c d e|")))));
+				assertEquals(accented, velocities(convert(standard(tune("semantic", "!emphasis!c d e|")))));
+				// At most the loudest: ffff stays ffff; an accent before a chord is for all of its notes
+				assertEquals(velocities(convert(tune("semantic", "+ffff+c d|"))),
+						velocities(convert(standard(tune("semantic", "+fff+Lc +ffff+d|")))));
+				List<Integer> chord = velocities(convert(standard(tune("semantic", "L[ce] d|"))));
+				assertEquals(List.of(accented.get(0), accented.get(0), accented.get(1)), chord);
 				assertEquals(List.of(on(0, 60), off(q / 2, 60), on(q / 2, 62), off(3 * q / 4, 62), on(q, 64),
 						off(3 * q / 2, 64)), noteEvents(convert(standard(tune("semantic", "c .d e|")))));
+				// A staccato before a chord is for all of its notes; the dotted bar line .| is no staccato
+				assertEquals(List.of(on(0, 60), on(0, 64), off(q / 4, 60), off(q / 4, 64), on(q / 2, 62),
+						off(q, 62)), noteEvents(convert(standard(tune("semantic", ".[ce] d|")))));
+				assertEquals(noteEvents(convert(standard(tune("semantic", "c d | e|")))),
+						noteEvents(convert(standard(tune("semantic", "c d .| e|")))));
 			}
 
 			@Disabled(NOT_YET)

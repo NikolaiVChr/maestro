@@ -147,6 +147,19 @@ public class AbcToMidi {
 	public static final double GRACE_NOTE_SECONDS = 0.065;
 
 	/**
+	 * How many Dynamics steps an accent (L, !accent!, !>!, !emphasis!) plays louder than the notes around it, at most
+	 * ffff. ABC 2.1 (4.14) leaves the amount to the program; MuseScore 4 plays an accent 2 dynamic levels up (mf as ff).
+	 * Only with Params.standard2011: Lotro plays an accent like any note.
+	 */
+	public static final int ACCENT_DYNAMICS_STEPS = 2;
+
+	/**
+	 * How much of its written length a staccato note (.c) sounds; the next note starts on time. ABC 2.1 (4.14) leaves the
+	 * amount to the program; MuseScore 3 and 4 play half. Only with Params.standard2011.
+	 */
+	public static final double STACCATO_LENGTH = 0.5;
+
+	/**
 	 * Ornaments that are played, by their decoration name (ABC 2.1, 4.14); T, M, P and ~ are the short forms. ABC leaves
 	 * how to play them to the program: here in steps of GRACE_NOTE_SECONDS, see ornamentNotes.
 	 */
@@ -157,6 +170,15 @@ public class AbcToMidi {
 	/** The dynamics marks !pppp! to !ffff! (ABC 2.1, 4.14), by name: the same volumes as +pppp+ to +ffff+. */
 	private static final Set<String> DYNAMICS_NAMES = Arrays.stream(Dynamics.values()).map(Enum::name)
 			.collect(java.util.stream.Collectors.toUnmodifiableSet());
+
+	/** The accent's decoration names (ABC 2.1, 4.14); L is its short form. */
+	private static final Set<String> ACCENT_NAMES = Set.of("accent", ">", "emphasis");
+
+	/** The volume of an accented note: ACCENT_DYNAMICS_STEPS louder than the dynamics, at most the loudest. */
+	private static Dynamics accented(Dynamics dynamics) {
+		Dynamics[] all = Dynamics.values();
+		return all[Math.min(dynamics.ordinal() + ACCENT_DYNAMICS_STEPS, all.length - 1)];
+	}
 
 	public static List<String> readLines(File inputFile) throws IOException {
 		// Note: ABC files are technically ISO-8859-1 by standard, but often UTF-8 in practice.
@@ -966,6 +988,9 @@ public class AbcToMidi {
 					List<double[]> graceNotes = new ArrayList<>(); // {noteId, written length} of grace notes before the next note
 					double attackOffset = 0; // The current note or chord starts after its grace notes
 					String ornament = null; // The decoration before the next note, if it's one that is played (ORNAMENTS)
+					// An accent or staccato before the next note or chord (only with standard2011)
+					boolean accent = false;
+					boolean staccato = false;
 					Tuplet tuplet = null;
 					int brokenRhythmNumerator = 1; // The numerator of the note after the broken rhythm sign
 					int brokenRhythmDenominator = 1; // The denominator of the note after the broken rhythm sign
@@ -1180,6 +1205,9 @@ public class AbcToMidi {
 										throw new FileParseException("Empty chord", fileName, lineNumber, chordStartIndex);
 									}
 									inChord = false;
+									// An accent or staccato before the chord was for all of its notes
+									accent = false;
+									staccato = false;
 
 									if (tuplet != null && tuplet.r == 0) {
 										// A tuplet that ended on this chord have now applied to all of its notes. Now the tuplet is done.
@@ -1321,6 +1349,8 @@ public class AbcToMidi {
 											throw new FileParseException("Unsupported +decoration+", fileName, lineNumber, i);
 										if (!repeats.skipping && ORNAMENTS.containsKey(decoration))
 											ornament = ORNAMENTS.get(decoration);
+										else if (abc21 && ACCENT_NAMES.contains(decoration))
+											accent = true; // +accent+, the ABC 2.0 form of !accent!
 									}
 
 									if (enableLotroErrors && inChord) {
@@ -1365,6 +1395,8 @@ public class AbcToMidi {
 										// ABC 2.1 (4.14): players "may be expected to implement the dynamics marks": !p! as
 										// +p+. Lotro skips them, so only with standard2011.
 										info.setDynamics(decorationName);
+									} else if (abc21 && ACCENT_NAMES.contains(decorationName)) {
+										accent = true; // ABC 2.1 (4.14): "the accent mark", as L
 									} else if (!repeats.skipping && ORNAMENTS.containsKey(decorationName)) {
 										ornament = ORNAMENTS.get(decorationName);
 									}
@@ -1449,7 +1481,10 @@ public class AbcToMidi {
 										ornament = "roll";
 									break;
 								case '.': // Staccato
-									// A decoration. Lotro plays on (tested); it changes nothing here.
+									// A decoration. Lotro plays on (tested) and plays the note as written, so only with
+									// standard2011 it sounds shorter. Not the dotted bar line .| (ABC 2.1, 4.8).
+									if (abc21 && !(i + 1 < line.length() && line.charAt(i + 1) == '|'))
+										staccato = true;
 									break;
 
 								case '$': // Score line break (ABC 2.1, 4.1)
@@ -1515,6 +1550,8 @@ public class AbcToMidi {
 									}
 									if (!repeats.skipping && (ch == 'T' || ch == 'M' || ch == 'P'))
 										ornament = (ch == 'T') ? "trill" : (ch == 'M') ? "lowermordent" : "uppermordent";
+									if (abc21 && ch == 'L')
+										accent = true;
 									break;
 								case 'y':
 									// Spacer. Tested in Lotro (B58): it refuses the part.
@@ -1685,6 +1722,10 @@ public class AbcToMidi {
 						if (repeats.skipping) {
 							ornament = null;
 							graceNotes.clear();
+							if (!inChord) {
+								accent = false;
+								staccato = false;
+							}
 							// A note of an ending that this pass doesn't play: it takes no time. It keeps its place in the w:
 							// lyrics, which are written for the notes as they stand.
 							char letter = m.group(NOTE_LETTER).charAt(0);
@@ -1929,8 +1970,9 @@ public class AbcToMidi {
 											"The meter denominator (the N in M:x/N) must be the same throughout the song",
 											fileName, meterChangeLine, meterChangeColumn);
 								}
+								Dynamics attack = accent ? accented(info.getDynamics()) : info.getDynamics();
 								track.add(MidiFactory.createNoteOnEventEx(noteId, channel,
-										info.getDynamics().getVol(useLotroInstruments), Math.round(chordStartTick + attackOffset)));
+										attack.getVol(useLotroInstruments), Math.round(chordStartTick + attackOffset)));
 							}
 
 							notesOn.add(new Triple<>(lotroNoteId, noteEndTick, abcNoteAcc+noteLetter+octaveStr+abcNoteL));
@@ -1954,6 +1996,9 @@ public class AbcToMidi {
 							} else {
 								tiedNoteEndTicks.remove(noteId);
 								tiedNoteStartTicks.remove(noteId);
+								// A staccato note sounds STACCATO_LENGTH of its written length (not a tied note)
+								if (staccato && tiedSoFar == null)
+									tieEndTick = chordStartTick + (noteEndTick - chordStartTick) * STACCATO_LENGTH;
 							}
 
 							handleNoteTie(useLotroInstruments, enableLotroErrors, info, track, channel, PPQN, tiedNotes,
@@ -1969,6 +2014,8 @@ public class AbcToMidi {
 						if (!inChord) {
 							chordStartTick = noteEndTick;
 							attackOffset = 0;
+							accent = false;
+							staccato = false;
 							log.finer("chordStartTick n="+chordStartTick);
 						}
 						i = m.end();
