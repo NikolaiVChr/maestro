@@ -835,6 +835,15 @@ final class AbcCases {
 		c.add(tune("parts_order_after_the_key", "P:ABA", "P:A", "c d|", "P:B", "e f|"));
 		c.add(tune("parts_order_after_notes_is_a_label", "g a|", "P:ABA", "P:A", "c d|", "P:B", "e f|"));
 
+		// ------------------------------------------------------------ meters as sums (A40): beat groups
+		c.add(tune("meter_sum", header("M:2+2+3/8"), "c2 d2 e3|f2 g2 a3|"));
+		c.add(tune("meter_sum_parenthesized", header("M:(2+2+3)/16"), "c2 d2 e3|f2 g2 a3|"));
+		c.add(tune("meter_sum_chords", header("M:2+2+3/16", "R:rachenitsa", "-Q"), "\"Am\"A2 c2 e3|\"E7\"B2 ^G2 E3|")
+				.with(p -> p.chordAccompaniment = true));
+		c.add(tune("meter_seven_eight_chords", header("M:7/8"), "\"G\"G2 B2 d3|\"D\"A2 F2 D3|")
+				.with(p -> p.chordAccompaniment = true));
+		c.add(tune("meter_sum_in_the_body", header("M:7/16"), "c2 d2 e3|", "M:3+2+2/16", "f3 g2 a2|"));
+
 		// ------------------------------------------------------------ lyrics, more
 		c.add(tune("lyrics_rests_and_graces", "c z {g}d e|", "w:one two three"));
 		c.add(tune("lyrics_star_skips_a_note", "c d e f|", "w:one * three four"));

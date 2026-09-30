@@ -930,6 +930,12 @@ public class AbcToMidi {
 									throw new LotroFileParseException("Lotro refuses a part with M:none; give a meter, e.g. M:4/4",
 											fileName, lineNumber, infoMatcher.start(INFO_VALUE));
 								}
+								if (enableLotroErrors && value.contains("+")) {
+									// ABC 2.1 (3.1.6): the numerator as a sum shows the beat groups; not tested in Lotro
+									throw new LotroFileParseException("A meter written as a sum (M:" + value + ") is untested "
+											+ "in Lotro; write its total, e.g. M:7/8 for M:2+2+3/8", fileName, lineNumber,
+											infoMatcher.start(INFO_VALUE));
+								}
 								info.setMeter(value, track == null);
 								meterChangeLine = lineNumber;
 								meterChangeColumn = infoMatcher.start(INFO_VALUE);
@@ -1476,7 +1482,7 @@ public class AbcToMidi {
 									if (playChords && !inChord && !repeats.skipping && !drumPart) {
 										// On the beat of the note that follows; text that isn't a chord name is skipped
 										ChordSymbol chord = ChordSymbol.parse(line.substring(i + 1, j), Math.round(chordStartTick),
-												beatTicks(info), beatsPerBar(info), info.getTranspose());
+												beatTicks(info), beatsPerBar(info), groupTicks(info), info.getTranspose());
 										if (chord != null)
 											chordSymbols.computeIfAbsent(trackNumber, k -> new ArrayList<>()).add(chord);
 									}
@@ -3128,11 +3134,21 @@ public class AbcToMidi {
 		return (numerator % 3 == 0 && numerator > 3) ? 3 * beat : beat;
 	}
 
+	/** The bar's beat groups in ticks (M:2+2+3/8, 7/8: a quarter, a quarter, a dotted quarter), or null. */
+	private static long[] groupTicks(TuneInfo info) {
+		int[] groups = info.getBeatGroups();
+		if (groups == null)
+			return null;
+		long unit = info.getTickFactor() * DEFAULT_NOTE_TICKS / info.getBarDenominator();
+		return Arrays.stream(groups).mapToLong(g -> g * unit).toArray();
+	}
+
 	/**
-	 * A chord symbol: where it is, the meter's beat and beats per bar, its notes (MIDI, from C3), its bass note and the
-	 * chord's fifth for an alternating bass (MIDI, C2 to B2).
+	 * A chord symbol: where it is, the meter's beat and beats per bar, the bar's beat groups in ticks (null for equal
+	 * beats), its notes (MIDI, from C3), its bass note and the chord's fifth for an alternating bass (MIDI, C2 to B2).
 	 */
-	record ChordSymbol(long tick, long beatTicks, int beatsPerBar, int[] pitches, int bass, int fifth) {
+	record ChordSymbol(long tick, long beatTicks, int beatsPerBar, long[] groupTicks, int[] pitches, int bass,
+					   int fifth) {
 		/** Intervals above the root for each chord quality (ABC 2.1, 4.18 leaves the names to the program). */
 		private static final Map<String, int[]> QUALITIES = new HashMap<>();
 		static {
@@ -3167,7 +3183,8 @@ public class AbcToMidi {
 		private static final Pattern NAME = Pattern.compile("([A-G])([#b]?)([^/]*)(?:/([A-G])([#b]?))?");
 
 		/** The chord, or null if the text isn't a chord name (an annotation like "^text", "Fine", "a."). */
-		static ChordSymbol parse(String text, long tick, long beatTicks, int beatsPerBar, int transpose) {
+		static ChordSymbol parse(String text, long tick, long beatTicks, int beatsPerBar, long[] groupTicks,
+								 int transpose) {
 			Matcher m = NAME.matcher(text.trim());
 			if (!m.matches())
 				return null;
@@ -3184,7 +3201,13 @@ public class AbcToMidi {
 					fifth = intervals[n]; // The chord's own fifth: diminished, perfect or augmented
 			}
 			// Bass notes from C2 to B2
-			return new ChordSymbol(tick, beatTicks, beatsPerBar, pitches, 36 + bass, 36 + (root + fifth) % 12);
+			if (groupTicks != null) {
+				// A beat is a group: the first is the quick chord's length
+				beatTicks = groupTicks[0];
+				beatsPerBar = groupTicks.length;
+			}
+			return new ChordSymbol(tick, beatTicks, beatsPerBar, groupTicks, pitches, 36 + bass,
+					36 + (root + fifth) % 12);
 		}
 
 		private static int pitchClass(String letter, String accidental, int transpose) {
@@ -3201,9 +3224,10 @@ public class AbcToMidi {
 	 * Adds a part's accompaniment as two new tracks, a bass and a chords track. Each chord lasts until the next one
 	 * (the last until the part's written end, partEnd). From the chord's start and from each bar line in it, the root
 	 * in the bass, then by the bar's beats: 2 beats (2/4 6/8) chord; 3 beats (3/4 9/8) the chord once, held; 4 beats
-	 * (4/4 12/8) chord, the fifth in the bass on beat 3, chord; else the chord on each beat. A chord that gets no beat
-	 * of its own (it lasts a beat or less) is struck with its bass. A hymn: the bass and the chord together from the
-	 * chord's start and each bar line (and beat 3 of 4), held.
+	 * (4/4 12/8) chord, the fifth in the bass on beat 3, chord; beat groups (7/8 as 2+2+3, M:2+2+3/8) the chord on each
+	 * group after the first, held to its end; else the chord on each beat. A chord that gets no beat of its own (it
+	 * lasts a beat or less) is struck with its bass. A hymn: the bass and the chord together from the chord's start
+	 * and each bar line (and beat 3 of 4), held.
 	 *
 	 * @return The new last track number (unchanged if there are no channels left)
 	 */
@@ -3253,6 +3277,22 @@ public class AbcToMidi {
 					segmentStart = segmentEnd;
 					continue;
 				}
+				if (chord.groupTicks() != null) {
+					// Beat groups: the root on the first, the chord on each one after it, held to its end
+					for (long beat = segmentStart; beat < segmentEnd; ) {
+						long beatEnd = Math.min(groupEnd(chord.groupTicks(), bar, beat), segmentEnd);
+						if (beat == segmentStart) {
+							addNote(bassTrack, bassChannel, chord.bass() + bassShift, bassVolume, beat, beatEnd);
+						} else {
+							for (int pitch : chord.pitches())
+								addNote(chordTrack, chordChannel, pitch + chordShift, chordVolume, beat, beatEnd);
+							chordStruck = true;
+						}
+						beat = beatEnd;
+					}
+					segmentStart = segmentEnd;
+					continue;
+				}
 				for (long beat = segmentStart; beat < segmentEnd; beat += chord.beatTicks()) {
 					long beatEnd = Math.min(beat + chord.beatTicks(), segmentEnd);
 					long beatInBar = (beat - bar) / chord.beatTicks();
@@ -3283,6 +3323,16 @@ public class AbcToMidi {
 		endTrack(bassTrack, LotroInstrument.BASIC_THEORBO, useLotroInstruments, tempoMap, ppqn, bpm);
 		endTrack(chordTrack, LotroInstrument.LUTE_OF_AGES, useLotroInstruments, tempoMap, ppqn, bpm);
 		return trackNumber;
+	}
+
+	/** Where the beat group that the tick is in ends, counting the groups from the bar's start (and on, past its end). */
+	private static long groupEnd(long[] groupTicks, long barStart, long tick) {
+		long end = barStart;
+		for (int g = 0; ; g = (g + 1) % groupTicks.length) {
+			end += groupTicks[g];
+			if (end > tick)
+				return end;
+		}
 	}
 
 	private static Track accompanimentTrack(Sequence seq, AbcInfo abcInfo, int part, int index, LotroInstrument instrument,

@@ -1157,6 +1157,8 @@ class AbcToMidiBehaviourTest {
 			// Encoded text (Norbeck's sl\"angpolska), and an unknown type: abc2midi's Q:1/4=120
 			assertEquals(112, typeTempo("R:sl\\\"angpolska", "M:3/4", "-Q"));
 			assertEquals(240, typeTempo("R:hora", "M:6/8", "-Q"));
+			// Balkan dances in their quick beat: a rachenitsa 220 eighths, 440 sixteenths in 7/16
+			assertEquals(440, typeTempo("R:rachenitsa", "M:2+2+3/16", "-Q"));
 			// A Q: wins; without specTempo (Lotro files, existing projects) R: changes nothing
 			assertEquals(60, typeTempo("R:reel", "M:4/4", "Q:1/4=60"));
 			assertEquals(120, abcInfoOf(AbcCase.of("semantic", "X:1", "T:t", "R:reel", "M:4/4", "L:1/8", "K:C", "c d|"))
@@ -1368,6 +1370,40 @@ class AbcToMidiBehaviourTest {
 			assertEquals(2, convert(tune("semantic", "\"G\"G B d|")).getTracks().length);
 			assertEquals(2, ConversionDump.convert(chords(tune("semantic", "\"G\"G B d|")), Profile.ABC_PLAYER_STRICT)
 					.getTracks().length);
+		}
+
+		@Test
+		void balkanMetersInBeatGroups() throws Exception {
+			// ABC 2.1 (3.1.6): M:2+2+3/8 is 7/8 in beats of 2, 2 and 3 eighths; also written (2+2+3)/8. The notes play
+			// as in 7/8
+			List<NoteEvent> seven = noteEvents(convert(tune("semantic", header("M:7/8"), "c2 d2 e3|")));
+			assertEquals(seven, noteEvents(convert(tune("semantic", header("M:2+2+3/8"), "c2 d2 e3|"))));
+			assertEquals(seven, noteEvents(convert(tune("semantic", header("M:(2+2+3)/8"), "c2 d2 e3|"))));
+			// Untested in Lotro: with Lotro errors, an error saying to write the total
+			assertThrows(LotroFileParseException.class, () -> ConversionDump
+					.convert(tune("semantic", header("M:2+2+3/8"), "c2 d2 e3|"), Profile.ABC_PLAYER_STRICT));
+			// The accompaniment follows the groups: the root on the first, the chord on each other, held to its end. (The
+			// MIDI's quarter note is the meter's beat here: e is an eighth)
+			Sequence s = convert(chords(tune("semantic", header("M:2+2+3/8"), "\"G\"G2 B2 d3|\"D\"A2 F2 D3|")));
+			long e = s.getResolution();
+			assertEquals(List.of(on(0, 43), on(7 * e, 38)), noteOns(s, 2));
+			assertEquals(List.of(55, 59, 62), pitchesAt(noteOns(s, 3), 2 * e));
+			assertEquals(List.of(55, 59, 62), pitchesAt(noteOns(s, 3), 4 * e));
+			assertEquals(List.of(on(2 * e, 55), off(4 * e, 55), on(4 * e, 55), off(7 * e, 55)),
+					noteEvents(s, 3).stream().filter(n -> n.pitch() == 55).toList());
+			assertEquals(List.of(50, 54, 57), pitchesAt(noteOns(s, 3), 9 * e));
+			// Plain 7/8 is counted 2+2+3 too (as a rachenitsa), 5/8 2+3; the sum may put the 3 elsewhere (3+2+2)
+			assertEquals(noteEvents(s, 3), noteEvents(convert(chords(tune("semantic", header("M:7/8"),
+					"\"G\"G2 B2 d3|\"D\"A2 F2 D3|"))), 3));
+			assertEquals(List.of(55, 59, 62), pitchesAt(noteOns(convert(chords(tune("semantic", header("M:5/8"),
+					"\"G\"G2 B3|"))), 3), 2 * e));
+			Sequence kalamatiano = convert(chords(tune("semantic", header("M:3+2+2/8"), "\"G\"G3 B2 d2|")));
+			assertEquals(List.of(55, 59, 62), pitchesAt(noteOns(kalamatiano, 3), 3 * e));
+			assertEquals(List.of(55, 59, 62), pitchesAt(noteOns(kalamatiano, 3), 5 * e));
+			// 2+2+2+3 (9 eighths) isn't compound: four groups, not three dotted quarters as 9/8
+			Sequence nine = convert(chords(tune("semantic", header("M:2+2+2+3/8"), "\"G\"G2 B2 d2 g3|")));
+			assertEquals(List.of(2 * e, 4 * e, 6 * e), noteOns(nine, 3).stream().filter(n -> n.pitch() == 55)
+					.map(NoteEvent::tick).toList());
 		}
 
 		private static AbcCase chords(AbcCase abcCase) {

@@ -45,6 +45,9 @@ public class TuneInfo {
 	private boolean compoundMeter;
 	private int meterNumerator;
 	private int meterDenominator;
+	// The meter's beat groups, in its denominator's notes, when the numerator is written as a sum (M:2+2+3/8, ABC 2.1,
+	// 3.1.6); else null
+	private int[] beatGroups;
     private int noteDivisorNum;
     private int noteDivisorDenom;
     private int tickFactor = 16;
@@ -59,6 +62,7 @@ public class TuneInfo {
 	private int fileOctaveShift;
 	private int fileMeterNumerator;
 	private int fileMeterDenominator;
+	private int[] fileBeatGroups;
 	private int fileNoteDivisorNum;
 	private int fileNoteDivisorDenom;
 	private boolean noteDivisorSetInHeader; // An L: in the current header (the file's or the part's)
@@ -97,6 +101,7 @@ public class TuneInfo {
 		octaveShift = 0;
 		meterNumerator = 4;
 		meterDenominator = 4;
+		beatGroups = null;
 		compoundMeter = false;
 		noteDivisorNum = -1;
 		noteDivisorDenom = 1;
@@ -124,6 +129,7 @@ public class TuneInfo {
 			fileOctaveShift = octaveShift;
 			fileMeterNumerator = meterNumerator;
 			fileMeterDenominator = meterDenominator;
+			fileBeatGroups = beatGroups;
 			fileNoteDivisorNum = noteDivisorNum;
 			fileNoteDivisorDenom = noteDivisorDenom;
 			fileInstructions = instructions;
@@ -136,7 +142,8 @@ public class TuneInfo {
 		octaveShift = fileOctaveShift;
 		meterNumerator = fileMeterNumerator;
 		meterDenominator = fileMeterDenominator;
-		compoundMeter = (meterNumerator % 3) == 0;
+		beatGroups = fileBeatGroups;
+		compoundMeter = isCompound(meterNumerator, beatGroups);
 		noteDivisorNum = fileNoteDivisorNum;
 		noteDivisorDenom = fileNoteDivisorDenom;
 		noteDivisorSetInHeader = false;
@@ -343,6 +350,7 @@ public class TuneInfo {
 		str = str.trim();
 		boolean wasCompound = isCompoundForTempo();
 		int oldDenominator = meterDenominator;
+		beatGroups = null;
 		if (str.equals("C") || str.equalsIgnoreCase("none")) {
 			// M:none is free meter (ABC 2.1, 3.1.6): no bars to keep, so the timing is that of 4/4 (default L:1/8)
 			meterNumerator = 4;
@@ -356,7 +364,19 @@ public class TuneInfo {
 				throw new IllegalArgumentException(
 						"The string: \"" + str + "\" is not a valid time signature (expected format: 4/4)");
 			}
-			meterNumerator = Integer.parseInt(parts[0]);
+			Matcher sum = METER_SUM.matcher(parts[0]);
+			if (sum.matches()) {
+				// M:2+2+3/8 and M:(2+2+3)/8: 7/8, played in beats of 2, 2 and 3 eighths
+				String[] groups = sum.group(1).split("\\+");
+				beatGroups = new int[groups.length];
+				meterNumerator = 0;
+				for (int g = 0; g < groups.length; g++) {
+					beatGroups[g] = Integer.parseInt(groups[g]);
+					meterNumerator += beatGroups[g];
+				}
+			} else {
+				meterNumerator = Integer.parseInt(parts[0]);
+			}
 			meterDenominator = Integer.parseInt(parts[1]);
 		}
 		if (inHeader && !noteDivisorSetInHeader) {
@@ -364,7 +384,7 @@ public class TuneInfo {
 			noteDivisorDenom = 1;
 		}
 		calcPPQN();
-		this.compoundMeter = (meterNumerator % 3) == 0;
+		this.compoundMeter = isCompound(meterNumerator, beatGroups);
 		if (inHeader && (meterDenominator != oldDenominator || isCompoundForTempo() != wasCompound)) {
 			// ABC 2.1 lets M: come after Q: in a header: work the tempo out again for this meter
 			retempo();
@@ -434,7 +454,34 @@ public class TuneInfo {
 
 	/** 6/8 9/8 12/8 (and 6/4 ...): the felt beat is three of the denominator. 3/4 and 3/8 are not compound. */
 	private boolean isCompoundForTempo() {
-		return meterNumerator % 3 == 0 && meterNumerator > 3;
+		return compoundMeter && meterNumerator > 3;
+	}
+
+	/** The numerator of a sum (ABC 2.1, 3.1.6): 2+2+3 or (2+2+3). */
+	private static final Pattern METER_SUM = Pattern.compile("\\(?(\\d+(?:\\+\\d+)+)\\)?");
+
+	/** Compound: the numerator a multiple of 3; with beat groups, all of 3 (3+3+2 isn't, 2+2+2+3 = 9 isn't). */
+	private static boolean isCompound(int numerator, int[] groups) {
+		if (groups == null)
+			return numerator % 3 == 0;
+		return groups.length > 1 && Arrays.stream(groups).allMatch(g -> g == 3);
+	}
+
+	/**
+	 * The bar's beat groups, in notes of the meter's denominator, for a meter that isn't counted in equal beats: as
+	 * written (M:2+2+3/8), or, for a numerator that neither 2 nor 3 divides (5, 7, 11, 13 ...), beats of 2 and a 3 at
+	 * the end (7 = 2+2+3, as a rachenitsa; 5 = 2+3). Null for other meters, which are counted in equal beats.
+	 */
+	public int[] getBeatGroups() {
+		if (beatGroups != null)
+			return beatGroups.clone();
+		int n = meterNumerator;
+		if (n < 5 || n % 2 == 0 || n % 3 == 0)
+			return null;
+		int[] groups = new int[(n - 3) / 2 + 1];
+		Arrays.fill(groups, 2);
+		groups[groups.length - 1] = 3;
+		return groups;
 	}
 
 	/**

@@ -12,7 +12,8 @@ import java.util.regex.Pattern;
  * Session tempos, at the relaxed end, so a tune is easy to follow (TradTab's metronome guide: reel 100-124 half notes,
  * jig 108-124 and slip jig 113-124 dotted quarters, hornpipe 160-200 quarters, polka 121-140 quarters, slide 37-41
  * bars a minute; Irish dance: treble jig 72-96 dotted quarters). Strathspeys at Scottish country dance speed (about 32
- * bars a minute), airs from the Norbeck collection's Q: fields (slow air 23, air 35 bars a minute).
+ * bars a minute), airs from the Norbeck collection's Q: fields (slow air 23, air 35 bars a minute), and so the Balkan
+ * dances in quick beats of an eighth (rachenitsa, kopanitsa: 1/8=220; paidushko 2/8=180; sandansko 2/16=180).
  */
 public final class RhythmTempo {
 	private RhythmTempo() {
@@ -43,7 +44,12 @@ public final class RhythmTempo {
 			type("marche?s?|marsch", "1/4=112"), // 56 in 2/4, 28 in 4/4
 			type("\\w*polska|polskas|polon.s|hambo|halling", "1/4=112"), // 37 in 3/4
 			type("airs?|songs?", "1/4=100"), // 33 in 3/4
-			type("slow airs?|laments?", "1/4=70")); // 23 in 3/4
+			type("slow airs?|laments?", "1/4=70"), // 23 in 3/4
+			// Balkan: counted in eighths, the quick beat of a 2+2+3 bar
+			type("r[au]che?nit[sz]as?|racenicas?|kopanit[sz]as?|gankino|cadaneasca|geampara|buchimish|da[yj]chovo"
+					+ "|krivo|horos?", "1/8=220"), // 63 in 7/16
+			type("pa[iy]dushko", "1/4=180"), // 72 in 5/8
+			type("sandansko", "1/8=180")); // 16 in 22/16
 
 	/** The Q: value for the first tune type in an R: field's value (decoded, AbcText), or null. */
 	public static String of(String rhythm) {
