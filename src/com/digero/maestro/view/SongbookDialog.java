@@ -13,6 +13,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.text.Normalizer;
 import java.util.List;
 import java.util.Locale;
@@ -42,6 +43,7 @@ import javax.swing.table.TableRowSorter;
 
 import com.digero.common.abc.AbcText;
 import com.digero.common.abctomidi.AbcSongbook;
+import com.digero.common.util.Util;
 
 /**
  * Asks what to do with a songbook (a file of standard ABC with many X: tunes): open one tune, open all as parts (as
@@ -82,6 +84,7 @@ public class SongbookDialog extends JDialog {
 	private static final String CANCEL = "Cancel";
 	private static final String SPLIT_DONE = "%d tunes written to\n%s";
 	private static final String SPLIT_FAILED = "Could not write the tunes:\n%s";
+	private static final String SPLIT_NOT_WRITABLE = "Can't write to\n%s\nPlease pick another folder.";
 
 	private final AbcSongbook book;
 	private final File bookFile;
@@ -365,14 +368,26 @@ public class SongbookDialog extends JDialog {
 	}
 
 	private void splitAll() {
+		// Next to the book, else (a read-only folder, a CD) in the user's Documents or home folder
 		String name = bookFile.getName().replaceFirst("(?i)\\.(abc|txt)$", "");
-		JFileChooser chooser = new JFileChooser(bookFile.getParentFile());
+		File start = bookFile.getAbsoluteFile().getParentFile();
+		if (!isWritable(start)) {
+			start = Util.getDocumentsDir();
+		}
+		JFileChooser chooser = new JFileChooser(start);
 		chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-		chooser.setSelectedFile(new File(bookFile.getParentFile(), name + " tunes"));
+		chooser.setSelectedFile(new File(start, name + " tunes"));
 		chooser.setDialogTitle(SPLIT);
-		if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
-			return;
-		File folder = chooser.getSelectedFile();
+		File folder;
+		while (true) {
+			if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
+				return;
+			folder = chooser.getSelectedFile();
+			if (isWritable(folder))
+				break;
+			JOptionPane.showMessageDialog(this, String.format(SPLIT_NOT_WRITABLE, folder.getAbsolutePath()), SPLIT,
+					JOptionPane.WARNING_MESSAGE);
+		}
 		try {
 			int written = book.splitAll(folder).size();
 			JOptionPane.showMessageDialog(this, String.format(SPLIT_DONE, written, folder.getAbsolutePath()), SPLIT,
@@ -381,6 +396,14 @@ public class SongbookDialog extends JDialog {
 			JOptionPane.showMessageDialog(this, String.format(SPLIT_FAILED, e.getMessage()), SPLIT,
 					JOptionPane.ERROR_MESSAGE);
 		}
+	}
+
+	/** The folder can be written to, or (if it doesn't exist yet) made in its nearest existing parent. */
+	private static boolean isWritable(File folder) {
+		File existing = folder;
+		while (existing != null && !existing.exists())
+			existing = existing.getParentFile();
+		return existing != null && existing.isDirectory() && Files.isWritable(existing.toPath());
 	}
 
 	private void close(Result chosen) {
