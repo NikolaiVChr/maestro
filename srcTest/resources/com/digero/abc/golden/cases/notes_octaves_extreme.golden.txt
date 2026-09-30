@@ -42,11 +42,7 @@ divisionType=0.0 resolution=11520 tickLength=47232 tracks=2
   #1 line=6 cols=[5,8) ticks=5760..11520 note=24 track=1 bar=0 tiesFrom=- tiesTo=-
   #2 line=6 cols=[9,12) ticks=11520..17280 note=84 track=1 bar=0 tiesFrom=- tiesTo=-
   #3 line=6 cols=[13,17) ticks=17280..23040 note=96 track=1 bar=0 tiesFrom=- tiesTo=-
-== log
-  WARNING: Unable to find duration for note 12 in Lute of Ages
-  WARNING: Unable to find duration for note 24 in Lute of Ages
-  WARNING: Unable to find duration for note 84 in Lute of Ages
-  WARNING: Unable to find duration for note 96 in Lute of Ages
+== log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
 == EXCEPTION LotroFileParseException: Error reading notes_octaves_extreme.abc on line 7, column 1:

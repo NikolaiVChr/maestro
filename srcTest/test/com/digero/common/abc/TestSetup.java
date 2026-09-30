@@ -2,6 +2,9 @@ package com.digero.common.abc;
 
 import com.digero.common.i18n.LocaleManager;
 import com.digero.common.i18n.UIText;
+import com.digero.common.util.Logging;
+
+import java.io.IOException;
 
 /** The one place that says what runs before every AbcToMidi test. */
 final class TestSetup {
@@ -9,7 +12,11 @@ final class TestSetup {
 	}
 
 	static void beforeEachTest() {
-		LocaleManager.init();
+        try {
+            Logging.configure("Unit-test", true);
+        } catch (IOException ignored) {
+        }
+        LocaleManager.init();
 		UIText.init();
 	}
 }

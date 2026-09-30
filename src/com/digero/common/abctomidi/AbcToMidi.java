@@ -563,6 +563,10 @@ public class AbcToMidi {
 		MidiProgramGuess.Clues partProgramClues = fileProgramClues;
 
 		int lineNumberForRegions = -1;
+		// With voices (VoiceSplitter) the lines read aren't in the file's order: a part ends at the line read before
+		// its next X:, and the next file's region lines start after the highest line read
+		int previousLineForRegions = -1;
+		int highestLineForRegions = -1;
 		abcInfo.abcTrackInfos = new ArrayList<>();
 		for (FileAndData fileAndData : filesData) {
 			track = null;
@@ -574,7 +578,18 @@ public class AbcToMidi {
 			int lineNumber = 0;
 			int partStartLine = 0;
 			List<String> lines = fileAndData.lines;
-			int firstLineForRegions = lineNumberForRegions + 1; // Region line numbers run on through all files
+			// ABC 2.1 (7), with standard2011: a tune's voices become parts that play together (VoiceSplitter). Lotro
+			// plays them one after another (B42), so without the flag V: changes nothing. Messages give the lines of
+			// the file.
+			int[] sourceLineNumbers = null;
+			if (abc21) {
+				VoiceSplitter.Result voices = VoiceSplitter.split(lines);
+				if (voices != null) {
+					lines = voices.lines();
+					sourceLineNumbers = voices.sourceLineNumbers();
+				}
+			}
+			int firstLineForRegions = highestLineForRegions + 1; // Region line numbers run on through all files
 			int startColumn = 0; // Where the parsing of the line starts: mid-line when going back for a repeat
 			// ABC 2.1 (2.2), with standard2011 in a file of X: tunes: free text before the first X: (besides the file
 			// header's fields) and after a tune; an empty line ends the tune (2.2.1). Lotro plays on after an empty
@@ -586,8 +601,10 @@ public class AbcToMidi {
 			boolean inTune = false; // Between an X: and the empty line that ends its tune
 			lineLoop: for (int lineIndex = 0; lineIndex < lines.size(); lineIndex++) {
 				String line = lines.get(lineIndex);
-				lineNumberForRegions = firstLineForRegions + lineIndex;
-				lineNumber = lineIndex + 1;
+				lineNumber = (sourceLineNumbers != null) ? sourceLineNumbers[lineIndex] : lineIndex + 1;
+				previousLineForRegions = lineNumberForRegions;
+				lineNumberForRegions = firstLineForRegions + lineNumber - 1;
+				highestLineForRegions = Math.max(highestLineForRegions, lineNumberForRegions);
 
 				if (skipFreeText) {
 					if (line.startsWith("X:")) {
@@ -762,6 +779,13 @@ public class AbcToMidi {
 						}
 					}
 
+					// A voice's part (VoiceSplitter) is named by the voice; the song keeps the tune's title
+					if (track == null && type == 'V' && abc21) {
+						String voicePartName = VoiceSplitter.partName(value);
+						if (voicePartName != null)
+							abcInfo.setPartName(trackNumber, voicePartName, true);
+					}
+
 					try {
 						switch (type) {
 							case 'X':
@@ -788,7 +812,7 @@ public class AbcToMidi {
 								repeats.newPart();
 
 								if (trackNumber > 0)
-									abcInfo.setPartEndLine(trackNumber, lineNumberForRegions - 1);
+									abcInfo.setPartEndLine(trackNumber, previousLineForRegions);
 
 								info.newPart(Integer.parseInt(value));
 								trackNumber++;
@@ -847,6 +871,10 @@ public class AbcToMidi {
 							case 'I':
 								// I:linebreak and I:decoration (ABC 2.1) are kept; others (I:MIDI ...) change nothing here
 								info.applyInstruction(value);
+								break;
+							case 'R':
+								// The tune's type: the tempo of a song without Q: (standard ABC)
+								info.setRhythm(value);
 								break;
 							case 'K':
 								String notForLotro;

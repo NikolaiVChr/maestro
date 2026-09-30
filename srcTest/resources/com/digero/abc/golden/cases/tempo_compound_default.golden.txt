@@ -3,10 +3,10 @@ case tempo_compound_default
 
 ### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
 == sequence
-divisionType=0.0 resolution=5760 tickLength=58953 tracks=2
+divisionType=0.0 resolution=5760 tickLength=48902 tracks=2
 -- track 0 (6 events)
   0 META text type=0x05 "@TTest"
-  0 META tempo mpq=166666
+  0 META tempo mpq=250000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=06031808
   0 META type=0x59 data=0000
@@ -30,13 +30,13 @@ divisionType=0.0 resolution=5760 tickLength=58953 tracks=2
   28800 NOTE_OFF ch=0 d1=67 d2=106 [LotroShortMessage]
   28800 NOTE_ON ch=0 d1=69 d2=106 [LotroShortMessage]
   34560 NOTE_OFF ch=0 d1=69 d2=106 [LotroShortMessage]
-  58953 META end_of_track
+  48902 META end_of_track
 == abcInfo
   title="Test"
   composer=""
   transcriber=""
   genre="" mood=""
-  primaryTempoBPM=360 timeSignature=6/8 keySignature=C maj
+  primaryTempoBPM=240 timeSignature=6/8 keySignature=C maj
   hasTriplets=false hasMixTimings=false barCount=1 partCount=2 partSetups=2..2 empty=false
   sourceFiles=[tempo_compound_default.abc]
   part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
@@ -103,7 +103,7 @@ divisionType=0.0 resolution=5760 tickLength=38851 tracks=2
 divisionType=0.0 resolution=5760 tickLength=34560 tracks=2
 -- track 0 (6 events)
   0 META text type=0x05 "@TTest"
-  0 META tempo mpq=166666
+  0 META tempo mpq=250000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=06031808
   0 META type=0x59 data=0000
@@ -130,7 +130,7 @@ divisionType=0.0 resolution=5760 tickLength=34560 tracks=2
   composer=""
   transcriber=""
   genre="" mood=""
-  primaryTempoBPM=360 timeSignature=6/8 keySignature=C maj
+  primaryTempoBPM=240 timeSignature=6/8 keySignature=C maj
   hasTriplets=false hasMixTimings=false barCount=1 partCount=2 partSetups=2..2 empty=false
   sourceFiles=[tempo_compound_default.abc]
   part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
@@ -149,7 +149,7 @@ divisionType=0.0 resolution=5760 tickLength=34560 tracks=2
 divisionType=0.0 resolution=5760 tickLength=34560 tracks=2
 -- track 0 (6 events)
   0 META text type=0x05 "@TTest"
-  0 META tempo mpq=166666
+  0 META tempo mpq=250000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=06031808
   0 META type=0x59 data=0000
@@ -176,7 +176,7 @@ divisionType=0.0 resolution=5760 tickLength=34560 tracks=2
   composer=""
   transcriber=""
   genre="" mood=""
-  primaryTempoBPM=360 timeSignature=6/8 keySignature=C maj
+  primaryTempoBPM=240 timeSignature=6/8 keySignature=C maj
   hasTriplets=false hasMixTimings=false barCount=1 partCount=2 partSetups=2..2 empty=false
   sourceFiles=[tempo_compound_default.abc]
   part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
@@ -195,7 +195,7 @@ divisionType=0.0 resolution=5760 tickLength=34560 tracks=2
 divisionType=0.0 resolution=5760 tickLength=34560 tracks=2
 -- track 0 (6 events)
   0 META text type=0x05 "@TTest"
-  0 META tempo mpq=166666
+  0 META tempo mpq=250000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=06031808
   0 META type=0x59 data=0000
@@ -222,7 +222,7 @@ divisionType=0.0 resolution=5760 tickLength=34560 tracks=2
   composer=""
   transcriber=""
   genre="" mood=""
-  primaryTempoBPM=360 timeSignature=6/8 keySignature=C maj
+  primaryTempoBPM=240 timeSignature=6/8 keySignature=C maj
   hasTriplets=false hasMixTimings=false barCount=1 partCount=2 partSetups=2..2 empty=false
   sourceFiles=[tempo_compound_default.abc]
   part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0

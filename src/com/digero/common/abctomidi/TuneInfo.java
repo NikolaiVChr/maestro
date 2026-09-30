@@ -5,6 +5,7 @@ import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.digero.common.abc.AbcText;
 import com.digero.common.abc.Dynamics;
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.midi.KeyMode;
@@ -27,7 +28,7 @@ public class TuneInfo {
 	private int primaryTempoBPM; // In beats of the meter's denominator (M:6/8: eighths), like the MIDI's quarter notes
 	// Q: as written (ABC 2.1, 3.1.8): the beat as a fraction of a whole note, and the beats per minute. The beat is 0
 	// for Q:120 (the meter's denominator, as in LotRO), UNIT_NOTE_BEAT for Q:120 and Q:C=120 when the Q: note length
-	// counts (ABC 2.1, 10.1: unit note lengths, L:) and FELT_BEAT for a tempo word or the default tempo.
+	// counts (ABC 2.1, 10.1: unit note lengths, L:), FELT_BEAT for a tempo word and DEFAULT_BEAT without Q:.
 	private double tempoBeat;
 	private int tempoBeatsPerMinute = 120;
 	private boolean standardTempo; // The Q: note length counts, as in ABC 2.1 (LotRO errors off); LotRO ignores it
@@ -64,6 +65,10 @@ public class TuneInfo {
 	// I:linebreak and I:decoration (ABC 2.1): every part starts from the file header's
 	private AbcInstructions instructions = new AbcInstructions();
 	private AbcInstructions fileInstructions = new AbcInstructions();
+	// The tempo of the tune's type in R: (RhythmTempo), as a Q: value, for a song without Q:; every part starts from
+	// the file header's
+	private String rhythmTempo;
+	private String fileRhythmTempo;
 
     public TuneInfo() {
 		partNumber = 0;
@@ -97,6 +102,7 @@ public class TuneInfo {
 		noteDivisorDenom = 1;
 		noteDivisorSetInHeader = false;
 		instructions = new AbcInstructions();
+		rhythmTempo = null;
 		calcPPQN();
 	}
 
@@ -121,6 +127,7 @@ public class TuneInfo {
 			fileNoteDivisorNum = noteDivisorNum;
 			fileNoteDivisorDenom = noteDivisorDenom;
 			fileInstructions = instructions;
+			fileRhythmTempo = rhythmTempo;
 		}
 		key = fileKey;
 		keyAccidentals = fileKeyAccidentals.clone();
@@ -134,7 +141,15 @@ public class TuneInfo {
 		noteDivisorDenom = fileNoteDivisorDenom;
 		noteDivisorSetInHeader = false;
 		instructions = fileInstructions.copy();
+		rhythmTempo = fileRhythmTempo;
 		calcPPQN();
+	}
+
+	/** An R: field's value (ABC 2.1, 3.1.7): the tune's type sets the tempo of a song without Q: (endHeader). */
+	public void setRhythm(String rhythm) {
+		String tempo = RhythmTempo.of(AbcText.decode(rhythm));
+		if (tempo != null)
+			rhythmTempo = tempo;
 	}
 
 	/**
@@ -395,8 +410,14 @@ public class TuneInfo {
 			Map.entry("moderato", 110), Map.entry("allegretto", 115), Map.entry("allegro", 130),
 			Map.entry("vivace", 165), Map.entry("presto", 180), Map.entry("prestissimo", 200));
 
-	/** A tempo word's or the default tempo's beat: a quarter, or a dotted quarter in 6/8 9/8 12/8 (per denominator). */
+	/** A tempo word's beat: a quarter, or a dotted quarter in 6/8 9/8 12/8 (per denominator). */
 	private static final double FELT_BEAT = -1;
+	/**
+	 * The beat and tempo without Q: and without a known tune type in R: (RhythmTempo): a quarter in every meter,
+	 * abc2midi's default (Q:1/4=120; ABC 2.1 gives none). In 6/8 that's 80 dotted quarters a minute.
+	 */
+	private static final double DEFAULT_BEAT = 1 / 4.0;
+	private static final int DEFAULT_BEATS_PER_MINUTE = 120;
 	/** The beat of Q:120 and Q:C=120 when the Q: note length counts: the unit note length, L: (ABC 2.1, 10.1). */
 	private static final double UNIT_NOTE_BEAT = -2;
 
@@ -521,13 +542,21 @@ public class TuneInfo {
 	}
 
 	/**
-	 * A part's header ends (its first notes). Without any Q: so far, ABC 2.1 gives no tempo: 120 beats a minute, the
-	 * beat being a dotted quarter in 6/8 9/8 12/8 when the Q: note length counts (as in LotRO otherwise: eighths). A
-	 * Q:120 that counts unit notes takes the header's L:, also one after the Q:.
+	 * A part's header ends (its first notes). Without any Q: so far, ABC 2.1 gives no tempo, when the Q: note length
+	 * counts (as in LotRO otherwise: 120 of the meter's denominator): the first part's tune type in R: gives it
+	 * (RhythmTempo), else abc2midi's, 120 quarters a minute in every meter. The song has one tempo: the other parts
+	 * keep it. A Q:120 that counts unit notes takes the header's L:, also one after the Q:.
 	 */
 	public void endHeader() {
 		if (!tempoGiven && standardTempo) {
-			tempoBeat = FELT_BEAT;
+			if (!allPartsTempoFixed) {
+				if (rhythmTempo != null) {
+					parseTempo(rhythmTempo, true);
+				} else {
+					tempoBeat = DEFAULT_BEAT;
+					tempoBeatsPerMinute = DEFAULT_BEATS_PER_MINUTE;
+				}
+			}
 			primaryTempoBPM = toMeterBeats(tempoBeat, tempoBeatsPerMinute);
 			if (primaryTempoBPM != tempoBeatsPerMinute) {
 				// The MIDI's default tempo is 120, so only another one needs a tempo event

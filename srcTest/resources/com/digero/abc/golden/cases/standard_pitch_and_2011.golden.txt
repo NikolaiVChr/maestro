@@ -52,8 +52,7 @@ divisionType=0.0 resolution=11520 tickLength=58496 tracks=2
   #5 line=6 cols=[11,13) ticks=23040..28800 note=73 track=1 bar=0 tiesFrom=- tiesTo=-
   #6 line=6 cols=[14,16) ticks=28800..34560 note=49 track=1 bar=0 tiesFrom=- tiesTo=-
   #7 line=6 cols=[17,18) ticks=34560..40320 note=61 track=1 bar=0 tiesFrom=- tiesTo=-
-== log
-  WARNING: Unable to find duration for note 73 in Lute of Ages
+== log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
 == sequence

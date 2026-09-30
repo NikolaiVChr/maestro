@@ -36,8 +36,7 @@ divisionType=0.0 resolution=11520 tickLength=29952 tracks=2
 == regions (2)
   #0 line=6 cols=[0,3) ticks=0..5760 note=84 track=1 bar=0 tiesFrom=- tiesTo=-
   #1 line=6 cols=[4,5) ticks=5760..11520 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
-== log
-  WARNING: Unable to find duration for note 84 in Lute of Ages
+== log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
 == EXCEPTION LotroFileParseException: Error reading lotro_note_too_high.abc on line 7, column 1:

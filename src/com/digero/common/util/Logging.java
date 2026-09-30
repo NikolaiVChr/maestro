@@ -26,13 +26,25 @@ public class Logging {
 	}
 
 	public static void configure(String app) throws IOException {
+		configure(app, false);
+	}
+
+	public static void configure(String app, boolean silent) throws IOException {
 		LogManager.getLogManager().reset();
 
 		Logger root = Logger.getLogger("");
-		root.setLevel(Level.CONFIG);// root.setLevel(Level.ALL);// to be able to set level on individual children
+		if (silent) {
+			root.setLevel(Level.OFF);// root.setLevel(Level.ALL);// to be able to set level on individual children
+		} else {
+			root.setLevel(Level.CONFIG);// root.setLevel(Level.ALL);// to be able to set level on individual children
+		}
 
 		ConsoleHandler console = new ConsoleHandler();
-		console.setLevel(Level.WARNING);
+		if (silent) {
+			console.setLevel(Level.OFF);
+		} else {
+			console.setLevel(Level.WARNING);
+		}
 		console.setFormatter(new SanitizingFormatter());
 
 		root.addHandler(console);

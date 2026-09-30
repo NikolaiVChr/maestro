@@ -1523,7 +1523,7 @@ divisionType=0.0 resolution=11520 tickLength=2211840 tracks=2
 
 ### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
 == sequence
-divisionType=0.0 resolution=11520 tickLength=3640320 tracks=2
+divisionType=0.0 resolution=11520 tickLength=1336320 tracks=4
 -- track 0 (7 events)
   0 META text type=0x05 "@TCanzonetta a tre voci"
   0 META tempo mpq=545454
@@ -1532,10 +1532,10 @@ divisionType=0.0 resolution=11520 tickLength=3640320 tracks=2
   0 META type=0x59 data=FD00
   1 META text type=0x05 "@IComposer: Claudio Monteverdi (1567-1643)"
   1 META end_of_track
--- track 1 (611 events)
+-- track 1 (197 events)
   0 PROGRAM_CHANGE ch=0 d1=75 d2=0 [LotroShortMessage]
-  0 META text type=0x03 "Canzonetta a tre voci"
-  0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META text type=0x03 "Soprano"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=91 [LotroShortMessage]
   92160 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
   92160 META text type=0x05 "Son "
   115200 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
@@ -1558,84 +1558,59 @@ divisionType=0.0 resolution=11520 tickLength=3640320 tracks=2
   172800 META text type=0x05 "ni e "
   184320 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
   184320 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  184320 META text type=0x05 "/Son "
-  207360 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  184320 META text type=0x05 "/que"
+  195840 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  195840 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
+  195840 META text type=0x05 "sto il "
+  207360 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
   207360 NOTE_ON ch=0 d1=70 d2=80 [LotroShortMessage]
-  207360 META text type=0x05 "que"
-  218880 NOTE_OFF ch=0 d1=70 d2=80 [LotroShortMessage]
-  218880 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
-  218880 META text type=0x05 "sti i "
-  230400 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
-  230400 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  230400 META text type=0x05 "cre"
-  241920 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
+  207360 META text type=0x05 "vi"
+  230400 NOTE_OFF ch=0 d1=70 d2=80 [LotroShortMessage]
+  230400 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  230400 META text type=0x05 "so "
+  241920 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
   241920 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  241920 META text type=0x05 "spi "
+  241920 META text type=0x05 "ond' "
   253440 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  253440 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
-  253440 META text type=0x05 "cri"
-  264960 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
-  264960 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  264960 META text type=0x05 "ni e "
-  276480 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  276480 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  276480 META text type=0x05 "que "
-  282240 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  282240 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
-  282240 META text type=0x05 "sto il "
-  288000 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
-  288000 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  288000 META text type=0x05 "vi"
-  293760 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  293760 NOTE_ON ch=0 d1=70 d2=80 [LotroShortMessage]
-  293760 META text type=0x05 "so "
-  299520 NOTE_OFF ch=0 d1=70 d2=80 [LotroShortMessage]
-  299520 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  299520 META text type=0x05 "e "
+  253440 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
+  253440 META text type=0x05 "io "
+  264960 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
+  264960 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
+  264960 META text type=0x05 "ri"
+  276480 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
+  276480 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  276480 META text type=0x05 "man"
   311040 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  311040 NOTE_ON ch=0 d1=69 d2=80 [LotroShortMessage]
-  322560 NOTE_OFF ch=0 d1=69 d2=80 [LotroShortMessage]
-  322560 NOTE_ON ch=0 d1=70 d2=80 [LotroShortMessage]
-  345600 NOTE_OFF ch=0 d1=70 d2=80 [LotroShortMessage]
-  345600 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  357120 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  357120 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  368640 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  414720 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
-  414720 META text type=0x05 "/Son "
-  437760 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
-  437760 NOTE_ON ch=0 d1=75 d2=80 [LotroShortMessage]
-  437760 META text type=0x05 "que"
-  449280 NOTE_OFF ch=0 d1=75 d2=80 [LotroShortMessage]
-  449280 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  449280 META text type=0x05 "sti i "
-  460800 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  460800 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
-  460800 META text type=0x05 "cre"
-  472320 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
-  472320 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
-  472320 META text type=0x05 "spi "
-  483840 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
-  483840 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  483840 META text type=0x05 "cri"
-  495360 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  495360 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
-  495360 META text type=0x05 "ni e "
-  506880 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
-  506880 NOTE_ON ch=0 d1=70 d2=80 [LotroShortMessage]
-  506880 META text type=0x05 "que "
-  512640 NOTE_OFF ch=0 d1=70 d2=80 [LotroShortMessage]
-  512640 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  512640 META text type=0x05 "sto il "
-  518400 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  311040 NOTE_ON ch=0 d1=70 d2=80 [LotroShortMessage]
+  311040 META text type=0x05 "go uc"
+  322560 NOTE_OFF ch=0 d1=70 d2=80 [LotroShortMessage]
+  322560 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
+  322560 META text type=0x05 "ci"
+  345600 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
+  345600 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
+  345600 META text type=0x05 "so. "
+  357120 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
+  460800 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
+  460800 META text type=0x05 "/Son "
+  483840 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
+  483840 NOTE_ON ch=0 d1=75 d2=80 [LotroShortMessage]
+  483840 META text type=0x05 "que"
+  495360 NOTE_OFF ch=0 d1=75 d2=80 [LotroShortMessage]
+  495360 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  495360 META text type=0x05 "sti i "
+  506880 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  506880 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
+  506880 META text type=0x05 "cre"
+  518400 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
   518400 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
-  524160 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
-  524160 NOTE_ON ch=0 d1=75 d2=80 [LotroShortMessage]
-  529920 NOTE_OFF ch=0 d1=75 d2=80 [LotroShortMessage]
-  529920 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
-  541440 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
-  541440 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
-  552960 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
+  518400 META text type=0x05 "spi "
+  529920 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
+  529920 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  529920 META text type=0x05 "cri"
+  541440 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  541440 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  541440 META text type=0x05 "ni e "
+  552960 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
   552960 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
   552960 META text type=0x05 "/que"
   564480 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
@@ -1669,714 +1644,841 @@ divisionType=0.0 resolution=11520 tickLength=3640320 tracks=2
   714240 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
   714240 META text type=0x05 "so. "
   725760 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
+  737280 NOTE_ON ch=0 d1=75 d2=80 [LotroShortMessage]
+  737280 META text type=0x05 "Deh, "
+  783360 NOTE_OFF ch=0 d1=75 d2=80 [LotroShortMessage]
   783360 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
-  783360 META text type=0x05 "/Son "
-  806400 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
+  783360 META text type=0x05 "/dim"
+  794880 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
+  794880 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
+  794880 META text type=0x05 "me"
+  806400 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
   806400 NOTE_ON ch=0 d1=75 d2=80 [LotroShortMessage]
-  806400 META text type=0x05 "que"
+  806400 META text type=0x05 "lo "
   817920 NOTE_OFF ch=0 d1=75 d2=80 [LotroShortMessage]
   817920 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  817920 META text type=0x05 "sti i "
+  817920 META text type=0x05 "ben "
   829440 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  829440 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
-  829440 META text type=0x05 "cre"
-  840960 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
-  840960 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
-  840960 META text type=0x05 "spi "
-  852480 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
+  829440 NOTE_ON ch=0 d1=70 d2=80 [LotroShortMessage]
+  829440 META text type=0x05 "mi"
+  852480 NOTE_OFF ch=0 d1=70 d2=80 [LotroShortMessage]
   852480 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  852480 META text type=0x05 "cri"
-  864000 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  864000 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
-  864000 META text type=0x05 "ni e "
-  875520 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
-  875520 NOTE_ON ch=0 d1=70 d2=80 [LotroShortMessage]
-  875520 META text type=0x05 "que "
-  881280 NOTE_OFF ch=0 d1=70 d2=80 [LotroShortMessage]
-  881280 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  881280 META text type=0x05 "sto il "
-  887040 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  887040 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
-  892800 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
-  892800 NOTE_ON ch=0 d1=75 d2=80 [LotroShortMessage]
-  898560 NOTE_OFF ch=0 d1=75 d2=80 [LotroShortMessage]
-  898560 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
-  910080 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
-  910080 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
-  921600 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
-  921600 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  921600 META text type=0x05 "/que"
-  933120 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  933120 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  933120 META text type=0x05 "sto il "
-  944640 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  944640 NOTE_ON ch=0 d1=70 d2=80 [LotroShortMessage]
-  944640 META text type=0x05 "vi"
-  967680 NOTE_OFF ch=0 d1=70 d2=80 [LotroShortMessage]
-  967680 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  967680 META text type=0x05 "so "
-  979200 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  979200 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  979200 META text type=0x05 "ond' "
-  990720 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  990720 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  990720 META text type=0x05 "io "
-  1002240 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  1002240 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  1002240 META text type=0x05 "ri"
-  1013760 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  1013760 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  1013760 META text type=0x05 "man"
-  1048320 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  1048320 NOTE_ON ch=0 d1=70 d2=80 [LotroShortMessage]
-  1048320 META text type=0x05 "go uc"
-  1059840 NOTE_OFF ch=0 d1=70 d2=80 [LotroShortMessage]
-  1059840 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
-  1059840 META text type=0x05 "ci"
-  1082880 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
-  1082880 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
-  1082880 META text type=0x05 "so. "
-  1094400 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
-  1105920 NOTE_ON ch=0 d1=75 d2=80 [LotroShortMessage]
-  1105920 META text type=0x05 "Deh, "
-  1152000 NOTE_OFF ch=0 d1=75 d2=80 [LotroShortMessage]
-  1152000 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  1152000 META text type=0x05 "/que"
-  1163520 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
+  852480 META text type=0x05 "o, "
+  875520 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  887040 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
+  887040 META text type=0x05 "che "
+  898560 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
+  898560 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
+  898560 META text type=0x05 "que"
+  910080 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
+  910080 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
+  910080 META text type=0x05 "sto\\ "
+  921600 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
+  921600 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
+  921600 META text type=0x05 "/sol "
+  933120 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
+  933120 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
+  933120 META text type=0x05 "de"
+  944640 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
+  944640 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
+  944640 META text type=0x05 "si"
+  967680 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
+  967680 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
+  967680 META text type=0x05 "o "
+  990720 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
+  1013760 NOTE_ON ch=0 d1=75 d2=80 [LotroShortMessage]
+  1013760 META text type=0x05 "Deh, "
+  1059840 NOTE_OFF ch=0 d1=75 d2=80 [LotroShortMessage]
+  1059840 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
+  1059840 META text type=0x05 "/dim"
+  1071360 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
+  1071360 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
+  1071360 META text type=0x05 "me"
+  1082880 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
+  1082880 NOTE_ON ch=0 d1=75 d2=80 [LotroShortMessage]
+  1082880 META text type=0x05 "lo "
+  1094400 NOTE_OFF ch=0 d1=75 d2=80 [LotroShortMessage]
+  1094400 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  1094400 META text type=0x05 "ben "
+  1105920 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  1105920 NOTE_ON ch=0 d1=70 d2=80 [LotroShortMessage]
+  1105920 META text type=0x05 "mi"
+  1128960 NOTE_OFF ch=0 d1=70 d2=80 [LotroShortMessage]
+  1128960 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  1128960 META text type=0x05 "o, "
+  1152000 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
   1163520 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  1163520 META text type=0x05 "sto il "
+  1163520 META text type=0x05 "che "
   1175040 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
   1175040 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
-  1175040 META text type=0x05 "vi"
-  1198080 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
-  1198080 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  1198080 META text type=0x05 "so "
-  1209600 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
+  1175040 META text type=0x05 "que"
+  1186560 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
+  1186560 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
+  1186560 META text type=0x05 "sto\\ "
+  1198080 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
+  1198080 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
+  1198080 META text type=0x05 "/sol "
+  1209600 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
   1209600 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  1209600 META text type=0x05 "ond' "
+  1209600 META text type=0x05 "de"
   1221120 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  1221120 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  1221120 META text type=0x05 "io "
-  1232640 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  1232640 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  1232640 META text type=0x05 "ri"
-  1244160 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  1244160 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  1244160 META text type=0x05 "man"
-  1278720 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  1278720 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  1278720 META text type=0x05 "go uc"
-  1290240 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  1290240 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
-  1290240 META text type=0x05 "ci"
-  1313280 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
-  1313280 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
-  1313280 META text type=0x05 "so. "
-  1324800 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
-  1336320 NOTE_ON ch=0 d1=76 d2=80 [LotroShortMessage]
-  1336320 META text type=0x05 "Deh, "
-  1382400 NOTE_OFF ch=0 d1=76 d2=80 [LotroShortMessage]
-  1382400 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  1382400 META text type=0x05 "/que"
-  1393920 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  1393920 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  1393920 META text type=0x05 "sto il "
-  1405440 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  1405440 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
-  1405440 META text type=0x05 "vi"
-  1428480 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
-  1428480 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  1428480 META text type=0x05 "so "
-  1440000 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  1440000 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  1440000 META text type=0x05 "ond' "
-  1451520 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  1451520 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  1451520 META text type=0x05 "io "
-  1463040 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  1463040 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  1463040 META text type=0x05 "ri"
-  1474560 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  1474560 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  1474560 META text type=0x05 "man"
-  1509120 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  1509120 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  1509120 META text type=0x05 "go uc"
-  1520640 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  1520640 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
-  1520640 META text type=0x05 "ci"
-  1543680 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
-  1543680 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
-  1543680 META text type=0x05 "so. "
-  1555200 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
-  1566720 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  1566720 META text type=0x05 "Deh, "
-  1612800 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  1612800 NOTE_ON ch=0 d1=80 d2=80 [LotroShortMessage]
-  1612800 META text type=0x05 "/vi "
-  1624320 NOTE_OFF ch=0 d1=80 d2=80 [LotroShortMessage]
-  1624320 NOTE_ON ch=0 d1=79 d2=80 [LotroShortMessage]
-  1624320 META text type=0x05 "so "
-  1630080 NOTE_OFF ch=0 d1=79 d2=80 [LotroShortMessage]
-  1630080 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
-  1630080 META text type=0x05 "ond' "
-  1635840 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
-  1635840 NOTE_ON ch=0 d1=75 d2=80 [LotroShortMessage]
-  1635840 META text type=0x05 "io "
-  1658880 NOTE_OFF ch=0 d1=75 d2=80 [LotroShortMessage]
-  1658880 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  1658880 META text type=0x05 "ti"
-  1670400 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  1670400 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
-  1670400 META text type=0x05 "man"
-  1681920 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
-  1681920 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
-  1681920 META text type=0x05 "go uc"
-  1693440 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
-  1693440 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
-  1693440 META text type=0x05 "ci"
-  1704960 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
-  1704960 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  1704960 META text type=0x05 "so. "
-  1739520 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  1739520 NOTE_ON ch=0 d1=70 d2=80 [LotroShortMessage]
-  1739520 META text type=0x05 "Deh, "
-  1751040 NOTE_OFF ch=0 d1=70 d2=80 [LotroShortMessage]
-  1751040 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  1774080 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  1774080 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  1785600 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  1797120 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  1797120 META text type=0x05 "Deh, "
-  1843200 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  1843200 NOTE_ON ch=0 d1=80 d2=80 [LotroShortMessage]
-  1843200 META text type=0x05 "/vi "
-  1854720 NOTE_OFF ch=0 d1=80 d2=80 [LotroShortMessage]
-  1854720 NOTE_ON ch=0 d1=79 d2=80 [LotroShortMessage]
-  1854720 META text type=0x05 "so "
-  1860480 NOTE_OFF ch=0 d1=79 d2=80 [LotroShortMessage]
-  1860480 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
-  1860480 META text type=0x05 "ond' "
-  1866240 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
-  1866240 NOTE_ON ch=0 d1=75 d2=80 [LotroShortMessage]
-  1866240 META text type=0x05 "io "
-  1889280 NOTE_OFF ch=0 d1=75 d2=80 [LotroShortMessage]
-  1889280 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  1889280 META text type=0x05 "ti"
-  1900800 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  1900800 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
-  1900800 META text type=0x05 "man"
-  1912320 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
-  1912320 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
-  1912320 META text type=0x05 "go uc"
-  1923840 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
-  1923840 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
-  1923840 META text type=0x05 "ci"
-  1935360 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
-  1935360 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  1935360 META text type=0x05 "so. "
-  1969920 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  1969920 NOTE_ON ch=0 d1=70 d2=80 [LotroShortMessage]
-  1969920 META text type=0x05 "Deh, "
-  1981440 NOTE_OFF ch=0 d1=70 d2=80 [LotroShortMessage]
-  1981440 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  2004480 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  2004480 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  2016000 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  2027520 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  2073600 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  2073600 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
-  2073600 META text type=0x05 "/dim"
-  2085120 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
-  2085120 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
-  2085120 META text type=0x05 "me"
-  2096640 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
-  2096640 NOTE_ON ch=0 d1=75 d2=80 [LotroShortMessage]
-  2096640 META text type=0x05 "lo "
-  2108160 NOTE_OFF ch=0 d1=75 d2=80 [LotroShortMessage]
-  2108160 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  2108160 META text type=0x05 "ben "
-  2119680 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  2119680 NOTE_ON ch=0 d1=70 d2=80 [LotroShortMessage]
-  2119680 META text type=0x05 "mi"
-  2142720 NOTE_OFF ch=0 d1=70 d2=80 [LotroShortMessage]
-  2142720 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  2142720 META text type=0x05 "o, "
-  2165760 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  2177280 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  2177280 META text type=0x05 "che "
-  2188800 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  2188800 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
-  2188800 META text type=0x05 "que"
-  2200320 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
-  2200320 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  2200320 META text type=0x05 "sto\\ "
-  2211840 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  2211840 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
-  2211840 META text type=0x05 "/sol "
-  2223360 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
-  2223360 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  2223360 META text type=0x05 "de"
-  2234880 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  2234880 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
-  2234880 META text type=0x05 "si"
-  2257920 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
-  2257920 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  2257920 META text type=0x05 "o "
-  2280960 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  2304000 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  2350080 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  2350080 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
-  2350080 META text type=0x05 "/dim"
-  2361600 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
-  2361600 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
-  2361600 META text type=0x05 "me"
-  2373120 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
-  2373120 NOTE_ON ch=0 d1=75 d2=80 [LotroShortMessage]
-  2373120 META text type=0x05 "lo "
-  2384640 NOTE_OFF ch=0 d1=75 d2=80 [LotroShortMessage]
-  2384640 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  2384640 META text type=0x05 "ben "
-  2396160 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  2396160 NOTE_ON ch=0 d1=70 d2=80 [LotroShortMessage]
-  2396160 META text type=0x05 "mi"
-  2419200 NOTE_OFF ch=0 d1=70 d2=80 [LotroShortMessage]
-  2419200 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  2419200 META text type=0x05 "o, "
-  2442240 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  2453760 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  2453760 META text type=0x05 "che "
-  2465280 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  2465280 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
-  2465280 META text type=0x05 "que"
-  2476800 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
-  2476800 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  2476800 META text type=0x05 "sto\\ "
-  2488320 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  2488320 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
-  2488320 META text type=0x05 "/sol "
-  2499840 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
-  2499840 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  2499840 META text type=0x05 "de"
-  2511360 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  2511360 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
-  2511360 META text type=0x05 "si "
-  2534400 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
-  2534400 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  2626560 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  2626560 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  2626560 META text type=0x05 "/dim"
-  2638080 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  2638080 NOTE_ON ch=0 d1=70 d2=80 [LotroShortMessage]
-  2638080 META text type=0x05 "me"
-  2649600 NOTE_OFF ch=0 d1=70 d2=80 [LotroShortMessage]
-  2649600 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
-  2649600 META text type=0x05 "lo "
-  2661120 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
-  2661120 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  2661120 META text type=0x05 "ben "
-  2672640 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  2672640 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
-  2672640 META text type=0x05 "mi"
-  2695680 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
-  2695680 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  2695680 META text type=0x05 "o, "
-  2707200 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  2707200 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  2707200 META text type=0x05 "che "
-  2718720 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  2718720 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
-  2718720 META text type=0x05 "que"
-  2730240 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
-  2730240 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  2730240 META text type=0x05 "sto "
-  2741760 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  2741760 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
-  2741760 META text type=0x05 "sol "
-  2753280 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
-  2753280 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  2753280 META text type=0x05 "de"
-  2764800 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  2764800 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
-  2764800 META text type=0x05 "si "
-  2776320 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
-  2776320 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  2776320 META text type=0x05 "o"
-  2793600 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  2793600 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
-  2796480 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
-  2796480 NOTE_ON ch=0 d1=62 d2=80 [LotroShortMessage]
-  2796480 META text type=0x05 ". "
-  2799360 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
-  2799360 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
-  2810880 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
-  2810880 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  2833920 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  2856960 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  2856960 META text type=0x05 "/dim"
-  2868480 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  2868480 NOTE_ON ch=0 d1=70 d2=80 [LotroShortMessage]
-  2868480 META text type=0x05 "me"
-  2880000 NOTE_OFF ch=0 d1=70 d2=80 [LotroShortMessage]
-  2880000 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
-  2880000 META text type=0x05 "lo "
-  2891520 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
-  2891520 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  2891520 META text type=0x05 "ben "
-  2903040 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  2903040 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
-  2903040 META text type=0x05 "mi"
-  2926080 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
-  2926080 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  2926080 META text type=0x05 "o, "
-  2937600 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  2937600 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  2937600 META text type=0x05 "che "
-  2949120 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  2949120 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
-  2949120 META text type=0x05 "que"
-  2960640 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
-  2960640 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  2960640 META text type=0x05 "sto "
-  2972160 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  2972160 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
-  2972160 META text type=0x05 "sol "
-  2983680 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
-  2983680 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  2983680 META text type=0x05 "de"
-  2995200 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  2995200 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
-  2995200 META text type=0x05 "si "
-  3006720 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
-  3006720 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  3006720 META text type=0x05 "o"
-  3024000 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  3024000 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
-  3026880 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
-  3026880 NOTE_ON ch=0 d1=62 d2=80 [LotroShortMessage]
-  3026880 META text type=0x05 ". "
-  3029760 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
-  3029760 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
-  3041280 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
-  3041280 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  3133440 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  3133440 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
-  3133440 META text type=0x05 "/dim"
-  3144960 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
-  3144960 NOTE_ON ch=0 d1=70 d2=80 [LotroShortMessage]
-  3144960 META text type=0x05 "me"
-  3156480 NOTE_OFF ch=0 d1=70 d2=80 [LotroShortMessage]
-  3156480 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  3156480 META text type=0x05 "lo "
-  3173760 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  3173760 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
-  3173760 META text type=0x05 "ben "
-  3179520 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
-  3179520 NOTE_ON ch=0 d1=75 d2=80 [LotroShortMessage]
-  3179520 META text type=0x05 "mi"
-  3202560 NOTE_OFF ch=0 d1=75 d2=80 [LotroShortMessage]
-  3202560 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  3202560 META text type=0x05 "o, "
-  3214080 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  3214080 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  3214080 META text type=0x05 "che "
-  3225600 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  3225600 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
-  3225600 META text type=0x05 "que"
-  3237120 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
-  3237120 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  3237120 META text type=0x05 "sto "
-  3248640 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  3248640 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  3248640 META text type=0x05 "sol "
-  3260160 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  3260160 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
-  3260160 META text type=0x05 "de"
-  3271680 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
-  3271680 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  3271680 META text type=0x05 "si"
-  3317760 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  3317760 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  3317760 META text type=0x05 "o "
-  3340800 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  3363840 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
-  3363840 META text type=0x05 "/dim"
-  3375360 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
-  3375360 NOTE_ON ch=0 d1=70 d2=80 [LotroShortMessage]
-  3375360 META text type=0x05 "me"
-  3386880 NOTE_OFF ch=0 d1=70 d2=80 [LotroShortMessage]
-  3386880 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  3386880 META text type=0x05 "lo "
-  3404160 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  3404160 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
-  3404160 META text type=0x05 "ben "
-  3409920 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
-  3409920 NOTE_ON ch=0 d1=75 d2=80 [LotroShortMessage]
-  3409920 META text type=0x05 "mi"
-  3432960 NOTE_OFF ch=0 d1=75 d2=80 [LotroShortMessage]
-  3432960 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  3432960 META text type=0x05 "o, "
-  3444480 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
-  3444480 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  3444480 META text type=0x05 "che "
-  3456000 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  3456000 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
-  3456000 META text type=0x05 "que"
-  3467520 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
-  3467520 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  3467520 META text type=0x05 "sto "
-  3479040 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  3479040 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  3479040 META text type=0x05 "sol "
-  3490560 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  3490560 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
-  3490560 META text type=0x05 "de"
-  3502080 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]
-  3502080 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
-  3502080 META text type=0x05 "si "
-  3548160 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
-  3548160 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  3548161 META text type=0x05 "/Questi son gli occhi che mi"
-  3548162 META text type=0x05 "/Questi son gli occhi che miran do fiso mi"
-  3548163 META text type=0x05 "/Questi son gli occhi che miran do"
-  3548164 META text type=0x05 "/rando fiso, tutto restai conquiso."
-  3548165 META text type=0x05 "/rando fiso tutto restai conquiso."
-  3548166 META text type=0x05 "/fi so tutto restai conquiso."
-  3640320 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
-  3640320 META end_of_track
+  1221120 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
+  1221120 META text type=0x05 "si "
+  1244160 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
+  1244160 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
+  1244161 META text type=0x05 "/Questi son gli occhi che mi"
+  1244162 META text type=0x05 "/rando fiso, tutto restai conquiso."
+  1336320 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
+  1336320 META end_of_track
+-- track 2 (262 events)
+  0 PROGRAM_CHANGE ch=1 d1=75 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=1 d1=72 d2=80 [LotroShortMessage]
+  0 META text type=0x05 "Son "
+  0 META text type=0x03 "Alto"
+  0 CONTROL_CHANGE ch=1 d1=10 d2=37 [LotroShortMessage]
+  23040 NOTE_OFF ch=1 d1=72 d2=80 [LotroShortMessage]
+  23040 NOTE_ON ch=1 d1=70 d2=80 [LotroShortMessage]
+  23040 META text type=0x05 "que"
+  34560 NOTE_OFF ch=1 d1=70 d2=80 [LotroShortMessage]
+  34560 NOTE_ON ch=1 d1=67 d2=80 [LotroShortMessage]
+  34560 META text type=0x05 "sti i "
+  46080 NOTE_OFF ch=1 d1=67 d2=80 [LotroShortMessage]
+  46080 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  46080 META text type=0x05 "cre"
+  57600 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  57600 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  57600 META text type=0x05 "spi "
+  69120 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  69120 NOTE_ON ch=1 d1=67 d2=80 [LotroShortMessage]
+  69120 META text type=0x05 "cri"
+  80640 NOTE_OFF ch=1 d1=67 d2=80 [LotroShortMessage]
+  80640 NOTE_ON ch=1 d1=72 d2=80 [LotroShortMessage]
+  80640 META text type=0x05 "ni e "
+  92160 NOTE_OFF ch=1 d1=72 d2=80 [LotroShortMessage]
+  92160 NOTE_ON ch=1 d1=65 d2=80 [LotroShortMessage]
+  92160 META text type=0x05 "que "
+  97920 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
+  97920 NOTE_ON ch=1 d1=67 d2=80 [LotroShortMessage]
+  97920 META text type=0x05 "sto il "
+  103680 NOTE_OFF ch=1 d1=67 d2=80 [LotroShortMessage]
+  103680 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  103680 META text type=0x05 "vi"
+  109440 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  109440 NOTE_ON ch=1 d1=70 d2=80 [LotroShortMessage]
+  109440 META text type=0x05 "so "
+  115200 NOTE_OFF ch=1 d1=70 d2=80 [LotroShortMessage]
+  115200 NOTE_ON ch=1 d1=72 d2=80 [LotroShortMessage]
+  115200 META text type=0x05 "e "
+  126720 NOTE_OFF ch=1 d1=72 d2=80 [LotroShortMessage]
+  126720 NOTE_ON ch=1 d1=69 d2=80 [LotroShortMessage]
+  138240 NOTE_OFF ch=1 d1=69 d2=80 [LotroShortMessage]
+  138240 NOTE_ON ch=1 d1=70 d2=80 [LotroShortMessage]
+  161280 NOTE_OFF ch=1 d1=70 d2=80 [LotroShortMessage]
+  161280 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  172800 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  172800 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  184320 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  184320 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  184320 META text type=0x05 "/que"
+  195840 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  195840 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  195840 META text type=0x05 "sto il "
+  207360 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  207360 NOTE_ON ch=1 d1=67 d2=80 [LotroShortMessage]
+  207360 META text type=0x05 "vi"
+  230400 NOTE_OFF ch=1 d1=67 d2=80 [LotroShortMessage]
+  230400 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  230400 META text type=0x05 "so "
+  241920 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  241920 NOTE_ON ch=1 d1=65 d2=80 [LotroShortMessage]
+  241920 META text type=0x05 "ond' "
+  253440 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
+  253440 NOTE_ON ch=1 d1=65 d2=80 [LotroShortMessage]
+  253440 META text type=0x05 "io "
+  264960 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
+  264960 NOTE_ON ch=1 d1=65 d2=80 [LotroShortMessage]
+  264960 META text type=0x05 "ri"
+  276480 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
+  276480 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  276480 META text type=0x05 "man"
+  311040 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  311040 NOTE_ON ch=1 d1=65 d2=80 [LotroShortMessage]
+  311040 META text type=0x05 "go uc"
+  322560 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
+  322560 NOTE_ON ch=1 d1=64 d2=80 [LotroShortMessage]
+  322560 META text type=0x05 "ci"
+  345600 NOTE_OFF ch=1 d1=64 d2=80 [LotroShortMessage]
+  345600 NOTE_ON ch=1 d1=64 d2=80 [LotroShortMessage]
+  345600 META text type=0x05 "so. "
+  357120 NOTE_OFF ch=1 d1=64 d2=80 [LotroShortMessage]
+  368640 NOTE_ON ch=1 d1=72 d2=80 [LotroShortMessage]
+  368640 META text type=0x05 "/Son "
+  391680 NOTE_OFF ch=1 d1=72 d2=80 [LotroShortMessage]
+  391680 NOTE_ON ch=1 d1=70 d2=80 [LotroShortMessage]
+  391680 META text type=0x05 "que"
+  403200 NOTE_OFF ch=1 d1=70 d2=80 [LotroShortMessage]
+  403200 NOTE_ON ch=1 d1=67 d2=80 [LotroShortMessage]
+  403200 META text type=0x05 "sti i "
+  414720 NOTE_OFF ch=1 d1=67 d2=80 [LotroShortMessage]
+  414720 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  414720 META text type=0x05 "cre"
+  426240 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  426240 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  426240 META text type=0x05 "spi "
+  437760 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  437760 NOTE_ON ch=1 d1=67 d2=80 [LotroShortMessage]
+  437760 META text type=0x05 "cri"
+  449280 NOTE_OFF ch=1 d1=67 d2=80 [LotroShortMessage]
+  449280 NOTE_ON ch=1 d1=72 d2=80 [LotroShortMessage]
+  449280 META text type=0x05 "ni e "
+  460800 NOTE_OFF ch=1 d1=72 d2=80 [LotroShortMessage]
+  460800 NOTE_ON ch=1 d1=65 d2=80 [LotroShortMessage]
+  460800 META text type=0x05 "que "
+  466560 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
+  466560 NOTE_ON ch=1 d1=67 d2=80 [LotroShortMessage]
+  466560 META text type=0x05 "sto il "
+  472320 NOTE_OFF ch=1 d1=67 d2=80 [LotroShortMessage]
+  472320 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  472320 META text type=0x05 "vi"
+  478080 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  478080 NOTE_ON ch=1 d1=70 d2=80 [LotroShortMessage]
+  478080 META text type=0x05 "so "
+  483840 NOTE_OFF ch=1 d1=70 d2=80 [LotroShortMessage]
+  483840 NOTE_ON ch=1 d1=72 d2=80 [LotroShortMessage]
+  483840 META text type=0x05 "e "
+  495360 NOTE_OFF ch=1 d1=72 d2=80 [LotroShortMessage]
+  495360 NOTE_ON ch=1 d1=69 d2=80 [LotroShortMessage]
+  506880 NOTE_OFF ch=1 d1=69 d2=80 [LotroShortMessage]
+  506880 NOTE_ON ch=1 d1=70 d2=80 [LotroShortMessage]
+  529920 NOTE_OFF ch=1 d1=70 d2=80 [LotroShortMessage]
+  529920 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  541440 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  541440 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  552960 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  552960 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  552960 META text type=0x05 "/que"
+  564480 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  564480 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  564480 META text type=0x05 "sto il "
+  576000 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  576000 NOTE_ON ch=1 d1=67 d2=80 [LotroShortMessage]
+  576000 META text type=0x05 "vi"
+  599040 NOTE_OFF ch=1 d1=67 d2=80 [LotroShortMessage]
+  599040 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  599040 META text type=0x05 "so "
+  610560 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  610560 NOTE_ON ch=1 d1=65 d2=80 [LotroShortMessage]
+  610560 META text type=0x05 "ond' "
+  622080 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
+  622080 NOTE_ON ch=1 d1=65 d2=80 [LotroShortMessage]
+  622080 META text type=0x05 "io "
+  633600 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
+  633600 NOTE_ON ch=1 d1=65 d2=80 [LotroShortMessage]
+  633600 META text type=0x05 "ri"
+  645120 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
+  645120 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  645120 META text type=0x05 "man"
+  679680 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  679680 NOTE_ON ch=1 d1=65 d2=80 [LotroShortMessage]
+  679680 META text type=0x05 "go uc"
+  691200 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
+  691200 NOTE_ON ch=1 d1=64 d2=80 [LotroShortMessage]
+  691200 META text type=0x05 "ci"
+  714240 NOTE_OFF ch=1 d1=64 d2=80 [LotroShortMessage]
+  714240 NOTE_ON ch=1 d1=64 d2=80 [LotroShortMessage]
+  714240 META text type=0x05 "so. "
+  725760 NOTE_OFF ch=1 d1=64 d2=80 [LotroShortMessage]
+  737280 NOTE_ON ch=1 d1=72 d2=80 [LotroShortMessage]
+  737280 META text type=0x05 "Deh, "
+  783360 NOTE_OFF ch=1 d1=72 d2=80 [LotroShortMessage]
+  783360 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  783360 META text type=0x05 "/dim"
+  794880 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  794880 NOTE_ON ch=1 d1=70 d2=80 [LotroShortMessage]
+  794880 META text type=0x05 "me"
+  806400 NOTE_OFF ch=1 d1=70 d2=80 [LotroShortMessage]
+  806400 NOTE_ON ch=1 d1=67 d2=80 [LotroShortMessage]
+  806400 META text type=0x05 "lo "
+  817920 NOTE_OFF ch=1 d1=67 d2=80 [LotroShortMessage]
+  817920 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  817920 META text type=0x05 "ben "
+  829440 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  829440 NOTE_ON ch=1 d1=67 d2=80 [LotroShortMessage]
+  829440 META text type=0x05 "mi"
+  852480 NOTE_OFF ch=1 d1=67 d2=80 [LotroShortMessage]
+  852480 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  852480 META text type=0x05 "o, "
+  864000 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  864000 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  864000 META text type=0x05 "che "
+  875520 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  875520 NOTE_ON ch=1 d1=67 d2=80 [LotroShortMessage]
+  875520 META text type=0x05 "que"
+  887040 NOTE_OFF ch=1 d1=67 d2=80 [LotroShortMessage]
+  887040 NOTE_ON ch=1 d1=65 d2=80 [LotroShortMessage]
+  887040 META text type=0x05 "sto "
+  898560 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
+  898560 NOTE_ON ch=1 d1=64 d2=80 [LotroShortMessage]
+  898560 META text type=0x05 "sol "
+  910080 NOTE_OFF ch=1 d1=64 d2=80 [LotroShortMessage]
+  910080 NOTE_ON ch=1 d1=65 d2=80 [LotroShortMessage]
+  910080 META text type=0x05 "de"
+  921600 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
+  921600 NOTE_ON ch=1 d1=67 d2=80 [LotroShortMessage]
+  921600 META text type=0x05 "si "
+  933120 NOTE_OFF ch=1 d1=67 d2=80 [LotroShortMessage]
+  933120 NOTE_ON ch=1 d1=65 d2=80 [LotroShortMessage]
+  933120 META text type=0x05 "o"
+  950400 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
+  950400 NOTE_ON ch=1 d1=64 d2=80 [LotroShortMessage]
+  953280 NOTE_OFF ch=1 d1=64 d2=80 [LotroShortMessage]
+  953280 NOTE_ON ch=1 d1=62 d2=80 [LotroShortMessage]
+  953280 META text type=0x05 ". "
+  956160 NOTE_OFF ch=1 d1=62 d2=80 [LotroShortMessage]
+  956160 NOTE_ON ch=1 d1=64 d2=80 [LotroShortMessage]
+  967680 NOTE_OFF ch=1 d1=64 d2=80 [LotroShortMessage]
+  967680 NOTE_ON ch=1 d1=65 d2=80 [LotroShortMessage]
+  990720 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
+  1013760 NOTE_ON ch=1 d1=72 d2=80 [LotroShortMessage]
+  1013760 META text type=0x05 "Deh, "
+  1059840 NOTE_OFF ch=1 d1=72 d2=80 [LotroShortMessage]
+  1059840 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  1059840 META text type=0x05 "/dim"
+  1071360 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  1071360 NOTE_ON ch=1 d1=70 d2=80 [LotroShortMessage]
+  1071360 META text type=0x05 "me"
+  1082880 NOTE_OFF ch=1 d1=70 d2=80 [LotroShortMessage]
+  1082880 NOTE_ON ch=1 d1=67 d2=80 [LotroShortMessage]
+  1082880 META text type=0x05 "lo "
+  1094400 NOTE_OFF ch=1 d1=67 d2=80 [LotroShortMessage]
+  1094400 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  1094400 META text type=0x05 "ben "
+  1105920 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  1105920 NOTE_ON ch=1 d1=67 d2=80 [LotroShortMessage]
+  1105920 META text type=0x05 "mi"
+  1128960 NOTE_OFF ch=1 d1=67 d2=80 [LotroShortMessage]
+  1128960 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  1128960 META text type=0x05 "o, "
+  1140480 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  1140480 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  1140480 META text type=0x05 "che "
+  1152000 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
+  1152000 NOTE_ON ch=1 d1=67 d2=80 [LotroShortMessage]
+  1152000 META text type=0x05 "que"
+  1163520 NOTE_OFF ch=1 d1=67 d2=80 [LotroShortMessage]
+  1163520 NOTE_ON ch=1 d1=65 d2=80 [LotroShortMessage]
+  1163520 META text type=0x05 "sto "
+  1175040 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
+  1175040 NOTE_ON ch=1 d1=64 d2=80 [LotroShortMessage]
+  1175040 META text type=0x05 "sol "
+  1186560 NOTE_OFF ch=1 d1=64 d2=80 [LotroShortMessage]
+  1186560 NOTE_ON ch=1 d1=65 d2=80 [LotroShortMessage]
+  1186560 META text type=0x05 "de"
+  1198080 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
+  1198080 NOTE_ON ch=1 d1=67 d2=80 [LotroShortMessage]
+  1198080 META text type=0x05 "si "
+  1209600 NOTE_OFF ch=1 d1=67 d2=80 [LotroShortMessage]
+  1209600 NOTE_ON ch=1 d1=65 d2=80 [LotroShortMessage]
+  1209600 META text type=0x05 "o"
+  1226880 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
+  1226880 NOTE_ON ch=1 d1=64 d2=80 [LotroShortMessage]
+  1229760 NOTE_OFF ch=1 d1=64 d2=80 [LotroShortMessage]
+  1229760 NOTE_ON ch=1 d1=62 d2=80 [LotroShortMessage]
+  1229760 META text type=0x05 ". "
+  1232640 NOTE_OFF ch=1 d1=62 d2=80 [LotroShortMessage]
+  1232640 NOTE_ON ch=1 d1=64 d2=80 [LotroShortMessage]
+  1244160 NOTE_OFF ch=1 d1=64 d2=80 [LotroShortMessage]
+  1244160 NOTE_ON ch=1 d1=65 d2=80 [LotroShortMessage]
+  1244161 META text type=0x05 "/Questi son gli occhi che miran do fiso mi"
+  1244162 META text type=0x05 "/rando fiso tutto restai conquiso."
+  1336320 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
+  1336320 META end_of_track
+-- track 3 (225 events)
+  0 PROGRAM_CHANGE ch=2 d1=75 d2=0 [LotroShortMessage]
+  0 META text type=0x03 "Tenor"
+  0 CONTROL_CHANGE ch=2 d1=10 d2=88 [LotroShortMessage]
+  46080 NOTE_ON ch=2 d1=77 d2=80 [LotroShortMessage]
+  46080 META text type=0x05 "Son "
+  69120 NOTE_OFF ch=2 d1=77 d2=80 [LotroShortMessage]
+  69120 NOTE_ON ch=2 d1=75 d2=80 [LotroShortMessage]
+  69120 META text type=0x05 "que"
+  80640 NOTE_OFF ch=2 d1=75 d2=80 [LotroShortMessage]
+  80640 NOTE_ON ch=2 d1=72 d2=80 [LotroShortMessage]
+  80640 META text type=0x05 "sti i "
+  92160 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
+  92160 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
+  92160 META text type=0x05 "cre"
+  103680 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
+  103680 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
+  103680 META text type=0x05 "spi "
+  115200 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
+  115200 NOTE_ON ch=2 d1=72 d2=80 [LotroShortMessage]
+  115200 META text type=0x05 "cri"
+  126720 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
+  126720 NOTE_ON ch=2 d1=77 d2=80 [LotroShortMessage]
+  126720 META text type=0x05 "ni e "
+  138240 NOTE_OFF ch=2 d1=77 d2=80 [LotroShortMessage]
+  138240 NOTE_ON ch=2 d1=70 d2=80 [LotroShortMessage]
+  138240 META text type=0x05 "que "
+  144000 NOTE_OFF ch=2 d1=70 d2=80 [LotroShortMessage]
+  144000 NOTE_ON ch=2 d1=72 d2=80 [LotroShortMessage]
+  144000 META text type=0x05 "sto il "
+  149760 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
+  149760 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
+  155520 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
+  155520 NOTE_ON ch=2 d1=75 d2=80 [LotroShortMessage]
+  161280 NOTE_OFF ch=2 d1=75 d2=80 [LotroShortMessage]
+  161280 NOTE_ON ch=2 d1=77 d2=80 [LotroShortMessage]
+  172800 NOTE_OFF ch=2 d1=77 d2=80 [LotroShortMessage]
+  172800 NOTE_ON ch=2 d1=77 d2=80 [LotroShortMessage]
+  184320 NOTE_OFF ch=2 d1=77 d2=80 [LotroShortMessage]
+  184320 NOTE_ON ch=2 d1=80 d2=80 [LotroShortMessage]
+  184320 META text type=0x05 "/vi "
+  195840 NOTE_OFF ch=2 d1=80 d2=80 [LotroShortMessage]
+  195840 NOTE_ON ch=2 d1=79 d2=80 [LotroShortMessage]
+  195840 META text type=0x05 "so "
+  201600 NOTE_OFF ch=2 d1=79 d2=80 [LotroShortMessage]
+  201600 NOTE_ON ch=2 d1=77 d2=80 [LotroShortMessage]
+  201600 META text type=0x05 "ond' "
+  207360 NOTE_OFF ch=2 d1=77 d2=80 [LotroShortMessage]
+  207360 NOTE_ON ch=2 d1=75 d2=80 [LotroShortMessage]
+  207360 META text type=0x05 "io "
+  230400 NOTE_OFF ch=2 d1=75 d2=80 [LotroShortMessage]
+  230400 NOTE_ON ch=2 d1=68 d2=80 [LotroShortMessage]
+  230400 META text type=0x05 "ti"
+  241920 NOTE_OFF ch=2 d1=68 d2=80 [LotroShortMessage]
+  241920 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
+  241920 META text type=0x05 "man"
+  253440 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
+  253440 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
+  253440 META text type=0x05 "go uc"
+  264960 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
+  264960 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
+  264960 META text type=0x05 "ci"
+  276480 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
+  276480 NOTE_ON ch=2 d1=68 d2=80 [LotroShortMessage]
+  276480 META text type=0x05 "so. "
+  311040 NOTE_OFF ch=2 d1=68 d2=80 [LotroShortMessage]
+  311040 NOTE_ON ch=2 d1=70 d2=80 [LotroShortMessage]
+  311040 META text type=0x05 "Deh, "
+  322560 NOTE_OFF ch=2 d1=70 d2=80 [LotroShortMessage]
+  322560 NOTE_ON ch=2 d1=72 d2=80 [LotroShortMessage]
+  345600 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
+  345600 NOTE_ON ch=2 d1=72 d2=80 [LotroShortMessage]
+  357120 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
+  414720 NOTE_ON ch=2 d1=77 d2=80 [LotroShortMessage]
+  414720 META text type=0x05 "/Son "
+  437760 NOTE_OFF ch=2 d1=77 d2=80 [LotroShortMessage]
+  437760 NOTE_ON ch=2 d1=75 d2=80 [LotroShortMessage]
+  437760 META text type=0x05 "que"
+  449280 NOTE_OFF ch=2 d1=75 d2=80 [LotroShortMessage]
+  449280 NOTE_ON ch=2 d1=72 d2=80 [LotroShortMessage]
+  449280 META text type=0x05 "sti i "
+  460800 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
+  460800 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
+  460800 META text type=0x05 "cre"
+  472320 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
+  472320 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
+  472320 META text type=0x05 "spi "
+  483840 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
+  483840 NOTE_ON ch=2 d1=72 d2=80 [LotroShortMessage]
+  483840 META text type=0x05 "cri"
+  495360 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
+  495360 NOTE_ON ch=2 d1=77 d2=80 [LotroShortMessage]
+  495360 META text type=0x05 "ni e "
+  506880 NOTE_OFF ch=2 d1=77 d2=80 [LotroShortMessage]
+  506880 NOTE_ON ch=2 d1=70 d2=80 [LotroShortMessage]
+  506880 META text type=0x05 "que "
+  512640 NOTE_OFF ch=2 d1=70 d2=80 [LotroShortMessage]
+  512640 NOTE_ON ch=2 d1=72 d2=80 [LotroShortMessage]
+  512640 META text type=0x05 "sto il "
+  518400 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
+  518400 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
+  524160 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
+  524160 NOTE_ON ch=2 d1=75 d2=80 [LotroShortMessage]
+  529920 NOTE_OFF ch=2 d1=75 d2=80 [LotroShortMessage]
+  529920 NOTE_ON ch=2 d1=77 d2=80 [LotroShortMessage]
+  541440 NOTE_OFF ch=2 d1=77 d2=80 [LotroShortMessage]
+  541440 NOTE_ON ch=2 d1=77 d2=80 [LotroShortMessage]
+  552960 NOTE_OFF ch=2 d1=77 d2=80 [LotroShortMessage]
+  552960 NOTE_ON ch=2 d1=80 d2=80 [LotroShortMessage]
+  552960 META text type=0x05 "/vi "
+  564480 NOTE_OFF ch=2 d1=80 d2=80 [LotroShortMessage]
+  564480 NOTE_ON ch=2 d1=79 d2=80 [LotroShortMessage]
+  564480 META text type=0x05 "so "
+  570240 NOTE_OFF ch=2 d1=79 d2=80 [LotroShortMessage]
+  570240 NOTE_ON ch=2 d1=77 d2=80 [LotroShortMessage]
+  570240 META text type=0x05 "ond' "
+  576000 NOTE_OFF ch=2 d1=77 d2=80 [LotroShortMessage]
+  576000 NOTE_ON ch=2 d1=75 d2=80 [LotroShortMessage]
+  576000 META text type=0x05 "io "
+  599040 NOTE_OFF ch=2 d1=75 d2=80 [LotroShortMessage]
+  599040 NOTE_ON ch=2 d1=68 d2=80 [LotroShortMessage]
+  599040 META text type=0x05 "ti"
+  610560 NOTE_OFF ch=2 d1=68 d2=80 [LotroShortMessage]
+  610560 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
+  610560 META text type=0x05 "man"
+  622080 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
+  622080 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
+  622080 META text type=0x05 "go uc"
+  633600 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
+  633600 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
+  633600 META text type=0x05 "ci"
+  645120 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
+  645120 NOTE_ON ch=2 d1=68 d2=80 [LotroShortMessage]
+  645120 META text type=0x05 "so. "
+  679680 NOTE_OFF ch=2 d1=68 d2=80 [LotroShortMessage]
+  679680 NOTE_ON ch=2 d1=70 d2=80 [LotroShortMessage]
+  679680 META text type=0x05 "Deh, "
+  691200 NOTE_OFF ch=2 d1=70 d2=80 [LotroShortMessage]
+  691200 NOTE_ON ch=2 d1=72 d2=80 [LotroShortMessage]
+  714240 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
+  714240 NOTE_ON ch=2 d1=72 d2=80 [LotroShortMessage]
+  725760 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
+  737280 NOTE_ON ch=2 d1=68 d2=80 [LotroShortMessage]
+  783360 NOTE_OFF ch=2 d1=68 d2=80 [LotroShortMessage]
+  783360 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
+  783360 META text type=0x05 "/dim"
+  794880 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
+  794880 NOTE_ON ch=2 d1=70 d2=80 [LotroShortMessage]
+  794880 META text type=0x05 "me"
+  806400 NOTE_OFF ch=2 d1=70 d2=80 [LotroShortMessage]
+  806400 NOTE_ON ch=2 d1=72 d2=80 [LotroShortMessage]
+  806400 META text type=0x05 "lo "
+  823680 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
+  823680 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
+  823680 META text type=0x05 "ben "
+  829440 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
+  829440 NOTE_ON ch=2 d1=75 d2=80 [LotroShortMessage]
+  829440 META text type=0x05 "mi"
+  852480 NOTE_OFF ch=2 d1=75 d2=80 [LotroShortMessage]
+  852480 NOTE_ON ch=2 d1=68 d2=80 [LotroShortMessage]
+  852480 META text type=0x05 "o, "
+  864000 NOTE_OFF ch=2 d1=68 d2=80 [LotroShortMessage]
+  864000 NOTE_ON ch=2 d1=65 d2=80 [LotroShortMessage]
+  864000 META text type=0x05 "che "
+  875520 NOTE_OFF ch=2 d1=65 d2=80 [LotroShortMessage]
+  875520 NOTE_ON ch=2 d1=64 d2=80 [LotroShortMessage]
+  875520 META text type=0x05 "que"
+  887040 NOTE_OFF ch=2 d1=64 d2=80 [LotroShortMessage]
+  887040 NOTE_ON ch=2 d1=65 d2=80 [LotroShortMessage]
+  887040 META text type=0x05 "sto "
+  898560 NOTE_OFF ch=2 d1=65 d2=80 [LotroShortMessage]
+  898560 NOTE_ON ch=2 d1=72 d2=80 [LotroShortMessage]
+  898560 META text type=0x05 "sol "
+  910080 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
+  910080 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
+  910080 META text type=0x05 "de"
+  921600 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
+  921600 NOTE_ON ch=2 d1=72 d2=80 [LotroShortMessage]
+  921600 META text type=0x05 "si"
+  967680 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
+  967680 NOTE_ON ch=2 d1=65 d2=80 [LotroShortMessage]
+  967680 META text type=0x05 "o "
+  990720 NOTE_OFF ch=2 d1=65 d2=80 [LotroShortMessage]
+  1013760 NOTE_ON ch=2 d1=68 d2=80 [LotroShortMessage]
+  1059840 NOTE_OFF ch=2 d1=68 d2=80 [LotroShortMessage]
+  1059840 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
+  1059840 META text type=0x05 "/dim"
+  1071360 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
+  1071360 NOTE_ON ch=2 d1=70 d2=80 [LotroShortMessage]
+  1071360 META text type=0x05 "me"
+  1082880 NOTE_OFF ch=2 d1=70 d2=80 [LotroShortMessage]
+  1082880 NOTE_ON ch=2 d1=72 d2=80 [LotroShortMessage]
+  1082880 META text type=0x05 "lo "
+  1100160 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
+  1100160 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
+  1100160 META text type=0x05 "ben "
+  1105920 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
+  1105920 NOTE_ON ch=2 d1=75 d2=80 [LotroShortMessage]
+  1105920 META text type=0x05 "mi"
+  1128960 NOTE_OFF ch=2 d1=75 d2=80 [LotroShortMessage]
+  1128960 NOTE_ON ch=2 d1=68 d2=80 [LotroShortMessage]
+  1128960 META text type=0x05 "o, "
+  1140480 NOTE_OFF ch=2 d1=68 d2=80 [LotroShortMessage]
+  1140480 NOTE_ON ch=2 d1=65 d2=80 [LotroShortMessage]
+  1140480 META text type=0x05 "che "
+  1152000 NOTE_OFF ch=2 d1=65 d2=80 [LotroShortMessage]
+  1152000 NOTE_ON ch=2 d1=64 d2=80 [LotroShortMessage]
+  1152000 META text type=0x05 "que"
+  1163520 NOTE_OFF ch=2 d1=64 d2=80 [LotroShortMessage]
+  1163520 NOTE_ON ch=2 d1=65 d2=80 [LotroShortMessage]
+  1163520 META text type=0x05 "sto "
+  1175040 NOTE_OFF ch=2 d1=65 d2=80 [LotroShortMessage]
+  1175040 NOTE_ON ch=2 d1=72 d2=80 [LotroShortMessage]
+  1175040 META text type=0x05 "sol "
+  1186560 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
+  1186560 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
+  1186560 META text type=0x05 "de"
+  1198080 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
+  1198080 NOTE_ON ch=2 d1=72 d2=80 [LotroShortMessage]
+  1198080 META text type=0x05 "si "
+  1244160 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
+  1244160 NOTE_ON ch=2 d1=65 d2=80 [LotroShortMessage]
+  1244161 META text type=0x05 "/Questi son gli occhi che miran do"
+  1244162 META text type=0x05 "/fi so tutto restai conquiso."
+  1336320 NOTE_OFF ch=2 d1=65 d2=80 [LotroShortMessage]
+  1336320 META end_of_track
 == abcInfo
   title="Canzonetta a tre voci"
   composer="Claudio Monteverdi (1567-1643)"
   transcriber=""
   genre="" mood=""
   primaryTempoBPM=110 timeSignature=4/4 keySignature=Eb maj
-  hasTriplets=false hasMixTimings=false barCount=77 partCount=2 partSetups=2..2 empty=false
+  hasTriplets=false hasMixTimings=false barCount=29 partCount=4 partSetups=4..4 empty=false
   sourceFiles=[Canzonetta.abc]
   part 0: number=0 name="Canzonetta a tre voci" fullName="Canzonetta a tre voci" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
-  part 1: number=1 name="Canzonetta a tre voci" fullName="Canzonetta a tre voci" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=20..62 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
-== regions (224)
-  #0 line=35 cols=[9,11) ticks=0..46080 REST track=1 bar=1 tiesFrom=- tiesTo=-
-  #1 line=35 cols=[14,16) ticks=46080..92160 REST track=1 bar=2 tiesFrom=- tiesTo=-
-  #2 line=35 cols=[19,21) ticks=92160..115200 note=77 track=1 bar=3 tiesFrom=- tiesTo=-
-  #3 line=35 cols=[21,22) ticks=115200..126720 note=75 track=1 bar=3 tiesFrom=- tiesTo=-
-  #4 line=35 cols=[22,23) ticks=126720..138240 note=72 track=1 bar=3 tiesFrom=- tiesTo=-
-  #5 line=35 cols=[33,35) ticks=138240..149760 note=73 track=1 bar=4 tiesFrom=- tiesTo=-
-  #6 line=35 cols=[35,36) ticks=149760..161280 note=73 track=1 bar=4 tiesFrom=- tiesTo=-
-  #7 line=35 cols=[36,37) ticks=161280..172800 note=72 track=1 bar=4 tiesFrom=- tiesTo=-
-  #8 line=35 cols=[37,38) ticks=172800..184320 note=72 track=1 bar=4 tiesFrom=- tiesTo=-
-  #9 line=38 cols=[9,11) ticks=184320..207360 note=72 track=1 bar=5 tiesFrom=- tiesTo=-
-  #10 line=38 cols=[11,12) ticks=207360..218880 note=70 track=1 bar=5 tiesFrom=- tiesTo=-
-  #11 line=38 cols=[12,13) ticks=218880..230400 note=67 track=1 bar=5 tiesFrom=- tiesTo=-
-  #12 line=38 cols=[14,15) ticks=230400..241920 note=68 track=1 bar=6 tiesFrom=- tiesTo=-
-  #13 line=38 cols=[15,16) ticks=241920..253440 note=68 track=1 bar=6 tiesFrom=- tiesTo=-
-  #14 line=38 cols=[16,17) ticks=253440..264960 note=67 track=1 bar=6 tiesFrom=- tiesTo=-
-  #15 line=38 cols=[17,18) ticks=264960..276480 note=72 track=1 bar=6 tiesFrom=- tiesTo=-
-  #16 line=38 cols=[20,22) ticks=276480..282240 note=65 track=1 bar=7 tiesFrom=- tiesTo=-
-  #17 line=38 cols=[22,24) ticks=282240..288000 note=67 track=1 bar=7 tiesFrom=- tiesTo=-
-  #18 line=38 cols=[24,26) ticks=288000..293760 note=68 track=1 bar=7 tiesFrom=- tiesTo=-
-  #19 line=38 cols=[26,28) ticks=293760..299520 note=70 track=1 bar=7 tiesFrom=- tiesTo=-
-  #20 line=38 cols=[29,30) ticks=299520..311040 note=72 track=1 bar=7 tiesFrom=- tiesTo=-
-  #21 line=38 cols=[30,32) ticks=311040..322560 note=69 track=1 bar=7 tiesFrom=- tiesTo=-
-  #22 line=38 cols=[33,35) ticks=322560..345600 note=70 track=1 bar=8 tiesFrom=- tiesTo=-
-  #23 line=38 cols=[35,36) ticks=345600..357120 note=68 track=1 bar=8 tiesFrom=- tiesTo=-
-  #24 line=38 cols=[36,37) ticks=357120..368640 note=68 track=1 bar=8 tiesFrom=- tiesTo=-
-  #25 line=41 cols=[9,11) ticks=368640..414720 REST track=1 bar=9 tiesFrom=- tiesTo=-
-  #26 line=41 cols=[14,16) ticks=414720..437760 note=77 track=1 bar=10 tiesFrom=- tiesTo=-
-  #27 line=41 cols=[16,17) ticks=437760..449280 note=75 track=1 bar=10 tiesFrom=- tiesTo=-
-  #28 line=41 cols=[17,18) ticks=449280..460800 note=72 track=1 bar=10 tiesFrom=- tiesTo=-
-  #29 line=41 cols=[19,21) ticks=460800..472320 note=73 track=1 bar=11 tiesFrom=- tiesTo=-
-  #30 line=41 cols=[21,22) ticks=472320..483840 note=73 track=1 bar=11 tiesFrom=- tiesTo=-
-  #31 line=41 cols=[22,23) ticks=483840..495360 note=72 track=1 bar=11 tiesFrom=- tiesTo=-
-  #32 line=41 cols=[23,24) ticks=495360..506880 note=77 track=1 bar=11 tiesFrom=- tiesTo=-
-  #33 line=41 cols=[34,36) ticks=506880..512640 note=70 track=1 bar=12 tiesFrom=- tiesTo=-
-  #34 line=41 cols=[36,38) ticks=512640..518400 note=72 track=1 bar=12 tiesFrom=- tiesTo=-
-  #35 line=41 cols=[38,41) ticks=518400..524160 note=73 track=1 bar=12 tiesFrom=- tiesTo=-
-  #36 line=41 cols=[41,43) ticks=524160..529920 note=75 track=1 bar=12 tiesFrom=- tiesTo=-
-  #37 line=41 cols=[44,45) ticks=529920..541440 note=77 track=1 bar=12 tiesFrom=- tiesTo=-
-  #38 line=41 cols=[45,46) ticks=541440..552960 note=77 track=1 bar=12 tiesFrom=- tiesTo=-
-  #39 line=45 cols=[7,8) ticks=552960..564480 note=72 track=1 bar=13 tiesFrom=- tiesTo=-
-  #40 line=45 cols=[8,9) ticks=564480..576000 note=68 track=1 bar=13 tiesFrom=- tiesTo=-
-  #41 line=45 cols=[9,11) ticks=576000..599040 note=70 track=1 bar=13 tiesFrom=- tiesTo=-
-  #42 line=45 cols=[17,18) ticks=599040..610560 note=72 track=1 bar=14 tiesFrom=- tiesTo=-
-  #43 line=45 cols=[18,19) ticks=610560..622080 note=68 track=1 bar=14 tiesFrom=- tiesTo=-
-  #44 line=45 cols=[19,20) ticks=622080..633600 note=68 track=1 bar=14 tiesFrom=- tiesTo=-
-  #45 line=45 cols=[20,21) ticks=633600..645120 note=68 track=1 bar=14 tiesFrom=- tiesTo=-
-  #46 line=45 cols=[23,25) ticks=645120..679680 note=72 track=1 bar=15 tiesFrom=- tiesTo=-
-  #47 line=45 cols=[25,26) ticks=679680..691200 note=70 track=1 bar=15 tiesFrom=- tiesTo=-
-  #48 line=45 cols=[27,29) ticks=691200..714240 note=67 track=1 bar=16 tiesFrom=- tiesTo=-
-  #49 line=45 cols=[38,39) ticks=714240..725760 note=67 track=1 bar=16 tiesFrom=- tiesTo=-
-  #50 line=45 cols=[39,40) ticks=725760..737280 REST track=1 bar=16 tiesFrom=- tiesTo=-
-  #51 line=41 cols=[9,11) ticks=737280..783360 REST track=1 bar=17 tiesFrom=- tiesTo=-
-  #52 line=41 cols=[14,16) ticks=783360..806400 note=77 track=1 bar=18 tiesFrom=- tiesTo=-
-  #53 line=41 cols=[16,17) ticks=806400..817920 note=75 track=1 bar=18 tiesFrom=- tiesTo=-
-  #54 line=41 cols=[17,18) ticks=817920..829440 note=72 track=1 bar=18 tiesFrom=- tiesTo=-
-  #55 line=41 cols=[19,21) ticks=829440..840960 note=73 track=1 bar=19 tiesFrom=- tiesTo=-
-  #56 line=41 cols=[21,22) ticks=840960..852480 note=73 track=1 bar=19 tiesFrom=- tiesTo=-
-  #57 line=41 cols=[22,23) ticks=852480..864000 note=72 track=1 bar=19 tiesFrom=- tiesTo=-
-  #58 line=41 cols=[23,24) ticks=864000..875520 note=77 track=1 bar=19 tiesFrom=- tiesTo=-
-  #59 line=41 cols=[34,36) ticks=875520..881280 note=70 track=1 bar=20 tiesFrom=- tiesTo=-
-  #60 line=41 cols=[36,38) ticks=881280..887040 note=72 track=1 bar=20 tiesFrom=- tiesTo=-
-  #61 line=41 cols=[38,41) ticks=887040..892800 note=73 track=1 bar=20 tiesFrom=- tiesTo=-
-  #62 line=41 cols=[41,43) ticks=892800..898560 note=75 track=1 bar=20 tiesFrom=- tiesTo=-
-  #63 line=41 cols=[44,45) ticks=898560..910080 note=77 track=1 bar=20 tiesFrom=- tiesTo=-
-  #64 line=41 cols=[45,46) ticks=910080..921600 note=77 track=1 bar=20 tiesFrom=- tiesTo=-
-  #65 line=45 cols=[7,8) ticks=921600..933120 note=72 track=1 bar=21 tiesFrom=- tiesTo=-
-  #66 line=45 cols=[8,9) ticks=933120..944640 note=68 track=1 bar=21 tiesFrom=- tiesTo=-
-  #67 line=45 cols=[9,11) ticks=944640..967680 note=70 track=1 bar=21 tiesFrom=- tiesTo=-
-  #68 line=45 cols=[17,18) ticks=967680..979200 note=72 track=1 bar=22 tiesFrom=- tiesTo=-
-  #69 line=45 cols=[18,19) ticks=979200..990720 note=68 track=1 bar=22 tiesFrom=- tiesTo=-
-  #70 line=45 cols=[19,20) ticks=990720..1002240 note=68 track=1 bar=22 tiesFrom=- tiesTo=-
-  #71 line=45 cols=[20,21) ticks=1002240..1013760 note=68 track=1 bar=22 tiesFrom=- tiesTo=-
-  #72 line=45 cols=[23,25) ticks=1013760..1048320 note=72 track=1 bar=23 tiesFrom=- tiesTo=-
-  #73 line=45 cols=[25,26) ticks=1048320..1059840 note=70 track=1 bar=23 tiesFrom=- tiesTo=-
-  #74 line=45 cols=[27,29) ticks=1059840..1082880 note=67 track=1 bar=24 tiesFrom=- tiesTo=-
-  #75 line=45 cols=[38,39) ticks=1082880..1094400 note=67 track=1 bar=24 tiesFrom=- tiesTo=-
-  #76 line=45 cols=[39,40) ticks=1094400..1105920 REST track=1 bar=24 tiesFrom=- tiesTo=-
-  #77 line=45 cols=[43,45) ticks=1105920..1152000 note=75 track=1 bar=25 tiesFrom=- tiesTo=-
-  #78 line=48 cols=[7,8) ticks=1152000..1163520 note=68 track=1 bar=26 tiesFrom=- tiesTo=-
-  #79 line=48 cols=[8,9) ticks=1163520..1175040 note=68 track=1 bar=26 tiesFrom=- tiesTo=-
-  #80 line=48 cols=[9,11) ticks=1175040..1198080 note=67 track=1 bar=26 tiesFrom=- tiesTo=-
-  #81 line=48 cols=[17,18) ticks=1198080..1209600 note=68 track=1 bar=27 tiesFrom=- tiesTo=-
-  #82 line=48 cols=[18,19) ticks=1209600..1221120 note=65 track=1 bar=27 tiesFrom=- tiesTo=-
-  #83 line=48 cols=[19,20) ticks=1221120..1232640 note=65 track=1 bar=27 tiesFrom=- tiesTo=-
-  #84 line=48 cols=[20,21) ticks=1232640..1244160 note=65 track=1 bar=27 tiesFrom=- tiesTo=-
-  #85 line=48 cols=[23,25) ticks=1244160..1278720 note=68 track=1 bar=28 tiesFrom=- tiesTo=-
-  #86 line=48 cols=[25,26) ticks=1278720..1290240 note=65 track=1 bar=28 tiesFrom=- tiesTo=-
-  #87 line=48 cols=[27,30) ticks=1290240..1313280 note=64 track=1 bar=29 tiesFrom=- tiesTo=-
-  #88 line=48 cols=[39,40) ticks=1313280..1324800 note=64 track=1 bar=29 tiesFrom=- tiesTo=-
-  #89 line=48 cols=[40,41) ticks=1324800..1336320 REST track=1 bar=29 tiesFrom=- tiesTo=-
-  #90 line=45 cols=[43,45) ticks=1336320..1382400 note=76 track=1 bar=30 tiesFrom=- tiesTo=-
-  #91 line=48 cols=[7,8) ticks=1382400..1393920 note=68 track=1 bar=31 tiesFrom=- tiesTo=-
-  #92 line=48 cols=[8,9) ticks=1393920..1405440 note=68 track=1 bar=31 tiesFrom=- tiesTo=-
-  #93 line=48 cols=[9,11) ticks=1405440..1428480 note=67 track=1 bar=31 tiesFrom=- tiesTo=-
-  #94 line=48 cols=[17,18) ticks=1428480..1440000 note=68 track=1 bar=32 tiesFrom=- tiesTo=-
-  #95 line=48 cols=[18,19) ticks=1440000..1451520 note=65 track=1 bar=32 tiesFrom=- tiesTo=-
-  #96 line=48 cols=[19,20) ticks=1451520..1463040 note=65 track=1 bar=32 tiesFrom=- tiesTo=-
-  #97 line=48 cols=[20,21) ticks=1463040..1474560 note=65 track=1 bar=32 tiesFrom=- tiesTo=-
-  #98 line=48 cols=[23,25) ticks=1474560..1509120 note=68 track=1 bar=33 tiesFrom=- tiesTo=-
-  #99 line=48 cols=[25,26) ticks=1509120..1520640 note=65 track=1 bar=33 tiesFrom=- tiesTo=-
-  #100 line=48 cols=[27,30) ticks=1520640..1543680 note=64 track=1 bar=34 tiesFrom=- tiesTo=-
-  #101 line=48 cols=[39,40) ticks=1543680..1555200 note=64 track=1 bar=34 tiesFrom=- tiesTo=-
-  #102 line=48 cols=[40,41) ticks=1555200..1566720 REST track=1 bar=34 tiesFrom=- tiesTo=-
-  #103 line=48 cols=[43,45) ticks=1566720..1612800 note=72 track=1 bar=35 tiesFrom=- tiesTo=-
-  #104 line=51 cols=[8,9) ticks=1612800..1624320 note=80 track=1 bar=36 tiesFrom=- tiesTo=-
-  #105 line=51 cols=[9,11) ticks=1624320..1630080 note=79 track=1 bar=36 tiesFrom=- tiesTo=-
-  #106 line=51 cols=[11,13) ticks=1630080..1635840 note=77 track=1 bar=36 tiesFrom=- tiesTo=-
-  #107 line=51 cols=[13,15) ticks=1635840..1658880 note=75 track=1 bar=36 tiesFrom=- tiesTo=-
-  #108 line=51 cols=[17,18) ticks=1658880..1670400 note=68 track=1 bar=37 tiesFrom=- tiesTo=-
-  #109 line=51 cols=[18,20) ticks=1670400..1681920 note=73 track=1 bar=37 tiesFrom=- tiesTo=-
-  #110 line=51 cols=[20,21) ticks=1681920..1693440 note=73 track=1 bar=37 tiesFrom=- tiesTo=-
-  #111 line=51 cols=[21,22) ticks=1693440..1704960 note=73 track=1 bar=37 tiesFrom=- tiesTo=-
-  #112 line=51 cols=[23,25) ticks=1704960..1739520 note=68 track=1 bar=38 tiesFrom=- tiesTo=-
-  #113 line=51 cols=[25,26) ticks=1739520..1751040 note=70 track=1 bar=38 tiesFrom=- tiesTo=-
-  #114 line=51 cols=[27,29) ticks=1751040..1774080 note=72 track=1 bar=39 tiesFrom=- tiesTo=-
-  #115 line=51 cols=[38,39) ticks=1774080..1785600 note=72 track=1 bar=39 tiesFrom=- tiesTo=-
-  #116 line=51 cols=[39,40) ticks=1785600..1797120 REST track=1 bar=39 tiesFrom=- tiesTo=-
-  #117 line=48 cols=[43,45) ticks=1797120..1843200 note=72 track=1 bar=40 tiesFrom=- tiesTo=-
-  #118 line=51 cols=[8,9) ticks=1843200..1854720 note=80 track=1 bar=41 tiesFrom=- tiesTo=-
-  #119 line=51 cols=[9,11) ticks=1854720..1860480 note=79 track=1 bar=41 tiesFrom=- tiesTo=-
-  #120 line=51 cols=[11,13) ticks=1860480..1866240 note=77 track=1 bar=41 tiesFrom=- tiesTo=-
-  #121 line=51 cols=[13,15) ticks=1866240..1889280 note=75 track=1 bar=41 tiesFrom=- tiesTo=-
-  #122 line=51 cols=[17,18) ticks=1889280..1900800 note=68 track=1 bar=42 tiesFrom=- tiesTo=-
-  #123 line=51 cols=[18,20) ticks=1900800..1912320 note=73 track=1 bar=42 tiesFrom=- tiesTo=-
-  #124 line=51 cols=[20,21) ticks=1912320..1923840 note=73 track=1 bar=42 tiesFrom=- tiesTo=-
-  #125 line=51 cols=[21,22) ticks=1923840..1935360 note=73 track=1 bar=42 tiesFrom=- tiesTo=-
-  #126 line=51 cols=[23,25) ticks=1935360..1969920 note=68 track=1 bar=43 tiesFrom=- tiesTo=-
-  #127 line=51 cols=[25,26) ticks=1969920..1981440 note=70 track=1 bar=43 tiesFrom=- tiesTo=-
-  #128 line=51 cols=[27,29) ticks=1981440..2004480 note=72 track=1 bar=44 tiesFrom=- tiesTo=-
-  #129 line=51 cols=[38,39) ticks=2004480..2016000 note=72 track=1 bar=44 tiesFrom=- tiesTo=-
-  #130 line=51 cols=[39,40) ticks=2016000..2027520 REST track=1 bar=44 tiesFrom=- tiesTo=-
-  #131 line=51 cols=[43,45) ticks=2027520..2073600 note=68 track=1 bar=45 tiesFrom=- tiesTo=-
-  #132 line=55 cols=[7,8) ticks=2073600..2085120 note=77 track=1 bar=46 tiesFrom=- tiesTo=-
-  #133 line=55 cols=[8,10) ticks=2085120..2096640 note=73 track=1 bar=46 tiesFrom=- tiesTo=-
-  #134 line=55 cols=[10,11) ticks=2096640..2108160 note=75 track=1 bar=46 tiesFrom=- tiesTo=-
-  #135 line=55 cols=[11,12) ticks=2108160..2119680 note=72 track=1 bar=46 tiesFrom=- tiesTo=-
-  #136 line=55 cols=[14,16) ticks=2119680..2142720 note=70 track=1 bar=47 tiesFrom=- tiesTo=-
-  #137 line=55 cols=[16,18) ticks=2142720..2165760 note=72 track=1 bar=47 tiesFrom=- tiesTo=-
-  #138 line=55 cols=[19,20) ticks=2165760..2177280 REST track=1 bar=48 tiesFrom=- tiesTo=-
-  #139 line=55 cols=[20,21) ticks=2177280..2188800 note=68 track=1 bar=48 tiesFrom=- tiesTo=-
-  #140 line=55 cols=[21,22) ticks=2188800..2200320 note=67 track=1 bar=48 tiesFrom=- tiesTo=-
-  #141 line=55 cols=[22,23) ticks=2200320..2211840 note=65 track=1 bar=48 tiesFrom=- tiesTo=-
-  #142 line=57 cols=[0,2) ticks=2211840..2223360 note=64 track=1 bar=49 tiesFrom=- tiesTo=-
-  #143 line=57 cols=[2,3) ticks=2223360..2234880 note=65 track=1 bar=49 tiesFrom=- tiesTo=-
-  #144 line=57 cols=[3,5) ticks=2234880..2257920 note=67 track=1 bar=49 tiesFrom=- tiesTo=-
-  #145 line=57 cols=[17,19) ticks=2257920..2280960 note=65 track=1 bar=50 tiesFrom=- tiesTo=-
-  #146 line=57 cols=[19,21) ticks=2280960..2304000 REST track=1 bar=50 tiesFrom=- tiesTo=-
-  #147 line=51 cols=[43,45) ticks=2304000..2350080 note=68 track=1 bar=51 tiesFrom=- tiesTo=-
-  #148 line=55 cols=[7,8) ticks=2350080..2361600 note=77 track=1 bar=52 tiesFrom=- tiesTo=-
-  #149 line=55 cols=[8,10) ticks=2361600..2373120 note=73 track=1 bar=52 tiesFrom=- tiesTo=-
-  #150 line=55 cols=[10,11) ticks=2373120..2384640 note=75 track=1 bar=52 tiesFrom=- tiesTo=-
-  #151 line=55 cols=[11,12) ticks=2384640..2396160 note=72 track=1 bar=52 tiesFrom=- tiesTo=-
-  #152 line=55 cols=[14,16) ticks=2396160..2419200 note=70 track=1 bar=53 tiesFrom=- tiesTo=-
-  #153 line=55 cols=[16,18) ticks=2419200..2442240 note=72 track=1 bar=53 tiesFrom=- tiesTo=-
-  #154 line=55 cols=[19,20) ticks=2442240..2453760 REST track=1 bar=54 tiesFrom=- tiesTo=-
-  #155 line=55 cols=[20,21) ticks=2453760..2465280 note=68 track=1 bar=54 tiesFrom=- tiesTo=-
-  #156 line=55 cols=[21,22) ticks=2465280..2476800 note=67 track=1 bar=54 tiesFrom=- tiesTo=-
-  #157 line=55 cols=[22,23) ticks=2476800..2488320 note=65 track=1 bar=54 tiesFrom=- tiesTo=-
-  #158 line=57 cols=[0,2) ticks=2488320..2499840 note=64 track=1 bar=55 tiesFrom=- tiesTo=-
-  #159 line=57 cols=[2,3) ticks=2499840..2511360 note=65 track=1 bar=55 tiesFrom=- tiesTo=-
-  #160 line=57 cols=[3,5) ticks=2511360..2534400 note=67 track=1 bar=55 tiesFrom=- tiesTo=-
-  #161 line=57 cols=[24,26) ticks=2534400..2626560 note=65 track=1 bar=56 tiesFrom=- tiesTo=-
-  #162 line=59 cols=[7,8) ticks=2626560..2638080 note=68 track=1 bar=57 tiesFrom=- tiesTo=-
-  #163 line=59 cols=[8,9) ticks=2638080..2649600 note=70 track=1 bar=57 tiesFrom=- tiesTo=-
-  #164 line=59 cols=[9,10) ticks=2649600..2661120 note=67 track=1 bar=57 tiesFrom=- tiesTo=-
-  #165 line=59 cols=[10,11) ticks=2661120..2672640 note=68 track=1 bar=57 tiesFrom=- tiesTo=-
-  #166 line=59 cols=[14,16) ticks=2672640..2695680 note=67 track=1 bar=58 tiesFrom=- tiesTo=-
-  #167 line=59 cols=[16,17) ticks=2695680..2707200 note=68 track=1 bar=58 tiesFrom=- tiesTo=-
-  #168 line=59 cols=[17,18) ticks=2707200..2718720 note=68 track=1 bar=58 tiesFrom=- tiesTo=-
-  #169 line=59 cols=[19,20) ticks=2718720..2730240 note=67 track=1 bar=59 tiesFrom=- tiesTo=-
-  #170 line=59 cols=[20,21) ticks=2730240..2741760 note=65 track=1 bar=59 tiesFrom=- tiesTo=-
-  #171 line=59 cols=[21,23) ticks=2741760..2753280 note=64 track=1 bar=59 tiesFrom=- tiesTo=-
-  #172 line=59 cols=[23,24) ticks=2753280..2764800 note=65 track=1 bar=59 tiesFrom=- tiesTo=-
-  #173 line=59 cols=[27,28) ticks=2764800..2776320 note=67 track=1 bar=60 tiesFrom=- tiesTo=-
-  #174 line=59 cols=[28,32) ticks=2776320..2793600 note=65 track=1 bar=60 tiesFrom=- tiesTo=-
-  #175 line=59 cols=[32,36) ticks=2793600..2796480 note=64 track=1 bar=60 tiesFrom=- tiesTo=-
-  #176 line=59 cols=[36,39) ticks=2796480..2799360 note=62 track=1 bar=60 tiesFrom=- tiesTo=-
-  #177 line=59 cols=[39,40) ticks=2799360..2810880 note=64 track=1 bar=60 tiesFrom=- tiesTo=-
-  #178 line=59 cols=[43,45) ticks=2810880..2833920 note=65 track=1 bar=61 tiesFrom=- tiesTo=-
-  #179 line=59 cols=[45,47) ticks=2833920..2856960 REST track=1 bar=61 tiesFrom=- tiesTo=-
-  #180 line=59 cols=[7,8) ticks=2856960..2868480 note=68 track=1 bar=62 tiesFrom=- tiesTo=-
-  #181 line=59 cols=[8,9) ticks=2868480..2880000 note=70 track=1 bar=62 tiesFrom=- tiesTo=-
-  #182 line=59 cols=[9,10) ticks=2880000..2891520 note=67 track=1 bar=62 tiesFrom=- tiesTo=-
-  #183 line=59 cols=[10,11) ticks=2891520..2903040 note=68 track=1 bar=62 tiesFrom=- tiesTo=-
-  #184 line=59 cols=[14,16) ticks=2903040..2926080 note=67 track=1 bar=63 tiesFrom=- tiesTo=-
-  #185 line=59 cols=[16,17) ticks=2926080..2937600 note=68 track=1 bar=63 tiesFrom=- tiesTo=-
-  #186 line=59 cols=[17,18) ticks=2937600..2949120 note=68 track=1 bar=63 tiesFrom=- tiesTo=-
-  #187 line=59 cols=[19,20) ticks=2949120..2960640 note=67 track=1 bar=64 tiesFrom=- tiesTo=-
-  #188 line=59 cols=[20,21) ticks=2960640..2972160 note=65 track=1 bar=64 tiesFrom=- tiesTo=-
-  #189 line=59 cols=[21,23) ticks=2972160..2983680 note=64 track=1 bar=64 tiesFrom=- tiesTo=-
-  #190 line=59 cols=[23,24) ticks=2983680..2995200 note=65 track=1 bar=64 tiesFrom=- tiesTo=-
-  #191 line=59 cols=[27,28) ticks=2995200..3006720 note=67 track=1 bar=65 tiesFrom=- tiesTo=-
-  #192 line=59 cols=[28,32) ticks=3006720..3024000 note=65 track=1 bar=65 tiesFrom=- tiesTo=-
-  #193 line=59 cols=[32,36) ticks=3024000..3026880 note=64 track=1 bar=65 tiesFrom=- tiesTo=-
-  #194 line=59 cols=[36,39) ticks=3026880..3029760 note=62 track=1 bar=65 tiesFrom=- tiesTo=-
-  #195 line=59 cols=[39,40) ticks=3029760..3041280 note=64 track=1 bar=65 tiesFrom=- tiesTo=-
-  #196 line=59 cols=[50,52) ticks=3041280..3133440 note=65 track=1 bar=66 tiesFrom=- tiesTo=-
-  #197 line=61 cols=[7,9) ticks=3133440..3144960 note=73 track=1 bar=67 tiesFrom=- tiesTo=-
-  #198 line=61 cols=[9,10) ticks=3144960..3156480 note=70 track=1 bar=67 tiesFrom=- tiesTo=-
-  #199 line=61 cols=[10,12) ticks=3156480..3173760 note=72 track=1 bar=67 tiesFrom=- tiesTo=-
-  #200 line=61 cols=[12,13) ticks=3173760..3179520 note=73 track=1 bar=67 tiesFrom=- tiesTo=-
-  #201 line=61 cols=[14,16) ticks=3179520..3202560 note=75 track=1 bar=68 tiesFrom=- tiesTo=-
-  #202 line=61 cols=[16,17) ticks=3202560..3214080 note=68 track=1 bar=68 tiesFrom=- tiesTo=-
-  #203 line=61 cols=[17,18) ticks=3214080..3225600 note=65 track=1 bar=68 tiesFrom=- tiesTo=-
-  #204 line=61 cols=[19,21) ticks=3225600..3237120 note=64 track=1 bar=69 tiesFrom=- tiesTo=-
-  #205 line=61 cols=[21,22) ticks=3237120..3248640 note=65 track=1 bar=69 tiesFrom=- tiesTo=-
-  #206 line=61 cols=[22,23) ticks=3248640..3260160 note=72 track=1 bar=69 tiesFrom=- tiesTo=-
-  #207 line=61 cols=[23,25) ticks=3260160..3271680 note=73 track=1 bar=69 tiesFrom=- tiesTo=-
-  #208 line=61 cols=[26,28) ticks=3271680..3317760 note=72 track=1 bar=70 tiesFrom=- tiesTo=-
-  #209 line=61 cols=[43,45) ticks=3317760..3340800 note=65 track=1 bar=71 tiesFrom=- tiesTo=-
-  #210 line=61 cols=[45,47) ticks=3340800..3363840 REST track=1 bar=71 tiesFrom=- tiesTo=-
-  #211 line=61 cols=[7,9) ticks=3363840..3375360 note=73 track=1 bar=72 tiesFrom=- tiesTo=-
-  #212 line=61 cols=[9,10) ticks=3375360..3386880 note=70 track=1 bar=72 tiesFrom=- tiesTo=-
-  #213 line=61 cols=[10,12) ticks=3386880..3404160 note=72 track=1 bar=72 tiesFrom=- tiesTo=-
-  #214 line=61 cols=[12,13) ticks=3404160..3409920 note=73 track=1 bar=72 tiesFrom=- tiesTo=-
-  #215 line=61 cols=[14,16) ticks=3409920..3432960 note=75 track=1 bar=73 tiesFrom=- tiesTo=-
-  #216 line=61 cols=[16,17) ticks=3432960..3444480 note=68 track=1 bar=73 tiesFrom=- tiesTo=-
-  #217 line=61 cols=[17,18) ticks=3444480..3456000 note=65 track=1 bar=73 tiesFrom=- tiesTo=-
-  #218 line=61 cols=[19,21) ticks=3456000..3467520 note=64 track=1 bar=74 tiesFrom=- tiesTo=-
-  #219 line=61 cols=[21,22) ticks=3467520..3479040 note=65 track=1 bar=74 tiesFrom=- tiesTo=-
-  #220 line=61 cols=[22,23) ticks=3479040..3490560 note=72 track=1 bar=74 tiesFrom=- tiesTo=-
-  #221 line=61 cols=[23,25) ticks=3490560..3502080 note=73 track=1 bar=74 tiesFrom=- tiesTo=-
-  #222 line=61 cols=[26,28) ticks=3502080..3548160 note=72 track=1 bar=75 tiesFrom=- tiesTo=-
-  #223 line=61 cols=[50,52) ticks=3548160..3640320 note=65 track=1 bar=76 tiesFrom=- tiesTo=-
+  part 1: number=1 name="Soprano" fullName="Canzonetta a tre voci" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=20..58 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=91 [LotroShortMessage]
+  part 2: number=2 name="Alto" fullName="Canzonetta a tre voci" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=20..60 pan=0 CONTROL_CHANGE ch=1 d1=10 d2=37 [LotroShortMessage]
+  part 3: number=3 name="Tenor" fullName="Canzonetta a tre voci" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=20..62 pan=0 CONTROL_CHANGE ch=2 d1=10 d2=88 [LotroShortMessage]
+== regions (249)
+  #0 line=38 cols=[9,11) ticks=0..23040 note=72 track=2 bar=1 tiesFrom=- tiesTo=-
+  #1 line=35 cols=[9,11) ticks=0..46080 REST track=1 bar=1 tiesFrom=- tiesTo=-
+  #2 line=41 cols=[9,11) ticks=0..46080 REST track=3 bar=1 tiesFrom=- tiesTo=-
+  #3 line=38 cols=[11,12) ticks=23040..34560 note=70 track=2 bar=1 tiesFrom=- tiesTo=-
+  #4 line=38 cols=[12,13) ticks=34560..46080 note=67 track=2 bar=1 tiesFrom=- tiesTo=-
+  #5 line=38 cols=[14,15) ticks=46080..57600 note=68 track=2 bar=2 tiesFrom=- tiesTo=-
+  #6 line=41 cols=[14,16) ticks=46080..69120 note=77 track=3 bar=2 tiesFrom=- tiesTo=-
+  #7 line=35 cols=[14,16) ticks=46080..92160 REST track=1 bar=2 tiesFrom=- tiesTo=-
+  #8 line=38 cols=[15,16) ticks=57600..69120 note=68 track=2 bar=2 tiesFrom=- tiesTo=-
+  #9 line=38 cols=[16,17) ticks=69120..80640 note=67 track=2 bar=2 tiesFrom=- tiesTo=-
+  #10 line=41 cols=[16,17) ticks=69120..80640 note=75 track=3 bar=2 tiesFrom=- tiesTo=-
+  #11 line=38 cols=[17,18) ticks=80640..92160 note=72 track=2 bar=2 tiesFrom=- tiesTo=-
+  #12 line=41 cols=[17,18) ticks=80640..92160 note=72 track=3 bar=2 tiesFrom=- tiesTo=-
+  #13 line=38 cols=[20,22) ticks=92160..97920 note=65 track=2 bar=3 tiesFrom=- tiesTo=-
+  #14 line=41 cols=[19,21) ticks=92160..103680 note=73 track=3 bar=3 tiesFrom=- tiesTo=-
+  #15 line=35 cols=[19,21) ticks=92160..115200 note=77 track=1 bar=3 tiesFrom=- tiesTo=-
+  #16 line=38 cols=[22,24) ticks=97920..103680 note=67 track=2 bar=3 tiesFrom=- tiesTo=-
+  #17 line=38 cols=[24,26) ticks=103680..109440 note=68 track=2 bar=3 tiesFrom=- tiesTo=-
+  #18 line=41 cols=[21,22) ticks=103680..115200 note=73 track=3 bar=3 tiesFrom=- tiesTo=-
+  #19 line=38 cols=[26,28) ticks=109440..115200 note=70 track=2 bar=3 tiesFrom=- tiesTo=-
+  #20 line=35 cols=[21,22) ticks=115200..126720 note=75 track=1 bar=3 tiesFrom=- tiesTo=-
+  #21 line=38 cols=[29,30) ticks=115200..126720 note=72 track=2 bar=3 tiesFrom=- tiesTo=-
+  #22 line=41 cols=[22,23) ticks=115200..126720 note=72 track=3 bar=3 tiesFrom=- tiesTo=-
+  #23 line=35 cols=[22,23) ticks=126720..138240 note=72 track=1 bar=3 tiesFrom=- tiesTo=-
+  #24 line=38 cols=[30,32) ticks=126720..138240 note=69 track=2 bar=3 tiesFrom=- tiesTo=-
+  #25 line=41 cols=[23,24) ticks=126720..138240 note=77 track=3 bar=3 tiesFrom=- tiesTo=-
+  #26 line=41 cols=[34,36) ticks=138240..144000 note=70 track=3 bar=4 tiesFrom=- tiesTo=-
+  #27 line=35 cols=[33,35) ticks=138240..149760 note=73 track=1 bar=4 tiesFrom=- tiesTo=-
+  #28 line=38 cols=[33,35) ticks=138240..161280 note=70 track=2 bar=4 tiesFrom=- tiesTo=-
+  #29 line=41 cols=[36,38) ticks=144000..149760 note=72 track=3 bar=4 tiesFrom=- tiesTo=-
+  #30 line=41 cols=[38,41) ticks=149760..155520 note=73 track=3 bar=4 tiesFrom=- tiesTo=-
+  #31 line=35 cols=[35,36) ticks=149760..161280 note=73 track=1 bar=4 tiesFrom=- tiesTo=-
+  #32 line=41 cols=[41,43) ticks=155520..161280 note=75 track=3 bar=4 tiesFrom=- tiesTo=-
+  #33 line=35 cols=[36,37) ticks=161280..172800 note=72 track=1 bar=4 tiesFrom=- tiesTo=-
+  #34 line=38 cols=[35,36) ticks=161280..172800 note=68 track=2 bar=4 tiesFrom=- tiesTo=-
+  #35 line=41 cols=[44,45) ticks=161280..172800 note=77 track=3 bar=4 tiesFrom=- tiesTo=-
+  #36 line=35 cols=[37,38) ticks=172800..184320 note=72 track=1 bar=4 tiesFrom=- tiesTo=-
+  #37 line=38 cols=[36,37) ticks=172800..184320 note=68 track=2 bar=4 tiesFrom=- tiesTo=-
+  #38 line=41 cols=[45,46) ticks=172800..184320 note=77 track=3 bar=4 tiesFrom=- tiesTo=-
+  #39 line=45 cols=[7,8) ticks=184320..195840 note=72 track=1 bar=5 tiesFrom=- tiesTo=-
+  #40 line=48 cols=[7,8) ticks=184320..195840 note=68 track=2 bar=5 tiesFrom=- tiesTo=-
+  #41 line=51 cols=[8,9) ticks=184320..195840 note=80 track=3 bar=5 tiesFrom=- tiesTo=-
+  #42 line=51 cols=[9,11) ticks=195840..201600 note=79 track=3 bar=5 tiesFrom=- tiesTo=-
+  #43 line=45 cols=[8,9) ticks=195840..207360 note=68 track=1 bar=5 tiesFrom=- tiesTo=-
+  #44 line=48 cols=[8,9) ticks=195840..207360 note=68 track=2 bar=5 tiesFrom=- tiesTo=-
+  #45 line=51 cols=[11,13) ticks=201600..207360 note=77 track=3 bar=5 tiesFrom=- tiesTo=-
+  #46 line=45 cols=[9,11) ticks=207360..230400 note=70 track=1 bar=5 tiesFrom=- tiesTo=-
+  #47 line=48 cols=[9,11) ticks=207360..230400 note=67 track=2 bar=5 tiesFrom=- tiesTo=-
+  #48 line=51 cols=[13,15) ticks=207360..230400 note=75 track=3 bar=5 tiesFrom=- tiesTo=-
+  #49 line=45 cols=[17,18) ticks=230400..241920 note=72 track=1 bar=6 tiesFrom=- tiesTo=-
+  #50 line=48 cols=[17,18) ticks=230400..241920 note=68 track=2 bar=6 tiesFrom=- tiesTo=-
+  #51 line=51 cols=[17,18) ticks=230400..241920 note=68 track=3 bar=6 tiesFrom=- tiesTo=-
+  #52 line=45 cols=[18,19) ticks=241920..253440 note=68 track=1 bar=6 tiesFrom=- tiesTo=-
+  #53 line=48 cols=[18,19) ticks=241920..253440 note=65 track=2 bar=6 tiesFrom=- tiesTo=-
+  #54 line=51 cols=[18,20) ticks=241920..253440 note=73 track=3 bar=6 tiesFrom=- tiesTo=-
+  #55 line=45 cols=[19,20) ticks=253440..264960 note=68 track=1 bar=6 tiesFrom=- tiesTo=-
+  #56 line=48 cols=[19,20) ticks=253440..264960 note=65 track=2 bar=6 tiesFrom=- tiesTo=-
+  #57 line=51 cols=[20,21) ticks=253440..264960 note=73 track=3 bar=6 tiesFrom=- tiesTo=-
+  #58 line=45 cols=[20,21) ticks=264960..276480 note=68 track=1 bar=6 tiesFrom=- tiesTo=-
+  #59 line=48 cols=[20,21) ticks=264960..276480 note=65 track=2 bar=6 tiesFrom=- tiesTo=-
+  #60 line=51 cols=[21,22) ticks=264960..276480 note=73 track=3 bar=6 tiesFrom=- tiesTo=-
+  #61 line=45 cols=[23,25) ticks=276480..311040 note=72 track=1 bar=7 tiesFrom=- tiesTo=-
+  #62 line=48 cols=[23,25) ticks=276480..311040 note=68 track=2 bar=7 tiesFrom=- tiesTo=-
+  #63 line=51 cols=[23,25) ticks=276480..311040 note=68 track=3 bar=7 tiesFrom=- tiesTo=-
+  #64 line=45 cols=[25,26) ticks=311040..322560 note=70 track=1 bar=7 tiesFrom=- tiesTo=-
+  #65 line=48 cols=[25,26) ticks=311040..322560 note=65 track=2 bar=7 tiesFrom=- tiesTo=-
+  #66 line=51 cols=[25,26) ticks=311040..322560 note=70 track=3 bar=7 tiesFrom=- tiesTo=-
+  #67 line=45 cols=[27,29) ticks=322560..345600 note=67 track=1 bar=8 tiesFrom=- tiesTo=-
+  #68 line=48 cols=[27,30) ticks=322560..345600 note=64 track=2 bar=8 tiesFrom=- tiesTo=-
+  #69 line=51 cols=[27,29) ticks=322560..345600 note=72 track=3 bar=8 tiesFrom=- tiesTo=-
+  #70 line=45 cols=[38,39) ticks=345600..357120 note=67 track=1 bar=8 tiesFrom=- tiesTo=-
+  #71 line=48 cols=[39,40) ticks=345600..357120 note=64 track=2 bar=8 tiesFrom=- tiesTo=-
+  #72 line=51 cols=[38,39) ticks=345600..357120 note=72 track=3 bar=8 tiesFrom=- tiesTo=-
+  #73 line=45 cols=[39,40) ticks=357120..368640 REST track=1 bar=8 tiesFrom=- tiesTo=-
+  #74 line=48 cols=[40,41) ticks=357120..368640 REST track=2 bar=8 tiesFrom=- tiesTo=-
+  #75 line=51 cols=[39,40) ticks=357120..368640 REST track=3 bar=8 tiesFrom=- tiesTo=-
+  #76 line=38 cols=[9,11) ticks=368640..391680 note=72 track=2 bar=9 tiesFrom=- tiesTo=-
+  #77 line=35 cols=[9,11) ticks=368640..414720 REST track=1 bar=9 tiesFrom=- tiesTo=-
+  #78 line=41 cols=[9,11) ticks=368640..414720 REST track=3 bar=9 tiesFrom=- tiesTo=-
+  #79 line=38 cols=[11,12) ticks=391680..403200 note=70 track=2 bar=9 tiesFrom=- tiesTo=-
+  #80 line=38 cols=[12,13) ticks=403200..414720 note=67 track=2 bar=9 tiesFrom=- tiesTo=-
+  #81 line=38 cols=[14,15) ticks=414720..426240 note=68 track=2 bar=10 tiesFrom=- tiesTo=-
+  #82 line=41 cols=[14,16) ticks=414720..437760 note=77 track=3 bar=10 tiesFrom=- tiesTo=-
+  #83 line=35 cols=[14,16) ticks=414720..460800 REST track=1 bar=10 tiesFrom=- tiesTo=-
+  #84 line=38 cols=[15,16) ticks=426240..437760 note=68 track=2 bar=10 tiesFrom=- tiesTo=-
+  #85 line=38 cols=[16,17) ticks=437760..449280 note=67 track=2 bar=10 tiesFrom=- tiesTo=-
+  #86 line=41 cols=[16,17) ticks=437760..449280 note=75 track=3 bar=10 tiesFrom=- tiesTo=-
+  #87 line=38 cols=[17,18) ticks=449280..460800 note=72 track=2 bar=10 tiesFrom=- tiesTo=-
+  #88 line=41 cols=[17,18) ticks=449280..460800 note=72 track=3 bar=10 tiesFrom=- tiesTo=-
+  #89 line=38 cols=[20,22) ticks=460800..466560 note=65 track=2 bar=11 tiesFrom=- tiesTo=-
+  #90 line=41 cols=[19,21) ticks=460800..472320 note=73 track=3 bar=11 tiesFrom=- tiesTo=-
+  #91 line=35 cols=[19,21) ticks=460800..483840 note=77 track=1 bar=11 tiesFrom=- tiesTo=-
+  #92 line=38 cols=[22,24) ticks=466560..472320 note=67 track=2 bar=11 tiesFrom=- tiesTo=-
+  #93 line=38 cols=[24,26) ticks=472320..478080 note=68 track=2 bar=11 tiesFrom=- tiesTo=-
+  #94 line=41 cols=[21,22) ticks=472320..483840 note=73 track=3 bar=11 tiesFrom=- tiesTo=-
+  #95 line=38 cols=[26,28) ticks=478080..483840 note=70 track=2 bar=11 tiesFrom=- tiesTo=-
+  #96 line=35 cols=[21,22) ticks=483840..495360 note=75 track=1 bar=11 tiesFrom=- tiesTo=-
+  #97 line=38 cols=[29,30) ticks=483840..495360 note=72 track=2 bar=11 tiesFrom=- tiesTo=-
+  #98 line=41 cols=[22,23) ticks=483840..495360 note=72 track=3 bar=11 tiesFrom=- tiesTo=-
+  #99 line=35 cols=[22,23) ticks=495360..506880 note=72 track=1 bar=11 tiesFrom=- tiesTo=-
+  #100 line=38 cols=[30,32) ticks=495360..506880 note=69 track=2 bar=11 tiesFrom=- tiesTo=-
+  #101 line=41 cols=[23,24) ticks=495360..506880 note=77 track=3 bar=11 tiesFrom=- tiesTo=-
+  #102 line=41 cols=[34,36) ticks=506880..512640 note=70 track=3 bar=12 tiesFrom=- tiesTo=-
+  #103 line=35 cols=[33,35) ticks=506880..518400 note=73 track=1 bar=12 tiesFrom=- tiesTo=-
+  #104 line=38 cols=[33,35) ticks=506880..529920 note=70 track=2 bar=12 tiesFrom=- tiesTo=-
+  #105 line=41 cols=[36,38) ticks=512640..518400 note=72 track=3 bar=12 tiesFrom=- tiesTo=-
+  #106 line=41 cols=[38,41) ticks=518400..524160 note=73 track=3 bar=12 tiesFrom=- tiesTo=-
+  #107 line=35 cols=[35,36) ticks=518400..529920 note=73 track=1 bar=12 tiesFrom=- tiesTo=-
+  #108 line=41 cols=[41,43) ticks=524160..529920 note=75 track=3 bar=12 tiesFrom=- tiesTo=-
+  #109 line=35 cols=[36,37) ticks=529920..541440 note=72 track=1 bar=12 tiesFrom=- tiesTo=-
+  #110 line=38 cols=[35,36) ticks=529920..541440 note=68 track=2 bar=12 tiesFrom=- tiesTo=-
+  #111 line=41 cols=[44,45) ticks=529920..541440 note=77 track=3 bar=12 tiesFrom=- tiesTo=-
+  #112 line=35 cols=[37,38) ticks=541440..552960 note=72 track=1 bar=12 tiesFrom=- tiesTo=-
+  #113 line=38 cols=[36,37) ticks=541440..552960 note=68 track=2 bar=12 tiesFrom=- tiesTo=-
+  #114 line=41 cols=[45,46) ticks=541440..552960 note=77 track=3 bar=12 tiesFrom=- tiesTo=-
+  #115 line=45 cols=[7,8) ticks=552960..564480 note=72 track=1 bar=13 tiesFrom=- tiesTo=-
+  #116 line=48 cols=[7,8) ticks=552960..564480 note=68 track=2 bar=13 tiesFrom=- tiesTo=-
+  #117 line=51 cols=[8,9) ticks=552960..564480 note=80 track=3 bar=13 tiesFrom=- tiesTo=-
+  #118 line=51 cols=[9,11) ticks=564480..570240 note=79 track=3 bar=13 tiesFrom=- tiesTo=-
+  #119 line=45 cols=[8,9) ticks=564480..576000 note=68 track=1 bar=13 tiesFrom=- tiesTo=-
+  #120 line=48 cols=[8,9) ticks=564480..576000 note=68 track=2 bar=13 tiesFrom=- tiesTo=-
+  #121 line=51 cols=[11,13) ticks=570240..576000 note=77 track=3 bar=13 tiesFrom=- tiesTo=-
+  #122 line=45 cols=[9,11) ticks=576000..599040 note=70 track=1 bar=13 tiesFrom=- tiesTo=-
+  #123 line=48 cols=[9,11) ticks=576000..599040 note=67 track=2 bar=13 tiesFrom=- tiesTo=-
+  #124 line=51 cols=[13,15) ticks=576000..599040 note=75 track=3 bar=13 tiesFrom=- tiesTo=-
+  #125 line=45 cols=[17,18) ticks=599040..610560 note=72 track=1 bar=14 tiesFrom=- tiesTo=-
+  #126 line=48 cols=[17,18) ticks=599040..610560 note=68 track=2 bar=14 tiesFrom=- tiesTo=-
+  #127 line=51 cols=[17,18) ticks=599040..610560 note=68 track=3 bar=14 tiesFrom=- tiesTo=-
+  #128 line=45 cols=[18,19) ticks=610560..622080 note=68 track=1 bar=14 tiesFrom=- tiesTo=-
+  #129 line=48 cols=[18,19) ticks=610560..622080 note=65 track=2 bar=14 tiesFrom=- tiesTo=-
+  #130 line=51 cols=[18,20) ticks=610560..622080 note=73 track=3 bar=14 tiesFrom=- tiesTo=-
+  #131 line=45 cols=[19,20) ticks=622080..633600 note=68 track=1 bar=14 tiesFrom=- tiesTo=-
+  #132 line=48 cols=[19,20) ticks=622080..633600 note=65 track=2 bar=14 tiesFrom=- tiesTo=-
+  #133 line=51 cols=[20,21) ticks=622080..633600 note=73 track=3 bar=14 tiesFrom=- tiesTo=-
+  #134 line=45 cols=[20,21) ticks=633600..645120 note=68 track=1 bar=14 tiesFrom=- tiesTo=-
+  #135 line=48 cols=[20,21) ticks=633600..645120 note=65 track=2 bar=14 tiesFrom=- tiesTo=-
+  #136 line=51 cols=[21,22) ticks=633600..645120 note=73 track=3 bar=14 tiesFrom=- tiesTo=-
+  #137 line=45 cols=[23,25) ticks=645120..679680 note=72 track=1 bar=15 tiesFrom=- tiesTo=-
+  #138 line=48 cols=[23,25) ticks=645120..679680 note=68 track=2 bar=15 tiesFrom=- tiesTo=-
+  #139 line=51 cols=[23,25) ticks=645120..679680 note=68 track=3 bar=15 tiesFrom=- tiesTo=-
+  #140 line=45 cols=[25,26) ticks=679680..691200 note=70 track=1 bar=15 tiesFrom=- tiesTo=-
+  #141 line=48 cols=[25,26) ticks=679680..691200 note=65 track=2 bar=15 tiesFrom=- tiesTo=-
+  #142 line=51 cols=[25,26) ticks=679680..691200 note=70 track=3 bar=15 tiesFrom=- tiesTo=-
+  #143 line=45 cols=[27,29) ticks=691200..714240 note=67 track=1 bar=16 tiesFrom=- tiesTo=-
+  #144 line=48 cols=[27,30) ticks=691200..714240 note=64 track=2 bar=16 tiesFrom=- tiesTo=-
+  #145 line=51 cols=[27,29) ticks=691200..714240 note=72 track=3 bar=16 tiesFrom=- tiesTo=-
+  #146 line=45 cols=[38,39) ticks=714240..725760 note=67 track=1 bar=16 tiesFrom=- tiesTo=-
+  #147 line=48 cols=[39,40) ticks=714240..725760 note=64 track=2 bar=16 tiesFrom=- tiesTo=-
+  #148 line=51 cols=[38,39) ticks=714240..725760 note=72 track=3 bar=16 tiesFrom=- tiesTo=-
+  #149 line=45 cols=[39,40) ticks=725760..737280 REST track=1 bar=16 tiesFrom=- tiesTo=-
+  #150 line=48 cols=[40,41) ticks=725760..737280 REST track=2 bar=16 tiesFrom=- tiesTo=-
+  #151 line=51 cols=[39,40) ticks=725760..737280 REST track=3 bar=16 tiesFrom=- tiesTo=-
+  #152 line=45 cols=[43,45) ticks=737280..783360 note=75 track=1 bar=17 tiesFrom=- tiesTo=-
+  #153 line=48 cols=[43,45) ticks=737280..783360 note=72 track=2 bar=17 tiesFrom=- tiesTo=-
+  #154 line=51 cols=[43,45) ticks=737280..783360 note=68 track=3 bar=17 tiesFrom=- tiesTo=-
+  #155 line=55 cols=[7,8) ticks=783360..794880 note=77 track=1 bar=18 tiesFrom=- tiesTo=-
+  #156 line=59 cols=[7,8) ticks=783360..794880 note=68 track=2 bar=18 tiesFrom=- tiesTo=-
+  #157 line=61 cols=[7,9) ticks=783360..794880 note=73 track=3 bar=18 tiesFrom=- tiesTo=-
+  #158 line=55 cols=[8,10) ticks=794880..806400 note=73 track=1 bar=18 tiesFrom=- tiesTo=-
+  #159 line=59 cols=[8,9) ticks=794880..806400 note=70 track=2 bar=18 tiesFrom=- tiesTo=-
+  #160 line=61 cols=[9,10) ticks=794880..806400 note=70 track=3 bar=18 tiesFrom=- tiesTo=-
+  #161 line=55 cols=[10,11) ticks=806400..817920 note=75 track=1 bar=18 tiesFrom=- tiesTo=-
+  #162 line=59 cols=[9,10) ticks=806400..817920 note=67 track=2 bar=18 tiesFrom=- tiesTo=-
+  #163 line=61 cols=[10,12) ticks=806400..823680 note=72 track=3 bar=18 tiesFrom=- tiesTo=-
+  #164 line=55 cols=[11,12) ticks=817920..829440 note=72 track=1 bar=18 tiesFrom=- tiesTo=-
+  #165 line=59 cols=[10,11) ticks=817920..829440 note=68 track=2 bar=18 tiesFrom=- tiesTo=-
+  #166 line=61 cols=[12,13) ticks=823680..829440 note=73 track=3 bar=18 tiesFrom=- tiesTo=-
+  #167 line=55 cols=[14,16) ticks=829440..852480 note=70 track=1 bar=19 tiesFrom=- tiesTo=-
+  #168 line=59 cols=[14,16) ticks=829440..852480 note=67 track=2 bar=19 tiesFrom=- tiesTo=-
+  #169 line=61 cols=[14,16) ticks=829440..852480 note=75 track=3 bar=19 tiesFrom=- tiesTo=-
+  #170 line=59 cols=[16,17) ticks=852480..864000 note=68 track=2 bar=19 tiesFrom=- tiesTo=-
+  #171 line=61 cols=[16,17) ticks=852480..864000 note=68 track=3 bar=19 tiesFrom=- tiesTo=-
+  #172 line=55 cols=[16,18) ticks=852480..875520 note=72 track=1 bar=19 tiesFrom=- tiesTo=-
+  #173 line=59 cols=[17,18) ticks=864000..875520 note=68 track=2 bar=19 tiesFrom=- tiesTo=-
+  #174 line=61 cols=[17,18) ticks=864000..875520 note=65 track=3 bar=19 tiesFrom=- tiesTo=-
+  #175 line=55 cols=[19,20) ticks=875520..887040 REST track=1 bar=20 tiesFrom=- tiesTo=-
+  #176 line=59 cols=[19,20) ticks=875520..887040 note=67 track=2 bar=20 tiesFrom=- tiesTo=-
+  #177 line=61 cols=[19,21) ticks=875520..887040 note=64 track=3 bar=20 tiesFrom=- tiesTo=-
+  #178 line=55 cols=[20,21) ticks=887040..898560 note=68 track=1 bar=20 tiesFrom=- tiesTo=-
+  #179 line=59 cols=[20,21) ticks=887040..898560 note=65 track=2 bar=20 tiesFrom=- tiesTo=-
+  #180 line=61 cols=[21,22) ticks=887040..898560 note=65 track=3 bar=20 tiesFrom=- tiesTo=-
+  #181 line=55 cols=[21,22) ticks=898560..910080 note=67 track=1 bar=20 tiesFrom=- tiesTo=-
+  #182 line=59 cols=[21,23) ticks=898560..910080 note=64 track=2 bar=20 tiesFrom=- tiesTo=-
+  #183 line=61 cols=[22,23) ticks=898560..910080 note=72 track=3 bar=20 tiesFrom=- tiesTo=-
+  #184 line=55 cols=[22,23) ticks=910080..921600 note=65 track=1 bar=20 tiesFrom=- tiesTo=-
+  #185 line=59 cols=[23,24) ticks=910080..921600 note=65 track=2 bar=20 tiesFrom=- tiesTo=-
+  #186 line=61 cols=[23,25) ticks=910080..921600 note=73 track=3 bar=20 tiesFrom=- tiesTo=-
+  #187 line=57 cols=[0,2) ticks=921600..933120 note=64 track=1 bar=21 tiesFrom=- tiesTo=-
+  #188 line=59 cols=[27,28) ticks=921600..933120 note=67 track=2 bar=21 tiesFrom=- tiesTo=-
+  #189 line=61 cols=[26,28) ticks=921600..967680 note=72 track=3 bar=21 tiesFrom=- tiesTo=-
+  #190 line=57 cols=[2,3) ticks=933120..944640 note=65 track=1 bar=21 tiesFrom=- tiesTo=-
+  #191 line=59 cols=[28,32) ticks=933120..950400 note=65 track=2 bar=21 tiesFrom=- tiesTo=-
+  #192 line=57 cols=[3,5) ticks=944640..967680 note=67 track=1 bar=21 tiesFrom=- tiesTo=-
+  #193 line=59 cols=[32,36) ticks=950400..953280 note=64 track=2 bar=21 tiesFrom=- tiesTo=-
+  #194 line=59 cols=[36,39) ticks=953280..956160 note=62 track=2 bar=21 tiesFrom=- tiesTo=-
+  #195 line=59 cols=[39,40) ticks=956160..967680 note=64 track=2 bar=21 tiesFrom=- tiesTo=-
+  #196 line=57 cols=[17,19) ticks=967680..990720 note=65 track=1 bar=22 tiesFrom=- tiesTo=-
+  #197 line=59 cols=[43,45) ticks=967680..990720 note=65 track=2 bar=22 tiesFrom=- tiesTo=-
+  #198 line=61 cols=[43,45) ticks=967680..990720 note=65 track=3 bar=22 tiesFrom=- tiesTo=-
+  #199 line=57 cols=[19,21) ticks=990720..1013760 REST track=1 bar=22 tiesFrom=- tiesTo=-
+  #200 line=59 cols=[45,47) ticks=990720..1013760 REST track=2 bar=22 tiesFrom=- tiesTo=-
+  #201 line=61 cols=[45,47) ticks=990720..1013760 REST track=3 bar=22 tiesFrom=- tiesTo=-
+  #202 line=45 cols=[43,45) ticks=1013760..1059840 note=75 track=1 bar=23 tiesFrom=- tiesTo=-
+  #203 line=48 cols=[43,45) ticks=1013760..1059840 note=72 track=2 bar=23 tiesFrom=- tiesTo=-
+  #204 line=51 cols=[43,45) ticks=1013760..1059840 note=68 track=3 bar=23 tiesFrom=- tiesTo=-
+  #205 line=55 cols=[7,8) ticks=1059840..1071360 note=77 track=1 bar=24 tiesFrom=- tiesTo=-
+  #206 line=59 cols=[7,8) ticks=1059840..1071360 note=68 track=2 bar=24 tiesFrom=- tiesTo=-
+  #207 line=61 cols=[7,9) ticks=1059840..1071360 note=73 track=3 bar=24 tiesFrom=- tiesTo=-
+  #208 line=55 cols=[8,10) ticks=1071360..1082880 note=73 track=1 bar=24 tiesFrom=- tiesTo=-
+  #209 line=59 cols=[8,9) ticks=1071360..1082880 note=70 track=2 bar=24 tiesFrom=- tiesTo=-
+  #210 line=61 cols=[9,10) ticks=1071360..1082880 note=70 track=3 bar=24 tiesFrom=- tiesTo=-
+  #211 line=55 cols=[10,11) ticks=1082880..1094400 note=75 track=1 bar=24 tiesFrom=- tiesTo=-
+  #212 line=59 cols=[9,10) ticks=1082880..1094400 note=67 track=2 bar=24 tiesFrom=- tiesTo=-
+  #213 line=61 cols=[10,12) ticks=1082880..1100160 note=72 track=3 bar=24 tiesFrom=- tiesTo=-
+  #214 line=55 cols=[11,12) ticks=1094400..1105920 note=72 track=1 bar=24 tiesFrom=- tiesTo=-
+  #215 line=59 cols=[10,11) ticks=1094400..1105920 note=68 track=2 bar=24 tiesFrom=- tiesTo=-
+  #216 line=61 cols=[12,13) ticks=1100160..1105920 note=73 track=3 bar=24 tiesFrom=- tiesTo=-
+  #217 line=55 cols=[14,16) ticks=1105920..1128960 note=70 track=1 bar=25 tiesFrom=- tiesTo=-
+  #218 line=59 cols=[14,16) ticks=1105920..1128960 note=67 track=2 bar=25 tiesFrom=- tiesTo=-
+  #219 line=61 cols=[14,16) ticks=1105920..1128960 note=75 track=3 bar=25 tiesFrom=- tiesTo=-
+  #220 line=59 cols=[16,17) ticks=1128960..1140480 note=68 track=2 bar=25 tiesFrom=- tiesTo=-
+  #221 line=61 cols=[16,17) ticks=1128960..1140480 note=68 track=3 bar=25 tiesFrom=- tiesTo=-
+  #222 line=55 cols=[16,18) ticks=1128960..1152000 note=72 track=1 bar=25 tiesFrom=- tiesTo=-
+  #223 line=59 cols=[17,18) ticks=1140480..1152000 note=68 track=2 bar=25 tiesFrom=- tiesTo=-
+  #224 line=61 cols=[17,18) ticks=1140480..1152000 note=65 track=3 bar=25 tiesFrom=- tiesTo=-
+  #225 line=55 cols=[19,20) ticks=1152000..1163520 REST track=1 bar=26 tiesFrom=- tiesTo=-
+  #226 line=59 cols=[19,20) ticks=1152000..1163520 note=67 track=2 bar=26 tiesFrom=- tiesTo=-
+  #227 line=61 cols=[19,21) ticks=1152000..1163520 note=64 track=3 bar=26 tiesFrom=- tiesTo=-
+  #228 line=55 cols=[20,21) ticks=1163520..1175040 note=68 track=1 bar=26 tiesFrom=- tiesTo=-
+  #229 line=59 cols=[20,21) ticks=1163520..1175040 note=65 track=2 bar=26 tiesFrom=- tiesTo=-
+  #230 line=61 cols=[21,22) ticks=1163520..1175040 note=65 track=3 bar=26 tiesFrom=- tiesTo=-
+  #231 line=55 cols=[21,22) ticks=1175040..1186560 note=67 track=1 bar=26 tiesFrom=- tiesTo=-
+  #232 line=59 cols=[21,23) ticks=1175040..1186560 note=64 track=2 bar=26 tiesFrom=- tiesTo=-
+  #233 line=61 cols=[22,23) ticks=1175040..1186560 note=72 track=3 bar=26 tiesFrom=- tiesTo=-
+  #234 line=55 cols=[22,23) ticks=1186560..1198080 note=65 track=1 bar=26 tiesFrom=- tiesTo=-
+  #235 line=59 cols=[23,24) ticks=1186560..1198080 note=65 track=2 bar=26 tiesFrom=- tiesTo=-
+  #236 line=61 cols=[23,25) ticks=1186560..1198080 note=73 track=3 bar=26 tiesFrom=- tiesTo=-
+  #237 line=57 cols=[0,2) ticks=1198080..1209600 note=64 track=1 bar=27 tiesFrom=- tiesTo=-
+  #238 line=59 cols=[27,28) ticks=1198080..1209600 note=67 track=2 bar=27 tiesFrom=- tiesTo=-
+  #239 line=61 cols=[26,28) ticks=1198080..1244160 note=72 track=3 bar=27 tiesFrom=- tiesTo=-
+  #240 line=57 cols=[2,3) ticks=1209600..1221120 note=65 track=1 bar=27 tiesFrom=- tiesTo=-
+  #241 line=59 cols=[28,32) ticks=1209600..1226880 note=65 track=2 bar=27 tiesFrom=- tiesTo=-
+  #242 line=57 cols=[3,5) ticks=1221120..1244160 note=67 track=1 bar=27 tiesFrom=- tiesTo=-
+  #243 line=59 cols=[32,36) ticks=1226880..1229760 note=64 track=2 bar=27 tiesFrom=- tiesTo=-
+  #244 line=59 cols=[36,39) ticks=1229760..1232640 note=62 track=2 bar=27 tiesFrom=- tiesTo=-
+  #245 line=59 cols=[39,40) ticks=1232640..1244160 note=64 track=2 bar=27 tiesFrom=- tiesTo=-
+  #246 line=57 cols=[24,26) ticks=1244160..1336320 note=65 track=1 bar=28 tiesFrom=- tiesTo=-
+  #247 line=59 cols=[50,52) ticks=1244160..1336320 note=65 track=2 bar=28 tiesFrom=- tiesTo=-
+  #248 line=61 cols=[50,52) ticks=1244160..1336320 note=65 track=3 bar=28 tiesFrom=- tiesTo=-
 == log: empty

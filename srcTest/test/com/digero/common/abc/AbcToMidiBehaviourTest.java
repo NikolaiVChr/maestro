@@ -453,6 +453,35 @@ class AbcToMidiBehaviourTest {
 			}
 
 			@Test
+			void voicesPlayTogether() throws Exception {
+				AbcCase voices = tune("semantic", "V:1", "c d|", "V:2 name=\"Bass\"", "C D|");
+				// Lotro (B42): V: changes nothing, the voices play one after another in one part
+				Sequence lotro = convert(voices);
+				long q = lotro.getResolution();
+				assertEquals(2, lotro.getTracks().length);
+				assertEquals(List.of(on(0, 60), on(q / 2, 62), on(q, 48), on(3 * q / 2, 50)), noteOns(lotro));
+				// ABC 2.1 (7): each voice is a part, all from the tune's start, named by the voice (else "Voice" and
+				// its id)
+				AbcToMidi.Params params = new AbcToMidi.Params(voices.filesData());
+				Profile.MAESTRO_LEGACY.applyTo(params);
+				standard(voices).tweak().accept(params);
+				params.generateRegions = true;
+				AbcInfo info = params.abcInfo = new AbcInfo();
+				Sequence s = AbcToMidi.convert(params);
+				assertEquals(3, s.getTracks().length);
+				assertEquals(List.of(on(0, 60), on(q / 2, 62)), noteOns(s, 1));
+				assertEquals(List.of(on(0, 48), on(q / 2, 50)), noteOns(s, 2));
+				assertEquals(List.of("Test", "Voice 1", "Bass"),
+						List.of(info.getPartName(0), info.getPartName(1), info.getPartName(2)));
+				// The notes point to the lines of the file (regions count lines from 0: line 10 is the V:2 voice's)
+				List<Integer> bassLines = info.getRegions().stream().filter(r -> r.getNote() != null)
+						.filter(r -> r.getNote().id < 60).map(AbcRegion::getLine).distinct().toList();
+				assertEquals(List.of(9), bassLines);
+				// [V:] in a line: each voice gets its stretch
+				assertEquals(noteEvents(s, 2), noteEvents(convert(standard(tune("semantic", "[V:1] c d| [V:2] C D|"))), 2));
+			}
+
+			@Test
 			void brokenRhythmWithChords() throws Exception {
 				long q = convert(tune("semantic", "c|")).getResolution();
 				// Lotro (tested, B6 and B31): in c>[ce] only the chord's first note is halved, e keeps its length and
@@ -1055,9 +1084,15 @@ class AbcToMidiBehaviourTest {
 			assertEquals(120, tempo("M:6/8", "Q:120"));
 			assertEquals(60, tempo("M:4/4", "Q:120"));
 			// Without Q: 120 beats, a dotted quarter in 6/8 9/8 12/8; a tempo word likewise
-			assertEquals(360, tempo("M:6/8", "-Q"));
+			assertEquals(120, tempo("M:6/8", "Q:120"));
+			assertEquals(60, tempo("M:4/4", "Q:120"));
+			// Without Q: abc2midi's 120 quarters in every meter (ABC 2.1 gives no tempo), in 6/8 240 eighths, 80 dotted
+			// quarters
+			assertEquals(240, tempo("M:6/8", "-Q"));
 			assertEquals(120, tempo("M:3/4", "-Q"));
 			assertEquals(120, tempo("M:4/4", "-Q"));
+			assertEquals(60, tempo("M:2/2", "-Q"));
+			// A tempo word's beat is the felt one, a dotted quarter in 6/8 9/8 12/8
 			assertEquals(390, tempo("M:6/8", "Q:\"Allegro\""));
 			// M: may come after Q: in the header
 			AbcCase late = AbcCase.of("semantic", "X:1", "T:Test", "Q:3/8=120", "M:6/8", "L:1/8", "K:C", "c d|");
@@ -1065,7 +1100,8 @@ class AbcToMidiBehaviourTest {
 			// What's played: a bar of 6/8 at Q:3/8=120 lasts as long as at Q:360
 			long bar = convert(tune("semantic", header("M:6/8", "Q:360"), "c6|")).getMicrosecondLength();
 			assertEquals(bar, convert(specTempo(tune("semantic", header("M:6/8", "Q:3/8=120"), "c6|"))).getMicrosecondLength());
-			assertEquals(bar, convert(specTempo(tune("semantic", header("M:6/8", "-Q"), "c6|"))).getMicrosecondLength());
+			assertEquals(convert(tune("semantic", header("M:6/8", "Q:240"), "c6|")).getMicrosecondLength(),
+					convert(specTempo(tune("semantic", header("M:6/8", "-Q"), "c6|"))).getMicrosecondLength());
 			// Parts must still have the same tempo
 			assertThrows(FileParseException.class, () -> convert(specTempo(AbcCase.of("semantic", AbcCase.concat(
 					AbcCases.part(1, "One", "c d|"), new String[] { "X:2", "T:Two", "M:4/4", "L:1/8", "Q:1/4=120", "K:C", "c d|" })))));
@@ -1089,6 +1125,41 @@ class AbcToMidiBehaviourTest {
 				ConversionDump.run(tune("semantic", header(fields), "c d|"), Profile.ABC_PLAYER_STRICT, false, info);
 				assertEquals(120, info.getPrimaryTempoBPM(), String.join(" ", fields));
 			}
+		}
+
+		@Test
+		void tuneTypeSetsTheTempoWithoutQ() throws Exception {
+			// Without Q: the tune's type in R: gives the tempo, counted in its own beat (RhythmTempo). The tempo played
+			// is in beats of the meter's denominator: a reel's 100 half notes are 200 quarters in 4/4
+			assertEquals(200, typeTempo("R:reel", "M:4/4", "-Q"));
+			assertEquals(324, typeTempo("R:jig", "M:6/8", "-Q")); // 108 dotted quarters
+			assertEquals(339, typeTempo("R:slip jig", "M:9/8", "-Q")); // 113 dotted quarters, not the jig's
+			assertEquals(108, typeTempo("R:waltz", "M:3/4", "-Q"));
+			// Its own beat keeps the bars: a waltz in 6/8 (The Session's Ice And Fire), a slide in 6/8 or 12/8
+			assertEquals(216, typeTempo("R:waltz", "M:6/8", "-Q")); // 36 bars a minute, as in 3/4
+			assertEquals(typeTempo("R:slide", "M:12/8", "-Q"), typeTempo("R:slide", "M:6/8", "-Q"));
+			// Encoded text (Norbeck's sl\"angpolska), and an unknown type: abc2midi's Q:1/4=120
+			assertEquals(112, typeTempo("R:sl\\\"angpolska", "M:3/4", "-Q"));
+			assertEquals(240, typeTempo("R:hora", "M:6/8", "-Q"));
+			// A Q: wins; without specTempo (Lotro files, existing projects) R: changes nothing
+			assertEquals(60, typeTempo("R:reel", "M:4/4", "Q:1/4=60"));
+			assertEquals(120, abcInfoOf(AbcCase.of("semantic", "X:1", "T:t", "R:reel", "M:4/4", "L:1/8", "K:C", "c d|"))
+					.getPrimaryTempoBPM());
+			// The file header's type, for its parts; the song has one tempo: the first part's
+			assertEquals(324, abcInfoOf(specTempo(AbcCase.of("semantic", "R:jig", "M:6/8", "L:1/8", "X:1", "T:t", "K:C",
+					"c d|"))).getPrimaryTempoBPM());
+			assertEquals(200, abcInfoOf(specTempo(AbcCase.of("semantic", AbcCase.concat(new String[] { "X:1", "T:a",
+					"R:reel", "M:4/4", "L:1/8", "K:C", "c d|", "" }, new String[] { "X:2", "T:b", "R:polka", "M:4/4",
+					"L:1/8", "K:C", "e f|" })))).getPrimaryTempoBPM());
+		}
+
+		/** The tempo played for a tune with this R:, M: and Q: ("-Q" for none), with specTempo. */
+		private int typeTempo(String rhythm, String meter, String tempo) throws Exception {
+			List<String> lines = new ArrayList<>(List.of("X:1", "T:t", rhythm, meter, "L:1/8"));
+			if (!tempo.equals("-Q"))
+				lines.add(tempo);
+			lines.addAll(List.of("K:C", "c d|"));
+			return abcInfoOf(specTempo(AbcCase.of("semantic", lines.toArray(String[]::new)))).getPrimaryTempoBPM();
 		}
 
 		private int tempo(String meter, String tempo) throws Exception {

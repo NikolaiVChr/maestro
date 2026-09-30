@@ -83,8 +83,7 @@ divisionType=0.0 resolution=11520 tickLength=35449 tracks=2
   #2 line=6 cols=[1,3) ticks=0..11520 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
   #3 line=6 cols=[6,7) ticks=5760..11520 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
   #4 line=6 cols=[8,9) ticks=11520..17280 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
-== log
-  WARNING: chord_rest_sets_length_overlap.abc: Overlapping note c2, lotro might not play part 1 correctly. Overlap ticks=5760.0 11520.0 - 5760.0 11520.0 0.25s
+== log: empty
 
 ### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)
 == sequence
