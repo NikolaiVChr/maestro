@@ -46,6 +46,13 @@ final class AbcCases {
 		return of(name, concat(DEFAULT_HEADER, body));
 	}
 
+	/** The default header with a P: part order (ABC 2.1, 3.1.9) before its K:. */
+	static String[] partOrderHeader(String order) {
+		List<String> lines = new ArrayList<>(List.of(header()));
+		lines.add(lines.size() - 1, order);
+		return lines.toArray(String[]::new);
+	}
+
 	/** A modified header followed by the body lines. */
 	static AbcCase tune(String name, String[] header, String... body) {
 		return of(name, concat(header, body));
@@ -804,22 +811,29 @@ final class AbcCases {
 				"V:2 name=\"Bass\" clef=bass" }), "V:1", "c d e f|", "V:2", "C, D, E, F,|"));
 		c.add(tune("voices_with_lyrics", "V:1", "c d|", "w:one two", "V:2", "e f|", "w:three four"));
 
-		// ------------------------------------------------------------ parts order (A16), as they are read today
-		c.add(tune("parts_order", concat(header(), new String[] { "P:ABA" }), "P:A", "c d|", "P:B", "e f|"));
-		c.add(tune("parts_order_expanded", concat(header(), new String[] { "P:ABA" }), "P:A", "c d|", "P:B", "e f|")
+		// ------------------------------------------------------------ parts order (A16): the header's P: order, with
+		// standard2011 (PartOrder); a body P: starts a section, where a :| without |: goes back to. Before
+		// 2026-09-30 these cases had the P: after K: (a body label), so they tested nothing of the order.
+		c.add(tune("parts_order", partOrderHeader("P:ABA"), "P:A", "c d|", "P:B", "e f|"));
+		c.add(tune("parts_order_expanded", partOrderHeader("P:ABA"), "P:A", "c d|", "P:B", "e f|")
 				.with(p -> p.expandRepeats = true));
-		c.add(tune("parts_order_repeat_count", concat(header(), new String[] { "P:A2B" }), "P:A", "c d|", "P:B",
+		c.add(tune("parts_order_repeat_count", partOrderHeader("P:A2B"), "P:A", "c d|", "P:B",
 				"e f|").with(p -> p.expandRepeats = true));
-		c.add(tune("parts_order_group", concat(header(), new String[] { "P:(AB)2" }), "P:A", "c d|", "P:B", "e f|")
+		c.add(tune("parts_order_group", partOrderHeader("P:(AB)2"), "P:A", "c d|", "P:B", "e f|")
 				.with(p -> p.expandRepeats = true));
-		c.add(tune("parts_order_dots", concat(header(), new String[] { "P:A.B.A" }), "P:A", "c d|", "P:B", "e f|")
+		c.add(tune("parts_order_dots", partOrderHeader("P:A.B.A"), "P:A", "c d|", "P:B", "e f|")
 				.with(p -> p.expandRepeats = true));
-		c.add(tune("parts_order_missing_section", concat(header(), new String[] { "P:ABC" }), "P:A", "c d|", "P:B",
+		c.add(tune("parts_order_missing_section", partOrderHeader("P:ABC"), "P:A", "c d|", "P:B",
 				"e f|").with(p -> p.expandRepeats = true));
-		c.add(tune("parts_order_music_before_first_p", concat(header(), new String[] { "P:AB" }), "g a|", "P:A",
+		c.add(tune("parts_order_music_before_first_p", partOrderHeader("P:AB"), "g a|", "P:A",
 				"c d|", "P:B", "e f|").with(p -> p.expandRepeats = true));
-		c.add(tune("parts_order_with_repeats", concat(header(), new String[] { "P:AB" }), "P:A", "|: c d :|", "P:B",
+		c.add(tune("parts_order_with_repeats", partOrderHeader("P:AB"), "P:A", "|: c d :|", "P:B",
 				"e f|").with(p -> p.expandRepeats = true));
+		c.add(tune("parts_order_repeat_without_start", partOrderHeader("P:AB"), "P:A", "c d|", "P:B", "e f :|")
+				.with(p -> p.expandRepeats = true));
+		// The Session's layout: an order on the first line after K: (the site writes the header); after notes a label
+		c.add(tune("parts_order_after_the_key", "P:ABA", "P:A", "c d|", "P:B", "e f|"));
+		c.add(tune("parts_order_after_notes_is_a_label", "g a|", "P:ABA", "P:A", "c d|", "P:B", "e f|"));
 
 		// ------------------------------------------------------------ lyrics, more
 		c.add(tune("lyrics_rests_and_graces", "c z {g}d e|", "w:one two three"));

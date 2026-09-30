@@ -1,5 +1,5 @@
 # AbcToMidi golden snapshot. Re-record with: mvn test -Dabc.golden.update=true (and review the diff before committing)
-case parts_order_dots
+case parts_order_after_the_key
 
 ### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
 == sequence
@@ -34,7 +34,7 @@ divisionType=0.0 resolution=11520 tickLength=39090 tracks=2
   genre="" mood=""
   primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
   hasTriplets=false hasMixTimings=false barCount=2 partCount=2 partSetups=2..2 empty=false
-  sourceFiles=[parts_order_dots.abc]
+  sourceFiles=[parts_order_after_the_key.abc]
   part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
   part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..10 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
 == regions (4)
@@ -77,7 +77,7 @@ divisionType=0.0 resolution=11520 tickLength=39090 tracks=2
   genre="" mood=""
   primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
   hasTriplets=false hasMixTimings=false barCount=2 partCount=2 partSetups=2..2 empty=false
-  sourceFiles=[parts_order_dots.abc]
+  sourceFiles=[parts_order_after_the_key.abc]
   part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
   part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..10 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
 == regions (4)
@@ -117,7 +117,7 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=2
   genre="" mood=""
   primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
   hasTriplets=false hasMixTimings=false barCount=2 partCount=2 partSetups=2..2 empty=false
-  sourceFiles=[parts_order_dots.abc]
+  sourceFiles=[parts_order_after_the_key.abc]
   part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
   part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..10 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
 == regions (4)
@@ -157,7 +157,7 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=2
   genre="" mood=""
   primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
   hasTriplets=false hasMixTimings=false barCount=2 partCount=2 partSetups=2..2 empty=false
-  sourceFiles=[parts_order_dots.abc]
+  sourceFiles=[parts_order_after_the_key.abc]
   part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
   part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..10 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
 == regions (4)
@@ -201,7 +201,7 @@ divisionType=0.0 resolution=11520 tickLength=34560 tracks=2
   genre="" mood=""
   primaryTempoBPM=60 timeSignature=4/4 keySignature=C maj
   hasTriplets=false hasMixTimings=false barCount=3 partCount=2 partSetups=2..2 empty=false
-  sourceFiles=[parts_order_dots.abc]
+  sourceFiles=[parts_order_after_the_key.abc]
   part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
   part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..8 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
 == regions (6)

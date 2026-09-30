@@ -482,6 +482,22 @@ class AbcToMidiBehaviourTest {
 			}
 
 			@Test
+			void sectionsPlayInTheHeadersOrder() throws Exception {
+				AbcCase ordered = tune("semantic", AbcCases.partOrderHeader("P:ABA"), "P:A", "c d|", "P:B", "e f|");
+				// Lotro (B52): the header P: is ignored, the sections play as written
+				Sequence lotro = convert(ordered);
+				long q = lotro.getResolution();
+				assertEquals(List.of(on(0, 60), on(q / 2, 62), on(q, 64), on(3 * q / 2, 65)), noteOns(lotro));
+				// ABC 2.1 (3.1.9): A, B, then A again
+				assertEquals(List.of(on(0, 60), on(q / 2, 62), on(q, 64), on(3 * q / 2, 65), on(2 * q, 60),
+						on(5 * q / 2, 62)), noteOns(convert(standard(ordered))));
+				// A :| without |: goes back to its section's start, not into the section before
+				AbcCase repeat = tune("semantic", AbcCases.partOrderHeader("P:AB"), "P:A", "c d|", "P:B", "e f :|");
+				assertEquals(List.of(on(0, 60), on(q / 2, 62), on(q, 64), on(3 * q / 2, 65), on(2 * q, 64),
+						on(5 * q / 2, 65)), noteOns(convert(standard(repeat).with(p -> p.expandRepeats = true))));
+			}
+
+			@Test
 			void brokenRhythmWithChords() throws Exception {
 				long q = convert(tune("semantic", "c|")).getResolution();
 				// Lotro (tested, B6 and B31): in c>[ce] only the chord's first note is halved, e keeps its length and

@@ -588,6 +588,16 @@ public class AbcToMidi {
 					lines = voices.lines();
 					sourceLineNumbers = voices.sourceLineNumbers();
 				}
+				PartOrder.Result ordered = PartOrder.apply(lines);
+				if (ordered != null) {
+					lines = ordered.lines();
+					int[] orderedSources = ordered.sourceLineNumbers();
+					if (sourceLineNumbers != null) {
+						for (int k = 0; k < orderedSources.length; k++)
+							orderedSources[k] = sourceLineNumbers[orderedSources[k] - 1];
+					}
+					sourceLineNumbers = orderedSources;
+				}
 			}
 			int firstLineForRegions = highestLineForRegions + 1; // Region line numbers run on through all files
 			int startColumn = 0; // Where the parsing of the line starts: mid-line when going back for a repeat
@@ -875,6 +885,12 @@ public class AbcToMidi {
 							case 'R':
 								// The tune's type: the tempo of a song without Q: (standard ABC)
 								info.setRhythm(value);
+								break;
+							case 'P':
+								// A section of the tune starts (ABC 2.1, 3.1.9): a :| without |: after it goes back to
+								// its start, not into the section before it (which PartOrder may have changed)
+								if (abc21 && track != null)
+									repeats.sectionEnd(lineIndex + 1, 0);
 								break;
 							case 'K':
 								String notForLotro;
