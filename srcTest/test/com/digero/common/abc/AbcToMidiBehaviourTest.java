@@ -439,17 +439,51 @@ class AbcToMidiBehaviourTest {
 				AbcCase old = tune("semantic", "c d|  !", "e f|");
 				assertThrows(FileParseException.class, () -> convert(old));
 				assertThrows(FileParseException.class, () -> ConversionDump.convert(standard(old), Profile.ABC_PLAYER_STRICT));
-				// ABC 2.1 (12): a file without %abc-2.1 is read loosely: a ! with no ! after it before | [ : a space or the
-				// line's end is a line break (skipped); with one it's a decoration
+				// ABC 2.1 (12): a file without %abc-2.1 is read loosely: a ! with no ! after it before | [ : or the line's
+				// end is a line break (skipped); with one it's a decoration, also with spaces in it (Norbeck's
+				// !D.C. al fine!)
 				assertEquals(4, noteOns(convert(standard(old))).size());
 				assertEquals(noteEvents(convert(standard(tune("semantic", "!trill!c d|")))),
 						noteEvents(convert(standard(tune("semantic", "!trill!c d| !")))));
+				assertEquals(4, noteOns(convert(standard(tune("semantic", "c d|", "!D.C. al fine!", "e f|")))).size());
 				// A file of ABC 2.1 or later is strict: a lone ! is an error, unless I:linebreak ! says it's a line break
 				String[] head = { "%abc-2.1", "X:1", "T:t", "M:4/4", "L:1/8", "Q:120", "K:C" };
 				assertThrows(FileParseException.class,
 						() -> convert(standard(AbcCase.of("semantic", AbcCase.concat(head, new String[] { "c d|  !", "e f|" })))));
 				assertEquals(4, noteOns(convert(standard(AbcCase.of("semantic",
 						AbcCase.concat(head, new String[] { "I:linebreak !", "c d|  !", "e f|" }))))).size());
+			}
+
+			@Test
+			void aTuneWithoutNotesIsAnEmptyTrack() throws Exception {
+				// A tune (X:) with only a header, at the end or between others: an empty track (Maestro hides it), so
+				// each part keeps the track of its number. (It was an ArrayIndexOutOfBoundsException, in every reading.)
+				for (boolean std : new boolean[] { false, true }) {
+					String[] one = { "X:1", "T:One", "M:4/4", "L:1/8", "K:C", "c d|", "" };
+					String[] empty = { "X:2", "T:Empty", "K:C", "" };
+					String[] three = { "X:3", "T:Three", "K:C", "e f|" };
+					AbcCase first = AbcCase.of("semantic", AbcCase.concat(empty, three));
+					AbcCase last = AbcCase.of("semantic", AbcCase.concat(one, empty));
+					AbcCase middle = AbcCase.of("semantic", AbcCase.concat(AbcCase.concat(one, empty), three));
+					if (std) {
+						first = standard(first);
+						last = standard(last);
+						middle = standard(middle);
+					}
+					Sequence s = convert(middle);
+					assertEquals(4, s.getTracks().length);
+					assertEquals(List.of(), noteOns(s, 2));
+					assertEquals(List.of(64, 65), noteOns(s, 3).stream().map(NoteEvent::pitch).toList());
+					AbcInfo info = abcInfoOf(middle);
+					assertEquals("Empty", info.getPartName(2));
+					assertEquals("Three", info.getPartName(3));
+					assertEquals(3, convert(last).getTracks().length);
+					assertEquals(List.of(), noteOns(convert(last), 2));
+					Sequence firstEmpty = convert(first);
+					assertEquals(3, firstEmpty.getTracks().length);
+					assertEquals(List.of(), noteOns(firstEmpty, 1));
+					assertEquals(2, noteOns(firstEmpty, 2).size());
+				}
 			}
 
 			@Test

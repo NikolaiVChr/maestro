@@ -409,15 +409,16 @@ public class AbcToMidi {
 	}
 
 	/**
-	 * The loose reading of ! (ABC 2.1, 12): the ! at index starts a decoration if another ! follows before | [ : a space
-	 * or the line's end; else it's a score line break.
+	 * The loose reading of ! (ABC 2.1, 12): the ! at index starts a decoration if another ! follows before | [ : or the
+	 * line's end; else it's a score line break. Spaces may come between (!D.C. al fine!, ! roll!): measured on The
+	 * Session and Norbeck, a ! ... ! without a bar line between is a decoration, never a line break before music.
 	 */
 	private static boolean isBangDecoration(String line, int index) {
 		for (int k = index + 1; k < line.length(); k++) {
 			char c = line.charAt(k);
 			if (c == '!')
 				return true;
-			if (c == '|' || c == '[' || c == ':' || c == ' ' || c == '\t')
+			if (c == '|' || c == '[' || c == ':')
 				return false;
 		}
 		return false;
@@ -1029,6 +1030,10 @@ public class AbcToMidi {
 					}
 
 					if (track == null) {
+						// The parts before it without notes get their empty tracks first
+						while (partTrackCount(seq) < trackNumber - 1)
+							addEmptyTrack(seq, abcInfo, partTrackCount(seq) + 1, trackInstruments, useLotroInstruments,
+									fileName);
 						trackIndex = seq.getTracks().length;
 						channel = getTrackChannel(trackIndex);
 						if (channel > MidiConstants.CHANNEL_COUNT_ABC - 1) {
@@ -2180,6 +2185,11 @@ public class AbcToMidi {
 			}
 		}
 
+		// The last parts without notes get their empty tracks too (see addEmptyTrack)
+		while (partTrackCount(seq) < trackNumber)
+			addEmptyTrack(seq, abcInfo, partTrackCount(seq) + 1, trackInstruments, useLotroInstruments,
+					filesData.getLast().file.getName());
+
 		// Done here for all parts at once, when all tempo changes are known
 		Track[] partTracks = seq.getTracks();
 		for (int t = 1; t < partTracks.length; t++) {
@@ -3323,6 +3333,35 @@ public class AbcToMidi {
 		endTrack(bassTrack, LotroInstrument.BASIC_THEORBO, useLotroInstruments, tempoMap, ppqn, bpm);
 		endTrack(chordTrack, LotroInstrument.LUTE_OF_AGES, useLotroInstruments, tempoMap, ppqn, bpm);
 		return trackNumber;
+	}
+
+	/** The parts that have a track so far (the tracks after track 0; the accompaniment comes after all parts). */
+	private static int partTrackCount(Sequence seq) {
+		return (seq == null) ? 0 : seq.getTracks().length - 1;
+	}
+
+	/**
+	 * An empty track for a part without notes (a tune with only a header), so each part keeps the track of its number
+	 * (Maestro hides an empty part). Its instrument is the default one: a part's instrument is set with its notes.
+	 */
+	private static void addEmptyTrack(Sequence seq, AbcInfo abcInfo, int part,
+									  Map<Integer, LotroInstrument> trackInstruments, boolean useLotroInstruments,
+									  String fileName) throws FileParseException {
+		int channel = getTrackChannel(part);
+		if (channel > MidiConstants.CHANNEL_COUNT_ABC - 1)
+			throw new FileParseException("Too many parts (max = " + (MidiConstants.CHANNEL_COUNT_ABC - 1) + ")", fileName);
+		Track track = seq.createTrack();
+		LotroInstrument instrument = LotroInstrument.DEFAULT_INSTRUMENT;
+		int program = instrument.midi.id();
+		trackInstruments.put(part, instrument);
+		track.add(MidiFactory.createLotroChangeEvent(program, channel, 0));
+		abcInfo.abcTrackInfos.add(new ExportTrackInfo(0, null, null, channel, program, Long.MAX_VALUE, 0,0,0,0,0,0, null));
+		if (useLotroInstruments) {
+			track.add(MidiFactory.createChannelVolumeEvent(MidiConstants.MAX_VOLUME, channel, 1L));
+			track.add(MidiFactory.createReverbControlEvent(AbcConstants.MIDI_REVERB, channel, 1L));
+			track.add(MidiFactory.createChorusControlEvent(AbcConstants.MIDI_CHORUS, channel, 1L));
+		}
+		abcInfo.setPartInstrument(part, instrument, false);
 	}
 
 	/** Where the beat group that the tick is in ends, counting the groups from the bar's start (and on, past its end). */
