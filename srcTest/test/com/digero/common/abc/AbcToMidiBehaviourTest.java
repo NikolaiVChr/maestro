@@ -415,7 +415,6 @@ class AbcToMidiBehaviourTest {
 						tempos(ConversionDump.convert(specTempo(tune("semantic", "c8|")), Profile.ABC_PLAYER_STRICT)));
 			}
 
-			@Disabled(NOT_YET)
 			@Test
 			void blankLineEndsTheTune() throws Exception {
 				// Lotro (tested, B14): it plays on after a blank line, so both lines play
@@ -431,6 +430,26 @@ class AbcToMidiBehaviourTest {
 						"L:1/8", "Q:120", "K:C", "c d|");
 				assertEquals(2, noteOns(convert(standard(book))).size());
 				assertThrows(FileParseException.class, () -> convert(book));
+			}
+
+			@Test
+			void bangAsLineBreak() throws Exception {
+				// Older ABC (pipe collections, 2.0): ! at the end of a line is a score line break. Without the flag, and
+				// with Lotro errors, a lone ! is an error
+				AbcCase old = tune("semantic", "c d|  !", "e f|");
+				assertThrows(FileParseException.class, () -> convert(old));
+				assertThrows(FileParseException.class, () -> ConversionDump.convert(standard(old), Profile.ABC_PLAYER_STRICT));
+				// ABC 2.1 (12): a file without %abc-2.1 is read loosely: a ! with no ! after it before | [ : a space or the
+				// line's end is a line break (skipped); with one it's a decoration
+				assertEquals(4, noteOns(convert(standard(old))).size());
+				assertEquals(noteEvents(convert(standard(tune("semantic", "!trill!c d|")))),
+						noteEvents(convert(standard(tune("semantic", "!trill!c d| !")))));
+				// A file of ABC 2.1 or later is strict: a lone ! is an error, unless I:linebreak ! says it's a line break
+				String[] head = { "%abc-2.1", "X:1", "T:t", "M:4/4", "L:1/8", "Q:120", "K:C" };
+				assertThrows(FileParseException.class,
+						() -> convert(standard(AbcCase.of("semantic", AbcCase.concat(head, new String[] { "c d|  !", "e f|" })))));
+				assertEquals(4, noteOns(convert(standard(AbcCase.of("semantic",
+						AbcCase.concat(head, new String[] { "I:linebreak !", "c d|  !", "e f|" }))))).size());
 			}
 
 			@Test

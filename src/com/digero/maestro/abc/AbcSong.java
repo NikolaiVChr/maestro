@@ -16,19 +16,11 @@ import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
+import java.util.*;
 import java.util.List;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.NavigableMap;
 
 import javax.sound.midi.InvalidMidiDataException;
 import javax.swing.*;
@@ -37,6 +29,8 @@ import javax.xml.xpath.XPathExpressionException;
 import com.aifel.abctools.AbcTools;
 import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.VersionsWithIssues;
+import com.digero.common.abctomidi.AbcSongbook;
+import com.digero.common.abctomidi.FileAndData;
 import com.digero.common.util.*;
 import com.digero.maestro.view.*;
 import org.jetbrains.annotations.NotNull;
@@ -129,6 +123,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private AbcExporter abcExporter;
 	private File sourceFile; // The MIDI or ABC file that this song was loaded from
 	private File newSourceFile = null;
+	private String sourceAbcText = null;
 	public final static String errorString = "ERROR";
 	private File exportFile; // The ABC export file
 	private File projectFile; // The XML Maestro song file
@@ -163,7 +158,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 
 	private boolean degraded = false;
 
-    public AbcSong(File file, PartAutoNumberer partAutoNumberer, PartNameTemplate partNameTemplate,
+	public AbcSong(File file, PartAutoNumberer partAutoNumberer, PartNameTemplate partNameTemplate,
 			ExportFilenameTemplate exportFilenameTemplate, InstrNameSettings instrNameSettings,
 			FileResolver fileResolver, MiscSettings miscSettings, SaveAndExportSettings saveAndExportSettings)
 			throws IOException, InvalidMidiDataException, FileParseException, SAXException {
@@ -289,6 +284,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			}
 			sourceAbcWasMadeForLotro = result;
 		}
+		chooseAbc(params, file);
 		boolean standardAbc = abcImportVersion > 1 && Boolean.FALSE.equals(sourceAbcWasMadeForLotro);
 		params.standardPitch = standardAbc;
 		params.expandRepeats = standardAbc;
@@ -513,11 +509,16 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			}
 			File origSourceFile = sourceFile;
 
+			Element abcElement = XmlUtil.selectSingleElement(songEle, "abc");
+			if (abcElement != null) {
+				sourceAbcText = abcElement.getTextContent();
+			}
+
 			exportFile = SaveUtil.parseValue(songEle, "exportFile", exportFile);
 
 			sequenceInfo = null;
 			String name = sourceFile.getName().toLowerCase();
-			boolean isAbc = name.endsWith(Util.ABC_FILE_EXTENSION) || name.endsWith(Util.TXT_FILE_EXTENSION);
+			boolean isAbc = name.endsWith(Util.ABC_FILE_EXTENSION) || name.endsWith(Util.TXT_FILE_EXTENSION) || sourceAbcText != null;
 			int attempts = 0;
 			while (sequenceInfo == null) {
 				if (++attempts > 20) {
@@ -730,7 +731,10 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			if (isAbc) {
 				AbcInfo abcInfo = new AbcInfo();
 
-				AbcToMidi.Params params = new AbcToMidi.Params(newSourceFile);
+				// The abc kept in the project; without it (an older project, a replaced source) the file is used.
+				boolean keptText = sourceAbcText != null;
+				AbcToMidi.Params params = keptText ? new AbcToMidi.Params(sourceAbcText, newSourceFile)
+						: new AbcToMidi.Params(newSourceFile);
 				params.abcInfo = abcInfo;
 				params.useLotroInstruments = false;
                 params.warningHandler = warningHandler;
@@ -753,6 +757,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				params.chordAccompaniment = standardAbc;
 				params.specTempo = standardAbc;
 				// params.stereo = false;
+				if (!keptText)
+					chooseAbc(params, newSourceFile);
 				usingOldVelocities = true;// The abc volumes are tuned to old volume scheme
 				usingOldTempos = true;
 				usingNewMidiLayout = 1;
@@ -793,6 +799,27 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		if (storeNewSourceFile) {
 			sourceFile = newSourceFile;
 		}
+	}
+
+	/**
+	 * The abc of a new source: a songbook (standard ABC, many X: tunes) asks for its tune, and what is parsed is kept in
+	 * the project, so it doesn't depend on the file any more. The filename is kept though.
+	 */
+	private void chooseAbc(AbcToMidi.Params params, File file) throws FileParseException {
+		if (Boolean.FALSE.equals(sourceAbcWasMadeForLotro)) {
+			AbcSongbook book = new AbcSongbook(params.filesData.getFirst().lines);
+			if (book.tunes().size() > 1) {
+				SongbookDialog.Result chosen = SongbookDialog.show(null, book, file);
+				switch (chosen.choice()) {
+					case TUNE -> params.filesData = new ArrayList<>(
+							List.of(new FileAndData(file, book.tuneLines(chosen.tune()))));
+					case ALL_AS_PARTS -> {
+					}
+					case CANCEL -> throw new FileParseException("User did not choose a tune", file.getName());
+				}
+			}
+		}
+		sourceAbcText = XmlUtil.sanitizeForCdata(String.join("\n", params.filesData.getFirst().lines));
 	}
 	
 	public void convertTunelinesToLongs () {
@@ -1007,6 +1034,11 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				lineEle.setAttribute("barEnd", String.valueOf(barEnd));
 				lineEle.setTextContent(XmlUtil.sanitizeStringForXMLSaving(line.text()));
 			}
+		}
+
+		if (sourceAbcText != null && !sourceAbcText.isEmpty()) {
+			Element abcEle = (Element) songEle.appendChild(doc.createElement("abc"));
+			abcEle.appendChild(doc.createCDATASection(XmlUtil.sanitizeForCdata(sourceAbcText)));
 		}
 
 		return doc;
@@ -1565,6 +1597,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	
 	public void setSourceFile(File sourceFile) {
 		this.sourceFile = sourceFile;
+		this.sourceAbcText = null;
 	}
 
 	@Override
@@ -1581,15 +1614,17 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	 * (tryToLoadFromFile). Returns what to restore if the replacement fails.
 	 */
 	public Object[] resetAbcReading() {
-		Object[] previous = { abcImportVersion, sourceAbcWasMadeForLotro};
+		Object[] previous = { abcImportVersion, sourceAbcWasMadeForLotro, sourceAbcText};
 		abcImportVersion = 2; // Repeats played, Q: note length counts
 		sourceAbcWasMadeForLotro = null; // Detected on load
+		sourceAbcText = null;
 		return previous;
 	}
 
 	public void restoreAbcReading(Object[] previous) {
 		abcImportVersion = (Integer) previous[0];
 		sourceAbcWasMadeForLotro = (Boolean) previous[1];
+		sourceAbcText = (String) previous[2];
 	}
 
 	public File getProjectFile() {
@@ -2179,6 +2214,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         // read-only/shared services.
         this.sequenceInfo = other.sequenceInfo;// lets assume the midi don't change while we work, then this is immutable
         this.timingInfo = other.timingInfo;// would be time-consuming to deep copy, plus it's kinda immutable
+		this.sourceAbcText = other.sourceAbcText;
 
         // settings classes
         this.partAutoNumberer = new PartAutoNumberer(other.partAutoNumberer);

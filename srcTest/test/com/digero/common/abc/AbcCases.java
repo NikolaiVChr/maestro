@@ -531,6 +531,11 @@ final class AbcCases {
 		c.add(tune("grace_notes_short_note", "{g}c/4 d|"));
 		c.add(tune("grace_notes_accidental", "{^f}f f|"));
 		c.add(tune("grace_notes_rest_inside", "{Z}c d|"));
+		// ! as a score line break (A25): older ABC without %abc-2.1, e.g. pipe collections; with standard2011 only
+		c.add(tune("bang_line_break", "{g}A2 B2|  !", "c2 d2|]  !"));
+		c.add(tune("bang_line_break_std2011", "{g}A2 B2|  !", "c2 d2|]  !").with(p -> p.standard2011 = true));
+		c.add(of("bang_line_break_strict_std2011", "%abc-2.1", "X:1", "T:t", "M:4/4", "L:1/8", "Q:120", "K:C", "A2 B2|  !",
+				"c2 d2|]").with(p -> p.standard2011 = true));
 		// A slur over grace notes (Village Music Project): layout only; with Lotro errors an error (untested)
 		c.add(tune("grace_notes_slurred", "B2 {(B/c/B/^A/)} Be B2|"));
 

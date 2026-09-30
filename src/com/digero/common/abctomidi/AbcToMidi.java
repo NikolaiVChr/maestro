@@ -85,6 +85,15 @@ public class AbcToMidi {
 			this.filesData.add(new FileAndData(file, readLines(file)));
 		}
 
+		/**
+		 * ABC kept as text (in a Maestro project), and the file it came from: its name is used in messages, and it
+		 * needn't exist any more.
+		 */
+		public Params(String data, File sourceFile) {
+			this.filesData = new ArrayList<>();
+			this.filesData.add(new FileAndData(sourceFile, new ArrayList<>(Arrays.asList(data.split("\\r\\n|\\r|\\n", -1)))));
+		}
+
 		public Params(List<FileAndData> filesData) {
 			this.filesData = filesData;
 		}
@@ -385,6 +394,38 @@ public class AbcToMidi {
 		return notLotros;
 	}
 
+	/** The version line of ABC 2.1 (2.1): %abc-2.1 on the first line; %abc alone, or no line, is older. */
+	private static final Pattern VERSION_PATTERN = Pattern.compile("^%abc-(\\d+)\\.(\\d+)");
+
+	/** The file says it follows ABC 2.1 or later: strict (ABC 2.1, 12). */
+	private static boolean isAbc21OrLater(List<String> lines) {
+		if (lines.isEmpty())
+			return false;
+		Matcher m = VERSION_PATTERN.matcher(lines.get(0).stripLeading().replace("\uFEFF", ""));
+		if (!m.find())
+			return false;
+		int major = Integer.parseInt(m.group(1));
+		return major > 2 || (major == 2 && Integer.parseInt(m.group(2)) >= 1);
+	}
+
+	/**
+	 * The loose reading of ! (ABC 2.1, 12): the ! at index starts a decoration if another ! follows before | [ : a space
+	 * or the line's end; else it's a score line break.
+	 */
+	private static boolean isBangDecoration(String line, int index) {
+		for (int k = index + 1; k < line.length(); k++) {
+			char c = line.charAt(k);
+			if (c == '!')
+				return true;
+			if (c == '|' || c == '[' || c == ':' || c == ' ' || c == '\t')
+				return false;
+		}
+		return false;
+	}
+
+	/** A line of a file header (ABC 2.1, 2.2.2): a field, a directive or comment (%), or empty. Else free text. */
+	private static final Pattern FILE_HEADER_LINE_PATTERN = Pattern.compile("^([A-Za-z]:|%|\\s*$).*");
+
 	/** What in a music line isn't notes: quoted text, !decorations!, +decorations+ and inline fields ([K:G]). */
 	private static final Pattern NOT_NOTES_PATTERN = Pattern.compile("\"[^\"]*\"|![^!]*!|\\+[^+]*\\+|\\[[A-Za-z]:[^\\]]*\\]");
 
@@ -535,10 +576,29 @@ public class AbcToMidi {
 			List<String> lines = fileAndData.lines;
 			int firstLineForRegions = lineNumberForRegions + 1; // Region line numbers run on through all files
 			int startColumn = 0; // Where the parsing of the line starts: mid-line when going back for a repeat
+			// ABC 2.1 (2.2), with standard2011 in a file of X: tunes: free text before the first X: (besides the file
+			// header's fields) and after a tune; an empty line ends the tune (2.2.1). Lotro plays on after an empty
+			// line (B14), so without the flag every line is read.
+			boolean skipFreeText = abc21 && lines.stream().anyMatch(l -> l.startsWith("X:"));
+			// ABC 2.1 (12): a file without %abc-2.1 (or higher) on its first line is read loosely: a lone ! is a line break
+			boolean looseBang = abc21 && !isAbc21OrLater(lines);
+			boolean tuneSeen = false; // An X: so far in this file
+			boolean inTune = false; // Between an X: and the empty line that ends its tune
 			lineLoop: for (int lineIndex = 0; lineIndex < lines.size(); lineIndex++) {
 				String line = lines.get(lineIndex);
 				lineNumberForRegions = firstLineForRegions + lineIndex;
 				lineNumber = lineIndex + 1;
+
+				if (skipFreeText) {
+					if (line.startsWith("X:")) {
+						tuneSeen = true;
+						inTune = true;
+					} else if (inTune && line.isBlank()) {
+						inTune = false;
+					} else if (!inTune && (tuneSeen || !FILE_HEADER_LINE_PATTERN.matcher(line).matches())) {
+						continue; // Free text
+					}
+				}
 
 				// Handle extended info
 				Matcher xInfoMatcher = XINFO_PATTERN.matcher(line);
@@ -1383,6 +1443,13 @@ public class AbcToMidi {
 								case '!': {
 									// !trill! !f! ... decorations. Tested in Lotro: it plays nothing of the part from the first
 									// one on (not even after a +mf+ or on the next line). Without Lotro errors they're skipped.
+									// With standard2011 a ! can also be a score line break (layout only, skipped): after
+									// I:linebreak ! (ABC 2.1, 6.1.1), or in a file older than ABC 2.1 when no ! follows before
+									// | [ : a space or the line's end (the loose reading, ABC 2.1, 12).
+									if (abc21 && (info.getInstructions().isLineBreakAtBang()
+											|| (looseBang && !isBangDecoration(line, i)))) {
+										break;
+									}
 									int j = line.indexOf('!', i + 1);
 									if (j < 0) {
 										throw new FileParseException("There is no matching '!'", fileName, lineNumber, i);

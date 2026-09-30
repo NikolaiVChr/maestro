@@ -13,6 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.AbstractList;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -299,7 +300,29 @@ public class XmlUtil {
 	public static String DOCUMENT_FILE_USERDATA = XmlUtil.class.getName() + ".DOCUMENT_FILE";
 	public static String LINE_NUMBER_USERDATA = XmlUtil.class.getName() + ".LINE_NUMBER";
 
-	private static class LineNumberHandler extends DefaultHandler {
+	/** The text with every character that CDATA in XML 1.0 or 1.1 can't hold replaced by a space. */
+    public static String sanitizeForCdata(String text) {
+		StringBuilder out = null;
+		for (int i = 0; i < text.length(); i++) {
+			char c = text.charAt(i);
+			if (Character.isHighSurrogate(c) && i + 1 < text.length() && Character.isLowSurrogate(text.charAt(i + 1))) {
+				// A character beyond U+FFFF: allowed
+				if (out != null)
+					out.append(c).append(text.charAt(i + 1));
+				i++;
+				continue;
+			}
+			boolean ok = c == '\t' || c == '\n' || c == '\r' || (c >= 0x20 && c <= 0x7E)
+					|| (c >= 0xA0 && c <= 0xD7FF && c != 0x2028) || (c >= 0xE000 && c <= 0xFFFD);
+			if (!ok && out == null)
+				out = new StringBuilder(text.length()).append(text, 0, i);
+			if (out != null)
+				out.append(ok ? c : ' ');
+		}
+		return (out == null) ? text : out.toString();
+	}
+
+    private static class LineNumberHandler extends DefaultHandler {
 		private Document doc = null;
 		private final Deque<Node> stack = new ArrayDeque<>();
 		private final StringBuilder text = new StringBuilder();
