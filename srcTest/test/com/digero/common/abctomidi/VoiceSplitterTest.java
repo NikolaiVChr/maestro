@@ -73,6 +73,17 @@ class VoiceSplitterTest {
 	}
 
 	@Test
+	void sectionsInAVoicesMusicAreItsOwn() {
+		// A tune written voice after voice, each with its sections: a P: after a V: and before notes is that voice's
+		VoiceSplitter.Result r = VoiceSplitter.split(List.of("X:1", "T:t", "P:BA", "K:C", //
+				"V:1", "P:A", "c d|", "P:B", "e f|", "V:2", "P:A", "E F|", "P:B", "G A|"));
+		assertEquals(List.of("X:1", "T:t", "P:BA", "V:1", "%%MIDI channel 1", "K:C", //
+				"P:A", "c d|", "P:B", "e f|", //
+				"X:2", "T:t", "P:BA", "V:2", "%%MIDI channel 2", "K:C", //
+				"P:A", "E F|", "P:B", "G A|"), r.lines());
+	}
+
+	@Test
 	void musicBeforeTheFirstVoiceIsVoiceOne() {
 		// The Session's "Give Us An A": the melody starts before V:2, and goes on in V:1
 		assertEquals(List.of("X:1", "T:t", "V:1", "%%MIDI channel 1", "K:G", "g d|", "B G|", //

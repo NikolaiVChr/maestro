@@ -22,7 +22,9 @@ import java.util.regex.Pattern;
  * were. Music before the first V: belongs to the first voice of the header, or without one to voice 1 (abcm2ps's and
  * abc2midi's default voice), which then comes first; other lines before it (%% directives, fields) go to every voice.
  * w: lyrics follow the notes above them; W: (words after the tune) go to the first voice.</li>
- * <li>P: section labels go to every voice, so a part order (P:AABB, A16) plays the same sections in every part.</li>
+ * <li>P: section labels go to every voice, so a part order (P:AABB, A16) plays the same sections in every part. But
+ * a label in a voice's music (after its V:, followed by notes) is that voice's own: in a tune written voice after
+ * voice (V:1 P:A ... P:B ..., then V:2 P:A ... P:B ...), each voice has its own sections.</li>
  * <li>A voice's header: the first voice gets the tune header; the others its title, timing, key, rhythm, instructions
  * and directives (not the composer, notes and history, which would show once per voice). Each part gets its voice's
  * V: definition (its name= names the part, partName, and is a clue to the program, MidiProgramGuess), %%MIDI channel
@@ -182,8 +184,12 @@ public final class VoiceSplitter {
 				continue;
 			}
 			if (line.startsWith("P:")) {
-				for (Voice voice : order)
-					voice.add(line, b + 1);
+				if (current != null && !voiceLineFollows(lines, b + 1, end)) {
+					current.add(line, b + 1); // In this voice's music
+				} else {
+					for (Voice voice : order)
+						voice.add(line, b + 1);
+				}
 				continue;
 			}
 			if (line.startsWith("W:")) {
@@ -334,6 +340,17 @@ public final class VoiceSplitter {
 	/** A line with only the stretch from to end kept, the rest blanked with spaces. */
 	private static String keepOnly(String line, int from, int end) {
 		return " ".repeat(from) + line.substring(from, end);
+	}
+
+	/** Whether the next line from from (comments skipped) switches voice: a V: line, or a line starting with [V:. */
+	private static boolean voiceLineFollows(List<String> lines, int from, int end) {
+		for (int k = from; k < end; k++) {
+			String line = lines.get(k).stripLeading();
+			if (line.startsWith("%"))
+				continue;
+			return VOICE_LINE.matcher(line).matches() || line.startsWith("[V:");
+		}
+		return false;
 	}
 
 	/** A line of notes: not empty, not a field, a comment or a directive. */

@@ -917,7 +917,7 @@ public class AbcToMidi {
 								}
 
 								if (track != null)
-									singLyrics(track, lyricNotes, lyricLines, musicLines, lastAttackTick + 1);
+									singLyrics(track, lyricNotes, lyricLines, musicLines, sourceLineNumbers, lastAttackTick + 1);
 								if (track != null && playChords) {
 									partEndTicks.put(trackNumber, Math.round(chordStartTick));
 									endPartDrone(partDrone, trackNumber, Math.round(chordStartTick), drones);
@@ -2375,7 +2375,7 @@ public class AbcToMidi {
 
 			// The file's last part ends here
 			if (track != null)
-				singLyrics(track, lyricNotes, lyricLines, musicLines, lastAttackTick + 1);
+				singLyrics(track, lyricNotes, lyricLines, musicLines, sourceLineNumbers, lastAttackTick + 1);
 			lyricNotes.clear();
 			lyricLines.clear();
 			musicLines.clear();
@@ -2785,18 +2785,23 @@ public class AbcToMidi {
 
 	/**
 	 * Writes a part's w: lyrics, when the part has ended. A run of w: lines (with no music between them) is sung to the
-	 * notes written since the previous run. The first line is verse 1, sung on every pass through the notes. The others
-	 * are later verses: in ABC 2.1 (5.2) they're for the times the part is played again (P:), not for the repeats in
-	 * it. They're written after the part's last note, as lines of text without timing, so Maestro still shows them.
+	 * notes written since the previous run. Its lines are the verses, sung one per time the notes are played: verse 1
+	 * the first time, verse 2 the second (a repeat, or the section played again by a P: order, PartOrder's copy of the
+	 * same lines), and so on; once the verses are used up, verse 1 again (a single w: line is sung every time). Verses
+	 * left over are written after the part's last note, as lines of text without timing, so Maestro still shows them.
 	 *
-	 * @param unsungTick Where the verses that aren't sung go: after the part's last note started
+	 * @param sourceLineNumbers The file's line of each line index (PartOrder's copies of a section share them), or null
+	 * @param unsungTick        Where the verses that aren't sung go: after the part's last note started
 	 */
 	private static void singLyrics(Track track, TreeMap<Long, LyricNote> lyricNotes, TreeMap<Integer, String> lyricLines,
-								   TreeSet<Integer> musicLines, long unsungTick) {
+								   TreeSet<Integer> musicLines, int[] sourceLineNumbers, long unsungTick) {
 		record Verse(long firstTick, List<long[]> slots, String text) {
 		}
 		List<Verse> verses = new ArrayList<>();
 		TreeMap<Integer, List<String>> unsung = new TreeMap<>(); // verse number => its lines, in the order of the file
+		// Per run of w: lines in the file (the file's line of its first line): its verses, and the times sung so far
+		Map<Integer, List<String>> runTexts = new LinkedHashMap<>();
+		Map<Integer, Integer> runSung = new HashMap<>();
 		List<Integer> lines = new ArrayList<>(lyricLines.keySet());
 		int notesFromLine = 0; // The notes of the next run of w: lines are written from this line on
 		int k = 0;
@@ -2816,7 +2821,11 @@ public class AbcToMidi {
 			Set<Integer> passes = new TreeSet<>();
 			for (LyricNote note : notes)
 				passes.addAll(note.ticks.keySet());
+			int run = (sourceLineNumbers != null) ? sourceLineNumbers[firstLine] : firstLine;
+			runTexts.putIfAbsent(run, texts);
 			for (int pass : passes) {
+				int time = runSung.merge(run, 1, Integer::sum); // The how-many-th time these notes are sung
+				String text = texts.get((time <= texts.size()) ? time - 1 : 0);
 				List<long[]> slots = new ArrayList<>();
 				long firstTick = Long.MAX_VALUE;
 				for (LyricNote note : notes) {
@@ -2825,9 +2834,14 @@ public class AbcToMidi {
 					if (tick >= 0)
 						firstTick = Math.min(firstTick, tick);
 				}
-				verses.add(new Verse(firstTick, slots, texts.getFirst()));
+				verses.add(new Verse(firstTick, slots, text));
 			}
-			for (int verse = 2; verse <= texts.size() && !passes.isEmpty(); verse++)
+		}
+		for (Map.Entry<Integer, List<String>> run : runTexts.entrySet()) {
+			// The verses beyond the times the notes were played
+			List<String> texts = run.getValue();
+			int sung = runSung.getOrDefault(run.getKey(), 0);
+			for (int verse = Math.max(2, sung + 1); verse <= texts.size() && sung > 0; verse++)
 				unsung.computeIfAbsent(verse, v -> new ArrayList<>()).add(texts.get(verse - 1));
 		}
 

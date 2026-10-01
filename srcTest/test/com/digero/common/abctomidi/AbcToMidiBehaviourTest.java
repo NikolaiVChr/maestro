@@ -258,14 +258,18 @@ class AbcToMidiBehaviourTest {
 		@Nested
 		class Standard2011 {
 
-			/** For the tests of what isn't implemented yet: each loses it when its item is done. */
+			/**
+			 * For the tests of what isn't implemented yet: each loses it when its item is done.
+			 */
 			private static final String NOT_YET = "Params.standard2011: not implemented yet";
 
 			private static AbcCase standard(AbcCase abcCase) {
 				return abcCase.with(p -> p.standard2011 = true);
 			}
 
-			/** The note-on velocities of track 1, in order. */
+			/**
+			 * The note-on velocities of track 1, in order.
+			 */
 			private static List<Integer> velocities(Sequence sequence) {
 				List<Integer> velocities = new ArrayList<>();
 				Track track = sequence.getTracks()[1];
@@ -276,7 +280,9 @@ class AbcToMidiBehaviourTest {
 				return velocities;
 			}
 
-			/** "tick:microseconds per quarter" of each tempo event in track 0. */
+			/**
+			 * "tick:microseconds per quarter" of each tempo event in track 0.
+			 */
 			private static List<String> tempos(Sequence sequence) {
 				List<String> tempos = new ArrayList<>();
 				Track track = sequence.getTracks()[0];
@@ -383,7 +389,7 @@ class AbcToMidiBehaviourTest {
 				assertEquals(List.of(61, 72, 61),
 						pitches(standard(tune("semantic", "%%propagate-accidentals octave", "^c c' c|"))));
 				assertEquals(List.of(61, 72, 61), pitches(standard(tune("semantic",
-						AbcCase.concat(header(), new String[] { "I:propagate-accidentals octave" }), "^c c' c|"))));
+						AbcCase.concat(header(), new String[]{"I:propagate-accidentals octave"}), "^c c' c|"))));
 				assertEquals(List.of(61, 72, 60),
 						pitches(standard(tune("semantic", "[I:propagate-accidentals not] ^c c' c|"))));
 				// From where it is: before it the default (pitch)
@@ -396,14 +402,16 @@ class AbcToMidiBehaviourTest {
 						"%%propagate-accidentals not", "^c c' c|")), Profile.ABC_PLAYER_STRICT)).stream().map(NoteEvent::pitch)
 						.toList());
 				// The file header's directive applies to every tune
-				AbcCase book = AbcCase.of("semantic", AbcCase.concat(new String[] { "%%propagate-accidentals not" },
+				AbcCase book = AbcCase.of("semantic", AbcCase.concat(new String[]{"%%propagate-accidentals not"},
 						AbcCases.part(1, "One", "^c c|"), AbcCases.part(2, "Two", "^c c|")));
 				Sequence s = convert(standard(book));
 				assertEquals(List.of(61, 60), noteOns(s, 1).stream().map(NoteEvent::pitch).toList());
 				assertEquals(List.of(61, 60), noteOns(s, 2).stream().map(NoteEvent::pitch).toList());
 			}
 
-			/** The pitches of the notes of track 1, in order. */
+			/**
+			 * The pitches of the notes of track 1, in order.
+			 */
 			private List<Integer> pitches(AbcCase abcCase) throws Exception {
 				return noteOns(convert(abcCase)).stream().map(NoteEvent::pitch).toList();
 			}
@@ -422,7 +430,7 @@ class AbcToMidiBehaviourTest {
 				assertEquals(2_000_000L, convert(standard(tune("semantic", "c8|"))).getMicrosecondLength());
 				// The header's L:, also one after the Q:; without L: the default (1/16 in 2/4: 16 sixteenths at 120 = 8 s)
 				assertEquals(8_000_000L, convert(specTempo(tune("semantic", AbcCase.concat(header("-L"),
-						new String[] { "L:1/16" }), "c16|"))).getMicrosecondLength());
+						new String[]{"L:1/16"}), "c16|"))).getMicrosecondLength());
 				assertEquals(8_000_000L,
 						convert(specTempo(tune("semantic", header("M:2/4", "-L"), "c16|"))).getMicrosecondLength());
 				// With L:1/4 the two readings are the same; a note length in Q: counts as before
@@ -470,21 +478,21 @@ class AbcToMidiBehaviourTest {
 						noteEvents(convert(standard(tune("semantic", "!trill!c d| !")))));
 				assertEquals(4, noteOns(convert(standard(tune("semantic", "c d|", "!D.C. al fine!", "e f|")))).size());
 				// A file of ABC 2.1 or later is strict: a lone ! is an error, unless I:linebreak ! says it's a line break
-				String[] head = { "%abc-2.1", "X:1", "T:t", "M:4/4", "L:1/8", "Q:120", "K:C" };
+				String[] head = {"%abc-2.1", "X:1", "T:t", "M:4/4", "L:1/8", "Q:120", "K:C"};
 				assertThrows(FileParseException.class,
-						() -> convert(standard(AbcCase.of("semantic", AbcCase.concat(head, new String[] { "c d|  !", "e f|" })))));
+						() -> convert(standard(AbcCase.of("semantic", AbcCase.concat(head, new String[]{"c d|  !", "e f|"})))));
 				assertEquals(4, noteOns(convert(standard(AbcCase.of("semantic",
-						AbcCase.concat(head, new String[] { "I:linebreak !", "c d|  !", "e f|" }))))).size());
+						AbcCase.concat(head, new String[]{"I:linebreak !", "c d|  !", "e f|"}))))).size());
 			}
 
 			@Test
 			void aTuneWithoutNotesIsAnEmptyTrack() throws Exception {
 				// A tune (X:) with only a header, at the end or between others: an empty track (Maestro hides it), so
 				// each part keeps the track of its number. (It was an ArrayIndexOutOfBoundsException, in every reading.)
-				for (boolean std : new boolean[] { false, true }) {
-					String[] one = { "X:1", "T:One", "M:4/4", "L:1/8", "K:C", "c d|", "" };
-					String[] empty = { "X:2", "T:Empty", "K:C", "" };
-					String[] three = { "X:3", "T:Three", "K:C", "e f|" };
+				for (boolean std : new boolean[]{false, true}) {
+					String[] one = {"X:1", "T:One", "M:4/4", "L:1/8", "K:C", "c d|", ""};
+					String[] empty = {"X:2", "T:Empty", "K:C", ""};
+					String[] three = {"X:3", "T:Three", "K:C", "e f|"};
 					AbcCase first = AbcCase.of("semantic", AbcCase.concat(empty, three));
 					AbcCase last = AbcCase.of("semantic", AbcCase.concat(one, empty));
 					AbcCase middle = AbcCase.of("semantic", AbcCase.concat(AbcCase.concat(one, empty), three));
@@ -552,6 +560,20 @@ class AbcToMidiBehaviourTest {
 				AbcCase repeat = tune("semantic", AbcCases.partOrderHeader("P:AB"), "P:A", "c d|", "P:B", "e f :|");
 				assertEquals(List.of(on(0, 60), on(q / 2, 62), on(q, 64), on(3 * q / 2, 65), on(2 * q, 64),
 						on(5 * q / 2, 65)), noteOns(convert(standard(repeat).with(p -> p.expandRepeats = true))));
+			}
+
+
+			@Test
+			void versesGoOnWhenASectionIsPlayedAgain() throws Exception {
+				// P:AA: verse 2 the second time A is played (user, 2026-10-01)
+				AbcCase twice = tune("semantic", AbcCases.partOrderHeader("P:AA"), "P:A", "c d|", "w:one two",
+						"w:three four");
+				assertEquals(List.of("0:one ", "1:two ", "2:/three ", "3:four "), lyrics(convert(standard(twice)), 1));
+				// With a repeat in A, verse 2 is sung on the repeat, and not again: then verse 1
+				AbcCase repeated = tune("semantic", AbcCases.partOrderHeader("P:AA"), "P:A", "|: c d :|", "w:one two",
+						"w:three four");
+				assertEquals(List.of("0:one ", "1:two ", "2:/three ", "3:four ", "4:/one ", "5:two ", "6:/one ", "7:two "),
+						lyrics(convert(standard(repeated).with(p -> p.expandRepeats = true)), 1));
 			}
 
 			@Test
@@ -1114,18 +1136,18 @@ class AbcToMidiBehaviourTest {
 		}
 
 		@Test
-		void verseOneIsSungOnEveryPass() throws Exception {
-			// Later verses are for the times the part is played again (ABC 2.1, 5.2), not for repeats in it: they follow as
-			// text after the last note started
+		void versesAreSungOnePerPass() throws Exception {
+			// The verses (w: lines in a run) are sung one per time the notes are played: verse 2 on the repeat (user,
+			// 2026-10-01)
 			Sequence s = convert(tune("semantic", "|: c d :|", "w:one two", "w:three four").with(p -> p.expandRepeats = true));
-			assertEquals(List.of("0:one ", "1:two ", "2:/one ", "3:two ", "3:/three four"), lyrics(s, 1));
+			assertEquals(List.of("0:one ", "1:two ", "2:/three ", "3:four "), lyrics(s, 1));
 			// The syllables go to the notes as written; a note the pass doesn't play drops its syllable
 			s = convert(tune("semantic", "|: c d |", "w:a b", "w:e f", "[1 e :| [2 f |]", "w:c *", "w:* g")
 					.with(p -> p.expandRepeats = true));
-			assertEquals(List.of("0:a ", "1:b ", "2:/c ", "3:/a ", "4:b ", "5:/e f", "5:/g"), lyrics(s, 1));
-			// A hymn with a repeated second half: verse 1 on both passes, verse 2 as text
+			assertEquals(List.of("0:a ", "1:b ", "2:/c ", "3:/e ", "4:f ", "5:/g "), lyrics(s, 1));
+			// A hymn with a repeated second half: verse 2 on the repeat, from the notes it plays (not the c before |:)
 			s = convert(tune("semantic", "c |: d e :|", "w:1.~a b c", "w:2.~x y z").with(p -> p.expandRepeats = true));
-			assertEquals(List.of("0:1. a ", "1:b ", "2:c ", "3:/b ", "4:c ", "4:/2. x y z"), lyrics(s, 1));
+			assertEquals(List.of("0:1. a ", "1:b ", "2:c ", "3:/y ", "4:z "), lyrics(s, 1));
 			// A W: line in a repeated section is written once
 			s = convert(tune("semantic", header(), "|: c |", "W:Verse", "d :|").with(p -> p.expandRepeats = true));
 			assertEquals(List.of("0:<Verse"), lyrics(s, 0));
