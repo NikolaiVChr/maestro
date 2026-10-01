@@ -258,13 +258,16 @@ public class AbcToMidi {
 	 * BruTE"); LotRO MIDI Player, Maestro's predecessor ("Z: Transcribed using LotRO MIDI Player: ..."); a Lotro
 	 * instrument's full name in T: (Basic Lute, Lute of Ages), or just an instrument's name in square brackets ([flute],
 	 * [Lute]).
-	 * <li>Else FALSE, standard ABC, if any of: chord symbols ("Am"), voices (V:), the background fields of tune
-	 * collections (B: D: F: H: O: R: S:), a note Lotro can't play (below C, or above c'), or ABC that Lotro refuses or
-	 * plays otherwise (tested in Lotro): a Q: note length that isn't the meter's beat (Q:3/8=120 in 6/8, B15), text in
-	 * Q: (B20), words after the key in K: or an empty K: (B23, B38, B49), M:none (B21), +: (B22), an L: after the notes
-	 * (B40), and in the notes :|: :|] (B2, B4), !decorations! (B56, B57), +decorations+ other than volumes (B12), grace
-	 * notes (B55), T H L M O P S u v (B17, B50), y (B58), Z (B16), $ (B36), ` (B37), [|] (B18), inline fields (B7-B10),
-	 * a length or a tie after a chord (B11, B65), and a broken rhythm next to a chord (B5, B6).
+	 * <li>Else null, unsure, with LotRO MIDI Player's comment "% Transpose: -12" but not its Z: line (a player changed
+	 * it, maybe the notes too): no sign of standard ABC counts then.
+	 * <li>Else FALSE, standard ABC, if any of: chord symbols ("Am"), voices (two V: in a tune), the background fields
+	 * of tune collections (B: D: F: H: O: R: S:), a note Lotro can't play (below C, or above c'), or ABC that Lotro
+	 * refuses or plays otherwise (tested in Lotro): a Q: note length that isn't the meter's beat (Q:3/8=120 in 6/8,
+	 * B15), text in Q: (B20), words after the key in K: or an empty K: (B23, B38, B49), M:none (B21), +: (B22), an L:
+	 * after the notes that changes the unit note length (B40), and in the notes :|: :|] (B2, B4), !decorations! (B56,
+	 * B57), +decorations+ other than volumes (B12), grace notes (B55), T H L M O P S u v (B17, B50), y (B58), Z (B16),
+	 * $ (B36), ` (B37), [|] (B18), inline fields (B7-B10), a length or a tie after a chord (B11, B65), and a broken
+	 * rhythm next to a chord (B5, B6).
 	 * <li>Else null: nothing tells.
 	 * </ol>
 	 * Not signs: an instrument word elsewhere in a title ("Bass Reeves", "(fiddle tune)", "[Bass line]"), as folk
@@ -278,6 +281,7 @@ public class AbcToMidi {
 	 */
 	public static Boolean isMadeForLotro(List<FileAndData> filesData) {
 		boolean standardSign = false;
+		boolean lmpComment = false; // LotRO MIDI Player's "% Transpose:": unsure, not standard ABC either
 		for (FileAndData fileAndData : filesData) {
 			if (fileAndData.lines.stream().filter(l -> l.trim().startsWith("X:")).count() > LOTRO_MAX_PARTS)
 				return Boolean.FALSE;
@@ -285,6 +289,9 @@ public class AbcToMidi {
 		for (FileAndData fileAndData : filesData) {
 			String fileMeter = null; // The file header's M: (before the first X:), which every tune starts from
 			String meter = null; // The M: that applies (null: 4/4)
+			String fileUnitLength = null; // The file header's L:, without spaces
+			String unitLength = null; // The L: that applies (null: the default)
+			Set<String> voices = new HashSet<>(); // The tune's voice IDs (V:)
 			List<String> tempos = new ArrayList<>(); // Q: values with a note length, checked against the meter
 			boolean inTune = false; // After an X:
 			boolean inBody = false; // The tune's notes have started
@@ -305,6 +312,7 @@ public class AbcToMidi {
 				} else if (lower.startsWith("%")) {
 					if (lower.contains("bruzo"))
 						return true;
+					lmpComment |= LMP_TRANSPOSE_PATTERN.matcher(trimmed).lookingAt();
 				} else if (trimmed.startsWith("+:")) {
 					standardSign = true; // A field continued on the next line (B22, B51)
 				} else if (INFO_PATTERN.matcher(trimmed).matches()) {
@@ -312,15 +320,17 @@ public class AbcToMidi {
 						return true;
 					if (lower.startsWith("t:") && isLotroTitle(trimmed.substring(2)))
 						return true;
-					// Voices, and the background fields of tune collections (book, discography, file, history,
-					// origin, rhythm, source), which Lotro/BruTE tools don't write (C: N: Z: they do)
-					if ("vbdfhors".indexOf(lower.charAt(0)) >= 0)
+					// The background fields of tune collections (book, discography, file, history, origin, rhythm,
+					// source), which Lotro/BruTE tools don't write (C: N: Z: they do)
+					if ("bdfhors".indexOf(lower.charAt(0)) >= 0)
 						standardSign = true;
 					String value = stripComment(trimmed.substring(2)).trim();
 					switch (trimmed.charAt(0)) {
 						case 'X' -> {
 							standardSign |= tempoNotLotros(tempos, meter);
 							meter = fileMeter;
+							unitLength = fileUnitLength;
+							voices.clear();
 							inTune = true;
 							inBody = false;
 							freeText = false;
@@ -338,7 +348,19 @@ public class AbcToMidi {
 								tempos.add(value);
 						}
 						case 'K' -> standardSign |= !KEY_LOTRO_PLAYS_PATTERN.matcher(value).matches();
-						case 'L' -> standardSign |= inBody; // Lotro ignores it (B40)
+						case 'L' -> {
+							// Lotro ignores an L: after the notes (B40): a sign if it changes the unit note length
+							String length = value.replace(" ", "");
+							standardSign |= inBody && !length.equals(unitLength);
+							unitLength = length;
+							if (!inTune)
+								fileUnitLength = length;
+						}
+						case 'V' -> {
+							// Voices: two or more in a tune (hand-made files for Lotro may have a lone V:1)
+							voices.add(value.split("\\s+")[0]);
+							standardSign |= voices.size() > 1;
+						}
 						default -> {
 						}
 					}
@@ -353,8 +375,12 @@ public class AbcToMidi {
 			}
 			standardSign |= tempoNotLotros(tempos, meter);
 		}
-		return standardSign ? Boolean.FALSE : null;
+		return (standardSign && !lmpComment) ? Boolean.FALSE : null;
 	}
+
+	/** LotRO MIDI Player's comment "%  Transpose: -12", also kept when the player changed the Z: line. */
+	private static final Pattern LMP_TRANSPOSE_PATTERN = Pattern.compile("%\\s*Transpose\\s*:\\s*-?\\d");
+
 
 	/** The most parts a song made for Lotro has (Maestro's limit): a file with more X: is a tune book. */
 	private static final int LOTRO_MAX_PARTS = 24;
@@ -1022,13 +1048,17 @@ public class AbcToMidi {
 								break;
 							case 'L':
 								// Tested in Lotro (B40): an L: line after the part's first notes changes nothing, the notes
-								// after it keep the header's L:
-								if (enableLotroErrors && track != null) {
+								// after it keep the header's L:. An error only if it would change the length: files made
+								// for Lotro repeat the L: after a mid-song M: ("M:2/4", "L:1/8")
+								int lengthNum = info.getLNum();
+								int lengthDenom = info.getLDenom();
+								// The note length doesn't affect the PPQN, so it may differ between parts
+								info.setNoteDivisor(value);
+								if (enableLotroErrors && track != null
+										&& (long) info.getLNum() * lengthDenom != (long) lengthNum * info.getLDenom()) {
 									throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.length.after.notes"),
 											fileName, lineNumber, infoMatcher.start(INFO_VALUE));
 								}
-								// The note length doesn't affect the PPQN, so it may differ between parts
-								info.setNoteDivisor(value);
 								break;
 							case 'M':
 								if (enableLotroErrors && value.equalsIgnoreCase("none")) {
@@ -1192,6 +1222,7 @@ public class AbcToMidi {
 					startColumn = 0;
 					boolean inChord = false;
 					Set<Integer> chordNoteIds = new HashSet<>(); // Pitches in the current chord; only the first of each sounds
+					int chordRests = 0; // Rests in the current chord; Lotro's limit counts them as one (B73)
 					// Length multiplier from the suffix after the current chord's ']' (e.g. [ceg]3/4), applied to
 					// every note in the chord. Stays 1/1 when the chord has no suffix or we're not in a chord.
 					int chordLenNumerator = 1;
@@ -1345,6 +1376,7 @@ public class AbcToMidi {
 									inChord = true;
 									chordStartIndex = i;
 									chordNoteIds.clear();
+									chordRests = 0;
 
 									// Look ahead past the matching ']' for a chord length suffix, because the notes inside
 									// the chord are turned into MIDI events before we reach the ']'.
@@ -1904,11 +1936,6 @@ public class AbcToMidi {
 						if (inChord)
 							chordSize++;
 
-						if (enableLotroErrors && inChord && chordSize > AbcConstants.MAX_CHORD_NOTES) {
-							throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.chord.too.many.notes"),
-									fileName, lineNumber, m.start());
-						}
-
 						// Parse the note
 
 						// fraction with broken rhythm, tuplet and tempo changes applied. long, because the products get
@@ -2066,6 +2093,15 @@ public class AbcToMidi {
 
 							throwExceptionsIfEnabled(enableLotroErrors, fileName, lineNumber, m, abcNoteL, noteLetter,
 									lengthSeconds, lotroSeconds(info, numerator_abc, denominator_abc), info.getPrimaryTempoBPM());
+							if (inChord) {
+								chordRests++;
+								if (enableLotroErrors
+										&& chordNoteIds.size() + Math.min(chordRests, 1) > AbcConstants.MAX_CHORD_NOTES) {
+									throw new LotroFileParseException(
+											UIText.get("common.abctomidi.lotro.chord.too.many.notes"), fileName, lineNumber,
+											m.start());
+								}
+							}
 							if (!inChord) partChordsNumber++;
 							if (enableLotroErrors && partChordsNumber > 10_000) {
 								throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.too.many.notes",
@@ -2112,6 +2148,14 @@ public class AbcToMidi {
 								}
 								i = m.end();// required, otherwise the loop will find the same note again and never end
 								continue;
+							}
+
+							// Lotro's limit of 6 notes in a chord counts different notes, and rests as one: a doubled note,
+							// which it ignores, doesn't count, nor a second rest (tested in game, B72, B73)
+							if (enableLotroErrors && inChord
+									&& chordNoteIds.size() + Math.min(chordRests, 1) > AbcConstants.MAX_CHORD_NOTES) {
+								throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.chord.too.many.notes"),
+										fileName, lineNumber, m.start());
 							}
 
 							if (info.getInstrument() == LotroInstrument.BASIC_COWBELL

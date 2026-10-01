@@ -1032,9 +1032,24 @@ class AbcToMidiBehaviourTest {
 			// the header it's fine
 			assertThrows(LotroFileParseException.class,
 					() -> ConversionDump.convert(tune("semantic", "c d|", "L:1/4", "e f|"), Profile.ABC_PLAYER_STRICT));
-			ConversionDump.convert(tune("semantic", header("L:1/4"), "c d|"), Profile.ABC_PLAYER_STRICT);
+			// ... nor after the notes when it keeps the length (files made for Lotro repeat it after a mid-song M:)
+			ConversionDump.convert(tune("semantic", "c d|", "M:2/4", "L:1/8", "e f|"), Profile.ABC_PLAYER_STRICT);
 			assertEquals(List.of(on(0, 60), on(q / 2, 62), on(q, 64), on(2 * q, 65)),
 					noteOns(convert(tune("semantic", "c d|", "L:1/4", "e f|"))));
+		}
+
+		@Test
+		void chordLimitCountsDifferentNotes() throws Exception {
+			// Tested in Lotro (B72): a chord of 7 different notes is too many, but a doubled note doesn't count (Lotro
+			// ignores it): 7 notes with 6 or 5 different play (the user's old files: Dead.abc, cure3-5.abc). Rests count
+			// as one (B73): 6 notes and a rest are too many, 5 notes and two rests play
+			assertThrows(LotroFileParseException.class,
+					() -> ConversionDump.convert(tune("semantic", "[CEGcegb] c|"), Profile.ABC_PLAYER_STRICT));
+			assertThrows(LotroFileParseException.class,
+					() -> ConversionDump.convert(tune("semantic", "[CEGcegz] c|"), Profile.ABC_PLAYER_STRICT));
+			ConversionDump.convert(tune("semantic", "[C2E2G2c2e2zz] c|"), Profile.ABC_PLAYER_STRICT);
+			ConversionDump.convert(tune("semantic", "[CEGcegg] c|"), Profile.ABC_PLAYER_STRICT);
+			ConversionDump.convert(tune("semantic", "[=F2C2A,2A,2F,2F,2C,2] c|"), Profile.ABC_PLAYER_STRICT);
 		}
 
 		/** The notes played with Params.expandRepeats, in ABC (c d e ...). */
@@ -1389,6 +1404,19 @@ class AbcToMidiBehaviourTest {
 			assertEquals(Boolean.FALSE, madeForLotro(book.toArray(String[]::new)));
 			assertEquals(Boolean.TRUE, madeForLotro(book.subList(0, 1 + 24 * 5).toArray(String[]::new)));
 
+			// null, unsure, with LotRO MIDI Player's "% Transpose:" but another Z: line (a player changed it, maybe
+			// the notes too): then no sign of standard ABC counts, here a voice and a chord symbol
+			assertNull(madeForLotro("X:1", "T:Song", "Z:Transcribed by Aifel", "% Transpose: -12", "K:C", "V:1",
+					"\"Am\"c d|", "V:2", "C D|"));
+
+			// null, unsure, with LotRO MIDI Player's "% Transpose:" but another Z: line (a player changed it, maybe
+			// the notes too): then no sign of standard ABC counts, here a voice and a chord symbol
+			assertNull(madeForLotro("X:1", "T:Song", "Z:Transcribed by Aifel", "% Transpose: -12", "K:C", "V:1",
+					"\"Am\"c d|", "V:2", "C D|"));
+			// ... but a sure sign of Lotro still decides
+			assertEquals(Boolean.TRUE, madeForLotro("X:1", "T:Song [Lute]", "Z:Transcribed by Aifel", "% Transpose: -12",
+					"K:C", "\"Am\"c d|"));
+
 			// null: else nothing tells: the caller asks the user. Instrument words in a folk title and volume marks
 			// (ABC too) are no signs either way, nor is what Lotro plays as ABC 2.1 says, or plays plain
 			List<String[]> noSigns = List.of(new String[] { "X:1", "T:The Piper's Farewell", "K:C", "c d|" },
@@ -1420,6 +1448,10 @@ class AbcToMidiBehaviourTest {
 					new String[] { "These are my Tunes. Hornpipes, Marches (c) 2026 Me $5", "", "X:1", "T:Tune", "K:C",
 							"c d|", "", "Played every Tuesday: Thanks to Mary!", "X:2", "T:Tune two", "K:C", "e f|" },
 					new String[] { "X:1", "K:C", "c d|", "", "Tc d|" },
+					// One voice (hand-made files for Lotro: V:1), an L: after the notes that keeps the unit note length
+					// ("M:2/4", "L:1/8" mid-song)
+					new String[] { "X:1", "M:4/4", "L:1/8", "K:G", "V:1", "c d|" },
+					new String[] { "X:1", "L:1/8", "K:C", "c d|", "M:2/4", "L: 1/8", "e f|" },
 					// Other tools' %%abc-version and %%abc-creator (hum2abc, Essen's Chinese songs)
 					new String[] { "X:1", "T:Tiqi gege zou xikou", "%%abc-version 2.0", "%%abc-creator hum2abc beta",
 							"K:G", "c d|" });
