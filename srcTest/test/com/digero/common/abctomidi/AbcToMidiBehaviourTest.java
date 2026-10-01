@@ -1092,6 +1092,9 @@ class AbcToMidiBehaviourTest {
 			assertEquals("cdecdf", playedWithRepeats("|: c d |1 e :|2 f |]"));
 			assertEquals("cdce", playedWithRepeats("|: c [1 d :| [2 e |]"));
 			assertEquals("cdcecf", playedWithRepeats("|: c [1 d :| [2 e :| [3 f |]"));
+			// A first ending closed by :|| (a repeat end, as :|): its || doesn't end the section before the second
+			assertEquals("cdecdf", playedWithRepeats("|: c d |1 e :||2 f |]"));
+			assertEquals("cdce", playedWithRepeats("|: c [1 d :|| [2 e |]"));
 			// [1,3 and [2-3: an ending for more passes (ABC 2.1, 4.10)
 			assertEquals("cdcecdf", playedWithRepeats("|: c [1,3 d :| [2 e :| f |]"));
 			assertEquals("cdcece", playedWithRepeats("|: c [1 d :| [2-3 e :| |]"));
@@ -1706,14 +1709,14 @@ class AbcToMidiBehaviourTest {
 					noteOns(s));
 			// Spaces and a tie to the note change nothing
 			assertEquals(noteOns(convert(tune("semantic", "{ga}c4|"))), noteOns(convert(tune("semantic", "{g a-}c4|"))));
-			// Nor does a slur over them (Village Music Project), also with the slur going on out of the braces; with
-			// Lotro errors it's an error (untested in Lotro)
+			// Nor does a slur over them (Village Music Project), also with the slur going on out of the braces; Lotro
+			// plays it too (tested in game, B76), so no Lotro error
 			assertEquals(noteEvents(convert(tune("semantic", "{gfga}c4|"))),
 					noteEvents(convert(tune("semantic", "{(gf)(ga)}c4|"))));
 			assertEquals(noteEvents(convert(tune("semantic", "{/ga}c4 d|"))),
 					noteEvents(convert(tune("semantic", "{/(ga}c4) d|"))));
-			assertThrows(LotroFileParseException.class,
-					() -> ConversionDump.convert(tune("semantic", "{(ga)}c4|"), Profile.ABC_PLAYER_STRICT));
+			assertEquals(noteEvents(ConversionDump.convert(tune("semantic", "{ga}c4|"), Profile.ABC_PLAYER_STRICT)),
+					noteEvents(ConversionDump.convert(tune("semantic", "{(ga)}c4|"), Profile.ABC_PLAYER_STRICT)));
 			// Anything else in the braces is an error, in every mode (Z, a rest, a sign, nothing)
 			for (String body : List.of("{Z}c|", "{z}c|", "{x}c|", "{}c|", "{/}c|", "{g!}c|", "{H}c|", "{g>}c|")) {
 				for (Profile profile : Profile.values()) {

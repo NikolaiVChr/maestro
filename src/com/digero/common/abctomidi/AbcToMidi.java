@@ -1724,11 +1724,7 @@ public class AbcToMidi {
 										}
 										if (c == '(' || c == ')') {
 											// A slur over the grace notes, {(B/c/B/^A/)} (Village Music Project): layout only.
-											// ABC 2.1 (4.12) doesn't say; untested in Lotro.
-											if (enableLotroErrors) {
-												throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.grace.slur"),
-														fileName, lineNumber, k);
-											}
+											// ABC 2.1 (4.12) doesn't say; Lotro plays the part (tested in game, B76).
 											k++;
 											continue;
 										}
@@ -3009,9 +3005,13 @@ public class AbcToMidi {
 
 	/** Quoted text "..." and decorations !...! +...+ , which may contain | and digits. */
 	private static final Pattern NOT_A_BAR_PATTERN = Pattern.compile("\"[^\"]*\"|![^!]*!|\\+[^+]*\\+");
-	/** An ending [1 |1 (also in :|2), and the signs that end a section: || |] [| |: :: */
+
+	/**
+	 * An ending [1 |1 (also in :|2), and the signs that end a section: || |] [| |: :: ; not the || of :|| (a repeat
+	 * end, as :|), which would hide the second ending after a first one closed by :||
+	 */
 	private static final Pattern ENDING_OR_SECTION_END_PATTERN = Pattern
-			.compile("[\\[|](\\d+(?:[,-]\\d+)*)|\\|\\||\\|\\]|\\[\\||\\|:|::");
+			.compile("[\\[|](\\d+(?:[,-]\\d+)*)|(?<!:)\\|\\||\\|\\]|\\[\\||\\|:|::");
 
 	/**
 	 * Whether an ending for the pass comes in the section that starts at the line and column: up to its end (|| |] [|),
