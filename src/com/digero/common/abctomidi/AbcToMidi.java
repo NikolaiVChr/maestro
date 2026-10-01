@@ -218,7 +218,10 @@ public class AbcToMidi {
 			// This covers the vast majority of legacy Windows files (Windows 7/10/11 with Java 8/11/17).
 			// It is a superset of ISO-8859-1, so it correctly handles standard Western characters
 			// Plus Windows specific chars like smart quotes and euro signs.
-			return Files.readAllLines(inputFile.toPath(), Charset.forName("windows-1252"));
+			// Decoded leniently: a byte Windows-1252 leaves undefined (0x81 0x8D 0x8F 0x90 0x9D, e.g. a DOS file's ü,
+			// 0x81 in code page 437) becomes U+FFFD instead of failing the whole file ("Input length = 1").
+			byte[] bytes = Files.readAllBytes(inputFile.toPath());
+			return new ArrayList<>(new String(bytes, Charset.forName("windows-1252")).lines().toList());
 		}
 	}
 
@@ -247,10 +250,14 @@ public class AbcToMidi {
 	 * for the instrument in its title, or are standard ABC (Params.standardPitch). A wrong answer puts every part an
 	 * octave off, so without a sign either way the answer is null, and the caller asks the user.
 	 * <ol>
-	 * <li>TRUE, made for Lotro, if any of: an extended field of Maestro and the ABC Player (%%song-title, %%part-name,
-	 * %%made-for, %%abc-creator ...); BruTE ("% Produced with Bruzo's Transcoding Environment", "Z: Transcribed with
-	 * BruTE"); a Lotro instrument's full name in T: (Basic Lute, Lute of Ages), or just an instrument's name in square
-	 * brackets ([flute], [Lute]).
+	 * <li>FALSE, standard ABC, for a file with more X: than a song made for Lotro has parts (LOTRO_MAX_PARTS): a tune
+	 * book (Essen's shanxi.abc, 802 songs, has %%abc-creator hum2abc).
+	 * <li>Else TRUE, made for Lotro, if any of: an extended field of Maestro and the ABC Player (%%song-title,
+	 * %%part-name, %%made-for, %%abc-creator naming Maestro, ABC Tools or BruTE ...; not %%abc-version, nor another
+	 * tool's %%abc-creator); BruTE ("% Produced with Bruzo's Transcoding Environment", "Z: Transcribed with
+	 * BruTE"); LotRO MIDI Player, Maestro's predecessor ("Z: Transcribed using LotRO MIDI Player: ..."); a Lotro
+	 * instrument's full name in T: (Basic Lute, Lute of Ages), or just an instrument's name in square brackets ([flute],
+	 * [Lute]).
 	 * <li>Else FALSE, standard ABC, if any of: chord symbols ("Am"), voices (V:), the background fields of tune
 	 * collections (B: D: F: H: O: R: S:), a note Lotro can't play (below C, or above c'), or ABC that Lotro refuses or
 	 * plays otherwise (tested in Lotro): a Q: note length that isn't the meter's beat (Q:3/8=120 in 6/8, B15), text in
@@ -272,6 +279,10 @@ public class AbcToMidi {
 	public static Boolean isMadeForLotro(List<FileAndData> filesData) {
 		boolean standardSign = false;
 		for (FileAndData fileAndData : filesData) {
+			if (fileAndData.lines.stream().filter(l -> l.trim().startsWith("X:")).count() > LOTRO_MAX_PARTS)
+				return Boolean.FALSE;
+		}
+		for (FileAndData fileAndData : filesData) {
 			String fileMeter = null; // The file header's M: (before the first X:), which every tune starts from
 			String meter = null; // The M: that applies (null: 4/4)
 			List<String> tempos = new ArrayList<>(); // Q: values with a note length, checked against the meter
@@ -286,7 +297,10 @@ public class AbcToMidi {
 					freeText = hasX;
 				} else if (lower.startsWith("%%")) {
 					Matcher xInfo = XINFO_PATTERN.matcher(line);
-					if (xInfo.matches() && AbcField.fromString(xInfo.group(XINFO_FIELD) + xInfo.group(XINFO_COLON)) != null)
+					AbcField field = xInfo.matches()
+							? AbcField.fromString(xInfo.group(XINFO_FIELD) + xInfo.group(XINFO_COLON))
+							: null;
+					if (field != null && isLotroField(field, xInfo.group(XINFO_VALUE)))
 						return true;
 				} else if (lower.startsWith("%")) {
 					if (lower.contains("bruzo"))
@@ -294,7 +308,7 @@ public class AbcToMidi {
 				} else if (trimmed.startsWith("+:")) {
 					standardSign = true; // A field continued on the next line (B22, B51)
 				} else if (INFO_PATTERN.matcher(trimmed).matches()) {
-					if (lower.startsWith("z:") && lower.contains("brute"))
+					if (lower.startsWith("z:") && (lower.contains("brute") || lower.contains("lotro midi player")))
 						return true;
 					if (lower.startsWith("t:") && isLotroTitle(trimmed.substring(2)))
 						return true;
@@ -340,6 +354,24 @@ public class AbcToMidi {
 			standardSign |= tempoNotLotros(tempos, meter);
 		}
 		return standardSign ? Boolean.FALSE : null;
+	}
+
+	/** The most parts a song made for Lotro has (Maestro's limit): a file with more X: is a tune book. */
+	private static final int LOTRO_MAX_PARTS = 24;
+
+	/** A tool made for Lotro, in %%abc-creator (Maestro writes "%%abc-creator Maestro v2.5.0"). */
+	private static final Pattern LOTRO_CREATOR_PATTERN = Pattern.compile("(?i)maestro|abc ?tools|abc ?player|brute|bruzo");
+
+	/**
+	 * Whether an extended field marks a file made for Lotro: all do, but %%abc-version, and %%abc-creator unless it names
+	 * a Lotro tool. Other tools write those too (hum2abc: %%abc-version 2.0, %%abc-creator hum2abc beta).
+	 */
+	private static boolean isLotroField(AbcField field, String value) {
+		return switch (field) {
+			case ABC_VERSION -> false;
+			case ABC_CREATOR -> LOTRO_CREATOR_PATTERN.matcher(value).find();
+			default -> true;
+		};
 	}
 
 	/** A key that Lotro plays: the key and its mode, nothing more (K:G, K:Am, K:D mix, K: C maj; B33). */

@@ -186,6 +186,20 @@ class AbcToMidiBehaviourTest {
 	@Nested
 	class Semantics {
 
+		@Test
+		void fileThatIsNeitherUtf8NorWindows1252Opens() throws Exception {
+			// The Essen collection's Chinese songs (shanxi.abc): ü as 0x81 (DOS code page 437), which Windows-1252
+			// leaves undefined. It failed with "Input length = 1"; now that byte is U+FFFD and the rest reads as usual
+			java.nio.file.Path file = java.nio.file.Files.createTempFile("cp437", ".abc");
+			try {
+				java.nio.file.Files.write(file, new byte[] { 'T', ':', 'L', (byte) 0x81, '\r', '\n', 'K', ':', 'C', '\n',
+					'C', (byte) 0xE9, '|' });
+				assertEquals(List.of("T:L�", "K:C", "Cé|"), AbcToMidi.readLines(file.toFile()));
+			} finally {
+				java.nio.file.Files.delete(file);
+			}
+		}
+
 		record NoteEvent(long tick, boolean on, int pitch) {
 			@Override
 			public String toString() {
@@ -1311,6 +1325,10 @@ class AbcToMidiBehaviourTest {
 					new String[] { "%%abc-creator Maestro v2.5.0" }, new String[] { "%%made-for Basic Flute" },
 					new String[] { "% Produced with Bruzo's Transcoding Environment 2.0 alpha" },
 					new String[] { "X:1", "T: test1  1/14 [flute] 0:10", "Z: Transcribed with BruTE 64 300 1" },
+					// LotRO MIDI Player (Maestro's predecessor): no other sign, chords shortened by a rest inside
+					new String[] { "X: 1", "T: Song (0:16)",
+								   "Z: Transcribed using LotRO MIDI Player: http://lotro.acasylum.com/midi", "%  Transpose: 0",
+						 		   "L: 1/4", "Q: 120", "K: C", "", "A/2 [^c/4 e/2 z/4] a/4" },
 					new String[] { "X:1", "T: test1  1/14 [flute] 0:10" }, new String[] { "X:1", "T:Song [Lute]" },
 					new String[] { "X:1", "T: Concert-Rachmaninoff[Basic Lute](10:04)" },
 					new String[] { "X:1", "T:Lute of Ages solo" }, new String[] { "X:1", "T:Song - Basic Fiddle" },
@@ -1364,6 +1382,13 @@ class AbcToMidiBehaviourTest {
 			for (String[] lines : standard)
 				assertEquals(Boolean.FALSE, madeForLotro(lines), String.join(" / ", lines));
 
+			// FALSE first of all: more X: than a song made for Lotro has parts (24) is a tune book, whatever else it has
+			List<String> book = new ArrayList<>(List.of("%%part-name Lute"));
+			for (int x = 1; x <= 25; x++)
+				book.addAll(List.of("X:" + x, "T:Song [Lute]", "K:C", "c d|", ""));
+			assertEquals(Boolean.FALSE, madeForLotro(book.toArray(String[]::new)));
+			assertEquals(Boolean.TRUE, madeForLotro(book.subList(0, 1 + 24 * 5).toArray(String[]::new)));
+
 			// null: else nothing tells: the caller asks the user. Instrument words in a folk title and volume marks
 			// (ABC too) are no signs either way, nor is what Lotro plays as ABC 2.1 says, or plays plain
 			List<String[]> noSigns = List.of(new String[] { "X:1", "T:The Piper's Farewell", "K:C", "c d|" },
@@ -1394,7 +1419,10 @@ class AbcToMidiBehaviourTest {
 					// letters aren't decorations)
 					new String[] { "These are my Tunes. Hornpipes, Marches (c) 2026 Me $5", "", "X:1", "T:Tune", "K:C",
 							"c d|", "", "Played every Tuesday: Thanks to Mary!", "X:2", "T:Tune two", "K:C", "e f|" },
-					new String[] { "X:1", "K:C", "c d|", "", "Tc d|" });
+					new String[] { "X:1", "K:C", "c d|", "", "Tc d|" },
+					// Other tools' %%abc-version and %%abc-creator (hum2abc, Essen's Chinese songs)
+					new String[] { "X:1", "T:Tiqi gege zou xikou", "%%abc-version 2.0", "%%abc-creator hum2abc beta",
+							"K:G", "c d|" });
 			for (String[] lines : noSigns)
 				assertNull(madeForLotro(lines), String.join(" / ", lines));
 		}
