@@ -782,6 +782,10 @@ public class AbcToMidi {
 				if (line.stripLeading().startsWith("r:"))
 					continue;
 
+				// Macros (m:, ABC 2.1, 4.16): not expanded yet, so the music using them can't be played as written
+				if (line.stripLeading().startsWith("m:"))
+					throw new FileParseException("Macros (m:) aren't supported yet", fileName, lineNumber, 0);
+
 				int chordSize = 0;
 
 				Matcher infoMatcher = INFO_PATTERN.matcher(line);
@@ -1794,6 +1798,12 @@ public class AbcToMidi {
 												fileName, lineNumber, i);
 									}
 									break;
+
+								case '&':
+									// Voice overlay (ABC 2.1, 7.4): a second voice in the same bar. Not played yet (rare: 17
+									// of The Session's 55,000 settings)
+									throw new FileParseException("Voice overlay (&) isn't supported yet", fileName,
+											lineNumber, i);
 
 								default:
 									throw new FileParseException("Unknown/unexpected character '" + ch + "'", fileName,

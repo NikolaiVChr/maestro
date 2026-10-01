@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.text.Normalizer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -48,7 +49,8 @@ import com.digero.common.util.Util;
 /**
  * Asks what to do with a songbook (a file of standard ABC with many X: tunes): open one tune, open all as parts (as
  * before), or split the book into one file per tune. Shows the tunes with number, title, type (R:), key and meter, a
- * filter over all of them, and the ABC of the selected tune (without the file header, which all tunes share).
+ * filter over all of them (and over every title, composer and origin of the tune: a tune is often known by another
+ * name), and the ABC of the selected tune (without the file header, which all tunes share).
  * <p>
  * Sizes come from the font, so the dialog follows Maestro's text size setting. Keys: type to filter, Up/Down to move in
  * the list (also from the filter), Enter to open the selected tune, Escape to cancel, double-click to open.
@@ -73,7 +75,9 @@ public class SongbookDialog extends JDialog {
 	private static final String INTRO = "<html>This file is a songbook with %d tunes. Pick the tune to open, "
 			+ "or open them all as parts of one song.</html>";
 	private static final String FILTER = "Filter:";
-	private static final String FILTER_TIP = "Words in the number, title, type, key or meter; all must match";
+	private static final String FILTER_TIP = "Words in the number, any title, type, key, meter, composer or origin; "
+			+ "all must match";
+	private static final String ALSO_KNOWN_AS = "Also: %s";
 	private static final String COUNT = "%d of %d tunes";
 	private static final String[] COLUMNS = { "No.", "Title", "Type", "Key", "Meter" };
 	private static final String OPEN_TUNE = "Open tune";
@@ -90,7 +94,8 @@ public class SongbookDialog extends JDialog {
 	private final File bookFile;
 	private final List<AbcSongbook.Tune> tunes;
 	private final String[][] rows; // number, title, type, key, meter
-	private final String[] searchText; // Per tune: all its columns, lower case, without accents
+	private final String[] searchText; // Per tune: its columns, titles, composers and origins, lower case, without accents
+	private final String[] otherTitles; // Per tune: its titles after the first, or null
 	private final JTable table;
 	private final TableRowSorter<AbstractTableModel> sorter;
 	private final JTextField filter = new JTextField();
@@ -121,12 +126,17 @@ public class SongbookDialog extends JDialog {
 
 		rows = new String[tunes.size()][];
 		searchText = new String[tunes.size()];
+		otherTitles = new String[tunes.size()];
 		for (int i = 0; i < tunes.size(); i++) {
 			AbcSongbook.Tune tune = tunes.get(i);
 			List<String> lines = book.tuneLines(tune);
 			rows[i] = new String[] { tune.number(), tune.title(), field(lines, "R:"), field(lines, "K:"),
 					field(lines, "M:") };
-			searchText[i] = simplify(String.join(" ", rows[i]));
+			List<String> titles = tuneFields(lines, "T:");
+			if (titles.size() > 1)
+				otherTitles[i] = String.join(", ", titles.subList(1, titles.size()));
+			searchText[i] = simplify(String.join(" ", rows[i]) + " " + String.join(" ", titles) + " "
+					+ String.join(" ", tuneFields(lines, "C:")) + " " + String.join(" ", tuneFields(lines, "O:")));
 		}
 
 		AbstractTableModel model = new AbstractTableModel() {
@@ -150,7 +160,18 @@ public class SongbookDialog extends JDialog {
 				return rows[row][column];
 			}
 		};
-		table = new JTable(model);
+		table = new JTable(model) {
+			// The title's tooltip: the tune's other titles, so a match on one of them is seen
+			@Override
+			public String getToolTipText(MouseEvent e) {
+				int row = rowAtPoint(e.getPoint());
+				int column = columnAtPoint(e.getPoint());
+				if (row < 0 || column < 0 || convertColumnIndexToModel(column) != 1)
+					return null;
+				String others = otherTitles[convertRowIndexToModel(row)];
+				return (others == null) ? null : String.format(ALSO_KNOWN_AS, others);
+			}
+		};
 		sorter = new TableRowSorter<>(model);
 		sorter.setComparator(0, (String a, String b) -> a.matches("\\d{1,9}") && b.matches("\\d{1,9}")
 				? Integer.compare(Integer.parseInt(a), Integer.parseInt(b)) : a.compareToIgnoreCase(b)); // 2 before 10
@@ -300,6 +321,22 @@ public class SongbookDialog extends JDialog {
 			}
 		}
 		return value;
+	}
+
+	/** Every value of a field in a tune's own lines (after its X:), in order, its escapes decoded. */
+	private static List<String> tuneFields(List<String> lines, String field) {
+		List<String> values = new ArrayList<>();
+		boolean inTune = false;
+		for (String line : lines) {
+			if (line.startsWith("X:"))
+				inTune = true;
+			if (inTune && line.startsWith(field)) {
+				String value = AbcText.decode(line.substring(2).trim());
+				if (!value.isEmpty())
+					values.add(value);
+			}
+		}
+		return values;
 	}
 
 	/** Lower case, without accents: "Polska från" and "polska fran" find each other. */

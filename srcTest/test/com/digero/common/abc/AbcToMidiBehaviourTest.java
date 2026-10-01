@@ -151,37 +151,30 @@ class AbcToMidiBehaviourTest {
 				assertEquals(true, names.contains(name), "OUT_OF_RANGE_CASES names an unknown case: " + name);
 		}
 
-		@ParameterizedTest(name = "{0} {1}")
-		@MethodSource("com.digero.common.abc.AbcToMidiBehaviourTest#caseProfiles")
-		void conversionIsDeterministic(AbcCase abcCase, Profile profile) {
-			String first = ConversionDump.run(abcCase, profile, true, new AbcInfo()).text();
-			String second = ConversionDump.run(abcCase, profile, true, new AbcInfo()).text();
-			TextDiff.assertSameText(first, second, "Second conversion differs from the first");
-		}
+		/** The song converted into the reused AbcInfo before each case in everyConversionIsTheSame. */
+		private static final AbcCase PREVIOUS_SONG = AbcCases.all().stream()
+				.filter(c -> c.name().equals("instruments_by_title")).findFirst().orElseThrow();
 
+		/**
+		 * A case gives the same result every way it is converted: again (deterministic), into a reused AbcInfo after
+		 * another song (AbcToMidi resets it, nothing from the previous song may leak), and without note regions (the
+		 * MIDI, AbcInfo and log don't depend on Params.generateRegions). One test, so each conversion is done once.
+		 */
 		@ParameterizedTest(name = "{0} {1}")
 		@MethodSource("com.digero.common.abc.AbcToMidiBehaviourTest#caseProfiles")
-		void generateRegionsDoesNotChangeTheMidi(AbcCase abcCase, Profile profile) {
-			ConversionDump.Result with = ConversionDump.run(abcCase, profile, true, new AbcInfo());
-			ConversionDump.Result without = ConversionDump.run(abcCase, profile, false, new AbcInfo());
-			assertEquals(with.error(), without.error());
-			TextDiff.assertSameText(with.sequence(), without.sequence(), "MIDI differs without regions");
-			TextDiff.assertSameText(with.abcInfo(), without.abcInfo(), "AbcInfo differs without regions");
-			TextDiff.assertSameText(with.log(), without.log(), "Log differs without regions");
-		}
+		void everyConversionIsTheSame(AbcCase abcCase, Profile profile) {
+			ConversionDump.Result fresh = ConversionDump.run(abcCase, profile, true, new AbcInfo());
 
-		/** Params.abcInfo can be reused (AbcToMidi resets it); nothing from the previous song may leak. */
-		@ParameterizedTest(name = "{0} {1}")
-		@MethodSource("com.digero.common.abc.AbcToMidiBehaviourTest#caseProfiles")
-		void reusedAbcInfoGivesSameResultAsFreshOne(AbcCase abcCase, Profile profile) {
-			AbcCase previousSong = AbcCases.all().stream().filter(c -> c.name().equals("instruments_by_title"))
-					.findFirst().orElseThrow();
 			AbcInfo reused = new AbcInfo();
-			ConversionDump.run(previousSong, Profile.MAESTRO_LEGACY, true, reused);
+			ConversionDump.run(PREVIOUS_SONG, Profile.MAESTRO_LEGACY, true, reused);
+			TextDiff.assertSameText(fresh.text(), ConversionDump.run(abcCase, profile, true, reused).text(),
+					"A second conversion, into a reused AbcInfo, differs from the first");
 
-			String fresh = ConversionDump.run(abcCase, profile, true, new AbcInfo()).text();
-			String afterReuse = ConversionDump.run(abcCase, profile, true, reused).text();
-			TextDiff.assertSameText(fresh, afterReuse, "Reused AbcInfo gives a different result");
+			ConversionDump.Result without = ConversionDump.run(abcCase, profile, false, new AbcInfo());
+			assertEquals(fresh.error(), without.error());
+			TextDiff.assertSameText(fresh.sequence(), without.sequence(), "MIDI differs without regions");
+			TextDiff.assertSameText(fresh.abcInfo(), without.abcInfo(), "AbcInfo differs without regions");
+			TextDiff.assertSameText(fresh.log(), without.log(), "Log differs without regions");
 		}
 	}
 

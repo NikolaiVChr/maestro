@@ -821,6 +821,7 @@ final class AbcCases {
 		// ------------------------------------------------------------ voices (A13), as they are read today
 		c.add(tune("voices_in_body", "V:1", "c d e f|", "V:2", "C D E F|"));
 		c.add(tune("voices_inline", "[V:1] c d e f|", "[V:2] C D E F|"));
+		c.add(tune("voice_overlay", "c d e f & A, B, C D|")); // ABC 2.1, 7.4: an error, not supported yet
 		c.add(tune("voices_defined_in_header", concat(header(), new String[] { "V:1 name=\"Fiddle\"",
 				"V:2 name=\"Bass\" clef=bass" }), "V:1", "c d e f|", "V:2", "C, D, E, F,|"));
 		c.add(tune("voices_with_lyrics", "V:1", "c d|", "w:one two", "V:2", "e f|", "w:three four"));
