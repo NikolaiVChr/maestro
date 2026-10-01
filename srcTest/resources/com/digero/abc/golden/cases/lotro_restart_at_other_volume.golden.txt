@@ -44,7 +44,7 @@ divisionType=0.0 resolution=11520 tickLength=35449 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading lotro_restart_at_other_volume.abc on line 7, column 12:
+== EXCEPTION LotroFileParseException: Error reading lotro_restart_at_other_volume.abc (X:1 Test) on line 7, column 12:
 Note c starts again while c2 still sounds, at another volume (+ff+). Lotro then plays nothing of part 1
 == log: empty
 

@@ -2,22 +2,22 @@
 case instruction_linebreak_bang
 
 ### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
-== EXCEPTION FileParseException: Error reading instruction_linebreak_bang.abc on line 8, column 4:
+== EXCEPTION FileParseException: Error reading instruction_linebreak_bang.abc (X:1 Test) on line 8, column 4:
 There is no matching '!'
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION FileParseException: Error reading instruction_linebreak_bang.abc on line 8, column 4:
+== EXCEPTION FileParseException: Error reading instruction_linebreak_bang.abc (X:1 Test) on line 8, column 4:
 There is no matching '!'
 == log: empty
 
 ### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)
-== EXCEPTION FileParseException: Error reading instruction_linebreak_bang.abc on line 8, column 4:
+== EXCEPTION FileParseException: Error reading instruction_linebreak_bang.abc (X:1 Test) on line 8, column 4:
 There is no matching '!'
 == log: empty
 
 ### profile MAESTRO_NEW_LOTRO (useLotroInstruments=false, enableLotroErrors=false, Lotro Abc)
-== EXCEPTION FileParseException: Error reading instruction_linebreak_bang.abc on line 8, column 4:
+== EXCEPTION FileParseException: Error reading instruction_linebreak_bang.abc (X:1 Test) on line 8, column 4:
 There is no matching '!'
 == log: empty
 

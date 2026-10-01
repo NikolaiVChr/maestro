@@ -45,7 +45,7 @@ divisionType=0.0 resolution=11520 tickLength=47232 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading notes_octaves_extreme.abc on line 7, column 1:
+== EXCEPTION LotroFileParseException: Error reading notes_octaves_extreme.abc (X:1 Test) on line 7, column 1:
 Note is too low
 == log: empty
 

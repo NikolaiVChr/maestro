@@ -49,6 +49,10 @@ public final class LocaleManager {
      * Otherwise, the user will be prompted to select a locale.
      */
     public static synchronized void init() {
+        init(false);
+    }
+
+    public static synchronized void init(boolean unitTest) {
 
         // Check if the locale has already been initialized to avoid redundant work.
         if (initialized) {
@@ -57,6 +61,10 @@ public final class LocaleManager {
 
         // Retrieve the stored locale preference, if any.
         String lang = PREFS.get("locale", null);
+
+        if (unitTest) {
+            lang = Locale.ENGLISH.getLanguage();
+        }
 
         // legacy locale setting "US" to Locale.ENGLISH
         final String LEGACY_LOCALE_US = "US";
@@ -71,7 +79,7 @@ public final class LocaleManager {
                 .filter(l -> l.getLanguage().equalsIgnoreCase(selectedLanguage))
                 .findFirst()
                 .orElseGet(() -> {
-                    if (GraphicsEnvironment.isHeadless()) {
+                    if (GraphicsEnvironment.isHeadless() || unitTest) {
                         LOGGER.info("Running in headless mode, defaulting to Locale.ENGLISH.");
                         return Locale.ENGLISH;
                     } else {

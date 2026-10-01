@@ -41,7 +41,7 @@ divisionType=0.0 resolution=11520 tickLength=116370 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading repeats_multi_measure_rest.abc on line 7, column 4:
+== EXCEPTION LotroFileParseException: Error reading repeats_multi_measure_rest.abc (X:1 Test) on line 7, column 4:
 Lotro refuses a part with a multi-measure rest Z; write the rest out, e.g. z8 for a bar of 4/4 with L:1/8
 == log: empty
 

@@ -4,14 +4,13 @@ import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MetaMessage;
 
 import com.digero.common.abc.Accidental;
+import com.digero.common.i18n.UIText;
 
 /**
  * Representation of a MIDI key signature.
  */
 @SuppressWarnings("HardCodedStringLiteral")
 public class KeySignature implements MidiConstants {
-	private static final String INVALID_KEY_SIGNATURE = "Invalid key signature: ";
-
 	public static final KeySignature C_MAJOR = new KeySignature(0, true);
 
 	public final byte sharpsFlats;
@@ -19,7 +18,7 @@ public class KeySignature implements MidiConstants {
 
 	public KeySignature(int sharpsFlats, boolean major) {
 		if (sharpsFlats < -7 || sharpsFlats > 7)
-			throw new IllegalArgumentException("Key signatures can't have more than 7 sharps or flats");
+			throw new IllegalArgumentException(UIText.get("common.keysignature.too.many.accidentals"));
 
 		this.sharpsFlats = (byte) sharpsFlats;
 		this.mode = major ? KeyMode.MAJOR : KeyMode.MINOR;
@@ -27,7 +26,7 @@ public class KeySignature implements MidiConstants {
 
 	public KeySignature(int sharpsFlats, KeyMode mode) {
 		if (sharpsFlats < -7 || sharpsFlats > 7)
-			throw new IllegalArgumentException("Key signatures can't have more than 7 sharps or flats");
+			throw new IllegalArgumentException(UIText.get("common.keysignature.too.many.accidentals"));
 
 		this.sharpsFlats = (byte) sharpsFlats;
 		this.mode = mode;
@@ -67,7 +66,7 @@ public class KeySignature implements MidiConstants {
 
 	public KeySignature(String str) {
 		if (str.isEmpty())
-			throw new IllegalArgumentException(INVALID_KEY_SIGNATURE + str);
+			throw new IllegalArgumentException(UIText.get("common.keysignature.invalid", str));
 
 		String keyPart;
 		if (str.length() == 1) {
@@ -84,7 +83,7 @@ public class KeySignature implements MidiConstants {
 
 		this.mode = KeyMode.parseMode(suffix);
 		if (this.mode == null)
-			throw new IllegalArgumentException(INVALID_KEY_SIGNATURE + str);
+			throw new IllegalArgumentException(UIText.get("common.keysignature.invalid", str));
 
 		String[] keys = modeToKeys(this.mode);
 		for (int i = 0; i < keys.length; i++) {
@@ -93,7 +92,7 @@ public class KeySignature implements MidiConstants {
 				return;
 			}
 		}
-		throw new IllegalArgumentException(INVALID_KEY_SIGNATURE + str);
+		throw new IllegalArgumentException(UIText.get("common.keysignature.invalid", str));
 	}
 
 	public KeySignature transpose(int semitones) {

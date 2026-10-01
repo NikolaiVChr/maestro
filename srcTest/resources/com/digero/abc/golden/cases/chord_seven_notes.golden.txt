@@ -58,7 +58,7 @@ divisionType=0.0 resolution=11520 tickLength=24210 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading chord_seven_notes.abc on line 7, column 8:
+== EXCEPTION LotroFileParseException: Error reading chord_seven_notes.abc (X:1 Test) on line 7, column 8:
 Too many notes in a chord
 == log: empty
 

@@ -25,7 +25,7 @@ final class TestSetup {
             Logging.configure("Unit-test", true);
         } catch (IOException ignored) {
         }
-        LocaleManager.init();
+        LocaleManager.init(true);
         UIText.init();
     }
 }

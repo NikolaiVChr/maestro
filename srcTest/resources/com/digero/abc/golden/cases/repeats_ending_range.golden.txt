@@ -54,7 +54,7 @@ divisionType=0.0 resolution=11520 tickLength=56370 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading repeats_ending_range.abc on line 7, column 6:
+== EXCEPTION LotroFileParseException: Error reading repeats_ending_range.abc (X:1 Test) on line 7, column 6:
 Lotro plays nothing of a part with an ending for several passes (1-2); write the ending out for each pass
 == log: empty
 

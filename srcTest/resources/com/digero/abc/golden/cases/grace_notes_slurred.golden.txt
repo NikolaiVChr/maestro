@@ -53,7 +53,7 @@ divisionType=0.0 resolution=11520 tickLength=40598 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading grace_notes_slurred.abc on line 7, column 5:
+== EXCEPTION LotroFileParseException: Error reading grace_notes_slurred.abc (X:1 Test) on line 7, column 5:
 A slur inside grace notes is untested in Lotro; leave it out
 == log: empty
 

@@ -57,7 +57,7 @@ divisionType=0.0 resolution=11520 tickLength=59935 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading accent_and_staccato_std2011.abc on line 7, column 1:
+== EXCEPTION LotroFileParseException: Error reading accent_and_staccato_std2011.abc (X:1 Test) on line 7, column 1:
 Lotro plays nothing of a part from a !decoration! on (!accent!); use +f+ style for volume
 == log: empty
 

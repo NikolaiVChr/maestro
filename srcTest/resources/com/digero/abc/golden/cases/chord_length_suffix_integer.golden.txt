@@ -46,7 +46,7 @@ divisionType=0.0 resolution=11520 tickLength=29970 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading chord_length_suffix_integer.abc on line 7, column 6:
+== EXCEPTION LotroFileParseException: Error reading chord_length_suffix_integer.abc (X:1 Test) on line 7, column 6:
 Lotro doesn't support a duration after a chord (2); write the length on each note in the chord instead
 == log: empty
 

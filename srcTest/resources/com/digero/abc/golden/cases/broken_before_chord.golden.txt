@@ -43,7 +43,7 @@ divisionType=0.0 resolution=11520 tickLength=31958 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading broken_before_chord.abc on line 7, column 3:
+== EXCEPTION LotroFileParseException: Error reading broken_before_chord.abc (X:1 Test) on line 7, column 3:
 Lotro shortens only the first note of a chord after broken rhythm (c>[ce]), the others keep their length; write the lengths on the notes instead
 == log: empty
 

@@ -39,7 +39,7 @@ divisionType=0.0 resolution=11520 tickLength=29563 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading midi_drums_with_kit.abc on line 9, column 1:
+== EXCEPTION LotroFileParseException: Error reading midi_drums_with_kit.abc (X:1 Test) on line 9, column 1:
 Note is too low
 == log: empty
 

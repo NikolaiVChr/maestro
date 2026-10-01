@@ -44,6 +44,7 @@ import javax.swing.table.TableRowSorter;
 
 import com.digero.common.abc.AbcText;
 import com.digero.common.abctomidi.AbcSongbook;
+import com.digero.common.i18n.UIText;
 import com.digero.common.util.Util;
 
 /**
@@ -70,25 +71,26 @@ public class SongbookDialog extends JDialog {
 	public record Result(Choice choice, AbcSongbook.Tune tune) {
 	}
 
-	// The texts, together for translation
-	private static final String TITLE = "Songbook: %s";
-	private static final String INTRO = "<html>This file is a songbook with %d tunes. Pick the tune to open, "
-			+ "or open them all as parts of one song.</html>";
-	private static final String FILTER = "Filter:";
-	private static final String FILTER_TIP = "Words in the number, any title, type, key, meter, composer or origin; "
-			+ "all must match";
-	private static final String ALSO_KNOWN_AS = "Also: %s";
-	private static final String COUNT = "%d of %d tunes";
-	private static final String[] COLUMNS = { "No.", "Title", "Type", "Key", "Meter" };
-	private static final String OPEN_TUNE = "Open tune";
-	private static final String ALL_AS_PARTS = "Open all as parts";
-	private static final String ALL_AS_PARTS_TIP = "Every tune as a part of one song, as Maestro did before";
-	private static final String SPLIT = "Split into files…";
-	private static final String SPLIT_TIP = "Write every tune to a file of its own, in a folder you pick";
-	private static final String CANCEL = "Cancel";
-	private static final String SPLIT_DONE = "%d tunes written to\n%s";
-	private static final String SPLIT_FAILED = "Could not write the tunes:\n%s";
-	private static final String SPLIT_NOT_WRITABLE = "Can't write to\n%s\nPlease pick another folder.";
+	// The texts' keys (UIText)
+	private static final String TITLE = "common.abctomidi.songbook.title";
+	private static final String INTRO = "common.abctomidi.songbook.intro";
+	private static final String FILTER = "common.abctomidi.songbook.filter";
+	private static final String FILTER_TIP = "common.abctomidi.songbook.filter.tip";
+	private static final String ALSO_KNOWN_AS = "common.abctomidi.songbook.also.known.as";
+	private static final String COUNT = "common.abctomidi.songbook.count";
+	private static final String[] COLUMNS = { "common.abctomidi.songbook.column.number",
+			"common.abctomidi.songbook.column.title", "common.abctomidi.songbook.column.type",
+			"common.abctomidi.songbook.column.key", "common.abctomidi.songbook.column.meter" };
+	private static final String OPEN_TUNE = "common.abctomidi.songbook.open.tune";
+	private static final String ALL_AS_PARTS = "common.abctomidi.songbook.all.as.parts";
+	private static final String ALL_AS_PARTS_TIP = "common.abctomidi.songbook.all.as.parts.tip";
+	private static final String SPLIT = "common.abctomidi.songbook.split";
+	private static final String SPLIT_TIP = "common.abctomidi.songbook.split.tip";
+	private static final String SPLIT_FOLDER = "common.abctomidi.songbook.split.folder";
+	private static final String CANCEL = "common.abctomidi.songbook.cancel";
+	private static final String SPLIT_DONE = "common.abctomidi.songbook.split.done";
+	private static final String SPLIT_FAILED = "common.abctomidi.songbook.split.failed";
+	private static final String SPLIT_NOT_WRITABLE = "common.abctomidi.songbook.split.not.writable";
 
 	private final AbcSongbook book;
 	private final File bookFile;
@@ -101,7 +103,7 @@ public class SongbookDialog extends JDialog {
 	private final JTextField filter = new JTextField();
 	private final JLabel count = new JLabel();
 	private final JTextArea preview = new JTextArea();
-	private final JButton openButton = new JButton(OPEN_TUNE);
+	private final JButton openButton = new JButton(UIText.get(OPEN_TUNE));
 	private Result result = new Result(Choice.CANCEL, null);
 
 	/**
@@ -118,7 +120,7 @@ public class SongbookDialog extends JDialog {
 	}
 
 	private SongbookDialog(Component owner, AbcSongbook book, File bookFile) {
-		super(owner == null ? null : SwingUtilities.getWindowAncestor(owner), String.format(TITLE, bookFile.getName()),
+		super(owner == null ? null : SwingUtilities.getWindowAncestor(owner), UIText.get(TITLE, bookFile.getName()),
 				ModalityType.APPLICATION_MODAL);
 		this.book = book;
 		this.bookFile = bookFile;
@@ -152,7 +154,7 @@ public class SongbookDialog extends JDialog {
 
 			@Override
 			public String getColumnName(int column) {
-				return COLUMNS[column];
+				return UIText.get(COLUMNS[column]);
 			}
 
 			@Override
@@ -169,7 +171,7 @@ public class SongbookDialog extends JDialog {
 				if (row < 0 || column < 0 || convertColumnIndexToModel(column) != 1)
 					return null;
 				String others = otherTitles[convertRowIndexToModel(row)];
-				return (others == null) ? null : String.format(ALSO_KNOWN_AS, others);
+				return (others == null) ? null : UIText.get(ALSO_KNOWN_AS, others);
 			}
 		};
 		sorter = new TableRowSorter<>(model);
@@ -194,7 +196,7 @@ public class SongbookDialog extends JDialog {
 		preview.setRows(16);
 		preview.setColumns(40);
 
-		filter.setToolTipText(FILTER_TIP);
+		filter.setToolTipText(UIText.get(FILTER_TIP));
 		filter.setColumns(24);
 
 		// Layout: intro; filter and count; list | preview; buttons
@@ -211,13 +213,13 @@ public class SongbookDialog extends JDialog {
 		g.fill = GridBagConstraints.HORIZONTAL;
 		g.weightx = 1;
 		g.insets = new Insets(0, 0, gap, 0);
-		top.add(new JLabel(String.format(INTRO, tunes.size())), g);
+		top.add(new JLabel(UIText.get(INTRO, tunes.size())), g);
 		g.gridy = 1;
 		g.gridwidth = 1;
 		g.weightx = 0;
 		g.fill = GridBagConstraints.NONE;
 		g.insets = new Insets(0, 0, 0, gap);
-		JLabel filterLabel = new JLabel(FILTER);
+		JLabel filterLabel = new JLabel(UIText.get(FILTER));
 		filterLabel.setLabelFor(filter);
 		filterLabel.setDisplayedMnemonic(KeyEvent.VK_F);
 		top.add(filterLabel, g);
@@ -237,11 +239,11 @@ public class SongbookDialog extends JDialog {
 		split.setContinuousLayout(true);
 		content.add(split, BorderLayout.CENTER);
 
-		JButton allButton = new JButton(ALL_AS_PARTS);
-		allButton.setToolTipText(ALL_AS_PARTS_TIP);
-		JButton splitButton = new JButton(SPLIT);
-		splitButton.setToolTipText(SPLIT_TIP);
-		JButton cancelButton = new JButton(CANCEL);
+		JButton allButton = new JButton(UIText.get(ALL_AS_PARTS));
+		allButton.setToolTipText(UIText.get(ALL_AS_PARTS_TIP));
+		JButton splitButton = new JButton(UIText.get(SPLIT));
+		splitButton.setToolTipText(UIText.get(SPLIT_TIP));
+		JButton cancelButton = new JButton(UIText.get(CANCEL));
 		JPanel buttons = new JPanel(new GridBagLayout());
 		GridBagConstraints b = new GridBagConstraints();
 		b.insets = new Insets(0, 0, 0, gap);
@@ -357,7 +359,7 @@ public class SongbookDialog extends JDialog {
 				return true;
 			}
 		});
-		count.setText(String.format(COUNT, table.getRowCount(), tunes.size()));
+		count.setText(UIText.get(COUNT, table.getRowCount(), tunes.size()));
 		if (table.getRowCount() > 0 && table.getSelectedRow() < 0)
 			select(0);
 		showSelected();
@@ -413,8 +415,8 @@ public class SongbookDialog extends JDialog {
 		}
 		JFileChooser chooser = new JFileChooser(start);
 		chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-		chooser.setSelectedFile(new File(start, name + " tunes"));
-		chooser.setDialogTitle(SPLIT);
+		chooser.setSelectedFile(new File(start, UIText.get(SPLIT_FOLDER, name)));
+		chooser.setDialogTitle(UIText.get(SPLIT));
 		File folder;
 		while (true) {
 			if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
@@ -422,16 +424,16 @@ public class SongbookDialog extends JDialog {
 			folder = chooser.getSelectedFile();
 			if (isWritable(folder))
 				break;
-			JOptionPane.showMessageDialog(this, String.format(SPLIT_NOT_WRITABLE, folder.getAbsolutePath()), SPLIT,
-					JOptionPane.WARNING_MESSAGE);
+			JOptionPane.showMessageDialog(this, UIText.get(SPLIT_NOT_WRITABLE, folder.getAbsolutePath()),
+					UIText.get(SPLIT), JOptionPane.WARNING_MESSAGE);
 		}
 		try {
 			int written = book.splitAll(folder).size();
-			JOptionPane.showMessageDialog(this, String.format(SPLIT_DONE, written, folder.getAbsolutePath()), SPLIT,
-					JOptionPane.INFORMATION_MESSAGE);
+			JOptionPane.showMessageDialog(this, UIText.get(SPLIT_DONE, written, folder.getAbsolutePath()),
+					UIText.get(SPLIT), JOptionPane.INFORMATION_MESSAGE);
 		} catch (IOException e) {
-			JOptionPane.showMessageDialog(this, String.format(SPLIT_FAILED, e.getMessage()), SPLIT,
-					JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(this, UIText.get(SPLIT_FAILED, e.getMessage()),
+					UIText.get(SPLIT), JOptionPane.ERROR_MESSAGE);
 		}
 	}
 

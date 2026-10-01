@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
 import javax.sound.midi.*;
 
 import com.digero.common.abc.*;
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.MidiConstants;
 import com.digero.common.midi.MidiFactory;
 import com.digero.common.midi.MidiUtils;
@@ -541,6 +542,13 @@ public class AbcToMidi {
 		Map<Integer, AbcRegion> tiedRegions = new HashMap<>();
 
 		Map<Integer, Integer> tiedNotes = new HashMap<>(); // noteId => (line << 16) | column
+		// ABC 2.1 (4.11), with standard2011: a tie joins a note to the next note (or chord), which must have its pitch.
+		// The pitches tied when the last note or chord ended, and the pitches of the note or chord being read.
+		Set<Integer> tiesToContinue = new HashSet<>();
+		Set<Integer> eventPitches = new HashSet<>();
+		// A repeat sign or an ending since the last note or chord: the next note played may be another one (|: c ... d- :|
+		// goes back to c), so a tie that isn't continued there just ends
+		boolean crossedRepeat = false;
 		Map<Integer, Double> tiedNoteStartTicks = new HashMap<>(); // noteId => start of the tie's first note
 		Map<Integer, Double> tiedNoteEndTicks = new HashMap<>(); // noteId => end of the tied note so far, see below
 		Map<Integer, LotroInstrument> trackInstruments = new HashMap<>(); // trackIndex => instrument it plays, see endTrack
@@ -605,7 +613,10 @@ public class AbcToMidi {
 			partProgramClues = fileProgramClues;
 			fileDrone = new Drone();
 			partDrone = fileDrone;
-			String fileName = fileAndData.file.getName();
+			// The file's name in messages; from an X: on with the tune's number and title (a tune of a songbook)
+			String baseFileName = fileAndData.file.getName();
+			String fileName = baseFileName;
+			String tuneNumber = null; // The X: of the part being read
 			abcInfo.addSourceFile(fileAndData.file);
 			int lineNumber = 0;
 			int partStartLine = 0;
@@ -747,8 +758,8 @@ public class AbcToMidi {
 				// refuses the part.
 				if (line.startsWith("+:")) {
 					if (enableLotroErrors) {
-						throw new LotroFileParseException("Lotro refuses a part with a +: field continuation; put the field "
-								+ "on one line", fileName, lineNumber, 0);
+						throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.field.continuation"),
+								fileName, lineNumber, 0);
 					}
 					String more = line.substring(2).trim();
 					if (lastField == 'w') {
@@ -784,7 +795,8 @@ public class AbcToMidi {
 
 				// Macros (m:, ABC 2.1, 4.16): not expanded yet, so the music using them can't be played as written
 				if (line.stripLeading().startsWith("m:"))
-					throw new FileParseException("Macros (m:) aren't supported yet", fileName, lineNumber, 0);
+					throw new FileParseException(UIText.get("common.abctomidi.macros.not.supported"), fileName,
+							lineNumber, 0);
 
 				int chordSize = 0;
 
@@ -840,8 +852,8 @@ public class AbcToMidi {
 						switch (type) {
 							case 'X':
 								for (int lineAndColumn : tiedNotes.values()) {
-									throw new FileParseException("Tied note does not connect to another note", fileName,
-											lineAndColumn >>> 16, lineAndColumn & 0xFFFF);
+									throw new FileParseException(UIText.get("common.abctomidi.tie.not.connected"),
+											fileName, lineAndColumn >>> 16, lineAndColumn & 0xFFFF);
 								}
 
 								if (track != null)
@@ -871,6 +883,8 @@ public class AbcToMidi {
 									abcInfo.setPartEndLine(trackNumber, previousLineForRegions);
 
 								info.newPart(Integer.parseInt(value));
+								tuneNumber = value;
+								fileName = tuneFileName(baseFileName, tuneNumber, null);
 								trackNumber++;
 								partStartLine = lineNumber;
 								// The part starts from the file header's meter, so a meter error in a part without M: points here
@@ -893,6 +907,8 @@ public class AbcToMidi {
 								// More T: lines in the header are other titles of the tune
 								if (partTitles++ > 0 && infoLineNumbers.add(lineNumberForRegions))
 									infoLines.add("Also known as: " + AbcText.decode(value));
+								else if (partTitles == 1 && tuneNumber != null)
+									fileName = tuneFileName(baseFileName, tuneNumber, AbcText.decode(value));
 								info.setTitle(value, false);
 								abcInfo.setPartName(trackNumber, value, false);
 								// In standard ABC, T: is the song's title: it doesn't name an instrument
@@ -954,36 +970,33 @@ public class AbcToMidi {
 								}
 								if (enableLotroErrors && value.isBlank()) {
 									// Tested in Lotro (B38): an empty K:, in the header or the tune, plays nothing
-									throw new LotroFileParseException("Lotro refuses a part with an empty K:; write the key, "
-											+ "e.g. K:C", fileName, lineNumber, infoMatcher.start(INFO_VALUE));
+									throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.key.empty"),
+											fileName, lineNumber, infoMatcher.start(INFO_VALUE));
 								}
 								if (enableLotroErrors && !notForLotro.isEmpty()) {
-									throw new LotroFileParseException("Lotro refuses a part with \"" + notForLotro
-											+ "\" in K:; write only the key, e.g. K:G or K:D mix", fileName, lineNumber,
-											infoMatcher.start(INFO_VALUE));
+									throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.key.words",
+											notForLotro), fileName, lineNumber, infoMatcher.start(INFO_VALUE));
 								}
 								break;
 							case 'L':
 								// Tested in Lotro (B40): an L: line after the part's first notes changes nothing, the notes
 								// after it keep the header's L:
 								if (enableLotroErrors && track != null) {
-									throw new LotroFileParseException("Lotro ignores an L: after the part's first notes; "
-											+ "put it in the header or write the lengths on the notes", fileName, lineNumber,
-											infoMatcher.start(INFO_VALUE));
+									throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.length.after.notes"),
+											fileName, lineNumber, infoMatcher.start(INFO_VALUE));
 								}
 								// The note length doesn't affect the PPQN, so it may differ between parts
 								info.setNoteDivisor(value);
 								break;
 							case 'M':
 								if (enableLotroErrors && value.equalsIgnoreCase("none")) {
-									throw new LotroFileParseException("Lotro refuses a part with M:none; give a meter, e.g. M:4/4",
+									throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.meter.none"),
 											fileName, lineNumber, infoMatcher.start(INFO_VALUE));
 								}
 								if (enableLotroErrors && value.contains("+")) {
 									// ABC 2.1 (3.1.6): the numerator as a sum shows the beat groups; not tested in Lotro
-									throw new LotroFileParseException("A meter written as a sum (M:" + value + ") is untested "
-											+ "in Lotro; write its total, e.g. M:7/8 for M:2+2+3/8", fileName, lineNumber,
-											infoMatcher.start(INFO_VALUE));
+									throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.meter.sum",
+											value), fileName, lineNumber, infoMatcher.start(INFO_VALUE));
 								}
 								info.setMeter(value, track == null);
 								meterChangeLine = lineNumber;
@@ -991,15 +1004,14 @@ public class AbcToMidi {
 								break;
 							case 'Q': {
 								if (enableLotroErrors && value.indexOf('"') >= 0) {
-									throw new LotroFileParseException("Lotro refuses a part with text in Q: (" + value
-											+ "); use only the tempo, e.g. Q:120", fileName, lineNumber,
-											infoMatcher.start(INFO_VALUE));
+									throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.tempo.text",
+											value), fileName, lineNumber, infoMatcher.start(INFO_VALUE));
 								}
 								int tempo = info.getPrimaryTempoBPM();
 								info.setPrimaryTempoBPM(value);
 								if (track != null) {
 									if (info.getPrimaryTempoBPM() != tempo) {
-										throw new FileParseException("The tempo can't be changed with Q: in the middle of a part",
+										throw new FileParseException(UIText.get("common.abctomidi.tempo.change.mid.part"),
 												fileName, lineNumber, infoMatcher.start(INFO_VALUE));
 									}
 								} else {
@@ -1014,7 +1026,7 @@ public class AbcToMidi {
 					} catch (IllegalArgumentException e) {
 						// NumberFormatException's own message ("For input string: ...") doesn't say what's wrong
 						String message = (e instanceof NumberFormatException)
-								? "Invalid number in " + type + ": field: \"" + value + "\""
+								? UIText.get("common.abctomidi.field.invalid.number", String.valueOf(type), value)
 								: e.getMessage();
 						throw new FileParseException(message, fileName, lineNumber, infoMatcher.start(INFO_VALUE));
 					}
@@ -1040,14 +1052,15 @@ public class AbcToMidi {
 								&& Math.abs(beat * denominator - 1) > 1e-9) {
 							// Tested in Lotro (B15): the beat is the meter's denominator, whatever the note length
 							long asLotro = Math.round(info.getTempoBeatsPerMinute() * beat * denominator);
-							throw new LotroFileParseException("Lotro plays Q:" + headerTempo + " as "
-									+ info.getTempoBeatsPerMinute() + " beats of 1/" + denominator
-									+ " a minute (the meter's beat), whatever the note length; for this tempo write Q:1/"
-									+ denominator + "=" + asLotro, fileName, headerTempoLine, headerTempoColumn);
+							throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.tempo.note.length",
+									headerTempo, String.valueOf(info.getTempoBeatsPerMinute()),
+									String.valueOf(denominator), String.valueOf(asLotro)), fileName, headerTempoLine,
+									headerTempoColumn);
 						}
 						if (seq != null && info.getPrimaryTempoBPM() != abcInfo.getPrimaryTempoBPM()) {
-							throw new FileParseException("All parts must have the same tempo (Q:" + info.getPrimaryTempoBPM()
-									+ " here, Q:" + abcInfo.getPrimaryTempoBPM() + " in the earlier parts)", fileName,
+							throw new FileParseException(UIText.get("common.abctomidi.parts.same.tempo",
+									String.valueOf(info.getPrimaryTempoBPM()),
+									String.valueOf(abcInfo.getPrimaryTempoBPM())), fileName,
 									(headerTempo != null) ? headerTempoLine : lineNumber,
 									(headerTempo != null) ? headerTempoColumn : 0);
 						}
@@ -1073,7 +1086,8 @@ public class AbcToMidi {
 
 							track = null;
 						} catch (InvalidMidiDataException mde) {
-							throw new FileParseException("Midi Error: " + mde.getMessage(), fileName);
+							throw new FileParseException(UIText.get("common.abctomidi.midi.error", mde.getMessage()),
+									fileName);
 						}
 					}
 
@@ -1085,9 +1099,8 @@ public class AbcToMidi {
 						trackIndex = seq.getTracks().length;
 						channel = getTrackChannel(trackIndex);
 						if (channel > MidiConstants.CHANNEL_COUNT_ABC - 1) {
-							throw new FileParseException(
-									"Too many parts (max = " + (MidiConstants.CHANNEL_COUNT_ABC - 1) + ")", fileName,
-									partStartLine);
+							throw new FileParseException(UIText.get("common.abctomidi.too.many.parts",
+									String.valueOf(MidiConstants.CHANNEL_COUNT_ABC - 1)), fileName, partStartLine);
 						}
 						track = seq.createTrack();
 						trackInstruments.put(trackIndex, info.getInstrument());
@@ -1169,8 +1182,8 @@ public class AbcToMidi {
 							char ch = line.charAt(i);
 							if (Character.isWhitespace(ch)) {
 								if (inChord) {
-									throw new FileParseException("Unexpected whitespace inside a chord", fileName,
-											lineNumber, i);
+									throw new FileParseException(UIText.get("common.abctomidi.chord.whitespace"),
+											fileName, lineNumber, i);
 								}
 								continue;
 							}
@@ -1178,14 +1191,15 @@ public class AbcToMidi {
 							switch (ch) {
 								case '[': // Chord start
 									if (inChord) {
-										throw new FileParseException("Unexpected '" + ch + "' inside a chord", fileName,
-												lineNumber, i);
+										throw new FileParseException(UIText.get("common.abctomidi.unexpected.in.chord",
+												String.valueOf(ch)), fileName, lineNumber, i);
 									}
 
 									if (i + 1 < line.length() && Character.isDigit(line.charAt(i + 1))) {
 										// [1 [2 ... : the start of a numbered ending. Tested in Lotro: it plays on, and plays
 										// no repeats, so every ending plays once, one after the other
 										int end = skipEndingNumber(line, i + 1);
+										crossedRepeat = true;
 										repeats.ending(checkEnding(line.substring(i + 1, end + 1), enableLotroErrors, fileName, lineNumber, i));
 										i = end;
 										break;
@@ -1195,12 +1209,12 @@ public class AbcToMidi {
 										// line of its own. Tested in Lotro: it refuses the part.
 										int close = line.indexOf(']', i + 3);
 										if (close < 0) {
-											throw new FileParseException("There is no matching ']'", fileName, lineNumber, i);
+											throw new FileParseException(UIText.get("common.abctomidi.no.matching",
+													"]"), fileName, lineNumber, i);
 										}
 										if (enableLotroErrors) {
-											throw new LotroFileParseException("Lotro refuses a part with an inline field ("
-													+ line.substring(i, close + 1) + "); put the field on a line of its own",
-													fileName, lineNumber, i);
+											throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.inline.field",
+													line.substring(i, close + 1)), fileName, lineNumber, i);
 										}
 										char field = Character.toUpperCase(line.charAt(i + 1));
 										String value = line.substring(i + 3, close).trim();
@@ -1221,9 +1235,8 @@ public class AbcToMidi {
 													int tempo = info.getPrimaryTempoBPM();
 													info.setPrimaryTempoBPM(value);
 													if (info.getPrimaryTempoBPM() != tempo) {
-														throw new FileParseException(
-																"The tempo can't be changed with Q: in the middle of a part", fileName,
-																lineNumber, i + 3);
+														throw new FileParseException(UIText.get("common.abctomidi.tempo.change.mid.part"),
+																fileName, lineNumber, i + 3);
 													}
 												}
 												default -> {
@@ -1232,7 +1245,7 @@ public class AbcToMidi {
 											}
 										} catch (IllegalArgumentException e) {
 											String message = (e instanceof NumberFormatException)
-													? "Invalid number in " + field + ": field: \"" + value + "\""
+													? UIText.get("common.abctomidi.field.invalid.number", String.valueOf(field), value)
 													: e.getMessage();
 											throw new FileParseException(message, fileName, lineNumber, i + 3);
 										}
@@ -1242,8 +1255,8 @@ public class AbcToMidi {
 									if (line.startsWith("[|]", i)) {
 										// [|] : an invisible bar line (ABC 2.1, 4.8). Tested in Lotro: it refuses the part.
 										if (enableLotroErrors) {
-											throw new LotroFileParseException("Lotro refuses a part with an invisible bar line [|]; "
-													+ "use |", fileName, lineNumber, i);
+											throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.invisible.bar"),
+													fileName, lineNumber, i);
 										}
 										lyricBar++;
 										if (trackNumber == 1)
@@ -1271,9 +1284,8 @@ public class AbcToMidi {
 									nextBrokenDenominator = 1;
 									if (brokenRhythmDenominator != 1 || brokenRhythmNumerator != 1) {
 										if (enableLotroErrors) {
-											throw new LotroFileParseException("Lotro shortens only the first note of a chord after "
-													+ "broken rhythm (c>[ce]), the others keep their length; write the lengths "
-													+ "on the notes instead", fileName, lineNumber, i);
+											throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.broken.before.chord"),
+													fileName, lineNumber, i);
 										}
 										// c>[ce] : the chord gets the second part of the broken rhythm. ABC 2.1 (4.4, 4.17): the
 										// whole chord. Lotro (tested, B6 and B31): only the chord's first note, the others keep
@@ -1304,33 +1316,32 @@ public class AbcToMidi {
 											chordLenNumerator = parseLengthNumerator(chordLenMatcher.group(CHORD_LEN_NUMER));
 											chordLenDenominator = parseLengthDenominator(chordLenMatcher.group(CHORD_LEN_DENOM));
 										} catch (IllegalArgumentException e) {
-											throw new FileParseException("Invalid chord length: " + chordLenMatcher.group(),
-													fileName, lineNumber, chordCloseIndex + 1);
+											throw new FileParseException(UIText.get("common.abctomidi.chord.length.invalid",
+													chordLenMatcher.group()), fileName, lineNumber,
+													chordCloseIndex + 1);
 										}
 										chordLenStr = chordLenMatcher.group();
 										if (enableLotroErrors && !chordLenStr.isEmpty()) {
-											throw new LotroFileParseException("Lotro doesn't support a duration after a chord ("
-													+ chordLenStr + "); write the length on each note in the chord instead",
-													fileName, lineNumber, chordCloseIndex + 1);
+											throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.chord.length",
+													chordLenStr), fileName, lineNumber, chordCloseIndex + 1);
 										}
 										if (chordLenNumerator == 0 || chordLenDenominator == 0) {
-											throw new FileParseException("Invalid chord length: " + chordLenStr, fileName,
-													lineNumber, chordCloseIndex + 1);
+											throw new FileParseException(UIText.get("common.abctomidi.chord.length.invalid",
+													chordLenStr), fileName, lineNumber, chordCloseIndex + 1);
 										}
 										// [ce]- : a tie after the chord. Tested in Lotro (B65): it refuses the part.
 										int tieAt = chordCloseIndex + 1 + chordLenStr.length();
 										chordTied = tieAt < line.length() && line.charAt(tieAt) == '-';
 										if (enableLotroErrors && chordTied) {
-											throw new LotroFileParseException("Lotro refuses a part with a tie after a chord ([ce]-); "
-													+ "tie each note in the chord instead, e.g. [c-e-]", fileName, lineNumber, tieAt);
+											throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.chord.tie"),
+													fileName, lineNumber, tieAt);
 										}
 										// [ce]>d : broken rhythm after the chord. ABC 2.1 (4.4): like after a note. Lotro refuses
 										// it (tested, B5), so without standard2011 it's an error.
 										int brokenStart = tieAt + (chordTied ? 1 : 0);
 										if (!abc21 && brokenStart < line.length()
 												&& (line.charAt(brokenStart) == '>' || line.charAt(brokenStart) == '<')) {
-											String message = "Lotro refuses a part with a broken rhythm after a chord ([ce]>d); write "
-													+ "the lengths on the notes instead, e.g. [c3/2e3/2] d/";
+											String message = UIText.get("common.abctomidi.lotro.broken.after.chord");
 											if (enableLotroErrors)
 												throw new LotroFileParseException(message, fileName, lineNumber, brokenStart);
 											throw new FileParseException(message, fileName, lineNumber, brokenStart);
@@ -1358,23 +1369,31 @@ public class AbcToMidi {
 
 									partChordsNumber++;
 									if (enableLotroErrors && partChordsNumber > 10_000) {
-										throw new LotroFileParseException("Too many chords/notes/rests in "+info.getTitle()+". Max is 10000.",
-												fileName, lineNumber, i);
+										throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.too.many.notes",
+												info.getTitle()), fileName, lineNumber, i);
 									}
 									break;
 
 								case ']': // Chord end
 									if (!inChord) {
-										throw new FileParseException("Unexpected '" + ch + "'", fileName, lineNumber, i);
+										throw new FileParseException(UIText.get("common.abctomidi.unexpected.char",
+												String.valueOf(ch)), fileName, lineNumber, i);
 									}
 									if (i != chordCloseIndex) {
 										// For now this branch should never run.
-										throw new FileParseException("Mismatched ']' in chord", fileName, lineNumber, i);
+										throw new FileParseException(UIText.get("common.abctomidi.chord.mismatched.close"),
+												fileName, lineNumber, i);
 									}
 									if (chordSize == 0) {
-										throw new FileParseException("Empty chord", fileName, lineNumber, chordStartIndex);
+										throw new FileParseException(UIText.get("common.abctomidi.chord.empty"),
+												fileName, lineNumber, chordStartIndex);
 									}
 									inChord = false;
+									if (abc21 && !repeats.skipping) {
+										checkTiesContinue(tiesToContinue, eventPitches, tiedNotes, tiedNoteStartTicks, tiedNoteEndTicks, tiedRegions,
+												crossedRepeat, track, channel, info.getDynamics().getVol(useLotroInstruments), noteOffEvents, fileName);
+										crossedRepeat = false;
+									}
 									// An accent or staccato before the chord was for all of its notes
 									accent = false;
 									staccato = false;
@@ -1412,8 +1431,8 @@ public class AbcToMidi {
 
 								case '|': // Bar line
 									if (inChord) {
-										throw new FileParseException("Unexpected '" + ch + "' inside a chord", fileName,
-												lineNumber, i);
+										throw new FileParseException(UIText.get("common.abctomidi.unexpected.in.chord",
+												String.valueOf(ch)), fileName, lineNumber, i);
 									}
 									if (playChords)
 										partBarTicks.computeIfAbsent(trackNumber, k -> new TreeSet<>()).add(Math.round(chordStartTick));
@@ -1434,22 +1453,26 @@ public class AbcToMidi {
 										i++; // Skip |], |:
 										if (afterBar == ']')
 											repeats.sectionEnd(lineIndex, i + 1);
-										else
+										else {
+											crossedRepeat = true;
 											repeats.start(lineIndex, i + 1);
+										}
 									} else if (trackNumber == 1) {
 										abcInfo.addBar(Math.round(chordStartTick));
 									}
 									int endingEnd = skipEndingNumber(line, i + 1); // |1 |2 : a numbered ending
-									if (endingEnd > i)
+									if (endingEnd > i) {
+										crossedRepeat = true;
 										repeats.ending(checkEnding(line.substring(i + 1, endingEnd + 1), enableLotroErrors, fileName,
 												lineNumber, i + 1));
+									}
 									i = endingEnd;
 									break;
 
 								case ':': // Beginning of repeat end bar line :| ::| :::::::|
 									if (inChord) {
-										throw new FileParseException("Unexpected '" + ch + "' inside a chord", fileName,
-												lineNumber, i);
+										throw new FileParseException(UIText.get("common.abctomidi.unexpected.in.chord",
+												String.valueOf(ch)), fileName, lineNumber, i);
 									}
 									if (playChords)
 										partBarTicks.computeIfAbsent(trackNumber, k -> new TreeSet<>()).add(Math.round(chordStartTick));
@@ -1485,13 +1508,14 @@ public class AbcToMidi {
 									} else if (colons >= 2) {
 										signEnd = i + colons; // :: the end of one repeat and the start of the next
 									} else {
-										throw new FileParseException("Expected to see '|' after parsing '" + ch + "'", fileName,
-												lineNumber, i);
+										throw new FileParseException(UIText.get("common.abctomidi.bar.expected.after",
+												String.valueOf(ch)), fileName, lineNumber, i);
 									}
 									lyricBar++;
 									if (trackNumber == 1)
 										abcInfo.addBar(Math.round(chordStartTick));
 
+									crossedRepeat = true;
 									if (repeats.end(lines, lineIndex, i, signEnd)) {
 										// Play the repeated section again: go back to its start
 										lineIndex = repeats.jumpLine - 1;
@@ -1500,16 +1524,19 @@ public class AbcToMidi {
 									}
 									i = signEnd - 1;
 									int nextEndingEnd = skipEndingNumber(line, i + 1); // :|2 : a numbered ending
-									if (nextEndingEnd > i)
+									if (nextEndingEnd > i) {
+										crossedRepeat = true;
 										repeats.ending(checkEnding(line.substring(i + 1, nextEndingEnd + 1), enableLotroErrors,
 												fileName, lineNumber, i + 1));
+									}
 									i = nextEndingEnd;
 									break;
 
 								case '+': {
 									int j = line.indexOf('+', i + 1);
 									if (j < 0) {
-										throw new FileParseException("There is no matching '+'", fileName, lineNumber, i);
+										throw new FileParseException(UIText.get("common.abctomidi.no.matching", "+"),
+												fileName, lineNumber, i);
 									}
 									String decoration = line.substring(i + 1, j);
 									try {
@@ -1518,11 +1545,12 @@ public class AbcToMidi {
 										// +trill+ +fermata+ ... : the ABC 2.0 form of !trill! (ABC 2.1, 4.14). Tested in Lotro: it
 										// plays nothing of the part. Only notes (+ceg+, a chord in ABC 1.6) stay an error.
 										if (enableLotroErrors) {
-											throw new LotroFileParseException("Lotro plays nothing of a part with +" + decoration
-													+ "+; only the volumes +pppp+ to +ffff+ work", fileName, lineNumber, i);
+											throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.plus.decoration",
+													decoration), fileName, lineNumber, i);
 										}
 										if (decoration.isEmpty() || decoration.matches("[_^=A-Ga-g,'0-9/]*"))
-											throw new FileParseException("Unsupported +decoration+", fileName, lineNumber, i);
+											throw new FileParseException(UIText.get("common.abctomidi.plus.decoration.unsupported"),
+													fileName, lineNumber, i);
 										if (!repeats.skipping && ORNAMENTS.containsKey(decoration))
 											ornament = ORNAMENTS.get(decoration);
 										else if (abc21 && ACCENT_NAMES.contains(decoration))
@@ -1530,7 +1558,7 @@ public class AbcToMidi {
 									}
 
 									if (enableLotroErrors && inChord) {
-										throw new LotroFileParseException("Can't include a +decoration+ inside a chord",
+										throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.plus.decoration.in.chord"),
 												fileName, lineNumber, i);
 									}
 
@@ -1542,7 +1570,8 @@ public class AbcToMidi {
 									// "Am" chord symbol or "^text" annotation. Lotro plays on (tested); it plays no chords.
 									int j = line.indexOf('"', i + 1);
 									if (j < 0) {
-										throw new FileParseException("There is no matching '\"'", fileName, lineNumber, i);
+										throw new FileParseException(UIText.get("common.abctomidi.no.matching", "\""),
+												fileName, lineNumber, i);
 									}
 									if (playChords && !inChord && !repeats.skipping && !drumPart) {
 										// On the beat of the note that follows; text that isn't a chord name is skipped
@@ -1567,11 +1596,12 @@ public class AbcToMidi {
 									}
 									int j = line.indexOf('!', i + 1);
 									if (j < 0) {
-										throw new FileParseException("There is no matching '!'", fileName, lineNumber, i);
+										throw new FileParseException(UIText.get("common.abctomidi.no.matching", "!"),
+												fileName, lineNumber, i);
 									}
 									if (enableLotroErrors) {
-										throw new LotroFileParseException("Lotro plays nothing of a part from a !decoration! on ("
-												+ line.substring(i, j + 1) + "); use +f+ style for volume", fileName, lineNumber, i);
+										throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.bang.decoration",
+												line.substring(i, j + 1)), fileName, lineNumber, i);
 									}
 									String decorationName = line.substring(i + 1, j);
 									if (abc21 && DYNAMICS_NAMES.contains(decorationName)) {
@@ -1593,12 +1623,13 @@ public class AbcToMidi {
 									// (ABC leaves their length to the program: GRACE_NOTE_SECONDS). Checked in every mode, so a
 									// mistake in the braces is an error even where they aren't played.
 									if (inChord) {
-										throw new FileParseException("Unexpected '" + ch + "' inside a chord", fileName,
-												lineNumber, i);
+										throw new FileParseException(UIText.get("common.abctomidi.unexpected.in.chord",
+												String.valueOf(ch)), fileName, lineNumber, i);
 									}
 									int j = line.indexOf('}', i + 1);
 									if (j < 0) {
-										throw new FileParseException("There is no matching '}'", fileName, lineNumber, i);
+										throw new FileParseException(UIText.get("common.abctomidi.no.matching", "}"),
+												fileName, lineNumber, i);
 									}
 									int k = i + 1;
 									if (k < j && line.charAt(k) == '/')
@@ -1618,28 +1649,29 @@ public class AbcToMidi {
 											// A slur over the grace notes, {(B/c/B/^A/)} (Village Music Project): layout only.
 											// ABC 2.1 (4.12) doesn't say; untested in Lotro.
 											if (enableLotroErrors) {
-												throw new LotroFileParseException("A slur inside grace notes is untested in Lotro; "
-														+ "leave it out", fileName, lineNumber, k);
+												throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.grace.slur"),
+														fileName, lineNumber, k);
 											}
 											k++;
 											continue;
 										}
 										grace.region(k, j);
 										if (!grace.lookingAt()) {
-											throw new FileParseException("Unexpected '" + c + "' in grace notes", fileName,
-													lineNumber, k);
+											throw new FileParseException(UIText.get("common.abctomidi.grace.unexpected",
+													String.valueOf(c)), fileName, lineNumber, k);
 										}
 										char letter = grace.group(NOTE_LETTER).charAt(0);
 										if (letter == 'z' || letter == 'x') {
-											throw new FileParseException("Unexpected rest '" + letter + "' in grace notes",
-													fileName, lineNumber, k);
+											throw new FileParseException(UIText.get("common.abctomidi.grace.rest",
+													String.valueOf(letter)), fileName, lineNumber, k);
 										}
 										double weight;
 										try {
 											weight = nextFactor * parseLengthNumerator(grace.group(NOTE_LEN_NUMER))
 													/ parseLengthDenominator(grace.group(NOTE_LEN_DENOM));
 										} catch (IllegalArgumentException e) {
-											throw new FileParseException("Invalid grace note length", fileName, lineNumber, k);
+											throw new FileParseException(UIText.get("common.abctomidi.grace.length.invalid"),
+													fileName, lineNumber, k);
 										}
 										nextFactor = 1;
 										String broken = grace.group(NOTE_BROKEN_RHYTHM);
@@ -1656,11 +1688,12 @@ public class AbcToMidi {
 										k = grace.end();
 									}
 									if (group.isEmpty()) {
-										throw new FileParseException("No grace notes in the braces", fileName, lineNumber, i);
+										throw new FileParseException(UIText.get("common.abctomidi.grace.empty"),
+												fileName, lineNumber, i);
 									}
 									if (nextFactor != 1) {
-										throw new FileParseException("A broken rhythm needs a grace note after it", fileName,
-												lineNumber, j);
+										throw new FileParseException(UIText.get("common.abctomidi.grace.broken.needs.note"),
+												fileName, lineNumber, j);
 									}
 									if (!enableLotroErrors && !repeats.skipping)
 										graceNotes.addAll(group);
@@ -1685,20 +1718,20 @@ public class AbcToMidi {
 									// Layout only, they change nothing that's played. Tested in Lotro: it plays the part up to
 									// the sign, and nothing after it.
 									if (enableLotroErrors) {
-										throw new LotroFileParseException("Lotro stops playing the part at '" + ch
-												+ "' (layout only); leave it out", fileName, lineNumber, i);
+										throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.layout.char",
+												String.valueOf(ch)), fileName, lineNumber, i);
 									}
 									break;
 
 								case 'Z': {
 									// Z Z4 : a rest of 1 or 4 whole bars (ABC 2.1, 4.5). Tested in Lotro: it refuses the part.
 									if (enableLotroErrors) {
-										throw new LotroFileParseException("Lotro refuses a part with a multi-measure rest Z; "
-												+ "write the rest out, e.g. z8 for a bar of 4/4 with L:1/8", fileName, lineNumber, i);
+										throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.multi.measure.rest"),
+												fileName, lineNumber, i);
 									}
 									if (inChord) {
-										throw new FileParseException("Unexpected '" + ch + "' inside a chord", fileName,
-												lineNumber, i);
+										throw new FileParseException(UIText.get("common.abctomidi.unexpected.in.chord",
+												String.valueOf(ch)), fileName, lineNumber, i);
 									}
 									int j = i + 1;
 									while (j < line.length() && Character.isDigit(line.charAt(j)))
@@ -1719,6 +1752,11 @@ public class AbcToMidi {
 											abcInfo.addRegion(new AbcRegion(lineNumberForRegions, i, j, Math.round(chordStartTick),
 													Math.round(chordStartTick + bars * barTicks), Note.REST, trackIndex));
 										}
+										if (abc21) {
+											checkTiesContinue(tiesToContinue, eventPitches, tiedNotes, tiedNoteStartTicks, tiedNoteEndTicks, tiedRegions,
+													crossedRepeat, track, channel, info.getDynamics().getVol(useLotroInstruments), noteOffEvents, fileName);
+											crossedRepeat = false;
+										}
 										chordStartTick += bars * barTicks;
 										chordEndTick = chordStartTick;
 									}
@@ -1738,8 +1776,8 @@ public class AbcToMidi {
 									// Decorations in short form (ABC 2.1, 4.14). T M P are ornaments that are played, the others
 									// change nothing here. Tested in Lotro (T H u v): it refuses the part.
 									if (enableLotroErrors) {
-										throw new LotroFileParseException("Lotro refuses a part with the decoration '" + ch
-												+ "'; leave it out", fileName, lineNumber, i);
+										throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.decoration.letter",
+												String.valueOf(ch)), fileName, lineNumber, i);
 									}
 									if (!repeats.skipping && (ch == 'T' || ch == 'M' || ch == 'P'))
 										ornament = (ch == 'T') ? "trill" : (ch == 'M') ? "lowermordent" : "uppermordent";
@@ -1749,7 +1787,7 @@ public class AbcToMidi {
 								case 'y':
 									// Spacer. Tested in Lotro (B58): it refuses the part.
 									if (enableLotroErrors) {
-										throw new LotroFileParseException("Lotro refuses a part with the spacer 'y'; leave it out",
+										throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.spacer"),
 												fileName, lineNumber, i);
 									}
 									break;
@@ -1759,8 +1797,8 @@ public class AbcToMidi {
 									if (i + 1 < line.length() && Character.isDigit(line.charAt(i + 1))) {
 										// If it has a digit following it, it's a tuplet
 										if (tuplet != null) {
-											throw new FileParseException("Unexpected '" + ch + "' before end of tuplet",
-													fileName, lineNumber, i);
+											throw new FileParseException(UIText.get("common.abctomidi.tuplet.unexpected",
+													String.valueOf(ch)), fileName, lineNumber, i);
 										}
 
 										// The tuplet spec (p:q:r) runs to the first character that isn't a digit or ':',
@@ -1771,14 +1809,15 @@ public class AbcToMidi {
 										try {
 											tuplet = new Tuplet(line.substring(i + 1, j), info.isCompoundMeter());
 										} catch (IllegalArgumentException e) {
-											throw new FileParseException("Invalid tuplet", fileName, lineNumber, i);
+											throw new FileParseException(UIText.get("common.abctomidi.tuplet.invalid"),
+													fileName, lineNumber, i);
 										}
 										i = j - 1;
 									} else {
 										// Otherwise it's a slur, which Lotro conveniently ignores
 										if (inChord) {
-											throw new FileParseException("Unexpected '" + ch + "' inside a chord", fileName,
-													lineNumber, i);
+											throw new FileParseException(UIText.get("common.abctomidi.unexpected.in.chord",
+													String.valueOf(ch)), fileName, lineNumber, i);
 										}
 									}
 									break;
@@ -1786,15 +1825,15 @@ public class AbcToMidi {
 								case ')':
 									// End of a slur, ignore
 									if (inChord) {
-										throw new FileParseException("Unexpected '" + ch + "' inside a chord", fileName,
-												lineNumber, i);
+										throw new FileParseException(UIText.get("common.abctomidi.unexpected.in.chord",
+												String.valueOf(ch)), fileName, lineNumber, i);
 									}
 									break;
 
 								case '\\':
 									// Line continuation; Lotro treats every line on its own anyway, so it's ignored
 									if (!line.substring(i + 1).isBlank()) {
-										throw new FileParseException("Unexpected '\\' (only allowed at the end of a line)",
+										throw new FileParseException(UIText.get("common.abctomidi.backslash.not.at.end"),
 												fileName, lineNumber, i);
 									}
 									break;
@@ -1802,12 +1841,12 @@ public class AbcToMidi {
 								case '&':
 									// Voice overlay (ABC 2.1, 7.4): a second voice in the same bar. Not played yet (rare: 17
 									// of The Session's 55,000 settings)
-									throw new FileParseException("Voice overlay (&) isn't supported yet", fileName,
-											lineNumber, i);
+									throw new FileParseException(UIText.get("common.abctomidi.overlay.not.supported"),
+											fileName, lineNumber, i);
 
 								default:
-									throw new FileParseException("Unknown/unexpected character '" + ch + "'", fileName,
-											lineNumber, i);
+									throw new FileParseException(UIText.get("common.abctomidi.unknown.char",
+											String.valueOf(ch)), fileName, lineNumber, i);
 							}
 						}
 
@@ -1822,7 +1861,8 @@ public class AbcToMidi {
 							chordSize++;
 
 						if (enableLotroErrors && inChord && chordSize > AbcConstants.MAX_CHORD_NOTES) {
-							throw new LotroFileParseException("Too many notes in a chord", fileName, lineNumber, m.start());
+							throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.chord.too.many.notes"),
+									fileName, lineNumber, m.start());
 						}
 
 						// Parse the note
@@ -1841,9 +1881,10 @@ public class AbcToMidi {
 							numerator = parseLengthNumerator(m.group(NOTE_LEN_NUMER));
 							denominator = parseLengthDenominator(m.group(NOTE_LEN_DENOM));
 						} catch (IllegalArgumentException e) {
-							throw new FileParseException("Invalid note length: "
-									+ Objects.requireNonNullElse(m.group(NOTE_LEN_NUMER), "")
-									+ Objects.requireNonNullElse(m.group(NOTE_LEN_DENOM), ""), fileName, lineNumber, m.start());
+							throw new FileParseException(UIText.get("common.abctomidi.note.length.invalid",
+									Objects.requireNonNullElse(m.group(NOTE_LEN_NUMER),
+									"") + Objects.requireNonNullElse(m.group(NOTE_LEN_DENOM), "")), fileName,
+									lineNumber, m.start());
 						}
 
 						String abcNoteL = "";
@@ -1872,15 +1913,15 @@ public class AbcToMidi {
 						String brokenRhythm = m.group(NOTE_BROKEN_RHYTHM);
 						if (brokenRhythm != null) {
 							if (brokenRhythmDenominator != 1 || brokenRhythmNumerator != 1) {
-								throw new FileParseException("Invalid broken rhythm: " + brokenRhythm, fileName, lineNumber,
-										m.start(NOTE_BROKEN_RHYTHM));
+								throw new FileParseException(UIText.get("common.abctomidi.broken.invalid",
+										brokenRhythm), fileName, lineNumber, m.start(NOTE_BROKEN_RHYTHM));
 							}
 							if (inChord) {
-								throw new FileParseException("Can't have broken rhythm (< or >) within a chord", fileName,
+								throw new FileParseException(UIText.get("common.abctomidi.broken.in.chord"), fileName,
 										lineNumber, m.start(NOTE_BROKEN_RHYTHM));
 							}
 							if (m.group(NOTE_TIE) != null) {
-								throw new FileParseException("Tied notes can't have broken rhythms (< or >)", fileName,
+								throw new FileParseException(UIText.get("common.abctomidi.broken.tied"), fileName,
 										lineNumber, m.start(NOTE_BROKEN_RHYTHM));
 							}
 
@@ -1969,12 +2010,12 @@ public class AbcToMidi {
 							octaveStr = "";
 						if (noteLetter == 'z' || noteLetter == 'x') {
 							if (m.group(NOTE_ACCIDENTAL) != null && !m.group(NOTE_ACCIDENTAL).isEmpty()) {
-								throw new FileParseException("Unexpected accidental on a rest", fileName, lineNumber,
-										m.start(NOTE_ACCIDENTAL));
+								throw new FileParseException(UIText.get("common.abctomidi.rest.accidental"), fileName,
+										lineNumber, m.start(NOTE_ACCIDENTAL));
 							}
 							if (!octaveStr.isEmpty()) {
-								throw new FileParseException("Unexpected octave indicator on a rest", fileName, lineNumber,
-										m.start(NOTE_OCTAVE));
+								throw new FileParseException(UIText.get("common.abctomidi.rest.octave"), fileName,
+										lineNumber, m.start(NOTE_OCTAVE));
 							}
 
 							float lengthSeconds = info.getWholeNoteTime() * (numerator_abc / (float) denominator_abc);
@@ -1983,8 +2024,8 @@ public class AbcToMidi {
 									lengthSeconds, lotroSeconds(info, numerator_abc, denominator_abc), info.getPrimaryTempoBPM());
 							if (!inChord) partChordsNumber++;
 							if (enableLotroErrors && partChordsNumber > 10_000) {
-								throw new LotroFileParseException("Too many chords/notes/rests in "+info.getTitle()+". Max is 10000.",
-										fileName, lineNumber, i);
+								throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.too.many.notes",
+										info.getTitle()), fileName, lineNumber, i);
 							}
 							if (generateRegions) {
 								abcInfo.addRegion(new AbcRegion(lineNumberForRegions, m.start(), m.end(),
@@ -1995,14 +2036,17 @@ public class AbcToMidi {
 						} else {
 							int[] pitch = notePitch(m, info, accidentals, useLotroInstruments);
 							int noteId = pitch[0];
+							eventPitches.add(noteId);
 							int lotroNoteId = pitch[1];
 							// Tied to the next note of its pitch: by its own - or by a tie after its chord
 							boolean tied = m.group(NOTE_TIE) != null || (inChord && chordTied);
 
 							if (enableLotroErrors && lotroNoteId < Note.MIN_PLAYABLE.id)
-								throw new LotroFileParseException("Note is too low", fileName, lineNumber, m.start());
+								throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.note.too.low"),
+										fileName, lineNumber, m.start());
 							else if (enableLotroErrors && lotroNoteId > Note.MAX_PLAYABLE.id)
-								throw new LotroFileParseException("Note is too high", fileName, lineNumber, m.start());
+								throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.note.too.high"),
+										fileName, lineNumber, m.start());
 
 							// Lotro plays only the first of the same note in a chord and ignores the later one completely,
 							// also for the chord's length (tested in game, also for enharmonic spellings like [^c_d]).
@@ -2108,10 +2152,10 @@ public class AbcToMidi {
 									// Tested in Lotro: a note that starts again while it still sounds, with a different volume
 									// than it started with, makes Lotro play nothing of the part. Without a volume change it plays.
 									if (info.getDynamics() != attackDynamics.get(lotroNoteId)) {
-										throw new LotroFileParseException("Note " + abcNoteAcc + noteLetter + octaveStr + abcNoteL
-												+ " starts again while " + soundingNote.third + " still sounds, at another volume (+"
-												+ info.getDynamics() + "+). Lotro then plays nothing of part " + info.getPartNumber(),
-												fileName, lineNumber, m.start());
+										throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.note.restart.volume",
+												abcNoteAcc + noteLetter + octaveStr + abcNoteL,
+												String.valueOf(soundingNote.third), String.valueOf(info.getDynamics()),
+												String.valueOf(info.getPartNumber())), fileName, lineNumber, m.start());
 									}
 									// 0.0001 is for rounding errors
 									double lengthSeconds = info.getWholeNoteTime() * (numerator_abc / (double) denominator_abc);// the overlapping note duration
@@ -2167,8 +2211,7 @@ public class AbcToMidi {
 								attackDynamics.put(lotroNoteId, info.getDynamics());
 								lastAttackTick = Math.round(chordStartTick + attackOffset);
 								if (info.getPpqn() != PPQN) {
-									throw new FileParseException(
-											"The meter denominator (the N in M:x/N) must be the same throughout the song",
+									throw new FileParseException(UIText.get("common.abctomidi.meter.denominator.same"),
 											fileName, meterChangeLine, meterChangeColumn);
 								}
 								Dynamics attack = accent ? accented(info.getDynamics()) : info.getDynamics();
@@ -2211,12 +2254,17 @@ public class AbcToMidi {
 									abcNoteAcc, curTempoBPM, tieStartTick, tieEndTick, noteLetter, octaveStr, noteId, lotroNoteId, info.getInstrument());
 							if (!inChord) partChordsNumber++;
 							if (enableLotroErrors && partChordsNumber > 10_000) {
-								throw new LotroFileParseException("Too many chords/notes/rests in "+info.getTitle()+". Max is 10000.",
-										fileName, lineNumber, i);
+								throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.too.many.notes",
+										info.getTitle()), fileName, lineNumber, i);
 							}
 						}
 
 						if (!inChord) {
+							if (abc21) {
+								checkTiesContinue(tiesToContinue, eventPitches, tiedNotes, tiedNoteStartTicks, tiedNoteEndTicks, tiedRegions,
+										crossedRepeat, track, channel, info.getDynamics().getVol(useLotroInstruments), noteOffEvents, fileName);
+								crossedRepeat = false;
+							}
 							chordStartTick = noteEndTick;
 							attackOffset = 0;
 							accent = false;
@@ -2227,13 +2275,16 @@ public class AbcToMidi {
 					}
 
 					if (tuplet != null)
-						throw new FileParseException("Tuplet not finished by end of line", fileName, lineNumber, i);
+						throw new FileParseException(UIText.get("common.abctomidi.tuplet.unfinished"), fileName,
+								lineNumber, i);
 
 					if (inChord)
-						throw new FileParseException("Chord not closed at end of line", fileName, lineNumber, i);
+						throw new FileParseException(UIText.get("common.abctomidi.chord.unclosed"), fileName,
+								lineNumber, i);
 
 					if (brokenRhythmDenominator != 1 || brokenRhythmNumerator != 1)
-						throw new FileParseException("Broken rhythm unfinished at end of line", fileName, lineNumber, i);
+						throw new FileParseException(UIText.get("common.abctomidi.broken.unfinished"), fileName,
+								lineNumber, i);
 				}
 			}
 
@@ -2247,11 +2298,11 @@ public class AbcToMidi {
 			repeats.newPart();
 
 			if (seq == null)
-				throw new FileParseException("The file contains no notes", fileName, lineNumber);
+				throw new FileParseException(UIText.get("common.abctomidi.no.notes"), fileName, lineNumber);
 
 			for (int lineAndColumn : tiedNotes.values()) {
-				throw new FileParseException("Tied note does not connect to another note", fileName, lineAndColumn >>> 16,
-						lineAndColumn & 0xFFFF);
+				throw new FileParseException(UIText.get("common.abctomidi.tie.not.connected"), fileName,
+						lineAndColumn >>> 16, lineAndColumn & 0xFFFF);
 			}
 		}
 
@@ -2345,6 +2396,42 @@ public class AbcToMidi {
 	}
 
 	/**
+	 * A note, chord or rest has been read (ABC 2.1, 4.11, with standard2011): each pitch tied before it must be in it, as
+	 * a tie joins a note to the next note of its pitch. Then its own ties are the ones the next one must continue. (Lotro
+	 * joins a tied note to the next note of its pitch wherever that is; standard2011 doesn't.) After a repeat sign or an
+	 * ending the next note played can be another (|: c ... d- :| goes back to c): a tie it doesn't continue ends there,
+	 * at the tied note's end.
+	 *
+	 * @throws FileParseException At the tie, if the next note has another pitch (a tie written as a slur: F-G)
+	 */
+	private static void checkTiesContinue(Set<Integer> tiesToContinue, Set<Integer> eventPitches,
+										  Map<Integer, Integer> tiedNotes, Map<Integer, Double> tiedNoteStartTicks,
+										  Map<Integer, Double> tiedNoteEndTicks, Map<Integer, AbcRegion> tiedRegions,
+										  boolean crossedRepeat, Track track, int channel, int velocity,
+										  List<MidiEvent> noteOffEvents, String fileName) throws FileParseException {
+		for (int pitch : tiesToContinue) {
+			Integer lineAndColumn = tiedNotes.get(pitch);
+			if (eventPitches.contains(pitch) || lineAndColumn == null)
+				continue;
+			if (!crossedRepeat) {
+				throw new FileParseException(UIText.get("common.abctomidi.tie.other.pitch"), fileName,
+						lineAndColumn >>> 16, lineAndColumn & 0xFFFF);
+			}
+			MidiEvent noteOff = MidiFactory.createNoteOffEventEx(pitch, channel, velocity,
+					Math.round(tiedNoteEndTicks.get(pitch)));
+			track.add(noteOff);
+			noteOffEvents.add(noteOff);
+			tiedNotes.remove(pitch);
+			tiedNoteStartTicks.remove(pitch);
+			tiedNoteEndTicks.remove(pitch);
+			tiedRegions.remove(pitch);
+		}
+		tiesToContinue.clear();
+		tiesToContinue.addAll(tiedNotes.keySet());
+		eventPitches.clear();
+	}
+
+	/**
 	 * Records a tie, or ends the note: its note-off goes at its written end (for a tie, the end of the whole tied
 	 * note). A plucked note that rings shorter than written and is last in track is cut later, in endTrack.
 	 */
@@ -2385,16 +2472,17 @@ public class AbcToMidi {
 		// Using double for lengthSeconds can result in rounding errors in 17 decimal
 		// place.
 		if (enableLotroErrors && lotroSeconds < AbcConstants.SHORTEST_NOTE_SECONDS) {
-			throw new LotroFileParseException("Rest's duration is too short (" + formatSeconds(lotroSeconds)
-					+ "s)(" + noteLetter + abcNoteL + ")", fileName, lineNumber, m.start());
+			throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.rest.too.short",
+					formatSeconds(lotroSeconds), noteLetter + abcNoteL), fileName, lineNumber, m.start());
             /*
 		} else if (enableLotroErrors && AbcConstants.getShortestNoteMicros(bpm) > 60000L && ((float) lengthSeconds) == ((float) AbcConstants.SHORTEST_NOTE_SECONDS)) {
 			throw new LotroParseException("Rest's duration is too short (" + String.format(Locale.US, "%.3f", lengthSeconds)
 						+ "s)(" + noteLetter + " " + abcNoteL + ")", fileName, lineNumber, m.start());
             */
 		} else if (enableLotroErrors && lengthSeconds > AbcConstants.LONGEST_NOTE_SECONDS) {
-			throw new LotroFileParseException("Rest's duration is too long (" + String.format(Locale.US, "%.3f", lengthSeconds) + "s)("
-					+ noteLetter + abcNoteL + ")", fileName, lineNumber, m.start());
+			throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.rest.too.long",
+					String.format(Locale.US, "%.3f", lengthSeconds), noteLetter + abcNoteL), fileName, lineNumber,
+					m.start());
 		}
 	}
 
@@ -2411,15 +2499,14 @@ public class AbcToMidi {
 		// Using double for lengthSeconds can result in rounding errors in 17 decimal
 		// place.
 		if (enableLotroErrors && lotroSeconds < AbcConstants.SHORTEST_NOTE_SECONDS) {
-			throw new LotroFileParseException(
-					"Note's duration is too short (" + formatSeconds(lotroSeconds) + "s)(" + abcNoteAcc
-							+ noteLetter + octaveStr + abcNoteL + addGroup(m, shouldAddGroup) + ")",
-					fileName, lineNumber, m.start());
+			throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.note.too.short",
+					formatSeconds(lotroSeconds), abcNoteAcc + noteLetter + octaveStr + abcNoteL + addGroup(m,
+					shouldAddGroup)), fileName, lineNumber, m.start());
 		} else if (enableLotroErrors && lengthSeconds > AbcConstants.LONGEST_NOTE_SECONDS) {
-			throw new LotroFileParseException(
-					"Note's duration is too long (" + String.format(Locale.US, "%.3f", lengthSeconds) + "s)(" + abcNoteAcc
-							+ noteLetter + octaveStr + abcNoteL + addGroup(m, shouldAddGroup) + ")",
-					fileName, lineNumber, m.start());
+			throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.note.too.long",
+					String.format(Locale.US, "%.3f", lengthSeconds),
+					abcNoteAcc + noteLetter + octaveStr + abcNoteL + addGroup(m, shouldAddGroup)), fileName, lineNumber,
+					m.start());
 		}
 	}
 
@@ -2718,8 +2805,8 @@ public class AbcToMidi {
 	private static String checkEnding(String numbers, boolean enableLotroErrors, String fileName, int lineNumber,
 									  int column) throws LotroFileParseException {
 		if (enableLotroErrors && !numbers.chars().allMatch(Character::isDigit)) {
-			throw new LotroFileParseException("Lotro plays nothing of a part with an ending for several passes ("
-					+ numbers + "); write the ending out for each pass", fileName, lineNumber, column);
+			throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.ending.several", numbers), fileName,
+					lineNumber, column);
 		}
 		return numbers;
 	}
@@ -3079,7 +3166,8 @@ public class AbcToMidi {
 		try {
 			return Math.multiplyExact(a, b);
 		} catch (ArithmeticException e) {
-			throw new FileParseException("The note length is too large to calculate with", fileName, lineNumber, column);
+			throw new FileParseException(UIText.get("common.abctomidi.note.length.too.large"), fileName, lineNumber,
+					column);
 		}
 	}
 
@@ -3470,6 +3558,15 @@ public class AbcToMidi {
 		return trackNumber;
 	}
 
+	/**
+	 * The file's name in a message about a tune in it: "book.abc (X:12 The Red Haired Girl)", or without a title yet
+	 * "book.abc (X:12)". In a songbook the line alone doesn't say which tune.
+	 */
+	private static String tuneFileName(String fileName, String number, String title) {
+		return (title == null || title.isBlank()) ? UIText.get("common.abctomidi.file.tune", fileName, number)
+				: UIText.get("common.abctomidi.file.tune.title", fileName, number, title.trim());
+	}
+
 	/** How loud a drone is, unless %%MIDI drone gives its velocities. */
 	static final Dynamics DRONE_DYNAMICS = Dynamics.pp;
 
@@ -3562,7 +3659,8 @@ public class AbcToMidi {
 									  String fileName) throws FileParseException {
 		int channel = getTrackChannel(part);
 		if (channel > MidiConstants.CHANNEL_COUNT_ABC - 1)
-			throw new FileParseException("Too many parts (max = " + (MidiConstants.CHANNEL_COUNT_ABC - 1) + ")", fileName);
+			throw new FileParseException(UIText.get("common.abctomidi.too.many.parts",
+					String.valueOf(MidiConstants.CHANNEL_COUNT_ABC - 1)), fileName);
 		Track track = seq.createTrack();
 		LotroInstrument instrument = LotroInstrument.DEFAULT_INSTRUMENT;
 		int program = instrument.midi.id();
@@ -3718,7 +3816,7 @@ public class AbcToMidi {
 		}
 
 		if (abcInfo.isEmpty()) {
-			throw new FileParseException("Empty or invalid ABC files", fileName);
+			throw new FileParseException(UIText.get("common.abctomidi.files.empty"), fileName);
 		}
 
 		return abcInfo;

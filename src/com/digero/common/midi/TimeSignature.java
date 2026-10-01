@@ -4,6 +4,8 @@ import javax.sound.midi.InvalidMidiDataException;
 import javax.sound.midi.MetaMessage;
 import java.util.logging.Logger;
 
+import com.digero.common.i18n.UIText;
+
 /**
  * Representation of a MIDI time signature.
  */
@@ -107,8 +109,7 @@ public class TimeSignature implements MidiConstants {
         } else {
             String[] parts = str.split("[/:| ]");
             if (parts.length != 2) {
-                throw new IllegalArgumentException(
-                        "The string: \"" + str + "\" is not a valid time signature (expected format: 4/4)");
+                throw new IllegalArgumentException(UIText.get("common.timesignature.invalid", str));
             }
             if (!strict && Integer.parseInt(parts[1]) > MAX_DENOMINATOR) {
                 this.numerator = 4;
@@ -134,13 +135,14 @@ public class TimeSignature implements MidiConstants {
 
 	private static void verifyData(int numerator, int denominator) {
 		if (denominator == 0 || denominator != (1 << floorLog2(denominator))) {
-			throw new IllegalArgumentException("The denominator of the time signature must be a power of 2");
+			throw new IllegalArgumentException(UIText.get("common.timesignature.denominator.power.of.two"));
 		}
 		if (denominator > MAX_DENOMINATOR) {
-			throw new IllegalArgumentException("The denominator must be less than or equal to " + MAX_DENOMINATOR);
+			throw new IllegalArgumentException(
+					UIText.get("common.timesignature.denominator.max", String.valueOf(MAX_DENOMINATOR)));
 		}
 		if (numerator > 255) {
-			throw new IllegalArgumentException("The numerator of the time signature must be less than 256");
+			throw new IllegalArgumentException(UIText.get("common.timesignature.numerator.max"));
 		}
 	}
 

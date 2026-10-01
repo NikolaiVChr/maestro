@@ -46,7 +46,7 @@ divisionType=0.0 resolution=11520 tickLength=37833 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading plus_decorations.abc on line 7, column 1:
+== EXCEPTION LotroFileParseException: Error reading plus_decorations.abc (X:1 Test) on line 7, column 1:
 Lotro plays nothing of a part with +fermata+; only the volumes +pppp+ to +ffff+ work
 == log: empty
 

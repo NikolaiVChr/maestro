@@ -305,12 +305,28 @@ class AbcToMidiBehaviourTest {
 			}
 
 			@Test
-			void tieOverOtherNotesStaysAsInLotro() throws Exception {
-				// Decided: kept in every mode. Lotro joins a tie to the next note of its pitch wherever it is (tested:
-				// c- d c is one c over the d). ABC 2.1 (4.11) only ties "two successive notes", so standard ABC never
-				// writes c- d c, and either reading plays it the same.
-				assertEquals(noteEvents(convert(tune("semantic", "c- d c|"))),
-						noteEvents(convert(standard(tune("semantic", "c- d c|")))));
+			void tieJoinsTheNextNoteOnly() throws Exception {
+				// Lotro joins a tie to the next note of its pitch wherever it is (tested: c- d c is one c over the d).
+				// ABC 2.1 (4.11): "Ties connect two successive notes of the same pitch". O'Neill's collections write -
+				// as a slur (F-G): with Lotro's reading the F sounds on to the next F. So with the flag the next note
+				// (or chord, or rest) must have the tied pitch, else an error at the tie
+				Sequence s = convert(tune("semantic", "c- d c|"));
+				long q = s.getResolution();
+				assertEquals(List.of(on(0, 60), on(q / 2, 62), off(q, 60), off(q, 62)), noteEvents(s)); // The sum of the c's
+				for (String body : List.of("c- d c|", "F-G F|", "c- z c|", "[ce]- [cg] e|", "[ce]- c e|")) {
+					FileParseException e = assertThrows(FileParseException.class,
+							() -> convert(standard(tune("semantic", body))), body);
+					assertTrue(e.getMessage().contains("line 7,"), e.getMessage()); // At the tie's line
+				}
+				// The next note continues it: across a bar line or a line break, in a chord
+				assertEquals(noteEvents(convert(tune("semantic", "c4- | c4 d|"))),
+						noteEvents(convert(standard(tune("semantic", "c4- | c4 d|")))));
+				assertEquals(noteEvents(convert(tune("semantic", "[ce]- [ce] d|"))),
+						noteEvents(convert(standard(tune("semantic", "[ce]- [ce] d|")))));
+				// After a repeat sign or an ending the next note played may be another: there the tie just ends
+				s = convert(standard(tune("semantic", "|: c |1 d- :|2 d e|]").with(p -> p.expandRepeats = true)));
+				assertEquals(List.of(on(0, 60), off(q / 2, 60), on(q / 2, 62), off(q, 62), on(q, 60), off(3 * q / 2, 60),
+						on(3 * q / 2, 62), off(2 * q, 62), on(2 * q, 64), off(5 * q / 2, 64)), noteEvents(s));
 			}
 
 			@Test

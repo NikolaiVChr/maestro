@@ -57,7 +57,7 @@ divisionType=0.0 resolution=11520 tickLength=62130 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading decoration_volume.abc on line 7, column 14:
+== EXCEPTION LotroFileParseException: Error reading decoration_volume.abc (X:1 Test) on line 7, column 14:
 Lotro plays nothing of a part from a !decoration! on (!fff!); use +f+ style for volume
 == log: empty
 

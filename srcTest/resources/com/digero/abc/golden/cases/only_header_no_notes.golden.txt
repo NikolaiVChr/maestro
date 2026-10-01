@@ -2,26 +2,26 @@
 case only_header_no_notes
 
 ### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
-== EXCEPTION FileParseException: Error reading only_header_no_notes.abc on line 6:
+== EXCEPTION FileParseException: Error reading only_header_no_notes.abc (X:1 Test) on line 6:
 The file contains no notes
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION FileParseException: Error reading only_header_no_notes.abc on line 6:
+== EXCEPTION FileParseException: Error reading only_header_no_notes.abc (X:1 Test) on line 6:
 The file contains no notes
 == log: empty
 
 ### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)
-== EXCEPTION FileParseException: Error reading only_header_no_notes.abc on line 6:
+== EXCEPTION FileParseException: Error reading only_header_no_notes.abc (X:1 Test) on line 6:
 The file contains no notes
 == log: empty
 
 ### profile MAESTRO_NEW_LOTRO (useLotroInstruments=false, enableLotroErrors=false, Lotro Abc)
-== EXCEPTION FileParseException: Error reading only_header_no_notes.abc on line 6:
+== EXCEPTION FileParseException: Error reading only_header_no_notes.abc (X:1 Test) on line 6:
 The file contains no notes
 == log: empty
 
 ### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
-== EXCEPTION FileParseException: Error reading only_header_no_notes.abc on line 6:
+== EXCEPTION FileParseException: Error reading only_header_no_notes.abc (X:1 Test) on line 6:
 The file contains no notes
 == log: empty

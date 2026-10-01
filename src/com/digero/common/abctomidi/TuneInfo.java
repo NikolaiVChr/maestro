@@ -8,6 +8,7 @@ import java.util.regex.Pattern;
 import com.digero.common.abc.AbcText;
 import com.digero.common.abc.Dynamics;
 import com.digero.common.abc.LotroInstrument;
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.KeyMode;
 import com.digero.common.midi.KeySignature;
 import com.digero.common.midi.TimeSignature;
@@ -240,7 +241,7 @@ public class TuneInfo {
 			} else if (lower.equals("exp") || lower.matches("[_^=].*")) {
 				Matcher accidental = KEY_ACCIDENTAL_PATTERN.matcher(lower);
 				if (!standard2011 || !(lower.equals("exp") || accidental.matches())) {
-					throw new KeyWordException("Explicit accidentals in K: aren't supported: " + str,
+					throw new KeyWordException(UIText.get("common.abctomidi.key.explicit.accidentals", str),
 							String.join(" ", Arrays.copyOfRange(words, w, words.length)));
 				}
 				if (lower.equals("exp")) {
@@ -260,7 +261,7 @@ public class TuneInfo {
 				} else if (lower.startsWith("octave=")) {
 					octaveShift = 12 * Integer.parseInt(lower.substring(lower.indexOf('=') + 1));
 				} else if (!lower.matches("(middle|m|stafflines|staffscale|style|cue|name|subname|sname|nm|snm)=.*")) {
-					throw new KeyWordException("Invalid key signature: " + str,
+					throw new KeyWordException(UIText.get("common.keysignature.invalid", str),
 							String.join(" ", Arrays.copyOfRange(words, w, words.length)));
 				}
 			}
@@ -361,8 +362,7 @@ public class TuneInfo {
 		} else {
 			String[] parts = str.split("[/:| ]");
 			if (parts.length != 2) {
-				throw new IllegalArgumentException(
-						"The string: \"" + str + "\" is not a valid time signature (expected format: 4/4)");
+				throw new IllegalArgumentException(UIText.get("common.timesignature.invalid", str));
 			}
 			Matcher sum = METER_SUM.matcher(parts[0]);
 			if (sum.matches()) {
@@ -527,16 +527,16 @@ public class TuneInfo {
 				if (unitNotes && parts[0].trim().equals("C"))
 					beat = UNIT_NOTE_BEAT; // Q:C=120
 			} else {
-				throw new IllegalArgumentException("Unable to read tempo");
+				throw new IllegalArgumentException(UIText.get("common.abctomidi.tempo.unreadable"));
 			}
 
 			if (bpm < 1 || bpm > 10000)
-				throw new IllegalArgumentException("Tempo \"" + bpm + "\" is out of range (expected 1-10000)");
+				throw new IllegalArgumentException(UIText.get("common.abctomidi.tempo.out.of.range", String.valueOf(bpm)));
 
 			tempoBeat = beat;
 			tempoBeatsPerMinute = bpm;
 		} catch (NumberFormatException nfe) {
-			throw new IllegalArgumentException("Unable to read tempo");
+			throw new IllegalArgumentException(UIText.get("common.abctomidi.tempo.unreadable"));
 		}
 	}
 
@@ -655,19 +655,16 @@ public class TuneInfo {
 	private double parseNoteDivisor(String str) {
 		String[] parts = str.trim().split("[/:| ]");
 		if (parts.length != 2) {
-			throw new IllegalArgumentException(
-					"\"" + str + "\" is not a valid note length" + " (example of valid note length: 1/4)");
+			throw new IllegalArgumentException(UIText.get("common.abctomidi.length.invalid", str));
 		}
 		int numerator = Integer.parseInt(parts[0]);
 		int denominator = Integer.parseInt(parts[1]);
 
 		if (numerator < 1) {
-			throw new IllegalArgumentException(
-					"The numerator of the note length must be positive" + " (example of valid note length: 3/8)");
+			throw new IllegalArgumentException(UIText.get("common.abctomidi.length.numerator.positive"));
 		}
 		if (denominator < 1) {
-			throw new IllegalArgumentException(
-					"The denominator of the note length must be positive" + " (example of valid note length: 3/8)");
+			throw new IllegalArgumentException(UIText.get("common.abctomidi.length.denominator.positive"));
 		}
 
         this.noteDivisorNum = numerator;

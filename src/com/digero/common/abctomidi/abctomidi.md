@@ -51,7 +51,7 @@ One per note: MIDI ticks to/from line/columns in the ABC text. The ABC Player us
 - `FileAndData`: a file and its lines.
 - `common.abc.AbcText`: text escapes in lyrics (`\'e`, `&eacute;`, `é`).
 
-## 10,000+ Tests (`srcTest`, package `com.digero.common.abc`)
+## 5,000+ Tests (`srcTest`, package `com.digero.common.abc`)
 - `AbcCases`: one tiny tune per feature or error.
 - Snapshot tests: every case in 5 `Profile`s (ABC_PLAYER, ABC_PLAYER_STRICT, MAESTRO_LEGACY, MAESTRO_NEW_LOTRO, MAESTRO_NEW_STANDARD), compared with golden files. Record them with `-Dabc.golden.update=true`.
 - `AbcToMidiBehaviourTest`: exact checks; "Tested in Lotro" comments mark behaviour confirmed in game (B-numbers in `abc-todo.txt`).

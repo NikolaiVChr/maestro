@@ -42,7 +42,7 @@ divisionType=0.0 resolution=11520 tickLength=32527 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading key_highland_pipes.abc on line 6, column 3:
+== EXCEPTION LotroFileParseException: Error reading key_highland_pipes.abc (X:1 Test) on line 6, column 3:
 Lotro refuses a part with "HP" in K:; write only the key, e.g. K:G or K:D mix
 == log: empty
 

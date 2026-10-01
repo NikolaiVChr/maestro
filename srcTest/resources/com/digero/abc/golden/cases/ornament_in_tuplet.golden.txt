@@ -45,7 +45,7 @@ divisionType=0.0 resolution=11520 tickLength=30998 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading ornament_in_tuplet.abc on line 7, column 3:
+== EXCEPTION LotroFileParseException: Error reading ornament_in_tuplet.abc (X:1 Test) on line 7, column 3:
 Lotro refuses a part with the decoration 'T'; leave it out
 == log: empty
 

@@ -45,7 +45,7 @@ divisionType=0.0 resolution=11520 tickLength=44850 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading note_length_change_mid_part.abc on line 8, column 3:
+== EXCEPTION LotroFileParseException: Error reading note_length_change_mid_part.abc (X:1 Test) on line 8, column 3:
 Lotro ignores an L: after the part's first notes; put it in the header or write the lengths on the notes
 == log: empty
 

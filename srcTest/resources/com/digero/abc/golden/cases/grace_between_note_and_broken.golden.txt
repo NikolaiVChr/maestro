@@ -2,26 +2,26 @@
 case grace_between_note_and_broken
 
 ### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
-== EXCEPTION FileParseException: Error reading grace_between_note_and_broken.abc on line 7, column 5:
+== EXCEPTION FileParseException: Error reading grace_between_note_and_broken.abc (X:1 Test) on line 7, column 5:
 Unknown/unexpected character '<'
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION FileParseException: Error reading grace_between_note_and_broken.abc on line 7, column 5:
+== EXCEPTION FileParseException: Error reading grace_between_note_and_broken.abc (X:1 Test) on line 7, column 5:
 Unknown/unexpected character '<'
 == log: empty
 
 ### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)
-== EXCEPTION FileParseException: Error reading grace_between_note_and_broken.abc on line 7, column 5:
+== EXCEPTION FileParseException: Error reading grace_between_note_and_broken.abc (X:1 Test) on line 7, column 5:
 Unknown/unexpected character '<'
 == log: empty
 
 ### profile MAESTRO_NEW_LOTRO (useLotroInstruments=false, enableLotroErrors=false, Lotro Abc)
-== EXCEPTION FileParseException: Error reading grace_between_note_and_broken.abc on line 7, column 5:
+== EXCEPTION FileParseException: Error reading grace_between_note_and_broken.abc (X:1 Test) on line 7, column 5:
 Unknown/unexpected character '<'
 == log: empty
 
 ### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
-== EXCEPTION FileParseException: Error reading grace_between_note_and_broken.abc on line 7, column 5:
+== EXCEPTION FileParseException: Error reading grace_between_note_and_broken.abc (X:1 Test) on line 7, column 5:
 Unknown/unexpected character '<'
 == log: empty

@@ -2,26 +2,26 @@
 case note_length_no_slash
 
 ### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
-== EXCEPTION FileParseException: Error reading note_length_no_slash.abc on line 4, column 3:
+== EXCEPTION FileParseException: Error reading note_length_no_slash.abc (X:1 Test) on line 4, column 3:
 "1" is not a valid note length (example of valid note length: 1/4)
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION FileParseException: Error reading note_length_no_slash.abc on line 4, column 3:
+== EXCEPTION FileParseException: Error reading note_length_no_slash.abc (X:1 Test) on line 4, column 3:
 "1" is not a valid note length (example of valid note length: 1/4)
 == log: empty
 
 ### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)
-== EXCEPTION FileParseException: Error reading note_length_no_slash.abc on line 4, column 3:
+== EXCEPTION FileParseException: Error reading note_length_no_slash.abc (X:1 Test) on line 4, column 3:
 "1" is not a valid note length (example of valid note length: 1/4)
 == log: empty
 
 ### profile MAESTRO_NEW_LOTRO (useLotroInstruments=false, enableLotroErrors=false, Lotro Abc)
-== EXCEPTION FileParseException: Error reading note_length_no_slash.abc on line 4, column 3:
+== EXCEPTION FileParseException: Error reading note_length_no_slash.abc (X:1 Test) on line 4, column 3:
 "1" is not a valid note length (example of valid note length: 1/4)
 == log: empty
 
 ### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
-== EXCEPTION FileParseException: Error reading note_length_no_slash.abc on line 4, column 3:
+== EXCEPTION FileParseException: Error reading note_length_no_slash.abc (X:1 Test) on line 4, column 3:
 "1" is not a valid note length (example of valid note length: 1/4)
 == log: empty

@@ -509,7 +509,7 @@ divisionType=0.0 resolution=11520 tickLength=2134622 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading Canzonetta.abc on line 26, column 4:
+== EXCEPTION LotroFileParseException: Error reading Canzonetta.abc (X:1 Canzonetta a tre voci) on line 26, column 4:
 Lotro refuses a part with text in Q: ("Andante mosso" 1/4 = 110); use only the tempo, e.g. Q:120
 == log: empty
 

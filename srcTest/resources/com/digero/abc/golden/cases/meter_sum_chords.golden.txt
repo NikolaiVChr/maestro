@@ -143,7 +143,7 @@ divisionType=0.0 resolution=2880 tickLength=80640 tracks=4
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading meter_sum_chords.abc on line 3, column 3:
+== EXCEPTION LotroFileParseException: Error reading meter_sum_chords.abc (X:1 Test) on line 3, column 3:
 A meter written as a sum (M:2+2+3/16) is untested in Lotro; write its total, e.g. M:7/8 for M:2+2+3/8
 == log: empty
 

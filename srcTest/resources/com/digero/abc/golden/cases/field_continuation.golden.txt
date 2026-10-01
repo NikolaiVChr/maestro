@@ -49,7 +49,7 @@ divisionType=0.0 resolution=11520 tickLength=39090 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading field_continuation.abc on line 9, column 1:
+== EXCEPTION LotroFileParseException: Error reading field_continuation.abc (X:1 Test) on line 9, column 1:
 Lotro refuses a part with a +: field continuation; put the field on one line
 == log: empty
 

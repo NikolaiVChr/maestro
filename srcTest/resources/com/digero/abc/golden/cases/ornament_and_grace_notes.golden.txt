@@ -59,7 +59,7 @@ divisionType=0.0 resolution=11520 tickLength=42937 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading ornament_and_grace_notes.abc on line 7, column 4:
+== EXCEPTION LotroFileParseException: Error reading ornament_and_grace_notes.abc (X:1 Test) on line 7, column 4:
 Lotro refuses a part with the decoration 'T'; leave it out
 == log: empty
 

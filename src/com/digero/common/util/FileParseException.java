@@ -1,5 +1,7 @@
 package com.digero.common.util;
 
+import com.digero.common.i18n.UIText;
+
 @SuppressWarnings("serial")
 public class FileParseException extends Exception {
 	public FileParseException(String message, String fileName, int line, int column) {
@@ -15,18 +17,18 @@ public class FileParseException extends Exception {
 	}
 
 	private static String formatMessage(String message, String fileName, int line, int column) {
-		String msg = "Error";
-		if (fileName != null && !fileName.isEmpty())
-			msg += " reading " + fileName;
-
-		if (line >= 0) {
-			msg += " on line " + line;
-			if (column >= 0)
-				msg += ", column " + (column + 1);
+		boolean file = fileName != null && !fileName.isEmpty();
+		String lineText = String.valueOf(line);
+		String columnText = String.valueOf(column + 1);
+		if (line < 0) {
+			return file ? UIText.get("common.fileparse.error.file", fileName, message)
+					: UIText.get("common.fileparse.error", message);
 		}
-
-		msg += ":\n" + message;
-
-		return msg;
+		if (column < 0) {
+			return file ? UIText.get("common.fileparse.error.file.line", fileName, lineText, message)
+					: UIText.get("common.fileparse.error.line", lineText, message);
+		}
+		return file ? UIText.get("common.fileparse.error.file.line.column", fileName, lineText, columnText, message)
+				: UIText.get("common.fileparse.error.line.column", lineText, columnText, message);
 	}
 }

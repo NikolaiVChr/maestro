@@ -51,7 +51,7 @@ divisionType=0.0 resolution=5760 tickLength=38851 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading tempo_compound_beat_without_spec_tempo.abc on line 5, column 3:
+== EXCEPTION LotroFileParseException: Error reading tempo_compound_beat_without_spec_tempo.abc (X:1 Test) on line 5, column 3:
 Lotro plays Q:3/8=120 as 120 beats of 1/8 a minute (the meter's beat), whatever the note length; for this tempo write Q:1/8=360
 == log: empty
 

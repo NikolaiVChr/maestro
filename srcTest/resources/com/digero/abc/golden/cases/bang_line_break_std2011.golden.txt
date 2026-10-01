@@ -47,7 +47,7 @@ divisionType=0.0 resolution=11520 tickLength=58489 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION FileParseException: Error reading bang_line_break_std2011.abc on line 7, column 12:
+== EXCEPTION FileParseException: Error reading bang_line_break_std2011.abc (X:1 Test) on line 7, column 12:
 There is no matching '!'
 == log: empty
 

@@ -39,7 +39,7 @@ divisionType=0.0 resolution=11520 tickLength=26770 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading inline_field_lower_case.abc on line 7, column 3:
+== EXCEPTION LotroFileParseException: Error reading inline_field_lower_case.abc (X:1 Test) on line 7, column 3:
 Lotro refuses a part with an inline field ([k:G]); put the field on a line of its own
 == log: empty
 

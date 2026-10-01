@@ -59,7 +59,7 @@ divisionType=0.0 resolution=11520 tickLength=62130 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading broken_after_chord_with_length_std2011.abc on line 7, column 7:
+== EXCEPTION LotroFileParseException: Error reading broken_after_chord_with_length_std2011.abc (X:1 Test) on line 7, column 7:
 Lotro refuses a part with a broken rhythm after a chord ([ce]>d); write the lengths on the notes instead, e.g. [c3/2e3/2] d/
 == log: empty
 

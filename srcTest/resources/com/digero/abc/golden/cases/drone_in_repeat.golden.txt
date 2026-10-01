@@ -39,7 +39,7 @@ divisionType=0.0 resolution=11520 tickLength=29689 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading drone_in_repeat.abc on line 7, column 6:
+== EXCEPTION LotroFileParseException: Error reading drone_in_repeat.abc (X:1 Test) on line 7, column 6:
 Lotro refuses a part with an inline field ([I:MIDI droneon]); put the field on a line of its own
 == log: empty
 

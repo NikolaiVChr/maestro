@@ -198,6 +198,6 @@ divisionType=0.0 resolution=11520 tickLength=11520 tracks=3
 == log: empty
 
 ### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
-== EXCEPTION FileParseException: Error reading parts_different_note_length.abc on line 12, column 3:
+== EXCEPTION FileParseException: Error reading parts_different_note_length.abc (X:2 Two) on line 12, column 3:
 All parts must have the same tempo (Q:30 here, Q:60 in the earlier parts)
 == log: empty

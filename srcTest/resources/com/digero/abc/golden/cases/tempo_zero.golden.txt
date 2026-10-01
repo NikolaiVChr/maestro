@@ -2,26 +2,26 @@
 case tempo_zero
 
 ### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
-== EXCEPTION FileParseException: Error reading tempo_zero.abc on line 5, column 3:
+== EXCEPTION FileParseException: Error reading tempo_zero.abc (X:1 Test) on line 5, column 3:
 Tempo "0" is out of range (expected 1-10000)
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION FileParseException: Error reading tempo_zero.abc on line 5, column 3:
+== EXCEPTION FileParseException: Error reading tempo_zero.abc (X:1 Test) on line 5, column 3:
 Tempo "0" is out of range (expected 1-10000)
 == log: empty
 
 ### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)
-== EXCEPTION FileParseException: Error reading tempo_zero.abc on line 5, column 3:
+== EXCEPTION FileParseException: Error reading tempo_zero.abc (X:1 Test) on line 5, column 3:
 Tempo "0" is out of range (expected 1-10000)
 == log: empty
 
 ### profile MAESTRO_NEW_LOTRO (useLotroInstruments=false, enableLotroErrors=false, Lotro Abc)
-== EXCEPTION FileParseException: Error reading tempo_zero.abc on line 5, column 3:
+== EXCEPTION FileParseException: Error reading tempo_zero.abc (X:1 Test) on line 5, column 3:
 Tempo "0" is out of range (expected 1-10000)
 == log: empty
 
 ### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
-== EXCEPTION FileParseException: Error reading tempo_zero.abc on line 5, column 3:
+== EXCEPTION FileParseException: Error reading tempo_zero.abc (X:1 Test) on line 5, column 3:
 Tempo "0" is out of range (expected 1-10000)
 == log: empty

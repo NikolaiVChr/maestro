@@ -2,26 +2,26 @@
 case meter_invalid
 
 ### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
-== EXCEPTION FileParseException: Error reading meter_invalid.abc on line 3, column 3:
+== EXCEPTION FileParseException: Error reading meter_invalid.abc (X:1 Test) on line 3, column 3:
 The string: "4" is not a valid time signature (expected format: 4/4)
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION FileParseException: Error reading meter_invalid.abc on line 3, column 3:
+== EXCEPTION FileParseException: Error reading meter_invalid.abc (X:1 Test) on line 3, column 3:
 The string: "4" is not a valid time signature (expected format: 4/4)
 == log: empty
 
 ### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)
-== EXCEPTION FileParseException: Error reading meter_invalid.abc on line 3, column 3:
+== EXCEPTION FileParseException: Error reading meter_invalid.abc (X:1 Test) on line 3, column 3:
 The string: "4" is not a valid time signature (expected format: 4/4)
 == log: empty
 
 ### profile MAESTRO_NEW_LOTRO (useLotroInstruments=false, enableLotroErrors=false, Lotro Abc)
-== EXCEPTION FileParseException: Error reading meter_invalid.abc on line 3, column 3:
+== EXCEPTION FileParseException: Error reading meter_invalid.abc (X:1 Test) on line 3, column 3:
 The string: "4" is not a valid time signature (expected format: 4/4)
 == log: empty
 
 ### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
-== EXCEPTION FileParseException: Error reading meter_invalid.abc on line 3, column 3:
+== EXCEPTION FileParseException: Error reading meter_invalid.abc (X:1 Test) on line 3, column 3:
 The string: "4" is not a valid time signature (expected format: 4/4)
 == log: empty

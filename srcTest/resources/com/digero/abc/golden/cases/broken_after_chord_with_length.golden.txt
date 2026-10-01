@@ -2,22 +2,22 @@
 case broken_after_chord_with_length
 
 ### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
-== EXCEPTION FileParseException: Error reading broken_after_chord_with_length.abc on line 7, column 7:
+== EXCEPTION FileParseException: Error reading broken_after_chord_with_length.abc (X:1 Test) on line 7, column 7:
 Lotro refuses a part with a broken rhythm after a chord ([ce]>d); write the lengths on the notes instead, e.g. [c3/2e3/2] d/
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading broken_after_chord_with_length.abc on line 7, column 7:
+== EXCEPTION LotroFileParseException: Error reading broken_after_chord_with_length.abc (X:1 Test) on line 7, column 7:
 Lotro refuses a part with a broken rhythm after a chord ([ce]>d); write the lengths on the notes instead, e.g. [c3/2e3/2] d/
 == log: empty
 
 ### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)
-== EXCEPTION FileParseException: Error reading broken_after_chord_with_length.abc on line 7, column 7:
+== EXCEPTION FileParseException: Error reading broken_after_chord_with_length.abc (X:1 Test) on line 7, column 7:
 Lotro refuses a part with a broken rhythm after a chord ([ce]>d); write the lengths on the notes instead, e.g. [c3/2e3/2] d/
 == log: empty
 
 ### profile MAESTRO_NEW_LOTRO (useLotroInstruments=false, enableLotroErrors=false, Lotro Abc)
-== EXCEPTION FileParseException: Error reading broken_after_chord_with_length.abc on line 7, column 7:
+== EXCEPTION FileParseException: Error reading broken_after_chord_with_length.abc (X:1 Test) on line 7, column 7:
 Lotro refuses a part with a broken rhythm after a chord ([ce]>d); write the lengths on the notes instead, e.g. [c3/2e3/2] d/
 == log: empty
 

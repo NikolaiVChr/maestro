@@ -39,7 +39,7 @@ divisionType=0.0 resolution=11520 tickLength=202770 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading lotro_note_8s_then_too_long.abc on line 7, column 5:
+== EXCEPTION LotroFileParseException: Error reading lotro_note_8s_then_too_long.abc (X:1 Test) on line 7, column 5:
 Note's duration is too long (8.250s)(c33)
 == log: empty
 

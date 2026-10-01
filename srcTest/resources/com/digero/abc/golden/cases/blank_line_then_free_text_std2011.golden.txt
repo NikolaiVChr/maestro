@@ -39,7 +39,7 @@ divisionType=0.0 resolution=11520 tickLength=29689 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION FileParseException: Error reading blank_line_then_free_text_std2011.abc on line 9, column 1:
+== EXCEPTION FileParseException: Error reading blank_line_then_free_text_std2011.abc (X:1 Test) on line 9, column 1:
 Unknown/unexpected character 'N'
 == log: empty
 

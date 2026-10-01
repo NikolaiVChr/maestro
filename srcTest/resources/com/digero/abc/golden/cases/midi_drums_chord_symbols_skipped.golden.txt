@@ -45,7 +45,7 @@ divisionType=0.0 resolution=11520 tickLength=41083 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading midi_drums_chord_symbols_skipped.abc on line 8, column 4:
+== EXCEPTION LotroFileParseException: Error reading midi_drums_chord_symbols_skipped.abc (X:1 Test) on line 8, column 4:
 Note is too low
 == log: empty
 

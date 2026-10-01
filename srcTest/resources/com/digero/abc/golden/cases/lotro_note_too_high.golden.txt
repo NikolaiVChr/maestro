@@ -39,7 +39,7 @@ divisionType=0.0 resolution=11520 tickLength=29952 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading lotro_note_too_high.abc on line 7, column 1:
+== EXCEPTION LotroFileParseException: Error reading lotro_note_too_high.abc (X:1 Test) on line 7, column 1:
 Note is too high
 == log: empty
 

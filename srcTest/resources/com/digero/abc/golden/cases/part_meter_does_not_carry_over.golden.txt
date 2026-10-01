@@ -198,6 +198,6 @@ divisionType=0.0 resolution=11520 tickLength=11520 tracks=3
 == log: empty
 
 ### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
-== EXCEPTION FileParseException: Error reading part_meter_does_not_carry_over.abc on line 9, column 1:
+== EXCEPTION FileParseException: Error reading part_meter_does_not_carry_over.abc (X:2 Two) on line 9, column 1:
 All parts must have the same tempo (Q:60 here, Q:30 in the earlier parts)
 == log: empty

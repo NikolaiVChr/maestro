@@ -43,7 +43,7 @@ divisionType=0.0 resolution=11520 tickLength=29689 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading chord_dynamics_inside.abc on line 7, column 2:
+== EXCEPTION LotroFileParseException: Error reading chord_dynamics_inside.abc (X:1 Test) on line 7, column 2:
 Can't include a +decoration+ inside a chord
 == log: empty
 

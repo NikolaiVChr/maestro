@@ -488,7 +488,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
                                 CORRUPT_ABC_WARNING_ID, UIText.get("common.potential.corrupted.abc.from.0", abcCreator), message);
 
                         if (action == WarningHandler.WarningAction.SKIP_FILE) {
-                            throw new FileParseException("Skipped file (possible corrupt abc source) by user request.", null);
+                            throw new FileParseException(UIText.get("common.abctomidi.skipped.corrupt.file"), null);
                         }
                     } else if (AppInfo.maestro || Preferences.userNodeForPackage(AbcPlayer.class).node("miscSettings")
                             .getBoolean("flawedMaestroPopup", true)) {

@@ -46,7 +46,7 @@ divisionType=0.0 resolution=11520 tickLength=64142 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading grace_notes_fast_tempo.abc on line 7, column 4:
+== EXCEPTION LotroFileParseException: Error reading grace_notes_fast_tempo.abc (X:1 Test) on line 7, column 4:
 Note's duration is too short (0.050s)(c/)
 == log: empty
 

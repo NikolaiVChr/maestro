@@ -53,7 +53,7 @@ divisionType=0.0 resolution=11520 tickLength=35449 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading lyrics_with_ornaments.abc on line 7, column 1:
+== EXCEPTION LotroFileParseException: Error reading lyrics_with_ornaments.abc (X:1 Test) on line 7, column 1:
 Lotro refuses a part with the decoration 'T'; leave it out
 == log: empty
 

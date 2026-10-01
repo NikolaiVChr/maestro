@@ -45,7 +45,7 @@ divisionType=0.0 resolution=11520 tickLength=40908 tracks=2
 == log: empty
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading tempo_word.abc on line 5, column 3:
+== EXCEPTION LotroFileParseException: Error reading tempo_word.abc (X:1 Test) on line 5, column 3:
 Lotro refuses a part with text in Q: ("Allegro"); use only the tempo, e.g. Q:120
 == log: empty
 
