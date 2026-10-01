@@ -616,6 +616,7 @@ public class AbcToMidi {
 			String baseFileName = fileAndData.file.getName();
 			String fileName = baseFileName;
 			String tuneNumber = null; // The X: of the part being read
+			String fileTitle = null; // The file header's first T:, the name of a part without a T: of its own
 			abcInfo.addSourceFile(fileAndData.file);
 			int lineNumber = 0;
 			int partStartLine = 0;
@@ -811,7 +812,9 @@ public class AbcToMidi {
 					if (type == 'T' && track != null)
 						continue;
 
-					abcInfo.setMetadata(type, value);
+					// The song's title comes from the first T: of each header (more T: lines are other titles of the tune)
+					if (type != 'T' || partTitles == 0)
+						abcInfo.setMetadata(type, value);
 
 					// Information about the tune. H: lines in a row are one text (ABC 1.6: H: may go on over several
 					// lines); other fields in a row are one each, e.g. two C: for two composers.
@@ -885,6 +888,8 @@ public class AbcToMidi {
 								tuneNumber = value;
 								fileName = tuneFileName(baseFileName, tuneNumber, null);
 								trackNumber++;
+								// Named by its first T:, else by the file header's, else by the file
+								abcInfo.setPartName(trackNumber, defaultPartName(fileTitle, baseFileName), false);
 								partStartLine = lineNumber;
 								// The part starts from the file header's meter, so a meter error in a part without M: points here
 								meterChangeLine = lineNumber;
@@ -903,13 +908,19 @@ public class AbcToMidi {
 								partDrone = fileDrone.forPart();
 								break;
 							case 'T':
-								// More T: lines in the header are other titles of the tune
-								if (partTitles++ > 0 && infoLineNumbers.add(lineNumberForRegions))
-									infoLines.add("Also known as: " + AbcText.decode(value));
-								else if (partTitles == 1 && tuneNumber != null)
-									fileName = tuneFileName(baseFileName, tuneNumber, AbcText.decode(value));
-								info.setTitle(value, false);
-								abcInfo.setPartName(trackNumber, value, false);
+								if (partTitles++ > 0) {
+									// More T: lines in the header are other titles of the tune
+									if (infoLineNumbers.add(lineNumberForRegions))
+										infoLines.add("Also known as: " + AbcText.decode(value));
+								} else {
+									// The first T: names the part (in the file header: the file, and every part without a T:)
+									if (tuneNumber != null)
+										fileName = tuneFileName(baseFileName, tuneNumber, AbcText.decode(value));
+									else if (fileTitle == null)
+										fileTitle = value;
+									info.setTitle(value, false);
+									abcInfo.setPartName(trackNumber, value, false);
+								}
 								// In standard ABC, T: is the song's title: it doesn't name an instrument
 								if (!info.isStandardPitch()
 										&& (instrumentOverrideMap == null || !instrumentOverrideMap.containsKey(trackNumber))) {
@@ -1079,7 +1090,9 @@ public class AbcToMidi {
 							seq.createTrack();
 
 							abcInfo.setPartNumber(0, 0);
-							abcInfo.setPartName(0, info.getTitle(), false);
+							// The first part's name, as above: its first T:, else the file header's, else the file
+							abcInfo.setPartName(0, info.getTitle().isEmpty() ? defaultPartName(fileTitle, baseFileName)
+									: info.getTitle(), false);
 							abcInfo.setTimeSignature(info.getMeter());
 							abcInfo.setKeySignature(info.getKey());
 
@@ -3557,6 +3570,11 @@ public class AbcToMidi {
 		return trackNumber;
 	}
 
+	/** The name of a part without a T: of its own: the file header's first T:, else the file's name without extension. */
+	private static String defaultPartName(String fileTitle, String fileName) {
+		return (fileTitle != null) ? fileTitle : fileName.replaceFirst("\\.[^.]*$", "");
+	}
+
 	/**
 	 * The file's name in a message about a tune in it: "book.abc (X:12 The Red Haired Girl)", or without a title yet
 	 * "book.abc (X:12)". In a songbook the line alone doesn't say which tune.
@@ -3737,6 +3755,8 @@ public class AbcToMidi {
 		String fileName = null;
 		for (FileAndData fileAndData : abc) {
 			fileName = fileAndData.file.getName();
+			String fileTitle = null; // As in convert(): the first T: names the part, else the file header's, else the file
+			int partTitles = 0;
 			abcInfo.addSourceFile(fileAndData.file);
 			int lineNumber = 0;
 			int partStartLine = 0;
@@ -3781,7 +3801,8 @@ public class AbcToMidi {
 					if (type == 'T' && inBody)
 						continue;
 
-					abcInfo.setMetadata(type, value);
+					if (type != 'T' || partTitles == 0)
+						abcInfo.setMetadata(type, value);
 
 					try {
 						switch(type) {
@@ -3789,11 +3810,17 @@ public class AbcToMidi {
 								instrumentSet = false;
 								inBody = false;
 								trackNumber++;
+								partTitles = 0;
+								abcInfo.setPartName(trackNumber, defaultPartName(fileTitle, fileName), false);
 								abcInfo.setPartNumber(trackNumber,  Integer.parseInt(value));
 								abcInfo.setPartStartLine(trackNumber, lineNumber);
 								break;
 							case 'T':
-								abcInfo.setPartName(trackNumber, value, false);
+								if (partTitles++ == 0) {
+									if (trackNumber == 0 && fileTitle == null)
+										fileTitle = value;
+									abcInfo.setPartName(trackNumber, value, false);
+								}
 								if (!instrumentSet) {
 									LotroInstrument instrument = LotroInstrument.findInstrumentName(value, null);
 									if (instrument != null) {

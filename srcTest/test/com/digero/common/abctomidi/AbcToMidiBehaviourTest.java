@@ -2201,8 +2201,9 @@ class AbcToMidiBehaviourTest {
 			// getPartName(0) used to cut the prefix off anyway: StringIndexOutOfBoundsException.
 			AbcInfo info = abcInfoOf(AbcCase.of("semantic", "X:1", "%%part-name Harp", "T:Test Flute", "K:C", "c|"));
 			assertEquals("Harp", info.getPartName(0));
+			// An empty %%part-name and no T: either: the file's name, as for a part without a T:
 			AbcInfo empty = abcInfoOf(tune("semantic", AbcCases.extended("%%part-name"), "c|"));
-			assertEquals("", empty.getPartName(0));
+			assertEquals("semantic", empty.getPartName(0));
 		}
 
 		@Test

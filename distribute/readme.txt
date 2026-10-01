@@ -61,6 +61,7 @@ This changelog is only partial, to see all the way back to v1.0.0 go here:
 Version 4.7.3
 * When loading projects, the project version number and XML version number are now checked for errors.
 * Maestro and Abc Player will now warn if a part is too large for lotro.
+* Fixed that when importing abc with e.g. "K:D mix", the space would make it become D major.
 * Abc Player: now interprets abc files closer to how Lotro plays them, with clearer error messages.
 * Maestro: abc files not made for Lotro (folk tune collections etc..) are now read as standard ABC 2.1
 * Maestro: abc lyrics are now shown in time with the music in Maestro, just like midi lyrics.

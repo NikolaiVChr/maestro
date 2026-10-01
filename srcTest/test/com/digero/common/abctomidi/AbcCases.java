@@ -81,6 +81,12 @@ final class AbcCases {
 		c.add(of("x_not_a_number", "X:abc", "T:Test", "K:C", "c d|"));
 		c.add(tune("title_inside_part", "c d|", "T:Late title", "e f|"));
 		c.add(of("title_twice_in_header", "X:1", "T:First", "T:Second", "K:C", "c d|"));
+		// A part is named by its first T:, else the file header's first T:, else the file's name; other titles (a
+		// second T:) don't shorten the song's title
+		c.add(of("part_name_from_file_header", "T:Book Title", "", "X:1", "M:4/4", "L:1/8", "Q:120", "K:C", "c d|"));
+		c.add(of("part_name_from_file_name", "X:1", "M:4/4", "L:1/8", "Q:120", "K:C", "c d|"));
+		c.add(of("title_other_names_dont_shorten", "X:1", "T:The Red Haired Girl", "T:The Rambling Sailor", "M:4/4",
+				"L:1/8", "Q:120", "K:C", "c d|"));
 
 		c.add(tune("meter_2_4_default_l", header("M:2/4", "-L"), "c d e f|"));
 		c.add(tune("meter_3_4_default_l", header("M:3/4", "-L"), "c d e f|"));
