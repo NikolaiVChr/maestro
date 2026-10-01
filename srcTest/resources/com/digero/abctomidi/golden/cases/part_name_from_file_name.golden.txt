@@ -13,9 +13,9 @@ case part_name_from_file_name
 == sequence
 divisionType=0.0 resolution=11520 tickLength=29689 tracks=2
 -- track 0 (6 events)
-  0 META text type=0x05 "@T(Untitled)"
+  0 META text type=0x05 "@Tpart_name_from_file_name"
   0 META tempo mpq=500000
-  0 META text type=0x03 "(Untitled)"
+  0 META text type=0x03 "part_name_from_file_name"
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
   0 META end_of_track
@@ -32,7 +32,7 @@ divisionType=0.0 resolution=11520 tickLength=29689 tracks=2
   11520 NOTE_OFF ch=0 d1=62 d2=106 [LotroShortMessage]
   29689 META end_of_track
 == abcInfo
-  title="(Untitled)"
+  title="part_name_from_file_name"
   composer=""
   transcriber=""
   genre="" mood=""
@@ -50,9 +50,9 @@ divisionType=0.0 resolution=11520 tickLength=29689 tracks=2
 == sequence
 divisionType=0.0 resolution=11520 tickLength=29689 tracks=2
 -- track 0 (6 events)
-  0 META text type=0x05 "@T(Untitled)"
+  0 META text type=0x05 "@Tpart_name_from_file_name"
   0 META tempo mpq=500000
-  0 META text type=0x03 "(Untitled)"
+  0 META text type=0x03 "part_name_from_file_name"
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
   0 META end_of_track
@@ -69,7 +69,7 @@ divisionType=0.0 resolution=11520 tickLength=29689 tracks=2
   11520 NOTE_OFF ch=0 d1=62 d2=106 [LotroShortMessage]
   29689 META end_of_track
 == abcInfo
-  title="(Untitled)"
+  title="part_name_from_file_name"
   composer=""
   transcriber=""
   genre="" mood=""
@@ -87,9 +87,9 @@ divisionType=0.0 resolution=11520 tickLength=29689 tracks=2
 == sequence
 divisionType=0.0 resolution=11520 tickLength=11520 tracks=2
 -- track 0 (6 events)
-  0 META text type=0x05 "@T(Untitled)"
+  0 META text type=0x05 "@Tpart_name_from_file_name"
   0 META tempo mpq=500000
-  0 META text type=0x03 "(Untitled)"
+  0 META text type=0x03 "part_name_from_file_name"
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
   0 META end_of_track
@@ -105,7 +105,7 @@ divisionType=0.0 resolution=11520 tickLength=11520 tracks=2
   11520 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
   11520 META end_of_track
 == abcInfo
-  title="(Untitled)"
+  title="part_name_from_file_name"
   composer=""
   transcriber=""
   genre="" mood=""
@@ -123,9 +123,9 @@ divisionType=0.0 resolution=11520 tickLength=11520 tracks=2
 == sequence
 divisionType=0.0 resolution=11520 tickLength=11520 tracks=2
 -- track 0 (6 events)
-  0 META text type=0x05 "@T(Untitled)"
+  0 META text type=0x05 "@Tpart_name_from_file_name"
   0 META tempo mpq=500000
-  0 META text type=0x03 "(Untitled)"
+  0 META text type=0x03 "part_name_from_file_name"
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
   0 META end_of_track
@@ -141,7 +141,7 @@ divisionType=0.0 resolution=11520 tickLength=11520 tracks=2
   11520 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
   11520 META end_of_track
 == abcInfo
-  title="(Untitled)"
+  title="part_name_from_file_name"
   composer=""
   transcriber=""
   genre="" mood=""
@@ -159,9 +159,9 @@ divisionType=0.0 resolution=11520 tickLength=11520 tracks=2
 == sequence
 divisionType=0.0 resolution=11520 tickLength=11520 tracks=2
 -- track 0 (6 events)
-  0 META text type=0x05 "@T(Untitled)"
+  0 META text type=0x05 "@Tpart_name_from_file_name"
   0 META tempo mpq=1000000
-  0 META text type=0x03 "(Untitled)"
+  0 META text type=0x03 "part_name_from_file_name"
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
   0 META end_of_track
@@ -177,7 +177,7 @@ divisionType=0.0 resolution=11520 tickLength=11520 tracks=2
   11520 NOTE_OFF ch=0 d1=74 d2=80 [LotroShortMessage]
   11520 META end_of_track
 == abcInfo
-  title="(Untitled)"
+  title="part_name_from_file_name"
   composer=""
   transcriber=""
   genre="" mood=""
