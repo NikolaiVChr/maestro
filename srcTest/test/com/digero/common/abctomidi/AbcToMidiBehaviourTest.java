@@ -328,16 +328,17 @@ class AbcToMidiBehaviourTest {
 			void tieJoinsTheNextNoteOnly() throws Exception {
 				// Lotro joins a tie to the next note of its pitch wherever it is (tested: c- d c is one c over the d).
 				// ABC 2.1 (4.11): "Ties connect two successive notes of the same pitch". O'Neill's collections write -
-				// as a slur (F-G): with Lotro's reading the F sounds on to the next F. So with the flag the next note
-				// (or chord, or rest) must have the tied pitch, else an error at the tie
+				// as a slur (F-G): with Lotro's reading the F sounds on to the next F. So with the flag a tie joins the
+				// next note (or chord) if it has the tied pitch, else it ties nothing: the note just ends (it was an
+				// error, user 2026-10-01: MoreFilesLoad.tieToNothingIsIgnored)
 				Sequence s = convert(tune("semantic", "c- d c|"));
 				long q = s.getResolution();
 				assertEquals(List.of(on(0, 60), on(q / 2, 62), off(q, 60), off(q, 62)), noteEvents(s)); // The sum of the c's
-				for (String body : List.of("c- d c|", "F-G F|", "c- z c|", "[ce]- [cg] e|", "[ce]- c e|")) {
-					FileParseException e = assertThrows(FileParseException.class,
-							() -> convert(standard(tune("semantic", body))), body);
-					assertTrue(e.getMessage().contains("line 7,"), e.getMessage()); // At the tie's line
-				}
+				Map<String, String> untied = Map.of("c- d c|", "c d c|", "F-G F|", "F G F|", "c- z c|", "c z c|",
+						"[ce]- [cg] e|", "[c-e] [cg] e|", "[ce]- c e|", "[c-e] c e|");
+				for (Map.Entry<String, String> body : untied.entrySet())
+					assertEquals(noteEvents(convert(standard(tune("semantic", body.getValue())))),
+							noteEvents(convert(standard(tune("semantic", body.getKey())))), body.getKey());
 				// The next note continues it: across a bar line or a line break, in a chord
 				assertEquals(noteEvents(convert(tune("semantic", "c4- | c4 d|"))),
 						noteEvents(convert(standard(tune("semantic", "c4- | c4 d|")))));
@@ -352,11 +353,13 @@ class AbcToMidiBehaviourTest {
 			@Test
 			void tieNeedsTheSamePitchAfterTheBarLine() throws Exception {
 				// ABC 2.1 (4.11): a tie joins "two notes of the same pitch", within or between bars, and the bar line
-				// ends an accidental as always. So ^c-|c ties C# to C, which doesn't connect: an error, in both readings
-				// and as in Lotro (tested). The continuation repeats the sharp: ^c-|^c. (Staff notation carries the
-				// accidental over a tie; ABC doesn't say so, and Lotro doesn't: standard2011 changes nothing here.)
-				assertThrows(FileParseException.class, () -> convert(tune("semantic", "^c-|c d|")));
-				assertThrows(FileParseException.class, () -> convert(standard(tune("semantic", "^c-|c d|"))));
+				// ends an accidental as always. So ^c-|c ties C# to C, which doesn't connect: the tie ties nothing in both
+				// readings (it was an error; Lotro plays nothing of the part, tested). The continuation repeats the sharp:
+				// ^c-|^c. (Staff notation carries the accidental over a tie; ABC doesn't say so, and Lotro doesn't:
+				// standard2011 changes nothing here.)
+				assertEquals(noteEvents(convert(tune("semantic", "^c|c d|"))), noteEvents(convert(tune("semantic", "^c-|c d|"))));
+				assertEquals(noteEvents(convert(standard(tune("semantic", "^c|c d|")))),
+						noteEvents(convert(standard(tune("semantic", "^c-|c d|")))));
 				Sequence s = convert(standard(tune("semantic", "^c-|^c d|")));
 				long q = s.getResolution();
 				assertEquals(List.of(on(0, 61), off(q, 61), on(q, 62), off(3 * q / 2, 62)), noteEvents(s));
@@ -751,6 +754,200 @@ class AbcToMidiBehaviourTest {
 			}
 		}
 
+		/**
+		 * Files that stopped with an error before (2026-10-01): proper ABC, and common slips whose meaning is sure. None
+		 * needs a flag, since no file that loads today is read otherwise (||1 played in the ABC Player, but Lotro refuses
+		 * it: now a Lotro error, before the release). With Lotro errors on (the ABC Player) what Lotro refuses stays an
+		 * error (tested, lotro_test_B77).
+		 */
+		@Nested
+		class MoreFilesLoad {
+
+			/** Every reading but the ABC Player with Lotro errors. */
+			private static final List<Profile> READINGS = List.of(Profile.ABC_PLAYER, Profile.MAESTRO_LEGACY,
+					Profile.MAESTRO_NEW_LOTRO, Profile.MAESTRO_NEW_STANDARD);
+
+			/** The note events of every track but the first (the chord accompaniment of standard ABC included). */
+			private static List<List<NoteEvent>> played(Profile profile, String body) throws Exception {
+				Sequence s = ConversionDump.convert(tune("semantic", body.split("\n")), profile);
+				List<List<NoteEvent>> tracks = new ArrayList<>();
+				for (int t = 1; t < s.getTracks().length; t++)
+					tracks.add(noteEvents(s, t));
+				return tracks;
+			}
+
+			/** In every reading without Lotro errors, body plays as the proper ABC does (lines split at \n). */
+			private static void playsAs(String proper, String body) throws Exception {
+				for (Profile profile : READINGS)
+					assertEquals(played(profile, proper), played(profile, body), body + " " + profile);
+			}
+
+			/** With Lotro errors on, a Lotro error. */
+			private static LotroFileParseException lotroError(String body) {
+				return assertThrows(LotroFileParseException.class,
+						() -> ConversionDump.convert(tune("semantic", body.split("\n")), Profile.ABC_PLAYER_STRICT), body);
+			}
+
+			/** An error in every reading. */
+			private static void errorEverywhere(String body) {
+				for (Profile profile : Profile.values())
+					assertThrows(FileParseException.class,
+							() -> ConversionDump.convert(tune("semantic", body.split("\n")), profile), body + " " + profile);
+			}
+
+			@Test
+			void endingRightAfterADoubleBar() throws Exception {
+				// ||1 is || then [1, as abc2midi reads it; it was an error ("unexpected '1'") when repeats are played
+				Profile std = Profile.MAESTRO_NEW_STANDARD;
+				List<List<NoteEvent>> twice = played(std, "c2 d2 e2 f2 | g8 | c2 d2 e2 f2 | a8 |]");
+				assertEquals(twice, played(std, "|: c2 d2 e2 f2 ||1 g8 :|2 a8 |]"));
+				// || [1 too: its || ended the repeated section, so nothing was repeated (silently)
+				assertEquals(twice, played(std, "|: c2 d2 e2 f2 || [1 g8 :|2 a8 |]"));
+				// Without |: the repeat goes back to the section's start, the || before it, not the one before the ending
+				assertEquals(played(std, "c8 | d2 e2 f2 g2 | a8 | d2 e2 f2 g2 | b8 |]"),
+						played(std, "c8 || d2 e2 f2 g2 ||1 a8 :|2 b8 |]"));
+				// The first ending closed with :||
+				assertEquals(played(std, "c8 | d8 | e8 | c8 | d8 | f8 |]"), played(std, "|: c8 | d8 ||1 e8 :||2 f8 |]"));
+				// Where repeats aren't played it played before, and still does, as |1
+				playsAs("|: c2 d2 e2 f2 |1 g8 :|2 a8 |]", "|: c2 d2 e2 f2 ||1 g8 :|2 a8 |]");
+				// Lotro plays nothing of the part (tested, B77b); the ABC Player played it
+				lotroError("|: c2 d2 e2 f2 ||1 g8 :|2 a8 |]");
+			}
+
+			@Test
+			void brokenRhythmAfterASlur() throws Exception {
+				// (d8d2)>e2 (Village Music Project), (A2 A)>F: the > belongs to the last note in the slur
+				playsAs("c2 d>e f4|", "(c2 d)>e f4|");
+				playsAs("c d<e f4 z|", "(c d)<e f4 z|");
+				playsAs("c2 d>>e f4|", "(c2 d)>>e f4|");
+				playsAs("c2 d>e f4|", "c2 (d)>e f4|");
+				playsAs("c d>e f z4|", "(c d)>(e f) z4|");
+				// Lotro plays nothing of the part (tested, B77c)
+				lotroError("(c2 d)>e f4|");
+			}
+
+			@Test
+			void tupletInGraceNotesIsSkipped() throws Exception {
+				// {(3Bcd}c4 (Village Music Project): grace notes are timed by the player anyway (ABC 2.1, 4.12)
+				playsAs("{Bcd}c4 d4|", "{(3Bcd}c4 d4|");
+				playsAs("{Bcd}c4 d4|", "{(3:2:3Bcd}c4 d4|");
+				playsAs("{Bcd}c4 d4|", "{(3(Bcd)}c4 d4|");
+				// Lotro plays it (tested, B77d), skipping the grace notes as always
+				assertEquals(noteEvents(ConversionDump.convert(tune("semantic", "{Bcd}c4 d4|"), Profile.ABC_PLAYER_STRICT)),
+						noteEvents(ConversionDump.convert(tune("semantic", "{(3Bcd}c4 d4|"), Profile.ABC_PLAYER_STRICT)));
+			}
+
+			@Test
+			void tieWrittenApartFromItsNote() throws Exception {
+				// Not ABC 2.1 (4.11: the - right after the note), but common (the Nottingham Music Database, A21/A44).
+				// Only where it's sure what is meant: right after a note, with only spaces and bar lines between
+				playsAs("c4-c4|", "c4 -c4|");
+				playsAs("c4- c4|", "c4 - c4|");
+				playsAs("c4-|c4|", "c4|-c4|");
+				playsAs("c4-|c4|", "c4 -|c4|");
+				playsAs("c4-|c4|", "c4 | -c4|");
+				playsAs("^c4-c4|", "^c4 -c4|");
+				playsAs("c4-\"G\"c4|", "c4 -\"G\"c4|"); // B -"Em"B (Nottingham)
+				// Followed by another pitch it ties nothing (tieToNothingIsIgnored)
+				playsAs("c4 d4|", "c4 -d4|");
+				// Lotro plays nothing of the part (tested, B30)
+				lotroError("c4 -c4|");
+				// Not sure: at the start of a line, after a rest, after grace notes or a chord
+				errorEverywhere("-c4 d4|");
+				errorEverywhere("c4\n-c4|");
+				errorEverywhere("z4 -c4|");
+				errorEverywhere("{g}-a4 z4|");
+				errorEverywhere("[ce]4 -[ce]4|");
+			}
+
+			@Test
+			void tieToNothingIsIgnored() throws Exception {
+				// A tie with no note of its pitch after it (e6- | d4, a tie written as a slur F-G): the note just ends.
+				// Lotro's reading joins a tie to the next note of its pitch wherever it is (tested); here there's none
+				playsAs("c4 d4|", "c4- d4|");
+				playsAs("c4 z4|", "c4- z4|");
+				playsAs("c4 d4|]", "c4 d4-|]");
+				playsAs("c d", "c d-");
+				// Lotro's reading still ties over other notes (one c of 6 eighths over the d); ABC 2.1 only to the next
+				// note (Standard2011.tieJoinsTheNextNoteOnly), so there the tie is ignored now
+				Sequence s = convert(tune("semantic", "c2- d2 c4|"));
+				long q = s.getResolution();
+				assertEquals(List.of(on(0, 60), on(q, 62), off(2 * q, 62), off(3 * q, 60)), noteEvents(s));
+				assertEquals(played(Profile.MAESTRO_NEW_STANDARD, "c2 d2 c4|"),
+						played(Profile.MAESTRO_NEW_STANDARD, "c2- d2 c4|"));
+				// With Lotro errors it stays an error (user, 2026-10-01)
+				assertThrows(FileParseException.class,
+						() -> ConversionDump.convert(tune("semantic", "c4- d4|"), Profile.ABC_PLAYER_STRICT));
+			}
+
+			@Test
+			void lettersJAndRAreDecorations() throws Exception {
+				// J (slide) and R (roll): abc 1.6 and BarFly, common in old collections (ABC 2.1 has neither, its letters
+				// are T H L M O P S u v). J is skipped, R played as ~
+				playsAs("c2 ~d2 e4|", "Jc2 Rd2 e4|");
+				// Lotro plays nothing of the part (tested, B77f), as with the other letter decorations (B17)
+				lotroError("Jc2 d2 e4|");
+				lotroError("Rc2 d2 e4|");
+			}
+
+			@Test
+			void doubledBackslashContinuesTheLine() throws Exception {
+				// cde \\ at a line's end (John Chambers' Bray collection): one \ continues the line, the other is extra
+				playsAs("c2 d2 \\\ne2 f2|", "c2 d2 \\\\\ne2 f2|");
+				playsAs("c2 d2 \\\ne2 f2|", "c2 d2 \\\\  \ne2 f2|");
+				// In the middle of a line it stays an error
+				errorEverywhere("c2\\\\d2 e4|");
+				// Lotro plays it (tested, B77g)
+				assertEquals(noteEvents(ConversionDump.convert(tune("semantic", "c2 d2 \\", "e2 f2|"), Profile.ABC_PLAYER_STRICT)),
+						noteEvents(ConversionDump.convert(tune("semantic", "c2 d2 \\\\", "e2 f2|"), Profile.ABC_PLAYER_STRICT)));
+			}
+
+			@Test
+			void typographicQuotesInTheNotesAreQuotes() throws Exception {
+				// A word processor's \u201CG\u201D: read as "G" in the notes (standard ABC plays the chord symbol)
+				playsAs("\"G\"c4 d4|", "\u201CG\u201Dc4 d4|");
+				playsAs("\"G\"c4 d4|", "\u201DG\u201Dc4 d4|");
+				playsAs("\"^high\"c4 d4|", "\u201C^high\u201Dc4 d4|");
+				// Elsewhere they're text: the title and the lyrics keep them
+				assertEquals("\u201CRose\u201D", abcInfoOf(tune("semantic", header("T:\u201CRose\u201D"), "c4 d4|")).getTitle());
+				assertEquals(List.of("0:\u201Cone ", "4:two\u201D "),
+						lyrics(convert(tune("semantic", "c4 d4|", "w:\u201Cone two\u201D")), 1));
+				// Lotro plays nothing of the part (tested, B77e); the message says what to write
+				assertTrue(lotroError("\u201CG\u201Dc4 d4|").getMessage().contains("\""));
+			}
+
+			@Test
+			void aFieldWrappedOntoTheNextLineIsNamed() throws Exception {
+				// Bruce Thomson's files: a field's text goes on on the next line, which was read as notes ("Unknown/
+				// unexpected character 'r'", or with Lotro errors "Lotro refuses ... 'T'", a trill)
+				AbcCase wrapped = AbcCase.of("semantic", "X:1", "T:Test", "N:Collected from", "Tradition", "M:4/4",
+						"L:1/8", "K:C", "c d|");
+				for (Profile profile : Profile.values()) {
+					FileParseException e = assertThrows(FileParseException.class,
+							() -> ConversionDump.convert(wrapped, profile), profile.name());
+					assertFalse(e instanceof LotroFileParseException, profile + ": " + e.getMessage());
+					assertEquals(4, e.getLine(), profile.name()); // Tradition
+					assertEquals(3, e.getRelatedLine(), profile.name()); // N:
+					assertTrue(e.getMessage().contains("N:") && e.getMessage().contains("+:"), e.getMessage());
+				}
+				// Without a K: after it, it's music (a Lotro file without K:), and the error is the usual one
+				FileParseException e = assertThrows(FileParseException.class, () -> ConversionDump.convert(
+						AbcCase.of("semantic", "X:1", "T:Test", "N:Collected from", "Tradition"), Profile.MAESTRO_LEGACY));
+				assertEquals(-1, e.getRelatedLine());
+			}
+
+			@Test
+			void lotroErrorsSayWhatLotroDoes() throws Exception {
+				// :|: and :|] (B2, B4): Lotro plays nothing of the part. They were "Expected to see '|' after parsing
+				// ':'" and "Unexpected ']'"
+				assertTrue(lotroError("|: c4 d4 :|: e4 f4 :|").getMessage().contains("::"));
+				assertTrue(lotroError("|: c4 d4 :|] e4 f4|").getMessage().contains(":|"));
+				// The other readings play them as before
+				playsAs("|: c4 d4 :: e4 f4 :|", "|: c4 d4 :|: e4 f4 :|");
+				playsAs("|: c4 d4 :| e4 f4|", "|: c4 d4 :|] e4 f4|");
+			}
+		}
+
 		@Test
 		void eighthNotesFollowEachOther() throws Exception {
 			Sequence s = convert(tune("semantic", "c d e f|"));
@@ -833,8 +1030,11 @@ class AbcToMidiBehaviourTest {
 		}
 
 		@Test
-		void unconnectedTieIsAnError() {
-			assertThrows(FileParseException.class, () -> convert(tune("semantic", "c-d|")));
+		void unconnectedTieTiesNothing() throws Exception {
+			// The c just ends (it was an error, user 2026-10-01); with Lotro errors it still is one
+			assertEquals(noteEvents(convert(tune("semantic", "c d|"))), noteEvents(convert(tune("semantic", "c-d|"))));
+			assertThrows(FileParseException.class,
+					() -> ConversionDump.convert(tune("semantic", "c-d|"), Profile.ABC_PLAYER_STRICT));
 		}
 
 		@Test
@@ -901,9 +1101,12 @@ class AbcToMidiBehaviourTest {
 		}
 
 		@Test
-		void tieAcrossBarLineDoesNotKeepTheAccidental() {
-			// Tested in Lotro: ^c-|c doesn't play. The bar line resets the sharp, so C# and C don't connect.
-			assertThrows(FileParseException.class, () -> convert(tune("semantic", "^c-|c d|")));
+		void tieAcrossBarLineDoesNotKeepTheAccidental() throws Exception {
+			// Tested in Lotro: ^c-|c doesn't play. The bar line resets the sharp, so C# and C don't connect: with Lotro
+			// errors an error, else the tie ties nothing (user, 2026-10-01)
+			assertThrows(FileParseException.class,
+					() -> ConversionDump.convert(tune("semantic", "^c-|c d|"), Profile.ABC_PLAYER_STRICT));
+			assertEquals(noteEvents(convert(tune("semantic", "^c|c d|"))), noteEvents(convert(tune("semantic", "^c-|c d|"))));
 		}
 
 		@Test

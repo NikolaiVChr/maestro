@@ -538,16 +538,29 @@ public class AbcToMidi {
 	}
 
 	public static Sequence convert(Params params) throws FileParseException {
-		return convert(params.filesData, params.useLotroInstruments, params.instrumentOverrideMap, params.abcInfo,
-				params.enableLotroErrors, params.stereo, params.generateRegions, params.expandRepeats, params.specTempo,
-				params.standardPitch, params.chordAccompaniment, params.standard2011, params.warningHandler);
+		// The line being parsed when it may be a field's text going on, the field's line and its letter
+		int[] wrappedField = { -1, -1, 0 };
+		try {
+			return convert(params.filesData, params.useLotroInstruments, params.instrumentOverrideMap, params.abcInfo,
+					params.enableLotroErrors, params.stereo, params.generateRegions, params.expandRepeats, params.specTempo,
+					params.standardPitch, params.chordAccompaniment, params.standard2011, params.warningHandler,
+					wrappedField);
+		} catch (FileParseException e) {
+			// A line in a tune's header that isn't music (Bruce Thomson's files: "Tradition" read as T, a trill, and r)
+			if (wrappedField[0] >= 0 && e.getLine() == wrappedField[0]) {
+				throw new FileParseException(UIText.get("common.abctomidi.field.wrapped", (char) wrappedField[2] + ":",
+						String.valueOf(wrappedField[1])), e.getFileName(), e.getLine(), 0, wrappedField[1], 0);
+			}
+			throw e;
+		}
 	}
 
+	/** @param wrappedField See convert(Params) */
 	private static Sequence convert(List<FileAndData> filesData, boolean useLotroInstruments,
 									Map<Integer, LotroInstrument> instrumentOverrideMap, AbcInfo abcInfo, final boolean enableLotroErrors,
 									final int stereo, final boolean generateRegions, final boolean expandRepeats, boolean specTempo,
 									boolean standardPitch, boolean chordAccompaniment, boolean standard2011,
-									WarningHandler warningHandler)
+									WarningHandler warningHandler, int[] wrappedField)
 			throws FileParseException {
 		if (abcInfo == null)
 			abcInfo = new AbcInfo();
@@ -635,6 +648,7 @@ public class AbcToMidi {
 		String lastVerseText = "";
 		MidiEvent lastVerseEvent = null;
 		char lastField = 0; // The field on the line before (w for w:), for a +: line; 0 after a line of music
+		int lastFieldLine = -1; // The line of lastField
 		int lastLyricLine = -1; // Line index of the last w: line, for a +: line after it
 		// Information fields ("Composer: ..."), in the file's order; see writeInfoLines. Lines already read are kept by
 		// their region line number, so a repeat going back doesn't read them again.
@@ -712,6 +726,7 @@ public class AbcToMidi {
 			boolean inTune = false; // Between an X: and the empty line that ends its tune
 			lineLoop: for (int lineIndex = 0; lineIndex < lines.size(); lineIndex++) {
 				String line = lines.get(lineIndex);
+				wrappedField[0] = -1; // Only a line being parsed may be a field's text going on
 				lineNumber = (sourceLineNumbers != null) ? sourceLineNumbers[lineIndex] : lineIndex + 1;
 				previousLineForRegions = lineNumberForRegions;
 				lineNumberForRegions = firstLineForRegions + lineNumber - 1;
@@ -864,6 +879,7 @@ public class AbcToMidi {
 					String value = unescapePercent(infoMatcher.group(INFO_VALUE).trim());
 					char previousField = lastField;
 					lastField = type;
+					lastFieldLine = lineNumber;
 
 					// A T: after the part's notes started is a section title (ABC 2.1). Lotro plays on (tested), and it
 					// doesn't name the song or the part.
@@ -911,10 +927,9 @@ public class AbcToMidi {
 					try {
 						switch (type) {
 							case 'X':
-								for (int lineAndColumn : tiedNotes.values()) {
-									throw new FileParseException(UIText.get("common.abctomidi.tie.not.connected"),
-											fileName, lineAndColumn >>> 16, lineAndColumn & 0xFFFF);
-								}
+								endUnconnectedTies(enableLotroErrors, tiedNotes, tiedNoteStartTicks, tiedNoteEndTicks,
+										tiedRegions, tiesToContinue, track, channel, info.getDynamics().getVol(useLotroInstruments),
+										noteOffEvents, fileName);
 
 								if (track != null)
 									singLyrics(track, lyricNotes, lyricLines, musicLines, sourceLineNumbers, lastAttackTick + 1);
@@ -1214,6 +1229,16 @@ public class AbcToMidi {
 						pendingVerseLines.clear();
 					}
 
+					// A line that may be a field's text going on (Bruce Thomson's files): the part's first line of notes,
+					// right after a field, before the tune's K:. If it isn't music, convert(Params) says so.
+					if (musicLines.isEmpty() && Character.isUpperCase(lastField) && lastField != 'K' && lastField != 'X'
+							&& keyFollows(lines, lineIndex + 1)) {
+						wrappedField[0] = lineNumber;
+						wrappedField[1] = lastFieldLine;
+						wrappedField[2] = lastField;
+					}
+					if (!enableLotroErrors)
+						line = withSlipsFixed(line);
 					Matcher m = NOTE_PATTERN.matcher(line);
 					lastField = 0;
 					musicLines.add(lineIndex);
@@ -1522,8 +1547,15 @@ public class AbcToMidi {
 
 									accidentals.clear();
 									char afterBar = (i + 1 < line.length()) ? line.charAt(i + 1) : ' ';
-									if (afterBar == '|') {
-										repeats.sectionEnd(lineIndex, i + 2); // || : a double bar line
+									if (afterBar == '|' && enableLotroErrors && i + 2 < line.length()
+											&& Character.isDigit(line.charAt(i + 2))) {
+										// ||1 : Lotro plays nothing of the part (tested, B77b)
+										throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.ending.after.double.bar",
+												line.substring(i, skipEndingNumber(line, i + 2) + 1)), fileName, lineNumber, i);
+									}
+									if (afterBar == '|' && !endingAt(line, i + 2)) {
+										// || : a double bar line; not the bar line before an ending (||1, || [1)
+										repeats.sectionEnd(lineIndex, i + 2);
 									}
 									if (afterBar == ']' || afterBar == ':') {
 										i++; // Skip |], |:
@@ -1573,7 +1605,15 @@ public class AbcToMidi {
 									if (pipe >= 0) {
 										signEnd = pipe + 1;
 										if (enableLotroErrors) {
-											// Only :| ::| ...
+											// Only :| ::| ... : Lotro plays nothing of a part with :|: or :|] (tested, B2, B4)
+											if (signEnd < line.length() && line.charAt(signEnd) == ':') {
+												throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.repeat.bar.colon"),
+														fileName, lineNumber, i);
+											}
+											if (signEnd < line.length() && line.charAt(signEnd) == ']') {
+												throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.repeat.bar.bracket"),
+														fileName, lineNumber, i);
+											}
 										} else if (signEnd + 1 < line.length() && line.charAt(signEnd) == '|'
 												&& line.charAt(signEnd + 1) == ':') {
 											signEnd += 2; // :||: the end of one repeat and the start of the next
@@ -1724,8 +1764,11 @@ public class AbcToMidi {
 										}
 										if (c == '(' || c == ')') {
 											// A slur over the grace notes, {(B/c/B/^A/)} (Village Music Project): layout only.
-											// ABC 2.1 (4.12) doesn't say; Lotro plays the part (tested in game, B76).
+											// ABC 2.1 (4.12) doesn't say; Lotro plays the part (tested in game, B76). Also a
+											// tuplet, {(3Bcd}: grace notes are timed by the player anyway; Lotro plays it (B77d).
 											k++;
+											while (c == '(' && k < j && (Character.isDigit(line.charAt(k)) || line.charAt(k) == ':'))
+												k++;
 											continue;
 										}
 										grace.region(k, j);
@@ -1846,14 +1889,21 @@ public class AbcToMidi {
 								case 'T': // Trill
 								case 'u': // Up-bow
 								case 'v': // Down-bow
-									// Decorations in short form (ABC 2.1, 4.14). T M P are ornaments that are played, the others
-									// change nothing here. Tested in Lotro (T H u v): it refuses the part.
+								case 'J': // Slide (abc 1.6 and BarFly, not ABC 2.1)
+								case 'R': // Roll (abc 1.6 and BarFly, not ABC 2.1): played as ~
+									// Decorations in short form (ABC 2.1, 4.14). T M P R are ornaments that are played, the others
+									// change nothing here. Tested in Lotro (T H u v; J R in B77f): it refuses the part.
 									if (enableLotroErrors) {
 										throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.decoration.letter",
 												String.valueOf(ch)), fileName, lineNumber, i);
 									}
-									if (!repeats.skipping && (ch == 'T' || ch == 'M' || ch == 'P'))
-										ornament = (ch == 'T') ? "trill" : (ch == 'M') ? "lowermordent" : "uppermordent";
+									if (!repeats.skipping && (ch == 'T' || ch == 'M' || ch == 'P' || ch == 'R'))
+										ornament = switch (ch) {
+											case 'T' -> "trill";
+											case 'M' -> "lowermordent";
+											case 'P' -> "uppermordent";
+											default -> "roll";
+										};
 									if (abc21 && ch == 'L')
 										accent = true;
 									break;
@@ -1901,11 +1951,38 @@ public class AbcToMidi {
 										throw new FileParseException(UIText.get("common.abctomidi.unexpected.in.chord",
 												String.valueOf(ch)), fileName, lineNumber, i);
 									}
+									// (c d)>e : Lotro plays nothing of the part (tested, B77c). Without Lotro errors
+									// withSlipsFixed moved the > before the ).
+									if (enableLotroErrors && i + 1 < line.length()
+											&& (line.charAt(i + 1) == '>' || line.charAt(i + 1) == '<')) {
+										throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.broken.after.slur"),
+												fileName, lineNumber, i + 1);
+									}
 									break;
 
+								case '-':
+									// A tie apart from its note, c4 -c4 (without Lotro errors withSlipsFixed moved it to the
+									// note): Lotro plays nothing of the part (tested, B30)
+									if (enableLotroErrors && detachedTieNoteEnd(line, i) >= 0) {
+										throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.tie.apart"),
+												fileName, lineNumber, i);
+									}
+									throw new FileParseException(UIText.get("common.abctomidi.unknown.char",
+											String.valueOf(ch)), fileName, lineNumber, i);
+
+								case '“':
+								case '”':
+									// Typographic quotes, left only with Lotro errors (withSlipsFixed): Lotro plays nothing of
+									// the part (tested, B77e)
+									throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.typographic.quotes"),
+											fileName, lineNumber, i);
+
 								case '\\':
-									// Line continuation; Lotro treats every line on its own anyway, so it's ignored
-									if (!line.substring(i + 1).isBlank()) {
+									// Line continuation; Lotro treats every line on its own anyway, so it's ignored. Also doubled,
+									// \\ at the line's end (John Chambers' collections): Lotro plays it (tested, B77g).
+									String afterBackslash = line.substring(i + 1);
+									if (!afterBackslash.isBlank()
+											&& !(afterBackslash.startsWith("\\") && afterBackslash.substring(1).isBlank())) {
 										throw new FileParseException(UIText.get("common.abctomidi.backslash.not.at.end"),
 												fileName, lineNumber, i);
 									}
@@ -2385,10 +2462,8 @@ public class AbcToMidi {
 			if (seq == null)
 				throw new FileParseException(UIText.get("common.abctomidi.no.notes"), fileName, lineNumber);
 
-			for (int lineAndColumn : tiedNotes.values()) {
-				throw new FileParseException(UIText.get("common.abctomidi.tie.not.connected"), fileName,
-						lineAndColumn >>> 16, lineAndColumn & 0xFFFF);
-			}
+			endUnconnectedTies(enableLotroErrors, tiedNotes, tiedNoteStartTicks, tiedNoteEndTicks, tiedRegions,
+					tiesToContinue, track, channel, info.getDynamics().getVol(useLotroInstruments), noteOffEvents, fileName);
 		}
 
 		// The last parts without notes get their empty tracks too (see addEmptyTrack)
@@ -2483,11 +2558,9 @@ public class AbcToMidi {
 	/**
 	 * A note, chord or rest has been read (ABC 2.1, 4.11, with standard2011): each pitch tied before it must be in it, as
 	 * a tie joins a note to the next note of its pitch. Then its own ties are the ones the next one must continue. (Lotro
-	 * joins a tied note to the next note of its pitch wherever that is; standard2011 doesn't.) After a repeat sign or an
-	 * ending the next note played can be another (|: c ... d- :| goes back to c): a tie it doesn't continue ends there,
-	 * at the tied note's end.
-	 *
-	 * @throws FileParseException At the tie, if the next note has another pitch (a tie written as a slur: F-G)
+	 * joins a tied note to the next note of its pitch wherever that is; standard2011 doesn't.) A tie the next one doesn't
+	 * continue ends there, at the tied note's end: after a repeat sign or an ending the next note played can be another
+	 * (|: c ... d- :| goes back to c), and elsewhere it ties nothing (a tie written as a slur, F-G; user, 2026-10-01).
 	 */
 	private static void checkTiesContinue(Set<Integer> tiesToContinue, Set<Integer> eventPitches,
 										  Map<Integer, Integer> tiedNotes, Map<Integer, Double> tiedNoteStartTicks,
@@ -2498,10 +2571,8 @@ public class AbcToMidi {
 			Integer lineAndColumn = tiedNotes.get(pitch);
 			if (eventPitches.contains(pitch) || lineAndColumn == null)
 				continue;
-			if (!crossedRepeat) {
-				throw new FileParseException(UIText.get("common.abctomidi.tie.other.pitch"), fileName,
-						lineAndColumn >>> 16, lineAndColumn & 0xFFFF);
-			}
+			if (!crossedRepeat)
+				log.warning(fileName + ": line " + (lineAndColumn >>> 16) + ": a tie to another pitch or a rest ties nothing");
 			MidiEvent noteOff = MidiFactory.createNoteOffEventEx(pitch, channel, velocity,
 					Math.round(tiedNoteEndTicks.get(pitch)));
 			track.add(noteOff);
@@ -2514,6 +2585,111 @@ public class AbcToMidi {
 		tiesToContinue.clear();
 		tiesToContinue.addAll(tiedNotes.keySet());
 		eventPitches.clear();
+	}
+
+	/**
+	 * The ties left at a part's end, with no note of their pitch after them (e6- | d4, c d- at the end): with Lotro
+	 * errors an error at the tie; else the note just ends there (user, 2026-10-01).
+	 */
+	private static void endUnconnectedTies(boolean enableLotroErrors, Map<Integer, Integer> tiedNotes,
+										   Map<Integer, Double> tiedNoteStartTicks, Map<Integer, Double> tiedNoteEndTicks,
+										   Map<Integer, AbcRegion> tiedRegions, Set<Integer> tiesToContinue, Track track,
+										   int channel, int velocity, List<MidiEvent> noteOffEvents, String fileName)
+			throws FileParseException {
+		for (Map.Entry<Integer, Integer> tie : tiedNotes.entrySet()) {
+			int lineAndColumn = tie.getValue();
+			if (enableLotroErrors) {
+				throw new FileParseException(UIText.get("common.abctomidi.tie.not.connected"), fileName,
+						lineAndColumn >>> 16, lineAndColumn & 0xFFFF);
+			}
+			log.warning(fileName + ": line " + (lineAndColumn >>> 16) + ": a tie with no note of its pitch after it ties nothing");
+			MidiEvent noteOff = MidiFactory.createNoteOffEventEx(tie.getKey(), channel, velocity,
+					Math.round(tiedNoteEndTicks.get(tie.getKey())));
+			track.add(noteOff);
+			noteOffEvents.add(noteOff);
+		}
+		tiedNotes.clear();
+		tiedNoteStartTicks.clear();
+		tiedNoteEndTicks.clear();
+		tiedRegions.clear();
+		tiesToContinue.clear();
+	}
+
+	/**
+	 * Common slips in the notes whose meaning is sure, written the proper way, in the same length so the columns stay
+	 * right: typographic quotes (a word processor's “G”) as "G"; a tie written apart from its note (c4 -c4,
+	 * c4|-c4, c4 -|c4; the Nottingham Music Database) moved to the note; a broken rhythm after a slur's end ((c d)>e,
+	 * Village Music Project) moved before the ). Not with Lotro errors: Lotro plays nothing of such a part (tested,
+	 * B30, B77), and the parser says so.
+	 */
+	static String withSlipsFixed(String line) {
+		StringBuilder notes = new StringBuilder(line.replace('“', '"').replace('”', '"'));
+		boolean quoted = false;
+		for (int i = 0; i < notes.length(); i++) {
+			char c = notes.charAt(i);
+			if (c == '"')
+				quoted = !quoted;
+			if (quoted)
+				continue;
+			if (c == '-') {
+				int noteEnd = detachedTieNoteEnd(notes, i);
+				if (noteEnd >= 0) {
+					notes.deleteCharAt(i);
+					notes.insert(noteEnd, '-');
+				}
+			} else if (c == ')' && i + 1 < notes.length() && (notes.charAt(i + 1) == '>' || notes.charAt(i + 1) == '<')) {
+				// The > (or >> <) goes before the )
+				int end = i + 1;
+				while (end < notes.length() && notes.charAt(end) == notes.charAt(i + 1))
+					end++;
+				notes.deleteCharAt(i);
+				notes.insert(end - 1, ')');
+				i = end - 1;
+			}
+		}
+		return notes.toString();
+	}
+
+	/**
+	 * Whether the - at dash is a tie written apart from its note: right after a note (c4 -c4, c4|-c4, c4 -|c4), with
+	 * only spaces and bar lines between. Not after a rest, a chord or grace notes, nor at a line's start (not sure).
+	 *
+	 * @return The index after the note, where the - belongs, or -1
+	 */
+	private static int detachedTieNoteEnd(CharSequence notes, int dash) {
+		int k = dash - 1;
+		while (k >= 0 && (notes.charAt(k) == ' ' || notes.charAt(k) == '\t' || notes.charAt(k) == '|'))
+			k--;
+		if (k < 0 || k == dash - 1)
+			return -1; // At the line's start, or right after the note (a tie as it should be)
+		int noteEnd = k + 1;
+		while (k >= 0 && (Character.isDigit(notes.charAt(k)) || notes.charAt(k) == '/'))
+			k--; // The length
+		while (k >= 0 && (notes.charAt(k) == ',' || notes.charAt(k) == '\''))
+			k--; // The octave
+		return (k >= 0 && "ABCDEFGabcdefg".indexOf(notes.charAt(k)) >= 0) ? noteEnd : -1;
+	}
+
+	/** Whether an ending's number comes at from, maybe after spaces and a [ (||1, || [1). */
+	private static boolean endingAt(String line, int from) {
+		int k = from;
+		while (k < line.length() && line.charAt(k) == ' ')
+			k++;
+		if (k < line.length() && line.charAt(k) == '[')
+			k++;
+		return k < line.length() && Character.isDigit(line.charAt(k));
+	}
+
+	/** Whether a K: line comes later in the tune: before the next X:, from line index from on. */
+	private static boolean keyFollows(List<String> lines, int from) {
+		for (int l = from; l < lines.size(); l++) {
+			String line = lines.get(l);
+			if (line.startsWith("X:"))
+				return false;
+			if (line.startsWith("K:"))
+				return true;
+		}
+		return false;
 	}
 
 	/**
@@ -3022,10 +3198,11 @@ public class AbcToMidi {
 
 	/**
 	 * An ending [1 |1 (also in :|2), and the signs that end a section: || |] [| |: :: ; not the || of :|| (a repeat
-	 * end, as :|), which would hide the second ending after a first one closed by :||
+	 * end, as :|), which would hide the second ending after a first one closed by :||, nor a || right before an ending
+	 * (||1, || [1), which is just the bar line before it
 	 */
 	private static final Pattern ENDING_OR_SECTION_END_PATTERN = Pattern
-			.compile("[\\[|](\\d+(?:[,-]\\d+)*)|(?<!:)\\|\\||\\|\\]|\\[\\||\\|:|::");
+			.compile("[\\[|](\\d+(?:[,-]\\d+)*)|(?<!:)\\|\\|(?!\\s*\\[?\\d)|\\|]|\\[\\||\\|:|::");
 
 	/**
 	 * Whether an ending for the pass comes in the section that starts at the line and column: up to its end (|| |] [|),
