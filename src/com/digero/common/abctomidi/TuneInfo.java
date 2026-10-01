@@ -70,10 +70,10 @@ public class TuneInfo {
 	// I:linebreak and I:decoration (ABC 2.1): every part starts from the file header's
 	private AbcInstructions instructions = new AbcInstructions();
 	private AbcInstructions fileInstructions = new AbcInstructions();
-	// The tempo of the tune's type in R: (RhythmTempo), as a Q: value, for a song without Q:; every part starts from
-	// the file header's
-	private String rhythmTempo;
-	private String fileRhythmTempo;
+	// The last R: with a known tune type (RhythmTempo), for the tempo of a song without Q:; every part starts from the
+	// file header's
+	private String rhythm;
+	private String fileRhythm;
 
     public TuneInfo() {
 		partNumber = 0;
@@ -108,7 +108,7 @@ public class TuneInfo {
 		noteDivisorDenom = 1;
 		noteDivisorSetInHeader = false;
 		instructions = new AbcInstructions();
-		rhythmTempo = null;
+		rhythm = null;
 		calcPPQN();
 	}
 
@@ -134,7 +134,7 @@ public class TuneInfo {
 			fileNoteDivisorNum = noteDivisorNum;
 			fileNoteDivisorDenom = noteDivisorDenom;
 			fileInstructions = instructions;
-			fileRhythmTempo = rhythmTempo;
+			fileRhythm = rhythm;
 		}
 		key = fileKey;
 		keyAccidentals = fileKeyAccidentals.clone();
@@ -149,15 +149,15 @@ public class TuneInfo {
 		noteDivisorDenom = fileNoteDivisorDenom;
 		noteDivisorSetInHeader = false;
 		instructions = fileInstructions.copy();
-		rhythmTempo = fileRhythmTempo;
+		rhythm = fileRhythm;
 		calcPPQN();
 	}
 
 	/** An R: field's value (ABC 2.1, 3.1.7): the tune's type sets the tempo of a song without Q: (endHeader). */
 	public void setRhythm(String rhythm) {
-		String tempo = RhythmTempo.of(AbcText.decode(rhythm));
-		if (tempo != null)
-			rhythmTempo = tempo;
+		String decoded = AbcText.decode(rhythm);
+		if (RhythmTempo.of(decoded) != null)
+			this.rhythm = decoded;
 	}
 
 	/**
@@ -597,6 +597,8 @@ public class TuneInfo {
 	public void endHeader() {
 		if (!tempoGiven && standardTempo) {
 			if (!allPartsTempoFixed) {
+				// The type's tempo in the meter the header ends with: M: may follow R:
+				String rhythmTempo = RhythmTempo.of(rhythm, meterNumerator, meterDenominator);
 				if (rhythmTempo != null) {
 					parseTempo(rhythmTempo, true);
 				} else {

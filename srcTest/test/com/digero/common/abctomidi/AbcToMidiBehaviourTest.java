@@ -1239,6 +1239,25 @@ class AbcToMidiBehaviourTest {
 			assertEquals(200, abcInfoOf(specTempo(AbcCase.of("semantic", AbcCase.concat(new String[] { "X:1", "T:a",
 					"R:reel", "M:4/4", "L:1/8", "K:C", "c d|", "" }, new String[] { "X:2", "T:b", "R:polka", "M:4/4",
 					"L:1/8", "K:C", "e f|" })))).getPrimaryTempoBPM());
+
+			// A type danced in bars of 4/4, written in 2/4 (O'Neill's reels and hornpipes, a 4/4 bar's notes in each
+			// 2/4 bar): its beat is halved, a reel's 1/2=100 is 1/4=100, a hornpipe's 1/4=160 is 1/8=160 (80 quarters),
+			// whatever the L:, also with an M: after the R:. A polka's 2/4 is its own: 120 quarters
+			assertEquals(100, headerTempo("R:Reel", "M:2/4", "L:1/16"));
+			assertEquals(80, headerTempo("R:Hornpipe", "M:2/4", "L:1/16"));
+			assertEquals(80, headerTempo("R:Hornpipe", "M:2/4", "L:1/8"));
+			assertEquals(80, headerTempo("R:Hornpipe", "M:2/4"));
+			assertEquals(80, headerTempo("M:C|", "R:hornpipe", "M:2/4", "L:1/16"));
+			assertEquals(120, headerTempo("R:polka", "M:2/4", "L:1/8"));
+			assertEquals(200, headerTempo("R:reel", "M:4/4", "L:1/16"));
+		}
+
+		/** The tempo played for a tune without Q: with these header fields, with specTempo. */
+		private int headerTempo(String... fields) throws Exception {
+			List<String> lines = new ArrayList<>(List.of("X:1", "T:t"));
+			lines.addAll(List.of(fields));
+			lines.addAll(List.of("K:C", "c d|"));
+			return abcInfoOf(specTempo(AbcCase.of("semantic", lines.toArray(String[]::new)))).getPrimaryTempoBPM();
 		}
 
 		/** The tempo played for a tune with this R:, M: and Q: ("-Q" for none), with specTempo. */
