@@ -1,5 +1,7 @@
 package com.digero.common.abctomidi;
 
+import com.digero.common.midi.MidiConstants;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,6 +29,9 @@ import java.util.regex.Pattern;
  * with abc2midi's channel of the voice (voices take channels 1, 2, ... skipping 10, the drums),
  * so %%MIDI program C N reaches the voice it was written for, and the voice's clef=, transpose= and octave= on its K:
  * line, which setKey reads.</li>
+ * <li>ABC 2.1's %%MIDI voice [ID] instrument=N (11.2), in the header or the body: to the header of every part, with the
+ * ID of the voice it was written for when it has none (the V: above it, the voice of the body line it is in, else the
+ * first voice). The part whose voice has that ID takes it (MidiProgramGuess), wherever it was written.</li>
  * <li>Parts are numbered 1, 2, 3 ... in the file, when any tune in it has voices.</li>
  * </ul>
  * Not yet: &amp; overlays (two voices in one bar) and %%score grouping (layout only).
@@ -50,6 +55,9 @@ public final class VoiceSplitter {
 	private static final Pattern PLAYED_PROPERTY = Pattern
 			.compile("(?i)^(clef=\\S+|(treble|alto|tenor|bass|perc|none)\\d?([+-]8)?|transpose=\\S+|t=\\S+|octave=\\S+)$");
 	private static final Pattern NAME = Pattern.compile("(?i)\\b(?:name|nm)\\s*=\\s*(?:\"([^\"]*)\"|(\\S+))");
+	/** %%MIDI voice or I:MIDI voice (ABC 2.1, 11.2); the words after voice in group 1. */
+	private static final Pattern MIDI_VOICE = Pattern.compile("(?i)^(?:%%|I:)\\s*MIDI(?:\\s*=)?\\s+voice\\b(.*)$");
+
 
 	/** A voice: its id, the properties of its definition, and its body lines (with their source line numbers). */
 	private static final class Voice {
@@ -108,10 +116,20 @@ public final class VoiceSplitter {
 
 		// The voices, in order: the header's definitions, then new ones in the body
 		Map<String, Voice> voices = new LinkedHashMap<>();
+		String headerVoice = null; // The last V: in the header: a %%MIDI voice without an ID below it is for that voice
+		List<String> midiVoiceLines = new ArrayList<>(); // %%MIDI voice, with the voice's ID, for every part's header
+		List<Integer> midiVoiceSources = new ArrayList<>();
 		for (int h = start + 1; h < bodyStart; h++) {
 			Matcher v = VOICE_LINE.matcher(lines.get(h));
-			if (v.matches())
+			if (v.matches()) {
 				voices.computeIfAbsent(v.group(1), Voice::new).properties = v.group(2).trim();
+				headerVoice = v.group(1);
+			}
+			Matcher midiVoice = MIDI_VOICE.matcher(lines.get(h));
+			if (midiVoice.matches()) {
+				midiVoiceLines.add(midiVoiceWithId(midiVoice.group(1), headerVoice));
+				midiVoiceSources.add(h + 1);
+			}
 		}
 		boolean headerVoices = !voices.isEmpty();
 		boolean musicBeforeVoices = false;
@@ -172,6 +190,12 @@ public final class VoiceSplitter {
 				first.add(line, b + 1);
 				continue;
 			}
+			Matcher midiVoice = MIDI_VOICE.matcher(line);
+			if (midiVoice.matches()) {
+				midiVoiceLines.add(midiVoiceWithId(midiVoice.group(1), (current != null) ? current.id : first.id));
+				midiVoiceSources.add(b + 1);
+				continue;
+			}
 			Matcher inline = INLINE_VOICE.matcher(line);
 			if (inline.find()) {
 				// Each voice keeps its own stretch of the line; the rest is blanked, so columns stay
@@ -213,7 +237,7 @@ public final class VoiceSplitter {
 			sources.add(start + 1);
 			for (int h = start + 1; h < bodyStart; h++) {
 				String line = lines.get(h);
-				if (VOICE_LINE.matcher(line).matches())
+				if (VOICE_LINE.matcher(line).matches() || MIDI_VOICE.matcher(line).matches())
 					continue;
 				Matcher field = FIELD.matcher(line);
 				boolean keep = firstPart || line.startsWith("%%")
@@ -223,13 +247,16 @@ public final class VoiceSplitter {
 				if (line.startsWith("K:")) {
 					// The voice's definition and name before K:, which ends the header
 					addVoiceHeader(voice, n, h + 1, out, sources);
+					addAll(midiVoiceLines, midiVoiceSources, out, sources);
 					line = line + playedProperties(voice.properties);
 				}
 				out.add(line);
 				sources.add(h + 1);
 			}
-			if (bodyStart == start + 1)
+			if (bodyStart == start + 1) {
 				addVoiceHeader(voice, n, start + 1, out, sources); // No K: in the header
+				addAll(midiVoiceLines, midiVoiceSources, out, sources);
+			}
 			for (int k = 0; k < voice.lines.size(); k++) {
 				if (voice.lines.get(k).isBlank())
 					continue;
@@ -248,6 +275,23 @@ public final class VoiceSplitter {
 			out.add("%%MIDI channel " + abc2midiChannel(index));
 			sources.add(source);
 		}
+	}
+
+	private static void addAll(List<String> lines, List<Integer> lineSources, List<String> out, List<Integer> sources) {
+		out.addAll(lines);
+		sources.addAll(lineSources);
+	}
+
+	/**
+	 * A %%MIDI voice directive with the ID of its voice: as written if it has one (the first word that isn't
+	 * instrument=, bank= or mute), else with the given ID (none if null).
+	 *
+	 * @param words The words after voice
+	 */
+	private static String midiVoiceWithId(String words, String id) {
+		String first = words.replaceAll("%.*", "").trim().split("\\s+")[0];
+		boolean hasId = !first.isEmpty() && !first.contains("=") && !first.equalsIgnoreCase("mute");
+		return ("%%MIDI voice " + ((hasId || id == null) ? words.trim() : id + " " + words.trim())).trim();
 	}
 
 	/**
@@ -269,10 +313,11 @@ public final class VoiceSplitter {
 
 	/** abc2midi's channel of the voice at this index (from 0): 1, 2, ... 9, 11, ... (10 is the drums). */
 	static int abc2midiChannel(int index) {
+		// Counted from 1 as in %%MIDI channel, which only MidiProgramGuess reads (never a MIDI message's channel)
 		int channel = index + 1;
-		if (channel >= 10)
+		if (channel >= MidiConstants.DRUM_CHANNEL+1)
 			channel++;
-		return (channel > 16) ? 16 : channel;
+		return (channel > MidiConstants.CHANNEL_COUNT) ? MidiConstants.CHANNEL_COUNT : channel;
 	}
 
 	/** The voice's clef, transpose= and octave= words, for its K: line (" clef=bass octave=-1"), or "". */

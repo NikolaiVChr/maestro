@@ -507,6 +507,8 @@ public class AbcToMidi {
 		// Chord symbols and bar lines per part (trackNumber), for the accompaniment (Params.chordAccompaniment)
 		boolean playChords = chordAccompaniment && !enableLotroErrors;
 		boolean hymn = playChords && isHymn(filesData); // Full chords instead of bass and chord in turn
+		// Bagpipe drones (Drone): standard ABC only, never a file made for Lotro
+		boolean playDrones = playChords && standardPitch;
 		Map<Integer, List<ChordSymbol>> chordSymbols = new TreeMap<>();
 		Map<Integer, NavigableSet<Long>> partBarTicks = new HashMap<>();
 		Map<Integer, Long> partEndTicks = new HashMap<>(); // Where each part's written notes end
@@ -562,6 +564,10 @@ public class AbcToMidi {
 		// starts from them. In the file header both are the same.
 		MidiProgramGuess.Clues fileProgramClues = new MidiProgramGuess.Clues();
 		MidiProgramGuess.Clues partProgramClues = fileProgramClues;
+		// Bagpipe drones (Drone), the same way: the file header's and the part's; each part's that sounds, by part
+		Drone fileDrone = new Drone();
+		Drone partDrone = fileDrone;
+		Map<Integer, Drone> drones = new TreeMap<>();
 
 		int lineNumberForRegions = -1;
 		// With voices (VoiceSplitter) the lines read aren't in the file's order: a part ends at the line read before
@@ -570,10 +576,17 @@ public class AbcToMidi {
 		int highestLineForRegions = -1;
 		abcInfo.abcTrackInfos = new ArrayList<>();
 		for (FileAndData fileAndData : filesData) {
+			// The previous file's last part ends here
+			if (track != null && playChords) {
+				partEndTicks.put(trackNumber, Math.round(chordStartTick));
+				endPartDrone(partDrone, trackNumber, Math.round(chordStartTick), drones);
+			}
 			track = null;
 			info.newFile();
 			fileProgramClues = new MidiProgramGuess.Clues();
 			partProgramClues = fileProgramClues;
+			fileDrone = new Drone();
+			partDrone = fileDrone;
 			String fileName = fileAndData.file.getName();
 			abcInfo.addSourceFile(fileAndData.file);
 			int lineNumber = 0;
@@ -631,9 +644,13 @@ public class AbcToMidi {
 				// Handle extended info
 				Matcher xInfoMatcher = XINFO_PATTERN.matcher(line);
 				if (xInfoMatcher.matches()) {
-					// %%MIDI program 73 (abc2midi): a clue to the part's MIDI program, in its header
-					if (track == null && xInfoMatcher.group(XINFO_FIELD).equalsIgnoreCase("MIDI"))
-						partProgramClues.midiDirective("MIDI " + xInfoMatcher.group(XINFO_VALUE));
+					// %%MIDI program 73 (abc2midi): a clue to the part's MIDI program, in its header. %%MIDI droneon:
+					// anywhere in the part.
+					if (xInfoMatcher.group(XINFO_FIELD).equalsIgnoreCase("MIDI")) {
+						if (track == null)
+							partProgramClues.midiDirective("MIDI " + xInfoMatcher.group(XINFO_VALUE));
+						partDrone.midiDirective("MIDI " + xInfoMatcher.group(XINFO_VALUE), Math.round(chordStartTick));
+					}
 					AbcField field = AbcField
 							.fromString(xInfoMatcher.group(XINFO_FIELD) + xInfoMatcher.group(XINFO_COLON));
 
@@ -807,8 +824,10 @@ public class AbcToMidi {
 
 								if (track != null)
 									singLyrics(track, lyricNotes, lyricLines, musicLines, lastAttackTick + 1);
-								if (track != null && playChords)
+								if (track != null && playChords) {
 									partEndTicks.put(trackNumber, Math.round(chordStartTick));
+									endPartDrone(partDrone, trackNumber, Math.round(chordStartTick), drones);
+								}
 
 								accidentals.clear();
 								noteOffEvents.clear();
@@ -842,6 +861,7 @@ public class AbcToMidi {
 								partChordsNumber = 0;
 								partTitles = 0;
 								partProgramClues = fileProgramClues.forPart();
+								partDrone = fileDrone.forPart();
 								break;
 							case 'T':
 								// More T: lines in the header are other titles of the tune
@@ -880,8 +900,10 @@ public class AbcToMidi {
 								lastVerseText = value;
 								break;
 							case 'I':
-								// I:linebreak and I:decoration (ABC 2.1) are kept; others (I:MIDI ...) change nothing here
+								// I:linebreak and I:decoration (ABC 2.1) are kept; I:MIDI droneon ... turns the drone on or
+								// off; others (I:MIDI program ...) change nothing here
 								info.applyInstruction(value);
+								partDrone.midiDirective(value, Math.round(chordStartTick));
 								break;
 							case 'R':
 								// The tune's type: the tempo of a song without Q: (standard ABC)
@@ -1057,6 +1079,9 @@ public class AbcToMidi {
 						if (drumPart) {
 							channel = MidiConstants.DRUM_CHANNEL; // Free: getTrackChannel never gives it
 							drumTracks.add(trackIndex);
+						} else if (playChords) {
+							// Highland pipes, or a part set to Bag Pipe: the pipes' drone (without drone directives)
+							partDrone.endHeader(partProgramClues.isHighlandPipes(), partProgramClues.explicitProgram());
 						}
 						track.add(MidiFactory.createLotroChangeEvent(program, channel, 0));
 						abcInfo.abcTrackInfos.add(new ExportTrackInfo(0, null, null, channel, program, Long.MAX_VALUE, 0,0,0,0,0,0, null));
@@ -1156,7 +1181,10 @@ public class AbcToMidi {
 										try {
 											switch (field) {
 												case 'K' -> info.setKey(value);
-												case 'I' -> info.applyInstruction(value);
+												case 'I' -> {
+													info.applyInstruction(value);
+													partDrone.midiDirective(value, Math.round(chordStartTick));
+												}
 												case 'L' -> info.setNoteDivisor(value);
 												case 'M' -> {
 													info.setMeter(value, false);
@@ -2200,8 +2228,10 @@ public class AbcToMidi {
 		abcInfo.setPartEndLine(trackNumber, lineNumberForRegions);
 
 		// The accompaniment: new tracks after all parts, so the parts keep their track numbers
-		if (track != null && playChords)
+		if (track != null && playChords) {
 			partEndTicks.put(trackNumber, Math.round(chordStartTick));
+			endPartDrone(partDrone, trackNumber, Math.round(chordStartTick), drones);
+		}
 		for (Map.Entry<Integer, List<ChordSymbol>> part : chordSymbols.entrySet()) {
 			// Standard ABC: %%MIDI bassprog and chordprog; Lotro files: the programs of Theorbo and Lute of Ages
 			int[] programs = accompanimentPrograms.getOrDefault(part.getKey(), new int[] {
@@ -2210,6 +2240,14 @@ public class AbcToMidi {
 					partEndTicks.getOrDefault(part.getKey(), 0L),
 					partBarTicks.getOrDefault(part.getKey(), new TreeSet<>()), trackNumber, useLotroInstruments,
 					info.getAllPartsTempoMap(), PPQN, info.getPrimaryTempoBPM(), programs[0], programs[1]);
+		}
+
+		// The drones after the accompaniment, one per part that has one (two voices of pipes are two sets of pipes)
+		if (playDrones) {
+			for (Map.Entry<Integer, Drone> part : drones.entrySet()) {
+				trackNumber = addDrone(seq, abcInfo, part.getKey(), part.getValue(), trackNumber, useLotroInstruments,
+						info.getAllPartsTempoMap(), PPQN, info.getPrimaryTempoBPM());
+			}
 		}
 
 		writeInfoLines(seq.getTracks()[0], AbcText.decode(abcInfo.getTitle()), infoLines);
@@ -3333,6 +3371,84 @@ public class AbcToMidi {
 		endTrack(bassTrack, LotroInstrument.BASIC_THEORBO, useLotroInstruments, tempoMap, ppqn, bpm);
 		endTrack(chordTrack, LotroInstrument.LUTE_OF_AGES, useLotroInstruments, tempoMap, ppqn, bpm);
 		return trackNumber;
+	}
+
+	/** How loud a drone is, unless %%MIDI drone gives its velocities. */
+	static final Dynamics DRONE_DYNAMICS = Dynamics.pp;
+
+	/**
+	 * A drone starts more than this many milliseconds from every note start of its part: merged into the part's track
+	 * (one bagpipe), notes that start together in Lotro share one velocity.
+	 */
+	static final int DRONE_GAP_MILLIS = 60;
+
+	/** The part's drone ends at the tick (the part's end); one that sounded is kept for its track. */
+	private static void endPartDrone(Drone drone, int part, long tick, Map<Integer, Drone> drones) {
+		drone.end(tick);
+		if (!drone.spans().isEmpty())
+			drones.put(part, drone);
+	}
+
+	/**
+	 * Adds a part's drone as a new track ("<part> - Drone", Basic Bagpipe): its notes held through each span.
+	 *
+	 * @return The new last track number (unchanged if there are no channels left)
+	 */
+	private static int addDrone(Sequence seq, AbcInfo abcInfo, int part, Drone drone, int trackNumber,
+								boolean useLotroInstruments, NavigableMap<Long, Integer> tempoMap, long ppqn, int bpm) {
+		if (getTrackChannel(trackNumber + 1) > MidiConstants.CHANNEL_COUNT_ABC - 1)
+			return trackNumber; // No channels left for it
+		Track droneTrack = accompanimentTrack(seq, abcInfo, part, ++trackNumber, LotroInstrument.BASIC_BAGPIPE,
+				drone.program(), "Drone", useLotroInstruments);
+		// With Lotro instruments the notes are in Lotro's notation, which the instrument's octave shift moves
+		int shift = useLotroInstruments ? -12 * LotroInstrument.BASIC_BAGPIPE.octaveDelta : 0;
+		int channel = getTrackChannel(trackNumber);
+		int volume = DRONE_DYNAMICS.getVol(useLotroInstruments);
+		NavigableSet<Long> noteStarts = noteStarts(seq.getTracks()[part]);
+		for (Drone.Span span : drone.spans()) {
+			long start = droneStart(span, noteStarts, tempoMap, ppqn, bpm);
+			for (int[] note : drone.notes(volume))
+				addNote(droneTrack, channel, note[0] + shift, note[1], start, span.end());
+		}
+		endTrack(droneTrack, LotroInstrument.BASIC_BAGPIPE, useLotroInstruments, tempoMap, ppqn, bpm);
+		return trackNumber;
+	}
+
+	/** The ticks where the track's notes start. */
+	private static NavigableSet<Long> noteStarts(Track track) {
+		NavigableSet<Long> starts = new TreeSet<>();
+		for (int i = 0; i < track.size(); i++) {
+			if (track.get(i).getMessage() instanceof ShortMessage sm && sm.getCommand() == ShortMessage.NOTE_ON
+					&& sm.getData2() > 0)
+				starts.add(track.get(i).getTick());
+		}
+		return starts;
+	}
+
+	/**
+	 * Where a drone span starts: at its start, or later, just more than DRONE_GAP_MILLIS after the note start that is
+	 * too close to it (and again, as long as another one is). At its start after all if that leaves no time before its
+	 * end.
+	 */
+	private static long droneStart(Drone.Span span, NavigableSet<Long> noteStarts, NavigableMap<Long, Integer> tempoMap,
+								   long ppqn, int bpm) {
+		long start = span.start();
+		while (true) {
+			long gap = droneGapTicks(start, tempoMap, ppqn, bpm);
+			Long near = noteStarts.higher(start - gap);
+			if (near == null || near >= start + gap)
+				return start;
+			start = near + droneGapTicks(near, tempoMap, ppqn, bpm);
+			if (start >= span.end())
+				return span.start();
+		}
+	}
+
+	/** The fewest ticks that are more than DRONE_GAP_MILLIS at the tempo at the tick. */
+	private static long droneGapTicks(long tick, NavigableMap<Long, Integer> tempoMap, long ppqn, int bpm) {
+		Map.Entry<Long, Integer> tempo = tempoMap.floorEntry(tick);
+		double ticksPerMilli = ((tempo != null) ? tempo.getValue() : bpm) * ppqn / 60000.0;
+		return (long) Math.floor(DRONE_GAP_MILLIS * ticksPerMilli) + 1;
 	}
 
 	/** The parts that have a track so far (the tracks after track 0; the accompaniment comes after all parts). */

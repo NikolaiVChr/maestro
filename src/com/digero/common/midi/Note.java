@@ -27,6 +27,12 @@ import org.jetbrains.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Very important: The abc of these notes are transposed 1 octave from standard abc.
+ * So when Lute of Ages say it have zero octaveDelta, in reality the lotro one has 1. C3 to C6.
+ *
+ * The abcToMidi class transposes abc 1 octave when converting to midi, to account for this.
+ */
 public enum Note {
 	REST(-1), //
 	CX, CsX, DbX(CsX), DX, DsX, EbX(DsX), EX, FX, FsX, GbX(FsX), GX, GsX, AbX(GsX), AX, AsX, BbX(AsX), BX, //
@@ -43,6 +49,7 @@ public enum Note {
 
 	public static final Note MIN = CX;
 	public static final Note MAX = G9;// G9 == 127
+
 	public static final Note MIN_PLAYABLE = C2;
 	public static final Note MAX_PLAYABLE = C5;
 

@@ -1797,6 +1797,96 @@ class AbcToMidiBehaviourTest {
 		}
 
 		@Test
+		void midiVoiceSetsTheInstrument() throws Exception {
+			// ABC 2.1 (11.2): %%MIDI voice [ID] instrument=N [bank=B], N counted from 1 (instrument=59 is the tuba,
+			// program 58); it beats %%MIDI program
+			assertEquals(58, standardProgram("%%MIDI voice instrument=59"));
+			assertEquals(58, standardProgram("%%MIDI voice instrument=59 bank=1 % tuba"));
+			assertEquals(58, standardProgram("%%MIDI program 73", "%%MIDI voice instrument=59"));
+			// Only bank 1 (General MIDI): another keeps the guess. mute is ignored: the part keeps its notes
+			assertEquals(73, standardProgram("G:flute", "%%MIDI voice instrument=59 bank=2"));
+			assertEquals(58, standardProgram("%%MIDI voice instrument=59 mute"));
+			// With an ID the voice with that ID, wherever it is written; without, the voice it is written for (the V:
+			// above it in the header, or the voice of its body line)
+			AbcCase header = AbcCase.of("semantic", "X:1", "T:t", "%%MIDI voice Tb instrument=59", "V:Vl name=\"Violin\"",
+							"V:Tb", "%%MIDI voice instrument=33", "M:4/4", "L:1/8", "Q:120", "K:C", "V:Vl", "c d|", "V:Tb", "C D|")
+					.with(p -> {
+						p.standardPitch = true;
+						p.standard2011 = true;
+					});
+			assertEquals(List.of(40, 32), programs(convert(header)));
+			AbcCase body = AbcCase.of("semantic", "X:1", "T:t", "M:4/4", "L:1/8", "Q:120", "K:C", "V:1",
+					"%%MIDI voice instrument=22", "c d|", "V:2", "C D|", "V:1", "%%MIDI voice 2 instrument=74", "e f|", "V:2",
+					"E F|").with(p -> {
+				p.standardPitch = true;
+				p.standard2011 = true;
+			});
+			assertEquals(List.of(21, 73), programs(convert(body)));
+		}
+
+		/** A tune of standard ABC with the accompaniment (and so drones): X: T: M:4/4 L:1/8 Q:120, then the lines. */
+		private static AbcCase accompanied(String... lines) {
+			List<String> all = new ArrayList<>(List.of("X:1", "T:t", "M:4/4", "L:1/8", "Q:120"));
+			all.addAll(List.of(lines));
+			return AbcCase.of("semantic", all.toArray(String[]::new)).with(p -> {
+				p.standardPitch = true;
+				p.standard2011 = true;
+				p.expandRepeats = true;
+				p.chordAccompaniment = true;
+			});
+		}
+
+		@Test
+		void bagpipeDrones() throws Exception {
+			// abc2midi's %%MIDI droneon and droneoff: a track after the parts, from where it is turned on to where it is
+			// turned off. Without %%MIDI drone, the pipes' drone where Lotro's bagpipe plays it (Drone.
+			// IN_LOTRO_BAGPIPE_RANGE): the tenor drone A3 on Bag Pipe, the bass drone A2 an octave up on it. It starts
+			// more than 60 ms after a note that starts with it (merged into one bagpipe, notes that start together share
+			// a velocity): at Q:120, just over 0.12 q
+			Sequence s = convert(accompanied("K:C", "c d|", "%%MIDI droneon", "e f|", "%%MIDI droneoff", "g a|"));
+			long q = s.getResolution();
+			long gap = 120 * q * 60 / 60000 + 1;
+			assertEquals(3, s.getTracks().length);
+			assertEquals(List.of(on(q + gap, 57), off(2 * q, 57)), noteEvents(s, 2));
+			assertEquals(List.of(24, 109), programs(s));
+			// %%MIDI drone sets the program (from 0), the pitches and their velocities (0 keeps one); each pitch by whole
+			// octaves into the bagpipe's range, C3 to C6 (D2 as D3, E2 as E3; F#6 as F#5, C7 as C6)
+			s = convert(accompanied("%%MIDI drone 20 38 40 0 0", "%%MIDI droneon", "K:C", "c d|"));
+			assertEquals(List.of(on(gap, 50), on(gap, 52), off(q, 50), off(q, 52)), noteEvents(s, 2));
+			assertEquals(List.of(24, 20), programs(s));
+			s = convert(accompanied("%%MIDI drone 0 90 96", "%%MIDI droneon", "K:C", "c d|"));
+			assertEquals(List.of(on(gap, 78), on(gap, 84), off(q, 78), off(q, 84)), noteEvents(s, 2));
+			// As often as a repeat plays it (inline [I:MIDI ...])
+			s = convert(accompanied("K:C", "|: c [I:MIDI droneon] d [I:MIDI droneoff] :|"));
+			assertEquals(List.of(on(q / 2 + gap, 57), off(q, 57), on(3 * q / 2 + gap, 57), off(2 * q, 57)),
+					noteEvents(s, 2));
+			// Past quick notes: after the last one that is too close
+			s = convert(accompanied("K:HP", "c/8 d/8 e/8 f/8 g4|"));
+			assertEquals(List.of(on(q / 4 + gap, 57), off(q / 4 + 2 * q, 57)), noteEvents(s, 2));
+			// Without directives: Highland pipes, or a part set to Bag Pipe, have the pipes' drone on Bag Pipe, the whole
+			// part
+			List<NoteEvent> pipes = List.of(on(gap, 57), off(q, 57));
+			s = convert(accompanied("K:HP", "c d|"));
+			assertEquals(pipes, noteEvents(s, 2));
+			assertEquals(List.of(109, 109), programs(s));
+			assertEquals(pipes, noteEvents(convert(accompanied("%%MIDI program 109", "K:C", "c d|")), 2));
+			assertEquals(pipes, noteEvents(convert(accompanied("%%MIDI voice instrument=110", "K:C", "c d|")), 2));
+			// Only a program the file sets: a name is no sign
+			assertEquals(2, convert(accompanied("G:pipes", "K:C", "c d|")).getTracks().length);
+			// A drone directive decides: K:HP with droneoff has none
+			assertEquals(2, convert(accompanied("%%MIDI droneoff", "K:HP", "c d|")).getTracks().length);
+			// Two voices of pipes are two sets of pipes: a drone each
+			s = convert(accompanied("K:HP", "V:1", "c d|", "V:2", "A, B,|"));
+			assertEquals(5, s.getTracks().length);
+			assertEquals(pipes, noteEvents(s, 3));
+			assertEquals(pipes, noteEvents(s, 4));
+			// Only with the accompaniment (Maestro, standard ABC); never in a file made for Lotro
+			assertEquals(2, convert(accompanied("K:HP", "c d|").with(p -> p.chordAccompaniment = false)).getTracks().length);
+			assertEquals(2, convert(accompanied("%%MIDI program 109", "%%MIDI droneon", "K:C", "c d|")
+					.with(p -> p.standardPitch = false)).getTracks().length);
+		}
+
+		@Test
 		void tieAfterAChordTiesEveryNote() throws Exception {
 			// [ce]- (ABC 2.1, 4.11 and 4.17): c and e each tie to the next c and e, like [c-e-]
 			Sequence s = convert(tune("semantic", "[ce]2- [ce]2 d2 z2|"));

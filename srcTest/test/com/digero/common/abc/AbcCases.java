@@ -796,6 +796,20 @@ final class AbcCases {
 		c.add(tune("midi_program_rhythm", header("R:Slip Jig"), "C D|").with(p -> p.standardPitch = true));
 		c.add(of("midi_program_rhythm_file_header", concat(new String[] { "R:reel" }, part(1, "One", "C D|"),
 				part(2, "Two", "R:hornpipe", "E F|"))).with(p -> p.standardPitch = true));
+		// %%MIDI voice (ABC 2.1, 11.2, A46): the instrument counted from 1, bank 1 only; by ID for voices
+		c.add(tune("midi_voice_instrument", extended("%%MIDI voice instrument=59"), "C D|")
+				.with(p -> p.standardPitch = true));
+		c.add(tune("midi_voice_other_bank", extended("%%MIDI voice instrument=59 bank=2"), "C D|")
+				.with(p -> p.standardPitch = true));
+		c.add(tune("midi_voice_by_id", "%%MIDI voice 2 instrument=43", "V:1", "B c|", "V:2", "C D|")
+				.with(p -> p.standardPitch = true));
+
+		// ------------------------------------------------------------ bagpipe drones (A42), with the accompaniment
+		c.add(tune("drone_on_off", "c d|", "%%MIDI droneon", "e f|", "%%MIDI droneoff", "g a|"));
+		c.add(tune("drone_settings", extended("%%MIDI drone 20 38 40 90 0", "%%MIDI droneon"), "c d|"));
+		c.add(tune("drone_in_repeat", "|: c [I:MIDI droneon] d [I:MIDI droneoff] :|"));
+		c.add(tune("drone_bag_pipe_program", extended("%%MIDI program 109"), "c d|"));
+		c.add(tune("drone_highland_pipes_voices", header("K:HP"), "V:1", "c d|", "V:2", "A, B,|"));
 
 		// Cowbells (A37), Maestro only (the ABC Player's pitch is random): one pitch without standard pitch (as
 		// before), the written pitch with it
