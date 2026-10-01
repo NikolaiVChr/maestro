@@ -33,6 +33,8 @@ import com.digero.common.midi.MidiInstrument;
  * makes it a Lotro file: AbcToMidi.isMadeForLotro.) The first name wins.</li>
  * <li>the tune's type in R:, by what usually plays it in sessions (RHYTHMS): reel, strathspey, polska ... Violin; jig,
  * slide, air ... Flute; hornpipe, polka, waltz, march ... Accordion; hymn ... Church Organ</li>
+ * <li>without R:, a tune type in the title, the same way ("Butchers Hornpipe", "Miss McLeod's Reel"): tune books
+ * often name the type only there (or have their R: commented out, %R:)</li>
  * <li>else Nylon Guitar, the program of Lute of Ages that every part had before</li>
  * </ol>
  * The chord accompaniment (Params.chordAccompaniment) takes %%MIDI bassprog N and chordprog N, else Acoustic Bass and
@@ -189,6 +191,7 @@ final class MidiProgramGuess {
 		private boolean highlandPipes; // K:HP
 		private Clue named = new Clue(); // The first instrument name
 		private Clue rhythm = new Clue(); // The first tune type in R:
+		private Clue titleRhythm = new Clue(); // The first tune type in a title
 
 		/** The clues a part starts from: this file header's, which the part's own clues replace. */
 		Clues forPart() {
@@ -203,6 +206,7 @@ final class MidiProgramGuess {
 			part.highlandPipes = highlandPipes;
 			part.named = named.inherit();
 			part.rhythm = rhythm.inherit();
+			part.titleRhythm = titleRhythm.inherit();
 			return part;
 		}
 
@@ -304,11 +308,12 @@ final class MidiProgramGuess {
 			rhythm.setFirst(programOfRhythm(AbcText.decode(value)));
 		}
 
-		/** A T: field's value: only a name after "for" is a clue. */
+		/** A T: field's value: a name after "for" is a clue, and a tune type (weaker than R:). */
 		void title(String title) {
 			Matcher forName = FOR.matcher(title);
 			while (forName.find())
 				named.setFirst(programOfName(title.substring(forName.end()), true));
+			titleRhythm.setFirst(programOfRhythm(AbcText.decode(title)));
 		}
 
 		/** The part's channel as abc2midi counts, 1 to 16: its %%MIDI channel, else 1. */
@@ -354,6 +359,8 @@ final class MidiProgramGuess {
 				return named.value;
 			if (rhythm.value != null)
 				return rhythm.value;
+			if (titleRhythm.value != null)
+				return titleRhythm.value;
 			return DEFAULT_PROGRAM;
 		}
 

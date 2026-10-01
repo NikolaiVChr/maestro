@@ -415,7 +415,7 @@ divisionType=0.0 resolution=11520 tickLength=138240 tracks=4
   0 META type=0x59 data=0000
   0 META end_of_track
 -- track 1 (22 events)
-  0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
+  0 PROGRAM_CHANGE ch=0 d1=19 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Evening Hymn"
   0 CONTROL_CHANGE ch=0 d1=10 d2=91 [LotroShortMessage]

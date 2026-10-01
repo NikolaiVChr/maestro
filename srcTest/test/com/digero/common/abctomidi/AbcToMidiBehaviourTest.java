@@ -1883,6 +1883,10 @@ class AbcToMidiBehaviourTest {
 			assertEquals(40, standardProgram("R:polon\\\"as")); // The Swedish polonäs, a fiddle tune
 			assertEquals(19, standardProgram("R:hymn"));
 			assertEquals(24, standardProgram("R:song"));
+			// Without R:, a tune type in the title (tune books: Butchers Hornpipe, its R: commented out); R: beats it
+			assertEquals(21, standardProgram("T:Butchers Hornpipe"));
+			assertEquals(73, standardProgram("T:The Kesh Jig", "%R:hornpipe"));
+			assertEquals(40, standardProgram("T:Butchers Hornpipe", "R:reel"));
 			// An instrument's name beats it
 			assertEquals(46, standardProgram("R:reel", "G:harp"));
 			// %%MIDI beats the pipes, the pipes beat a name
