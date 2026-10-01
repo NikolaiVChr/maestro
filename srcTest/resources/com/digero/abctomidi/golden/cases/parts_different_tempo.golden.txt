@@ -1,0 +1,43 @@
+# AbcToMidi golden snapshot. Re-record with: mvn test -Dabc.golden.update=true (and review the diff before committing)
+case parts_different_tempo
+
+== abc parts_different_tempo.abc
+  X:1
+  T:One
+  M:4/4
+  L:1/8
+  Q:120
+  K:C
+  c d|
+  X:2
+  T:Two
+  M:4/4
+  L:1/8
+  Q:100
+  K:C
+  e f|
+
+### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
+== EXCEPTION FileParseException: Error reading parts_different_tempo.abc (X:2 Two) on line 12, column 3:
+All parts must have the same tempo (Q:100 here, Q:120 in the earlier parts)
+== log: empty
+
+### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
+== EXCEPTION FileParseException: Error reading parts_different_tempo.abc (X:2 Two) on line 12, column 3:
+All parts must have the same tempo (Q:100 here, Q:120 in the earlier parts)
+== log: empty
+
+### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)
+== EXCEPTION FileParseException: Error reading parts_different_tempo.abc (X:2 Two) on line 12, column 3:
+All parts must have the same tempo (Q:100 here, Q:120 in the earlier parts)
+== log: empty
+
+### profile MAESTRO_NEW_LOTRO (useLotroInstruments=false, enableLotroErrors=false, Lotro Abc)
+== EXCEPTION FileParseException: Error reading parts_different_tempo.abc (X:2 Two) on line 12, column 3:
+All parts must have the same tempo (Q:100 here, Q:120 in the earlier parts)
+== log: empty
+
+### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
+== EXCEPTION FileParseException: Error reading parts_different_tempo.abc (X:2 Two) on line 12, column 3:
+All parts must have the same tempo (Q:50 here, Q:60 in the earlier parts)
+== log: empty

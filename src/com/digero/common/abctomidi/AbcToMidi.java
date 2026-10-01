@@ -39,7 +39,6 @@ public class AbcToMidi {
 		 * If true then,
 		 * pitch: abc notes will be transposed in the midi to match lotros instruments.
 		 * last note: will be shortened to lotro sample length
-		 * effect: midi tracks will get reverb and chorus set to zero
 		 * velocity: will use lotro dynamics for the midi volume
 		 * cowbells: randomized pitch instead of only 1 note (without it: 1 note, or with standardPitch the written pitch)
 		 */
@@ -1126,9 +1125,9 @@ public class AbcToMidi {
 						abcInfo.abcTrackInfos.add(new ExportTrackInfo(0, null, null, channel, program, Long.MAX_VALUE, 0,0,0,0,0,0, null));
 						if (useLotroInstruments) {
 							track.add(MidiFactory.createChannelVolumeEvent(MidiConstants.MAX_VOLUME, channel, 1L));
-							track.add(MidiFactory.createReverbControlEvent(AbcConstants.MIDI_REVERB, channel, 1L));
-							track.add(MidiFactory.createChorusControlEvent(AbcConstants.MIDI_CHORUS, channel, 1L));
 						}
+						track.add(MidiFactory.createReverbControlEvent(AbcConstants.MIDI_REVERB, channel, 1L));
+						track.add(MidiFactory.createChorusControlEvent(AbcConstants.MIDI_CHORUS, channel, 1L));
 
 						// The header is done: info has the part's instrument. Definitive means it came from %%made-for.
 						abcInfo.setPartInstrument(trackNumber, info.getInstrument(), info.isInstrumentDefinitiveSet());
@@ -3669,9 +3668,9 @@ public class AbcToMidi {
 		abcInfo.abcTrackInfos.add(new ExportTrackInfo(0, null, null, channel, program, Long.MAX_VALUE, 0,0,0,0,0,0, null));
 		if (useLotroInstruments) {
 			track.add(MidiFactory.createChannelVolumeEvent(MidiConstants.MAX_VOLUME, channel, 1L));
-			track.add(MidiFactory.createReverbControlEvent(AbcConstants.MIDI_REVERB, channel, 1L));
-			track.add(MidiFactory.createChorusControlEvent(AbcConstants.MIDI_CHORUS, channel, 1L));
 		}
+		track.add(MidiFactory.createReverbControlEvent(AbcConstants.MIDI_REVERB, channel, 1L));
+		track.add(MidiFactory.createChorusControlEvent(AbcConstants.MIDI_CHORUS, channel, 1L));
 		abcInfo.setPartInstrument(part, instrument, false);
 	}
 
@@ -3694,9 +3693,9 @@ public class AbcToMidi {
 				null));
 		if (useLotroInstruments) {
 			track.add(MidiFactory.createChannelVolumeEvent(MidiConstants.MAX_VOLUME, channel, 1L));
-			track.add(MidiFactory.createReverbControlEvent(AbcConstants.MIDI_REVERB, channel, 1L));
-			track.add(MidiFactory.createChorusControlEvent(AbcConstants.MIDI_CHORUS, channel, 1L));
 		}
+		track.add(MidiFactory.createReverbControlEvent(AbcConstants.MIDI_REVERB, channel, 1L));
+		track.add(MidiFactory.createChorusControlEvent(AbcConstants.MIDI_CHORUS, channel, 1L));
 		// The part's name as shown; set as final, so the title all parts share isn't taken off it again
 		String name = abcInfo.getPartName(part);
 		abcInfo.setPartNumber(index, 0); // Maestro numbers it

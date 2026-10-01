@@ -1,0 +1,994 @@
+# AbcToMidi golden snapshot. Re-record with: mvn test -Dabc.golden.update=true (and review the diff before committing)
+file amazingGrace.abc
+
+### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=510476 tracks=2
+-- track 0 (21 events)
+  0 META text type=0x05 "@TAmazing Grace"
+  0 META text type=0x03 "Amazing Grace"
+  0 META type=0x58 data=03021808
+  0 META type=0x59 data=0100
+  1 META text type=0x05 "@IComposer: John Newton"
+  2 META text type=0x05 "@ISource: Soodlum's Irish Tin Whistle Book, John C. Campbell Folk School Song Book"
+  495361 META text type=0x05 "<2. 'Twas grace that taught my heart to fear"
+  495362 META text type=0x05 "<And grace that fear relieved;"
+  495363 META text type=0x05 "<How precious did that grace appear"
+  495364 META text type=0x05 "<The hour I first believed."
+  495365 META text type=0x05 "<"
+  495366 META text type=0x05 "<3. Through many dangers, toils, and snares"
+  495367 META text type=0x05 "<I have already come;"
+  495368 META text type=0x05 "<'Tis grace hath bro't me safe thus far,"
+  495369 META text type=0x05 "<And grace will lead me home."
+  495370 META text type=0x05 "<"
+  495371 META text type=0x05 "<4. When we've been here ten thousand years"
+  495372 META text type=0x05 "<Bright shining as the sun;"
+  495373 META text type=0x05 "<We've no less days to sing God's praise"
+  495374 META text type=0x05 "<Than when we first begun."
+  495374 META end_of_track
+-- track 1 (117 events)
+  0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=50 d2=106 [LotroShortMessage]
+  0 META text type=0x05 "1. A"
+  0 META text type=0x03 "Amazing Grace"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=50 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
+  11520 META text type=0x05 "maz"
+  34560 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
+  34560 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  34560 META text type=0x05 "ing "
+  38400 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  38400 NOTE_ON ch=0 d1=57 d2=106 [LotroShortMessage]
+  42240 NOTE_OFF ch=0 d1=57 d2=106 [LotroShortMessage]
+  42240 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
+  46080 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
+  46080 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  46080 META text type=0x05 "grace, "
+  69120 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  69120 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  69120 META text type=0x05 "how "
+  74880 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  74880 NOTE_ON ch=0 d1=57 d2=106 [LotroShortMessage]
+  80640 NOTE_OFF ch=0 d1=57 d2=106 [LotroShortMessage]
+  80640 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
+  80640 META text type=0x05 "sweet "
+  103680 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
+  103680 NOTE_ON ch=0 d1=52 d2=106 [LotroShortMessage]
+  103680 META text type=0x05 "the "
+  115200 NOTE_OFF ch=0 d1=52 d2=106 [LotroShortMessage]
+  115200 NOTE_ON ch=0 d1=50 d2=106 [LotroShortMessage]
+  115200 META text type=0x05 "sound "
+  138240 NOTE_OFF ch=0 d1=50 d2=106 [LotroShortMessage]
+  138240 NOTE_ON ch=0 d1=50 d2=106 [LotroShortMessage]
+  138240 META text type=0x05 "/That "
+  149760 NOTE_OFF ch=0 d1=50 d2=106 [LotroShortMessage]
+  149760 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
+  149760 META text type=0x05 "saved "
+  172800 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
+  172800 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  172800 META text type=0x05 "a "
+  176640 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  176640 NOTE_ON ch=0 d1=57 d2=106 [LotroShortMessage]
+  180480 NOTE_OFF ch=0 d1=57 d2=106 [LotroShortMessage]
+  180480 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
+  184320 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
+  184320 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  184320 META text type=0x05 "wretch "
+  207360 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  207360 NOTE_ON ch=0 d1=57 d2=106 [LotroShortMessage]
+  207360 META text type=0x05 "like "
+  213120 NOTE_OFF ch=0 d1=57 d2=106 [LotroShortMessage]
+  213120 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  218880 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  218880 NOTE_ON ch=0 d1=62 d2=106 [LotroShortMessage]
+  218880 META text type=0x05 "me. "
+  276480 NOTE_OFF ch=0 d1=62 d2=106 [LotroShortMessage]
+  276480 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  276480 META text type=0x05 "/I "
+  282240 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  282240 NOTE_ON ch=0 d1=62 d2=106 [LotroShortMessage]
+  288000 NOTE_OFF ch=0 d1=62 d2=106 [LotroShortMessage]
+  288000 NOTE_ON ch=0 d1=62 d2=106 [LotroShortMessage]
+  288000 META text type=0x05 "once "
+  311040 NOTE_OFF ch=0 d1=62 d2=106 [LotroShortMessage]
+  311040 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  311040 META text type=0x05 "was "
+  314880 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  314880 NOTE_ON ch=0 d1=57 d2=106 [LotroShortMessage]
+  318720 NOTE_OFF ch=0 d1=57 d2=106 [LotroShortMessage]
+  318720 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
+  322560 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
+  322560 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  322560 META text type=0x05 "lost, "
+  345600 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  345600 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  345600 META text type=0x05 "but "
+  351360 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  351360 NOTE_ON ch=0 d1=57 d2=106 [LotroShortMessage]
+  357120 NOTE_OFF ch=0 d1=57 d2=106 [LotroShortMessage]
+  357120 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
+  357120 META text type=0x05 "now "
+  380160 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
+  380160 NOTE_ON ch=0 d1=52 d2=106 [LotroShortMessage]
+  380160 META text type=0x05 "am "
+  391680 NOTE_OFF ch=0 d1=52 d2=106 [LotroShortMessage]
+  391680 NOTE_ON ch=0 d1=50 d2=106 [LotroShortMessage]
+  391680 META text type=0x05 "found, "
+  414720 NOTE_OFF ch=0 d1=50 d2=106 [LotroShortMessage]
+  414720 NOTE_ON ch=0 d1=50 d2=106 [LotroShortMessage]
+  414720 META text type=0x05 "/Was "
+  426240 NOTE_OFF ch=0 d1=50 d2=106 [LotroShortMessage]
+  426240 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
+  426240 META text type=0x05 "blind, "
+  449280 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
+  449280 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  449280 META text type=0x05 "but "
+  453120 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  453120 NOTE_ON ch=0 d1=57 d2=106 [LotroShortMessage]
+  456960 NOTE_OFF ch=0 d1=57 d2=106 [LotroShortMessage]
+  456960 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
+  460800 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
+  460800 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  460800 META text type=0x05 "now "
+  483840 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  483840 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  483840 META text type=0x05 "I "
+  489600 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  489600 NOTE_ON ch=0 d1=57 d2=106 [LotroShortMessage]
+  495360 NOTE_OFF ch=0 d1=57 d2=106 [LotroShortMessage]
+  495360 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
+  495360 META text type=0x05 "see. "
+  510476 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
+  510476 META end_of_track
+== abcInfo
+  title="Amazing Grace"
+  composer="John Newton"
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=120 timeSignature=3/4 keySignature=G maj
+  hasTriplets=true hasMixTimings=false barCount=17 partCount=2 partSetups=2..2 empty=false
+  sourceFiles=[amazingGrace.abc]
+  part 0: number=0 name="Amazing Grace" fullName="Amazing Grace" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Amazing Grace" fullName="Amazing Grace" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..29 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+== regions (43)
+  #0 line=7 cols=[2,4) ticks=0..11520 note=50 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=7 cols=[7,9) ticks=11520..34560 note=55 track=1 bar=1 tiesFrom=- tiesTo=-
+  #2 line=7 cols=[13,14) ticks=34560..38400 note=59 track=1 bar=1 tiesFrom=- tiesTo=-
+  #3 line=7 cols=[14,15) ticks=38400..42240 note=57 track=1 bar=1 tiesFrom=- tiesTo=-
+  #4 line=7 cols=[15,16) ticks=42240..46080 note=55 track=1 bar=1 tiesFrom=- tiesTo=-
+  #5 line=7 cols=[20,22) ticks=46080..69120 note=59 track=1 bar=2 tiesFrom=- tiesTo=-
+  #6 line=7 cols=[23,24) ticks=69120..74880 note=59 track=1 bar=2 tiesFrom=- tiesTo=-
+  #7 line=7 cols=[24,25) ticks=74880..80640 note=57 track=1 bar=2 tiesFrom=- tiesTo=-
+  #8 line=7 cols=[28,30) ticks=80640..103680 note=55 track=1 bar=3 tiesFrom=- tiesTo=-
+  #9 line=7 cols=[31,33) ticks=103680..115200 note=52 track=1 bar=3 tiesFrom=- tiesTo=-
+  #10 line=7 cols=[36,38) ticks=115200..138240 note=50 track=1 bar=4 tiesFrom=- tiesTo=-
+  #11 line=9 cols=[2,4) ticks=138240..149760 note=50 track=1 bar=4 tiesFrom=- tiesTo=-
+  #12 line=9 cols=[7,9) ticks=149760..172800 note=55 track=1 bar=5 tiesFrom=- tiesTo=-
+  #13 line=9 cols=[13,14) ticks=172800..176640 note=59 track=1 bar=5 tiesFrom=- tiesTo=-
+  #14 line=9 cols=[14,15) ticks=176640..180480 note=57 track=1 bar=5 tiesFrom=- tiesTo=-
+  #15 line=9 cols=[15,16) ticks=180480..184320 note=55 track=1 bar=5 tiesFrom=- tiesTo=-
+  #16 line=9 cols=[20,22) ticks=184320..207360 note=59 track=1 bar=6 tiesFrom=- tiesTo=-
+  #17 line=9 cols=[23,24) ticks=207360..213120 note=57 track=1 bar=6 tiesFrom=- tiesTo=-
+  #18 line=9 cols=[24,25) ticks=213120..218880 note=59 track=1 bar=6 tiesFrom=- tiesTo=-
+  #19 line=9 cols=[28,31) ticks=218880..253440 note=62 track=1 bar=7 tiesFrom=- tiesTo=#20
+  #20 line=9 cols=[34,36) ticks=253440..276480 note=62 track=1 bar=8 tiesFrom=#19 tiesTo=-
+  #21 line=11 cols=[2,3) ticks=276480..282240 note=59 track=1 bar=8 tiesFrom=- tiesTo=-
+  #22 line=11 cols=[3,4) ticks=282240..288000 note=62 track=1 bar=8 tiesFrom=- tiesTo=-
+  #23 line=11 cols=[7,9) ticks=288000..311040 note=62 track=1 bar=9 tiesFrom=- tiesTo=-
+  #24 line=11 cols=[13,14) ticks=311040..314880 note=59 track=1 bar=9 tiesFrom=- tiesTo=-
+  #25 line=11 cols=[14,15) ticks=314880..318720 note=57 track=1 bar=9 tiesFrom=- tiesTo=-
+  #26 line=11 cols=[15,16) ticks=318720..322560 note=55 track=1 bar=9 tiesFrom=- tiesTo=-
+  #27 line=11 cols=[20,22) ticks=322560..345600 note=59 track=1 bar=10 tiesFrom=- tiesTo=-
+  #28 line=11 cols=[23,24) ticks=345600..351360 note=59 track=1 bar=10 tiesFrom=- tiesTo=-
+  #29 line=11 cols=[24,25) ticks=351360..357120 note=57 track=1 bar=10 tiesFrom=- tiesTo=-
+  #30 line=11 cols=[28,30) ticks=357120..380160 note=55 track=1 bar=11 tiesFrom=- tiesTo=-
+  #31 line=11 cols=[31,33) ticks=380160..391680 note=52 track=1 bar=11 tiesFrom=- tiesTo=-
+  #32 line=11 cols=[36,38) ticks=391680..414720 note=50 track=1 bar=12 tiesFrom=- tiesTo=-
+  #33 line=13 cols=[2,4) ticks=414720..426240 note=50 track=1 bar=12 tiesFrom=- tiesTo=-
+  #34 line=13 cols=[7,9) ticks=426240..449280 note=55 track=1 bar=13 tiesFrom=- tiesTo=-
+  #35 line=13 cols=[13,14) ticks=449280..453120 note=59 track=1 bar=13 tiesFrom=- tiesTo=-
+  #36 line=13 cols=[14,15) ticks=453120..456960 note=57 track=1 bar=13 tiesFrom=- tiesTo=-
+  #37 line=13 cols=[15,16) ticks=456960..460800 note=55 track=1 bar=13 tiesFrom=- tiesTo=-
+  #38 line=13 cols=[20,22) ticks=460800..483840 note=59 track=1 bar=14 tiesFrom=- tiesTo=-
+  #39 line=13 cols=[23,24) ticks=483840..489600 note=59 track=1 bar=14 tiesFrom=- tiesTo=-
+  #40 line=13 cols=[24,25) ticks=489600..495360 note=57 track=1 bar=14 tiesFrom=- tiesTo=-
+  #41 line=13 cols=[28,31) ticks=495360..529920 note=55 track=1 bar=15 tiesFrom=- tiesTo=#42
+  #42 line=13 cols=[34,36) ticks=529920..552960 note=55 track=1 bar=16 tiesFrom=#41 tiesTo=-
+== log: empty
+
+### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=510476 tracks=2
+-- track 0 (21 events)
+  0 META text type=0x05 "@TAmazing Grace"
+  0 META text type=0x03 "Amazing Grace"
+  0 META type=0x58 data=03021808
+  0 META type=0x59 data=0100
+  1 META text type=0x05 "@IComposer: John Newton"
+  2 META text type=0x05 "@ISource: Soodlum's Irish Tin Whistle Book, John C. Campbell Folk School Song Book"
+  495361 META text type=0x05 "<2. 'Twas grace that taught my heart to fear"
+  495362 META text type=0x05 "<And grace that fear relieved;"
+  495363 META text type=0x05 "<How precious did that grace appear"
+  495364 META text type=0x05 "<The hour I first believed."
+  495365 META text type=0x05 "<"
+  495366 META text type=0x05 "<3. Through many dangers, toils, and snares"
+  495367 META text type=0x05 "<I have already come;"
+  495368 META text type=0x05 "<'Tis grace hath bro't me safe thus far,"
+  495369 META text type=0x05 "<And grace will lead me home."
+  495370 META text type=0x05 "<"
+  495371 META text type=0x05 "<4. When we've been here ten thousand years"
+  495372 META text type=0x05 "<Bright shining as the sun;"
+  495373 META text type=0x05 "<We've no less days to sing God's praise"
+  495374 META text type=0x05 "<Than when we first begun."
+  495374 META end_of_track
+-- track 1 (117 events)
+  0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=50 d2=106 [LotroShortMessage]
+  0 META text type=0x05 "1. A"
+  0 META text type=0x03 "Amazing Grace"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=50 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
+  11520 META text type=0x05 "maz"
+  34560 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
+  34560 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  34560 META text type=0x05 "ing "
+  38400 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  38400 NOTE_ON ch=0 d1=57 d2=106 [LotroShortMessage]
+  42240 NOTE_OFF ch=0 d1=57 d2=106 [LotroShortMessage]
+  42240 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
+  46080 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
+  46080 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  46080 META text type=0x05 "grace, "
+  69120 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  69120 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  69120 META text type=0x05 "how "
+  74880 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  74880 NOTE_ON ch=0 d1=57 d2=106 [LotroShortMessage]
+  80640 NOTE_OFF ch=0 d1=57 d2=106 [LotroShortMessage]
+  80640 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
+  80640 META text type=0x05 "sweet "
+  103680 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
+  103680 NOTE_ON ch=0 d1=52 d2=106 [LotroShortMessage]
+  103680 META text type=0x05 "the "
+  115200 NOTE_OFF ch=0 d1=52 d2=106 [LotroShortMessage]
+  115200 NOTE_ON ch=0 d1=50 d2=106 [LotroShortMessage]
+  115200 META text type=0x05 "sound "
+  138240 NOTE_OFF ch=0 d1=50 d2=106 [LotroShortMessage]
+  138240 NOTE_ON ch=0 d1=50 d2=106 [LotroShortMessage]
+  138240 META text type=0x05 "/That "
+  149760 NOTE_OFF ch=0 d1=50 d2=106 [LotroShortMessage]
+  149760 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
+  149760 META text type=0x05 "saved "
+  172800 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
+  172800 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  172800 META text type=0x05 "a "
+  176640 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  176640 NOTE_ON ch=0 d1=57 d2=106 [LotroShortMessage]
+  180480 NOTE_OFF ch=0 d1=57 d2=106 [LotroShortMessage]
+  180480 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
+  184320 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
+  184320 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  184320 META text type=0x05 "wretch "
+  207360 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  207360 NOTE_ON ch=0 d1=57 d2=106 [LotroShortMessage]
+  207360 META text type=0x05 "like "
+  213120 NOTE_OFF ch=0 d1=57 d2=106 [LotroShortMessage]
+  213120 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  218880 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  218880 NOTE_ON ch=0 d1=62 d2=106 [LotroShortMessage]
+  218880 META text type=0x05 "me. "
+  276480 NOTE_OFF ch=0 d1=62 d2=106 [LotroShortMessage]
+  276480 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  276480 META text type=0x05 "/I "
+  282240 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  282240 NOTE_ON ch=0 d1=62 d2=106 [LotroShortMessage]
+  288000 NOTE_OFF ch=0 d1=62 d2=106 [LotroShortMessage]
+  288000 NOTE_ON ch=0 d1=62 d2=106 [LotroShortMessage]
+  288000 META text type=0x05 "once "
+  311040 NOTE_OFF ch=0 d1=62 d2=106 [LotroShortMessage]
+  311040 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  311040 META text type=0x05 "was "
+  314880 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  314880 NOTE_ON ch=0 d1=57 d2=106 [LotroShortMessage]
+  318720 NOTE_OFF ch=0 d1=57 d2=106 [LotroShortMessage]
+  318720 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
+  322560 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
+  322560 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  322560 META text type=0x05 "lost, "
+  345600 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  345600 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  345600 META text type=0x05 "but "
+  351360 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  351360 NOTE_ON ch=0 d1=57 d2=106 [LotroShortMessage]
+  357120 NOTE_OFF ch=0 d1=57 d2=106 [LotroShortMessage]
+  357120 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
+  357120 META text type=0x05 "now "
+  380160 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
+  380160 NOTE_ON ch=0 d1=52 d2=106 [LotroShortMessage]
+  380160 META text type=0x05 "am "
+  391680 NOTE_OFF ch=0 d1=52 d2=106 [LotroShortMessage]
+  391680 NOTE_ON ch=0 d1=50 d2=106 [LotroShortMessage]
+  391680 META text type=0x05 "found, "
+  414720 NOTE_OFF ch=0 d1=50 d2=106 [LotroShortMessage]
+  414720 NOTE_ON ch=0 d1=50 d2=106 [LotroShortMessage]
+  414720 META text type=0x05 "/Was "
+  426240 NOTE_OFF ch=0 d1=50 d2=106 [LotroShortMessage]
+  426240 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
+  426240 META text type=0x05 "blind, "
+  449280 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
+  449280 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  449280 META text type=0x05 "but "
+  453120 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  453120 NOTE_ON ch=0 d1=57 d2=106 [LotroShortMessage]
+  456960 NOTE_OFF ch=0 d1=57 d2=106 [LotroShortMessage]
+  456960 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
+  460800 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
+  460800 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  460800 META text type=0x05 "now "
+  483840 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  483840 NOTE_ON ch=0 d1=59 d2=106 [LotroShortMessage]
+  483840 META text type=0x05 "I "
+  489600 NOTE_OFF ch=0 d1=59 d2=106 [LotroShortMessage]
+  489600 NOTE_ON ch=0 d1=57 d2=106 [LotroShortMessage]
+  495360 NOTE_OFF ch=0 d1=57 d2=106 [LotroShortMessage]
+  495360 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
+  495360 META text type=0x05 "see. "
+  510476 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
+  510476 META end_of_track
+== abcInfo
+  title="Amazing Grace"
+  composer="John Newton"
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=120 timeSignature=3/4 keySignature=G maj
+  hasTriplets=true hasMixTimings=false barCount=17 partCount=2 partSetups=2..2 empty=false
+  sourceFiles=[amazingGrace.abc]
+  part 0: number=0 name="Amazing Grace" fullName="Amazing Grace" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Amazing Grace" fullName="Amazing Grace" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..29 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+== regions (43)
+  #0 line=7 cols=[2,4) ticks=0..11520 note=50 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=7 cols=[7,9) ticks=11520..34560 note=55 track=1 bar=1 tiesFrom=- tiesTo=-
+  #2 line=7 cols=[13,14) ticks=34560..38400 note=59 track=1 bar=1 tiesFrom=- tiesTo=-
+  #3 line=7 cols=[14,15) ticks=38400..42240 note=57 track=1 bar=1 tiesFrom=- tiesTo=-
+  #4 line=7 cols=[15,16) ticks=42240..46080 note=55 track=1 bar=1 tiesFrom=- tiesTo=-
+  #5 line=7 cols=[20,22) ticks=46080..69120 note=59 track=1 bar=2 tiesFrom=- tiesTo=-
+  #6 line=7 cols=[23,24) ticks=69120..74880 note=59 track=1 bar=2 tiesFrom=- tiesTo=-
+  #7 line=7 cols=[24,25) ticks=74880..80640 note=57 track=1 bar=2 tiesFrom=- tiesTo=-
+  #8 line=7 cols=[28,30) ticks=80640..103680 note=55 track=1 bar=3 tiesFrom=- tiesTo=-
+  #9 line=7 cols=[31,33) ticks=103680..115200 note=52 track=1 bar=3 tiesFrom=- tiesTo=-
+  #10 line=7 cols=[36,38) ticks=115200..138240 note=50 track=1 bar=4 tiesFrom=- tiesTo=-
+  #11 line=9 cols=[2,4) ticks=138240..149760 note=50 track=1 bar=4 tiesFrom=- tiesTo=-
+  #12 line=9 cols=[7,9) ticks=149760..172800 note=55 track=1 bar=5 tiesFrom=- tiesTo=-
+  #13 line=9 cols=[13,14) ticks=172800..176640 note=59 track=1 bar=5 tiesFrom=- tiesTo=-
+  #14 line=9 cols=[14,15) ticks=176640..180480 note=57 track=1 bar=5 tiesFrom=- tiesTo=-
+  #15 line=9 cols=[15,16) ticks=180480..184320 note=55 track=1 bar=5 tiesFrom=- tiesTo=-
+  #16 line=9 cols=[20,22) ticks=184320..207360 note=59 track=1 bar=6 tiesFrom=- tiesTo=-
+  #17 line=9 cols=[23,24) ticks=207360..213120 note=57 track=1 bar=6 tiesFrom=- tiesTo=-
+  #18 line=9 cols=[24,25) ticks=213120..218880 note=59 track=1 bar=6 tiesFrom=- tiesTo=-
+  #19 line=9 cols=[28,31) ticks=218880..253440 note=62 track=1 bar=7 tiesFrom=- tiesTo=#20
+  #20 line=9 cols=[34,36) ticks=253440..276480 note=62 track=1 bar=8 tiesFrom=#19 tiesTo=-
+  #21 line=11 cols=[2,3) ticks=276480..282240 note=59 track=1 bar=8 tiesFrom=- tiesTo=-
+  #22 line=11 cols=[3,4) ticks=282240..288000 note=62 track=1 bar=8 tiesFrom=- tiesTo=-
+  #23 line=11 cols=[7,9) ticks=288000..311040 note=62 track=1 bar=9 tiesFrom=- tiesTo=-
+  #24 line=11 cols=[13,14) ticks=311040..314880 note=59 track=1 bar=9 tiesFrom=- tiesTo=-
+  #25 line=11 cols=[14,15) ticks=314880..318720 note=57 track=1 bar=9 tiesFrom=- tiesTo=-
+  #26 line=11 cols=[15,16) ticks=318720..322560 note=55 track=1 bar=9 tiesFrom=- tiesTo=-
+  #27 line=11 cols=[20,22) ticks=322560..345600 note=59 track=1 bar=10 tiesFrom=- tiesTo=-
+  #28 line=11 cols=[23,24) ticks=345600..351360 note=59 track=1 bar=10 tiesFrom=- tiesTo=-
+  #29 line=11 cols=[24,25) ticks=351360..357120 note=57 track=1 bar=10 tiesFrom=- tiesTo=-
+  #30 line=11 cols=[28,30) ticks=357120..380160 note=55 track=1 bar=11 tiesFrom=- tiesTo=-
+  #31 line=11 cols=[31,33) ticks=380160..391680 note=52 track=1 bar=11 tiesFrom=- tiesTo=-
+  #32 line=11 cols=[36,38) ticks=391680..414720 note=50 track=1 bar=12 tiesFrom=- tiesTo=-
+  #33 line=13 cols=[2,4) ticks=414720..426240 note=50 track=1 bar=12 tiesFrom=- tiesTo=-
+  #34 line=13 cols=[7,9) ticks=426240..449280 note=55 track=1 bar=13 tiesFrom=- tiesTo=-
+  #35 line=13 cols=[13,14) ticks=449280..453120 note=59 track=1 bar=13 tiesFrom=- tiesTo=-
+  #36 line=13 cols=[14,15) ticks=453120..456960 note=57 track=1 bar=13 tiesFrom=- tiesTo=-
+  #37 line=13 cols=[15,16) ticks=456960..460800 note=55 track=1 bar=13 tiesFrom=- tiesTo=-
+  #38 line=13 cols=[20,22) ticks=460800..483840 note=59 track=1 bar=14 tiesFrom=- tiesTo=-
+  #39 line=13 cols=[23,24) ticks=483840..489600 note=59 track=1 bar=14 tiesFrom=- tiesTo=-
+  #40 line=13 cols=[24,25) ticks=489600..495360 note=57 track=1 bar=14 tiesFrom=- tiesTo=-
+  #41 line=13 cols=[28,31) ticks=495360..529920 note=55 track=1 bar=15 tiesFrom=- tiesTo=#42
+  #42 line=13 cols=[34,36) ticks=529920..552960 note=55 track=1 bar=16 tiesFrom=#41 tiesTo=-
+== log: empty
+
+### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=552960 tracks=2
+-- track 0 (21 events)
+  0 META text type=0x05 "@TAmazing Grace"
+  0 META text type=0x03 "Amazing Grace"
+  0 META type=0x58 data=03021808
+  0 META type=0x59 data=0100
+  1 META text type=0x05 "@IComposer: John Newton"
+  2 META text type=0x05 "@ISource: Soodlum's Irish Tin Whistle Book, John C. Campbell Folk School Song Book"
+  495361 META text type=0x05 "<2. 'Twas grace that taught my heart to fear"
+  495362 META text type=0x05 "<And grace that fear relieved;"
+  495363 META text type=0x05 "<How precious did that grace appear"
+  495364 META text type=0x05 "<The hour I first believed."
+  495365 META text type=0x05 "<"
+  495366 META text type=0x05 "<3. Through many dangers, toils, and snares"
+  495367 META text type=0x05 "<I have already come;"
+  495368 META text type=0x05 "<'Tis grace hath bro't me safe thus far,"
+  495369 META text type=0x05 "<And grace will lead me home."
+  495370 META text type=0x05 "<"
+  495371 META text type=0x05 "<4. When we've been here ten thousand years"
+  495372 META text type=0x05 "<Bright shining as the sun;"
+  495373 META text type=0x05 "<We've no less days to sing God's praise"
+  495374 META text type=0x05 "<Than when we first begun."
+  495374 META end_of_track
+-- track 1 (116 events)
+  0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=50 d2=80 [LotroShortMessage]
+  0 META text type=0x05 "1. A"
+  0 META text type=0x03 "Amazing Grace"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=50 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
+  11520 META text type=0x05 "maz"
+  34560 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
+  34560 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  34560 META text type=0x05 "ing "
+  38400 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  38400 NOTE_ON ch=0 d1=57 d2=80 [LotroShortMessage]
+  42240 NOTE_OFF ch=0 d1=57 d2=80 [LotroShortMessage]
+  42240 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
+  46080 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
+  46080 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  46080 META text type=0x05 "grace, "
+  69120 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  69120 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  69120 META text type=0x05 "how "
+  74880 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  74880 NOTE_ON ch=0 d1=57 d2=80 [LotroShortMessage]
+  80640 NOTE_OFF ch=0 d1=57 d2=80 [LotroShortMessage]
+  80640 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
+  80640 META text type=0x05 "sweet "
+  103680 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
+  103680 NOTE_ON ch=0 d1=52 d2=80 [LotroShortMessage]
+  103680 META text type=0x05 "the "
+  115200 NOTE_OFF ch=0 d1=52 d2=80 [LotroShortMessage]
+  115200 NOTE_ON ch=0 d1=50 d2=80 [LotroShortMessage]
+  115200 META text type=0x05 "sound "
+  138240 NOTE_OFF ch=0 d1=50 d2=80 [LotroShortMessage]
+  138240 NOTE_ON ch=0 d1=50 d2=80 [LotroShortMessage]
+  138240 META text type=0x05 "/That "
+  149760 NOTE_OFF ch=0 d1=50 d2=80 [LotroShortMessage]
+  149760 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
+  149760 META text type=0x05 "saved "
+  172800 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
+  172800 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  172800 META text type=0x05 "a "
+  176640 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  176640 NOTE_ON ch=0 d1=57 d2=80 [LotroShortMessage]
+  180480 NOTE_OFF ch=0 d1=57 d2=80 [LotroShortMessage]
+  180480 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
+  184320 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
+  184320 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  184320 META text type=0x05 "wretch "
+  207360 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  207360 NOTE_ON ch=0 d1=57 d2=80 [LotroShortMessage]
+  207360 META text type=0x05 "like "
+  213120 NOTE_OFF ch=0 d1=57 d2=80 [LotroShortMessage]
+  213120 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  218880 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  218880 NOTE_ON ch=0 d1=62 d2=80 [LotroShortMessage]
+  218880 META text type=0x05 "me. "
+  276480 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
+  276480 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  276480 META text type=0x05 "/I "
+  282240 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  282240 NOTE_ON ch=0 d1=62 d2=80 [LotroShortMessage]
+  288000 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
+  288000 NOTE_ON ch=0 d1=62 d2=80 [LotroShortMessage]
+  288000 META text type=0x05 "once "
+  311040 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
+  311040 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  311040 META text type=0x05 "was "
+  314880 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  314880 NOTE_ON ch=0 d1=57 d2=80 [LotroShortMessage]
+  318720 NOTE_OFF ch=0 d1=57 d2=80 [LotroShortMessage]
+  318720 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
+  322560 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
+  322560 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  322560 META text type=0x05 "lost, "
+  345600 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  345600 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  345600 META text type=0x05 "but "
+  351360 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  351360 NOTE_ON ch=0 d1=57 d2=80 [LotroShortMessage]
+  357120 NOTE_OFF ch=0 d1=57 d2=80 [LotroShortMessage]
+  357120 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
+  357120 META text type=0x05 "now "
+  380160 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
+  380160 NOTE_ON ch=0 d1=52 d2=80 [LotroShortMessage]
+  380160 META text type=0x05 "am "
+  391680 NOTE_OFF ch=0 d1=52 d2=80 [LotroShortMessage]
+  391680 NOTE_ON ch=0 d1=50 d2=80 [LotroShortMessage]
+  391680 META text type=0x05 "found, "
+  414720 NOTE_OFF ch=0 d1=50 d2=80 [LotroShortMessage]
+  414720 NOTE_ON ch=0 d1=50 d2=80 [LotroShortMessage]
+  414720 META text type=0x05 "/Was "
+  426240 NOTE_OFF ch=0 d1=50 d2=80 [LotroShortMessage]
+  426240 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
+  426240 META text type=0x05 "blind, "
+  449280 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
+  449280 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  449280 META text type=0x05 "but "
+  453120 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  453120 NOTE_ON ch=0 d1=57 d2=80 [LotroShortMessage]
+  456960 NOTE_OFF ch=0 d1=57 d2=80 [LotroShortMessage]
+  456960 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
+  460800 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
+  460800 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  460800 META text type=0x05 "now "
+  483840 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  483840 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  483840 META text type=0x05 "I "
+  489600 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  489600 NOTE_ON ch=0 d1=57 d2=80 [LotroShortMessage]
+  495360 NOTE_OFF ch=0 d1=57 d2=80 [LotroShortMessage]
+  495360 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
+  495360 META text type=0x05 "see. "
+  552960 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
+  552960 META end_of_track
+== abcInfo
+  title="Amazing Grace"
+  composer="John Newton"
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=120 timeSignature=3/4 keySignature=G maj
+  hasTriplets=true hasMixTimings=false barCount=17 partCount=2 partSetups=2..2 empty=false
+  sourceFiles=[amazingGrace.abc]
+  part 0: number=0 name="Amazing Grace" fullName="Amazing Grace" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Amazing Grace" fullName="Amazing Grace" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..29 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+== regions (43)
+  #0 line=7 cols=[2,4) ticks=0..11520 note=50 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=7 cols=[7,9) ticks=11520..34560 note=55 track=1 bar=1 tiesFrom=- tiesTo=-
+  #2 line=7 cols=[13,14) ticks=34560..38400 note=59 track=1 bar=1 tiesFrom=- tiesTo=-
+  #3 line=7 cols=[14,15) ticks=38400..42240 note=57 track=1 bar=1 tiesFrom=- tiesTo=-
+  #4 line=7 cols=[15,16) ticks=42240..46080 note=55 track=1 bar=1 tiesFrom=- tiesTo=-
+  #5 line=7 cols=[20,22) ticks=46080..69120 note=59 track=1 bar=2 tiesFrom=- tiesTo=-
+  #6 line=7 cols=[23,24) ticks=69120..74880 note=59 track=1 bar=2 tiesFrom=- tiesTo=-
+  #7 line=7 cols=[24,25) ticks=74880..80640 note=57 track=1 bar=2 tiesFrom=- tiesTo=-
+  #8 line=7 cols=[28,30) ticks=80640..103680 note=55 track=1 bar=3 tiesFrom=- tiesTo=-
+  #9 line=7 cols=[31,33) ticks=103680..115200 note=52 track=1 bar=3 tiesFrom=- tiesTo=-
+  #10 line=7 cols=[36,38) ticks=115200..138240 note=50 track=1 bar=4 tiesFrom=- tiesTo=-
+  #11 line=9 cols=[2,4) ticks=138240..149760 note=50 track=1 bar=4 tiesFrom=- tiesTo=-
+  #12 line=9 cols=[7,9) ticks=149760..172800 note=55 track=1 bar=5 tiesFrom=- tiesTo=-
+  #13 line=9 cols=[13,14) ticks=172800..176640 note=59 track=1 bar=5 tiesFrom=- tiesTo=-
+  #14 line=9 cols=[14,15) ticks=176640..180480 note=57 track=1 bar=5 tiesFrom=- tiesTo=-
+  #15 line=9 cols=[15,16) ticks=180480..184320 note=55 track=1 bar=5 tiesFrom=- tiesTo=-
+  #16 line=9 cols=[20,22) ticks=184320..207360 note=59 track=1 bar=6 tiesFrom=- tiesTo=-
+  #17 line=9 cols=[23,24) ticks=207360..213120 note=57 track=1 bar=6 tiesFrom=- tiesTo=-
+  #18 line=9 cols=[24,25) ticks=213120..218880 note=59 track=1 bar=6 tiesFrom=- tiesTo=-
+  #19 line=9 cols=[28,31) ticks=218880..253440 note=62 track=1 bar=7 tiesFrom=- tiesTo=#20
+  #20 line=9 cols=[34,36) ticks=253440..276480 note=62 track=1 bar=8 tiesFrom=#19 tiesTo=-
+  #21 line=11 cols=[2,3) ticks=276480..282240 note=59 track=1 bar=8 tiesFrom=- tiesTo=-
+  #22 line=11 cols=[3,4) ticks=282240..288000 note=62 track=1 bar=8 tiesFrom=- tiesTo=-
+  #23 line=11 cols=[7,9) ticks=288000..311040 note=62 track=1 bar=9 tiesFrom=- tiesTo=-
+  #24 line=11 cols=[13,14) ticks=311040..314880 note=59 track=1 bar=9 tiesFrom=- tiesTo=-
+  #25 line=11 cols=[14,15) ticks=314880..318720 note=57 track=1 bar=9 tiesFrom=- tiesTo=-
+  #26 line=11 cols=[15,16) ticks=318720..322560 note=55 track=1 bar=9 tiesFrom=- tiesTo=-
+  #27 line=11 cols=[20,22) ticks=322560..345600 note=59 track=1 bar=10 tiesFrom=- tiesTo=-
+  #28 line=11 cols=[23,24) ticks=345600..351360 note=59 track=1 bar=10 tiesFrom=- tiesTo=-
+  #29 line=11 cols=[24,25) ticks=351360..357120 note=57 track=1 bar=10 tiesFrom=- tiesTo=-
+  #30 line=11 cols=[28,30) ticks=357120..380160 note=55 track=1 bar=11 tiesFrom=- tiesTo=-
+  #31 line=11 cols=[31,33) ticks=380160..391680 note=52 track=1 bar=11 tiesFrom=- tiesTo=-
+  #32 line=11 cols=[36,38) ticks=391680..414720 note=50 track=1 bar=12 tiesFrom=- tiesTo=-
+  #33 line=13 cols=[2,4) ticks=414720..426240 note=50 track=1 bar=12 tiesFrom=- tiesTo=-
+  #34 line=13 cols=[7,9) ticks=426240..449280 note=55 track=1 bar=13 tiesFrom=- tiesTo=-
+  #35 line=13 cols=[13,14) ticks=449280..453120 note=59 track=1 bar=13 tiesFrom=- tiesTo=-
+  #36 line=13 cols=[14,15) ticks=453120..456960 note=57 track=1 bar=13 tiesFrom=- tiesTo=-
+  #37 line=13 cols=[15,16) ticks=456960..460800 note=55 track=1 bar=13 tiesFrom=- tiesTo=-
+  #38 line=13 cols=[20,22) ticks=460800..483840 note=59 track=1 bar=14 tiesFrom=- tiesTo=-
+  #39 line=13 cols=[23,24) ticks=483840..489600 note=59 track=1 bar=14 tiesFrom=- tiesTo=-
+  #40 line=13 cols=[24,25) ticks=489600..495360 note=57 track=1 bar=14 tiesFrom=- tiesTo=-
+  #41 line=13 cols=[28,31) ticks=495360..529920 note=55 track=1 bar=15 tiesFrom=- tiesTo=#42
+  #42 line=13 cols=[34,36) ticks=529920..552960 note=55 track=1 bar=16 tiesFrom=#41 tiesTo=-
+== log: empty
+
+### profile MAESTRO_NEW_LOTRO (useLotroInstruments=false, enableLotroErrors=false, Lotro Abc)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=552960 tracks=2
+-- track 0 (21 events)
+  0 META text type=0x05 "@TAmazing Grace"
+  0 META text type=0x03 "Amazing Grace"
+  0 META type=0x58 data=03021808
+  0 META type=0x59 data=0100
+  1 META text type=0x05 "@IComposer: John Newton"
+  2 META text type=0x05 "@ISource: Soodlum's Irish Tin Whistle Book, John C. Campbell Folk School Song Book"
+  495361 META text type=0x05 "<2. 'Twas grace that taught my heart to fear"
+  495362 META text type=0x05 "<And grace that fear relieved;"
+  495363 META text type=0x05 "<How precious did that grace appear"
+  495364 META text type=0x05 "<The hour I first believed."
+  495365 META text type=0x05 "<"
+  495366 META text type=0x05 "<3. Through many dangers, toils, and snares"
+  495367 META text type=0x05 "<I have already come;"
+  495368 META text type=0x05 "<'Tis grace hath bro't me safe thus far,"
+  495369 META text type=0x05 "<And grace will lead me home."
+  495370 META text type=0x05 "<"
+  495371 META text type=0x05 "<4. When we've been here ten thousand years"
+  495372 META text type=0x05 "<Bright shining as the sun;"
+  495373 META text type=0x05 "<We've no less days to sing God's praise"
+  495374 META text type=0x05 "<Than when we first begun."
+  495374 META end_of_track
+-- track 1 (116 events)
+  0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=50 d2=80 [LotroShortMessage]
+  0 META text type=0x05 "1. A"
+  0 META text type=0x03 "Amazing Grace"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=50 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
+  11520 META text type=0x05 "maz"
+  34560 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
+  34560 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  34560 META text type=0x05 "ing "
+  38400 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  38400 NOTE_ON ch=0 d1=57 d2=80 [LotroShortMessage]
+  42240 NOTE_OFF ch=0 d1=57 d2=80 [LotroShortMessage]
+  42240 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
+  46080 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
+  46080 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  46080 META text type=0x05 "grace, "
+  69120 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  69120 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  69120 META text type=0x05 "how "
+  74880 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  74880 NOTE_ON ch=0 d1=57 d2=80 [LotroShortMessage]
+  80640 NOTE_OFF ch=0 d1=57 d2=80 [LotroShortMessage]
+  80640 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
+  80640 META text type=0x05 "sweet "
+  103680 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
+  103680 NOTE_ON ch=0 d1=52 d2=80 [LotroShortMessage]
+  103680 META text type=0x05 "the "
+  115200 NOTE_OFF ch=0 d1=52 d2=80 [LotroShortMessage]
+  115200 NOTE_ON ch=0 d1=50 d2=80 [LotroShortMessage]
+  115200 META text type=0x05 "sound "
+  138240 NOTE_OFF ch=0 d1=50 d2=80 [LotroShortMessage]
+  138240 NOTE_ON ch=0 d1=50 d2=80 [LotroShortMessage]
+  138240 META text type=0x05 "/That "
+  149760 NOTE_OFF ch=0 d1=50 d2=80 [LotroShortMessage]
+  149760 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
+  149760 META text type=0x05 "saved "
+  172800 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
+  172800 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  172800 META text type=0x05 "a "
+  176640 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  176640 NOTE_ON ch=0 d1=57 d2=80 [LotroShortMessage]
+  180480 NOTE_OFF ch=0 d1=57 d2=80 [LotroShortMessage]
+  180480 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
+  184320 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
+  184320 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  184320 META text type=0x05 "wretch "
+  207360 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  207360 NOTE_ON ch=0 d1=57 d2=80 [LotroShortMessage]
+  207360 META text type=0x05 "like "
+  213120 NOTE_OFF ch=0 d1=57 d2=80 [LotroShortMessage]
+  213120 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  218880 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  218880 NOTE_ON ch=0 d1=62 d2=80 [LotroShortMessage]
+  218880 META text type=0x05 "me. "
+  276480 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
+  276480 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  276480 META text type=0x05 "/I "
+  282240 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  282240 NOTE_ON ch=0 d1=62 d2=80 [LotroShortMessage]
+  288000 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
+  288000 NOTE_ON ch=0 d1=62 d2=80 [LotroShortMessage]
+  288000 META text type=0x05 "once "
+  311040 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
+  311040 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  311040 META text type=0x05 "was "
+  314880 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  314880 NOTE_ON ch=0 d1=57 d2=80 [LotroShortMessage]
+  318720 NOTE_OFF ch=0 d1=57 d2=80 [LotroShortMessage]
+  318720 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
+  322560 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
+  322560 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  322560 META text type=0x05 "lost, "
+  345600 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  345600 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  345600 META text type=0x05 "but "
+  351360 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  351360 NOTE_ON ch=0 d1=57 d2=80 [LotroShortMessage]
+  357120 NOTE_OFF ch=0 d1=57 d2=80 [LotroShortMessage]
+  357120 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
+  357120 META text type=0x05 "now "
+  380160 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
+  380160 NOTE_ON ch=0 d1=52 d2=80 [LotroShortMessage]
+  380160 META text type=0x05 "am "
+  391680 NOTE_OFF ch=0 d1=52 d2=80 [LotroShortMessage]
+  391680 NOTE_ON ch=0 d1=50 d2=80 [LotroShortMessage]
+  391680 META text type=0x05 "found, "
+  414720 NOTE_OFF ch=0 d1=50 d2=80 [LotroShortMessage]
+  414720 NOTE_ON ch=0 d1=50 d2=80 [LotroShortMessage]
+  414720 META text type=0x05 "/Was "
+  426240 NOTE_OFF ch=0 d1=50 d2=80 [LotroShortMessage]
+  426240 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
+  426240 META text type=0x05 "blind, "
+  449280 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
+  449280 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  449280 META text type=0x05 "but "
+  453120 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  453120 NOTE_ON ch=0 d1=57 d2=80 [LotroShortMessage]
+  456960 NOTE_OFF ch=0 d1=57 d2=80 [LotroShortMessage]
+  456960 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
+  460800 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
+  460800 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  460800 META text type=0x05 "now "
+  483840 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  483840 NOTE_ON ch=0 d1=59 d2=80 [LotroShortMessage]
+  483840 META text type=0x05 "I "
+  489600 NOTE_OFF ch=0 d1=59 d2=80 [LotroShortMessage]
+  489600 NOTE_ON ch=0 d1=57 d2=80 [LotroShortMessage]
+  495360 NOTE_OFF ch=0 d1=57 d2=80 [LotroShortMessage]
+  495360 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
+  495360 META text type=0x05 "see. "
+  552960 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
+  552960 META end_of_track
+== abcInfo
+  title="Amazing Grace"
+  composer="John Newton"
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=120 timeSignature=3/4 keySignature=G maj
+  hasTriplets=true hasMixTimings=false barCount=17 partCount=2 partSetups=2..2 empty=false
+  sourceFiles=[amazingGrace.abc]
+  part 0: number=0 name="Amazing Grace" fullName="Amazing Grace" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Amazing Grace" fullName="Amazing Grace" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..29 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+== regions (43)
+  #0 line=7 cols=[2,4) ticks=0..11520 note=50 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=7 cols=[7,9) ticks=11520..34560 note=55 track=1 bar=1 tiesFrom=- tiesTo=-
+  #2 line=7 cols=[13,14) ticks=34560..38400 note=59 track=1 bar=1 tiesFrom=- tiesTo=-
+  #3 line=7 cols=[14,15) ticks=38400..42240 note=57 track=1 bar=1 tiesFrom=- tiesTo=-
+  #4 line=7 cols=[15,16) ticks=42240..46080 note=55 track=1 bar=1 tiesFrom=- tiesTo=-
+  #5 line=7 cols=[20,22) ticks=46080..69120 note=59 track=1 bar=2 tiesFrom=- tiesTo=-
+  #6 line=7 cols=[23,24) ticks=69120..74880 note=59 track=1 bar=2 tiesFrom=- tiesTo=-
+  #7 line=7 cols=[24,25) ticks=74880..80640 note=57 track=1 bar=2 tiesFrom=- tiesTo=-
+  #8 line=7 cols=[28,30) ticks=80640..103680 note=55 track=1 bar=3 tiesFrom=- tiesTo=-
+  #9 line=7 cols=[31,33) ticks=103680..115200 note=52 track=1 bar=3 tiesFrom=- tiesTo=-
+  #10 line=7 cols=[36,38) ticks=115200..138240 note=50 track=1 bar=4 tiesFrom=- tiesTo=-
+  #11 line=9 cols=[2,4) ticks=138240..149760 note=50 track=1 bar=4 tiesFrom=- tiesTo=-
+  #12 line=9 cols=[7,9) ticks=149760..172800 note=55 track=1 bar=5 tiesFrom=- tiesTo=-
+  #13 line=9 cols=[13,14) ticks=172800..176640 note=59 track=1 bar=5 tiesFrom=- tiesTo=-
+  #14 line=9 cols=[14,15) ticks=176640..180480 note=57 track=1 bar=5 tiesFrom=- tiesTo=-
+  #15 line=9 cols=[15,16) ticks=180480..184320 note=55 track=1 bar=5 tiesFrom=- tiesTo=-
+  #16 line=9 cols=[20,22) ticks=184320..207360 note=59 track=1 bar=6 tiesFrom=- tiesTo=-
+  #17 line=9 cols=[23,24) ticks=207360..213120 note=57 track=1 bar=6 tiesFrom=- tiesTo=-
+  #18 line=9 cols=[24,25) ticks=213120..218880 note=59 track=1 bar=6 tiesFrom=- tiesTo=-
+  #19 line=9 cols=[28,31) ticks=218880..253440 note=62 track=1 bar=7 tiesFrom=- tiesTo=#20
+  #20 line=9 cols=[34,36) ticks=253440..276480 note=62 track=1 bar=8 tiesFrom=#19 tiesTo=-
+  #21 line=11 cols=[2,3) ticks=276480..282240 note=59 track=1 bar=8 tiesFrom=- tiesTo=-
+  #22 line=11 cols=[3,4) ticks=282240..288000 note=62 track=1 bar=8 tiesFrom=- tiesTo=-
+  #23 line=11 cols=[7,9) ticks=288000..311040 note=62 track=1 bar=9 tiesFrom=- tiesTo=-
+  #24 line=11 cols=[13,14) ticks=311040..314880 note=59 track=1 bar=9 tiesFrom=- tiesTo=-
+  #25 line=11 cols=[14,15) ticks=314880..318720 note=57 track=1 bar=9 tiesFrom=- tiesTo=-
+  #26 line=11 cols=[15,16) ticks=318720..322560 note=55 track=1 bar=9 tiesFrom=- tiesTo=-
+  #27 line=11 cols=[20,22) ticks=322560..345600 note=59 track=1 bar=10 tiesFrom=- tiesTo=-
+  #28 line=11 cols=[23,24) ticks=345600..351360 note=59 track=1 bar=10 tiesFrom=- tiesTo=-
+  #29 line=11 cols=[24,25) ticks=351360..357120 note=57 track=1 bar=10 tiesFrom=- tiesTo=-
+  #30 line=11 cols=[28,30) ticks=357120..380160 note=55 track=1 bar=11 tiesFrom=- tiesTo=-
+  #31 line=11 cols=[31,33) ticks=380160..391680 note=52 track=1 bar=11 tiesFrom=- tiesTo=-
+  #32 line=11 cols=[36,38) ticks=391680..414720 note=50 track=1 bar=12 tiesFrom=- tiesTo=-
+  #33 line=13 cols=[2,4) ticks=414720..426240 note=50 track=1 bar=12 tiesFrom=- tiesTo=-
+  #34 line=13 cols=[7,9) ticks=426240..449280 note=55 track=1 bar=13 tiesFrom=- tiesTo=-
+  #35 line=13 cols=[13,14) ticks=449280..453120 note=59 track=1 bar=13 tiesFrom=- tiesTo=-
+  #36 line=13 cols=[14,15) ticks=453120..456960 note=57 track=1 bar=13 tiesFrom=- tiesTo=-
+  #37 line=13 cols=[15,16) ticks=456960..460800 note=55 track=1 bar=13 tiesFrom=- tiesTo=-
+  #38 line=13 cols=[20,22) ticks=460800..483840 note=59 track=1 bar=14 tiesFrom=- tiesTo=-
+  #39 line=13 cols=[23,24) ticks=483840..489600 note=59 track=1 bar=14 tiesFrom=- tiesTo=-
+  #40 line=13 cols=[24,25) ticks=489600..495360 note=57 track=1 bar=14 tiesFrom=- tiesTo=-
+  #41 line=13 cols=[28,31) ticks=495360..529920 note=55 track=1 bar=15 tiesFrom=- tiesTo=#42
+  #42 line=13 cols=[34,36) ticks=529920..552960 note=55 track=1 bar=16 tiesFrom=#41 tiesTo=-
+== log: empty
+
+### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=552960 tracks=2
+-- track 0 (21 events)
+  0 META text type=0x05 "@TAmazing Grace"
+  0 META text type=0x03 "Amazing Grace"
+  0 META type=0x58 data=03021808
+  0 META type=0x59 data=0100
+  1 META text type=0x05 "@IComposer: John Newton"
+  2 META text type=0x05 "@ISource: Soodlum's Irish Tin Whistle Book, John C. Campbell Folk School Song Book"
+  495361 META text type=0x05 "<2. 'Twas grace that taught my heart to fear"
+  495362 META text type=0x05 "<And grace that fear relieved;"
+  495363 META text type=0x05 "<How precious did that grace appear"
+  495364 META text type=0x05 "<The hour I first believed."
+  495365 META text type=0x05 "<"
+  495366 META text type=0x05 "<3. Through many dangers, toils, and snares"
+  495367 META text type=0x05 "<I have already come;"
+  495368 META text type=0x05 "<'Tis grace hath bro't me safe thus far,"
+  495369 META text type=0x05 "<And grace will lead me home."
+  495370 META text type=0x05 "<"
+  495371 META text type=0x05 "<4. When we've been here ten thousand years"
+  495372 META text type=0x05 "<Bright shining as the sun;"
+  495373 META text type=0x05 "<We've no less days to sing God's praise"
+  495374 META text type=0x05 "<Than when we first begun."
+  495374 META end_of_track
+-- track 1 (116 events)
+  0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=62 d2=80 [LotroShortMessage]
+  0 META text type=0x05 "1. A"
+  0 META text type=0x03 "Amazing Grace"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
+  11520 META text type=0x05 "maz"
+  34560 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
+  34560 NOTE_ON ch=0 d1=71 d2=80 [LotroShortMessage]
+  34560 META text type=0x05 "ing "
+  38400 NOTE_OFF ch=0 d1=71 d2=80 [LotroShortMessage]
+  38400 NOTE_ON ch=0 d1=69 d2=80 [LotroShortMessage]
+  42240 NOTE_OFF ch=0 d1=69 d2=80 [LotroShortMessage]
+  42240 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
+  46080 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
+  46080 NOTE_ON ch=0 d1=71 d2=80 [LotroShortMessage]
+  46080 META text type=0x05 "grace, "
+  69120 NOTE_OFF ch=0 d1=71 d2=80 [LotroShortMessage]
+  69120 NOTE_ON ch=0 d1=71 d2=80 [LotroShortMessage]
+  69120 META text type=0x05 "how "
+  74880 NOTE_OFF ch=0 d1=71 d2=80 [LotroShortMessage]
+  74880 NOTE_ON ch=0 d1=69 d2=80 [LotroShortMessage]
+  80640 NOTE_OFF ch=0 d1=69 d2=80 [LotroShortMessage]
+  80640 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
+  80640 META text type=0x05 "sweet "
+  103680 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
+  103680 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
+  103680 META text type=0x05 "the "
+  115200 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
+  115200 NOTE_ON ch=0 d1=62 d2=80 [LotroShortMessage]
+  115200 META text type=0x05 "sound "
+  138240 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
+  138240 NOTE_ON ch=0 d1=62 d2=80 [LotroShortMessage]
+  138240 META text type=0x05 "/That "
+  149760 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
+  149760 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
+  149760 META text type=0x05 "saved "
+  172800 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
+  172800 NOTE_ON ch=0 d1=71 d2=80 [LotroShortMessage]
+  172800 META text type=0x05 "a "
+  176640 NOTE_OFF ch=0 d1=71 d2=80 [LotroShortMessage]
+  176640 NOTE_ON ch=0 d1=69 d2=80 [LotroShortMessage]
+  180480 NOTE_OFF ch=0 d1=69 d2=80 [LotroShortMessage]
+  180480 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
+  184320 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
+  184320 NOTE_ON ch=0 d1=71 d2=80 [LotroShortMessage]
+  184320 META text type=0x05 "wretch "
+  207360 NOTE_OFF ch=0 d1=71 d2=80 [LotroShortMessage]
+  207360 NOTE_ON ch=0 d1=69 d2=80 [LotroShortMessage]
+  207360 META text type=0x05 "like "
+  213120 NOTE_OFF ch=0 d1=69 d2=80 [LotroShortMessage]
+  213120 NOTE_ON ch=0 d1=71 d2=80 [LotroShortMessage]
+  218880 NOTE_OFF ch=0 d1=71 d2=80 [LotroShortMessage]
+  218880 NOTE_ON ch=0 d1=74 d2=80 [LotroShortMessage]
+  218880 META text type=0x05 "me. "
+  276480 NOTE_OFF ch=0 d1=74 d2=80 [LotroShortMessage]
+  276480 NOTE_ON ch=0 d1=71 d2=80 [LotroShortMessage]
+  276480 META text type=0x05 "/I "
+  282240 NOTE_OFF ch=0 d1=71 d2=80 [LotroShortMessage]
+  282240 NOTE_ON ch=0 d1=74 d2=80 [LotroShortMessage]
+  288000 NOTE_OFF ch=0 d1=74 d2=80 [LotroShortMessage]
+  288000 NOTE_ON ch=0 d1=74 d2=80 [LotroShortMessage]
+  288000 META text type=0x05 "once "
+  311040 NOTE_OFF ch=0 d1=74 d2=80 [LotroShortMessage]
+  311040 NOTE_ON ch=0 d1=71 d2=80 [LotroShortMessage]
+  311040 META text type=0x05 "was "
+  314880 NOTE_OFF ch=0 d1=71 d2=80 [LotroShortMessage]
+  314880 NOTE_ON ch=0 d1=69 d2=80 [LotroShortMessage]
+  318720 NOTE_OFF ch=0 d1=69 d2=80 [LotroShortMessage]
+  318720 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
+  322560 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
+  322560 NOTE_ON ch=0 d1=71 d2=80 [LotroShortMessage]
+  322560 META text type=0x05 "lost, "
+  345600 NOTE_OFF ch=0 d1=71 d2=80 [LotroShortMessage]
+  345600 NOTE_ON ch=0 d1=71 d2=80 [LotroShortMessage]
+  345600 META text type=0x05 "but "
+  351360 NOTE_OFF ch=0 d1=71 d2=80 [LotroShortMessage]
+  351360 NOTE_ON ch=0 d1=69 d2=80 [LotroShortMessage]
+  357120 NOTE_OFF ch=0 d1=69 d2=80 [LotroShortMessage]
+  357120 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
+  357120 META text type=0x05 "now "
+  380160 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
+  380160 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
+  380160 META text type=0x05 "am "
+  391680 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
+  391680 NOTE_ON ch=0 d1=62 d2=80 [LotroShortMessage]
+  391680 META text type=0x05 "found, "
+  414720 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
+  414720 NOTE_ON ch=0 d1=62 d2=80 [LotroShortMessage]
+  414720 META text type=0x05 "/Was "
+  426240 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
+  426240 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
+  426240 META text type=0x05 "blind, "
+  449280 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
+  449280 NOTE_ON ch=0 d1=71 d2=80 [LotroShortMessage]
+  449280 META text type=0x05 "but "
+  453120 NOTE_OFF ch=0 d1=71 d2=80 [LotroShortMessage]
+  453120 NOTE_ON ch=0 d1=69 d2=80 [LotroShortMessage]
+  456960 NOTE_OFF ch=0 d1=69 d2=80 [LotroShortMessage]
+  456960 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
+  460800 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
+  460800 NOTE_ON ch=0 d1=71 d2=80 [LotroShortMessage]
+  460800 META text type=0x05 "now "
+  483840 NOTE_OFF ch=0 d1=71 d2=80 [LotroShortMessage]
+  483840 NOTE_ON ch=0 d1=71 d2=80 [LotroShortMessage]
+  483840 META text type=0x05 "I "
+  489600 NOTE_OFF ch=0 d1=71 d2=80 [LotroShortMessage]
+  489600 NOTE_ON ch=0 d1=69 d2=80 [LotroShortMessage]
+  495360 NOTE_OFF ch=0 d1=69 d2=80 [LotroShortMessage]
+  495360 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
+  495360 META text type=0x05 "see. "
+  552960 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
+  552960 META end_of_track
+== abcInfo
+  title="Amazing Grace"
+  composer="John Newton"
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=120 timeSignature=3/4 keySignature=G maj
+  hasTriplets=true hasMixTimings=false barCount=17 partCount=2 partSetups=2..2 empty=false
+  sourceFiles=[amazingGrace.abc]
+  part 0: number=0 name="Amazing Grace" fullName="Amazing Grace" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Amazing Grace" fullName="Amazing Grace" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..29 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+== regions (43)
+  #0 line=7 cols=[2,4) ticks=0..11520 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=7 cols=[7,9) ticks=11520..34560 note=67 track=1 bar=1 tiesFrom=- tiesTo=-
+  #2 line=7 cols=[13,14) ticks=34560..38400 note=71 track=1 bar=1 tiesFrom=- tiesTo=-
+  #3 line=7 cols=[14,15) ticks=38400..42240 note=69 track=1 bar=1 tiesFrom=- tiesTo=-
+  #4 line=7 cols=[15,16) ticks=42240..46080 note=67 track=1 bar=1 tiesFrom=- tiesTo=-
+  #5 line=7 cols=[20,22) ticks=46080..69120 note=71 track=1 bar=2 tiesFrom=- tiesTo=-
+  #6 line=7 cols=[23,24) ticks=69120..74880 note=71 track=1 bar=2 tiesFrom=- tiesTo=-
+  #7 line=7 cols=[24,25) ticks=74880..80640 note=69 track=1 bar=2 tiesFrom=- tiesTo=-
+  #8 line=7 cols=[28,30) ticks=80640..103680 note=67 track=1 bar=3 tiesFrom=- tiesTo=-
+  #9 line=7 cols=[31,33) ticks=103680..115200 note=64 track=1 bar=3 tiesFrom=- tiesTo=-
+  #10 line=7 cols=[36,38) ticks=115200..138240 note=62 track=1 bar=4 tiesFrom=- tiesTo=-
+  #11 line=9 cols=[2,4) ticks=138240..149760 note=62 track=1 bar=4 tiesFrom=- tiesTo=-
+  #12 line=9 cols=[7,9) ticks=149760..172800 note=67 track=1 bar=5 tiesFrom=- tiesTo=-
+  #13 line=9 cols=[13,14) ticks=172800..176640 note=71 track=1 bar=5 tiesFrom=- tiesTo=-
+  #14 line=9 cols=[14,15) ticks=176640..180480 note=69 track=1 bar=5 tiesFrom=- tiesTo=-
+  #15 line=9 cols=[15,16) ticks=180480..184320 note=67 track=1 bar=5 tiesFrom=- tiesTo=-
+  #16 line=9 cols=[20,22) ticks=184320..207360 note=71 track=1 bar=6 tiesFrom=- tiesTo=-
+  #17 line=9 cols=[23,24) ticks=207360..213120 note=69 track=1 bar=6 tiesFrom=- tiesTo=-
+  #18 line=9 cols=[24,25) ticks=213120..218880 note=71 track=1 bar=6 tiesFrom=- tiesTo=-
+  #19 line=9 cols=[28,31) ticks=218880..253440 note=74 track=1 bar=7 tiesFrom=- tiesTo=#20
+  #20 line=9 cols=[34,36) ticks=253440..276480 note=74 track=1 bar=8 tiesFrom=#19 tiesTo=-
+  #21 line=11 cols=[2,3) ticks=276480..282240 note=71 track=1 bar=8 tiesFrom=- tiesTo=-
+  #22 line=11 cols=[3,4) ticks=282240..288000 note=74 track=1 bar=8 tiesFrom=- tiesTo=-
+  #23 line=11 cols=[7,9) ticks=288000..311040 note=74 track=1 bar=9 tiesFrom=- tiesTo=-
+  #24 line=11 cols=[13,14) ticks=311040..314880 note=71 track=1 bar=9 tiesFrom=- tiesTo=-
+  #25 line=11 cols=[14,15) ticks=314880..318720 note=69 track=1 bar=9 tiesFrom=- tiesTo=-
+  #26 line=11 cols=[15,16) ticks=318720..322560 note=67 track=1 bar=9 tiesFrom=- tiesTo=-
+  #27 line=11 cols=[20,22) ticks=322560..345600 note=71 track=1 bar=10 tiesFrom=- tiesTo=-
+  #28 line=11 cols=[23,24) ticks=345600..351360 note=71 track=1 bar=10 tiesFrom=- tiesTo=-
+  #29 line=11 cols=[24,25) ticks=351360..357120 note=69 track=1 bar=10 tiesFrom=- tiesTo=-
+  #30 line=11 cols=[28,30) ticks=357120..380160 note=67 track=1 bar=11 tiesFrom=- tiesTo=-
+  #31 line=11 cols=[31,33) ticks=380160..391680 note=64 track=1 bar=11 tiesFrom=- tiesTo=-
+  #32 line=11 cols=[36,38) ticks=391680..414720 note=62 track=1 bar=12 tiesFrom=- tiesTo=-
+  #33 line=13 cols=[2,4) ticks=414720..426240 note=62 track=1 bar=12 tiesFrom=- tiesTo=-
+  #34 line=13 cols=[7,9) ticks=426240..449280 note=67 track=1 bar=13 tiesFrom=- tiesTo=-
+  #35 line=13 cols=[13,14) ticks=449280..453120 note=71 track=1 bar=13 tiesFrom=- tiesTo=-
+  #36 line=13 cols=[14,15) ticks=453120..456960 note=69 track=1 bar=13 tiesFrom=- tiesTo=-
+  #37 line=13 cols=[15,16) ticks=456960..460800 note=67 track=1 bar=13 tiesFrom=- tiesTo=-
+  #38 line=13 cols=[20,22) ticks=460800..483840 note=71 track=1 bar=14 tiesFrom=- tiesTo=-
+  #39 line=13 cols=[23,24) ticks=483840..489600 note=71 track=1 bar=14 tiesFrom=- tiesTo=-
+  #40 line=13 cols=[24,25) ticks=489600..495360 note=69 track=1 bar=14 tiesFrom=- tiesTo=-
+  #41 line=13 cols=[28,31) ticks=495360..529920 note=67 track=1 bar=15 tiesFrom=- tiesTo=#42
+  #42 line=13 cols=[34,36) ticks=529920..552960 note=67 track=1 bar=16 tiesFrom=#41 tiesTo=-
+== log: empty

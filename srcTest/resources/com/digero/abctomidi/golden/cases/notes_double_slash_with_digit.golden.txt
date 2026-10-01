@@ -1,0 +1,36 @@
+# AbcToMidi golden snapshot. Re-record with: mvn test -Dabc.golden.update=true (and review the diff before committing)
+case notes_double_slash_with_digit
+
+== abc notes_double_slash_with_digit.abc
+  X:1
+  T:Test
+  M:4/4
+  L:1/8
+  Q:120
+  K:C
+  c//3 d|
+
+### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
+== EXCEPTION FileParseException: Error reading notes_double_slash_with_digit.abc (X:1 Test) on line 7, column 1:
+Invalid note length: //3
+== log: empty
+
+### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
+== EXCEPTION FileParseException: Error reading notes_double_slash_with_digit.abc (X:1 Test) on line 7, column 1:
+Invalid note length: //3
+== log: empty
+
+### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)
+== EXCEPTION FileParseException: Error reading notes_double_slash_with_digit.abc (X:1 Test) on line 7, column 1:
+Invalid note length: //3
+== log: empty
+
+### profile MAESTRO_NEW_LOTRO (useLotroInstruments=false, enableLotroErrors=false, Lotro Abc)
+== EXCEPTION FileParseException: Error reading notes_double_slash_with_digit.abc (X:1 Test) on line 7, column 1:
+Invalid note length: //3
+== log: empty
+
+### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
+== EXCEPTION FileParseException: Error reading notes_double_slash_with_digit.abc (X:1 Test) on line 7, column 1:
+Invalid note length: //3
+== log: empty

@@ -61,11 +61,11 @@ This changelog is only partial, to see all the way back to v1.0.0 go here:
 Version 4.7.3
 * When loading projects, the project version number and XML version number are now checked for errors.
 * Maestro and Abc Player will now warn if a part is too large for lotro.
-* ABC Player now interprets ABC files closer to how Lotro plays them, with clearer error messages.
-* When importing ABC files into maestro, and they are not meant for lotro (exported by maestro or BruTE), they are now interpreted closer to abc 2.1 standard.
-* ABC lyrics are now shown in time with the music in Maestro, and ABC files using accents, decorations and other common syntax now play the way they do in LotRO.
-* ABC files from folk tune collections now import at the right tempo (e.g. jigs written as Q:3/8=120) and the right octave, whatever instrument you assign. Also now support repeats and other abc spec features. Projects made before keep how they sounded.
-* Chord symbols in ABC files loaded into maestro, ("G", "Am", "D7") now become a bass part and a chords part.
+* Abc Player: now interprets abc files closer to how Lotro plays them, with clearer error messages.
+* Maestro: abc files not made for Lotro (folk tune collections etc..) are now read as standard ABC 2.1
+* Maestro: abc lyrics are now shown in time with the music in Maestro, just like midi lyrics.
+* Maestro: opening an abc file with many tunes asks which tune to open, with search; it can also split the book into one file per tune.
+* Maestro: Chord symbols in ABC files ("G", "Am", "D7") now become a bass track and a chords track. Bagpipe tunes get a drone track.
 
 Version 4.7.2
 * Make Windows midi system able to play back GS midi more reliable.

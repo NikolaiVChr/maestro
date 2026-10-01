@@ -1,7 +1,0 @@
-# AbcToMidi golden snapshot. Re-record with: mvn test -Dabc.golden.update=true (and review the diff before committing)
-case lotro_too_many_notes
-
-### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
-== EXCEPTION LotroFileParseException: Error reading lotro_too_many_notes.abc (X:1 Test) on line 7, column 30001:
-Too many chords/notes/rests in Test. Max is 10000.
-== log: empty

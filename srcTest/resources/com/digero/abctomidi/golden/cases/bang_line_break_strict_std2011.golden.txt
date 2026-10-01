@@ -1,0 +1,38 @@
+# AbcToMidi golden snapshot. Re-record with: mvn test -Dabc.golden.update=true (and review the diff before committing)
+case bang_line_break_strict_std2011
+
+== abc bang_line_break_strict_std2011.abc
+  %abc-2.1
+  X:1
+  T:t
+  M:4/4
+  L:1/8
+  Q:120
+  K:C
+  A2 B2|  !
+  c2 d2|]
+
+### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
+== EXCEPTION FileParseException: Error reading bang_line_break_strict_std2011.abc (X:1 t) on line 8, column 9:
+There is no matching '!'
+== log: empty
+
+### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
+== EXCEPTION FileParseException: Error reading bang_line_break_strict_std2011.abc (X:1 t) on line 8, column 9:
+There is no matching '!'
+== log: empty
+
+### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)
+== EXCEPTION FileParseException: Error reading bang_line_break_strict_std2011.abc (X:1 t) on line 8, column 9:
+There is no matching '!'
+== log: empty
+
+### profile MAESTRO_NEW_LOTRO (useLotroInstruments=false, enableLotroErrors=false, Lotro Abc)
+== EXCEPTION FileParseException: Error reading bang_line_break_strict_std2011.abc (X:1 t) on line 8, column 9:
+There is no matching '!'
+== log: empty
+
+### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
+== EXCEPTION FileParseException: Error reading bang_line_break_strict_std2011.abc (X:1 t) on line 8, column 9:
+There is no matching '!'
+== log: empty

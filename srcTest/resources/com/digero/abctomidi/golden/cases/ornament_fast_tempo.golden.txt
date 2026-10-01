@@ -1,0 +1,177 @@
+# AbcToMidi golden snapshot. Re-record with: mvn test -Dabc.golden.update=true (and review the diff before committing)
+case ornament_fast_tempo
+
+== abc ornament_fast_tempo.abc
+  X:1
+  T:Test
+  M:4/4
+  L:1/8
+  Q:300
+  K:C
+  Tc/ Td/ Te|
+
+### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=64055 tracks=2
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
+  0 META tempo mpq=200000
+  0 META text type=0x03 "Test"
+  0 META type=0x58 data=04021808
+  0 META type=0x59 data=0000
+  0 META end_of_track
+-- track 1 (13 events)
+  0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  0 META text type=0x03 "Test"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  2880 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  2880 NOTE_ON ch=0 d1=62 d2=106 [LotroShortMessage]
+  5760 NOTE_OFF ch=0 d1=62 d2=106 [LotroShortMessage]
+  5760 NOTE_ON ch=0 d1=64 d2=106 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=64 d2=106 [LotroShortMessage]
+  64055 META end_of_track
+== abcInfo
+  title="Test"
+  composer=""
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=300 timeSignature=4/4 keySignature=C maj
+  hasTriplets=false hasMixTimings=false barCount=1 partCount=2 partSetups=2..2 empty=false
+  sourceFiles=[ornament_fast_tempo.abc]
+  part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+== regions (3)
+  #0 line=6 cols=[1,3) ticks=0..2880 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=6 cols=[5,7) ticks=2880..5760 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
+  #2 line=6 cols=[9,10) ticks=5760..11520 note=64 track=1 bar=0 tiesFrom=- tiesTo=-
+== log: empty
+
+### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
+== EXCEPTION LotroFileParseException: Error reading ornament_fast_tempo.abc (X:1 Test) on line 7, column 1:
+Lotro refuses a part with the decoration 'T'; leave it out
+== log: empty
+
+### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=11520 tracks=2
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
+  0 META tempo mpq=200000
+  0 META text type=0x03 "Test"
+  0 META type=0x58 data=04021808
+  0 META type=0x59 data=0000
+  0 META end_of_track
+-- track 1 (12 events)
+  0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  0 META text type=0x03 "Test"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  2880 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  2880 NOTE_ON ch=0 d1=62 d2=80 [LotroShortMessage]
+  5760 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
+  5760 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
+  11520 META end_of_track
+== abcInfo
+  title="Test"
+  composer=""
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=300 timeSignature=4/4 keySignature=C maj
+  hasTriplets=false hasMixTimings=false barCount=1 partCount=2 partSetups=2..2 empty=false
+  sourceFiles=[ornament_fast_tempo.abc]
+  part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+== regions (3)
+  #0 line=6 cols=[1,3) ticks=0..2880 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=6 cols=[5,7) ticks=2880..5760 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
+  #2 line=6 cols=[9,10) ticks=5760..11520 note=64 track=1 bar=0 tiesFrom=- tiesTo=-
+== log: empty
+
+### profile MAESTRO_NEW_LOTRO (useLotroInstruments=false, enableLotroErrors=false, Lotro Abc)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=11520 tracks=2
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
+  0 META tempo mpq=200000
+  0 META text type=0x03 "Test"
+  0 META type=0x58 data=04021808
+  0 META type=0x59 data=0000
+  0 META end_of_track
+-- track 1 (12 events)
+  0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  0 META text type=0x03 "Test"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  2880 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  2880 NOTE_ON ch=0 d1=62 d2=80 [LotroShortMessage]
+  5760 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
+  5760 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
+  11520 META end_of_track
+== abcInfo
+  title="Test"
+  composer=""
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=300 timeSignature=4/4 keySignature=C maj
+  hasTriplets=false hasMixTimings=false barCount=1 partCount=2 partSetups=2..2 empty=false
+  sourceFiles=[ornament_fast_tempo.abc]
+  part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+== regions (3)
+  #0 line=6 cols=[1,3) ticks=0..2880 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=6 cols=[5,7) ticks=2880..5760 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
+  #2 line=6 cols=[9,10) ticks=5760..11520 note=64 track=1 bar=0 tiesFrom=- tiesTo=-
+== log: empty
+
+### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=11520 tracks=2
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
+  0 META tempo mpq=400000
+  0 META text type=0x03 "Test"
+  0 META type=0x58 data=04021808
+  0 META type=0x59 data=0000
+  0 META end_of_track
+-- track 1 (16 events)
+  0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  0 META text type=0x03 "Test"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  2880 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  2880 NOTE_ON ch=0 d1=74 d2=80 [LotroShortMessage]
+  5760 NOTE_OFF ch=0 d1=74 d2=80 [LotroShortMessage]
+  5760 NOTE_ON ch=0 d1=76 d2=80 [LotroShortMessage]
+  7632 NOTE_OFF ch=0 d1=76 d2=80 [LotroShortMessage]
+  7632 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
+  9504 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
+  9504 NOTE_ON ch=0 d1=76 d2=80 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=76 d2=80 [LotroShortMessage]
+  11520 META end_of_track
+== abcInfo
+  title="Test"
+  composer=""
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=150 timeSignature=4/4 keySignature=C maj
+  hasTriplets=false hasMixTimings=false barCount=1 partCount=2 partSetups=2..2 empty=false
+  sourceFiles=[ornament_fast_tempo.abc]
+  part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+== regions (3)
+  #0 line=6 cols=[1,3) ticks=0..2880 note=72 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=6 cols=[5,7) ticks=2880..5760 note=74 track=1 bar=0 tiesFrom=- tiesTo=-
+  #2 line=6 cols=[9,10) ticks=5760..11520 note=76 track=1 bar=0 tiesFrom=- tiesTo=-
+== log: empty

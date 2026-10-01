@@ -1,0 +1,1270 @@
+# AbcToMidi golden snapshot. Re-record with: mvn test -Dabc.golden.update=true (and review the diff before committing)
+case chord_accompaniment_qualities
+
+== abc chord_accompaniment_qualities.abc
+  X:1
+  T:Test
+  M:2/4
+  L:1/4
+  Q:120
+  K:C
+  "Cm"c c|"C7"c c|"Cmaj7"c c|"Cm7"c c|"Cdim"c c|"Cdim7"c c|"Cm7b5"c c|"Caug"c c|
+  "Csus4"c c|"Csus2"c c|"C6"c c|"C5"c c|"F#m"c c|"Bb7"c c|"Eb"c c|"Cxyz"c c|]
+
+### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=375812 tracks=4
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
+  0 META tempo mpq=500000
+  0 META text type=0x03 "Test"
+  0 META type=0x58 data=02021808
+  0 META type=0x59 data=0000
+  0 META end_of_track
+-- track 1 (71 events)
+  0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  0 META text type=0x03 "Test"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=91 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  23040 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  23040 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  34560 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  34560 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  46080 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  46080 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  57600 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  57600 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  69120 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  69120 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  80640 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  80640 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  92160 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  92160 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  103680 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  103680 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  115200 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  115200 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  126720 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  126720 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  138240 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  138240 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  149760 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  149760 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  161280 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  161280 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  172800 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  172800 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  184320 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  184320 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  195840 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  195840 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  207360 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  207360 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  218880 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  218880 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  230400 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  230400 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  241920 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  241920 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  253440 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  253440 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  264960 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  264960 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  276480 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  276480 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  288000 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  288000 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  299520 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  299520 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  311040 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  311040 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  322560 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  322560 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  334080 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  334080 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  345600 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  345600 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  357120 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  357120 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  368640 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  375570 META end_of_track
+-- track 2 (39 events)
+  0 PROGRAM_CHANGE ch=1 d1=32 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=1 d1=48 d2=106 [LotroShortMessage]
+  0 META text type=0x03 "Test - Bass"
+  0 CONTROL_CHANGE ch=1 d1=10 d2=76 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=1 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=1 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=1 d1=93 d2=0 [LotroShortMessage]
+  11520 NOTE_OFF ch=1 d1=48 d2=106 [LotroShortMessage]
+  23040 NOTE_ON ch=1 d1=48 d2=106 [LotroShortMessage]
+  34560 NOTE_OFF ch=1 d1=48 d2=106 [LotroShortMessage]
+  46080 NOTE_ON ch=1 d1=48 d2=106 [LotroShortMessage]
+  57600 NOTE_OFF ch=1 d1=48 d2=106 [LotroShortMessage]
+  69120 NOTE_ON ch=1 d1=48 d2=106 [LotroShortMessage]
+  80640 NOTE_OFF ch=1 d1=48 d2=106 [LotroShortMessage]
+  92160 NOTE_ON ch=1 d1=48 d2=106 [LotroShortMessage]
+  103680 NOTE_OFF ch=1 d1=48 d2=106 [LotroShortMessage]
+  115200 NOTE_ON ch=1 d1=48 d2=106 [LotroShortMessage]
+  126720 NOTE_OFF ch=1 d1=48 d2=106 [LotroShortMessage]
+  138240 NOTE_ON ch=1 d1=48 d2=106 [LotroShortMessage]
+  149760 NOTE_OFF ch=1 d1=48 d2=106 [LotroShortMessage]
+  161280 NOTE_ON ch=1 d1=48 d2=106 [LotroShortMessage]
+  172800 NOTE_OFF ch=1 d1=48 d2=106 [LotroShortMessage]
+  184320 NOTE_ON ch=1 d1=48 d2=106 [LotroShortMessage]
+  195840 NOTE_OFF ch=1 d1=48 d2=106 [LotroShortMessage]
+  207360 NOTE_ON ch=1 d1=48 d2=106 [LotroShortMessage]
+  218880 NOTE_OFF ch=1 d1=48 d2=106 [LotroShortMessage]
+  230400 NOTE_ON ch=1 d1=48 d2=106 [LotroShortMessage]
+  241920 NOTE_OFF ch=1 d1=48 d2=106 [LotroShortMessage]
+  253440 NOTE_ON ch=1 d1=48 d2=106 [LotroShortMessage]
+  264960 NOTE_OFF ch=1 d1=48 d2=106 [LotroShortMessage]
+  276480 NOTE_ON ch=1 d1=54 d2=106 [LotroShortMessage]
+  288000 NOTE_OFF ch=1 d1=54 d2=106 [LotroShortMessage]
+  299520 NOTE_ON ch=1 d1=58 d2=106 [LotroShortMessage]
+  311040 NOTE_OFF ch=1 d1=58 d2=106 [LotroShortMessage]
+  322560 NOTE_ON ch=1 d1=51 d2=106 [LotroShortMessage]
+  334080 NOTE_OFF ch=1 d1=51 d2=106 [LotroShortMessage]
+  345600 NOTE_ON ch=1 d1=51 d2=106 [LotroShortMessage]
+  357120 NOTE_OFF ch=1 d1=51 d2=106 [LotroShortMessage]
+  364724 META end_of_track
+-- track 3 (115 events)
+  0 PROGRAM_CHANGE ch=2 d1=24 d2=0 [LotroShortMessage]
+  0 META text type=0x03 "Test - Chords"
+  0 CONTROL_CHANGE ch=2 d1=10 d2=37 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=2 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=2 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=2 d1=93 d2=0 [LotroShortMessage]
+  11520 NOTE_ON ch=2 d1=48 d2=97 [LotroShortMessage]
+  11520 NOTE_ON ch=2 d1=51 d2=97 [LotroShortMessage]
+  11520 NOTE_ON ch=2 d1=55 d2=97 [LotroShortMessage]
+  23040 NOTE_OFF ch=2 d1=48 d2=97 [LotroShortMessage]
+  23040 NOTE_OFF ch=2 d1=51 d2=97 [LotroShortMessage]
+  23040 NOTE_OFF ch=2 d1=55 d2=97 [LotroShortMessage]
+  34560 NOTE_ON ch=2 d1=48 d2=97 [LotroShortMessage]
+  34560 NOTE_ON ch=2 d1=52 d2=97 [LotroShortMessage]
+  34560 NOTE_ON ch=2 d1=55 d2=97 [LotroShortMessage]
+  34560 NOTE_ON ch=2 d1=58 d2=97 [LotroShortMessage]
+  46080 NOTE_OFF ch=2 d1=48 d2=97 [LotroShortMessage]
+  46080 NOTE_OFF ch=2 d1=52 d2=97 [LotroShortMessage]
+  46080 NOTE_OFF ch=2 d1=55 d2=97 [LotroShortMessage]
+  46080 NOTE_OFF ch=2 d1=58 d2=97 [LotroShortMessage]
+  57600 NOTE_ON ch=2 d1=48 d2=97 [LotroShortMessage]
+  57600 NOTE_ON ch=2 d1=52 d2=97 [LotroShortMessage]
+  57600 NOTE_ON ch=2 d1=55 d2=97 [LotroShortMessage]
+  57600 NOTE_ON ch=2 d1=59 d2=97 [LotroShortMessage]
+  69120 NOTE_OFF ch=2 d1=48 d2=97 [LotroShortMessage]
+  69120 NOTE_OFF ch=2 d1=52 d2=97 [LotroShortMessage]
+  69120 NOTE_OFF ch=2 d1=55 d2=97 [LotroShortMessage]
+  69120 NOTE_OFF ch=2 d1=59 d2=97 [LotroShortMessage]
+  80640 NOTE_ON ch=2 d1=48 d2=97 [LotroShortMessage]
+  80640 NOTE_ON ch=2 d1=51 d2=97 [LotroShortMessage]
+  80640 NOTE_ON ch=2 d1=55 d2=97 [LotroShortMessage]
+  80640 NOTE_ON ch=2 d1=58 d2=97 [LotroShortMessage]
+  92160 NOTE_OFF ch=2 d1=48 d2=97 [LotroShortMessage]
+  92160 NOTE_OFF ch=2 d1=51 d2=97 [LotroShortMessage]
+  92160 NOTE_OFF ch=2 d1=55 d2=97 [LotroShortMessage]
+  92160 NOTE_OFF ch=2 d1=58 d2=97 [LotroShortMessage]
+  103680 NOTE_ON ch=2 d1=48 d2=97 [LotroShortMessage]
+  103680 NOTE_ON ch=2 d1=51 d2=97 [LotroShortMessage]
+  103680 NOTE_ON ch=2 d1=54 d2=97 [LotroShortMessage]
+  115200 NOTE_OFF ch=2 d1=48 d2=97 [LotroShortMessage]
+  115200 NOTE_OFF ch=2 d1=51 d2=97 [LotroShortMessage]
+  115200 NOTE_OFF ch=2 d1=54 d2=97 [LotroShortMessage]
+  126720 NOTE_ON ch=2 d1=48 d2=97 [LotroShortMessage]
+  126720 NOTE_ON ch=2 d1=51 d2=97 [LotroShortMessage]
+  126720 NOTE_ON ch=2 d1=54 d2=97 [LotroShortMessage]
+  126720 NOTE_ON ch=2 d1=57 d2=97 [LotroShortMessage]
+  138240 NOTE_OFF ch=2 d1=48 d2=97 [LotroShortMessage]
+  138240 NOTE_OFF ch=2 d1=51 d2=97 [LotroShortMessage]
+  138240 NOTE_OFF ch=2 d1=54 d2=97 [LotroShortMessage]
+  138240 NOTE_OFF ch=2 d1=57 d2=97 [LotroShortMessage]
+  149760 NOTE_ON ch=2 d1=48 d2=97 [LotroShortMessage]
+  149760 NOTE_ON ch=2 d1=51 d2=97 [LotroShortMessage]
+  149760 NOTE_ON ch=2 d1=54 d2=97 [LotroShortMessage]
+  149760 NOTE_ON ch=2 d1=58 d2=97 [LotroShortMessage]
+  161280 NOTE_OFF ch=2 d1=48 d2=97 [LotroShortMessage]
+  161280 NOTE_OFF ch=2 d1=51 d2=97 [LotroShortMessage]
+  161280 NOTE_OFF ch=2 d1=54 d2=97 [LotroShortMessage]
+  161280 NOTE_OFF ch=2 d1=58 d2=97 [LotroShortMessage]
+  172800 NOTE_ON ch=2 d1=48 d2=97 [LotroShortMessage]
+  172800 NOTE_ON ch=2 d1=52 d2=97 [LotroShortMessage]
+  172800 NOTE_ON ch=2 d1=56 d2=97 [LotroShortMessage]
+  184320 NOTE_OFF ch=2 d1=48 d2=97 [LotroShortMessage]
+  184320 NOTE_OFF ch=2 d1=52 d2=97 [LotroShortMessage]
+  184320 NOTE_OFF ch=2 d1=56 d2=97 [LotroShortMessage]
+  195840 NOTE_ON ch=2 d1=48 d2=97 [LotroShortMessage]
+  195840 NOTE_ON ch=2 d1=53 d2=97 [LotroShortMessage]
+  195840 NOTE_ON ch=2 d1=55 d2=97 [LotroShortMessage]
+  207360 NOTE_OFF ch=2 d1=48 d2=97 [LotroShortMessage]
+  207360 NOTE_OFF ch=2 d1=53 d2=97 [LotroShortMessage]
+  207360 NOTE_OFF ch=2 d1=55 d2=97 [LotroShortMessage]
+  218880 NOTE_ON ch=2 d1=48 d2=97 [LotroShortMessage]
+  218880 NOTE_ON ch=2 d1=50 d2=97 [LotroShortMessage]
+  218880 NOTE_ON ch=2 d1=55 d2=97 [LotroShortMessage]
+  230400 NOTE_OFF ch=2 d1=48 d2=97 [LotroShortMessage]
+  230400 NOTE_OFF ch=2 d1=50 d2=97 [LotroShortMessage]
+  230400 NOTE_OFF ch=2 d1=55 d2=97 [LotroShortMessage]
+  241920 NOTE_ON ch=2 d1=48 d2=97 [LotroShortMessage]
+  241920 NOTE_ON ch=2 d1=52 d2=97 [LotroShortMessage]
+  241920 NOTE_ON ch=2 d1=55 d2=97 [LotroShortMessage]
+  241920 NOTE_ON ch=2 d1=57 d2=97 [LotroShortMessage]
+  253440 NOTE_OFF ch=2 d1=48 d2=97 [LotroShortMessage]
+  253440 NOTE_OFF ch=2 d1=52 d2=97 [LotroShortMessage]
+  253440 NOTE_OFF ch=2 d1=55 d2=97 [LotroShortMessage]
+  253440 NOTE_OFF ch=2 d1=57 d2=97 [LotroShortMessage]
+  264960 NOTE_ON ch=2 d1=48 d2=97 [LotroShortMessage]
+  264960 NOTE_ON ch=2 d1=55 d2=97 [LotroShortMessage]
+  276480 NOTE_OFF ch=2 d1=48 d2=97 [LotroShortMessage]
+  276480 NOTE_OFF ch=2 d1=55 d2=97 [LotroShortMessage]
+  288000 NOTE_ON ch=2 d1=54 d2=97 [LotroShortMessage]
+  288000 NOTE_ON ch=2 d1=57 d2=97 [LotroShortMessage]
+  288000 NOTE_ON ch=2 d1=61 d2=97 [LotroShortMessage]
+  299520 NOTE_OFF ch=2 d1=54 d2=97 [LotroShortMessage]
+  299520 NOTE_OFF ch=2 d1=57 d2=97 [LotroShortMessage]
+  299520 NOTE_OFF ch=2 d1=61 d2=97 [LotroShortMessage]
+  311040 NOTE_ON ch=2 d1=58 d2=97 [LotroShortMessage]
+  311040 NOTE_ON ch=2 d1=62 d2=97 [LotroShortMessage]
+  311040 NOTE_ON ch=2 d1=65 d2=97 [LotroShortMessage]
+  311040 NOTE_ON ch=2 d1=68 d2=97 [LotroShortMessage]
+  322560 NOTE_OFF ch=2 d1=58 d2=97 [LotroShortMessage]
+  322560 NOTE_OFF ch=2 d1=62 d2=97 [LotroShortMessage]
+  322560 NOTE_OFF ch=2 d1=65 d2=97 [LotroShortMessage]
+  322560 NOTE_OFF ch=2 d1=68 d2=97 [LotroShortMessage]
+  334080 NOTE_ON ch=2 d1=51 d2=97 [LotroShortMessage]
+  334080 NOTE_ON ch=2 d1=55 d2=97 [LotroShortMessage]
+  334080 NOTE_ON ch=2 d1=58 d2=97 [LotroShortMessage]
+  345600 NOTE_OFF ch=2 d1=51 d2=97 [LotroShortMessage]
+  345600 NOTE_OFF ch=2 d1=55 d2=97 [LotroShortMessage]
+  345600 NOTE_OFF ch=2 d1=58 d2=97 [LotroShortMessage]
+  357120 NOTE_ON ch=2 d1=51 d2=97 [LotroShortMessage]
+  357120 NOTE_ON ch=2 d1=55 d2=97 [LotroShortMessage]
+  357120 NOTE_ON ch=2 d1=58 d2=97 [LotroShortMessage]
+  368640 NOTE_OFF ch=2 d1=51 d2=97 [LotroShortMessage]
+  368640 NOTE_OFF ch=2 d1=55 d2=97 [LotroShortMessage]
+  368640 NOTE_OFF ch=2 d1=58 d2=97 [LotroShortMessage]
+  375812 META end_of_track
+== abcInfo
+  title="Test"
+  composer=""
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=120 timeSignature=2/4 keySignature=C maj
+  hasTriplets=false hasMixTimings=false barCount=16 partCount=4 partSetups=4..4 empty=false
+  sourceFiles=[chord_accompaniment_qualities.abc]
+  part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..7 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=91 [LotroShortMessage]
+  part 2: number=0 name="Test - Bass" fullName="Test - Bass" instrument=BASIC_THEORBO madeFor=false userPan=null lines=0..7 pan=0 CONTROL_CHANGE ch=1 d1=10 d2=76 [LotroShortMessage]
+  part 3: number=0 name="Test - Chords" fullName="Test - Chords" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..7 pan=0 CONTROL_CHANGE ch=2 d1=10 d2=37 [LotroShortMessage]
+== regions (32)
+  #0 line=6 cols=[4,5) ticks=0..11520 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=6 cols=[6,7) ticks=11520..23040 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #2 line=6 cols=[12,13) ticks=23040..34560 note=60 track=1 bar=1 tiesFrom=- tiesTo=-
+  #3 line=6 cols=[14,15) ticks=34560..46080 note=60 track=1 bar=1 tiesFrom=- tiesTo=-
+  #4 line=6 cols=[23,24) ticks=46080..57600 note=60 track=1 bar=2 tiesFrom=- tiesTo=-
+  #5 line=6 cols=[25,26) ticks=57600..69120 note=60 track=1 bar=2 tiesFrom=- tiesTo=-
+  #6 line=6 cols=[32,33) ticks=69120..80640 note=60 track=1 bar=3 tiesFrom=- tiesTo=-
+  #7 line=6 cols=[34,35) ticks=80640..92160 note=60 track=1 bar=3 tiesFrom=- tiesTo=-
+  #8 line=6 cols=[42,43) ticks=92160..103680 note=60 track=1 bar=4 tiesFrom=- tiesTo=-
+  #9 line=6 cols=[44,45) ticks=103680..115200 note=60 track=1 bar=4 tiesFrom=- tiesTo=-
+  #10 line=6 cols=[53,54) ticks=115200..126720 note=60 track=1 bar=5 tiesFrom=- tiesTo=-
+  #11 line=6 cols=[55,56) ticks=126720..138240 note=60 track=1 bar=5 tiesFrom=- tiesTo=-
+  #12 line=6 cols=[64,65) ticks=138240..149760 note=60 track=1 bar=6 tiesFrom=- tiesTo=-
+  #13 line=6 cols=[66,67) ticks=149760..161280 note=60 track=1 bar=6 tiesFrom=- tiesTo=-
+  #14 line=6 cols=[74,75) ticks=161280..172800 note=60 track=1 bar=7 tiesFrom=- tiesTo=-
+  #15 line=6 cols=[76,77) ticks=172800..184320 note=60 track=1 bar=7 tiesFrom=- tiesTo=-
+  #16 line=7 cols=[7,8) ticks=184320..195840 note=60 track=1 bar=8 tiesFrom=- tiesTo=-
+  #17 line=7 cols=[9,10) ticks=195840..207360 note=60 track=1 bar=8 tiesFrom=- tiesTo=-
+  #18 line=7 cols=[18,19) ticks=207360..218880 note=60 track=1 bar=9 tiesFrom=- tiesTo=-
+  #19 line=7 cols=[20,21) ticks=218880..230400 note=60 track=1 bar=9 tiesFrom=- tiesTo=-
+  #20 line=7 cols=[26,27) ticks=230400..241920 note=60 track=1 bar=10 tiesFrom=- tiesTo=-
+  #21 line=7 cols=[28,29) ticks=241920..253440 note=60 track=1 bar=10 tiesFrom=- tiesTo=-
+  #22 line=7 cols=[34,35) ticks=253440..264960 note=60 track=1 bar=11 tiesFrom=- tiesTo=-
+  #23 line=7 cols=[36,37) ticks=264960..276480 note=60 track=1 bar=11 tiesFrom=- tiesTo=-
+  #24 line=7 cols=[43,44) ticks=276480..288000 note=60 track=1 bar=12 tiesFrom=- tiesTo=-
+  #25 line=7 cols=[45,46) ticks=288000..299520 note=60 track=1 bar=12 tiesFrom=- tiesTo=-
+  #26 line=7 cols=[52,53) ticks=299520..311040 note=60 track=1 bar=13 tiesFrom=- tiesTo=-
+  #27 line=7 cols=[54,55) ticks=311040..322560 note=60 track=1 bar=13 tiesFrom=- tiesTo=-
+  #28 line=7 cols=[60,61) ticks=322560..334080 note=60 track=1 bar=14 tiesFrom=- tiesTo=-
+  #29 line=7 cols=[62,63) ticks=334080..345600 note=60 track=1 bar=14 tiesFrom=- tiesTo=-
+  #30 line=7 cols=[70,71) ticks=345600..357120 note=60 track=1 bar=15 tiesFrom=- tiesTo=-
+  #31 line=7 cols=[72,73) ticks=357120..368640 note=60 track=1 bar=15 tiesFrom=- tiesTo=-
+== log: empty
+
+### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=375570 tracks=2
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
+  0 META tempo mpq=500000
+  0 META text type=0x03 "Test"
+  0 META type=0x58 data=02021808
+  0 META type=0x59 data=0000
+  0 META end_of_track
+-- track 1 (71 events)
+  0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  0 META text type=0x03 "Test"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  23040 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  23040 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  34560 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  34560 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  46080 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  46080 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  57600 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  57600 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  69120 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  69120 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  80640 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  80640 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  92160 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  92160 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  103680 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  103680 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  115200 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  115200 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  126720 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  126720 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  138240 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  138240 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  149760 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  149760 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  161280 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  161280 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  172800 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  172800 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  184320 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  184320 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  195840 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  195840 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  207360 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  207360 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  218880 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  218880 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  230400 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  230400 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  241920 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  241920 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  253440 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  253440 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  264960 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  264960 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  276480 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  276480 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  288000 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  288000 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  299520 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  299520 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  311040 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  311040 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  322560 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  322560 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  334080 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  334080 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  345600 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  345600 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  357120 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  357120 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  368640 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  375570 META end_of_track
+== abcInfo
+  title="Test"
+  composer=""
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=120 timeSignature=2/4 keySignature=C maj
+  hasTriplets=false hasMixTimings=false barCount=16 partCount=2 partSetups=2..2 empty=false
+  sourceFiles=[chord_accompaniment_qualities.abc]
+  part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..7 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+== regions (32)
+  #0 line=6 cols=[4,5) ticks=0..11520 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=6 cols=[6,7) ticks=11520..23040 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #2 line=6 cols=[12,13) ticks=23040..34560 note=60 track=1 bar=1 tiesFrom=- tiesTo=-
+  #3 line=6 cols=[14,15) ticks=34560..46080 note=60 track=1 bar=1 tiesFrom=- tiesTo=-
+  #4 line=6 cols=[23,24) ticks=46080..57600 note=60 track=1 bar=2 tiesFrom=- tiesTo=-
+  #5 line=6 cols=[25,26) ticks=57600..69120 note=60 track=1 bar=2 tiesFrom=- tiesTo=-
+  #6 line=6 cols=[32,33) ticks=69120..80640 note=60 track=1 bar=3 tiesFrom=- tiesTo=-
+  #7 line=6 cols=[34,35) ticks=80640..92160 note=60 track=1 bar=3 tiesFrom=- tiesTo=-
+  #8 line=6 cols=[42,43) ticks=92160..103680 note=60 track=1 bar=4 tiesFrom=- tiesTo=-
+  #9 line=6 cols=[44,45) ticks=103680..115200 note=60 track=1 bar=4 tiesFrom=- tiesTo=-
+  #10 line=6 cols=[53,54) ticks=115200..126720 note=60 track=1 bar=5 tiesFrom=- tiesTo=-
+  #11 line=6 cols=[55,56) ticks=126720..138240 note=60 track=1 bar=5 tiesFrom=- tiesTo=-
+  #12 line=6 cols=[64,65) ticks=138240..149760 note=60 track=1 bar=6 tiesFrom=- tiesTo=-
+  #13 line=6 cols=[66,67) ticks=149760..161280 note=60 track=1 bar=6 tiesFrom=- tiesTo=-
+  #14 line=6 cols=[74,75) ticks=161280..172800 note=60 track=1 bar=7 tiesFrom=- tiesTo=-
+  #15 line=6 cols=[76,77) ticks=172800..184320 note=60 track=1 bar=7 tiesFrom=- tiesTo=-
+  #16 line=7 cols=[7,8) ticks=184320..195840 note=60 track=1 bar=8 tiesFrom=- tiesTo=-
+  #17 line=7 cols=[9,10) ticks=195840..207360 note=60 track=1 bar=8 tiesFrom=- tiesTo=-
+  #18 line=7 cols=[18,19) ticks=207360..218880 note=60 track=1 bar=9 tiesFrom=- tiesTo=-
+  #19 line=7 cols=[20,21) ticks=218880..230400 note=60 track=1 bar=9 tiesFrom=- tiesTo=-
+  #20 line=7 cols=[26,27) ticks=230400..241920 note=60 track=1 bar=10 tiesFrom=- tiesTo=-
+  #21 line=7 cols=[28,29) ticks=241920..253440 note=60 track=1 bar=10 tiesFrom=- tiesTo=-
+  #22 line=7 cols=[34,35) ticks=253440..264960 note=60 track=1 bar=11 tiesFrom=- tiesTo=-
+  #23 line=7 cols=[36,37) ticks=264960..276480 note=60 track=1 bar=11 tiesFrom=- tiesTo=-
+  #24 line=7 cols=[43,44) ticks=276480..288000 note=60 track=1 bar=12 tiesFrom=- tiesTo=-
+  #25 line=7 cols=[45,46) ticks=288000..299520 note=60 track=1 bar=12 tiesFrom=- tiesTo=-
+  #26 line=7 cols=[52,53) ticks=299520..311040 note=60 track=1 bar=13 tiesFrom=- tiesTo=-
+  #27 line=7 cols=[54,55) ticks=311040..322560 note=60 track=1 bar=13 tiesFrom=- tiesTo=-
+  #28 line=7 cols=[60,61) ticks=322560..334080 note=60 track=1 bar=14 tiesFrom=- tiesTo=-
+  #29 line=7 cols=[62,63) ticks=334080..345600 note=60 track=1 bar=14 tiesFrom=- tiesTo=-
+  #30 line=7 cols=[70,71) ticks=345600..357120 note=60 track=1 bar=15 tiesFrom=- tiesTo=-
+  #31 line=7 cols=[72,73) ticks=357120..368640 note=60 track=1 bar=15 tiesFrom=- tiesTo=-
+== log: empty
+
+### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=368640 tracks=4
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
+  0 META tempo mpq=500000
+  0 META text type=0x03 "Test"
+  0 META type=0x58 data=02021808
+  0 META type=0x59 data=0000
+  0 META end_of_track
+-- track 1 (70 events)
+  0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  0 META text type=0x03 "Test"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=91 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  23040 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  23040 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  34560 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  34560 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  46080 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  46080 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  57600 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  57600 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  69120 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  69120 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  80640 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  80640 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  92160 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  92160 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  103680 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  103680 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  115200 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  115200 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  126720 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  126720 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  138240 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  138240 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  149760 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  149760 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  161280 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  161280 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  172800 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  172800 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  184320 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  184320 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  195840 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  195840 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  207360 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  207360 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  218880 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  218880 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  230400 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  230400 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  241920 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  241920 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  253440 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  253440 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  264960 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  264960 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  276480 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  276480 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  288000 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  288000 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  299520 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  299520 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  311040 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  311040 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  322560 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  322560 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  334080 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  334080 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  345600 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  345600 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  357120 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  357120 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  368640 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  368640 META end_of_track
+-- track 2 (38 events)
+  0 PROGRAM_CHANGE ch=1 d1=32 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  0 META text type=0x03 "Test - Bass"
+  0 CONTROL_CHANGE ch=1 d1=10 d2=76 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=1 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=1 d1=93 d2=0 [LotroShortMessage]
+  11520 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  23040 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  34560 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  46080 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  57600 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  69120 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  80640 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  92160 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  103680 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  115200 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  126720 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  138240 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  149760 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  161280 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  172800 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  184320 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  195840 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  207360 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  218880 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  230400 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  241920 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  253440 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  264960 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  276480 NOTE_ON ch=1 d1=42 d2=80 [LotroShortMessage]
+  288000 NOTE_OFF ch=1 d1=42 d2=80 [LotroShortMessage]
+  299520 NOTE_ON ch=1 d1=46 d2=80 [LotroShortMessage]
+  311040 NOTE_OFF ch=1 d1=46 d2=80 [LotroShortMessage]
+  322560 NOTE_ON ch=1 d1=39 d2=80 [LotroShortMessage]
+  334080 NOTE_OFF ch=1 d1=39 d2=80 [LotroShortMessage]
+  345600 NOTE_ON ch=1 d1=39 d2=80 [LotroShortMessage]
+  357120 NOTE_OFF ch=1 d1=39 d2=80 [LotroShortMessage]
+  357120 META end_of_track
+-- track 3 (114 events)
+  0 PROGRAM_CHANGE ch=2 d1=24 d2=0 [LotroShortMessage]
+  0 META text type=0x03 "Test - Chords"
+  0 CONTROL_CHANGE ch=2 d1=10 d2=37 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=2 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=2 d1=93 d2=0 [LotroShortMessage]
+  11520 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  11520 NOTE_ON ch=2 d1=51 d2=64 [LotroShortMessage]
+  11520 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  23040 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  23040 NOTE_OFF ch=2 d1=51 d2=64 [LotroShortMessage]
+  23040 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  34560 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  34560 NOTE_ON ch=2 d1=52 d2=64 [LotroShortMessage]
+  34560 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  34560 NOTE_ON ch=2 d1=58 d2=64 [LotroShortMessage]
+  46080 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  46080 NOTE_OFF ch=2 d1=52 d2=64 [LotroShortMessage]
+  46080 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  46080 NOTE_OFF ch=2 d1=58 d2=64 [LotroShortMessage]
+  57600 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  57600 NOTE_ON ch=2 d1=52 d2=64 [LotroShortMessage]
+  57600 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  57600 NOTE_ON ch=2 d1=59 d2=64 [LotroShortMessage]
+  69120 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  69120 NOTE_OFF ch=2 d1=52 d2=64 [LotroShortMessage]
+  69120 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  69120 NOTE_OFF ch=2 d1=59 d2=64 [LotroShortMessage]
+  80640 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  80640 NOTE_ON ch=2 d1=51 d2=64 [LotroShortMessage]
+  80640 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  80640 NOTE_ON ch=2 d1=58 d2=64 [LotroShortMessage]
+  92160 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  92160 NOTE_OFF ch=2 d1=51 d2=64 [LotroShortMessage]
+  92160 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  92160 NOTE_OFF ch=2 d1=58 d2=64 [LotroShortMessage]
+  103680 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  103680 NOTE_ON ch=2 d1=51 d2=64 [LotroShortMessage]
+  103680 NOTE_ON ch=2 d1=54 d2=64 [LotroShortMessage]
+  115200 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  115200 NOTE_OFF ch=2 d1=51 d2=64 [LotroShortMessage]
+  115200 NOTE_OFF ch=2 d1=54 d2=64 [LotroShortMessage]
+  126720 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  126720 NOTE_ON ch=2 d1=51 d2=64 [LotroShortMessage]
+  126720 NOTE_ON ch=2 d1=54 d2=64 [LotroShortMessage]
+  126720 NOTE_ON ch=2 d1=57 d2=64 [LotroShortMessage]
+  138240 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  138240 NOTE_OFF ch=2 d1=51 d2=64 [LotroShortMessage]
+  138240 NOTE_OFF ch=2 d1=54 d2=64 [LotroShortMessage]
+  138240 NOTE_OFF ch=2 d1=57 d2=64 [LotroShortMessage]
+  149760 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  149760 NOTE_ON ch=2 d1=51 d2=64 [LotroShortMessage]
+  149760 NOTE_ON ch=2 d1=54 d2=64 [LotroShortMessage]
+  149760 NOTE_ON ch=2 d1=58 d2=64 [LotroShortMessage]
+  161280 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  161280 NOTE_OFF ch=2 d1=51 d2=64 [LotroShortMessage]
+  161280 NOTE_OFF ch=2 d1=54 d2=64 [LotroShortMessage]
+  161280 NOTE_OFF ch=2 d1=58 d2=64 [LotroShortMessage]
+  172800 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  172800 NOTE_ON ch=2 d1=52 d2=64 [LotroShortMessage]
+  172800 NOTE_ON ch=2 d1=56 d2=64 [LotroShortMessage]
+  184320 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  184320 NOTE_OFF ch=2 d1=52 d2=64 [LotroShortMessage]
+  184320 NOTE_OFF ch=2 d1=56 d2=64 [LotroShortMessage]
+  195840 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  195840 NOTE_ON ch=2 d1=53 d2=64 [LotroShortMessage]
+  195840 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  207360 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  207360 NOTE_OFF ch=2 d1=53 d2=64 [LotroShortMessage]
+  207360 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  218880 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  218880 NOTE_ON ch=2 d1=50 d2=64 [LotroShortMessage]
+  218880 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  230400 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  230400 NOTE_OFF ch=2 d1=50 d2=64 [LotroShortMessage]
+  230400 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  241920 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  241920 NOTE_ON ch=2 d1=52 d2=64 [LotroShortMessage]
+  241920 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  241920 NOTE_ON ch=2 d1=57 d2=64 [LotroShortMessage]
+  253440 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  253440 NOTE_OFF ch=2 d1=52 d2=64 [LotroShortMessage]
+  253440 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  253440 NOTE_OFF ch=2 d1=57 d2=64 [LotroShortMessage]
+  264960 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  264960 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  276480 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  276480 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  288000 NOTE_ON ch=2 d1=54 d2=64 [LotroShortMessage]
+  288000 NOTE_ON ch=2 d1=57 d2=64 [LotroShortMessage]
+  288000 NOTE_ON ch=2 d1=61 d2=64 [LotroShortMessage]
+  299520 NOTE_OFF ch=2 d1=54 d2=64 [LotroShortMessage]
+  299520 NOTE_OFF ch=2 d1=57 d2=64 [LotroShortMessage]
+  299520 NOTE_OFF ch=2 d1=61 d2=64 [LotroShortMessage]
+  311040 NOTE_ON ch=2 d1=58 d2=64 [LotroShortMessage]
+  311040 NOTE_ON ch=2 d1=62 d2=64 [LotroShortMessage]
+  311040 NOTE_ON ch=2 d1=65 d2=64 [LotroShortMessage]
+  311040 NOTE_ON ch=2 d1=68 d2=64 [LotroShortMessage]
+  322560 NOTE_OFF ch=2 d1=58 d2=64 [LotroShortMessage]
+  322560 NOTE_OFF ch=2 d1=62 d2=64 [LotroShortMessage]
+  322560 NOTE_OFF ch=2 d1=65 d2=64 [LotroShortMessage]
+  322560 NOTE_OFF ch=2 d1=68 d2=64 [LotroShortMessage]
+  334080 NOTE_ON ch=2 d1=51 d2=64 [LotroShortMessage]
+  334080 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  334080 NOTE_ON ch=2 d1=58 d2=64 [LotroShortMessage]
+  345600 NOTE_OFF ch=2 d1=51 d2=64 [LotroShortMessage]
+  345600 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  345600 NOTE_OFF ch=2 d1=58 d2=64 [LotroShortMessage]
+  357120 NOTE_ON ch=2 d1=51 d2=64 [LotroShortMessage]
+  357120 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  357120 NOTE_ON ch=2 d1=58 d2=64 [LotroShortMessage]
+  368640 NOTE_OFF ch=2 d1=51 d2=64 [LotroShortMessage]
+  368640 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  368640 NOTE_OFF ch=2 d1=58 d2=64 [LotroShortMessage]
+  368640 META end_of_track
+== abcInfo
+  title="Test"
+  composer=""
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=120 timeSignature=2/4 keySignature=C maj
+  hasTriplets=false hasMixTimings=false barCount=16 partCount=4 partSetups=4..4 empty=false
+  sourceFiles=[chord_accompaniment_qualities.abc]
+  part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..7 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=91 [LotroShortMessage]
+  part 2: number=0 name="Test - Bass" fullName="Test - Bass" instrument=BASIC_THEORBO madeFor=false userPan=null lines=0..7 pan=0 CONTROL_CHANGE ch=1 d1=10 d2=76 [LotroShortMessage]
+  part 3: number=0 name="Test - Chords" fullName="Test - Chords" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..7 pan=0 CONTROL_CHANGE ch=2 d1=10 d2=37 [LotroShortMessage]
+== regions (32)
+  #0 line=6 cols=[4,5) ticks=0..11520 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=6 cols=[6,7) ticks=11520..23040 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #2 line=6 cols=[12,13) ticks=23040..34560 note=60 track=1 bar=1 tiesFrom=- tiesTo=-
+  #3 line=6 cols=[14,15) ticks=34560..46080 note=60 track=1 bar=1 tiesFrom=- tiesTo=-
+  #4 line=6 cols=[23,24) ticks=46080..57600 note=60 track=1 bar=2 tiesFrom=- tiesTo=-
+  #5 line=6 cols=[25,26) ticks=57600..69120 note=60 track=1 bar=2 tiesFrom=- tiesTo=-
+  #6 line=6 cols=[32,33) ticks=69120..80640 note=60 track=1 bar=3 tiesFrom=- tiesTo=-
+  #7 line=6 cols=[34,35) ticks=80640..92160 note=60 track=1 bar=3 tiesFrom=- tiesTo=-
+  #8 line=6 cols=[42,43) ticks=92160..103680 note=60 track=1 bar=4 tiesFrom=- tiesTo=-
+  #9 line=6 cols=[44,45) ticks=103680..115200 note=60 track=1 bar=4 tiesFrom=- tiesTo=-
+  #10 line=6 cols=[53,54) ticks=115200..126720 note=60 track=1 bar=5 tiesFrom=- tiesTo=-
+  #11 line=6 cols=[55,56) ticks=126720..138240 note=60 track=1 bar=5 tiesFrom=- tiesTo=-
+  #12 line=6 cols=[64,65) ticks=138240..149760 note=60 track=1 bar=6 tiesFrom=- tiesTo=-
+  #13 line=6 cols=[66,67) ticks=149760..161280 note=60 track=1 bar=6 tiesFrom=- tiesTo=-
+  #14 line=6 cols=[74,75) ticks=161280..172800 note=60 track=1 bar=7 tiesFrom=- tiesTo=-
+  #15 line=6 cols=[76,77) ticks=172800..184320 note=60 track=1 bar=7 tiesFrom=- tiesTo=-
+  #16 line=7 cols=[7,8) ticks=184320..195840 note=60 track=1 bar=8 tiesFrom=- tiesTo=-
+  #17 line=7 cols=[9,10) ticks=195840..207360 note=60 track=1 bar=8 tiesFrom=- tiesTo=-
+  #18 line=7 cols=[18,19) ticks=207360..218880 note=60 track=1 bar=9 tiesFrom=- tiesTo=-
+  #19 line=7 cols=[20,21) ticks=218880..230400 note=60 track=1 bar=9 tiesFrom=- tiesTo=-
+  #20 line=7 cols=[26,27) ticks=230400..241920 note=60 track=1 bar=10 tiesFrom=- tiesTo=-
+  #21 line=7 cols=[28,29) ticks=241920..253440 note=60 track=1 bar=10 tiesFrom=- tiesTo=-
+  #22 line=7 cols=[34,35) ticks=253440..264960 note=60 track=1 bar=11 tiesFrom=- tiesTo=-
+  #23 line=7 cols=[36,37) ticks=264960..276480 note=60 track=1 bar=11 tiesFrom=- tiesTo=-
+  #24 line=7 cols=[43,44) ticks=276480..288000 note=60 track=1 bar=12 tiesFrom=- tiesTo=-
+  #25 line=7 cols=[45,46) ticks=288000..299520 note=60 track=1 bar=12 tiesFrom=- tiesTo=-
+  #26 line=7 cols=[52,53) ticks=299520..311040 note=60 track=1 bar=13 tiesFrom=- tiesTo=-
+  #27 line=7 cols=[54,55) ticks=311040..322560 note=60 track=1 bar=13 tiesFrom=- tiesTo=-
+  #28 line=7 cols=[60,61) ticks=322560..334080 note=60 track=1 bar=14 tiesFrom=- tiesTo=-
+  #29 line=7 cols=[62,63) ticks=334080..345600 note=60 track=1 bar=14 tiesFrom=- tiesTo=-
+  #30 line=7 cols=[70,71) ticks=345600..357120 note=60 track=1 bar=15 tiesFrom=- tiesTo=-
+  #31 line=7 cols=[72,73) ticks=357120..368640 note=60 track=1 bar=15 tiesFrom=- tiesTo=-
+== log: empty
+
+### profile MAESTRO_NEW_LOTRO (useLotroInstruments=false, enableLotroErrors=false, Lotro Abc)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=368640 tracks=4
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
+  0 META tempo mpq=500000
+  0 META text type=0x03 "Test"
+  0 META type=0x58 data=02021808
+  0 META type=0x59 data=0000
+  0 META end_of_track
+-- track 1 (70 events)
+  0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  0 META text type=0x03 "Test"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=91 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  23040 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  23040 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  34560 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  34560 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  46080 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  46080 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  57600 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  57600 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  69120 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  69120 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  80640 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  80640 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  92160 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  92160 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  103680 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  103680 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  115200 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  115200 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  126720 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  126720 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  138240 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  138240 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  149760 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  149760 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  161280 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  161280 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  172800 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  172800 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  184320 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  184320 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  195840 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  195840 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  207360 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  207360 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  218880 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  218880 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  230400 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  230400 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  241920 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  241920 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  253440 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  253440 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  264960 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  264960 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  276480 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  276480 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  288000 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  288000 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  299520 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  299520 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  311040 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  311040 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  322560 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  322560 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  334080 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  334080 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  345600 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  345600 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  357120 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  357120 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  368640 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  368640 META end_of_track
+-- track 2 (38 events)
+  0 PROGRAM_CHANGE ch=1 d1=32 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  0 META text type=0x03 "Test - Bass"
+  0 CONTROL_CHANGE ch=1 d1=10 d2=76 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=1 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=1 d1=93 d2=0 [LotroShortMessage]
+  11520 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  23040 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  34560 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  46080 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  57600 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  69120 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  80640 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  92160 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  103680 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  115200 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  126720 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  138240 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  149760 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  161280 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  172800 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  184320 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  195840 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  207360 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  218880 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  230400 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  241920 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  253440 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  264960 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  276480 NOTE_ON ch=1 d1=42 d2=80 [LotroShortMessage]
+  288000 NOTE_OFF ch=1 d1=42 d2=80 [LotroShortMessage]
+  299520 NOTE_ON ch=1 d1=46 d2=80 [LotroShortMessage]
+  311040 NOTE_OFF ch=1 d1=46 d2=80 [LotroShortMessage]
+  322560 NOTE_ON ch=1 d1=39 d2=80 [LotroShortMessage]
+  334080 NOTE_OFF ch=1 d1=39 d2=80 [LotroShortMessage]
+  345600 NOTE_ON ch=1 d1=39 d2=80 [LotroShortMessage]
+  357120 NOTE_OFF ch=1 d1=39 d2=80 [LotroShortMessage]
+  357120 META end_of_track
+-- track 3 (114 events)
+  0 PROGRAM_CHANGE ch=2 d1=24 d2=0 [LotroShortMessage]
+  0 META text type=0x03 "Test - Chords"
+  0 CONTROL_CHANGE ch=2 d1=10 d2=37 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=2 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=2 d1=93 d2=0 [LotroShortMessage]
+  11520 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  11520 NOTE_ON ch=2 d1=51 d2=64 [LotroShortMessage]
+  11520 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  23040 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  23040 NOTE_OFF ch=2 d1=51 d2=64 [LotroShortMessage]
+  23040 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  34560 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  34560 NOTE_ON ch=2 d1=52 d2=64 [LotroShortMessage]
+  34560 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  34560 NOTE_ON ch=2 d1=58 d2=64 [LotroShortMessage]
+  46080 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  46080 NOTE_OFF ch=2 d1=52 d2=64 [LotroShortMessage]
+  46080 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  46080 NOTE_OFF ch=2 d1=58 d2=64 [LotroShortMessage]
+  57600 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  57600 NOTE_ON ch=2 d1=52 d2=64 [LotroShortMessage]
+  57600 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  57600 NOTE_ON ch=2 d1=59 d2=64 [LotroShortMessage]
+  69120 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  69120 NOTE_OFF ch=2 d1=52 d2=64 [LotroShortMessage]
+  69120 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  69120 NOTE_OFF ch=2 d1=59 d2=64 [LotroShortMessage]
+  80640 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  80640 NOTE_ON ch=2 d1=51 d2=64 [LotroShortMessage]
+  80640 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  80640 NOTE_ON ch=2 d1=58 d2=64 [LotroShortMessage]
+  92160 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  92160 NOTE_OFF ch=2 d1=51 d2=64 [LotroShortMessage]
+  92160 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  92160 NOTE_OFF ch=2 d1=58 d2=64 [LotroShortMessage]
+  103680 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  103680 NOTE_ON ch=2 d1=51 d2=64 [LotroShortMessage]
+  103680 NOTE_ON ch=2 d1=54 d2=64 [LotroShortMessage]
+  115200 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  115200 NOTE_OFF ch=2 d1=51 d2=64 [LotroShortMessage]
+  115200 NOTE_OFF ch=2 d1=54 d2=64 [LotroShortMessage]
+  126720 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  126720 NOTE_ON ch=2 d1=51 d2=64 [LotroShortMessage]
+  126720 NOTE_ON ch=2 d1=54 d2=64 [LotroShortMessage]
+  126720 NOTE_ON ch=2 d1=57 d2=64 [LotroShortMessage]
+  138240 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  138240 NOTE_OFF ch=2 d1=51 d2=64 [LotroShortMessage]
+  138240 NOTE_OFF ch=2 d1=54 d2=64 [LotroShortMessage]
+  138240 NOTE_OFF ch=2 d1=57 d2=64 [LotroShortMessage]
+  149760 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  149760 NOTE_ON ch=2 d1=51 d2=64 [LotroShortMessage]
+  149760 NOTE_ON ch=2 d1=54 d2=64 [LotroShortMessage]
+  149760 NOTE_ON ch=2 d1=58 d2=64 [LotroShortMessage]
+  161280 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  161280 NOTE_OFF ch=2 d1=51 d2=64 [LotroShortMessage]
+  161280 NOTE_OFF ch=2 d1=54 d2=64 [LotroShortMessage]
+  161280 NOTE_OFF ch=2 d1=58 d2=64 [LotroShortMessage]
+  172800 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  172800 NOTE_ON ch=2 d1=52 d2=64 [LotroShortMessage]
+  172800 NOTE_ON ch=2 d1=56 d2=64 [LotroShortMessage]
+  184320 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  184320 NOTE_OFF ch=2 d1=52 d2=64 [LotroShortMessage]
+  184320 NOTE_OFF ch=2 d1=56 d2=64 [LotroShortMessage]
+  195840 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  195840 NOTE_ON ch=2 d1=53 d2=64 [LotroShortMessage]
+  195840 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  207360 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  207360 NOTE_OFF ch=2 d1=53 d2=64 [LotroShortMessage]
+  207360 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  218880 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  218880 NOTE_ON ch=2 d1=50 d2=64 [LotroShortMessage]
+  218880 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  230400 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  230400 NOTE_OFF ch=2 d1=50 d2=64 [LotroShortMessage]
+  230400 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  241920 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  241920 NOTE_ON ch=2 d1=52 d2=64 [LotroShortMessage]
+  241920 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  241920 NOTE_ON ch=2 d1=57 d2=64 [LotroShortMessage]
+  253440 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  253440 NOTE_OFF ch=2 d1=52 d2=64 [LotroShortMessage]
+  253440 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  253440 NOTE_OFF ch=2 d1=57 d2=64 [LotroShortMessage]
+  264960 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  264960 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  276480 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  276480 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  288000 NOTE_ON ch=2 d1=54 d2=64 [LotroShortMessage]
+  288000 NOTE_ON ch=2 d1=57 d2=64 [LotroShortMessage]
+  288000 NOTE_ON ch=2 d1=61 d2=64 [LotroShortMessage]
+  299520 NOTE_OFF ch=2 d1=54 d2=64 [LotroShortMessage]
+  299520 NOTE_OFF ch=2 d1=57 d2=64 [LotroShortMessage]
+  299520 NOTE_OFF ch=2 d1=61 d2=64 [LotroShortMessage]
+  311040 NOTE_ON ch=2 d1=58 d2=64 [LotroShortMessage]
+  311040 NOTE_ON ch=2 d1=62 d2=64 [LotroShortMessage]
+  311040 NOTE_ON ch=2 d1=65 d2=64 [LotroShortMessage]
+  311040 NOTE_ON ch=2 d1=68 d2=64 [LotroShortMessage]
+  322560 NOTE_OFF ch=2 d1=58 d2=64 [LotroShortMessage]
+  322560 NOTE_OFF ch=2 d1=62 d2=64 [LotroShortMessage]
+  322560 NOTE_OFF ch=2 d1=65 d2=64 [LotroShortMessage]
+  322560 NOTE_OFF ch=2 d1=68 d2=64 [LotroShortMessage]
+  334080 NOTE_ON ch=2 d1=51 d2=64 [LotroShortMessage]
+  334080 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  334080 NOTE_ON ch=2 d1=58 d2=64 [LotroShortMessage]
+  345600 NOTE_OFF ch=2 d1=51 d2=64 [LotroShortMessage]
+  345600 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  345600 NOTE_OFF ch=2 d1=58 d2=64 [LotroShortMessage]
+  357120 NOTE_ON ch=2 d1=51 d2=64 [LotroShortMessage]
+  357120 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  357120 NOTE_ON ch=2 d1=58 d2=64 [LotroShortMessage]
+  368640 NOTE_OFF ch=2 d1=51 d2=64 [LotroShortMessage]
+  368640 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  368640 NOTE_OFF ch=2 d1=58 d2=64 [LotroShortMessage]
+  368640 META end_of_track
+== abcInfo
+  title="Test"
+  composer=""
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=120 timeSignature=2/4 keySignature=C maj
+  hasTriplets=false hasMixTimings=false barCount=16 partCount=4 partSetups=4..4 empty=false
+  sourceFiles=[chord_accompaniment_qualities.abc]
+  part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..7 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=91 [LotroShortMessage]
+  part 2: number=0 name="Test - Bass" fullName="Test - Bass" instrument=BASIC_THEORBO madeFor=false userPan=null lines=0..7 pan=0 CONTROL_CHANGE ch=1 d1=10 d2=76 [LotroShortMessage]
+  part 3: number=0 name="Test - Chords" fullName="Test - Chords" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..7 pan=0 CONTROL_CHANGE ch=2 d1=10 d2=37 [LotroShortMessage]
+== regions (32)
+  #0 line=6 cols=[4,5) ticks=0..11520 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=6 cols=[6,7) ticks=11520..23040 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #2 line=6 cols=[12,13) ticks=23040..34560 note=60 track=1 bar=1 tiesFrom=- tiesTo=-
+  #3 line=6 cols=[14,15) ticks=34560..46080 note=60 track=1 bar=1 tiesFrom=- tiesTo=-
+  #4 line=6 cols=[23,24) ticks=46080..57600 note=60 track=1 bar=2 tiesFrom=- tiesTo=-
+  #5 line=6 cols=[25,26) ticks=57600..69120 note=60 track=1 bar=2 tiesFrom=- tiesTo=-
+  #6 line=6 cols=[32,33) ticks=69120..80640 note=60 track=1 bar=3 tiesFrom=- tiesTo=-
+  #7 line=6 cols=[34,35) ticks=80640..92160 note=60 track=1 bar=3 tiesFrom=- tiesTo=-
+  #8 line=6 cols=[42,43) ticks=92160..103680 note=60 track=1 bar=4 tiesFrom=- tiesTo=-
+  #9 line=6 cols=[44,45) ticks=103680..115200 note=60 track=1 bar=4 tiesFrom=- tiesTo=-
+  #10 line=6 cols=[53,54) ticks=115200..126720 note=60 track=1 bar=5 tiesFrom=- tiesTo=-
+  #11 line=6 cols=[55,56) ticks=126720..138240 note=60 track=1 bar=5 tiesFrom=- tiesTo=-
+  #12 line=6 cols=[64,65) ticks=138240..149760 note=60 track=1 bar=6 tiesFrom=- tiesTo=-
+  #13 line=6 cols=[66,67) ticks=149760..161280 note=60 track=1 bar=6 tiesFrom=- tiesTo=-
+  #14 line=6 cols=[74,75) ticks=161280..172800 note=60 track=1 bar=7 tiesFrom=- tiesTo=-
+  #15 line=6 cols=[76,77) ticks=172800..184320 note=60 track=1 bar=7 tiesFrom=- tiesTo=-
+  #16 line=7 cols=[7,8) ticks=184320..195840 note=60 track=1 bar=8 tiesFrom=- tiesTo=-
+  #17 line=7 cols=[9,10) ticks=195840..207360 note=60 track=1 bar=8 tiesFrom=- tiesTo=-
+  #18 line=7 cols=[18,19) ticks=207360..218880 note=60 track=1 bar=9 tiesFrom=- tiesTo=-
+  #19 line=7 cols=[20,21) ticks=218880..230400 note=60 track=1 bar=9 tiesFrom=- tiesTo=-
+  #20 line=7 cols=[26,27) ticks=230400..241920 note=60 track=1 bar=10 tiesFrom=- tiesTo=-
+  #21 line=7 cols=[28,29) ticks=241920..253440 note=60 track=1 bar=10 tiesFrom=- tiesTo=-
+  #22 line=7 cols=[34,35) ticks=253440..264960 note=60 track=1 bar=11 tiesFrom=- tiesTo=-
+  #23 line=7 cols=[36,37) ticks=264960..276480 note=60 track=1 bar=11 tiesFrom=- tiesTo=-
+  #24 line=7 cols=[43,44) ticks=276480..288000 note=60 track=1 bar=12 tiesFrom=- tiesTo=-
+  #25 line=7 cols=[45,46) ticks=288000..299520 note=60 track=1 bar=12 tiesFrom=- tiesTo=-
+  #26 line=7 cols=[52,53) ticks=299520..311040 note=60 track=1 bar=13 tiesFrom=- tiesTo=-
+  #27 line=7 cols=[54,55) ticks=311040..322560 note=60 track=1 bar=13 tiesFrom=- tiesTo=-
+  #28 line=7 cols=[60,61) ticks=322560..334080 note=60 track=1 bar=14 tiesFrom=- tiesTo=-
+  #29 line=7 cols=[62,63) ticks=334080..345600 note=60 track=1 bar=14 tiesFrom=- tiesTo=-
+  #30 line=7 cols=[70,71) ticks=345600..357120 note=60 track=1 bar=15 tiesFrom=- tiesTo=-
+  #31 line=7 cols=[72,73) ticks=357120..368640 note=60 track=1 bar=15 tiesFrom=- tiesTo=-
+== log: empty
+
+### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=368640 tracks=4
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
+  0 META tempo mpq=500000
+  0 META text type=0x03 "Test"
+  0 META type=0x58 data=02021808
+  0 META type=0x59 data=0000
+  0 META end_of_track
+-- track 1 (70 events)
+  0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  0 META text type=0x03 "Test"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=91 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  23040 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  23040 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  34560 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  34560 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  46080 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  46080 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  57600 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  57600 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  69120 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  69120 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  80640 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  80640 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  92160 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  92160 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  103680 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  103680 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  115200 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  115200 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  126720 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  126720 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  138240 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  138240 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  149760 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  149760 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  161280 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  161280 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  172800 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  172800 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  184320 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  184320 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  195840 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  195840 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  207360 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  207360 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  218880 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  218880 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  230400 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  230400 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  241920 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  241920 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  253440 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  253440 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  264960 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  264960 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  276480 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  276480 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  288000 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  288000 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  299520 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  299520 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  311040 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  311040 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  322560 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  322560 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  334080 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  334080 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  345600 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  345600 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  357120 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  357120 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  368640 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  368640 META end_of_track
+-- track 2 (38 events)
+  0 PROGRAM_CHANGE ch=1 d1=32 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  0 META text type=0x03 "Test - Bass"
+  0 CONTROL_CHANGE ch=1 d1=10 d2=76 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=1 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=1 d1=93 d2=0 [LotroShortMessage]
+  11520 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  23040 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  34560 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  46080 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  57600 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  69120 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  80640 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  92160 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  103680 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  115200 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  126720 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  138240 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  149760 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  161280 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  172800 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  184320 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  195840 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  207360 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  218880 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  230400 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  241920 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  253440 NOTE_ON ch=1 d1=36 d2=80 [LotroShortMessage]
+  264960 NOTE_OFF ch=1 d1=36 d2=80 [LotroShortMessage]
+  276480 NOTE_ON ch=1 d1=42 d2=80 [LotroShortMessage]
+  288000 NOTE_OFF ch=1 d1=42 d2=80 [LotroShortMessage]
+  299520 NOTE_ON ch=1 d1=46 d2=80 [LotroShortMessage]
+  311040 NOTE_OFF ch=1 d1=46 d2=80 [LotroShortMessage]
+  322560 NOTE_ON ch=1 d1=39 d2=80 [LotroShortMessage]
+  334080 NOTE_OFF ch=1 d1=39 d2=80 [LotroShortMessage]
+  345600 NOTE_ON ch=1 d1=39 d2=80 [LotroShortMessage]
+  357120 NOTE_OFF ch=1 d1=39 d2=80 [LotroShortMessage]
+  357120 META end_of_track
+-- track 3 (114 events)
+  0 PROGRAM_CHANGE ch=2 d1=24 d2=0 [LotroShortMessage]
+  0 META text type=0x03 "Test - Chords"
+  0 CONTROL_CHANGE ch=2 d1=10 d2=37 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=2 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=2 d1=93 d2=0 [LotroShortMessage]
+  11520 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  11520 NOTE_ON ch=2 d1=51 d2=64 [LotroShortMessage]
+  11520 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  23040 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  23040 NOTE_OFF ch=2 d1=51 d2=64 [LotroShortMessage]
+  23040 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  34560 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  34560 NOTE_ON ch=2 d1=52 d2=64 [LotroShortMessage]
+  34560 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  34560 NOTE_ON ch=2 d1=58 d2=64 [LotroShortMessage]
+  46080 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  46080 NOTE_OFF ch=2 d1=52 d2=64 [LotroShortMessage]
+  46080 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  46080 NOTE_OFF ch=2 d1=58 d2=64 [LotroShortMessage]
+  57600 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  57600 NOTE_ON ch=2 d1=52 d2=64 [LotroShortMessage]
+  57600 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  57600 NOTE_ON ch=2 d1=59 d2=64 [LotroShortMessage]
+  69120 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  69120 NOTE_OFF ch=2 d1=52 d2=64 [LotroShortMessage]
+  69120 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  69120 NOTE_OFF ch=2 d1=59 d2=64 [LotroShortMessage]
+  80640 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  80640 NOTE_ON ch=2 d1=51 d2=64 [LotroShortMessage]
+  80640 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  80640 NOTE_ON ch=2 d1=58 d2=64 [LotroShortMessage]
+  92160 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  92160 NOTE_OFF ch=2 d1=51 d2=64 [LotroShortMessage]
+  92160 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  92160 NOTE_OFF ch=2 d1=58 d2=64 [LotroShortMessage]
+  103680 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  103680 NOTE_ON ch=2 d1=51 d2=64 [LotroShortMessage]
+  103680 NOTE_ON ch=2 d1=54 d2=64 [LotroShortMessage]
+  115200 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  115200 NOTE_OFF ch=2 d1=51 d2=64 [LotroShortMessage]
+  115200 NOTE_OFF ch=2 d1=54 d2=64 [LotroShortMessage]
+  126720 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  126720 NOTE_ON ch=2 d1=51 d2=64 [LotroShortMessage]
+  126720 NOTE_ON ch=2 d1=54 d2=64 [LotroShortMessage]
+  126720 NOTE_ON ch=2 d1=57 d2=64 [LotroShortMessage]
+  138240 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  138240 NOTE_OFF ch=2 d1=51 d2=64 [LotroShortMessage]
+  138240 NOTE_OFF ch=2 d1=54 d2=64 [LotroShortMessage]
+  138240 NOTE_OFF ch=2 d1=57 d2=64 [LotroShortMessage]
+  149760 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  149760 NOTE_ON ch=2 d1=51 d2=64 [LotroShortMessage]
+  149760 NOTE_ON ch=2 d1=54 d2=64 [LotroShortMessage]
+  149760 NOTE_ON ch=2 d1=58 d2=64 [LotroShortMessage]
+  161280 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  161280 NOTE_OFF ch=2 d1=51 d2=64 [LotroShortMessage]
+  161280 NOTE_OFF ch=2 d1=54 d2=64 [LotroShortMessage]
+  161280 NOTE_OFF ch=2 d1=58 d2=64 [LotroShortMessage]
+  172800 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  172800 NOTE_ON ch=2 d1=52 d2=64 [LotroShortMessage]
+  172800 NOTE_ON ch=2 d1=56 d2=64 [LotroShortMessage]
+  184320 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  184320 NOTE_OFF ch=2 d1=52 d2=64 [LotroShortMessage]
+  184320 NOTE_OFF ch=2 d1=56 d2=64 [LotroShortMessage]
+  195840 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  195840 NOTE_ON ch=2 d1=53 d2=64 [LotroShortMessage]
+  195840 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  207360 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  207360 NOTE_OFF ch=2 d1=53 d2=64 [LotroShortMessage]
+  207360 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  218880 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  218880 NOTE_ON ch=2 d1=50 d2=64 [LotroShortMessage]
+  218880 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  230400 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  230400 NOTE_OFF ch=2 d1=50 d2=64 [LotroShortMessage]
+  230400 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  241920 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  241920 NOTE_ON ch=2 d1=52 d2=64 [LotroShortMessage]
+  241920 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  241920 NOTE_ON ch=2 d1=57 d2=64 [LotroShortMessage]
+  253440 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  253440 NOTE_OFF ch=2 d1=52 d2=64 [LotroShortMessage]
+  253440 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  253440 NOTE_OFF ch=2 d1=57 d2=64 [LotroShortMessage]
+  264960 NOTE_ON ch=2 d1=48 d2=64 [LotroShortMessage]
+  264960 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  276480 NOTE_OFF ch=2 d1=48 d2=64 [LotroShortMessage]
+  276480 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  288000 NOTE_ON ch=2 d1=54 d2=64 [LotroShortMessage]
+  288000 NOTE_ON ch=2 d1=57 d2=64 [LotroShortMessage]
+  288000 NOTE_ON ch=2 d1=61 d2=64 [LotroShortMessage]
+  299520 NOTE_OFF ch=2 d1=54 d2=64 [LotroShortMessage]
+  299520 NOTE_OFF ch=2 d1=57 d2=64 [LotroShortMessage]
+  299520 NOTE_OFF ch=2 d1=61 d2=64 [LotroShortMessage]
+  311040 NOTE_ON ch=2 d1=58 d2=64 [LotroShortMessage]
+  311040 NOTE_ON ch=2 d1=62 d2=64 [LotroShortMessage]
+  311040 NOTE_ON ch=2 d1=65 d2=64 [LotroShortMessage]
+  311040 NOTE_ON ch=2 d1=68 d2=64 [LotroShortMessage]
+  322560 NOTE_OFF ch=2 d1=58 d2=64 [LotroShortMessage]
+  322560 NOTE_OFF ch=2 d1=62 d2=64 [LotroShortMessage]
+  322560 NOTE_OFF ch=2 d1=65 d2=64 [LotroShortMessage]
+  322560 NOTE_OFF ch=2 d1=68 d2=64 [LotroShortMessage]
+  334080 NOTE_ON ch=2 d1=51 d2=64 [LotroShortMessage]
+  334080 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  334080 NOTE_ON ch=2 d1=58 d2=64 [LotroShortMessage]
+  345600 NOTE_OFF ch=2 d1=51 d2=64 [LotroShortMessage]
+  345600 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  345600 NOTE_OFF ch=2 d1=58 d2=64 [LotroShortMessage]
+  357120 NOTE_ON ch=2 d1=51 d2=64 [LotroShortMessage]
+  357120 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
+  357120 NOTE_ON ch=2 d1=58 d2=64 [LotroShortMessage]
+  368640 NOTE_OFF ch=2 d1=51 d2=64 [LotroShortMessage]
+  368640 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
+  368640 NOTE_OFF ch=2 d1=58 d2=64 [LotroShortMessage]
+  368640 META end_of_track
+== abcInfo
+  title="Test"
+  composer=""
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=120 timeSignature=2/4 keySignature=C maj
+  hasTriplets=false hasMixTimings=false barCount=16 partCount=4 partSetups=4..4 empty=false
+  sourceFiles=[chord_accompaniment_qualities.abc]
+  part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..7 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=91 [LotroShortMessage]
+  part 2: number=0 name="Test - Bass" fullName="Test - Bass" instrument=BASIC_THEORBO madeFor=false userPan=null lines=0..7 pan=0 CONTROL_CHANGE ch=1 d1=10 d2=76 [LotroShortMessage]
+  part 3: number=0 name="Test - Chords" fullName="Test - Chords" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..7 pan=0 CONTROL_CHANGE ch=2 d1=10 d2=37 [LotroShortMessage]
+== regions (32)
+  #0 line=6 cols=[4,5) ticks=0..11520 note=72 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=6 cols=[6,7) ticks=11520..23040 note=72 track=1 bar=0 tiesFrom=- tiesTo=-
+  #2 line=6 cols=[12,13) ticks=23040..34560 note=72 track=1 bar=1 tiesFrom=- tiesTo=-
+  #3 line=6 cols=[14,15) ticks=34560..46080 note=72 track=1 bar=1 tiesFrom=- tiesTo=-
+  #4 line=6 cols=[23,24) ticks=46080..57600 note=72 track=1 bar=2 tiesFrom=- tiesTo=-
+  #5 line=6 cols=[25,26) ticks=57600..69120 note=72 track=1 bar=2 tiesFrom=- tiesTo=-
+  #6 line=6 cols=[32,33) ticks=69120..80640 note=72 track=1 bar=3 tiesFrom=- tiesTo=-
+  #7 line=6 cols=[34,35) ticks=80640..92160 note=72 track=1 bar=3 tiesFrom=- tiesTo=-
+  #8 line=6 cols=[42,43) ticks=92160..103680 note=72 track=1 bar=4 tiesFrom=- tiesTo=-
+  #9 line=6 cols=[44,45) ticks=103680..115200 note=72 track=1 bar=4 tiesFrom=- tiesTo=-
+  #10 line=6 cols=[53,54) ticks=115200..126720 note=72 track=1 bar=5 tiesFrom=- tiesTo=-
+  #11 line=6 cols=[55,56) ticks=126720..138240 note=72 track=1 bar=5 tiesFrom=- tiesTo=-
+  #12 line=6 cols=[64,65) ticks=138240..149760 note=72 track=1 bar=6 tiesFrom=- tiesTo=-
+  #13 line=6 cols=[66,67) ticks=149760..161280 note=72 track=1 bar=6 tiesFrom=- tiesTo=-
+  #14 line=6 cols=[74,75) ticks=161280..172800 note=72 track=1 bar=7 tiesFrom=- tiesTo=-
+  #15 line=6 cols=[76,77) ticks=172800..184320 note=72 track=1 bar=7 tiesFrom=- tiesTo=-
+  #16 line=7 cols=[7,8) ticks=184320..195840 note=72 track=1 bar=8 tiesFrom=- tiesTo=-
+  #17 line=7 cols=[9,10) ticks=195840..207360 note=72 track=1 bar=8 tiesFrom=- tiesTo=-
+  #18 line=7 cols=[18,19) ticks=207360..218880 note=72 track=1 bar=9 tiesFrom=- tiesTo=-
+  #19 line=7 cols=[20,21) ticks=218880..230400 note=72 track=1 bar=9 tiesFrom=- tiesTo=-
+  #20 line=7 cols=[26,27) ticks=230400..241920 note=72 track=1 bar=10 tiesFrom=- tiesTo=-
+  #21 line=7 cols=[28,29) ticks=241920..253440 note=72 track=1 bar=10 tiesFrom=- tiesTo=-
+  #22 line=7 cols=[34,35) ticks=253440..264960 note=72 track=1 bar=11 tiesFrom=- tiesTo=-
+  #23 line=7 cols=[36,37) ticks=264960..276480 note=72 track=1 bar=11 tiesFrom=- tiesTo=-
+  #24 line=7 cols=[43,44) ticks=276480..288000 note=72 track=1 bar=12 tiesFrom=- tiesTo=-
+  #25 line=7 cols=[45,46) ticks=288000..299520 note=72 track=1 bar=12 tiesFrom=- tiesTo=-
+  #26 line=7 cols=[52,53) ticks=299520..311040 note=72 track=1 bar=13 tiesFrom=- tiesTo=-
+  #27 line=7 cols=[54,55) ticks=311040..322560 note=72 track=1 bar=13 tiesFrom=- tiesTo=-
+  #28 line=7 cols=[60,61) ticks=322560..334080 note=72 track=1 bar=14 tiesFrom=- tiesTo=-
+  #29 line=7 cols=[62,63) ticks=334080..345600 note=72 track=1 bar=14 tiesFrom=- tiesTo=-
+  #30 line=7 cols=[70,71) ticks=345600..357120 note=72 track=1 bar=15 tiesFrom=- tiesTo=-
+  #31 line=7 cols=[72,73) ticks=357120..368640 note=72 track=1 bar=15 tiesFrom=- tiesTo=-
+== log: empty
