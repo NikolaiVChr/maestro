@@ -424,17 +424,17 @@ divisionType=0.0 resolution=2880 tickLength=80640 tracks=4
   1 META end_of_track
 -- track 1 (16 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
-  0 NOTE_ON ch=0 d1=69 d2=80 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=69 d2=96 [LotroShortMessage]
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=91 [LotroShortMessage]
   11520 NOTE_OFF ch=0 d1=69 d2=80 [LotroShortMessage]
-  11520 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=72 d2=96 [LotroShortMessage]
   23040 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
   23040 NOTE_ON ch=0 d1=76 d2=80 [LotroShortMessage]
   40320 NOTE_OFF ch=0 d1=76 d2=80 [LotroShortMessage]
-  40320 NOTE_ON ch=0 d1=71 d2=80 [LotroShortMessage]
+  40320 NOTE_ON ch=0 d1=71 d2=96 [LotroShortMessage]
   51840 NOTE_OFF ch=0 d1=71 d2=80 [LotroShortMessage]
-  51840 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
+  51840 NOTE_ON ch=0 d1=68 d2=96 [LotroShortMessage]
   63360 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
   63360 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
   80640 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]

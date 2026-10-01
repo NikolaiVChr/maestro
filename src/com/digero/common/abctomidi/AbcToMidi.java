@@ -163,6 +163,13 @@ public class AbcToMidi {
 	public static final int ACCENT_DYNAMICS_STEPS = 2;
 
 	/**
+	 * How many Dynamics steps louder the note at the start of each beat group plays, in a meter of beat groups (M:2+2+3/8,
+	 * 7/8 as 2+2+3, TuneInfo.getBeatGroups), so the bar is heard as its groups. Only with Params.standard2011; meters of
+	 * equal beats get none. An accented note (ACCENT_DYNAMICS_STEPS) stays as loud as its accent.
+	 */
+	public static final int BEAT_GROUP_ACCENT_STEPS = 1;
+
+	/**
 	 * How much of its written length a staccato note (.c) sounds; the next note starts on time. ABC 2.1 (4.14) leaves the
 	 * amount to the program; MuseScore 3 and 4 play half. Only with Params.standard2011.
 	 */
@@ -185,8 +192,13 @@ public class AbcToMidi {
 
 	/** The volume of an accented note: ACCENT_DYNAMICS_STEPS louder than the dynamics, at most the loudest. */
 	private static Dynamics accented(Dynamics dynamics) {
+		return louder(dynamics, ACCENT_DYNAMICS_STEPS);
+	}
+
+	/** The dynamics steps louder, at most the loudest. */
+	private static Dynamics louder(Dynamics dynamics, int steps) {
 		Dynamics[] all = Dynamics.values();
-		return all[Math.min(dynamics.ordinal() + ACCENT_DYNAMICS_STEPS, all.length - 1)];
+		return all[Math.min(dynamics.ordinal() + steps, all.length - 1)];
 	}
 
 	public static List<String> readLines(File inputFile) throws IOException {
@@ -547,6 +559,10 @@ public class AbcToMidi {
 		// Lyrics without timing (W:), each a lyric line in track 0. Before the part's notes they wait here for its track.
 		List<String> pendingVerseLines = new ArrayList<>();
 		long lastAttackTick = -1; // Where the part's last note started, for W: lines after the notes
+		// Beat-group accents (BEAT_GROUP_ACCENT_STEPS): the notes started since the last bar line, accented when the bar
+		// is known; where the part's last bar line was (null before its first, so the first bar can be a pickup)
+		List<BarAttack> barAttacks = new ArrayList<>();
+		Long lastBarTick = null;
 		// The next W: line's tick at the earliest. Each line gets a tick of its own: on an equal tick MidiText's order of
 		// lines is not defined.
 		long nextVerseTick = 0;
@@ -581,6 +597,8 @@ public class AbcToMidi {
 				partEndTicks.put(trackNumber, Math.round(chordStartTick));
 				endPartDrone(partDrone, trackNumber, Math.round(chordStartTick), drones);
 			}
+			if (track != null && abc21)
+				accentGroupStarts(barAttacks, (lastBarTick != null) ? lastBarTick : 0, groupTicks(info), useLotroInstruments);
 			track = null;
 			info.newFile();
 			fileProgramClues = new MidiProgramGuess.Clues();
@@ -828,6 +846,10 @@ public class AbcToMidi {
 									partEndTicks.put(trackNumber, Math.round(chordStartTick));
 									endPartDrone(partDrone, trackNumber, Math.round(chordStartTick), drones);
 								}
+								if (track != null && abc21)
+									accentGroupStarts(barAttacks, (lastBarTick != null) ? lastBarTick : 0, groupTicks(info),
+											useLotroInstruments);
+								lastBarTick = null;
 
 								accidentals.clear();
 								noteOffEvents.clear();
@@ -1391,6 +1413,9 @@ public class AbcToMidi {
 									}
 									if (playChords)
 										partBarTicks.computeIfAbsent(trackNumber, k -> new TreeSet<>()).add(Math.round(chordStartTick));
+									if (abc21)
+										lastBarTick = barLine(barAttacks, lastBarTick, Math.round(chordStartTick), groupTicks(info),
+												useLotroInstruments);
 									lyricBar++;
 
 									if (trackNumber == 1)
@@ -1424,6 +1449,9 @@ public class AbcToMidi {
 									}
 									if (playChords)
 										partBarTicks.computeIfAbsent(trackNumber, k -> new TreeSet<>()).add(Math.round(chordStartTick));
+									if (abc21)
+										lastBarTick = barLine(barAttacks, lastBarTick, Math.round(chordStartTick), groupTicks(info),
+												useLotroInstruments);
 
 									int pipe = -1;
 									for (int j = i + 1; j < parseEnd; j++) {
@@ -2134,8 +2162,12 @@ public class AbcToMidi {
 											fileName, meterChangeLine, meterChangeColumn);
 								}
 								Dynamics attack = accent ? accented(info.getDynamics()) : info.getDynamics();
-								track.add(MidiFactory.createNoteOnEventEx(noteId, channel,
-										attack.getVol(useLotroInstruments), Math.round(chordStartTick + attackOffset)));
+								MidiEvent noteOn = MidiFactory.createNoteOnEventEx(noteId, channel,
+										attack.getVol(useLotroInstruments), Math.round(chordStartTick + attackOffset));
+								track.add(noteOn);
+								// Where it is written (after grace notes it sounds later), for the beat-group accents
+								if (abc21 && !accent && info.getBeatGroups() != null)
+									barAttacks.add(new BarAttack(noteOn, Math.round(chordStartTick), attack));
 							}
 
 							notesOn.add(new Triple<>(lotroNoteId, noteEndTick, abcNoteAcc+noteLetter+octaveStr+abcNoteL));
@@ -2232,6 +2264,8 @@ public class AbcToMidi {
 			partEndTicks.put(trackNumber, Math.round(chordStartTick));
 			endPartDrone(partDrone, trackNumber, Math.round(chordStartTick), drones);
 		}
+		if (track != null && abc21)
+			accentGroupStarts(barAttacks, (lastBarTick != null) ? lastBarTick : 0, groupTicks(info), useLotroInstruments);
 		for (Map.Entry<Integer, List<ChordSymbol>> part : chordSymbols.entrySet()) {
 			// Standard ABC: %%MIDI bassprog and chordprog; Lotro files: the programs of Theorbo and Lute of Ages
 			int[] programs = accompanimentPrograms.getOrDefault(part.getKey(), new int[] {
@@ -3180,6 +3214,59 @@ public class AbcToMidi {
 		long beat = info.getTickFactor() * DEFAULT_NOTE_TICKS / info.getBarDenominator();
 		int numerator = info.getBarNumerator();
 		return (numerator % 3 == 0 && numerator > 3) ? 3 * beat : beat;
+	}
+
+	/** A note started in the bar so far: its note-on, where it is written, and its dynamics. */
+	private record BarAttack(MidiEvent noteOn, long tick, Dynamics dynamics) {
+	}
+
+	/**
+	 * A bar line at the tick: the bar's notes at the start of a beat group get their accent. The bar runs from the last
+	 * bar line; the part's first bar ends here, so a first bar shorter than the meter (a pickup) is its end, and one as
+	 * long or longer starts at the part's start.
+	 *
+	 * @return The bar line's tick, the next bar's start
+	 */
+	private static long barLine(List<BarAttack> attacks, Long lastBarTick, long tick, long[] groups,
+								boolean useLotroInstruments) {
+		long barStart = (lastBarTick != null) ? lastBarTick
+				: (groups != null) ? Math.min(0, tick - Arrays.stream(groups).sum()) : 0;
+		accentGroupStarts(attacks, barStart, groups, useLotroInstruments);
+		return tick;
+	}
+
+	/**
+	 * Plays the notes at the start of a beat group BEAT_GROUP_ACCENT_STEPS louder, counting the groups from barStart
+	 * (and on, past the bar's end, for a bar longer than the meter); then forgets the notes.
+	 */
+	private static void accentGroupStarts(List<BarAttack> attacks, long barStart, long[] groups,
+										  boolean useLotroInstruments) {
+		if (groups != null) {
+			for (BarAttack attack : attacks) {
+				if (isGroupStart(groups, barStart, attack.tick())) {
+					ShortMessage message = (ShortMessage) attack.noteOn().getMessage();
+					try {
+						message.setMessage(message.getCommand(), message.getChannel(), message.getData1(),
+								louder(attack.dynamics(), BEAT_GROUP_ACCENT_STEPS).getVol(useLotroInstruments));
+					} catch (InvalidMidiDataException e) {
+						throw new IllegalStateException(e); // The same message, another velocity
+					}
+				}
+			}
+		}
+		attacks.clear();
+	}
+
+	/** Whether the tick is where a beat group starts, counting the groups from barStart. */
+	private static boolean isGroupStart(long[] groups, long barStart, long tick) {
+		long offset = tick - barStart;
+		long position = 0;
+		for (int g = 0; position <= offset; g = (g + 1) % groups.length) {
+			if (position == offset)
+				return true;
+			position += groups[g];
+		}
+		return false;
 	}
 
 	/** The bar's beat groups in ticks (M:2+2+3/8, 7/8: a quarter, a quarter, a dotted quarter), or null. */

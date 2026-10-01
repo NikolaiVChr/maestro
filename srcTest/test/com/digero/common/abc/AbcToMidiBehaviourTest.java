@@ -603,6 +603,33 @@ class AbcToMidiBehaviourTest {
 						noteEvents(convert(standard(tune("semantic", "c d .| e|")))));
 			}
 
+			@Test
+			void beatGroupsAreAccented() throws Exception {
+				// A meter of beat groups (M:2+2+3/8; 5/8, 7/8, 11/8 ... as 2s and a 3 at the end): the note at each
+				// group's start plays AbcToMidi.BEAT_GROUP_ACCENT_STEPS (1) louder, so the bar is heard as its groups
+				List<Integer> volumes = velocities(convert(tune("semantic", "+mf+c +f+d +ff+e|")));
+				int mf = volumes.get(0), f = volumes.get(1), ff = volumes.get(2);
+				List<Integer> groups = List.of(f, mf, f, mf, f, mf, mf, f);
+				assertEquals(groups, velocities(convert(standard(tune("semantic", header("M:2+2+3/8"), "c d e f g a b|c|")))));
+				assertEquals(groups, velocities(convert(standard(tune("semantic", header("M:7/8"), "c d e f g a b|c|")))));
+				// The groups as written: 3+2+2
+				assertEquals(List.of(f, mf, mf, f, mf, f, mf), velocities(convert(standard(tune("semantic",
+						header("M:3+2+2/8"), "c d e f g a b|")))));
+				// A chord: every note; an accented note keeps its accent (2 steps), not more
+				assertEquals(List.of(f, f, mf, f, mf, mf), velocities(convert(standard(tune("semantic", header("M:5/8"),
+						"[ce] d e f g|")))));
+				assertEquals(List.of(ff, mf, f, mf, mf), velocities(convert(standard(tune("semantic", header("M:5/8"),
+						"Lc d e f g|")))));
+				// A pickup: the first bar ends at its bar line (here the last three eighths of a 7/8 bar)
+				assertEquals(List.of(f, mf, mf, f, mf, f, mf, f, mf, mf), velocities(convert(standard(tune("semantic",
+						header("M:7/8"), "g a b|c d e f g a b|")))));
+				// Not in meters of equal beats, and not without the flag (Lotro plays every note the same)
+				assertEquals(List.of(mf, mf, mf, mf, mf, mf), velocities(convert(standard(tune("semantic", header("M:6/8"),
+						"c d e f g a|")))));
+				assertEquals(List.of(mf, mf, mf, mf, mf, mf, mf), velocities(convert(tune("semantic", header("M:7/8"),
+						"c d e f g a b|"))));
+			}
+
 			@Disabled(NOT_YET)
 			@Test
 			void tempoChangeInThePart() throws Exception {
