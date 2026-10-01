@@ -585,6 +585,10 @@ class AbcToMidiBehaviourTest {
 				List<Integer> mf = velocities(convert(tune("semantic", "c d|")));
 				assertNotEquals(mf, plusForm);
 				assertEquals(mf, velocities(convert(tune("semantic", "!p!c !f!d|"))));
+				// ... also in capitals (tested in Lotro, B74: +FF+ +PP+ set the volume), with Lotro errors too
+				assertEquals(plusForm, velocities(convert(tune("semantic", "+P+c +F+d|"))));
+				assertEquals(velocities(ConversionDump.convert(tune("semantic", "+pp+c +ff+d|"), Profile.ABC_PLAYER_STRICT)),
+						velocities(ConversionDump.convert(tune("semantic", "+PP+c +FF+d|"), Profile.ABC_PLAYER_STRICT)));
 				// ABC 2.1 (4.14): players "may be expected to implement the dynamics marks": !p! !f! as +p+ +f+,
 				// from pppp to ffff; the volume stays until the next mark
 				assertEquals(plusForm, velocities(convert(standard(tune("semantic", "!p!c !f!d|")))));

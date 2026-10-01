@@ -627,6 +627,9 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		if (titlePrefix == null || titlePrefix.isEmpty()) {
 			if (metadata.containsKey('T'))
 				return metadata.get('T');
+			// No T: at all: the file's name without extension, as for a part without a T:
+			if (abcFiles != null && !abcFiles.isEmpty() && abcFiles.get(0) != null)
+				return abcFiles.get(0).getName().replaceFirst("\\.[^.]*$", "");
 			return "(Untitled)";
 		}
 

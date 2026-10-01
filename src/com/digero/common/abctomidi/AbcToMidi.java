@@ -430,7 +430,7 @@ public class AbcToMidi {
 	/** Quoted text in the notes: a chord symbol or an annotation. */
 	private static final Pattern QUOTED_PATTERN = Pattern.compile("\"[^\"]*\"");
 	/** A volume that Lotro plays: +pppp+ to +ffff+. */
-	private static final Pattern VOLUME_PATTERN = Pattern.compile("\\+(?:pppp|ppp|pp|p|mp|mf|f|ff|fff|ffff)\\+");
+	private static final Pattern VOLUME_PATTERN = Pattern.compile("(?i)\\+(?:pppp|ppp|pp|p|mp|mf|f|ff|fff|ffff)\\+");
 
 	/**
 	 * Whether a Q: with a note length has a beat other than the meter's (Q:3/8=120 in 6/8), which Lotro plays at another
@@ -1616,7 +1616,8 @@ public class AbcToMidi {
 									}
 									String decoration = line.substring(i + 1, j);
 									try {
-										info.setDynamics(decoration);
+										// Also in capitals: tested in Lotro (B74), +FF+ and +PP+ set the volume
+										info.setDynamics(decoration.toLowerCase(Locale.ROOT));
 									} catch (IllegalArgumentException iae) {
 										// +trill+ +fermata+ ... : the ABC 2.0 form of !trill! (ABC 2.1, 4.14). Tested in Lotro: it
 										// plays nothing of the part. Only notes (+ceg+, a chord in ABC 1.6) stay an error.
