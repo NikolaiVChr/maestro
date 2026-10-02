@@ -442,7 +442,7 @@ public class TunebookDialog extends JDialog {
 
 	private void splitAll() {
 		// Next to the book, else (a read-only folder, a CD) in the user's Documents or home folder
-		String name = bookFile.getName().replaceFirst("(?i)\\.(abc|txt)$", "");
+		String name = bookFile.getName().replaceFirst("(?i)\\.("+ Util.ABC_FILE_EXTENSION_NO_DOT+"|"+ Util.TXT_FILE_EXTENSION_NO_DOT+")$", "");
 		File start = bookFile.getAbsoluteFile().getParentFile();
 		if (!isWritable(start)) {
 			start = Util.getDocumentsDir();
