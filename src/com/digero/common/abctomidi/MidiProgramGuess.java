@@ -7,6 +7,7 @@ import java.util.regex.Pattern;
 import com.digero.common.abc.AbcText;
 import com.digero.common.midi.MidiConstants;
 import com.digero.common.midi.MidiInstrument;
+import com.digero.common.abctomidi.RhythmTempo.TuneType;
 
 /**
  * The General MIDI program (the sound) of a part of standard ABC (Params.standardPitch), from clues in its header.
@@ -87,19 +88,28 @@ final class MidiProgramGuess {
 			name("kotos?", MidiInstrument.KOTO), //
 			name("kalimbas?|mbiras?", MidiInstrument.KALIMBA));
 
+
+
 	/**
-	 * The tune's type in R: (ABC 2.1: the rhythm, e.g. reel, jig, hornpipe) and the program of an instrument
-	 * that plays that kind of tune, so a collection of dance tunes doesn't all sound the same. The weakest clue: a
-	 * guess by what's usual in sessions. At the same place in a text the longer match wins ("slip jig").
+	 * The tune's type in R: (ABC 2.1: the rhythm, e.g. reel, jig, hornpipe; its names in RhythmTempo) and the program of
+	 * an instrument that plays that kind of tune, so a collection of dance tunes doesn't all sound the same. The
+	 * weakest clue: a guess by what's usual in sessions. A type not here (song, Balkan dances) is no clue.
 	 */
-	private static final List<Name> RHYTHMS = List.of( //
-			name("reels?|strathspeys?|flings?|highlands?|set ?dances?|schottisc?he?s?|reinlenders?",
-					MidiInstrument.VIOLIN), //
-			name("\\w*polska|polskas|polon.s|hambo|halling|springar|springleik|gangar", MidiInstrument.VIOLIN), //
-			name("(?:slip |single |double )?jigs?|slides?|airs?|slow airs?|laments?", MidiInstrument.FLUTE), //
-			name("hornpipes?|barn ?dances?|polkas?|mazurkas?|waltz(?:es)?|valses?|vals|marche?s?|marsch",
-					MidiInstrument.ACCORDION), //
-			name("hymns?|psalms?|chorales?", MidiInstrument.CHURCH_ORGAN));
+	private static final Map<TuneType, Integer> RHYTHMS = new EnumMap<>(TuneType.class);
+	static {
+		rhythms(MidiInstrument.VIOLIN, TuneType.REEL, TuneType.STRATHSPEY, TuneType.SCHOTTISCHE, TuneType.SET_DANCE,
+				TuneType.POLSKA, TuneType.GANGLAT);
+		rhythms(MidiInstrument.FLUTE, TuneType.JIG, TuneType.TREBLE_JIG, TuneType.SLIP_JIG, TuneType.SLIDE,
+				TuneType.AIR, TuneType.SLOW_AIR);
+		rhythms(MidiInstrument.ACCORDION, TuneType.HORNPIPE, TuneType.BARN_DANCE, TuneType.THREE_TWO, TuneType.POLKA,
+				TuneType.MAZURKA, TuneType.WALTZ, TuneType.FIVE_TIME_WALTZ, TuneType.MARCH);
+		rhythms(MidiInstrument.CHURCH_ORGAN, TuneType.HYMN);
+	}
+
+	private static void rhythms(MidiInstrument instrument, TuneType... types) {
+		for (TuneType type : types)
+			RHYTHMS.put(type, instrument.id());
+	}
 
 	/** A %%MIDI directive that sets a program or a channel; bassprog may go on with octave=N. */
 	private static final Pattern MIDI_DIRECTIVE = Pattern
@@ -127,9 +137,10 @@ final class MidiProgramGuess {
 		return firstMatch(NAMES, text, atStart);
 	}
 
-	/** The program of the first tune type in an R: field's value, or null. */
+	/** The program of the first tune type with a program in an R: field's value (decoded, AbcText), or null. */
 	static Integer programOfRhythm(String text) {
-		return firstMatch(RHYTHMS, text, false);
+		TuneType type = RhythmTempo.typeOf(text, RHYTHMS.keySet());
+		return (type == null) ? null : RHYTHMS.get(type);
 	}
 
 	private static Integer firstMatch(List<Name> names, String text, boolean atStart) {

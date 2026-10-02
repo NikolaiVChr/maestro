@@ -500,7 +500,8 @@ class AbcToMidiBehaviourTest {
 				assertNull(AbcToMidi.bareTempo(tune("semantic", header("M:6/8"), "c6|").filesData()));
 				assertNull(AbcToMidi.bareTempo(tune("semantic", header("M:2+2+3/8"), "c7|").filesData()));
 				assertNull(AbcToMidi.bareTempo(tune("semantic", header("Q:1/4=120"), "c8|").filesData()));
-				assertNull(AbcToMidi.bareTempo(tune("semantic", header("-Q"), "c8|").filesData()));
+				// No Q: at all: a bpm of -1, for the notice that the tempo is guessed
+				assertEquals(-1, AbcToMidi.bareTempo(tune("semantic", header("-Q"), "c8|").filesData()).bpm());
 				assertNull(AbcToMidi.bareTempo(tune("semantic", header("M:none"), "c8|").filesData()));
 			}
 
@@ -1956,6 +1957,58 @@ class AbcToMidiBehaviourTest {
 			assertEquals(200, headerTempo("R:reel", "M:4/4", "L:1/16"));
 		}
 
+		@Test
+		void tuneTypesInOtherSpellingsAndLanguages() throws Exception {
+			// Spellings found in tune books: slipjig, reinländer, accents left out or written as ABC escapes
+			assertEquals(339, typeTempo("R:slipjig", "M:9/8", "-Q")); // 113 dotted quarters
+			assertEquals(144, typeTempo("R:reinl\u00e4nder", "M:4/4", "-Q"));
+			assertEquals(144, typeTempo("R:Rheinl\\\"ander", "M:4/4", "-Q"));
+			assertEquals(144, typeTempo("R:reinlaender", "M:4/4", "-Q"));
+			assertEquals(144, typeTempo("R:reil\\\"ander", "M:4/4", "-Q")); // Swedish, Norbeck's 16
+			assertEquals(144, typeTempo("R:rejl\u00e4nder", "M:4/4", "-Q"));
+			assertEquals(324, typeTempo("R:mui\u00f1eira", "M:6/8", "-Q")); // 108 dotted quarters, as a jig
+			assertEquals(324, typeTempo("R:muineira", "M:6/8", "-Q"));
+			// Other languages: German, French, Italian, Spanish, Finnish, Swedish, Danish
+			assertEquals(108, typeTempo("R:Walzer", "M:3/4", "-Q"));
+			assertEquals(108, typeTempo("R:L\u00e4ndler", "M:3/4", "-Q"));
+			assertEquals(108, typeTempo("R:valssi", "M:3/4", "-Q"));
+			assertEquals(112, typeTempo("R:marcia", "M:2/4", "-Q"));
+			assertEquals(144, typeTempo("R:jenkka", "M:4/4", "-Q"));
+			assertEquals(144, typeTempo("R:Scottish", "M:4/4", "-Q")); // the bal folk's schottische
+			assertEquals(200, typeTempo("R:Scottish reel", "M:4/4", "-Q")); // a reel
+			assertEquals(324, typeTempo("R:gigue", "M:6/8", "-Q"));
+			assertEquals(100, typeTempo("R:visa", "M:3/4", "-Q"));
+			assertEquals(100, typeTempo("R:s\u00e5ng", "M:3/4", "-Q"));
+			assertEquals(100, typeTempo("R:Lied", "M:3/4", "-Q"));
+			assertEquals(100, typeTempo("R:g\u00e5ngl\u00e5t", "M:2/4", "-Q"));
+			assertEquals(300, typeTempo("R:gangar", "M:6/8", "-Q")); // 100 dotted quarters
+			assertEquals(112, typeTempo("R:springar", "M:3/4", "-Q")); // as a polska
+			assertEquals(70, typeTempo("R:berceuse", "M:3/4", "-Q")); // as a slow air
+			// More types
+			assertEquals(100, typeTempo("R:minuet", "M:3/4", "-Q"));
+			assertEquals(90, typeTempo("R:hymn", "M:4/4", "-Q"));
+			assertEquals(336, typeTempo("R:tarantella", "M:6/8", "-Q")); // 112 dotted quarters
+			assertEquals(100, typeTempo("R:an dro", "M:2/4", "-Q"));
+			assertEquals(160, typeTempo("R:rid\u00e9e", "M:6/4", "-Q"));
+			assertEquals(180, typeTempo("R:valse \u00e0 5 temps", "M:5/8", "-Q")); // not the waltz's 108 quarters
+			assertEquals(90, typeTempo("R:huayno", "M:2/4", "-Q"));
+			// A type counted otherwise in another kind of meter. Set dance: in jig time 96 dotted quarters, in
+			// hornpipe time 138 quarters (in C| 69 halves; in 2/4, a 4/4 bar's notes, halved)
+			assertEquals(288, typeTempo("R:set dance", "M:6/8", "-Q"));
+			assertEquals(288, typeTempo("R:long dance, set dance, slip jig", "M:9/8", "-Q")); // the first type
+			assertEquals(69, typeTempo("R:set dance", "M:C|", "-Q"));
+			assertEquals(69, typeTempo("R:set dance", "M:2/4", "-Q"));
+			// Country dance: in jig time like a jig, else 112 quarters
+			assertEquals(324, typeTempo("R:country dance", "M:6/8", "-Q"));
+			assertEquals(112, typeTempo("R:country dance", "M:2/4", "-Q"));
+			// Bourrée: three-time in 3/8, 180 eighths; two-time 120 quarters
+			assertEquals(180, typeTempo("R:bourr\u00e9e", "M:3/8", "-Q"));
+			assertEquals(120, typeTempo("R:bourree", "M:2/4", "-Q"));
+			// No type: a composer (O'Carolan's tunes go from 50 to 220 quarters) or a heading
+			assertEquals(120, typeTempo("R:carolan", "M:3/4", "-Q"));
+			assertEquals(120, typeTempo("R:misc", "M:3/4", "-Q"));
+		}
+
 		/** The tempo played for a tune without Q: with these header fields, with specTempo. */
 		private int headerTempo(String... fields) throws Exception {
 			List<String> lines = new ArrayList<>(List.of("X:1", "T:t"));
@@ -2529,6 +2582,13 @@ class AbcToMidiBehaviourTest {
 			assertEquals(40, standardProgram("R:polon\\\"as")); // The Swedish polonäs, a fiddle tune
 			assertEquals(19, standardProgram("R:hymn"));
 			assertEquals(24, standardProgram("R:song"));
+			// The tempo's spellings and languages too (RhythmTempo); a type without a program leaves the next one
+			assertEquals(73, standardProgram("R:slipjig"));
+			assertEquals(40, standardProgram("R:Rheinl\u00e4nder"));
+			assertEquals(21, standardProgram("R:Walzer"));
+			assertEquals(40, standardProgram("R:g\u00e5ngl\u00e5t"));
+			assertEquals(24, standardProgram("R:mui\u00f1eira"));
+			assertEquals(40, standardProgram("R:song, reel"));
 			// Without R:, a tune type in the title (tune books: Butchers Hornpipe, its R: commented out); R: beats it
 			assertEquals(21, standardProgram("T:Butchers Hornpipe"));
 			assertEquals(73, standardProgram("T:The Kesh Jig", "%R:hornpipe"));

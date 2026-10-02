@@ -284,6 +284,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			}
 			sourceAbcWasMadeForLotro = result;
 		}
+		chooseAbc(params, file);
 		AbcToMidi.BareTempo bareTempo = AbcToMidi.bareTempo(params.filesData);
 		if (bareTempo != null) {
 			Component parent = null;
@@ -293,11 +294,17 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 					break;
 				}
 			}
-			JOptionPane.showMessageDialog(parent, UIText.get("common.abctomidi.bare.tempo", String.valueOf(bareTempo.bpm()),
-							bareTempo.unitNote(), bareTempo.beat()), UIText.get("common.abctomidi.bare.tempo.title"),
-					JOptionPane.INFORMATION_MESSAGE);
+			if (bareTempo.bpm() == -1) {
+				JOptionPane.showMessageDialog(parent, UIText.get("common.abctomidi.no.tempo", String.valueOf(bareTempo.bpm()),
+								bareTempo.unitNote(), bareTempo.beat()), UIText.get("common.abctomidi.bare.tempo.title"),
+						JOptionPane.INFORMATION_MESSAGE);
+			} else {
+				JOptionPane.showMessageDialog(parent, UIText.get("common.abctomidi.bare.tempo", String.valueOf(bareTempo.bpm()),
+								bareTempo.unitNote(), bareTempo.beat()), UIText.get("common.abctomidi.bare.tempo.title"),
+						JOptionPane.INFORMATION_MESSAGE);
+			}
 		}
-		chooseAbc(params, file);
+
 		boolean standardAbc = abcImportVersion > 1 && Boolean.FALSE.equals(sourceAbcWasMadeForLotro);
 		params.standardPitch = standardAbc;
 		params.expandRepeats = standardAbc;

@@ -585,7 +585,8 @@ public class AbcToMidi {
 	 * Q:C=100). ABC 2.1 (10.1, deprecated form) counts it in unit notes, L:, and so do we, but many files mean beats of
 	 * the meter by it (O'Neill's metronome marks, FolkWiki; abcjs reads it so). The tempo can be changed in Maestro.
 	 *
-	 * @return null if the first tune has no bare Q:, or its L: is the meter's beat (both readings are the same)
+	 * @return null if the first tune's Q: has a note length, or its L: is the meter's beat (both readings are the same);
+	 *         a bpm of -1 (and no notes) if it has no Q: at all, so its tempo is guessed (common.abctomidi.no.tempo)
 	 */
 	public static BareTempo bareTempo(List<FileAndData> filesData) {
 		String tempo = null;
@@ -603,7 +604,9 @@ public class AbcToMidi {
 				unitNote = line.substring(2).replace(" ", "");
 		}
 		Matcher bare = (tempo == null) ? null : BARE_TEMPO.matcher(tempo);
-		if (bare == null || !bare.matches())
+		if (bare == null)
+			return new BareTempo(-1, null, null); // No Q: at all: the tempo is guessed
+		if (!bare.matches())
 			return null;
 		int numerator = 4;
 		int denominator = 4;
