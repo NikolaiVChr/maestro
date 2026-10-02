@@ -35,12 +35,12 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableRowSorter;
 
 import com.digero.common.abc.AbcText;
-import com.digero.common.abctomidi.AbcSongbook;
+import com.digero.common.abctomidi.AbcTunebook;
 import com.digero.common.i18n.UIText;
 import com.digero.common.util.Util;
 
 /**
- * Asks what to do with a songbook (a file of standard ABC with many X: tunes): open one tune, open all as parts (as
+ * Asks what to do with a tunebook (a file of standard ABC with many X: tunes): open one tune, open all as parts (as
  * before), or split the book into one file per tune. Shows the tunes with number, title, type (R:), key and meter, a
  * filter over all of them (and over every title, composer and origin of the tune: a tune is often known by another
  * name), and the ABC of the selected tune (without the file header, which all tunes share).
@@ -48,7 +48,7 @@ import com.digero.common.util.Util;
  * Sizes come from the font, so the dialog follows Maestro's text size setting. Keys: type to filter, Up/Down to move in
  * the list (also from the filter), Enter to open the selected tune, Escape to cancel, double-click to open.
  */
-public class SongbookDialog extends JDialog {
+public class TunebookDialog extends JDialog {
 	protected static final Logger log = Logger.getLogger("tunebook");
 	/** What the user chose. */
 	public enum Choice {
@@ -61,7 +61,7 @@ public class SongbookDialog extends JDialog {
 	}
 
 	/** The user's choice, and the tune for {@link Choice#TUNE} (else null). */
-	public record Result(Choice choice, AbcSongbook.Tune tune) {
+	public record Result(Choice choice, AbcTunebook.Tune tune) {
 	}
 
 	// The texts' keys (UIText)
@@ -85,9 +85,9 @@ public class SongbookDialog extends JDialog {
 	private static final String SPLIT_FAILED = "common.abctomidi.songbook.split.failed";
 	private static final String SPLIT_NOT_WRITABLE = "common.abctomidi.songbook.split.not.writable";
 
-	private final AbcSongbook book;
+	private final AbcTunebook book;
 	private final File bookFile;
-	private final List<AbcSongbook.Tune> tunes;
+	private final List<AbcTunebook.Tune> tunes;
 	private final String[][] rows; // number, title, type, key, meter
 	private final String[] searchText; // Per tune: its columns, titles, composers and origins, lower case, without accents
 	private final String[] otherTitles; // Per tune: its titles after the first, or null
@@ -108,12 +108,12 @@ public class SongbookDialog extends JDialog {
 	 * @param book     The songbook
 	 * @param bookFile Its file: for the title and the folder offered for splitting
 	 */
-	public static Result show(Component owner, AbcSongbook book, File bookFile) {
-		AbcSongbook.Tune lastTune = null;
+	public static Result show(Component owner, AbcTunebook book, File bookFile) {
+		AbcTunebook.Tune lastTune = null;
 		if (bookFile != null && bookFile.equals(lastFile) && lastResult != null) {
 			lastTune = lastResult.tune;
 		}
-		SongbookDialog dialog = new SongbookDialog(owner, book, bookFile, lastTune);
+		TunebookDialog dialog = new TunebookDialog(owner, book, bookFile, lastTune);
 		dialog.setVisible(true);
 		if (dialog.result != null && (dialog.result.choice == Choice.TUNE || dialog.result.choice == Choice.CANCEL)) {
 			lastResult = dialog.result;
@@ -125,7 +125,7 @@ public class SongbookDialog extends JDialog {
 		return dialog.result;
 	}
 
-	private SongbookDialog(Component owner, AbcSongbook book, File bookFile, AbcSongbook.Tune selectedTune) {
+	private TunebookDialog(Component owner, AbcTunebook book, File bookFile, AbcTunebook.Tune selectedTune) {
 		super(owner == null ? null : SwingUtilities.getWindowAncestor(owner), UIText.get(TITLE, bookFile.getName()),
 				ModalityType.APPLICATION_MODAL);
 		this.book = book;
@@ -136,7 +136,7 @@ public class SongbookDialog extends JDialog {
 		searchText = new String[tunes.size()];
 		otherTitles = new String[tunes.size()];
 		for (int i = 0; i < tunes.size(); i++) {
-			AbcSongbook.Tune tune = tunes.get(i);
+			AbcTunebook.Tune tune = tunes.get(i);
 			List<String> lines = book.tuneLines(tune);
 			rows[i] = new String[] { tune.number(), tune.title(), field(lines, "R:"), field(lines, "K:"),
 					field(lines, "M:") };
@@ -324,7 +324,7 @@ public class SongbookDialog extends JDialog {
 			public void windowOpened(WindowEvent e) {
 				if (table.getSelectedRow() >= 0)
 					scrollToCenter(table.getSelectedRow());
-				SongbookDialog.this.removeWindowListener(this);
+				TunebookDialog.this.removeWindowListener(this);
 			}
 		});
 	}
@@ -416,13 +416,13 @@ public class SongbookDialog extends JDialog {
 		table.scrollRectToVisible(wanted);
 	}
 
-	private AbcSongbook.Tune selectedTune() {
+	private AbcTunebook.Tune selectedTune() {
 		int viewRow = table.getSelectedRow();
 		return (viewRow < 0) ? null : tunes.get(table.convertRowIndexToModel(viewRow));
 	}
 
 	private void showSelected() {
-		AbcSongbook.Tune tune = selectedTune();
+		AbcTunebook.Tune tune = selectedTune();
 		// The tune from its X: (the file header is the same for every tune)
 		List<String> lines = (tune == null) ? List.of() : book.tuneLines(tune);
 		int x = 0;
@@ -434,7 +434,7 @@ public class SongbookDialog extends JDialog {
 	}
 
 	private void openSelected() {
-		AbcSongbook.Tune tune = selectedTune();
+		AbcTunebook.Tune tune = selectedTune();
 		if (tune != null)
 			close(new Result(Choice.TUNE, tune));
 	}

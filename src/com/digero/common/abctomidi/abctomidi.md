@@ -1,59 +1,119 @@
-# ABC to MIDI (`com.digero.common.abctomidi`)
+# ABC to MIDI
 
-**Rule:** Lotro errors on (ABC Player) = play as Lotro does, and throw `LotroFileParseException` for anything Lotro refuses or plays differently. Lotro errors off (Maestro) = play as ABC 2.1 says. Files made for Lotro and existing projects keep Lotro's reading; only new projects from standard ABC get the ABC 2.1 one (the flags below).
+Package `com.digero.common.abctomidi`. It reads ABC text and turns it into a MIDI `Sequence`, for the ABC Player and
+for Maestro.
 
-## Entry points (`AbcToMidi`, static)
-- `convert(Params)` → `Sequence`. Fills `params.abcInfo` as a side effect.
-- `parseAbcMetadata(files)` → `AbcInfo` with titles/instruments only, no notes (ABC Player playlist).
-- `isMadeForLotro(files)`: written for Lotro instruments, or standard ABC (folk)? Sets up `Params.standardPitch`.
+## Two ways to read a file
 
-## `AbcToMidi.Params`: how to read the file
+ABC is read in one of two ways, and nearly every rule in the parser depends on which.
+
+- **Lotro's reading.** For files made for Lotro, and for every project made before this version. Notes play the way
+  Lotro plays them, even where that differs from the ABC standard.
+- **The standard reading (ABC 2.1).** Only for a *new* Maestro project from a file that is *not* made for Lotro, such as
+  a folk tune book. Repeats are played out, voices play together, chord symbols get an accompaniment, and so on.
+
+On top of either reading, **Lotro errors** can be switched on (the ABC Player's setting). Then anything Lotro refuses,
+or plays in silence, or stops at, is an error that says what Lotro does (`LotroFileParseException`). The messages use
+the words of the in-game tests: "refuses", "in silence (no error)", "stops playing".
+
+Release rule: once released, changing how a file that loads today is read needs a new flag, so old projects keep
+their sound. Fixing something that is an error today needs no flag.
+
+## How to call it
+
+All entry points are static methods of `AbcToMidi`.
+
+| Method | What it does |
+|---|---|
+| `convert(Params)` | Reads the ABC and returns the `Sequence`. Also fills `params.abcInfo`. |
+| `parseAbcMetadata(files)` | Titles, part names and instruments only, no notes: the ABC Player's playlist. |
+| `isMadeForLotro(files)` | Made for Lotro? `TRUE`, `FALSE`, or `null` when it can't tell (Maestro then asks the user). |
+| `bareTempo(files)` | For a `Q:` without a note length that the standard reading counts differently: Maestro's notice. |
+| `readLines(file)` | Reads a file as UTF-8, else Windows-1252, without a byte order mark. |
+
+## The settings: `AbcToMidi.Params`
+
 | Field | ABC Player | Maestro |
 |---|---|---|
-| `enableLotroErrors` | on (user setting) | off |
-| `useLotroInstruments` | on: notes in Lotro notation, sample lengths | off: notes at the instrument's real pitch (+`octaveDelta`) |
-| `expandRepeats`, `specTempo`, `chordAccompaniment`, `standardPitch`, `standard2011` | off | on for a new project from standard ABC (`abcImportVersion > 1` and not made for Lotro) |
+| `enableLotroErrors` | the user's setting | off |
+| `useLotroInstruments` | on: Lotro's octaves and sample lengths | off: each note at its real pitch |
+| `standardPitch`, `standard2011`, `expandRepeats`, `specTempo`, `chordAccompaniment` | off | on only for a new project from a file not made for Lotro |
 
-`abc21` in the parser = `standard2011 && !enableLotroErrors`: the ABC 2.1 reading (voices, part order, free text, loose `!`, ...).
+In the parser, `abc21` means `standard2011 && !enableLotroErrors`: the standard reading is on.
 
-## `AbcToMidi`: the parser (large method)
-- With `abc21`, each file's lines first go through `VoiceSplitter` then `PartOrder` (text transforms; `sourceLineNumbers` keep messages and regions on the file's lines).
-- One pass over all lines of all files: `%%` fields → info fields (`X:` starts a part) → music, char by char (`switch`).
-- **Tracks:** 0 = tempo, song title, `W:`/verse text lines. 1..n = one per `X:` part, same index in `AbcInfo` (a part without notes gets an empty track). Then the accompaniment tracks.
-- **Two pitches per note:** `noteId` (MIDI, what plays) and `lotroNoteId` (Lotro notation, used for the Lotro range/length checks).
-- **Inner classes:**
-  - `Repeats`: expands repeats by jumping back (`lineLoop`, `startColumn`).
-  - `LyricNote`: `w:` syllables, sung at the part's end (`singLyrics`).
-  - `Tuplet`.
-  - `ChordSymbol`: chord name parsing for the accompaniment.
-- **After the loop:** accompaniment tracks, `endTrack` (plucked note ends, end-of-track), tempo events, pan, time/key signature.
+The tests name the five combinations in use (`Profile`): `ABC_PLAYER`, `ABC_PLAYER_STRICT` (Lotro errors on),
+`MAESTRO_LEGACY` (an old project), `MAESTRO_NEW_LOTRO` (a new project, file made for Lotro) and `MAESTRO_NEW_STANDARD`
+(a new project, standard ABC).
 
-## `TuneInfo`: parse state
-- What is in force while reading: key (+ explicit accidentals), meter (+ beat groups of `M:2+2+3/8`), `L:`, tempo (+ tempo maps; without `Q:` from `R:` via `RhythmTempo`, else 1/4=120), transposition (K: clef/transpose/octave), instrument, dynamics, `I:` instructions.
-- The file header's values are kept apart: every part starts from them (`newFile`, `newPart`), not from the part before (tested in Lotro).
-- Internal to the parser; nothing outside reads it.
+## Inside `AbcToMidi`
 
-## `AbcInfo`: the result, besides the `Sequence`
-- **Song:** titles, composer, transcriber, genre, mood, tempo, meter, key, length, and the `%%` timing flags (mix, organic, swing/triplet guess).
-- **Per part, by track index:** name, number, instrument (and whether it came from `%%made-for`), pan, ABC line range.
-- **Also:** bar ticks, regions, and `abcTrackInfos` for Maestro.
+`convert` is one long pass over all lines of all files.
 
-## `AbcRegion`
-One per note: MIDI ticks to/from line/columns in the ABC text. The ABC Player uses them to highlight the text while playing. Only made with `Params.generateRegions`.
+1. **Before the pass, standard reading only:** each file's text goes through `VoiceSplitter` (voices become parts),
+   then `PartOrder` (`P:ABA` is written out in order). Both only rewrite text; a table of line numbers keeps error
+   messages and highlighting on the file's own lines.
+2. **The pass:** `%%` lines, then fields (`X:` starts a new part), then music, character by character.
+3. **After the pass:** the chord accompaniment and drone tracks, the end of each track (where plucked notes stop
+   ringing), tempo events, pan, and the time and key signatures.
 
-## Helpers (each small, own tests)
-- `VoiceSplitter`: a tune's voices (`V:`, `[V:]`) → one `X:` part each, played together.
-- `PartOrder`: header `P:ABA` (or The Session's `P:` right after `K:`) → body sections written out in that order.
-- `RhythmTempo`: tempo for a tune type in `R:` (reel, jig, waltz, Balkan dances ...), as a `Q:` value.
-- `MidiProgramGuess`: MIDI program for standard ABC parts (`%%MIDI program`, names, `G:`, `V:`, `T:`, `R:`).
-- `AbcInstructions`: `I:linebreak`, `I:decoration`.
-- `AbcSongbook`: a tune book → its tunes (Maestro's songbook dialog, ABC Tools' split). (`AbcSongbookSplitter`: old, to delete.)
-- `FileAndData`: a file and its lines.
-- `common.abc.AbcText`: text escapes in lyrics (`\'e`, `&eacute;`, `é`).
+**Tracks.** Track 0 holds the tempo, the song title and the `W:` text. Tracks 1 to n are the parts, one per `X:`, with
+the same index as in `AbcInfo`; a part without notes still gets an empty track. The accompaniment and drones come after.
 
-## 5,000+ Tests (`srcTest`, package `com.digero.common.abc`)
-- `AbcCases`: one tiny tune per feature or error.
-- Snapshot tests: every case in 5 `Profile`s (ABC_PLAYER, ABC_PLAYER_STRICT, MAESTRO_LEGACY, MAESTRO_NEW_LOTRO, MAESTRO_NEW_STANDARD), compared with golden files. Record them with `-Dabc.golden.update=true`.
-- `AbcToMidiBehaviourTest`: exact checks; "Tested in Lotro" comments mark behaviour confirmed in game (B-numbers in `abc-todo.txt`).
-- `VoiceSplitterTest`, `PartOrderTest`, `AbcSongbookTest`, `AbcTextTest`: the helpers.
-- `TestSetup`: logging, locale, UI texts, once per JVM.
+**Two pitches per note.** `noteId` is the MIDI note that plays. `lotroNoteId` is the note in Lotro's notation, used to
+check Lotro's range and note lengths.
+
+**`%%Q:` (Maestro's tempo changes).** A `%%Q:` line puts a tempo change in the tempo map. A note keeps the seconds its
+ABC length gives at the main tempo; only the beats and bars follow the new tempo. That makes the round trip work: MIDI
+→ Maestro → ABC → back into Maestro gives the MIDI's tempo map again. Grace notes and ornaments are counted in seconds
+too.
+
+**Helpers inside the class:**
+- `Repeats`: plays repeats out by jumping back in the text. On the second pass the section is read as it was on the
+  first (key, meter, `L:`, `I:`); dynamics carry over. A first ending that is skipped changes nothing.
+- `LyricNote`, `singLyrics`, `sing`: `w:` lyrics, one syllable per note, a verse per pass. Written when the part ends.
+- `ChordSymbol`: chord names ("Am", "G/B") for the accompaniment.
+- `Tuplet`: `(3`, `(3:2:3` and the like.
+
+## Other classes
+
+| Class | What it is |
+|---|---|
+| `TuneInfo` | What is in force while reading: key, meter, `L:`, tempo, transposition, instrument, dynamics, `I:`. Every part starts from the file header's values, not the part before's (as Lotro does). `ReadState` is a snapshot of it, for repeats. Only the parser uses it. |
+| `AbcInfo` | The result besides the `Sequence`: song titles, composer, tempo, meter, key, length, the `%%` timing flags; per part its name, number, instrument, pan and line range; the bars and the regions. |
+| `AbcRegion` | One per note: where it is in the text and when it plays. The ABC Player uses them to highlight the text while playing. Only made with `Params.generateRegions`. |
+| `VoiceSplitter` | A tune's voices (`V:`, `[V:]`) → one part each, played together. |
+| `PartOrder` | `P:ABA` in the header → the sections written out in that order. |
+| `RhythmTempo` | A tempo for the tune type in `R:` (reel, jig, waltz, Balkan dances ...), for a tune without `Q:`. |
+| `MidiProgramGuess` | The MIDI sound of a standard ABC part: from `%%MIDI program`, `%%MIDI voice`, instrument names, `G:`, `V:`, `T:`, `R:`. |
+| `Drone` | A bagpipe drone under a part (`%%MIDI droneon`, or Highland pipes). Never for Lotro files. |
+| `AbcInstructions` | `I:linebreak`, `I:decoration`, `I:propagate-accidentals`. |
+| `AbcTunebook` | A tune book split into its tunes: Maestro's tunebook dialog and its "Split into files". |
+| `FileAndData` | A file and its lines. |
+| `AbcSongbookSplitter` | Old, replaced by `AbcTunebook`: to delete once ABC Tools uses `AbcTunebook`. |
+
+Outside the package: `common.abc.AbcText` decodes the text escapes in titles and lyrics (`\'e`, `&eacute;`, `é`).
+
+## Tests
+
+About 4,750 tests, in `srcTest/test/com/digero/common/abctomidi`.
+
+- **`AbcCases`:** one tiny tune per feature or error.
+- **Snapshot tests:** every case is converted in all five profiles and compared with a golden file in
+  `srcTest/resources/com/digero/abctomidi/golden`. `AbcToMidiFileSnapshotTest` does the same for real files (such as
+  Canzonetta, the ABC 2.1 standard's own example). After a change you meant to make, record the new output with
+  `-Dabc.golden.update=true` and read the diff.
+- **`AbcToMidiBehaviourTest`:** exact checks of notes, ticks, lyrics and errors. `ReviewBugs` holds one test per bug of
+  the review of 2026-10-02. "Tested in Lotro" comments point to the in-game tests B1 to B81 (`lotro_tests.md`).
+- **`AbcToMidiRoundTripTest`:** a MIDI with 155 tempo changes and Maestro's export of it (resources folder `roundtrip`).
+  Reading the export back must give the MIDI's tempo map and notes.
+- **The helpers:** `VoiceSplitterTest`, `PartOrderTest`, `AbcTunebookTest`, `AbcInstructionsTest`, `AbcTextTest`,
+  `AbcXmlTextTest`, `LotroMinimumLengthTest`.
+- **`TestSetup`:** logging, locale and UI texts, once per test run.
+
+## Not supported (ABC 2.1)
+
+- M: change with another denominator mid-tune, [M:C|] after 3/4
+- Q: tempo change mid-tune (the tempo map is shared by all parts, so tricky)
+- & voice overlays
+- m: macros
+- U: user-defined symbols, U:W=!trill! then Wc

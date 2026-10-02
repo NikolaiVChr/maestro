@@ -13,10 +13,8 @@ import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
 
-import com.digero.common.abctomidi.AbcSongbook;
-
-/** AbcSongbook: a songbook's tunes, one tune as ABC of its own, and splitting a book into files. */
-class AbcSongbookTest {
+/** AbcTunebook: a songbook's tunes, one tune as ABC of its own, and splitting a book into files. */
+class AbcTunebookTest {
 
 	/** A small book in Norbeck's style: free text, a file header, tunes, an escape in a title. */
 	private static final List<String> BOOK = List.of( //
@@ -46,18 +44,18 @@ class AbcSongbookTest {
 
 	@Test
 	void listsTheTunes() {
-		AbcSongbook book = new AbcSongbook(BOOK);
-		assertEquals(List.of("1", "2", "10"), book.tunes().stream().map(AbcSongbook.Tune::number).toList());
+		AbcTunebook book = new AbcTunebook(BOOK);
+		assertEquals(List.of("1", "2", "10"), book.tunes().stream().map(AbcTunebook.Tune::number).toList());
 		// The first title, its escapes decoded (also TeX's braces)
 		assertEquals(List.of("Nittonbundna", "Polska från Småland", "What? Why: <no> \"quotes\" | star*"),
-				book.tunes().stream().map(AbcSongbook.Tune::title).toList());
+				book.tunes().stream().map(AbcTunebook.Tune::title).toList());
 		// A file without X: has no tunes
-		assertEquals(List.of(), new AbcSongbook(List.of("M:4/4", "K:C", "c d e f|")).tunes());
+		assertEquals(List.of(), new AbcTunebook(List.of("M:4/4", "K:C", "c d e f|")).tunes());
 	}
 
 	@Test
 	void aTuneIsTheFileHeaderAndItsLines() {
-		AbcSongbook book = new AbcSongbook(BOOK);
+		AbcTunebook book = new AbcTunebook(BOOK);
 		// Free text in the file header as % comments; blank lines at its end go, one comes back before X:
 		assertEquals(List.of("% This file contains 3 polskas.", "% (c) Copyright Henrik Norbeck.", "", "M:3/4", "L:1/16",
 				"", "X:1", "T:Nittonbundna", "T:V\\\"avpolskan", "K:Dm", "A4 d4 f4|"), book.tuneLines(book.tunes().get(0)));
@@ -68,19 +66,19 @@ class AbcSongbookTest {
 		// Windows line ends
 		assertTrue(book.tuneText(book.tunes().get(0)).endsWith("A4 d4 f4|\r\n"));
 		// A book without a file header: the tune alone
-		AbcSongbook bare = new AbcSongbook(List.of("X:1", "T:a", "K:C", "c|"));
+		AbcTunebook bare = new AbcTunebook(List.of("X:1", "T:a", "K:C", "c|"));
 		assertEquals(List.of("X:1", "T:a", "K:C", "c|"), bare.tuneLines(bare.tunes().get(0)));
 	}
 
 	@Test
 	void fileNames() {
-		AbcSongbook book = new AbcSongbook(BOOK);
+		AbcTunebook book = new AbcTunebook(BOOK);
 		// The X: number zero-padded (at least 3 digits), the title as StringCleaner makes it safe for a file name, and
 		// what Windows doesn't allow (: * " < > | ?) as spaces
 		assertEquals(List.of("001 Nittonbundna", "002 Polska fraan Smaaland", "010 What Why no quotes star"),
 				book.tunes().stream().map(book::fileName).toList());
 		// Wider numbers, no title, a title of nothing usable
-		AbcSongbook other = new AbcSongbook(List.of("X:1234", "K:C", "c|", "X:7", "T:???", "K:C", "d|"));
+		AbcTunebook other = new AbcTunebook(List.of("X:1234", "K:C", "c|", "X:7", "T:???", "K:C", "d|"));
 		assertEquals(List.of("1234", "0007"), other.tunes().stream().map(other::fileName).toList());
 	}
 
@@ -88,8 +86,8 @@ class AbcSongbookTest {
 	void extractingWritesVersionsOnlyForOtherContent() throws IOException {
 		File folder = Files.createTempDirectory("songbook").toFile();
 		try {
-			AbcSongbook book = new AbcSongbook(BOOK);
-			AbcSongbook.Tune first = book.tunes().get(0);
+			AbcTunebook book = new AbcTunebook(BOOK);
+			AbcTunebook.Tune first = book.tunes().get(0);
 			File file = book.extract(first, folder);
 			assertEquals("001 Nittonbundna.abc", file.getName());
 			assertEquals(book.tuneText(first), Files.readString(file.toPath(), StandardCharsets.UTF_8));
@@ -97,10 +95,10 @@ class AbcSongbookTest {
 			assertEquals(file, book.extract(first, folder));
 			assertEquals(1, folder.list().length);
 			// Other content under the same name: _v002, then _v003; each found again later
-			AbcSongbook changed = new AbcSongbook(BOOK.stream().map(l -> l.equals("A4 d4 f4|") ? "A4 d4 e4|" : l).toList());
+			AbcTunebook changed = new AbcTunebook(BOOK.stream().map(l -> l.equals("A4 d4 f4|") ? "A4 d4 e4|" : l).toList());
 			File v2 = changed.extract(changed.tunes().get(0), folder);
 			assertEquals("001 Nittonbundna_v002.abc", v2.getName());
-			AbcSongbook changedAgain = new AbcSongbook(
+			AbcTunebook changedAgain = new AbcTunebook(
 					BOOK.stream().map(l -> l.equals("A4 d4 f4|") ? "A4 d4 d4|" : l).toList());
 			assertEquals("001 Nittonbundna_v003.abc", changedAgain.extract(changedAgain.tunes().get(0), folder).getName());
 			assertEquals(v2, changed.extract(changed.tunes().get(0), folder));

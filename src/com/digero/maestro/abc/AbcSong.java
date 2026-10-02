@@ -29,7 +29,7 @@ import javax.xml.xpath.XPathExpressionException;
 import com.aifel.abctools.AbcTools;
 import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.VersionsWithIssues;
-import com.digero.common.abctomidi.AbcSongbook;
+import com.digero.common.abctomidi.AbcTunebook;
 import com.digero.common.abctomidi.FileAndData;
 import com.digero.common.util.*;
 import com.digero.maestro.view.*;
@@ -820,9 +820,9 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	 */
 	private void chooseAbc(AbcToMidi.Params params, File file) throws FileParseException {
 		if (Boolean.FALSE.equals(sourceAbcWasMadeForLotro)) {
-			AbcSongbook book = new AbcSongbook(params.filesData.getFirst().lines);
+			AbcTunebook book = new AbcTunebook(params.filesData.getFirst().lines);
 			if (book.tunes().size() > 1) {
-				SongbookDialog.Result chosen = SongbookDialog.show(null, book, file);
+				TunebookDialog.Result chosen = TunebookDialog.show(null, book, file);
 				switch (chosen.choice()) {
 					case TUNE -> params.filesData = new ArrayList<>(
 							List.of(new FileAndData(file, book.tuneLines(chosen.tune()))));

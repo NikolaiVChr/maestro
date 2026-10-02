@@ -1038,7 +1038,9 @@ public class AbcToMidi {
 								if (trackNumber > 0)
 									abcInfo.setPartEndLine(trackNumber, previousLineForRegions);
 
+
 								if (value.isEmpty() && enableLotroErrors) {
+									// Tested in Lotro (B81): it refuses the whole file, its other parts too
 									throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.x.empty"), fileName,
 											lineNumber, 0);
 								}
@@ -1740,11 +1742,9 @@ public class AbcToMidi {
 									lyricBar++;
 									if (trackNumber == 1)
 										abcInfo.addBar(Math.round(chordStartTick));
-									// A repeat sign is a bar line (ABC 2.1): the bar's accidentals end here, also for the
-									// pass that goes back. Only in the standard reading: in Lotro's (and an old project's)
-									// the accidental stays, until the in-game test B79 says otherwise. TODO: Test!!!
-									if (abc21)
-										accidentals.clear();
+									// A repeat sign is a bar line: the bar's accidentals end here, also for the pass that
+									// goes back. ABC 2.1, and Lotro (tested, B79), so in every reading
+									accidentals.clear();
 
 									crossedRepeat = true;
 									if (repeats.end(lines, lineIndex, i, signEnd)) {
@@ -1970,7 +1970,7 @@ public class AbcToMidi {
 									}
 									break;
 
-								case 'X': // X X4 : the same, not printed (ABC 2.1, 4.5). Untested in Lotro: the same error
+								case 'X': // X X4 : the same, not printed (ABC 2.1, 4.5). Tested in Lotro (B80): it refuses it too
 								case 'Z': {
 									// Z Z4 : a rest of 1 or 4 whole bars (ABC 2.1, 4.5). Tested in Lotro: it refuses the part.
 									if (enableLotroErrors) {

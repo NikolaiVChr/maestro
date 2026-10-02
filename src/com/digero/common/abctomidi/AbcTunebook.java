@@ -25,7 +25,7 @@ import com.digero.common.abc.StringCleaner;
  * Whether a file is a songbook or a Lotro song (whose X: are parts that play together) is for the caller to decide,
  * e.g. by AbcToMidi.isMadeForLotro.
  */
-public final class AbcSongbook {
+public final class AbcTunebook {
 	/** A tune: its X: value, its first title (escapes decoded, "" if none) and its lines in the book. */
 	public record Tune(String number, String title, int firstLine, int endLine) {
 	}
@@ -44,12 +44,12 @@ public final class AbcSongbook {
 	private final int numberWidth;
 
 	/** The songbook in a file, read as AbcToMidi reads it (UTF-8, else Windows-1252). */
-	public static AbcSongbook read(File file) throws IOException {
-		return new AbcSongbook(AbcToMidi.readLines(file));
+	public static AbcTunebook read(File file) throws IOException {
+		return new AbcTunebook(AbcToMidi.readLines(file));
 	}
 
 	/** The songbook in these lines (without line ends). */
-	public AbcSongbook(List<String> lines) {
+	public AbcTunebook(List<String> lines) {
 		this.lines = List.copyOf(lines);
 
 		int first = 0;

@@ -847,9 +847,13 @@ class AbcToMidiBehaviourTest {
 			void bug1001RepeatSignEndsTheBarsAccidentals() throws Exception {
 				// The ^f before :| reaches neither the f that starts the section again nor the f after it
 				assertEquals(List.of(77, 78, 77, 78, 77), pitches(standard(tune("semantic", "|: f ^f :| f|"))));
-				// Lotro's reading and old projects keep it, until the in-game test B79 says what Lotro does
-				List<Integer> lotro = pitches(convert(tune("semantic", "^f2 :| f2|")));
-				assertEquals(lotro.get(0), lotro.get(1));
+				// The same in Lotro's reading, old projects and the ABC Player: Lotro ends the accidentals at :| (tested,
+				// B79), and so does ABC 2.1
+				for (Profile profile : List.of(Profile.ABC_PLAYER, Profile.ABC_PLAYER_STRICT, Profile.MAESTRO_LEGACY,
+						Profile.MAESTRO_NEW_LOTRO)) {
+					List<Integer> lotro = pitches(ConversionDump.convert(tune("semantic", "^f2 :| f2|"), profile));
+					assertEquals(lotro.get(0) - 1, lotro.get(1), profile.toString());
+				}
 			}
 
 			@Test
@@ -1057,7 +1061,7 @@ class AbcToMidiBehaviourTest {
 					assertEquals(noteEvents(ConversionDump.convert(tune("semantic", "c8|Z2|d8|Z|e8|"), profile)),
 							noteEvents(ConversionDump.convert(tune("semantic", "c8|X2|d8|X|e8|"), profile)), profile.toString());
 				}
-				// Lotro refuses Z (tested, B16); X is untested, so the same Lotro error
+				// Lotro refuses Z (tested, B16) and X (tested, B80)
 				assertThrows(LotroFileParseException.class,
 						() -> ConversionDump.convert(tune("semantic", "c8|X2|d8|"), Profile.ABC_PLAYER_STRICT));
 			}
@@ -1088,14 +1092,16 @@ class AbcToMidiBehaviourTest {
 					assertEquals("Two", info.getPartName(2));
 				}
 				// The songbook dialog lists it and opens it
-				AbcSongbook songbook = new AbcSongbook(book.filesData().getFirst().lines);
-				AbcSongbook.Tune second = songbook.tunes().get(1);
+				AbcTunebook songbook = new AbcTunebook(book.filesData().getFirst().lines);
+				AbcTunebook.Tune second = songbook.tunes().get(1);
 				assertEquals("", second.number());
 				assertEquals(2, noteOns(ConversionDump.convert(AbcCase.of("semantic",
 						songbook.tuneLines(second).toArray(String[]::new)), Profile.MAESTRO_NEW_STANDARD)).size());
-				// Untested in Lotro: a Lotro error
+				// Tested in Lotro (B81): it refuses the whole file, its parts with a number too
 				assertThrows(LotroFileParseException.class,
 						() -> ConversionDump.convert(song, Profile.ABC_PLAYER_STRICT));
+				assertThrows(LotroFileParseException.class,
+						() -> ConversionDump.convert(book, Profile.ABC_PLAYER_STRICT));
 			}
 
 			@Test
