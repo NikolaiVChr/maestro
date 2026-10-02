@@ -31,6 +31,7 @@ import javax.swing.RowFilter;
 import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.plaf.basic.BasicFileChooserUI;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableRowSorter;
 
@@ -446,9 +447,7 @@ public class TunebookDialog extends JDialog {
 		if (!isWritable(start)) {
 			start = Util.getDocumentsDir();
 		}
-		JFileChooser chooser = new JFileChooser(start);
-		chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-		chooser.setSelectedFile(new File(start, UIText.get(SPLIT_FOLDER, name)));
+		JFileChooser chooser = folderChooser(start, UIText.get(SPLIT_FOLDER, name));
 		chooser.setDialogTitle(UIText.get(SPLIT));
 		File folder;
 		while (true) {
@@ -468,6 +467,20 @@ public class TunebookDialog extends JDialog {
 			JOptionPane.showMessageDialog(this, UIText.get(SPLIT_FAILED, e.getMessage()),
 					UIText.get(SPLIT), JOptionPane.ERROR_MESSAGE);
 		}
+	}
+
+	/**
+	 * A chooser for a folder, opened in start, suggesting a new folder there. JFileChooser shows a selected folder's
+	 * name only when the folder exists; else its name field holds the start's path and Save chooses start. So the name
+	 * is put in the name field (on macOS the chooser keeps start).
+	 */
+	static JFileChooser folderChooser(File start, String newFolderName) {
+		JFileChooser chooser = new JFileChooser(start);
+		chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+		chooser.setSelectedFile(new File(start, newFolderName));
+		if (chooser.getUI() instanceof BasicFileChooserUI ui)
+			ui.setFileName(newFolderName);
+		return chooser;
 	}
 
 	/** The folder can be written to, or (if it doesn't exist yet) made in its nearest existing parent. */

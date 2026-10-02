@@ -63,7 +63,7 @@ Version 4.7.3
 * Maestro and Abc Player will now warn if a part is too large for lotro.
 * Fixed that when importing abc with e.g. "K:D mix", the space would make it become D major.
 * Abc Player: now interprets abc files closer to how Lotro plays them, with clearer error messages.
-* Maestro: abc files not made for Lotro (folk tune collections etc..) are now read as standard ABC 2.1
+* Maestro: abc files determined to not be made for Lotro (folk tune collections etc..) are now read as standard ABC 2.1
 * Maestro: abc lyrics are now shown in time with the music in Maestro, just like midi lyrics.
 * Maestro: opening an abc file with many tunes asks which tune to open, with search; it can also split the book into one file per tune.
 * Maestro: Chord symbols in ABC files ("G", "Am", "D7") now become a bass track and a chords track. Bagpipe tunes get a drone track.
