@@ -79,6 +79,26 @@ class PartOrderTest {
 	}
 
 	@Test
+	void inlineLabelsStartSectionsToo() {
+		// [P:A] in the notes (ABC 2.1, 3.2): the line is cut there, the label goes on a line of its own, and the notes
+		// after it keep their columns (spaces before them), for messages and note regions
+		PartOrder.Result r = PartOrder.apply(tune("P:ABA", "g a|[P:A] c d|[P:B] e f|"));
+		assertEquals(List.of("X:1", "T:t", "M:4/4", "L:1/8", "P:ABA", "K:C", //
+						"g a|", "P:A", " ".repeat(9) + " c d|", "P:B", " ".repeat(19) + " e f|", "P:A", " ".repeat(9) + " c d|"),
+				r.lines());
+		assertArrayEquals(new int[] { 1, 2, 3, 4, 5, 6, 7, 7, 7, 7, 7, 7, 7 }, r.sourceLineNumbers());
+		// Mixed with P: lines; not in quotes or a comment
+		assertEquals(List.of("P:B", "f|", "P:A", " ".repeat(5) + " e|"), PartOrder.apply(tune("P:BA", "[P:A] e|", "P:B", "f|"))
+				.lines().subList(6, 10));
+		assertEquals(List.of("P:B", "\"[P:A]\"c|", "P:A", "e|"), PartOrder.apply(tune("P:BA", "P:A", "e|", "P:B",
+				"\"[P:A]\"c|")).lines().subList(6, 10));
+		assertEquals(List.of("P:B", "c| % [P:A]", "P:A", "e|"), PartOrder.apply(tune("P:BA", "P:A", "e|", "P:B",
+				"c| % [P:A]")).lines().subList(6, 10));
+		// Without an order nothing changes
+		assertNull(PartOrder.apply(tune(null, "[P:A] c d|[P:B] e f|")));
+	}
+
+	@Test
 	void eachTuneOfAFileItsOwn() {
 		List<String> file = new java.util.ArrayList<>(List.of("% a book", ""));
 		file.addAll(tune("P:BA", "P:A", "c|", "P:B", "d|"));

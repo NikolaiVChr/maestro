@@ -50,7 +50,7 @@ divisionType=0.0 resolution=11520 tickLength=46969 tracks=2
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
 == EXCEPTION LotroFileParseException: Error reading tie_after_space.abc (X:1 Test) on line 7, column 4:
-Lotro plays nothing of a part with a tie written apart from its note (c2 -c2); write it right after the note, c2- c2
+Lotro refuses a part with a tie written apart from its note (c2 -c2); write it right after the note: c2- c2
 == log: empty
 
 ### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)

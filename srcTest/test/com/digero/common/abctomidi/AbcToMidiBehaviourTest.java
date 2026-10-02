@@ -565,6 +565,16 @@ class AbcToMidiBehaviourTest {
 						on(5 * q / 2, 65)), noteOns(convert(standard(repeat).with(p -> p.expandRepeats = true))));
 			}
 
+			@Test
+			void inlineSectionLabelsToo() throws Exception {
+				// [P:A] in the notes (ABC 2.1, 3.2) starts a section as a P: line does; it was skipped, and the tune
+				// played as written (user, 2026-10-02)
+				AbcCase onLines = tune("semantic", AbcCases.partOrderHeader("P:ABA"), "P:A", "c d|", "P:B", "e f|");
+				AbcCase inline = tune("semantic", AbcCases.partOrderHeader("P:ABA"), "[P:A] c d|[P:B] e f|");
+				assertEquals(noteEvents(convert(standard(onLines))), noteEvents(convert(standard(inline))));
+				// Without the flag nothing changes (Lotro, B52)
+				assertEquals(noteEvents(convert(tune("semantic", "c d|e f|"))), noteEvents(convert(inline)));
+			}
 
 			@Test
 			void versesGoOnWhenASectionIsPlayedAgain() throws Exception {

@@ -53,7 +53,7 @@ divisionType=0.0 resolution=11520 tickLength=29689 tracks=2
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
 == EXCEPTION LotroFileParseException: Error reading dynamics_bang_in_chord.abc (X:1 Test) on line 7, column 2:
-Lotro plays nothing of a part from a !decoration! on (!f!); use +f+ style for volume
+Lotro stops playing a part at a !decoration! (!f!); use +f+ style for volume
 == log: empty
 
 ### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)

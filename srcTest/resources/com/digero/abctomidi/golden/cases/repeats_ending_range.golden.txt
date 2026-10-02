@@ -64,7 +64,7 @@ divisionType=0.0 resolution=11520 tickLength=56370 tracks=2
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
 == EXCEPTION LotroFileParseException: Error reading repeats_ending_range.abc (X:1 Test) on line 7, column 6:
-Lotro plays nothing of a part with an ending for several passes (1-2); write the ending out for each pass
+Lotro refuses a part with an ending for several passes (1-2); write the ending out for each pass
 == log: empty
 
 ### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)

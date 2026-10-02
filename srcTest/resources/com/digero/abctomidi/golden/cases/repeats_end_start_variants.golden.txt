@@ -64,7 +64,7 @@ divisionType=0.0 resolution=11520 tickLength=56370 tracks=2
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
 == EXCEPTION LotroFileParseException: Error reading repeats_end_start_variants.abc (X:1 Test) on line 7, column 6:
-Lotro plays nothing of a part with :|:; write :: or :||: instead
+Lotro refuses a part with :|:; write :: or :||: instead
 == log: empty
 
 ### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)

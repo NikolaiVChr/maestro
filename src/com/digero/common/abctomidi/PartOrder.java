@@ -21,8 +21,10 @@ import java.util.regex.Pattern;
  * <li>A section runs from its P: line to the next body P: line or the tune's end. Music before the first body P: is
  * played once, first. A section in the order that the body doesn't have is skipped; a section the order doesn't name
  * isn't played (that's what the order says).</li>
+ * <li>A label in the notes, [P:A] (ABC 2.1, 3.2), is the same: the line is cut there, the label goes on a line of its
+ * own, and the notes after it keep their columns (spaces before them), for messages and note regions.</li>
  * </ul>
- * Per tune (from X: to the empty line that ends it, or the next X:). Not yet: inline [P:A].
+ * Per tune (from X: to the empty line that ends it, or the next X:).
  */
 public final class PartOrder {
 	private PartOrder() {
@@ -34,6 +36,8 @@ public final class PartOrder {
 
 	private static final Pattern ORDER = Pattern.compile("[A-Z0-9().\\s]+");
 	private static final Pattern LABEL = Pattern.compile("^P:\\s*([A-Z])\\s*(?:%.*)?$");
+	/** A section label in the notes, [P:A], or quoted text (which may look like one). */
+	private static final Pattern INLINE_LABEL = Pattern.compile("\\[P:\\s*([A-Z])\\s*]|\"[^\"]*\"");
 
 	/** The file with each tune's sections in its header's order; null if no tune has an order (it stays as it is). */
 	public static Result apply(List<String> lines) {
@@ -79,20 +83,25 @@ public final class PartOrder {
 			}
 		}
 
-		// The sections: the lines before the first label, then each label's lines
+		// The body's lines, a line with labels in its notes cut at them; and for each, its index in lines
+		List<String> body = new ArrayList<>();
+		List<Integer> bodySources = new ArrayList<>();
+		if (order != null) {
+			for (int b = bodyStart; b < end; b++)
+				cutAtLabels(lines.get(b), b, body, bodySources);
+		}
+		// The sections: the lines before the first label, then each label's lines (indexes in body)
 		List<Integer> before = new ArrayList<>();
 		Map<Character, List<Integer>> sections = new LinkedHashMap<>();
 		List<Integer> current = before;
-		if (order != null) {
-			for (int b = bodyStart; b < end; b++) {
-				Matcher label = LABEL.matcher(lines.get(b));
-				if (label.matches()) {
-					// A section written twice: the later one counts, as a later definition would
-					current = new ArrayList<>();
-					sections.put(label.group(1).charAt(0), current);
-				}
-				current.add(b);
+		for (int b = 0; b < body.size(); b++) {
+			Matcher label = LABEL.matcher(body.get(b));
+			if (label.matches()) {
+				// A section written twice: the later one counts, as a later definition would
+				current = new ArrayList<>();
+				sections.put(label.group(1).charAt(0), current);
 			}
+			current.add(b);
 		}
 		if (order == null || order.stream().noneMatch(sections::containsKey)) {
 			for (int k = start; k < end; k++) {
@@ -107,19 +116,59 @@ public final class PartOrder {
 			sources.add(k + 1);
 		}
 		for (int k : before) {
-			out.add(lines.get(k));
-			sources.add(k + 1);
+			out.add(body.get(k));
+			sources.add(bodySources.get(k) + 1);
 		}
 		for (char name : order) {
 			List<Integer> section = sections.get(name);
 			if (section == null)
 				continue; // Not in the body: skipped
 			for (int k : section) {
-				out.add(lines.get(k));
-				sources.add(k + 1);
+				out.add(body.get(k));
+				sources.add(bodySources.get(k) + 1);
 			}
 		}
 		return true;
+	}
+
+	/**
+	 * Adds a body line, cut at each label in its notes ([P:A], not in quotes or a comment, not on a field line): the
+	 * notes before the first label, then per label a P: line and its notes, with spaces up to their column.
+	 *
+	 * @param index Its index in the tune's lines, for each piece
+	 */
+	private static void cutAtLabels(String line, int index, List<String> body, List<Integer> bodySources) {
+		String notes = stripComment(line);
+		Matcher m = INLINE_LABEL.matcher(notes);
+		int from = 0; // Where the notes of the current piece start
+		boolean cut = false;
+		if (!line.matches("[A-Za-z]:.*")) {
+			while (m.find()) {
+				if (m.group(1) == null)
+					continue; // Quoted text
+				addPiece(line, from, m.start(), index, body, bodySources);
+				body.add("P:" + m.group(1));
+				bodySources.add(index);
+				from = m.end();
+				cut = true;
+			}
+		}
+		if (!cut) {
+			body.add(line);
+			bodySources.add(index);
+		} else {
+			addPiece(line, from, line.length(), index, body, bodySources);
+		}
+	}
+
+	/** The notes from from to to of a cut line, with spaces before them; nothing if they are only spaces. */
+	private static void addPiece(String line, int from, int to, int index, List<String> body,
+								 List<Integer> bodySources) {
+		String piece = line.substring(from, to);
+		if (piece.isBlank())
+			return;
+		body.add(" ".repeat(from) + piece);
+		bodySources.add(index);
 	}
 
 	/** The order of a P: line, or null if it is none (see parse) or has fewer than two sections. */
