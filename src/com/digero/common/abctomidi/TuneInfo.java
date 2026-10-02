@@ -153,6 +153,38 @@ public class TuneInfo {
 		calcPPQN();
 	}
 
+	/**
+	 * How the notes are read at a place in a part: what an expanded repeat restores when it goes back there
+	 * (AbcToMidi.Repeats). Not the tempo, which can't change within a part. Not the dynamics either (user,
+	 * 2026-10-02): a mark holds until the next one, also across a repeat, as in printed music and abc2midi.
+	 */
+	public record ReadState(KeySignature key, Integer[] keyAccidentals, int clefShift, int transposeShift,
+							int octaveShift, int meterNumerator, int meterDenominator, int[] beatGroups, boolean compoundMeter,
+							int noteDivisorNum, int noteDivisorDenom, AbcInstructions instructions) {
+	}
+
+	public ReadState readState() {
+		return new ReadState(key, keyAccidentals.clone(), clefShift, transposeShift, octaveShift, meterNumerator,
+				meterDenominator, beatGroups, compoundMeter, noteDivisorNum, noteDivisorDenom, instructions.copy());
+	}
+
+	public void restore(ReadState state) {
+		key = state.key();
+		keyAccidentals = state.keyAccidentals().clone();
+		clefShift = state.clefShift();
+		transposeShift = state.transposeShift();
+		octaveShift = state.octaveShift();
+		meterNumerator = state.meterNumerator();
+		meterDenominator = state.meterDenominator();
+		beatGroups = state.beatGroups(); // Never changed in place: setMeter makes a new array
+		compoundMeter = state.compoundMeter();
+		noteDivisorNum = state.noteDivisorNum();
+		noteDivisorDenom = state.noteDivisorDenom();
+		instructions = state.instructions().copy();
+		//dynamics = state.dynamics(); // on purpose, we carry it over instead
+		calcPPQN();
+	}
+
 	/** An R: field's value (ABC 2.1, 3.1.7): the tune's type sets the tempo of a song without Q: (endHeader). */
 	public void setRhythm(String rhythm) {
 		String decoded = AbcText.decode(rhythm);

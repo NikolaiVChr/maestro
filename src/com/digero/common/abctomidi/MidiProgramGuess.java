@@ -1,9 +1,6 @@
 package com.digero.common.abctomidi;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -187,6 +184,7 @@ final class MidiProgramGuess {
 		private Clue chordProgram = new Clue(); // %%MIDI chordprog N
 		private Clue voiceProgram = new Clue(); // %%MIDI voice instrument=N, without an ID
 		private Map<String, Integer> voicePrograms = new HashMap<>(); // %%MIDI voice ID instrument=N
+		private final Set<String> ownVoiceIds = new HashSet<>(); // The IDs of voicePrograms the part set itself
 		private String voiceId; // The part's voice: the ID of the V: in its header
 		private boolean highlandPipes; // K:HP
 		private Clue named = new Clue(); // The first instrument name
@@ -277,6 +275,7 @@ final class MidiProgramGuess {
 				voiceProgram.set(instrument - 1);
 			else
 				voicePrograms.put(id, instrument - 1);
+				ownVoiceIds.add(id);
 		}
 
 		/** A K: field's value: the key may be HP or Hp (Highland pipes). */
@@ -332,13 +331,20 @@ final class MidiProgramGuess {
 		}
 
 		/**
-		 * The program the file sets for the part, or null: %%MIDI voice (without an ID, then by the part's voice ID),
-		 * %%MIDI program N, %%MIDI program C N for the part's channel. Not one guessed from K:, names or R:.
+		 * The program the file sets for the part, or null. The part's own %%MIDI voice (without an ID, then by the
+		 * part's voice ID), then its own %%MIDI program N; then the same from the file header (BUG1011); then %%MIDI
+		 * program C N for the part's channel. Not one guessed from K:, names or R:.
 		 */
 		Integer explicitProgram() {
-			if (voiceProgram.value != null)
+			if (voiceProgram.value != null && !voiceProgram.inherited)
 				return voiceProgram.value;
 			Integer ofVoice = (voiceId != null) ? voicePrograms.get(voiceId) : null;
+			if (ofVoice != null && ownVoiceIds.contains(voiceId))
+				return ofVoice;
+			if (program.value != null && !program.inherited)
+				return program.value;
+			if (voiceProgram.value != null)
+				return voiceProgram.value;
 			if (ofVoice != null)
 				return ofVoice;
 			if (program.value != null)

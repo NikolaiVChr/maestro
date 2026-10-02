@@ -12,7 +12,7 @@ divisionType=0.0 resolution=11520 tickLength=2134622 tracks=2
   0 META type=0x59 data=FD00
   1 META text type=0x05 "@IComposer: Claudio Monteverdi (1567-1643)"
   1 META end_of_track
--- track 1 (353 events)
+-- track 1 (352 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 META text type=0x03 "Canzonetta a tre voci"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
@@ -62,27 +62,27 @@ divisionType=0.0 resolution=11520 tickLength=2134622 tracks=2
   264960 META text type=0x05 "ni e "
   276480 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
   276480 NOTE_ON ch=0 d1=53 d2=106 [LotroShortMessage]
-  276480 META text type=0x05 "que "
+  276480 META text type=0x05 "que"
   282240 NOTE_OFF ch=0 d1=53 d2=106 [LotroShortMessage]
   282240 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
-  282240 META text type=0x05 "sto il "
   288000 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
   288000 NOTE_ON ch=0 d1=56 d2=106 [LotroShortMessage]
-  288000 META text type=0x05 "vi"
   293760 NOTE_OFF ch=0 d1=56 d2=106 [LotroShortMessage]
   293760 NOTE_ON ch=0 d1=58 d2=106 [LotroShortMessage]
-  293760 META text type=0x05 "so "
   299520 NOTE_OFF ch=0 d1=58 d2=106 [LotroShortMessage]
   299520 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
-  299520 META text type=0x05 "e "
   311040 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
   311040 NOTE_ON ch=0 d1=57 d2=106 [LotroShortMessage]
+  311040 META text type=0x05 "sto il "
   322560 NOTE_OFF ch=0 d1=57 d2=106 [LotroShortMessage]
   322560 NOTE_ON ch=0 d1=58 d2=106 [LotroShortMessage]
+  322560 META text type=0x05 "vi"
   345600 NOTE_OFF ch=0 d1=58 d2=106 [LotroShortMessage]
   345600 NOTE_ON ch=0 d1=56 d2=106 [LotroShortMessage]
+  345600 META text type=0x05 "so "
   357120 NOTE_OFF ch=0 d1=56 d2=106 [LotroShortMessage]
   357120 NOTE_ON ch=0 d1=56 d2=106 [LotroShortMessage]
+  357120 META text type=0x05 "e "
   368640 NOTE_OFF ch=0 d1=56 d2=106 [LotroShortMessage]
   414720 NOTE_ON ch=0 d1=65 d2=106 [LotroShortMessage]
   414720 META text type=0x05 "/Son "
@@ -106,10 +106,9 @@ divisionType=0.0 resolution=11520 tickLength=2134622 tracks=2
   495360 META text type=0x05 "ni e "
   506880 NOTE_OFF ch=0 d1=65 d2=106 [LotroShortMessage]
   506880 NOTE_ON ch=0 d1=58 d2=106 [LotroShortMessage]
-  506880 META text type=0x05 "que "
+  506880 META text type=0x05 "que"
   512640 NOTE_OFF ch=0 d1=58 d2=106 [LotroShortMessage]
   512640 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
-  512640 META text type=0x05 "sto il "
   518400 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
   518400 NOTE_ON ch=0 d1=61 d2=106 [LotroShortMessage]
   524160 NOTE_OFF ch=0 d1=61 d2=106 [LotroShortMessage]
@@ -118,6 +117,7 @@ divisionType=0.0 resolution=11520 tickLength=2134622 tracks=2
   529920 NOTE_ON ch=0 d1=65 d2=106 [LotroShortMessage]
   541440 NOTE_OFF ch=0 d1=65 d2=106 [LotroShortMessage]
   541440 NOTE_ON ch=0 d1=65 d2=106 [LotroShortMessage]
+  541440 META text type=0x05 "sto il "
   552960 NOTE_OFF ch=0 d1=65 d2=106 [LotroShortMessage]
   552960 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
   552960 META text type=0x05 "/que"
@@ -192,40 +192,40 @@ divisionType=0.0 resolution=11520 tickLength=2134622 tracks=2
   967680 META text type=0x05 "Deh, "
   1013760 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
   1013760 NOTE_ON ch=0 d1=68 d2=106 [LotroShortMessage]
-  1013760 META text type=0x05 "/vi "
+  1013760 META text type=0x05 "/vi"
   1025280 NOTE_OFF ch=0 d1=68 d2=106 [LotroShortMessage]
   1025280 NOTE_ON ch=0 d1=67 d2=106 [LotroShortMessage]
-  1025280 META text type=0x05 "so "
   1031040 NOTE_OFF ch=0 d1=67 d2=106 [LotroShortMessage]
   1031040 NOTE_ON ch=0 d1=65 d2=106 [LotroShortMessage]
-  1031040 META text type=0x05 "ond' "
   1036800 NOTE_OFF ch=0 d1=65 d2=106 [LotroShortMessage]
   1036800 NOTE_ON ch=0 d1=63 d2=106 [LotroShortMessage]
-  1036800 META text type=0x05 "io "
   1059840 NOTE_OFF ch=0 d1=63 d2=106 [LotroShortMessage]
   1059840 NOTE_ON ch=0 d1=56 d2=106 [LotroShortMessage]
-  1059840 META text type=0x05 "ti"
+  1059840 META text type=0x05 "so "
   1071360 NOTE_OFF ch=0 d1=56 d2=106 [LotroShortMessage]
   1071360 NOTE_ON ch=0 d1=61 d2=106 [LotroShortMessage]
-  1071360 META text type=0x05 "man"
+  1071360 META text type=0x05 "ond' "
   1082880 NOTE_OFF ch=0 d1=61 d2=106 [LotroShortMessage]
   1082880 NOTE_ON ch=0 d1=61 d2=106 [LotroShortMessage]
-  1082880 META text type=0x05 "go uc"
+  1082880 META text type=0x05 "io "
   1094400 NOTE_OFF ch=0 d1=61 d2=106 [LotroShortMessage]
   1094400 NOTE_ON ch=0 d1=61 d2=106 [LotroShortMessage]
-  1094400 META text type=0x05 "ci"
+  1094400 META text type=0x05 "ti"
   1105920 NOTE_OFF ch=0 d1=61 d2=106 [LotroShortMessage]
   1105920 NOTE_ON ch=0 d1=56 d2=106 [LotroShortMessage]
-  1105920 META text type=0x05 "so. "
+  1105920 META text type=0x05 "man"
   1140480 NOTE_OFF ch=0 d1=56 d2=106 [LotroShortMessage]
   1140480 NOTE_ON ch=0 d1=58 d2=106 [LotroShortMessage]
-  1140480 META text type=0x05 "Deh, "
+  1140480 META text type=0x05 "go uc"
   1152000 NOTE_OFF ch=0 d1=58 d2=106 [LotroShortMessage]
   1152000 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  1152000 META text type=0x05 "ci"
   1175040 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
   1175040 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  1175040 META text type=0x05 "so. "
   1186560 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
   1198080 NOTE_ON ch=0 d1=56 d2=106 [LotroShortMessage]
+  1198080 META text type=0x05 "Deh, "
   1244160 NOTE_OFF ch=0 d1=56 d2=106 [LotroShortMessage]
   1244160 NOTE_ON ch=0 d1=65 d2=106 [LotroShortMessage]
   1244160 META text type=0x05 "/dim"
@@ -252,10 +252,10 @@ divisionType=0.0 resolution=11520 tickLength=2134622 tracks=2
   1359360 META text type=0x05 "que"
   1370880 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
   1370880 NOTE_ON ch=0 d1=53 d2=106 [LotroShortMessage]
-  1370880 META text type=0x05 "sto\\ "
+  1370880 META text type=0x05 "sto "
   1382400 NOTE_OFF ch=0 d1=53 d2=106 [LotroShortMessage]
   1382400 NOTE_ON ch=0 d1=52 d2=106 [LotroShortMessage]
-  1382400 META text type=0x05 "/sol "
+  1382400 META text type=0x05 "sol "
   1393920 NOTE_OFF ch=0 d1=52 d2=106 [LotroShortMessage]
   1393920 NOTE_ON ch=0 d1=53 d2=106 [LotroShortMessage]
   1393920 META text type=0x05 "de"
@@ -264,7 +264,7 @@ divisionType=0.0 resolution=11520 tickLength=2134622 tracks=2
   1405440 META text type=0x05 "si"
   1428480 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
   1428480 NOTE_ON ch=0 d1=53 d2=106 [LotroShortMessage]
-  1428480 META text type=0x05 "o "
+  1428480 META text type=0x05 "o. "
   1451520 NOTE_OFF ch=0 d1=53 d2=106 [LotroShortMessage]
   1474560 NOTE_ON ch=0 d1=53 d2=106 [LotroShortMessage]
   1566720 NOTE_OFF ch=0 d1=53 d2=106 [LotroShortMessage]
@@ -302,19 +302,18 @@ divisionType=0.0 resolution=11520 tickLength=2134622 tracks=2
   1693440 META text type=0x05 "de"
   1704960 NOTE_OFF ch=0 d1=53 d2=106 [LotroShortMessage]
   1704960 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
-  1704960 META text type=0x05 "si "
+  1704960 META text type=0x05 "si"
   1716480 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
   1716480 NOTE_ON ch=0 d1=53 d2=106 [LotroShortMessage]
-  1716480 META text type=0x05 "o"
   1733760 NOTE_OFF ch=0 d1=53 d2=106 [LotroShortMessage]
   1733760 NOTE_ON ch=0 d1=52 d2=106 [LotroShortMessage]
   1736640 NOTE_OFF ch=0 d1=52 d2=106 [LotroShortMessage]
   1736640 NOTE_ON ch=0 d1=50 d2=106 [LotroShortMessage]
-  1736640 META text type=0x05 ". "
   1739520 NOTE_OFF ch=0 d1=50 d2=106 [LotroShortMessage]
   1739520 NOTE_ON ch=0 d1=52 d2=106 [LotroShortMessage]
   1751040 NOTE_OFF ch=0 d1=52 d2=106 [LotroShortMessage]
   1751040 NOTE_ON ch=0 d1=53 d2=106 [LotroShortMessage]
+  1751040 META text type=0x05 "o. "
   1774080 NOTE_OFF ch=0 d1=53 d2=106 [LotroShortMessage]
   1797120 NOTE_ON ch=0 d1=53 d2=106 [LotroShortMessage]
   1889280 NOTE_OFF ch=0 d1=53 d2=106 [LotroShortMessage]
@@ -355,15 +354,15 @@ divisionType=0.0 resolution=11520 tickLength=2134622 tracks=2
   2027520 META text type=0x05 "si"
   2073600 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
   2073600 NOTE_ON ch=0 d1=53 d2=106 [LotroShortMessage]
-  2073600 META text type=0x05 "o "
+  2073600 META text type=0x05 "o. "
   2096640 NOTE_OFF ch=0 d1=53 d2=106 [LotroShortMessage]
   2119680 NOTE_ON ch=0 d1=53 d2=106 [LotroShortMessage]
   2119681 META text type=0x05 "/Questi son gli occhi che mi"
-  2119682 META text type=0x05 "/Questi son gli occhi che miran do fiso mi"
-  2119683 META text type=0x05 "/Questi son gli occhi che miran do"
+  2119682 META text type=0x05 "/Questi son gli occhi che mirando fiso mi"
+  2119683 META text type=0x05 "/Questi son gli occhi che mirando"
   2119684 META text type=0x05 "/rando fiso, tutto restai conquiso."
   2119685 META text type=0x05 "/rando fiso tutto restai conquiso."
-  2119686 META text type=0x05 "/fi so tutto restai conquiso."
+  2119686 META text type=0x05 "/fiso tutto restai conquiso."
   2134622 NOTE_OFF ch=0 d1=53 d2=106 [LotroShortMessage]
   2134622 META end_of_track
 == abcInfo
@@ -524,7 +523,7 @@ divisionType=0.0 resolution=11520 tickLength=2211840 tracks=2
   0 META type=0x59 data=FD00
   1 META text type=0x05 "@IComposer: Claudio Monteverdi (1567-1643)"
   1 META end_of_track
--- track 1 (352 events)
+-- track 1 (351 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 META text type=0x03 "Canzonetta a tre voci"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
@@ -573,27 +572,27 @@ divisionType=0.0 resolution=11520 tickLength=2211840 tracks=2
   264960 META text type=0x05 "ni e "
   276480 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
   276480 NOTE_ON ch=0 d1=53 d2=80 [LotroShortMessage]
-  276480 META text type=0x05 "que "
+  276480 META text type=0x05 "que"
   282240 NOTE_OFF ch=0 d1=53 d2=80 [LotroShortMessage]
   282240 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
-  282240 META text type=0x05 "sto il "
   288000 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
   288000 NOTE_ON ch=0 d1=56 d2=80 [LotroShortMessage]
-  288000 META text type=0x05 "vi"
   293760 NOTE_OFF ch=0 d1=56 d2=80 [LotroShortMessage]
   293760 NOTE_ON ch=0 d1=58 d2=80 [LotroShortMessage]
-  293760 META text type=0x05 "so "
   299520 NOTE_OFF ch=0 d1=58 d2=80 [LotroShortMessage]
   299520 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
-  299520 META text type=0x05 "e "
   311040 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
   311040 NOTE_ON ch=0 d1=57 d2=80 [LotroShortMessage]
+  311040 META text type=0x05 "sto il "
   322560 NOTE_OFF ch=0 d1=57 d2=80 [LotroShortMessage]
   322560 NOTE_ON ch=0 d1=58 d2=80 [LotroShortMessage]
+  322560 META text type=0x05 "vi"
   345600 NOTE_OFF ch=0 d1=58 d2=80 [LotroShortMessage]
   345600 NOTE_ON ch=0 d1=56 d2=80 [LotroShortMessage]
+  345600 META text type=0x05 "so "
   357120 NOTE_OFF ch=0 d1=56 d2=80 [LotroShortMessage]
   357120 NOTE_ON ch=0 d1=56 d2=80 [LotroShortMessage]
+  357120 META text type=0x05 "e "
   368640 NOTE_OFF ch=0 d1=56 d2=80 [LotroShortMessage]
   414720 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
   414720 META text type=0x05 "/Son "
@@ -617,10 +616,9 @@ divisionType=0.0 resolution=11520 tickLength=2211840 tracks=2
   495360 META text type=0x05 "ni e "
   506880 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
   506880 NOTE_ON ch=0 d1=58 d2=80 [LotroShortMessage]
-  506880 META text type=0x05 "que "
+  506880 META text type=0x05 "que"
   512640 NOTE_OFF ch=0 d1=58 d2=80 [LotroShortMessage]
   512640 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
-  512640 META text type=0x05 "sto il "
   518400 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
   518400 NOTE_ON ch=0 d1=61 d2=80 [LotroShortMessage]
   524160 NOTE_OFF ch=0 d1=61 d2=80 [LotroShortMessage]
@@ -629,6 +627,7 @@ divisionType=0.0 resolution=11520 tickLength=2211840 tracks=2
   529920 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
   541440 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
   541440 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
+  541440 META text type=0x05 "sto il "
   552960 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
   552960 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
   552960 META text type=0x05 "/que"
@@ -703,40 +702,40 @@ divisionType=0.0 resolution=11520 tickLength=2211840 tracks=2
   967680 META text type=0x05 "Deh, "
   1013760 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
   1013760 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  1013760 META text type=0x05 "/vi "
+  1013760 META text type=0x05 "/vi"
   1025280 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
   1025280 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
-  1025280 META text type=0x05 "so "
   1031040 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
   1031040 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  1031040 META text type=0x05 "ond' "
   1036800 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
   1036800 NOTE_ON ch=0 d1=63 d2=80 [LotroShortMessage]
-  1036800 META text type=0x05 "io "
   1059840 NOTE_OFF ch=0 d1=63 d2=80 [LotroShortMessage]
   1059840 NOTE_ON ch=0 d1=56 d2=80 [LotroShortMessage]
-  1059840 META text type=0x05 "ti"
+  1059840 META text type=0x05 "so "
   1071360 NOTE_OFF ch=0 d1=56 d2=80 [LotroShortMessage]
   1071360 NOTE_ON ch=0 d1=61 d2=80 [LotroShortMessage]
-  1071360 META text type=0x05 "man"
+  1071360 META text type=0x05 "ond' "
   1082880 NOTE_OFF ch=0 d1=61 d2=80 [LotroShortMessage]
   1082880 NOTE_ON ch=0 d1=61 d2=80 [LotroShortMessage]
-  1082880 META text type=0x05 "go uc"
+  1082880 META text type=0x05 "io "
   1094400 NOTE_OFF ch=0 d1=61 d2=80 [LotroShortMessage]
   1094400 NOTE_ON ch=0 d1=61 d2=80 [LotroShortMessage]
-  1094400 META text type=0x05 "ci"
+  1094400 META text type=0x05 "ti"
   1105920 NOTE_OFF ch=0 d1=61 d2=80 [LotroShortMessage]
   1105920 NOTE_ON ch=0 d1=56 d2=80 [LotroShortMessage]
-  1105920 META text type=0x05 "so. "
+  1105920 META text type=0x05 "man"
   1140480 NOTE_OFF ch=0 d1=56 d2=80 [LotroShortMessage]
   1140480 NOTE_ON ch=0 d1=58 d2=80 [LotroShortMessage]
-  1140480 META text type=0x05 "Deh, "
+  1140480 META text type=0x05 "go uc"
   1152000 NOTE_OFF ch=0 d1=58 d2=80 [LotroShortMessage]
   1152000 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  1152000 META text type=0x05 "ci"
   1175040 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
   1175040 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  1175040 META text type=0x05 "so. "
   1186560 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
   1198080 NOTE_ON ch=0 d1=56 d2=80 [LotroShortMessage]
+  1198080 META text type=0x05 "Deh, "
   1244160 NOTE_OFF ch=0 d1=56 d2=80 [LotroShortMessage]
   1244160 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
   1244160 META text type=0x05 "/dim"
@@ -763,10 +762,10 @@ divisionType=0.0 resolution=11520 tickLength=2211840 tracks=2
   1359360 META text type=0x05 "que"
   1370880 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
   1370880 NOTE_ON ch=0 d1=53 d2=80 [LotroShortMessage]
-  1370880 META text type=0x05 "sto\\ "
+  1370880 META text type=0x05 "sto "
   1382400 NOTE_OFF ch=0 d1=53 d2=80 [LotroShortMessage]
   1382400 NOTE_ON ch=0 d1=52 d2=80 [LotroShortMessage]
-  1382400 META text type=0x05 "/sol "
+  1382400 META text type=0x05 "sol "
   1393920 NOTE_OFF ch=0 d1=52 d2=80 [LotroShortMessage]
   1393920 NOTE_ON ch=0 d1=53 d2=80 [LotroShortMessage]
   1393920 META text type=0x05 "de"
@@ -775,7 +774,7 @@ divisionType=0.0 resolution=11520 tickLength=2211840 tracks=2
   1405440 META text type=0x05 "si"
   1428480 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
   1428480 NOTE_ON ch=0 d1=53 d2=80 [LotroShortMessage]
-  1428480 META text type=0x05 "o "
+  1428480 META text type=0x05 "o. "
   1451520 NOTE_OFF ch=0 d1=53 d2=80 [LotroShortMessage]
   1474560 NOTE_ON ch=0 d1=53 d2=80 [LotroShortMessage]
   1566720 NOTE_OFF ch=0 d1=53 d2=80 [LotroShortMessage]
@@ -813,19 +812,18 @@ divisionType=0.0 resolution=11520 tickLength=2211840 tracks=2
   1693440 META text type=0x05 "de"
   1704960 NOTE_OFF ch=0 d1=53 d2=80 [LotroShortMessage]
   1704960 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
-  1704960 META text type=0x05 "si "
+  1704960 META text type=0x05 "si"
   1716480 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
   1716480 NOTE_ON ch=0 d1=53 d2=80 [LotroShortMessage]
-  1716480 META text type=0x05 "o"
   1733760 NOTE_OFF ch=0 d1=53 d2=80 [LotroShortMessage]
   1733760 NOTE_ON ch=0 d1=52 d2=80 [LotroShortMessage]
   1736640 NOTE_OFF ch=0 d1=52 d2=80 [LotroShortMessage]
   1736640 NOTE_ON ch=0 d1=50 d2=80 [LotroShortMessage]
-  1736640 META text type=0x05 ". "
   1739520 NOTE_OFF ch=0 d1=50 d2=80 [LotroShortMessage]
   1739520 NOTE_ON ch=0 d1=52 d2=80 [LotroShortMessage]
   1751040 NOTE_OFF ch=0 d1=52 d2=80 [LotroShortMessage]
   1751040 NOTE_ON ch=0 d1=53 d2=80 [LotroShortMessage]
+  1751040 META text type=0x05 "o. "
   1774080 NOTE_OFF ch=0 d1=53 d2=80 [LotroShortMessage]
   1797120 NOTE_ON ch=0 d1=53 d2=80 [LotroShortMessage]
   1889280 NOTE_OFF ch=0 d1=53 d2=80 [LotroShortMessage]
@@ -866,15 +864,15 @@ divisionType=0.0 resolution=11520 tickLength=2211840 tracks=2
   2027520 META text type=0x05 "si"
   2073600 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
   2073600 NOTE_ON ch=0 d1=53 d2=80 [LotroShortMessage]
-  2073600 META text type=0x05 "o "
+  2073600 META text type=0x05 "o. "
   2096640 NOTE_OFF ch=0 d1=53 d2=80 [LotroShortMessage]
   2119680 NOTE_ON ch=0 d1=53 d2=80 [LotroShortMessage]
   2119681 META text type=0x05 "/Questi son gli occhi che mi"
-  2119682 META text type=0x05 "/Questi son gli occhi che miran do fiso mi"
-  2119683 META text type=0x05 "/Questi son gli occhi che miran do"
+  2119682 META text type=0x05 "/Questi son gli occhi che mirando fiso mi"
+  2119683 META text type=0x05 "/Questi son gli occhi che mirando"
   2119684 META text type=0x05 "/rando fiso, tutto restai conquiso."
   2119685 META text type=0x05 "/rando fiso tutto restai conquiso."
-  2119686 META text type=0x05 "/fi so tutto restai conquiso."
+  2119686 META text type=0x05 "/fiso tutto restai conquiso."
   2211840 NOTE_OFF ch=0 d1=53 d2=80 [LotroShortMessage]
   2211840 META end_of_track
 == abcInfo
@@ -1030,7 +1028,7 @@ divisionType=0.0 resolution=11520 tickLength=2211840 tracks=2
   0 META type=0x59 data=FD00
   1 META text type=0x05 "@IComposer: Claudio Monteverdi (1567-1643)"
   1 META end_of_track
--- track 1 (352 events)
+-- track 1 (351 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 META text type=0x03 "Canzonetta a tre voci"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
@@ -1079,27 +1077,27 @@ divisionType=0.0 resolution=11520 tickLength=2211840 tracks=2
   264960 META text type=0x05 "ni e "
   276480 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
   276480 NOTE_ON ch=0 d1=53 d2=80 [LotroShortMessage]
-  276480 META text type=0x05 "que "
+  276480 META text type=0x05 "que"
   282240 NOTE_OFF ch=0 d1=53 d2=80 [LotroShortMessage]
   282240 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
-  282240 META text type=0x05 "sto il "
   288000 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
   288000 NOTE_ON ch=0 d1=56 d2=80 [LotroShortMessage]
-  288000 META text type=0x05 "vi"
   293760 NOTE_OFF ch=0 d1=56 d2=80 [LotroShortMessage]
   293760 NOTE_ON ch=0 d1=58 d2=80 [LotroShortMessage]
-  293760 META text type=0x05 "so "
   299520 NOTE_OFF ch=0 d1=58 d2=80 [LotroShortMessage]
   299520 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
-  299520 META text type=0x05 "e "
   311040 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
   311040 NOTE_ON ch=0 d1=57 d2=80 [LotroShortMessage]
+  311040 META text type=0x05 "sto il "
   322560 NOTE_OFF ch=0 d1=57 d2=80 [LotroShortMessage]
   322560 NOTE_ON ch=0 d1=58 d2=80 [LotroShortMessage]
+  322560 META text type=0x05 "vi"
   345600 NOTE_OFF ch=0 d1=58 d2=80 [LotroShortMessage]
   345600 NOTE_ON ch=0 d1=56 d2=80 [LotroShortMessage]
+  345600 META text type=0x05 "so "
   357120 NOTE_OFF ch=0 d1=56 d2=80 [LotroShortMessage]
   357120 NOTE_ON ch=0 d1=56 d2=80 [LotroShortMessage]
+  357120 META text type=0x05 "e "
   368640 NOTE_OFF ch=0 d1=56 d2=80 [LotroShortMessage]
   414720 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
   414720 META text type=0x05 "/Son "
@@ -1123,10 +1121,9 @@ divisionType=0.0 resolution=11520 tickLength=2211840 tracks=2
   495360 META text type=0x05 "ni e "
   506880 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
   506880 NOTE_ON ch=0 d1=58 d2=80 [LotroShortMessage]
-  506880 META text type=0x05 "que "
+  506880 META text type=0x05 "que"
   512640 NOTE_OFF ch=0 d1=58 d2=80 [LotroShortMessage]
   512640 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
-  512640 META text type=0x05 "sto il "
   518400 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
   518400 NOTE_ON ch=0 d1=61 d2=80 [LotroShortMessage]
   524160 NOTE_OFF ch=0 d1=61 d2=80 [LotroShortMessage]
@@ -1135,6 +1132,7 @@ divisionType=0.0 resolution=11520 tickLength=2211840 tracks=2
   529920 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
   541440 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
   541440 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
+  541440 META text type=0x05 "sto il "
   552960 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
   552960 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
   552960 META text type=0x05 "/que"
@@ -1209,40 +1207,40 @@ divisionType=0.0 resolution=11520 tickLength=2211840 tracks=2
   967680 META text type=0x05 "Deh, "
   1013760 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
   1013760 NOTE_ON ch=0 d1=68 d2=80 [LotroShortMessage]
-  1013760 META text type=0x05 "/vi "
+  1013760 META text type=0x05 "/vi"
   1025280 NOTE_OFF ch=0 d1=68 d2=80 [LotroShortMessage]
   1025280 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
-  1025280 META text type=0x05 "so "
   1031040 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
   1031040 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  1031040 META text type=0x05 "ond' "
   1036800 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
   1036800 NOTE_ON ch=0 d1=63 d2=80 [LotroShortMessage]
-  1036800 META text type=0x05 "io "
   1059840 NOTE_OFF ch=0 d1=63 d2=80 [LotroShortMessage]
   1059840 NOTE_ON ch=0 d1=56 d2=80 [LotroShortMessage]
-  1059840 META text type=0x05 "ti"
+  1059840 META text type=0x05 "so "
   1071360 NOTE_OFF ch=0 d1=56 d2=80 [LotroShortMessage]
   1071360 NOTE_ON ch=0 d1=61 d2=80 [LotroShortMessage]
-  1071360 META text type=0x05 "man"
+  1071360 META text type=0x05 "ond' "
   1082880 NOTE_OFF ch=0 d1=61 d2=80 [LotroShortMessage]
   1082880 NOTE_ON ch=0 d1=61 d2=80 [LotroShortMessage]
-  1082880 META text type=0x05 "go uc"
+  1082880 META text type=0x05 "io "
   1094400 NOTE_OFF ch=0 d1=61 d2=80 [LotroShortMessage]
   1094400 NOTE_ON ch=0 d1=61 d2=80 [LotroShortMessage]
-  1094400 META text type=0x05 "ci"
+  1094400 META text type=0x05 "ti"
   1105920 NOTE_OFF ch=0 d1=61 d2=80 [LotroShortMessage]
   1105920 NOTE_ON ch=0 d1=56 d2=80 [LotroShortMessage]
-  1105920 META text type=0x05 "so. "
+  1105920 META text type=0x05 "man"
   1140480 NOTE_OFF ch=0 d1=56 d2=80 [LotroShortMessage]
   1140480 NOTE_ON ch=0 d1=58 d2=80 [LotroShortMessage]
-  1140480 META text type=0x05 "Deh, "
+  1140480 META text type=0x05 "go uc"
   1152000 NOTE_OFF ch=0 d1=58 d2=80 [LotroShortMessage]
   1152000 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  1152000 META text type=0x05 "ci"
   1175040 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
   1175040 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  1175040 META text type=0x05 "so. "
   1186560 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
   1198080 NOTE_ON ch=0 d1=56 d2=80 [LotroShortMessage]
+  1198080 META text type=0x05 "Deh, "
   1244160 NOTE_OFF ch=0 d1=56 d2=80 [LotroShortMessage]
   1244160 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
   1244160 META text type=0x05 "/dim"
@@ -1269,10 +1267,10 @@ divisionType=0.0 resolution=11520 tickLength=2211840 tracks=2
   1359360 META text type=0x05 "que"
   1370880 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
   1370880 NOTE_ON ch=0 d1=53 d2=80 [LotroShortMessage]
-  1370880 META text type=0x05 "sto\\ "
+  1370880 META text type=0x05 "sto "
   1382400 NOTE_OFF ch=0 d1=53 d2=80 [LotroShortMessage]
   1382400 NOTE_ON ch=0 d1=52 d2=80 [LotroShortMessage]
-  1382400 META text type=0x05 "/sol "
+  1382400 META text type=0x05 "sol "
   1393920 NOTE_OFF ch=0 d1=52 d2=80 [LotroShortMessage]
   1393920 NOTE_ON ch=0 d1=53 d2=80 [LotroShortMessage]
   1393920 META text type=0x05 "de"
@@ -1281,7 +1279,7 @@ divisionType=0.0 resolution=11520 tickLength=2211840 tracks=2
   1405440 META text type=0x05 "si"
   1428480 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
   1428480 NOTE_ON ch=0 d1=53 d2=80 [LotroShortMessage]
-  1428480 META text type=0x05 "o "
+  1428480 META text type=0x05 "o. "
   1451520 NOTE_OFF ch=0 d1=53 d2=80 [LotroShortMessage]
   1474560 NOTE_ON ch=0 d1=53 d2=80 [LotroShortMessage]
   1566720 NOTE_OFF ch=0 d1=53 d2=80 [LotroShortMessage]
@@ -1319,19 +1317,18 @@ divisionType=0.0 resolution=11520 tickLength=2211840 tracks=2
   1693440 META text type=0x05 "de"
   1704960 NOTE_OFF ch=0 d1=53 d2=80 [LotroShortMessage]
   1704960 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
-  1704960 META text type=0x05 "si "
+  1704960 META text type=0x05 "si"
   1716480 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
   1716480 NOTE_ON ch=0 d1=53 d2=80 [LotroShortMessage]
-  1716480 META text type=0x05 "o"
   1733760 NOTE_OFF ch=0 d1=53 d2=80 [LotroShortMessage]
   1733760 NOTE_ON ch=0 d1=52 d2=80 [LotroShortMessage]
   1736640 NOTE_OFF ch=0 d1=52 d2=80 [LotroShortMessage]
   1736640 NOTE_ON ch=0 d1=50 d2=80 [LotroShortMessage]
-  1736640 META text type=0x05 ". "
   1739520 NOTE_OFF ch=0 d1=50 d2=80 [LotroShortMessage]
   1739520 NOTE_ON ch=0 d1=52 d2=80 [LotroShortMessage]
   1751040 NOTE_OFF ch=0 d1=52 d2=80 [LotroShortMessage]
   1751040 NOTE_ON ch=0 d1=53 d2=80 [LotroShortMessage]
+  1751040 META text type=0x05 "o. "
   1774080 NOTE_OFF ch=0 d1=53 d2=80 [LotroShortMessage]
   1797120 NOTE_ON ch=0 d1=53 d2=80 [LotroShortMessage]
   1889280 NOTE_OFF ch=0 d1=53 d2=80 [LotroShortMessage]
@@ -1372,15 +1369,15 @@ divisionType=0.0 resolution=11520 tickLength=2211840 tracks=2
   2027520 META text type=0x05 "si"
   2073600 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
   2073600 NOTE_ON ch=0 d1=53 d2=80 [LotroShortMessage]
-  2073600 META text type=0x05 "o "
+  2073600 META text type=0x05 "o. "
   2096640 NOTE_OFF ch=0 d1=53 d2=80 [LotroShortMessage]
   2119680 NOTE_ON ch=0 d1=53 d2=80 [LotroShortMessage]
   2119681 META text type=0x05 "/Questi son gli occhi che mi"
-  2119682 META text type=0x05 "/Questi son gli occhi che miran do fiso mi"
-  2119683 META text type=0x05 "/Questi son gli occhi che miran do"
+  2119682 META text type=0x05 "/Questi son gli occhi che mirando fiso mi"
+  2119683 META text type=0x05 "/Questi son gli occhi che mirando"
   2119684 META text type=0x05 "/rando fiso, tutto restai conquiso."
   2119685 META text type=0x05 "/rando fiso tutto restai conquiso."
-  2119686 META text type=0x05 "/fi so tutto restai conquiso."
+  2119686 META text type=0x05 "/fiso tutto restai conquiso."
   2211840 NOTE_OFF ch=0 d1=53 d2=80 [LotroShortMessage]
   2211840 META end_of_track
 == abcInfo
@@ -1536,7 +1533,7 @@ divisionType=0.0 resolution=11520 tickLength=1336320 tracks=4
   0 META type=0x59 data=FD00
   1 META text type=0x05 "@IComposer: Claudio Monteverdi (1567-1643)"
   1 META end_of_track
--- track 1 (196 events)
+-- track 1 (198 events)
   0 PROGRAM_CHANGE ch=0 d1=75 d2=0 [LotroShortMessage]
   0 META text type=0x03 "Soprano"
   0 CONTROL_CHANGE ch=0 d1=10 d2=91 [LotroShortMessage]
@@ -1651,10 +1648,10 @@ divisionType=0.0 resolution=11520 tickLength=1336320 tracks=4
   714240 META text type=0x05 "so. "
   725760 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
   737280 NOTE_ON ch=0 d1=75 d2=80 [LotroShortMessage]
-  737280 META text type=0x05 "Deh, "
+  737280 META text type=0x05 "/Deh, "
   783360 NOTE_OFF ch=0 d1=75 d2=80 [LotroShortMessage]
   783360 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
-  783360 META text type=0x05 "/dim"
+  783360 META text type=0x05 "dim"
   794880 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
   794880 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
   794880 META text type=0x05 "me"
@@ -1678,10 +1675,10 @@ divisionType=0.0 resolution=11520 tickLength=1336320 tracks=4
   898560 META text type=0x05 "que"
   910080 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
   910080 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  910080 META text type=0x05 "sto\\ "
+  910080 META text type=0x05 "sto "
   921600 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
   921600 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
-  921600 META text type=0x05 "/sol "
+  921600 META text type=0x05 "sol "
   933120 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
   933120 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
   933120 META text type=0x05 "de"
@@ -1690,12 +1687,13 @@ divisionType=0.0 resolution=11520 tickLength=1336320 tracks=4
   944640 META text type=0x05 "si"
   967680 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
   967680 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  967680 META text type=0x05 "o "
+  967680 META text type=0x05 "o. "
   990720 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
   1013760 NOTE_ON ch=0 d1=75 d2=80 [LotroShortMessage]
+  1013760 META text type=0x05 "/Deh, "
   1059840 NOTE_OFF ch=0 d1=75 d2=80 [LotroShortMessage]
   1059840 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
-  1059840 META text type=0x05 "/dim"
+  1059840 META text type=0x05 "dim"
   1071360 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
   1071360 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
   1071360 META text type=0x05 "me"
@@ -1719,21 +1717,22 @@ divisionType=0.0 resolution=11520 tickLength=1336320 tracks=4
   1175040 META text type=0x05 "que"
   1186560 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
   1186560 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
-  1186560 META text type=0x05 "sto\\ "
+  1186560 META text type=0x05 "sto "
   1198080 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
   1198080 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
-  1198080 META text type=0x05 "/sol "
+  1198080 META text type=0x05 "sol "
   1209600 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
   1209600 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
   1209600 META text type=0x05 "de"
   1221120 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
   1221120 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
-  1221120 META text type=0x05 "si "
+  1221120 META text type=0x05 "si"
   1244160 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
   1244160 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
+  1244160 META text type=0x05 "o. "
   1336320 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
   1336320 META end_of_track
--- track 2 (261 events)
+-- track 2 (260 events)
   0 PROGRAM_CHANGE ch=1 d1=75 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=1 d1=72 d2=80 [LotroShortMessage]
   0 META text type=0x05 "Son "
@@ -1761,27 +1760,27 @@ divisionType=0.0 resolution=11520 tickLength=1336320 tracks=4
   80640 META text type=0x05 "ni e "
   92160 NOTE_OFF ch=1 d1=72 d2=80 [LotroShortMessage]
   92160 NOTE_ON ch=1 d1=65 d2=80 [LotroShortMessage]
-  92160 META text type=0x05 "que "
+  92160 META text type=0x05 "que"
   97920 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
   97920 NOTE_ON ch=1 d1=67 d2=80 [LotroShortMessage]
-  97920 META text type=0x05 "sto il "
   103680 NOTE_OFF ch=1 d1=67 d2=80 [LotroShortMessage]
   103680 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
-  103680 META text type=0x05 "vi"
   109440 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
   109440 NOTE_ON ch=1 d1=70 d2=80 [LotroShortMessage]
-  109440 META text type=0x05 "so "
   115200 NOTE_OFF ch=1 d1=70 d2=80 [LotroShortMessage]
   115200 NOTE_ON ch=1 d1=72 d2=80 [LotroShortMessage]
-  115200 META text type=0x05 "e "
   126720 NOTE_OFF ch=1 d1=72 d2=80 [LotroShortMessage]
   126720 NOTE_ON ch=1 d1=69 d2=80 [LotroShortMessage]
+  126720 META text type=0x05 "sto il "
   138240 NOTE_OFF ch=1 d1=69 d2=80 [LotroShortMessage]
   138240 NOTE_ON ch=1 d1=70 d2=80 [LotroShortMessage]
+  138240 META text type=0x05 "vi"
   161280 NOTE_OFF ch=1 d1=70 d2=80 [LotroShortMessage]
   161280 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  161280 META text type=0x05 "so "
   172800 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
   172800 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  172800 META text type=0x05 "e "
   184320 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
   184320 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
   184320 META text type=0x05 "/que"
@@ -1838,27 +1837,27 @@ divisionType=0.0 resolution=11520 tickLength=1336320 tracks=4
   449280 META text type=0x05 "mi"
   460800 NOTE_OFF ch=1 d1=72 d2=80 [LotroShortMessage]
   460800 NOTE_ON ch=1 d1=65 d2=80 [LotroShortMessage]
-  460800 META text type=0x05 "ran "
+  460800 META text type=0x05 "ran"
   466560 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
   466560 NOTE_ON ch=1 d1=67 d2=80 [LotroShortMessage]
-  466560 META text type=0x05 "do "
   472320 NOTE_OFF ch=1 d1=67 d2=80 [LotroShortMessage]
   472320 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
-  472320 META text type=0x05 "fi"
   478080 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
   478080 NOTE_ON ch=1 d1=70 d2=80 [LotroShortMessage]
-  478080 META text type=0x05 "so "
   483840 NOTE_OFF ch=1 d1=70 d2=80 [LotroShortMessage]
   483840 NOTE_ON ch=1 d1=72 d2=80 [LotroShortMessage]
-  483840 META text type=0x05 "mi-"
   495360 NOTE_OFF ch=1 d1=72 d2=80 [LotroShortMessage]
   495360 NOTE_ON ch=1 d1=69 d2=80 [LotroShortMessage]
+  495360 META text type=0x05 "do "
   506880 NOTE_OFF ch=1 d1=69 d2=80 [LotroShortMessage]
   506880 NOTE_ON ch=1 d1=70 d2=80 [LotroShortMessage]
+  506880 META text type=0x05 "fi"
   529920 NOTE_OFF ch=1 d1=70 d2=80 [LotroShortMessage]
   529920 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  529920 META text type=0x05 "so "
   541440 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
   541440 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
+  541440 META text type=0x05 "mi-"
   552960 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
   552960 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
   552960 META text type=0x05 "/ran"
@@ -1894,10 +1893,10 @@ divisionType=0.0 resolution=11520 tickLength=1336320 tracks=4
   714240 META text type=0x05 "so. "
   725760 NOTE_OFF ch=1 d1=64 d2=80 [LotroShortMessage]
   737280 NOTE_ON ch=1 d1=72 d2=80 [LotroShortMessage]
-  737280 META text type=0x05 "Deh, "
+  737280 META text type=0x05 "/Deh, "
   783360 NOTE_OFF ch=1 d1=72 d2=80 [LotroShortMessage]
   783360 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
-  783360 META text type=0x05 "/dim"
+  783360 META text type=0x05 "dim"
   794880 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
   794880 NOTE_ON ch=1 d1=70 d2=80 [LotroShortMessage]
   794880 META text type=0x05 "me"
@@ -1930,24 +1929,24 @@ divisionType=0.0 resolution=11520 tickLength=1336320 tracks=4
   910080 META text type=0x05 "de"
   921600 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
   921600 NOTE_ON ch=1 d1=67 d2=80 [LotroShortMessage]
-  921600 META text type=0x05 "si "
+  921600 META text type=0x05 "si"
   933120 NOTE_OFF ch=1 d1=67 d2=80 [LotroShortMessage]
   933120 NOTE_ON ch=1 d1=65 d2=80 [LotroShortMessage]
-  933120 META text type=0x05 "o"
   950400 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
   950400 NOTE_ON ch=1 d1=64 d2=80 [LotroShortMessage]
   953280 NOTE_OFF ch=1 d1=64 d2=80 [LotroShortMessage]
   953280 NOTE_ON ch=1 d1=62 d2=80 [LotroShortMessage]
-  953280 META text type=0x05 ". "
   956160 NOTE_OFF ch=1 d1=62 d2=80 [LotroShortMessage]
   956160 NOTE_ON ch=1 d1=64 d2=80 [LotroShortMessage]
   967680 NOTE_OFF ch=1 d1=64 d2=80 [LotroShortMessage]
   967680 NOTE_ON ch=1 d1=65 d2=80 [LotroShortMessage]
+  967680 META text type=0x05 "o. "
   990720 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
   1013760 NOTE_ON ch=1 d1=72 d2=80 [LotroShortMessage]
+  1013760 META text type=0x05 "/Deh, "
   1059840 NOTE_OFF ch=1 d1=72 d2=80 [LotroShortMessage]
   1059840 NOTE_ON ch=1 d1=68 d2=80 [LotroShortMessage]
-  1059840 META text type=0x05 "/dim"
+  1059840 META text type=0x05 "dim"
   1071360 NOTE_OFF ch=1 d1=68 d2=80 [LotroShortMessage]
   1071360 NOTE_ON ch=1 d1=70 d2=80 [LotroShortMessage]
   1071360 META text type=0x05 "me"
@@ -1980,22 +1979,21 @@ divisionType=0.0 resolution=11520 tickLength=1336320 tracks=4
   1186560 META text type=0x05 "de"
   1198080 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
   1198080 NOTE_ON ch=1 d1=67 d2=80 [LotroShortMessage]
-  1198080 META text type=0x05 "si "
+  1198080 META text type=0x05 "si"
   1209600 NOTE_OFF ch=1 d1=67 d2=80 [LotroShortMessage]
   1209600 NOTE_ON ch=1 d1=65 d2=80 [LotroShortMessage]
-  1209600 META text type=0x05 "o"
   1226880 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
   1226880 NOTE_ON ch=1 d1=64 d2=80 [LotroShortMessage]
   1229760 NOTE_OFF ch=1 d1=64 d2=80 [LotroShortMessage]
   1229760 NOTE_ON ch=1 d1=62 d2=80 [LotroShortMessage]
-  1229760 META text type=0x05 ". "
   1232640 NOTE_OFF ch=1 d1=62 d2=80 [LotroShortMessage]
   1232640 NOTE_ON ch=1 d1=64 d2=80 [LotroShortMessage]
   1244160 NOTE_OFF ch=1 d1=64 d2=80 [LotroShortMessage]
   1244160 NOTE_ON ch=1 d1=65 d2=80 [LotroShortMessage]
+  1244160 META text type=0x05 "o. "
   1336320 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
   1336320 META end_of_track
--- track 3 (224 events)
+-- track 3 (226 events)
   0 PROGRAM_CHANGE ch=2 d1=75 d2=0 [LotroShortMessage]
   0 META text type=0x03 "Tenor"
   0 CONTROL_CHANGE ch=2 d1=10 d2=88 [LotroShortMessage]
@@ -2023,10 +2021,9 @@ divisionType=0.0 resolution=11520 tickLength=1336320 tracks=4
   126720 META text type=0x05 "ni e "
   138240 NOTE_OFF ch=2 d1=77 d2=80 [LotroShortMessage]
   138240 NOTE_ON ch=2 d1=70 d2=80 [LotroShortMessage]
-  138240 META text type=0x05 "que "
+  138240 META text type=0x05 "que"
   144000 NOTE_OFF ch=2 d1=70 d2=80 [LotroShortMessage]
   144000 NOTE_ON ch=2 d1=72 d2=80 [LotroShortMessage]
-  144000 META text type=0x05 "sto il "
   149760 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
   149760 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
   155520 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
@@ -2035,40 +2032,40 @@ divisionType=0.0 resolution=11520 tickLength=1336320 tracks=4
   161280 NOTE_ON ch=2 d1=77 d2=80 [LotroShortMessage]
   172800 NOTE_OFF ch=2 d1=77 d2=80 [LotroShortMessage]
   172800 NOTE_ON ch=2 d1=77 d2=80 [LotroShortMessage]
+  172800 META text type=0x05 "sto il "
   184320 NOTE_OFF ch=2 d1=77 d2=80 [LotroShortMessage]
   184320 NOTE_ON ch=2 d1=80 d2=80 [LotroShortMessage]
-  184320 META text type=0x05 "/vi "
+  184320 META text type=0x05 "/vi"
   195840 NOTE_OFF ch=2 d1=80 d2=80 [LotroShortMessage]
   195840 NOTE_ON ch=2 d1=79 d2=80 [LotroShortMessage]
-  195840 META text type=0x05 "so "
   201600 NOTE_OFF ch=2 d1=79 d2=80 [LotroShortMessage]
   201600 NOTE_ON ch=2 d1=77 d2=80 [LotroShortMessage]
-  201600 META text type=0x05 "ond' "
   207360 NOTE_OFF ch=2 d1=77 d2=80 [LotroShortMessage]
   207360 NOTE_ON ch=2 d1=75 d2=80 [LotroShortMessage]
-  207360 META text type=0x05 "io "
   230400 NOTE_OFF ch=2 d1=75 d2=80 [LotroShortMessage]
   230400 NOTE_ON ch=2 d1=68 d2=80 [LotroShortMessage]
-  230400 META text type=0x05 "ti"
+  230400 META text type=0x05 "so "
   241920 NOTE_OFF ch=2 d1=68 d2=80 [LotroShortMessage]
   241920 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
-  241920 META text type=0x05 "man"
+  241920 META text type=0x05 "ond' "
   253440 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
   253440 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
-  253440 META text type=0x05 "go uc"
+  253440 META text type=0x05 "io "
   264960 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
   264960 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
-  264960 META text type=0x05 "ci"
+  264960 META text type=0x05 "ti"
   276480 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
   276480 NOTE_ON ch=2 d1=68 d2=80 [LotroShortMessage]
-  276480 META text type=0x05 "so. "
+  276480 META text type=0x05 "man"
   311040 NOTE_OFF ch=2 d1=68 d2=80 [LotroShortMessage]
   311040 NOTE_ON ch=2 d1=70 d2=80 [LotroShortMessage]
-  311040 META text type=0x05 "Deh, "
+  311040 META text type=0x05 "go uc"
   322560 NOTE_OFF ch=2 d1=70 d2=80 [LotroShortMessage]
   322560 NOTE_ON ch=2 d1=72 d2=80 [LotroShortMessage]
+  322560 META text type=0x05 "ci"
   345600 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
   345600 NOTE_ON ch=2 d1=72 d2=80 [LotroShortMessage]
+  345600 META text type=0x05 "so. "
   357120 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
   414720 NOTE_ON ch=2 d1=77 d2=80 [LotroShortMessage]
   414720 META text type=0x05 "/Que"
@@ -2092,10 +2089,9 @@ divisionType=0.0 resolution=11520 tickLength=1336320 tracks=4
   495360 META text type=0x05 "mi"
   506880 NOTE_OFF ch=2 d1=77 d2=80 [LotroShortMessage]
   506880 NOTE_ON ch=2 d1=70 d2=80 [LotroShortMessage]
-  506880 META text type=0x05 "ran "
+  506880 META text type=0x05 "ran"
   512640 NOTE_OFF ch=2 d1=70 d2=80 [LotroShortMessage]
   512640 NOTE_ON ch=2 d1=72 d2=80 [LotroShortMessage]
-  512640 META text type=0x05 "do "
   518400 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
   518400 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
   524160 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
@@ -2104,44 +2100,46 @@ divisionType=0.0 resolution=11520 tickLength=1336320 tracks=4
   529920 NOTE_ON ch=2 d1=77 d2=80 [LotroShortMessage]
   541440 NOTE_OFF ch=2 d1=77 d2=80 [LotroShortMessage]
   541440 NOTE_ON ch=2 d1=77 d2=80 [LotroShortMessage]
+  541440 META text type=0x05 "do "
   552960 NOTE_OFF ch=2 d1=77 d2=80 [LotroShortMessage]
   552960 NOTE_ON ch=2 d1=80 d2=80 [LotroShortMessage]
-  552960 META text type=0x05 "/fi "
+  552960 META text type=0x05 "/fi"
   564480 NOTE_OFF ch=2 d1=80 d2=80 [LotroShortMessage]
   564480 NOTE_ON ch=2 d1=79 d2=80 [LotroShortMessage]
-  564480 META text type=0x05 "so "
   570240 NOTE_OFF ch=2 d1=79 d2=80 [LotroShortMessage]
   570240 NOTE_ON ch=2 d1=77 d2=80 [LotroShortMessage]
-  570240 META text type=0x05 "tut"
   576000 NOTE_OFF ch=2 d1=77 d2=80 [LotroShortMessage]
   576000 NOTE_ON ch=2 d1=75 d2=80 [LotroShortMessage]
-  576000 META text type=0x05 "to "
   599040 NOTE_OFF ch=2 d1=75 d2=80 [LotroShortMessage]
   599040 NOTE_ON ch=2 d1=68 d2=80 [LotroShortMessage]
-  599040 META text type=0x05 "re"
+  599040 META text type=0x05 "so "
   610560 NOTE_OFF ch=2 d1=68 d2=80 [LotroShortMessage]
   610560 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
-  610560 META text type=0x05 "stai "
+  610560 META text type=0x05 "tut"
   622080 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
   622080 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
-  622080 META text type=0x05 "con"
+  622080 META text type=0x05 "to "
   633600 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
   633600 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
-  633600 META text type=0x05 "qui"
+  633600 META text type=0x05 "re"
   645120 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
   645120 NOTE_ON ch=2 d1=68 d2=80 [LotroShortMessage]
-  645120 META text type=0x05 "so. "
+  645120 META text type=0x05 "stai "
   679680 NOTE_OFF ch=2 d1=68 d2=80 [LotroShortMessage]
   679680 NOTE_ON ch=2 d1=70 d2=80 [LotroShortMessage]
+  679680 META text type=0x05 "con"
   691200 NOTE_OFF ch=2 d1=70 d2=80 [LotroShortMessage]
   691200 NOTE_ON ch=2 d1=72 d2=80 [LotroShortMessage]
+  691200 META text type=0x05 "qui"
   714240 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
   714240 NOTE_ON ch=2 d1=72 d2=80 [LotroShortMessage]
+  714240 META text type=0x05 "so. "
   725760 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
   737280 NOTE_ON ch=2 d1=68 d2=80 [LotroShortMessage]
+  737280 META text type=0x05 "/Deh, "
   783360 NOTE_OFF ch=2 d1=68 d2=80 [LotroShortMessage]
   783360 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
-  783360 META text type=0x05 "/dim"
+  783360 META text type=0x05 "dim"
   794880 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
   794880 NOTE_ON ch=2 d1=70 d2=80 [LotroShortMessage]
   794880 META text type=0x05 "me"
@@ -2177,12 +2175,13 @@ divisionType=0.0 resolution=11520 tickLength=1336320 tracks=4
   921600 META text type=0x05 "si"
   967680 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
   967680 NOTE_ON ch=2 d1=65 d2=80 [LotroShortMessage]
-  967680 META text type=0x05 "o "
+  967680 META text type=0x05 "o. "
   990720 NOTE_OFF ch=2 d1=65 d2=80 [LotroShortMessage]
   1013760 NOTE_ON ch=2 d1=68 d2=80 [LotroShortMessage]
+  1013760 META text type=0x05 "/Deh, "
   1059840 NOTE_OFF ch=2 d1=68 d2=80 [LotroShortMessage]
   1059840 NOTE_ON ch=2 d1=73 d2=80 [LotroShortMessage]
-  1059840 META text type=0x05 "/dim"
+  1059840 META text type=0x05 "dim"
   1071360 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
   1071360 NOTE_ON ch=2 d1=70 d2=80 [LotroShortMessage]
   1071360 META text type=0x05 "me"
@@ -2215,9 +2214,10 @@ divisionType=0.0 resolution=11520 tickLength=1336320 tracks=4
   1186560 META text type=0x05 "de"
   1198080 NOTE_OFF ch=2 d1=73 d2=80 [LotroShortMessage]
   1198080 NOTE_ON ch=2 d1=72 d2=80 [LotroShortMessage]
-  1198080 META text type=0x05 "si "
+  1198080 META text type=0x05 "si"
   1244160 NOTE_OFF ch=2 d1=72 d2=80 [LotroShortMessage]
   1244160 NOTE_ON ch=2 d1=65 d2=80 [LotroShortMessage]
+  1244160 META text type=0x05 "o. "
   1336320 NOTE_OFF ch=2 d1=65 d2=80 [LotroShortMessage]
   1336320 META end_of_track
 == abcInfo

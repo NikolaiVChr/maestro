@@ -150,4 +150,13 @@ class VoiceSplitterTest {
 				.map(l -> l.substring(15)).toList();
 		assertEquals(List.of("1", "2", "3", "4", "5", "6", "7", "8", "9", "11", "12"), channels);
 	}
+
+	@Test
+	void playedPropertiesGoBeforeTheKeysComment() {
+		// BUG1010: after the comment, octave=-1 was part of it, and the voice's octave was lost
+		VoiceSplitter.Result r = VoiceSplitter.split(List.of("X:1", "T:t", "V:1", "V:2 octave=-1", "K:G % key", "V:1",
+				"c|", "V:2", "C|"));
+		assertEquals(List.of("X:1", "T:t", "V:1", "%%MIDI channel 1", "K:G % key", "c|", //
+				"X:2", "T:t", "V:2 octave=-1", "%%MIDI channel 2", "K:G octave=-1 % key", "C|"), r.lines());
+	}
 }

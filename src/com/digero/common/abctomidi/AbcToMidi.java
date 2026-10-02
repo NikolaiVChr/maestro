@@ -91,7 +91,8 @@ public class AbcToMidi {
 		 */
 		public Params(String data, File sourceFile) {
 			this.filesData = new ArrayList<>();
-			this.filesData.add(new FileAndData(sourceFile, new ArrayList<>(Arrays.asList(data.split("\\r\\n|\\r|\\n", -1)))));
+			this.filesData.add(new FileAndData(sourceFile,
+					withoutByteOrderMark(new ArrayList<>(Arrays.asList(data.split("\\r\\n|\\r|\\n", -1))))));
 		}
 
 		public Params(List<FileAndData> filesData) {
@@ -212,7 +213,7 @@ public class AbcToMidi {
 			// - Files explicitly saved as UTF-8
 			// If the file contains invalid UTF-8 byte sequences (like a legacy Windows file might),
 			// this throws MalformedInputException.
-			return Files.readAllLines(inputFile.toPath(), StandardCharsets.UTF_8);
+			return withoutByteOrderMark(new ArrayList<>(Files.readAllLines(inputFile.toPath(), StandardCharsets.UTF_8)));
 		} catch (MalformedInputException e) {
 			// 2. Fallback: Windows-1252 ("ANSI")
 			// This covers the vast majority of legacy Windows files (Windows 7/10/11 with Java 8/11/17).
@@ -221,8 +222,25 @@ public class AbcToMidi {
 			// Decoded leniently: a byte Windows-1252 leaves undefined (0x81 0x8D 0x8F 0x90 0x9D, e.g. a DOS file's ü,
 			// 0x81 in code page 437) becomes U+FFFD instead of failing the whole file ("Input length = 1").
 			byte[] bytes = Files.readAllBytes(inputFile.toPath());
-			return new ArrayList<>(new String(bytes, Charset.forName("windows-1252")).lines().toList());
+			return withoutByteOrderMark(
+					new ArrayList<>(new String(bytes, Charset.forName("windows-1252")).lines().toList()));
 		}
+	}
+
+	/**
+	 * The lines without a byte order mark at the start of the first (ABC 2.1, 2.1: software should ignore it). Left in,
+	 * "﻿X:1" is no X: line and "﻿%%song-title" no directive. A UTF-8 BOM in a file read as Windows-1252 (its
+	 * rest isn't UTF-8) is "ï»¿".
+	 */
+	static List<String> withoutByteOrderMark(List<String> lines) {
+		if (!lines.isEmpty()) {
+			String first = lines.get(0);
+			if (first.startsWith("﻿"))
+				lines.set(0, first.substring(1));
+			else if (first.startsWith("ï»¿"))
+				lines.set(0, first.substring(3));
+		}
+		return lines;
 	}
 
 	/** A Lotro instrument's full name, e.g. "Basic Lute" or "Lute of Ages" (spaces may be _ or missing). */
@@ -555,6 +573,58 @@ public class AbcToMidi {
 		}
 	}
 
+	/** A bare Q: (Q:100): its tempo, the unit note it counts in ABC 2.1 (L:) and the meter's beat it may have meant. */
+	public record BareTempo(int bpm, String unitNote, String beat) {
+	}
+
+	private static final Pattern BARE_TEMPO = Pattern.compile("(?:C\\s*=\\s*)?(\\d+)");
+	private static final Pattern METER_FRACTION = Pattern.compile("^\\(?([\\d+\\s]+)\\)?\\s*/\\s*(\\d+)");
+
+	/**
+	 * For Maestro's notice when a new project is made from standard ABC: the first tune's Q: when it is bare (Q:100,
+	 * Q:C=100). ABC 2.1 (10.1, deprecated form) counts it in unit notes, L:, and so do we, but many files mean beats of
+	 * the meter by it (O'Neill's metronome marks, FolkWiki; abcjs reads it so). The tempo can be changed in Maestro.
+	 *
+	 * @return null if the first tune has no bare Q:, or its L: is the meter's beat (both readings are the same)
+	 */
+	public static BareTempo bareTempo(List<FileAndData> filesData) {
+		String tempo = null;
+		String meter = null;
+		String unitNote = null;
+		for (String line : filesData.getFirst().lines) {
+			line = stripComment(line).trim();
+			if (line.startsWith("K:"))
+				break; // The first tune's header ends (a file header has no K:)
+			if (line.startsWith("Q:"))
+				tempo = line.substring(2).trim();
+			else if (line.startsWith("M:"))
+				meter = line.substring(2).trim();
+			else if (line.startsWith("L:"))
+				unitNote = line.substring(2).replace(" ", "");
+		}
+		Matcher bare = (tempo == null) ? null : BARE_TEMPO.matcher(tempo);
+		if (bare == null || !bare.matches())
+			return null;
+		int numerator = 4;
+		int denominator = 4;
+		if ("C|".equals(meter)) {
+			numerator = 2;
+			denominator = 2;
+		} else if (meter != null && !meter.equals("C")) {
+			Matcher fraction = METER_FRACTION.matcher(meter);
+			if (!fraction.find())
+				return null; // M:none
+			numerator = 0;
+			for (String part : fraction.group(1).split("\\+"))
+				numerator += Integer.parseInt(part.trim()); // 2+2+3/8
+			denominator = Integer.parseInt(fraction.group(2));
+		}
+		if (unitNote == null)
+			unitNote = (numerator / (double) denominator < 0.75) ? "1/16" : "1/8"; // ABC 2.1, 3.1.7
+		String beat = "1/" + denominator;
+		return unitNote.equals(beat) ? null : new BareTempo(Integer.parseInt(bare.group(1)), unitNote, beat);
+	}
+
 	/** @param wrappedField See convert(Params) */
 	private static Sequence convert(List<FileAndData> filesData, boolean useLotroInstruments,
 									Map<Integer, LotroInstrument> instrumentOverrideMap, AbcInfo abcInfo, final boolean enableLotroErrors,
@@ -633,7 +703,7 @@ public class AbcToMidi {
 		TreeSet<Integer> musicLines = new TreeSet<>(); // Line indexes of the part's lines of music
 		Set<Integer> verseLineIndexes = new HashSet<>(); // W: lines written, so a repeat doesn't write them again
 		int lyricBar = 0; // Bars in the part so far, for | in a w: line
-		Repeats repeats = new Repeats(expandRepeats);
+		Repeats repeats = new Repeats(expandRepeats, info);
 		// Lyrics without timing (W:), each a lyric line in track 0. Before the part's notes they wait here for its track.
 		List<String> pendingVerseLines = new ArrayList<>();
 		long lastAttackTick = -1; // Where the part's last note started, for W: lines after the notes
@@ -681,8 +751,11 @@ public class AbcToMidi {
 			}
 			if (track != null && abc21)
 				accentGroupStarts(barAttacks, (lastBarTick != null) ? lastBarTick : 0, groupTicks(info), useLotroInstruments);
+			// AbcToMidi.convert, start of each file
 			track = null;
 			info.newFile();
+			partTitles = 0; // This file's header: its first T: is the file's title, not another one of the last part
+			lastField = 0; // A +: at the file's start continues nothing of the file before
 			fileProgramClues = new MidiProgramGuess.Clues();
 			partProgramClues = fileProgramClues;
 			fileDrone = new Drone();
@@ -1000,7 +1073,9 @@ public class AbcToMidi {
 									else if (fileTitle == null)
 										fileTitle = value;
 									info.setTitle(value, false);
-									abcInfo.setPartName(trackNumber, value, false);
+									// In a later file's header, trackNumber is still the file before's last part
+									if (tuneNumber != null || trackNumber == 0)
+										abcInfo.setPartName(trackNumber, value, false);
 								}
 								// In standard ABC, T: is the song's title: it doesn't name an instrument
 								if (!info.isStandardPitch()
@@ -1369,6 +1444,11 @@ public class AbcToMidi {
 											throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.invisible.bar"),
 													fileName, lineNumber, i);
 										}
+										if (playChords)
+											partBarTicks.computeIfAbsent(trackNumber, k -> new TreeSet<>()).add(Math.round(chordStartTick));
+										if (abc21)
+											lastBarTick = barLine(barAttacks, lastBarTick, Math.round(chordStartTick), groupTicks(info),
+													useLotroInstruments);
 										lyricBar++;
 										if (trackNumber == 1)
 											abcInfo.addBar(Math.round(chordStartTick));
@@ -1377,13 +1457,24 @@ public class AbcToMidi {
 										break;
 									}
 									if (i + 1 < line.length() && line.charAt(i + 1) == '|') {
-										// [| : a thick-thin bar line
+										// [| : a thick-thin bar line; [|: also starts a repeat
+										if (playChords)
+											partBarTicks.computeIfAbsent(trackNumber, k -> new TreeSet<>()).add(Math.round(chordStartTick));
+										if (abc21)
+											lastBarTick = barLine(barAttacks, lastBarTick, Math.round(chordStartTick), groupTicks(info),
+													useLotroInstruments);
 										lyricBar++;
 										if (trackNumber == 1)
 											abcInfo.addBar(Math.round(chordStartTick));
 										accidentals.clear();
 										i++;
-										repeats.sectionEnd(lineIndex, i + 1);
+										if (!enableLotroErrors && i + 1 < line.length() && line.charAt(i + 1) == ':') {
+											i++;
+											crossedRepeat = true;
+											repeats.start(lineIndex, i + 1);
+										} else {
+											repeats.sectionEnd(lineIndex, i + 1);
+										}
 										break;
 									}
 
@@ -1641,14 +1732,25 @@ public class AbcToMidi {
 									lyricBar++;
 									if (trackNumber == 1)
 										abcInfo.addBar(Math.round(chordStartTick));
+									// A repeat sign is a bar line (ABC 2.1): the bar's accidentals end here, also for the
+									// pass that goes back. Only in the standard reading: in Lotro's (and an old project's)
+									// the accidental stays, until the in-game test B79 says otherwise. TODO: Test!!!
+									if (abc21)
+										accidentals.clear();
 
 									crossedRepeat = true;
 									if (repeats.end(lines, lineIndex, i, signEnd)) {
-										// Play the repeated section again: go back to its start
+										// Play the repeated section again: go back to its start, read as it was read there
+										if (repeats.startState != null)
+											info.restore(repeats.startState);
 										lineIndex = repeats.jumpLine - 1;
 										startColumn = repeats.jumpColumn;
 										continue lineLoop;
 									}
+									// :: :|: :||: also start the next repeat. Repeats.end only does that when no ending was
+									// open; after |2 ... :: the next :| went back to the first |: and played nothing again.
+									if (line.charAt(signEnd - 1) == ':')
+										repeats.start(lineIndex, signEnd);
 									i = signEnd - 1;
 									int nextEndingEnd = skipEndingNumber(line, i + 1); // :|2 : a numbered ending
 									if (nextEndingEnd > i) {
@@ -1840,12 +1942,15 @@ public class AbcToMidi {
 									if (!enableLotroErrors && !repeats.skipping)
 										ornament = "roll";
 									break;
-								case '.': // Staccato
+								case '.': { // Staccato
 									// A decoration. Lotro plays on (tested) and plays the note as written, so only with
-									// standard2011 it sounds shorter. Not the dotted bar line .| (ABC 2.1, 4.8).
-									if (abc21 && !(i + 1 < line.length() && line.charAt(i + 1) == '|'))
+									// standard2011 it sounds shorter. Not the dotted bar line .| (ABC 2.1, 4.8), nor a dotted
+									// slur .( and its optional .) (4.11). A dotted tie .- is made a tie by withSlipsFixed.
+									char afterDot = (i + 1 < line.length()) ? line.charAt(i + 1) : ' ';
+									if (abc21 && afterDot != '|' && afterDot != '(' && afterDot != ')')
 										staccato = true;
 									break;
+								}
 
 								case '$': // Score line break (ABC 2.1, 4.1)
 								case '`': // Back quote in a beam, e.g. A`B`c (ABC 2.1, 4.7)
@@ -1947,8 +2052,10 @@ public class AbcToMidi {
 										int j = i + 1;
 										while (j < line.length() && (line.charAt(j) == ':' || Character.isDigit(line.charAt(j))))
 											j++;
+										// ABC 2.1 (4.13): compound is 6/8 9/8 12/8; the older reading also counts 3/4 and 3/8
+										boolean compound = info.isCompoundMeter() && (!abc21 || info.getBarNumerator() > 3);
 										try {
-											tuplet = new Tuplet(line.substring(i + 1, j), info.isCompoundMeter());
+											tuplet = new Tuplet(line.substring(i + 1, j), compound);
 										} catch (IllegalArgumentException e) {
 											throw new FileParseException(UIText.get("common.abctomidi.tuplet.invalid"),
 													fileName, lineNumber, i);
@@ -2424,9 +2531,13 @@ public class AbcToMidi {
 							} else {
 								tiedNoteEndTicks.remove(noteId);
 								tiedNoteStartTicks.remove(noteId);
-								// A staccato note sounds STACCATO_LENGTH of its written length (not a tied note)
-								if (staccato && tiedSoFar == null)
-									tieEndTick = chordStartTick + (noteEndTick - chordStartTick) * STACCATO_LENGTH;
+								// A staccato note sounds STACCATO_LENGTH of what is left of it after its grace notes and
+								// ornament (not a tied note). Measured from the written start, a trill ending after that
+								// would put the note-off before the note-on: a hanging note.
+								if (staccato && tiedSoFar == null) {
+									double attackTick = chordStartTick + attackOffset;
+									tieEndTick = attackTick + (noteEndTick - attackTick) * STACCATO_LENGTH;
+								}
 							}
 
 							handleNoteTie(useLotroInstruments, enableLotroErrors, info, track, channel, PPQN, tiedNotes,
@@ -2645,8 +2756,8 @@ public class AbcToMidi {
 	 * c4|-c4, c4 -|c4; the Nottingham Music Database) moved to the note; a broken rhythm after a slur's end ((c d)>e,
 	 * Village Music Project) moved before the ). Also proper ABC that the parser reads only the other way round: a
 	 * broken rhythm after grace notes, c{g}<d, moved before them, c<{g}d (ABC 2.1, 4.12: "A<{g}A and A{g}<A are legal
-	 * and equivalent"). Not with Lotro errors: Lotro plays nothing of such a part (tested, B30, B77, B78), and the
-	 * parser says so.
+	 * and equivalent"); a dotted tie, C.-C or [CE].-[CE] (4.11), as a tie, C- C. Not with Lotro errors: Lotro plays
+	 * nothing of such a part (tested, B30, B77, B78), and the parser says so.
 	 */
 	static String withSlipsFixed(String line) {
 		StringBuilder notes = new StringBuilder(line.replace('“', '"').replace('”', '"'));
@@ -2663,6 +2774,10 @@ public class AbcToMidi {
 					notes.deleteCharAt(i);
 					notes.insert(noteEnd, '-');
 				}
+			} else if (c == '.' && i + 1 < notes.length() && notes.charAt(i + 1) == '-' && endsNoteOrChord(notes, i)) {
+				// C.-C : the - goes to the note, the dot (layout only) becomes a space
+				notes.setCharAt(i, '-');
+				notes.setCharAt(i + 1, ' ');
 			} else if (c == '{') {
 				// c{g}<d : the < (or >> >) goes before the {
 				int close = notes.indexOf("}", i);
@@ -2707,6 +2822,18 @@ public class AbcToMidi {
 		while (k >= 0 && (notes.charAt(k) == ',' || notes.charAt(k) == '\''))
 			k--; // The octave
 		return (k >= 0 && "ABCDEFGabcdefg".indexOf(notes.charAt(k)) >= 0) ? noteEnd : -1;
+	}
+
+	/** Whether a note (c, ^c'2, C,3/2) or a chord (its ], maybe with a length) ends right before index end. */
+	private static boolean endsNoteOrChord(CharSequence notes, int end) {
+		int k = end - 1;
+		while (k >= 0 && (Character.isDigit(notes.charAt(k)) || notes.charAt(k) == '/'))
+			k--; // The length
+		if (k >= 0 && notes.charAt(k) == ']')
+			return true;
+		while (k >= 0 && (notes.charAt(k) == ',' || notes.charAt(k) == '\''))
+			k--; // The octave
+		return k >= 0 && "ABCDEFGabcdefg".indexOf(notes.charAt(k)) >= 0;
 	}
 
 	/** Whether an ending's number comes at from, maybe after spaces and a [ (||1, || [1). */
@@ -3010,9 +3137,11 @@ public class AbcToMidi {
 	 */
 	private static void singLyrics(Track track, TreeMap<Long, LyricNote> lyricNotes, TreeMap<Integer, String> lyricLines,
 								   TreeSet<Integer> musicLines, int[] sourceLineNumbers, long unsungTick) {
-		record Verse(long firstTick, List<long[]> slots, String text) {
+		record Event(long tick, String text, int verse, boolean detached) {
 		}
-		List<Verse> verses = new ArrayList<>();
+		List<Event> events = new ArrayList<>();
+		Set<Integer> goingOn = new HashSet<>(); // Verses ending with \ (ABC 2.1, 5.1): the next one goes on in their line
+		int verseNumber = 0;
 		TreeMap<Integer, List<String>> unsung = new TreeMap<>(); // verse number => its lines, in the order of the file
 		// Per run of w: lines in the file (the file's line of its first line): its verses, and the times sung so far
 		Map<Integer, List<String>> runTexts = new LinkedHashMap<>();
@@ -3038,18 +3167,29 @@ public class AbcToMidi {
 				passes.addAll(note.ticks.keySet());
 			int run = (sourceLineNumbers != null) ? sourceLineNumbers[firstLine] : firstLine;
 			runTexts.putIfAbsent(run, texts);
+			boolean[] detached = detachedNotes(new ArrayList<>(notes), new ArrayList<>(passes));
 			for (int pass : passes) {
 				int time = runSung.merge(run, 1, Integer::sum); // The how-many-th time these notes are sung
-				String text = texts.get((time <= texts.size()) ? time - 1 : 0);
+				int index = (time <= texts.size()) ? time - 1 : 0;
+				String text = texts.get(index);
 				List<long[]> slots = new ArrayList<>();
-				long firstTick = Long.MAX_VALUE;
-				for (LyricNote note : notes) {
-					long tick = note.ticks.getOrDefault(pass, -1L); // -1: not played on this pass, its syllable is dropped
-					slots.add(new long[] { tick, note.bar });
-					if (tick >= 0)
-						firstTick = Math.min(firstTick, tick);
+				for (LyricNote note : notes) // A tick of -1: not played on this pass, its syllable is dropped
+					slots.add(new long[] { note.ticks.getOrDefault(pass, -1L), note.bar });
+				Sung sung = sing(slots, withoutContinuation(text));
+				List<Syllable> syllables = new ArrayList<>(sung.syllables());
+				if (index > 0) {
+					// A detached note after this verse's last syllable: the first verse's syllable for it, the one the
+					// score shows under it (Canzonetta's Deh, which the second verse doesn't have)
+					for (Syllable first : sing(slots, withoutContinuation(texts.get(0))).syllables()) {
+						if (first.slot() >= sung.endSlot() && detached[first.slot()])
+							syllables.add(first);
+					}
 				}
-				verses.add(new Verse(firstTick, slots, text));
+				int verse = verseNumber++;
+				if (!withoutContinuation(text).equals(text))
+					goingOn.add(verse);
+				for (Syllable syllable : syllables)
+					events.add(new Event(syllable.tick(), syllable.text(), verse, detached[syllable.slot()]));
 			}
 		}
 		for (Map.Entry<Integer, List<String>> run : runTexts.entrySet()) {
@@ -3060,11 +3200,18 @@ public class AbcToMidi {
 				unsung.computeIfAbsent(verse, v -> new ArrayList<>()).add(texts.get(verse - 1));
 		}
 
-		// In the order they're sung, so only the first one doesn't start a new line
-		verses.sort(Comparator.comparingLong(Verse::firstTick));
-		boolean newLine = false;
-		for (Verse verse : verses)
-			newLine |= addLyrics(track, verse.slots(), verse.text(), newLine);
+		// In the order they're sung (a stable sort: a verse's own order on an equal tick). Each verse starts a new line
+		// (/), but not the first one, not after a verse ending with \, and not after a detached syllable, which starts
+		// the line of the phrase it begins; a detached syllable starts one
+		events.sort(Comparator.comparingLong(Event::tick));
+		Event previous = null;
+		for (Event event : events) {
+			boolean newLine = previous != null && event.verse() != previous.verse()
+					&& (event.detached() || (!previous.detached() && !goingOn.contains(previous.verse())));
+			track.add(MidiFactory.createTextMetaEvent(MidiConstants.META_LYRIC, (newLine ? "/" : "") + event.text(),
+					event.tick()));
+			previous = event;
+		}
 
 		// Each line on a tick of its own, as on an equal tick MidiText's order is not defined; / starts a new line
 		// (MidiText's NEWLINE_NEW, in the text and in the timed lines alike)
@@ -3080,9 +3227,10 @@ public class AbcToMidi {
 
 	/**
 	 * A w: line as plain text, for a verse that isn't sung: the syllables joined into words (the same rules as
-	 * addLyrics), e.g. "1.~Je-sus, san-to no-me do Cris_to" gives "1. Jesus, santo nome do Cristo".
+	 * sing), e.g. "1.~Je-sus, san-to no-me do Cris_to" gives "1. Jesus, santo nome do Cristo".
 	 */
 	private static String verseText(String text) {
+		text = withoutContinuation(text);
 		StringBuilder words = new StringBuilder();
 		StringBuilder syllable = new StringBuilder();
 		for (int i = 0; i <= text.length(); i++) {
@@ -3103,10 +3251,17 @@ public class AbcToMidi {
 				syllable.append(c);
 				continue;
 			}
+			// AbcToMidi.verseText, the end of the character loop
 			words.append(AbcText.decode(syllable.toString()));
 			syllable.setLength(0);
-			// After a space, * or | the word ends; - and _ join the syllables of a word
-			if (c != '-' && c != '_' && !words.isEmpty() && words.charAt(words.length() - 1) != ' ')
+			// A - after a space joins the word again (syll-a -ble is "syllable")
+			if (c == '-' && i > 0 && Character.isWhitespace(text.charAt(i - 1)) && !words.isEmpty()
+					&& words.charAt(words.length() - 1) == ' ')
+				words.setLength(words.length() - 1);
+			// After a space, * or | the word ends; - and _ join the syllables of a word, and so does a space after a
+			// held note's - (que - - sto is "questo")
+			if (c != '-' && c != '_' && !(Character.isWhitespace(c) && followsHold(text, i)) && !words.isEmpty()
+					&& words.charAt(words.length() - 1) != ' ')
 				words.append(' ');
 		}
 		return words.toString().trim();
@@ -3146,8 +3301,10 @@ public class AbcToMidi {
 	 */
 	private static final class Repeats {
 		final boolean expand;
+		final TuneInfo info; // Read at every place a :| can go back to
 		int startLine = -1; // Where a :| goes back to (line index); -1 until the part's first line of music
 		int startColumn;
+		TuneInfo.ReadState startState; // How the notes were read at startLine/startColumn; null without expand
 		int pass = 1; // 2 is the first time through the section again
 		Set<Integer> ending; // The numbers of the ending the parser is in, null outside an ending
 		boolean skipping; // The ending isn't played on this pass: its notes take no time
@@ -3155,12 +3312,14 @@ public class AbcToMidi {
 		int jumpLine; // Where to go back to, after end() returned true
 		int jumpColumn;
 
-		Repeats(boolean expand) {
+		Repeats(boolean expand, TuneInfo info) {
 			this.expand = expand;
+			this.info = info;
 		}
 
 		void newPart() {
 			startLine = -1;
+			startState = null;
 			pass = 1;
 			ending = null;
 			skipping = false;
@@ -3172,6 +3331,7 @@ public class AbcToMidi {
 			if (startLine < 0) {
 				startLine = lineIndex;
 				startColumn = 0;
+				markState();
 			}
 		}
 
@@ -3182,6 +3342,13 @@ public class AbcToMidi {
 			pass = 1;
 			ending = null;
 			skipping = false;
+			markState();
+		}
+
+		/** The state a :| restores when it goes back to here. */
+		private void markState() {
+			if (expand)
+				startState = info.readState();
 		}
 
 		/** || |] [| : ends an ending, and a :| without |: after it goes back to here. */
@@ -3271,26 +3438,81 @@ public class AbcToMidi {
 		return false;
 	}
 
+	/** A w: line without the \ that continues it on the next w: line (ABC 2.1, 5.1); a \\ at the end is kept. */
+	private static String withoutContinuation(String text) {
+		String trimmed = text.stripTrailing();
+		int backslashes = 0;
+		while (backslashes < trimmed.length() && trimmed.charAt(trimmed.length() - 1 - backslashes) == '\\')
+			backslashes++;
+		return (backslashes % 2 == 1) ? trimmed.substring(0, trimmed.length() - 1) : text;
+	}
+
 	/**
-	 * Writes a w: line as lyric events, the way Maestro's MidiText reads karaoke (Tune1000): one syllable per note or
-	 * chord from the first slot on, a space after the last syllable of a word, and a / before the first syllable when
-	 * lyrics came before: a new line. (Before the very first lyrics it would give an empty line. A \r after the last
-	 * syllable instead wouldn't end a W: line that comes before.)
+	 * Whether the last character before index i that isn't a space is a held note's -: one after a space or another -
+	 * (ABC 2.1, 5.1), not a \- or the - between two syllables.
+	 */
+	private static boolean followsHold(String text, int i) {
+		int k = Math.min(i, text.length()) - 1;
+		while (k >= 0 && Character.isWhitespace(text.charAt(k)))
+			k--;
+		return k >= 1 && text.charAt(k) == '-' && (Character.isWhitespace(text.charAt(k - 1)) || text.charAt(k - 1) == '-');
+	}
+
+	/** A syllable that is only punctuation (o_. , ;): no syllable to sing on a note of its own. */
+	private static final Pattern PUNCTUATION = Pattern.compile("[.,;:!?]+");
+
+	/** A syllable, sung on the note at slot, at its tick on this pass. */
+	private record Syllable(int slot, long tick, String text) {
+	}
+
+	/** A w: line's syllables on one pass, and the slot after its last one. */
+	private record Sung(List<Syllable> syllables, int endSlot) {
+	}
+
+	/**
+	 * The notes of a run of w: lines that are played after the run's next pass has started: Canzonetta's e4 after ::,
+	 * which starts the next section, while the notes before it are repeated by |: :: . A detached note's syllable
+	 * starts the line of the phrase after it, and on a pass whose verse has none for it, the first verse's is sung.
+	 */
+	private static boolean[] detachedNotes(List<LyricNote> notes, List<Integer> passes) {
+		boolean[] detached = new boolean[notes.size()];
+		for (int p = 0; p + 1 < passes.size(); p++) {
+			long nextPassStart = Long.MAX_VALUE;
+			for (LyricNote note : notes) {
+				long tick = note.ticks.getOrDefault(passes.get(p + 1), -1L);
+				if (tick >= 0)
+					nextPassStart = Math.min(nextPassStart, tick);
+			}
+			for (int n = 0; n < notes.size(); n++) {
+				if (notes.get(n).ticks.getOrDefault(passes.get(p), -1L) > nextPassStart)
+					detached[n] = true;
+			}
+		}
+		return detached;
+	}
+
+	/**
+	 * A w: line's syllables, the way Maestro's MidiText reads karaoke (Tune1000): one syllable per note or chord from
+	 * the first slot on, and a space after the last syllable of a word. singLyrics writes them, with a / where a line
+	 * starts. (Before the very first lyrics a / would give an empty line. A \r after the last syllable instead
+	 * wouldn't end a W: line that comes before.)
 	 * As in ABC 2.1: a space or - ends a syllable, _ holds the previous syllable over the next note, * skips a note,
 	 * ~ is a space within a syllable, \- is a hyphen, and | goes on at the next bar. Syllables beyond the notes are
-	 * dropped. Other escapes (\'e, \~n, &eacute;, ...) are decoded in each syllable, see AbcText.
+	 * dropped. Other escapes (\'e, \~n, &eacute;, ...) are decoded in each syllable, see AbcText. A syllable whose
+	 * note isn't played on this pass (a first ending, on the second pass) is sung on the next note that holds it (_ or
+	 * a - after a space), if that note is played: Canzonetta's o_ over |1F2 ... |2F8. Punctuation alone (o_.) joins
+	 * the syllable before.
 	 *
-	 * @param slots   {tick, bar} of each note or chord a syllable can go to; a tick below 0 drops its syllable (the
-	 *                note isn't played on this pass)
-	 * @param newLine Lyrics come before this line
-	 * @return Whether any syllable was written
+	 * @param slots {tick, bar} of each note or chord a syllable can go to; a tick below 0 drops its syllable (the note
+	 *              isn't played on this pass)
 	 */
-	private static boolean addLyrics(Track track, List<long[]> slots, String text, boolean newLine) {
-		List<Long> ticks = new ArrayList<>();
+	private static Sung sing(List<long[]> slots, String text) {
+		List<Integer> sungSlots = new ArrayList<>(); // The slot of each syllable
 		List<StringBuilder> syllables = new ArrayList<>();
 		StringBuilder syllable = new StringBuilder();
 		int slot = 0;
 		boolean lastWritten = false; // The last syllable so far got a note
+		String heldOver = null; // The last syllable, when its note isn't played on this pass: a note holding it sings it
 		for (int i = 0; i <= text.length(); i++) {
 			char c = (i < text.length()) ? text.charAt(i) : ' ';
 			if (c == '\\' && i + 1 < text.length()) {
@@ -3310,19 +3532,50 @@ public class AbcToMidi {
 				syllable.append(c);
 				continue;
 			}
-			// The syllable so far ends here; after a space, * or | it also ends its word
-			boolean wordEnds = (c != '-' && c != '_');
-			if (!syllable.isEmpty()) {
+			// The syllable so far ends here; after a space, * or | it also ends its word, but not a space after a held
+			// note's - (que - - sto is one word)
+			boolean wordEnds = (c != '-' && c != '_') && !(Character.isWhitespace(c) && followsHold(text, i));
+			if (!syllable.isEmpty() && PUNCTUATION.matcher(syllable).matches() && (heldOver != null
+					|| (lastWritten && !syllables.isEmpty()))) {
+				// Punctuation alone takes no note: it ends the syllable before (a held-over one too)
+				if (heldOver != null) {
+					heldOver += syllable;
+				} else {
+					StringBuilder last = syllables.getLast();
+					last.setLength(last.toString().stripTrailing().length());
+					last.append(syllable);
+				}
+				syllable.setLength(0);
+			} else if (!syllable.isEmpty()) {
+				String decoded = AbcText.decode(syllable.toString());
 				lastWritten = slot < slots.size() && slots.get(slot)[0] >= 0;
 				if (lastWritten) {
-					ticks.add(slots.get(slot)[0]);
-					syllables.add(new StringBuilder(AbcText.decode(syllable.toString())));
+					sungSlots.add(slot);
+					syllables.add(new StringBuilder(decoded));
 				}
+				heldOver = (!lastWritten && slot < slots.size()) ? decoded : null;
 				slot++;
 				syllable.setLength(0);
+			} else if (c == '-' && i > 0 && (Character.isWhitespace(text.charAt(i - 1)) || text.charAt(i - 1) == '-')) {
+				// A - after a space or another -: a syllable of its own, the word going on over this note (ABC 2.1, 5.1:
+				// syll-a--ble and syll-a -ble are both four notes)
+				if (singHeldOver(heldOver, slots, slot, sungSlots, syllables)) {
+					heldOver = null;
+					lastWritten = true;
+				}
+				slot++;
+				if (!syllables.isEmpty()) {
+					StringBuilder last = syllables.getLast();
+					if (last.charAt(last.length() - 1) == ' ')
+						last.setLength(last.length() - 1); // The space before it didn't end the word
+				}
 			}
 			if (wordEnds && !syllables.isEmpty() && syllables.getLast().charAt(syllables.getLast().length() - 1) != ' ')
 				syllables.getLast().append(' ');
+			if (c == '_' && singHeldOver(heldOver, slots, slot, sungSlots, syllables)) {
+				heldOver = null;
+				lastWritten = true;
+			}
 			if (c == '_' || c == '*') {
 				slot++; // The note is held by the previous syllable, or has none
 			} else if (c == '|' && slot > 0) {
@@ -3339,11 +3592,24 @@ public class AbcToMidi {
 			last.setLength(last.toString().stripTrailing().length());
 			last.append('-');
 		}
-		for (int k = 0; k < syllables.size(); k++) {
-			String s = ((k == 0 && newLine) ? "/" : "") + syllables.get(k);
-			track.add(MidiFactory.createTextMetaEvent(MidiConstants.META_LYRIC, s, ticks.get(k))); // Lyric
-		}
-		return !syllables.isEmpty();
+		List<Syllable> sung = new ArrayList<>();
+		for (int k = 0; k < syllables.size(); k++)
+			sung.add(new Syllable(sungSlots.get(k), slots.get(sungSlots.get(k))[0], syllables.get(k).toString()));
+		return new Sung(sung, slot);
+	}
+
+	/**
+	 * Sings a syllable whose own note isn't played on this pass on the note at slot that holds it, if that one is.
+	 *
+	 * @return Whether it was sung
+	 */
+	private static boolean singHeldOver(String heldOver, List<long[]> slots, int slot, List<Integer> sungSlots,
+										List<StringBuilder> syllables) {
+		if (heldOver == null || slot >= slots.size() || slots.get(slot)[0] < 0)
+			return false;
+		sungSlots.add(slot);
+		syllables.add(new StringBuilder(heldOver));
+		return true;
 	}
 
 	/**
@@ -3731,8 +3997,11 @@ public class AbcToMidi {
 				QUALITIES.put(name, intervals);
 		}
 
-		/** Root, accidental, quality, and an optional /bass: G, F#m, Bb7, Dm7b5, C/E. */
-		private static final Pattern NAME = Pattern.compile("([A-G])([#b]?)([^/]*)(?:/([A-G])([#b]?))?");
+		/**
+		 * Root, accidental, quality, an optional /bass (either case, ABC 2.1, 4.18) and an alternate chord in
+		 * parentheses, which is only printed: G, F#m, Bb7, Dm7b5, C/E, G/b, G(Em).
+		 */
+		private static final Pattern NAME = Pattern.compile("([A-G])([#b]?)([^/(]*)(?:/([A-Ga-g])([#b]?))?(?:\\(.*\\))?");
 
 		/** The chord, or null if the text isn't a chord name (an annotation like "^text", "Fine", "a."). */
 		static ChordSymbol parse(String text, long tick, long beatTicks, int beatsPerBar, long[] groupTicks,
@@ -4064,6 +4333,8 @@ public class AbcToMidi {
 			fileName = fileAndData.file.getName();
 			String fileTitle = null; // As in convert(): the first T: names the part, else the file header's, else the file
 			int partTitles = 0;
+			boolean inFileHeader = true; // Before this file's first X:
+			inBody = false; // The file before's last part ended with that file
 			abcInfo.addSourceFile(fileAndData.file);
 			int lineNumber = 0;
 			int partStartLine = 0;
@@ -4116,6 +4387,7 @@ public class AbcToMidi {
 							case 'X': // New part
 								instrumentSet = false;
 								inBody = false;
+								inFileHeader = false;
 								trackNumber++;
 								partTitles = 0;
 								abcInfo.setPartName(trackNumber, defaultPartName(fileTitle, fileName), false);
@@ -4124,11 +4396,13 @@ public class AbcToMidi {
 								break;
 							case 'T':
 								if (partTitles++ == 0) {
-									if (trackNumber == 0 && fileTitle == null)
+									if (inFileHeader && fileTitle == null)
 										fileTitle = value;
-									abcInfo.setPartName(trackNumber, value, false);
+									// In a later file's header, trackNumber is still the file before's last part
+									if (!inFileHeader || trackNumber == 0)
+										abcInfo.setPartName(trackNumber, value, false);
 								}
-								if (!instrumentSet) {
+								if (!instrumentSet && (!inFileHeader || trackNumber == 0)) {
 									LotroInstrument instrument = LotroInstrument.findInstrumentName(value, null);
 									if (instrument != null) {
 										abcInfo.setPartInstrument(trackNumber, instrument);

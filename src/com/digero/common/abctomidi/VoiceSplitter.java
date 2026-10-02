@@ -259,7 +259,7 @@ public final class VoiceSplitter {
 					addVoiceHeader(voice, n, alone, h + 1, out, sources);
 					addAll(alone ? withoutVoiceId(midiVoiceLines, voice.id) : midiVoiceLines, midiVoiceSources, out,
 							sources);
-					line = line + playedProperties(voice.properties);
+					line = withPlayedProperties(line, playedProperties(voice.properties));
 				}
 				out.add(line);
 				sources.add(h + 1);
@@ -359,6 +359,17 @@ public final class VoiceSplitter {
 				words.append(' ').append(word);
 		}
 		return words.toString();
+	}
+
+	/** The K: line with the played properties before its % comment (after it they'd be part of the comment). */
+	private static String withPlayedProperties(String keyLine, String properties) {
+		if (properties.isEmpty())
+			return keyLine;
+		for (int k = 0; k < keyLine.length(); k++) {
+			if (keyLine.charAt(k) == '%' && (k == 0 || keyLine.charAt(k - 1) != '\\'))
+				return keyLine.substring(0, k).stripTrailing() + properties + " " + keyLine.substring(k);
+		}
+		return keyLine + properties;
 	}
 
 	/** A line with only the stretch from to end kept, the rest blanked with spaces. */

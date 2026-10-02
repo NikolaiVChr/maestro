@@ -113,6 +113,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		genre = null;
 		mood = null;
 		exportTimestamp = null;
+		issue = null; // Else the next song read into this AbcInfo keeps the flawed-Maestro issue of the one before
 		abcCreator = null;
 		timeSignature = TimeSignature.FOUR_FOUR;
 		keySignature = KeySignature.C_MAJOR;

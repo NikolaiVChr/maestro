@@ -135,7 +135,6 @@ public class SongbookDialog extends JDialog {
 		rows = new String[tunes.size()][];
 		searchText = new String[tunes.size()];
 		otherTitles = new String[tunes.size()];
-		int selectedRow = 0;
 		for (int i = 0; i < tunes.size(); i++) {
 			AbcSongbook.Tune tune = tunes.get(i);
 			List<String> lines = book.tuneLines(tune);
@@ -146,10 +145,6 @@ public class SongbookDialog extends JDialog {
 				otherTitles[i] = String.join(", ", titles.subList(1, titles.size()));
 			searchText[i] = simplify(String.join(" ", rows[i]) + " " + String.join(" ", titles) + " "
 					+ String.join(" ", tuneFields(lines, "C:")) + " " + String.join(" ", tuneFields(lines, "O:")));
-			if (selectedRow == 0 && selectedTune != null && selectedTune.equals(tune.number())) {
-				log.severe("row "+i);
-				selectedRow = i;
-			}
 		}
 
 		AbstractTableModel model = new AbstractTableModel() {
@@ -202,8 +197,11 @@ public class SongbookDialog extends JDialog {
 		table.setPreferredScrollableViewportSize(new Dimension(42 * em, 16 * table.getRowHeight()));
 
 		int viewRow = 0;
-		if (selectedTune != null) viewRow = table.convertRowIndexToView(tunes.indexOf(selectedTune));
-		table.setRowSelectionInterval(viewRow, viewRow);
+		if (selectedTune != null) {
+			int idx = tunes.indexOf(selectedTune);
+			if (idx != -1) viewRow = table.convertRowIndexToView(idx);
+		}
+		if (viewRow != 0) table.setRowSelectionInterval(viewRow, viewRow);
 
 
 		Font font = table.getFont();
@@ -277,7 +275,7 @@ public class SongbookDialog extends JDialog {
 		// Behaviour
 		openButton.addActionListener(e -> openSelected());
 		allButton.addActionListener(e -> close(new Result(Choice.ALL_AS_PARTS, null)));
-		cancelButton.addActionListener(e -> close(new Result(Choice.CANCEL, null)));
+		cancelButton.addActionListener(e -> close(new Result(Choice.CANCEL, selectedTune())));
 		splitButton.addActionListener(e -> splitAll());
 		getRootPane().setDefaultButton(openButton);
 		getRootPane().registerKeyboardAction(e -> close(new Result(Choice.CANCEL, null)),

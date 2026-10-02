@@ -284,6 +284,19 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			}
 			sourceAbcWasMadeForLotro = result;
 		}
+		AbcToMidi.BareTempo bareTempo = AbcToMidi.bareTempo(params.filesData);
+		if (bareTempo != null) {
+			Component parent = null;
+			for (Frame frame : Frame.getFrames()) {
+				if (frame.isVisible()) {
+					parent = frame;
+					break;
+				}
+			}
+			JOptionPane.showMessageDialog(parent, UIText.get("common.abctomidi.bare.tempo", String.valueOf(bareTempo.bpm()),
+							bareTempo.unitNote(), bareTempo.beat()), UIText.get("common.abctomidi.bare.tempo.title"),
+					JOptionPane.INFORMATION_MESSAGE);
+		}
 		chooseAbc(params, file);
 		boolean standardAbc = abcImportVersion > 1 && Boolean.FALSE.equals(sourceAbcWasMadeForLotro);
 		params.standardPitch = standardAbc;

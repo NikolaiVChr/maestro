@@ -200,6 +200,41 @@ class AbcToMidiBehaviourTest {
 			}
 		}
 
+		@Test
+		void byteOrderMarkIsDroppedWhenReading() throws Exception {
+			// BUG1000: Files.readAllLines keeps a UTF-8 file's byte order mark (EF BB BF), so the first line was "\uFEFFX:1"
+			java.nio.file.Path file = java.nio.file.Files.createTempFile("bom", ".abc");
+			try {
+				java.nio.file.Files.write(file, new byte[] { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF, 'X', ':', '1', '\n',
+						'K', ':', 'C' });
+				assertEquals(List.of("X:1", "K:C"), AbcToMidi.readLines(file.toFile()));
+				// Not UTF-8 after the mark (0x81): read as Windows-1252, where the mark would be "ï»¿"
+				java.nio.file.Files.write(file, new byte[] { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF, 'T', ':', 'L',
+						(byte) 0x81, '\n', 'K', ':', 'C' });
+				assertEquals(List.of("T:L�", "K:C"), AbcToMidi.readLines(file.toFile()));
+			} finally {
+				java.nio.file.Files.delete(file);
+			}
+		}
+
+		@Test
+		void fileWithByteOrderMarkPlaysAsWithout() throws Exception {
+			// BUG1000: "\uFEFFX:1" was no X: line (abc21: free text, "no notes"; else "unknown character"), and
+			// "\uFEFF%%song-title" (a Maestro export) was no comment. Through Params(String, File), as a project's kept text
+			for (Profile profile : Profile.values()) {
+				for (String abc : List.of("X:1\nT:Bom\nK:C\nCDEF|", "%%song-title Bom\nX:1\nT:Bom\nK:C\nCDEF|")) {
+					assertEquals(sequenceOf(abc, profile), sequenceOf("\uFEFF" + abc, profile), profile + ": " + abc);
+				}
+			}
+		}
+
+		private static String sequenceOf(String abc, Profile profile) throws Exception {
+			AbcToMidi.Params params = new AbcToMidi.Params(abc, new java.io.File("bom.abc"));
+			profile.applyTo(params);
+			params.abcInfo = new AbcInfo();
+			return ConversionDump.renderSequence(AbcToMidi.convert(params));
+		}
+
 		record NoteEvent(long tick, boolean on, int pitch) {
 			@Override
 			public String toString() {
@@ -447,6 +482,26 @@ class AbcToMidiBehaviourTest {
 				// With Lotro errors: the meter's beats (Lotro's reading), the same as without specTempo
 				assertEquals(tempos(ConversionDump.convert(tune("semantic", "c8|"), Profile.ABC_PLAYER_STRICT)),
 						tempos(ConversionDump.convert(specTempo(tune("semantic", "c8|")), Profile.ABC_PLAYER_STRICT)));
+			}
+
+			@Test
+			void bareTempoGetsANotice() throws Exception {
+				// Many files mean beats by a bare Q: (O'Neill, FolkWiki); we read it as ABC 2.1 says, and Maestro tells
+				// the user, who can change the tempo (user, 2026-10-02)
+				assertEquals(new AbcToMidi.BareTempo(120, "1/8", "1/4"), AbcToMidi.bareTempo(tune("semantic", "c8|").filesData()));
+				assertEquals(new AbcToMidi.BareTempo(120, "1/8", "1/4"),
+						AbcToMidi.bareTempo(tune("semantic", header("Q:C=120 % old"), "c8|").filesData()));
+				assertEquals(new AbcToMidi.BareTempo(120, "1/16", "1/4"),
+						AbcToMidi.bareTempo(tune("semantic", header("M:2/4", "-L"), "c8|").filesData()));
+				assertEquals(new AbcToMidi.BareTempo(120, "1/8", "1/2"),
+						AbcToMidi.bareTempo(tune("semantic", header("M:C|"), "c8|").filesData()));
+				// Nothing to tell: L: is the meter's beat, a note length in Q:, no Q:, M:none
+				assertNull(AbcToMidi.bareTempo(tune("semantic", header("L:1/4"), "c4|").filesData()));
+				assertNull(AbcToMidi.bareTempo(tune("semantic", header("M:6/8"), "c6|").filesData()));
+				assertNull(AbcToMidi.bareTempo(tune("semantic", header("M:2+2+3/8"), "c7|").filesData()));
+				assertNull(AbcToMidi.bareTempo(tune("semantic", header("Q:1/4=120"), "c8|").filesData()));
+				assertNull(AbcToMidi.bareTempo(tune("semantic", header("-Q"), "c8|").filesData()));
+				assertNull(AbcToMidi.bareTempo(tune("semantic", header("M:none"), "c8|").filesData()));
 			}
 
 			@Test
@@ -765,6 +820,201 @@ class AbcToMidiBehaviourTest {
 						noteEvents(ConversionDump.convert(standard(tune("semantic", "[c2e] g|")), Profile.ABC_PLAYER_STRICT)));
 				assertEquals(noteEvents(ConversionDump.convert(tune("semantic", "^c c' C c|"), Profile.ABC_PLAYER_STRICT)),
 						noteEvents(ConversionDump.convert(standard(tune("semantic", "^c c' C c|")), Profile.ABC_PLAYER_STRICT)));
+			}
+		}
+
+		/** The third opinion's bug list (review_bugs.md, 2026-10-02): one test per bug, each failing before its fix. */
+		@Nested
+		class ReviewBugs {
+
+			private static Sequence standard(AbcCase abcCase) throws Exception {
+				return ConversionDump.convert(abcCase, Profile.MAESTRO_NEW_STANDARD);
+			}
+
+			private static String rendered(AbcCase abcCase) throws Exception {
+				return ConversionDump.renderSequence(standard(abcCase));
+			}
+
+			private static List<Integer> pitches(Sequence sequence) {
+				return noteOns(sequence).stream().map(NoteEvent::pitch).toList();
+			}
+
+			private static List<Long> ticks(Sequence sequence) {
+				return noteOns(sequence).stream().map(NoteEvent::tick).toList();
+			}
+
+			@Test
+			void bug1001RepeatSignEndsTheBarsAccidentals() throws Exception {
+				// The ^f before :| reaches neither the f that starts the section again nor the f after it
+				assertEquals(List.of(77, 78, 77, 78, 77), pitches(standard(tune("semantic", "|: f ^f :| f|"))));
+				// Lotro's reading and old projects keep it, until the in-game test B79 says what Lotro does
+				List<Integer> lotro = pitches(convert(tune("semantic", "^f2 :| f2|")));
+				assertEquals(lotro.get(0), lotro.get(1));
+			}
+
+			@Test
+			void bug1002SecondPassIsReadAsTheFirst() throws Exception {
+				// A K: in the section: the second pass starts in the key the first did
+				assertEquals(List.of(65, 66, 65, 66), pitches(standard(tune("semantic", "|: F2 |", "K:G", "F2 :|"))));
+				// An L: in the section: c d are eighths again on the second pass
+				Sequence s = standard(tune("semantic", "|: c d |", "L:1/4", "e f :|"));
+				// Dynamics carry over (user, 2026-10-02): a mark holds until the next one, also across a repeat, as in
+				// printed music and abc2midi. The second pass's c d keep the +f+ from the section's end
+				List<Integer> volumes = Standard2011.velocities(standard(tune("semantic", "|: c d | +f+ e f :|")));
+				assertNotEquals(volumes.get(0), volumes.get(2));
+				assertEquals(volumes.get(2), volumes.get(4));
+			}
+
+			@Test
+			void bug1003DoubleColonAfterSecondEndingStartsTheNextRepeat() throws Exception {
+				// c d, c e, then f twice
+				assertEquals(List.of(72, 74, 72, 76, 77, 77), pitches(standard(tune("semantic", "|: c |1 d :|2 e :: f :|"))));
+				assertEquals(List.of(72, 74, 72, 76, 77, 77),
+						pitches(standard(tune("semantic", "|: c |1 d :|2 e :|: f :|"))));
+			}
+
+			@Test
+			void bug1004DottedTieIsATie() throws Exception {
+				// ABC 2.1 (4.11): C.-C is a dotted tie, played as C-C, in every reading without Lotro errors
+				for (Profile profile : List.of(Profile.ABC_PLAYER, Profile.MAESTRO_LEGACY, Profile.MAESTRO_NEW_LOTRO,
+						Profile.MAESTRO_NEW_STANDARD)) {
+					assertEquals(noteEvents(ConversionDump.convert(tune("semantic", "C2-C2 D2 [CE]-[CE]|"), profile)),
+							noteEvents(ConversionDump.convert(tune("semantic", "C2.-C2 D2 [CE].-[CE]|"), profile)),
+							profile.toString());
+				}
+				// Lotro doesn't know it (an error, as before)
+				assertThrows(FileParseException.class,
+						() -> ConversionDump.convert(tune("semantic", "C2.-C2 D2|"), Profile.ABC_PLAYER_STRICT));
+			}
+
+			@Test
+			void bug1005StaccatoNoteEndsAfterItStarts() throws Exception {
+				// With a trill or grace notes the note starts late; its staccato end is measured from there
+				for (String notes : List.of(".Tc4 d4|", "!trill!.c4 d4|", ".{d}c2 e2|")) {
+					List<NoteEvent> c = noteEvents(standard(tune("semantic", notes))).stream()
+							.filter(n -> n.pitch() == 72).toList();
+					assertEquals(0, c.size() % 2, notes + ": " + c);
+					for (int k = 0; k < c.size(); k += 2) {
+						assertTrue(c.get(k).on() && !c.get(k + 1).on() && c.get(k + 1).tick() > c.get(k).tick(),
+								notes + ": " + c);
+					}
+				}
+			}
+
+			@Test
+			void bug1006HyphenAfterSpaceOrHyphenIsASyllable() throws Exception {
+				// ABC 2.1 (5.1): syll-a--ble and syll-a -ble are both four notes; the word goes on over the third
+				for (String words : List.of("w:syll-a--ble", "w:syll-a -ble")) {
+					assertEquals(List.of("0:syll", "1:a", "3:ble "),
+							lyrics(convert(tune("semantic", "c d e f|", words)), 1), words);
+				}
+				// The spaces between held notes don't end the word: que - - sto is "questo" (Canzonetta), sung and as a
+				// verse that isn't sung
+				assertEquals(List.of("0:que", "3:sto ", "3:/questo"),
+						lyrics(convert(tune("semantic", "c d e f|", "w:que - - sto", "w:que - - sto")), 1));
+			}
+
+			@Test
+			void heldSyllableIsSungWhenItsNoteIsSkipped() throws Exception {
+				// Canzonetta (ABC 2.1's example): de-si-o_ under |1F2z2:|2F8|]. o is written under the first ending's F2,
+				// and _ holds it over the second ending's F8. On the second pass the first ending isn't played: o is
+				// sung on F8, instead of being lost
+				Sequence s = standard(tune("semantic", "|: c d |1 e2 :|2 f2|]", "w:one two three_"));
+				assertEquals(List.of("0:one ", "1:two ", "2:three ", "4:/one ", "5:two ", "6:three "), lyrics(s, 1));
+			}
+
+			@Test
+			void syllableAfterTheRepeatSignStartsTheNextPhrase() throws Exception {
+				// Canzonetta: "... ucciso. Deh," under "... ::e4|", the second verse ends at "conquiso.". The long e4 after
+				// :: starts the last section: Deh, is sung at the start of its line ("Deh, dimmelo ..."), not at the end
+				// of the line before, and on the section's second pass too, where the second verse has no syllable for it
+				Sequence s = standard(tune("semantic", "|: c d ::e2|", "w:one two Deh,", "w:three four",
+						"f g |1 a2 :|2 a2|]", "w:dim-me-lo_."));
+				assertEquals(List.of("0:one ", "1:two ", "2:/three ", "3:four ", "4:/Deh, ", "6:dim", "7:me", "8:lo. ",
+						"10:/Deh, ", "12:dim", "13:me", "14:lo. "), lyrics(s, 1));
+			}
+
+			@Test
+			void punctuationAloneJoinsTheSyllableBefore() throws Exception {
+				// o_. (Canzonetta): the . is no syllable to sing on a note of its own, it ends the word before
+				assertEquals(List.of("0:a ", "1:b. "), lyrics(convert(tune("semantic", "c d e|", "w:a b_.")), 1));
+				assertEquals(List.of("0:a, ", "1:b "), lyrics(convert(tune("semantic", "c d|", "w:a , b")), 1));
+			}
+
+			@Test
+			void lyricsLineEndingInBackslashGoesOn() throws Exception {
+				// ABC 2.1 (5.1): \ at the end of a w: line continues it: no \ in the syllable, no new line
+				assertEquals(List.of("0:a ", "1:b ", "2:c ", "3:d "),
+						lyrics(convert(tune("semantic", "c d|", "w:a b\\", "e f|", "w:c d")), 1));
+			}
+
+			@Test
+			void bug1007ThickBarsAreBars() throws Exception {
+				// [| and [|] are bar lines for the chord accompaniment and the beat-group accents, as | is
+				assertEquals(rendered(tune("semantic", header("M:7/8"), "\"C\"c2 d2 e3 | d2 e2 f3 | \"G\"g7 | c7|")),
+						rendered(tune("semantic", header("M:7/8"), "\"C\"c2 d2 e3 [| d2 e2 f3 [|] \"G\"g7 | c7|")));
+				// [|: starts a repeat (it failed: bar expected after :)
+				assertEquals(List.of(72, 74, 74), pitches(standard(tune("semantic", "c [|: d :|"))));
+			}
+
+			@Test
+			void bug1008LaterFilesHeaderTitleNamesItsParts() throws Exception {
+				// File two's header T: is that file's title: its part without a T: is named by it, in the song and in
+				// the playlist (BUG1009)
+				AbcCase two = AbcCase.of("semantic", "X:1", "T:One", "K:C", "c d|").plusFile("two.abc", "T:Two", "",
+						"X:2", "K:C", "e f|");
+				for (AbcInfo info : List.of(abcInfoOf(two), AbcToMidi.parseAbcMetadata(two.filesData()))) {
+					assertEquals("One", info.getPartName(1));
+					assertEquals("Two", info.getPartName(2));
+				}
+			}
+
+			@Test
+			void bug1011PartsOwnProgramBeatsTheHeadersVoiceInstrument() {
+				MidiProgramGuess.Clues file = new MidiProgramGuess.Clues();
+				file.midiDirective("MIDI voice instrument=74");
+				MidiProgramGuess.Clues part = file.forPart();
+				part.midiDirective("MIDI program 40");
+				assertEquals(40, part.program());
+				// Without one of its own, a part takes the header's: instrument=74 is program 73
+				assertEquals(73, file.forPart().program());
+				// The same for the header's %%MIDI voice with the part's voice ID
+				MidiProgramGuess.Clues book = new MidiProgramGuess.Clues();
+				book.midiDirective("MIDI voice 1 instrument=74");
+				MidiProgramGuess.Clues voice = book.forPart();
+				voice.voice("1");
+				assertEquals(73, voice.program());
+				voice.midiDirective("MIDI program 40");
+				assertEquals(40, voice.program());
+			}
+
+			@Test
+			void bug1012ResetClearsTheIssue() throws Exception {
+				// Set directly: a flawed %%abc-creator also shows a dialog
+				AbcInfo info = new AbcInfo();
+				java.lang.reflect.Field issue = AbcInfo.class.getDeclaredField("issue");
+				issue.setAccessible(true);
+				issue.set(info, "a flawed Maestro");
+				info.reset();
+				assertEquals("", info.getIssue());
+			}
+
+			@Test
+			void bug1013ChordSymbolWithLowercaseBassOrAlternateChord() throws Exception {
+				// ABC 2.1 (4.18): the bass in either case; an alternate chord in parentheses is only printed
+				assertNotEquals(rendered(tune("semantic", "\"G\"G4 G4|")), rendered(tune("semantic", "\"G/B\"G4 G4|")));
+				assertEquals(rendered(tune("semantic", "\"G/B\"G4 G4|")), rendered(tune("semantic", "\"G/b\"G4 G4|")));
+				assertEquals(rendered(tune("semantic", "\"G\"G4 G4|")), rendered(tune("semantic", "\"G(Em)\"G4 G4|")));
+			}
+
+			@Test
+			void bug1014QuintupletIn34TakesTheTimeOfTwo() throws Exception {
+				// ABC 2.1 (4.13): (5 is in the time of 3 only in a compound meter (6/8 9/8 12/8); 3/4 isn't one
+				assertEquals(ticks(standard(tune("semantic", header("M:3/4"), "c d a4|"))).get(2),
+						ticks(standard(tune("semantic", header("M:3/4"), "(5cdefg a4|"))).get(5));
+				// Lotro's reading keeps the old one (3/4 counted as compound): in the time of 3
+				assertEquals(ticks(convert(tune("semantic", header("M:3/4"), "c d e a4|"))).get(3),
+						ticks(convert(tune("semantic", header("M:3/4"), "(5cdefg a4|"))).get(5));
 			}
 		}
 
