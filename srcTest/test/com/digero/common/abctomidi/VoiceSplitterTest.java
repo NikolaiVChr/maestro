@@ -93,10 +93,11 @@ class VoiceSplitterTest {
 		// "Vals à Lulu": the melody, then V:2 and V:3; the melody is voice 1
 		assertEquals(List.of("X:1", "T:t", "V:1", "%%MIDI channel 1", "K:G", "g d|", //
 				"X:2", "T:t", "V:2", "%%MIDI channel 2", "K:G", "G B|", //
-				"X:3", "T:t", "V:3", "%%MIDI channel 3", "K:G", "D G|"),
+						"X:3", "T:t", "V:3", "%%MIDI channel 3", "K:G", "D G|"),
 				VoiceSplitter.split(List.of("X:1", "T:t", "K:G", "g d|", "V:2", "G B|", "V:3", "D G|")).lines());
-		// A voice without music is no part (The Session's "Celestial" ends with a V:2 line)
-		assertEquals(List.of("X:1", "T:t", "V:1", "%%MIDI channel 1", "K:G", "g d|"),
+		// A voice without music is no part (The Session's "Celestial" ends with a V:2 line); the one left is alone, so
+		// no V: line (aLoneVoiceKeepsTheTunesName)
+		assertEquals(List.of("X:1", "T:t", "%%MIDI channel 1", "K:G", "g d|"),
 				VoiceSplitter.split(List.of("X:1", "T:t", "K:G", "g d|", "V:2")).lines());
 		// With voices in the header, it is the header's first
 		assertEquals(List.of("X:1", "T:t", "V:A", "%%MIDI channel 1", "K:G", "g d|", "B G|", //
@@ -112,6 +113,22 @@ class VoiceSplitterTest {
 		assertEquals(List.of("A songbook.", "", "X:1", "T:plain", "K:C", "c|", "", "Notes between.", //
 				"X:2", "T:voiced", "V:a", "%%MIDI channel 1", "K:C", "c|", //
 				"X:3", "T:voiced", "V:b", "%%MIDI channel 2", "K:C", "e|"), r.lines());
+	}
+
+	@Test
+	void aLoneVoiceKeepsTheTunesName() {
+		// One voice with music (FolkWiki writes V:1 above every tune): no V: line in the part, so the part keeps the
+		// tune's title instead of "Voice 1"; its clef still reaches K:, and a %%MIDI voice for it the part
+		VoiceSplitter.Result r = VoiceSplitter.split(List.of("X:1", "T:t", "K:C", "V:1 clef=bass", "%%MIDI voice 1 instrument=43",
+				"C, D,|"));
+		assertEquals(List.of("X:1", "T:t", "%%MIDI channel 1", "%%MIDI voice instrument=43", "K:C clef=bass", "C, D,|"),
+				r.lines());
+		// With a name= the V: line stays, and names the part
+		assertEquals(List.of("X:1", "T:t", "V:1 name=\"Cello\"", "%%MIDI channel 1", "K:C", "C, D,|"),
+				VoiceSplitter.split(List.of("X:1", "T:t", "K:C", "V:1 name=\"Cello\"", "C, D,|")).lines());
+		// Two voices defined, one with music: alone too
+		assertEquals(List.of("X:1", "T:t", "%%MIDI channel 1", "K:C", "c d|"),
+				VoiceSplitter.split(List.of("X:1", "T:t", "V:1", "V:2", "K:C", "V:1", "c d|")).lines());
 	}
 
 	@Test

@@ -547,6 +547,20 @@ class AbcToMidiBehaviourTest {
 				assertEquals(List.of(9), bassLines);
 				// [V:] in a line: each voice gets its stretch
 				assertEquals(noteEvents(s, 2), noteEvents(convert(standard(tune("semantic", "[V:1] c d| [V:2] C D|"))), 2));
+				// A tune with one voice (FolkWiki writes V:1 above every tune) keeps its title as the part's name; a
+				// name= still names it (user, 2026-10-02)
+				AbcToMidi.Params lone = new AbcToMidi.Params(tune("semantic", "V:1", "c d|").filesData());
+				Profile.MAESTRO_LEGACY.applyTo(lone);
+				standard(tune("semantic", "V:1", "c d|")).tweak().accept(lone);
+				lone.abcInfo = new AbcInfo();
+				AbcToMidi.convert(lone);
+				assertEquals("Test", lone.abcInfo.getPartName(1));
+				AbcToMidi.Params named = new AbcToMidi.Params(tune("semantic", "V:1 name=\"Flute\"", "c d|").filesData());
+				Profile.MAESTRO_LEGACY.applyTo(named);
+				standard(tune("semantic", "V:1", "c d|")).tweak().accept(named);
+				named.abcInfo = new AbcInfo();
+				AbcToMidi.convert(named);
+				assertEquals("Flute", named.abcInfo.getPartName(1));
 			}
 
 			@Test

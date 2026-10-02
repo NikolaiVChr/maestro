@@ -34,6 +34,9 @@ import java.util.regex.Pattern;
  * <li>ABC 2.1's %%MIDI voice [ID] instrument=N (11.2), in the header or the body: to the header of every part, with the
  * ID of the voice it was written for when it has none (the V: above it, the voice of the body line it is in, else the
  * first voice). The part whose voice has that ID takes it (MidiProgramGuess), wherever it was written.</li>
+ * <li>A tune with one voice with music (FolkWiki writes V:1 above every tune) gets no V: line in its part, unless the
+ * voice has a name=: the part keeps the tune's title instead of "Voice 1". Its clef=, transpose= and octave= still
+ * reach K:, and a %%MIDI voice for it the part (without the ID).</li>
  * <li>Parts are numbered 1, 2, 3 ... in the file, when any tune in it has voices.</li>
  * </ul>
  * Not yet: &amp; overlays (two voices in one bar) and %%score grouping (layout only).
@@ -234,6 +237,7 @@ public final class VoiceSplitter {
 
 		// Each voice as a part; a voice without music (a V: line at the end) has none. Its channel stays taken, as
 		// %%MIDI program C N counts it.
+		boolean alone = order.stream().filter(v -> v.lines.stream().anyMatch(VoiceSplitter::isMusic)).count() == 1;
 		boolean firstPart = true;
 		for (int n = 0; n < order.size(); n++) {
 			Voice voice = order.get(n);
@@ -252,16 +256,17 @@ public final class VoiceSplitter {
 					continue;
 				if (line.startsWith("K:")) {
 					// The voice's definition and name before K:, which ends the header
-					addVoiceHeader(voice, n, h + 1, out, sources);
-					addAll(midiVoiceLines, midiVoiceSources, out, sources);
+					addVoiceHeader(voice, n, alone, h + 1, out, sources);
+					addAll(alone ? withoutVoiceId(midiVoiceLines, voice.id) : midiVoiceLines, midiVoiceSources, out,
+							sources);
 					line = line + playedProperties(voice.properties);
 				}
 				out.add(line);
 				sources.add(h + 1);
 			}
 			if (bodyStart == start + 1) {
-				addVoiceHeader(voice, n, start + 1, out, sources); // No K: in the header
-				addAll(midiVoiceLines, midiVoiceSources, out, sources);
+				addVoiceHeader(voice, n, alone, start + 1, out, sources); // No K: in the header
+				addAll(alone ? withoutVoiceId(midiVoiceLines, voice.id) : midiVoiceLines, midiVoiceSources, out, sources);
 			}
 			for (int k = 0; k < voice.lines.size(); k++) {
 				if (voice.lines.get(k).isBlank())
@@ -274,13 +279,32 @@ public final class VoiceSplitter {
 		return partNumber;
 	}
 
-	private static void addVoiceHeader(Voice voice, int index, int source, List<String> out, List<Integer> sources) {
-		out.add(("V:" + voice.id + " " + voice.properties).trim());
-		sources.add(source);
+	/**
+	 * The voice's V: line (which names the part, partName) and its %%MIDI channel.
+	 *
+	 * @param alone The tune's only voice with music: no V: line without a name=, so the part keeps the tune's title
+	 */
+	private static void addVoiceHeader(Voice voice, int index, boolean alone, int source, List<String> out,
+									   List<Integer> sources) {
+		if (!alone || NAME.matcher(voice.properties).find()) {
+			out.add(("V:" + voice.id + " " + voice.properties).trim());
+			sources.add(source);
+		}
 		if (!voice.properties.matches("(?i).*\\bchannel\\s*=.*")) {
 			out.add("%%MIDI channel " + abc2midiChannel(index));
 			sources.add(source);
 		}
+	}
+
+	/** The %%MIDI voice lines for the tune's only voice: its own ID left out, so they reach a part without a V: line. */
+	private static List<String> withoutVoiceId(List<String> midiVoiceLines, String id) {
+		List<String> lines = new ArrayList<>();
+		for (String line : midiVoiceLines) {
+			String[] words = line.split("\\s+", 4); // %%MIDI voice ID rest
+			lines.add((words.length >= 3 && words[2].equals(id)) ? ("%%MIDI voice " + (words.length > 3 ? words[3] : "")).trim()
+					: line);
+		}
+		return lines;
 	}
 
 	private static void addAll(List<String> lines, List<Integer> lineSources, List<String> out, List<Integer> sources) {
