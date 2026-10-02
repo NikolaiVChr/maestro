@@ -497,8 +497,8 @@ public class AbcToMidi {
 	}
 
 	/**
-	 * The loose reading of ! (ABC 2.1, 12): the ! at index starts a decoration if another ! follows before | [ : or the
-	 * line's end; else it's a score line break. Spaces may come between (!D.C. al fine!, ! roll!): measured on The
+	 * The loose reading of ! (ABC 2.1, 12): the ! at index starts a decoration if another ! follows before | [ ] : or
+	 * the line's end; else it's a score line break. Spaces may come between (!D.C. al fine!, ! roll!): measured on The
 	 * Session and Norbeck, a ! ... ! without a bar line between is a decoration, never a line break before music.
 	 */
 	private static boolean isBangDecoration(String line, int index) {
@@ -506,7 +506,7 @@ public class AbcToMidi {
 			char c = line.charAt(k);
 			if (c == '!')
 				return true;
-			if (c == '|' || c == '[' || c == ':')
+			if (c == '|' || c == '[' || c == ']' || c == ':')
 				return false;
 		}
 		return false;
@@ -1038,7 +1038,11 @@ public class AbcToMidi {
 								if (trackNumber > 0)
 									abcInfo.setPartEndLine(trackNumber, previousLineForRegions);
 
-								info.newPart(Integer.parseInt(value));
+								if (value.isEmpty() && enableLotroErrors) {
+									throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.x.empty"), fileName,
+											lineNumber, 0);
+								}
+								info.newPart(partNumber(value, info.getPartNumber()));
 								tuneNumber = value;
 								fileName = tuneFileName(baseFileName, tuneNumber, null);
 								trackNumber++;
@@ -1661,6 +1665,10 @@ public class AbcToMidi {
 									}
 									if (afterBar == ']' || afterBar == ':') {
 										i++; // Skip |], |:
+										// |:: is read as |:, as ::| is read as :| (BUG1018; ABC 2.1 defines no third pass)
+										while (afterBar == ':' && !enableLotroErrors && i + 1 < line.length()
+												&& line.charAt(i + 1) == ':')
+											i++;
 										if (afterBar == ']')
 											repeats.sectionEnd(lineIndex, i + 1);
 										else {
@@ -1962,11 +1970,12 @@ public class AbcToMidi {
 									}
 									break;
 
+								case 'X': // X X4 : the same, not printed (ABC 2.1, 4.5). Untested in Lotro: the same error
 								case 'Z': {
 									// Z Z4 : a rest of 1 or 4 whole bars (ABC 2.1, 4.5). Tested in Lotro: it refuses the part.
 									if (enableLotroErrors) {
-										throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.multi.measure.rest"),
-												fileName, lineNumber, i);
+										throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.multi.measure.rest",
+												String.valueOf(ch)), fileName, lineNumber, i);
 									}
 									if (inChord) {
 										throw new FileParseException(UIText.get("common.abctomidi.unexpected.in.chord",
@@ -3305,6 +3314,8 @@ public class AbcToMidi {
 		int startLine = -1; // Where a :| goes back to (line index); -1 until the part's first line of music
 		int startColumn;
 		TuneInfo.ReadState startState; // How the notes were read at startLine/startColumn; null without expand
+		TuneInfo.ReadState skipState; // How the notes were read where the skipped ending starts: restored at its end
+		Dynamics skipDynamics;
 		int pass = 1; // 2 is the first time through the section again
 		Set<Integer> ending; // The numbers of the ending the parser is in, null outside an ending
 		boolean skipping; // The ending isn't played on this pass: its notes take no time
@@ -3341,7 +3352,7 @@ public class AbcToMidi {
 			startColumn = column;
 			pass = 1;
 			ending = null;
-			skipping = false;
+			skip(false);
 			markState();
 		}
 
@@ -3359,7 +3370,22 @@ public class AbcToMidi {
 		/** [1 |1 :|2 ... : an ending starts. */
 		void ending(String numbers) {
 			ending = parseEndingNumbers(numbers);
-			skipping = expand && pass > 1 && !ending.contains(pass);
+			skip(expand && pass > 1 && !ending.contains(pass));
+		}
+
+		/**
+		 * Starts or stops skipping an ending this pass doesn't play. What is written in it isn't read either (BUG1015):
+		 * its K: M: L: I: and dynamics are undone at its end, so they don't reach the ending that is played.
+		 */
+		private void skip(boolean skip) {
+			if (skip && !skipping) {
+				skipState = info.readState();
+				skipDynamics = info.getDynamics();
+			} else if (!skip && skipping) {
+				info.restore(skipState);
+				info.setDynamics(skipDynamics.name());
+			}
+			skipping = skip;
 		}
 
 		/**
@@ -3370,7 +3396,7 @@ public class AbcToMidi {
 		boolean end(List<String> lines, int lineIndex, int column, int after) {
 			if (skipping) {
 				// The end of an ending this pass doesn't play: go on after it
-				skipping = false;
+				skip(false);
 				ending = null;
 				return false;
 			}
@@ -4152,6 +4178,14 @@ public class AbcToMidi {
 	}
 
 	/**
+	 * A part's number from its X: field. ABC 2.1 (3.1.1): "The X: field may be empty": then the number after the part
+	 * before's (1 for the first).
+	 */
+	private static int partNumber(String value, int previous) {
+		return value.isEmpty() ? previous + 1 : Integer.parseInt(value);
+	}
+
+	/**
 	 * The file's name in a message about a tune in it: "book.abc (X:12 The Red Haired Girl)", or without a title yet
 	 * "book.abc (X:12)". In a songbook the line alone doesn't say which tune.
 	 */
@@ -4325,6 +4359,7 @@ public class AbcToMidi {
 	public static AbcInfo parseAbcMetadata(List<FileAndData> abc) throws FileParseException {
 		AbcInfo abcInfo = new AbcInfo();
 		int trackNumber = 0;
+		int partNumber = 0; // The last X: number, for an empty X: (as in convert())
 		// Same instrument rules as convert(): %%made-for wins, then %%part-name, then the first T: that names one
 		boolean instrumentSet = false;
 		boolean inBody = false; // The current part's notes have started, so a T: is a section title (as in convert())
@@ -4391,7 +4426,8 @@ public class AbcToMidi {
 								trackNumber++;
 								partTitles = 0;
 								abcInfo.setPartName(trackNumber, defaultPartName(fileTitle, fileName), false);
-								abcInfo.setPartNumber(trackNumber,  Integer.parseInt(value));
+								partNumber = partNumber(value, partNumber);
+								abcInfo.setPartNumber(trackNumber, partNumber);
 								abcInfo.setPartStartLine(trackNumber, lineNumber);
 								break;
 							case 'T':

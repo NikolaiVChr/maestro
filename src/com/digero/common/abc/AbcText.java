@@ -17,9 +17,13 @@ import java.util.Map;
  */
 public final class AbcText {
 
-	/** The accent mnemonics before a letter, and the combining mark of each. */
+	/**
+	 * The accent mnemonics before a letter, and the combining mark of each, in the same order. Written as escapes: a
+	 * string of bare combining marks can't be read, and a tool that normalizes it to Unicode's canonical order moves the
+	 * cedilla (U+0327) first, which would give \`e an e with a cedilla (BUG1022).
+	 */
 	private static final String ACCENTS = "`'^~\"cuvH";
-	private static final String COMBINING = "̧̀́̂̃̈̆̌̋";
+	private static final String COMBINING = "\u0300\u0301\u0302\u0303\u0308\u0327\u0306\u030C\u030B";
 
 	/** Mnemonics that aren't an accent on a letter. */
 	private static final Map<String, String> SPECIAL_MNEMONICS = Map.of(

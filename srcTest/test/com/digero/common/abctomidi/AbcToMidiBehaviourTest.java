@@ -970,6 +970,80 @@ class AbcToMidiBehaviourTest {
 			}
 
 			@Test
+			void bug1015SkippedEndingChangesNothing() throws Exception {
+				// The second pass skips the first ending: what is written in it isn't read either. A dynamics mark: e
+				// stays p (c p, d f, c p, e p)
+				List<Integer> volumes = Standard2011.velocities(standard(tune("semantic", "|: +p+ c |1 +f+ d :|2 e|]")));
+				assertNotEquals(volumes.get(0), volumes.get(1));
+				assertEquals(List.of(volumes.get(0), volumes.get(0)), volumes.subList(2, 4));
+				// A key, inline or on its own line: the second ending's F stays natural
+				assertEquals(List.of(65, 66, 65, 65), pitches(standard(tune("semantic", "|: F |1 [K:G] F :|2 F|]"))));
+				assertEquals(List.of(65, 66, 65, 65), pitches(standard(tune("semantic", "|: F |1", "K:G", "F :|2 F|]"))));
+				// A unit note length: e f are eighths
+				Sequence s = standard(tune("semantic", "|: c |1 [L:1/4] d :|2 e f|]"));
+				long e = s.getResolution() / 2;
+				assertEquals(List.of(0L, e, 3 * e, 4 * e, 5 * e), ticks(s));
+			}
+
+			@Test
+			void bug1017InvisibleMultiMeasureRest() throws Exception {
+				// ABC 2.1 (4.5): X and X4 are Z and Z4, only not printed: whole bars of rest
+				for (Profile profile : List.of(Profile.ABC_PLAYER, Profile.MAESTRO_LEGACY, Profile.MAESTRO_NEW_LOTRO,
+						Profile.MAESTRO_NEW_STANDARD)) {
+					assertEquals(noteEvents(ConversionDump.convert(tune("semantic", "c8|Z2|d8|Z|e8|"), profile)),
+							noteEvents(ConversionDump.convert(tune("semantic", "c8|X2|d8|X|e8|"), profile)), profile.toString());
+				}
+				// Lotro refuses Z (tested, B16); X is untested, so the same Lotro error
+				assertThrows(LotroFileParseException.class,
+						() -> ConversionDump.convert(tune("semantic", "c8|X2|d8|"), Profile.ABC_PLAYER_STRICT));
+			}
+
+			@Test
+			void bug1018RepeatStartWithTwoColons() throws Exception {
+				// |:: failed (bar expected after :). It's read as |:, as ::| is read as :| (ABC 2.1 defines no third pass)
+				assertEquals(List.of(72, 74, 72, 74, 76), pitches(standard(tune("semantic", "|:: c d ::| e|"))));
+				for (Profile profile : List.of(Profile.ABC_PLAYER, Profile.MAESTRO_LEGACY, Profile.MAESTRO_NEW_LOTRO)) {
+					assertEquals(noteEvents(ConversionDump.convert(tune("semantic", "|: c d :| e|"), profile)),
+							noteEvents(ConversionDump.convert(tune("semantic", "|:: c d ::| e|"), profile)), profile.toString());
+				}
+			}
+
+			@Test
+			void bug1019EmptyReferenceNumber() throws Exception {
+				// ABC 2.1 (3.1.1): "The X: field may be empty". It failed in every reading, a single song too (Invalid
+				// number in X: field). The part gets the number after the part before's
+				AbcCase song = AbcCase.of("semantic", "X:", "T:Song", "K:C", "c d|");
+				AbcCase book = AbcCase.of("semantic", "X:3", "T:One", "K:C", "c d|", "", "X:", "T:Two", "K:C", "e f|");
+				for (Profile profile : List.of(Profile.ABC_PLAYER, Profile.MAESTRO_LEGACY, Profile.MAESTRO_NEW_LOTRO,
+						Profile.MAESTRO_NEW_STANDARD)) {
+					assertEquals(2, noteOns(ConversionDump.convert(song, profile)).size(), profile.toString());
+					ConversionDump.convert(book, profile);
+				}
+				for (AbcInfo info : List.of(abcInfoOf(book), AbcToMidi.parseAbcMetadata(book.filesData()))) {
+					assertEquals(4, info.getPartNumber(2));
+					assertEquals("Two", info.getPartName(2));
+				}
+				// The songbook dialog lists it and opens it
+				AbcSongbook songbook = new AbcSongbook(book.filesData().getFirst().lines);
+				AbcSongbook.Tune second = songbook.tunes().get(1);
+				assertEquals("", second.number());
+				assertEquals(2, noteOns(ConversionDump.convert(AbcCase.of("semantic",
+						songbook.tuneLines(second).toArray(String[]::new)), Profile.MAESTRO_NEW_STANDARD)).size());
+				// Untested in Lotro: a Lotro error
+				assertThrows(LotroFileParseException.class,
+						() -> ConversionDump.convert(song, Profile.ABC_PLAYER_STRICT));
+			}
+
+			@Test
+			void bug1021BangBeforeAClosingBracketIsALineBreak() throws Exception {
+				// The loose reading of ! (ABC 2.1, 12, a file without %abc-2.1): a ! is a decoration only if the next !
+				// comes before | [ : or ]. Here the next ! is after the chord's ], so this ! is a score line break, and
+				// the chord stays [ce]; read as a decoration "!e] d!", it ate the ]
+				assertEquals(noteEvents(standard(tune("semantic", "[ce] d!trill!f|"))),
+						noteEvents(standard(tune("semantic", "[c!e] d!trill!f|"))));
+			}
+
+			@Test
 			void bug1011PartsOwnProgramBeatsTheHeadersVoiceInstrument() {
 				MidiProgramGuess.Clues file = new MidiProgramGuess.Clues();
 				file.midiDirective("MIDI voice instrument=74");
