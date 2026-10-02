@@ -904,6 +904,99 @@ final class AbcCases {
 		c.add(tune("repeats_start_only", "|: c d|e f|").with(p -> p.expandRepeats = true));
 		c.add(tune("repeats_multi_measure_rest", "|: Z c :|").with(p -> p.expandRepeats = true));
 
+		// ============================================================ found 2026-09-29 to 2026-10-02
+		// Every case runs in all five profiles: Lotro's reading and the standard one side by side. B-numbers are the
+		// in-game tests (lotro_tests.md), BUG numbers the review of 2026-10-02 (review_bugs.md).
+
+		// ------------------------------------------------------------ slips read leniently (A56)
+		c.add(tune("slip_tie_apart_from_its_note", "c2 -c2 d2|"));
+		c.add(tune("slip_tie_apart_across_bar", "c4|-c4|"));
+		c.add(tune("slip_j_and_r", "Jc Rd e f|")); // B77f: J skipped, R a roll
+		c.add(tune("slip_double_backslash_line_end", "c d e f|\\\\", "g a b c'|")); // B77g
+		c.add(tune("slip_typographic_quotes", "\u201CG\u201Dc d \u201CC\u201De f|")); // B77e
+		c.add(tune("slip_broken_after_slur", "(c d)>e f|")); // B77c
+		c.add(tune("slip_tuplet_in_grace_notes", "{(3Bcd}c2 d2|")); // B77d
+		c.add(of("slip_field_wrapped_onto_next_line", "X:1", "T:A title that goes", "on the next line", "M:4/4", "L:1/8",
+				"Q:120", "K:C", "c d|"));
+
+		// ------------------------------------------------------------ endings and repeat signs
+		c.add(tune("ending_after_double_bar", "|: c d ||1 e f :|2 g a|]")); // B77b
+		c.add(tune("ending_after_double_bar_and_space", "|: c d || [1 e f :|[2 g a|]"));
+		c.add(tune("repeat_sign_colon_bar_colon", "|: c d :|: e f :|")); // B2
+		c.add(tune("repeat_sign_colon_bar_bracket", "|: c d :|] e f|")); // B4
+		c.add(tune("repeat_sign_ends_accidentals", "|: f ^f :| f|")); // BUG1001, B79
+		c.add(tune("repeat_second_pass_key", "|: F2 |", "K:G", "F2 :|")); // BUG1002
+		c.add(tune("repeat_second_pass_unit_length", "|: c d |", "L:1/4", "e f :|")); // BUG1002
+		c.add(tune("repeat_dynamics_carry_over", "|: c d | +f+ e f :|")); // BUG1002: dynamics carry over
+		c.add(tune("repeat_double_colon_after_second_ending", "|: c |1 d :|2 e :: f :|")); // BUG1003
+		c.add(tune("repeat_bar_colon_after_second_ending", "|: c |1 d :|2 e :|: f :|")); // BUG1003
+		c.add(tune("repeat_start_with_two_colons", "|:: c d ::| e|")); // BUG1018
+		c.add(tune("skipped_ending_dynamics", "|: +p+ c |1 +f+ d :|2 e|]")); // BUG1015
+		c.add(tune("skipped_ending_inline_key", "|: F |1 [K:G] F :|2 F|]")); // BUG1015
+		c.add(tune("skipped_ending_key_line", "|: F |1", "K:G", "F :|2 F|]")); // BUG1015
+		c.add(tune("skipped_ending_unit_length", "|: c |1 [L:1/4] d :|2 e f|]")); // BUG1015
+
+		// ------------------------------------------------------------ bar lines
+		c.add(tune("bar_thick_thin_accompaniment", header("M:7/8"), "\"C\"c2 d2 e3 [| d2 e2 f3 [|] \"G\"g7 | c7|")); // BUG1007
+		c.add(tune("bar_thick_thin_repeat_start", "c [|: d :|")); // BUG1007
+		c.add(tune("bang_before_closing_bracket", "[c!e] d!trill!f|")); // BUG1021
+
+		// ------------------------------------------------------------ notes, rests, tuplets
+		c.add(tune("tie_dotted", "C2.-C2 D2 [CE].-[CE]|")); // BUG1004
+		c.add(tune("staccato_with_trill", ".Tc4 d4|")); // BUG1005
+		c.add(tune("staccato_with_grace_note", ".{d}c2 e2|")); // BUG1005
+		c.add(tune("invisible_multi_measure_rest", "c8|X2|d8|X|e8|")); // BUG1017, B80
+		c.add(tune("tuplet_5_in_3_4", header("M:3/4"), "(5cdefg a4|")); // BUG1014
+		c.add(tune("tuplet_5_in_3_8", header("M:3/8"), "(5cdefg a|")); // BUG1014
+		c.add(tune("grace_notes_under_tempo_change", "{d}c4 c4|", "%%Q: 240", "{d}c4 c4|")); // BUG1016
+		c.add(tune("ornament_under_tempo_change", "Mc4 c4|", "%%Q: 240", "Mc4 c4|")); // BUG1016
+
+		// ------------------------------------------------------------ decorations
+		c.add(tune("decorations_skipped", "!fermata!c !coda!d !segno!e !D.C.!f|!tenuto!c !wedge!d !breath!e !arpeggio![ceg]|"));
+		c.add(tune("decorations_accent_forms", "Lc !accent!d !>!e !emphasis!f|"));
+		c.add(tune("decorations_letters_bowing", "uc vd He Of Sg|"));
+		c.add(tune("dynamics_plus_capitals", "+FF+c d +PP+e f|")); // B74
+
+		// ------------------------------------------------------------ chords
+		c.add(tune("chord_symbol_lowercase_bass", "\"G/b\"G4 \"C/e\"C4|")); // BUG1013
+		c.add(tune("chord_symbol_alternate", "\"G(Em)\"G4 \"C7(b9)\"C4|")); // BUG1013
+		c.add(tune("chord_five_notes_and_rest", "[C2E2G2c2e2z2] d2|")); // B73a: plays
+		c.add(tune("chord_six_notes_and_rest", "[C2E2G2c2e2g2z2] d2|")); // B73b: Lotro refuses it
+		c.add(tune("chord_six_different_with_double", "[C2E2G2c2e2g2c2] d2|")); // B72c: plays
+
+		// ------------------------------------------------------------ fields
+		c.add(tune("key_words_after_the_key", header("K:By Aha"), "B d f|")); // B75k
+		c.add(tune("note_length_same_after_notes", "c d|", "L:1/8", "e f|")); // B40
+		c.add(tune("tempo_from_rhythm_hornpipe", header("-Q", "R:hornpipe"), "c d e f|"));
+		c.add(tune("tempo_from_rhythm_jig", header("-Q", "R:jig", "M:6/8"), "c d e f g a|"));
+		c.add(of("x_empty", "X:", "T:Song", "M:4/4", "L:1/8", "Q:120", "K:C", "c d|")); // BUG1019, B81
+		c.add(of("x_empty_in_book", "X:3", "T:One", "M:4/4", "L:1/8", "Q:120", "K:C", "c d|", "", "X:", "T:Two",
+				"M:4/4", "L:1/8", "Q:120", "K:C", "e f|")); // B81: Lotro refuses the whole file
+		c.add(of("files_second_file_header_title", "X:1", "T:One", "M:4/4", "L:1/8", "Q:120", "K:C", "c d|")
+				.plusFile("two.abc", "T:Two", "", "X:2", "M:4/4", "L:1/8", "Q:120", "K:C", "e f|")); // BUG1008
+
+		// ------------------------------------------------------------ parts and voices
+		c.add(tune("parts_inline_labels", partOrderHeader("P:ABA"), "[P:A]c d|[P:B]e f|"));
+		c.add(tune("parts_inline_label_mid_line", partOrderHeader("P:AB"), "[P:A]c d [P:B]e f|"));
+		c.add(tune("voice_alone_keeps_the_title", "V:1", "c d e f|")); // FolkWiki: no "Voice 1"
+		c.add(tune("voice_alone_with_name", "V:1 name=\"Fiddle\"", "c d e f|"));
+		c.add(of("voice_octave_and_key_comment", "X:1", "T:t", "V:1", "V:2 octave=-1", "M:4/4", "L:1/8", "Q:120",
+				"K:G % key", "V:1", "c d|", "V:2", "C D|")); // BUG1010
+		c.add(of("midi_voice_header_against_part_program", "%%MIDI voice instrument=74", "", "X:1", "T:t",
+				"%%MIDI program 40", "M:4/4", "L:1/8", "Q:120", "K:C", "c d|")); // BUG1011
+		c.add(of("midi_voice_id_header_against_part_program", "%%MIDI voice 1 instrument=74", "", "X:1", "T:t", "V:1",
+				"%%MIDI program 40", "M:4/4", "L:1/8", "Q:120", "K:C", "V:1", "c d|")); // BUG1011
+
+		// ------------------------------------------------------------ lyrics (BUG1006, Canzonetta)
+		c.add(tune("lyrics_hyphen_after_space", "c d e f|", "w:syll-a -ble"));
+		c.add(tune("lyrics_double_hyphen", "c d e f|", "w:syll-a--ble"));
+		c.add(tune("lyrics_held_word_is_one_word", "c d e f|", "w:que - - sto", "w:que - - sto"));
+		c.add(tune("lyrics_held_over_skipped_ending", "|: c d |1 e2 :|2 f2|]", "w:one two three_"));
+		c.add(tune("lyrics_punctuation_alone", "c d e|", "w:a b_.", "w:a , b"));
+		c.add(tune("lyrics_line_continued", "c d|", "w:a b\\", "e f|", "w:c d"));
+		c.add(tune("lyrics_phrase_after_repeat_sign", "|: c d ::e2|", "w:one two Deh,", "w:three four",
+				"f g |1 a2 :|2 a2|]", "w:dim-me-lo_."));
+
 		return c;
 	}
 

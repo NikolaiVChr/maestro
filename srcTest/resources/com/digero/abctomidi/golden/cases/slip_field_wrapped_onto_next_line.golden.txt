@@ -1,0 +1,37 @@
+# AbcToMidi golden snapshot. Re-record with: mvn test -Dabc.golden.update=true (and review the diff before committing)
+case slip_field_wrapped_onto_next_line
+
+== abc slip_field_wrapped_onto_next_line.abc
+  X:1
+  T:A title that goes
+  on the next line
+  M:4/4
+  L:1/8
+  Q:120
+  K:C
+  c d|
+
+### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
+== EXCEPTION FileParseException: Error reading slip_field_wrapped_onto_next_line.abc (X:1 A title that goes) on line 3, column 1:
+This line isn't music: is it the rest of the T: field on line 2? Continue a field on the next line with +:
+== log: empty
+
+### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
+== EXCEPTION FileParseException: Error reading slip_field_wrapped_onto_next_line.abc (X:1 A title that goes) on line 3, column 1:
+This line isn't music: is it the rest of the T: field on line 2? Continue a field on the next line with +:
+== log: empty
+
+### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)
+== EXCEPTION FileParseException: Error reading slip_field_wrapped_onto_next_line.abc (X:1 A title that goes) on line 3, column 1:
+This line isn't music: is it the rest of the T: field on line 2? Continue a field on the next line with +:
+== log: empty
+
+### profile MAESTRO_NEW_LOTRO (useLotroInstruments=false, enableLotroErrors=false, Lotro Abc)
+== EXCEPTION FileParseException: Error reading slip_field_wrapped_onto_next_line.abc (X:1 A title that goes) on line 3, column 1:
+This line isn't music: is it the rest of the T: field on line 2? Continue a field on the next line with +:
+== log: empty
+
+### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
+== EXCEPTION FileParseException: Error reading slip_field_wrapped_onto_next_line.abc (X:1 A title that goes) on line 3, column 1:
+This line isn't music: is it the rest of the T: field on line 2? Continue a field on the next line with +:
+== log: empty

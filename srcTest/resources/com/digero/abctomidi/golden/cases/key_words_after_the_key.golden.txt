@@ -1,0 +1,36 @@
+# AbcToMidi golden snapshot. Re-record with: mvn test -Dabc.golden.update=true (and review the diff before committing)
+case key_words_after_the_key
+
+== abc key_words_after_the_key.abc
+  X:1
+  T:Test
+  M:4/4
+  L:1/8
+  Q:120
+  K:By Aha
+  B d f|
+
+### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
+== EXCEPTION FileParseException: Error reading key_words_after_the_key.abc (X:1 Test) on line 6, column 3:
+Invalid key signature: By Aha
+== log: empty
+
+### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
+== EXCEPTION LotroFileParseException: Error reading key_words_after_the_key.abc (X:1 Test) on line 6, column 3:
+Lotro refuses a part with "Aha" in K:; write only the key, e.g. K:G or K:D mix
+== log: empty
+
+### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)
+== EXCEPTION FileParseException: Error reading key_words_after_the_key.abc (X:1 Test) on line 6, column 3:
+Invalid key signature: By Aha
+== log: empty
+
+### profile MAESTRO_NEW_LOTRO (useLotroInstruments=false, enableLotroErrors=false, Lotro Abc)
+== EXCEPTION FileParseException: Error reading key_words_after_the_key.abc (X:1 Test) on line 6, column 3:
+Invalid key signature: By Aha
+== log: empty
+
+### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
+== EXCEPTION FileParseException: Error reading key_words_after_the_key.abc (X:1 Test) on line 6, column 3:
+Invalid key signature: By Aha
+== log: empty
