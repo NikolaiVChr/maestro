@@ -2385,7 +2385,9 @@ public class AbcToMidi {
 
 							// Grace notes before this note or chord: on the beat, taking their time from the note, which starts
 							// after them. The shortest one lasts GRACE_NOTE_SECONDS, the others by their written lengths; all
-							// of them together at most half the note. Not before a tied note's continuation.
+							// of them together at most half the note. Not before a tied note's continuation. Seconds are
+							// turned into ticks at the tempo at the note: under a %%Q: change the ticks play at that tempo
+							// (BUG1016).
 							if (!graceNotes.isEmpty() && (!inChord || chordSize == 1) && !tiedNotes.containsKey(noteId)) {
 								double totalWeight = 0;
 								double shortestWeight = Double.MAX_VALUE;
@@ -2393,7 +2395,7 @@ public class AbcToMidi {
 									totalWeight += grace[1];
 									shortestWeight = Math.min(shortestWeight, grace[1]);
 								}
-								double ticksPerSecond = info.getPrimaryTempoBPM() * PPQN / 60.0;
+								double ticksPerSecond = info.getCurrentTempoBPM(Math.round(chordStartTick)) * PPQN / 60.0;
 								double graceTicks = Math.min(GRACE_NOTE_SECONDS * ticksPerSecond * totalWeight / shortestWeight,
 										(noteEndTick - chordStartTick) / 2);
 								double graceTick = chordStartTick;
@@ -2412,11 +2414,13 @@ public class AbcToMidi {
 							// ornament
 							double soundOffset = attackOffset;
 
+
 							// An ornament: quick notes in steps of GRACE_NOTE_SECONDS, taking their time from the note, which
-							// sounds after them (see ornamentNotes). Not on a chord, a tied note's continuation or a drum.
+							// sounds after them (see ornamentNotes). Not on a chord, a tied note's continuation or a drum. In
+							// ticks at the tempo at the note, as grace notes.
 							if (ornament != null && !inChord && !tiedNotes.containsKey(noteId)
 									&& !info.getInstrument().isPercussion && !drumPart) {
-								double ticksPerSecond = info.getPrimaryTempoBPM() * PPQN / 60.0;
+								double ticksPerSecond = info.getCurrentTempoBPM(Math.round(chordStartTick)) * PPQN / 60.0;
 								Map<Integer, Integer> neighbourAccidentals = new HashMap<>(accidentals);
 								int upper = neighbourPitch(m, 1, info, neighbourAccidentals, useLotroInstruments);
 								int lower = neighbourPitch(m, -1, info, neighbourAccidentals, useLotroInstruments);

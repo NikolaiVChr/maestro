@@ -985,6 +985,70 @@ class AbcToMidiBehaviourTest {
 				assertEquals(List.of(0L, e, 3 * e, 4 * e, 5 * e), ticks(s));
 			}
 
+			/** The seconds at a tick, by the tempo events of track 0 (120 a minute before the first). */
+			private static double secondsAt(Sequence sequence, long tick) {
+				TreeMap<Long, Integer> tempos = new TreeMap<>(); // tick => microseconds per quarter
+				Track track = sequence.getTracks()[0];
+				for (int i = 0; i < track.size(); i++) {
+					if (track.get(i).getMessage() instanceof MetaMessage mm && mm.getType() == 0x51) {
+						byte[] d = mm.getData();
+						tempos.put(track.get(i).getTick(), ((d[0] & 0xFF) << 16) | ((d[1] & 0xFF) << 8) | (d[2] & 0xFF));
+					}
+				}
+				double seconds = 0;
+				long from = 0;
+				int mpq = 500000;
+				for (Map.Entry<Long, Integer> tempo : tempos.headMap(tick, true).entrySet()) {
+					seconds += (tempo.getKey() - from) * mpq / 1e6 / sequence.getResolution();
+					from = tempo.getKey();
+					mpq = tempo.getValue();
+				}
+				return seconds + (tick - from) * mpq / 1e6 / sequence.getResolution();
+			}
+
+			/** {start, end} in seconds of each note of the pitch in track 1, in order. */
+			private static List<double[]> noteSeconds(Sequence sequence, int pitch) {
+				List<double[]> notes = new ArrayList<>();
+				long start = -1;
+				for (NoteEvent event : noteEvents(sequence)) {
+					if (event.pitch() != pitch)
+						continue;
+					if (event.on())
+						start = event.tick();
+					else
+						notes.add(new double[] { secondsAt(sequence, start), secondsAt(sequence, event.tick()) });
+				}
+				return notes;
+			}
+
+			@Test
+			void bug1016GraceNotesAndOrnamentsLastTheirSecondsUnderAnyTempo() throws Exception {
+				// %%Q: (Maestro's round trip of a MIDI's tempo changes) moves the tick grid, not the music: a note lasts
+				// the seconds its ABC length gives at the primary tempo. Grace notes and ornaments are seconds too
+				// (GRACE_NOTE_SECONDS); they were turned into ticks at the primary tempo, so under %%Q: 240 a grace note
+				// lasted half of it, below Lotro's 60 ms
+				Sequence s = convert(tune("semantic", "{d}c4 c4|", "%%Q: 240", "{d}c4 c4|", "%%Q: 60", "{d}c4 c4|"));
+				double tick = 1.0 / (2 * s.getResolution()); // A tick at the fastest tempo, 240: rounding
+				List<double[]> graces = noteSeconds(s, 62);
+				assertEquals(3, graces.size());
+				for (double[] grace : graces)
+					assertTrue(Math.abs(grace[1] - grace[0] - AbcToMidi.GRACE_NOTE_SECONDS) <= tick,
+							"a grace note of " + (grace[1] - grace[0]) + " s");
+				for (double[] note : noteSeconds(s, 60)) {
+					// The notes: 4 eighths at Q:120, 1 second each (less the grace note's 65 ms before the first of a bar)
+					double length = note[1] - note[0];
+					assertTrue(Math.abs(length - 1) < 1e-3 || Math.abs(length - (1 - AbcToMidi.GRACE_NOTE_SECONDS)) < 1e-3,
+							"a note of " + length + " s");
+				}
+				// An ornament: a mordent's two quick notes, 65 ms each, under every tempo
+				s = convert(tune("semantic", "Mc4 c4|", "%%Q: 240", "Mc4 c4|"));
+				List<double[]> lower = noteSeconds(s, 59);
+				assertEquals(2, lower.size());
+				for (double[] note : lower)
+					assertTrue(Math.abs(note[1] - note[0] - AbcToMidi.GRACE_NOTE_SECONDS) <= tick,
+							"a mordent's lower note of " + (note[1] - note[0]) + " s");
+			}
+
 			@Test
 			void bug1017InvisibleMultiMeasureRest() throws Exception {
 				// ABC 2.1 (4.5): X and X4 are Z and Z4, only not printed: whole bars of rest
