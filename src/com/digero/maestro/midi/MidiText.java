@@ -112,6 +112,9 @@ public class MidiText {
 			case MidiConstants.META_M_LIVE:
 				fragment.source = Source.MLIVE;
 				break;
+			case MidiConstants.META_COPYRIGHT:
+				fragment.source = Source.COPYRIGHT;
+				break;
 		}
 		//System.out.println("tick="+tick+" txt: "+MidiUtils.formatBytesHexOnly(data)+" type="+fragment.source+" track="+track);
 		fragment.track = track;
@@ -190,6 +193,11 @@ public class MidiText {
 					if (data.length == 6 && data[2] == (byte) 'E' && data[3] == (byte) 'N' && data[4] == (byte) 'G' && data[5] == (byte) 'L') {
 						fragment.reaction = Reaction.LANGUAGE;
 					}
+				} else if (fragment.source == Source.COPYRIGHT && data.length > 0) {
+					valid = true;
+					offset = 0;
+					fragment.format = Format.UNKNOWN;
+					fragment.reaction = Reaction.MUSIC_RIGHTS;
 				} else if (data[0] == (byte) '@' && data.length >= 2) {
 					valid = true;
 					switch (data[1]) {
@@ -197,7 +205,7 @@ public class MidiText {
 						case 'k':
 							valid = data.length > 2;
 							offset = 2;
-							fragment.reaction = Reaction.RIGHTS;
+							fragment.reaction = Reaction.KARAOKE_RIGHTS;
 							fragment.format = fragment.source == Source.TEXT?Format.SOFT_KARAOKE:Format.TUNE1000;
 							break;
 						case 'L':
@@ -543,8 +551,11 @@ public class MidiText {
 				case TITLE:
 					str.append("Title: ").append(decode(fraction.sylineBytes)).append("\n");
 					break;
-				case RIGHTS:
-					//str += "Lyrics copyright: "+decode(fraction.sylineBytes)+"\n";
+				case KARAOKE_RIGHTS:
+					str.append("Lyrics copyright: "+decode(fraction.sylineBytes)).append("\n");
+					break;
+				case MUSIC_RIGHTS:
+					str.append("Copyright: "+decode(fraction.sylineBytes)).append("\n");
 					break;
 				case LANGUAGE:
 					str.append("Language: ").append(decode(fraction.sylineBytes)).append("\n");
@@ -593,7 +604,8 @@ public class MidiText {
                     case LANGUAGE -> "Language: " + decode(fraction.sylineBytes);
                     case INFO -> "Info: " + decode(fraction.sylineBytes);
                     case META_LINE -> fraction.prefix + decode(fraction.sylineBytes);
-                    case RIGHTS -> "Lyrics Copyrights: " + decode(fraction.sylineBytes);
+                    case KARAOKE_RIGHTS -> "Lyrics Copyrights: " + decode(fraction.sylineBytes);
+					case MUSIC_RIGHTS -> "Copyrights: " + decode(fraction.sylineBytes);
 					case WRITER -> "Writer: " + decode(fraction.sylineBytes);
 					case VERSION -> "Version: " + decode(fraction.sylineBytes);
 					default -> "";
@@ -717,7 +729,7 @@ public class MidiText {
 	}
 
 	private boolean isMetadata(Reaction r) {
-		return r == Reaction.TITLE || r == Reaction.RIGHTS || r == Reaction.LANGUAGE ||
+		return r == Reaction.TITLE || r == Reaction.KARAOKE_RIGHTS || r == Reaction.MUSIC_RIGHTS || r == Reaction.LANGUAGE ||
 				r == Reaction.INFO || r == Reaction.META_LINE || r == Reaction.VERSION || r == Reaction.WRITER;
 	}
 
@@ -808,7 +820,7 @@ public class MidiText {
 		public enum Reaction {
 			// the order matters
 			TITLE,
-			RIGHTS,
+			KARAOKE_RIGHTS,
 			LANGUAGE,
 			INFO,
 			VERSION,
@@ -826,8 +838,9 @@ public class MidiText {
 			CLEAR_NEW,//clear screen
 			NEWLINE_NEW,// newline
 			CHORD,
-			SYNC // highlight next full line
-			, META_LINE // M-LIVE
+			SYNC, // highlight next full line
+			META_LINE, // M-LIVE
+			MUSIC_RIGHTS
 			
 			// in modern Tune1000 kar, newline is sometimes at same tick as syllable, meaning syllable first, then newline.
 			// in older Soft Karaoke kar, newline is sometimes at same tick as syllable, meaning newline first, then syllable.
@@ -839,7 +852,8 @@ public class MidiText {
 			TEXT,
 			MARK, 
 			CUE,
-			MLIVE
+			MLIVE,
+			COPYRIGHT
 		}
 		public enum Format {
 			SOFT_KARAOKE,

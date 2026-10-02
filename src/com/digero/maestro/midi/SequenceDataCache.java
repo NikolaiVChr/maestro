@@ -494,9 +494,11 @@ public class SequenceDataCache implements MidiConstants, ITempoCache, IBarNumber
 						} else if (!ignoreMidiText && type == META_M_LIVE && m.getData() != null) {			
 							midiText.collectTxt(tick, data, META_M_LIVE, iTrack);
 						} else if (m.getType() == META_COPYRIGHT && tick == 0L && iTrack == 0) {
-							log.finer("\n(c): "+MidiUtils.formatBytes(data));
 							String tmp = "";
-							if (!ignoreMidiText) tmp = MidiUtils.decodeMidiText(data).trim();
+							if (!ignoreMidiText) {
+								tmp = MidiUtils.decodeMidiText(data).trim();
+								midiText.collectTxt(tick, data, META_COPYRIGHT, iTrack);
+							}
 							
 							if (!tmp.isEmpty()) {
 								copyright = tmp;
