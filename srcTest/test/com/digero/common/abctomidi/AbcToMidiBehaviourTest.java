@@ -734,16 +734,6 @@ class AbcToMidiBehaviourTest {
 						standard(tune("semantic", header("K:G ^c"), "c f|")), Profile.ABC_PLAYER_STRICT));
 			}
 
-			@Disabled(NOT_YET)
-			@Test
-			void graceNotesBetweenANoteAndItsBrokenRhythm() throws Exception {
-				// Without the flag c{g}<d is an error (only c<{g}d works)
-				assertThrows(FileParseException.class, () -> convert(tune("semantic", "c{g}<d e|")));
-				// ABC 2.1 (4.12): "A<{g}A and A{g}<A are legal and equivalent"
-				assertEquals(noteEvents(convert(standard(tune("semantic", "c<{g}d e|")))),
-						noteEvents(convert(standard(tune("semantic", "c{g}<d e|")))));
-			}
-
 			@Test
 			void lotroErrorsWin() throws Exception {
 				// With Lotro errors on (the ABC Player) the flag changes nothing: Lotro's reading, or a Lotro error
@@ -945,6 +935,41 @@ class AbcToMidiBehaviourTest {
 				// The other readings play them as before
 				playsAs("|: c4 d4 :: e4 f4 :|", "|: c4 d4 :|: e4 f4 :|");
 				playsAs("|: c4 d4 :| e4 f4|", "|: c4 d4 :|] e4 f4|");
+			}
+
+			@Test
+			void graceNotesBetweenANoteAndItsBrokenRhythm() throws Exception {
+				// ABC 2.1 (4.12): "A<{g}A and A{g}<A are legal and equivalent". Only the first worked (F3f); it was an
+				// error in every reading, so no flag (user, 2026-10-02)
+				playsAs("c<{g}d e4 z2|", "c{g}<d e4 z2|");
+				playsAs("c>{gf}d e4 z2|", "c{gf}>d e4 z2|");
+				playsAs("c2 d>>{/g}e f4|", "c2 d{/g}>>e f4|");
+				// After a chord: as [ce]>, which only standard2011 plays (else an error, as before)
+				assertEquals(played(Profile.MAESTRO_NEW_STANDARD, "[ce]>{g}d f4 z2|"),
+						played(Profile.MAESTRO_NEW_STANDARD, "[ce]{g}>d f4 z2|"));
+				// Lotro plays nothing of the part (tested, B78b); the message says what to write
+				assertTrue(lotroError("c{g}<d e4 z2|").getMessage().contains("c<{g}d"));
+			}
+
+			@Test
+			void brokenRhythmAcrossALineBreak() throws Exception {
+				// e> at a line's end, its note on the next line of notes (Village Music Project: Golden days of good
+				// Queen Bess; 3 Norbeck tunes). ABC 2.1 doesn't forbid it, abc2midi plays it
+				playsAs("c2 d>e f4|", "c2 d>\ne f4|");
+				playsAs("c2 d>e f4|", "c2 d> \\\ne f4|"); // With a line continuation
+				playsAs("c2 d>e f4|\nw:a b c d", "c2 d>\nw:a b\ne f4|\nw:c d"); // With lyrics between
+				// After a chord: as [ce]>, which only standard2011 plays (else an error, as before)
+				assertEquals(played(Profile.MAESTRO_NEW_STANDARD, "c2 [ce]>d f4|"),
+						played(Profile.MAESTRO_NEW_STANDARD, "c2 [ce]>\nd f4|"));
+				// Lotro plays it too (tested, B78c)
+				assertEquals(noteEvents(ConversionDump.convert(tune("semantic", "c2 d>e f4|"), Profile.ABC_PLAYER_STRICT)),
+						noteEvents(ConversionDump.convert(tune("semantic", "c2 d>", "e f4|"), Profile.ABC_PLAYER_STRICT)));
+				// With nothing after it in the part it stays an error, also before the next tune
+				errorEverywhere("c2 d4 e>");
+				for (Profile profile : Profile.values()) {
+					assertThrows(FileParseException.class, () -> ConversionDump.convert(AbcCase.of("semantic",
+							AbcCase.concat(AbcCases.part(1, "One", "c2 d4 e>"), AbcCases.part(2, "Two", "d e f g a b c' d'|"))), profile), profile.name());
+				}
 			}
 		}
 

@@ -649,6 +649,9 @@ public class AbcToMidi {
 		MidiEvent lastVerseEvent = null;
 		char lastField = 0; // The field on the line before (w for w:), for a +: line; 0 after a line of music
 		int lastFieldLine = -1; // The line of lastField
+		// A broken rhythm at a line's end (e>), for the first note of the next line of notes: {numerator, denominator}
+		// of that note, and the line and column of the >; {1, 1, -1, -1} if none
+		int[] brokenCarried = { 1, 1, -1, -1 };
 		int lastLyricLine = -1; // Line index of the last w: line, for a +: line after it
 		// Information fields ("Composer: ..."), in the file's order; see writeInfoLines. Lines already read are kept by
 		// their region line number, so a repeat going back doesn't read them again.
@@ -930,6 +933,11 @@ public class AbcToMidi {
 								endUnconnectedTies(enableLotroErrors, tiedNotes, tiedNoteStartTicks, tiedNoteEndTicks,
 										tiedRegions, tiesToContinue, track, channel, info.getDynamics().getVol(useLotroInstruments),
 										noteOffEvents, fileName);
+								if (brokenCarried[2] >= 0) {
+									// e> at the end of the part before: no note of its own to go to
+									throw new FileParseException(UIText.get("common.abctomidi.broken.unfinished"), fileName,
+											brokenCarried[2], brokenCarried[3]);
+								}
 
 								if (track != null)
 									singLyrics(track, lyricNotes, lyricLines, musicLines, sourceLineNumbers, lastAttackTick + 1);
@@ -1272,8 +1280,11 @@ public class AbcToMidi {
 					boolean accent = false;
 					boolean staccato = false;
 					Tuplet tuplet = null;
-					int brokenRhythmNumerator = 1; // The numerator of the note after the broken rhythm sign
-					int brokenRhythmDenominator = 1; // The denominator of the note after the broken rhythm sign
+					// The numerator and denominator of the note after the broken rhythm sign; from the line before if
+					// that ended with one (e>)
+					int brokenRhythmNumerator = brokenCarried[0];
+					int brokenRhythmDenominator = brokenCarried[1];
+					brokenCarried = new int[] { 1, 1, -1, -1 };
 					while (true) {
 						boolean found = m.find(i);
 						int parseEnd = found ? m.start() : line.length();
@@ -1810,6 +1821,13 @@ public class AbcToMidi {
 									if (nextFactor != 1) {
 										throw new FileParseException(UIText.get("common.abctomidi.grace.broken.needs.note"),
 												fileName, lineNumber, j);
+									}
+									// c{g}<d : without Lotro errors withSlipsFixed moved the < before the {. Lotro plays
+									// nothing of the part (tested, B78b).
+									if (enableLotroErrors && j + 1 < line.length()
+											&& (line.charAt(j + 1) == '<' || line.charAt(j + 1) == '>')) {
+										throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.grace.broken"),
+												fileName, lineNumber, j + 1);
 									}
 									if (!enableLotroErrors && !repeats.skipping)
 										graceNotes.addAll(group);
@@ -2444,9 +2462,11 @@ public class AbcToMidi {
 						throw new FileParseException(UIText.get("common.abctomidi.chord.unclosed"), fileName,
 								lineNumber, i);
 
-					if (brokenRhythmDenominator != 1 || brokenRhythmNumerator != 1)
-						throw new FileParseException(UIText.get("common.abctomidi.broken.unfinished"), fileName,
-								lineNumber, i);
+					if (brokenRhythmDenominator != 1 || brokenRhythmNumerator != 1) {
+						// e> at the line's end: its note comes on the next line of notes (Village Music Project; ABC 2.1
+						// doesn't forbid it, abc2midi plays it). Lotro plays the part too (tested, B78c).
+						brokenCarried = new int[] { brokenRhythmNumerator, brokenRhythmDenominator, lineNumber, i };
+					}
 				}
 			}
 
@@ -2464,6 +2484,10 @@ public class AbcToMidi {
 
 			endUnconnectedTies(enableLotroErrors, tiedNotes, tiedNoteStartTicks, tiedNoteEndTicks, tiedRegions,
 					tiesToContinue, track, channel, info.getDynamics().getVol(useLotroInstruments), noteOffEvents, fileName);
+			if (brokenCarried[2] >= 0) {
+				throw new FileParseException(UIText.get("common.abctomidi.broken.unfinished"), fileName, brokenCarried[2],
+						brokenCarried[3]);
+			}
 		}
 
 		// The last parts without notes get their empty tracks too (see addEmptyTrack)
@@ -2619,8 +2643,10 @@ public class AbcToMidi {
 	 * Common slips in the notes whose meaning is sure, written the proper way, in the same length so the columns stay
 	 * right: typographic quotes (a word processor's “G”) as "G"; a tie written apart from its note (c4 -c4,
 	 * c4|-c4, c4 -|c4; the Nottingham Music Database) moved to the note; a broken rhythm after a slur's end ((c d)>e,
-	 * Village Music Project) moved before the ). Not with Lotro errors: Lotro plays nothing of such a part (tested,
-	 * B30, B77), and the parser says so.
+	 * Village Music Project) moved before the ). Also proper ABC that the parser reads only the other way round: a
+	 * broken rhythm after grace notes, c{g}<d, moved before them, c<{g}d (ABC 2.1, 4.12: "A<{g}A and A{g}<A are legal
+	 * and equivalent"). Not with Lotro errors: Lotro plays nothing of such a part (tested, B30, B77, B78), and the
+	 * parser says so.
 	 */
 	static String withSlipsFixed(String line) {
 		StringBuilder notes = new StringBuilder(line.replace('“', '"').replace('”', '"'));
@@ -2637,6 +2663,19 @@ public class AbcToMidi {
 					notes.deleteCharAt(i);
 					notes.insert(noteEnd, '-');
 				}
+			} else if (c == '{') {
+				// c{g}<d : the < (or >> >) goes before the {
+				int close = notes.indexOf("}", i);
+				if (close < 0)
+					break; // The parser says so
+				int end = close + 1;
+				while (end < notes.length() && (notes.charAt(end) == '>' || notes.charAt(end) == '<')
+						&& notes.charAt(end) == notes.charAt(close + 1))
+					end++;
+				String broken = notes.substring(close + 1, end);
+				notes.delete(close + 1, end);
+				notes.insert(i, broken);
+				i = close + broken.length();
 			} else if (c == ')' && i + 1 < notes.length() && (notes.charAt(i + 1) == '>' || notes.charAt(i + 1) == '<')) {
 				// The > (or >> <) goes before the )
 				int end = i + 1;

@@ -1,16 +1,7 @@
 package com.digero.maestro.view;
 
-import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.event.KeyEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.*;
+import java.awt.event.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,6 +9,7 @@ import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.logging.Logger;
 
 import javax.swing.AbstractAction;
 import javax.swing.BorderFactory;
@@ -57,6 +49,7 @@ import com.digero.common.util.Util;
  * the list (also from the filter), Enter to open the selected tune, Escape to cancel, double-click to open.
  */
 public class SongbookDialog extends JDialog {
+	protected static final Logger log = Logger.getLogger("tunebook");
 	/** What the user chose. */
 	public enum Choice {
 		/** Open the selected tune: see {@link Result#tune()} */
@@ -105,6 +98,8 @@ public class SongbookDialog extends JDialog {
 	private final JTextArea preview = new JTextArea();
 	private final JButton openButton = new JButton(UIText.get(OPEN_TUNE));
 	private Result result = new Result(Choice.CANCEL, null);
+	private static Result lastResult = null;
+	private static File lastFile = null;
 
 	/**
 	 * Shows the dialog (modal) and returns the user's choice.
@@ -114,12 +109,23 @@ public class SongbookDialog extends JDialog {
 	 * @param bookFile Its file: for the title and the folder offered for splitting
 	 */
 	public static Result show(Component owner, AbcSongbook book, File bookFile) {
-		SongbookDialog dialog = new SongbookDialog(owner, book, bookFile);
+		AbcSongbook.Tune lastTune = null;
+		if (bookFile != null && bookFile.equals(lastFile) && lastResult != null) {
+			lastTune = lastResult.tune;
+		}
+		SongbookDialog dialog = new SongbookDialog(owner, book, bookFile, lastTune);
 		dialog.setVisible(true);
+		if (dialog.result != null && (dialog.result.choice == Choice.TUNE || dialog.result.choice == Choice.CANCEL)) {
+			lastResult = dialog.result;
+			lastFile = dialog.bookFile;
+		} else {
+			lastResult = null;
+			lastFile = null;
+		}
 		return dialog.result;
 	}
 
-	private SongbookDialog(Component owner, AbcSongbook book, File bookFile) {
+	private SongbookDialog(Component owner, AbcSongbook book, File bookFile, AbcSongbook.Tune selectedTune) {
 		super(owner == null ? null : SwingUtilities.getWindowAncestor(owner), UIText.get(TITLE, bookFile.getName()),
 				ModalityType.APPLICATION_MODAL);
 		this.book = book;
@@ -129,6 +135,7 @@ public class SongbookDialog extends JDialog {
 		rows = new String[tunes.size()][];
 		searchText = new String[tunes.size()];
 		otherTitles = new String[tunes.size()];
+		int selectedRow = 0;
 		for (int i = 0; i < tunes.size(); i++) {
 			AbcSongbook.Tune tune = tunes.get(i);
 			List<String> lines = book.tuneLines(tune);
@@ -139,6 +146,10 @@ public class SongbookDialog extends JDialog {
 				otherTitles[i] = String.join(", ", titles.subList(1, titles.size()));
 			searchText[i] = simplify(String.join(" ", rows[i]) + " " + String.join(" ", titles) + " "
 					+ String.join(" ", tuneFields(lines, "C:")) + " " + String.join(" ", tuneFields(lines, "O:")));
+			if (selectedRow == 0 && selectedTune != null && selectedTune.equals(tune.number())) {
+				log.severe("row "+i);
+				selectedRow = i;
+			}
 		}
 
 		AbstractTableModel model = new AbstractTableModel() {
@@ -189,6 +200,11 @@ public class SongbookDialog extends JDialog {
 		for (int c = 0; c < widthsInEm.length; c++)
 			table.getColumnModel().getColumn(c).setPreferredWidth(widthsInEm[c] * em);
 		table.setPreferredScrollableViewportSize(new Dimension(42 * em, 16 * table.getRowHeight()));
+
+		int viewRow = 0;
+		if (selectedTune != null) viewRow = table.convertRowIndexToView(tunes.indexOf(selectedTune));
+		table.setRowSelectionInterval(viewRow, viewRow);
+
 
 		Font font = table.getFont();
 		preview.setFont(new Font(Font.MONOSPACED, Font.PLAIN, font.getSize()));
@@ -303,6 +319,16 @@ public class SongbookDialog extends JDialog {
 		pack();
 		setLocationRelativeTo(owner);
 		filter.requestFocusInWindow();
+
+
+		addWindowListener(new WindowAdapter() {
+			@Override
+			public void windowOpened(WindowEvent e) {
+				if (table.getSelectedRow() >= 0)
+					scrollToCenter(table.getSelectedRow());
+				SongbookDialog.this.removeWindowListener(this);
+			}
+		});
 	}
 
 	/**
@@ -381,6 +407,15 @@ public class SongbookDialog extends JDialog {
 	private void select(int viewRow) {
 		table.setRowSelectionInterval(viewRow, viewRow);
 		table.scrollRectToVisible(table.getCellRect(viewRow, 0, true));
+	}
+
+	/** Scrolls the list so the row is in the middle of what's shown (as near as it can be at the list's ends). */
+	private void scrollToCenter(int viewRow) {
+		Rectangle cell = table.getCellRect(viewRow, 0, true);
+		Rectangle shown = table.getVisibleRect();
+		Rectangle wanted = new Rectangle(cell.x, Math.max(0, cell.y - (shown.height - cell.height) / 2), cell.width,
+				shown.height);
+		table.scrollRectToVisible(wanted);
 	}
 
 	private AbcSongbook.Tune selectedTune() {
