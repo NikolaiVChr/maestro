@@ -25,6 +25,8 @@ import com.digero.common.abctomidi.RhythmTempo.TuneType;
  * part's program; program C N the program of channel C; channel C the part's channel (else 1, as abc2midi's first
  * voice). N is 0 to 127, C 1 to 16. Channel 10 is the drums: the notes are General MIDI percussion (C,, bass drum,
  * D,, snare), program 0 the standard kit unless another is set.</li>
+ * <li>BarFly's V:ID Program C N (not ABC 2.1; melodeon.net's big file): the voice's program, N counted from 0 (as
+ * abc2midi), C its channel, ignored. Weaker than every %%MIDI directive.</li>
  * <li>K:HP or K:Hp (Highland pipes): Bag Pipe</li>
  * <li>an instrument's name: in V: name= or nm= ("Violin"), in G: ("flute"), and in a T: after "for" ("Air for the
  * harp"). Elsewhere in a title a name is no clue: "The Flute Player" is a tune. (A name in square brackets, "[Flute]",
@@ -116,6 +118,8 @@ final class MidiProgramGuess {
 			.compile("(?i)MIDI(?:\\s*=)?\\s+(program|channel|bassprog|chordprog)\\s+(\\d+)(?:\\s+(\\d+))?\\b");
 	/** ABC 2.1's %%MIDI voice [ID] [instrument=N [bank=B]] [mute] (11.2); the words after voice in group 1. */
 	private static final Pattern MIDI_VOICE = Pattern.compile("(?i)MIDI(?:\\s*=)?\\s+voice\\b(.*)");
+	/** BarFly's program in a V: line, V:1 Program 1 71: a channel (ignored), then the program counted from 0. */
+	private static final Pattern VOICE_PROGRAM = Pattern.compile("(?i)\\bprogram\\s+(\\d+)(?:\\s+(\\d+))?\\b");
 	private static final Pattern VOICE_NAME = Pattern.compile("(?i)\\b(?:name|nm)\\s*=\\s*(?:\"([^\"]*)\"|(\\S+))");
 	private static final Pattern FOR = Pattern.compile("(?i)\\bfor\\s+(?:(?:the|a|an|two|three|2|3|solo)\\s+)?");
 
@@ -197,6 +201,7 @@ final class MidiProgramGuess {
 		private Map<String, Integer> voicePrograms = new HashMap<>(); // %%MIDI voice ID instrument=N
 		private final Set<String> ownVoiceIds = new HashSet<>(); // The IDs of voicePrograms the part set itself
 		private String voiceId; // The part's voice: the ID of the V: in its header
+		private Clue barFlyProgram = new Clue(); // V:1 Program C N (BarFly)
 		private boolean highlandPipes; // K:HP
 		private Clue named = new Clue(); // The first instrument name
 		private Clue rhythm = new Clue(); // The first tune type in R:
@@ -212,6 +217,7 @@ final class MidiProgramGuess {
 			part.chordProgram = chordProgram.inherit();
 			part.voiceProgram = voiceProgram.inherit();
 			part.voicePrograms = new HashMap<>(voicePrograms);
+			part.barFlyProgram = barFlyProgram.inherit();
 			part.highlandPipes = highlandPipes;
 			part.named = named.inherit();
 			part.rhythm = rhythm.inherit();
@@ -282,11 +288,12 @@ final class MidiProgramGuess {
 			}
 			if (instrument == null || instrument < 1 || instrument > 128 || bank != 1)
 				return;
-			if (id == null)
+			if (id == null) {
 				voiceProgram.set(instrument - 1);
-			else
+			} else {
 				voicePrograms.put(id, instrument - 1);
 				ownVoiceIds.add(id);
+			}
 		}
 
 		/** A K: field's value: the key may be HP or Hp (Highland pipes). */
@@ -298,11 +305,17 @@ final class MidiProgramGuess {
 				highlandPipes = words[0].equals("HP") || words[0].equals("Hp");
 		}
 
-		/** A V: field's value: the part's voice ID, and the name in name= or nm=. */
+		/** A V: field's value: the part's voice ID, the name in name= or nm=, and BarFly's Program C N. */
 		void voice(String voice) {
 			String[] words = voice.trim().split("\\s+", 2);
 			if (!words[0].isEmpty() && !words[0].contains("="))
 				voiceId = words[0];
+			Matcher barFly = VOICE_PROGRAM.matcher(voice);
+			if (barFly.find()) {
+				int value = Integer.parseInt(barFly.group(barFly.group(2) != null ? 2 : 1));
+				if (value <= 127)
+					barFlyProgram.set(value);
+			}
 			Matcher m = VOICE_NAME.matcher(voice);
 			while (m.find())
 				named.setFirst(programOfName(m.group(1) != null ? m.group(1) : m.group(2)));
@@ -344,7 +357,7 @@ final class MidiProgramGuess {
 		/**
 		 * The program the file sets for the part, or null. The part's own %%MIDI voice (without an ID, then by the
 		 * part's voice ID), then its own %%MIDI program N; then the same from the file header (BUG1011); then %%MIDI
-		 * program C N for the part's channel. Not one guessed from K:, names or R:.
+		 * program C N for the part's channel; then BarFly's V: Program C N. Not one guessed from K:, names or R:.
 		 */
 		Integer explicitProgram() {
 			if (voiceProgram.value != null && !voiceProgram.inherited)
@@ -360,7 +373,8 @@ final class MidiProgramGuess {
 				return ofVoice;
 			if (program.value != null)
 				return program.value;
-			return channelPrograms.get(channel());
+			Integer ofChannel = channelPrograms.get(channel());
+			return (ofChannel != null) ? ofChannel : barFlyProgram.value;
 		}
 
 		/** The program these clues give. */

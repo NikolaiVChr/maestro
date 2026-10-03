@@ -16,6 +16,9 @@ On top of either reading, **Lotro errors** can be switched on (the ABC Player's 
 or plays in silence, or stops at, is an error that says what Lotro does (`LotroFileParseException`). The messages use
 the words of the in-game tests: "refuses", "in silence (no error)", "stops playing".
 
+**Leniency.** Common slips whose meaning is sure (typographic quotes, a tie apart from its note, ||1, [k:G], "tr"
+and more) are read as meant. Each such place is guarded by `AbcToMidi.LENIENT` (always true), whose Javadoc lists them.
+
 Release rule: once released, changing how a file that loads today is read needs a new flag, so old projects keep
 their sound. Fixing something that is an error today needs no flag.
 
@@ -83,8 +86,8 @@ too.
 | `AbcRegion` | One per note: where it is in the text and when it plays. The ABC Player uses them to highlight the text while playing. Only made with `Params.generateRegions`. |
 | `VoiceSplitter` | A tune's voices (`V:`, `[V:]`) → one part each, played together. |
 | `PartOrder` | `P:ABA` in the header → the sections written out in that order. |
-| `RhythmTempo` | A tempo for the tune type in `R:` (reel, jig, waltz, Balkan dances ...), for a tune without `Q:`. |
-| `MidiProgramGuess` | The MIDI sound of a standard ABC part: from `%%MIDI program`, `%%MIDI voice`, instrument names, `G:`, `V:`, `T:`, `R:`. |
+| `RhythmTempo` | A tempo for the tune type in `R:` (reel, jig, waltz, set dance, Balkan dances ...), for a tune without `Q:`. The types (`TuneType`) have their names in several languages and are matched without accents (Walzer, gånglåt, muiñeira). |
+| `MidiProgramGuess` | The MIDI sound of a standard ABC part: from `%%MIDI program`, `%%MIDI voice`, instrument names, `G:`, `V:`, `T:`, `R:` (`RhythmTempo`'s tune types). |
 | `Drone` | A bagpipe drone under a part (`%%MIDI droneon`, or Highland pipes). Never for Lotro files. |
 | `AbcInstructions` | `I:linebreak`, `I:decoration`, `I:propagate-accidentals`. |
 | `AbcTunebook` | A tune book split into its tunes: Maestro's tunebook dialog and its "Split into files". |
@@ -95,7 +98,7 @@ Outside the package: `common.abc.AbcText` decodes the text escapes in titles and
 
 ## Tests
 
-About 4,750 tests, in `srcTest/test/com/digero/common/abctomidi`.
+About 5,250 tests, in `srcTest/test/com/digero/common/abctomidi`.
 
 - **`AbcCases`:** one tiny tune per feature or error.
 - **Snapshot tests:** every case is converted in all five profiles and compared with a golden file in
@@ -113,7 +116,8 @@ About 4,750 tests, in `srcTest/test/com/digero/common/abctomidi`.
 ## Not supported (ABC 2.1)
 
 - M: change with another denominator mid-tune, [M:C|] after 3/4
-- Q: tempo change mid-tune (the tempo map is shared by all parts, so tricky)
+- D.S./Fine jumps (`!segno!`, `!D.S.!`, `!fine!`, or O'Neill's "Segno" and "Fine" as text): the tune plays straight through once
+- Q: tempo change in the middle of a part (the tempo map is shared by all parts, so tricky)
 - & voice overlays
 - m: macros
 - U: user-defined symbols, U:W=!trill! then Wc

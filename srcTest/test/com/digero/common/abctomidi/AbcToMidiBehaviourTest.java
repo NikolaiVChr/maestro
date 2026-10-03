@@ -2687,6 +2687,17 @@ class AbcToMidiBehaviourTest {
 			assertEquals(40, standardProgram("T:Butchers Hornpipe", "R:reel"));
 			// An instrument's name beats it
 			assertEquals(46, standardProgram("R:reel", "G:harp"));
+			// BarFly's V:1 Program C N (channel, program from 0; melodeon.net's big file): Piano, Clarinet. Weaker than
+			// abc2midi's %%MIDI program, stronger than a name
+			assertEquals(0, standardProgram("V:1 Program 1 0 %Piano"));
+			assertEquals(71, standardProgram("V:1 Program 1 71 %Clarinet"));
+			assertEquals(110, standardProgram("V:1 program 1 110 bass"));
+			assertEquals(40, standardProgram("V:1 Program 1 0", "%%MIDI program 40"));
+			assertEquals(0, standardProgram("V:1 Program 1 0", "G:flute"));
+			// Each voice its own (Beethoven's Ecossaise, Frank Nordberg's: piano in both voices)
+			assertEquals(List.of(0, 56), programs(convert(AbcCase.of("semantic", "X:1", "T:t", "V:1 Program 1 0 %Piano",
+							"V:2 Program 2 56 bass", "M:2/4", "L:1/8", "K:G", "V:1", "B c|", "V:2", "G, D,|")
+					.with(p -> p.standardPitch = true).with(p -> p.standard2011 = true))));
 			// %%MIDI beats the pipes, the pipes beat a name
 			assertEquals(73, standardProgram("G:fiddle", "%%MIDI program 73", "K:HP"));
 			assertEquals(109, standardProgram("G:fiddle", "K:HP"));
