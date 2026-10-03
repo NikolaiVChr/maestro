@@ -28,6 +28,28 @@ import com.digero.maestro.abc.AbcExporter.ExportTrackInfo;
 public class AbcToMidi {
 	private static final Logger log = Logger.getLogger("import.abc");
 
+	/**
+	 * Read common slips leniently when what's meant is sure (user's rule, 2026-10-01); always true. Every place that
+	 * does is guarded by it, so they can be found: without Lotro errors,
+	 * <ul>
+	 * <li>typographic quotes in the notes (“G”) as "G" (withSlipsFixed)</li>
+	 * <li>a tie written apart from its note, c4 -c4, moved to the note (withSlipsFixed)</li>
+	 * <li>a broken rhythm after a slur's end, (c d)>e, moved before the ) (withSlipsFixed)</li>
+	 * <li>a tie to no note of its pitch: the note just ends, with a warning in the log (endUnconnectedTies,
+	 * checkTiesContinue)</li>
+	 * <li>J (slide) skipped and R played as ~, abc 1.6 and BarFly's short decorations</li>
+	 * <li>a doubled \\ at a line's end, as \ (John Chambers' collections)</li>
+	 * <li>|| before an ending, ||1 and || [1: no section end</li>
+	 * <li>a tuplet in grace notes, {(3Bcd}: played as plain grace notes</li>
+	 * <li>|:: read as |:, as ::| is :|</li>
+	 * <li>a lower-case inline field, [k:G] [l:1/16], as [K:G] [L:1/16]</li>
+	 * <li>in the standard reading, "tr" "^tr" "tr=" before a note: a trill</li>
+	 * </ul>
+	 * Not here, as ABC 2.1 or Lotro reads them so: an empty X:, c{g}<d, C.-C, X rests, a slur over grace notes, e> at a
+	 * line's end, a lone ! as a line break in a file without %abc-2.1.
+	 */
+	static final boolean LENIENT = true;
+
 	/** This is a static-only class */
 	private AbcToMidi() {
 	}
@@ -1410,7 +1432,10 @@ public class AbcToMidi {
 										i = end;
 										break;
 									}
-									if (i + 2 < line.length() && Character.isLetter(line.charAt(i + 1)) && line.charAt(i + 2) == ':') {
+									// ABC 2.1's inline fields are upper case, and [r:] [m:]; LENIENT reads [k:G] as [K:G]
+									char fieldLetter = (i + 1 < line.length()) ? line.charAt(i + 1) : ' ';
+									if (i + 2 < line.length() && Character.isLetter(fieldLetter) && line.charAt(i + 2) == ':'
+											&& (LENIENT || Character.isUpperCase(fieldLetter) || fieldLetter == 'r' || fieldLetter == 'm')) {
 										// [K:G] [L:1/16] [M:3/4] : an inline field (ABC 2.1, 3.1), the same as a field on a
 										// line of its own. Tested in Lotro: it refuses the part.
 										int close = line.indexOf(']', i + 3);
@@ -1675,14 +1700,14 @@ public class AbcToMidi {
 										throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.ending.after.double.bar",
 												line.substring(i, skipEndingNumber(line, i + 2) + 1)), fileName, lineNumber, i);
 									}
-									if (afterBar == '|' && !endingAt(line, i + 2)) {
+									if (afterBar == '|' && !(LENIENT && endingAt(line, i + 2))) {
 										// || : a double bar line; not the bar line before an ending (||1, || [1)
 										repeats.sectionEnd(lineIndex, i + 2);
 									}
 									if (afterBar == ']' || afterBar == ':') {
 										i++; // Skip |], |:
 										// |:: is read as |:, as ::| is read as :| (BUG1018; ABC 2.1 defines no third pass)
-										while (afterBar == ':' && !enableLotroErrors && i + 1 < line.length()
+										while (LENIENT && afterBar == ':' && !enableLotroErrors && i + 1 < line.length()
 												&& line.charAt(i + 1) == ':')
 											i++;
 										if (afterBar == ']')
@@ -1836,7 +1861,7 @@ public class AbcToMidi {
 									// "tr=" with a natural upper note. The standard reading plays it as !trill!; Lotro plays
 									// the note plain
 									String text = line.substring(i + 1, j);
-									if (abc21 && !repeats.skipping && TRILL_TEXT.matcher(text).matches())
+									if (LENIENT && abc21 && !repeats.skipping && TRILL_TEXT.matcher(text).matches())
 										ornament = text.endsWith("=") ? TRILL_NATURAL : "trill";
 									i = j;
 									break;
@@ -1908,7 +1933,8 @@ public class AbcToMidi {
 											// ABC 2.1 (4.12) doesn't say; Lotro plays the part (tested in game, B76). Also a
 											// tuplet, {(3Bcd}: grace notes are timed by the player anyway; Lotro plays it (B77d).
 											k++;
-											while (c == '(' && k < j && (Character.isDigit(line.charAt(k)) || line.charAt(k) == ':'))
+											while (LENIENT && c == '(' && k < j
+													&& (Character.isDigit(line.charAt(k)) || line.charAt(k) == ':'))
 												k++;
 											continue;
 										}
@@ -2049,6 +2075,10 @@ public class AbcToMidi {
 										throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.decoration.letter",
 												String.valueOf(ch)), fileName, lineNumber, i);
 									}
+									if (!LENIENT && (ch == 'J' || ch == 'R')) {
+										throw new FileParseException(UIText.get("common.abctomidi.unknown.char",
+												String.valueOf(ch)), fileName, lineNumber, i);
+									}
 									if (!repeats.skipping && (ch == 'T' || ch == 'M' || ch == 'P' || ch == 'R'))
 										ornament = switch (ch) {
 											case 'T' -> "trill";
@@ -2128,15 +2158,19 @@ public class AbcToMidi {
 								case '”':
 									// Typographic quotes, left only with Lotro errors (withSlipsFixed): Lotro plays nothing of
 									// the part (tested, B77e)
-									throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.typographic.quotes"),
-											fileName, lineNumber, i);
+									if (enableLotroErrors) {
+										throw new LotroFileParseException(
+												UIText.get("common.abctomidi.lotro.typographic.quotes"), fileName, lineNumber, i);
+									}
+									throw new FileParseException(UIText.get("common.abctomidi.unknown.char",
+											String.valueOf(ch)), fileName, lineNumber, i);
 
 								case '\\':
 									// Line continuation; Lotro treats every line on its own anyway, so it's ignored. Also doubled,
 									// \\ at the line's end (John Chambers' collections): Lotro plays it (tested, B77g).
 									String afterBackslash = line.substring(i + 1);
-									if (!afterBackslash.isBlank()
-											&& !(afterBackslash.startsWith("\\") && afterBackslash.substring(1).isBlank())) {
+									if (!afterBackslash.isBlank() && !(LENIENT && afterBackslash.startsWith("\\")
+											&& afterBackslash.substring(1).isBlank())) {
 										throw new FileParseException(UIText.get("common.abctomidi.backslash.not.at.end"),
 												fileName, lineNumber, i);
 									}
@@ -2743,8 +2777,13 @@ public class AbcToMidi {
 			Integer lineAndColumn = tiedNotes.get(pitch);
 			if (eventPitches.contains(pitch) || lineAndColumn == null)
 				continue;
-			if (!crossedRepeat)
+			if (!crossedRepeat) {
+				if (!LENIENT) {
+					throw new FileParseException(UIText.get("common.abctomidi.tie.not.connected"), fileName,
+							lineAndColumn >>> 16, lineAndColumn & 0xFFFF);
+				}
 				log.warning(fileName + ": line " + (lineAndColumn >>> 16) + ": a tie to another pitch or a rest ties nothing");
+			}
 			MidiEvent noteOff = MidiFactory.createNoteOffEventEx(pitch, channel, velocity,
 					Math.round(tiedNoteEndTicks.get(pitch)));
 			track.add(noteOff);
@@ -2770,7 +2809,7 @@ public class AbcToMidi {
 			throws FileParseException {
 		for (Map.Entry<Integer, Integer> tie : tiedNotes.entrySet()) {
 			int lineAndColumn = tie.getValue();
-			if (enableLotroErrors) {
+			if (enableLotroErrors || !LENIENT) {
 				throw new FileParseException(UIText.get("common.abctomidi.tie.not.connected"), fileName,
 						lineAndColumn >>> 16, lineAndColumn & 0xFFFF);
 			}
@@ -2797,7 +2836,7 @@ public class AbcToMidi {
 	 * nothing of such a part (tested, B30, B77, B78), and the parser says so.
 	 */
 	static String withSlipsFixed(String line) {
-		StringBuilder notes = new StringBuilder(line.replace('“', '"').replace('”', '"'));
+		StringBuilder notes = new StringBuilder(LENIENT ? line.replace('“', '"').replace('”', '"') : line);
 		boolean quoted = false;
 		for (int i = 0; i < notes.length(); i++) {
 			char c = notes.charAt(i);
@@ -2805,7 +2844,7 @@ public class AbcToMidi {
 				quoted = !quoted;
 			if (quoted)
 				continue;
-			if (c == '-') {
+			if (c == '-' && LENIENT) {
 				int noteEnd = detachedTieNoteEnd(notes, i);
 				if (noteEnd >= 0) {
 					notes.deleteCharAt(i);
@@ -2828,7 +2867,8 @@ public class AbcToMidi {
 				notes.delete(close + 1, end);
 				notes.insert(i, broken);
 				i = close + broken.length();
-			} else if (c == ')' && i + 1 < notes.length() && (notes.charAt(i + 1) == '>' || notes.charAt(i + 1) == '<')) {
+			} else if (LENIENT && c == ')' && i + 1 < notes.length()
+					&& (notes.charAt(i + 1) == '>' || notes.charAt(i + 1) == '<')) {
 				// The > (or >> <) goes before the )
 				int end = i + 1;
 				while (end < notes.length() && notes.charAt(end) == notes.charAt(i + 1))
