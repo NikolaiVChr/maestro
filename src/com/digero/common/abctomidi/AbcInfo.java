@@ -59,6 +59,8 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 	private List<File> abcFiles;
 	private String titlePrefix;
 	private Map<Character, String> metadata = new HashMap<>();
+	/** C: T: Z: of a file header, for a song whose parts have none of their own (setFileHeaderMetadata) */
+	private final Map<Character, String> headerMetadata = new HashMap<>();
 	private NavigableMap<Long, Integer> bars = new TreeMap<>();
 	private Map<Integer, AbcInfo.PartInfo> partInfoByIndex = new HashMap<>();
 	private NavigableSet<AbcRegion> regions;
@@ -93,6 +95,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		abcFiles = null;
 		titlePrefix = null;
 		metadata.clear();
+		headerMetadata.clear();
 		bars.clear();
 		partInfoByIndex.clear();
 		regions = null;
@@ -316,7 +319,8 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 	}
 
 	private String getMetadata_MaybeNull(char key) {
-		return metadata.get(Character.toUpperCase(key));
+		key = Character.toUpperCase(key);
+		return metadata.containsKey(key) ? metadata.get(key) : headerMetadata.get(key);
 	}
 
 	public int getPartStartLine(int trackIndex) {
@@ -359,6 +363,20 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 			}
 		}
 		return max;
+	}
+
+	/**
+	 * A field of a file header (before the file's first X:). A tune's own field overrides it (ABC 2.1, 2.2.2), so its
+	 * C:, T: and Z: name the song only when no part has its own; the first file's header counts.
+	 */
+	void setFileHeaderMetadata(char key, String value) {
+		key = Character.toUpperCase(key);
+		if (key == 'C' || key == 'T' || key == 'Z') {
+			this.empty = false;
+			headerMetadata.putIfAbsent(key, value);
+		} else {
+			setMetadata(key, value);
+		}
 	}
 
 	void setMetadata(char key, String value) {
@@ -628,6 +646,8 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		if (titlePrefix == null || titlePrefix.isEmpty()) {
 			if (metadata.containsKey('T'))
 				return metadata.get('T');
+			if (headerMetadata.containsKey('T'))
+				return headerMetadata.get('T');
 			// No T: at all: the file's name without extension, as for a part without a T:
 			if (abcFiles != null && !abcFiles.isEmpty() && abcFiles.get(0) != null)
 				return abcFiles.get(0).getName().replaceFirst("\\.[^.]*$", "");

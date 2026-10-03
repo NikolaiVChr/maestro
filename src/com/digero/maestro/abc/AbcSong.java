@@ -2230,6 +2230,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		this.mergeVersion = other.mergeVersion;
 		this.abcImportVersion = other.abcImportVersion;
 		this.sourceAbcWasMadeForLotro = other.sourceAbcWasMadeForLotro;
+		this.degraded = other.degraded;
 
         // read-only/shared services.
         this.sequenceInfo = other.sequenceInfo;// lets assume the midi don't change while we work, then this is immutable

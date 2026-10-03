@@ -1161,6 +1161,49 @@ class AbcToMidiBehaviourTest {
 				assertEquals(ticks(convert(tune("semantic", header("M:3/4"), "c d e a4|"))).get(3),
 						ticks(convert(tune("semantic", header("M:3/4"), "(5cdefg a4|"))).get(5));
 			}
+
+			@Test
+			void tunesOwnFieldsBeatTheFileHeaders() throws Exception {
+				// ABC 2.1 (2.2.2): a tune's fields override the file header's. Found in RSCDS Book 52: its first X: lost
+				// its X, so the first tune's T: C: Z: became the file header, and every tune opened from the book was
+				// named after the first tune, with its composer. Norbeck: the header's Z:id:hn-air-%X, the tune's
+				// Z:id:hn-air-1
+				AbcCase tune = AbcCase.of("semantic", "T:City Lights", "C:Ian R Muir", "Z:id:hn-air-%X", "L:1/8",
+						"K:D", "", "X:7", "T:Farewell to Balfour Road", "C:Charles Duff Collection (1792)",
+						"Z:id:hn-air-1", "M:6/8", "K:A", "c d|");
+				// The header's, when the tune has none of its own
+				AbcCase headerOnly = AbcCase.of("semantic", "C:Turlough O'Carolan", "Z:Henrik Norbeck", "", "X:1",
+						"T:Planxty Irwin", "K:G", "c d|");
+				// A song of parts (Lotro): the first part's, as before
+				AbcCase parts = AbcCase.of("semantic", "X:1", "T:Song - Lute", "C:First", "Z:Me", "K:C", "c d|", "",
+						"X:2", "T:Song - Flute", "C:Second", "Z:You", "K:C", "e f|");
+				for (Profile profile : List.of(Profile.ABC_PLAYER, Profile.MAESTRO_LEGACY,
+						Profile.MAESTRO_NEW_STANDARD)) {
+					List<AbcInfo> infos = new ArrayList<>();
+					for (AbcCase abcCase : List.of(tune, headerOnly, parts)) {
+						AbcInfo info = new AbcInfo();
+						ConversionDump.run(abcCase, profile, false, info);
+						infos.add(info);
+					}
+					checkFileHeaderFields(infos, profile.toString());
+				}
+				checkFileHeaderFields(List.of(AbcToMidi.parseAbcMetadata(tune.filesData()),
+								AbcToMidi.parseAbcMetadata(headerOnly.filesData()), AbcToMidi.parseAbcMetadata(parts.filesData())),
+						"playlist");
+			}
+
+			/** The song's title, composer and transcriber for the three files of tunesOwnFieldsBeatTheFileHeaders. */
+			private static void checkFileHeaderFields(List<AbcInfo> infos, String reading) {
+				assertEquals("Farewell to Balfour Road", infos.get(0).getTitle(), reading);
+				assertEquals("Charles Duff Collection (1792)", infos.get(0).getComposer(), reading);
+				assertEquals("id:hn-air-1", infos.get(0).getTranscriber(), reading);
+				assertEquals("Planxty Irwin", infos.get(1).getTitle(), reading);
+				assertEquals("Turlough O'Carolan", infos.get(1).getComposer(), reading);
+				assertEquals("Henrik Norbeck", infos.get(1).getTranscriber(), reading);
+				assertEquals("Song", infos.get(2).getTitle(), reading);
+				assertEquals("First", infos.get(2).getComposer(), reading);
+				assertEquals("Me", infos.get(2).getTranscriber(), reading);
+			}
 		}
 
 		/**
@@ -2513,6 +2556,33 @@ class AbcToMidiBehaviourTest {
 			// With Lotro errors: ~ plays the note plain, as in Lotro (tested)
 			assertEquals(noteEvents(ConversionDump.convert(tune("semantic", "c3 d|"), Profile.ABC_PLAYER_STRICT)),
 					noteEvents(ConversionDump.convert(tune("semantic", "~c3 d|"), Profile.ABC_PLAYER_STRICT)));
+		}
+
+		@Test
+		void trTextBeforeANoteIsATrillInTheStandardReading() throws Exception {
+			// Older tune books write the trill of printed music as text before the note: "tr"A4 (melodeon.net's big
+			// file has it 632 times), "^tr"A4, "tr="A4. The standard reading plays it as !trill!
+			Profile standard = Profile.MAESTRO_NEW_STANDARD;
+			assertEquals(noteEvents(ConversionDump.convert(tune("semantic", "!trill!c4 d|"), standard)),
+					noteEvents(ConversionDump.convert(tune("semantic", "\"tr\"c4 d|"), standard)));
+			assertEquals(noteEvents(ConversionDump.convert(tune("semantic", "!trill!c4 d|"), standard)),
+					noteEvents(ConversionDump.convert(tune("semantic", "\"tr\" c4 d|"), standard)));
+			// Also as an annotation above the note, "^tr"
+			assertEquals(noteEvents(ConversionDump.convert(tune("semantic", "!trill!c4 d|"), standard)),
+					noteEvents(ConversionDump.convert(tune("semantic", "\"^tr\"c4 d|"), standard)));
+			// "tr=": the trill's upper note is natural (in K:G above e it's =f, not ^f), only in the trill: the bar's
+			// next f is ^f
+			assertEquals(noteEvents(ConversionDump.convert(tune("semantic", "!trill!e4 ^f|"), standard)),
+					noteEvents(ConversionDump.convert(tune("semantic", header("K:G"), "\"tr=\"e4 f|"), standard)));
+			// Other text is no trill
+			for (String text : List.of("\"Trio\"", "\"^Trio\"", "\"_tr\"", "\"tr#\""))
+				assertEquals(noteEvents(ConversionDump.convert(tune("semantic", "c4 d|"), standard)),
+						noteEvents(ConversionDump.convert(tune("semantic", text + "c4 d|"), standard)), text);
+			// Lotro plays the note plain: so do its reading, old projects and Lotro files (no error either)
+			for (Profile profile : List.of(Profile.ABC_PLAYER, Profile.ABC_PLAYER_STRICT, Profile.MAESTRO_LEGACY,
+					Profile.MAESTRO_NEW_LOTRO))
+				assertEquals(noteEvents(ConversionDump.convert(tune("semantic", "c4 d|"), profile)),
+						noteEvents(ConversionDump.convert(tune("semantic", "\"tr\"c4 d|"), profile)), profile.toString());
 		}
 
 		/** The program (MIDI patch) of each part's track, in track order. */

@@ -176,6 +176,12 @@ public class AbcToMidi {
 	 */
 	public static final double STACCATO_LENGTH = 0.5;
 
+	/** Text before a note that means a trill, in the standard reading: "tr", "^tr", "tr=" (natural upper note) */
+	private static final Pattern TRILL_TEXT = Pattern.compile("\\^?tr=?");
+
+	/** The ornament of "tr=": a trill whose upper note is natural */
+	private static final String TRILL_NATURAL = "trill=";
+
 	/**
 	 * Ornaments that are played, by their decoration name (ABC 2.1, 4.14); T, M, P and ~ are the short forms. ABC leaves
 	 * how to play them to the program: here in steps of GRACE_NOTE_SECONDS, see ornamentNotes.
@@ -965,9 +971,14 @@ public class AbcToMidi {
 					if (type == 'T' && track != null)
 						continue;
 
-					// The song's title comes from the first T: of each header (more T: lines are other titles of the tune)
-					if (type != 'T' || partTitles == 0)
-						abcInfo.setMetadata(type, value);
+					// The song's title comes from the first T: of each header (more T: lines are other titles of the tune).
+					// A part's own C: T: Z: beat the file header's (ABC 2.1, 2.2.2)
+					if (type != 'T' || partTitles == 0) {
+						if (tuneNumber == null)
+							abcInfo.setFileHeaderMetadata(type, value);
+						else
+							abcInfo.setMetadata(type, value);
+					}
 
 					// Information about the tune. H: lines in a row are one text (ABC 1.6: H: may go on over several
 					// lines); other fields in a row are one each, e.g. two C: for two composers.
@@ -1821,6 +1832,12 @@ public class AbcToMidi {
 										if (chord != null)
 											chordSymbols.computeIfAbsent(trackNumber, k -> new ArrayList<>()).add(chord);
 									}
+									// "tr", "^tr": the trill of printed music, as older tune books write it before the note;
+									// "tr=" with a natural upper note. The standard reading plays it as !trill!; Lotro plays
+									// the note plain
+									String text = line.substring(i + 1, j);
+									if (abc21 && !repeats.skipping && TRILL_TEXT.matcher(text).matches())
+										ornament = text.endsWith("=") ? TRILL_NATURAL : "trill";
 									i = j;
 									break;
 								}
@@ -2425,8 +2442,12 @@ public class AbcToMidi {
 									&& !info.getInstrument().isPercussion && !drumPart) {
 								double ticksPerSecond = info.getCurrentTempoBPM(Math.round(chordStartTick)) * PPQN / 60.0;
 								Map<Integer, Integer> neighbourAccidentals = new HashMap<>(accidentals);
-								int upper = neighbourPitch(m, 1, info, neighbourAccidentals, useLotroInstruments);
-								int lower = neighbourPitch(m, -1, info, neighbourAccidentals, useLotroInstruments);
+								boolean naturalUpper = ornament.equals(TRILL_NATURAL);
+								int upper = neighbourPitch(m, 1, naturalUpper ? "=" : "", info, neighbourAccidentals,
+										useLotroInstruments);
+								int lower = neighbourPitch(m, -1, "", info, neighbourAccidentals, useLotroInstruments);
+								if (naturalUpper)
+									ornament = "trill";
 								double tick = chordStartTick + attackOffset;
 								int volume = info.getDynamics().getVol(useLotroInstruments);
 								for (double[] note : ornamentNotes(ornament, noteId, upper, lower, noteEndTick - tick,
@@ -3044,10 +3065,11 @@ public class AbcToMidi {
 
 	/**
 	 * The pitch of the note a step above (1) or below (-1) the matched one in the scale: the next letter, with the key
-	 * signature and the bar's accidentals (e.g. above B in K:F is c, above ^c in K:C is d).
+	 * signature and the bar's accidentals (e.g. above B in K:F is c, above ^c in K:C is d), or with this accidental
+	 * ("=" for "tr=", else "").
 	 */
-	private static int neighbourPitch(Matcher m, int step, TuneInfo info, Map<Integer, Integer> accidentals,
-									  boolean useLotroInstruments) {
+	private static int neighbourPitch(Matcher m, int step, String accidental, TuneInfo info,
+									  Map<Integer, Integer> accidentals, boolean useLotroInstruments) {
 		char letter = m.group(NOTE_LETTER).charAt(0);
 		String octaveStr = Objects.requireNonNullElse(m.group(NOTE_OCTAVE), "");
 		int octave = Character.isUpperCase(letter) ? 3 : 4;
@@ -3058,9 +3080,9 @@ public class AbcToMidi {
 		int degree = octave * 7 + "CDEFGAB".indexOf(Character.toUpperCase(letter)) + step;
 		int newOctave = Math.floorDiv(degree, 7);
 		char newLetter = "CDEFGAB".charAt(Math.floorMod(degree, 7));
-		String neighbour = (newOctave >= 4)
+		String neighbour = accidental + ((newOctave >= 4)
 				? Character.toLowerCase(newLetter) + "'".repeat(newOctave - 4)
-				: newLetter + ",".repeat(3 - newOctave);
+				: newLetter + ",".repeat(3 - newOctave));
 		Matcher n = NOTE_PATTERN.matcher(neighbour);
 		if (!n.matches())
 			return notePitch(m, info, accidentals, useLotroInstruments)[0]; // Beyond ABC's octave marks: no neighbour
@@ -4421,8 +4443,12 @@ public class AbcToMidi {
 					if (type == 'T' && inBody)
 						continue;
 
-					if (type != 'T' || partTitles == 0)
-						abcInfo.setMetadata(type, value);
+					if (type != 'T' || partTitles == 0) {
+						if (inFileHeader)
+							abcInfo.setFileHeaderMetadata(type, value);
+						else
+							abcInfo.setMetadata(type, value);
+					}
 
 					try {
 						switch(type) {
