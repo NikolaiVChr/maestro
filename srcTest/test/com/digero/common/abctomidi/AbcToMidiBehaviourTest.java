@@ -12,6 +12,7 @@ import javax.sound.midi.*;
 import com.digero.common.abc.AbcConstants;
 import com.digero.common.abc.LotroInstrument;
 import com.digero.common.abc.LotroInstrumentSampleDuration;
+import com.digero.common.i18n.UIText;
 import com.digero.common.midi.MidiConstants;
 import com.digero.common.midi.MidiUtils;
 import com.digero.common.midi.Note;
@@ -775,6 +776,27 @@ class AbcToMidiBehaviourTest {
 					long q = s.getResolution();
 					assertEquals(List.of("0:500000", q + ":1000000"), tempos(s));
 					assertEquals(List.of(on(0, 60), on(q / 2, 62), on(q, 64), on(3 * q / 2, 65)), noteOns(s));
+				}
+			}
+
+			@Test
+			void meterDenominatorErrorSaysWhereTheMeterChanged() throws Exception {
+				// In the middle of a part, an M: line or an inline [M:] in its music: not supported yet
+				for (AbcCase abcCase : List.of(tune("semantic", "c d|", "M:6/8", "e f|"),
+						tune("semantic", "c d e f|[M:6/8] g a b|"))) {
+					FileParseException e = assertThrows(FileParseException.class, () -> convert(abcCase));
+					assertTrue(e.getMessage().contains(UIText.get("common.abctomidi.meter.change.in.part")),
+							e.getMessage());
+				}
+				// Between parts: a part's own M:, or the file header's for a part without one
+				for (AbcCase abcCase : List.of(
+						AbcCase.of("semantic", "X:1", "T:One", "M:4/4", "L:1/8", "Q:120", "K:C", "c d|", "X:2", "T:Two",
+								"M:6/8", "L:1/8", "Q:120", "K:C", "e f|"),
+						AbcCase.of("semantic", "X:1", "T:One", "M:6/8", "L:1/8", "Q:120", "K:C", "c d|", "X:2", "T:Two",
+								"Q:120", "K:C", "c d|"))) {
+					FileParseException e = assertThrows(FileParseException.class, () -> convert(abcCase));
+					assertTrue(e.getMessage().contains(UIText.get("common.abctomidi.meter.denominator.same")),
+							e.getMessage());
 				}
 			}
 

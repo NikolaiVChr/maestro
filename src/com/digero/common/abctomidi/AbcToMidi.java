@@ -688,6 +688,7 @@ public class AbcToMidi {
 		// Where the meter (and with it the PPQN) last changed, for the "must be the same" error
 		int meterChangeLine = 0;
 		int meterChangeColumn = 0;
+		boolean meterChangeInPart = false; // The last meter change was in a part's music, not in a header
 		// Chord symbols and bar lines per part (trackNumber), for the accompaniment (Params.chordAccompaniment)
 		boolean playChords = chordAccompaniment && !enableLotroErrors;
 		boolean hymn = playChords && isHymn(filesData); // Full chords instead of bass and chord in turn
@@ -1090,6 +1091,7 @@ public class AbcToMidi {
 								// The part starts from the file header's meter, so a meter error in a part without M: points here
 								meterChangeLine = lineNumber;
 								meterChangeColumn = 0;
+								meterChangeInPart = false;
 								chordStartTick = 0;
 								chordEndTick = 0;
 								abcInfo.setPartNumber(trackNumber, info.getPartNumber());
@@ -1213,6 +1215,7 @@ public class AbcToMidi {
 								info.setMeter(value, track == null);
 								meterChangeLine = lineNumber;
 								meterChangeColumn = infoMatcher.start(INFO_VALUE);
+								meterChangeInPart = track != null;
 								break;
 							case 'Q': {
 								if (enableLotroErrors && value.indexOf('"') >= 0) {
@@ -1461,6 +1464,7 @@ public class AbcToMidi {
 													info.setMeter(value, false);
 													meterChangeLine = lineNumber;
 													meterChangeColumn = i + 3;
+													meterChangeInPart = true;
 												}
 												case 'Q' -> {
 													int tempo = info.getPrimaryTempoBPM();
@@ -2569,8 +2573,11 @@ public class AbcToMidi {
 								attackDynamics.put(lotroNoteId, info.getDynamics());
 								lastAttackTick = Math.round(chordStartTick + attackOffset);
 								if (info.getPpqn() != PPQN) {
-									throw new FileParseException(UIText.get("common.abctomidi.meter.denominator.same"),
-											fileName, meterChangeLine, meterChangeColumn);
+									// The song's tick grid comes from the first note's meter denominator (PPQN): another one
+									// in a part's music isn't supported yet (F3d); another one in a part's header can't be
+									throw new FileParseException(UIText.get(meterChangeInPart ? "common.abctomidi.meter.change.in.part"
+											: "common.abctomidi.meter.denominator.same"), fileName, meterChangeLine,
+											meterChangeColumn);
 								}
 								Dynamics attack = accent ? accented(info.getDynamics()) : info.getDynamics();
 								MidiEvent noteOn = MidiFactory.createNoteOnEventEx(noteId, channel,
