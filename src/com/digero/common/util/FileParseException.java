@@ -3,6 +3,7 @@ package com.digero.common.util;
 import com.digero.common.i18n.UIText;
 
 public class FileParseException extends Exception {
+	private final String detail;
 	private final String fileName;
 	private final int line;
 	private final int column;
@@ -17,7 +18,17 @@ public class FileParseException extends Exception {
 	 */
 	public FileParseException(String message, String fileName, int line, int column, int relatedLine,
 							  int relatedColumn) {
-		super(formatMessage(message, fileName, line, column));
+		this(message, fileName, line, column, relatedLine, relatedColumn, null);
+	}
+
+	/**
+	 * @param place How the message says where, instead of "on line N" (e.g. "6 lines down", counted from a tune's X:
+	 *              in text taken from a file); null for the line. getLine() is the line either way.
+	 */
+	public FileParseException(String message, String fileName, int line, int column, int relatedLine,
+							  int relatedColumn, String place) {
+		super(formatMessage(message, fileName, line, column, place));
+		this.detail = message;
 		this.fileName = fileName;
 		this.line = line;
 		this.column = column;
@@ -28,13 +39,18 @@ public class FileParseException extends Exception {
 	public FileParseException(String message, String fileName, int line, int column) {
 		this(message, fileName, line, column, -1, -1);
 	}
+	
+	public FileParseException(String message, String fileName) {
+		this(message, fileName, -1, -1, -1, -1);
+	}
+
+	/** The message as given, without "Error reading" and where. */
+	public String getDetail() {
+		return detail;
+	}
 
 	public FileParseException(String message, String fileName, int line) {
 		this(message, fileName, line, -1, -1, -1);
-	}
-
-	public FileParseException(String message, String fileName) {
-		this(message, fileName, -1, -1, -1, -1);
 	}
 
 	public String getFileName() {
@@ -61,18 +77,23 @@ public class FileParseException extends Exception {
 		return relatedColumn;
 	}
 
-	private static String formatMessage(String message, String fileName, int line, int column) {
+
+	private static String formatMessage(String message, String fileName, int line, int column, String place) {
 		boolean file = fileName != null && !fileName.isEmpty();
-		String lineText = String.valueOf(line);
-		String columnText = String.valueOf(column + 1);
-		if (line < 0) {
+		if (file && place != null) {
+			if (column < 0)
+				return UIText.get("common.fileparse.error.file.place", fileName, place, message);
+			return UIText.get("common.fileparse.error.file.place.column", fileName, place,
+					String.valueOf(column + 1), message);
+		}
+		if (line < 0)
 			return file ? UIText.get("common.fileparse.error.file", fileName, message)
 					: UIText.get("common.fileparse.error", message);
-		}
-		if (column < 0) {
+		String lineText = String.valueOf(line);
+		if (column < 0)
 			return file ? UIText.get("common.fileparse.error.file.line", fileName, lineText, message)
 					: UIText.get("common.fileparse.error.line", lineText, message);
-		}
+		String columnText = String.valueOf(column + 1);
 		return file ? UIText.get("common.fileparse.error.file.line.column", fileName, lineText, columnText, message)
 				: UIText.get("common.fileparse.error.line.column", lineText, columnText, message);
 	}

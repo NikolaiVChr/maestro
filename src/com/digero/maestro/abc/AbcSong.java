@@ -765,7 +765,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 					if (sourceAbcWasMadeForLotro == null) {
 						Boolean result = askMadeForLotro(newSourceFile.getName());
 						if (result == null) {
-							throw new FileParseException("User did not decide on Abc type", newSourceFile.getName());
+							throw new FileParseException(UIText.get("maestro.abctomidi.no.choice"), newSourceFile.getName());
 						}
 						sourceAbcWasMadeForLotro = result;
 					}
@@ -811,9 +811,11 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			timeSignature = sequenceInfo.getTimeSignature();
 		} catch (FileNotFoundException e) {
 			String msg = UIText.get("maestro.could.not.find.the.file.used.to.create.this.song.0", newSourceFile);
+			sourceAbcText = null;
 			newSourceFile = fileResolver.locateFile(newSourceFile, msg);
 		} catch (InvalidMidiDataException | IOException | FileParseException e) {
 			String msg = UIText.get("maestro.could.not.load.the.file.used.to.create.this.song.0.1", newSourceFile, e.getMessage());
+			sourceAbcText = null;
 			newSourceFile = fileResolver.resolveFile(newSourceFile, msg);
 		}
 		if (storeNewSourceFile) {
@@ -831,8 +833,8 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			if (book.tunes().size() > 1) {
 				TunebookDialog.Result chosen = TunebookDialog.show(null, book, file);
 				switch (chosen.choice()) {
-					case TUNE -> params.filesData = new ArrayList<>(
-							List.of(new FileAndData(file, book.tuneLines(chosen.tune()))));
+					case TUNE -> params.filesData = new ArrayList<>(List.of(new FileAndData(file,
+							book.tuneLines(chosen.tune()), AbcToMidi.tuneAloneName(file))));
 					case ALL_AS_PARTS -> {
 					}
 					case CANCEL -> throw new FileParseException("User did not choose a tune", file.getName());

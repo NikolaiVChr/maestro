@@ -1156,6 +1156,60 @@ class AbcToMidiBehaviourTest {
 			}
 
 			@Test
+			void textKeptInTheProjectIsNamedSoInMessages() throws Exception {
+				// Maestro parses text taken from a file: a tune opened from a book is the book's header, an empty line and
+				// the tune (AbcTunebook.tuneLines), and the project keeps it. Its line numbers aren't the file's, so a
+				// message counts from the tune's X:, which is the same in the book, the tune's text and the project:
+				// "Book.abc, the tune (X:2 Polska), 3 lines down, column 4"
+				String text = String.join("\n", "M:3/4", "", "X:2", "T:Polska", "K:G", "G4 & d4|");
+				java.io.File book = new java.io.File("Book.abc");
+				String down = UIText.get("common.abctomidi.lines.down", 3) + ", column 4:";
+				FileParseException e = assertThrows(FileParseException.class, () -> AbcToMidi.convert(new AbcToMidi.Params(
+						List.of(new FileAndData(book, List.of(text.split("\n")), AbcToMidi.tuneAloneName(book))))));
+				assertTrue(e.getMessage().contains(UIText.get("common.abctomidi.file.tune.alone", "Book.abc")
+						+ " (X:2 Polska), " + down), e.getMessage());
+				assertEquals(6, e.getLine()); // The line in the text that was read, as before
+				assertEquals(3, e.getColumn());
+				// Reloading the project: its kept text, the same count
+				e = assertThrows(FileParseException.class, () -> AbcToMidi.convert(new AbcToMidi.Params(text, book)));
+				assertTrue(e.getMessage().contains(UIText.get("common.abctomidi.file.kept", "Book.abc")
+						+ " (X:2 Polska), " + down), e.getMessage());
+				assertEquals(6, e.getLine());
+				// One line down
+				e = assertThrows(FileParseException.class, () -> AbcToMidi.convert(new AbcToMidi.Params(String.join("\n",
+						"X:2", "& d4|"), book)));
+				assertTrue(e.getMessage().contains(UIText.get("common.abctomidi.lines.down", 1)), e.getMessage());
+				// Before the X:, in the file header (the same lines as the book's): the line as it is
+				e = assertThrows(FileParseException.class, () -> AbcToMidi.convert(new AbcToMidi.Params(String.join("\n",
+						"M:3/x", "", "X:2", "T:Polska", "K:G", "G4 d4|"), book)));
+				assertTrue(e.getMessage().contains(" on line 1"), e.getMessage());
+				// A file read as it is: its own name and lines
+				e = assertThrows(FileParseException.class, () -> AbcToMidi.convert(new AbcToMidi.Params(List.of(
+						new FileAndData(book, List.of(text.split("\n")))))));
+				assertTrue(e.getMessage().contains("Book.abc (X:2 Polska) on line 6, column 4:"), e.getMessage());
+			}
+
+			@Test
+			void fileParseMessagesComeFromTheBundle() {
+				// FileParseException is used outside AbcToMidi too: every message is the bundle's, and a place ("6 lines
+				// down") has its own pattern. Line 1200 stays "1200", not "1,200".
+				assertEquals(UIText.get("common.fileparse.error", "Bad"), new FileParseException("Bad", null).getMessage());
+				assertEquals(UIText.get("common.fileparse.error.file", "a.abc", "Bad"),
+						new FileParseException("Bad", "a.abc").getMessage());
+				assertEquals(UIText.get("common.fileparse.error.file.line", "a.abc", "1200", "Bad"),
+						new FileParseException("Bad", "a.abc", 1200).getMessage());
+				assertEquals(UIText.get("common.fileparse.error.line.column", "7", "4", "Bad"),
+						new FileParseException("Bad", null, 7, 3).getMessage());
+				assertEquals(UIText.get("common.fileparse.error.file.place", "a.abc", "6 lines down", "Bad"),
+						new FileParseException("Bad", "a.abc", 19, -1, -1, -1, "6 lines down").getMessage());
+				FileParseException e = new FileParseException("Bad", "a.abc", 19, 3, -1, -1, "6 lines down");
+				assertEquals(UIText.get("common.fileparse.error.file.place.column", "a.abc", "6 lines down", "4", "Bad"),
+						e.getMessage());
+				assertEquals("Bad", e.getDetail());
+				assertEquals(19, e.getLine());
+			}
+
+			@Test
 			void bug1012ResetClearsTheIssue() throws Exception {
 				// Set directly: a flawed %%abc-creator also shows a dialog
 				AbcInfo info = new AbcInfo();

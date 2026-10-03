@@ -109,12 +109,14 @@ public class AbcToMidi {
 
 		/**
 		 * ABC kept as text (in a Maestro project), and the file it came from: its name is used in messages, and it
-		 * needn't exist any more.
+		 * needn't exist any more. Line numbers count this text, not the file's (for a tune from a book, the book's
+		 * header and the tune), so messages name it as kept (keptTextName).
 		 */
 		public Params(String data, File sourceFile) {
 			this.filesData = new ArrayList<>();
 			this.filesData.add(new FileAndData(sourceFile,
-					withoutByteOrderMark(new ArrayList<>(Arrays.asList(data.split("\\r\\n|\\r|\\n", -1))))));
+					withoutByteOrderMark(new ArrayList<>(Arrays.asList(data.split("\\r\\n|\\r|\\n", -1)))),
+					keptTextName(sourceFile)));
 		}
 
 		public Params(List<FileAndData> filesData) {
@@ -597,7 +599,7 @@ public class AbcToMidi {
 				throw new FileParseException(UIText.get("common.abctomidi.field.wrapped", (char) wrappedField[2] + ":",
 						String.valueOf(wrappedField[1])), e.getFileName(), e.getLine(), 0, wrappedField[1], 0);
 			}
-			throw e;
+			throw countedFromTune(e, params.filesData);
 		}
 	}
 
@@ -793,7 +795,7 @@ public class AbcToMidi {
 			fileDrone = new Drone();
 			partDrone = fileDrone;
 			// The file's name in messages; from an X: on with the tune's number and title (a tune of a songbook)
-			String baseFileName = fileAndData.file.getName();
+			String baseFileName = fileAndData.name;
 			String fileName = baseFileName;
 			String tuneNumber = null; // The X: of the part being read
 			String fileTitle = null; // The file header's first T:, the name of a part without a T: of its own
@@ -2682,7 +2684,7 @@ public class AbcToMidi {
 		// The last parts without notes get their empty tracks too (see addEmptyTrack)
 		while (partTrackCount(seq) < trackNumber)
 			addEmptyTrack(seq, abcInfo, partTrackCount(seq) + 1, trackInstruments, useLotroInstruments,
-					filesData.getLast().file.getName());
+					filesData.getLast().name);
 
 		// Done here for all parts at once, when all tempo changes are known
 		Track[] partTracks = seq.getTracks();
@@ -4261,6 +4263,51 @@ public class AbcToMidi {
 		return value.isEmpty() ? previous + 1 : Integer.parseInt(value);
 	}
 
+
+
+	/**
+	 * The name in messages of the ABC a project keeps (Params(String, File)): "Book.abc, as kept in the project". Its
+	 * errors are counted from the tune's X: (countedFromTune).
+	 */
+	public static String keptTextName(File file) {
+		return UIText.get("common.abctomidi.file.kept", (file != null) ? file.getName() : "");
+	}
+
+	/**
+	 * The name in messages of a tune opened from a book (AbcTunebook.tuneLines): "Book.abc, the tune". Its errors are
+	 * counted from the tune's X: (countedFromTune).
+	 */
+	public static String tuneAloneName(File file) {
+		return UIText.get("common.abctomidi.file.tune.alone", (file != null) ? file.getName() : "");
+	}
+
+	/**
+	 * An error in text taken from a file (FileAndData.taken: a tune of a book, the ABC a project keeps), whose line
+	 * numbers aren't the file's: its place counted from the tune's X: line, "6 lines down", which is the same in the
+	 * book, the tune's text and the project. An error before the first X: (the file header, whose lines are the
+	 * book's) or on an X: line, and every other error, stays as it is. getLine() stays the line in the text.
+	 */
+	private static FileParseException countedFromTune(FileParseException e, List<FileAndData> filesData) {
+		if (e.getLine() < 1 || e.getFileName() == null)
+			return e;
+		for (FileAndData data : filesData) {
+			if (!data.taken || !e.getFileName().startsWith(data.name))
+				continue;
+			int x = Math.min(e.getLine(), data.lines.size()) - 1; // The error's line, as an index
+			while (x >= 0 && !data.lines.get(x).startsWith("X:"))
+				x--;
+			int down = e.getLine() - (x + 1);
+			if (x < 0 || down < 1)
+				return e;
+			String place = UIText.get("common.abctomidi.lines.down", down);
+			if (e instanceof LotroFileParseException)
+				return new LotroFileParseException(e.getDetail(), e.getFileName(), e.getLine(), e.getColumn(), place);
+			return new FileParseException(e.getDetail(), e.getFileName(), e.getLine(), e.getColumn(), e.getRelatedLine(),
+					e.getRelatedColumn(), place);
+		}
+		return e;
+	}
+
 	/**
 	 * The file's name in a message about a tune in it: "book.abc (X:12 The Red Haired Girl)", or without a title yet
 	 * "book.abc (X:12)". In a songbook the line alone doesn't say which tune.
@@ -4441,7 +4488,7 @@ public class AbcToMidi {
 		boolean inBody = false; // The current part's notes have started, so a T: is a section title (as in convert())
 		String fileName = null;
 		for (FileAndData fileAndData : abc) {
-			fileName = fileAndData.file.getName();
+			fileName = fileAndData.name;
 			String fileTitle = null; // As in convert(): the first T: names the part, else the file header's, else the file
 			int partTitles = 0;
 			boolean inFileHeader = true; // Before this file's first X:
