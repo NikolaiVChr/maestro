@@ -43,6 +43,7 @@ public class AbcToMidi {
 	 * "D/f#"), "Am-5" as "Adim" (ChordSymbol.lenientName)</li>
 	 * <li>in the standard reading, a transposing macro's target without a length, m: Tn = (3n/o/n/, for a note written
 	 * without one (Macros; O'Neill's 1001)</li>
+	 * <li>a Q: without a number: Q:Swing as Q:"Swing", an empty Q: as none (lenientTempo)</li>
 	 * </ul>
 	 * Not here, as ABC 2.1 or Lotro reads them so: an empty X:, c{g}<d, C.-C, X rests, a slur over grace notes, e> at a
 	 * line's end, a lone ! as a line break in a file without %abc-2.1.
@@ -606,6 +607,16 @@ public class AbcToMidi {
 			}
 			throw countedFromTune(atSourceColumn(e, sourceColumns), params.filesData);
 		}
+	}
+
+	/**
+	 * LENIENT, without Lotro errors: a Q: without a number (the abcmr tune book) read as meant. Q:Swing as the tempo
+	 * word Q:"Swing" (ABC 2.1, 3.1.8, writes it in quotes), an empty Q: as none (null).
+	 */
+	private static String lenientTempo(String value, boolean enableLotroErrors) {
+		if (!LENIENT || enableLotroErrors || value.indexOf('"') >= 0 || value.chars().anyMatch(Character::isDigit))
+			return value;
+		return value.isBlank() ? null : "\"" + value.trim() + "\"";
 	}
 
 	/**
@@ -1277,8 +1288,11 @@ public class AbcToMidi {
 									throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.tempo.text",
 											value), fileName, lineNumber, infoMatcher.start(INFO_VALUE));
 								}
+								String tempoText = lenientTempo(value, enableLotroErrors);
+								if (tempoText == null)
+									break; // An empty Q:
 								int tempo = info.getPrimaryTempoBPM();
-								info.setPrimaryTempoBPM(value);
+								info.setPrimaryTempoBPM(tempoText);
 								if (track != null) {
 									if (info.getPrimaryTempoBPM() != tempo) {
 										throw new FileParseException(UIText.get("common.abctomidi.tempo.change.mid.part"),
@@ -1532,8 +1546,11 @@ public class AbcToMidi {
 														signatures.at(Math.round(chordStartTick), info);
 												}
 												case 'Q' -> {
+													String tempoText = lenientTempo(value, enableLotroErrors);
+													if (tempoText == null)
+														break; // An empty [Q:]
 													int tempo = info.getPrimaryTempoBPM();
-													info.setPrimaryTempoBPM(value);
+													info.setPrimaryTempoBPM(tempoText);
 													if (info.getPrimaryTempoBPM() != tempo) {
 														throw new FileParseException(UIText.get("common.abctomidi.tempo.change.mid.part"),
 																fileName, lineNumber, i + 3);

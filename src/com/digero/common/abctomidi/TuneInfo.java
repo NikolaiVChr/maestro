@@ -37,6 +37,7 @@ public class TuneInfo {
 	private boolean standardPitch; // C is middle C, whatever the instrument (ABC 2.1); LotRO's octave depends on it
 	private boolean standard2011; // Params.standard2011 (and LotRO errors off): ABC 2.1 where LotRO plays otherwise
 	private boolean tempoGiven; // A Q: so far
+	private boolean tempoIsType; // The last Q: was the text of a tune type alone (parseTempo)
 	private boolean allPartsTempoFixed; // The first part's header has ended: its tempo is the song's
 	private Integer savedTempoBPM; // Params.savedTempoBPM: played instead of a guessed tempo, or null
 	private Integer guessedTempoBPM; // getGuessedTempoBPM
@@ -541,6 +542,12 @@ public class TuneInfo {
 						return;
 					}
 				}
+				// A tune type instead (Q:"Chacarera", abcmr's book): read as R:, its tempo is guessed (endHeader)
+				if (qField && standardTempo && RhythmTempo.of(text) != null) {
+					rhythm = text;
+					tempoIsType = true;
+					return;
+				}
 				if (!tempoGiven)
 					tempoBeat = FELT_BEAT; // An unknown word: the default tempo
 				return;
@@ -688,8 +695,12 @@ public class TuneInfo {
 		return toMeterBeats(tempoBeat, tempoBeatsPerMinute);
 	}
 
+
 	public void setPrimaryTempoBPM(String str) {
+		tempoIsType = false;
 		parseTempo(str, true);
+		if (tempoIsType)
+			return; // A tune type, as R: (parseTempo): no Q: given
 		tempoGiven = true;
 		this.primaryTempoBPM = writtenTempo();
 		if (!allPartsTempoMap.containsKey(0L))

@@ -2282,7 +2282,7 @@ class AbcToMidiBehaviourTest {
 			assertEquals(25, guessed(specTempo(tune("t", header("M:2/4", "-L", "Q:100"), "c d|")))); // 1/16=100
 			assertEquals(390, guessed(specTempo(tune("t", header("M:6/8", "Q:\"Allegro\""), "c d|")))); // 3/8=130
 			assertEquals(130, guessed(specTempo(tune("t", header("Q:\"Allegro\""), "c d|"))));
-			assertEquals(120, guessed(specTempo(tune("t", header("Q:\"Swing!\""), "c d|"))));
+			assertEquals(120, guessed(specTempo(tune("t", header("Q:\"Lively!\""), "c d|")))); // not swing, a type
 			// Not guessed: a Q: with a note length; Lotro's reading (Lotro files, existing projects)
 			assertNull(guessed(specTempo(tune("t", header("Q:1/4=100"), "c d|"))));
 			assertNull(guessed(specTempo(tune("t", header("Q:\"Allegro\" 1/4=100"), "c d|"))));
@@ -2394,6 +2394,56 @@ class AbcToMidiBehaviourTest {
 			// No type: a composer (O'Carolan's tunes go from 50 to 220 quarters) or a heading
 			assertEquals(120, typeTempo("R:carolan", "M:3/4", "-Q"));
 			assertEquals(120, typeTempo("R:misc", "M:3/4", "-Q"));
+		}
+
+		@Test
+		void danceTypesOfBallroomAndLatinAmerica() throws Exception {
+			// Added 2026-10-04 (user), each at its dance's tempo. Chacarera: 57 bars a minute (two recordings of
+			// Chacarera del Violin), in 6/8 and in 3/4
+			assertEquals(342, typeTempo("R:chacarera", "M:6/8", "-Q")); // 114 dotted quarters
+			assertEquals(171, typeTempo("R:Chacarera", "M:3/4", "-Q"));
+			// WDSF's competition tempos, at the relaxed end: tango 31-33 bars, Viennese waltz 58-60, slow foxtrot
+			// 28-30, samba 50-52, rumba 25-27, jive 42-44; American: bolero 24-26, mambo 47-51, East Coast swing 34-36,
+			// West Coast swing 28-32. The foxtrot's 30 bars are the default's 120 quarters
+			assertEquals(124, typeTempo("R:tango", "M:4/4", "-Q"));
+			assertEquals(124, typeTempo("R:tango", "M:2/4", "-Q")); // 62 bars of 2/4: the same quarters
+			assertEquals(174, typeTempo("R:Viennese waltz", "M:3/4", "-Q")); // not the waltz's 108
+			assertEquals(174, typeTempo("R:Wiener Walzer", "M:3/4", "-Q"));
+			assertEquals(112, typeTempo("R:slow foxtrot", "M:4/4", "-Q"));
+			assertEquals(100, typeTempo("R:samba", "M:2/4", "-Q"));
+			assertEquals(100, typeTempo("R:rumba", "M:4/4", "-Q"));
+			assertEquals(96, typeTempo("R:bolero", "M:4/4", "-Q"));
+			assertEquals(188, typeTempo("R:mambo", "M:4/4", "-Q"));
+			assertEquals(168, typeTempo("R:jive", "M:4/4", "-Q"));
+			assertEquals(136, typeTempo("R:swing", "M:4/4", "-Q"));
+			assertEquals(112, typeTempo("R:West Coast swing", "M:4/4", "-Q"));
+			// Frans Absil's table: calypso and beguine 112 quarters, cumbia 82-96, reggae 72-108; ragtime under 90
+			// quarters in 2/4, a cakewalk 100 or less (perfessorbill.com)
+			assertEquals(112, typeTempo("R:calypso", "M:4/4", "-Q"));
+			assertEquals(112, typeTempo("R:beguine", "M:4/4", "-Q"));
+			assertEquals(88, typeTempo("R:cumbia", "M:4/4", "-Q"));
+			assertEquals(80, typeTempo("R:reggae", "M:4/4", "-Q"));
+			assertEquals(80, typeTempo("R:ragtime", "M:2/4", "-Q"));
+			assertEquals(100, typeTempo("R:cakewalk", "M:2/4", "-Q"));
+			// Not types: a quickstep in tune books is a quick march (6/8, 2/4), not the ballroom's 50 bars of 4/4; a
+			// rag alone (R:Rag in 3/4 and 6/8 in the corpus)
+			assertEquals(120, typeTempo("R:quickstep", "M:2/4", "-Q"));
+			assertEquals(120, typeTempo("R:rag", "M:2/4", "-Q"));
+		}
+
+		@Test
+		void tempoTextNamingATuneTypeIsReadAsR() throws Exception {
+			// Q:"Chacarera" (abcmr's Los Engualichados): a text alone that is no tempo word but a tune type is read
+			// as R:Chacarera, a guessed tempo (a project saves it). It played at the default, 120 dotted quarters
+			assertEquals(342, headerTempo("M:6/8", "L:1/8", "Q:\"Chacarera\""));
+			assertNotNull(abcInfoOf(specTempo(tune("semantic", header("M:6/8", "Q:\"Chacarera\""), "c d|")))
+					.getGuessedTempoBPM());
+			assertEquals(56, headerTempo("M:C|", "L:1/8", "R:reel", "Q:\"Calipso\"")); // after R:, it wins: 112 quarters
+			assertEquals(136, headerTempo("M:4/4", "L:1/8", "Q:Swing")); // LENIENT: Q:"Swing"
+			// A tempo word comes first, and a number always
+			assertEquals(130, headerTempo("M:4/4", "L:1/8", "Q:\"Allegro tango\""));
+			assertEquals(300, headerTempo("M:6/8", "L:1/8", "Q:\"Chacarera\" 3/8=100"));
+			assertEquals(120, headerTempo("M:4/4", "L:1/8", "Q:\"Rock\"")); // no type: the default
 		}
 
 		/** The tempo played for a tune without Q: with these header fields, with specTempo. */
@@ -2963,6 +3013,29 @@ class AbcToMidiBehaviourTest {
 			return AbcCase.of("semantic", lines.toArray(String[]::new)).with(p -> p.standardPitch = standardPitch);
 		}
 
+
+
+		@Test
+		void tempoWithoutNumberIsReadAsMeant() throws Exception {
+			// LENIENT (the abcmr book, 2026-10-04): Q:Swing as the tempo word Q:"Swing", an empty Q: and [Q:] as none.
+			// It was "Unable to read tempo"; with Lotro errors it still is
+			for (Profile profile : List.of(Profile.MAESTRO_LEGACY, Profile.MAESTRO_NEW_STANDARD)) {
+				String none = played(header("-Q"), "c8|", profile);
+				assertEquals(none, played(header("Q:"), "c8|", profile), profile.name());
+				assertEquals(none, played(header("-Q"), "[Q:] c8|", profile), profile.name());
+				assertEquals(played(header("Q:\"Swing\""), "c8|", profile), played(header("Q:Swing"), "c8|", profile),
+						profile.name());
+			}
+			for (String tempo : List.of("Q:Swing", "Q:")) {
+				assertThrows(FileParseException.class,
+						() -> ConversionDump.convert(tune("semantic", header(tempo), "c8|"), Profile.ABC_PLAYER_STRICT));
+			}
+		}
+
+		/** The MIDI of a tune with this header and music, as text. */
+		private static String played(String[] header, String body, Profile profile) throws Exception {
+			return ConversionDump.renderSequence(ConversionDump.convert(tune("semantic", header, body), profile));
+		}
 
 		@Test
 		void bowingMarksMakeItAFiddleTune() throws Exception {

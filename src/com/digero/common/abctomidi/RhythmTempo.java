@@ -28,8 +28,18 @@ import java.util.regex.Pattern;
  * reels (with L:1/16, or with L:1/8 and notes like A/B/). In a meter of half a whole note their beat is halved, so the
  * bars a minute stay (a reel's 1/2=100 is 1/4=100 in 2/4).
  * <p>
+ * Dances of the ballroom and of Latin America (2026-10-04), each at its dance's tempo, at the relaxed end. WDSF's
+ * competition tempos in bars a minute: tango 31-33, Viennese waltz 58-60, slow foxtrot 28-30, samba 50-52, rumba
+ * 25-27, jive 42-44; the American ones: bolero 24-26, mambo 47-51, East Coast swing 34-36, West Coast swing 28-32.
+ * Frans Absil's table of dance tempos: calypso and beguine 112 quarters, cumbia 82-96, reggae 72-108. Ragtime under
+ * 90 quarters in 2/4, a cakewalk 100 or less (perfessorbill.com). The chacarera 57 bars a minute, in 6/8 and in 3/4
+ * (two recordings of Chacarera del Violin).
+ * <p>
  * Left out, as their tempo would be the default's anyway (the Norbeck collection's Q: fields, 120 to 140 quarters):
- * hora, kolo, freylekhs, Breton gavotte and hanter dro. Not a type: a composer (carolan) or a heading (misc).
+ * hora, kolo, freylekhs, Breton gavotte and hanter dro; the foxtrot (30 bars of 4/4), cha-cha, paso doble, bachata
+ * and bossa nova. Left out as their name means another tempo in tune books: the quickstep (a quick march in 6/8 or
+ * 2/4, not the ballroom's 50 bars of 4/4) and a rag alone. Left out without a tempo to trust: salsa and merengue (the
+ * sources differ), zamba, cueca, gato, chamame and milonga. Not a type: a composer (carolan) or a heading (misc).
  */
 public final class RhythmTempo {
 	private RhythmTempo() {
@@ -69,6 +79,24 @@ public final class RhythmTempo {
 		RIDEE("ridees?|larides?|rond", "1/4=160"), // 27 in 6/4, 40 in 4/4
 		BOURREE("bourrees?", "1/4=120", false, null, "1/8=180"), // two-time 60 in 2/4; three-time 60 in 3/8
 		HUAYNO("huaynos?|waynus?|waynos?", "1/4=90"), // 45 in 2/4
+		CHACARERA("chacareras?", "3/8=114", false, null, "1/4=171"), // 57 in 6/8 and in 3/4
+		// The ballroom's and Latin America's dances
+		TANGO("tangos?", "1/4=124"), // 31 in 4/4
+		VIENNESE_WALTZ("viennese waltz(?:es)?|wiener walzer|valses? viennoises?", "1/4=174"), // 58 in 3/4
+		SLOW_FOXTROT("slow ?fox(?:trots?)?|slowfox", "1/4=112"), // 28 in 4/4
+		SAMBA("sambas?", "1/4=100"), // 50 in 2/4
+		RUMBA("rh?umbas?", "1/4=100"), // 25 in 4/4
+		BOLERO("boleros?", "1/4=96"), // 24 in 4/4
+		MAMBO("mambos?", "1/4=188"), // 47 in 4/4
+		JIVE("jives?", "1/4=168"), // 42 in 4/4
+		SWING("(?:east coast )?swing|lindy(?: ?hop)?|jitterbug", "1/4=136"), // 34 in 4/4
+		WEST_COAST_SWING("west coast swing", "1/4=112"), // 28 in 4/4
+		CALYPSO("calypsos?|calipsos?", "1/4=112"), // 28 in 4/4
+		BEGUINE("beguines?|biguines?", "1/4=112"), // 28 in 4/4
+		CUMBIA("cumbias?", "1/4=88"), // 22 in 4/4
+		REGGAE("reggae", "1/4=80"), // 20 in 4/4
+		RAGTIME("ragtimes?", "1/4=80"), // 40 in 2/4
+		CAKEWALK("cake ?walks?", "1/4=100"), // 50 in 2/4
 		AIR("airs?", "1/4=100"), // 33 in 3/4
 		SONG("songs?|ballads?|lied(?:er)?|chansons?|cancion(?:es)?|canzon[ei]|vis[ae]|visor|sang(?:er)?|laulu",
 				"1/4=100"), // 33 in 3/4
