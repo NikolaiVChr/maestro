@@ -251,6 +251,9 @@ public enum ColorTable {
 	/** currently playing lyrics highlight color, dark mode */
 	LYRICS_HIGHLIGHT_DARK (new Color(100,170,100),
 			"Currently playing lyrics highlight color, dark mode"),
+	
+	TUNEBOOK_ERROR_LINE (new Color(255, 0, 0, 60), "Tunebook error line"),
+	TUNEBOOK_ERROR_CHARACTER (new Color(255, 0, 0, 150), "Tunebook error character"),
 	;
 
 	//NOTE_PRUNED (new Color(1f,1f,0f));
