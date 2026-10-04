@@ -119,5 +119,3 @@ About 5,250 tests, in `srcTest/test/com/digero/common/abctomidi`.
 - D.S./Fine jumps (`!segno!`, `!D.S.!`, `!fine!`, or O'Neill's "Segno" and "Fine" as text): the tune plays straight through once
 - Q: tempo change in the middle of a part (the tempo map is shared by all parts, so tricky)
 - & voice overlays
-- m: macros
-- U: user-defined symbols, U:W=!trill! then Wc
