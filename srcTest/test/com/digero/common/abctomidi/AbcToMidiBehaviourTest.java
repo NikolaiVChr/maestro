@@ -2859,6 +2859,30 @@ class AbcToMidiBehaviourTest {
 			return AbcCase.of("semantic", lines.toArray(String[]::new)).with(p -> p.standardPitch = standardPitch);
 		}
 
+
+		@Test
+		void bowingMarksMakeItAFiddleTune() throws Exception {
+			// u and v (up-bow and down-bow, ABC 2.1 4.14) or !upbow! !downbow! in the music: written for a fiddle (user,
+			// 2026-10-04). Stronger than R: (a jig is Flute), weaker than an instrument's name
+			assertEquals(73, bodyProgram("R:jig", "c d|"));
+			assertEquals(40, bodyProgram("R:jig", "vc ud|"));
+			assertEquals(40, bodyProgram("R:jig", "!downbow!c !upbow!d|"));
+			assertEquals(40, bodyProgram("R:jig", "c d|", "vc ud|")); // In a later line
+			assertEquals(73, bodyProgram("G:flute", "vc ud|"));
+			// Not bowing: in quoted text, a field, the lyrics, a comment, or the free text after the tune
+			assertEquals(73, bodyProgram("R:jig", "\"^up v\"c d|", "w:u v", "+:u v", "% u v"));
+			assertEquals(73, bodyProgram("R:jig", "c d|", "", "Played by Vivaldi, with an up-bow"));
+		}
+
+		/** The first part's program in standard ABC (2.1) with one header field and these lines of music. */
+		private int bodyProgram(String field, String... body) throws Exception {
+			List<String> lines = new ArrayList<>(List.of("X:1", "T:t", field, "M:4/4", "L:1/8", "Q:120", "K:C"));
+			lines.addAll(List.of(body));
+			AbcCase tune = AbcCase.of("semantic", lines.toArray(String[]::new))
+					.with(p -> p.standardPitch = p.standard2011 = true);
+			return programs(convert(tune)).getFirst();
+		}
+
 		@Test
 		void standardAbcGetsAMidiProgramFromClues() throws Exception {
 			// %%MIDI program N or I:MIDI program N (abc2midi); program C N is channel C's, the part's channel is its

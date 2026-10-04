@@ -31,6 +31,8 @@ import com.digero.common.abctomidi.RhythmTempo.TuneType;
  * <li>an instrument's name: in V: name= or nm= ("Violin"), in G: ("flute"), and in a T: after "for" ("Air for the
  * harp"). Elsewhere in a title a name is no clue: "The Flute Player" is a tune. (A name in square brackets, "[Flute]",
  * makes it a Lotro file: AbcToMidi.isMadeForLotro.) The first name wins.</li>
+ * <li>bowing marks in the part's music (hasBowing): u and v (up-bow, down-bow, ABC 2.1 4.14), !upbow! !downbow!:
+ * Violin</li>
  * <li>the tune's type in R:, by what usually plays it in sessions (RHYTHMS): reel, strathspey, polska ... Violin; jig,
  * slide, air ... Flute; hornpipe, polka, waltz, march ... Accordion; hymn ... Church Organ</li>
  * <li>without R:, a tune type in the title, the same way ("Butchers Hornpipe", "Miss McLeod's Reel"): tune books
@@ -122,6 +124,33 @@ final class MidiProgramGuess {
 	private static final Pattern VOICE_PROGRAM = Pattern.compile("(?i)\\bprogram\\s+(\\d+)(?:\\s+(\\d+))?\\b");
 	private static final Pattern VOICE_NAME = Pattern.compile("(?i)\\b(?:name|nm)\\s*=\\s*(?:\"([^\"]*)\"|(\\S+))");
 	private static final Pattern FOR = Pattern.compile("(?i)\\bfor\\s+(?:(?:the|a|an|two|three|2|3|solo)\\s+)?");
+	/** A field (T:, w: ...) or a field going on (+:, ABC 2.1 3.2): no music. */
+	private static final Pattern FIELD = Pattern.compile("[A-Za-z+]:");
+	/** A bowing mark by name. */
+	private static final Pattern BOWING_NAME = Pattern.compile("[!+](?:up|down)bow[!+]");
+	/** What in a line of music isn't notes: quoted text, decorations by name, inline fields, a comment. */
+	private static final Pattern NOT_NOTES = Pattern.compile("\"[^\"]*\"|![^!]*!|\\+[^+]*\\+|\\[[A-Za-z]:[^\\]]*]|%.*");
+
+	/**
+	 * Bowing marks in a part's music, from its line from to the next X: (or to an empty line, which ends the tune,
+	 * endAtEmptyLine): u or v (up-bow, down-bow: in music a lower-case u or v is nothing else), !upbow! or !downbow!.
+	 * Not in fields (lyrics, w:), comments, quoted text or other decorations.
+	 */
+	static boolean hasBowing(List<String> lines, int from, boolean endAtEmptyLine) {
+		for (int i = from; i < lines.size(); i++) {
+			String line = lines.get(i);
+			if (line.startsWith("X:") || (endAtEmptyLine && line.isBlank()))
+				break;
+			if (line.startsWith("%") || FIELD.matcher(line).lookingAt())
+				continue;
+			if (BOWING_NAME.matcher(line).find())
+				return true;
+			String notes = NOT_NOTES.matcher(line).replaceAll("");
+			if (notes.indexOf('u') >= 0 || notes.indexOf('v') >= 0)
+				return true;
+		}
+		return false;
+	}
 
 	private record Name(Pattern pattern, int program) {
 	}
@@ -204,6 +233,7 @@ final class MidiProgramGuess {
 		private Clue barFlyProgram = new Clue(); // V:1 Program C N (BarFly)
 		private boolean highlandPipes; // K:HP
 		private Clue named = new Clue(); // The first instrument name
+		private boolean bowed; // Bowing marks in the part's music (hasBowing)
 		private Clue rhythm = new Clue(); // The first tune type in R:
 		private Clue titleRhythm = new Clue(); // The first tune type in a title
 
@@ -321,6 +351,11 @@ final class MidiProgramGuess {
 				named.setFirst(programOfName(m.group(1) != null ? m.group(1) : m.group(2)));
 		}
 
+		/** Bowing marks in the part's music (hasBowing): written for a fiddle. */
+		void bowing(boolean bowed) {
+			this.bowed = bowed;
+		}
+
 		/** A G: field's value (ABC 2.1: the group, e.g. flute or fiddle). */
 		void group(String group) {
 			named.setFirst(programOfName(group));
@@ -388,6 +423,8 @@ final class MidiProgramGuess {
 				return MidiInstrument.BAG_PIPE.id();
 			if (named.value != null)
 				return named.value;
+			if (bowed)
+				return MidiInstrument.VIOLIN.id();
 			if (rhythm.value != null)
 				return rhythm.value;
 			if (titleRhythm.value != null)

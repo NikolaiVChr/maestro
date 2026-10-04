@@ -1340,6 +1340,7 @@ public class AbcToMidi {
 						int program = info.getInstrument().midi.id();
 						drumPart = false;
 						if (info.isStandardPitch() && !info.isInstrumentSet()) {
+							partProgramClues.bowing(MidiProgramGuess.hasBowing(lines, lineIndex, skipFreeText));
 							program = partProgramClues.program();
 							drumPart = partProgramClues.isDrums();
 							accompanimentPrograms.put(trackNumber, new int[] { partProgramClues.bassProgram(),
