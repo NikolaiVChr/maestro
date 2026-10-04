@@ -19,11 +19,12 @@ divisionType=0.0 resolution=11520 tickLength=5056902 tracks=2
   3565440 META tempo mpq=310880
   5040000 META tempo mpq=750000
   5040000 META end_of_track
--- track 1 (2433 events)
+-- track 1 (2434 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=40 d2=61 [LotroShortMessage]
   0 META text type=0x03 "Lute of Ages"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
@@ -4983,11 +4984,12 @@ divisionType=0.0 resolution=11520 tickLength=5056902 tracks=2
   3565440 META tempo mpq=310880
   5040000 META tempo mpq=750000
   5040000 META end_of_track
--- track 1 (2433 events)
+-- track 1 (2434 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=40 d2=61 [LotroShortMessage]
   0 META text type=0x03 "Lute of Ages"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
@@ -9947,11 +9949,12 @@ divisionType=0.0 resolution=11520 tickLength=5057280 tracks=2
   3565440 META tempo mpq=310880
   5040000 META tempo mpq=750000
   5040000 META end_of_track
--- track 1 (2432 events)
+-- track 1 (2433 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=40 d2=4 [LotroShortMessage]
   0 META text type=0x03 "Lute of Ages"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   40320 NOTE_OFF ch=0 d1=40 d2=4 [LotroShortMessage]
@@ -14910,11 +14913,12 @@ divisionType=0.0 resolution=11520 tickLength=5057280 tracks=2
   3565440 META tempo mpq=310880
   5040000 META tempo mpq=750000
   5040000 META end_of_track
--- track 1 (2432 events)
+-- track 1 (2433 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=40 d2=4 [LotroShortMessage]
   0 META text type=0x03 "Lute of Ages"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   40320 NOTE_OFF ch=0 d1=40 d2=4 [LotroShortMessage]
@@ -19873,11 +19877,12 @@ divisionType=0.0 resolution=11520 tickLength=10062423 tracks=2
   7094123 META tempo mpq=310880
   10028041 META tempo mpq=750000
   10028041 META end_of_track
--- track 1 (2432 events)
+-- track 1 (2433 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=52 d2=4 [LotroShortMessage]
   0 META text type=0x03 "Lute of Ages"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   80224 NOTE_OFF ch=0 d1=52 d2=4 [LotroShortMessage]

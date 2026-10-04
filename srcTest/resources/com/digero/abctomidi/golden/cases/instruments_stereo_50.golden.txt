@@ -69,11 +69,12 @@ divisionType=0.0 resolution=11520 tickLength=43189 tracks=9
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
   0 META end_of_track
--- track 1 (15 events)
+-- track 1 (16 events)
   0 PROGRAM_CHANGE ch=0 d1=46 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=36 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Harp"
   0 CONTROL_CHANGE ch=0 d1=10 d2=86 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
@@ -85,11 +86,12 @@ divisionType=0.0 resolution=11520 tickLength=43189 tracks=9
   17280 NOTE_ON ch=0 d1=72 d2=106 [LotroShortMessage]
   23040 NOTE_OFF ch=0 d1=72 d2=106 [LotroShortMessage]
   42959 META end_of_track
--- track 2 (15 events)
+-- track 2 (16 events)
   0 PROGRAM_CHANGE ch=1 d1=109 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=1 d1=36 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Bagpipe"
   0 CONTROL_CHANGE ch=1 d1=10 d2=33 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=1 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=1 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=1 d1=93 d2=0 [LotroShortMessage]
@@ -101,11 +103,12 @@ divisionType=0.0 resolution=11520 tickLength=43189 tracks=9
   17280 NOTE_ON ch=1 d1=72 d2=106 [LotroShortMessage]
   23040 NOTE_OFF ch=1 d1=72 d2=106 [LotroShortMessage]
   23040 META end_of_track
--- track 3 (15 events)
+-- track 3 (16 events)
   0 PROGRAM_CHANGE ch=2 d1=73 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=2 d1=36 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Flute"
   0 CONTROL_CHANGE ch=2 d1=10 d2=95 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=2 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=93 d2=0 [LotroShortMessage]
@@ -117,11 +120,12 @@ divisionType=0.0 resolution=11520 tickLength=43189 tracks=9
   17280 NOTE_ON ch=2 d1=72 d2=106 [LotroShortMessage]
   23040 NOTE_OFF ch=2 d1=72 d2=106 [LotroShortMessage]
   23040 META end_of_track
--- track 4 (15 events)
+-- track 4 (16 events)
   0 PROGRAM_CHANGE ch=3 d1=32 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=3 d1=36 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Theorbo"
   0 CONTROL_CHANGE ch=3 d1=10 d2=74 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=3 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=3 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=3 d1=93 d2=0 [LotroShortMessage]
@@ -133,11 +137,12 @@ divisionType=0.0 resolution=11520 tickLength=43189 tracks=9
   17280 NOTE_ON ch=3 d1=72 d2=106 [LotroShortMessage]
   23040 NOTE_OFF ch=3 d1=72 d2=106 [LotroShortMessage]
   36404 META end_of_track
--- track 5 (15 events)
+-- track 5 (16 events)
   0 PROGRAM_CHANGE ch=4 d1=118 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=4 d1=36 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Drum"
   0 CONTROL_CHANGE ch=4 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=4 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=4 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=4 d1=93 d2=0 [LotroShortMessage]
@@ -149,11 +154,12 @@ divisionType=0.0 resolution=11520 tickLength=43189 tracks=9
   17280 NOTE_ON ch=4 d1=72 d2=106 [LotroShortMessage]
   23040 NOTE_OFF ch=4 d1=72 d2=106 [LotroShortMessage]
   24165 META end_of_track
--- track 6 (15 events)
+-- track 6 (16 events)
   0 PROGRAM_CHANGE ch=5 d1=120 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=5 d1=36 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Student Fiddle"
   0 CONTROL_CHANGE ch=5 d1=10 d2=97 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=5 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=5 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=5 d1=93 d2=0 [LotroShortMessage]
@@ -165,11 +171,12 @@ divisionType=0.0 resolution=11520 tickLength=43189 tracks=9
   17280 NOTE_ON ch=5 d1=72 d2=106 [LotroShortMessage]
   23040 NOTE_OFF ch=5 d1=72 d2=106 [LotroShortMessage]
   23040 META end_of_track
--- track 7 (15 events)
+-- track 7 (16 events)
   0 PROGRAM_CHANGE ch=6 d1=27 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=6 d1=36 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Misty Mountain Harp"
   0 CONTROL_CHANGE ch=6 d1=10 d2=42 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=6 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=6 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=6 d1=93 d2=0 [LotroShortMessage]
@@ -181,11 +188,12 @@ divisionType=0.0 resolution=11520 tickLength=43189 tracks=9
   17280 NOTE_ON ch=6 d1=72 d2=106 [LotroShortMessage]
   23040 NOTE_OFF ch=6 d1=72 d2=106 [LotroShortMessage]
   43189 META end_of_track
--- track 8 (15 events)
+-- track 8 (16 events)
   0 PROGRAM_CHANGE ch=7 d1=71 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=7 d1=36 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Clarinet"
   0 CONTROL_CHANGE ch=7 d1=10 d2=35 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=7 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=7 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=7 d1=93 d2=0 [LotroShortMessage]
@@ -259,11 +267,12 @@ divisionType=0.0 resolution=11520 tickLength=43189 tracks=9
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
   0 META end_of_track
--- track 1 (15 events)
+-- track 1 (16 events)
   0 PROGRAM_CHANGE ch=0 d1=46 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=36 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Harp"
   0 CONTROL_CHANGE ch=0 d1=10 d2=86 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
@@ -275,11 +284,12 @@ divisionType=0.0 resolution=11520 tickLength=43189 tracks=9
   17280 NOTE_ON ch=0 d1=72 d2=106 [LotroShortMessage]
   23040 NOTE_OFF ch=0 d1=72 d2=106 [LotroShortMessage]
   42959 META end_of_track
--- track 2 (15 events)
+-- track 2 (16 events)
   0 PROGRAM_CHANGE ch=1 d1=109 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=1 d1=36 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Bagpipe"
   0 CONTROL_CHANGE ch=1 d1=10 d2=33 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=1 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=1 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=1 d1=93 d2=0 [LotroShortMessage]
@@ -291,11 +301,12 @@ divisionType=0.0 resolution=11520 tickLength=43189 tracks=9
   17280 NOTE_ON ch=1 d1=72 d2=106 [LotroShortMessage]
   23040 NOTE_OFF ch=1 d1=72 d2=106 [LotroShortMessage]
   23040 META end_of_track
--- track 3 (15 events)
+-- track 3 (16 events)
   0 PROGRAM_CHANGE ch=2 d1=73 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=2 d1=36 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Flute"
   0 CONTROL_CHANGE ch=2 d1=10 d2=95 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=2 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=93 d2=0 [LotroShortMessage]
@@ -307,11 +318,12 @@ divisionType=0.0 resolution=11520 tickLength=43189 tracks=9
   17280 NOTE_ON ch=2 d1=72 d2=106 [LotroShortMessage]
   23040 NOTE_OFF ch=2 d1=72 d2=106 [LotroShortMessage]
   23040 META end_of_track
--- track 4 (15 events)
+-- track 4 (16 events)
   0 PROGRAM_CHANGE ch=3 d1=32 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=3 d1=36 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Theorbo"
   0 CONTROL_CHANGE ch=3 d1=10 d2=74 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=3 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=3 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=3 d1=93 d2=0 [LotroShortMessage]
@@ -323,11 +335,12 @@ divisionType=0.0 resolution=11520 tickLength=43189 tracks=9
   17280 NOTE_ON ch=3 d1=72 d2=106 [LotroShortMessage]
   23040 NOTE_OFF ch=3 d1=72 d2=106 [LotroShortMessage]
   36404 META end_of_track
--- track 5 (15 events)
+-- track 5 (16 events)
   0 PROGRAM_CHANGE ch=4 d1=118 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=4 d1=36 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Drum"
   0 CONTROL_CHANGE ch=4 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=4 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=4 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=4 d1=93 d2=0 [LotroShortMessage]
@@ -339,11 +352,12 @@ divisionType=0.0 resolution=11520 tickLength=43189 tracks=9
   17280 NOTE_ON ch=4 d1=72 d2=106 [LotroShortMessage]
   23040 NOTE_OFF ch=4 d1=72 d2=106 [LotroShortMessage]
   24165 META end_of_track
--- track 6 (15 events)
+-- track 6 (16 events)
   0 PROGRAM_CHANGE ch=5 d1=120 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=5 d1=36 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Student Fiddle"
   0 CONTROL_CHANGE ch=5 d1=10 d2=97 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=5 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=5 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=5 d1=93 d2=0 [LotroShortMessage]
@@ -355,11 +369,12 @@ divisionType=0.0 resolution=11520 tickLength=43189 tracks=9
   17280 NOTE_ON ch=5 d1=72 d2=106 [LotroShortMessage]
   23040 NOTE_OFF ch=5 d1=72 d2=106 [LotroShortMessage]
   23040 META end_of_track
--- track 7 (15 events)
+-- track 7 (16 events)
   0 PROGRAM_CHANGE ch=6 d1=27 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=6 d1=36 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Misty Mountain Harp"
   0 CONTROL_CHANGE ch=6 d1=10 d2=42 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=6 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=6 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=6 d1=93 d2=0 [LotroShortMessage]
@@ -371,11 +386,12 @@ divisionType=0.0 resolution=11520 tickLength=43189 tracks=9
   17280 NOTE_ON ch=6 d1=72 d2=106 [LotroShortMessage]
   23040 NOTE_OFF ch=6 d1=72 d2=106 [LotroShortMessage]
   43189 META end_of_track
--- track 8 (15 events)
+-- track 8 (16 events)
   0 PROGRAM_CHANGE ch=7 d1=71 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=7 d1=36 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Clarinet"
   0 CONTROL_CHANGE ch=7 d1=10 d2=35 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=7 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=7 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=7 d1=93 d2=0 [LotroShortMessage]
@@ -449,11 +465,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
   0 META end_of_track
--- track 1 (14 events)
+-- track 1 (15 events)
   0 PROGRAM_CHANGE ch=0 d1=46 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=36 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Harp"
   0 CONTROL_CHANGE ch=0 d1=10 d2=86 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=0 d1=36 d2=80 [LotroShortMessage]
@@ -464,11 +481,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
   17280 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
   23040 META end_of_track
--- track 2 (14 events)
+-- track 2 (15 events)
   0 PROGRAM_CHANGE ch=1 d1=109 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=1 d1=48 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Bagpipe"
   0 CONTROL_CHANGE ch=1 d1=10 d2=33 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=1 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=1 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=1 d1=48 d2=80 [LotroShortMessage]
@@ -479,11 +497,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
   17280 NOTE_ON ch=1 d1=84 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=1 d1=84 d2=80 [LotroShortMessage]
   23040 META end_of_track
--- track 3 (14 events)
+-- track 3 (15 events)
   0 PROGRAM_CHANGE ch=2 d1=73 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=2 d1=60 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Flute"
   0 CONTROL_CHANGE ch=2 d1=10 d2=95 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=2 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=2 d1=60 d2=80 [LotroShortMessage]
@@ -494,11 +513,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
   17280 NOTE_ON ch=2 d1=96 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=2 d1=96 d2=80 [LotroShortMessage]
   23040 META end_of_track
--- track 4 (14 events)
+-- track 4 (15 events)
   0 PROGRAM_CHANGE ch=3 d1=32 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=3 d1=24 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Theorbo"
   0 CONTROL_CHANGE ch=3 d1=10 d2=74 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=3 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=3 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=3 d1=24 d2=80 [LotroShortMessage]
@@ -509,11 +529,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
   17280 NOTE_ON ch=3 d1=60 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=3 d1=60 d2=80 [LotroShortMessage]
   23040 META end_of_track
--- track 5 (14 events)
+-- track 5 (15 events)
   0 PROGRAM_CHANGE ch=4 d1=118 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=4 d1=36 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Drum"
   0 CONTROL_CHANGE ch=4 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=4 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=4 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=4 d1=36 d2=80 [LotroShortMessage]
@@ -524,11 +545,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
   17280 NOTE_ON ch=4 d1=72 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=4 d1=72 d2=80 [LotroShortMessage]
   23040 META end_of_track
--- track 6 (14 events)
+-- track 6 (15 events)
   0 PROGRAM_CHANGE ch=5 d1=120 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=5 d1=48 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Student Fiddle"
   0 CONTROL_CHANGE ch=5 d1=10 d2=97 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=5 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=5 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=5 d1=48 d2=80 [LotroShortMessage]
@@ -539,11 +561,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
   17280 NOTE_ON ch=5 d1=84 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=5 d1=84 d2=80 [LotroShortMessage]
   23040 META end_of_track
--- track 7 (14 events)
+-- track 7 (15 events)
   0 PROGRAM_CHANGE ch=6 d1=27 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=6 d1=36 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Misty Mountain Harp"
   0 CONTROL_CHANGE ch=6 d1=10 d2=42 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=6 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=6 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=6 d1=36 d2=80 [LotroShortMessage]
@@ -554,11 +577,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
   17280 NOTE_ON ch=6 d1=72 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=6 d1=72 d2=80 [LotroShortMessage]
   23040 META end_of_track
--- track 8 (14 events)
+-- track 8 (15 events)
   0 PROGRAM_CHANGE ch=7 d1=71 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=7 d1=48 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Clarinet"
   0 CONTROL_CHANGE ch=7 d1=10 d2=35 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=7 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=7 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=7 d1=48 d2=80 [LotroShortMessage]
@@ -631,11 +655,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
   0 META end_of_track
--- track 1 (14 events)
+-- track 1 (15 events)
   0 PROGRAM_CHANGE ch=0 d1=46 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=36 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Harp"
   0 CONTROL_CHANGE ch=0 d1=10 d2=86 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=0 d1=36 d2=80 [LotroShortMessage]
@@ -646,11 +671,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
   17280 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
   23040 META end_of_track
--- track 2 (14 events)
+-- track 2 (15 events)
   0 PROGRAM_CHANGE ch=1 d1=109 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=1 d1=48 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Bagpipe"
   0 CONTROL_CHANGE ch=1 d1=10 d2=33 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=1 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=1 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=1 d1=48 d2=80 [LotroShortMessage]
@@ -661,11 +687,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
   17280 NOTE_ON ch=1 d1=84 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=1 d1=84 d2=80 [LotroShortMessage]
   23040 META end_of_track
--- track 3 (14 events)
+-- track 3 (15 events)
   0 PROGRAM_CHANGE ch=2 d1=73 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=2 d1=60 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Flute"
   0 CONTROL_CHANGE ch=2 d1=10 d2=95 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=2 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=2 d1=60 d2=80 [LotroShortMessage]
@@ -676,11 +703,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
   17280 NOTE_ON ch=2 d1=96 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=2 d1=96 d2=80 [LotroShortMessage]
   23040 META end_of_track
--- track 4 (14 events)
+-- track 4 (15 events)
   0 PROGRAM_CHANGE ch=3 d1=32 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=3 d1=24 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Theorbo"
   0 CONTROL_CHANGE ch=3 d1=10 d2=74 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=3 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=3 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=3 d1=24 d2=80 [LotroShortMessage]
@@ -691,11 +719,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
   17280 NOTE_ON ch=3 d1=60 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=3 d1=60 d2=80 [LotroShortMessage]
   23040 META end_of_track
--- track 5 (14 events)
+-- track 5 (15 events)
   0 PROGRAM_CHANGE ch=4 d1=118 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=4 d1=36 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Drum"
   0 CONTROL_CHANGE ch=4 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=4 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=4 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=4 d1=36 d2=80 [LotroShortMessage]
@@ -706,11 +735,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
   17280 NOTE_ON ch=4 d1=72 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=4 d1=72 d2=80 [LotroShortMessage]
   23040 META end_of_track
--- track 6 (14 events)
+-- track 6 (15 events)
   0 PROGRAM_CHANGE ch=5 d1=120 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=5 d1=48 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Student Fiddle"
   0 CONTROL_CHANGE ch=5 d1=10 d2=97 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=5 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=5 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=5 d1=48 d2=80 [LotroShortMessage]
@@ -721,11 +751,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
   17280 NOTE_ON ch=5 d1=84 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=5 d1=84 d2=80 [LotroShortMessage]
   23040 META end_of_track
--- track 7 (14 events)
+-- track 7 (15 events)
   0 PROGRAM_CHANGE ch=6 d1=27 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=6 d1=36 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Misty Mountain Harp"
   0 CONTROL_CHANGE ch=6 d1=10 d2=42 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=6 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=6 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=6 d1=36 d2=80 [LotroShortMessage]
@@ -736,11 +767,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
   17280 NOTE_ON ch=6 d1=72 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=6 d1=72 d2=80 [LotroShortMessage]
   23040 META end_of_track
--- track 8 (14 events)
+-- track 8 (15 events)
   0 PROGRAM_CHANGE ch=7 d1=71 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=7 d1=48 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Clarinet"
   0 CONTROL_CHANGE ch=7 d1=10 d2=35 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=7 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=7 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=7 d1=48 d2=80 [LotroShortMessage]
@@ -813,11 +845,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
   0 META end_of_track
--- track 1 (14 events)
+-- track 1 (15 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=48 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Harp"
   0 CONTROL_CHANGE ch=0 d1=10 d2=86 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=0 d1=48 d2=80 [LotroShortMessage]
@@ -828,11 +861,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
   17280 NOTE_ON ch=0 d1=84 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=0 d1=84 d2=80 [LotroShortMessage]
   23040 META end_of_track
--- track 2 (14 events)
+-- track 2 (15 events)
   0 PROGRAM_CHANGE ch=1 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=1 d1=48 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Bagpipe"
   0 CONTROL_CHANGE ch=1 d1=10 d2=42 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=1 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=1 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=1 d1=48 d2=80 [LotroShortMessage]
@@ -843,11 +877,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
   17280 NOTE_ON ch=1 d1=84 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=1 d1=84 d2=80 [LotroShortMessage]
   23040 META end_of_track
--- track 3 (14 events)
+-- track 3 (15 events)
   0 PROGRAM_CHANGE ch=2 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=2 d1=48 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Flute"
   0 CONTROL_CHANGE ch=2 d1=10 d2=84 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=2 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=2 d1=48 d2=80 [LotroShortMessage]
@@ -858,11 +893,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
   17280 NOTE_ON ch=2 d1=84 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=2 d1=84 d2=80 [LotroShortMessage]
   23040 META end_of_track
--- track 4 (14 events)
+-- track 4 (15 events)
   0 PROGRAM_CHANGE ch=3 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=3 d1=48 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Theorbo"
   0 CONTROL_CHANGE ch=3 d1=10 d2=44 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=3 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=3 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=3 d1=48 d2=80 [LotroShortMessage]
@@ -873,11 +909,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
   17280 NOTE_ON ch=3 d1=84 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=3 d1=84 d2=80 [LotroShortMessage]
   23040 META end_of_track
--- track 5 (14 events)
+-- track 5 (15 events)
   0 PROGRAM_CHANGE ch=4 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=4 d1=48 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Drum"
   0 CONTROL_CHANGE ch=4 d1=10 d2=82 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=4 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=4 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=4 d1=48 d2=80 [LotroShortMessage]
@@ -888,11 +925,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
   17280 NOTE_ON ch=4 d1=84 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=4 d1=84 d2=80 [LotroShortMessage]
   23040 META end_of_track
--- track 6 (14 events)
+-- track 6 (15 events)
   0 PROGRAM_CHANGE ch=5 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=5 d1=48 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Student Fiddle"
   0 CONTROL_CHANGE ch=5 d1=10 d2=46 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=5 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=5 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=5 d1=48 d2=80 [LotroShortMessage]
@@ -903,11 +941,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
   17280 NOTE_ON ch=5 d1=84 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=5 d1=84 d2=80 [LotroShortMessage]
   23040 META end_of_track
--- track 7 (14 events)
+-- track 7 (15 events)
   0 PROGRAM_CHANGE ch=6 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=6 d1=48 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Misty Mountain Harp"
   0 CONTROL_CHANGE ch=6 d1=10 d2=79 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=6 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=6 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=6 d1=48 d2=80 [LotroShortMessage]
@@ -918,11 +957,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=9
   17280 NOTE_ON ch=6 d1=84 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=6 d1=84 d2=80 [LotroShortMessage]
   23040 META end_of_track
--- track 8 (14 events)
+-- track 8 (15 events)
   0 PROGRAM_CHANGE ch=7 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=7 d1=48 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Clarinet"
   0 CONTROL_CHANGE ch=7 d1=10 d2=49 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=7 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=7 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=7 d1=48 d2=80 [LotroShortMessage]

@@ -653,6 +653,61 @@ class AbcToMidiBehaviourTest {
 			}
 
 			@Test
+			void theMidiHasTheMeterAndKeyWhereTheyChange() throws Exception {
+				// For other programs (notation, DAWs): the meter and the key at the start and where they change (user,
+				// 2026-10-04). In every reading; Maestro takes the song's meter and key from AbcInfo
+				AbcCase changes = tune("semantic", header("K:G"), "c d e f|[M:3/4] c d e|", "K:F", "c d e|");
+				for (Sequence played : List.of(convert(changes), convert(standard(changes)))) {
+					// In eighths: 4/4 and G from the start, 3/4 after the first bar, F after the 3/4 bar
+					assertEquals(List.of("0 4/4", "0 G maj", "4 3/4", "7 F maj"), signatures(played));
+					// The keys also in every part's track (MuseScore reads a key only in the track of its notes; it
+					// ignores track 0's and guesses a key)
+					long eighth = played.getResolution() / 2;
+					for (int i = 1; i < played.getTracks().length; i++)
+						assertEquals(List.of("0 G maj", "7 F maj"), keys(played.getTracks()[i], eighth));
+				}
+				// A mode has no MIDI key: its key signature, as the major key with the same sharps or flats
+				assertEquals(List.of("0 4/4", "0 C maj"), signatures(convert(tune("semantic", header("K:Ddor"), "c d|"))));
+				// A repeat goes back to the meter at its start
+				Sequence repeated = convert(standard(tune("semantic", "|: c d [M:3/4] e f g :|"))
+						.with(p -> p.expandRepeats = true));
+				assertEquals(List.of("0 4/4", "0 C maj", "2 3/4", "5 4/4", "7 3/4"), signatures(repeated));
+				// An ending the second pass skips: its K: isn't read then
+				Sequence skipped = convert(standard(tune("semantic", "|: F |1", "K:G", "F :|2 F|]"))
+						.with(p -> p.expandRepeats = true));
+				assertEquals(List.of("0 4/4", "0 C maj", "1 G maj", "2 C maj"), signatures(skipped));
+			}
+
+			/** A track's key signatures: "eighths key". */
+			private static List<String> keys(Track track, long eighth) {
+				List<String> found = new ArrayList<>();
+				for (int i = 0; i < track.size(); i++) {
+					if (track.get(i).getMessage() instanceof MetaMessage meta
+							&& meta.getType() == MidiConstants.META_KEY_SIGNATURE)
+						found.add(track.get(i).getTick() / eighth + " " + new com.digero.common.midi.KeySignature(meta));
+				}
+				return found;
+			}
+
+			/** Track 0's time and key signatures: "eighths meter" or "eighths key". */
+			private static List<String> signatures(Sequence sequence) {
+				long eighth = sequence.getResolution() / 2;
+				List<String> found = new ArrayList<>();
+				Track track = sequence.getTracks()[0];
+				for (int i = 0; i < track.size(); i++) {
+					if (!(track.get(i).getMessage() instanceof MetaMessage meta))
+						continue;
+					String at = (track.get(i).getTick() / eighth) + " ";
+					if (meta.getType() == MidiConstants.META_TIME_SIGNATURE)
+						found.add(at + (meta.getData()[0] & 0xFF) + "/" + (1 << meta.getData()[1]));
+					else if (meta.getType() == MidiConstants.META_KEY_SIGNATURE)
+						found.add(at + new com.digero.common.midi.KeySignature(meta));
+				}
+				found.sort(Comparator.comparingLong(s -> Long.parseLong(s.substring(0, s.indexOf(' ')))));
+				return found;
+			}
+
+			@Test
 			void inlineSectionLabelsToo() throws Exception {
 				// [P:A] in the notes (ABC 2.1, 3.2) starts a section as a P: line does; it was skipped, and the tune
 				// played as written (user, 2026-10-02)

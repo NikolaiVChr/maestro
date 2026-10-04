@@ -20,11 +20,12 @@ divisionType=0.0 resolution=5760 tickLength=80640 tracks=4
   0 META type=0x58 data=07031808
   0 META type=0x59 data=0000
   0 META end_of_track
--- track 1 (19 events)
+-- track 1 (20 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=91 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
@@ -40,11 +41,12 @@ divisionType=0.0 resolution=5760 tickLength=80640 tracks=4
   63360 NOTE_ON ch=0 d1=50 d2=106 [LotroShortMessage]
   72911 NOTE_OFF ch=0 d1=50 d2=106 [LotroShortMessage]
   72911 META end_of_track
--- track 2 (11 events)
+-- track 2 (12 events)
   0 PROGRAM_CHANGE ch=1 d1=32 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=1 d1=55 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Test - Bass"
   0 CONTROL_CHANGE ch=1 d1=10 d2=76 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=1 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=1 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=1 d1=93 d2=0 [LotroShortMessage]
@@ -52,10 +54,11 @@ divisionType=0.0 resolution=5760 tickLength=80640 tracks=4
   40320 NOTE_ON ch=1 d1=50 d2=106 [LotroShortMessage]
   49882 NOTE_OFF ch=1 d1=50 d2=106 [LotroShortMessage]
   49882 META end_of_track
--- track 3 (31 events)
+-- track 3 (32 events)
   0 PROGRAM_CHANGE ch=2 d1=24 d2=0 [LotroShortMessage]
   0 META text type=0x03 "Test - Chords"
   0 CONTROL_CHANGE ch=2 d1=10 d2=37 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=2 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=93 d2=0 [LotroShortMessage]
@@ -115,11 +118,12 @@ divisionType=0.0 resolution=5760 tickLength=72911 tracks=2
   0 META type=0x58 data=07031808
   0 META type=0x59 data=0000
   0 META end_of_track
--- track 1 (19 events)
+-- track 1 (20 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
@@ -164,11 +168,12 @@ divisionType=0.0 resolution=5760 tickLength=80640 tracks=4
   0 META type=0x58 data=07031808
   0 META type=0x59 data=0000
   0 META end_of_track
--- track 1 (18 events)
+-- track 1 (19 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=91 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   11520 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
@@ -183,21 +188,23 @@ divisionType=0.0 resolution=5760 tickLength=80640 tracks=4
   63360 NOTE_ON ch=0 d1=50 d2=80 [LotroShortMessage]
   80640 NOTE_OFF ch=0 d1=50 d2=80 [LotroShortMessage]
   80640 META end_of_track
--- track 2 (10 events)
+-- track 2 (11 events)
   0 PROGRAM_CHANGE ch=1 d1=32 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=1 d1=43 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Test - Bass"
   0 CONTROL_CHANGE ch=1 d1=10 d2=76 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=1 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=1 d1=93 d2=0 [LotroShortMessage]
   11520 NOTE_OFF ch=1 d1=43 d2=80 [LotroShortMessage]
   40320 NOTE_ON ch=1 d1=38 d2=80 [LotroShortMessage]
   51840 NOTE_OFF ch=1 d1=38 d2=80 [LotroShortMessage]
   51840 META end_of_track
--- track 3 (30 events)
+-- track 3 (31 events)
   0 PROGRAM_CHANGE ch=2 d1=24 d2=0 [LotroShortMessage]
   0 META text type=0x03 "Test - Chords"
   0 CONTROL_CHANGE ch=2 d1=10 d2=37 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=2 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=93 d2=0 [LotroShortMessage]
   11520 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
@@ -256,11 +263,12 @@ divisionType=0.0 resolution=5760 tickLength=80640 tracks=4
   0 META type=0x58 data=07031808
   0 META type=0x59 data=0000
   0 META end_of_track
--- track 1 (18 events)
+-- track 1 (19 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=91 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   11520 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
@@ -275,21 +283,23 @@ divisionType=0.0 resolution=5760 tickLength=80640 tracks=4
   63360 NOTE_ON ch=0 d1=50 d2=80 [LotroShortMessage]
   80640 NOTE_OFF ch=0 d1=50 d2=80 [LotroShortMessage]
   80640 META end_of_track
--- track 2 (10 events)
+-- track 2 (11 events)
   0 PROGRAM_CHANGE ch=1 d1=32 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=1 d1=43 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Test - Bass"
   0 CONTROL_CHANGE ch=1 d1=10 d2=76 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=1 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=1 d1=93 d2=0 [LotroShortMessage]
   11520 NOTE_OFF ch=1 d1=43 d2=80 [LotroShortMessage]
   40320 NOTE_ON ch=1 d1=38 d2=80 [LotroShortMessage]
   51840 NOTE_OFF ch=1 d1=38 d2=80 [LotroShortMessage]
   51840 META end_of_track
--- track 3 (30 events)
+-- track 3 (31 events)
   0 PROGRAM_CHANGE ch=2 d1=24 d2=0 [LotroShortMessage]
   0 META text type=0x03 "Test - Chords"
   0 CONTROL_CHANGE ch=2 d1=10 d2=37 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=2 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=93 d2=0 [LotroShortMessage]
   11520 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
@@ -348,11 +358,12 @@ divisionType=0.0 resolution=5760 tickLength=80640 tracks=4
   0 META type=0x58 data=07031808
   0 META type=0x59 data=0000
   0 META end_of_track
--- track 1 (18 events)
+-- track 1 (19 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=67 d2=96 [LotroShortMessage]
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=91 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   11520 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
@@ -367,21 +378,23 @@ divisionType=0.0 resolution=5760 tickLength=80640 tracks=4
   63360 NOTE_ON ch=0 d1=62 d2=96 [LotroShortMessage]
   80640 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
   80640 META end_of_track
--- track 2 (10 events)
+-- track 2 (11 events)
   0 PROGRAM_CHANGE ch=1 d1=32 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=1 d1=43 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Test - Bass"
   0 CONTROL_CHANGE ch=1 d1=10 d2=76 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=1 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=1 d1=93 d2=0 [LotroShortMessage]
   11520 NOTE_OFF ch=1 d1=43 d2=80 [LotroShortMessage]
   40320 NOTE_ON ch=1 d1=38 d2=80 [LotroShortMessage]
   51840 NOTE_OFF ch=1 d1=38 d2=80 [LotroShortMessage]
   51840 META end_of_track
--- track 3 (30 events)
+-- track 3 (31 events)
   0 PROGRAM_CHANGE ch=2 d1=24 d2=0 [LotroShortMessage]
   0 META text type=0x03 "Test - Chords"
   0 CONTROL_CHANGE ch=2 d1=10 d2=37 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=2 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=93 d2=0 [LotroShortMessage]
   11520 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]

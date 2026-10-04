@@ -29,12 +29,13 @@ divisionType=0.0 resolution=11520 tickLength=39090 tracks=2
   2 META text type=0x05 "@TTest"
   17281 META text type=0x05 "<2. Verse two"
   17281 META end_of_track
--- track 1 (19 events)
+-- track 1 (20 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
   0 META text type=0x05 "la "
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
@@ -79,12 +80,13 @@ divisionType=0.0 resolution=11520 tickLength=39090 tracks=2
   2 META text type=0x05 "@TTest"
   17281 META text type=0x05 "<2. Verse two"
   17281 META end_of_track
--- track 1 (19 events)
+-- track 1 (20 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
   0 META text type=0x05 "la "
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
@@ -129,12 +131,13 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=2
   2 META text type=0x05 "@TTest"
   17281 META text type=0x05 "<2. Verse two"
   17281 META end_of_track
--- track 1 (18 events)
+-- track 1 (19 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
   0 META text type=0x05 "la "
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
@@ -178,12 +181,13 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=2
   2 META text type=0x05 "@TTest"
   17281 META text type=0x05 "<2. Verse two"
   17281 META end_of_track
--- track 1 (18 events)
+-- track 1 (19 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
   0 META text type=0x05 "la "
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
@@ -227,12 +231,13 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=2
   2 META text type=0x05 "@TTest"
   17281 META text type=0x05 "<2. Verse two"
   17281 META end_of_track
--- track 1 (18 events)
+-- track 1 (19 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
   0 META text type=0x05 "la "
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]

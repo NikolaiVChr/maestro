@@ -15,18 +15,20 @@ case key_change_mid_part
 ### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
 == sequence
 divisionType=0.0 resolution=11520 tickLength=41216 tracks=2
--- track 0 (6 events)
+-- track 0 (7 events)
   0 META text type=0x05 "@TTest"
   0 META tempo mpq=500000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
-  0 META end_of_track
--- track 1 (15 events)
+  11520 META type=0x59 data=0200
+  11520 META end_of_track
+-- track 1 (17 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=65 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
@@ -34,6 +36,7 @@ divisionType=0.0 resolution=11520 tickLength=41216 tracks=2
   5760 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
   11520 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
   11520 NOTE_ON ch=0 d1=66 d2=106 [LotroShortMessage]
+  11520 META type=0x59 data=0200
   17280 NOTE_OFF ch=0 d1=66 d2=106 [LotroShortMessage]
   17280 NOTE_ON ch=0 d1=61 d2=106 [LotroShortMessage]
   23040 NOTE_OFF ch=0 d1=61 d2=106 [LotroShortMessage]
@@ -58,18 +61,20 @@ divisionType=0.0 resolution=11520 tickLength=41216 tracks=2
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
 == sequence
 divisionType=0.0 resolution=11520 tickLength=41216 tracks=2
--- track 0 (6 events)
+-- track 0 (7 events)
   0 META text type=0x05 "@TTest"
   0 META tempo mpq=500000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
-  0 META end_of_track
--- track 1 (15 events)
+  11520 META type=0x59 data=0200
+  11520 META end_of_track
+-- track 1 (17 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=65 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
@@ -77,6 +82,7 @@ divisionType=0.0 resolution=11520 tickLength=41216 tracks=2
   5760 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
   11520 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
   11520 NOTE_ON ch=0 d1=66 d2=106 [LotroShortMessage]
+  11520 META type=0x59 data=0200
   17280 NOTE_OFF ch=0 d1=66 d2=106 [LotroShortMessage]
   17280 NOTE_ON ch=0 d1=61 d2=106 [LotroShortMessage]
   23040 NOTE_OFF ch=0 d1=61 d2=106 [LotroShortMessage]
@@ -101,24 +107,27 @@ divisionType=0.0 resolution=11520 tickLength=41216 tracks=2
 ### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)
 == sequence
 divisionType=0.0 resolution=11520 tickLength=23040 tracks=2
--- track 0 (6 events)
+-- track 0 (7 events)
   0 META text type=0x05 "@TTest"
   0 META tempo mpq=500000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
-  0 META end_of_track
--- track 1 (14 events)
+  11520 META type=0x59 data=0200
+  11520 META end_of_track
+-- track 1 (16 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
   5760 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
   11520 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
   11520 NOTE_ON ch=0 d1=66 d2=80 [LotroShortMessage]
+  11520 META type=0x59 data=0200
   17280 NOTE_OFF ch=0 d1=66 d2=80 [LotroShortMessage]
   17280 NOTE_ON ch=0 d1=61 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=0 d1=61 d2=80 [LotroShortMessage]
@@ -143,24 +152,27 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=2
 ### profile MAESTRO_NEW_LOTRO (useLotroInstruments=false, enableLotroErrors=false, Lotro Abc)
 == sequence
 divisionType=0.0 resolution=11520 tickLength=23040 tracks=2
--- track 0 (6 events)
+-- track 0 (7 events)
   0 META text type=0x05 "@TTest"
   0 META tempo mpq=500000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
-  0 META end_of_track
--- track 1 (14 events)
+  11520 META type=0x59 data=0200
+  11520 META end_of_track
+-- track 1 (16 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
   5760 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
   11520 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
   11520 NOTE_ON ch=0 d1=66 d2=80 [LotroShortMessage]
+  11520 META type=0x59 data=0200
   17280 NOTE_OFF ch=0 d1=66 d2=80 [LotroShortMessage]
   17280 NOTE_ON ch=0 d1=61 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=0 d1=61 d2=80 [LotroShortMessage]
@@ -185,24 +197,27 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=2
 ### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
 == sequence
 divisionType=0.0 resolution=11520 tickLength=23040 tracks=2
--- track 0 (6 events)
+-- track 0 (7 events)
   0 META text type=0x05 "@TTest"
   0 META tempo mpq=1000000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
-  0 META end_of_track
--- track 1 (14 events)
+  11520 META type=0x59 data=0200
+  11520 META end_of_track
+-- track 1 (16 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Test"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   5760 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
   5760 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
   11520 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
   11520 NOTE_ON ch=0 d1=78 d2=80 [LotroShortMessage]
+  11520 META type=0x59 data=0200
   17280 NOTE_OFF ch=0 d1=78 d2=80 [LotroShortMessage]
   17280 NOTE_ON ch=0 d1=73 d2=80 [LotroShortMessage]
   23040 NOTE_OFF ch=0 d1=73 d2=80 [LotroShortMessage]

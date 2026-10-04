@@ -12,10 +12,11 @@ divisionType=0.0 resolution=11520 tickLength=2134622 tracks=2
   0 META type=0x59 data=FD00
   1 META text type=0x05 "@IComposer: Claudio Monteverdi (1567-1643)"
   1 META end_of_track
--- track 1 (352 events)
+-- track 1 (353 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 META text type=0x03 "Canzonetta a tre voci"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=FD00
   1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
@@ -523,10 +524,11 @@ divisionType=0.0 resolution=11520 tickLength=2211840 tracks=2
   0 META type=0x59 data=FD00
   1 META text type=0x05 "@IComposer: Claudio Monteverdi (1567-1643)"
   1 META end_of_track
--- track 1 (351 events)
+-- track 1 (352 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 META text type=0x03 "Canzonetta a tre voci"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=FD00
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   92160 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
@@ -1028,10 +1030,11 @@ divisionType=0.0 resolution=11520 tickLength=2211840 tracks=2
   0 META type=0x59 data=FD00
   1 META text type=0x05 "@IComposer: Claudio Monteverdi (1567-1643)"
   1 META end_of_track
--- track 1 (351 events)
+-- track 1 (352 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 META text type=0x03 "Canzonetta a tre voci"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=FD00
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   92160 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
@@ -1533,10 +1536,11 @@ divisionType=0.0 resolution=11520 tickLength=1336320 tracks=4
   0 META type=0x59 data=FD00
   1 META text type=0x05 "@IComposer: Claudio Monteverdi (1567-1643)"
   1 META end_of_track
--- track 1 (198 events)
+-- track 1 (199 events)
   0 PROGRAM_CHANGE ch=0 d1=75 d2=0 [LotroShortMessage]
   0 META text type=0x03 "Soprano"
   0 CONTROL_CHANGE ch=0 d1=10 d2=91 [LotroShortMessage]
+  0 META type=0x59 data=FD00
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   92160 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
@@ -1732,12 +1736,13 @@ divisionType=0.0 resolution=11520 tickLength=1336320 tracks=4
   1244160 META text type=0x05 "o. "
   1336320 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
   1336320 META end_of_track
--- track 2 (260 events)
+-- track 2 (261 events)
   0 PROGRAM_CHANGE ch=1 d1=75 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=1 d1=72 d2=80 [LotroShortMessage]
   0 META text type=0x05 "Son "
   0 META text type=0x03 "Alto"
   0 CONTROL_CHANGE ch=1 d1=10 d2=37 [LotroShortMessage]
+  0 META type=0x59 data=FD00
   1 CONTROL_CHANGE ch=1 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=1 d1=93 d2=0 [LotroShortMessage]
   23040 NOTE_OFF ch=1 d1=72 d2=80 [LotroShortMessage]
@@ -1993,10 +1998,11 @@ divisionType=0.0 resolution=11520 tickLength=1336320 tracks=4
   1244160 META text type=0x05 "o. "
   1336320 NOTE_OFF ch=1 d1=65 d2=80 [LotroShortMessage]
   1336320 META end_of_track
--- track 3 (226 events)
+-- track 3 (227 events)
   0 PROGRAM_CHANGE ch=2 d1=75 d2=0 [LotroShortMessage]
   0 META text type=0x03 "Tenor"
   0 CONTROL_CHANGE ch=2 d1=10 d2=88 [LotroShortMessage]
+  0 META type=0x59 data=FD00
   1 CONTROL_CHANGE ch=2 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=93 d2=0 [LotroShortMessage]
   46080 NOTE_ON ch=2 d1=77 d2=80 [LotroShortMessage]

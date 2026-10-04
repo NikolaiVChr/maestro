@@ -51,6 +51,19 @@ public class KeySignature implements MidiConstants {
 		}
 	}
 
+	/**
+	 * A key read from ABC (K:) as a MIDI key signature can say it: MIDI has major and minor keys only, so a mode is the
+	 * major key with its sharps or flats (D dorian as C major, D mixolydian as G major), which notation software shows
+	 * as the right key signature; aeolian is minor, ionian major. Major and minor keys are returned as they are.
+	 */
+	public static KeySignature fromAbc(KeySignature key) {
+		return switch (key.mode) {
+			case MAJOR, MINOR -> key;
+			case AEOLIAN -> new KeySignature(key.sharpsFlats, KeyMode.MINOR);
+			default -> new KeySignature(key.sharpsFlats, KeyMode.MAJOR);
+		};
+	}
+
 	public MetaMessage toMidiMessage() {
 		try {
 			MetaMessage midiMessage = new MetaMessage();

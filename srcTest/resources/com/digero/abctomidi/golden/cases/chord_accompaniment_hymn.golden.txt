@@ -20,11 +20,12 @@ divisionType=0.0 resolution=11520 tickLength=138240 tracks=4
   0 META type=0x58 data=03021808
   0 META type=0x59 data=0000
   0 META end_of_track
--- track 1 (23 events)
+-- track 1 (24 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Evening Hymn"
   0 CONTROL_CHANGE ch=0 d1=10 d2=91 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
@@ -44,11 +45,12 @@ divisionType=0.0 resolution=11520 tickLength=138240 tracks=4
   103680 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
   118796 NOTE_OFF ch=0 d1=55 d2=106 [LotroShortMessage]
   118796 META end_of_track
--- track 2 (17 events)
+-- track 2 (18 events)
   0 PROGRAM_CHANGE ch=1 d1=32 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=1 d1=55 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Evening Hymn - Bass"
   0 CONTROL_CHANGE ch=1 d1=10 d2=76 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=1 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=1 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=1 d1=93 d2=0 [LotroShortMessage]
@@ -62,13 +64,14 @@ divisionType=0.0 resolution=11520 tickLength=138240 tracks=4
   103680 NOTE_ON ch=1 d1=55 d2=106 [LotroShortMessage]
   122804 NOTE_OFF ch=1 d1=55 d2=106 [LotroShortMessage]
   122804 META end_of_track
--- track 3 (39 events)
+-- track 3 (40 events)
   0 PROGRAM_CHANGE ch=2 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=2 d1=55 d2=97 [LotroShortMessage]
   0 NOTE_ON ch=2 d1=59 d2=97 [LotroShortMessage]
   0 NOTE_ON ch=2 d1=62 d2=97 [LotroShortMessage]
   0 META text type=0x03 "Evening Hymn - Chords"
   0 CONTROL_CHANGE ch=2 d1=10 d2=37 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=2 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=93 d2=0 [LotroShortMessage]
@@ -135,11 +138,12 @@ divisionType=0.0 resolution=11520 tickLength=118796 tracks=2
   0 META type=0x58 data=03021808
   0 META type=0x59 data=0000
   0 META end_of_track
--- track 1 (23 events)
+-- track 1 (24 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=55 d2=106 [LotroShortMessage]
   0 META text type=0x03 "Evening Hymn"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
@@ -190,11 +194,12 @@ divisionType=0.0 resolution=11520 tickLength=138240 tracks=4
   0 META type=0x58 data=03021808
   0 META type=0x59 data=0000
   0 META end_of_track
--- track 1 (22 events)
+-- track 1 (23 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Evening Hymn"
   0 CONTROL_CHANGE ch=0 d1=10 d2=91 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   23040 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
@@ -213,11 +218,12 @@ divisionType=0.0 resolution=11520 tickLength=138240 tracks=4
   103680 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
   138240 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
   138240 META end_of_track
--- track 2 (16 events)
+-- track 2 (17 events)
   0 PROGRAM_CHANGE ch=1 d1=32 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=1 d1=43 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Evening Hymn - Bass"
   0 CONTROL_CHANGE ch=1 d1=10 d2=76 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=1 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=1 d1=93 d2=0 [LotroShortMessage]
   34560 NOTE_OFF ch=1 d1=43 d2=80 [LotroShortMessage]
@@ -230,13 +236,14 @@ divisionType=0.0 resolution=11520 tickLength=138240 tracks=4
   103680 NOTE_ON ch=1 d1=43 d2=80 [LotroShortMessage]
   138240 NOTE_OFF ch=1 d1=43 d2=80 [LotroShortMessage]
   138240 META end_of_track
--- track 3 (38 events)
+-- track 3 (39 events)
   0 PROGRAM_CHANGE ch=2 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
   0 NOTE_ON ch=2 d1=59 d2=64 [LotroShortMessage]
   0 NOTE_ON ch=2 d1=62 d2=64 [LotroShortMessage]
   0 META text type=0x03 "Evening Hymn - Chords"
   0 CONTROL_CHANGE ch=2 d1=10 d2=37 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=2 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=93 d2=0 [LotroShortMessage]
   34560 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
@@ -302,11 +309,12 @@ divisionType=0.0 resolution=11520 tickLength=138240 tracks=4
   0 META type=0x58 data=03021808
   0 META type=0x59 data=0000
   0 META end_of_track
--- track 1 (22 events)
+-- track 1 (23 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Evening Hymn"
   0 CONTROL_CHANGE ch=0 d1=10 d2=91 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   23040 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
@@ -325,11 +333,12 @@ divisionType=0.0 resolution=11520 tickLength=138240 tracks=4
   103680 NOTE_ON ch=0 d1=55 d2=80 [LotroShortMessage]
   138240 NOTE_OFF ch=0 d1=55 d2=80 [LotroShortMessage]
   138240 META end_of_track
--- track 2 (16 events)
+-- track 2 (17 events)
   0 PROGRAM_CHANGE ch=1 d1=32 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=1 d1=43 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Evening Hymn - Bass"
   0 CONTROL_CHANGE ch=1 d1=10 d2=76 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=1 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=1 d1=93 d2=0 [LotroShortMessage]
   34560 NOTE_OFF ch=1 d1=43 d2=80 [LotroShortMessage]
@@ -342,13 +351,14 @@ divisionType=0.0 resolution=11520 tickLength=138240 tracks=4
   103680 NOTE_ON ch=1 d1=43 d2=80 [LotroShortMessage]
   138240 NOTE_OFF ch=1 d1=43 d2=80 [LotroShortMessage]
   138240 META end_of_track
--- track 3 (38 events)
+-- track 3 (39 events)
   0 PROGRAM_CHANGE ch=2 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
   0 NOTE_ON ch=2 d1=59 d2=64 [LotroShortMessage]
   0 NOTE_ON ch=2 d1=62 d2=64 [LotroShortMessage]
   0 META text type=0x03 "Evening Hymn - Chords"
   0 CONTROL_CHANGE ch=2 d1=10 d2=37 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=2 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=93 d2=0 [LotroShortMessage]
   34560 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]
@@ -414,11 +424,12 @@ divisionType=0.0 resolution=11520 tickLength=138240 tracks=4
   0 META type=0x58 data=03021808
   0 META type=0x59 data=0000
   0 META end_of_track
--- track 1 (22 events)
+-- track 1 (23 events)
   0 PROGRAM_CHANGE ch=0 d1=19 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Evening Hymn"
   0 CONTROL_CHANGE ch=0 d1=10 d2=91 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   23040 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
@@ -437,11 +448,12 @@ divisionType=0.0 resolution=11520 tickLength=138240 tracks=4
   103680 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
   138240 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
   138240 META end_of_track
--- track 2 (16 events)
+-- track 2 (17 events)
   0 PROGRAM_CHANGE ch=1 d1=32 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=1 d1=43 d2=80 [LotroShortMessage]
   0 META text type=0x03 "Evening Hymn - Bass"
   0 CONTROL_CHANGE ch=1 d1=10 d2=76 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=1 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=1 d1=93 d2=0 [LotroShortMessage]
   34560 NOTE_OFF ch=1 d1=43 d2=80 [LotroShortMessage]
@@ -454,13 +466,14 @@ divisionType=0.0 resolution=11520 tickLength=138240 tracks=4
   103680 NOTE_ON ch=1 d1=43 d2=80 [LotroShortMessage]
   138240 NOTE_OFF ch=1 d1=43 d2=80 [LotroShortMessage]
   138240 META end_of_track
--- track 3 (38 events)
+-- track 3 (39 events)
   0 PROGRAM_CHANGE ch=2 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=2 d1=55 d2=64 [LotroShortMessage]
   0 NOTE_ON ch=2 d1=59 d2=64 [LotroShortMessage]
   0 NOTE_ON ch=2 d1=62 d2=64 [LotroShortMessage]
   0 META text type=0x03 "Evening Hymn - Chords"
   0 CONTROL_CHANGE ch=2 d1=10 d2=37 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=2 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=93 d2=0 [LotroShortMessage]
   34560 NOTE_OFF ch=2 d1=55 d2=64 [LotroShortMessage]

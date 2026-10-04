@@ -8,11 +8,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.logging.Logger;
 
 import javax.sound.midi.InvalidMidiDataException;
+import javax.sound.midi.MidiSystem;
 import javax.sound.midi.MidiUnavailableException;
 import javax.sound.midi.Sequence;
 import javax.swing.AbstractAction;
@@ -58,7 +60,7 @@ import com.digero.common.view.ColorTable;
  * filter over all of them (and over every title, composer and origin of the tune: a tune is often known by another
  * name), and the ABC of the selected tune (without the file header, which all tunes share). A tune that doesn't load
  * has its error marked in red in the ABC, the message as the ABC's tooltip. Play plays the selected tune as Open tune
- * would read it, and pauses it (PreviewPlayer).
+ * would read it, and pauses it (PreviewPlayer); Save as MIDI writes it to a MIDI file.
  * <p>
  * Sizes come from the font, so the dialog follows Maestro's text size setting. Keys: type to filter, Up/Down to move in
  * the list (also from the filter), Space in the list to play or pause, Enter to open the selected tune, Escape to
@@ -95,6 +97,10 @@ public class TunebookDialog extends JDialog {
 	private static final String PLAY_TIP = "common.abctomidi.songbook.play.tip";
 	private static final String PAUSE = "common.abctomidi.songbook.pause";
 	private static final String PLAY_FAILED = "common.abctomidi.songbook.play.failed";
+	private static final String SAVE_MIDI = "common.abctomidi.songbook.save.midi";
+	private static final String SAVE_MIDI_TIP = "common.abctomidi.songbook.save.midi.tip";
+	private static final String SAVE_MIDI_EXISTS = "common.abctomidi.songbook.save.midi.exists";
+	private static final String SAVE_MIDI_FAILED = "common.abctomidi.songbook.save.midi.failed";
 	private static final String ALL_AS_PARTS = "common.abctomidi.songbook.all.as.parts";
 	private static final String ALL_AS_PARTS_TIP = "common.abctomidi.songbook.all.as.parts.tip";
 	private static final String SPLIT = "common.abctomidi.songbook.split";
@@ -123,6 +129,8 @@ public class TunebookDialog extends JDialog {
 	private final JTextArea preview = new JTextArea();
 	private final JButton openButton = new JButton(UIText.get(OPEN_TUNE));
 	private final JButton playButton = new JButton(UIText.get(PLAY));
+	private final JButton saveMidiButton = new JButton(UIText.get(SAVE_MIDI));
+	private Sequence selectedSequence; // The selected tune as Open tune reads it, or null if it doesn't load
 	private final PreviewPlayer player = new PreviewPlayer(PreviewPlayer::openDefault);
 	private AbcTunebook.Tune shown; // The tune in the ABC pane and for Play
 	private boolean shownOnce;
@@ -295,6 +303,7 @@ public class TunebookDialog extends JDialog {
 		b.anchor = GridBagConstraints.WEST;
 		buttons.add(allButton, b); // The book's own actions left, the usual ones right
 		b.weightx = 0;
+		buttons.add(saveMidiButton, b);
 		buttons.add(playButton, b);
 		buttons.add(openButton, b);
 		b.insets = new Insets(0, 0, 0, 0);
@@ -308,6 +317,8 @@ public class TunebookDialog extends JDialog {
 		cancelButton.addActionListener(e -> close(new Result(Choice.CANCEL, selectedTune())));
 		splitButton.addActionListener(e -> splitAll());
 		playButton.setToolTipText(UIText.get(PLAY_TIP));
+		saveMidiButton.setToolTipText(UIText.get(SAVE_MIDI_TIP));
+		saveMidiButton.addActionListener(e -> saveMidi());
 		playButton.addActionListener(e -> playOrPause());
 		player.setOnEnd(() -> SwingUtilities.invokeLater(this::updatePlayButton));
 		// Space in the list plays or pauses (JTable's own Space would only select the row again)
@@ -475,7 +486,9 @@ public class TunebookDialog extends JDialog {
 			x++;
 		preview.setText(String.join("\n", lines.subList(Math.min(x, lines.size()), lines.size())));
 		preview.setCaretPosition(0);
-		player.setTune(check(tune, x));
+		selectedSequence = check(tune, x);
+		player.setTune(selectedSequence);
+		saveMidiButton.setEnabled(selectedSequence != null);
 		updatePlayButton();
 		openButton.setEnabled(tune != null);
 	}
@@ -530,6 +543,45 @@ public class TunebookDialog extends JDialog {
 	private void updatePlayButton() {
 		playButton.setText(UIText.get(player.isPlaying() ? PAUSE : PLAY));
 		playButton.setEnabled(player.canPlay());
+	}
+
+	/** Asks where, then writes the selected tune as Open tune reads it to a MIDI file. */
+	private void saveMidi() {
+		AbcTunebook.Tune tune = selectedTune();
+		if (tune == null || selectedSequence == null)
+			return;
+		File start = bookFile.getAbsoluteFile().getParentFile();
+		if (!isWritable(start))
+			start = Util.getDocumentsDir();
+		JFileChooser chooser = new JFileChooser(start);
+		chooser.setDialogTitle(UIText.get(SAVE_MIDI));
+		chooser.setSelectedFile(new File(start, midiFileName(book, tune)));
+		if (chooser.showSaveDialog(this) != JFileChooser.APPROVE_OPTION)
+			return;
+		File file = chooser.getSelectedFile();
+		if (!file.getName().toLowerCase(Locale.ROOT).endsWith(".mid"))
+			file = new File(file.getParentFile(), file.getName() + ".mid");
+		if (file.exists() && JOptionPane.showConfirmDialog(this, UIText.get(SAVE_MIDI_EXISTS, file.getName()),
+				UIText.get(SAVE_MIDI), JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION)
+			return;
+		try {
+			writeMidi(selectedSequence, file);
+		} catch (IOException e) {
+			JOptionPane.showMessageDialog(this, UIText.get(SAVE_MIDI_FAILED, e.getMessage()), UIText.get(SAVE_MIDI),
+					JOptionPane.ERROR_MESSAGE);
+		}
+	}
+
+	/** The MIDI file's name for a tune: as Split into files names its ABC file, "007 Polska fran Smaland.mid". */
+	static String midiFileName(AbcTunebook book, AbcTunebook.Tune tune) {
+		return book.fileName(tune) + ".mid";
+	}
+
+	/** Writes the sequence as a MIDI file: type 1 (a track per part), else type 0. */
+	static void writeMidi(Sequence sequence, File file) throws IOException {
+		int[] types = MidiSystem.getMidiFileTypes(sequence);
+		int type = Arrays.stream(types).anyMatch(t -> t == 1) ? 1 : 0;
+		MidiSystem.write(sequence, type, file);
 	}
 
 	/**

@@ -26,12 +26,13 @@ divisionType=0.0 resolution=11520 tickLength=510476 tracks=2
   495373 META text type=0x05 "<We've no less days to sing God's praise"
   495374 META text type=0x05 "<Than when we first begun."
   495374 META end_of_track
--- track 1 (117 events)
+-- track 1 (118 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=50 d2=106 [LotroShortMessage]
   0 META text type=0x05 "1. A"
   0 META text type=0x03 "Amazing Grace"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0100
   1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
@@ -225,12 +226,13 @@ divisionType=0.0 resolution=11520 tickLength=510476 tracks=2
   495373 META text type=0x05 "<We've no less days to sing God's praise"
   495374 META text type=0x05 "<Than when we first begun."
   495374 META end_of_track
--- track 1 (117 events)
+-- track 1 (118 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=50 d2=106 [LotroShortMessage]
   0 META text type=0x05 "1. A"
   0 META text type=0x03 "Amazing Grace"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0100
   1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
@@ -424,12 +426,13 @@ divisionType=0.0 resolution=11520 tickLength=552960 tracks=2
   495373 META text type=0x05 "<We've no less days to sing God's praise"
   495374 META text type=0x05 "<Than when we first begun."
   495374 META end_of_track
--- track 1 (116 events)
+-- track 1 (117 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=50 d2=80 [LotroShortMessage]
   0 META text type=0x05 "1. A"
   0 META text type=0x03 "Amazing Grace"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0100
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   11520 NOTE_OFF ch=0 d1=50 d2=80 [LotroShortMessage]
@@ -622,12 +625,13 @@ divisionType=0.0 resolution=11520 tickLength=552960 tracks=2
   495373 META text type=0x05 "<We've no less days to sing God's praise"
   495374 META text type=0x05 "<Than when we first begun."
   495374 META end_of_track
--- track 1 (116 events)
+-- track 1 (117 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=50 d2=80 [LotroShortMessage]
   0 META text type=0x05 "1. A"
   0 META text type=0x03 "Amazing Grace"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0100
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   11520 NOTE_OFF ch=0 d1=50 d2=80 [LotroShortMessage]
@@ -820,12 +824,13 @@ divisionType=0.0 resolution=11520 tickLength=552960 tracks=2
   495373 META text type=0x05 "<We've no less days to sing God's praise"
   495374 META text type=0x05 "<Than when we first begun."
   495374 META end_of_track
--- track 1 (116 events)
+-- track 1 (117 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=62 d2=80 [LotroShortMessage]
   0 META text type=0x05 "1. A"
   0 META text type=0x03 "Amazing Grace"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0100
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   11520 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]

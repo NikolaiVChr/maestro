@@ -17,12 +17,13 @@ divisionType=0.0 resolution=11520 tickLength=741637 tracks=2
   725765 META text type=0x05 "<Word, word, syl-la-ble!"
   725766 META text type=0x05 "<"
   725766 META end_of_track
--- track 1 (153 events)
+-- track 1 (154 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=57 d2=106 [LotroShortMessage]
   0 META text type=0x05 "words "
   0 META text type=0x03 "Lyrics"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
@@ -255,12 +256,13 @@ divisionType=0.0 resolution=11520 tickLength=741637 tracks=2
   725765 META text type=0x05 "<Word, word, syl-la-ble!"
   725766 META text type=0x05 "<"
   725766 META end_of_track
--- track 1 (153 events)
+-- track 1 (154 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=57 d2=106 [LotroShortMessage]
   0 META text type=0x05 "words "
   0 META text type=0x03 "Lyrics"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
@@ -493,12 +495,13 @@ divisionType=0.0 resolution=11520 tickLength=737280 tracks=2
   725765 META text type=0x05 "<Word, word, syl-la-ble!"
   725766 META text type=0x05 "<"
   725766 META end_of_track
--- track 1 (152 events)
+-- track 1 (153 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=57 d2=80 [LotroShortMessage]
   0 META text type=0x05 "words "
   0 META text type=0x03 "Lyrics"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   11520 NOTE_OFF ch=0 d1=57 d2=80 [LotroShortMessage]
@@ -730,12 +733,13 @@ divisionType=0.0 resolution=11520 tickLength=737280 tracks=2
   725765 META text type=0x05 "<Word, word, syl-la-ble!"
   725766 META text type=0x05 "<"
   725766 META end_of_track
--- track 1 (152 events)
+-- track 1 (153 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=57 d2=80 [LotroShortMessage]
   0 META text type=0x05 "words "
   0 META text type=0x03 "Lyrics"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   11520 NOTE_OFF ch=0 d1=57 d2=80 [LotroShortMessage]
@@ -967,12 +971,13 @@ divisionType=0.0 resolution=11520 tickLength=737280 tracks=2
   725765 META text type=0x05 "<Word, word, syl-la-ble!"
   725766 META text type=0x05 "<"
   725766 META end_of_track
--- track 1 (152 events)
+-- track 1 (153 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=69 d2=80 [LotroShortMessage]
   0 META text type=0x05 "words "
   0 META text type=0x03 "Lyrics"
   0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
   1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
   11520 NOTE_OFF ch=0 d1=69 d2=80 [LotroShortMessage]

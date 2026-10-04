@@ -16,12 +16,7 @@ import javax.sound.midi.*;
 
 import com.digero.common.abc.*;
 import com.digero.common.i18n.UIText;
-import com.digero.common.midi.MidiConstants;
-import com.digero.common.midi.MidiFactory;
-import com.digero.common.midi.MidiUtils;
-import com.digero.common.midi.Note;
-import com.digero.common.midi.PanGenerator;
-import com.digero.common.midi.SequencerWrapper;
+import com.digero.common.midi.*;
 import com.digero.common.util.*;
 import com.digero.maestro.abc.AbcExporter.ExportTrackInfo;
 
@@ -746,6 +741,7 @@ public class AbcToMidi {
 		Set<Integer> verseLineIndexes = new HashSet<>(); // W: lines written, so a repeat doesn't write them again
 		int lyricBar = 0; // Bars in the part so far, for | in a w: line
 		Repeats repeats = new Repeats(expandRepeats, info);
+		Signatures signatures = new Signatures();
 		// Lyrics without timing (W:), each a lyric line in track 0. Before the part's notes they wait here for its track.
 		List<String> pendingVerseLines = new ArrayList<>();
 		long lastAttackTick = -1; // Where the part's last note started, for W: lines after the notes
@@ -1197,6 +1193,8 @@ public class AbcToMidi {
 									throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.key.words",
 											notForLotro), fileName, lineNumber, infoMatcher.start(INFO_VALUE));
 								}
+								if (trackNumber == 1 && !repeats.skipping)
+									signatures.at(Math.round(chordStartTick), info);
 								break;
 							case 'L':
 								// Tested in Lotro (B40): an L: line after the part's first notes changes nothing, the notes
@@ -1226,6 +1224,8 @@ public class AbcToMidi {
 								meterChangeLine = lineNumber;
 								meterChangeColumn = infoMatcher.start(INFO_VALUE);
 								meterChangeInPart = track != null;
+								if (trackNumber == 1 && !repeats.skipping)
+									signatures.at(Math.round(chordStartTick), info);
 								break;
 							case 'Q': {
 								if (enableLotroErrors && value.indexOf('"') >= 0) {
@@ -1312,6 +1312,7 @@ public class AbcToMidi {
 									: info.getTitle(), false);
 							abcInfo.setTimeSignature(info.getMeter());
 							abcInfo.setKeySignature(info.getKey());
+							signatures.at(0, info);
 
 							track = null;
 						} catch (InvalidMidiDataException mde) {
@@ -1466,7 +1467,11 @@ public class AbcToMidi {
 										String value = line.substring(i + 3, close).trim();
 										try {
 											switch (field) {
-												case 'K' -> info.setKey(value);
+												case 'K' -> {
+													info.setKey(value);
+													if (trackNumber == 1 && !repeats.skipping)
+														signatures.at(Math.round(chordStartTick), info);
+												}
 												case 'I' -> {
 													info.applyInstruction(value);
 													partDrone.midiDirective(value, Math.round(chordStartTick));
@@ -1477,6 +1482,8 @@ public class AbcToMidi {
 													meterChangeLine = lineNumber;
 													meterChangeColumn = i + 3;
 													meterChangeInPart = true;
+													if (trackNumber == 1 && !repeats.skipping)
+														signatures.at(Math.round(chordStartTick), info);
 												}
 												case 'Q' -> {
 													int tempo = info.getPrimaryTempoBPM();
@@ -1512,7 +1519,7 @@ public class AbcToMidi {
 													useLotroInstruments);
 										lyricBar++;
 										if (trackNumber == 1)
-											abcInfo.addBar(Math.round(chordStartTick));
+											addBar(abcInfo, signatures, repeats, info, chordStartTick);
 										accidentals.clear();
 										i += 2;
 										break;
@@ -1526,7 +1533,7 @@ public class AbcToMidi {
 													useLotroInstruments);
 										lyricBar++;
 										if (trackNumber == 1)
-											abcInfo.addBar(Math.round(chordStartTick));
+											addBar(abcInfo, signatures, repeats, info, chordStartTick);
 										accidentals.clear();
 										i++;
 										if (!enableLotroErrors && i + 1 < line.length() && line.charAt(i + 1) == ':') {
@@ -1705,8 +1712,9 @@ public class AbcToMidi {
 												useLotroInstruments);
 									lyricBar++;
 
+
 									if (trackNumber == 1)
-										abcInfo.addBar(Math.round(chordStartTick));
+										addBar(abcInfo, signatures, repeats, info, chordStartTick);
 
 									accidentals.clear();
 									char afterBar = (i + 1 < line.length()) ? line.charAt(i + 1) : ' ';
@@ -1733,7 +1741,7 @@ public class AbcToMidi {
 											repeats.repeatStart(lineIndex, i + 1);
 										}
 									} else if (trackNumber == 1) {
-										abcInfo.addBar(Math.round(chordStartTick));
+										addBar(abcInfo, signatures, repeats, info, chordStartTick);
 									}
 									int endingEnd = skipEndingNumber(line, i + 1); // |1 |2 : a numbered ending
 									if (endingEnd > i) {
@@ -1796,7 +1804,7 @@ public class AbcToMidi {
 									}
 									lyricBar++;
 									if (trackNumber == 1)
-										abcInfo.addBar(Math.round(chordStartTick));
+										addBar(abcInfo, signatures, repeats, info, chordStartTick);
 									// A repeat sign is a bar line: the bar's accidentals end here, also for the pass that
 									// goes back. ABC 2.1, and Lotro (tested, B79), so in every reading
 									accidentals.clear();
@@ -1806,6 +1814,8 @@ public class AbcToMidi {
 										// Play the repeated section again: go back to its start, read as it was read there
 										if (repeats.startState != null)
 											info.restore(repeats.startState);
+										if (trackNumber == 1)
+											signatures.at(Math.round(chordStartTick), info); // The meter and key there
 										lineIndex = repeats.jumpLine - 1;
 										startColumn = repeats.jumpColumn;
 										continue lineLoop;
@@ -2056,7 +2066,7 @@ public class AbcToMidi {
 											// The bar lines inside the rest; the one after it is written
 											lyricBar++;
 											if (trackNumber == 1)
-												abcInfo.addBar(Math.round(chordStartTick + bar * barTicks));
+												addBar(abcInfo, signatures, repeats, info, chordStartTick + bar * barTicks);
 										}
 										if (generateRegions) {
 											abcInfo.addRegion(new AbcRegion(lineNumberForRegions, i, j, Math.round(chordStartTick),
@@ -2764,10 +2774,14 @@ public class AbcToMidi {
 			abcInfo.setPanEvent(panEvent, i);
 		}
 
-		// Add time and key signature events
-		tracks[0].add(MidiFactory.createTimeSignatureEvent(abcInfo.getTimeSignature(), 0));
-		if (MidiFactory.isSupportedMidiKeyMode(abcInfo.getKeySignature().mode))
-			tracks[0].add(MidiFactory.createKeySignatureEvent(abcInfo.getKeySignature(), 0));
+		// Time and key signatures: at the start, and where the first part's change. The keys in every track: MuseScore
+		// reads a key only in the track of its notes (track 0's it ignores, and guesses one)
+		for (Map.Entry<Long, TimeSignature> meter : signatures.meters.entrySet())
+			tracks[0].add(MidiFactory.createTimeSignatureEvent(meter.getValue(), meter.getKey()));
+		for (Map.Entry<Long, KeySignature> key : signatures.keys.entrySet()) {
+			for (Track keyTrack : tracks)
+				keyTrack.add(MidiFactory.createKeySignatureEvent(key.getValue(), key.getKey()));
+		}
 
 		// The song uses triplets only if a real share of its notes has triplet timing: one triplet among thousands
 		// of regular notes must not give the whole song a triplet grid
@@ -3388,6 +3402,38 @@ public class AbcToMidi {
 				result.add(n);
 		}
 		return result;
+	}
+
+	/**
+	 * A bar line of the first part: a bar for AbcInfo, and the meter and key there (Signatures), unless in an ending this
+	 * pass skips, whose K: and M: aren't read.
+	 */
+	private static void addBar(AbcInfo abcInfo, Signatures signatures, Repeats repeats, TuneInfo info, double tick) {
+		abcInfo.addBar(Math.round(tick));
+		if (!repeats.skipping)
+			signatures.at(Math.round(tick), info);
+	}
+
+	/**
+	 * The first part's meter and key from where they change: M: K: [M:] [K:] in the tune, and a repeat or a skipped
+	 * ending that goes back to others. For the MIDI's time and key signatures, which other programs show (notation, a
+	 * DAW); Maestro takes the song's meter and key from AbcInfo. The key as MIDI can say it (KeySignature.fromAbc).
+	 */
+	private static final class Signatures {
+		final TreeMap<Long, TimeSignature> meters = new TreeMap<>();
+		final TreeMap<Long, KeySignature> keys = new TreeMap<>();
+
+		/** The meter and key from this tick on, if they aren't already. */
+		void at(long tick, TuneInfo info) {
+			TimeSignature meter = info.getMeter();
+			Map.Entry<Long, TimeSignature> lastMeter = meters.floorEntry(tick);
+			if (lastMeter == null || !lastMeter.getValue().equals(meter))
+				meters.put(tick, meter);
+			KeySignature key = KeySignature.fromAbc(info.getKey());
+			Map.Entry<Long, KeySignature> lastKey = keys.floorEntry(tick);
+			if (lastKey == null || !lastKey.getValue().equals(key))
+				keys.put(tick, key);
+		}
 	}
 
 	/**
