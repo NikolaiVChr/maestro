@@ -81,6 +81,11 @@ public class AbcToMidi {
 		 */
 		public boolean specTempo = false;
 		/**
+		 * A project's saved tempo, played instead of a guessed one (AbcInfo.getGuessedTempoBPM, which gives it), in
+		 * beats of the meter's denominator; null to guess. Only with specTempo, and not with Lotro errors.
+		 */
+		public Integer savedTempoBPM = null;
+		/**
 		 * Play each note at its ABC 2.1 pitch (C is middle C), and don't take the instrument from T:. For standard ABC,
 		 * like folk tunes, where T: is the song's title. Off for ABC made for Lotro, where the octave depends on the
 		 * instrument named in the title (see {@link #isMadeForLotro(List)}).
@@ -591,8 +596,8 @@ public class AbcToMidi {
 		try {
 			return convert(params.filesData, params.useLotroInstruments, params.instrumentOverrideMap, params.abcInfo,
 					params.enableLotroErrors, params.stereo, params.generateRegions, params.expandRepeats, params.specTempo,
-					params.standardPitch, params.chordAccompaniment, params.standard2011, params.warningHandler,
-					wrappedField);
+					params.savedTempoBPM, params.standardPitch, params.chordAccompaniment, params.standard2011,
+					params.warningHandler, wrappedField);
 		} catch (FileParseException e) {
 			// A line in a tune's header that isn't music (Bruce Thomson's files: "Tradition" read as T, a trill, and r)
 			if (wrappedField[0] >= 0 && e.getLine() == wrappedField[0]) {
@@ -662,8 +667,8 @@ public class AbcToMidi {
 	private static Sequence convert(List<FileAndData> filesData, boolean useLotroInstruments,
 									Map<Integer, LotroInstrument> instrumentOverrideMap, AbcInfo abcInfo, final boolean enableLotroErrors,
 									final int stereo, final boolean generateRegions, final boolean expandRepeats, boolean specTempo,
-									boolean standardPitch, boolean chordAccompaniment, boolean standard2011,
-									WarningHandler warningHandler, int[] wrappedField)
+									Integer savedTempoBPM, boolean standardPitch, boolean chordAccompaniment,
+									boolean standard2011, WarningHandler warningHandler, int[] wrappedField)
 			throws FileParseException {
 		if (abcInfo == null)
 			abcInfo = new AbcInfo();
@@ -674,6 +679,7 @@ public class AbcToMidi {
 
 		TuneInfo info = new TuneInfo();
 		info.setStandardTempo(specTempo && !enableLotroErrors);
+		info.setSavedTempoBPM(savedTempoBPM);
 		info.setStandardPitch(standardPitch && !enableLotroErrors);
 		// Play ABC 2.1 where Lotro plays it otherwise (Params.standard2011); with Lotro errors, Lotro's reading
 		final boolean abc21 = standard2011 && !enableLotroErrors;
@@ -1289,7 +1295,9 @@ public class AbcToMidi {
 							PPQN = info.getPpqn();
 							seq = new Sequence(Sequence.PPQ, (int) PPQN);
 
+
 							abcInfo.setPrimaryTempoBPM(info.getPrimaryTempoBPM());
+							abcInfo.setGuessedTempoBPM(info.getGuessedTempoBPM());
 
 							// Create track 0, which will later be filled with the
 							// tempo events and song metadata (title, etc.)

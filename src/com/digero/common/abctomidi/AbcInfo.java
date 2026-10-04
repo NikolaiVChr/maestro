@@ -66,6 +66,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 	private NavigableSet<AbcRegion> regions;
 	private List<List<Integer>> partSetups;
 	private int primaryTempoBPM = 120;
+	private Integer guessedTempoBPM; // getGuessedTempoBPM
 	private boolean isOrganic = false;
 	private boolean isOrganic2 = false;
     private boolean isV2 = false;
@@ -101,6 +102,7 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		regions = null;
 		partSetups = null;
 		primaryTempoBPM = 120;
+		guessedTempoBPM = null;
 		isOrganic = false;
 		isOrganic2 = false;
         isV2 = false;
@@ -213,6 +215,14 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 
 	public int getPrimaryTempoBPM() {
 		return primaryTempoBPM;
+	}
+
+	/**
+	 * The song's tempo when it was guessed, as getPrimaryTempoBPM, or null (TuneInfo.getGuessedTempoBPM). A project
+	 * saves it and gives it back (Params.savedTempoBPM), so a later change to the guessing doesn't change the project.
+	 */
+	public Integer getGuessedTempoBPM() {
+		return guessedTempoBPM;
 	}
 
 	public boolean isEmpty() {
@@ -608,6 +618,10 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 	void setPrimaryTempoBPM(int tempoBPM) {
 		this.primaryTempoBPM = tempoBPM;
 		this.empty = false;
+	}
+
+	void setGuessedTempoBPM(Integer guessedTempoBPM) {
+		this.guessedTempoBPM = guessedTempoBPM;
 	}
 
 	void setHasTriplets(boolean hasTriplets) {

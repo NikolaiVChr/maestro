@@ -124,6 +124,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	private File sourceFile; // The MIDI or ABC file that this song was loaded from
 	private File newSourceFile = null;
 	private String sourceAbcText = null;
+	private Integer sourceAbcBPM = null;
 	public final static String errorString = "ERROR";
 	private File exportFile; // The ABC export file
 	private File projectFile; // The XML Maestro song file
@@ -322,7 +323,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		composer = sequenceInfo.getComposer();
 		keySignature = (ICompileConstants.SHOW_KEY_FIELD) ? abcInfo.getKeySignature() : KeySignature.C_MAJOR;
 		timeSignature = abcInfo.getTimeSignature();
-
+		sourceAbcBPM = abcInfo.getGuessedTempoBPM();
 		if (sequenceInfo.getDataCache() != null) {
 			copyright = sequenceInfo.getDataCache().getCopyright();
 			lyrics = sequenceInfo.getDataCache().getLyrics();
@@ -532,6 +533,10 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			Element abcElement = XmlUtil.selectSingleElement(songEle, "abc");
 			if (abcElement != null) {
 				sourceAbcText = abcElement.getTextContent();
+				sourceAbcBPM = SaveUtil.parseValue(abcElement, "@bpm", -1);
+				if (sourceAbcBPM == -1) {
+					sourceAbcBPM = null;
+				}
 			}
 
 			exportFile = SaveUtil.parseValue(songEle, "exportFile", exportFile);
@@ -755,6 +760,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				boolean keptText = sourceAbcText != null;
 				AbcToMidi.Params params = keptText ? new AbcToMidi.Params(sourceAbcText, newSourceFile)
 						: new AbcToMidi.Params(newSourceFile);
+				if (keptText) params.savedTempoBPM = sourceAbcBPM;
 				params.abcInfo = abcInfo;
 				params.useLotroInstruments = false;
                 params.warningHandler = warningHandler;
@@ -798,6 +804,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				tripletTiming = abcInfo.hasTriplets();
 				priorityActive = false;
 				transcriber = abcInfo.getTranscriber();
+				sourceAbcBPM = abcInfo.getGuessedTempoBPM();
 			} else {
 				sequenceInfo = SequenceInfo.fromMidi(newSourceFile, miscSettings, usingOldVelocities, usingOldTempos, ignoreZeroChannelVolume, ignoreMidiText, usingNewMidiLayout);
 			}
@@ -812,10 +819,12 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		} catch (FileNotFoundException e) {
 			String msg = UIText.get("maestro.could.not.find.the.file.used.to.create.this.song.0", newSourceFile);
 			sourceAbcText = null;
+			sourceAbcBPM = null;
 			newSourceFile = fileResolver.locateFile(newSourceFile, msg);
 		} catch (InvalidMidiDataException | IOException | FileParseException e) {
 			String msg = UIText.get("maestro.could.not.load.the.file.used.to.create.this.song.0.1", newSourceFile, e.getMessage());
 			sourceAbcText = null;
+			sourceAbcBPM = null;
 			newSourceFile = fileResolver.resolveFile(newSourceFile, msg);
 		}
 		if (storeNewSourceFile) {
@@ -1061,6 +1070,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		if (sourceAbcText != null && !sourceAbcText.isEmpty()) {
 			Element abcEle = (Element) songEle.appendChild(doc.createElement("abc"));
 			abcEle.appendChild(doc.createCDATASection(XmlUtil.sanitizeForCdata(sourceAbcText)));
+			if (sourceAbcBPM != null) abcEle.setAttribute("bpm", Integer.toString(sourceAbcBPM));
 		}
 
 		return doc;
@@ -1620,6 +1630,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	public void setSourceFile(File sourceFile) {
 		this.sourceFile = sourceFile;
 		this.sourceAbcText = null;
+		this.sourceAbcBPM = null;
 	}
 
 	@Override
@@ -1636,10 +1647,11 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 	 * (tryToLoadFromFile). Returns what to restore if the replacement fails.
 	 */
 	public Object[] resetAbcReading() {
-		Object[] previous = { abcImportVersion, sourceAbcWasMadeForLotro, sourceAbcText};
+		Object[] previous = { abcImportVersion, sourceAbcWasMadeForLotro, sourceAbcText, sourceAbcBPM};
 		abcImportVersion = 2; // Repeats played, Q: note length counts
 		sourceAbcWasMadeForLotro = null; // Detected on load
 		sourceAbcText = null;
+		sourceAbcBPM = null;
 		return previous;
 	}
 
@@ -1647,6 +1659,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 		abcImportVersion = (Integer) previous[0];
 		sourceAbcWasMadeForLotro = (Boolean) previous[1];
 		sourceAbcText = (String) previous[2];
+		sourceAbcBPM = (Integer) previous[3];
 	}
 
 	public File getProjectFile() {
@@ -2238,6 +2251,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
         this.sequenceInfo = other.sequenceInfo;// lets assume the midi don't change while we work, then this is immutable
         this.timingInfo = other.timingInfo;// would be time-consuming to deep copy, plus it's kinda immutable
 		this.sourceAbcText = other.sourceAbcText;
+		this.sourceAbcBPM = other.sourceAbcBPM;
 
         // settings classes
         this.partAutoNumberer = new PartAutoNumberer(other.partAutoNumberer);

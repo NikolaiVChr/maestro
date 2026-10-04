@@ -37,6 +37,8 @@ public class TuneInfo {
 	private boolean standard2011; // Params.standard2011 (and LotRO errors off): ABC 2.1 where LotRO plays otherwise
 	private boolean tempoGiven; // A Q: so far
 	private boolean allPartsTempoFixed; // The first part's header has ended: its tempo is the song's
+	private Integer savedTempoBPM; // Params.savedTempoBPM: played instead of a guessed tempo, or null
+	private Integer guessedTempoBPM; // getGuessedTempoBPM
 	private final NavigableMap<Long, Integer> curPartTempoMap = new TreeMap<>(); // Tick -> BPM
 	private final NavigableMap<Long, Integer> allPartsTempoMap = new TreeMap<>(); // Tick -> BPM
 	private LotroInstrument instrument;
@@ -239,7 +241,6 @@ public class TuneInfo {
 
 	/** Clef words in K: (ABC 2.1, 4.6), e.g. bass, clef=treble-8, alto1. */
 	private static final Pattern CLEF_PATTERN = Pattern.compile("(clef=)?(treble|alto|tenor|bass|perc|none)\\d?([+-]8)?");
-	/** Mode words after the key: C maj, D mix, E dor ... (the first three letters count). */
 
 	/**
 	 * K: key [mode] [clef and transposition] (ABC 2.1, 3.1.14 and 4.6). The clef and middle= only change how the
@@ -425,7 +426,7 @@ public class TuneInfo {
 
 	/** Works the tempo out again from the last Q:, after a header field that changes it (M: or L: after Q:). */
 	private void retempo() {
-		int bpm = toMeterBeats(tempoBeat, tempoBeatsPerMinute);
+		int bpm = writtenTempo();
 		if (bpm != primaryTempoBPM) {
 			if (Integer.valueOf(primaryTempoBPM).equals(curPartTempoMap.get(0L)))
 				curPartTempoMap.put(0L, bpm);
@@ -638,7 +639,7 @@ public class TuneInfo {
 					tempoBeatsPerMinute = DEFAULT_BEATS_PER_MINUTE;
 				}
 			}
-			primaryTempoBPM = toMeterBeats(tempoBeat, tempoBeatsPerMinute);
+			primaryTempoBPM = writtenTempo();
 			if (primaryTempoBPM != tempoBeatsPerMinute) {
 				// The MIDI's default tempo is 120, so only another one needs a tempo event
 				curPartTempoMap.putIfAbsent(0L, primaryTempoBPM);
@@ -649,13 +650,47 @@ public class TuneInfo {
 			// Q:120 counts unit notes: an L: after the Q: in the header counts too
 			retempo();
 		}
+		if (!allPartsTempoFixed)
+			guessedTempoBPM = isGuessed() ? primaryTempoBPM : null;
 		allPartsTempoFixed = true;
+	}
+
+	/**
+	 * The song's tempo when it was guessed, in beats of the meter's denominator (as getPrimaryTempoBPM): no Q: (R:'s
+	 * tune type, else the default), a Q: without a note length, a tempo word or a text alone. Null when the Q: has a
+	 * note length, and in Lotro's reading (setStandardTempo false), which has no guessing. Set when the first part's
+	 * header ends.
+	 */
+	public Integer getGuessedTempoBPM() {
+		return guessedTempoBPM;
+	}
+
+	/**
+	 * A project's saved tempo (Params.savedTempoBPM), in beats of the meter's denominator, played instead of a guessed
+	 * one in every part, so the parts keep one tempo; a Q: with a note length still counts. Only when the Q: note
+	 * length counts (setStandardTempo).
+	 */
+	public void setSavedTempoBPM(Integer savedTempoBPM) {
+		this.savedTempoBPM = savedTempoBPM;
+	}
+
+	/** The tempo so far is guessed (getGuessedTempoBPM): no Q:, or a Q: without a note length. */
+	private boolean isGuessed() {
+		return standardTempo
+				&& (!tempoGiven || tempoBeat == UNIT_NOTE_BEAT || tempoBeat == FELT_BEAT || tempoBeat == 0);
+	}
+
+	/** The last Q:'s tempo (or no Q:'s), in beats of the meter's denominator: the saved tempo instead of a guess. */
+	private int writtenTempo() {
+		if (savedTempoBPM != null && isGuessed())
+			return savedTempoBPM;
+		return toMeterBeats(tempoBeat, tempoBeatsPerMinute);
 	}
 
 	public void setPrimaryTempoBPM(String str) {
 		parseTempo(str, true);
 		tempoGiven = true;
-		this.primaryTempoBPM = toMeterBeats(tempoBeat, tempoBeatsPerMinute);
+		this.primaryTempoBPM = writtenTempo();
 		if (!allPartsTempoMap.containsKey(0L))
 			allPartsTempoMap.put(0L, this.primaryTempoBPM);
 		if (!curPartTempoMap.containsKey(0L))

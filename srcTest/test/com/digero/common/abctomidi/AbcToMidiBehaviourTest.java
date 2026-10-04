@@ -2077,6 +2077,54 @@ class AbcToMidiBehaviourTest {
 		}
 
 		@Test
+		void guessedTempoIsReportedAndCanBeKept() throws Exception {
+			// A project saves the song's tempo when it was guessed (AbcInfo.getGuessedTempoBPM), in the units of
+			// getPrimaryTempoBPM (beats of the meter's denominator), and gives it back (Params.savedTempoBPM), so a later
+			// change to the guessing doesn't change the project (user, 2026-10-04). Guessed: no Q: (R:'s type, else
+			// 1/4=120), a Q: without a note length (unit notes, L:), a tempo word, a text alone
+			assertEquals(324, guessed(specTempo(tune("t", header("R:jig", "M:6/8", "-Q"), "c d|")))); // 3/8=108
+			assertEquals(240, guessed(specTempo(tune("t", header("M:6/8", "-Q"), "c d|")))); // 1/4=120
+			assertEquals(60, guessed(specTempo(tune("t", header("Q:120"), "c d|")))); // 1/8=120 in 4/4
+			assertEquals(60, guessed(specTempo(tune("t", header("Q:C=120"), "c d|"))));
+			assertEquals(25, guessed(specTempo(tune("t", header("M:2/4", "-L", "Q:100"), "c d|")))); // 1/16=100
+			assertEquals(390, guessed(specTempo(tune("t", header("M:6/8", "Q:\"Allegro\""), "c d|")))); // 3/8=130
+			assertEquals(130, guessed(specTempo(tune("t", header("Q:\"Allegro\""), "c d|"))));
+			assertEquals(120, guessed(specTempo(tune("t", header("Q:\"Swing!\""), "c d|"))));
+			// Not guessed: a Q: with a note length; Lotro's reading (Lotro files, existing projects)
+			assertNull(guessed(specTempo(tune("t", header("Q:1/4=100"), "c d|"))));
+			assertNull(guessed(specTempo(tune("t", header("Q:\"Allegro\" 1/4=100"), "c d|"))));
+			assertNull(guessed(tune("t", header("R:jig", "M:6/8", "-Q"), "c d|")));
+			assertNull(guessed(tune("t", "c d|")));
+			// The saved tempo is played instead of the guess, and is the guess again
+			AbcCase jig = specTempo(tune("t", header("R:jig", "M:6/8", "-Q"), "c d|"))
+					.with(p -> p.savedTempoBPM = 300);
+			assertEquals(300, abcInfoOf(jig).getPrimaryTempoBPM());
+			assertEquals(300, guessed(jig));
+			AbcCase bare = specTempo(tune("t", "c d|")).with(p -> p.savedTempoBPM = 90);
+			assertEquals(90, abcInfoOf(bare).getPrimaryTempoBPM());
+			assertEquals(90, guessed(bare));
+			// Also with an M: after the bare Q: in the header, which works the tempo out again
+			AbcCase meterAfter = specTempo(AbcCase.of("t", "X:1", "T:t", "L:1/8", "Q:100", "M:6/8", "K:C", "c d|"))
+					.with(p -> p.savedTempoBPM = 77);
+			assertEquals(77, abcInfoOf(meterAfter).getPrimaryTempoBPM());
+			// In every part (each with a bare Q:120), so the parts keep one tempo
+			AbcCase parts = specTempo(AbcCase.of("t", AbcCase.concat(AbcCases.part(1, "One", "c d|"),
+					AbcCases.part(2, "Two", "e f|")))).with(p -> p.savedTempoBPM = 90);
+			assertEquals(90, abcInfoOf(parts).getPrimaryTempoBPM());
+			// Not instead of a Q: with a note length, nor in Lotro's reading
+			AbcCase given = specTempo(tune("t", header("Q:1/4=100"), "c d|")).with(p -> p.savedTempoBPM = 90);
+			assertEquals(100, abcInfoOf(given).getPrimaryTempoBPM());
+			assertNull(guessed(given));
+			AbcCase lotro = tune("t", header("-Q"), "c d|").with(p -> p.savedTempoBPM = 90);
+			assertEquals(120, abcInfoOf(lotro).getPrimaryTempoBPM());
+			assertNull(guessed(lotro));
+		}
+
+		private static Integer guessed(AbcCase abcCase) throws Exception {
+			return abcInfoOf(abcCase).getGuessedTempoBPM();
+		}
+
+		@Test
 		void tuneTypesInOtherSpellingsAndLanguages() throws Exception {
 			// Spellings found in tune books: slipjig, reinländer, accents left out or written as ABC escapes
 			assertEquals(339, typeTempo("R:slipjig", "M:9/8", "-Q")); // 113 dotted quarters
