@@ -41,6 +41,8 @@ public class AbcToMidi {
 	 * <li>in the standard reading, "tr" "^tr" "tr=" before a note: a trill</li>
 	 * <li>chord names written otherwise: "G/dim" as "Gdim", a bass with + or - for sharp or flat ("D/f+" as
 	 * "D/f#"), "Am-5" as "Adim" (ChordSymbol.lenientName)</li>
+	 * <li>in the standard reading, a transposing macro's target without a length, m: Tn = (3n/o/n/, for a note written
+	 * without one (Macros; O'Neill's 1001)</li>
 	 * </ul>
 	 * Not here, as ABC 2.1 or Lotro reads them so: an empty X:, c{g}<d, C.-C, X rests, a slur over grace notes, e> at a
 	 * line's end, a lone ! as a line break in a file without %abc-2.1.
@@ -590,19 +592,40 @@ public class AbcToMidi {
 	public static Sequence convert(Params params) throws FileParseException {
 		// The line being parsed when it may be a field's text going on, the field's line and its letter
 		int[] wrappedField = { -1, -1, 0 };
+		Map<String, Map<Integer, int[]>> sourceColumns = new HashMap<>();
 		try {
 			return convert(params.filesData, params.useLotroInstruments, params.instrumentOverrideMap, params.abcInfo,
 					params.enableLotroErrors, params.stereo, params.generateRegions, params.expandRepeats, params.specTempo,
 					params.savedTempoBPM, params.standardPitch, params.chordAccompaniment, params.standard2011,
-					params.warningHandler, wrappedField);
+					params.warningHandler, wrappedField, sourceColumns);
 		} catch (FileParseException e) {
 			// A line in a tune's header that isn't music (Bruce Thomson's files: "Tradition" read as T, a trill, and r)
 			if (wrappedField[0] >= 0 && e.getLine() == wrappedField[0]) {
 				throw new FileParseException(UIText.get("common.abctomidi.field.wrapped", (char) wrappedField[2] + ":",
 						String.valueOf(wrappedField[1])), e.getFileName(), e.getLine(), 0, wrappedField[1], 0);
 			}
-			throw countedFromTune(e, params.filesData);
+			throw countedFromTune(atSourceColumn(e, sourceColumns), params.filesData);
 		}
+	}
+
+	/**
+	 * An error in a line that Macros wrote out: its column in the file's line. A mistake in a macro's notes is where
+	 * the macro is used.
+	 *
+	 * @param sourceColumns For each file's name, its lines that Macros changed (Macros.Result)
+	 */
+	private static FileParseException atSourceColumn(FileParseException e, Map<String, Map<Integer, int[]>> sourceColumns) {
+		if (e.getFileName() == null || e.getColumn() < 0 || e instanceof LotroFileParseException)
+			return e;
+		for (Map.Entry<String, Map<Integer, int[]>> file : sourceColumns.entrySet()) {
+			int[] columns = file.getValue().get(e.getLine());
+			if (columns == null || !e.getFileName().startsWith(file.getKey()))
+				continue;
+			int column = columns[Math.min(e.getColumn(), columns.length - 1)];
+			return new FileParseException(e.getDetail(), e.getFileName(), e.getLine(), column, e.getRelatedLine(),
+					e.getRelatedColumn());
+		}
+		return e;
 	}
 
 	/** A bare Q: (Q:100): its tempo, the unit note it counts in ABC 2.1 (L:) and the meter's beat it may have meant. */
@@ -660,12 +683,16 @@ public class AbcToMidi {
 		return unitNote.equals(beat) ? null : new BareTempo(Integer.parseInt(bare.group(1)), unitNote, beat);
 	}
 
-	/** @param wrappedField See convert(Params) */
+	/**
+	 * @param wrappedField  See convert(Params)
+	 * @param sourceColumns Filled for each file's lines that Macros changed: see atSourceColumn
+	 */
 	private static Sequence convert(List<FileAndData> filesData, boolean useLotroInstruments,
 									Map<Integer, LotroInstrument> instrumentOverrideMap, AbcInfo abcInfo, final boolean enableLotroErrors,
 									final int stereo, final boolean generateRegions, final boolean expandRepeats, boolean specTempo,
 									Integer savedTempoBPM, boolean standardPitch, boolean chordAccompaniment,
-									boolean standard2011, WarningHandler warningHandler, int[] wrappedField)
+									boolean standard2011, WarningHandler warningHandler, int[] wrappedField,
+									Map<String, Map<Integer, int[]>> sourceColumns)
 			throws FileParseException {
 		if (abcInfo == null)
 			abcInfo = new AbcInfo();
@@ -812,6 +839,12 @@ public class AbcToMidi {
 			// the file.
 			int[] sourceLineNumbers = null;
 			if (abc21) {
+				// ABC 2.1 (9, 4.16): macros and U: symbols written out first; errors keep the file's columns
+				Macros.Result written = Macros.apply(lines);
+				if (written != null) {
+					lines = written.lines();
+					sourceColumns.put(fileAndData.name, written.sourceColumns());
+				}
 				VoiceSplitter.Result voices = VoiceSplitter.split(lines);
 				if (voices != null) {
 					lines = voices.lines();
@@ -980,10 +1013,22 @@ public class AbcToMidi {
 				if (line.stripLeading().startsWith("r:"))
 					continue;
 
-				// Macros (m:, ABC 2.1, 4.16): not expanded yet, so the music using them can't be played as written
-				if (line.stripLeading().startsWith("m:"))
-					throw new FileParseException(UIText.get("common.abctomidi.macros.not.supported"), fileName,
-							lineNumber, 0);
+				// Macros (m:, ABC 2.1, 9) and U: symbols (4.16): the standard reading wrote them out before (Macros),
+				// so here a definition that isn't right is an error, with the tune's name. Lotro's reading doesn't read
+				// m:, and reads U: as nothing.
+				String definition = line.stripLeading();
+				if (definition.startsWith("m:") || (abc21 && definition.startsWith("U:"))) {
+					if (!abc21) {
+						throw new FileParseException(UIText.get("common.abctomidi.macros.not.supported"), fileName,
+								lineNumber, 0);
+					}
+					try {
+						Macros.check(definition);
+					} catch (IllegalArgumentException e) {
+						throw new FileParseException(UIText.get(e.getMessage()), fileName, lineNumber, 0);
+					}
+					continue;
+				}
 
 				int chordSize = 0;
 

@@ -455,6 +455,110 @@ class AbcToMidiBehaviourTest {
 				return noteOns(convert(abcCase)).stream().map(NoteEvent::pitch).toList();
 			}
 
+			/** A tune with these fields before its K: (m:, U:) and this music, in the standard reading. */
+			private static AbcCase defining(List<String> fields, String... body) {
+				List<String> lines = new ArrayList<>(List.of("X:1", "T:t", "M:4/4", "L:1/8", "Q:120"));
+				lines.addAll(fields);
+				lines.add("K:C");
+				lines.addAll(List.of(body));
+				return standard(AbcCase.of("semantic", lines.toArray(String[]::new)));
+			}
+
+			/** The note events of the music in the standard reading, written out by hand. */
+			private List<NoteEvent> writtenOut(String... body) throws Exception {
+				return noteEvents(convert(defining(List.of(), body)));
+			}
+
+			@Test
+			void transposingMacroPlaysItsNotes() throws Exception {
+				// ABC 2.1 (9.2): n is the note, the letters h to z the notes of the scale around it (o above, m below),
+				// for notes of the target's length without an accidental. A comment ends the replacement
+				List<String> roll = List.of("m: ~n2 = (3o/n/m/ n % One macro does for all rolls");
+				assertEquals(writtenOut("(3d/c/B/ c (3c/B/A/ B (3c'/b/a/ b c2|"),
+						noteEvents(convert(defining(roll, "~c2 ~B2 ~b2 c2|"))));
+				// Another length, a note with an accidental: the roll as written (~)
+				assertEquals(writtenOut("~c3 ~^c c4|"), noteEvents(convert(defining(roll, "~c3 ~^c c4|"))));
+				// LENIENT: a target without a length is a note written without one (O'Neill's 1001: m: Tn = (3n/o/n/)
+				List<String> turn = List.of("m: Tn = (3n/o/n/");
+				assertEquals(writtenOut("(3c/d/c/ Tc2 c5|"), noteEvents(convert(defining(turn, "Tc Tc2 c5|"))));
+			}
+
+			@Test
+			void staticMacroReplacesItsTarget() throws Exception {
+				// ABC 2.1 (9.1): the target where it stands as a whole note, not ~G3/2. The = in it is a natural
+				List<String> macro = List.of("m: T=c2 = (3c/d/c/ B/c/");
+				assertEquals(writtenOut("(3c/d/c/ B/c/ d2 T=c3 d|"),
+						noteEvents(convert(defining(macro, "T=c2 d2 T=c3 d|"))));
+			}
+
+			@Test
+			void macrosHoldWhereTheyAreDefined() throws Exception {
+				// ABC 2.1 (2.2.2, 9): the file header's for every tune, a tune's for that tune only and from its line on;
+				// a later one of the same target replaces it. The parts play together (the standard reading)
+				Sequence s = convert(standard(AbcCase.of("semantic", "m: ~n2 = n/o/n", "", "X:1", "T:a", "M:4/4",
+						"L:1/8", "Q:120", "K:C", "~c2 c6|", "", "X:2", "T:b", "M:4/4", "L:1/8", "Q:120",
+						"m: ~n2 = (3o/n/m/ n", "K:C", "~c2 c6|", "", "X:3", "T:c", "M:4/4", "L:1/8", "Q:120", "K:C",
+						"~c2 c6|", "m: ~n2 = c2", "~d2 c6|")));
+				Sequence written = convert(standard(AbcCase.of("semantic", "X:1", "T:a", "M:4/4", "L:1/8", "Q:120",
+						"K:C", "c/d/c c6|", "", "X:2", "T:b", "M:4/4", "L:1/8", "Q:120", "K:C", "(3d/c/B/ c c6|", "",
+						"X:3", "T:c", "M:4/4", "L:1/8", "Q:120", "K:C", "c/d/c c6|", "c2 c6|")));
+				for (int part = 1; part <= 3; part++)
+					assertEquals(noteEvents(written, part), noteEvents(s, part), "part " + part);
+			}
+
+			@Test
+			void macrosAndSymbolsLeaveTextAlone() throws Exception {
+				// Not in quoted text, decorations, inline fields, comments or lyrics
+				List<String> fields = List.of("m: ~n2 = (3o/n/m/ n", "U: W = !trill!");
+				String body = "\"^~c2 W\"c2 !~c2! [I:~c2 W] c6 % ~c2 W";
+				assertEquals(writtenOut(body), noteEvents(convert(defining(fields, body, "w: ~c2 W"))));
+			}
+
+			@Test
+			void symbolsStandForDecorations() throws Exception {
+				// ABC 2.1 (4.16): U: gives H to W, h to w and ~ a decoration or a text; !nil! takes it away
+				assertEquals(writtenOut("Tc2 c6|"), noteEvents(convert(defining(List.of("U: W = !trill!"), "Wc2 c6|"))));
+				assertEquals(writtenOut("Tc2 c6|"), noteEvents(convert(defining(List.of("U: ~ = !trill!"), "~c2 c6|"))));
+				assertEquals(writtenOut("c2 c6|"), noteEvents(convert(defining(List.of("U: T = !nil!"), "Tc2 c6|"))));
+				assertEquals(writtenOut("c2 c6|"), noteEvents(convert(defining(List.of("U: p = \"^+\""), "pc2 c6|"))));
+				// Macros first, then the symbols in what they wrote (ABC 2.1, 9)
+				assertEquals(writtenOut("Pc2 c6|"), noteEvents(convert(defining(
+						List.of("m: ~n2 = Wn2", "U: W = !uppermordent!"), "~c2 c6|"))));
+			}
+
+			@Test
+			void macrosAndSymbolsOnlyInTheStandardReading() throws Exception {
+				// Lotro's reading: m: is an error, U: is read as nothing (W an unknown character)
+				AbcCase macro = AbcCase.of("semantic", "X:1", "T:t", "M:4/4", "L:1/8", "Q:120", "m: ~n2 = n2", "K:C", "c8|");
+				FileParseException e = assertThrows(FileParseException.class, () -> convert(macro));
+				assertEquals(UIText.get("common.abctomidi.macros.not.supported"), e.getDetail());
+				AbcCase symbol = AbcCase.of("semantic", "X:1", "T:t", "M:4/4", "L:1/8", "Q:120", "U: W = !trill!", "K:C",
+						"Wc8|");
+				assertThrows(FileParseException.class, () -> convert(symbol));
+			}
+
+			@Test
+			void macroErrorsSayWhereInTheFile() throws Exception {
+				// A definition that isn't right: an error on its line
+				for (String[] wrong : new String[][] { { "m: ~n2", "common.abctomidi.macro.invalid" },
+						{ "m: ~n2x = n2", "common.abctomidi.macro.transposing" },
+						{ "U: A = !trill!", "common.abctomidi.symbol.invalid" },
+						{ "U: W = trill", "common.abctomidi.symbol.invalid" } }) {
+					FileParseException e = assertThrows(FileParseException.class,
+							() -> convert(defining(List.of(wrong[0]), "c8|")), wrong[0]);
+					assertEquals(UIText.get(wrong[1]), e.getDetail(), wrong[0]);
+					assertEquals(6, e.getLine(), wrong[0]);
+				}
+				// A mistake after a macro, or in its notes: the column in the file's line
+				FileParseException after = assertThrows(FileParseException.class,
+						() -> convert(defining(List.of("m: ~n2 = (3o/n/m/ n"), "~c2 #|")));
+				assertEquals(8, after.getLine());
+				assertEquals(4, after.getColumn());
+				FileParseException in = assertThrows(FileParseException.class,
+						() -> convert(defining(List.of("m: ~n2 = (3o/n/m/ #"), "c ~c2|")));
+				assertEquals(2, in.getColumn());
+			}
+
 			@Test
 			void tempoWithoutNoteLengthCountsUnitNotes() throws Exception {
 				// Lotro and every Lotro file: Q:120 is 120 beats of the meter's denominator. M:4/4 L:1/8 Q:120 c8
