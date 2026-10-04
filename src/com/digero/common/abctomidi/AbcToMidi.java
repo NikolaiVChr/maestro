@@ -44,6 +44,8 @@ public class AbcToMidi {
 	 * <li>|:: read as |:, as ::| is :|</li>
 	 * <li>a lower-case inline field, [k:G] [l:1/16], as [K:G] [L:1/16]</li>
 	 * <li>in the standard reading, "tr" "^tr" "tr=" before a note: a trill</li>
+	 * <li>chord names written otherwise: "G/dim" as "Gdim", a bass with + or - for sharp or flat ("D/f+" as
+	 * "D/f#"), "Am-5" as "Adim" (ChordSymbol.lenientName)</li>
 	 * </ul>
 	 * Not here, as ABC 2.1 or Lotro reads them so: an empty X:, c{g}<d, C.-C, X rests, a slur over grace notes, e> at a
 	 * line's end, a lone ! as a line break in a file without %abc-2.1.
@@ -1173,7 +1175,7 @@ public class AbcToMidi {
 								// A section of the tune starts (ABC 2.1, 3.1.9): a :| without |: after it goes back to
 								// its start, not into the section before it (which PartOrder may have changed)
 								if (abc21 && track != null)
-									repeats.sectionEnd(lineIndex + 1, 0);
+									repeats.sectionLabel(lineIndex + 1);
 								break;
 							case 'K':
 								String notForLotro;
@@ -1530,7 +1532,7 @@ public class AbcToMidi {
 										if (!enableLotroErrors && i + 1 < line.length() && line.charAt(i + 1) == ':') {
 											i++;
 											crossedRepeat = true;
-											repeats.start(lineIndex, i + 1);
+											repeats.repeatStart(lineIndex, i + 1);
 										} else {
 											repeats.sectionEnd(lineIndex, i + 1);
 										}
@@ -1728,7 +1730,7 @@ public class AbcToMidi {
 											repeats.sectionEnd(lineIndex, i + 1);
 										else {
 											crossedRepeat = true;
-											repeats.start(lineIndex, i + 1);
+											repeats.repeatStart(lineIndex, i + 1);
 										}
 									} else if (trackNumber == 1) {
 										abcInfo.addBar(Math.round(chordStartTick));
@@ -1811,7 +1813,7 @@ public class AbcToMidi {
 									// :: :|: :||: also start the next repeat. Repeats.end only does that when no ending was
 									// open; after |2 ... :: the next :| went back to the first |: and played nothing again.
 									if (line.charAt(signEnd - 1) == ':')
-										repeats.start(lineIndex, signEnd);
+										repeats.repeatStart(lineIndex, signEnd);
 									i = signEnd - 1;
 									int nextEndingEnd = skipEndingNumber(line, i + 1); // :|2 : a numbered ending
 									if (nextEndingEnd > i) {
@@ -3403,6 +3405,7 @@ public class AbcToMidi {
 		TuneInfo.ReadState skipState; // How the notes were read where the skipped ending starts: restored at its end
 		Dynamics skipDynamics;
 		int pass = 1; // 2 is the first time through the section again
+		boolean open; // After a |: whose :| hasn't been played often enough yet
 		Set<Integer> ending; // The numbers of the ending the parser is in, null outside an ending
 		boolean skipping; // The ending isn't played on this pass: its notes take no time
 		final Set<Long> jumped = new HashSet<>(); // The :| that went back, as its source position and pass
@@ -3417,6 +3420,7 @@ public class AbcToMidi {
 		void newPart() {
 			startLine = -1;
 			startState = null;
+			open = false;
 			pass = 1;
 			ending = null;
 			skipping = false;
@@ -3432,8 +3436,15 @@ public class AbcToMidi {
 			}
 		}
 
+
 		/** |: at the column before this one. */
-		void start(int lineIndex, int column) {
+		void repeatStart(int lineIndex, int column) {
+			start(lineIndex, column);
+			open = true;
+		}
+
+		/** Where a :| goes back to: here, at the column. */
+		private void start(int lineIndex, int column) {
 			startLine = lineIndex;
 			startColumn = column;
 			pass = 1;
@@ -3451,6 +3462,16 @@ public class AbcToMidi {
 		/** || |] [| : ends an ending, and a :| without |: after it goes back to here. */
 		void sectionEnd(int lineIndex, int column) {
 			start(lineIndex, column);
+			open = false;
+		}
+
+		/**
+		 * A P: line (ABC 2.1, 3.1.9) at the start of this line: a section starts, as at ||. Not between |: and its :|,
+		 * which goes back to the |: (X:10829 Ragtime Annie, a P: in the middle of a bar of a repeated section).
+		 */
+		void sectionLabel(int lineIndex) {
+			if (!open)
+				sectionEnd(lineIndex, 0);
 		}
 
 		/** [1 |1 :|2 ... : an ending starts. */
@@ -3500,6 +3521,7 @@ public class AbcToMidi {
 				jumpColumn = startColumn;
 				return true;
 			}
+			open = false;
 			if (ending != null) {
 				// The end of the ending for this pass. The endings after it are for other passes, and are skipped.
 				ending = null;
@@ -4118,7 +4140,7 @@ public class AbcToMidi {
 		/** The chord, or null if the text isn't a chord name (an annotation like "^text", "Fine", "a."). */
 		static ChordSymbol parse(String text, long tick, long beatTicks, int beatsPerBar, long[] groupTicks,
 								 int transpose) {
-			Matcher m = NAME.matcher(text.trim());
+			Matcher m = NAME.matcher(LENIENT ? lenientName(text.trim()) : text.trim());
 			if (!m.matches())
 				return null;
 			int[] intervals = QUALITIES.get(m.group(3));
@@ -4141,6 +4163,17 @@ public class AbcToMidi {
 			}
 			return new ChordSymbol(tick, beatTicks, beatsPerBar, groupTicks, pitches, 36 + bass,
 					36 + (root + fifth) % 12);
+		}
+
+		/**
+		 * A chord name as written in some tune books (the Nottingham Music Database), as ABC 2.1 writes it: "G/dim" as
+		 * "Gdim"; a bass with + or - for its sharp or flat, "D/f+" as "D/f#"; m-5, a minor chord with a flat fifth,
+		 * as dim, "Am-5/D#" as "Adim/D#". A + after the root stays augmented ("D+").
+		 */
+		static String lenientName(String name) {
+			name = name.replaceFirst("^([A-G][#b]?)/dim(?=$|[/(])", "$1dim");
+			name = name.replaceFirst("^([A-G][#b]?)m-5(?=$|[/(])", "$1dim");
+			return name.replaceFirst("/([A-Ga-g])\\+", "/$1#").replaceFirst("/([A-Ga-g])-", "/$1b");
 		}
 
 		private static int pitchClass(String letter, String accidental, int transpose) {

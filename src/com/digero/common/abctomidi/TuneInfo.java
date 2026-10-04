@@ -11,6 +11,7 @@ import com.digero.common.abc.LotroInstrument;
 import com.digero.common.i18n.UIText;
 import com.digero.common.midi.KeyMode;
 import com.digero.common.midi.KeySignature;
+import com.digero.common.midi.MidiConstants;
 import com.digero.common.midi.TimeSignature;
 
 public class TuneInfo {
@@ -31,7 +32,7 @@ public class TuneInfo {
 	// for Q:120 (the meter's denominator, as in LotRO), UNIT_NOTE_BEAT for Q:120 and Q:C=120 when the Q: note length
 	// counts (ABC 2.1, 10.1: unit note lengths, L:), FELT_BEAT for a tempo word and DEFAULT_BEAT without Q:.
 	private double tempoBeat;
-	private int tempoBeatsPerMinute = 120;
+	private int tempoBeatsPerMinute = MidiConstants.DEFAULT_TEMPO_BPM;
 	private boolean standardTempo; // The Q: note length counts, as in ABC 2.1 (LotRO errors off); LotRO ignores it
 	private boolean standardPitch; // C is middle C, whatever the instrument (ABC 2.1); LotRO's octave depends on it
 	private boolean standard2011; // Params.standard2011 (and LotRO errors off): ABC 2.1 where LotRO plays otherwise
@@ -84,7 +85,7 @@ public class TuneInfo {
 		key = KeySignature.C_MAJOR;
 		meterNumerator = 4;
 		meterDenominator = 4;
-		primaryTempoBPM = 120;
+		primaryTempoBPM = MidiConstants.DEFAULT_TEMPO_BPM;
 		instrument = LotroInstrument.DEFAULT_INSTRUMENT;
 		instrumentSet = false;
 		dynamics = Dynamics.mf;
@@ -470,7 +471,7 @@ public class TuneInfo {
 	 * abc2midi's default (Q:1/4=120; ABC 2.1 gives none). In 6/8 that's 80 dotted quarters a minute.
 	 */
 	private static final double DEFAULT_BEAT = 1 / 4.0;
-	private static final int DEFAULT_BEATS_PER_MINUTE = 120;
+	private static final int DEFAULT_BEATS_PER_MINUTE = MidiConstants.DEFAULT_TEMPO_BPM;
 	/** The beat of Q:120 and Q:C=120 when the Q: note length counts: the unit note length, L: (ABC 2.1, 10.1). */
 	private static final double UNIT_NOTE_BEAT = -2;
 
@@ -640,8 +641,8 @@ public class TuneInfo {
 				}
 			}
 			primaryTempoBPM = writtenTempo();
-			if (primaryTempoBPM != tempoBeatsPerMinute) {
-				// The MIDI's default tempo is 120, so only another one needs a tempo event
+			if (primaryTempoBPM != MidiConstants.DEFAULT_TEMPO_BPM) {
+				// The MIDI's default tempo is 120 of the meter's beats, so only another one needs a tempo event
 				curPartTempoMap.putIfAbsent(0L, primaryTempoBPM);
 				if (!allPartsTempoFixed)
 					allPartsTempoMap.putIfAbsent(0L, primaryTempoBPM);

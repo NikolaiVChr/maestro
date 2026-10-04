@@ -637,6 +637,22 @@ class AbcToMidiBehaviourTest {
 			}
 
 			@Test
+			void aSectionLabelInsideARepeatKeepsItsStart() throws Exception {
+				// X:10829 Ragtime Annie: "|:G/4A/4|...|"D7"f/2", a P:3 line, "f/2 ...| [1 ... g:| [2 g2||". The P: started
+				// a section, so the :| went back to the P:, not to the |:, and the first three bars were not repeated
+				AbcCase labelled = tune("semantic", "|: c d |", "P:3", "e f :|");
+				AbcCase plain = tune("semantic", "|: c d |", "e f :|");
+				assertEquals(noteEvents(convert(standard(plain).with(p -> p.expandRepeats = true))),
+						noteEvents(convert(standard(labelled).with(p -> p.expandRepeats = true))));
+				// Not in a repeat, a P: still starts a section: a :| without |: after it goes back to the P:
+				AbcCase after = tune("semantic", "c d |", "P:B", "e f :|");
+				Sequence played = convert(standard(after).with(p -> p.expandRepeats = true));
+				long q = played.getResolution();
+				assertEquals(List.of(on(0, 60), on(q / 2, 62), on(q, 64), on(3 * q / 2, 65), on(2 * q, 64),
+						on(5 * q / 2, 65)), noteOns(played));
+			}
+
+			@Test
 			void inlineSectionLabelsToo() throws Exception {
 				// [P:A] in the notes (ABC 2.1, 3.2) starts a section as a P: line does; it was skipped, and the tune
 				// played as written (user, 2026-10-02)
@@ -1236,6 +1252,24 @@ class AbcToMidiBehaviourTest {
 				// Lotro's reading keeps the old one (3/4 counted as compound): in the time of 3
 				assertEquals(ticks(convert(tune("semantic", header("M:3/4"), "c d e a4|"))).get(3),
 						ticks(convert(tune("semantic", header("M:3/4"), "(5cdefg a4|"))).get(5));
+			}
+
+			@Test
+			void chordNamesWrittenOtherwise() throws Exception {
+				// X:10837 Rake Maker's Jig: "C#/dim" (C#dim) was no chord name, so the bar went on with the C before it.
+				// Read leniently, as found in the Nottingham Music Database: X/dim as Xdim, a bass with + or - for sharp
+				// or flat (D/f+ as D/f#), m-5 (a minor chord with a flat fifth) as dim
+				assertNotEquals(rendered(tune("semantic", "\"C\"G4 G4|")),
+						rendered(tune("semantic", "\"C\"G4 \"C#/dim\"G4|")));
+				assertEquals(rendered(tune("semantic", "\"C\"G4 \"C#dim\"G4|")),
+						rendered(tune("semantic", "\"C\"G4 \"C#/dim\"G4|")));
+				assertEquals(rendered(tune("semantic", "\"D/F#\"G4 G4|")), rendered(tune("semantic", "\"D/f+\"G4 G4|")));
+				assertEquals(rendered(tune("semantic", "\"A7/Bb\"G4 G4|")), rendered(tune("semantic", "\"A7/b-\"G4 G4|")));
+				assertEquals(rendered(tune("semantic", "\"Adim\"G4 G4|")), rendered(tune("semantic", "\"Am-5\"G4 G4|")));
+				assertEquals(rendered(tune("semantic", "\"Adim/D#\"G4 G4|")),
+						rendered(tune("semantic", "\"Am-5/D#\"G4 G4|")));
+				// A + after the root is still augmented
+				assertNotEquals(rendered(tune("semantic", "\"D\"G4 G4|")), rendered(tune("semantic", "\"D+\"G4 G4|")));
 			}
 
 			@Test
@@ -2122,6 +2156,33 @@ class AbcToMidiBehaviourTest {
 
 		private static Integer guessed(AbcCase abcCase) throws Exception {
 			return abcInfoOf(abcCase).getGuessedTempoBPM();
+		}
+
+		@Test
+		void guessedTempoIsPlayedWhenItsBeatIsTheMetersBeat() throws Exception {
+			// X:9463 O'Dowd's (R:reel, M:C|, no Q:) played at 120 halves a minute instead of the reel's 100: a guessed tempo
+			// whose beat is the meter's (a reel's 1/2 in 2/2, a hornpipe's 1/4 in 4/4, a waltz's 1/4 in 3/4) got no tempo
+			// event, so the MIDI kept its default, 120 of the meter's beats a minute. Bars a minute, as played:
+			assertEquals(50L, barsPerMinute(specTempo(tune("t", header("R:reel", "M:C|", "-Q"), "B4 B4|"))));
+			assertEquals(40L, barsPerMinute(specTempo(tune("t", header("R:hornpipe", "M:4/4", "-Q"), "B8|"))));
+			assertEquals(36L, barsPerMinute(specTempo(tune("t", header("R:waltz", "M:3/4", "-Q"), "B6|"))));
+			// A saved tempo too: 90 halves a minute
+			assertEquals(45L, barsPerMinute(specTempo(tune("t", header("R:reel", "M:C|", "-Q"), "B4 B4|"))
+					.with(p -> p.savedTempoBPM = 90)));
+			// The default tempo, 1/4=120 in 4/4, is the MIDI's own
+			assertEquals(30L, barsPerMinute(specTempo(tune("t", header("R:unknown", "M:4/4", "-Q"), "B8|"))));
+		}
+
+		/** How many times a minute a one-bar tune is played, from the MIDI's length. */
+		private static long barsPerMinute(AbcCase oneBar) throws Exception {
+			return Math.round(60e6 / AbcToMidi.convert(paramsOf(oneBar)).getMicrosecondLength());
+		}
+
+		private static AbcToMidi.Params paramsOf(AbcCase abcCase) {
+			AbcToMidi.Params params = new AbcToMidi.Params(abcCase.filesData());
+			Profile.MAESTRO_LEGACY.applyTo(params);
+			abcCase.tweak().accept(params);
+			return params;
 		}
 
 		@Test
