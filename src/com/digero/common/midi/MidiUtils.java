@@ -902,4 +902,11 @@ public class MidiUtils {
         }
         return false;
     }
+
+    public static boolean isNote(MidiMessage message) {
+        if (message instanceof ShortMessage msg) {
+            if (msg.getCommand() == ShortMessage.NOTE_ON || msg.getCommand() == ShortMessage.NOTE_OFF) return true; 
+        }
+        return false;
+    }
 }
