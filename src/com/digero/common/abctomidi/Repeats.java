@@ -23,6 +23,12 @@ import com.digero.common.abc.Dynamics;
  */
 final class Repeats {
 	/**
+	 * However the marks are written, a part jumps (a :| back, a D.C., D.S. or To Coda) at most this often: more is an
+	 * error (AbcToMidi), not a parser going round in circles.
+	 */
+	static final int MAX_JUMPS = 1000;
+
+	/**
 	 * Where to go on reading: a line (index) and column, with how the notes were read there (null without
 	 * expandRepeats: as they are).
 	 */
@@ -54,6 +60,8 @@ final class Repeats {
 	private int fromColumn;
 	private boolean fineArmed; // Fine read after the jump: the part ends at the next bar line
 	private boolean codaArmed; // To Coda read after the jump: on to the coda at the next bar line
+	private boolean codaTaken; // The coda was gone to: a To Coda in it doesn't go there again
+	private int jumps; // The jumps in this part so far (MAX_JUMPS)
 	private boolean finished; // After Fine: the rest of the part isn't played
 
 	Repeats(boolean expand, TuneInfo info) {
@@ -87,9 +95,16 @@ final class Repeats {
 		jumpedWith = null;
 		fineArmed = false;
 		codaArmed = false;
+		codaTaken = false;
 		finished = false;
+		jumps = 0;
 	}
 
+	/** The jumps in this part so far: a :| back, a D.C., D.S. or To Coda (MAX_JUMPS). */
+	int jumps() {
+		return jumps;
+	}
+	
 	/** A line of music: the part's first one is where a :| without |: goes back to. */
 	void musicLine(int lineIndex) {
 		if (startLine < 0) {
@@ -187,6 +202,7 @@ final class Repeats {
 		if (again && jumped.add(passKey(lineIndex, column, pass))) {
 			pass++;
 			ending = null;
+			jumps++;
 			return new Jump(startLine, startColumn, startState);
 		}
 		open = false;
@@ -201,11 +217,13 @@ final class Repeats {
 		return null;
 	}
 
+
 	/**
-	 * A mark of the form at the column (JumpMarks; null for none): a segno is where a D.S. goes back to; a D.C. or D.S.
-	 * jumps at its section's end; after the jump, Fine and To Coda at the next bar line.
+	 * A mark of the form from the column to end in the line (JumpMarks; null for none): a segno is where a D.S. goes
+	 * back to; a D.C. or D.S. jumps at its section's end; after the jump, Fine and To Coda at the next bar line. A Fine
+	 * right after a bar line with nothing after it on its line (Norbeck's ":| !fine!") belongs to that bar line.
 	 */
-	void mark(JumpMarks.Mark mark, int lineIndex, int column) {
+	void mark(JumpMarks.Mark mark, String line, int lineIndex, int column, int end) {
 		if (!expand || mark == null || finished)
 			return;
 		switch (mark) {
@@ -214,23 +232,30 @@ final class Repeats {
 					segno = new Jump(lineIndex, column, info.readState());
 			}
 			case FINE -> {
-				if (jumpedWith != null && jumpedWith.stopsAtFine())
-					fineArmed = true;
+				if (jumpedWith != null && jumpedWith.stopsAtFine()) {
+					if (JumpMarks.endsBarBefore(line, column, end))
+						finished = true;
+					else
+						fineArmed = true;
+				}
 			}
 			case TO_CODA -> {
-				if (jumpedWith != null && jumpedWith.jumpsToCoda())
+				if (jumpedWith != null && jumpedWith.jumpsToCoda() && !codaTaken)
 					codaArmed = true;
 			}
 			case CODA -> {
 				// The first coda mark: To Coda, before the D.C. or D.S.; the one after it is where the coda starts
 				boolean before = lineIndex < fromLine || (lineIndex == fromLine && column < fromColumn);
-				if (jumpedWith != null && jumpedWith.jumpsToCoda() && before)
+				if (jumpedWith != null && jumpedWith.jumpsToCoda() && before && !codaTaken)
 					codaArmed = true;
 			}
 			default -> {
-				// D.C. D.S.: a D.S. only with a segno before it (user), each only once
-				if (armed == null && (!mark.toSegno() || segno != null)
-						&& !jumpedBack.contains(sourceKey(lineIndex, column))) {
+				// D.C. D.S.: a D.S. only with a segno before it (user), each only once. A second one before the same
+				// section's end ("D.C." and !D.C.! on one bar) is the same jump written twice: it never jumps itself.
+				long key = sourceKey(lineIndex, column);
+				if (armed != null) {
+					jumpedBack.add(key);
+				} else if ((!mark.toSegno() || segno != null) && !jumpedBack.contains(key)) {
 					armed = mark;
 					armedLine = lineIndex;
 					armedColumn = column;
@@ -257,6 +282,8 @@ final class Repeats {
 			codaArmed = false;
 			int[] coda = JumpMarks.nextCoda(lines, fromLine, fromColumn); // The D.C. or D.S. itself is no coda
 			if (coda != null) {
+				codaTaken = true;
+				jumps++;
 				start(coda[0], coda[1]);
 				return new Jump(coda[0], coda[1], null);
 			}
@@ -271,7 +298,19 @@ final class Repeats {
 		armed = null;
 		start(back.line(), back.column());
 		startState = back.state();
+		jumps++;
 		return back;
+	}
+
+	/**
+	 * The part ends (its next X:, the empty line that ends its tune, or the file's end), as a section does: a D.C. or
+	 * D.S. still waiting goes back from here (a mark after the last bar line, or a part without one at its end).
+	 *
+	 * @return Where to go on reading; null when the part ends here
+	 */
+	Jump partEnd(List<String> lines) {
+		sectionEnded = true;
+		return bar(lines);
 	}
 
 	/** A place in the part's lines. */

@@ -782,6 +782,14 @@ final class AbcCases {
 				"S\"G\"d2 d2|\"C\"e2 d2|\"Am\"c2 B2|\"D\"A4 O|\"G\"B2 B2|\"C\"c2 B2|\"D\"A2 G2|\"D\"F4||",
 				"|:\"Em\"G2 g2|\"D\"f2 e2|\"G\"d2 c2|\"G\"B4:|\"D\"A2 d2|\"G\"\"D.S. al Coda\"G4|]",
 				"!coda!\"G\"G2 B2|\"G\"d2 g2|\"D\"f2 a2|\"G\"g4 !D.C.alfine!|]"));
+		
+		// Third opinion (2026-10-05): the coda once (a To Coda in it went round for ever), a jump written twice is one,
+		// a D.C. jumps at a P: that starts the next section and at the part's end, a Fine after its bar line is there
+		c.add(tune("jump_coda_once", "c d|!segno!e f|g a !coda!|b c' !D.S.alcoda!|]!coda!d e \"To Coda\"|f g|]"));
+		c.add(tune("jump_written_twice", "c d|e f|\"D.C.\"g a !D.C.!|]"));
+		c.add(tune("jump_at_section_label", "c d|e f !D.C.!|", "P:B", "g a|b c'|]"));
+		c.add(tune("jump_at_part_end", "c d|e f|]", "!D.C.!"));
+		c.add(tune("jump_fine_after_bar", "c d|e f|| !fine!", "g a|b c' !D.C.alfine!|]"));
 
 		// ------------------------------------------------------------ tempo forms (2026-10-04, 2026-10-05)
 		c.add(tune("tempo_unit_notes_c3", header("M:6/8", "Q:C3=100"), "c6|")); // abc 1.6: three unit notes a beat
@@ -991,9 +999,9 @@ final class AbcCases {
 		c.add(tune("grace_notes_under_tempo_change", "{d}c4 c4|", "%%Q: 240", "{d}c4 c4|")); // BUG1016
 		c.add(tune("ornament_under_tempo_change", "Mc4 c4|", "%%Q: 240", "Mc4 c4|")); // BUG1016
 
-
+		
 		// ------------------------------------------------------------ decorations
-		c.add(tune("decorations_skipped", "!fermata!c !coda!d !segno!e !D.C.!f|!tenuto!c !thumb!d !breath!e !arpeggio![ceg]|"));
+		c.add(tune("decorations_skipped", "!fermata!c !coda!d !segno!e !open!f|!tenuto!c !thumb!d !breath!e !arpeggio![ceg]|"));
 		// !sfz! louder than an accent, !wedge! shorter than staccato (standard2011); !turnx! !invertedturnx! as the turns
 		c.add(tune("decorations_sfz_wedge_turnx", "!sfz!c !wedge!d !turnx!e2|+sfz+f +wedge+g !invertedturnx!a2|"));
 		// A fermata holds the part's last notes twice as long (standard2011); the one on the first note is skipped

@@ -8,7 +8,7 @@ case decorations_skipped
   L:1/8
   Q:120
   K:C
-  !fermata!c !coda!d !segno!e !D.C.!f|!tenuto!c !thumb!d !breath!e !arpeggio![ceg]|
+  !fermata!c !coda!d !segno!e !open!f|!tenuto!c !thumb!d !breath!e !arpeggio![ceg]|
 
 ### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
 == sequence

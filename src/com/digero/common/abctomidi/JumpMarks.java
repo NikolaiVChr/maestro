@@ -88,7 +88,19 @@ final class JumpMarks {
 	static Mark ofLetter(char letter) {
 		return (letter == 'S') ? Mark.SEGNO : (letter == 'O') ? Mark.CODA : null;
 	}
-
+	
+	/**
+	 * The mark from start to end in the line stands right after a bar line, with nothing after it on its line but
+	 * spaces and a comment (Norbeck's ":| !fine!"): it belongs to that bar line. Before it only spaces, or nothing at
+	 * the line's start.
+	 */
+	static boolean endsBarBefore(String line, int start, int end) {
+		String before = line.substring(0, start).stripTrailing();
+		String after = line.substring(end).strip();
+		boolean barBefore = before.isEmpty() || "|:]".indexOf(before.charAt(before.length() - 1)) >= 0;
+		return barBefore && (after.isEmpty() || after.startsWith("%"));
+	}
+	
 	/** A field (T:, w: ...) or a field going on (+:): no music. */
 	private static final Pattern FIELD = Pattern.compile("[A-Za-z+]:");
 

@@ -621,6 +621,48 @@ class AbcToMidiBehaviourTest {
 			}
 
 			@Test
+			void theCodaIsGoneToOnce() throws Exception {
+				// Third opinion (2026-10-05): a To Coda inside the coda went to the same coda again, for ever (a hang)
+				assertTimeoutPreemptively(java.time.Duration.ofSeconds(10), () -> assertEquals(
+						playedOut("c d|e f|g a|b c'|e f|g a|d e|f g|]"),
+						playedOut("c d|!segno!e f|g a !coda!|b c' !D.S.alcoda!|]!coda!d e \"To Coda\"|f g|]")));
+			}
+
+			@Test
+			void aJumpWrittenTwiceJumpsOnce() throws Exception {
+				// "D.C." and !D.C.! before the same section end are one jump (third opinion, 2026-10-05): the second
+				// jumped again on the pass after the first, so the music played three times
+				assertEquals(playedOut("c d|e f|g a|c d|e f|g a|]"), playedOut("c d|e f|\"D.C.\"g a !D.C.!|]"));
+			}
+
+			@Test
+			void jumpsWhereTheSectionEnds() throws Exception {
+				// A D.C. or D.S. jumps where its section ends (third opinion, 2026-10-05): also at a P: that starts the
+				// next section (it jumped a bar later), and where the part ends without a bar line after the mark
+				// (Norbeck's rachenitsas: !D.C. al fine! on a line of its own at the end)
+				assertEquals(playedOut("c d|e f|c d|e f|", "P:B", "g a|b c'|]"),
+						playedOut("c d|e f !D.C.!|", "P:B", "g a|b c'|]"));
+				assertEquals(playedOut("c d|e f|]c d|e f|]"), playedOut("c d|e f|]", "!D.C.!"));
+				assertEquals(playedOut("c d|e f|]c d|e f|]"), playedOut("c d|e f|] \"D.C.\""));
+				assertEquals(playedOut("c d|e f g a|c d|e f g a|]"), playedOut("c d|e f \"D.C.\"g a"));
+				// A Fine with nothing after it on its line belongs to the bar line before it (Norbeck's ":| !fine!");
+				// one before notes stops at the end of their bar
+				assertEquals(playedOut("c d|e f||g a|b c'|c d|e f||]"),
+						playedOut("c d|e f|| !fine!", "g a|b c' !D.C.alfine!|]"));
+				assertEquals(playedOut("c d|e f||g a|b c'|c d|e f||]"),
+						playedOut("c d|!fine!e f||g a|b c' !D.C.alfine!|]"));
+			}
+
+			@Test
+			void jumpsThatGoRoundInCirclesAreAnError() throws Exception {
+				// However the marks are written, a part can't jump more than Repeats.MAX_JUMPS times: an error, not a hang
+				assertDoesNotThrow(() -> playedOut("|:c:|".repeat(Repeats.MAX_JUMPS)));
+				FileParseException e = assertThrows(FileParseException.class,
+						() -> playedOut("|:c:|".repeat(Repeats.MAX_JUMPS + 1)));
+				assertEquals(UIText.get("common.abctomidi.jumps.endless"), e.getDetail());
+			}	
+			
+			@Test
 			void oldTempoCountsSeveralUnitNotes() throws Exception {
 				// abc 1.6's Q:C3=100 (The Queen's Delight and Bacon's other Morris tunes; 91 Q:C2 C3 C4 C6 in the corpus):
 				// 100 beats of three unit notes, here dotted quarters. It was 100 of the meter's eighths, three times
@@ -958,8 +1000,6 @@ class AbcToMidiBehaviourTest {
 				assertEquals(plusForm, velocities(convert(standard(tune("semantic", "!p!c !f!d|")))));
 				assertEquals(velocities(convert(tune("semantic", "+pppp+c +ffff+d|"))),
 						velocities(convert(standard(tune("semantic", "!pppp!c !ffff!d|")))));
-				assertEquals(velocities(convert(tune("semantic", "+ppp+c d +fff+e|"))),
-						velocities(convert(standard(tune("semantic", "!ppp!c d !fff!e|")))));
 				assertEquals(velocities(convert(tune("semantic", "+ppp+c d +fff+e|"))),
 						velocities(convert(standard(tune("semantic", "!ppp!c d !fff!e|")))));
 				// !sfz! is no volume mark: only its note is louder (accentAndStaccato), the next one is mf again
@@ -3196,6 +3236,22 @@ class AbcToMidiBehaviourTest {
 			// Not bowing: in quoted text, a field, the lyrics, a comment, or the free text after the tune
 			assertEquals(73, bodyProgram("R:jig", "\"^up v\"c d|", "w:u v", "+:u v", "% u v"));
 			assertEquals(73, bodyProgram("R:jig", "c d|", "", "Played by Vivaldi, with an up-bow"));
+		}
+
+		@Test
+		void longNumbersInDirectivesAreIgnored() throws Exception {
+			// A number too long for an int (third opinion, 2026-10-05): out of range, ignored as 200 is; it was a
+			// NumberFormatException out of convert
+			for (String field : List.of("%%MIDI program 99999999999", "%%MIDI program 1 99999999999",
+					"%%MIDI channel 99999999999", "%%MIDI bassprog 99999999999"))
+				assertEquals(bodyProgram(field.replace("99999999999", "200"), "c d|"), bodyProgram(field, "c d|"), field);
+			// BarFly's V: Program, and %%MIDI drone
+			AbcCase voices = AbcCase.of("semantic", "X:1", "T:t", "M:2/4", "L:1/8", "V:1 Program 1 99999999999", "V:2",
+					"K:C", "V:1", "c d|]", "V:2", "C D|]").with(p -> p.standard2011 = p.standardPitch = true);
+			assertDoesNotThrow(() -> convert(voices));
+			assertEquals(noteEvents(convert(accompanied("%%MIDI drone 200 38 40 0 0", "%%MIDI droneon", "K:C", "c d|")), 2),
+					noteEvents(convert(accompanied("%%MIDI drone 99999999999 38 40 0 0", "%%MIDI droneon", "K:C", "c d|")),
+							2));
 		}
 
 		/** The first part's program in standard ABC (2.1) with one header field and these lines of music. */

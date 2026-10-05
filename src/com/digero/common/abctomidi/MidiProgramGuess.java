@@ -126,6 +126,14 @@ final class MidiProgramGuess {
 	private static final Pattern FOR = Pattern.compile("(?i)\\bfor\\s+(?:(?:the|a|an|two|three|2|3|solo)\\s+)?");
 	/** A field (T:, w: ...) or a field going on (+:, ABC 2.1 3.2): no music. */
 	private static final Pattern FIELD = Pattern.compile("[A-Za-z+]:");
+	/**
+	 * A number of a %%MIDI directive or a V: field (digits only): too long for an int, it's Integer.MAX_VALUE, out of
+	 * every range there, so it's ignored as 200 is (it was a NumberFormatException out of convert).
+	 */
+	static int midiNumber(String digits) {
+		return (digits.length() > 9) ? Integer.MAX_VALUE : Integer.parseInt(digits);
+	}
+
 	/** A bowing mark by name. */
 	private static final Pattern BOWING_NAME = Pattern.compile("[!+](?:up|down)bow[!+]");
 	/** What in a line of music isn't notes: quoted text, decorations by name, inline fields, a comment. */
@@ -269,8 +277,8 @@ final class MidiProgramGuess {
 			if (!m.lookingAt())
 				return;
 			String what = m.group(1).toLowerCase(Locale.ROOT);
-			int first = Integer.parseInt(m.group(2));
-			Integer second = (m.group(3) != null) ? Integer.valueOf(m.group(3)) : null;
+			int first = midiNumber(m.group(2));
+			Integer second = (m.group(3) != null) ? midiNumber(m.group(3)) : null;
 			switch (what) {
 				case "program" -> {
 					if (second == null) {
@@ -342,7 +350,7 @@ final class MidiProgramGuess {
 				voiceId = words[0];
 			Matcher barFly = VOICE_PROGRAM.matcher(voice);
 			if (barFly.find()) {
-				int value = Integer.parseInt(barFly.group(barFly.group(2) != null ? 2 : 1));
+				int value = midiNumber(barFly.group(barFly.group(2) != null ? 2 : 1));
 				if (value <= 127)
 					barFlyProgram.set(value);
 			}

@@ -98,7 +98,7 @@ final class Drone {
 			default -> {
 				String[] values = m.group(2).trim().split("\\s+");
 				for (int v = 0; v < values.length && v < 5; v++) {
-					int value = values[v].isEmpty() ? 0 : Integer.parseInt(values[v]);
+					int value = values[v].isEmpty() ? 0 : MidiProgramGuess.midiNumber(values[v]);
 					if (value <= 0 || value > 127)
 						continue; // As abc2midi: 0 keeps the setting
 					switch (v) {

@@ -914,7 +914,25 @@ public class AbcToMidi {
 			boolean looseBang = abc21 && !isAbc21OrLater(lines);
 			boolean tuneSeen = false; // An X: so far in this file
 			boolean inTune = false; // Between an X: and the empty line that ends its tune
-			lineLoop: for (int lineIndex = 0; lineIndex < lines.size(); lineIndex++) {
+			Repeats.Jump jumpTo = null; // Where to go on reading: a :| back, a D.C., D.S. or To Coda (Repeats)
+			lineLoop: for (int lineIndex = 0; lineIndex <= lines.size() || jumpTo != null; lineIndex++) {
+				// Where the part ends (its next X:, the empty line that ends its tune, the file's end), as a section ends:
+				// a D.C. or D.S. still waiting goes back from here
+				if (jumpTo == null && abc21 && track != null && (lineIndex == lines.size()
+						|| lines.get(lineIndex).startsWith("X:") || (skipFreeText && inTune && lines.get(lineIndex).isBlank())))
+					jumpTo = repeats.partEnd(lines);
+				if (jumpTo != null) {
+					// Go on reading where the jump goes, the notes read as they were read there
+					if (repeats.jumps() > Repeats.MAX_JUMPS)
+						throw new FileParseException(UIText.get("common.abctomidi.jumps.endless"), fileName, lineNumber);
+					crossedRepeat = true;
+					restoreAt(jumpTo, info, signatures, trackNumber, chordStartTick);
+					lineIndex = jumpTo.line();
+					startColumn = jumpTo.column();
+					jumpTo = null;
+				} else if (lineIndex == lines.size()) {
+					break;
+				}
 				String line = lines.get(lineIndex);
 				wrappedField[0] = -1; // Only a line being parsed may be a field's text going on
 				lineNumber = (sourceLineNumbers != null) ? sourceLineNumbers[lineIndex] : lineIndex + 1;
@@ -1262,8 +1280,13 @@ public class AbcToMidi {
 							case 'P':
 								// A section of the tune starts (ABC 2.1, 3.1.9): a :| without |: after it goes back to
 								// its start, not into the section before it (which PartOrder may have changed)
-								if (abc21 && track != null)
+								if (abc21 && track != null) {
 									repeats.sectionLabel(lineIndex + 1);
+									// A D.C. or D.S. before it jumps here, where its section ends
+									jumpTo = repeats.bar(lines);
+									if (jumpTo != null)
+										continue lineLoop;
+								}
 								break;
 							case 'K':
 								String notForLotro;
@@ -1916,15 +1939,12 @@ public class AbcToMidi {
 									// goes back. ABC 2.1, and Lotro (tested, B79), so in every reading
 									accidentals.clear();
 
+
 									crossedRepeat = true;
-									Repeats.Jump back = repeats.end(lines, lineIndex, i, signEnd);
-									if (back != null) {
-										// Play the repeated section again: go back to its start, read as it was read there
-										restoreAt(back, info, signatures, trackNumber, chordStartTick);
-										lineIndex = back.line() - 1;
-										startColumn = back.column();
-										continue lineLoop;
-									}
+									jumpTo = repeats.end(lines, lineIndex, i, signEnd);
+									if (jumpTo != null)
+										continue lineLoop; // Play the repeated section again: back to its start
+
 									// :: :|: :||: also start the next repeat. Repeats.end only does that when no ending was
 									// open; after |2 ... :: the next :| went back to the first |: and played nothing again.
 									if (line.charAt(signEnd - 1) == ':')
@@ -1968,7 +1988,7 @@ public class AbcToMidi {
 											soundingLength = STACCATISSIMO_LENGTH; // +wedge+, the ABC 2.0 form
 										else if (abc21 && FERMATA_NAMES.contains(decoration))
 											fermata = true; // +fermata+, the ABC 2.0 form
-										repeats.mark(JumpMarks.of(decoration), lineIndex, i); // +segno+ +D.S.+ ...
+										repeats.mark(JumpMarks.of(decoration), line, lineIndex, i, j + 1); // +segno+ +D.S.+ ...
 									}
 
 									if (enableLotroErrors && inChord) {
@@ -2000,7 +2020,7 @@ public class AbcToMidi {
 									String text = line.substring(i + 1, j);
 									// "Fine", "D.S. al Coda": a mark of the form written as text, as older tune books do
 									if (LENIENT)
-										repeats.mark(JumpMarks.of(text), lineIndex, i);
+										repeats.mark(JumpMarks.of(text), line, lineIndex, i, j + 1);
 									if (LENIENT && abc21 && !repeats.skipping() && TRILL_TEXT.matcher(text).matches())
 										ornament = text.endsWith("=") ? TRILL_NATURAL : "trill";
 									i = j;
@@ -2027,7 +2047,7 @@ public class AbcToMidi {
 												line.substring(i, j + 1)), fileName, lineNumber, i);
 									}
 									String decorationName = line.substring(i + 1, j);
-									repeats.mark(JumpMarks.of(decorationName), lineIndex, i); // !segno! !D.S.! ...
+									repeats.mark(JumpMarks.of(decorationName), line, lineIndex, i, j + 1); // !segno! !D.S.! ...
 									if (abc21 && DYNAMICS_NAMES.contains(decorationName)) {
 										// ABC 2.1 (4.14): players "may be expected to implement the dynamics marks": !p! as
 										// +p+. Lotro skips them, so only with standard2011.
@@ -2111,8 +2131,12 @@ public class AbcToMidi {
 											nextFactor = (broken.charAt(0) == '>') ? 1 / factor : longer;
 										}
 										// A tie (a grace note tied to the note) changes nothing here
-										group.add(new double[] { notePitch(grace, info, graceAccidentals, useLotroInstruments)[0],
-												weight });
+										int gracePitch = notePitch(grace, info, graceAccidentals, useLotroInstruments)[0];
+										if (gracePitch < Note.MIN.id || gracePitch > Note.MAX.id) {
+											throw new FileParseException(UIText.get("common.abctomidi.note.out.of.midi.range",
+													grace.group()), fileName, lineNumber, k);
+										}
+										group.add(new double[] { gracePitch, weight });
 										k = grace.end();
 									}
 									if (group.isEmpty()) {
@@ -2224,7 +2248,7 @@ public class AbcToMidi {
 										throw new FileParseException(UIText.get("common.abctomidi.unknown.char",
 												String.valueOf(ch)), fileName, lineNumber, i);
 									}
-									repeats.mark(JumpMarks.ofLetter(ch), lineIndex, i); // S segno, O coda
+									repeats.mark(JumpMarks.ofLetter(ch), line, lineIndex, i, i + 1); // S segno, O coda
 									if (!repeats.skipping() && (ch == 'T' || ch == 'M' || ch == 'P' || ch == 'R'))
 										ornament = switch (ch) {
 											case 'T' -> "trill";
@@ -2336,10 +2360,7 @@ public class AbcToMidi {
 							}
 							if (onward != null) {
 								// A D.C. or D.S. goes back, To Coda on to the coda (Repeats.bar): go on reading there
-								crossedRepeat = true;
-								restoreAt(onward, info, signatures, trackNumber, chordStartTick);
-								lineIndex = onward.line() - 1;
-								startColumn = onward.column();
+								jumpTo = onward;
 								continue lineLoop;
 							}
 						}
@@ -2546,7 +2567,13 @@ public class AbcToMidi {
 							else if (enableLotroErrors && lotroNoteId > Note.MAX_PLAYABLE.id)
 								throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.note.too.high"),
 										fileName, lineNumber, m.start());
-
+							// Beyond MIDI's notes (0 to 127): c''''' , C,,,,, or K: octave= / transpose= taking a note past
+							// them. MidiFactory would throw a RuntimeException for it, out of convert.
+							if (noteId < Note.MIN.id || noteId > Note.MAX.id) {
+								throw new FileParseException(UIText.get("common.abctomidi.note.out.of.midi.range",
+										m.group()), fileName, lineNumber, m.start());
+							}
+							
 							// Lotro plays only the first of the same note in a chord and ignores the later one completely,
 							// also for the chord's length (tested in game, also for enharmonic spellings like [^c_d]).
 							// Checked before the cowbell code, which gives all cowbell notes the same pitch.
@@ -2641,8 +2668,11 @@ public class AbcToMidi {
 									ornament = "trill";
 								double tick = chordStartTick + attackOffset;
 								int volume = info.getDynamics().getVol(useLotroInstruments);
-								for (double[] note : ornamentNotes(ornament, noteId, upper, lower, noteEndTick - tick,
-										GRACE_NOTE_SECONDS * ticksPerSecond)) {
+								// A neighbour beyond MIDI's notes (the note is at its edge): no ornament
+								List<double[]> quickNotes = (upper > Note.MAX.id || lower < Note.MIN.id) ? List.of()
+										: ornamentNotes(ornament, noteId, upper, lower, noteEndTick - tick,
+										GRACE_NOTE_SECONDS * ticksPerSecond);
+								for (double[] note : quickNotes) {
 									track.add(MidiFactory.createNoteOnEventEx((int) note[0], channel, volume, Math.round(tick)));
 									track.add(MidiFactory.createNoteOffEventEx((int) note[0], channel, volume,
 											Math.round(tick + note[1])));
