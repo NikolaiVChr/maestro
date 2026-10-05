@@ -560,6 +560,28 @@ class AbcToMidiBehaviourTest {
 			}
 
 			@Test
+			void oldTempoCountsSeveralUnitNotes() throws Exception {
+				// abc 1.6's Q:C3=100 (The Queen's Delight and Bacon's other Morris tunes; 91 Q:C2 C3 C4 C6 in the corpus):
+				// 100 beats of three unit notes, here dotted quarters. It was 100 of the meter's eighths, three times
+				// too slow
+				assertEquals(length(specTempo(tune("semantic", header("M:6/8", "Q:3/8=100"), "c6|"))),
+						length(specTempo(tune("semantic", header("M:6/8", "Q:C3=100"), "c6|"))));
+				assertEquals(length(specTempo(tune("semantic", header("Q:1/4=100"), "c8|"))),
+						length(specTempo(tune("semantic", header("Q:C2=100"), "c8|"))));
+				// The unit note counts, also an L: after the Q: (C2 with L:1/16 is an eighth)
+				assertEquals(length(specTempo(AbcCase.of("semantic", "X:1", "T:t", "M:4/4", "Q:1/8=60", "L:1/16", "K:C", "c8|"))),
+						length(specTempo(AbcCase.of("semantic", "X:1", "T:t", "M:4/4", "Q:C2=60", "L:1/16", "K:C", "c8|"))));
+				// Lotro's reading: the meter's beat, as before
+				assertEquals(length(tune("semantic", header("M:6/8", "Q:100"), "c6|")),
+						length(tune("semantic", header("M:6/8", "Q:C3=100"), "c6|")));
+			}
+
+			/** How long the tune plays, in microseconds. */
+			private long length(AbcCase abcCase) throws Exception {
+				return convert(abcCase).getMicrosecondLength();
+			}
+
+			@Test
 			void tempoWithoutNoteLengthCountsUnitNotes() throws Exception {
 				// Lotro and every Lotro file: Q:120 is 120 beats of the meter's denominator. M:4/4 L:1/8 Q:120 c8
 				// (a whole note) = 4 quarters at 120 a minute = 2 s.

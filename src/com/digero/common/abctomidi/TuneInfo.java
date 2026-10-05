@@ -32,7 +32,8 @@ public class TuneInfo {
 	// for Q:120 (the meter's denominator, as in LotRO), UNIT_NOTE_BEAT for Q:120 and Q:C=120 when the Q: note length
 	// counts (ABC 2.1, 10.1: unit note lengths, L:), FELT_BEAT for a tempo word and DEFAULT_BEAT without Q:.
 	private double tempoBeat;
-	private int tempoBeatsPerMinute = MidiConstants.DEFAULT_TEMPO_BPM;
+	private int tempoBeatsPerMinute = 120;
+	private int tempoUnitNotes = 1; // With UNIT_NOTE_BEAT: unit notes a beat (abc 1.6's Q:C3=100: three)
 	private boolean standardTempo; // The Q: note length counts, as in ABC 2.1 (LotRO errors off); LotRO ignores it
 	private boolean standardPitch; // C is middle C, whatever the instrument (ABC 2.1); LotRO's octave depends on it
 	private boolean standard2011; // Params.standard2011 (and LotRO errors off): ABC 2.1 where LotRO plays otherwise
@@ -475,6 +476,8 @@ public class TuneInfo {
 	private static final int DEFAULT_BEATS_PER_MINUTE = MidiConstants.DEFAULT_TEMPO_BPM;
 	/** The beat of Q:120 and Q:C=120 when the Q: note length counts: the unit note length, L: (ABC 2.1, 10.1). */
 	private static final double UNIT_NOTE_BEAT = -2;
+	/** Q:C=120 and abc 1.6's Q:C3=100 (ABC 2.1, 10.1, deprecated): the beat in unit notes, C for one. */
+	private static final Pattern UNIT_NOTE_TEMPO = Pattern.compile("C\\s*(\\d*)");
 
 	/** Beats of the meter's denominator per minute: the tempo that is played (and written to the MIDI). */
 	private int toMeterBeats(double beat, int beatsPerMinute) {
@@ -483,7 +486,7 @@ public class TuneInfo {
 		if (beat == FELT_BEAT)
 			return isCompoundForTempo() ? 3 * beatsPerMinute : beatsPerMinute;
 		if (beat == UNIT_NOTE_BEAT)
-			beat = getLNum() / (double) getLDenom();
+			beat = tempoUnitNotes * getLNum() / (double) getLDenom();
 		return (int) Math.max(1, Math.round(beatsPerMinute * beat * meterDenominator));
 	}
 
@@ -558,6 +561,7 @@ public class TuneInfo {
 			int bpm;
 			double beat = 0;
 			boolean unitNotes = qField && standardTempo;
+			int unitNotesPerBeat = 1;
 			if (parts.length == 1) {
 				bpm = Integer.parseInt(parts[0].trim());
 				if (unitNotes)
@@ -565,8 +569,13 @@ public class TuneInfo {
 			} else if (parts.length == 2) {
 				bpm = Integer.parseInt(parts[1].trim());
 				beat = parseTempoBeat(parts[0]);
-				if (unitNotes && parts[0].trim().equals("C"))
-					beat = UNIT_NOTE_BEAT; // Q:C=120
+				Matcher unitNoteBeat = UNIT_NOTE_TEMPO.matcher(parts[0].trim());
+				if (unitNotes && unitNoteBeat.matches()) {
+					// Q:C=120, and abc 1.6's Q:C3=100: a beat of one unit note, or of three
+					beat = UNIT_NOTE_BEAT;
+					if (!unitNoteBeat.group(1).isEmpty())
+						unitNotesPerBeat = Integer.parseInt(unitNoteBeat.group(1));
+				}
 			} else {
 				throw new IllegalArgumentException(UIText.get("common.abctomidi.tempo.unreadable"));
 			}
@@ -576,6 +585,7 @@ public class TuneInfo {
 
 			tempoBeat = beat;
 			tempoBeatsPerMinute = bpm;
+			tempoUnitNotes = unitNotesPerBeat;
 		} catch (NumberFormatException nfe) {
 			throw new IllegalArgumentException(UIText.get("common.abctomidi.tempo.unreadable"));
 		}
