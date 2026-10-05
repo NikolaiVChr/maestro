@@ -368,12 +368,13 @@ public class TunebookDialog extends JDialog {
 		applyFilter();
 		pack();
 		setLocationRelativeTo(owner);
-		filter.requestFocusInWindow();
-
 
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowOpened(WindowEvent e) {
+				// Focus in the filter once the dialog is shown: asked before, it may land elsewhere, e.g. on Open tune
+				// (FlatLaf fills a focused button blue), where Space would open the tune instead of playing it
+				filter.requestFocusInWindow();
 				if (table.getSelectedRow() >= 0)
 					scrollToCenter(table.getSelectedRow());
 				TunebookDialog.this.removeWindowListener(this);

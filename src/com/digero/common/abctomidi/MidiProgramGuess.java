@@ -399,22 +399,24 @@ final class MidiProgramGuess {
 		}
 
 		/**
-		 * The program the file sets for the part, or null. The part's own %%MIDI voice (without an ID, then by the
-		 * part's voice ID), then its own %%MIDI program N; then the same from the file header (BUG1011); then %%MIDI
-		 * program C N for the part's channel; then BarFly's V: Program C N. Not one guessed from K:, names or R:.
+		 * The program the file sets for the part, or null. The part's own %%MIDI voice (by the part's voice ID, then
+		 * without an ID), then its own %%MIDI program N; then the same from the file header (BUG1011); then %%MIDI
+		 * program C N for the part's channel; then BarFly's V: Program C N. Not one guessed from K:, names or R:. The
+		 * voice's ID first (third opinion, 2026-10-05): ABC 2.1 (11.2) names the voice with it; without one, before a
+		 * V:, every voice is our reading.
 		 */
 		Integer explicitProgram() {
-			if (voiceProgram.value != null && !voiceProgram.inherited)
-				return voiceProgram.value;
 			Integer ofVoice = (voiceId != null) ? voicePrograms.get(voiceId) : null;
 			if (ofVoice != null && ownVoiceIds.contains(voiceId))
 				return ofVoice;
+			if (voiceProgram.value != null && !voiceProgram.inherited)
+				return voiceProgram.value;
 			if (program.value != null && !program.inherited)
 				return program.value;
-			if (voiceProgram.value != null)
-				return voiceProgram.value;
 			if (ofVoice != null)
 				return ofVoice;
+			if (voiceProgram.value != null)
+				return voiceProgram.value;
 			if (program.value != null)
 				return program.value;
 			Integer ofChannel = channelPrograms.get(channel());

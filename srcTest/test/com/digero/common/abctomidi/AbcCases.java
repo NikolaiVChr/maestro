@@ -859,6 +859,14 @@ final class AbcCases {
 				.with(p -> p.standardPitch = true));
 		c.add(tune("midi_voice_by_id", "%%MIDI voice 2 instrument=43", "V:1", "B c|", "V:2", "C D|")
 				.with(p -> p.standardPitch = true));
+		// The voice's ID beats a %%MIDI voice without one, in the file header and in the tune's (third opinion,
+		// 2026-10-05): Fl flute (74), Tb tuba (59); both were flute
+		c.add(of("midi_voice_id_first_file_header", "%%MIDI voice instrument=74", "%%MIDI voice Tb instrument=59", "",
+				"X:1", "T:t", "M:4/4", "L:1/8", "Q:120", "V:Fl", "V:Tb", "K:C", "V:Fl", "B c|", "V:Tb", "C, D,|")
+				.with(p -> p.standardPitch = true));
+		c.add(of("midi_voice_id_first_tune_header", "X:1", "T:t", "M:4/4", "L:1/8", "Q:120", "%%MIDI voice instrument=74",
+				"%%MIDI voice Tb instrument=59", "V:Fl", "V:Tb", "K:C", "V:Fl", "B c|", "V:Tb", "C, D,|")
+				.with(p -> p.standardPitch = true));
 
 		// ------------------------------------------------------------ bagpipe drones (A42), with the accompaniment
 		c.add(tune("drone_on_off", "c d|", "%%MIDI droneon", "e f|", "%%MIDI droneoff", "g a|"));
