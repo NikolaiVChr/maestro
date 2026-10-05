@@ -113,7 +113,7 @@ About 5,250 tests, in `srcTest/test/com/digero/common/abctomidi`.
   `AbcXmlTextTest`, `LotroMinimumLengthTest`.
 - **`TestSetup`:** logging, locale and UI texts, once per test run.
 
-## Not supported (ABC 2.1)
+## Not supported (Abc 2.1)
 
 - M: change with another denominator mid-tune, [M:C|] after 3/4
 - D.S./Fine jumps (`!segno!`, `!D.S.!`, `!fine!`, or O'Neill's "Segno" and "Fine" as text): the tune plays straight through once

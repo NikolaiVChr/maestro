@@ -1249,7 +1249,7 @@ public class AbcToMidi {
 									throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.key.words",
 											notForLotro), fileName, lineNumber, infoMatcher.start(INFO_VALUE));
 								}
-								if (trackNumber == 1 && !repeats.skipping)
+								if (trackNumber == 1 && !repeats.skipping())
 									signatures.at(Math.round(chordStartTick), info);
 								break;
 							case 'L':
@@ -1280,7 +1280,7 @@ public class AbcToMidi {
 								meterChangeLine = lineNumber;
 								meterChangeColumn = infoMatcher.start(INFO_VALUE);
 								meterChangeInPart = track != null;
-								if (trackNumber == 1 && !repeats.skipping)
+								if (trackNumber == 1 && !repeats.skipping())
 									signatures.at(Math.round(chordStartTick), info);
 								break;
 							case 'Q': {
@@ -1529,7 +1529,7 @@ public class AbcToMidi {
 											switch (field) {
 												case 'K' -> {
 													info.setKey(value);
-													if (trackNumber == 1 && !repeats.skipping)
+													if (trackNumber == 1 && !repeats.skipping())
 														signatures.at(Math.round(chordStartTick), info);
 												}
 												case 'I' -> {
@@ -1542,7 +1542,7 @@ public class AbcToMidi {
 													meterChangeLine = lineNumber;
 													meterChangeColumn = i + 3;
 													meterChangeInPart = true;
-													if (trackNumber == 1 && !repeats.skipping)
+													if (trackNumber == 1 && !repeats.skipping())
 														signatures.at(Math.round(chordStartTick), info);
 												}
 												case 'Q' -> {
@@ -1723,7 +1723,7 @@ public class AbcToMidi {
 												fileName, lineNumber, chordStartIndex);
 									}
 									inChord = false;
-									if (abc21 && !repeats.skipping) {
+									if (abc21 && !repeats.skipping()) {
 										checkTiesContinue(tiesToContinue, eventPitches, tiedNotes, tiedNoteStartTicks, tiedNoteEndTicks, tiedRegions,
 												crossedRepeat, track, channel, info.getDynamics().getVol(useLotroInstruments), noteOffEvents, fileName);
 										crossedRepeat = false;
@@ -1738,7 +1738,7 @@ public class AbcToMidi {
 									}
 
 									int chordLenEnd = i + 1 + chordLenStr.length() + (chordTied ? 1 : 0) + chordBrokenStr.length();
-									if (generateRegions && !repeats.skipping) { // A skipped ending's chord isn't played
+									if (generateRegions && !repeats.skipping()) { // A skipped ending's chord isn't played
 										abcInfo.addRegion(new AbcRegion(lineNumberForRegions, chordStartIndex, chordLenEnd,
 												Math.round(chordStartTick), Math.round(chordEndTick), null, trackIndex));
 									}
@@ -1873,14 +1873,12 @@ public class AbcToMidi {
 									accidentals.clear();
 
 									crossedRepeat = true;
-									if (repeats.end(lines, lineIndex, i, signEnd)) {
+									Repeats.Jump back = repeats.end(lines, lineIndex, i, signEnd);
+									if (back != null) {
 										// Play the repeated section again: go back to its start, read as it was read there
-										if (repeats.startState != null)
-											info.restore(repeats.startState);
-										if (trackNumber == 1)
-											signatures.at(Math.round(chordStartTick), info); // The meter and key there
-										lineIndex = repeats.jumpLine - 1;
-										startColumn = repeats.jumpColumn;
+										restoreAt(back, info, signatures, trackNumber, chordStartTick);
+										lineIndex = back.line() - 1;
+										startColumn = back.column();
 										continue lineLoop;
 									}
 									// :: :|: :||: also start the next repeat. Repeats.end only does that when no ending was
@@ -1917,7 +1915,7 @@ public class AbcToMidi {
 										if (decoration.isEmpty() || decoration.matches("[_^=A-Ga-g,'0-9/]*"))
 											throw new FileParseException(UIText.get("common.abctomidi.plus.decoration.unsupported"),
 													fileName, lineNumber, i);
-										if (!repeats.skipping && ORNAMENTS.containsKey(decoration))
+										if (!repeats.skipping() && ORNAMENTS.containsKey(decoration))
 											ornament = ORNAMENTS.get(decoration);
 										else if (abc21 && ACCENT_NAMES.contains(decoration))
 											accent = true; // +accent+, the ABC 2.0 form of !accent!
@@ -1939,7 +1937,7 @@ public class AbcToMidi {
 										throw new FileParseException(UIText.get("common.abctomidi.no.matching", "\""),
 												fileName, lineNumber, i);
 									}
-									if (playChords && !inChord && !repeats.skipping && !drumPart) {
+									if (playChords && !inChord && !repeats.skipping() && !drumPart) {
 										// On the beat of the note that follows; text that isn't a chord name is skipped
 										ChordSymbol chord = ChordSymbol.parse(line.substring(i + 1, j), Math.round(chordStartTick),
 												beatTicks(info), beatsPerBar(info), groupTicks(info), info.getTranspose());
@@ -1950,7 +1948,7 @@ public class AbcToMidi {
 									// "tr=" with a natural upper note. The standard reading plays it as !trill!; Lotro plays
 									// the note plain
 									String text = line.substring(i + 1, j);
-									if (LENIENT && abc21 && !repeats.skipping && TRILL_TEXT.matcher(text).matches())
+									if (LENIENT && abc21 && !repeats.skipping() && TRILL_TEXT.matcher(text).matches())
 										ornament = text.endsWith("=") ? TRILL_NATURAL : "trill";
 									i = j;
 									break;
@@ -1982,7 +1980,7 @@ public class AbcToMidi {
 										info.setDynamics(decorationName);
 									} else if (abc21 && ACCENT_NAMES.contains(decorationName)) {
 										accent = true; // ABC 2.1 (4.14): "the accent mark", as L
-									} else if (!repeats.skipping && ORNAMENTS.containsKey(decorationName)) {
+									} else if (!repeats.skipping() && ORNAMENTS.containsKey(decorationName)) {
 										ornament = ORNAMENTS.get(decorationName);
 									}
 									i = j;
@@ -2074,7 +2072,7 @@ public class AbcToMidi {
 										throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.grace.broken"),
 												fileName, lineNumber, j + 1);
 									}
-									if (!enableLotroErrors && !repeats.skipping)
+									if (!enableLotroErrors && !repeats.skipping())
 										graceNotes.addAll(group);
 									i = j;
 									break;
@@ -2082,7 +2080,7 @@ public class AbcToMidi {
 
 								case '~': // Roll
 									// Lotro plays on (tested) and plays the note plain, so with Lotro errors it changes nothing
-									if (!enableLotroErrors && !repeats.skipping)
+									if (!enableLotroErrors && !repeats.skipping())
 										ornament = "roll";
 									break;
 								case '.': { // Staccato
@@ -2120,7 +2118,7 @@ public class AbcToMidi {
 									while (j < line.length() && Character.isDigit(line.charAt(j)))
 										j++;
 									int bars = (j > i + 1) ? Integer.parseInt(line.substring(i + 1, j)) : 1;
-									if (!repeats.skipping && bars > 0) {
+									if (!repeats.skipping() && bars > 0) {
 										// Whole-note ticks times the bar's length, at the current tempo like a note
 										double barTicks = (double) info.getTickFactor() * DEFAULT_NOTE_TICKS * info.getBarNumerator()
 												* info.getCurrentTempoBPM(Math.round(chordStartTick))
@@ -2168,7 +2166,7 @@ public class AbcToMidi {
 										throw new FileParseException(UIText.get("common.abctomidi.unknown.char",
 												String.valueOf(ch)), fileName, lineNumber, i);
 									}
-									if (!repeats.skipping && (ch == 'T' || ch == 'M' || ch == 'P' || ch == 'R'))
+									if (!repeats.skipping() && (ch == 'T' || ch == 'M' || ch == 'P' || ch == 'R'))
 										ornament = switch (ch) {
 											case 'T' -> "trill";
 											case 'M' -> "lowermordent";
@@ -2381,7 +2379,7 @@ public class AbcToMidi {
 							}
 						}
 
-						if (repeats.skipping) {
+						if (repeats.skipping()) {
 							ornament = null;
 							graceNotes.clear();
 							if (!inChord) {
@@ -2651,7 +2649,7 @@ public class AbcToMidi {
 
 							// A syllable goes here. Also on a tied note: in w: lyrics tied notes are separate notes (ABC 2.1, 5.1)
 							if (!inChord || chordSize == 1)
-								lyricNote(lyricNotes, lineIndex, m.start(), lyricBar).ticks.put(repeats.pass,
+								lyricNote(lyricNotes, lineIndex, m.start(), lyricBar).ticks.put(repeats.pass(),
 										Math.round(chordStartTick + soundOffset));
 
 							if (!tiedNotes.containsKey(noteId)) {
@@ -3454,17 +3452,16 @@ public class AbcToMidi {
 		return numbers;
 	}
 
-	/** The numbers of an ending: 1, 1,3 or 1-3 (ABC 2.1 also allows e.g. 1,3,5-7). */
-	private static Set<Integer> parseEndingNumbers(String numbers) {
-		Set<Integer> result = new HashSet<>();
-		for (String range : numbers.split(",")) {
-			String[] fromTo = range.split("-");
-			int from = Integer.parseInt(fromTo[0]);
-			int to = Integer.parseInt(fromTo[fromTo.length - 1]);
-			for (int n = from; n <= to; n++)
-				result.add(n);
-		}
-		return result;
+	/**
+	 * Goes on reading where a jump goes (Repeats.Jump): the notes read as they were read there, and the first part's
+	 * meter and key from the tick on (Signatures). The caller moves to the jump's line and column.
+	 */
+	private static void restoreAt(Repeats.Jump jump, TuneInfo info, Signatures signatures, int trackNumber,
+								  double tick) {
+		if (jump.state() != null)
+			info.restore(jump.state());
+		if (trackNumber == 1)
+			signatures.at(Math.round(tick), info); // The meter and key there
 	}
 
 	/**
@@ -3473,7 +3470,7 @@ public class AbcToMidi {
 	 */
 	private static void addBar(AbcInfo abcInfo, Signatures signatures, Repeats repeats, TuneInfo info, double tick) {
 		abcInfo.addBar(Math.round(tick));
-		if (!repeats.skipping)
+		if (!repeats.skipping())
 			signatures.at(Math.round(tick), info);
 	}
 
@@ -3499,149 +3496,6 @@ public class AbcToMidi {
 		}
 	}
 
-	/**
-	 * Where the parser is in a part's repeats (ABC 2.1, 4.8 and 4.9), with Params.expandRepeats. A :| goes back to the
-	 * |: before it; without one, to the part's start, or to the last double bar (|| |] [|) or :| before it. The endings
-	 * [1 [2 [1,3 [2-4 (also |1 and :|2) play on the passes they're numbered for; an ending runs to the next ending, :|,
-	 * ||, |] or [|. Without expandRepeats everything plays once, one after the other, as in Lotro.
-	 */
-	private static final class Repeats {
-		final boolean expand;
-		final TuneInfo info; // Read at every place a :| can go back to
-		int startLine = -1; // Where a :| goes back to (line index); -1 until the part's first line of music
-		int startColumn;
-		TuneInfo.ReadState startState; // How the notes were read at startLine/startColumn; null without expand
-		TuneInfo.ReadState skipState; // How the notes were read where the skipped ending starts: restored at its end
-		Dynamics skipDynamics;
-		int pass = 1; // 2 is the first time through the section again
-		boolean open; // After a |: whose :| hasn't been played often enough yet
-		Set<Integer> ending; // The numbers of the ending the parser is in, null outside an ending
-		boolean skipping; // The ending isn't played on this pass: its notes take no time
-		final Set<Long> jumped = new HashSet<>(); // The :| that went back, as its source position and pass
-		int jumpLine; // Where to go back to, after end() returned true
-		int jumpColumn;
-
-		Repeats(boolean expand, TuneInfo info) {
-			this.expand = expand;
-			this.info = info;
-		}
-
-		void newPart() {
-			startLine = -1;
-			startState = null;
-			open = false;
-			pass = 1;
-			ending = null;
-			skipping = false;
-			jumped.clear();
-		}
-
-		/** A line of music: the part's first one is where a :| without |: goes back to. */
-		void musicLine(int lineIndex) {
-			if (startLine < 0) {
-				startLine = lineIndex;
-				startColumn = 0;
-				markState();
-			}
-		}
-
-
-		/** |: at the column before this one. */
-		void repeatStart(int lineIndex, int column) {
-			start(lineIndex, column);
-			open = true;
-		}
-
-		/** Where a :| goes back to: here, at the column. */
-		private void start(int lineIndex, int column) {
-			startLine = lineIndex;
-			startColumn = column;
-			pass = 1;
-			ending = null;
-			skip(false);
-			markState();
-		}
-
-		/** The state a :| restores when it goes back to here. */
-		private void markState() {
-			if (expand)
-				startState = info.readState();
-		}
-
-		/** || |] [| : ends an ending, and a :| without |: after it goes back to here. */
-		void sectionEnd(int lineIndex, int column) {
-			start(lineIndex, column);
-			open = false;
-		}
-
-		/**
-		 * A P: line (ABC 2.1, 3.1.9) at the start of this line: a section starts, as at ||. Not between |: and its :|,
-		 * which goes back to the |: (X:10829 Ragtime Annie, a P: in the middle of a bar of a repeated section).
-		 */
-		void sectionLabel(int lineIndex) {
-			if (!open)
-				sectionEnd(lineIndex, 0);
-		}
-
-		/** [1 |1 :|2 ... : an ending starts. */
-		void ending(String numbers) {
-			ending = parseEndingNumbers(numbers);
-			skip(expand && pass > 1 && !ending.contains(pass));
-		}
-
-		/**
-		 * Starts or stops skipping an ending this pass doesn't play. What is written in it isn't read either (BUG1015):
-		 * its K: M: L: I: and dynamics are undone at its end, so they don't reach the ending that is played.
-		 */
-		private void skip(boolean skip) {
-			if (skip && !skipping) {
-				skipState = info.readState();
-				skipDynamics = info.getDynamics();
-			} else if (!skip && skipping) {
-				info.restore(skipState);
-				info.setDynamics(skipDynamics.name());
-			}
-			skipping = skip;
-		}
-
-		/**
-		 * :| at the column, the whole sign ending before column after.
-		 *
-		 * @return Whether to go back to jumpLine and jumpColumn, to play the section again
-		 */
-		boolean end(List<String> lines, int lineIndex, int column, int after) {
-			if (skipping) {
-				// The end of an ending this pass doesn't play: go on after it
-				skip(false);
-				ending = null;
-				return false;
-			}
-			boolean again;
-			if (!expand)
-				again = false;
-			else if (ending == null)
-				again = (pass == 1);
-			else // After an ending: again if another pass has an ending in this section
-				again = ending.contains(pass + 1) || endingFollows(lines, startLine, startColumn, pass + 1);
-			if (again && jumped.add((sourcePosition(lineIndex, column) << 8) | pass)) {
-				pass++;
-				ending = null;
-				jumpLine = startLine;
-				jumpColumn = startColumn;
-				return true;
-			}
-			open = false;
-			if (ending != null) {
-				// The end of the ending for this pass. The endings after it are for other passes, and are skipped.
-				ending = null;
-				return false;
-			}
-			// Played often enough: a later :| without |: goes back to here
-			start(lineIndex, after);
-			return false;
-		}
-	}
-
 	/** Quoted text "..." and decorations !...! +...+ , which may contain | and digits. */
 	private static final Pattern NOT_A_BAR_PATTERN = Pattern.compile("\"[^\"]*\"|![^!]*!|\\+[^+]*\\+");
 
@@ -3657,7 +3511,7 @@ public class AbcToMidi {
 	 * Whether an ending for the pass comes in the section that starts at the line and column: up to its end (|| |] [|),
 	 * the next |: or ::, or the next X:.
 	 */
-	private static boolean endingFollows(List<String> lines, int lineIndex, int column, int pass) {
+	static boolean endingFollows(List<String> lines, int lineIndex, int column, int pass) {
 		for (int l = lineIndex; l < lines.size(); l++) {
 			String line = stripComment(lines.get(l));
 			if (XINFO_PATTERN.matcher(line).matches() || line.stripLeading().startsWith("w:") || line.stripLeading().startsWith("s:"))
@@ -3674,7 +3528,7 @@ public class AbcToMidi {
 			while (m.find()) {
 				if (m.group(1) == null)
 					return false; // The section ends
-				if (parseEndingNumbers(m.group(1)).contains(pass))
+				if (Repeats.parseEndingNumbers(m.group(1)).contains(pass))
 					return true;
 			}
 		}
