@@ -71,8 +71,6 @@ ABC length gives at the main tempo; only the beats and bars follow the new tempo
 too.
 
 **Helpers inside the class:**
-- `Repeats`: plays repeats out by jumping back in the text. On the second pass the section is read as it was on the
-  first (key, meter, `L:`, `I:`); dynamics carry over. A first ending that is skipped changes nothing.
 - `LyricNote`, `singLyrics`, `sing`: `w:` lyrics, one syllable per note, a verse per pass. Written when the part ends.
 - `ChordSymbol`: chord names ("Am", "G/B") for the accompaniment.
 - `Tuplet`: `(3`, `(3:2:3` and the like.
@@ -88,6 +86,9 @@ too.
 | `PartOrder` | `P:ABA` in the header → the sections written out in that order. |
 | `RhythmTempo` | A tempo for the tune type in `R:` (reel, jig, waltz, set dance, Balkan dances ...), for a tune without `Q:`. The types (`TuneType`) have their names in several languages and are matched without accents (Walzer, gånglåt, muiñeira). |
 | `MidiProgramGuess` | The MIDI sound of a standard ABC part: from `%%MIDI program`, `%%MIDI voice`, instrument names, `G:`, `V:`, `T:`, `R:` (`RhythmTempo`'s tune types). |
+| `Repeats` | Where the parser is in a part's repeats and its D.C., D.S., coda and Fine: where to go on reading (`Jump`). |
+| `JumpMarks` | The marks of the form (segno, coda, To Coda, Fine, D.C., D.S.) as decorations, letters or text. |
+| `Macros` | m: macros and U: symbols written out in the text, standard reading only (before `VoiceSplitter`). |
 | `Drone` | A bagpipe drone under a part (`%%MIDI droneon`, or Highland pipes). Never for Lotro files. |
 | `AbcInstructions` | `I:linebreak`, `I:decoration`, `I:propagate-accidentals`. |
 | `AbcTunebook` | A tune book split into its tunes: Maestro's tunebook dialog and its "Split into files". |
@@ -116,6 +117,5 @@ About 5,250 tests, in `srcTest/test/com/digero/common/abctomidi`.
 ## Not supported (Abc 2.1)
 
 - M: change with another denominator mid-tune, [M:C|] after 3/4
-- D.S./Fine jumps (`!segno!`, `!D.S.!`, `!fine!`, or O'Neill's "Segno" and "Fine" as text): the tune plays straight through once
 - Q: tempo change in the middle of a part (the tempo map is shared by all parts, so tricky)
 - & voice overlays

@@ -7,6 +7,7 @@ import java.nio.charset.MalformedInputException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
+import java.util.function.Predicate;
 import java.util.logging.Logger;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
@@ -44,6 +45,8 @@ public class AbcToMidi {
 	 * <li>in the standard reading, a transposing macro's target without a length, m: Tn = (3n/o/n/, for a note written
 	 * without one (Macros; O'Neill's 1001)</li>
 	 * <li>a Q: without a number: Q:Swing as Q:"Swing", an empty Q: as none (lenientTempo)</li>
+	 * <li>with expandRepeats, a text that is exactly a mark of the form ("Fine", "D.S. al Coda", "To Coda") as that
+	 * mark (JumpMarks), as older tune books write them</li>
 	 * </ul>
 	 * Not here, as ABC 2.1 or Lotro reads them so: an empty X:, c{g}<d, C.-C, X rests, a slur over grace notes, e> at a
 	 * line's end, a lone ! as a line break in a file without %abc-2.1.
@@ -1484,6 +1487,7 @@ public class AbcToMidi {
 						// Parse anything that's not a note
 						for (; i < parseEnd; i++) {
 							char ch = line.charAt(i);
+							Repeats.Jump onward = null; // Set after a bar line: what its D.C., D.S., To Coda or Fine asks for
 							if (Character.isWhitespace(ch)) {
 								if (inChord) {
 									throw new FileParseException(UIText.get("common.abctomidi.chord.whitespace"),
@@ -1504,7 +1508,8 @@ public class AbcToMidi {
 										// no repeats, so every ending plays once, one after the other
 										int end = skipEndingNumber(line, i + 1);
 										crossedRepeat = true;
-										repeats.ending(checkEnding(line.substring(i + 1, end + 1), enableLotroErrors, fileName, lineNumber, i));
+										repeats.ending(checkEnding(line.substring(i + 1, end + 1), enableLotroErrors, fileName, lineNumber, i),
+												lines, lineIndex, end + 1);
 										i = end;
 										break;
 									}
@@ -1585,6 +1590,7 @@ public class AbcToMidi {
 											addBar(abcInfo, signatures, repeats, info, chordStartTick);
 										accidentals.clear();
 										i += 2;
+										onward = repeats.bar(lines);
 										break;
 									}
 									if (i + 1 < line.length() && line.charAt(i + 1) == '|') {
@@ -1606,6 +1612,7 @@ public class AbcToMidi {
 										} else {
 											repeats.sectionEnd(lineIndex, i + 1);
 										}
+										onward = repeats.bar(lines);
 										break;
 									}
 
@@ -1810,9 +1817,10 @@ public class AbcToMidi {
 									if (endingEnd > i) {
 										crossedRepeat = true;
 										repeats.ending(checkEnding(line.substring(i + 1, endingEnd + 1), enableLotroErrors, fileName,
-												lineNumber, i + 1));
+												lineNumber, i + 1), lines, lineIndex, endingEnd + 1);
 									}
 									i = endingEnd;
+									onward = repeats.bar(lines);
 									break;
 
 								case ':': // Beginning of repeat end bar line :| ::| :::::::|
@@ -1890,9 +1898,10 @@ public class AbcToMidi {
 									if (nextEndingEnd > i) {
 										crossedRepeat = true;
 										repeats.ending(checkEnding(line.substring(i + 1, nextEndingEnd + 1), enableLotroErrors,
-												fileName, lineNumber, i + 1));
+												fileName, lineNumber, i + 1), lines, lineIndex, nextEndingEnd + 1);
 									}
 									i = nextEndingEnd;
+									onward = repeats.bar(lines);
 									break;
 
 								case '+': {
@@ -1919,6 +1928,7 @@ public class AbcToMidi {
 											ornament = ORNAMENTS.get(decoration);
 										else if (abc21 && ACCENT_NAMES.contains(decoration))
 											accent = true; // +accent+, the ABC 2.0 form of !accent!
+										repeats.mark(JumpMarks.of(decoration), lineIndex, i); // +segno+ +D.S.+ ...
 									}
 
 									if (enableLotroErrors && inChord) {
@@ -1948,6 +1958,9 @@ public class AbcToMidi {
 									// "tr=" with a natural upper note. The standard reading plays it as !trill!; Lotro plays
 									// the note plain
 									String text = line.substring(i + 1, j);
+									// "Fine", "D.S. al Coda": a mark of the form written as text, as older tune books do
+									if (LENIENT)
+										repeats.mark(JumpMarks.of(text), lineIndex, i);
 									if (LENIENT && abc21 && !repeats.skipping() && TRILL_TEXT.matcher(text).matches())
 										ornament = text.endsWith("=") ? TRILL_NATURAL : "trill";
 									i = j;
@@ -1974,6 +1987,7 @@ public class AbcToMidi {
 												line.substring(i, j + 1)), fileName, lineNumber, i);
 									}
 									String decorationName = line.substring(i + 1, j);
+									repeats.mark(JumpMarks.of(decorationName), lineIndex, i); // !segno! !D.S.! ...
 									if (abc21 && DYNAMICS_NAMES.contains(decorationName)) {
 										// ABC 2.1 (4.14): players "may be expected to implement the dynamics marks": !p! as
 										// +p+. Lotro skips them, so only with standard2011.
@@ -2166,6 +2180,7 @@ public class AbcToMidi {
 										throw new FileParseException(UIText.get("common.abctomidi.unknown.char",
 												String.valueOf(ch)), fileName, lineNumber, i);
 									}
+									repeats.mark(JumpMarks.ofLetter(ch), lineIndex, i); // S segno, O coda
 									if (!repeats.skipping() && (ch == 'T' || ch == 'M' || ch == 'P' || ch == 'R'))
 										ornament = switch (ch) {
 											case 'T' -> "trill";
@@ -2272,6 +2287,14 @@ public class AbcToMidi {
 								default:
 									throw new FileParseException(UIText.get("common.abctomidi.unknown.char",
 											String.valueOf(ch)), fileName, lineNumber, i);
+							}
+							if (onward != null) {
+								// A D.C. or D.S. goes back, To Coda on to the coda (Repeats.bar): go on reading there
+								crossedRepeat = true;
+								restoreAt(onward, info, signatures, trackNumber, chordStartTick);
+								lineIndex = onward.line() - 1;
+								startColumn = onward.column();
+								continue lineLoop;
 							}
 						}
 
@@ -3512,6 +3535,11 @@ public class AbcToMidi {
 	 * the next |: or ::, or the next X:.
 	 */
 	static boolean endingFollows(List<String> lines, int lineIndex, int column, int pass) {
+		return endingFollows(lines, lineIndex, column, numbers -> numbers.contains(pass));
+	}
+
+	/** Whether an ending whose numbers are wanted comes in the section that starts at the line and column (as above). */
+	static boolean endingFollows(List<String> lines, int lineIndex, int column, Predicate<Set<Integer>> wanted) {
 		for (int l = lineIndex; l < lines.size(); l++) {
 			String line = stripComment(lines.get(l));
 			if (XINFO_PATTERN.matcher(line).matches() || line.stripLeading().startsWith("w:") || line.stripLeading().startsWith("s:"))
@@ -3528,7 +3556,7 @@ public class AbcToMidi {
 			while (m.find()) {
 				if (m.group(1) == null)
 					return false; // The section ends
-				if (Repeats.parseEndingNumbers(m.group(1)).contains(pass))
+				if (wanted.test(Repeats.parseEndingNumbers(m.group(1))))
 					return true;
 			}
 		}

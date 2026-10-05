@@ -559,6 +559,64 @@ class AbcToMidiBehaviourTest {
 				assertEquals(2, in.getColumn());
 			}
 
+			/** The note events of this music with repeats played out (Params.expandRepeats), in the standard reading. */
+			private List<NoteEvent> playedOut(String... body) throws Exception {
+				AbcCase tune = AbcCase.of("semantic", AbcCase.concat(header(), body))
+						.with(p -> p.expandRepeats = p.standard2011 = true);
+				return noteEvents(convert(tune));
+			}
+
+			@Test
+			void daCapoAlFineGoesBackAndEndsAtFine() throws Exception {
+				// User's rules (2026-10-05): D.C. goes back to the start once, and after it Fine ends the part at the next
+				// bar line; before the jump Fine is passed over. Text marks act at the next bar line (the text stands over
+				// a note), a D.C. or D.S. at the end of the section (|| |] [| or a :| that doesn't go back)
+				assertEquals(playedOut("c d|e f||g a|b c'|c d|e f|]"),
+						playedOut("c d|\"Fine\"e f||g a|\"D.C. al Fine\"b c'|]"));
+				// The same with decorations, and the spellings DC, al fine, alfine
+				assertEquals(playedOut("c d|e f||g a|b c'|c d|e f|]"),
+						playedOut("c d|e f !fine!||g a|b c' !D.C.alfine!|]"));
+				assertEquals(playedOut("c d|e f||g a|b c'|c d|e f|]"),
+						playedOut("c d|\"^Fine\"e f||g a|\"DC al fine\"b c'|]"));
+			}
+
+			@Test
+			void dalSegnoAlCodaJumpsToTheCoda() throws Exception {
+				// D.S. goes back to the segno; after it the first coda mark ("To Coda") jumps to the coda mark after the D.S.
+				String written = "c d|e f|g a|b c'|e f|g a|d e|]";
+				assertEquals(playedOut(written), playedOut("c d|!segno!e f|g a !coda!|b c' !D.S.!|]!coda!d e|]"));
+				// The letters S and O (ABC 2.1, 4.14)
+				assertEquals(playedOut(written), playedOut("c d|Se f|g a O|b c' !D.S.!|]Od e|]"));
+				// Text marks, with "To Coda" and "D.S. al Coda"
+				assertEquals(playedOut(written),
+						playedOut("c d|\"Segno\"e f|g a \"To Coda\"|b c' \"D.S. al Coda\"|]\"Coda\"d e|]"));
+			}
+
+			@Test
+			void afterTheJumpRepeatsArentTaken() throws Exception {
+				// The pass after a D.C. or D.S. plays a repeated section once, with its last ending
+				assertEquals(playedOut("c d|e f|c d|g a||b c'|c d|g a||b c'|]"),
+						playedOut("|:c d|1 e f:|2 g a||b c' !D.C.!|]"));
+				// Each D.C. or D.S. jumps once: the second time it is passed over
+				assertEquals(playedOut("c d|e f|c d|e f|]"), playedOut("c d|e f !D.C.!|]"));
+			}
+
+			@Test
+			void jumpMarksThatArentPlayed() throws Exception {
+				// A D.S. without a segno (user: only with one, written or as text), a "To Coda" or Fine before any jump,
+				// an al Fine's coda and an al Coda's Fine: nothing
+				assertEquals(playedOut("c d|e f|]"), playedOut("c d|e f !D.S.!|]"));
+				assertEquals(playedOut("c d|e f|g a|c d|e f|g a|]"),
+						playedOut("c d|e f \"To Coda\"|g a !D.C.alfine!|]"));
+				assertEquals(playedOut("c d|e f|g a|c d|e f|g a|]"),
+						playedOut("c d|\"Fine\"e f|g a \"D.C. al Coda\"|]"));
+				// A chord name isn't one: "D/C" is no D.C. (Nottingham's Hunt The Squirrel has "D/c+")
+				assertEquals(playedOut("c d|e f|]"), playedOut("\"D/C\"c d|\"D/c+\"e f|]"));
+				// Lotro's reading (without expandRepeats): the marks change nothing, the music plays once
+				assertEquals(noteEvents(convert(tune("semantic", "c d|e f|g a|]"))),
+						noteEvents(convert(tune("semantic", "c d|!segno!e f|g a !D.S.!|]"))));
+			}
+
 			@Test
 			void oldTempoCountsSeveralUnitNotes() throws Exception {
 				// abc 1.6's Q:C3=100 (The Queen's Delight and Bacon's other Morris tunes; 91 Q:C2 C3 C4 C6 in the corpus):

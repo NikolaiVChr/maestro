@@ -737,9 +737,10 @@ final class AbcCases {
 		c.add(of("info_per_part", concat(part(1, "One", "C:First composer", "c d|"),
 				part(2, "Two", "C:Second composer", "e f|"))));
 
+
 		// ------------------------------------------------------------ fields and directives that aren't played
-		// r: a remark on a line of its own, skipped in every mode (Lotro plays on, B68). Errors today, all ABC 2.1:
-		// U: symbols in the notes (A35), m: macros (A36), a ! line break after I:linebreak ! (A25)
+		// r: a remark on a line of its own, skipped in every mode (Lotro plays on, B68). U: symbols (A35) and m: macros
+		// (A36): played in the standard reading since 2026-10-04 (more below); a ! line break after I:linebreak ! (A25)
 		c.add(tune("user_defined_symbol", concat(header(), new String[] { "U:W=!trill!" }), "Wc2 d|"));
 		c.add(tune("info_remark_line", "c d|", "r:a remark", "e f|"));
 		c.add(tune("macro_field", concat(header(), new String[] { "m:~n2 = (3o/n/m/ n" }), "c d|"));
@@ -748,6 +749,45 @@ final class AbcCases {
 		c.add(of("abc_version_line", concat(new String[] { "%abc-2.1" }, header(), new String[] { "c d|" })));
 		c.add(of("key_before_other_fields", "X:1", "T:Test", "K:D", "M:4/4", "L:1/8", "Q:120", "f c|"));
 		c.add(tune("directive_in_body", "c d|", "%%MIDI program 73", "e f|"));
+
+		// ------------------------------------------------------------ m: macros and U: symbols (2026-10-04)
+		// ABC 2.1 (9, 4.16), in the standard reading (Macros): macros first, then the symbols. Lotro's reading: m: is an
+		// error, U: is read as nothing
+		c.add(tune("macro_transposing", concat(header(), new String[] { "m: ~n2 = (3o/n/m/ n % one for all rolls" }),
+				"~c2 ~B2 ~b2 c2|"));
+		c.add(tune("macro_static", concat(header(), new String[] { "m: T=c2 = (3c/d/c/ B/c/" }), "T=c2 d2 T=c3 d|"));
+		c.add(tune("macro_without_length", concat(header(), new String[] { "m: Tn = (3n/o/n/" }), "Tc Tc2 c5|"));
+		c.add(of("macro_file_header", concat(new String[] { "m: ~n2 = n/o/n", "" }, header(), new String[] { "~c2 c6|",
+				"" }, new String[] { "X:2", "T:Two", "M:4/4", "L:1/8", "Q:120", "m: ~n2 = (3o/n/m/ n", "K:C", "~c2 c6|" })));
+		c.add(tune("macro_invalid", concat(header(), new String[] { "m: ~n2" }), "c8|"));
+		c.add(tune("symbol_nil", concat(header(), new String[] { "U: T = !nil!" }), "Tc2 c6|"));
+		c.add(tune("symbol_text", concat(header(), new String[] { "U: p = \"^+\"" }), "pc2 c6|"));
+		c.add(tune("macro_then_symbol", concat(header(), new String[] { "m: ~n2 = Wn2", "U: W = !uppermordent!" }),
+				"~c2 c6|"));
+		c.add(tune("symbol_invalid", concat(header(), new String[] { "U: A = !trill!" }), "c8|"));
+
+		// ------------------------------------------------------------ D.C., D.S., segno, coda, Fine (2026-10-05)
+		// With expandRepeats (Repeats, JumpMarks): a D.C. or D.S. jumps once at its section's end; after it no repeats
+		// (the last ending), Fine ends, To Coda goes to the coda. Elsewhere the marks are nothing (Lotro: errors)
+		c.add(tune("jump_dc_al_fine_text", "c d|\"Fine\"e f||g a|\"D.C. al Fine\"b c'|]"));
+		c.add(tune("jump_ds_al_coda_letters", "c d|Se f|g a O|b c' !D.S.!|]Od e|]"));
+		c.add(tune("jump_ds_al_coda_decorations", "c d|!segno!e f|g a !coda!|b c' !D.S.alcoda!|]!coda!d e|]"));
+		c.add(tune("jump_dc_repeat_endings", "|:c d|1 e f:|2 g a||b c' !D.C.!|]"));
+		c.add(tune("jump_ds_without_segno", "c d|e f !D.S.!|]"));
+		c.add(tune("jump_chord_is_no_dc", "\"D/C\"c d|\"D/c+\"e f|]"));
+		c.add(tune("jump_lyrics", "c d e f|g a b c' !D.C.!|]", "w: one two three four five six sev-en",
+				"w: uno dos tres cua-tro cin-co seis siete"));
+		c.add(of("jump_two_jumps", "X:1", "T:Jump marks test, a march in G", "M:2/4", "L:1/8", "Q:1/4=104", "K:G",
+				"|:\"G\"G2 B2|d2 B2|\"C\"c2 e2|\"G\"d4|\"D\"A2 c2|\"D7\"B2 A2|1 \"G\"G2 B2|\"D\"A4:|2 \"D7\"G2 A2|\"G\"\"^Fine\"G4||",
+				"S\"G\"d2 d2|\"C\"e2 d2|\"Am\"c2 B2|\"D\"A4 O|\"G\"B2 B2|\"C\"c2 B2|\"D\"A2 G2|\"D\"F4||",
+				"|:\"Em\"G2 g2|\"D\"f2 e2|\"G\"d2 c2|\"G\"B4:|\"D\"A2 d2|\"G\"\"D.S. al Coda\"G4|]",
+				"!coda!\"G\"G2 B2|\"G\"d2 g2|\"D\"f2 a2|\"G\"g4 !D.C.alfine!|]"));
+
+		// ------------------------------------------------------------ tempo forms (2026-10-04, 2026-10-05)
+		c.add(tune("tempo_unit_notes_c3", header("M:6/8", "Q:C3=100"), "c6|")); // abc 1.6: three unit notes a beat
+		c.add(tune("tempo_text_tune_type", header("M:6/8", "Q:\"Chacarera\""), "c6|")); // read as R:chacarera
+		c.add(tune("tempo_word_unquoted", header("Q:Swing"), "c d|")); // LENIENT: Q:"Swing", a tune type
+		c.add(tune("tempo_empty", header("Q:"), "c d|")); // LENIENT: no Q:
 
 		// ------------------------------------------------------------ MIDI program of standard ABC (A30)
 		// Only with standard pitch (MidiProgramGuess); Lotro files keep their Lotro instrument's program

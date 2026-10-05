@@ -1,0 +1,300 @@
+# AbcToMidi golden snapshot. Re-record with: mvn test -Dabc.golden.update=true (and review the diff before committing)
+case jump_dc_al_fine_text
+
+== abc jump_dc_al_fine_text.abc
+  X:1
+  T:Test
+  M:4/4
+  L:1/8
+  Q:120
+  K:C
+  c d|"Fine"e f||g a|"D.C. al Fine"b c'|]
+
+### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=59935 tracks=2
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
+  0 META tempo mpq=500000
+  0 META text type=0x03 "Test"
+  0 META type=0x58 data=04021808
+  0 META type=0x59 data=0000
+  0 META end_of_track
+-- track 1 (24 events)
+  0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  0 META text type=0x03 "Test"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
+  1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  5760 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  5760 NOTE_ON ch=0 d1=62 d2=106 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=62 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=64 d2=106 [LotroShortMessage]
+  17280 NOTE_OFF ch=0 d1=64 d2=106 [LotroShortMessage]
+  17280 NOTE_ON ch=0 d1=65 d2=106 [LotroShortMessage]
+  23040 NOTE_OFF ch=0 d1=65 d2=106 [LotroShortMessage]
+  23040 NOTE_ON ch=0 d1=67 d2=106 [LotroShortMessage]
+  28800 NOTE_OFF ch=0 d1=67 d2=106 [LotroShortMessage]
+  28800 NOTE_ON ch=0 d1=69 d2=106 [LotroShortMessage]
+  34560 NOTE_OFF ch=0 d1=69 d2=106 [LotroShortMessage]
+  34560 NOTE_ON ch=0 d1=71 d2=106 [LotroShortMessage]
+  40320 NOTE_OFF ch=0 d1=71 d2=106 [LotroShortMessage]
+  40320 NOTE_ON ch=0 d1=72 d2=106 [LotroShortMessage]
+  46080 NOTE_OFF ch=0 d1=72 d2=106 [LotroShortMessage]
+  59935 META end_of_track
+== abcInfo
+  title="Test"
+  composer=""
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
+  hasTriplets=false hasMixTimings=false barCount=4 partCount=2 partSetups=2..2 empty=false
+  sourceFiles=[jump_dc_al_fine_text.abc]
+  part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+== regions (8)
+  #0 line=6 cols=[0,1) ticks=0..5760 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=6 cols=[2,3) ticks=5760..11520 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
+  #2 line=6 cols=[10,11) ticks=11520..17280 note=64 track=1 bar=1 tiesFrom=- tiesTo=-
+  #3 line=6 cols=[12,13) ticks=17280..23040 note=65 track=1 bar=1 tiesFrom=- tiesTo=-
+  #4 line=6 cols=[15,16) ticks=23040..28800 note=67 track=1 bar=2 tiesFrom=- tiesTo=-
+  #5 line=6 cols=[17,18) ticks=28800..34560 note=69 track=1 bar=2 tiesFrom=- tiesTo=-
+  #6 line=6 cols=[33,34) ticks=34560..40320 note=71 track=1 bar=3 tiesFrom=- tiesTo=-
+  #7 line=6 cols=[35,37) ticks=40320..46080 note=72 track=1 bar=3 tiesFrom=- tiesTo=-
+== log: empty
+
+### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=59935 tracks=2
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
+  0 META tempo mpq=500000
+  0 META text type=0x03 "Test"
+  0 META type=0x58 data=04021808
+  0 META type=0x59 data=0000
+  0 META end_of_track
+-- track 1 (24 events)
+  0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=60 d2=106 [LotroShortMessage]
+  0 META text type=0x03 "Test"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
+  1 CONTROL_CHANGE ch=0 d1=7 d2=127 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  5760 NOTE_OFF ch=0 d1=60 d2=106 [LotroShortMessage]
+  5760 NOTE_ON ch=0 d1=62 d2=106 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=62 d2=106 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=64 d2=106 [LotroShortMessage]
+  17280 NOTE_OFF ch=0 d1=64 d2=106 [LotroShortMessage]
+  17280 NOTE_ON ch=0 d1=65 d2=106 [LotroShortMessage]
+  23040 NOTE_OFF ch=0 d1=65 d2=106 [LotroShortMessage]
+  23040 NOTE_ON ch=0 d1=67 d2=106 [LotroShortMessage]
+  28800 NOTE_OFF ch=0 d1=67 d2=106 [LotroShortMessage]
+  28800 NOTE_ON ch=0 d1=69 d2=106 [LotroShortMessage]
+  34560 NOTE_OFF ch=0 d1=69 d2=106 [LotroShortMessage]
+  34560 NOTE_ON ch=0 d1=71 d2=106 [LotroShortMessage]
+  40320 NOTE_OFF ch=0 d1=71 d2=106 [LotroShortMessage]
+  40320 NOTE_ON ch=0 d1=72 d2=106 [LotroShortMessage]
+  46080 NOTE_OFF ch=0 d1=72 d2=106 [LotroShortMessage]
+  59935 META end_of_track
+== abcInfo
+  title="Test"
+  composer=""
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
+  hasTriplets=false hasMixTimings=false barCount=4 partCount=2 partSetups=2..2 empty=false
+  sourceFiles=[jump_dc_al_fine_text.abc]
+  part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+== regions (8)
+  #0 line=6 cols=[0,1) ticks=0..5760 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=6 cols=[2,3) ticks=5760..11520 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
+  #2 line=6 cols=[10,11) ticks=11520..17280 note=64 track=1 bar=1 tiesFrom=- tiesTo=-
+  #3 line=6 cols=[12,13) ticks=17280..23040 note=65 track=1 bar=1 tiesFrom=- tiesTo=-
+  #4 line=6 cols=[15,16) ticks=23040..28800 note=67 track=1 bar=2 tiesFrom=- tiesTo=-
+  #5 line=6 cols=[17,18) ticks=28800..34560 note=69 track=1 bar=2 tiesFrom=- tiesTo=-
+  #6 line=6 cols=[33,34) ticks=34560..40320 note=71 track=1 bar=3 tiesFrom=- tiesTo=-
+  #7 line=6 cols=[35,37) ticks=40320..46080 note=72 track=1 bar=3 tiesFrom=- tiesTo=-
+== log: empty
+
+### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=46080 tracks=2
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
+  0 META tempo mpq=500000
+  0 META text type=0x03 "Test"
+  0 META type=0x58 data=04021808
+  0 META type=0x59 data=0000
+  0 META end_of_track
+-- track 1 (23 events)
+  0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  0 META text type=0x03 "Test"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
+  1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  5760 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  5760 NOTE_ON ch=0 d1=62 d2=80 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
+  17280 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
+  17280 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
+  23040 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
+  23040 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
+  28800 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
+  28800 NOTE_ON ch=0 d1=69 d2=80 [LotroShortMessage]
+  34560 NOTE_OFF ch=0 d1=69 d2=80 [LotroShortMessage]
+  34560 NOTE_ON ch=0 d1=71 d2=80 [LotroShortMessage]
+  40320 NOTE_OFF ch=0 d1=71 d2=80 [LotroShortMessage]
+  40320 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  46080 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  46080 META end_of_track
+== abcInfo
+  title="Test"
+  composer=""
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
+  hasTriplets=false hasMixTimings=false barCount=4 partCount=2 partSetups=2..2 empty=false
+  sourceFiles=[jump_dc_al_fine_text.abc]
+  part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+== regions (8)
+  #0 line=6 cols=[0,1) ticks=0..5760 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=6 cols=[2,3) ticks=5760..11520 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
+  #2 line=6 cols=[10,11) ticks=11520..17280 note=64 track=1 bar=1 tiesFrom=- tiesTo=-
+  #3 line=6 cols=[12,13) ticks=17280..23040 note=65 track=1 bar=1 tiesFrom=- tiesTo=-
+  #4 line=6 cols=[15,16) ticks=23040..28800 note=67 track=1 bar=2 tiesFrom=- tiesTo=-
+  #5 line=6 cols=[17,18) ticks=28800..34560 note=69 track=1 bar=2 tiesFrom=- tiesTo=-
+  #6 line=6 cols=[33,34) ticks=34560..40320 note=71 track=1 bar=3 tiesFrom=- tiesTo=-
+  #7 line=6 cols=[35,37) ticks=40320..46080 note=72 track=1 bar=3 tiesFrom=- tiesTo=-
+== log: empty
+
+### profile MAESTRO_NEW_LOTRO (useLotroInstruments=false, enableLotroErrors=false, Lotro Abc)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=46080 tracks=2
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
+  0 META tempo mpq=500000
+  0 META text type=0x03 "Test"
+  0 META type=0x58 data=04021808
+  0 META type=0x59 data=0000
+  0 META end_of_track
+-- track 1 (23 events)
+  0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=60 d2=80 [LotroShortMessage]
+  0 META text type=0x03 "Test"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
+  1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  5760 NOTE_OFF ch=0 d1=60 d2=80 [LotroShortMessage]
+  5760 NOTE_ON ch=0 d1=62 d2=80 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=62 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=64 d2=80 [LotroShortMessage]
+  17280 NOTE_OFF ch=0 d1=64 d2=80 [LotroShortMessage]
+  17280 NOTE_ON ch=0 d1=65 d2=80 [LotroShortMessage]
+  23040 NOTE_OFF ch=0 d1=65 d2=80 [LotroShortMessage]
+  23040 NOTE_ON ch=0 d1=67 d2=80 [LotroShortMessage]
+  28800 NOTE_OFF ch=0 d1=67 d2=80 [LotroShortMessage]
+  28800 NOTE_ON ch=0 d1=69 d2=80 [LotroShortMessage]
+  34560 NOTE_OFF ch=0 d1=69 d2=80 [LotroShortMessage]
+  34560 NOTE_ON ch=0 d1=71 d2=80 [LotroShortMessage]
+  40320 NOTE_OFF ch=0 d1=71 d2=80 [LotroShortMessage]
+  40320 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  46080 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  46080 META end_of_track
+== abcInfo
+  title="Test"
+  composer=""
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=120 timeSignature=4/4 keySignature=C maj
+  hasTriplets=false hasMixTimings=false barCount=4 partCount=2 partSetups=2..2 empty=false
+  sourceFiles=[jump_dc_al_fine_text.abc]
+  part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+== regions (8)
+  #0 line=6 cols=[0,1) ticks=0..5760 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=6 cols=[2,3) ticks=5760..11520 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
+  #2 line=6 cols=[10,11) ticks=11520..17280 note=64 track=1 bar=1 tiesFrom=- tiesTo=-
+  #3 line=6 cols=[12,13) ticks=17280..23040 note=65 track=1 bar=1 tiesFrom=- tiesTo=-
+  #4 line=6 cols=[15,16) ticks=23040..28800 note=67 track=1 bar=2 tiesFrom=- tiesTo=-
+  #5 line=6 cols=[17,18) ticks=28800..34560 note=69 track=1 bar=2 tiesFrom=- tiesTo=-
+  #6 line=6 cols=[33,34) ticks=34560..40320 note=71 track=1 bar=3 tiesFrom=- tiesTo=-
+  #7 line=6 cols=[35,37) ticks=40320..46080 note=72 track=1 bar=3 tiesFrom=- tiesTo=-
+== log: empty
+
+### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
+== sequence
+divisionType=0.0 resolution=11520 tickLength=69120 tracks=2
+-- track 0 (6 events)
+  0 META text type=0x05 "@TTest"
+  0 META tempo mpq=1000000
+  0 META text type=0x03 "Test"
+  0 META type=0x58 data=04021808
+  0 META type=0x59 data=0000
+  0 META end_of_track
+-- track 1 (31 events)
+  0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
+  0 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  0 META text type=0x03 "Test"
+  0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+  0 META type=0x59 data=0000
+  1 CONTROL_CHANGE ch=0 d1=91 d2=0 [LotroShortMessage]
+  1 CONTROL_CHANGE ch=0 d1=93 d2=0 [LotroShortMessage]
+  5760 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  5760 NOTE_ON ch=0 d1=74 d2=80 [LotroShortMessage]
+  11520 NOTE_OFF ch=0 d1=74 d2=80 [LotroShortMessage]
+  11520 NOTE_ON ch=0 d1=76 d2=80 [LotroShortMessage]
+  17280 NOTE_OFF ch=0 d1=76 d2=80 [LotroShortMessage]
+  17280 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
+  23040 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
+  23040 NOTE_ON ch=0 d1=79 d2=80 [LotroShortMessage]
+  28800 NOTE_OFF ch=0 d1=79 d2=80 [LotroShortMessage]
+  28800 NOTE_ON ch=0 d1=81 d2=80 [LotroShortMessage]
+  34560 NOTE_OFF ch=0 d1=81 d2=80 [LotroShortMessage]
+  34560 NOTE_ON ch=0 d1=83 d2=80 [LotroShortMessage]
+  40320 NOTE_OFF ch=0 d1=83 d2=80 [LotroShortMessage]
+  40320 NOTE_ON ch=0 d1=84 d2=80 [LotroShortMessage]
+  46080 NOTE_OFF ch=0 d1=84 d2=80 [LotroShortMessage]
+  46080 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]
+  51840 NOTE_OFF ch=0 d1=72 d2=80 [LotroShortMessage]
+  51840 NOTE_ON ch=0 d1=74 d2=80 [LotroShortMessage]
+  57600 NOTE_OFF ch=0 d1=74 d2=80 [LotroShortMessage]
+  57600 NOTE_ON ch=0 d1=76 d2=80 [LotroShortMessage]
+  63360 NOTE_OFF ch=0 d1=76 d2=80 [LotroShortMessage]
+  63360 NOTE_ON ch=0 d1=77 d2=80 [LotroShortMessage]
+  69120 NOTE_OFF ch=0 d1=77 d2=80 [LotroShortMessage]
+  69120 META end_of_track
+== abcInfo
+  title="Test"
+  composer=""
+  transcriber=""
+  genre="" mood=""
+  primaryTempoBPM=60 timeSignature=4/4 keySignature=C maj
+  hasTriplets=false hasMixTimings=false barCount=6 partCount=2 partSetups=2..2 empty=false
+  sourceFiles=[jump_dc_al_fine_text.abc]
+  part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
+  part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..6 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
+== regions (12)
+  #0 line=6 cols=[0,1) ticks=0..5760 note=72 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=6 cols=[2,3) ticks=5760..11520 note=74 track=1 bar=0 tiesFrom=- tiesTo=-
+  #2 line=6 cols=[10,11) ticks=11520..17280 note=76 track=1 bar=1 tiesFrom=- tiesTo=-
+  #3 line=6 cols=[12,13) ticks=17280..23040 note=77 track=1 bar=1 tiesFrom=- tiesTo=-
+  #4 line=6 cols=[15,16) ticks=23040..28800 note=79 track=1 bar=2 tiesFrom=- tiesTo=-
+  #5 line=6 cols=[17,18) ticks=28800..34560 note=81 track=1 bar=2 tiesFrom=- tiesTo=-
+  #6 line=6 cols=[33,34) ticks=34560..40320 note=83 track=1 bar=3 tiesFrom=- tiesTo=-
+  #7 line=6 cols=[35,37) ticks=40320..46080 note=84 track=1 bar=3 tiesFrom=- tiesTo=-
+  #8 line=6 cols=[0,1) ticks=46080..51840 note=72 track=1 bar=4 tiesFrom=- tiesTo=-
+  #9 line=6 cols=[2,3) ticks=51840..57600 note=74 track=1 bar=4 tiesFrom=- tiesTo=-
+  #10 line=6 cols=[10,11) ticks=57600..63360 note=76 track=1 bar=5 tiesFrom=- tiesTo=-
+  #11 line=6 cols=[12,13) ticks=63360..69120 note=77 track=1 bar=5 tiesFrom=- tiesTo=-
+== log: empty
