@@ -196,6 +196,13 @@ public class AbcToMidi {
 	 */
 	public static final int ACCENT_DYNAMICS_STEPS = 2;
 
+
+	/**
+	 * How many Dynamics steps !sfz! (sforzando) plays its note louder, at most ffff: a stronger accent than
+	 * ACCENT_DYNAMICS_STEPS. ABC 2.1 (4.14) leaves the amount to the program. Only with Params.standard2011.
+	 */
+	public static final int SFZ_DYNAMICS_STEPS = 3;
+
 	/**
 	 * How many Dynamics steps louder the note at the start of each beat group plays, in a meter of beat groups (M:2+2+3/8,
 	 * 7/8 as 2+2+3, TuneInfo.getBeatGroups), so the bar is heard as its groups. Only with Params.standard2011; meters of
@@ -209,6 +216,12 @@ public class AbcToMidi {
 	 */
 	public static final double STACCATO_LENGTH = 0.5;
 
+	/**
+	 * How much of its written length a staccatissimo note (!wedge!) sounds: shorter than STACCATO_LENGTH. ABC 2.1 (4.14)
+	 * leaves the amount to the program. Only with Params.standard2011.
+	 */
+	public static final double STACCATISSIMO_LENGTH = 0.25;
+
 	/** Text before a note that means a trill, in the standard reading: "tr", "^tr", "tr=" (natural upper note) */
 	private static final Pattern TRILL_TEXT = Pattern.compile("\\^?tr=?");
 
@@ -221,18 +234,29 @@ public class AbcToMidi {
 	 */
 	private static final Map<String, String> ORNAMENTS = Map.of("trill", "trill", "roll", "roll", "lowermordent",
 			"lowermordent", "mordent", "lowermordent", "uppermordent", "uppermordent", "pralltriller", "uppermordent",
-			"turn", "turn", "invertedturn", "invertedturn");
+			"turn", "turn", "invertedturn", "invertedturn", "turnx", "turn", "invertedturnx", "invertedturn");
 
 	/** The dynamics marks !pppp! to !ffff! (ABC 2.1, 4.14), by name: the same volumes as +pppp+ to +ffff+. */
 	private static final Set<String> DYNAMICS_NAMES = Arrays.stream(Dynamics.values()).map(Enum::name)
 			.collect(java.util.stream.Collectors.toUnmodifiableSet());
 
+	/**
+	 * The seed of a cowbell part's random pitches with Lotro instruments (useLotroInstruments): started again for each
+	 * part, so a conversion gives the same notes every time, and a part's notes don't depend on the parts before it.
+	 */
+	private static final long COWBELL_SEED = 1;
+
+	/** The fermata's decoration names (ABC 2.1, 4.14); H is its short form. Held on a part's last notes (holdFermata). */
+	private static final Set<String> FERMATA_NAMES = Set.of("fermata", "invertedfermata");
+
 	/** The accent's decoration names (ABC 2.1, 4.14); L is its short form. */
 	private static final Set<String> ACCENT_NAMES = Set.of("accent", ">", "emphasis");
 
-	/** The volume of an accented note: ACCENT_DYNAMICS_STEPS louder than the dynamics, at most the loudest. */
-	private static Dynamics accented(Dynamics dynamics) {
-		return louder(dynamics, ACCENT_DYNAMICS_STEPS);
+	/** How many Dynamics steps louder a decoration plays its note: an accent, !sfz!; 0 for none. */
+	private static int accentStepsOf(String decoration) {
+		if (ACCENT_NAMES.contains(decoration))
+			return ACCENT_DYNAMICS_STEPS;
+		return decoration.equals("sfz") ? SFZ_DYNAMICS_STEPS : 0;
 	}
 
 	/** The dynamics steps louder, at most the loudest. */
@@ -772,8 +796,12 @@ public class AbcToMidi {
 		Map<Integer, Double> tiedNoteEndTicks = new HashMap<>(); // noteId => end of the tied note so far, see below
 		Map<Integer, LotroInstrument> trackInstruments = new HashMap<>(); // trackIndex => instrument it plays, see endTrack
 		Map<Integer, Integer> accidentals = new HashMap<>(); // noteId => deltaNoteId
+		Random cowbellPitches = new Random(COWBELL_SEED); // A cowbell's random pitches, from each part's start
 
 		List<MidiEvent> noteOffEvents = new ArrayList<>();
+		// The note-offs of the last chord played with a fermata, and where it starts: held at the part's end (holdFermata)
+		List<MidiEvent> fermataNoteOffs = new ArrayList<>();
+		long fermataStartTick = -1;
 		List<Triple<Integer, Double, String>> notesOn = new ArrayList<>();
 		Map<Integer, Dynamics> attackDynamics = new HashMap<>(); // lotroNoteId => volume when it was last attacked
 		// Lyrics (w:), sung when the part ends, see singLyrics. Keyed by source position, as the repeats play notes again.
@@ -1115,8 +1143,11 @@ public class AbcToMidi {
 											brokenCarried[2], brokenCarried[3]);
 								}
 
-								if (track != null)
+								if (track != null) {
+									chordStartTick = holdFermata(track, fermataNoteOffs, fermataStartTick, chordStartTick,
+											partBarTicks.get(trackNumber));
 									singLyrics(track, lyricNotes, lyricLines, musicLines, sourceLineNumbers, lastAttackTick + 1);
+								}
 								if (track != null && playChords) {
 									partEndTicks.put(trackNumber, Math.round(chordStartTick));
 									endPartDrone(partDrone, trackNumber, Math.round(chordStartTick), drones);
@@ -1159,6 +1190,7 @@ public class AbcToMidi {
 								meterChangeColumn = 0;
 								meterChangeInPart = false;
 								chordStartTick = 0;
+								cowbellPitches.setSeed(COWBELL_SEED);
 								chordEndTick = 0;
 								abcInfo.setPartNumber(trackNumber, info.getPartNumber());
 								abcInfo.setPartStartLine(trackNumber, lineNumberForRegions);
@@ -1473,9 +1505,11 @@ public class AbcToMidi {
 					List<double[]> graceNotes = new ArrayList<>(); // {noteId, written length} of grace notes before the next note
 					double attackOffset = 0; // The current note or chord starts after its grace notes
 					String ornament = null; // The decoration before the next note, if it's one that is played (ORNAMENTS)
-					// An accent or staccato before the next note or chord (only with standard2011)
-					boolean accent = false;
-					boolean staccato = false;
+					// An accent or staccato before the next note or chord (only with standard2011): how many Dynamics
+					// steps louder it plays (accentStepsOf), and how much of its written length it sounds
+					int accentSteps = 0;
+					double soundingLength = 1;
+					boolean fermata = false; // Held if it's on the part's last notes (holdFermata)
 					Tuplet tuplet = null;
 					// The numerator and denominator of the note after the broken rhythm sign; from the line before if
 					// that ended with one (e>)
@@ -1736,9 +1770,10 @@ public class AbcToMidi {
 												crossedRepeat, track, channel, info.getDynamics().getVol(useLotroInstruments), noteOffEvents, fileName);
 										crossedRepeat = false;
 									}
-									// An accent or staccato before the chord was for all of its notes
-									accent = false;
-									staccato = false;
+									// An accent, staccato or fermata before the chord was for all of its notes
+									accentSteps = 0;
+									soundingLength = 1;
+									fermata = false;
 
 									if (tuplet != null && tuplet.r == 0) {
 										// A tuplet that ended on this chord have now applied to all of its notes. Now the tuplet is done.
@@ -1927,8 +1962,12 @@ public class AbcToMidi {
 													fileName, lineNumber, i);
 										if (!repeats.skipping() && ORNAMENTS.containsKey(decoration))
 											ornament = ORNAMENTS.get(decoration);
-										else if (abc21 && ACCENT_NAMES.contains(decoration))
-											accent = true; // +accent+, the ABC 2.0 form of !accent!
+										else if (abc21 && accentStepsOf(decoration) > 0)
+											accentSteps = accentStepsOf(decoration); // +accent+ +sfz+, the ABC 2.0 forms
+										else if (abc21 && decoration.equals("wedge"))
+											soundingLength = STACCATISSIMO_LENGTH; // +wedge+, the ABC 2.0 form
+										else if (abc21 && FERMATA_NAMES.contains(decoration))
+											fermata = true; // +fermata+, the ABC 2.0 form
 										repeats.mark(JumpMarks.of(decoration), lineIndex, i); // +segno+ +D.S.+ ...
 									}
 
@@ -1993,8 +2032,12 @@ public class AbcToMidi {
 										// ABC 2.1 (4.14): players "may be expected to implement the dynamics marks": !p! as
 										// +p+. Lotro skips them, so only with standard2011.
 										info.setDynamics(decorationName);
-									} else if (abc21 && ACCENT_NAMES.contains(decorationName)) {
-										accent = true; // ABC 2.1 (4.14): "the accent mark", as L
+									} else if (abc21 && accentStepsOf(decorationName) > 0) {
+										accentSteps = accentStepsOf(decorationName); // ABC 2.1 (4.14): "the accent mark", as L
+									} else if (abc21 && decorationName.equals("wedge")) {
+										soundingLength = STACCATISSIMO_LENGTH; // Staccatissimo
+									} else if (abc21 && FERMATA_NAMES.contains(decorationName)) {
+										fermata = true;
 									} else if (!repeats.skipping() && ORNAMENTS.containsKey(decorationName)) {
 										ornament = ORNAMENTS.get(decorationName);
 									}
@@ -2104,7 +2147,7 @@ public class AbcToMidi {
 									// slur .( and its optional .) (4.11). A dotted tie .- is made a tie by withSlipsFixed.
 									char afterDot = (i + 1 < line.length()) ? line.charAt(i + 1) : ' ';
 									if (abc21 && afterDot != '|' && afterDot != '(' && afterDot != ')')
-										staccato = true;
+										soundingLength = STACCATO_LENGTH;
 									break;
 								}
 
@@ -2190,7 +2233,9 @@ public class AbcToMidi {
 											default -> "roll";
 										};
 									if (abc21 && ch == 'L')
-										accent = true;
+										accentSteps = ACCENT_DYNAMICS_STEPS;
+									if (abc21 && ch == 'H')
+										fermata = true;
 									break;
 								case 'y':
 									// Spacer. Tested in Lotro (B58): it refuses the part.
@@ -2407,8 +2452,9 @@ public class AbcToMidi {
 							ornament = null;
 							graceNotes.clear();
 							if (!inChord) {
-								accent = false;
-								staccato = false;
+								accentSteps = 0;
+								soundingLength = 1;
+								fermata = false;
 							}
 							// A note of an ending that this pass doesn't play: it takes no time. It keeps its place in the w:
 							// lyrics, which are written for the notes as they stand.
@@ -2538,7 +2584,7 @@ public class AbcToMidi {
 									if (!tied && !tiedNotes.containsKey(noteId)) {
 										int min = info.getInstrument().lowestPlayable.id;
 										int max = info.getInstrument().highestPlayable.id;
-										lotroNoteId = noteId = min + (int) (Math.random() * (max - min));
+										lotroNoteId = noteId = min + cowbellPitches.nextInt(max - min);
 									}
 								} else if (!info.isStandardPitch()) {
 									// Lotro files and old projects: one pitch, as before (A37)
@@ -2686,12 +2732,17 @@ public class AbcToMidi {
 											: "common.abctomidi.meter.denominator.same"), fileName, meterChangeLine,
 											meterChangeColumn);
 								}
-								Dynamics attack = accent ? accented(info.getDynamics()) : info.getDynamics();
+								// A later chord: the fermata before it wasn't on the part's last notes
+								if (fermataStartTick != Math.round(chordStartTick)) {
+									fermataNoteOffs.clear();
+									fermataStartTick = Math.round(chordStartTick);
+								}
+								Dynamics attack = louder(info.getDynamics(), accentSteps);
 								MidiEvent noteOn = MidiFactory.createNoteOnEventEx(noteId, channel,
 										attack.getVol(useLotroInstruments), Math.round(chordStartTick + attackOffset));
 								track.add(noteOn);
 								// Where it is written (after grace notes it sounds later), for the beat-group accents
-								if (abc21 && !accent && info.getBeatGroups() != null)
+								if (abc21 && accentSteps == 0 && info.getBeatGroups() != null)
 									barAttacks.add(new BarAttack(noteOn, Math.round(chordStartTick), attack));
 							}
 
@@ -2716,18 +2767,20 @@ public class AbcToMidi {
 							} else {
 								tiedNoteEndTicks.remove(noteId);
 								tiedNoteStartTicks.remove(noteId);
-								// A staccato note sounds STACCATO_LENGTH of what is left of it after its grace notes and
-								// ornament (not a tied note). Measured from the written start, a trill ending after that
-								// would put the note-off before the note-on: a hanging note.
-								if (staccato && tiedSoFar == null) {
+								// A staccato note sounds STACCATO_LENGTH (STACCATISSIMO_LENGTH) of what is left of it after
+								// its grace notes and ornament (not a tied note). Measured from the written start, a trill
+								// ending after that would put the note-off before the note-on: a hanging note.
+								if (soundingLength < 1 && tiedSoFar == null) {
 									double attackTick = chordStartTick + attackOffset;
-									tieEndTick = attackTick + (noteEndTick - attackTick) * STACCATO_LENGTH;
+									tieEndTick = attackTick + (noteEndTick - attackTick) * soundingLength;
 								}
 							}
 
 							handleNoteTie(useLotroInstruments, enableLotroErrors, info, track, channel, PPQN, tiedNotes,
 									noteOffEvents, fileName, lineNumber, m, tied, numerator_abc, denominator_abc, abcNoteL,
 									abcNoteAcc, curTempoBPM, tieStartTick, tieEndTick, noteLetter, octaveStr, noteId, lotroNoteId, info.getInstrument());
+							if (fermata && !tied)
+								fermataNoteOffs.add(noteOffEvents.getLast());
 							if (!inChord) partChordsNumber++;
 							if (enableLotroErrors && partChordsNumber > 10_000) {
 								throw new LotroFileParseException(UIText.get("common.abctomidi.lotro.too.many.notes",
@@ -2743,8 +2796,9 @@ public class AbcToMidi {
 							}
 							chordStartTick = noteEndTick;
 							attackOffset = 0;
-							accent = false;
-							staccato = false;
+							accentSteps = 0;
+							soundingLength = 1;
+							fermata = false;
 							log.finer("chordStartTick n="+chordStartTick);
 						}
 						i = m.end();
@@ -2766,9 +2820,13 @@ public class AbcToMidi {
 				}
 			}
 
+
 			// The file's last part ends here
-			if (track != null)
+			if (track != null) {
+				chordStartTick = holdFermata(track, fermataNoteOffs, fermataStartTick, chordStartTick,
+						partBarTicks.get(trackNumber));
 				singLyrics(track, lyricNotes, lyricLines, musicLines, sourceLineNumbers, lastAttackTick + 1);
+			}
 			lyricNotes.clear();
 			lyricLines.clear();
 			musicLines.clear();
@@ -3051,6 +3109,41 @@ public class AbcToMidi {
 				return true;
 		}
 		return false;
+	}
+
+	/**
+	 * A fermata (H, !fermata!, !invertedfermata!) on the part's last notes holds them: the notes that end where the part
+	 * ends sound twice their written length, and the part ends that much later. Only there: elsewhere a fermata would
+	 * put the part behind the others and the accompaniment, so it's skipped (user, 2026-10-05). How long to hold is ABC's
+	 * choice to leave (4.14); twice the length scales with the note.
+	 *
+	 * @param noteOffs  The note-offs of the last chord played with a fermata (its notes that weren't tied on); cleared
+	 * @param startTick Where that chord is written to start
+	 * @param endTick   Where the part ends now
+	 * @param bars      The part's bar lines, for the accompaniment (null without chord symbols): one where the held
+	 *                  notes end is dropped, so the accompaniment plays on through the hold as under a longer note
+	 * @return Where the part ends
+	 */
+	private static double holdFermata(Track track, List<MidiEvent> noteOffs, long startTick, double endTick,
+									  NavigableSet<Long> bars) {
+		long end = Math.round(endTick);
+		long hold = end - startTick;
+		boolean held = false;
+		for (MidiEvent noteOff : noteOffs) {
+			if (noteOff.getTick() == end) {
+				// A rest after it, or a shorter note of its chord, ends before the part does: not held
+				track.remove(noteOff);
+				noteOff.setTick(end + hold);
+				track.add(noteOff);
+				held = true;
+			}
+		}
+		noteOffs.clear();
+		if (!held)
+			return endTick;
+		if (bars != null)
+			bars.tailSet(end, true).clear();
+		return endTick + hold;
 	}
 
 	/**

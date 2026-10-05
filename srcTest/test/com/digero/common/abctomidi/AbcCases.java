@@ -264,9 +264,9 @@ final class AbcCases {
 		c.add(of("instruments_stereo_50", instrumentParts).with(p -> p.stereo = 50));
 		c.add(tune("instrument_override", header("T:Test Harp"), "c d e f|")
 				.with(p -> p.instrumentOverrideMap = Map.of(1, LotroInstrument.BASIC_FLUTE)));
-		// Cowbell notes are randomized when useLotroInstruments is on, unless tied
-		c.add(tune("cowbell", header("T:Test Cowbell"), "c d e|").only(Profile.MAESTRO_LEGACY));
-		c.add(tune("moor_cowbell", header("T:Test Moor Cowbell"), "c d e|").only(Profile.MAESTRO_LEGACY));
+		// Cowbell notes are randomized when useLotroInstruments is on, unless tied: with a fixed seed, the same each time
+		c.add(tune("cowbell", header("T:Test Cowbell"), "c d e|"));
+		c.add(tune("moor_cowbell", header("T:Test Moor Cowbell"), "c d e|"));
 		c.add(tune("cowbell_tied", header("T:Test Cowbell"), "c-c|"));
 
 		// ------------------------------------------------------------ parts and files
@@ -991,8 +991,13 @@ final class AbcCases {
 		c.add(tune("grace_notes_under_tempo_change", "{d}c4 c4|", "%%Q: 240", "{d}c4 c4|")); // BUG1016
 		c.add(tune("ornament_under_tempo_change", "Mc4 c4|", "%%Q: 240", "Mc4 c4|")); // BUG1016
 
+
 		// ------------------------------------------------------------ decorations
-		c.add(tune("decorations_skipped", "!fermata!c !coda!d !segno!e !D.C.!f|!tenuto!c !wedge!d !breath!e !arpeggio![ceg]|"));
+		c.add(tune("decorations_skipped", "!fermata!c !coda!d !segno!e !D.C.!f|!tenuto!c !thumb!d !breath!e !arpeggio![ceg]|"));
+		// !sfz! louder than an accent, !wedge! shorter than staccato (standard2011); !turnx! !invertedturnx! as the turns
+		c.add(tune("decorations_sfz_wedge_turnx", "!sfz!c !wedge!d !turnx!e2|+sfz+f +wedge+g !invertedturnx!a2|"));
+		// A fermata holds the part's last notes twice as long (standard2011); the one on the first note is skipped
+		c.add(tune("decorations_fermata_last_notes", "Hc d e2|c d !fermata![ce]2|]"));
 		c.add(tune("decorations_accent_forms", "Lc !accent!d !>!e !emphasis!f|"));
 		c.add(tune("decorations_letters_bowing", "uc vd He Of Sg|"));
 		c.add(tune("dynamics_plus_capitals", "+FF+c d +PP+e f|")); // B74

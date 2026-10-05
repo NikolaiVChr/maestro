@@ -960,8 +960,10 @@ class AbcToMidiBehaviourTest {
 						velocities(convert(standard(tune("semantic", "!pppp!c !ffff!d|")))));
 				assertEquals(velocities(convert(tune("semantic", "+ppp+c d +fff+e|"))),
 						velocities(convert(standard(tune("semantic", "!ppp!c d !fff!e|")))));
-				// A mark Dynamics doesn't have (!sfz!) sets no volume
-				assertEquals(mf, velocities(convert(standard(tune("semantic", "!sfz!c d|")))));
+				assertEquals(velocities(convert(tune("semantic", "+ppp+c d +fff+e|"))),
+						velocities(convert(standard(tune("semantic", "!ppp!c d !fff!e|")))));
+				// !sfz! is no volume mark: only its note is louder (accentAndStaccato), the next one is mf again
+				assertEquals(mf.get(1), velocities(convert(standard(tune("semantic", "!sfz!c d|")))).get(1));
 			}
 
 			@Test
@@ -992,6 +994,53 @@ class AbcToMidiBehaviourTest {
 						off(q, 62)), noteEvents(convert(standard(tune("semantic", ".[ce] d|")))));
 				assertEquals(noteEvents(convert(standard(tune("semantic", "c d | e|")))),
 						noteEvents(convert(standard(tune("semantic", "c d .| e|")))));
+				// !sfz! (sforzando) AbcToMidi.SFZ_DYNAMICS_STEPS louder (3: mf as fff); !wedge! (staccatissimo) sounding
+				// AbcToMidi.STACCATISSIMO_LENGTH of its length (a quarter). Also as +sfz+ +wedge+ (ABC 2.0)
+				assertEquals(velocities(convert(tune("semantic", "+fff+c +mf+d e|"))),
+						velocities(convert(standard(tune("semantic", "!sfz!c d e|")))));
+				assertEquals(List.of(on(0, 60), off(q / 2, 60), on(q / 2, 62), off(5 * q / 8, 62), on(q, 64),
+						off(3 * q / 2, 64)), noteEvents(convert(standard(tune("semantic", "c !wedge!d e|")))));
+				Sequence plusForm = convert(standard(tune("semantic", "+sfz+c +wedge+d e|")));
+				Sequence bangForm = convert(standard(tune("semantic", "!sfz!c !wedge!d e|")));
+				assertEquals(noteEvents(bangForm), noteEvents(plusForm));
+				assertEquals(velocities(bangForm), velocities(plusForm));
+				// Lotro: neither changes anything
+				Sequence lotro = convert(tune("semantic", "!sfz!c !wedge!d e|"));
+				assertEquals(noteEvents(plain), noteEvents(lotro));
+				assertEquals(velocities(plain), velocities(lotro));
+			}
+
+			@Test
+			void fermataHoldsThePartsLastNotes() throws Exception {
+				// A fermata (H, !fermata!, !invertedfermata!, +fermata+) on the part's last note or chord: it sounds twice
+				// its written length, and the part ends that much later. Elsewhere it's skipped, so the parts and the
+				// accompaniment stay together.
+				Sequence held = convert(standard(tune("semantic", "c d e4|")));
+				for (String body : List.of("c d He2|", "c d !fermata!e2|", "c d !invertedfermata!e2|", "c d +fermata+e2|")) {
+					Sequence fermata = convert(standard(tune("semantic", body)));
+					assertEquals(noteEvents(held), noteEvents(fermata), body);
+					assertEquals(held.getTickLength(), fermata.getTickLength(), body);
+				}
+				// All the notes of a chord
+				assertEquals(noteEvents(convert(standard(tune("semantic", "c [ce]4|")))),
+						noteEvents(convert(standard(tune("semantic", "c H[ce]2|")))));
+				// Not in the middle of the part, nor before a rest
+				assertEquals(noteEvents(convert(standard(tune("semantic", "c d e2|")))),
+						noteEvents(convert(standard(tune("semantic", "c Hd e2|")))));
+				assertEquals(noteEvents(convert(standard(tune("semantic", "c d z2|")))),
+						noteEvents(convert(standard(tune("semantic", "c Hd z2|")))));
+				// The last note played: after D.C. al Fine, the note at Fine
+				assertEquals(noteEvents(convert(standard(tune("semantic", "c d|e f||g a|b c'|c d|e f2|]")))),
+						noteEvents(convert(standard(tune("semantic", "c d|\"Fine\"e Hf||g a|b c' \"D.C. al Fine\"|]"))
+								.with(p -> p.expandRepeats = true))));
+				// The accompaniment ends with it
+				Sequence chordsHeld = convert(chords(standard(tune("semantic", "\"C\"c d e4|"))));
+				Sequence chordsFermata = convert(chords(standard(tune("semantic", "\"C\"c d He2|"))));
+				for (int t = 2; t < chordsHeld.getTracks().length; t++)
+					assertEquals(noteEvents(chordsHeld, t), noteEvents(chordsFermata, t), "track " + t);
+				// Lotro: a fermata changes nothing
+				assertEquals(noteEvents(convert(tune("semantic", "c d e2|"))),
+						noteEvents(convert(tune("semantic", "c d He2|"))));
 			}
 
 			@Test
@@ -2995,6 +3044,18 @@ class AbcToMidiBehaviourTest {
 					noteEvents(ConversionDump.convert(tune("semantic", "{g}c d e f|"), Profile.ABC_PLAYER_STRICT)));
 		}
 
+
+		@Test
+		void cowbellNotesAreTheSameEveryTime() throws Exception {
+			// With Lotro instruments a cowbell's notes get random pitches (as in Lotro). The randomness has a fixed seed,
+			// started again for each part, so a conversion gives the same notes every time
+			AbcCase cowbell = tune("semantic", header("T:Test Cowbell"), "c d e f g a b c' c d e f g a b c'|");
+			List<NoteEvent> first = noteEvents(ConversionDump.convert(cowbell, Profile.ABC_PLAYER));
+			assertEquals(first, noteEvents(ConversionDump.convert(cowbell, Profile.ABC_PLAYER)));
+			// Still random: not one pitch for all
+			assertTrue(first.stream().map(NoteEvent::pitch).distinct().count() > 1, first.toString());
+		}
+
 		@Test
 		void ornamentsArePlayed() throws Exception {
 			// In steps of GRACE_NOTE_SECONDS from the note's start, folk style (starting on the note); the note itself
@@ -3016,6 +3077,9 @@ class AbcToMidiBehaviourTest {
 					noteOns(convert(tune("semantic", "!pralltriller!c2|"))));
 			assertEquals(List.of(on(0, 62), on(Math.round(g), 60), on(Math.round(2 * g), 59), on(Math.round(3 * g), 60)),
 					noteOns(convert(tune("semantic", "!turn!c2|"))));
+			// !turnx! !invertedturnx! (a turn with a line through it) are played as !turn! !invertedturn!
+			assertEquals(noteOns(convert(tune("semantic", "!turn!c2 !invertedturn!d2|"))),
+					noteOns(convert(tune("semantic", "!turnx!c2 !invertedturnx!d2|"))));
 			// Irish roll: the note in three parts, a cut (above) starts the second, a tap (below) the third
 			assertEquals(List.of(on(0, 60), on(q / 2, 62), on(Math.round(q / 2.0 + g), 60), on(q, 59),
 					on(Math.round(q + g), 60)), noteOns(convert(tune("semantic", "~c3|"))));
