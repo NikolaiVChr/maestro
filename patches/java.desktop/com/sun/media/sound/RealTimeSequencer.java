@@ -28,6 +28,7 @@ package com.sun.media.sound;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -1571,118 +1572,145 @@ final class RealTimeSequencer extends AbstractMidiDevice
          * Runtime application of mute/solo:
          * if a track is muted that was previously playing, send
          *    note off events for all currently playing notes.
+         * Nothing to do when a track is unmuted: disabled tracks keep playing
+         * everything but their notes (see isStateMessage()), and keep their
+         * read position, so the channel state is already correct.
          */
         private void applyDisabledTracks(boolean[] oldDisabled, boolean[] newDisabled) {
-            byte[][] tempArray = null;
             synchronized(RealTimeSequencer.this) {
-                for (int i = 0; i < newDisabled.length; i++) {
-                    if (((oldDisabled == null)
-                         || (i >= oldDisabled.length)
-                         || !oldDisabled[i])
-                        && newDisabled[i]) {
+                for (int i = 0; (i < newDisabled.length) && (i < tracks.length); i++) {
+                    boolean wasDisabled = (oldDisabled != null)
+                            && (i < oldDisabled.length)
+                            && oldDisabled[i];
+                    if (!wasDisabled && newDisabled[i]) {
                         // case that a track gets muted: need to
                         // send appropriate note off events to prevent
                         // hanging notes
-
-                        if (tracks.length > i) {
-                            sendNoteOffIfOn(tracks[i], lastTick);
-                        }
-                    }
-                    else if ((oldDisabled != null)
-                             && (i < oldDisabled.length)
-                             && oldDisabled[i]
-                             && !newDisabled[i]) {
-                        // case that a track was muted and is now unmuted
-                        // need to chase events and re-index this track
-                        if (tempArray == null) {
-                            tempArray = new byte[128][16];
-                        }
-                        chaseTrackEvents(i, 0, lastTick, true, tempArray);
+                        sendNoteOffIfOn(tracks[i], lastTick);
                     }
                 }
             }
         }
 
-        /** go through all events from startTick to endTick
-         * chase the controller state and program change state
-         * and then set the end-states at once.
-         *
+        /**
+         * Chases controller, program change and pitch bend state from the
+         * beginning of the sequence up to (excluding) endTick, merged over all
+         * tracks, sends the end state, and re-indexes all tracks to endTick.
+         * <p>
+         * The latest event wins. On equal ticks the higher track index wins,
+         * which is the order in which pump() dispatches simultaneous events.
+         * This matters when several tracks share a channel: chasing them one
+         * track after the other lets the last chased track win, even when
+         * another track changed the channel later.
+         * <p>
+         * Disabled tracks are included, because pump() also plays their
+         * non-note messages (see isStateMessage()), so they need the correct
+         * read position too.
+         * <p>
          * needs to be called in synchronized state
-         * @param tempArray an byte[128][16] to hold controller messages
          */
-        private void chaseTrackEvents(int trackNum,
-                                      long startTick,
-                                      long endTick,
-                                      boolean doReindex,
-                                      byte[][] tempArray) {
+        synchronized void chaseEvents(long startTick, long endTick) {
             if (startTick > endTick) {
                 // start from the beginning
                 startTick = 0;
             }
-            byte[] progs = new byte[16];
-            // init temp array with impossible values
+            // tick of the event that set the value, -1 means not set
+            long[][] ccTick = new long[16][128];
+            byte[][] ccValue = new byte[16][128];
+            long[] progTick = new long[16];
+            byte[] progValue = new byte[16];
+            long[] bendTick = new long[16];
+            int[] bendValue = new int[16]; // packed: data1 | (data2 << 8)
             for (int ch = 0; ch < 16; ch++) {
-                progs[ch] = -1;
-                for (int co = 0; co < 128; co++) {
-                    tempArray[co][ch] = -1;
-                }
+                Arrays.fill(ccTick[ch], -1);
             }
-            Track track = tracks[trackNum];
-            int size = track.size();
-            try {
-                for (int i = 0; i < size; i++) {
-                    MidiEvent event = track.get(i);
-                    if (event.getTick() >= endTick) {
-                        if (doReindex && (trackNum < trackReadPos.length)) {
-                            trackReadPos[trackNum] = (i > 0)?(i-1):0;
+            Arrays.fill(progTick, -1);
+            Arrays.fill(bendTick, -1);
+
+            for (int t = 0; t < tracks.length; t++) {
+                Track track = tracks[t];
+                int size = track.size();
+                int i = 0;
+                try {
+                    for (; i < size; i++) {
+                        MidiEvent event = track.get(i);
+                        long tick = event.getTick();
+                        if (tick >= endTick) {
+                            break;
                         }
-                        break;
-                    }
-                    MidiMessage msg = event.getMessage();
-                    int status = msg.getStatus();
-                    int len = msg.getLength();
-                    if (len == 3 && ((status & 0xF0) == ShortMessage.CONTROL_CHANGE)) {
-                        if (msg instanceof ShortMessage) {
-                            ShortMessage smsg = (ShortMessage) msg;
-                            tempArray[smsg.getData1() & 0x7F][status & 0x0F] = (byte) smsg.getData2();
+                        MidiMessage msg = event.getMessage();
+                        int status = msg.getStatus();
+                        int command = status & 0xF0;
+                        int len = msg.getLength();
+                        boolean isController = (len == 3) && (command == ShortMessage.CONTROL_CHANGE);
+                        boolean isProgram = (len == 2) && (command == ShortMessage.PROGRAM_CHANGE);
+                        boolean isBend = (len == 3) && (command == ShortMessage.PITCH_BEND);
+                        if (!isController && !isProgram && !isBend) {
+                            continue;
+                        }
+                        int ch = status & 0x0F;
+                        int data1;
+                        int data2 = 0;
+                        if (msg instanceof ShortMessage smsg) {
+                            data1 = smsg.getData1() & 0x7F;
+                            data2 = smsg.getData2() & 0x7F;
                         } else {
                             byte[] data = msg.getMessage();
-                            tempArray[data[1] & 0x7F][status & 0x0F] = data[2];
+                            data1 = data[1] & 0x7F;
+                            if (len == 3) {
+                                data2 = data[2] & 0x7F;
+                            }
+                        }
+                        // '>=': on equal ticks the later track wins
+                        if (isController) {
+                            if (isChasedController(data1) && tick >= ccTick[ch][data1]) {
+                                ccTick[ch][data1] = tick;
+                                ccValue[ch][data1] = (byte) data2;
+                            }
+                        } else if (isProgram) {
+                            if (tick >= progTick[ch]) {
+                                progTick[ch] = tick;
+                                progValue[ch] = (byte) data1;
+                            }
+                        } else if (tick >= bendTick[ch]) {
+                            bendTick[ch] = tick;
+                            bendValue[ch] = data1 | (data2 << 8);
                         }
                     }
-                    if (len == 2 && ((status & 0xF0) == ShortMessage.PROGRAM_CHANGE)) {
-                        if (msg instanceof ShortMessage) {
-                            ShortMessage smsg = (ShortMessage) msg;
-                            progs[status & 0x0F] = (byte) smsg.getData1();
-                        } else {
-                            byte[] data = msg.getMessage();
-                            progs[status & 0x0F] = data[1];
-                        }
+                    if (t < trackReadPos.length) {
+                        // also when no event is at or after endTick: then it points
+                        // to End Of Track, instead of keeping a stale position
+                        trackReadPos[t] = (i > 0) ? (i - 1) : 0;
                     }
+                } catch (ArrayIndexOutOfBoundsException aioobe) {
+                    // this happens when messages are removed
+                    // from the track while this method executes.
+                    // Let pump() find the read positions again.
+                    needReindex = true;
                 }
-            } catch (ArrayIndexOutOfBoundsException aioobe) {
-                // this happens when messages are removed
-                // from the track while this method executes
             }
-            int numControllersSent = 0;
-            // now send out the aggregated controllers and program changes
+
+            // now send out the aggregated state
             for (int ch = 0; ch < 16; ch++) {
                 for (int co = 0; co < 128; co++) {
-                    byte controllerValue = tempArray[co][ch];
-                    if (controllerValue >= 0) {
-                        int packedMsg = (ShortMessage.CONTROL_CHANGE | ch) | (co<<8) | (controllerValue<<16);
+                    if (ccTick[ch][co] >= 0) {
+                        int packedMsg = (ShortMessage.CONTROL_CHANGE | ch) | (co << 8) | (ccValue[ch][co] << 16);
                         getTransmitterList().sendMessage(packedMsg, -1);
-                        numControllersSent++;
                     }
                 }
                 // send program change *after* controllers, to
                 // correctly initialize banks
-                if (progs[ch] >= 0) {
-                    getTransmitterList().sendMessage((ShortMessage.PROGRAM_CHANGE | ch) | (progs[ch]<<8), -1);
+                if (progTick[ch] >= 0) {
+                    getTransmitterList().sendMessage((ShortMessage.PROGRAM_CHANGE | ch) | (progValue[ch] << 8), -1);
                 }
-                if (progs[ch] >= 0 || startTick == 0 || endTick == 0) {
+                boolean reset = (progTick[ch] >= 0) || (startTick == 0) || (endTick == 0);
+                if (bendTick[ch] >= 0) {
+                    getTransmitterList().sendMessage((ShortMessage.PITCH_BEND | ch) | (bendValue[ch] << 8), -1);
+                } else if (reset) {
                     // reset pitch bend on this channel (E0 00 40)
                     getTransmitterList().sendMessage((ShortMessage.PITCH_BEND | ch) | (0x40 << 16), -1);
+                }
+                if (reset) {
                     // reset sustain pedal on this channel
                     getTransmitterList().sendMessage((ShortMessage.CONTROL_CHANGE | ch) | (64 << 8), -1);
                 }
@@ -1690,17 +1718,46 @@ final class RealTimeSequencer extends AbstractMidiDevice
         }
 
         /**
-         * chase controllers and program for all tracks.
+         * Controllers whose last value can be re-sent on its own.
+         * Data entry and (N)RPN select (6, 38, 96-101) only make sense as an
+         * ordered sequence, re-sending the last value of each in controller
+         * number order can write to the wrong parameter.
+         * Channel mode messages (120-127) are commands, not state: re-sending
+         * all notes off would cut notes, and reset all controllers would
+         * undo the controllers just chased.
          */
-        synchronized void chaseEvents(long startTick, long endTick) {
-            byte[][] tempArray = new byte[128][16];
-            for (int t = 0; t < tracks.length; t++) {
-                if ((trackDisabled == null)
-                    || (trackDisabled.length <= t)
-                    || (!trackDisabled[t])) {
-                    // if track is not disabled, chase the events for it
-                    chaseTrackEvents(t, startTick, endTick, true, tempArray);
-                }
+        private static boolean isChasedController(int controller) {
+            switch (controller) {
+                case 6: case 38:
+                case 96: case 97: case 98: case 99: case 100: case 101:
+                    return false;
+                default:
+                    return controller < 120;
+            }
+        }
+
+        /**
+         * Messages that a disabled (muted, or not solo) track still plays:
+         * everything except its notes. Muting only silences the notes, so a
+         * channel that is shared with a playing track keeps the same program,
+         * controllers and pitch bend as when all tracks play.
+         *
+         * @return true for channel messages other than note on/off and poly
+         *         pressure, and for system exclusive messages
+         */
+        private static boolean isStateMessage(MidiMessage msg) {
+            int status = msg.getStatus();
+            switch (status & 0xF0) {
+                case ShortMessage.NOTE_OFF:
+                case ShortMessage.NOTE_ON:
+                case ShortMessage.POLY_PRESSURE:
+                    return false;
+                case 0xF0:
+                    // system exclusive (0xF0, 0xF7) yes,
+                    // meta events and system common/real time messages no
+                    return (status == 0xF0) || (status == 0xF7);
+                default:
+                    return true;
             }
         }
 
@@ -1878,11 +1935,14 @@ final class RealTimeSequencer extends AbstractMidiDevice
                             // since last time. Would need to set needReindex = true then
                             readPos++;
                             // only play this event if the track is enabled,
-                            // or if it is a tempo message on track 0
+                            // or if it is a tempo message on track 0,
+                            // or if it changes synthesizer state: a disabled
+                            // track only has its notes silenced
                             // Note: cannot put this check outside
                             //       this inner loop in order to detect end of file
-                            if (!disabled ||
-                                ((t == 0) && (MidiUtils.isMetaTempo(currEvent.getMessage())))) {
+                            if (!disabled
+                                    || ((t == 0) && (MidiUtils.isMetaTempo(currEvent.getMessage())))
+                                    || isStateMessage(currEvent.getMessage())) {
                                 changesPending = dispatchMessage(t, currEvent);
                             }
                         }
