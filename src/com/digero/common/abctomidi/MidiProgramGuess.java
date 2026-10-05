@@ -149,7 +149,8 @@ final class MidiProgramGuess {
 			String line = lines.get(i);
 			if (line.startsWith("X:") || (endAtEmptyLine && line.isBlank()))
 				break;
-			if (line.startsWith("%") || FIELD.matcher(line).lookingAt())
+			String trimmed = line.stripLeading(); // "   w: love" is lyrics too, as AbcToMidi reads it
+			if (trimmed.startsWith("%") || FIELD.matcher(trimmed).lookingAt())
 				continue;
 			if (BOWING_NAME.matcher(line).find())
 				return true;

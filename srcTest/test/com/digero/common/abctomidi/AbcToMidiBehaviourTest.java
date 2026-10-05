@@ -1536,6 +1536,27 @@ class AbcToMidiBehaviourTest {
 				assertTrue(e.getMessage().contains("Book.abc (X:2 Polska) on line 6, column 4:"), e.getMessage());
 			}
 
+
+			@Test
+			void aPartWithoutATitleIsNamedAfterTheFile() throws Exception {
+				// Named after the file without its extension, also for a project's kept text and a tune opened from a
+				// book (third opinion, 2026-10-05): their name in messages ("reels, as kept in the project") is no
+				// file name, and only an extension's dot made it come out right
+				List<String> lines = List.of("X:1", "K:C", "c d|");
+				for (String name : List.of("reels", "Book.abc")) {
+					java.io.File file = new java.io.File(name);
+					AbcToMidi.Params kept = new AbcToMidi.Params(String.join("\n", lines), file);
+					kept.abcInfo = new AbcInfo();
+					AbcToMidi.convert(kept);
+					assertEquals(name.replace(".abc", ""), kept.abcInfo.getPartName(1), name);
+					AbcToMidi.Params alone = new AbcToMidi.Params(
+							List.of(new FileAndData(file, lines, AbcToMidi.tuneAloneName(file))));
+					alone.abcInfo = new AbcInfo();
+					AbcToMidi.convert(alone);
+					assertEquals(name.replace(".abc", ""), alone.abcInfo.getPartName(1), name);
+				}
+			}
+
 			@Test
 			void fileParseMessagesComeFromTheBundle() {
 				// FileParseException is used outside AbcToMidi too: every message is the bundle's, and a place ("6 lines
@@ -2454,7 +2475,7 @@ class AbcToMidiBehaviourTest {
 			assertEquals(25, guessed(specTempo(tune("t", header("M:2/4", "-L", "Q:100"), "c d|")))); // 1/16=100
 			assertEquals(390, guessed(specTempo(tune("t", header("M:6/8", "Q:\"Allegro\""), "c d|")))); // 3/8=130
 			assertEquals(130, guessed(specTempo(tune("t", header("Q:\"Allegro\""), "c d|"))));
-			assertEquals(120, guessed(specTempo(tune("t", header("Q:\"Lively!\""), "c d|")))); // not swing, a type
+			assertEquals(130, guessed(specTempo(tune("t", header("Q:\"Lively!\""), "c d|")))); // An English tempo word
 			// Not guessed: a Q: with a note length; Lotro's reading (Lotro files, existing projects)
 			assertNull(guessed(specTempo(tune("t", header("Q:1/4=100"), "c d|"))));
 			assertNull(guessed(specTempo(tune("t", header("Q:\"Allegro\" 1/4=100"), "c d|"))));
@@ -2616,6 +2637,35 @@ class AbcToMidiBehaviourTest {
 			assertEquals(130, headerTempo("M:4/4", "L:1/8", "Q:\"Allegro tango\""));
 			assertEquals(300, headerTempo("M:6/8", "L:1/8", "Q:\"Chacarera\" 3/8=100"));
 			assertEquals(120, headerTempo("M:4/4", "L:1/8", "Q:\"Rock\"")); // no type: the default
+		}
+
+		@Test
+		void maestrosTempoChangeKeepsTheUnitNoteBeat() throws Exception {
+			// A %%Q: line (Maestro's tempo changes) doesn't change the written Q:C3=100 (three unit notes a beat) that
+			// the later parts are checked against (third opinion, 2026-10-05): it took the beat to one unit note
+			AbcCase song = specTempo(AbcCase.of("semantic", "X:1", "T:a", "M:4/4", "L:1/8", "Q:C3=100", "K:C", "c d|",
+					"%%Q: 1/4=80", "e f|", "X:2", "T:b", "K:C", "g a|"));
+			assertEquals(abcInfoOf(specTempo(AbcCase.of("semantic", "X:1", "T:a", "M:4/4", "L:1/8", "Q:C3=100", "K:C",
+					"c d|"))).getPrimaryTempoBPM(), abcInfoOf(song).getPrimaryTempoBPM());
+		}
+
+		@Test
+		void tempoTextWithoutATempoGivesNone() throws Exception {
+			// A Q: text that is neither a tempo word nor a tune type gives no tempo, as no Q: (third opinion,
+			// 2026-10-05): R:'s type still gives one (a reel played 120 quarters, not 1/2=100), else the default (in 6/8
+			// a quarter, not a dotted quarter); also LENIENT's Q:Hot
+			assertEquals(typeTempo("R:reel", "M:C|", "-Q"), typeTempo("R:reel", "M:C|", "Q:\"Hot!\""));
+			assertEquals(typeTempo("R:reel", "M:C|", "-Q"), typeTempo("R:reel", "M:C|", "Q:Hot"));
+			assertEquals(headerTempo("M:6/8", "L:1/8"), headerTempo("M:6/8", "L:1/8", "Q:\"Hot!\""));
+			// English tempo words, as the Italian ones (TEMPO_WORDS): the felt beat, a dotted quarter in 6/8
+			assertEquals(headerTempo("M:4/4", "Q:\"Allegro\""), headerTempo("M:4/4", "Q:\"Lively\""));
+			assertEquals(headerTempo("M:6/8", "Q:\"Moderato\""), headerTempo("M:6/8", "Q:\"Moderately\""));
+			for (String[] word : new String[][] { { "Slow", "60" }, { "Slowly", "60" }, { "Steady", "100" },
+					{ "Medium", "110" }, { "Moderate", "110" }, { "Lively", "130" }, { "Brisk", "140" }, { "Fast", "150" },
+					{ "Quick", "150" }, { "Quickly", "150" } })
+				assertEquals(Integer.parseInt(word[1]), headerTempo("M:4/4", "Q:\"" + word[0] + "\""), word[0]);
+			// Not in Lotro's reading (Lotro files, existing projects): an unknown text there, as before
+			assertEquals(120, abcInfoOf(tune("semantic", header("Q:\"Lively\""), "c d|")).getPrimaryTempoBPM());
 		}
 
 		/** The tempo played for a tune without Q: with these header fields, with specTempo. */
@@ -3236,6 +3286,8 @@ class AbcToMidiBehaviourTest {
 			// Not bowing: in quoted text, a field, the lyrics, a comment, or the free text after the tune
 			assertEquals(73, bodyProgram("R:jig", "\"^up v\"c d|", "w:u v", "+:u v", "% u v"));
 			assertEquals(73, bodyProgram("R:jig", "c d|", "", "Played by Vivaldi, with an up-bow"));
+			// Lyrics indented, as AbcToMidi reads them too (third opinion, 2026-10-05): "love" has no down-bow
+			assertEquals(73, bodyProgram("R:jig", "c d|", "   w:I love you"));
 		}
 
 		@Test

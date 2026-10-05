@@ -1201,7 +1201,7 @@ public class AbcToMidi {
 								fileName = tuneFileName(baseFileName, tuneNumber, null);
 								trackNumber++;
 								// Named by its first T:, else by the file header's, else by the file
-								abcInfo.setPartName(trackNumber, defaultPartName(fileTitle, baseFileName), false);
+								abcInfo.setPartName(trackNumber, defaultPartName(fileTitle, fileAndData), false);
 								partStartLine = lineNumber;
 								// The part starts from the file header's meter, so a meter error in a part without M: points here
 								meterChangeLine = lineNumber;
@@ -1426,7 +1426,7 @@ public class AbcToMidi {
 
 							abcInfo.setPartNumber(0, 0);
 							// The first part's name, as above: its first T:, else the file header's, else the file
-							abcInfo.setPartName(0, info.getTitle().isEmpty() ? defaultPartName(fileTitle, baseFileName)
+							abcInfo.setPartName(0, info.getTitle().isEmpty() ? defaultPartName(fileTitle, fileAndData)
 									: info.getTitle(), false);
 							abcInfo.setTimeSignature(info.getMeter());
 							abcInfo.setKeySignature(info.getKey());
@@ -4406,9 +4406,15 @@ public class AbcToMidi {
 		return trackNumber;
 	}
 
-	/** The name of a part without a T: of its own: the file header's first T:, else the file's name without extension. */
-	private static String defaultPartName(String fileTitle, String fileName) {
-		return (fileTitle != null) ? fileTitle : fileName.replaceFirst("\\.[^.]*$", "");
+	/**
+	 * The name of a part without a T: of its own: the file header's first T:, else the file's name without extension.
+	 * The file's own name, not its name in messages ("Book.abc, as kept in the project", FileAndData.name).
+	 */
+	private static String defaultPartName(String fileTitle, FileAndData fileAndData) {
+		if (fileTitle != null)
+			return fileTitle;
+		String fileName = (fileAndData.file != null) ? fileAndData.file.getName() : fileAndData.name;
+		return fileName.replaceFirst("\\.[^.]*$", "");
 	}
 
 	/**
@@ -4708,7 +4714,7 @@ public class AbcToMidi {
 								inFileHeader = false;
 								trackNumber++;
 								partTitles = 0;
-								abcInfo.setPartName(trackNumber, defaultPartName(fileTitle, fileName), false);
+								abcInfo.setPartName(trackNumber, defaultPartName(fileTitle, fileAndData), false);
 								partNumber = partNumber(value, partNumber);
 								abcInfo.setPartNumber(trackNumber, partNumber);
 								abcInfo.setPartStartLine(trackNumber, lineNumber);

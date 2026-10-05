@@ -38,7 +38,7 @@ public class TuneInfo {
 	private boolean standardPitch; // C is middle C, whatever the instrument (ABC 2.1); LotRO's octave depends on it
 	private boolean standard2011; // Params.standard2011 (and LotRO errors off): ABC 2.1 where LotRO plays otherwise
 	private boolean tempoGiven; // A Q: so far
-	private boolean tempoIsType; // The last Q: was the text of a tune type alone (parseTempo)
+	private boolean tempoIsText; // The last Q: was a text alone that gives no tempo: a tune type, or another (parseTempo)
 	private boolean allPartsTempoFixed; // The first part's header has ended: its tempo is the song's
 	private Integer savedTempoBPM; // Params.savedTempoBPM: played instead of a guessed tempo, or null
 	private Integer guessedTempoBPM; // getGuessedTempoBPM
@@ -465,6 +465,14 @@ public class TuneInfo {
 			Map.entry("adagio", 70), Map.entry("adagietto", 75), Map.entry("andante", 90), Map.entry("andantino", 95),
 			Map.entry("moderato", 110), Map.entry("allegretto", 115), Map.entry("allegro", 130),
 			Map.entry("vivace", 165), Map.entry("presto", 180), Map.entry("prestissimo", 200));
+	/**
+	 * English tempo words (Q:"Lively", user 2026-10-05), as the Italian ones they stand for. Only where the Q: note
+	 * length counts (setStandardTempo): Lotro files and existing projects keep their tempo.
+	 */
+	private static final Map<String, Integer> ENGLISH_TEMPO_WORDS = Map.ofEntries(Map.entry("slow", 60),
+			Map.entry("slowly", 60), Map.entry("steady", 100), Map.entry("medium", 110), Map.entry("moderate", 110),
+			Map.entry("moderately", 110), Map.entry("lively", 130), Map.entry("brisk", 140), Map.entry("fast", 150),
+			Map.entry("quick", 150), Map.entry("quickly", 150));
 
 	/** A tempo word's beat: a quarter, or a dotted quarter in 6/8 9/8 12/8 (per denominator). */
 	private static final double FELT_BEAT = -1;
@@ -538,7 +546,7 @@ public class TuneInfo {
 			str = (str.substring(0, quote) + " " + (close < 0 ? "" : str.substring(close + 1))).trim();
 			if (str.isEmpty()) {
 				for (String word : text.split("[^\\p{L}]+")) {
-					Integer bpm = TEMPO_WORDS.get(word);
+					Integer bpm = TEMPO_WORDS.getOrDefault(word, standardTempo ? ENGLISH_TEMPO_WORDS.get(word) : null);
 					if (bpm != null) {
 						tempoBeat = FELT_BEAT;
 						tempoBeatsPerMinute = bpm;
@@ -548,7 +556,12 @@ public class TuneInfo {
 				// A tune type instead (Q:"Chacarera", abcmr's book): read as R:, its tempo is guessed (endHeader)
 				if (qField && standardTempo && RhythmTempo.of(text) != null) {
 					rhythm = text;
-					tempoIsType = true;
+					tempoIsText = true;
+					return;
+				}
+				// Another text (Q:"Hot!", LENIENT's Q:Hot): no tempo, as without a Q:, so R:'s type still gives one
+				if (qField && standardTempo) {
+					tempoIsText = true;
 					return;
 				}
 				if (!tempoGiven)
@@ -704,13 +717,12 @@ public class TuneInfo {
 			return savedTempoBPM;
 		return toMeterBeats(tempoBeat, tempoBeatsPerMinute);
 	}
-
-
+	
 	public void setPrimaryTempoBPM(String str) {
-		tempoIsType = false;
+		tempoIsText = false;
 		parseTempo(str, true);
-		if (tempoIsType)
-			return; // A tune type, as R: (parseTempo): no Q: given
+		if (tempoIsText)
+			return; // A tune type, as R:, or a text without a tempo (parseTempo): no Q: given
 		tempoGiven = true;
 		this.primaryTempoBPM = writtenTempo();
 		if (!allPartsTempoMap.containsKey(0L))
@@ -723,10 +735,12 @@ public class TuneInfo {
 		// %%Q: (Maestro's tempo changes). The written Q: stays what getTempoBeat() and endHeader() see.
 		double beat = tempoBeat;
 		int beatsPerMinute = tempoBeatsPerMinute;
+		int unitNotes = tempoUnitNotes;
 		parseTempo(str, false);
 		int bpm = toMeterBeats(tempoBeat, tempoBeatsPerMinute);
 		tempoBeat = beat;
 		tempoBeatsPerMinute = beatsPerMinute;
+		tempoUnitNotes = unitNotes;
 		allPartsTempoMap.put(tick, bpm);
 		curPartTempoMap.put(tick, bpm);
 	}

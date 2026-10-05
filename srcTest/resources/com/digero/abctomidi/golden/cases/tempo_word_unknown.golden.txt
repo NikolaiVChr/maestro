@@ -6,7 +6,7 @@ case tempo_word_unknown
   T:Test
   M:4/4
   L:1/8
-  Q:"Fast-ish"
+  Q:"Hot-ish"
   K:C
   c d e f|
 
@@ -56,7 +56,7 @@ divisionType=0.0 resolution=11520 tickLength=39090 tracks=2
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
 == EXCEPTION LotroFileParseException: Error reading tempo_word_unknown.abc (X:1 Test) on line 5, column 3:
-Lotro refuses a part with text in Q: ("Fast-ish"); use only the tempo, e.g. Q:120
+Lotro refuses a part with text in Q: ("Hot-ish"); use only the tempo, e.g. Q:120
 == log: empty
 
 ### profile MAESTRO_LEGACY (useLotroInstruments=false, enableLotroErrors=false, v4.6.21 compatibility, Lotro Abc)
@@ -148,13 +148,12 @@ divisionType=0.0 resolution=11520 tickLength=23040 tracks=2
 ### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
 == sequence
 divisionType=0.0 resolution=11520 tickLength=23040 tracks=2
--- track 0 (6 events)
+-- track 0 (5 events)
   0 META text type=0x05 "@TTest"
-  0 META tempo mpq=500000
   0 META text type=0x03 "Test"
   0 META type=0x58 data=04021808
   0 META type=0x59 data=0000
-  0 META end_of_track
+  1 META end_of_track
 -- track 1 (15 events)
   0 PROGRAM_CHANGE ch=0 d1=24 d2=0 [LotroShortMessage]
   0 NOTE_ON ch=0 d1=72 d2=80 [LotroShortMessage]

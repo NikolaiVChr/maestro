@@ -108,7 +108,7 @@ final class AbcCases {
 		c.add(tune("tempo_with_note_length", header("Q:1/4=100"), "c d e f|"));
 		c.add(tune("tempo_77", header("Q:77"), "c d e f|"));
 		c.add(tune("tempo_zero", header("Q:0"), "c d|"));
-		c.add(tune("tempo_garbage", header("Q:fast"), "c d|"));
+		c.add(tune("tempo_garbage", header("Q:hot"), "c d|"));
 		c.add(tune("tempo_twice_before_notes", concat(header(), new String[] { "Q:90" }), "c d|"));
 		c.add(tune("tempo_change_mid_part", "c d|", "Q:90", "e f|"));
 
@@ -475,7 +475,7 @@ final class AbcCases {
 		// Header fields
 		c.add(tune("tempo_word", header("Q:\"Allegro\""), "c d e f|"));
 		c.add(tune("tempo_word_with_value", header("Q:\"Allegro\" 1/4=100"), "c d e f|"));
-		c.add(tune("tempo_word_unknown", header("Q:\"Fast-ish\""), "c d e f|"));
+		c.add(tune("tempo_word_unknown", header("Q:\"Hot-ish\""), "c d e f|"));
 		c.add(tune("meter_none", header("M:none"), "c d e f g a b c'|"));
 		// The Q: note length is the beat (ABC 2.1, 3.1.8) with Params.specTempo (a Maestro project setting); Lotro,
 		// and Maestro without it, take the meter's denominator whatever it says (A15)
