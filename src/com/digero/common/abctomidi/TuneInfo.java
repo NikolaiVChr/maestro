@@ -723,7 +723,7 @@ public class TuneInfo {
 		// %%Q: (Maestro's tempo changes). The written Q: stays what getTempoBeat() and endHeader() see.
 		double beat = tempoBeat;
 		int beatsPerMinute = tempoBeatsPerMinute;
-			parseTempo(str, false);
+		parseTempo(str, false);
 		int bpm = toMeterBeats(tempoBeat, tempoBeatsPerMinute);
 		tempoBeat = beat;
 		tempoBeatsPerMinute = beatsPerMinute;

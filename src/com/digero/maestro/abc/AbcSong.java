@@ -763,7 +763,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 				if (keptText) params.savedTempoBPM = sourceAbcBPM;
 				params.abcInfo = abcInfo;
 				params.useLotroInstruments = false;
-                params.warningHandler = warningHandler;
+				params.warningHandler = warningHandler;
 				if (abcImportVersion > 1 && sourceAbcWasMadeForLotro == null) {
 					// Not decided for this source yet (a MIDI project whose source became this ABC file): decide once,
 					// saved with the project
@@ -846,7 +846,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 							book.tuneLines(chosen.tune()), AbcToMidi.tuneAloneName(file))));
 					case ALL_AS_PARTS -> {
 					}
-					case CANCEL -> throw new FileParseException("User did not choose a tune", file.getName());
+					case CANCEL -> throw new FileParseException(UIText.get("maestro.abctomidi.no.choice"), file.getName());
 				}
 			}
 		}
@@ -1193,7 +1193,7 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
                 view.write("Genre", StandardCharsets.UTF_16LE.encode(getGenre()));
                 view.write("Mood", StandardCharsets.UTF_16LE.encode(getMood()));
                 view.write("Number of parts", StandardCharsets.UTF_16LE.encode(Integer.toString(getActivePartCount())));
-                view.write("Tempo", StandardCharsets.UTF_16LE.encode(getTempoBPM() + " BPM"));
+				view.write("Tempo", StandardCharsets.UTF_16LE.encode(getTempoBPM() + " BPM"));
                 view.write("Duration", StandardCharsets.UTF_16LE.encode(Util.formatDurationM(getSongLengthMicros())));
                 view.write("Export Tool", StandardCharsets.UTF_16LE.encode(appName+" v"+MaestroMain.APP_VERSION));
                 view.write("Export Date", StandardCharsets.UTF_16LE.encode(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date())));

@@ -578,6 +578,9 @@ class AbcToMidiBehaviourTest {
 						playedOut("c d|e f !fine!||g a|b c' !D.C.alfine!|]"));
 				assertEquals(playedOut("c d|e f||g a|b c'|c d|e f|]"),
 						playedOut("c d|\"^Fine\"e f||g a|\"DC al fine\"b c'|]"));
+				// "End" is Fine too (O'Neill's 1850: "End" over the second ending, "D.C." at the tune's end)
+				assertEquals(playedOut("c d|e f||g a|b c'|c d|e f|]"),
+						playedOut("c d|\"End\"e f||g a|b c' \"D.C.\"|]"));
 			}
 
 			@Test

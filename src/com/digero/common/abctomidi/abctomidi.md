@@ -119,3 +119,4 @@ About 5,250 tests, in `srcTest/test/com/digero/common/abctomidi`.
 - M: change with another denominator mid-tune, [M:C|] after 3/4
 - Q: tempo change in the middle of a part (the tempo map is shared by all parts, so tricky)
 - & voice overlays
+- !fermata! on last played chord

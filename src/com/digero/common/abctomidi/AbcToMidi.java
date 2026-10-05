@@ -3,6 +3,7 @@ package com.digero.common.abctomidi;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
 import java.nio.charset.MalformedInputException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -272,10 +273,10 @@ public class AbcToMidi {
 	 */
 	static List<String> withoutByteOrderMark(List<String> lines) {
 		if (!lines.isEmpty()) {
-			String first = lines.get(0);
-			if (first.startsWith("﻿"))
+			String first = lines.getFirst();
+			if (first.startsWith("\uFEFF"))
 				lines.set(0, first.substring(1));
-			else if (first.startsWith("ï»¿"))
+			else if (first.startsWith("\u00EF\u00BB\u00BF"))
 				lines.set(0, first.substring(3));
 		}
 		return lines;
@@ -527,7 +528,7 @@ public class AbcToMidi {
 	private static boolean isAbc21OrLater(List<String> lines) {
 		if (lines.isEmpty())
 			return false;
-		Matcher m = VERSION_PATTERN.matcher(lines.get(0).stripLeading().replace("\uFEFF", ""));
+		Matcher m = VERSION_PATTERN.matcher(lines.getFirst().stripLeading().replace("\uFEFF", ""));
 		if (!m.find())
 			return false;
 		int major = Integer.parseInt(m.group(1));
@@ -3375,7 +3376,7 @@ public class AbcToMidi {
 				if (index > 0) {
 					// A detached note after this verse's last syllable: the first verse's syllable for it, the one the
 					// score shows under it (Canzonetta's Deh, which the second verse doesn't have)
-					for (Syllable first : sing(slots, withoutContinuation(texts.get(0))).syllables()) {
+					for (Syllable first : sing(slots, withoutContinuation(texts.getFirst())).syllables()) {
 						if (first.slot() >= sung.endSlot() && detached[first.slot()])
 							syllables.add(first);
 					}
