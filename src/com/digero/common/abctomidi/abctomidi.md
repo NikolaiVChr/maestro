@@ -116,7 +116,8 @@ About 5,250 tests, in `srcTest/test/com/digero/common/abctomidi`.
 
 ## Not supported (Abc 2.1)
 
-- M: change with another denominator mid-tune, [M:C|] after 3/4
-- Q: tempo change in the middle of a part (the tempo map is shared by all parts, so tricky)
-- & voice overlays
-- !fermata! on last played chord
+- M: change with another denominator mid-tune, [M:C|] after 3/4.
+- Q: tempo change in the middle of a part (the tempo map is shared by all parts, so tricky).
+- & voice overlays.
+- !arpeggio! and !slide!, they are ignored now.
+- Some additional very minor decorations.
