@@ -161,15 +161,12 @@ public final class SF2Instrument extends ModelInstrument {
                 generators.putAll(layerzone.getGenerators());
                 for (Map.Entry<Integer, Short> gen : pgenerators.entrySet()) {
                     int id = gen.getKey();
-                    // Ignore generators that are defined as Instrument-Only by SF2 Spec
-                    // Summing these breaks functionality (e.g. 1+1=2 breaks Looping)
-                    if (id == SF2Region.GENERATOR_SCALETUNING ||
-                            id == SF2Region.GENERATOR_SAMPLEMODES ||
-                            id == SF2Region.GENERATOR_EXCLUSIVECLASS ||
-                            id == SF2Region.GENERATOR_OVERRIDINGROOTKEY ||
-                            id == SF2Region.GENERATOR_KEYNUM ||
-                            id == SF2Region.GENERATOR_VELOCITY) {
-                        generators.put(id, gen.getValue());
+                    // SF2 2.04 8.5: generators that are only valid at instrument
+                    // level are ignored at preset level. Summing them breaks
+                    // functionality (e.g. 1+1=2 breaks looping), and they must
+                    // not replace the instrument's value either.
+                    // (scaleTuning is not one of them, it is additive.)
+                    if (isInstrumentOnly(id)) {
                         continue;
                     }
                     short val;
@@ -234,9 +231,11 @@ public final class SF2Instrument extends ModelInstrument {
                 performer.setVelFrom(velfrom);
                 performer.setVelTo(velto);
 
-                if (layerzone.contains(SF2Region.GENERATOR_EXCLUSIVECLASS)) {
-                    performer.setExclusiveClass(layerzone.getInteger(
-                            SF2Region.GENERATOR_EXCLUSIVECLASS));
+                // from the merged generators, so the instrument global zone counts too
+                int exclusiveClass = getGeneratorValue(generators,
+                        SF2Region.GENERATOR_EXCLUSIVECLASS);
+                if (exclusiveClass != 0) {
+                    performer.setExclusiveClass(exclusiveClass);
                 }
 
                 int startAddrsOffset = layerzone.getShort(
@@ -677,6 +676,32 @@ public final class SF2Instrument extends ModelInstrument {
             }
         }
         return performerList.toArray(new ModelPerformer[0]);
+    }
+
+    /**
+     * @return true for the generators SF2 2.04 only allows at instrument
+     *         level: the sample address offsets, keynum, velocity,
+     *         sampleModes, exclusiveClass and overridingRootKey
+     */
+    private static boolean isInstrumentOnly(int id) {
+        switch (id) {
+            case SF2Region.GENERATOR_STARTADDRSOFFSET:
+            case SF2Region.GENERATOR_ENDADDRSOFFSET:
+            case SF2Region.GENERATOR_STARTLOOPADDRSOFFSET:
+            case SF2Region.GENERATOR_ENDLOOPADDRSOFFSET:
+            case SF2Region.GENERATOR_STARTADDRSCOARSEOFFSET:
+            case SF2Region.GENERATOR_ENDADDRSCOARSEOFFSET:
+            case SF2Region.GENERATOR_STARTLOOPADDRSCOARSEOFFSET:
+            case SF2Region.GENERATOR_ENDLOOPADDRSCOARSEOFFSET:
+            case SF2Region.GENERATOR_KEYNUM:
+            case SF2Region.GENERATOR_VELOCITY:
+            case SF2Region.GENERATOR_SAMPLEMODES:
+            case SF2Region.GENERATOR_EXCLUSIVECLASS:
+            case SF2Region.GENERATOR_OVERRIDINGROOTKEY:
+                return true;
+            default:
+                return false;
+        }
     }
 
     private void convertModulator(ModelPerformer performer,
