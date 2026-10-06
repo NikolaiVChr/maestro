@@ -1214,6 +1214,12 @@ final class RealTimeSequencer extends AbstractMidiDevice
                 long tickPos = getTickPosition();
                 dataPump.setTempoMPQ(tempoCache.getTempoMPQAt(tickPos));
             }
+            long startTick = getTickPosition();
+            if (startTick > 0) {
+                // stop() sent Reset All Controllers (notesOff(true)),
+                // restore the state of the sequence at this position
+                dataPump.chaseEvents(startTick, startTick);
+            }
             dataPump.checkPointMillis = 0; // means restarted
             dataPump.clearNoteOnCache();
             dataPump.needReindex = true;
