@@ -39,6 +39,14 @@ import javax.sound.midi.Patch;
  */
 public final class SF2Instrument extends ModelInstrument {
 
+    /**
+     * Debug switch. true: velocities below 64 lower the filter cutoff by up
+     * to 2400 cents (the SF2 default modulator "velocity to filter cutoff"),
+     * as stock Gervill does. false: only the soundfont's own filter settings
+     * and modulators affect the filter.
+     */
+    private static final boolean VELOCITY_TO_FILTER = false;
+
     String name = "";
     int preset = 0;
     int bank = 0;
@@ -618,22 +626,23 @@ public final class SF2Instrument extends ModelInstrument {
 
                 }
 
-                performer.getConnectionBlocks().add(
-                    new ModelConnectionBlock(
-                        new ModelSource(ModelSource.SOURCE_NOTEON_VELOCITY,
-                            new ModelTransform() {
-                                @Override
-                                public double transform(double value) {
-                                    if (value < 0.5)
-                                        return 1 - value * 2;
-                                    else
-                                        return 0;
-                                }
-                            }),
-                        -2400,
-                        new ModelDestination(
-                            ModelDestination.DESTINATION_FILTER_FREQ)));
-
+                if (VELOCITY_TO_FILTER) {
+                    performer.getConnectionBlocks().add(
+                            new ModelConnectionBlock(
+                                    new ModelSource(ModelSource.SOURCE_NOTEON_VELOCITY,
+                                            new ModelTransform() {
+                                                @Override
+                                                public double transform(double value) {
+                                                    if (value < 0.5)
+                                                        return 1 - value * 2;
+                                                    else
+                                                        return 0;
+                                                }
+                                            }),
+                                    -2400,
+                                    new ModelDestination(
+                                            ModelDestination.DESTINATION_FILTER_FREQ)));
+                }
 
                 performer.getConnectionBlocks().add(
                     new ModelConnectionBlock(
