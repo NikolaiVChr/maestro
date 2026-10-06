@@ -68,7 +68,7 @@ public class SynthesizerFactory {
 			customMidisynth = findMIDISynthesizer();
 			if (customMidisynth != null) {
 				Map<String, Object> info = setupSynthesizerPropertyInfo();
-				info.put("latency", 24000);// double of default
+				info.put("latency", 120_000);// default
 				customMidisynth.open(null, info);
 				customMidisynth.unloadAllInstruments(bank);
 				customMidisynth.loadAllInstruments(bank);
@@ -93,7 +93,7 @@ public class SynthesizerFactory {
 		synthInfo.put("interpolation", "point");// default is linear. Options: "point", "linear", "linear1", "linear2", "cubic", "lanczos", "sinc".
 		synthInfo.put("auto gain control", true);// default is true. Set to false it can give pops when skipping in
 													// song, especially for abc player.
-		synthInfo.put("latency", PLAYBACK_LATENCY_MICROS);// 12000 microseconds is default. But that low with 24 parts will give pops
+		synthInfo.put("latency", PLAYBACK_LATENCY_MICROS);// 120_000 microseconds is default. But that low with 24 parts will give pops
 										  // and clicks in playback in abc player.
 		synthInfo.put("jitter correction", true);//default is true. Use seperate thread with nanotime to make playback of messages more timewise accurate. Is also cause of why maestro playback gets delayed after OS sleep or hibernation.
 		synthInfo.put("large mode", false);// Default false. If enabled it seems to use lazy

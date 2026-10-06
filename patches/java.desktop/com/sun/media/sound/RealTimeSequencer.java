@@ -168,7 +168,7 @@ final class RealTimeSequencer extends AbstractMidiDevice
 
     @Override
     public synchronized void setSequence(Sequence sequence)
-        throws InvalidMidiDataException {
+            throws InvalidMidiDataException {
         if (sequence != this.sequence) {
             if (this.sequence != null && sequence == null) {
                 setCaches();
@@ -649,8 +649,8 @@ final class RealTimeSequencer extends AbstractMidiDevice
     @Override
     public void setLoopStartPoint(long tick) {
         if ((tick > getTickLength())
-            || ((loopEnd != -1) && (tick > loopEnd))
-            || (tick < 0)) {
+                || ((loopEnd != -1) && (tick > loopEnd))
+                || (tick < 0)) {
             throw new IllegalArgumentException("invalid loop start point: "+tick);
         }
         loopStart = tick;
@@ -664,8 +664,8 @@ final class RealTimeSequencer extends AbstractMidiDevice
     @Override
     public void setLoopEndPoint(long tick) {
         if ((tick > getTickLength())
-            || ((loopStart > tick) && (tick != -1))
-            || (tick < -1)) {
+                || ((loopStart > tick) && (tick != -1))
+                || (tick < -1)) {
             throw new IllegalArgumentException("invalid loop end point: "+tick);
         }
         loopEnd = tick;
@@ -679,7 +679,7 @@ final class RealTimeSequencer extends AbstractMidiDevice
     @Override
     public void setLoopCount(int count) {
         if (count != LOOP_CONTINUOUSLY
-            && count < 0) {
+                && count < 0) {
             throw new IllegalArgumentException("illegal value for loop count: "+count);
         }
         loopCount = count;
@@ -1174,6 +1174,41 @@ final class RealTimeSequencer extends AbstractMidiDevice
         }
     }
 
+    /**
+     * A ShortMessage for channels above 15, which a packed MIDI message
+     * cannot address. Like Maestro's LotroShortMessage, the status byte holds
+     * channel & 0x0F and getChannel() returns the full channel.
+     * SoftSynthesizer opened with more than 16 "midi channels" routes
+     * messages by getChannel().
+     */
+    private static final class ExtendedChannelMessage extends ShortMessage {
+        private final int channel;
+
+        ExtendedChannelMessage(int command, int channel, int data1, int data2) {
+            super(toBytes(command, channel, data1, data2));
+            this.channel = channel;
+        }
+
+        private static byte[] toBytes(int command, int channel, int data1, int data2) {
+            byte status = (byte) ((command & 0xF0) | (channel & 0x0F));
+            if ((command == ShortMessage.PROGRAM_CHANGE)
+                    || (command == ShortMessage.CHANNEL_PRESSURE)) {
+                return new byte[] {status, (byte) (data1 & 0x7F)};
+            }
+            return new byte[] {status, (byte) (data1 & 0x7F), (byte) (data2 & 0x7F)};
+        }
+
+        @Override
+        public int getChannel() {
+            return channel;
+        }
+
+        @Override
+        public Object clone() {
+            return new ExtendedChannelMessage(getCommand(), channel, getData1(), getData2());
+        }
+    }
+
     final class PlayThread implements Runnable {
         private Thread thread;
         private final Object lock = new Object();
@@ -1188,12 +1223,12 @@ final class RealTimeSequencer extends AbstractMidiDevice
         PlayThread() {
             // nearly MAX_PRIORITY
             int priority = Thread.NORM_PRIORITY
-                + ((Thread.MAX_PRIORITY - Thread.NORM_PRIORITY) * 3) / 4;
+                    + ((Thread.MAX_PRIORITY - Thread.NORM_PRIORITY) * 3) / 4;
             thread = JSSecurityManager.createThread(this,
-                                                    "Java Sound Sequencer", // name
-                                                    false,                  // daemon
-                                                    priority,               // priority
-                                                    true);                  // doStart
+                    "Java Sound Sequencer", // name
+                    false,                  // daemon
+                    priority,               // priority
+                    true);                  // doStart
         }
 
         DataPump getDataPump() {
@@ -1347,7 +1382,13 @@ final class RealTimeSequencer extends AbstractMidiDevice
         private float divisionType;
         private long checkPointMillis;   // microseconds at checkoint
         private long checkPointTick;     // ticks at checkpoint
-        private int[] noteOnCache;       // bit-mask of notes that are currently on
+        /**
+         * Channels tracked and reset by the sequencer. noteOnCache holds one
+         * bit per channel in an int, so channels 32 and up are not tracked.
+         */
+        private static final int MAX_CHANNELS = 32;
+        private int[] noteOnCache;       // bit-mask of notes that are currently on, bit = channel
+        private int usedChannels;        // bit-mask of the channels above 15 the sequence uses
         private Track[] tracks;
         private boolean[] trackDisabled; // if true, do not play this track
         private int[] trackReadPos;      // read index per track
@@ -1369,6 +1410,7 @@ final class RealTimeSequencer extends AbstractMidiDevice
             noteOnCache = new int[128];
             tracks = null;
             trackDisabled = null;
+            usedChannels = 0;
         }
 
         synchronized void setTickPos(long tickPos) {
@@ -1445,6 +1487,7 @@ final class RealTimeSequencer extends AbstractMidiDevice
                 return;
             }
             tracks = seq.getTracks();
+            usedChannels = findUsedChannels(tracks);
             muteSoloChanged();
             resolution = seq.getResolution();
             divisionType = seq.getDivisionType();
@@ -1466,26 +1509,93 @@ final class RealTimeSequencer extends AbstractMidiDevice
 
         void notesOff(boolean doControllers) {
             int done = 0;
-            for (int ch=0; ch<16; ch++) {
-                int channelMask = (1<<ch);
+            for (int ch = 0; ch < MAX_CHANNELS; ch++) {
+                if (!isChannelInUse(ch)) {
+                    continue;
+                }
+                int channelMask = (1 << ch);
                 for (int i=0; i<128; i++) {
                     if ((noteOnCache[i] & channelMask) != 0) {
                         noteOnCache[i] ^= channelMask;
                         // send note on with velocity 0
-                        getTransmitterList().sendMessage((ShortMessage.NOTE_ON | ch) | (i<<8), -1);
+                        sendChannelMessage(ShortMessage.NOTE_ON, ch, i, 0);
                         done++;
                     }
                 }
                 /* all notes off */
-                getTransmitterList().sendMessage((ShortMessage.CONTROL_CHANGE | ch) | (123<<8), -1);
+                sendChannelMessage(ShortMessage.CONTROL_CHANGE, ch, 123, 0);
                 /* sustain off */
-                getTransmitterList().sendMessage((ShortMessage.CONTROL_CHANGE | ch) | (64<<8), -1);
+                sendChannelMessage(ShortMessage.CONTROL_CHANGE, ch, 64, 0);
                 if (doControllers) {
                     /* reset all controllers */
-                    getTransmitterList().sendMessage((ShortMessage.CONTROL_CHANGE | ch) | (121<<8), -1);
+                    sendChannelMessage(ShortMessage.CONTROL_CHANGE, ch, 121, 0);
                     done++;
                 }
             }
+        }
+
+        /**
+         * @return the channel of a channel message: getChannel() for a
+         *         ShortMessage, which a subclass can override to address
+         *         channels above 15, otherwise the low nibble of the status
+         */
+        private int channelOf(MidiMessage msg, int status) {
+            if (msg instanceof ShortMessage smsg) {
+                int ch = smsg.getChannel();
+                if (ch >= 0) {
+                    return ch;
+                }
+            }
+            return status & 0x0F;
+        }
+
+        /**
+         * @return true for channels 0-15, and for higher channels that
+         *         the sequence uses
+         */
+        private boolean isChannelInUse(int ch) {
+            return (ch < 16)
+                    || ((ch < MAX_CHANNELS) && ((usedChannels & (1 << ch)) != 0));
+        }
+
+        /**
+         * Sends a channel message created by the sequencer. Channels 0-15 as
+         * a packed message as before, higher channels as an
+         * ExtendedChannelMessage, as a packed message has 4 bits for the channel.
+         */
+        private void sendChannelMessage(int command, int ch, int data1, int data2) {
+            if (ch < 16) {
+                getTransmitterList().sendMessage((command | ch) | (data1 << 8) | (data2 << 16), -1);
+            } else {
+                getTransmitterList().sendMessage(new ExtendedChannelMessage(command, ch, data1, data2), -1);
+            }
+        }
+
+        /**
+         * @return bit mask of the channels above 15 that the tracks use
+         */
+        private int findUsedChannels(Track[] tracks) {
+            int used = 0;
+            for (Track track : tracks) {
+                try {
+                    int size = track.size();
+                    for (int i = 0; i < size; i++) {
+                        MidiMessage msg = track.get(i).getMessage();
+                        int status = msg.getStatus();
+                        if ((status & 0xF0) != 0xF0) {
+                            // a channel message
+                            int ch = channelOf(msg, status);
+                            if ((ch >= 16) && (ch < MAX_CHANNELS)) {
+                                used |= 1 << ch;
+                            }
+                        }
+                    }
+                } catch (ArrayIndexOutOfBoundsException aioobe) {
+                    // this happens when messages are removed
+                    // from the track while this method executes
+                }
+            }
+            return used;
         }
 
         private boolean[] makeDisabledArray() {
@@ -1556,13 +1666,14 @@ final class RealTimeSequencer extends AbstractMidiDevice
                                 note = data[1] & 0x7F;
                             }
                         }
-                        if (note >= 0) {
-                            int bit = 1<<(status & 0x0F);
+                        int ch = channelOf(msg, status);
+                        if ((note >= 0) && (ch < MAX_CHANNELS)) {
+                            int bit = 1 << ch;
                             if ((noteOnCache[note] & bit) != 0) {
                                 // the bit is set. Send Note Off
-                                getTransmitterList().sendMessage(status | (note<<8), -1);
+                                sendChannelMessage(ShortMessage.NOTE_ON, ch, note, 0);
                                 // clear the bit
-                                noteOnCache[note] &= (0xFFFF ^ bit);
+                                noteOnCache[note] &= ~bit;
                                 done++;
                             }
                         }
@@ -1621,13 +1732,13 @@ final class RealTimeSequencer extends AbstractMidiDevice
                 startTick = 0;
             }
             // tick of the event that set the value, -1 means not set
-            long[][] ccTick = new long[16][128];
-            byte[][] ccValue = new byte[16][128];
-            long[] progTick = new long[16];
-            byte[] progValue = new byte[16];
-            long[] bendTick = new long[16];
-            int[] bendValue = new int[16]; // packed: data1 | (data2 << 8)
-            for (int ch = 0; ch < 16; ch++) {
+            long[][] ccTick = new long[MAX_CHANNELS][128];
+            byte[][] ccValue = new byte[MAX_CHANNELS][128];
+            long[] progTick = new long[MAX_CHANNELS];
+            byte[] progValue = new byte[MAX_CHANNELS];
+            long[] bendTick = new long[MAX_CHANNELS];
+            int[] bendValue = new int[MAX_CHANNELS]; // packed: data1 | (data2 << 8)
+            for (int ch = 0; ch < MAX_CHANNELS; ch++) {
                 Arrays.fill(ccTick[ch], -1);
             }
             Arrays.fill(progTick, -1);
@@ -1654,7 +1765,11 @@ final class RealTimeSequencer extends AbstractMidiDevice
                         if (!isController && !isProgram && !isBend) {
                             continue;
                         }
-                        int ch = status & 0x0F;
+                        int ch = channelOf(msg, status);
+                        if (ch >= MAX_CHANNELS) {
+                            continue;
+                        }
+                        usedChannels |= 1 << ch;
                         int data1;
                         int data2 = 0;
                         if (msg instanceof ShortMessage smsg) {
@@ -1697,28 +1812,30 @@ final class RealTimeSequencer extends AbstractMidiDevice
             }
 
             // now send out the aggregated state
-            for (int ch = 0; ch < 16; ch++) {
+            for (int ch = 0; ch < MAX_CHANNELS; ch++) {
+                if (!isChannelInUse(ch)) {
+                    continue;
+                }
                 for (int co = 0; co < 128; co++) {
                     if (ccTick[ch][co] >= 0) {
-                        int packedMsg = (ShortMessage.CONTROL_CHANGE | ch) | (co << 8) | (ccValue[ch][co] << 16);
-                        getTransmitterList().sendMessage(packedMsg, -1);
+                        sendChannelMessage(ShortMessage.CONTROL_CHANGE, ch, co, ccValue[ch][co]);
                     }
                 }
                 // send program change *after* controllers, to
                 // correctly initialize banks
                 if (progTick[ch] >= 0) {
-                    getTransmitterList().sendMessage((ShortMessage.PROGRAM_CHANGE | ch) | (progValue[ch] << 8), -1);
+                    sendChannelMessage(ShortMessage.PROGRAM_CHANGE, ch, progValue[ch], 0);
                 }
                 boolean reset = (progTick[ch] >= 0) || (startTick == 0) || (endTick == 0);
                 if (bendTick[ch] >= 0) {
-                    getTransmitterList().sendMessage((ShortMessage.PITCH_BEND | ch) | (bendValue[ch] << 8), -1);
+                    sendChannelMessage(ShortMessage.PITCH_BEND, ch, bendValue[ch] & 0x7F, bendValue[ch] >> 8);
                 } else if (reset) {
                     // reset pitch bend on this channel (E0 00 40)
-                    getTransmitterList().sendMessage((ShortMessage.PITCH_BEND | ch) | (0x40 << 16), -1);
+                    sendChannelMessage(ShortMessage.PITCH_BEND, ch, 0, 0x40);
                 }
                 if (reset) {
                     // reset sustain pedal on this channel
-                    getTransmitterList().sendMessage((ShortMessage.CONTROL_CHANGE | ch) | (64 << 8), -1);
+                    sendChannelMessage(ShortMessage.CONTROL_CHANGE, ch, 64, 0);
                 }
             }
         }
@@ -1777,25 +1894,25 @@ final class RealTimeSequencer extends AbstractMidiDevice
         private long millis2tick(long millis) {
             if (divisionType != Sequence.PPQ) {
                 double dTick = ((((double) millis) * tempoFactor)
-                                * ((double) divisionType)
-                                * ((double) resolution))
-                    / ((double) 1000);
+                        * ((double) divisionType)
+                        * ((double) resolution))
+                        / ((double) 1000);
                 return (long) dTick;
             }
             return MidiUtils.microsec2ticks(millis * 1000,
-                                            currTempo * inverseTempoFactor,
-                                            resolution);
+                    currTempo * inverseTempoFactor,
+                    resolution);
         }
 
         private long tick2millis(long tick) {
             if (divisionType != Sequence.PPQ) {
                 double dMillis = ((((double) tick) * 1000) /
-                                  (tempoFactor * ((double) divisionType) * ((double) resolution)));
+                        (tempoFactor * ((double) divisionType) * ((double) resolution)));
                 return (long) dMillis;
             }
             return MidiUtils.ticks2microsec(tick,
-                                            currTempo * inverseTempoFactor,
-                                            resolution) / 1000;
+                    currTempo * inverseTempoFactor,
+                    resolution) / 1000;
         }
 
         private void ReindexTrack(int trackNum, long tick) {
@@ -1836,32 +1953,40 @@ final class RealTimeSequencer extends AbstractMidiDevice
                 getTransmitterList().sendMessage(message, -1);
 
                 switch (msgStatus & 0xF0) {
-                case ShortMessage.NOTE_OFF: {
-                    // note off - clear the bit in the noteOnCache array
-                    int note = ((ShortMessage) message).getData1() & 0x7F;
-                    noteOnCache[note] &= (0xFFFF ^ (1<<(msgStatus & 0x0F)));
-                    break;
-                }
-
-                case ShortMessage.NOTE_ON: {
-                    // note on
-                    ShortMessage smsg = (ShortMessage) message;
-                    int note = smsg.getData1() & 0x7F;
-                    int vel = smsg.getData2() & 0x7F;
-                    if (vel > 0) {
-                        // if velocity > 0 set the bit in the noteOnCache array
-                        noteOnCache[note] |= 1<<(msgStatus & 0x0F);
-                    } else {
-                        // if velocity = 0 clear the bit in the noteOnCache array
-                        noteOnCache[note] &= (0xFFFF ^ (1<<(msgStatus & 0x0F)));
+                    case ShortMessage.NOTE_OFF: {
+                        // note off - clear the bit in the noteOnCache array
+                        int ch = channelOf(message, msgStatus);
+                        if (ch < MAX_CHANNELS) {
+                            int note = ((ShortMessage) message).getData1() & 0x7F;
+                            noteOnCache[note] &= ~(1 << ch);
+                        }
+                        break;
                     }
-                    break;
-                }
 
-                case ShortMessage.CONTROL_CHANGE:
-                    // if controller message, send controller listeners
-                    sendControllerEvents(message);
-                    break;
+                    case ShortMessage.NOTE_ON: {
+                        // note on
+                        ShortMessage smsg = (ShortMessage) message;
+                        int ch = channelOf(message, msgStatus);
+                        if (ch < MAX_CHANNELS) {
+                            int note = smsg.getData1() & 0x7F;
+                            int vel = smsg.getData2() & 0x7F;
+                            if (vel > 0) {
+                                // if velocity > 0 set the bit in the noteOnCache array
+                                noteOnCache[note] |= 1 << ch;
+                                // also for events added after setSequence()
+                                usedChannels |= 1 << ch;
+                            } else {
+                                // if velocity = 0 clear the bit in the noteOnCache array
+                                noteOnCache[note] &= ~(1 << ch);
+                            }
+                        }
+                        break;
+                    }
+
+                    case ShortMessage.CONTROL_CHANGE:
+                        // if controller message, send controller listeners
+                        sendControllerEvents(message);
+                        break;
 
                 }
             }
@@ -1907,7 +2032,7 @@ final class RealTimeSequencer extends AbstractMidiDevice
                     // calculate current tick based on current time in milliseconds
                     targetTick = checkPointTick + millis2tick(currMillis - checkPointMillis);
                     if ((loopEnd != -1)
-                        && ((loopCount > 0 && currLoopCounter > 0)
+                            && ((loopCount > 0 && currLoopCounter > 0)
                             || (loopCount == LOOP_CONTINUOUSLY))) {
                         if (lastTick <= loopEnd && targetTick >= loopEnd) {
                             // need to loop!
@@ -1929,7 +2054,7 @@ final class RealTimeSequencer extends AbstractMidiDevice
                         int size = thisTrack.size();
                         // play all events that are due until targetTick
                         while (!changesPending && (readPos < size)
-                               && (currEvent = thisTrack.get(readPos)).getTick() <= targetTick) {
+                                && (currEvent = thisTrack.get(readPos)).getTick() <= targetTick) {
 
                             if ((readPos == size -1) &&  MidiUtils.isMetaEndOfTrack(currEvent.getMessage())) {
                                 // do not send out this message. Finished with this track
@@ -1969,11 +2094,11 @@ final class RealTimeSequencer extends AbstractMidiDevice
                 }
                 EOM = (finishedTracks == tracks.length);
                 if (doLoop
-                    || ( ((loopCount > 0 && currLoopCounter > 0)
-                          || (loopCount == LOOP_CONTINUOUSLY))
-                         && !changesPending
-                         && (loopEnd == -1)
-                         && EOM)) {
+                        || ( ((loopCount > 0 && currLoopCounter > 0)
+                        || (loopCount == LOOP_CONTINUOUSLY))
+                        && !changesPending
+                        && (loopEnd == -1)
+                        && EOM)) {
 
                     long oldCheckPointMillis = checkPointMillis;
                     long loopEndTick = loopEnd;

@@ -55,6 +55,8 @@ public class LotroSequencerWrapper extends NoteFilterSequencerWrapper {
 	 * @param doControllers Stop all midi controllers also
 	 */
 	public void injectPatchChanges(boolean doControllers) {
+		return;//this has now been fixed by patching the JDK instead so no longer needed
+		/*
 		List<ExportTrackInfo> infos = currentTrackInfos;
 		if (infos != null && infos.size() > MidiConstants.CHANNEL_COUNT-1) {
 			for (ExportTrackInfo info : infos) {
@@ -81,6 +83,7 @@ public class LotroSequencerWrapper extends NoteFilterSequencerWrapper {
                 }
             }
         }
+        */
 	}
 
     /**
