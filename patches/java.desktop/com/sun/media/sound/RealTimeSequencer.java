@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.WeakHashMap;
 
 import javax.sound.midi.ControllerEventListener;
@@ -1175,6 +1176,92 @@ final class RealTimeSequencer extends AbstractMidiDevice
     }
 
     /**
+     * A controller event that selects or changes an RPN or NRPN.
+     */
+    private record ParameterEvent(long tick, int channel, int controller, int value) {
+    }
+
+    /**
+     * Model of the RPN/NRPN state of one channel in the synthesizer, see
+     * DataPump.chaseParameters().
+     */
+    private static final class ChannelParameters {
+        /** the null (deselected) RPN/NRPN number, 127/127 */
+        static final int NULL = 0x3FFF;
+
+        int rpn = NULL;
+        int nrpn = NULL;
+        /** true when the sequence selected a parameter on this channel */
+        boolean selected;
+        /** RPN number -> {data entry MSB, LSB}, -1 means not known */
+        final Map<Integer, int[]> rpnValues = new TreeMap<>();
+
+        void apply(int controller, int value) {
+            switch (controller) {
+                case 101:
+                    rpn = (rpn & 0x7F) | (value << 7);
+                    nrpn = NULL;
+                    selected = true;
+                    break;
+                case 100:
+                    rpn = (rpn & 0x3F80) | value;
+                    nrpn = NULL;
+                    selected = true;
+                    break;
+                case 99:
+                    nrpn = (nrpn & 0x7F) | (value << 7);
+                    rpn = NULL;
+                    selected = true;
+                    break;
+                case 98:
+                    nrpn = (nrpn & 0x3F80) | value;
+                    rpn = NULL;
+                    selected = true;
+                    break;
+                case 121:
+                    // reset all controllers deselects, the values stay
+                    rpn = NULL;
+                    nrpn = NULL;
+                    break;
+                case 6:
+                    if (rpn != NULL) {
+                        valueOf(rpn)[0] = value;
+                    }
+                    break;
+                case 38:
+                    if (rpn != NULL) {
+                        valueOf(rpn)[1] = value;
+                    }
+                    break;
+                case 96:
+                case 97:
+                    if (rpn != NULL) {
+                        step(valueOf(rpn), (controller == 96) ? 1 : -1);
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        private int[] valueOf(int param) {
+            return rpnValues.computeIfAbsent(param, k -> new int[] {-1, -1});
+        }
+
+        private static void step(int[] value, int delta) {
+            if ((value[0] < 0) || (value[1] < 0)) {
+                // the synthesizer's starting value is not known
+                value[0] = -1;
+                value[1] = -1;
+                return;
+            }
+            int v = Math.max(0, Math.min(0x3FFF, ((value[0] << 7) | value[1]) + delta));
+            value[0] = v >> 7;
+            value[1] = v & 0x7F;
+        }
+    }
+
+    /**
      * A ShortMessage for channels above 15, which a packed MIDI message
      * cannot address. Like Maestro's LotroShortMessage, the status byte holds
      * channel & 0x0F and getChannel() returns the full channel.
@@ -1743,6 +1830,8 @@ final class RealTimeSequencer extends AbstractMidiDevice
             }
             Arrays.fill(progTick, -1);
             Arrays.fill(bendTick, -1);
+            // RPN/NRPN related controller events, null if there are none
+            List<ParameterEvent> parameterEvents = null;
 
             for (int t = 0; t < tracks.length; t++) {
                 Track track = tracks[t];
@@ -1784,7 +1873,14 @@ final class RealTimeSequencer extends AbstractMidiDevice
                         }
                         // '>=': on equal ticks the later track wins
                         if (isController) {
-                            if (isChasedController(data1) && tick >= ccTick[ch][data1]) {
+                            if (isParameterController(data1)) {
+                                if (parameterEvents == null) {
+                                    parameterEvents = new ArrayList<>();
+                                }
+                                parameterEvents.add(new ParameterEvent(tick, ch, data1, data2));
+                            }
+                            // all controllers, isChasedController() is applied when sending
+                            if (tick >= ccTick[ch][data1]) {
                                 ccTick[ch][data1] = tick;
                                 ccValue[ch][data1] = (byte) data2;
                             }
@@ -1811,13 +1907,15 @@ final class RealTimeSequencer extends AbstractMidiDevice
                 }
             }
 
+            ChannelParameters[] parameters = chaseParameters(parameterEvents);
+
             // now send out the aggregated state
             for (int ch = 0; ch < MAX_CHANNELS; ch++) {
                 if (!isChannelInUse(ch)) {
                     continue;
                 }
                 for (int co = 0; co < 128; co++) {
-                    if (ccTick[ch][co] >= 0) {
+                    if ((ccTick[ch][co] >= 0) && isChasedController(co)) {
                         sendChannelMessage(ShortMessage.CONTROL_CHANGE, ch, co, ccValue[ch][co]);
                     }
                 }
@@ -1836,6 +1934,9 @@ final class RealTimeSequencer extends AbstractMidiDevice
                 if (reset) {
                     // reset sustain pedal on this channel
                     sendChannelMessage(ShortMessage.CONTROL_CHANGE, ch, 64, 0);
+                }
+                if ((parameters != null) && (parameters[ch] != null)) {
+                    sendParameters(ch, parameters[ch]);
                 }
             }
         }
@@ -1856,6 +1957,92 @@ final class RealTimeSequencer extends AbstractMidiDevice
                     return false;
                 default:
                     return controller < 120;
+            }
+        }
+
+        /**
+         * @return true for the controllers that select or change an RPN or
+         *         NRPN: data entry (6, 38), increment/decrement (96, 97),
+         *         the (N)RPN select (98-101), and reset all controllers (121),
+         *         which deselects
+         */
+        private static boolean isParameterController(int controller) {
+            switch (controller) {
+                case 6: case 38:
+                case 96: case 97: case 98: case 99: case 100: case 101:
+                case 121:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        /**
+         * Plays the parameter controller events in playback order through a
+         * model of the synthesizer's RPN state: which RPN or NRPN is selected,
+         * and the value Data Entry gave each RPN. A Data Entry only means
+         * something together with the selection at that moment, which can
+         * come from another track, so this needs the events in time order.
+         * Data Entry keeps the other half of the value and
+         * increment/decrement steps it by 1, as SoftSynthesizer does.
+         * NRPN values are not modelled, NRPN selection is.
+         *
+         * @param events the events in track order, each track in event order
+         * @return the state per channel, null for a channel without events.
+         *         null if there are no events
+         */
+        private ChannelParameters[] chaseParameters(List<ParameterEvent> events) {
+            if (events == null) {
+                return null;
+            }
+            // List.sort is stable: on equal ticks the order stays track,
+            // then position in the track, which is the order pump() plays them
+            events.sort((a, b) -> Long.compare(a.tick(), b.tick()));
+            ChannelParameters[] channels = new ChannelParameters[MAX_CHANNELS];
+            for (ParameterEvent event : events) {
+                ChannelParameters p = channels[event.channel()];
+                if (p == null) {
+                    p = new ChannelParameters();
+                    channels[event.channel()] = p;
+                }
+                p.apply(event.controller(), event.value());
+            }
+            return channels;
+        }
+
+        /**
+         * Sends the RPN values the sequence has set on the channel, then
+         * selects the RPN or NRPN that the sequence has selected at this
+         * point, so a later Data Entry writes to the intended parameter.
+         * Nothing is sent for a channel on which the sequence never selects
+         * a parameter.
+         */
+        private void sendParameters(int ch, ChannelParameters p) {
+            if (!p.selected) {
+                return;
+            }
+            for (Map.Entry<Integer, int[]> entry : p.rpnValues.entrySet()) {
+                int rpn = entry.getKey();
+                int[] value = entry.getValue();
+                if ((value[0] < 0) && (value[1] < 0)) {
+                    continue;
+                }
+                sendChannelMessage(ShortMessage.CONTROL_CHANGE, ch, 101, rpn >> 7);
+                sendChannelMessage(ShortMessage.CONTROL_CHANGE, ch, 100, rpn & 0x7F);
+                if (value[0] >= 0) {
+                    sendChannelMessage(ShortMessage.CONTROL_CHANGE, ch, 6, value[0]);
+                }
+                if (value[1] >= 0) {
+                    sendChannelMessage(ShortMessage.CONTROL_CHANGE, ch, 38, value[1]);
+                }
+            }
+            // the selection, last: selecting one kind deselects the other
+            if (p.nrpn != ChannelParameters.NULL) {
+                sendChannelMessage(ShortMessage.CONTROL_CHANGE, ch, 99, p.nrpn >> 7);
+                sendChannelMessage(ShortMessage.CONTROL_CHANGE, ch, 98, p.nrpn & 0x7F);
+            } else {
+                sendChannelMessage(ShortMessage.CONTROL_CHANGE, ch, 101, p.rpn >> 7);
+                sendChannelMessage(ShortMessage.CONTROL_CHANGE, ch, 100, p.rpn & 0x7F);
             }
         }
 
