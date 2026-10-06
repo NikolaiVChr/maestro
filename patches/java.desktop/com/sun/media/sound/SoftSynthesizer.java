@@ -202,6 +202,8 @@ public final class SoftSynthesizer implements AudioSynthesizer,
     boolean reverb_on = true;
     boolean chorus_on = true;
     boolean agc_on = true;
+    // true: release fades linearly in amplitude instead of in dB
+    boolean linear_release = false;
 
     SoftChannel[] channels;
     SoftChannelProxy[] external_channels = null;
@@ -353,6 +355,7 @@ public final class SoftSynthesizer implements AudioSynthesizer,
         jitter_correction = (Boolean)items[11].value;
         reverb_light = (Boolean)items[12].value;
         load_default_soundbank = (Boolean)items[13].value;
+        linear_release = (Boolean)items[14].value;
     }
 
     private String patchToString(Patch patch) {
@@ -469,6 +472,10 @@ public final class SoftSynthesizer implements AudioSynthesizer,
 
     float getControlRate() {
         return controlrate;
+    }
+
+    boolean isLinearRelease() {
+        return linear_release;
     }
 
     SoftVoice[] getVoices() {
@@ -986,6 +993,10 @@ public final class SoftSynthesizer implements AudioSynthesizer,
 
         item = new AudioSynthesizerPropertyInfo("load default soundbank", o?load_default_soundbank:true);
         item.description = "Enabled/disable loading default soundbank";
+        list.add(item);
+
+        item = new AudioSynthesizerPropertyInfo("linear release", o?linear_release:false);
+        item.description = "Release fades linearly in amplitude instead of in dB";
         list.add(item);
 
         AudioSynthesizerPropertyInfo[] items;

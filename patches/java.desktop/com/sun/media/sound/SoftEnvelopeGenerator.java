@@ -61,6 +61,8 @@ public final class SoftEnvelopeGenerator implements SoftProcess {
     private final double[][] attack2 = new double[max_count][1];
     private final double[][] decay2 = new double[max_count][1];
     private double control_time = 0;
+    // see SoftSynthesizer "linear release"
+    private boolean linear_release = false;
 
     @Override
     public void reset() {
@@ -85,6 +87,7 @@ public final class SoftEnvelopeGenerator implements SoftProcess {
     @Override
     public void init(SoftSynthesizer synth) {
         control_time = 1.0 / synth.getControlRate();
+        linear_release = synth.isLinearRelease();
         processControlLogic();
     }
 
@@ -162,13 +165,19 @@ public final class SoftEnvelopeGenerator implements SoftProcess {
                         // stage_v[i] = out[i][0];
                         stage_ix[i] = 0;
 
-                        // Join the release curve smoothly at the current level.
-                        // Curve (in EG_RELEASE): out = (1 - m)^0.1
-                        // Inverse for the join:  m = 1 - out^10
-                        double currentOut = out[i][0];
-                        double m = 1.0 - Math.pow(currentOut, 10.0d);
-
-                        //double m = 1 - out[i][0];
+                        // Join the release curve at the current level.
+                        // out is mapped to gain in dB (SoftPerformer: eg 0 ->
+                        // mixer gain, -960 cB, linear).
+                        // Default curve (in EG_RELEASE): out = 1 - m, an even
+                        // dB fall: the SF2 release.
+                        // Linear release: out = (1 - m)^0.1, about a linear
+                        // fall in amplitude. Inverse for the join: m = 1 - out^10
+                        double m;
+                        if (linear_release) {
+                            m = 1.0 - Math.pow(out[i][0], 10.0d);
+                        } else {
+                            m = 1 - out[i][0];
+                        }
                         stage_ix[i] = (int)(stage_count[i] * m);
 
                         stage[i] = EG_RELEASE;
@@ -195,81 +204,83 @@ public final class SoftEnvelopeGenerator implements SoftProcess {
                     int attack_counts = (int)(Math.pow(2, attack / 1200.0) / control_time);
                     attack_counts += (int)(attack2 / (control_time * 1000));
 
-                    if ((attack2 < 0.000001
-                            && (attack < 0 && Double.isInfinite(attack)))
-                            || attack_counts <= 0) {
+                        if ((attack2 < 0.000001
+                                && (attack < 0 && Double.isInfinite(attack)))
+                                || attack_counts <= 0) {
+                            out[i][0] = 1;
+                            stage[i] = EG_HOLD;
+                            stage_count[i] = (int)(Math.pow(2,
+                                    this.hold[i][0] / 1200.0) / control_time);
+                            stage_ix[i] = 0;
+                        } else {
+                            stage[i] = EG_ATTACK;
+                            stage_count[i] = attack_counts;
+                            if (stage_count[i] < 0)
+                                stage_count[i] = 0;
+                            stage_ix[i] = 0;
+                        }
+                    } else
+                        stage_ix[i]--;
+                    break;
+                case EG_ATTACK:
+                    stage_ix[i]++;
+                    if (stage_ix[i] >= stage_count[i]) {
                         out[i][0] = 1;
                         stage[i] = EG_HOLD;
-                        stage_count[i] = (int)(Math.pow(2,
-                                this.hold[i][0] / 1200.0) / control_time);
-                        stage_ix[i] = 0;
                     } else {
-                        stage[i] = EG_ATTACK;
-                        stage_count[i] = attack_counts;
+                        // CONVEX attack
+                        double a = ((double)stage_ix[i]) / ((double)stage_count[i]);
+                        a = 1 + ((40.0 / 96.0) / Math.log(10)) * Math.log(a);
+                        if (a < 0)
+                            a = 0;
+                        else if (a > 1)
+                            a = 1;
+                        out[i][0] = a;
+                    }
+                    break;
+                case EG_HOLD:
+                    stage_ix[i]++;
+                    if (stage_ix[i] >= stage_count[i]) {
+                        stage[i] = EG_DECAY;
+                        stage_count[i] = (int)(Math.pow(2,
+                                this.decay[i][0] / 1200.0) / control_time);
+                        stage_count[i] += (int)(this.decay2[i][0]/(control_time*1000));
                         if (stage_count[i] < 0)
                             stage_count[i] = 0;
                         stage_ix[i] = 0;
                     }
-                } else
-                    stage_ix[i]--;
-                break;
-            case EG_ATTACK:
-                stage_ix[i]++;
-                if (stage_ix[i] >= stage_count[i]) {
-                    out[i][0] = 1;
-                    stage[i] = EG_HOLD;
-                } else {
-                    // CONVEX attack
-                    double a = ((double)stage_ix[i]) / ((double)stage_count[i]);
-                    a = 1 + ((40.0 / 96.0) / Math.log(10)) * Math.log(a);
-                    if (a < 0)
-                        a = 0;
-                    else if (a > 1)
-                        a = 1;
-                    out[i][0] = a;
-                }
-                break;
-            case EG_HOLD:
-                stage_ix[i]++;
-                if (stage_ix[i] >= stage_count[i]) {
-                    stage[i] = EG_DECAY;
-                    stage_count[i] = (int)(Math.pow(2,
-                            this.decay[i][0] / 1200.0) / control_time);
-                    stage_count[i] += (int)(this.decay2[i][0]/(control_time*1000));
-                    if (stage_count[i] < 0)
-                        stage_count[i] = 0;
-                    stage_ix[i] = 0;
-                }
-                break;
-            case EG_DECAY:
-                stage_ix[i]++;
-                double sustain = this.sustain[i][0] * (1.0 / 1000.0);
-                if (stage_ix[i] >= stage_count[i]) {
-                    out[i][0] = sustain;
-                    stage[i] = EG_SUSTAIN;
-                    if (sustain < 0.001) {
+                    break;
+                case EG_DECAY:
+                    stage_ix[i]++;
+                    double sustain = this.sustain[i][0] * (1.0 / 1000.0);
+                    if (stage_ix[i] >= stage_count[i]) {
+                        out[i][0] = sustain;
+                        stage[i] = EG_SUSTAIN;
+                        if (sustain < 0.001) {
+                            out[i][0] = 0;
+                            active[i][0] = 0;
+                            stage[i] = EG_END;
+                        }
+                    } else {
+                        double m = ((double)stage_ix[i]) / ((double)stage_count[i]);
+                        out[i][0] = (1 - m) + sustain * m;
+                    }
+                    break;
+                case EG_SUSTAIN:
+                    break;
+                case EG_RELEASE:
+                    stage_ix[i]++;
+                    if (stage_ix[i] >= stage_count[i]) {
                         out[i][0] = 0;
                         active[i][0] = 0;
                         stage[i] = EG_END;
-                    }
-                } else {
-                    double m = ((double)stage_ix[i]) / ((double)stage_count[i]);
-                    out[i][0] = (1 - m) + sustain * m;
-                }
-                break;
-            case EG_SUSTAIN:
-                break;
-            case EG_RELEASE:
-                stage_ix[i]++;
-                if (stage_ix[i] >= stage_count[i]) {
-                    out[i][0] = 0;
-                    active[i][0] = 0;
-                    stage[i] = EG_END;
-                } else {
-                    double m = ((double)stage_ix[i]) / ((double)stage_count[i]);
-
-                    out[i][0] = Math.pow(1.0d - m, 0.1d);
-                    //out[i][0] = (1 - m); // *stage_v[i];
+                    } else {
+                        double m = ((double)stage_ix[i]) / ((double)stage_count[i]);
+                        if (linear_release) {
+                            out[i][0] = Math.pow(1.0d - m, 0.1d);
+                        } else {
+                            out[i][0] = (1 - m); // *stage_v[i];
+                        }
 
                     if (on[i][0] < -0.5) {
                         stage_count[i] = (int)(Math.pow(2,

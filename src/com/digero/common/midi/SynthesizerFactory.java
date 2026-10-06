@@ -69,6 +69,7 @@ public class SynthesizerFactory {
 			if (customMidisynth != null) {
 				Map<String, Object> info = setupSynthesizerPropertyInfo();
 				info.put("latency", 120_000);// default
+				info.put("linear release", false);
 				customMidisynth.open(null, info);
 				customMidisynth.unloadAllInstruments(bank);
 				customMidisynth.loadAllInstruments(bank);
@@ -90,6 +91,7 @@ public class SynthesizerFactory {
 		synthInfo.put("load default soundbank", false);// default is true
 		synthInfo.put("max polyphony", 128);// default is 64
 		synthInfo.put("control rate", 147f); // default is 147f
+		synthInfo.put("linear release", true); // new flag we patched in. true=lotro simulation.
 		synthInfo.put("interpolation", "point");// default is linear. Options: "point", "linear", "linear1", "linear2", "cubic", "lanczos", "sinc".
 		synthInfo.put("auto gain control", true);// default is true. Set to false it can give pops when skipping in
 													// song, especially for abc player.
