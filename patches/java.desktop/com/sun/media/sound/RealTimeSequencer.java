@@ -1895,9 +1895,11 @@ final class RealTimeSequencer extends AbstractMidiDevice
                         }
                     }
                     if (t < trackReadPos.length) {
-                        // also when no event is at or after endTick: then it points
-                        // to End Of Track, instead of keeping a stale position
-                        trackReadPos[t] = (i > 0) ? (i - 1) : 0;
+                        // the first event at or after endTick, or track.size()
+                        // when there is none. Not i - 1: that played the last
+                        // event before endTick again, after the chased state
+                        // was sent (a reset sysex undid it).
+                        trackReadPos[t] = i;
                     }
                 } catch (ArrayIndexOutOfBoundsException aioobe) {
                     // this happens when messages are removed
@@ -2104,8 +2106,29 @@ final class RealTimeSequencer extends AbstractMidiDevice
 
         private void ReindexTrack(int trackNum, long tick) {
             if (trackNum < trackReadPos.length && trackNum < tracks.length) {
-                trackReadPos[trackNum] = MidiUtils.tick2index(tracks[trackNum], tick);
+                trackReadPos[trackNum] = firstIndexAtOrAfter(tracks[trackNum], tick);
             }
+        }
+
+        /**
+         * @return the index of the first event at or after tick, or
+         *         track.size() if there is none.
+         *         Not MidiUtils.tick2index(): with several events on the
+         *         tick, its binary search can stop at any of them, and the
+         *         ones before it would not be played.
+         */
+        private int firstIndexAtOrAfter(Track track, long tick) {
+            int low = 0;
+            int high = track.size();
+            while (low < high) {
+                int mid = (low + high) >>> 1;
+                if (track.get(mid).getTick() < tick) {
+                    low = mid + 1;
+                } else {
+                    high = mid;
+                }
+            }
+            return low;
         }
 
         /* returns if changes are pending */
