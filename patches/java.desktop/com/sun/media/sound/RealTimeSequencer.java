@@ -1430,7 +1430,9 @@ final class RealTimeSequencer extends AbstractMidiDevice
 
                 playThreadImplStop();
                 if (wasRunning) {
-                    dataPump.notesOff(true);
+                    // stopped: silence at once. End of the sequence:
+                    // let the last notes ring out
+                    dataPump.notesOff(true, !EOM);
                 }
                 if (EOM) {
                     dataPump.setTickPos(sequence.getTickLength());
@@ -1504,7 +1506,7 @@ final class RealTimeSequencer extends AbstractMidiDevice
             long oldLastTick = tickPos;
             lastTick = tickPos;
             if (running) {
-                notesOff(false);
+                notesOff(false, false);
             }
             if (running || tickPos > 0) {
                 // will also reindex
@@ -1594,11 +1596,21 @@ final class RealTimeSequencer extends AbstractMidiDevice
             }
         }
 
-        void notesOff(boolean doControllers) {
+        /**
+         * @param doControllers also send reset all controllers
+         * @param soundOff also send all sound off, which silences notes in
+         *                 their release phase too. Sent first, as
+         *                 SoftSynthesizer only applies it to held notes.
+         */
+        void notesOff(boolean doControllers, boolean soundOff) {
             int done = 0;
             for (int ch = 0; ch < MAX_CHANNELS; ch++) {
                 if (!isChannelInUse(ch)) {
                     continue;
+                }
+                if (soundOff) {
+                    /* all sound off */
+                    sendChannelMessage(ShortMessage.CONTROL_CHANGE, ch, 120, 0);
                 }
                 int channelMask = (1 << ch);
                 for (int i=0; i<128; i++) {
