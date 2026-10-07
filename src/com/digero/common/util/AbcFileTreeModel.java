@@ -4,6 +4,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.function.BiPredicate;
 
 import javax.swing.event.TreeModelEvent;
 import javax.swing.event.TreeModelListener;
@@ -41,7 +42,9 @@ public class AbcFileTreeModel implements TreeModel {
 	private ArrayList<TreeModelListener> listeners = new ArrayList<TreeModelListener>();
 	private AbcSongFileNode rootNode;
 	private static ExtensionFileFilter abcFilter = new ExtensionFileFilter(UIText.get("common.abc.files.and.playlists"),
-			Util.ABC_FILE_EXTENSION_NO_DOT, Util.TXT_FILE_EXTENSION_NO_DOT, Util.ABCP_FILE_EXTENSION_NO_DOT); 
+			Util.ABC_FILE_EXTENSION_NO_DOT, Util.TXT_FILE_EXTENSION_NO_DOT, Util.ABCP_FILE_EXTENSION_NO_DOT);
+	// Optional extra match for files whose name doesn't match: (file, lowerCaseFilter) -> matches
+	private BiPredicate<File, String> extraMatcher = null;
 	
 	public AbcFileTreeModel(List<File> directories) {
 		this.rootNode = new AbcSongFileNode(new File("a_d7mmy_file-name_thatwillnever-9eused"));
@@ -80,6 +83,30 @@ public class AbcFileTreeModel implements TreeModel {
 		rootNode.children.clear();
 		for (File file : directories) {
 			rootNode.children.add(new AbcSongFileNode(file));
+		}
+	}
+
+	/** Used by filter() for file nodes whose name doesn't match. Called with the lower-cased filter. */
+	public void setExtraMatcher(BiPredicate<File, String> matcher) {
+		this.extraMatcher = matcher;
+	}
+
+	/** All childless nodes (files and empty folders), unfiltered. Call on the EDT. */
+	public List<File> getAllFiles() {
+		List<File> result = new ArrayList<>();
+		for (AbcSongFileNode node : rootNode.children) {
+			collectLeafFiles(node, result);
+		}
+		return result;
+	}
+
+	private static void collectLeafFiles(AbcSongFileNode node, List<File> out) {
+		if (node.children.isEmpty()) {
+			out.add(node.theFile);
+			return;
+		}
+		for (AbcSongFileNode child : node.children) {
+			collectLeafFiles(child, out);
 		}
 	}
 	
@@ -218,7 +245,11 @@ public class AbcFileTreeModel implements TreeModel {
 				}
 			}
 			
-			return hasMatchedChild || theFile.getName().toLowerCase().contains(filterStr);
+			if (hasMatchedChild || theFile.getName().toLowerCase().contains(filterStr)) {
+				return true;
+			}
+			// Cheap name check failed: consult the metadata index (files only, no disk access)
+			return children.isEmpty() && extraMatcher != null && extraMatcher.test(theFile, filterStr);
 		}
 		
 		public AbcSongFileNode(final File theFile) {

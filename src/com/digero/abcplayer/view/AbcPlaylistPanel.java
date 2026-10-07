@@ -46,6 +46,7 @@ import com.digero.common.i18n.UIText;
 import com.digero.common.icons.IconLoader;
 import com.digero.common.util.AbcFileTreeModel;
 import com.digero.common.util.AbcFileTreeModel.AbcSongFileNode;
+import com.digero.common.util.AbcMetadataIndex;
 import com.digero.common.util.ExtensionFileFilter;
 import com.digero.common.util.Listener;
 import com.digero.common.util.FileParseException;
@@ -103,6 +104,10 @@ public class AbcPlaylistPanel extends JPanel {
 	private JScrollPane fileTreeScrollPane;
 	private JButton addToPlaylistButton;
 	private HintTextField searchTextField;
+	// Background index of title/composer/genre/mood used by the search field
+	private AbcMetadataIndex metadataIndex;
+	// Coalesces re-filtering while the index is still filling up
+	private Timer refilterTimer;
 	
 	// Right
 	private JTable playlistTable;
@@ -182,6 +187,8 @@ public class AbcPlaylistPanel extends JPanel {
 		sortType = AbcFileTreeModel.SortType.valueOf(prefs.get("sortType", "NAME_ASC"));
 		
 		abcFileTreeModel = new AbcFileTreeModel(topLevelDirs);
+		metadataIndex = new AbcMetadataIndex(this::onMetadataIndexed);
+		abcFileTreeModel.setExtraMatcher(metadataIndex::matches);
 		abcFileTreeModel.refresh(sortType);
 		abcFileTreeModel.filter("");
 		
@@ -697,6 +704,15 @@ public class AbcPlaylistPanel extends JPanel {
 		});
 		
 		searchTextField = new HintTextField(UIText.get("abcplayer.search"), 15);
+		refilterTimer = new Timer(1000, e -> {
+			if (MenuSelectionManager.defaultManager().getSelectedPath().length > 0) {
+				// A popup is open (e.g. the tree's Play item uses menuRowIdx); don't shift rows under it
+				refilterTimer.restart();
+				return;
+			}
+			applySearchFilter();
+		});
+		refilterTimer.setRepeats(false);
 		searchTextField.getDocument().addDocumentListener(new DocumentListener() {
 			@Override
 			public void changedUpdate(DocumentEvent e) { update(e); }
@@ -706,11 +722,12 @@ public class AbcPlaylistPanel extends JPanel {
 			public void removeUpdate(DocumentEvent e) { update(e); }
 			
 			public void update(DocumentEvent e) {
-				abcFileTreeModel.filter(searchTextField.getText());
-				if (!searchTextField.getText().isEmpty() && expandSearchMenuItem.isSelected()) {
-					expandMatchedPaths();
+				if (!searchTextField.getText().isEmpty() && !metadataIndex.hasStarted()) {
+					// First search: start reading file headers in the background.
+					// Filename matches show now; metadata matches are added as they are found.
+					metadataIndex.rebuild(abcFileTreeModel.getAllFiles());
 				}
-				reExpandPaths();
+				applySearchFilter();
 			}
 		});
 		searchTextField.setToolTipText(UIText.get("abcplayer.html.search.for.songs.in.the.abc.browser"));
@@ -957,6 +974,7 @@ public class AbcPlaylistPanel extends JPanel {
 				topLevelDirs = dirs.stream().map(File::new).collect(Collectors.toList());
 				abcFileTreeModel.setDirectories(topLevelDirs);
 				abcFileTreeModel.refresh(sortType);
+				refreshMetadataIndex();
 				abcFileTreeModel.filter(searchTextField.getText());
 				reExpandPaths();
 			}
@@ -964,9 +982,75 @@ public class AbcPlaylistPanel extends JPanel {
 		JMenuItem refreshMenuItem = playlistMenu.add(new JMenuItem(UIText.get("abcplayer.menu.refresh.browser")));
 		refreshMenuItem.addActionListener(e -> {
 			abcFileTreeModel.refresh(sortType);
+			refreshMetadataIndex();
 			abcFileTreeModel.filter(searchTextField.getText());
 			reExpandPaths();
 		});
+	}
+
+	/** Filters the tree with the current search text, keeping expansion and selection. */
+	private void applySearchFilter() {
+		refilterTimer.stop();
+		String text = searchTextField.getText();
+		TreePath[] selected = abcFileTree.getSelectionPaths();
+
+		abcFileTreeModel.filter(text);
+		if (!text.isEmpty() && expandSearchMenuItem.isSelected()) {
+			expandMatchedPaths();
+		}
+		reExpandPaths();
+		restoreSelection(selected);
+	}
+
+	/** Called on the EDT by the index with files that just got metadata. */
+	private void onMetadataIndexed(List<File> newlyIndexed) {
+		String text = searchTextField.getText();
+		if (text.isEmpty() || refilterTimer.isRunning()) {
+			return;
+		}
+		String lower = text.toLowerCase();
+		for (File f : newlyIndexed) {
+			// Only re-filter if this batch adds a file that isn't already shown by its name
+			if (!f.getName().toLowerCase().contains(lower) && metadataIndex.matches(f, lower)) {
+				refilterTimer.start();
+				return;
+			}
+		}
+	}
+
+	/** After the file tree is re-read from disk. Only re-reads changed files. */
+	private void refreshMetadataIndex() {
+		if (metadataIndex.hasStarted()) {
+			metadataIndex.rebuild(abcFileTreeModel.getAllFiles());
+		}
+	}
+
+	private void restoreSelection(TreePath[] paths) {
+		if (paths == null) {
+			return;
+		}
+		List<TreePath> stillPresent = new ArrayList<>(paths.length);
+		for (TreePath p : paths) {
+			if (isPathInModel(p)) {
+				stillPresent.add(p);
+			}
+		}
+		if (!stillPresent.isEmpty()) {
+			abcFileTree.setSelectionPaths(stillPresent.toArray(new TreePath[0]));
+		}
+	}
+
+	private boolean isPathInModel(TreePath path) {
+		Object[] nodes = path.getPath();
+		if (nodes.length == 0 || nodes[0] != abcFileTreeModel.getRoot()) {
+			return false;
+		}
+		for (int i = 1; i < nodes.length; i++) {
+			if (abcFileTreeModel.getIndexOfChild(nodes[i - 1], nodes[i]) < 0) {
+				return false;
+			}
+		}
+		return true;
 	}
 	
 	private void expandMatchedPaths() {
@@ -1564,7 +1648,7 @@ public class AbcPlaylistPanel extends JPanel {
 	}
 	
 	private void addFilesToPlaylist(List<File> files, int insertPos) {
-		String filterText = searchTextField.getText();
+		String filterText = searchTextField.getText().toLowerCase();
 		new SwingWorker<Boolean, Boolean>() {
 			boolean loadPlaylist = false;
 			List<AbcInfo> data = new ArrayList<>();
@@ -1592,7 +1676,8 @@ public class AbcPlaylistPanel extends JPanel {
 								.filter(File::exists)
 								.map(File::toPath) // Convert File to Path
 								.flatMap(path -> getAbcFilesInFolder(path)) // Process each directory
-								.filter(theFile -> theFile.getName().toLowerCase().contains(filterText)) // Filter based on search textbox
+								.filter(theFile -> theFile.getName().toLowerCase().contains(filterText)
+										|| metadataIndex.matches(theFile, filterText)) // same rule as the tree
 								.sorted(AbcFileTreeModel.getFileComparator(sortType))
 								.collect(Collectors.toList());
 					} catch (Exception e) {
