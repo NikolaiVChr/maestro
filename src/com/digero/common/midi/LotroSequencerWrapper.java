@@ -34,7 +34,7 @@ public class LotroSequencerWrapper extends NoteFilterSequencerWrapper {
 		}
 	}
 
-	/** LOTRO soundfont programs whose held notes are not restarted, e.g. drums */
+	/** LOTRO soundfont programs whose held notes are not restarted */
 	private static final int[] LOTRO_NO_RESTART_PROGRAMS = {
 			LotroInstrument.BASIC_DRUM.midi.id(),
 			LotroInstrument.BASIC_HARP.midi.id(),

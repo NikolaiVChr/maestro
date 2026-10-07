@@ -58,16 +58,19 @@ Release notes after 4.6.21 should be in markdown format. Keep the version header
 This changelog is only partial, to see all the way back to v1.0.0 go here:
   https://maestro.miraheze.org/wiki/Version_history
 
-Version 4.7.4
+Version 4.7.5
 * This is a **beta** build
 * When loading projects, the project version number and XML version number are now checked for errors.
 * Maestro and Abc Player will now warn if a part is too large for lotro.
 * Fixed that when importing abc with e.g. "K:D mix", the space would make it become D major.
 * Abc Player: now interprets abc files closer to how Lotro plays them, with clearer error messages.
-* Maestro: abc files determined to not be made for Lotro (folk tune collections etc..) are now read as standard ABC 2.1
-* Maestro: abc lyrics are now shown in time with the music in Maestro, just like midi lyrics.
-* Maestro: opening an abc file with many tunes asks which tune to open, with search; it can also split the book into one file per tune.
+* Maestro: Abc files determined to not be made for Lotro (folk tune collections etc.) are now read as standard ABC 2.1, and almost all of that syntax is now supported.
+* Maestro: Abc lyrics are now shown in time with the music in Maestro, just like midi lyrics.
+* Maestro: Opening an abc file with many tunes asks which tune to open, with search; it can also split the book into one file per tune.
 * Maestro: Chord symbols in ABC files ("G", "Am", "D7") now become a bass track and a chords track. Bagpipe tunes get a drone track.
+* Fixed that when soloing, during midi playback, of tracks that have notes in a channel whose program was switched 2 or more times on same tick, it could start sounding with another voice.
+* When using custom sf2 soundfont, there is no longer going to be what sounded like long reverb due to using same note-release-algorithm that lotro notes need.
+* When seeking in an abc preview or source midi song and landing in the middle of a sustained note, that note will now be restarted (for some instruments).
 
 Version 4.7.2
 * Make Windows midi system able to play back GS midi more reliable.
