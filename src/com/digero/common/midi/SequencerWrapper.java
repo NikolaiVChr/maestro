@@ -65,6 +65,9 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 
 	private ListenerList<SequencerEvent> listeners = null;
 
+	/** see setNoRestartPrograms() */
+	private int[] noRestartPrograms = new int[0];
+
 	public SequencerWrapper() throws MidiUnavailableException {
 		sequencer = MidiSystem.getSequencer(false);
 		sequencer.open();
@@ -183,6 +186,9 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 			try {
 				sequencer = MidiSystem.getSequencer(false);
 				sequencer.open();
+				if (noRestartPrograms.length > 0) {
+					applyNoRestartPrograms();
+				}
 				transmitter = sequencer.getTransmitter();
 				receiver = createReceiver();
 			} catch (MidiUnavailableException e1) {
@@ -748,5 +754,24 @@ public class SequencerWrapper implements MidiConstants, ITempoCache, IDiscardabl
 
 	public void setUseSequenceTempoFactor(boolean useSequenceTempoFactor) {
 		this.useSequenceTempoFactor = useSequenceTempoFactor;
+	}
+
+	/**
+	 * Programs whose held notes are not restarted when playback continues at a
+	 * new position (seek while playing, or start). Needs the patched
+	 * RealTimeSequencer; without it no held notes are restarted at all.
+	 */
+	public void setNoRestartPrograms(int... programs) {
+		noRestartPrograms = (programs == null) ? new int[0] : programs.clone();
+		applyNoRestartPrograms();
+	}
+
+	private void applyNoRestartPrograms() {
+		try {
+			sequencer.getClass().getMethod("setNoRestartPrograms", int[].class)
+					.invoke(sequencer, (Object) noRestartPrograms);
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			log.warning("Cannot set the no-restart programs, needs the patched RealTimeSequencer: " + e);
+		}
 	}
 }

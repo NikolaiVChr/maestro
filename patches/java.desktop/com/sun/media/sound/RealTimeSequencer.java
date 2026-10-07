@@ -60,7 +60,7 @@ import javax.sound.midi.Transmitter;
 /* TODO:
  * - rename PlayThread to PlayEngine (because isn't a thread)
  */
-final class RealTimeSequencer extends AbstractMidiDevice
+public final class RealTimeSequencer extends AbstractMidiDevice
         implements Sequencer, AutoConnectSequencer {
 
     /**
@@ -108,6 +108,13 @@ final class RealTimeSequencer extends AbstractMidiDevice
 
     /** tempo cache for getMicrosecondPosition */
     private final MidiUtils.TempoCache tempoCache = new MidiUtils.TempoCache();
+
+    /**
+     * Programs whose held notes are not restarted after a seek or on
+     * start(), indexed by program number. Replaced as a whole, never
+     * modified, so the play thread can read it without locking.
+     */
+    private volatile boolean[] noRestartPrograms = new boolean[128];
 
     /**
      * True if the sequence is running.
@@ -447,6 +454,50 @@ final class RealTimeSequencer extends AbstractMidiDevice
         } else {
             getDataPump().setTickPos(tick);
         }
+    }
+
+    /**
+     * Sets the programs whose held notes are not restarted when playback
+     * continues at a new position (a seek while running, or start()).
+     * Notes on the drum channel are never restarted.
+     *
+     * @param programs program numbers 0-127, replaces the previous set.
+     *                 None or an empty array restarts the notes of all
+     *                 programs.
+     * @throws IllegalArgumentException if a program is not in 0-127
+     */
+    public void setNoRestartPrograms(int... programs) {
+        boolean[] newPrograms = new boolean[128];
+        if (programs != null) {
+            for (int program : programs) {
+                if (program < 0 || program > 127) {
+                    throw new IllegalArgumentException("program out of range: " + program);
+                }
+                newPrograms[program] = true;
+            }
+        }
+        noRestartPrograms = newPrograms;
+    }
+
+    /**
+     * @return the programs whose held notes are not restarted, ascending
+     */
+    public int[] getNoRestartPrograms() {
+        boolean[] programs = noRestartPrograms;
+        int count = 0;
+        for (boolean excluded : programs) {
+            if (excluded) {
+                count++;
+            }
+        }
+        int[] result = new int[count];
+        int n = 0;
+        for (int program = 0; program < programs.length; program++) {
+            if (programs[program]) {
+                result[n++] = program;
+            }
+        }
+        return result;
     }
 
     @Override
@@ -1336,14 +1387,16 @@ final class RealTimeSequencer extends AbstractMidiDevice
                 long tickPos = getTickPosition();
                 dataPump.setTempoMPQ(tempoCache.getTempoMPQAt(tickPos));
             }
+            // before chasing: chaseEvents() sets the bits of the notes it restarts
+            dataPump.clearNoteOnCache();
             long startTick = getTickPosition();
             if (startTick > 0) {
                 // stop() sent Reset All Controllers (notesOff(true)),
-                // restore the state of the sequence at this position
-                dataPump.chaseEvents(startTick, startTick);
+                // restore the state of the sequence at this position,
+                // and restart the notes held at this position
+                dataPump.chaseEvents(startTick, startTick, true);
             }
             dataPump.checkPointMillis = 0; // means restarted
-            dataPump.clearNoteOnCache();
             dataPump.needReindex = true;
 
             dataPump.resetLoopCount();
@@ -1476,6 +1529,12 @@ final class RealTimeSequencer extends AbstractMidiDevice
          * bit per channel in an int, so channels 32 and up are not tracked.
          */
         private static final int MAX_CHANNELS = 32;
+        /** notes on this channel are never restarted, see restartHeldNotes() */
+        private static final int DRUM_CHANNEL = 9;
+        /** GM2 rhythm bank (MSB), notes of its programs are never restarted */
+        private static final int GM2_RHYTHM_BANK_MSB = 0x78;
+        /** a held note that ends sooner than this after a seek is not restarted */
+        private static final long RESTART_MIN_REMAINING_MILLIS = 100;
         private int[] noteOnCache;       // bit-mask of notes that are currently on, bit = channel
         private int usedChannels;        // bit-mask of the channels above 15 the sequence uses
         private Track[] tracks;
@@ -1508,16 +1567,19 @@ final class RealTimeSequencer extends AbstractMidiDevice
             if (running) {
                 notesOff(false, false);
             }
-            if (running || tickPos > 0) {
-                // will also reindex
-                chaseEvents(oldLastTick, tickPos);
-            } else {
-                needReindex = true;
-            }
+            // before chasing: chaseEvents() needs the tempo at the new
+            // position to find the notes that are about to end
             if (!hasCachedTempo()) {
                 setTempoMPQ(getTempoCache().getTempoMPQAt(lastTick, currTempo));
                 // treat this as if it is a real time tempo change
                 ignoreTempoEventAt = -1;
+            }
+            if (running || tickPos > 0) {
+                // will also reindex. Held notes are only restarted while
+                // running, start() restarts them when stopped
+                chaseEvents(oldLastTick, tickPos, running);
+            } else {
+                needReindex = true;
             }
             // trigger re-configuration
             checkPointMillis = 0;
@@ -1824,12 +1886,20 @@ final class RealTimeSequencer extends AbstractMidiDevice
          * read position too.
          * <p>
          * needs to be called in synchronized state
+         *
+         * @param restartNotes also restart the notes that sound at endTick,
+         *                     see restartHeldNotes(). Only while running.
          */
-        synchronized void chaseEvents(long startTick, long endTick) {
+        synchronized void chaseEvents(long startTick, long endTick, boolean restartNotes) {
             if (startTick > endTick) {
                 // start from the beginning
                 startTick = 0;
             }
+            // the notes that sound at endTick, null if not restarting notes
+            HeldNotes held = restartNotes ? new HeldNotes() : null;
+            // per track: index of the first event at or after endTick,
+            // -1 if unknown
+            int[] scanFrom = new int[tracks.length];
             // tick of the event that set the value, -1 means not set
             long[][] ccTick = new long[MAX_CHANNELS][128];
             byte[][] ccValue = new byte[MAX_CHANNELS][128];
@@ -1848,7 +1918,12 @@ final class RealTimeSequencer extends AbstractMidiDevice
             for (int t = 0; t < tracks.length; t++) {
                 Track track = tracks[t];
                 int size = track.size();
+                // pump() does not play the notes of a disabled track
+                boolean playsNotes = (trackDisabled == null)
+                        || (t >= trackDisabled.length)
+                        || !trackDisabled[t];
                 int i = 0;
+                scanFrom[t] = -1;
                 try {
                     for (; i < size; i++) {
                         MidiEvent event = track.get(i);
@@ -1863,6 +1938,31 @@ final class RealTimeSequencer extends AbstractMidiDevice
                         boolean isController = (len == 3) && (command == ShortMessage.CONTROL_CHANGE);
                         boolean isProgram = (len == 2) && (command == ShortMessage.PROGRAM_CHANGE);
                         boolean isBend = (len == 3) && (command == ShortMessage.PITCH_BEND);
+                        boolean isNote = (len == 3)
+                                && ((command == ShortMessage.NOTE_ON) || (command == ShortMessage.NOTE_OFF));
+                        if (isNote) {
+                            if ((held != null) && playsNotes) {
+                                int ch = channelOf(msg, status);
+                                if (ch < MAX_CHANNELS) {
+                                    int key;
+                                    int velocity;
+                                    if (msg instanceof ShortMessage smsg) {
+                                        key = smsg.getData1() & 0x7F;
+                                        velocity = smsg.getData2() & 0x7F;
+                                    } else {
+                                        byte[] data = msg.getMessage();
+                                        key = data[1] & 0x7F;
+                                        velocity = data[2] & 0x7F;
+                                    }
+                                    if (command == ShortMessage.NOTE_OFF) {
+                                        velocity = 0;
+                                    }
+                                    // velocity 0 is a note off
+                                    held.note(tick, HeldNotes.order(t, i), ch, key, velocity);
+                                }
+                            }
+                            continue;
+                        }
                         if (!isController && !isProgram && !isBend) {
                             continue;
                         }
@@ -1896,19 +1996,28 @@ final class RealTimeSequencer extends AbstractMidiDevice
                                 ccTick[ch][data1] = tick;
                                 ccValue[ch][data1] = (byte) data2;
                             }
+                            if ((held != null) && ((data1 == 0) || (data1 == 32))) {
+                                // bank select
+                                held.voice(tick, HeldNotes.order(t, i), ch, data1, data2);
+                            }
                         } else if (isProgram) {
                             if (tick >= progTick[ch]) {
                                 progTick[ch] = tick;
                                 progValue[ch] = (byte) data1;
+                            }
+                            if (held != null) {
+                                held.voice(tick, HeldNotes.order(t, i), ch, HeldNotes.PROGRAM, data1);
                             }
                         } else if (tick >= bendTick[ch]) {
                             bendTick[ch] = tick;
                             bendValue[ch] = data1 | (data2 << 8);
                         }
                     }
+                    // the first event at or after endTick, or track.size()
+                    // when there is none
+                    scanFrom[t] = i;
                     if (t < trackReadPos.length) {
-                        // the first event at or after endTick, or track.size()
-                        // when there is none. Not i - 1: that played the last
+                        // Not i - 1: that played the last
                         // event before endTick again, after the chased state
                         // was sent (a reset sysex undid it).
                         trackReadPos[t] = i;
@@ -1952,6 +2061,250 @@ final class RealTimeSequencer extends AbstractMidiDevice
                 if ((parameters != null) && (parameters[ch] != null)) {
                     sendParameters(ch, parameters[ch]);
                 }
+            }
+
+            // last: the notes need the program, controllers and RPNs above
+            if (held != null) {
+                restartHeldNotes(held, scanFrom, endTick);
+            }
+        }
+
+        /**
+         * Restarts the notes that sound at endTick, with their original
+         * velocity, from the start of the sound. MIDI cannot start a note
+         * part way into it. Called after the channel state is sent.
+         * Not restarted are notes:
+         * <ul>
+         * <li>on the drum channel, or of a GM2 rhythm bank program
+         * <li>of a program in noRestartPrograms
+         * <li>whose channel has changed program or bank since the note
+         *     started: the note would come back as another instrument
+         * <li>that end, or are struck again, within
+         *     RESTART_MIN_REMAINING_MILLIS: they would only blip
+         * </ul>
+         * The restarted notes are added to noteOnCache, so stop, the next
+         * seek and muting the track turn them off.
+         *
+         * @param scanFrom per track, the index of the first event at or
+         *                 after endTick, -1 if unknown
+         */
+        private void restartHeldNotes(HeldNotes held, int[] scanFrom, long endTick) {
+            if (!held.any()) {
+                return;
+            }
+            // notes that end or are struck again before limitTick are about to end
+            long window = Math.max(0, millis2tick(RESTART_MIN_REMAINING_MILLIS));
+            long limitTick = (window > Long.MAX_VALUE - endTick) ? Long.MAX_VALUE : endTick + window;
+            for (int t = 0; t < tracks.length; t++) {
+                boolean playsNotes = (trackDisabled == null)
+                        || (t >= trackDisabled.length)
+                        || !trackDisabled[t];
+                if (!playsNotes || (t >= scanFrom.length) || (scanFrom[t] < 0)) {
+                    continue;
+                }
+                Track track = tracks[t];
+                try {
+                    int size = track.size();
+                    for (int i = scanFrom[t]; i < size; i++) {
+                        MidiEvent event = track.get(i);
+                        if (event.getTick() >= limitTick) {
+                            break;
+                        }
+                        MidiMessage msg = event.getMessage();
+                        int status = msg.getStatus();
+                        int command = status & 0xF0;
+                        if ((msg.getLength() == 3)
+                                && ((command == ShortMessage.NOTE_ON) || (command == ShortMessage.NOTE_OFF))) {
+                            int ch = channelOf(msg, status);
+                            if (ch < MAX_CHANNELS) {
+                                int key = (msg instanceof ShortMessage smsg)
+                                        ? smsg.getData1() & 0x7F
+                                        : msg.getMessage()[1] & 0x7F;
+                                // a note off ends the note, a note on strikes it again
+                                held.endsSoon(ch, key);
+                            }
+                        }
+                    }
+                } catch (ArrayIndexOutOfBoundsException aioobe) {
+                    // this happens when messages are removed
+                    // from the track while this method executes
+                }
+            }
+
+            boolean[] excluded = noRestartPrograms;
+            held.sortVoiceEvents();
+            for (int ch = 0; ch < MAX_CHANNELS; ch++) {
+                if ((ch == DRUM_CHANNEL) || !held.any(ch)) {
+                    continue;
+                }
+                // the voice the channel has at endTick
+                int currentVoice = held.voiceAt(ch, endTick, -1);
+                int program = currentVoice & 0x7F;
+                int bankMsb = currentVoice >> 14;
+                if ((bankMsb == GM2_RHYTHM_BANK_MSB) || excluded[program]) {
+                    continue;
+                }
+                for (int key = 0; key < 128; key++) {
+                    if (!held.isHeld(ch, key)) {
+                        continue;
+                    }
+                    // the voice the note started with
+                    if (held.voiceAt(ch, held.onTick(ch, key), held.onOrder(ch, key)) != currentVoice) {
+                        continue;
+                    }
+                    sendChannelMessage(ShortMessage.NOTE_ON, ch, key, held.velocity(ch, key));
+                    noteOnCache[key] |= 1 << ch;
+                }
+            }
+        }
+
+        /**
+         * The notes that sound at the end of a chase, and the program
+         * changes and bank selects up to there, for restartHeldNotes().
+         * <p>
+         * A note sounds when its last note on comes after its last note off,
+         * merged over all tracks: a note off on any track ends it, as it
+         * does in the synthesizer. A note whose note off has passed while the
+         * sustain pedal is down does not count.
+         * <p>
+         * Events are ordered by tick, then track, then position in the
+         * track, which is the order in which pump() plays them, see order().
+         * chaseEvents() feeds the events track by track, so on equal ticks a
+         * later event always has a higher order.
+         */
+        private static final class HeldNotes {
+            /** the controller value of voice() for a program change */
+            static final int PROGRAM = -1;
+
+            // per channel and key, tick -1 means none
+            private final long[][] onTick = new long[MAX_CHANNELS][128];
+            private final long[][] onOrder = new long[MAX_CHANNELS][128];
+            private final byte[][] onVelocity = new byte[MAX_CHANNELS][128];
+            private final long[][] offTick = new long[MAX_CHANNELS][128];
+            private final long[][] offOrder = new long[MAX_CHANNELS][128];
+            /** program changes and bank selects */
+            private final List<VoiceEvent> voiceEvents = new ArrayList<>();
+
+            private record VoiceEvent(long tick, long order, int channel, int controller, int value) {}
+
+            HeldNotes() {
+                for (int ch = 0; ch < MAX_CHANNELS; ch++) {
+                    Arrays.fill(onTick[ch], -1);
+                    Arrays.fill(offTick[ch], -1);
+                }
+            }
+
+            /**
+             * @return the playback order of the event at index in track,
+             *         among the events on the same tick
+             */
+            static long order(int track, int index) {
+                return ((long) track << 32) | index;
+            }
+
+            /**
+             * @return true if the event at tick1/order1 plays after the
+             *         one at tick2/order2
+             */
+            private static boolean isAfter(long tick1, long order1, long tick2, long order2) {
+                return (tick1 > tick2) || ((tick1 == tick2) && (order1 > order2));
+            }
+
+            /** @param velocity 0 for a note off */
+            void note(long tick, long order, int ch, int key, int velocity) {
+                if (velocity > 0) {
+                    if (isAfter(tick, order, onTick[ch][key], onOrder[ch][key])) {
+                        onTick[ch][key] = tick;
+                        onOrder[ch][key] = order;
+                        onVelocity[ch][key] = (byte) velocity;
+                    }
+                } else if (isAfter(tick, order, offTick[ch][key], offOrder[ch][key])) {
+                    offTick[ch][key] = tick;
+                    offOrder[ch][key] = order;
+                }
+            }
+
+            /** @param controller 0 or 32 for a bank select, PROGRAM for a program change */
+            void voice(long tick, long order, int ch, int controller, int value) {
+                voiceEvents.add(new VoiceEvent(tick, order, ch, controller, value));
+            }
+
+            boolean isHeld(int ch, int key) {
+                return (onTick[ch][key] >= 0)
+                        && isAfter(onTick[ch][key], onOrder[ch][key], offTick[ch][key], offOrder[ch][key]);
+            }
+
+            boolean any(int ch) {
+                for (int key = 0; key < 128; key++) {
+                    if (isHeld(ch, key)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            boolean any() {
+                for (int ch = 0; ch < MAX_CHANNELS; ch++) {
+                    if (any(ch)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            /** the note ends or is struck again soon: do not restart it */
+            void endsSoon(int ch, int key) {
+                onTick[ch][key] = -1;
+            }
+
+            long onTick(int ch, int key) {
+                return onTick[ch][key];
+            }
+
+            long onOrder(int ch, int key) {
+                return onOrder[ch][key];
+            }
+
+            int velocity(int ch, int key) {
+                return onVelocity[ch][key];
+            }
+
+            void sortVoiceEvents() {
+                voiceEvents.sort((a, b) -> (a.tick() != b.tick())
+                        ? Long.compare(a.tick(), b.tick())
+                        : Long.compare(a.order(), b.order()));
+            }
+
+            /**
+             * The instrument a note started at tick/order plays with: the
+             * bank at the last program change before it, and that program.
+             * A bank select alone does not change the instrument. Requires
+             * sortVoiceEvents().
+             *
+             * @param order -1 for after all events on tick
+             * @return (bank MSB << 14) | (bank LSB << 7) | program,
+             *         0 before the first program change
+             */
+            int voiceAt(int ch, long tick, long order) {
+                int bankMsb = 0;
+                int bankLsb = 0;
+                int voice = 0;
+                for (VoiceEvent e : voiceEvents) {
+                    if ((e.tick() > tick) || ((e.tick() == tick) && (order >= 0) && (e.order() >= order))) {
+                        break;
+                    }
+                    if (e.channel() != ch) {
+                        continue;
+                    }
+                    if (e.controller() == 0) {
+                        bankMsb = e.value();
+                    } else if (e.controller() == 32) {
+                        bankLsb = e.value();
+                    } else {
+                        voice = (bankMsb << 14) | (bankLsb << 7) | e.value();
+                    }
+                }
+                return voice;
             }
         }
 

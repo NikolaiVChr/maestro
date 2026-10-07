@@ -30,6 +30,51 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 	private int listNumber = 0;
 	public static String deviceInUse = null;
 	private boolean feedActive = false;
+
+	/**
+	 * GM programs whose sound decays, so a restart would sound like a new strike:
+	 * pianos, chromatic percussion, plucked guitars and basses, pizzicato, harp,
+	 * timpani, orchestra hit, plucked ethnic, percussive.
+	 */
+	private static final int[] GM_NO_RESTART_PROGRAMS = {
+			// pianos
+			MidiInstrument.PIANO.id(), MidiInstrument.BRIGHT_PIANO.id(), MidiInstrument.ELEC_PIANO.id(),
+			MidiInstrument.HONKY_TONK_PIANO.id(), MidiInstrument.RHODES_PIANO.id(), MidiInstrument.CHORUS_PIANO.id(),
+			MidiInstrument.HARPSCHORD.id(), MidiInstrument.CLAVINET.id(),
+			// chromatic percussion
+			MidiInstrument.CELESTA.id(), MidiInstrument.GLOCKENSPIEL.id(), MidiInstrument.MUSIC_BOX.id(),
+			MidiInstrument.VIBRAPHONE.id(), MidiInstrument.MARIMBA.id(), MidiInstrument.XYLOPHONE.id(),
+			MidiInstrument.TUBULAR_BELLS.id(), MidiInstrument.DULCIMER.id(),
+			// plucked guitars
+			MidiInstrument.NYLON_GUITAR.id(), MidiInstrument.STEEL_STRING_GUITAR.id(), MidiInstrument.JAZZ_GUITAR.id(),
+			MidiInstrument.CLEAN_ELEC_GUITAR.id(), MidiInstrument.MUTE_ELEC_GUITAR.id(), MidiInstrument.HARMONICS.id(),
+			MidiInstrument.GUITAR_FRET_NOISE.id(),
+			// basses
+			MidiInstrument.ACOUSTIC_BASS.id(), MidiInstrument.FINGERED_ELEC_BASS.id(), MidiInstrument.PICKED_ELEC_BASS.id(),
+			MidiInstrument.FRETLESS_BASS.id(), MidiInstrument.SLAP_BASS_1.id(), MidiInstrument.SLAP_BASS_2.id(),
+			MidiInstrument.SYNTH_BASS_1.id(), MidiInstrument.SYNTH_BASS_2.id(),
+			// orchestral
+			MidiInstrument.PIZZICATO_STRINGS.id(), MidiInstrument.ORCHESTRA_HARP.id(), MidiInstrument.TIMPANI.id(),
+			MidiInstrument.ORCHESTRA_HIT.id(),
+			// plucked ethnic
+			MidiInstrument.SITAR.id(), MidiInstrument.BANJO.id(), MidiInstrument.SHAMISEN.id(),
+			MidiInstrument.KOTO.id(), MidiInstrument.KALIMBA.id(),
+			// percussive
+			MidiInstrument.TINKLE_BELL.id(), MidiInstrument.AGOGO.id(), MidiInstrument.STEEL_DRUMS.id(),
+			MidiInstrument.WOODBLOCK.id(), MidiInstrument.TAIKO_DRUM.id(), MidiInstrument.MELODIC_TOM.id(),
+			MidiInstrument.SYNTH_DRUM.id(), MidiInstrument.REVERSE_CYMBAL.id(), MidiInstrument.GUN_SHOT.id(),
+
+			MidiInstrument.PERC_ORGAN.id(),
+			MidiInstrument.BRASS_AND_LEAD.id(),
+			MidiInstrument.ICE_RAIN.id(),
+			MidiInstrument.CRYSTAL.id(),
+			MidiInstrument.ATMOSPHERE.id(),
+			MidiInstrument.BRIGHTNESS.id(),
+			MidiInstrument.ECHO_DROPS.id(),
+			MidiInstrument.STAR_THEME.id(),
+			MidiInstrument.BREATH_NOISE.id(),
+			MidiInstrument.BIRD_TWEET.id()
+	};
 	
 
 	public NoteFilterSequencerWrapper() throws MidiUnavailableException {
@@ -37,6 +82,7 @@ public class NoteFilterSequencerWrapper extends SequencerWrapper {
 		filter = new NoteFilterTransceiver();
 		addTransceiver(filter);
 		feedActive = AppInfo.maestro;
+		setNoRestartPrograms(GM_NO_RESTART_PROGRAMS);
 	}
 
 	public NoteFilterTransceiver getFilter() {

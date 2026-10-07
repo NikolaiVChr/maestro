@@ -14,6 +14,7 @@ import javax.sound.midi.Receiver;
 import javax.sound.midi.Synthesizer;
 import javax.sound.midi.VoiceStatus;
 
+import com.digero.common.abc.LotroInstrument;
 import com.digero.maestro.abc.AbcExporter.ExportTrackInfo;
 
 public class LotroSequencerWrapper extends NoteFilterSequencerWrapper {
@@ -33,9 +34,27 @@ public class LotroSequencerWrapper extends NoteFilterSequencerWrapper {
 		}
 	}
 
+	/** LOTRO soundfont programs whose held notes are not restarted, e.g. drums */
+	private static final int[] LOTRO_NO_RESTART_PROGRAMS = {
+			LotroInstrument.BASIC_DRUM.midi.id(),
+			LotroInstrument.BASIC_HARP.midi.id(),
+			LotroInstrument.BASIC_COWBELL.midi.id(),
+			LotroInstrument.BASIC_THEORBO.midi.id(),
+			LotroInstrument.BASIC_LUTE.midi.id(),
+			LotroInstrument.MOOR_COWBELL.midi.id(),
+			LotroInstrument.LUTE_OF_AGES.midi.id(),
+			LotroInstrument.STUDENT_FIDDLE.midi.id(),
+			LotroInstrument.JAUNTY_HAND_KNELLS.midi.id(),
+			LotroInstrument.MISTY_MOUNTAIN_HARP.midi.id(),
+			LotroInstrument.BRUSQUE_BASSOON.midi.id(),
+			LotroInstrument.TRAVELLERS_TRUSTY_FIDDLE.midi.id(),
+			LotroInstrument.SPRIGHTLY_FIDDLE.midi.id()
+	};
+
 	public LotroSequencerWrapper() throws MidiUnavailableException {
 		super();
 		abcSeq = this;
+		setNoRestartPrograms(LOTRO_NO_RESTART_PROGRAMS);
 	}
 
 	public void clearSequence() {
