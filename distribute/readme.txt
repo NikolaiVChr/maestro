@@ -16,7 +16,7 @@ Install instruction (.zip)
 ===================
 1: Copy the content of this ZIP into a any new folder.
 2: Use the executable files to start.
-(3): Make Windows shortcuts to start Maestro, Abc-Tools or Abc-Player in the unzipped folder.
+(3): Make Windows shortcuts to start Maestro, Abc-Tools, or Abc-Player in the unzipped folder.
 
 
 Linux/Mac instruction (.zip)
@@ -69,8 +69,9 @@ Version 4.7.5
 * Maestro: Opening an abc file with many tunes asks which tune to open, with search; it can also split the book into one file per tune.
 * Maestro: Chord symbols in ABC files ("G", "Am", "D7") now become a bass track and a chords track. Bagpipe tunes get a drone track.
 * Fixed that when soloing, during midi playback, of tracks that have notes in a channel whose program was switched 2 or more times on same tick, it could start sounding with another voice.
-* When using custom sf2 soundfont, there is no longer going to be what sounded like long reverb due to using same note-release-algorithm that lotro notes need.
+* When using custom sf2 soundfont, there is no longer going to be what sounded like long reverb on midi playback due to using same note-release-algorithm that lotro notes need.
 * When seeking in an abc preview or source midi song and landing in the middle of a sustained note, that note will now be restarted (for some instruments).
+* In abc player playlist view, the search-field will now also search title, artist, mood and genre.
 
 Version 4.7.2
 * Make Windows midi system able to play back GS midi more reliable.
@@ -116,7 +117,7 @@ Version 4.6.20
 - Added some more guards against 7bit midi bytes using 8th bit.
 - Fixed that sometimes it would not draw the notes of tracks that were not selected.
 - Prevent XG and GS device volume commands from being sent to the midi player, as that will change Maestros master volume, which the user should control.
-- Exporting expanded midi now put XG, GS and GM2 drum tracks onto new ports so they can be assigned to GM midi 10th channel, and windows midi player can figure out to play at least standard drumkit from them.
+- Exporting expanded midi now put XG, GS, and GM2 drum tracks onto new ports so they can be assigned to GM midi 10th channel, and windows midi player can figure out to play at least standard drumkit from them.
 - Plus exporting expanded midi now convert XG sysex bank/patch changes into regular midi control changes. This will allow for better support of playing the expanded midi with own custom sf2
 - Better grace-note handling in org multi-stage 2. If it did not overlap before backwards bounce, it now also wont after.
 - Fixed several reasons ABC preview could become muted.
@@ -247,7 +248,7 @@ Version 4.4.6
 - Added FX option to Jaunty hand-knells. In FX state it allows section-editor octave transposing and doubling.
     Note range limits in section editor wont be enabled in FX state.
     Tune-editor transposing (key-change) will affect it unless its a drum track. Track or song transposing will not.
-- Disabled doubling, transpose, legato and note range control inputs in section-editor for Student FX.
+- Disabled doubling, transpose, legato, and note range control inputs in section-editor for Student FX.
 - Disabled legato control for non-sustained instruments as it have no effect for them anyway.
 - Fixed that the abc playback audio and visible play-head was out of sync with 0.25 seconds.
 - Fixed that maestro did not handle midi with meter numerator higher than 127 correctly.
@@ -467,7 +468,7 @@ Version 3.6.5
 - Added more column options to the ABC playlist. Setups min, Setups max, Genre, Mood, Export Date, Exported By.
     All are hidden by default, right-click on the header of the playlist table to show/hide them.
 - Section-editor now supports up to 80 sections.
-- Included all samples from basic fiddle, lm bassoon, basic bassoon, basic flute and sprightly fiddle. The soundfont is now no longer interpolating.
+- Included all samples from basic fiddle, lm bassoon, basic bassoon, basic flute, and sprightly fiddle. The soundfont is now no longer interpolating.
     This means Maestro and Abc Player will use more RAM and more diskspace.
 - Fixed a bug where the Section/Tune editors don't work if they are left open while a file is opened.
 - Update sounds in Standard Drum Kit to follow official spec. names more closely.
@@ -621,7 +622,7 @@ Version 3.1.10
 - Fixed a bug in songs with more than 15 parts where the preview would sometimes play the wrong lotro instrument for a abc part.
     The bug has been there since v3.1.0, but now its fixed so that one might sometimes for a fraction of a second hear the wrong instruments,
     but then it fixes itself. 
-- Added more samples for Bardic, LM Fiddle, Basic Fiddle and LM Bassoon, so that less samples have to be interpolated.
+- Added more samples for Bardic, LM Fiddle, Basic Fiddle, and LM Bassoon, so that less samples have to be interpolated.
     They will sound slightly more accurate for specific notes now.
     Maestro might also use less CPU in preview now, downside is it will consume more memory and the install files are larger.
 
@@ -902,7 +903,7 @@ Version 2.5.0.85
 
 Version 2.5.0.84
 - Added 8 new drum sounds that each is a combi of 2 drum sounds, their names start with "Xtra".
-    The sounds are some bass, snares and a crash cymbal. Jersiel supplied the combis, except one.
+    The sounds are some bass, snares, and a crash cymbal. Jersiel supplied the combis, except one.
     Note that because they are 2 sounds, they will sound louder, and will eat into the 6 note limit fast, plus add to the 64 full song limit also.
     Note pruning down to 6 for a part, might split them up too, prune one of its sounds but not the other.
     So be very mindful of how the track(s) and song is made when considering to use these.
@@ -929,10 +930,10 @@ Version 2.5.0.82
     But do remember again that due to technical reasons Maestro note fadeout time is longer than in lotro,
     and since notes in fadeout phase is counted, the polyphony numbers have a tendency to be too high.
 - German and French words for 'center', 'left' and 'right' in part titles will now also change stereo pan.
-    The words recognized is now: left, links, gauche, right, rechts, droite, middle, center, zentrum, mitte and centre.
+    The words recognized is now: left, links, gauche, right, rechts, droite, middle, center, zentrum, mitte, and centre.
     Upper or lower case does not matter.
 - Added support for Songbook variants based on The Badgers Chapter.
-    It can output title, genre and mood.
+    It can output title, genre, and mood.
     There is also an option to output all parts played for convenience.
     There is no way to select individual parts to be played though, to do that have to use songbrowser.exe
 
@@ -965,10 +966,10 @@ Version 2.5.0.80
 Version 2.5.0.79
 - Added option to show polyphony count while previewing abc song. See tooltip in options for more info.
 - In the delay dialog the time can now be entered using comma as decimal point. Suggested by Notenzauber.
-- In XG, GM2 or GS midis, drums tracks will no longer get assigned some random GM instrument voice.
+- In XG, GM2, or GS midis, drums tracks will no longer get assigned some random GM instrument voice.
     They will be named "XG Drums", "GM2 Drums" or "GS Drums", and will some times still sound wrong when playing the midi.
     But now at least they will be marked as drum track so people don't assign melodic instruments on them.
-- Added support for showing GS, XG and GM2 instrument and drum kit names. If it does not know the name then it fall back to GM name.
+- Added support for showing GS, XG, and GM2 instrument and drum kit names. If it does not know the name then it fall back to GM name.
     Number of known instrument and kit names has gone from 129 to 2446 in total.
     The name lists was compiled mostly by github.com/jazz-soft and then edited and expanded by me.
 
@@ -1046,7 +1047,7 @@ Version 2.5.0.61
     Thanks to Pontin for good feedback and to Jersiel to spot that the sound issue in Pontin's video was in the note releases.
 
 Version 2.5.0.60
-- Built a .msi installer and 64-bit executables. 32 bit will still be the default that is run if you double click on MIDI, abc or msx files (unless you change it).
+- Built a .msi installer and 64-bit executables. 32 bit will still be the default that is run if you double click on MIDI, abc, or msx files (unless you change it).
 
 Version 2.5.0.59
 - When exporting with changed tempo, the part description duration should now be correct.
@@ -1183,7 +1184,7 @@ I get a crash, how can I find out what caused it?
 
 After having put Windows to sleep while Maestro were running the preview starts to sound uneven, there is preview delays. How to fix?
 
-- Save your work, close Maestro and reopen it. Its best to close Maestro before putting Windows to sleep.
+- Save your work, close Maestro, and reopen it. Its best to close Maestro before putting Windows to sleep.
 
 
 Can I compile the programs myself, can I get the source-code?
