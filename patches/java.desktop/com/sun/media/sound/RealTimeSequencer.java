@@ -591,7 +591,7 @@ public final class RealTimeSequencer extends AbstractMidiDevice
         trackMuted = ensureBoolArraySize(trackMuted, trackCount);
         trackMuted[track] = mute;
         if (getDataPump() != null) {
-            getDataPump().muteSoloChanged();
+            getDataPump().trackActivationChanged();
         }
     }
 
@@ -609,7 +609,7 @@ public final class RealTimeSequencer extends AbstractMidiDevice
         trackSolo = ensureBoolArraySize(trackSolo, trackCount);
         trackSolo[track] = solo;
         if (getDataPump() != null) {
-            getDataPump().muteSoloChanged();
+            getDataPump().trackActivationChanged();
         }
     }
 
@@ -1632,6 +1632,105 @@ public final class RealTimeSequencer extends AbstractMidiDevice
             trackDisabled = newDisabled;
         }
 
+        /**
+         * Mute or solo changed by setTrackMute() or setTrackSolo(): as
+         * muteSoloChanged(), and while running also restarts the held notes
+         * of the tracks that play again, so a note held across the unmute,
+         * like a drone, is heard again.
+         */
+        synchronized void trackActivationChanged() {
+            boolean[] oldDisabled = trackDisabled;
+            muteSoloChanged();
+            if (running) {
+                restartEnabledTracks(oldDisabled, trackDisabled);
+            }
+        }
+
+        /**
+         * Restarts the notes that tracks enabled again by a mute or solo
+         * change hold at the current position, with the rules of
+         * restartHeldNotes(). A note that is already on, because an enabled
+         * track holds the same key on the channel, is left alone.
+         */
+        private void restartEnabledTracks(boolean[] oldDisabled, boolean[] newDisabled) {
+            if ((oldDisabled == null) || (tracks == null)) {
+                return;
+            }
+            boolean[] enabled = new boolean[tracks.length];
+            boolean any = false;
+            for (int t = 0; t < tracks.length; t++) {
+                boolean wasDisabled = (t < oldDisabled.length) && oldDisabled[t];
+                boolean isDisabled = (newDisabled != null) && (t < newDisabled.length) && newDisabled[t];
+                enabled[t] = wasDisabled && !isDisabled;
+                any |= enabled[t];
+            }
+            if (!any) {
+                return;
+            }
+            // pump() has played all events up to and including lastTick
+            long endTick = lastTick + 1;
+            HeldNotes held = new HeldNotes();
+            int[] scanFrom = new int[tracks.length];
+            for (int t = 0; t < tracks.length; t++) {
+                Track track = tracks[t];
+                boolean playsNotes = (newDisabled == null) || (t >= newDisabled.length) || !newDisabled[t];
+                int i = 0;
+                scanFrom[t] = -1;
+                try {
+                    int size = track.size();
+                    for (; i < size; i++) {
+                        MidiEvent event = track.get(i);
+                        long tick = event.getTick();
+                        if (tick >= endTick) {
+                            break;
+                        }
+                        MidiMessage msg = event.getMessage();
+                        int status = msg.getStatus();
+                        int command = status & 0xF0;
+                        int len = msg.getLength();
+                        boolean isNote = (len == 3)
+                                && ((command == ShortMessage.NOTE_ON) || (command == ShortMessage.NOTE_OFF));
+                        boolean isBank = (len == 3) && (command == ShortMessage.CONTROL_CHANGE);
+                        boolean isProgram = (len == 2) && (command == ShortMessage.PROGRAM_CHANGE);
+                        if (!(isNote && playsNotes) && !isBank && !isProgram) {
+                            continue;
+                        }
+                        int ch = channelOf(msg, status);
+                        if (ch >= MAX_CHANNELS) {
+                            continue;
+                        }
+                        int data1;
+                        int data2 = 0;
+                        if (msg instanceof ShortMessage smsg) {
+                            data1 = smsg.getData1() & 0x7F;
+                            data2 = smsg.getData2() & 0x7F;
+                        } else {
+                            byte[] data = msg.getMessage();
+                            data1 = data[1] & 0x7F;
+                            if (len == 3) {
+                                data2 = data[2] & 0x7F;
+                            }
+                        }
+                        if (isNote) {
+                            // velocity 0 is a note off
+                            held.note(tick, HeldNotes.order(t, i), ch, data1,
+                                    (command == ShortMessage.NOTE_OFF) ? 0 : data2);
+                        } else if (isProgram) {
+                            held.voice(tick, HeldNotes.order(t, i), ch, HeldNotes.PROGRAM, data1);
+                        } else if ((data1 == 0) || (data1 == 32)) {
+                            held.voice(tick, HeldNotes.order(t, i), ch, data1, data2);
+                        }
+                    }
+                    scanFrom[t] = i;
+                } catch (ArrayIndexOutOfBoundsException aioobe) {
+                    // this happens when messages are removed
+                    // from the track while this method executes
+                }
+            }
+            held.retainStartedBy(enabled, noteOnCache);
+            restartHeldNotes(held, scanFrom, endTick);
+        }
+
         synchronized void setSequence(Sequence seq) {
             if (seq == null) {
                 init();
@@ -2255,6 +2354,26 @@ public final class RealTimeSequencer extends AbstractMidiDevice
             /** the note ends or is struck again soon: do not restart it */
             void endsSoon(int ch, int key) {
                 onTick[ch][key] = -1;
+            }
+
+            /**
+             * Keeps only the held notes that a track in tracks started, and
+             * that are not on already according to noteOnCache.
+             */
+            void retainStartedBy(boolean[] tracks, int[] noteOnCache) {
+                for (int ch = 0; ch < MAX_CHANNELS; ch++) {
+                    for (int key = 0; key < 128; key++) {
+                        if (!isHeld(ch, key)) {
+                            continue;
+                        }
+                        int track = (int) (onOrder[ch][key] >>> 32);
+                        boolean startedByTrack = (track < tracks.length) && tracks[track];
+                        boolean alreadyOn = (noteOnCache[key] & (1 << ch)) != 0;
+                        if (!startedByTrack || alreadyOn) {
+                            onTick[ch][key] = -1;
+                        }
+                    }
+                }
             }
 
             long onTick(int ch, int key) {
