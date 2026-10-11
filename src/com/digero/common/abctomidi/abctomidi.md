@@ -93,7 +93,6 @@ too.
 | `AbcInstructions` | `I:linebreak`, `I:decoration`, `I:propagate-accidentals`. |
 | `AbcTunebook` | A tune book split into its tunes: Maestro's tunebook dialog and its "Split into files". |
 | `FileAndData` | A file and its lines. |
-| `AbcSongbookSplitter` | Old, replaced by `AbcTunebook`: to delete once ABC Tools uses `AbcTunebook`. |
 
 Outside the package: `common.abc.AbcText` decodes the text escapes in titles and lyrics (`\'e`, `&eacute;`, `é`).
 

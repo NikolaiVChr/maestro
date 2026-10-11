@@ -70,6 +70,7 @@ public class SynthesizerFactory {
 				Map<String, Object> info = setupSynthesizerPropertyInfo();
 				info.put("latency", 120_000);// default
 				info.put("linear release", false);
+				info.put("interpolation", "linear");// default. clean at low CPU, "point" adds audible noise on pitched samples
 				customMidisynth.open(null, info);
 				customMidisynth.unloadAllInstruments(bank);
 				customMidisynth.loadAllInstruments(bank);
@@ -84,14 +85,14 @@ public class SynthesizerFactory {
 	public static Map<String, Object> setupSynthesizerPropertyInfo() {
 		Map<String, Object> synthInfo = new HashMap<>();
 		synthInfo.put("midi channels", MidiConstants.CHANNEL_COUNT_ABC);// default is 16
-		synthInfo.put("reverb", false);// default is true
-		synthInfo.put("chorus", false);// default is true
-		synthInfo.put("light reverb", false);// default is true
+		synthInfo.put("reverb", false);// default is true. If false then the sequence cmds to change reverb is also disabled.
+		synthInfo.put("chorus", false);// default is true. If false then the sequence cmds to change chorus is also disabled.
+		synthInfo.put("light reverb", false);// default is true. If true when reverb is enabled a cheaper reverb is used of less quality.
 		synthInfo.put("device id", 0);// default is 0
 		synthInfo.put("load default soundbank", false);// default is true
 		synthInfo.put("max polyphony", 128);// default is 64
 		synthInfo.put("control rate", 147f); // default is 147f
-		synthInfo.put("linear release", true); // new flag we patched in. true=lotro simulation.
+		synthInfo.put("linear release", true); // default false. new flag patched in. true=lotro simulation.
 		synthInfo.put("interpolation", "point");// default is linear. Options: "point", "linear", "linear1", "linear2", "cubic", "lanczos", "sinc".
 		synthInfo.put("auto gain control", true);// default is true. Set to false it can give pops when skipping in
 													// song, especially for abc player.
