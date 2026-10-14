@@ -189,8 +189,8 @@ divisionType=0.0 resolution=11520 tickLength=11520 tracks=5
   0 META type=0x59 data=0200
   1 CONTROL_CHANGE ch=2 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=2 d1=93 d2=0 [LotroShortMessage]
-  692 NOTE_ON ch=2 d1=57 d2=32 [LotroShortMessage]
-  11520 NOTE_OFF ch=2 d1=57 d2=32 [LotroShortMessage]
+  692 NOTE_ON ch=2 d1=57 d2=48 [LotroShortMessage]
+  11520 NOTE_OFF ch=2 d1=57 d2=48 [LotroShortMessage]
   11520 META end_of_track
 -- track 4 (9 events)
   0 PROGRAM_CHANGE ch=3 d1=109 d2=0 [LotroShortMessage]
@@ -199,8 +199,8 @@ divisionType=0.0 resolution=11520 tickLength=11520 tracks=5
   0 META type=0x59 data=0200
   1 CONTROL_CHANGE ch=3 d1=91 d2=0 [LotroShortMessage]
   1 CONTROL_CHANGE ch=3 d1=93 d2=0 [LotroShortMessage]
-  692 NOTE_ON ch=3 d1=57 d2=32 [LotroShortMessage]
-  11520 NOTE_OFF ch=3 d1=57 d2=32 [LotroShortMessage]
+  692 NOTE_ON ch=3 d1=57 d2=48 [LotroShortMessage]
+  11520 NOTE_OFF ch=3 d1=57 d2=48 [LotroShortMessage]
   11520 META end_of_track
 == abcInfo
   title="Test"

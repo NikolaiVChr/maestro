@@ -4480,7 +4480,7 @@ public class AbcToMidi {
 	}
 
 	/** How loud a drone is, unless %%MIDI drone gives its velocities. */
-	static final Dynamics DRONE_DYNAMICS = Dynamics.pp;
+	static final Dynamics DRONE_DYNAMICS = Dynamics.p;
 
 	/**
 	 * A drone starts more than this many milliseconds from every note start of its part: merged into the part's track
