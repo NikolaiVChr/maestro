@@ -302,8 +302,12 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 				|| titlePrefix.length() == info.name.length() || !info.name.startsWith(titlePrefix))
 			return info.name;
 
-		return info.name.substring(titlePrefix.length()).trim();
+		// Without the "-" or ":" after the prefix ("My Song" and "My Song - Lute": "Lute"; fourth opinion BUG-16)
+		String rest = LEADING_SEPARATOR.matcher(info.name.substring(titlePrefix.length())).replaceFirst("").trim();
+		return rest.isEmpty() ? info.name : rest;
 	}
+
+	private static final Pattern LEADING_SEPARATOR = Pattern.compile("^[-:;\\s]+");
 
 	public String getPartFullName(int trackIndex) {
 		return Util.emptyIfNull(getPartFullName_MaybeNull(trackIndex));
@@ -673,17 +677,37 @@ public class AbcInfo implements AbcConstants, IBarNumberCache {
 		return ret;
 	}
 
+	/**
+	 * The start the two titles share, ending where a word ends and outside brackets: "My Song - Flute" and "My Song -
+	 * Fiddle" share "My Song - ", not "My Song - F"; "Song (Flute)" and "Song (Fiddle)" share "Song ", so the parts
+	 * keep their brackets (fourth opinion BUG-16: the parts were "lute" and "iddle").
+	 */
 	private static String longestCommonPrefix(String a, String b) {
-		if (a.length() > b.length())
-			a = a.substring(0, b.length());
-
-		for (int j = 0; j < a.length(); j++) {
-			if (a.charAt(j) != b.charAt(j)) {
-				a = a.substring(0, j);
-				break;
-			}
+		int length = 0;
+		while (length < a.length() && length < b.length() && a.charAt(length) == b.charAt(length))
+			length++;
+		if (length > 0 && Character.isLetterOrDigit(a.charAt(length - 1))
+				&& (wordGoesOn(a, length) || wordGoesOn(b, length))) {
+			// In the middle of a word: back to its start
+			while (length > 0 && Character.isLetterOrDigit(a.charAt(length - 1)))
+				length--;
 		}
-		return a;
+		// Not in brackets: "Song (Lute lead)" and "Song (Lute)" share "Song ", not "Song (Lute"
+		int depth = 0;
+		int open = -1; // Where the outermost bracket still open starts
+		for (int i = 0; i < length; i++) {
+			char c = a.charAt(i);
+			if ("([{".indexOf(c) >= 0 && depth++ == 0)
+				open = i;
+			else if (")]}".indexOf(c) >= 0 && depth > 0)
+				depth--;
+		}
+		return a.substring(0, (depth > 0) ? open : length);
+	}
+
+	/** A letter or digit at the index: the word before it goes on. */
+	private static boolean wordGoesOn(String text, int index) {
+		return index < text.length() && Character.isLetterOrDigit(text.charAt(index));
 	}
 
     public void setPanEvent(MidiEvent panEvent, int trackIndex) {

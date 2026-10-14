@@ -3,6 +3,7 @@ package com.digero.common.abctomidi;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -105,10 +106,28 @@ final class JumpMarks {
 	private static final Pattern FIELD = Pattern.compile("[A-Za-z+]:");
 
 	/**
-	 * The first coda mark from the place (the start of a mark, or of the music), where the coda starts: {line index, column}, or null up to the part's end (the
-	 * next X: or empty line). In the music only: not in fields, comments or inline fields.
+	 * The first coda mark from the place (the start of a mark, or of the music), where the coda starts: {line index,
+	 * column}, or null up to the part's end (the next X: or empty line). In the music only: not in fields, comments or
+	 * inline fields.
 	 */
 	static int[] nextCoda(List<String> lines, int lineIndex, int column) {
+		return find(Set.of(Mark.CODA), false, lines, lineIndex, column);
+	}
+
+	/**
+	 * Whether the ending that starts at the place has one of these marks, up to its end (:| || |] [| or the next
+	 * ending). After a D.C. or D.S. the ending with the Fine or To Coda it stops at is played, not the last (a "Fine"
+	 * over the first ending of a waltz whose second leads on; fourth opinion BUG-03).
+	 */
+	static boolean endingHas(Set<Mark> marks, List<String> lines, int lineIndex, int column) {
+		return !marks.isEmpty() && find(marks, true, lines, lineIndex, column) != null;
+	}
+
+	/**
+	 * The first of the marks from the place: {line index, column}, or null up to the part's end, or with
+	 * inEnding up to the ending's end. In the music only: not in fields, comments or inline fields.
+	 */
+	private static int[] find(Set<Mark> wanted, boolean inEnding, List<String> lines, int lineIndex, int column) {
 		for (int l = lineIndex; l < lines.size(); l++) {
 			String line = lines.get(l);
 			if (l > lineIndex && (line.startsWith("X:") || line.isBlank()))
@@ -119,26 +138,33 @@ final class JumpMarks {
 			int i = (l == lineIndex) ? column : 0;
 			while (i < line.length()) {
 				char c = line.charAt(i);
-				int close = -1;
-				if (c == '%')
-					break;
-				if (c == '"' || c == '!' || c == '+')
-					close = line.indexOf(c, i + 1);
-				else if (c == '[' && i + 2 < line.length() && Character.isLetter(line.charAt(i + 1))
-						&& line.charAt(i + 2) == ':')
-					close = line.indexOf(']', i + 1);
-				if (close > i) {
-					boolean text = (c == '"');
-					if ((c != '[') && (!text || AbcToMidi.LENIENT) && of(line.substring(i + 1, close)) == Mark.CODA)
+				// A text, decoration, inline field or comment; not a lone ! (a line break, fourth opinion BUG-05)
+				int end = Macros.notMusicEnd(line, i);
+				if (end > i) {
+					boolean mark = (c == '!' || c == '+' || (c == '"' && AbcToMidi.LENIENT));
+					if (mark && wanted.contains(of(line.substring(i + 1, end - 1))))
 						return new int[] { l, i };
-					i = close + 1;
+					i = end;
 					continue;
 				}
-				if (c == 'O')
+				if (c == 'O' && wanted.contains(Mark.CODA))
 					return new int[] { l, i };
+				if (inEnding && endsEnding(line, i))
+					return null;
 				i++;
 			}
 		}
 		return null;
+	}
+
+	/** At the index an ending ends: :| || |] [| or the next ending (|2 [2). */
+	private static boolean endsEnding(String line, int i) {
+		char next = (i + 1 < line.length()) ? line.charAt(i + 1) : ' ';
+		return switch (line.charAt(i)) {
+			case ':' -> next == '|';
+			case '|' -> next == '|' || next == ']' || Character.isDigit(next);
+			case '[' -> next == '|' || Character.isDigit(next);
+			default -> false;
+		};
 	}
 }

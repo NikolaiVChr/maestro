@@ -1,5 +1,6 @@
 package com.digero.common.abctomidi;
 
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -8,15 +9,17 @@ import com.digero.common.abc.Dynamics;
 
 /**
  * Where the parser is in a part's repeats (ABC 2.1, 4.8 and 4.9), with Params.expandRepeats. A :| goes back to the
- * |: before it; without one, to the part's start, or to the last double bar (|| |] [|) or :| before it. The endings
- * [1 [2 [1,3 [2-4 (also |1 and :|2) play on the passes they're numbered for; an ending runs to the next ending, :|,
- * ||, |] or [|. Without expandRepeats everything plays once, one after the other, as in Lotro.
+ * |: before it, also over a double bar between them; without one, to the part's start, or to the last double bar
+ * (|| |] [|) or :| before it. The endings [1 [2 [1,3 [2-4 (also |1 and :|2) play on the passes they're numbered for;
+ * an ending runs to the next ending, :|, ||, |] or [|. Without expandRepeats everything plays once, one after the
+ * other, as in Lotro.
  * <p>
  * D.C. and D.S. (user's rules, 2026-10-05; JumpMarks): a D.C. goes back to the part's start, a D.S. to the segno
  * (only if there is one), each once, at the end of the section it is in (|| |] [| or a :| that doesn't go back). On
- * the pass after it a repeated section plays once, with its last ending; Fine ends the part at the next bar line,
- * and To Coda (or the first coda mark, before the D.C. or D.S.) goes to the coda mark after the D.C. or D.S. at the
- * next bar line. Before the jump, Fine and To Coda are passed over. An al Fine plays no coda, an al Coda no Fine.
+ * the pass after it a repeated section plays once, with its last ending, or the one with the Fine or To Coda; Fine
+ * ends the part at the next bar line, and To Coda (or the first coda mark, before the D.C. or D.S.) goes to the coda
+ * mark after the D.C. or D.S. at the next bar line. Before the jump, Fine and To Coda are passed over. An al Fine
+ * plays no coda, an al Coda no Fine.
  * <p>
  * The parser tells it the signs and marks it reads; where the music goes on elsewhere, end() and bar() give the Jump,
  * and the parser goes on reading there (AbcToMidi.restoreAt).
@@ -40,6 +43,7 @@ final class Repeats {
 	private int startLine = -1; // Where a :| goes back to (line index); -1 until the part's first line of music
 	private int startColumn;
 	private TuneInfo.ReadState startState; // How the notes were read at startLine/startColumn; null without expand
+	private TuneInfo.ReadState codaState; // How the notes were read where the D.C. or D.S. jumped: the coda after it
 	private TuneInfo.ReadState skipState; // How the notes were read where the skipped ending starts: restored at its end
 	private Dynamics skipDynamics;
 	private int pass = 1; // 2 is the first time through the section again
@@ -96,6 +100,7 @@ final class Repeats {
 		fineArmed = false;
 		codaArmed = false;
 		codaTaken = false;
+		codaState = null;
 		finished = false;
 		jumps = 0;
 	}
@@ -137,8 +142,13 @@ final class Repeats {
 			startState = info.readState();
 	}
 
-	/** || |] [| : ends an ending, and a :| without |: after it goes back to here. */
+	/**
+	 * || |] [| : ends an ending, and a :| without |: after it goes back to here. Not between |: and its :| outside an
+	 * ending, which goes back to the |: (ABC 2.1, 4.8; fourth opinion N1).
+	 */
 	void sectionEnd(int lineIndex, int column) {
+		if (open && ending == null)
+			return;
 		start(lineIndex, column);
 		open = false;
 		sectionEnded = true;
@@ -155,16 +165,29 @@ final class Repeats {
 
 	/**
 	 * [1 |1 :|2 ... : an ending starts; its numbers end before the column. After a D.C. or D.S. only the section's last
-	 * ending is played.
+	 * ending is played, or the one with the Fine or To Coda it stops at.
 	 */
 	void ending(String numbers, List<String> lines, int lineIndex, int column) {
 		ending = parseEndingNumbers(numbers);
 		if (jumpedWith != null)
-			skip(AbcToMidi.endingFollows(lines, lineIndex, column, followingNumbers -> true));
+			skip(!JumpMarks.endingHas(stops(), lines, lineIndex, column)
+					&& AbcToMidi.endingFollows(lines, lineIndex, column, followingNumbers -> true));
 		else
 			skip(expand && pass > 1 && !ending.contains(pass));
 	}
-	
+
+	/** The marks the D.C. or D.S. that jumped stops at: Fine, and To Coda (or a coda mark) until the coda is taken. */
+	private Set<JumpMarks.Mark> stops() {
+		Set<JumpMarks.Mark> stops = EnumSet.noneOf(JumpMarks.Mark.class);
+		if (jumpedWith.stopsAtFine())
+			stops.add(JumpMarks.Mark.FINE);
+		if (jumpedWith.jumpsToCoda() && !codaTaken) {
+			stops.add(JumpMarks.Mark.TO_CODA);
+			stops.add(JumpMarks.Mark.CODA);
+		}
+		return stops;
+	}
+
 	/**
 	 * Starts or stops skipping an ending this pass doesn't play. What is written in it isn't read either (BUG1015):
 	 * its K: M: L: I: and dynamics are undone at its end, so they don't reach the ending that is played.
@@ -190,7 +213,7 @@ final class Repeats {
 			// The end of an ending this pass doesn't play: go on after it
 			skip(false);
 			ending = null;
-			return null;
+			return endSection(lines, lineIndex, after);
 		}
 		boolean again;
 		if (!expand || jumpedWith != null)
@@ -205,13 +228,20 @@ final class Repeats {
 			jumps++;
 			return new Jump(startLine, startColumn, startState);
 		}
-		open = false;
-		if (ending != null) {
-			// The end of the ending for this pass. The endings after it are for other passes, and are skipped.
-			ending = null;
+		ending = null;
+		return endSection(lines, lineIndex, after);
+	}
+
+	/**
+	 * A :| that doesn't go back: the section ends, as at || (a later :| without |: goes back to here, a D.C. or D.S.
+	 * jumps); not while an ending follows, for another pass, which is skipped (fourth opinion BUG-01).
+	 *
+	 * @return null: go on after it
+	 */
+	private Jump endSection(List<String> lines, int lineIndex, int after) {
+		if (AbcToMidi.endingNext(lines, lineIndex, after))
 			return null;
-		}
-		// Played often enough: a later :| without |: goes back to here
+		open = false;
 		start(lineIndex, after);
 		sectionEnded = true;
 		return null;
@@ -224,8 +254,8 @@ final class Repeats {
 	 * right after a bar line with nothing after it on its line (Norbeck's ":| !fine!") belongs to that bar line.
 	 */
 	void mark(JumpMarks.Mark mark, String line, int lineIndex, int column, int end) {
-		if (!expand || mark == null || finished)
-			return;
+		if (!expand || mark == null || skipping())
+			return; // Also not in an ending this pass skips (fourth opinion BUG-03)
 		switch (mark) {
 			case SEGNO -> {
 				if (segno == null)
@@ -284,13 +314,16 @@ final class Repeats {
 			if (coda != null) {
 				codaTaken = true;
 				jumps++;
+				// Read as written there, after the D.C. or D.S. (fourth opinion BUG-04), not as at To Coda
 				start(coda[0], coda[1]);
-				return new Jump(coda[0], coda[1], null);
+				startState = codaState;
+				return new Jump(coda[0], coda[1], codaState);
 			}
 		}
 		if (!ended || armed == null)
 			return null;
 		Jump back = armed.toSegno() ? segno : partStart;
+		codaState = info.readState();
 		jumpedBack.add(sourceKey(armedLine, armedColumn));
 		jumpedWith = armed;
 		fromLine = armedLine;
@@ -320,7 +353,7 @@ final class Repeats {
 
 	/** A :| at its place on one pass: each goes back once a pass. */
 	private static long passKey(int lineIndex, int column, int pass) {
-		return ((long) lineIndex << 40) | ((long) column << 8) | pass;
+		return ((long) lineIndex << 40) | ((long) column << 16) | pass; // pass < 2^16 (MAX_JUMPS)
 	}
 
 	/** The numbers of an ending: 1, 1,3 or 1-3 (ABC 2.1 also allows e.g. 1,3,5-7). */

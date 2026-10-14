@@ -52,6 +52,7 @@ public final class VoiceSplitter {
 	private static final Pattern FIELD = Pattern.compile("^([A-Za-z]):");
 	private static final Pattern VOICE_LINE = Pattern.compile("^V:\\s*(\\S+)\\s*(.*)$");
 	private static final Pattern INLINE_VOICE = Pattern.compile("\\[V:\\s*([^\\]\\s]+)[^\\]]*\\]");
+	private static final Pattern QUOTED = Pattern.compile("\"[^\"]*\"");
 	/** Header fields a voice after the first gets: title, timing, key, rhythm, group, instructions, part order. */
 	private static final String HEADER_FIELDS_FOR_EVERY_VOICE = "TMLQKRGIP";
 	/** The voice of the music before the first V:, when the header defines none (abcm2ps, abc2midi). */
@@ -83,7 +84,7 @@ public final class VoiceSplitter {
 
 	/** The file with each tune's voices as parts; null if no tune in it has voices (the file stays as it is). */
 	public static Result split(List<String> lines) {
-		if (lines.stream().noneMatch(l -> VOICE_LINE.matcher(l).matches() || INLINE_VOICE.matcher(l).find()))
+		if (lines.stream().noneMatch(l -> VOICE_LINE.matcher(l).matches() || inlineVoice(l).find()))
 			return null;
 		List<String> out = new ArrayList<>();
 		List<Integer> sources = new ArrayList<>();
@@ -109,12 +110,13 @@ public final class VoiceSplitter {
 
 	/** Writes one tune (lines start to end) as parts; returns the last part number used. */
 	private static int splitTune(List<String> lines, int start, int end, int partNumber, List<String> out,
-			List<Integer> sources) {
-		// The header: from X: to its K: (ABC 2.1: the last field of the header)
+								 List<Integer> sources) {
+		// The header: from X: to its K: (ABC 2.1: the last field of the header). Without one, music starts the body;
+		// a K: further on is a key change (fourth opinion BUG-10)
 		int bodyStart = start + 1;
-		while (bodyStart < end && !lines.get(bodyStart).startsWith("K:"))
+		while (bodyStart < end && !lines.get(bodyStart).startsWith("K:") && !isMusic(lines.get(bodyStart)))
 			bodyStart++;
-		if (bodyStart < end)
+		if (bodyStart < end && lines.get(bodyStart).startsWith("K:"))
 			bodyStart++;
 		else
 			bodyStart = start + 1; // No K:: every line is body
@@ -127,7 +129,9 @@ public final class VoiceSplitter {
 		for (int h = start + 1; h < bodyStart; h++) {
 			Matcher v = VOICE_LINE.matcher(lines.get(h));
 			if (v.matches()) {
-				voices.computeIfAbsent(v.group(1), Voice::new).properties = v.group(2).trim();
+				// Without its comment; a second V: line for the voice adds to the first (fourth opinion BUG-11)
+				Voice voice = voices.computeIfAbsent(v.group(1), Voice::new);
+				voice.properties = (voice.properties + " " + properties(v)).trim();
 				headerVoice = v.group(1);
 			}
 			Matcher midiVoice = MIDI_VOICE.matcher(lines.get(h));
@@ -141,7 +145,7 @@ public final class VoiceSplitter {
 		for (int b = bodyStart; b < end; b++) {
 			String line = lines.get(b);
 			Matcher v = VOICE_LINE.matcher(line);
-			Matcher inline = INLINE_VOICE.matcher(line);
+			Matcher inline = inlineVoice(line);
 			boolean hasInline = inline.find();
 			if (voices.isEmpty() && !v.matches()
 					&& (hasInline ? !line.substring(0, inline.start()).isBlank() : isMusic(line)))
@@ -149,7 +153,7 @@ public final class VoiceSplitter {
 			if (v.matches()) {
 				Voice voice = voices.computeIfAbsent(v.group(1), Voice::new);
 				if (voice.properties.isEmpty())
-					voice.properties = v.group(2).trim();
+					voice.properties = properties(v);
 			}
 			if (hasInline) {
 				do {
@@ -177,21 +181,24 @@ public final class VoiceSplitter {
 
 		// The body, voice by voice
 		List<Voice> order = new ArrayList<>(voices.values());
-		Voice first = order.get(0);
+		Voice first = order.getFirst();
 		Voice current = null;
+		boolean everyVoice = false; // After a P: for every voice: its fields up to the next V: are too (BUG-09)
 		for (int b = bodyStart; b < end; b++) {
 			String line = lines.get(b);
 			Matcher v = VOICE_LINE.matcher(line);
 			if (v.matches()) {
 				current = voices.get(v.group(1));
+				everyVoice = false;
 				continue;
 			}
 			if (line.startsWith("P:")) {
-				if (current != null && !voiceLineFollows(lines, b + 1, end)) {
-					current.add(line, b + 1); // In this voice's music
-				} else {
+				everyVoice = current == null || voiceLineFollows(lines, b + 1, end);
+				if (everyVoice) {
 					for (Voice voice : order)
 						voice.add(line, b + 1);
+				} else {
+					current.add(line, b + 1); // In this voice's music
 				}
 				continue;
 			}
@@ -205,20 +212,30 @@ public final class VoiceSplitter {
 				midiVoiceSources.add(b + 1);
 				continue;
 			}
-			Matcher inline = INLINE_VOICE.matcher(line);
+			if (everyVoice && !isMusic(line)) {
+				for (Voice voice : order)
+					voice.add(line, b + 1);
+				continue;
+			}
+			everyVoice = false;
+			Matcher inline = inlineVoice(line);
 			if (inline.find()) {
-				// Each voice keeps its own stretch of the line; the rest is blanked, so columns stay
+				// Each voice keeps its own stretches of the line, as one line (a voice twice on it too, so w: lyrics
+				// follow all its notes; BUG-08); the rest is blanked, so columns stay
+				Map<Voice, StringBuilder> kept = new LinkedHashMap<>();
 				int from = 0;
 				Voice owner = current;
 				do {
 					if (owner == null && !line.substring(from, inline.start()).isBlank())
 						owner = first;
 					if (owner != null)
-						owner.add(keepOnly(line, from, inline.start()), b + 1);
+						keep(kept, owner, line, from, inline.start());
 					owner = voices.get(inline.group(1));
 					from = inline.end();
 				} while (inline.find());
-				owner.add(keepOnly(line, from, line.length()), b + 1);
+				keep(kept, owner, line, from, line.length());
+				for (Map.Entry<Voice, StringBuilder> stretch : kept.entrySet())
+					stretch.getKey().add(stretch.getValue().toString(), b + 1);
 				current = owner;
 				continue;
 			}
@@ -319,7 +336,7 @@ public final class VoiceSplitter {
 	 * @param words The words after voice
 	 */
 	private static String midiVoiceWithId(String words, String id) {
-		String first = words.replaceAll("%.*", "").trim().split("\\s+")[0];
+		String first = AbcToMidi.stripComment(words).trim().split("\\s+")[0];
 		boolean hasId = !first.isEmpty() && !first.contains("=") && !first.equalsIgnoreCase("mute");
 		return ("%%MIDI voice " + ((hasId || id == null) ? words.trim() : id + " " + words.trim())).trim();
 	}
@@ -365,25 +382,45 @@ public final class VoiceSplitter {
 	private static String withPlayedProperties(String keyLine, String properties) {
 		if (properties.isEmpty())
 			return keyLine;
-		for (int k = 0; k < keyLine.length(); k++) {
-			if (keyLine.charAt(k) == '%' && (k == 0 || keyLine.charAt(k - 1) != '\\'))
-				return keyLine.substring(0, k).stripTrailing() + properties + " " + keyLine.substring(k);
-		}
+		String key = AbcToMidi.stripComment(keyLine);
+		if (key.length() < keyLine.length())
+			return key.stripTrailing() + properties + " " + keyLine.substring(key.length());
 		return keyLine + properties;
 	}
 
-	/** A line with only the stretch from to end kept, the rest blanked with spaces. */
-	private static String keepOnly(String line, int from, int end) {
-		return " ".repeat(from) + line.substring(from, end);
+	/** Keeps the stretch from to end of the line for the voice, after spaces up to its column. */
+	private static void keep(Map<Voice, StringBuilder> kept, Voice voice, String line, int from, int end) {
+		StringBuilder text = kept.computeIfAbsent(voice, v -> new StringBuilder());
+		text.append(" ".repeat(from - text.length())).append(line, from, end);
 	}
 
-	/** Whether the next line from from (comments skipped) switches voice: a V: line, or a line starting with [V:. */
+	/**
+	 * The [V:x] switches in a line, not in a comment or quoted text (fourth opinion BUG-07: "% [V:2]" made a voice).
+	 * The matcher runs on the line with those blanked, so its columns are the line's.
+	 */
+	private static Matcher inlineVoice(String line) {
+		String music = AbcToMidi.stripComment(line);
+		music = QUOTED.matcher(music).replaceAll(m -> " ".repeat(m.group().length()));
+		return INLINE_VOICE.matcher(music);
+	}
+
+	/** A V: line's properties, without its comment. */
+	private static String properties(Matcher voiceLine) {
+		return AbcToMidi.stripComment(voiceLine.group(2)).trim();
+	}
+
+	/**
+	 * Whether the next line from from switches voice: a V: line, or a line starting with [V:. Comments and other fields
+	 * (P:B M:3/4 V:1) are skipped (fourth opinion BUG-09).
+	 */
 	private static boolean voiceLineFollows(List<String> lines, int from, int end) {
 		for (int k = from; k < end; k++) {
 			String line = lines.get(k).stripLeading();
-			if (line.startsWith("%"))
+			if (VOICE_LINE.matcher(line).matches() || line.startsWith("[V:"))
+				return true;
+			if (!isMusic(line))
 				continue;
-			return VOICE_LINE.matcher(line).matches() || line.startsWith("[V:");
+			return false;
 		}
 		return false;
 	}

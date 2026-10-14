@@ -138,7 +138,7 @@ public final class PartOrder {
 	 * @param index Its index in the tune's lines, for each piece
 	 */
 	private static void cutAtLabels(String line, int index, List<String> body, List<Integer> bodySources) {
-		String notes = stripComment(line);
+		String notes = AbcToMidi.stripComment(line);
 		Matcher m = INLINE_LABEL.matcher(notes);
 		int from = 0; // Where the notes of the current piece start
 		boolean cut = false;
@@ -173,7 +173,7 @@ public final class PartOrder {
 
 	/** The order of a P: line, or null if it is none (see parse) or has fewer than two sections. */
 	private static List<Character> orderOf(String line) {
-		List<Character> parsed = parse(stripComment(line.substring(2)));
+		List<Character> parsed = parse(AbcToMidi.stripComment(line.substring(2)));
 		return (parsed != null && parsed.size() >= 2) ? parsed : null;
 	}
 
@@ -218,10 +218,5 @@ public final class PartOrder {
 				sections.addAll(item);
 		}
 		return sections;
-	}
-
-	private static String stripComment(String value) {
-		int percent = value.indexOf('%');
-		return (percent < 0) ? value : value.substring(0, percent);
 	}
 }

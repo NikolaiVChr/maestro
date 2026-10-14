@@ -159,4 +159,54 @@ class VoiceSplitterTest {
 		assertEquals(List.of("X:1", "T:t", "V:1", "%%MIDI channel 1", "K:G % key", "c|", //
 				"X:2", "T:t", "V:2 octave=-1", "%%MIDI channel 2", "K:G octave=-1 % key", "C|"), r.lines());
 	}
+
+	@Test
+	void voiceSwitchesInCommentsAndQuotesArentVoices() {
+		// Fourth opinion (BUG-07, 2026-10-14): "% [V:2]" and "\"[V:2]\"" made a voice 2, which took the lines after
+		// them
+		assertNull(VoiceSplitter.split(List.of("X:1", "T:t", "K:C", "C D E F % [V:2]", "\"[V:2]\" G A B c")));
+	}
+
+	@Test
+	void fieldsAfterASectionForEveryVoiceAreForEveryVoice() {
+		// Fourth opinion (BUG-09): a P: with another field after it before the V: went to the voice before only, so
+		// the part order left that section out of the other voices
+		VoiceSplitter.Result r = VoiceSplitter.split(List.of("X:1", "T:t", "P:AB", "K:C", "P:A", "V:1", "c d|", "V:2",
+				"E F|", "P:B", "M:3/4", "V:1", "c d e|", "V:2", "E F G|"));
+		assertEquals(List.of("X:1", "T:t", "P:AB", "V:1", "%%MIDI channel 1", "K:C", //
+				"P:A", "c d|", "P:B", "M:3/4", "c d e|", //
+				"X:2", "T:t", "P:AB", "V:2", "%%MIDI channel 2", "K:C", //
+				"P:A", "E F|", "P:B", "M:3/4", "E F G|"), r.lines());
+	}
+
+	@Test
+	void withoutAKeyInTheHeaderMusicStartsTheBody() {
+		// Fourth opinion (BUG-10): the K: further on ended the header, so the music before it went into the first
+		// part's header and the second part lost it. Now the K: is a key change, for the voice it is written in
+		VoiceSplitter.Result r = VoiceSplitter.split(List.of("X:1", "T:t", "V:1", "c d|", "V:2", "E F|", "K:G", "V:1",
+				"f g|", "V:2", "G A|"));
+		assertEquals(List.of("X:1", "V:1", "%%MIDI channel 1", "T:t", "c d|", "f g|", //
+				"X:2", "V:2", "%%MIDI channel 2", "T:t", "E F|", "K:G", "G A|"), r.lines());
+	}
+
+	@Test
+	void aVoiceLinesCommentIsNoProperty() {
+		// Fourth opinion (BUG-11): "% was transpose=2" reached K: and transposed the part; a second V:1 line in the
+		// header replaced the first, so its name was lost
+		VoiceSplitter.Result r = VoiceSplitter.split(List.of("X:1", "T:t", "V:1 name=\"Flute\"",
+				"V:1 clef=treble % was transpose=2", "V:2", "K:C", "V:1", "c d|", "V:2", "E F|"));
+		assertEquals(List.of("X:1", "T:t", "V:1 name=\"Flute\" clef=treble", "%%MIDI channel 1", "K:C clef=treble",
+				"c d|", //
+				"X:2", "T:t", "V:2", "%%MIDI channel 2", "K:C", "E F|"), r.lines());
+	}
+
+	@Test
+	void aVoiceTwiceOnALineGetsOneLine() {
+		// Fourth opinion (BUG-08): voice 1 got two lines from one, so the w: under it followed only the second
+		VoiceSplitter.Result r = VoiceSplitter.split(List.of("X:1", "T:t", "K:C", "[V:1] C D [V:2] E F [V:1] G A |",
+				"w: x y z w"));
+		assertEquals(List.of("X:1", "T:t", "V:1", "%%MIDI channel 1", "K:C", //
+				"      C D " + " ".repeat(16) + "G A |", "w: x y z w", //
+				"X:2", "T:t", "V:2", "%%MIDI channel 2", "K:C", " ".repeat(16) + "E F "), r.lines());
+	}
 }

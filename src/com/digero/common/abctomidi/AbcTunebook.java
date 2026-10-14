@@ -69,7 +69,7 @@ public final class AbcTunebook {
 			int end = start + 1;
 			while (end < lines.size() && !isTuneStart(lines.get(end)))
 				end++;
-			String number = lines.get(start).substring(2).trim();
+			String number = AbcToMidi.stripComment(lines.get(start).substring(2)).trim(); // Not "1 % first" (BUG-22)
 			if (number.matches("\\d{1,9}"))
 				width = Math.max(width, String.valueOf(Integer.parseInt(number)).length());
 			found.add(new Tune(number, firstTitle(lines.subList(start, end)), start, end));
@@ -179,7 +179,7 @@ public final class AbcTunebook {
 			if (line.isBlank())
 				break;
 			if (line.startsWith("T:"))
-				return AbcText.decode(line.substring(2).trim());
+				return AbcText.decode(AbcToMidi.unescapePercent(AbcToMidi.stripComment(line.substring(2)).trim()));
 		}
 		return "";
 	}

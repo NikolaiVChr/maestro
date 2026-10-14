@@ -54,6 +54,16 @@ class AbcTunebookTest {
 	}
 
 	@Test
+	void commentsAreNoPartOfNumbersAndTitles() {
+		// Fourth opinion (BUG-22, 2026-10-14): "X:1 % first" and "T:Polska % trad" kept their comments, also in file
+		// names; \% is a percent sign
+		AbcTunebook book = new AbcTunebook(List.of("X:1 % first", "T:Polska % trad", "K:C", "c|", "", "X:2",
+				"T:100\\% Polska", "K:C", "d|"));
+		assertEquals(List.of("1", "2"), book.tunes().stream().map(AbcTunebook.Tune::number).toList());
+		assertEquals(List.of("Polska", "100% Polska"), book.tunes().stream().map(AbcTunebook.Tune::title).toList());
+	}
+	
+	@Test
 	void aTuneIsTheFileHeaderAndItsLines() {
 		AbcTunebook book = new AbcTunebook(BOOK);
 		// Free text in the file header as % comments; blank lines at its end go, one comes back before X:

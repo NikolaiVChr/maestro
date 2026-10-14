@@ -102,7 +102,7 @@ final class Macros {
 	 * first = that isn't one splits them, else the first =.
 	 */
 	static Macro macro(String value) {
-		String text = withoutComment(value);
+		String text = AbcToMidi.stripComment(value);
 		int equals = -1;
 		for (int i = text.indexOf('='); i >= 0; i = text.indexOf('=', i + 1)) {
 			boolean natural = i + 1 < text.length() && NOTE_LETTERS.indexOf(Character.toUpperCase(text.charAt(i + 1))) >= 0;
@@ -127,7 +127,7 @@ final class Macros {
 
 	/** A U: field's value: { the letter, what it stands for ("" for !nil! and !none!) }. */
 	static String[] symbol(String value) {
-		String text = withoutComment(value);
+		String text = AbcToMidi.stripComment(value);
 		int equals = text.indexOf('=');
 		String letter = (equals < 0) ? "" : text.substring(0, equals).trim();
 		String meaning = (equals < 0) ? "" : text.substring(equals + 1).trim();
@@ -139,15 +139,6 @@ final class Macros {
 		if (meaning.equals("!nil!") || meaning.equals("!none!"))
 			meaning = "";
 		return new String[] { letter, meaning };
-	}
-
-	/** The text before a comment (% not written as \%). */
-	private static String withoutComment(String text) {
-		for (int i = 0; i < text.length(); i++) {
-			if (text.charAt(i) == '%' && (i == 0 || text.charAt(i - 1) != '\\'))
-				return text.substring(0, i);
-		}
-		return text;
 	}
 
 	/** The lines with the macros and symbols written out, or null when nothing changed. */
@@ -293,9 +284,9 @@ final class Macros {
 
 	/**
 	 * The end of the quoted text, decoration (!trill! +trill+; not a lone ! line break), inline field or comment that
-	 * starts at the index; else the index.
+	 * starts at the index; else the index. Also for JumpMarks.
 	 */
-	private static int notMusicEnd(String text, int i) {
+	static int notMusicEnd(String text, int i) {
 		char c = text.charAt(i);
 		if (c == '%' && (i == 0 || text.charAt(i - 1) != '\\'))
 			return text.length();

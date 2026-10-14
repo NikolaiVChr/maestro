@@ -660,7 +660,42 @@ class AbcToMidiBehaviourTest {
 				FileParseException e = assertThrows(FileParseException.class,
 						() -> playedOut("|:c:|".repeat(Repeats.MAX_JUMPS + 1)));
 				assertEquals(UIText.get("common.abctomidi.jumps.endless"), e.getDetail());
-			}	
+			}
+
+			@Test
+			void aJumpInTheLastEndingJumpsAtItsRepeatSign() throws Exception {
+				// Fourth opinion (BUG-01, 2026-10-14): the :| that ends the last ending ends the section, as || does. The
+				// D.C. before it jumped a section later
+				assertEquals(playedOut("c d|e f|c d|g a|c d|g a|b c'|]"),
+						playedOut("|:c d|1 e f:|2 g a !D.C.!:|b c'|]"));
+			}
+
+			@Test
+			void afterTheJumpTheEndingWithTheFineIsPlayed() throws Exception {
+				// Fourth opinion (BUG-03, 2026-10-14): after the D.C. the ending with the Fine is played, where the piece
+				// ends (Vals efter Abraham Hagholm: "Fine" over the first ending, the second leads on). The Fine was read
+				// in the skipped ending, so the part ended before any ending
+				assertEquals(playedOut("c d|e f|c d|g a|c d|e f|]"),
+						playedOut("|:c d|1 e f !fine!:|2 g a !D.C.!|]"));
+				// The same with To Coda: it went to the coda before the ending
+				assertEquals(playedOut("c d|e f|c d|g a||b c'|c d|e f|d e|]"),
+						playedOut("|:c d|1 e f !coda!:|2 g a||b c' !D.C.!|]!coda!d e|]"));
+			}
+
+			@Test
+			void theCodaIsReadAsItIsWritten() throws Exception {
+				// Fourth opinion (BUG-04, 2026-10-14): the coda was read with the key at To Coda, not the K: before it
+				assertEquals(playedOut("c d|e f|[K:G]g a|c d|[K:G]f g|]"),
+						playedOut("c d !coda!|e f|[K:G]g a !D.C.!|]!coda!f g|]"));
+			}
+
+			@Test
+			void aLoneLineBreakBeforeTheCoda() throws Exception {
+				// Fourth opinion (BUG-05, 2026-10-14): a lone ! (a line break) was read as the start of a decoration up to
+				// the next !, so the coda mark after it wasn't found
+				assertEquals(playedOut("c d|e f|g a|b c'|c d|d e|]"),
+						playedOut("c d !coda!|e f|g a|b c' !D.C.! ! |]!coda!d e|]"));
+			}
 			
 			@Test
 			void oldTempoCountsSeveralUnitNotes() throws Exception {
@@ -2283,8 +2318,32 @@ class AbcToMidiBehaviourTest {
 			// Tested in Lotro: it plays nothing of a part with an ending for several passes; [1 [2 play on
 			for (String body : List.of("c d [1,3 e f | [2 g a |] b c'|", "c d [1-2 e f | g a b c'|]", "c |1,2 d :|"))
 				assertThrows(LotroFileParseException.class,
-						() -> ConversionDump.convert(tune("semantic", body), Profile.ABC_PLAYER_STRICT), body);
+				() -> ConversionDump.convert(tune("semantic", body), Profile.ABC_PLAYER_STRICT), body);
 			ConversionDump.convert(tune("semantic", "c [1 d | [2 e |]"), Profile.ABC_PLAYER_STRICT);
+		}
+
+		@Test
+		void aDoubleBarInsideARepeatKeepsItsStart() throws Exception {
+			// ABC 2.1 (4.8): a :| goes back to its |:, also over a double bar between them (fourth opinion N1,
+			// 2026-10-14): it went back to the double bar. One that ends an ending still ends the section
+			assertEquals("cdcde", playedWithRepeats("|: c || d :| e |"));
+			assertEquals("cdcde", playedWithRepeats("|: c [| d :| e |"));
+			assertEquals("cdecdfgg", playedWithRepeats("|: c d |1 e :|2 f || g :|"));
+		}
+
+		@Test
+		void theLastEndingsRepeatSignEndsTheSection() throws Exception {
+			// Fourth opinion (BUG-01, 2026-10-14): the :| that ends the last ending ends the section, as || does: a :|
+			// without |: after it went back too far, or not at all
+			assertEquals("cdecdfgg", playedWithRepeats("|: c d |1 e :|2 f :| g :|"));
+			assertEquals("cdecdfcdegg", playedWithRepeats("|: c d |1,3 e :|2 f :| g :|"));
+		}
+
+		@Test
+		void eachRepeatSignKeepsItsOwnPasses() throws Exception {
+			// Fourth opinion (BUG-06, 2026-10-14): a :| on its 769th pass was taken for the :| three columns on, which
+			// then didn't go back
+			assertEquals("cd".repeat(770) + "ee", playedWithRepeats("|: c [1-770 d :|e:|"));
 		}
 
 		@Test
@@ -2546,6 +2605,9 @@ class AbcToMidiBehaviourTest {
 			assertEquals(144, typeTempo("R:reinlaender", "M:4/4", "-Q"));
 			assertEquals(144, typeTempo("R:reil\\\"ander", "M:4/4", "-Q")); // Swedish, Norbeck's 16
 			assertEquals(144, typeTempo("R:rejl\u00e4nder", "M:4/4", "-Q"));
+			// Danish, with \u00e6 (fourth opinion BUG-21, 2026-10-14: NFD doesn't take it apart, so it wasn't read)
+			assertEquals(144, typeTempo("R:Rheinl\u00e6nder", "M:4/4", "-Q"));
+			assertEquals(144, typeTempo("R:rejl\u00e6nder", "M:4/4", "-Q"));
 			assertEquals(324, typeTempo("R:mui\u00f1eira", "M:6/8", "-Q")); // 108 dotted quarters, as a jig
 			assertEquals(324, typeTempo("R:muineira", "M:6/8", "-Q"));
 			// Other languages: German, French, Italian, Spanish, Finnish, Swedish, Danish
@@ -3532,6 +3594,25 @@ class AbcToMidiBehaviourTest {
 			// Tested in Lotro (B65): it refuses the part
 			assertThrows(LotroFileParseException.class,
 					() -> ConversionDump.convert(tune("semantic", "[ce]- [ce]|"), Profile.ABC_PLAYER_STRICT));
+		}
+
+
+		@Test
+		void theTitlesCommonStartEndsAtAWord() throws Exception {
+			// Fourth opinion (BUG-16, 2026-10-14): "My Song - Flute" and "My Song - Fiddle" gave the song "My Song - F"
+			// and the parts "lute" and "iddle"; with "My Song" first, the part "My Song - Lute" was "- Lute"
+			// Each: the two parts' T:, then the song's title and the parts' names
+			for (String[] titles : new String[][] { //
+					{ "My Song - Flute", "My Song - Fiddle", "My Song", "Flute", "Fiddle" },
+					{ "My Song (Flute)", "My Song (Fiddle)", "My Song", "(Flute)", "(Fiddle)" },
+					{ "My Song", "My Song - Lute", "My Song", "My Song", "Lute" } }) {
+				AbcCase song = AbcCase.of("semantic", "X:1", "T:" + titles[0], "M:4/4", "L:1/4", "K:C", "c d|", "",
+						"X:2", "T:" + titles[1], "M:4/4", "L:1/4", "K:C", "e f|");
+				for (AbcInfo info : List.of(abcInfoOf(song), AbcToMidi.parseAbcMetadata(song.filesData()))) {
+					assertEquals(titles[2], info.getTitle(), titles[0]);
+					assertEquals(List.of(titles[3], titles[4]), List.of(info.getPartName(1), info.getPartName(2)));
+				}
+			}
 		}
 
 		@Test

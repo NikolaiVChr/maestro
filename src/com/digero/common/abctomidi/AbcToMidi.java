@@ -3259,7 +3259,7 @@ public class AbcToMidi {
 	 * Removes a % comment. In ABC, % starts a comment anywhere on a line, including in information fields; \% is a
 	 * literal percent sign and doesn't start a comment.
 	 */
-	private static String stripComment(String line) {
+	static String stripComment(String line) {
 		for (int i = 0; i < line.length(); i++) {
 			if (line.charAt(i) == '%' && (i == 0 || line.charAt(i - 1) != '\\')) {
 				return line.substring(0, i);
@@ -3269,7 +3269,7 @@ public class AbcToMidi {
 	}
 
 	/** Turns \% (a literal percent sign in ABC) into %. */
-	private static String unescapePercent(String value) {
+	static String unescapePercent(String value) {
 		return value.replace("\\%", "%");
 	}
 
@@ -3686,6 +3686,29 @@ public class AbcToMidi {
 		}
 		return false;
 	}
+
+	/**
+	 * Whether an ending (2 of :|2, [2 or |2) comes next from the line and column: before it only spaces, chord
+	 * symbols, decorations, comments and field lines.
+	 */
+	static boolean endingNext(List<String> lines, int lineIndex, int column) {
+		for (int l = lineIndex; l < lines.size(); l++) {
+			if (l > lineIndex && (lines.get(l).isBlank() || lines.get(l).startsWith("X:")))
+				return false; // The tune ends
+			String line = stripComment(lines.get(l));
+			boolean field = XINFO_PATTERN.matcher(line).matches() || FILE_HEADER_LINE_PATTERN.matcher(line).matches();
+			if (l > lineIndex && field)
+				continue;
+			String from = line.substring(l == lineIndex ? Math.min(column, line.length()) : 0);
+			String music = NOT_A_BAR_PATTERN.matcher(from).replaceAll(" ").stripLeading();
+			if (!music.isEmpty())
+				return ENDING_NEXT_PATTERN.matcher(music).lookingAt();
+		}
+		return false;
+	}
+
+	/** An ending's number, or the [ or | before it. Not 0, which no pass plays (melnets' "An Ghabha": :|0). */
+	private static final Pattern ENDING_NEXT_PATTERN = Pattern.compile("[\\[|]?[1-9]");
 
 	/** A w: line without the \ that continues it on the next w: line (ABC 2.1, 5.1); a \\ at the end is kept. */
 	private static String withoutContinuation(String text) {

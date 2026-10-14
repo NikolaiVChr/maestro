@@ -65,7 +65,7 @@ public final class RhythmTempo {
 		POLKA("polkk?as?|polcas?", "1/4=120"), // 60 in 2/4
 		STRATHSPEY("strathspeys?|flings?", "1/4=128", COMMON_TIME), // 32 in 4/4
 		SCHOTTISCHE("highlands?|schottisc?he?s?|schottis|skottis|scottish(?!\\s+\\p{L})|jenkkas?|chotis|xotis"
-				+ "|(?:rh?ein|rei|rej)l(?:a|ae|e)nders?", "1/4=144", COMMON_TIME), // 36 in 4/4 or 2/2
+				+ "|(?:rh?ein|rei|rej)l(?:a|ae|\u00e6|e)nders?", "1/4=144", COMMON_TIME), // 36 in 4/4 or 2/2
 		MAZURKA("ma[sz]urk{1,2}as?|mazureks?|mazur", "1/4=120"), // 40 in 3/4
 		WALTZ("waltz(?:es)?|valses?|vals|valse musette|walzer|wals|valzer|valssi|walc|valcik|landler|dreher",
 				"1/4=108"), // 36 in 3/4
@@ -188,7 +188,7 @@ public final class RhythmTempo {
 		return found;
 	}
 
-	/** "Muiñeira" → "Muineira", "Gånglåt" → "Ganglat" (ø stays: it has no accent to take off). */
+	/** "Muiñeira" → "Muineira", "Gånglåt" → "Ganglat" (ø and æ stay: they have no accent to take off). */
 	private static String withoutAccents(String text) {
 		return Normalizer.normalize(text, Normalizer.Form.NFD).replaceAll("\\p{M}", "");
 	}

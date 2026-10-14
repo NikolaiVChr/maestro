@@ -98,6 +98,15 @@ class PartOrderTest {
 		assertNull(PartOrder.apply(tune(null, "[P:A] c d|[P:B] e f|")));
 	}
 
+
+	@Test
+	void anEscapedPercentStartsNoComment() {
+		// Fourth opinion (BUG-14, 2026-10-14): \% is a percent sign (ABC 2.1, 3.1), but the line was cut there, so
+		// the [P:A] after it was no label
+		assertEquals(List.of("P:B", "\"100\\%\" c| ", "P:A", " ".repeat(16) + " d|"), PartOrder.apply(tune("P:BA",
+				"P:A", "e|", "P:B", "\"100\\%\" c| [P:A] d|")).lines().subList(6, 10));
+	}
+
 	@Test
 	void eachTuneOfAFileItsOwn() {
 		List<String> file = new java.util.ArrayList<>(List.of("% a book", ""));
