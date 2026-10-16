@@ -80,6 +80,9 @@ class AbcTunebookTest {
 				"% Notes: play it slowly."), second.subList(6, second.size()));
 		// Windows line ends
 		assertTrue(book.tuneText(book.tunes().get(0)).endsWith("A4 d4 f4|\r\n"));
+		// A field going on in the file header stays a field (fifth opinion, 2026-10-16: it became a % comment)
+		assertEquals(List.of("N:A note", "+: going on"), new AbcTunebook(List.of("N:A note", "+: going on", "", "X:1",
+				"T:a", "K:C", "c|")).header());
 		// A book without a file header: the tune alone
 		AbcTunebook bare = new AbcTunebook(List.of("X:1", "T:a", "K:C", "c|"));
 		assertEquals(List.of("X:1", "T:a", "K:C", "c|"), bare.tuneLines(bare.tunes().get(0)));

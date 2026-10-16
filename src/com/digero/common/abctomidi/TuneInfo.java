@@ -387,14 +387,17 @@ public class TuneInfo {
 		str = str.trim();
 		boolean wasCompound = isCompoundForTempo();
 		int oldDenominator = meterDenominator;
-		beatGroups = null;
+		// Read into locals: a meter that isn't right changes nothing (fifth opinion 2)
+		int numerator;
+		int denominator;
+		int[] groups = null;
 		if (str.equals("C") || str.equalsIgnoreCase("none")) {
 			// M:none is free meter (ABC 2.1, 3.1.6): no bars to keep, so the timing is that of 4/4 (default L:1/8)
-			meterNumerator = 4;
-			meterDenominator = 4;
+			numerator = 4;
+			denominator = 4;
 		} else if (str.equals("C|")) {
-			meterNumerator = 2;
-			meterDenominator = 2;
+			numerator = 2;
+			denominator = 2;
 		} else {
 			String[] parts = str.split("[/:| ]");
 			if (parts.length != 2) {
@@ -402,19 +405,32 @@ public class TuneInfo {
 			}
 			Matcher sum = METER_SUM.matcher(parts[0]);
 			if (sum.matches()) {
-				// M:2+2+3/8 and M:(2+2+3)/8: 7/8, played in beats of 2, 2 and 3 eighths
-				String[] groups = sum.group(1).split("\\+");
-				beatGroups = new int[groups.length];
-				meterNumerator = 0;
-				for (int g = 0; g < groups.length; g++) {
-					beatGroups[g] = Integer.parseInt(groups[g]);
-					meterNumerator += beatGroups[g];
+				// M:2+2+3/8 and M:(2+2+3)/8: 7/8, played in beats of 2, 2 and 3 eighths. A group of 0 (M:0+0/8) made
+				// AbcToMidi's beat-group accents loop forever
+				String[] written = sum.group(1).split("\\+");
+				groups = new int[written.length];
+				long total = 0;
+				for (int g = 0; g < written.length; g++) {
+					groups[g] = Integer.parseInt(written[g]);
+					if (groups[g] < 1)
+						throw new IllegalArgumentException(UIText.get("common.timesignature.invalid", str));
+					total += groups[g];
 				}
+				if (total > Integer.MAX_VALUE)
+					throw new IllegalArgumentException(UIText.get("common.timesignature.invalid", str));
+				numerator = (int) total;
 			} else {
-				meterNumerator = Integer.parseInt(parts[0]);
+				numerator = Integer.parseInt(parts[0]);
 			}
-			meterDenominator = Integer.parseInt(parts[1]);
+			denominator = Integer.parseInt(parts[1]);
 		}
+		// M:4/0 divided by zero in calcPPQN (an ArithmeticException out of convert); a denominator above
+		// MAX_METER_DENOMINATOR gave 0 ticks a beat. A numerator of 0 (M:0/8) still loads, as before
+		if (numerator < 0 || denominator < 1 || denominator > MAX_METER_DENOMINATOR)
+			throw new IllegalArgumentException(UIText.get("common.timesignature.invalid", str));
+		meterNumerator = numerator;
+		meterDenominator = denominator;
+		beatGroups = groups;
 		if (inHeader && !noteDivisorSetInHeader) {
 			noteDivisorNum = -1;
 			noteDivisorDenom = 1;
@@ -502,6 +518,9 @@ public class TuneInfo {
 	private boolean isCompoundForTempo() {
 		return compoundMeter && meterNumerator > 3;
 	}
+
+	/** The largest meter denominator: calcPPQN's ticks a beat must stay at least 1. */
+	private static final long MAX_METER_DENOMINATOR = AbcToMidi.DEFAULT_NOTE_TICKS * 16;
 
 	/** The numerator of a sum (ABC 2.1, 3.1.6): 2+2+3 or (2+2+3). */
 	private static final Pattern METER_SUM = Pattern.compile("\\(?(\\d+(?:\\+\\d+)+)\\)?");

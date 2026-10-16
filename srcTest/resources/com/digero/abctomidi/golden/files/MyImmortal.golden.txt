@@ -3,7 +3,7 @@ file MyImmortal.abc
 
 ### profile ABC_PLAYER (useLotroInstruments=true, enableLotroErrors=false, Lotro Abc)
 == sequence
-divisionType=0.0 resolution=11520 tickLength=3789360 tracks=2
+divisionType=0.0 resolution=11520 tickLength=3788817 tracks=2
 -- track 0 (163 events)
   0 META text type=0x05 "@TMy Immortal"
   0 META tempo mpq=769230
@@ -3400,7 +3400,7 @@ divisionType=0.0 resolution=11520 tickLength=3789360 tracks=2
   3788817 NOTE_OFF ch=0 d1=63 d2=87 [LotroShortMessage]
   3788817 NOTE_OFF ch=0 d1=68 d2=87 [LotroShortMessage]
   3788817 NOTE_OFF ch=0 d1=72 d2=87 [LotroShortMessage]
-  3789360 META end_of_track
+  3788817 META end_of_track
 == abcInfo
   title="My Immortal"
   composer="Evanescence"
@@ -7107,7 +7107,7 @@ divisionType=0.0 resolution=11520 tickLength=3789360 tracks=2
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
 == sequence
-divisionType=0.0 resolution=11520 tickLength=3789360 tracks=2
+divisionType=0.0 resolution=11520 tickLength=3788817 tracks=2
 -- track 0 (163 events)
   0 META text type=0x05 "@TMy Immortal"
   0 META tempo mpq=769230
@@ -10504,7 +10504,7 @@ divisionType=0.0 resolution=11520 tickLength=3789360 tracks=2
   3788817 NOTE_OFF ch=0 d1=63 d2=87 [LotroShortMessage]
   3788817 NOTE_OFF ch=0 d1=68 d2=87 [LotroShortMessage]
   3788817 NOTE_OFF ch=0 d1=72 d2=87 [LotroShortMessage]
-  3789360 META end_of_track
+  3788817 META end_of_track
 == abcInfo
   title="My Immortal"
   composer="Evanescence"

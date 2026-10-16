@@ -553,6 +553,18 @@ class AbcToMidiBehaviourTest {
 			}
 
 			@Test
+			void notesAfterAMacroAreMarkedWhereTheyAreWritten() throws Exception {
+				// Fifth opinion (5, 2026-10-16): a note's region had the columns of the line the macro wrote out, so the
+				// c and d after ~G3 were marked 6 columns to the right. Now in the file's columns; the notes the macro
+				// wrote mark the macro (~G3)
+				AbcInfo info = new AbcInfo();
+				ConversionDump.run(AbcCase.of("semantic", "X:1", "T:t", "M:4/4", "L:1/8", "Q:120", "m: ~G3 = G{A}G{F}G", "K:C",
+						"~G3 c d|"), Profile.MAESTRO_NEW_STANDARD, true, info);
+				assertEquals(List.of("0-3", "4-5", "6-7"), info.getRegions().stream().filter(r -> r.getNote() != null)
+						.map(r -> r.getStartIndex() + "-" + r.getEndIndex()).distinct().toList());
+			}
+
+			@Test
 			void macrosAndSymbolsOnlyInTheStandardReading() throws Exception {
 				// Lotro's reading: m: is an error, U: is read as nothing (W an unknown character)
 				AbcCase macro = AbcCase.of("semantic", "X:1", "T:t", "M:4/4", "L:1/8", "Q:120", "m: ~n2 = n2", "K:C", "c8|");
@@ -1201,6 +1213,18 @@ class AbcToMidiBehaviourTest {
 			}
 
 			@Test
+			void aUnisonUnderATieThatGoesNowhereKeepsItsLength() throws Exception {
+				// Fifth opinion (3, 2026-10-16): in [c2-c4] d the tie ties nothing, and the c4 was cut at the c2's end;
+				// the c4's end was kept for the next part, where it held a tied c of the same pitch to that tick
+				Sequence s = convert(standard(tune("semantic", "[c2-c4] d4 z2|")));
+				long q = s.getResolution();
+				assertEquals(List.of(on(0, 60), on(q, 62), off(2 * q, 60), off(3 * q, 62)), noteEvents(s));
+				s = convert(standard(AbcCase.of("semantic", "X:1", "T:a", "M:4/4", "L:1/8", "K:C", "z8|z8|[c2-c4]|", "",
+						"X:2", "T:b", "M:4/4", "L:1/8", "K:C", "c2-c2 z4|")));
+				assertEquals(List.of(on(0, 60), off(q * 2, 60)), noteEvents(s, 2));
+			}
+
+			@Test
 			void aBarLineBeforeThePickupEndsNoBar() throws Exception {
 				// Fourth opinion pass 2 (BUG-08, 2026-10-15): |: or [| before the first note ended a bar there, so the
 				// pickup was accented as a whole bar
@@ -1456,6 +1480,43 @@ class AbcToMidiBehaviourTest {
 					assertEquals("One", info.getPartName(1));
 					assertEquals("Two", info.getPartName(2));
 					assertEquals(2, info.getPartNumber(2));
+				}
+			}
+
+			@Test
+			void titlesAreShownDecodedInTheStandardReading() throws Exception {
+				// Fifth opinion (6, 2026-10-16): T:, C: and Z: were kept with their escapes (Sl\"angpolska) for the song's
+				// title, its parts and composer, though the tunebook dialog showed them decoded. Decoded in the standard
+				// reading; Lotro's reading keeps them as written (user, 2026-10-16: not known what Lotro shows)
+				AbcCase tune = AbcCase.of("semantic", "X:1", "T:Sl\\\"angpolska fr{\\aa}n Sm{\\aa}land", "C:J\\\"orgen",
+						"N:genre: Sl\\\"angpolska", "M:3/4", "L:1/8", "K:G", "G2 B2 d2|");
+				AbcInfo standard = abcInfoOf(tune.with(p -> p.standard2011 = p.standardPitch = true));
+				assertEquals("Sl\u00e4ngpolska fr\u00e5n Sm\u00e5land", standard.getTitle());
+				assertEquals("Sl\u00e4ngpolska fr\u00e5n Sm\u00e5land", standard.getPartName(1));
+				assertEquals("J\u00f6rgen", standard.getComposer());
+				assertEquals("sl\u00e4ngpolska", standard.getGenre()); // N:genre:, lower case as before
+				assertEquals("Sl\\\"angpolska fr{\\aa}n Sm{\\aa}land", abcInfoOf(tune).getTitle());
+			}
+
+			@Test
+			void anErrorInAVoiceNamesTheTunesNumber() throws Exception {
+				// Fifth opinion (2026-10-16): VoiceSplitter numbers the voices' parts 1, 2 ..., so an error in tune 347's
+				// second voice said "X:2"
+				FileParseException e = assertThrows(FileParseException.class, () -> standard(AbcCase.of("semantic",
+						"X:347", "T:Tune", "K:C", "V:1", "c d|", "V:2", "E F & G|")));
+				assertTrue(e.getMessage().contains("X:347"), e.getMessage());
+				assertEquals(7, e.getLine());
+			}
+
+			@Test
+			void aLaterFilesHeaderNamesNoPartBeforeIt() throws Exception {
+				// Fifth opinion (2026-10-16): %%part-name in a later file's header renamed the file before's last part,
+				// in the song and in the playlist; T: there already didn't
+				AbcCase two = AbcCase.of("semantic", "X:1", "T:One", "%%part-name Flute", "K:C", "c d|").plusFile("two.abc",
+						"%%part-name Horn", "", "X:2", "T:Two", "K:C", "e f|");
+				for (AbcInfo info : List.of(abcInfoOf(two), AbcToMidi.parseAbcMetadata(two.filesData()))) {
+					assertEquals("Flute", info.getPartName(1));
+					assertEquals("Two", info.getPartName(2));
 				}
 			}
 
@@ -1934,6 +1995,13 @@ class AbcToMidiBehaviourTest {
 				// With Lotro errors it stays an error (user, 2026-10-01)
 				assertThrows(FileParseException.class,
 						() -> ConversionDump.convert(tune("semantic", "c4- d4|"), Profile.ABC_PLAYER_STRICT));
+				// The error is at the tie also past line 65,535 (fifth opinion: line and column were packed in an int)
+				List<String> body = new ArrayList<>(Collections.nCopies(70_000, "% a long file"));
+				body.add("c c4- d4|");
+				FileParseException far = assertThrows(FileParseException.class, () -> ConversionDump
+						.convert(tune("semantic", body.toArray(String[]::new)), Profile.ABC_PLAYER_STRICT));
+				assertEquals(6 + 70_001, far.getLine());
+				assertEquals(2, far.getColumn());
 			}
 
 			@Test
@@ -2515,7 +2583,7 @@ class AbcToMidiBehaviourTest {
 			// inside note groups, not in text strings or fields. The standard's own example; melnets' "||*" made about
 			// 210 corpus files fail to load
 			assertEquals(noteEvents(convert(tune("semantic",
-							"a !pp! bc2/3 [K:C#] def \"@this $2was difficult to parse?\" y |"))),
+					"a !pp! bc2/3 [K:C#] def \"@this $2was difficult to parse?\" y |"))),
 					noteEvents(convert(tune("semantic",
 							"@a !pp! #bc2/3* [K:C#] de?f \"@this $2was difficult to parse?\" y |**"))));
 			// In a chord, grace notes and a tuplet too
@@ -3193,6 +3261,47 @@ class AbcToMidiBehaviourTest {
 		}
 
 		@Test
+		void aQuickNoteOnAPitchStillSoundingIsHeard() throws Exception {
+			// Fifth opinion (7, 2026-10-16): in Lotro's reading a chord lasts as its shortest note, so the c4 of [c4e]
+			// still sounds when Tc and {c}c start. Its note-off was moved to their start after the trill's or grace
+			// note's first note-on, at the same tick, and silenced it. Now the note-off comes first
+			for (String body : List.of("[c4e] Tc4 z3|", "[c4e] {c}c4 z3|")) {
+				Sequence s = convert(tune("semantic", body));
+				long q = s.getResolution();
+				Track track = s.getTracks()[1];
+				List<String> atStart = new ArrayList<>(); // The c's events at the second note's start, in track order
+				for (int i = 0; i < track.size(); i++) {
+					if (track.get(i).getTick() == q / 2 && track.get(i).getMessage() instanceof ShortMessage sm
+							&& sm.getData1() == 60)
+						atStart.add((sm.getCommand() == ShortMessage.NOTE_ON && sm.getData2() > 0) ? "on" : "off");
+				}
+				assertEquals(List.of("off", "on"), atStart, body);
+			}
+		}
+
+		@Test
+		void aMeterThatCantBePlayedIsAnError() throws Exception {
+			// Fifth opinion (2, 2026-10-16): M:4/0 divided by zero (an ArithmeticException out of convert), M:0+0/8 made
+			// the beat-group accents loop forever, M:1/100000 gave 0 ticks a beat. Now each is an invalid meter, in
+			// every reading, also inline
+			for (String meter : List.of("M:4/0", "M:0+0/8", "M:2+0/8", "M:1/100000")) {
+				for (AbcCase abc : List.of(tune("semantic", header(meter), "\"C\"c d e f|"),
+						tune("semantic", "c d|[" + meter + "] e f|"))) {
+					assertTimeoutPreemptively(java.time.Duration.ofSeconds(10), () -> {
+						assertThrows(FileParseException.class, () -> convert(abc), meter);
+						assertThrows(FileParseException.class, () -> convert(abc.with(p -> {
+							p.standard2011 = p.standardPitch = p.chordAccompaniment = true;
+						})), meter);
+						assertThrows(FileParseException.class,
+								() -> ConversionDump.convert(abc, Profile.ABC_PLAYER_STRICT), meter);
+					});
+				}
+			}
+			// A numerator of 0 still loads, as before
+			convert(tune("semantic", header("M:0/8"), "c d|"));
+		}
+
+		@Test
 		void fieldContinuationJoinsTheLines() throws Exception {
 			// +: continues the field before it, with a space between (ABC 2.1, 3.3)
 			Sequence s = convert(tune("semantic", header(), "c d e f|", "w:one two", "+:three four", "W:A long", "+:line"));
@@ -3850,6 +3959,20 @@ class AbcToMidiBehaviourTest {
 			assertTrue(cSoundEnd < q / 4 + 16 * q, "the test needs c's sample < 8 s");
 			assertEquals(List.of(on(0, 62), off(q / 4, 62), on(q / 4, 60), off(cSoundEnd, 60)), noteEvents(s));
 			assertEquals(cSoundEnd, s.getTickLength());
+		}
+
+		@Test
+		void aHeldLastChordIsCutWhereItsSamplesRunOut() throws Exception {
+			// Fifth opinion (1, 2026-10-16): with two or more note-offs to cut, the track still ended at the chord's
+			// written end, so the song was longer than its sound (and than %%song-duration). It ends where the
+			// longest of the chord's samples runs out
+			Sequence s = ConversionDump.convert(tune("semantic", header("T:Test Harp"), "d/ [cc'c'']32|"),
+					Profile.ABC_PLAYER);
+			long q = s.getResolution(); // d/ = q/4, the chord 16 quarters
+			long end = q / 4 + Math.max(harpSampleTicks(60, q), Math.max(harpSampleTicks(72, q), harpSampleTicks(84, q)));
+			assertTrue(end < q / 4 + 16 * q, "the test needs the samples < 8 s");
+			assertEquals(end, s.getTickLength());
+			assertTrue(noteEvents(s).stream().allMatch(e -> e.tick() <= end), noteEvents(s).toString());
 		}
 
 		@Test

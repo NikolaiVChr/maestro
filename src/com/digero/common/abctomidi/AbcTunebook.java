@@ -30,8 +30,11 @@ public final class AbcTunebook {
 	public record Tune(String number, String title, int firstLine, int endLine) {
 	}
 
-	/** A field (T:Title, M:3/4), a directive (%%MIDI ...) or a comment: kept as it is. */
-	private static final Pattern FIELD_OR_COMMENT = Pattern.compile("^([A-Za-z]:|%).*");
+	/**
+	 * A field (T:Title, M:3/4), a field going on (+:, ABC 2.1 3.2; fifth opinion: it became a comment), a directive
+	 * (%%MIDI ...) or a comment: kept as it is.
+	 */
+	private static final Pattern FIELD_OR_COMMENT = Pattern.compile("^([A-Za-z+]:|%).*");
 	/** What StringCleaner.cleanForFileName leaves that Windows doesn't allow in a file name. */
 	private static final Pattern NOT_IN_FILE_NAME = Pattern.compile("[<>:\"|*\\p{Cntrl}]");
 	private static final int MAX_TITLE_LENGTH = 80;

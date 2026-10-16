@@ -1,5 +1,7 @@
 package com.digero.common.abctomidi;
 
+import com.digero.common.abc.*;
+
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -8,7 +10,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import com.digero.common.abctomidi.PartOrder;
 
 /** PartOrder: a tune's sections in its header's P: order (ABC 2.1, 3.1.9), as text. */
 class PartOrderTest {
@@ -53,6 +54,10 @@ class PartOrderTest {
 		assertNull(PartOrder.apply(tune("P:3A", "P:A", "c d|")));
 		// An order, but the body has no sections
 		assertNull(PartOrder.apply(tune("P:AB", "c d|", "e f|")));
+		// More than 1000 sections (fifth opinion, 2026-10-16: nested counts multiply, and this one ran out of memory)
+		assertNull(PartOrder.apply(tune("P:((((A100)100)100)100)", "P:A", "c d|")));
+		assertEquals(1000, PartOrder.parse("(A100)10").size());
+		assertNull(PartOrder.parse("(A100)11"));
 	}
 
 	@Test
@@ -84,7 +89,7 @@ class PartOrderTest {
 		// after it keep their columns (spaces before them), for messages and note regions
 		PartOrder.Result r = PartOrder.apply(tune("P:ABA", "g a|[P:A] c d|[P:B] e f|"));
 		assertEquals(List.of("X:1", "T:t", "M:4/4", "L:1/8", "P:ABA", "K:C", //
-						"g a|", "P:A", " ".repeat(9) + " c d|", "P:B", " ".repeat(19) + " e f|", "P:A", " ".repeat(9) + " c d|"),
+				"g a|", "P:A", " ".repeat(9) + " c d|", "P:B", " ".repeat(19) + " e f|", "P:A", " ".repeat(9) + " c d|"),
 				r.lines());
 		assertArrayEquals(new int[] { 1, 2, 3, 4, 5, 6, 7, 7, 7, 7, 7, 7, 7 }, r.sourceLineNumbers());
 		// Mixed with P: lines; not in quotes or a comment

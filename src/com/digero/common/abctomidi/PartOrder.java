@@ -35,6 +35,8 @@ public final class PartOrder {
 	}
 
 	private static final Pattern ORDER = Pattern.compile("[A-Z0-9().\\s]+");
+	/** The most sections an order plays: nested counts multiply, and a longer order is no order. */
+	private static final int MAX_SECTIONS = 1000;
 	private static final Pattern LABEL = Pattern.compile("^P:\\s*([A-Z])\\s*(?:%.*)?$");
 	/** A section label in the notes, [P:A], or quoted text (which may look like one). */
 	private static final Pattern INLINE_LABEL = Pattern.compile("\\[P:\\s*([A-Z])\\s*]|\"[^\"]*\"");
@@ -214,8 +216,11 @@ public final class PartOrder {
 				count = count * 10 + (text.charAt(position[0]++) - '0');
 			if (count > 100)
 				return null;
-			for (int n = 0; n < Math.max(count, 1); n++)
+			for (int n = 0; n < Math.max(count, 1); n++) {
 				sections.addAll(item);
+				if (sections.size() > MAX_SECTIONS)
+					return null; // P:((((A100)100)100)100) ran out of memory (fifth opinion)
+			}
 		}
 		return sections;
 	}

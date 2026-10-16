@@ -196,8 +196,8 @@ divisionType=0.0 resolution=11520 tickLength=11520 tracks=2
   11520 META end_of_track
 == abcInfo
   title="Test"
-  composer="Andr\\'e & Jos\\\"e"
-  transcriber="caf&eacute; \\u00e9"
+  composer="André & Josë"
+  transcriber="café é"
   genre="" mood=""
   primaryTempoBPM=60 timeSignature=4/4 keySignature=C maj
   hasTriplets=false hasMixTimings=false barCount=1 partCount=2 partSetups=2..2 empty=false

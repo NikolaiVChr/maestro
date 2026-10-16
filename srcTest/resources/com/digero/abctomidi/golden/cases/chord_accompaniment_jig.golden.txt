@@ -138,7 +138,7 @@ divisionType=0.0 resolution=5760 tickLength=140418 tracks=4
   132928 NOTE_OFF ch=2 d1=61 d2=97 [LotroShortMessage]
   132928 NOTE_OFF ch=2 d1=64 d2=97 [LotroShortMessage]
   132928 NOTE_OFF ch=2 d1=67 d2=97 [LotroShortMessage]
-  138240 META end_of_track
+  132928 META end_of_track
 == abcInfo
   title="Test"
   composer=""

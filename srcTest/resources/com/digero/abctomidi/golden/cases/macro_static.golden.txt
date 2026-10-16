@@ -120,12 +120,12 @@ divisionType=0.0 resolution=11520 tickLength=46080 tracks=2
   part 0: number=0 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..0
   part 1: number=1 name="Test" fullName="Test" instrument=LUTE_OF_AGES madeFor=false userPan=null lines=0..7 pan=0 CONTROL_CHANGE ch=0 d1=10 d2=64 [LotroShortMessage]
 == regions (8)
-  #0 line=7 cols=[2,4) ticks=0..1920 note=72 track=1 bar=0 tiesFrom=- tiesTo=-
-  #1 line=7 cols=[4,6) ticks=1920..3840 note=74 track=1 bar=0 tiesFrom=- tiesTo=-
-  #2 line=7 cols=[6,8) ticks=3840..5760 note=72 track=1 bar=0 tiesFrom=- tiesTo=-
-  #3 line=7 cols=[9,11) ticks=5760..8640 note=71 track=1 bar=0 tiesFrom=- tiesTo=-
-  #4 line=7 cols=[11,13) ticks=8640..11520 note=72 track=1 bar=0 tiesFrom=- tiesTo=-
-  #5 line=7 cols=[14,16) ticks=11520..23040 note=74 track=1 bar=0 tiesFrom=- tiesTo=-
-  #6 line=7 cols=[18,21) ticks=23040..40320 note=72 track=1 bar=0 tiesFrom=- tiesTo=-
-  #7 line=7 cols=[22,23) ticks=40320..46080 note=74 track=1 bar=0 tiesFrom=- tiesTo=-
+  #0 line=7 cols=[0,4) ticks=0..1920 note=72 track=1 bar=0 tiesFrom=- tiesTo=-
+  #1 line=7 cols=[0,4) ticks=1920..3840 note=74 track=1 bar=0 tiesFrom=- tiesTo=-
+  #2 line=7 cols=[0,4) ticks=3840..5760 note=72 track=1 bar=0 tiesFrom=- tiesTo=-
+  #3 line=7 cols=[0,4) ticks=5760..8640 note=71 track=1 bar=0 tiesFrom=- tiesTo=-
+  #4 line=7 cols=[0,4) ticks=8640..11520 note=72 track=1 bar=0 tiesFrom=- tiesTo=-
+  #5 line=7 cols=[5,7) ticks=11520..23040 note=74 track=1 bar=0 tiesFrom=- tiesTo=-
+  #6 line=7 cols=[9,12) ticks=23040..40320 note=72 track=1 bar=0 tiesFrom=- tiesTo=-
+  #7 line=7 cols=[13,14) ticks=40320..46080 note=74 track=1 bar=0 tiesFrom=- tiesTo=-
 == log: empty
