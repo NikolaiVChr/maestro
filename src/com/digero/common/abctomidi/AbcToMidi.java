@@ -8,6 +8,7 @@ import java.nio.charset.MalformedInputException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.logging.Logger;
 import java.util.regex.MatchResult;
@@ -430,9 +431,11 @@ public class AbcToMidi {
 						}
 						case 'K' -> standardSign |= !KEY_LOTRO_PLAYS_PATTERN.matcher(value).matches();
 						case 'L' -> {
-							// Lotro ignores an L: after the notes (B40): a sign if it changes the unit note length
+							// Lotro ignores an L: after the notes (B40): a sign if it changes the unit note
+							// length, which without an L: is the meter's default (fourth opinion pass 2, BUG-12)
 							String length = value.replace(" ", "");
-							standardSign |= inBody && !length.equals(unitLength);
+							standardSign |= inBody
+									&& !length.equals((unitLength != null) ? unitLength : defaultUnitLength(meter));
 							unitLength = length;
 							if (!inTune)
 								fileUnitLength = length;
@@ -484,6 +487,22 @@ public class AbcToMidi {
 	/** A key that Lotro plays: the key and its mode, nothing more (K:G, K:Am, K:D mix, K: C maj; B33). */
 	private static final Pattern KEY_LOTRO_PLAYS_PATTERN = Pattern.compile("(?i)[A-G][#b]?\\s*(?:m|min|minor|maj|major"
 			+ "|ion|ionian|aeo|aeolian|mix|mixolydian|dor|dorian|phr|phrygian|lyd|lydian|loc|locrian)?");
+
+	/**
+	 * The index of the first line of notes, if it comes before any X: (a file without X:, or with notes before its
+	 * first); else -1. Fields, directives, comments and empty lines aren't notes.
+	 */
+	private static int firstNotesBeforeX(List<String> lines) {
+		for (int k = 0; k < lines.size(); k++) {
+			String trimmed = lines.get(k).stripLeading();
+			if (trimmed.startsWith("X:"))
+				return -1;
+			if (!trimmed.isEmpty() && !trimmed.startsWith("%") && !FILE_HEADER_LINE_PATTERN.matcher(trimmed).matches()
+					&& !trimmed.startsWith("+:"))
+				return k;
+		}
+		return -1;
+	}
 
 	/** w: s: r: m: ... : a line that isn't notes. */
 	private static final Pattern LOWER_CASE_FIELD_PATTERN = Pattern.compile("[a-z]:");
@@ -584,22 +603,27 @@ public class AbcToMidi {
 	/** A note with its accidental and octave marks. */
 	private static final Pattern NOTE_OCTAVE_PATTERN = Pattern.compile("(\\^{1,2}|_{1,2}|=)?([A-Ga-g])(,+|'+)?");
 
-	/** A note Lotro can't play: below C, or above c' (the range of its instruments' ABC). */
+	/**
+	 * A note Lotro can't play: below C, or above c' (the range of its instruments' ABC), with its written accidental.
+	 * The pitch as notePitch has it: C' is c, _C, below C, (fourth opinion pass 2, BUG-12).
+	 */
 	private static boolean hasNoteOutsideLotroRange(String musicLine) {
 		Matcher note = NOTE_OCTAVE_PATTERN.matcher(NOT_NOTES_PATTERN.matcher(stripComment(musicLine)).replaceAll(" "));
 		while (note.find()) {
-			String octave = note.group(3);
-			if (octave == null)
-				continue;
+			String octaveMarks = note.group(3);
+			if (octaveMarks == null)
+				continue; // C to b, ^b and _C too: always in the range
 			char letter = note.group(2).charAt(0);
-			boolean sharp = note.group(1) != null && note.group(1).startsWith("^");
-			if (octave.startsWith("'")) {
-				// c' is Lotro's highest note; anything above it, ^c' included
-				if (octave.length() > 1 || letter != 'c' || sharp)
-					return true;
-			} else if (octave.length() > (Character.isUpperCase(letter) ? 1 : 2)) {
-				return true; // Below C, (C,, or c,,,)
-			}
+			int octave = Character.isUpperCase(letter) ? 3 : 4;
+			octave += (octaveMarks.charAt(0) == '\'') ? octaveMarks.length() : -octaveMarks.length();
+			int pitch = (octave + 1) * 12 + CHR_NOTE_DELTA[Character.toLowerCase(letter) - 'a'];
+			String accidental = Objects.requireNonNullElse(note.group(1), "");
+			if (accidental.startsWith("^"))
+				pitch += accidental.length();
+			else if (accidental.startsWith("_"))
+				pitch -= accidental.length();
+			if (pitch < Note.MIN_PLAYABLE.id || pitch > Note.MAX_PLAYABLE.id)
+				return true;
 		}
 		return false;
 	}
@@ -702,24 +726,48 @@ public class AbcToMidi {
 			return new BareTempo(-1, null, null); // No Q: at all: the tempo is guessed
 		if (!bare.matches())
 			return null;
-		int numerator = 4;
-		int denominator = 4;
-		if ("C|".equals(meter)) {
-			numerator = 2;
-			denominator = 2;
-		} else if (meter != null && !meter.equals("C")) {
-			Matcher fraction = METER_FRACTION.matcher(meter);
-			if (!fraction.find())
-				return null; // M:none
-			numerator = 0;
+		int[] fraction = meterFraction(meter);
+		if (fraction == null)
+			return null; // M:none
+		if (unitNote == null)
+			unitNote = defaultUnitLength(meter);
+		String beat = "1/" + fraction[1];
+		return unitNote.equals(beat) ? null : new BareTempo(Integer.parseInt(bare.group(1)), unitNote, beat);
+	}
+
+	/**
+	 * The meter's {numerator, denominator}: 4/4 if there's no M: or M:C, 2/2 for M:C|, 7/8 for M:2+2+3/8.
+	 *
+	 * @param meter The M: value without its comment, trimmed; null if none
+	 * @return null if it has no fraction (M:none)
+	 */
+	private static int[] meterFraction(String meter) {
+		if (meter == null || meter.equals("C"))
+			return new int[] { 4, 4 };
+		if (meter.equals("C|"))
+			return new int[] { 2, 2 };
+		Matcher fraction = METER_FRACTION.matcher(meter);
+		if (!fraction.find())
+			return null;
+		try {
+			int numerator = 0;
 			for (String part : fraction.group(1).split("\\+"))
 				numerator += Integer.parseInt(part.trim()); // 2+2+3/8
-			denominator = Integer.parseInt(fraction.group(2));
+			return new int[] { numerator, Integer.parseInt(fraction.group(2)) };
+		} catch (NumberFormatException e) {
+			return null; // Too many digits
 		}
-		if (unitNote == null)
-			unitNote = (numerator / (double) denominator < 0.75) ? "1/16" : "1/8"; // ABC 2.1, 3.1.7
-		String beat = "1/" + denominator;
-		return unitNote.equals(beat) ? null : new BareTempo(Integer.parseInt(bare.group(1)), unitNote, beat);
+	}
+
+	/**
+	 * The unit note length when a tune has no L: (ABC 2.1, 3.1.7): 1/16 if the meter is below 3/4, else 1/8 (M:none
+	 * too, as in TuneInfo).
+	 *
+	 * @param meter The M: value without its comment, trimmed; null if none
+	 */
+	private static String defaultUnitLength(String meter) {
+		int[] fraction = meterFraction(meter);
+		return (fraction != null && fraction[0] / (double) fraction[1] < 0.75) ? "1/16" : "1/8";
 	}
 
 	/**
@@ -794,6 +842,8 @@ public class AbcToMidi {
 		boolean crossedRepeat = false;
 		Map<Integer, Double> tiedNoteStartTicks = new HashMap<>(); // noteId => start of the tie's first note
 		Map<Integer, Double> tiedNoteEndTicks = new HashMap<>(); // noteId => end of the tied note so far, see below
+		// noteId => the end of a longer unison note (standard2011) under a tied note: the tie ends no earlier
+		Map<Integer, Double> unisonEnds = new HashMap<>();
 		Map<Integer, LotroInstrument> trackInstruments = new HashMap<>(); // trackIndex => instrument it plays, see endTrack
 		Map<Integer, Integer> accidentals = new HashMap<>(); // noteId => deltaNoteId
 		Random cowbellPitches = new Random(COWBELL_SEED); // A cowbell's random pitches, from each part's start
@@ -850,6 +900,9 @@ public class AbcToMidi {
 		// its next X:, and the next file's region lines start after the highest line read
 		int previousLineForRegions = -1;
 		int highestLineForRegions = -1;
+		// The part's highest line read before this one: its end line. Not the last line read, which a part order
+		// (P:ABA) takes back to an earlier section (fourth opinion pass 2, BUG-10)
+		int partHighestLineForRegions = -1;
 		abcInfo.abcTrackInfos = new ArrayList<>();
 		for (FileAndData fileAndData : filesData) {
 			// The previous file's last part ends here
@@ -904,12 +957,26 @@ public class AbcToMidi {
 					sourceLineNumbers = orderedSources;
 				}
 			}
+			// A later file whose notes have no X: before them (fourth opinion pass 2, BUG-05): a part of its own, as
+			// if an X: stood before its first notes; it played on in the file before's last part, after its end
+			int implicitX = (trackNumber > 0) ? firstNotesBeforeX(lines) : -1;
+			if (implicitX >= 0) {
+				List<String> withX = new ArrayList<>(lines);
+				withX.add(implicitX, "X:" + (info.getPartNumber() + 1));
+				int[] sources = new int[withX.size()];
+				for (int k = 0; k < sources.length; k++) {
+					int from = (k <= implicitX) ? k : k - 1; // The X: is counted as the notes' line
+					sources[k] = (sourceLineNumbers != null) ? sourceLineNumbers[from] : from + 1;
+				}
+				lines = withX;
+				sourceLineNumbers = sources;
+			}
 			int firstLineForRegions = highestLineForRegions + 1; // Region line numbers run on through all files
 			int startColumn = 0; // Where the parsing of the line starts: mid-line when going back for a repeat
 			// ABC 2.1 (2.2), with standard2011 in a file of X: tunes: free text before the first X: (besides the file
 			// header's fields) and after a tune; an empty line ends the tune (2.2.1). Lotro plays on after an empty
 			// line (B14), so without the flag every line is read.
-			boolean skipFreeText = abc21 && lines.stream().anyMatch(l -> l.startsWith("X:"));
+			boolean skipFreeText = abc21 && implicitX < 0 && lines.stream().anyMatch(l -> l.startsWith("X:"));
 			// ABC 2.1 (12): a file without %abc-2.1 (or higher) on its first line is read loosely: a lone ! is a line break
 			boolean looseBang = abc21 && !isAbc21OrLater(lines);
 			boolean tuneSeen = false; // An X: so far in this file
@@ -937,6 +1004,7 @@ public class AbcToMidi {
 				wrappedField[0] = -1; // Only a line being parsed may be a field's text going on
 				lineNumber = (sourceLineNumbers != null) ? sourceLineNumbers[lineIndex] : lineIndex + 1;
 				previousLineForRegions = lineNumberForRegions;
+				partHighestLineForRegions = Math.max(partHighestLineForRegions, previousLineForRegions);
 				lineNumberForRegions = firstLineForRegions + lineNumber - 1;
 				highestLineForRegions = Math.max(highestLineForRegions, lineNumberForRegions);
 
@@ -959,7 +1027,9 @@ public class AbcToMidi {
 					if (xInfoMatcher.group(XINFO_FIELD).equalsIgnoreCase("MIDI")) {
 						if (track == null)
 							partProgramClues.midiDirective("MIDI " + xInfoMatcher.group(XINFO_VALUE));
-						partDrone.midiDirective("MIDI " + xInfoMatcher.group(XINFO_VALUE), Math.round(chordStartTick));
+						// Not in an ending this pass skips, nor after Fine (fourth opinion pass 2, BUG-07)
+						if (!repeats.skipping())
+							partDrone.midiDirective("MIDI " + xInfoMatcher.group(XINFO_VALUE), Math.round(chordStartTick));
 					}
 					AbcField field = AbcField
 							.fromString(xInfoMatcher.group(XINFO_FIELD) + xInfoMatcher.group(XINFO_COLON));
@@ -969,7 +1039,8 @@ public class AbcToMidi {
 						info.applyInstruction(xInfoMatcher.group(XINFO_FIELD) + " " + xInfoMatcher.group(XINFO_VALUE));
 					} else if (field == AbcField.TEMPO) {
 						try {
-							info.addTempoEvent(Math.round(chordStartTick), xInfoMatcher.group(XINFO_VALUE).trim());
+							if (!repeats.skipping()) // Not in an ending this pass skips (BUG-07)
+								info.addTempoEvent(Math.round(chordStartTick), xInfoMatcher.group(XINFO_VALUE).trim());
 						} catch (IllegalArgumentException e) {
 							// Apparently that wasn't actually a tempo change
 						}
@@ -1030,7 +1101,8 @@ public class AbcToMidi {
 				// are later verses, sung when the repeats play the notes again. (W: lyrics after the tune are an info
 				// field, with no timing.)
 				if (line.stripLeading().startsWith("w:")) {
-					lyricLines.put(lineIndex, line.stripLeading().substring(2));
+					// Once: a repeat that reads it again would undo a +: added to it (fourth opinion pass 2, BUG-06)
+					lyricLines.putIfAbsent(lineIndex, line.stripLeading().substring(2));
 					lastField = 'w';
 					lastLyricLine = lineIndex;
 					continue;
@@ -1188,7 +1260,8 @@ public class AbcToMidi {
 								repeats.newPart();
 
 								if (trackNumber > 0)
-									abcInfo.setPartEndLine(trackNumber, previousLineForRegions);
+									abcInfo.setPartEndLine(trackNumber, partHighestLineForRegions);
+								partHighestLineForRegions = -1;
 
 
 								if (value.isEmpty() && enableLotroErrors) {
@@ -1271,7 +1344,8 @@ public class AbcToMidi {
 								// I:linebreak and I:decoration (ABC 2.1) are kept; I:MIDI droneon ... turns the drone on or
 								// off; others (I:MIDI program ...) change nothing here
 								info.applyInstruction(value);
-								partDrone.midiDirective(value, Math.round(chordStartTick));
+								if (!repeats.skipping())
+									partDrone.midiDirective(value, Math.round(chordStartTick));
 								break;
 							case 'R':
 								// The tune's type: the tempo of a song without Q: (standard ABC)
@@ -1597,7 +1671,8 @@ public class AbcToMidi {
 												}
 												case 'I' -> {
 													info.applyInstruction(value);
-													partDrone.midiDirective(value, Math.round(chordStartTick));
+													if (!repeats.skipping())
+														partDrone.midiDirective(value, Math.round(chordStartTick));
 												}
 												case 'L' -> info.setNoteDivisor(value);
 												case 'M' -> {
@@ -2574,6 +2649,23 @@ public class AbcToMidi {
 										m.group()), fileName, lineNumber, m.start());
 							}
 							
+							// ABC 2.1 (4.11): a tie joins two successive notes. A tied note that ended before this one starts
+							// (shorter than its chord: [B3D]- [B3D]) ties nothing, as a tie across a rest: it ends at its own
+							// end and this note sounds anew (abc2midi: "Could not find note to be tied")
+							if (abc21 && tiedNotes.containsKey(noteId) && tiedNoteEndTicks.get(noteId) < chordStartTick - 0.0001) {
+								int lineAndColumn = tiedNotes.get(noteId);
+								if (!LENIENT) {
+									throw new FileParseException(UIText.get("common.abctomidi.tie.not.connected"), fileName,
+											lineAndColumn >>> 16, lineAndColumn & 0xFFFF);
+								}
+								log.warning(fileName + ": line " + (lineAndColumn >>> 16)
+										+ ": a tie to a note that starts after the tied note ended ties nothing");
+								Double unisonEnd = unisonEnds.remove(noteId);
+								endTie(noteId, Math.max(tiedNoteEndTicks.get(noteId), (unisonEnd != null) ? unisonEnd : 0),
+										tiedNotes, tiedNoteStartTicks, tiedNoteEndTicks, tiedRegions, track, channel,
+										info.getDynamics().getVol(useLotroInstruments), noteOffEvents);
+							}
+
 							// Lotro plays only the first of the same note in a chord and ignores the later one completely,
 							// also for the chord's length (tested in game, also for enharmonic spellings like [^c_d]).
 							// Checked before the cowbell code, which gives all cowbell notes the same pitch.
@@ -2581,17 +2673,10 @@ public class AbcToMidi {
 								chordEndTick = chordEndTickBeforeThisNote;
 								// ABC 2.1 (4.17, standard2011): a unison, both notes sound. One MIDI channel can't sound a
 								// pitch twice, so the longer one plays: the first note's note-off moves to this one's end.
-								if (abc21 && !tied) {
-									for (MidiEvent noteOff : noteOffEvents) {
-										if (((ShortMessage) noteOff.getMessage()).getData1() == noteId
-												&& noteOff.getTick() > chordStartTick && noteOff.getTick() < Math.round(noteEndTick)) {
-											track.remove(noteOff);
-											noteOff.setTick(Math.round(noteEndTick));
-											track.add(noteOff);
-											break;
-										}
-									}
-								}
+								if (abc21)
+									unison(noteId, tied, unisonEnd(chordStartTick, attackOffset, noteEndTick, tied, soundingLength),
+											chordStartTick, noteEndTick, (lineNumber << 16) | m.start(), track, noteOffEvents,
+											tiedNotes, tiedNoteStartTicks, tiedNoteEndTicks, unisonEnds);
 								i = m.end();// required, otherwise the loop will find the same note again and never end
 								continue;
 							}
@@ -2788,8 +2873,16 @@ public class AbcToMidi {
 							double tieStartTick = chordStartTick;
 							Double tiedSoFar = tiedNoteEndTicks.get(noteId);
 							if (tiedSoFar != null) {
-								tieEndTick = tiedSoFar + (noteEndTick - chordStartTick);
+								// ABC 2.1 (4.11, 4.17): the two notes play as one, to the later of their ends (a note in a
+								// chord can end after the next note starts: [cc2-] c2 is a c3; one that ended before it
+								// ties nothing, see above). Lotro (tested): the sum of their lengths, which is the same
+								// when the next note starts where the tied one ends
+								tieEndTick = abc21 ? Math.max(tiedSoFar, noteEndTick)
+										: tiedSoFar + (noteEndTick - chordStartTick);
 								tieStartTick = tiedNoteStartTicks.get(noteId);
+								// A longer unison note under the tie's first note sounds to its own end (BUG-03)
+								if (!tied && unisonEnds.containsKey(noteId))
+									tieEndTick = Math.max(tieEndTick, unisonEnds.remove(noteId));
 							}
 							if (tied) {
 								tiedNoteEndTicks.put(noteId, tieEndTick);
@@ -2886,7 +2979,7 @@ public class AbcToMidi {
 					info.getPrimaryTempoBPM());
 		}
 
-		abcInfo.setPartEndLine(trackNumber, lineNumberForRegions);
+		abcInfo.setPartEndLine(trackNumber, Math.max(partHighestLineForRegions, lineNumberForRegions));
 
 		// The accompaniment: new tracks after all parts, so the parts keep their track numbers
 		if (track != null && playChords) {
@@ -2990,18 +3083,26 @@ public class AbcToMidi {
 				}
 				log.warning(fileName + ": line " + (lineAndColumn >>> 16) + ": a tie to another pitch or a rest ties nothing");
 			}
-			MidiEvent noteOff = MidiFactory.createNoteOffEventEx(pitch, channel, velocity,
-					Math.round(tiedNoteEndTicks.get(pitch)));
-			track.add(noteOff);
-			noteOffEvents.add(noteOff);
-			tiedNotes.remove(pitch);
-			tiedNoteStartTicks.remove(pitch);
-			tiedNoteEndTicks.remove(pitch);
-			tiedRegions.remove(pitch);
+			endTie(pitch, tiedNoteEndTicks.get(pitch), tiedNotes, tiedNoteStartTicks, tiedNoteEndTicks, tiedRegions,
+					track, channel, velocity, noteOffEvents);
 		}
 		tiesToContinue.clear();
 		tiesToContinue.addAll(tiedNotes.keySet());
 		eventPitches.clear();
+	}
+
+	/** A tie that ties nothing: its note ends at the tick, and the pitch is no longer tied. */
+	private static void endTie(int pitch, double end, Map<Integer, Integer> tiedNotes,
+							   Map<Integer, Double> tiedNoteStartTicks, Map<Integer, Double> tiedNoteEndTicks,
+							   Map<Integer, AbcRegion> tiedRegions, Track track, int channel, int velocity,
+							   List<MidiEvent> noteOffEvents) {
+		MidiEvent noteOff = MidiFactory.createNoteOffEventEx(pitch, channel, velocity, Math.round(end));
+		track.add(noteOff);
+		noteOffEvents.add(noteOff);
+		tiedNotes.remove(pitch);
+		tiedNoteStartTicks.remove(pitch);
+		tiedNoteEndTicks.remove(pitch);
+		tiedRegions.remove(pitch);
 	}
 
 	/**
@@ -3205,6 +3306,55 @@ public class AbcToMidi {
 			noteOffEvents.add(noteOff);
 
 			tiedNotes.remove(noteId);
+		}
+	}
+
+	/** Where a unison's second note stops sounding: a staccato shortens it as it would a note of its own. */
+	private static double unisonEnd(double chordStartTick, double attackOffset, double noteEndTick, boolean tied,
+									double soundingLength) {
+		if (tied || soundingLength >= 1)
+			return noteEndTick;
+		double attackTick = chordStartTick + attackOffset;
+		return attackTick + (noteEndTick - attackTick) * soundingLength;
+	}
+
+	/**
+	 * The second note of a unison in a chord (standard2011; fourth opinion pass 2, BUG-03): one MIDI channel can't
+	 * sound a pitch twice, so the first note's sound goes on to the later end, and a tie on either note ties the sound.
+	 * Before, a tie on the second note and its staccato were lost.
+	 *
+	 * @param end Where the second note stops sounding (unisonEnd)
+	 */
+	private static void unison(int noteId, boolean tied, double end, double chordStartTick, double noteEndTick,
+							   int lineAndColumn, Track track, List<MidiEvent> noteOffEvents, Map<Integer, Integer> tiedNotes,
+							   Map<Integer, Double> tiedNoteStartTicks, Map<Integer, Double> tiedNoteEndTicks,
+							   Map<Integer, Double> unisonEnds) {
+		if (tiedNotes.containsKey(noteId)) {
+			// The first note is tied: the tie sounds at least to this one's end
+			unisonEnds.merge(noteId, end, Math::max);
+			return;
+		}
+		MidiEvent firstOff = null;
+		for (MidiEvent noteOff : noteOffEvents) {
+			if (((ShortMessage) noteOff.getMessage()).getData1() == noteId && noteOff.getTick() > chordStartTick) {
+				firstOff = noteOff;
+				break;
+			}
+		}
+		if (firstOff == null)
+			return;
+		if (tied) {
+			// This one is tied: the first note's sound is tied on instead of ending (and lasts at least to its end)
+			track.remove(firstOff);
+			noteOffEvents.remove(firstOff);
+			tiedNotes.put(noteId, lineAndColumn);
+			tiedNoteStartTicks.put(noteId, chordStartTick);
+			tiedNoteEndTicks.put(noteId, noteEndTick);
+			unisonEnds.merge(noteId, (double) firstOff.getTick(), Math::max);
+		} else if (firstOff.getTick() < Math.round(end)) {
+			track.remove(firstOff);
+			firstOff.setTick(Math.round(end));
+			track.add(firstOff);
 		}
 	}
 
@@ -3664,6 +3814,34 @@ public class AbcToMidi {
 
 	/** Whether an ending whose numbers are wanted comes in the section that starts at the line and column (as above). */
 	static boolean endingFollows(List<String> lines, int lineIndex, int column, Predicate<Set<Integer>> wanted) {
+		return inSection(lines, lineIndex, column, ENDING_OR_SECTION_END_PATTERN, m -> {
+			if (m.group(1) == null)
+				return false; // The section ends
+			return wanted.test(Repeats.parseEndingNumbers(m.group(1))) ? true : null;
+		});
+	}
+
+	/** A repeat end :| (also :|| :|: :|] ::), and the signs that end a section first: || |] [| |: */
+	private static final Pattern REPEAT_END_OR_SECTION_END_PATTERN = Pattern
+			.compile("(:+\\|+|::)|\\|\\||\\|]|\\[\\||\\|:");
+
+	/**
+	 * Whether a repeat end (:| :: ...) ends the section that starts at the line and column, before || |] [| |: or the
+	 * next X: (fourth opinion pass 2, BUG-18: the section is played again, so an ending in it waits for its pass).
+	 */
+	static boolean repeatEndFollows(List<String> lines, int lineIndex, int column) {
+		return inSection(lines, lineIndex, column, REPEAT_END_OR_SECTION_END_PATTERN, m -> m.group(1) != null);
+	}
+
+	/**
+	 * Reads the bar signs from the line and column on, through the lines of music, until the next X:.
+	 *
+	 * @param signs  The signs looked for (quoted text and decorations aren't read)
+	 * @param answer For each sign found: true or false is the answer, null goes on
+	 * @return The first answer; false if there's none
+	 */
+	private static boolean inSection(List<String> lines, int lineIndex, int column, Pattern signs,
+									 Function<Matcher, Boolean> answer) {
 		for (int l = lineIndex; l < lines.size(); l++) {
 			String line = stripComment(lines.get(l));
 			if (XINFO_PATTERN.matcher(line).matches() || line.stripLeading().startsWith("w:") || line.stripLeading().startsWith("s:"))
@@ -3676,12 +3854,11 @@ public class AbcToMidi {
 			}
 			String music = NOT_A_BAR_PATTERN.matcher(line.substring(l == lineIndex ? Math.min(column, line.length()) : 0))
 					.replaceAll(" ");
-			Matcher m = ENDING_OR_SECTION_END_PATTERN.matcher(music);
+			Matcher m = signs.matcher(music);
 			while (m.find()) {
-				if (m.group(1) == null)
-					return false; // The section ends
-				if (wanted.test(Repeats.parseEndingNumbers(m.group(1))))
-					return true;
+				Boolean found = answer.apply(m);
+				if (found != null)
+					return found;
 			}
 		}
 		return false;
@@ -4178,12 +4355,15 @@ public class AbcToMidi {
 	/**
 	 * A bar line at the tick: the bar's notes at the start of a beat group get their accent. The bar runs from the last
 	 * bar line; the part's first bar ends here, so a first bar shorter than the meter (a pickup) is its end, and one as
-	 * long or longer starts at the part's start.
+	 * long or longer starts at the part's start. A bar line before any note (|: or [| at the start) ends no bar
+	 * (fourth opinion pass 2, BUG-08: the pickup after it was accented as a bar's start).
 	 *
-	 * @return The bar line's tick, the next bar's start
+	 * @return The bar line's tick, the next bar's start; null for one at the part's start
 	 */
-	private static long barLine(List<BarAttack> attacks, Long lastBarTick, long tick, long[] groups,
+	private static Long barLine(List<BarAttack> attacks, Long lastBarTick, long tick, long[] groups,
 								boolean useLotroInstruments) {
+		if (lastBarTick == null && tick == 0)
+			return null;
 		long barStart = (lastBarTick != null) ? lastBarTick
 				: (groups != null) ? Math.min(0, tick - Arrays.stream(groups).sum()) : 0;
 		accentGroupStarts(attacks, barStart, groups, useLotroInstruments);
@@ -4764,8 +4944,21 @@ public class AbcToMidi {
 					} catch (IllegalArgumentException e) {
 						throw new FileParseException(e.getMessage(), fileName, lineNumber, infoMatcher.start(INFO_VALUE));
 					}
-				} else if (!line.isBlank() && !line.stripLeading().startsWith("w:")) {
-					inBody = true; // A line of notes
+				} else if (!line.isBlank() && !LOWER_CASE_FIELD_PATTERN.matcher(line.stripLeading()).lookingAt()
+						&& !line.stripLeading().startsWith("+:")) {
+					// A line of notes; not w: r: m: or +: (fourth opinion pass 2, BUG-11: a remark before T: lost the
+					// title)
+					if (inFileHeader && trackNumber > 0) {
+						// A later file's notes without an X: before them: a part of its own, as in convert() (BUG-05)
+						inFileHeader = false;
+						instrumentSet = false;
+						trackNumber++;
+						partNumber++;
+						abcInfo.setPartName(trackNumber, defaultPartName(fileTitle, fileAndData), false);
+						abcInfo.setPartNumber(trackNumber, partNumber);
+						abcInfo.setPartStartLine(trackNumber, lineNumber);
+					}
+					inBody = true;
 				}
 			}
 		}

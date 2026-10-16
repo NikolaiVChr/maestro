@@ -50,6 +50,7 @@ final class Repeats {
 	private boolean open; // After a |: whose :| hasn't been played often enough yet
 	private Set<Integer> ending; // The numbers of the ending the parser is in, null outside an ending
 	private boolean skipping; // The ending isn't played on this pass: its notes take no time
+	private boolean firstEndingPlayed; // The first pass played an ending of this section (BUG-18)
 	private final Set<Long> jumped = new HashSet<>(); // The :| that went back, as its source position and pass
 	// D.C., D.S., segno, coda, Fine (JumpMarks)
 	private Jump partStart; // The part's first line of music, as it was read there
@@ -90,6 +91,7 @@ final class Repeats {
 		pass = 1;
 		ending = null;
 		skipping = false;
+		firstEndingPlayed = false;
 		jumped.clear();
 		partStart = null;
 		segno = null;
@@ -132,6 +134,7 @@ final class Repeats {
 		startColumn = column;
 		pass = 1;
 		ending = null;
+		firstEndingPlayed = false;
 		skip(false);
 		markState();
 	}
@@ -165,15 +168,21 @@ final class Repeats {
 
 	/**
 	 * [1 |1 :|2 ... : an ending starts; its numbers end before the column. After a D.C. or D.S. only the section's last
-	 * ending is played, or the one with the Fine or To Coda it stops at.
+	 * ending is played, or the one with the Fine or To Coda it stops at. On the first pass an ending for a later one
+	 * after the first pass's ending waits for its pass if a :| ends its section (|: c |1 d |2 e :| plays c d c e;
+	 * fourth opinion pass 2, BUG-18); without one, endings play one after the other. One no pass comes to (|93, a
+	 * typo) still plays.
 	 */
 	void ending(String numbers, List<String> lines, int lineIndex, int column) {
 		ending = parseEndingNumbers(numbers);
-		if (jumpedWith != null)
+		if (jumpedWith != null) {
 			skip(!JumpMarks.endingHas(stops(), lines, lineIndex, column)
 					&& AbcToMidi.endingFollows(lines, lineIndex, column, followingNumbers -> true));
-		else
-			skip(expand && pass > 1 && !ending.contains(pass));
+		} else {
+			skip(expand && !ending.contains(pass)
+					&& (pass > 1 || (firstEndingPlayed && AbcToMidi.repeatEndFollows(lines, lineIndex, column))));
+			firstEndingPlayed |= pass == 1 && ending.contains(1);
+		}
 	}
 
 	/** The marks the D.C. or D.S. that jumped stops at: Fine, and To Coda (or a coda mark) until the coda is taken. */
@@ -210,10 +219,16 @@ final class Repeats {
 	 */
 	Jump end(List<String> lines, int lineIndex, int column, int after) {
 		if (skipping) {
-			// The end of an ending this pass doesn't play: go on after it
 			skip(false);
-			ending = null;
-			return endSection(lines, lineIndex, after);
+			// An ending for a later pass, not followed by another ending (|: c |1 d |2 e :|): goes back as after the
+			// ending played (fourth opinion pass 2, BUG-18). Else the ending this pass doesn't play: go on after it
+			boolean later = expand && jumpedWith == null && ending != null
+					&& ending.stream().anyMatch(number -> number > pass)
+					&& !AbcToMidi.endingNext(lines, lineIndex, after);
+			if (!later) {
+				ending = null;
+				return endSection(lines, lineIndex, after);
+			}
 		}
 		boolean again;
 		if (!expand || jumpedWith != null)

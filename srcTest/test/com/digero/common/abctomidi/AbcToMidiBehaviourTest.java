@@ -361,6 +361,28 @@ class AbcToMidiBehaviourTest {
 			}
 
 			@Test
+			void unisonKeepsItsTieAndStaccato() throws Exception {
+				// Fourth opinion pass 2 (BUG-03, 2026-10-15): a tie on the longer note of a unison was lost, a tie on the
+				// shorter one ended the longer note too soon, and a staccato unison kept the longer note's full length
+				// [cc2-] c2: the c2 is tied to the next c2, which starts after an eighth (the chord's length, 4.17):
+				// one c to that c2's end, a c3 (ABC 2.1, 4.11: played as a single note; not the sum of their lengths)
+				Sequence s = convert(standard(tune("semantic", "[cc2-] c2 d|")));
+				long q = s.getResolution();
+				assertEquals(List.of(on(0, 60), off(3 * q / 2, 60), on(3 * q / 2, 62), off(2 * q, 62)), noteEvents(s));
+				// A tied note shorter than its chord ([B3D]- [B3D], both notes tied): the D ends before the next D
+				// starts, so its tie ties nothing, as across a rest (abc2midi too). The sum (two eighths) ended it
+				// before the next D started, which then made no sound
+				assertEquals(List.of(on(0, 50), on(0, 59), off(q / 2, 50), on(3 * q / 2, 50), off(2 * q, 50),
+						off(3 * q, 59)), noteEvents(convert(standard(tune("semantic", "[B3D]- [B3D] z|")))));
+				// [c-c3] c: the c3 sounds on past the tied c's end
+				assertEquals(List.of(on(0, 60), on(q, 62), off(3 * q / 2, 60), off(3 * q / 2, 62)),
+						noteEvents(convert(standard(tune("semantic", "[c-c3] c d|")))));
+				// .[cc2]: as short as a staccato c2
+				assertEquals(noteEvents(convert(standard(tune("semantic", ".c2 z2|")))).get(1),
+						noteEvents(convert(standard(tune("semantic", ".[cc2] z3|")))).get(1));
+			}
+
+			@Test
 			void tieJoinsTheNextNoteOnly() throws Exception {
 				// Lotro joins a tie to the next note of its pitch wherever it is (tested: c- d c is one c over the d).
 				// ABC 2.1 (4.11): "Ties connect two successive notes of the same pitch". O'Neill's collections write -
@@ -924,6 +946,15 @@ class AbcToMidiBehaviourTest {
 			}
 
 			@Test
+			void aPartInTheHeadersOrderEndsAtItsLastLine() throws Exception {
+				// Fourth opinion pass 2 (BUG-10, 2026-10-15): with P:ABA the part ended at the A played last, so its B
+				// (lines 10 and 11, indexes 9 and 10) was outside the part's lines
+				AbcCase ordered = tune("semantic", AbcCases.partOrderHeader("P:ABA"), "P:A", "c d|", "P:B", "e f|");
+				assertEquals(10, abcInfoOf(standard(ordered)).getPartEndLine(1));
+				assertEquals(10, abcInfoOf(ordered).getPartEndLine(1));
+			}
+
+			@Test
 			void aSectionLabelInsideARepeatKeepsItsStart() throws Exception {
 				// X:10829 Ragtime Annie: "|:G/4A/4|...|"D7"f/2", a P:3 line, "f/2 ...| [1 ... g:| [2 g2||". The P: started
 				// a section, so the :| went back to the P:, not to the |:, and the first three bars were not repeated
@@ -1168,6 +1199,16 @@ class AbcToMidiBehaviourTest {
 						"c d e f g a b|"))));
 			}
 
+			@Test
+			void aBarLineBeforeThePickupEndsNoBar() throws Exception {
+				// Fourth opinion pass 2 (BUG-08, 2026-10-15): |: or [| before the first note ended a bar there, so the
+				// pickup was accented as a whole bar
+				List<Integer> pickup = velocities(convert(standard(tune("semantic", header("M:7/8"), "g a b|c d e f g a b|"))));
+				for (String start : List.of("|:", "[|", "|"))
+					assertEquals(pickup, velocities(convert(standard(tune("semantic", header("M:7/8"),
+							start + " g a b|c d e f g a b|")))), start);
+			}
+
 			@Disabled(NOT_YET)
 			@Test
 			void tempoChangeInThePart() throws Exception {
@@ -1402,6 +1443,33 @@ class AbcToMidiBehaviourTest {
 			}
 
 			@Test
+			void aLaterFileWithoutXIsAPartOfItsOwn() throws Exception {
+				// Fourth opinion pass 2 (BUG-05, 2026-10-15): the notes of a later file without X: were a second track,
+				// but named and placed as the part before them, in the song and in the playlist
+				AbcCase two = AbcCase.of("semantic", "X:1", "T:One", "K:C", "c d|").plusFile("two.abc", "T:Two", "K:C",
+						"e f|");
+				Sequence s = standard(two);
+				assertEquals(3, s.getTracks().length);
+				assertEquals(List.of(76, 77), noteOns(s, 2).stream().map(NoteEvent::pitch).toList()); // ABC 2.1's pitch
+				for (AbcInfo info : List.of(abcInfoOf(two), AbcToMidi.parseAbcMetadata(two.filesData()))) {
+					assertEquals("One", info.getPartName(1));
+					assertEquals("Two", info.getPartName(2));
+					assertEquals(2, info.getPartNumber(2));
+				}
+			}
+
+			@Test
+			void aRemarkBeforeTheTitleKeepsIt() throws Exception {
+				// Fourth opinion pass 2 (BUG-11, 2026-10-15): in the playlist an r: (remark) or +: before T: started the
+				// notes, so the T: after it was no title
+				for (String before : List.of("r:a remark", "N:A note", "+:on it")) {
+					AbcCase remark = AbcCase.of("semantic", "X:1", before, "T:Title", "K:C", "c d|");
+					assertEquals("Title", abcInfoOf(remark).getTitle(), before);
+					assertEquals("Title", AbcToMidi.parseAbcMetadata(remark.filesData()).getTitle(), before);
+				}
+			}
+
+			@Test
 			void bug1015SkippedEndingChangesNothing() throws Exception {
 				// The second pass skips the first ending: what is written in it isn't read either. A dynamics mark: e
 				// stays p (c p, d f, c p, e p)
@@ -1415,6 +1483,21 @@ class AbcToMidiBehaviourTest {
 				Sequence s = standard(tune("semantic", "|: c |1 [L:1/4] d :|2 e f|]"));
 				long e = s.getResolution() / 2;
 				assertEquals(List.of(0L, e, 3 * e, 4 * e, 5 * e), ticks(s));
+			}
+
+			@Test
+			void aSkippedEndingChangesNoDroneOrTempo() throws Exception {
+				// Fourth opinion pass 2 (BUG-07, 2026-10-15): a skipped ending's drone directive and %%Q: line were
+				// still read. The drone is turned on at the first ending's end, off before it: off in the second ending
+				// (from the 3rd quarter on)
+				Sequence s = convert(accompanied("%%MIDI droneoff", "K:C",
+						"|: c2 [I:MIDI droneoff] [1 d2 [I:MIDI droneon] :| [2 e2 f2 |]"));
+				long q = s.getResolution();
+				assertTrue(noteEvents(s, 2).stream().allMatch(e -> e.tick() <= 3 * q), noteEvents(s, 2).toString());
+				// The tempo set in the first ending: once (the second pass is at that tempo already)
+				s = convert(tune("semantic", "|: c2 [1 d2", "%%Q: 60", "e2 :| [2 f2 |]"));
+				assertEquals(1L, Standard2011.tempos(s).stream().filter(t -> t.endsWith(":1000000")).count(),
+						Standard2011.tempos(s).toString());
 			}
 
 			/** The seconds at a tick, by the tempo events of track 0 (120 a minute before the first). */
@@ -2370,6 +2453,18 @@ class AbcToMidiBehaviourTest {
 		}
 
 		@Test
+		void anEndingWaitsForItsPass() throws Exception {
+			// Fourth opinion pass 2 (BUG-18, 2026-10-15): endings that one :| closes at the end. The first pass played
+			// the second ending too (c d e c e)
+			assertEquals("cdce", playedWithRepeats("|: c |1 d |2 e :|"));
+			assertEquals("cdce", playedWithRepeats("c [1 d | [2 e :|"));
+			assertEquals("cdcecf", playedWithRepeats("|: c |1 d :|2 e |3 f :|"));
+			assertEquals("cdcefgfa", playedWithRepeats("|: c |1 d |2 e :| f |1 g |2 a :|"));
+			// Without a :| at the section's end they still play one after the other
+			assertEquals("cde", playedWithRepeats("c [1 d | [2 e |]"));
+		}
+
+		@Test
 		void versesAreSungOnePerPass() throws Exception {
 			// The verses (w: lines in a run) are sung one per time the notes are played: verse 2 on the repeat (user,
 			// 2026-10-01)
@@ -2385,6 +2480,16 @@ class AbcToMidiBehaviourTest {
 			// A W: line in a repeated section is written once
 			s = convert(tune("semantic", header(), "|: c |", "W:Verse", "d :|").with(p -> p.expandRepeats = true));
 			assertEquals(List.of("0:<Verse"), lyrics(s, 0));
+		}
+
+		@Test
+		void aContinuedVerseIsSungOnEveryPass() throws Exception {
+			// Fourth opinion pass 2 (BUG-06, 2026-10-15): the repeat read the w: line again, which lost the +: added to
+			// it
+			Sequence s = convert(tune("semantic", "|: c d e f |", "w:one two", "+:three four", "g f e d :|")
+					.with(p -> p.expandRepeats = true));
+			assertEquals(List.of("0:one ", "1:two ", "2:three ", "3:four ", "8:/one ", "9:two ", "10:three ", "11:four "),
+					lyrics(s, 1));
 		}
 
 		@Test
@@ -2937,6 +3042,21 @@ class AbcToMidiBehaviourTest {
 							"K:G", "c d|" });
 			for (String[] lines : noSigns)
 				assertNull(madeForLotro(lines), String.join(" / ", lines));
+		}
+
+		@Test
+		void lotroRangeAndUnitLengthAreReadAsLotroReadsThem() throws Exception {
+			// Fourth opinion pass 2 (BUG-12, 2026-10-15): C' to B' (c to b) were notes above Lotro's range, _C, and
+			// _c,, (below C,) weren't; an L: after the notes that keeps the default unit note length was a change
+			for (String[] lines : List.of(new String[] { "X:1", "K:C", "C' D' B' c'|" },
+					new String[] { "X:1", "K:C", "^C, =c,, C,|" },
+					new String[] { "X:1", "K:C", "c d|", "L:1/8", "e f|" },
+					new String[] { "X:1", "M:2/4", "K:C", "c d|", "L:1/16", "e f|" }))
+				assertNull(madeForLotro(lines), String.join(" / ", lines));
+			for (String[] lines : List.of(new String[] { "X:1", "K:C", "_C, D|" }, new String[] { "X:1", "K:C", "_c,, d|" },
+					new String[] { "X:1", "K:C", "D'' d|" }, new String[] { "X:1", "K:C", "^c' d|" },
+					new String[] { "X:1", "M:2/4", "K:C", "c d|", "L:1/8", "e f|" }))
+				assertEquals(Boolean.FALSE, madeForLotro(lines), String.join(" / ", lines));
 		}
 
 		private static Boolean madeForLotro(String... lines) {
