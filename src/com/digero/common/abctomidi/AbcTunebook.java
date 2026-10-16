@@ -173,13 +173,21 @@ public final class AbcTunebook {
 		return (line.isBlank() || FIELD_OR_COMMENT.matcher(line).matches()) ? line : "% " + line;
 	}
 
+	/**
+	 * A field line's value (T:Polska, K:G % major) as shown: without its comment, \% as %, escapes decoded
+	 * (sl\"angpolska). Also for the tunebook dialog (fourth opinion pass 2, BUG-23).
+	 */
+	public static String fieldValue(String fieldLine) {
+		return AbcText.decode(AbcToMidi.unescapePercent(AbcToMidi.stripComment(fieldLine.substring(2)).trim()));
+	}
+
 	/** The first T: of the tune (before the first empty line), escapes decoded; "" if none. */
 	private static String firstTitle(List<String> tuneLines) {
 		for (String line : tuneLines) {
 			if (line.isBlank())
 				break;
 			if (line.startsWith("T:"))
-				return AbcText.decode(AbcToMidi.unescapePercent(AbcToMidi.stripComment(line.substring(2)).trim()));
+				return fieldValue(line);
 		}
 		return "";
 	}

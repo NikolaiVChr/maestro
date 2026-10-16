@@ -21,4 +21,14 @@ class KeySignatureTest {
 		KeySignature major = new KeySignature("G");
 		assertSame(major, KeySignature.fromAbc(major));
 	}
+
+	@Test
+	void transposingStartsFromTheKey() {
+		// Fourth opinion pass 2 (BUG-21, 2026-10-14): every key was transposed as if from C: G up a tone gave D
+		assertEquals(new KeySignature("A"), new KeySignature("G").transpose(2));
+		assertEquals(new KeySignature("Ab"), new KeySignature("G").transpose(1));
+		assertEquals(new KeySignature("Bm"), new KeySignature("Am").transpose(2));
+		assertEquals(new KeySignature("C"), new KeySignature("F#").transpose(-6));
+		assertEquals(new KeySignature("D"), new KeySignature("D").transpose(12));
+	}
 }

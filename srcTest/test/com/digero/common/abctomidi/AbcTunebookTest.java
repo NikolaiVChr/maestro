@@ -61,6 +61,11 @@ class AbcTunebookTest {
 				"T:100\\% Polska", "K:C", "d|"));
 		assertEquals(List.of("1", "2"), book.tunes().stream().map(AbcTunebook.Tune::number).toList());
 		assertEquals(List.of("Polska", "100% Polska"), book.tunes().stream().map(AbcTunebook.Tune::title).toList());
+		// Every field as the tunebook dialog shows it (fourth opinion pass 2, BUG-23: its K:, M:, R: and T: columns
+		// and tooltips kept the comments)
+		assertEquals("G", AbcTunebook.fieldValue("K:G % major"));
+		assertEquals("Reel", AbcTunebook.fieldValue("R:Reel % fast"));
+		assertEquals("sl\u00e4ngpolska 100%", AbcTunebook.fieldValue("T:sl\\\"angpolska 100\\% % a comment"));
 	}
 	
 	@Test

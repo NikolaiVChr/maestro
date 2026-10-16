@@ -190,6 +190,16 @@ class VoiceSplitterTest {
 	}
 
 	@Test
+	void aFieldGoingOnIsNoMusic() {
+		// Fourth opinion pass 2 (BUG-22, 2026-10-14): "+:" (a field going on, ABC 2.1, 2.3.4) was music, so it went to
+		// the first voice only
+		VoiceSplitter.Result r = VoiceSplitter.split(List.of("X:1", "T:t", "K:C", "N:A note", "+: going on", "V:1",
+				"c d|", "V:2", "E F|"));
+		assertEquals(List.of("X:1", "T:t", "V:1", "%%MIDI channel 1", "K:C", "N:A note", "+: going on", "c d|", //
+				"X:2", "T:t", "V:2", "%%MIDI channel 2", "K:C", "N:A note", "+: going on", "E F|"), r.lines());
+	}
+
+	@Test
 	void aVoiceLinesCommentIsNoProperty() {
 		// Fourth opinion (BUG-11): "% was transpose=2" reached K: and transposed the part; a second V:1 line in the
 		// header replaced the first, so its name was lost

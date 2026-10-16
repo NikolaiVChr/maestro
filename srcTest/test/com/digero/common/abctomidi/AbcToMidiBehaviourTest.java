@@ -512,6 +512,10 @@ class AbcToMidiBehaviourTest {
 				List<String> fields = List.of("m: ~n2 = (3o/n/m/ n", "U: W = !trill!");
 				String body = "\"^~c2 W\"c2 !~c2! [I:~c2 W] c6 % ~c2 W";
 				assertEquals(writtenOut(body), noteEvents(convert(defining(fields, body, "w: ~c2 W"))));
+				// Nor in a decoration with a space (fourth opinion pass 2, BUG-13: "!To Coda!" became
+				// "!!trill!o Coda!")
+				assertEquals(writtenOut("!To Coda!c8|"), noteEvents(convert(defining(List.of("U: T = !trill!"),
+						"!To Coda!c8|"))));
 			}
 
 			@Test
@@ -695,6 +699,25 @@ class AbcToMidiBehaviourTest {
 				// the next !, so the coda mark after it wasn't found
 				assertEquals(playedOut("c d|e f|g a|b c'|c d|d e|]"),
 						playedOut("c d !coda!|e f|g a|b c' !D.C.! ! |]!coda!d e|]"));
+			}
+
+			@Test
+			void marksWithSpacesAreDecorations() throws Exception {
+				// Fourth opinion pass 2 (BUG-13, 2026-10-14): Macros.notMusicEnd, which JumpMarks uses, took a ! with
+				// a space before the next ! for a line break, as the parser doesn't: "!To Coda!" in the first ending
+				// wasn't found, and the O of "!TO CODA!" after the D.C. was taken for the coda
+				assertEquals(playedOut("c d|e f|c d|g a||b c'|c d|e f|d e|]"),
+						playedOut("|:c d|1 e f !To Coda!:|2 g a||b c' !D.C.!|]!coda!d e|]"));
+				assertEquals(playedOut("c d|e f|c d|b c'|]"),
+						playedOut("c d !coda!|e f !D.C.!|] !TO CODA! g a|!coda! b c'|]"));
+			}
+
+			@Test
+			void aFineAfterAChordStopsAtTheBarsEnd() throws Exception {
+				// Fourth opinion pass 2 (BUG-14, 2026-10-14): the ] of a chord before a Fine at the line's end counted
+				// as a bar line, so the part ended at the Fine instead of at the end of its bar
+				assertEquals(playedOut("c d|e f [ce]", "g a||b c'|c d|e f [ce]", "g a||]"),
+						playedOut("c d|e f [ce] !fine!", "g a||b c' !D.C.alfine!|]"));
 			}
 			
 			@Test
@@ -2370,6 +2393,14 @@ class AbcToMidiBehaviourTest {
 			assertEquals(90, abcInfoOf(tune("semantic", header("Q:\"Allegro\" 1/4=90"), "c d|")).getPrimaryTempoBPM());
 			assertThrows(LotroFileParseException.class, () -> ConversionDump
 					.convert(tune("semantic", header("Q:\"Allegro\" 1/4=90"), "c d|"), Profile.ABC_PLAYER_STRICT));
+		}
+
+		@Test
+		void tempoWithTextBeforeAndAfter() throws Exception {
+			// ABC 2.1 (3.1.8): text before and after the tempo. Fourth opinion pass 2 (BUG-20, 2026-10-14): only the
+			// first text was taken off, so the tempo was "unreadable"
+			assertEquals(90, abcInfoOf(tune("semantic", header("Q:\"Allegro\" 1/4=90 \"con brio\""), "c d|"))
+					.getPrimaryTempoBPM());
 		}
 
 		@Test

@@ -564,7 +564,7 @@ public class AbcToMidi {
 	 * the line's end; else it's a score line break. Spaces may come between (!D.C. al fine!, ! roll!): measured on The
 	 * Session and Norbeck, a ! ... ! without a bar line between is a decoration, never a line break before music.
 	 */
-	private static boolean isBangDecoration(String line, int index) {
+	static boolean isBangDecoration(String line, int index) {
 		for (int k = index + 1; k < line.length(); k++) {
 			char c = line.charAt(k);
 			if (c == '!')

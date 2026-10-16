@@ -538,12 +538,18 @@ public class TuneInfo {
 	 *               (ABC 2.1, 10.1); not Maestro's %%Q:, which counts the meter's beats
 	 */
 	private void parseTempo(String str, boolean qField) {
-		// "Allegro" 1/4=120 or 1/4=120 "Allegro": the text goes; without a tempo, a tempo word sets it (else it stays)
-		int quote = str.indexOf('"');
-		if (quote >= 0) {
+		// "Allegro" 1/4=120, 1/4=120 "Allegro", also both (fourth opinion pass 2, BUG-20: the second was read as the
+		// tempo): the texts go; without a tempo, a tempo word sets it (else it stays)
+		boolean quoted = false;
+		StringBuilder texts = new StringBuilder();
+		for (int quote = str.indexOf('"'); quote >= 0; quote = str.indexOf('"')) {
+			quoted = true;
 			int close = str.indexOf('"', quote + 1);
-			String text = str.substring(quote + 1, close < 0 ? str.length() : close).trim().toLowerCase(Locale.ROOT);
+			texts.append(' ').append(str, quote + 1, close < 0 ? str.length() : close);
 			str = (str.substring(0, quote) + " " + (close < 0 ? "" : str.substring(close + 1))).trim();
+		}
+		if (quoted) {
+			String text = texts.toString().trim().toLowerCase(Locale.ROOT);
 			if (str.isEmpty()) {
 				for (String word : text.split("[^\\p{L}]+")) {
 					Integer bpm = TEMPO_WORDS.getOrDefault(word, standardTempo ? ENGLISH_TEMPO_WORDS.get(word) : null);

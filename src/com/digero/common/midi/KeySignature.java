@@ -112,7 +112,8 @@ public class KeySignature implements MidiConstants {
 		if (semitones % 12 == 0)
 			return this;
 
-		int x = (semitones * -5) % 12;
+		// Each semitone up is 7 fifths up, the same as 5 down; from this key's own sharps or flats
+		int x = (sharpsFlats + semitones * -5) % 12;
 
 		if (x > 6) {
 			x -= 12;

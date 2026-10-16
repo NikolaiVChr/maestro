@@ -93,12 +93,12 @@ final class JumpMarks {
 	/**
 	 * The mark from start to end in the line stands right after a bar line, with nothing after it on its line but
 	 * spaces and a comment (Norbeck's ":| !fine!"): it belongs to that bar line. Before it only spaces, or nothing at
-	 * the line's start.
+	 * the line's start. A ] ends a bar line only in |] (fourth opinion pass 2, BUG-14: "[ceg] !fine!" stopped there).
 	 */
 	static boolean endsBarBefore(String line, int start, int end) {
 		String before = line.substring(0, start).stripTrailing();
 		String after = line.substring(end).strip();
-		boolean barBefore = before.isEmpty() || "|:]".indexOf(before.charAt(before.length() - 1)) >= 0;
+		boolean barBefore = before.isEmpty() || before.endsWith("|") || before.endsWith(":") || before.endsWith("|]");
 		return barBefore && (after.isEmpty() || after.startsWith("%"));
 	}
 	

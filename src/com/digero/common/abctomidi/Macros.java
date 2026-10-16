@@ -295,14 +295,10 @@ final class Macros {
 			return (close < 0) ? i : close + 1;
 		}
 		if (c == '!') {
-			int close = text.indexOf('!', i + 1);
-			if (close < 0)
-				return i;
-			for (int k = i + 1; k < close; k++) {
-				if ("|[: \t".indexOf(text.charAt(k)) >= 0)
-					return i; // A line break (ABC 2.1, 12), not a decoration
-			}
-			return close + 1;
+			// As the parser reads it: spaces may be in it (!D.C. al fine!; fourth opinion pass 2, BUG-13), | [ ] : not
+			if (!AbcToMidi.isBangDecoration(text, i))
+				return i; // A line break (ABC 2.1, 12), not a decoration
+			return text.indexOf('!', i + 1) + 1;
 		}
 		if (c == '[' && i + 2 < text.length() && Character.isLetter(text.charAt(i + 1)) && text.charAt(i + 2) == ':') {
 			int close = text.indexOf(']', i + 3);

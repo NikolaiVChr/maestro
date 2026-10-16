@@ -49,7 +49,7 @@ public final class VoiceSplitter {
 	public record Result(List<String> lines, int[] sourceLineNumbers) {
 	}
 
-	private static final Pattern FIELD = Pattern.compile("^([A-Za-z]):");
+	private static final Pattern FIELD = Pattern.compile("^([A-Za-z+]):"); // +: a field going on (BUG-22, pass 2)
 	private static final Pattern VOICE_LINE = Pattern.compile("^V:\\s*(\\S+)\\s*(.*)$");
 	private static final Pattern INLINE_VOICE = Pattern.compile("\\[V:\\s*([^\\]\\s]+)[^\\]]*\\]");
 	private static final Pattern QUOTED = Pattern.compile("\"[^\"]*\"");

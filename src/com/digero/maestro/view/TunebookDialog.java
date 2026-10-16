@@ -45,7 +45,6 @@ import javax.swing.text.DefaultHighlighter;
 import javax.swing.text.Highlighter;
 import javax.swing.text.JTextComponent;
 
-import com.digero.common.abc.AbcText;
 import com.digero.common.abctomidi.AbcToMidi;
 import com.digero.common.abctomidi.AbcTunebook;
 import com.digero.common.abctomidi.FileAndData;
@@ -381,10 +380,10 @@ public class TunebookDialog extends JDialog {
 			}
 		});
 	}
-
+	
 	/**
-	 * The first value of a field in a tune's own lines (after its X:), else the file header's, its escapes decoded
-	 * (sl\"angpolska); "" if none.
+	 * The first value of a field in a tune's own lines (after its X:), else the file header's, as shown
+	 * (AbcTunebook.fieldValue: without its comment, escapes decoded); "" if none.
 	 */
 	private static String field(List<String> lines, String field) {
 		String value = "";
@@ -394,15 +393,15 @@ public class TunebookDialog extends JDialog {
 				inTune = true;
 			if (line.startsWith(field)) {
 				if (inTune)
-					return AbcText.decode(line.substring(2).trim());
+					return AbcTunebook.fieldValue(line);
 				if (value.isEmpty())
-					value = AbcText.decode(line.substring(2).trim());
+					value = AbcTunebook.fieldValue(line);
 			}
 		}
 		return value;
 	}
 
-	/** Every value of a field in a tune's own lines (after its X:), in order, its escapes decoded. */
+	/** Every value of a field in a tune's own lines (after its X:), in order, as shown (AbcTunebook.fieldValue). */
 	private static List<String> tuneFields(List<String> lines, String field) {
 		List<String> values = new ArrayList<>();
 		boolean inTune = false;
@@ -410,7 +409,7 @@ public class TunebookDialog extends JDialog {
 			if (line.startsWith("X:"))
 				inTune = true;
 			if (inTune && line.startsWith(field)) {
-				String value = AbcText.decode(line.substring(2).trim());
+				String value = AbcTunebook.fieldValue(line);
 				if (!value.isEmpty())
 					values.add(value);
 			}
