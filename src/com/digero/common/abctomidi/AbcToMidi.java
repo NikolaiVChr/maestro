@@ -504,6 +504,18 @@ public class AbcToMidi {
 		return -1;
 	}
 
+	/** The characters ABC 2.1 reserves for later standards (8.1). */
+	private static final String RESERVED_CHARACTERS = "#*;?@";
+
+	/**
+	 * A reserved character (ABC 2.1, 8.1: # * ; ? @) in the notes, which the standard asks to ignore between and inside
+	 * note groups (not in text strings or fields, which the parser reads elsewhere). Lotro's reading keeps it an error:
+	 * untested in Lotro.
+	 */
+	private static boolean isIgnoredReserved(char c, boolean enableLotroErrors) {
+		return !enableLotroErrors && RESERVED_CHARACTERS.indexOf(c) >= 0;
+	}
+	
 	/** w: s: r: m: ... : a line that isn't notes. */
 	private static final Pattern LOWER_CASE_FIELD_PATTERN = Pattern.compile("[a-z]:");
 
@@ -2178,6 +2190,10 @@ public class AbcToMidi {
 												k++;
 											continue;
 										}
+										if (isIgnoredReserved(c, enableLotroErrors)) {
+											k++; // {*g}
+											continue;
+										}
 										grace.region(k, j);
 										if (!grace.lookingAt()) {
 											throw new FileParseException(UIText.get("common.abctomidi.grace.unexpected",
@@ -2430,6 +2446,8 @@ public class AbcToMidi {
 											fileName, lineNumber, i);
 
 								default:
+									if (isIgnoredReserved(ch, enableLotroErrors))
+										break; // # * ; ? @ (melnets' "||*")
 									throw new FileParseException(UIText.get("common.abctomidi.unknown.char",
 											String.valueOf(ch)), fileName, lineNumber, i);
 							}

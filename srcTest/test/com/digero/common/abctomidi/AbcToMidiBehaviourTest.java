@@ -575,13 +575,14 @@ class AbcToMidiBehaviourTest {
 					assertEquals(UIText.get(wrong[1]), e.getDetail(), wrong[0]);
 					assertEquals(6, e.getLine(), wrong[0]);
 				}
-				// A mistake after a macro, or in its notes: the column in the file's line
+				// A mistake after a macro, or in its notes: the column in the file's line (a lone =; not #, which ABC 2.1
+				// reserves and the standard reading ignores)
 				FileParseException after = assertThrows(FileParseException.class,
-						() -> convert(defining(List.of("m: ~n2 = (3o/n/m/ n"), "~c2 #|")));
+						() -> convert(defining(List.of("m: ~n2 = (3o/n/m/ n"), "~c2 =|")));
 				assertEquals(8, after.getLine());
 				assertEquals(4, after.getColumn());
 				FileParseException in = assertThrows(FileParseException.class,
-						() -> convert(defining(List.of("m: ~n2 = (3o/n/m/ #"), "c ~c2|")));
+						() -> convert(defining(List.of("m: ~n2 = (3o/n/m/ ="), "c ~c2|")));
 				assertEquals(2, in.getColumn());
 			}
 
@@ -2506,6 +2507,23 @@ class AbcToMidiBehaviourTest {
 			// first text was taken off, so the tempo was "unreadable"
 			assertEquals(90, abcInfoOf(tune("semantic", header("Q:\"Allegro\" 1/4=90 \"con brio\""), "c d|"))
 					.getPrimaryTempoBPM());
+		}
+
+		@Test
+		void reservedCharactersAreIgnored() throws Exception {
+			// ABC 2.1 (8.1): # * ; ? @ are reserved for later standards, and software should ignore them between and
+			// inside note groups, not in text strings or fields. The standard's own example; melnets' "||*" made about
+			// 210 corpus files fail to load
+			assertEquals(noteEvents(convert(tune("semantic",
+							"a !pp! bc2/3 [K:C#] def \"@this $2was difficult to parse?\" y |"))),
+					noteEvents(convert(tune("semantic",
+							"@a !pp! #bc2/3* [K:C#] de?f \"@this $2was difficult to parse?\" y |**"))));
+			// In a chord, grace notes and a tuplet too
+			assertEquals(noteEvents(convert(tune("semantic", "[CEG] {g}a (3abc;|"))),
+					noteEvents(convert(tune("semantic", "[C*EG] {*g}a (3*abc;|"))));
+			// Untested in Lotro: still an error in its reading
+			assertThrows(FileParseException.class,
+					() -> ConversionDump.convert(tune("semantic", "c d|*"), Profile.ABC_PLAYER_STRICT));
 		}
 
 		@Test
