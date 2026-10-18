@@ -59,7 +59,6 @@ This changelog is only partial, to see all the way back to v1.0.0 go here:
   https://maestro.miraheze.org/wiki/Version_history
 
 Version 4.7.6
-* This is a **beta** build
 * When loading projects, the project version number and XML version number are now checked for errors.
 * Maestro and Abc Player will now warn if a part is too large for lotro.
 * Fixed that when importing abc with e.g. "K:D mix", the space would make it become D major.
@@ -72,6 +71,7 @@ Version 4.7.6
 * When using custom sf2 soundfont, there is no longer going to be what sounded like long reverb on midi playback due to using same note-release-algorithm that lotro notes need.
 * When seeking in an abc preview or source midi song and landing in the middle of a sustained note, that note will now be restarted (for some instruments).
 * In abc player playlist view, the search-field will now also search title, artist, mood and genre.
+* Fix "Save As..." splitting msx project name on '/' and improve file name cleaning.
 
 Version 4.7.2
 * Make Windows midi system able to play back GS midi more reliable.

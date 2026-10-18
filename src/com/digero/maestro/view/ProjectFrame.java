@@ -1034,7 +1034,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				if (openFileChooser == null) {
-					openFileChooser = new JFileChooser(prefs.get("openFileChooser.path", null));
+					openFileChooser = createFilteredOpenChooser(prefs.get("openFileChooser.path", null));
 					openFileChooser.setMultiSelectionEnabled(false);
                     openFileChooser.addChoosableFileFilter(
                             new ExtensionFileFilter("MIDI",
@@ -1143,8 +1143,8 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 					JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
 			if (result != JOptionPane.YES_OPTION)
 				return;
-			
-			JFileChooser openMidiChooser = new JFileChooser(abcSong.getSourceFile().getAbsoluteFile().getParent());
+
+			JFileChooser openMidiChooser = createFilteredOpenChooser(abcSong.getSourceFile().getAbsoluteFile().getParent());
 			openMidiChooser.setMultiSelectionEnabled(false);
             openMidiChooser.addChoosableFileFilter(
                     new ExtensionFileFilter("MIDI",
@@ -2669,7 +2669,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 
 			File alternateFile = null;
 			if (result == JOptionPane.OK_OPTION) {
-				JFileChooser jfc = new JFileChooser();
+				JFileChooser jfc = createFilteredOpenChooser(null);
                 jfc.addChoosableFileFilter(
                         new ExtensionFileFilter("MIDI",
                                 Util.MID_FILE_EXTENSION_NO_DOT,
@@ -2693,6 +2693,44 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			return alternateFile;
 		}
 	};
+
+	/**
+	 * A JFileChooser for opening files that rejects anything none of its filters would list.
+	 * Swing otherwise returns a typed file name even if no filter accepts it
+	 * (e.g. an extension-less file), and even if the file doesn't exist.
+	 * Any of the choosable filters may accept the file, not just the active one, so a user
+	 * who switched the dropdown to "MIDI" can still type the name of an .abc file.
+	 *
+	 * @param currentDirectoryPath start directory, or null for the user's default directory
+	 */
+	private static JFileChooser createFilteredOpenChooser(String currentDirectoryPath) {
+		return new JFileChooser(currentDirectoryPath) {
+			@Override
+			public void approveSelection() {
+				File selected = getSelectedFile();
+				if (selected != null && selected.isFile() && isAcceptedByAnyFilter(selected)) {
+					super.approveSelection();
+				} else {
+					JOptionPane.showMessageDialog(this,
+							UIText.get("maestro.file.0.is.not.a.supported.file",
+									selected == null ? "" : selected.getName()),
+							UIText.get("maestro.unsupported.file"), JOptionPane.WARNING_MESSAGE);
+					// dialog stays open, so the user can pick again
+				}
+			}
+
+			private boolean isAcceptedByAnyFilter(File file) {
+				FileFilter acceptAll = getAcceptAllFileFilter();
+				for (FileFilter filter : getChoosableFileFilters()) {
+					// "All files" would accept anything; it is disabled in Maestro's choosers,
+					// but skip it explicitly so enabling it later can't bypass this check.
+					if (filter != acceptAll && filter.accept(file))
+						return true;
+				}
+				return false;
+			}
+		};
+	}
 
 	private static String formatInfoMessage(String title, String message, int fontSize) {
 		int fontSizeHeader = Math.min(7, fontSize + 2);
@@ -3341,6 +3379,11 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			return selectedFile;
 		}
 	}
+
+	private static String stripExtension(String name) {
+		int dot = name.lastIndexOf('.');
+		return dot >= 0 ? name.substring(0, dot) : name;
+	}
 	
 	private File getAbcExportFile() {
 		File exportFile = abcSong.getExportFile();
@@ -3371,12 +3414,7 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 			fileName = abcSong.getSourceFilename();
 		}
 
-		int dot = fileName.lastIndexOf('.');
-		if (dot > 0)
-			fileName = fileName.substring(0, dot);
-		else if (dot == 0)
-			fileName = "";
-		fileName = StringCleaner.cleanForFileName(fileName);
+		fileName = StringCleaner.cleanForFileName(stripExtension(fileName));
 		fileName += Util.ABC_FILE_EXTENSION;
 
 		exportFile = new File(folder, fileName);
@@ -3416,8 +3454,9 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 	private boolean shouldExportAbcAs() {
 		boolean regeneratedFilenameIsDifferent =
 				abcSong != null && abcSong.getExportFile() != null &&
-				exportFilenameTemplate.shouldRegenerateFilename() &&
-				!exportFilenameTemplate.formatName(abcSong).equals(abcSong.getExportFile().getName());
+						exportFilenameTemplate.shouldRegenerateFilename() &&
+						!(StringCleaner.cleanForFileName(stripExtension(exportFilenameTemplate.formatName(abcSong)))
+								+ Util.ABC_FILE_EXTENSION).equals(abcSong.getExportFile().getName());
 
         File exportFile = abcSong == null ? null : abcSong.getExportFile();
 
@@ -3609,28 +3648,27 @@ public class ProjectFrame extends JFrame implements TableLayoutConstants, ICompi
 		if (!new File(folder).exists())
 			folder = defaultFolder;
 
-		String fileName = "mySong"+Util.MSX_FILE_EXTENSION;
+		String fileName = "mySong";
 
 		// Always regenerate setting from pattern export is highest precedent
 		if (exportFilenameTemplate.shouldRegenerateFilename()) {
-			fileName = exportFilenameTemplate.formatName(abcSong);
+			fileName = stripExtension(exportFilenameTemplate.formatName(abcSong));
 		} else if (saveFile != null) // else use MSX file if exists already
 		{
-			fileName = saveFile.getName();
+			fileName = stripExtension(saveFile.getName());
 		} else if (abcSong.getExportFile() != null) // else use ABC filename if exists
 		{
-			fileName = abcSong.getExportFile().getName();
+			fileName = stripExtension(abcSong.getExportFile().getName());
 		} else if (exportFilenameTemplate.isEnabled()) // else use pattern if enabled
 		{
-			fileName = exportFilenameTemplate.formatName(abcSong);
+			fileName = stripExtension(exportFilenameTemplate.formatName(abcSong));
 		} else if (abcSong.getSourceFile() != null) // else use source (midi/abc) file
 		{
-			fileName = abcSong.getSourceFilename();
+			fileName = stripExtension(abcSong.getSourceFilename());
 		}
-
-		int dot = fileName.lastIndexOf('.');
-		if (dot > 0)
-			fileName = fileName.substring(0, dot);
+		// Template names come from song metadata and can contain '/', ':' etc. Names from
+		// existing files are already valid, so this is a no-op for them.
+		fileName = StringCleaner.cleanForProjectFileName(fileName);
 		fileName += Util.MSX_FILE_EXTENSION;
 
 		saveFile = new File(folder, fileName);

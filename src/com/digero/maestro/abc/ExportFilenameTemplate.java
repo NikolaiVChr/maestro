@@ -194,14 +194,15 @@ public class ExportFilenameTemplate {
                         metadata.getActivePartCount());
             }
         });
-        vars.put("$SourceFile", new Variable(UIText.get("maestro.template.filename.source.file.name.midi.or.abc")) {
-            @Override
-            public String getValue(Settings settings, AbcMetadataSource metadata) {
-                if (metadata == null) metadata = new MockMetadataSource(null);
-                String name = metadata.getSourceFilename();
-                return name.substring(0, name.lastIndexOf('.'));
-            }
-        });
+		vars.put("$SourceFile", new Variable(UIText.get("maestro.template.filename.source.file.name.midi.or.abc")) {
+			@Override
+			public String getValue(Settings settings, AbcMetadataSource metadata) {
+				if (metadata == null) metadata = new MockMetadataSource(null);
+				String name = metadata.getSourceFilename();
+				int dot = name.lastIndexOf('.');
+				return dot > 0 ? name.substring(0, dot) : name;
+			}
+		});
         return vars;
     }
 

@@ -24,11 +24,55 @@ public class StringCleaner {
 		after = after.replace('/', ' ');
 		after = after.replace('\\', ' ');
 		after = after.replace('.', ' ').trim();// lotro do not like when there is more than one dot
-		// after = String.join("_", after.split(":*?\"<>|"));// Need to be converted to proper regex
+		// Chars not allowed in Windows file names. ':' is especially dangerous as NTFS
+		// can interpret it as an alternate data stream separator instead of failing.
+		after = after.replaceAll("[:*?\"<>|\\p{Cntrl}]", " ").trim();
 		// System.out.println("New file : "+after);
 		if (after.isEmpty())
 			after = "mySong";
 		return after;
+	}
+
+	/**
+	 * Minimal cleaning of a project (msx) file name: only removes what the file system
+	 * cannot store. Unlike cleanForFileName(), dots and non-ASCII letters are kept,
+	 * since msx files are never read by lotro or songbooks.
+	 *
+	 * @param before Expects a string for a file name, without the file extension.
+	 */
+	public static String cleanForProjectFileName(String before) {
+		if (before == null)
+			return "mySong";
+		// Path separators and chars not allowed in Windows file names. ':' must go, as NTFS
+		// can interpret it as an alternate data stream separator instead of failing.
+		String after = before.replaceAll("[/\\\\:*?\"<>|\\p{Cntrl}]", " ").trim();
+		// A leading dot makes the file hidden on Linux and macOS
+		after = after.replaceFirst("^[.\\s]+", "");
+		// ext4 limits a name to 255 bytes of UTF-8; keep room for the extension
+		after = truncateUtf8(after, 200);
+		if (after.isEmpty())
+			return "mySong";
+		// Windows reserved device names, also reserved with an extension (e.g. "NUL.msx")
+		if (after.matches("(?i)(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])"))
+			after += "_";
+		return after;
+	}
+
+	/**
+	 * Cuts a string so its UTF-8 encoding is at most maxBytes, never splitting a code point.
+	 */
+	private static String truncateUtf8(String s, int maxBytes) {
+		int bytes = 0;
+		int i = 0;
+		while (i < s.length()) {
+			int cp = s.codePointAt(i);
+			int len = cp < 0x80 ? 1 : cp < 0x800 ? 2 : cp < 0x10000 ? 3 : 4;
+			if (bytes + len > maxBytes)
+				break;
+			bytes += len;
+			i += Character.charCount(cp);
+		}
+		return s.substring(0, i).trim();
 	}
 
 	/**
