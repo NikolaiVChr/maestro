@@ -140,7 +140,8 @@ divisionType=0.0 resolution=11520 tickLength=427136 tracks=2
   #33 line=11 cols=[10,11) ticks=380160..391680 note=57 track=1 bar=11 tiesFrom=- tiesTo=-
   #34 line=11 cols=[12,13) ticks=391680..403200 note=59 track=1 bar=11 tiesFrom=- tiesTo=-
   #35 line=11 cols=[14,15) ticks=403200..414720 note=61 track=1 bar=11 tiesFrom=- tiesTo=-
-== log: empty
+== log
+  WARNING: Unable to find duration for note 73 in Lute of Ages
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
 == EXCEPTION LotroFileParseException: Error reading repeat-and-jump-test.abc (X:1 Repeat test complex, al coda fine) on line 7, column 3:

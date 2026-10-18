@@ -3241,6 +3241,35 @@ class AbcToMidiBehaviourTest {
 					.map(NoteEvent::tick).toList());
 		}
 
+		@Test
+		void aLowerCaseChordNameIsSkippedWithAWarning() throws Exception {
+			// ABC 2.1 (4.18): a chord name's root is A-G; only the bass may be lower case ("G/b"). So "e" and "f#m"
+			// aren't chords: G/b plays as if they weren't written
+			AbcCase lower = chords(tune("semantic", "\"e\"E2 \"f#m\"F2 \"G/b\"G4|"));
+			Sequence s = convert(lower);
+			Sequence without = convert(chords(tune("semantic", "E2 F2 \"G/b\"G4|")));
+			assertEquals(noteEvents(without, 2), noteEvents(s, 2));
+			assertEquals(noteEvents(without, 3), noteEvents(s, 3));
+			// Logged once per tune, with the tune's X:
+			String log = ConversionDump.run(lower, Profile.MAESTRO_NEW_STANDARD, false, new AbcInfo()).log();
+			assertEquals(1L, log.lines().filter(l -> l.contains("capital letter")).count(), log);
+			assertTrue(log.contains("(X:1") && log.contains("\"e\" is skipped"), log);
+			AbcCase twoTunes = chords(AbcCase.of("semantic", "X:1", "T:One", "K:C", "\"e\"c d|", "X:7", "T:Two", "K:C",
+					"\"d\"c d|"));
+			String both = ConversionDump.run(twoTunes, Profile.MAESTRO_NEW_STANDARD, false, new AbcInfo()).log();
+			assertEquals(2L, both.lines().filter(l -> l.contains("capital letter")).count(), both);
+			assertTrue(both.contains("(X:7 Two)"), both);
+			// Text that wouldn't be a chord with a capital either, and annotations, aren't logged
+			String text = ConversionDump.run(chords(tune("semantic", "\"a.\"c \"cresc\"d \"^e\"e \"ff\"f|")),
+					Profile.MAESTRO_NEW_STANDARD, false, new AbcInfo()).log();
+			assertFalse(text.contains("capital letter"), text);
+			// Nor without the accompaniment, or with Lotro errors (no chords are played)
+			assertFalse(ConversionDump.run(tune("semantic", "\"e\"E2 F2|").with(p -> p.chordAccompaniment = false),
+					Profile.MAESTRO_NEW_STANDARD, false, new AbcInfo()).log().contains("capital letter"));
+			assertFalse(ConversionDump.run(lower, Profile.ABC_PLAYER_STRICT, false, new AbcInfo()).log()
+					.contains("capital letter"));
+		}
+
 		private static AbcCase chords(AbcCase abcCase) {
 			return abcCase.with(p -> p.chordAccompaniment = true);
 		}

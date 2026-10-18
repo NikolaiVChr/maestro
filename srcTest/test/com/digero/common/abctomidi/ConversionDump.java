@@ -1,5 +1,8 @@
 package com.digero.common.abctomidi;
 
+import com.digero.common.abc.*;
+
+
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -38,6 +41,12 @@ final class ConversionDump {
 
 	/** Same logger name as AbcToMidi and AbcInfo use. */
 	private static final Logger ABC_LOG = Logger.getLogger("import.abc");
+
+	static {
+		// The tests check log records through the snapshots; printing them to the console as well is just noise.
+		// For the whole test run, so it also covers conversions that don't go through run() (e.g. convert()).
+		ABC_LOG.setUseParentHandlers(false);
+	}
 
 	record Result(String error, String sequence, String abcInfo, String regions, String log) {
 		String text() {
@@ -97,7 +106,7 @@ final class ConversionDump {
 	}
 
 	private static Result run(ParamsFactory factory, Profile profile, java.util.function.Consumer<AbcToMidi.Params> tweak,
-			boolean generateRegions, AbcInfo abcInfo) {
+							  boolean generateRegions, AbcInfo abcInfo) {
 		List<String> logLines = new ArrayList<>();
 		Handler capture = new Handler() {
 			private final SimpleFormatter formatter = new SimpleFormatter();
@@ -117,6 +126,10 @@ final class ConversionDump {
 			}
 		};
 
+		// The test set-up silences logging (TestSetup: the root logger OFF): let the warnings through to the capture
+		// only. ABC_LOG doesn't pass them on to the console (setUseParentHandlers(false) above)
+		Level level = ABC_LOG.getLevel();
+		ABC_LOG.setLevel(Level.WARNING);
 		ABC_LOG.addHandler(capture);
 		try {
 			AbcToMidi.Params params = factory.create();
@@ -131,6 +144,7 @@ final class ConversionDump {
 			return new Result(renderError(e), null, null, null, renderLog(logLines));
 		} finally {
 			ABC_LOG.removeHandler(capture);
+			ABC_LOG.setLevel(level);
 		}
 	}
 
@@ -173,12 +187,12 @@ final class ConversionDump {
 	private static String renderMessage(MidiMessage message) {
 		if (message instanceof ShortMessage sm) {
 			String command = switch (sm.getCommand()) {
-			case ShortMessage.NOTE_ON -> "NOTE_ON";
-			case ShortMessage.NOTE_OFF -> "NOTE_OFF";
-			case ShortMessage.CONTROL_CHANGE -> "CONTROL_CHANGE";
-			case ShortMessage.PROGRAM_CHANGE -> "PROGRAM_CHANGE";
-			case ShortMessage.PITCH_BEND -> "PITCH_BEND";
-			default -> String.format("CMD_%02X", sm.getCommand());
+				case ShortMessage.NOTE_ON -> "NOTE_ON";
+				case ShortMessage.NOTE_OFF -> "NOTE_OFF";
+				case ShortMessage.CONTROL_CHANGE -> "CONTROL_CHANGE";
+				case ShortMessage.PROGRAM_CHANGE -> "PROGRAM_CHANGE";
+				case ShortMessage.PITCH_BEND -> "PITCH_BEND";
+				default -> String.format("CMD_%02X", sm.getCommand());
 			};
 			// The message class is included because LotroShortMessage vs ShortMessage matters to the player
 			return String.format("%s ch=%d d1=%d d2=%d [%s]", command, sm.getChannel(), sm.getData1(), sm.getData2(),
@@ -187,12 +201,12 @@ final class ConversionDump {
 		if (message instanceof MetaMessage mm) {
 			byte[] data = mm.getData();
 			return switch (mm.getType()) {
-			case 0x51 -> "META tempo mpq="
-					+ (((data[0] & 0xFF) << 16) | ((data[1] & 0xFF) << 8) | (data[2] & 0xFF));
-			case 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 -> String.format("META text type=0x%02X \"%s\"",
-					mm.getType(), escape(new String(data, StandardCharsets.UTF_8)));
-			case 0x2F -> "META end_of_track";
-			default -> String.format("META type=0x%02X data=%s", mm.getType(), hex(data));
+				case 0x51 -> "META tempo mpq="
+						+ (((data[0] & 0xFF) << 16) | ((data[1] & 0xFF) << 8) | (data[2] & 0xFF));
+				case 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07 -> String.format("META text type=0x%02X \"%s\"",
+						mm.getType(), escape(new String(data, StandardCharsets.UTF_8)));
+				case 0x2F -> "META end_of_track";
+				default -> String.format("META type=0x%02X data=%s", mm.getType(), hex(data));
 			};
 		}
 		if (message instanceof SysexMessage sx)

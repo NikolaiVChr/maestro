@@ -35632,4 +35632,62 @@ divisionType=0.0 resolution=11520 tickLength=7567200 tracks=2
   #3688 line=448 cols=[79,87) ticks=7562880..7567200 note=75 track=1 bar=82 tiesFrom=#3683 tiesTo=-
   #3689 line=448 cols=[87,95) ticks=7562880..7567200 note=80 track=1 bar=82 tiesFrom=#3684 tiesTo=-
   #3690 line=448 cols=[95,104) ticks=7562880..7567200 note=84 track=1 bar=82 tiesFrom=#3685 tiesTo=-
-== log: empty
+== log
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 144: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 148: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 151: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 153: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 155: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 158: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 160: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 162: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 164: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 166: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 166: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 166: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 166: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 166: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 166: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 166: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 167: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 167: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 297: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 301: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 304: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 306: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 308: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 310: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 312: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 314: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 317: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 319: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 319: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 319: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 319: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 319: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 319: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 319: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 320: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 320: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 323: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 326: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 327: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 327: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 327: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 328: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 335: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 346: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 354: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 362: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 365: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 368: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 371: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 373: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 378: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 381: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 383: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 383: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 383: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 383: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 385: a tie to another pitch or a rest ties nothing
+  WARNING: MyImmortal.abc (X:1 My Immortal-Evanescence[Lute of Ages](4:26)): line 385: a tie to another pitch or a rest ties nothing

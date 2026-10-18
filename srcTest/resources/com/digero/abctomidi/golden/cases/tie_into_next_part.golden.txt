@@ -69,7 +69,8 @@ divisionType=0.0 resolution=11520 tickLength=29689 tracks=3
   #1 line=13 cols=[0,1) ticks=0..5760 note=62 track=2 bar=0 tiesFrom=- tiesTo=-
   #2 line=6 cols=[2,4) ticks=5760..11520 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
   #3 line=13 cols=[2,3) ticks=5760..11520 note=64 track=2 bar=0 tiesFrom=- tiesTo=-
-== log: empty
+== log
+  WARNING: tie_into_next_part.abc (X:1 One): line 7: a tie with no note of its pitch after it ties nothing
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
 == EXCEPTION FileParseException: Error reading tie_into_next_part.abc (X:1 One) on line 7, column 3:
@@ -126,7 +127,8 @@ divisionType=0.0 resolution=11520 tickLength=11520 tracks=3
   #1 line=13 cols=[0,1) ticks=0..5760 note=62 track=2 bar=0 tiesFrom=- tiesTo=-
   #2 line=6 cols=[2,4) ticks=5760..11520 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
   #3 line=13 cols=[2,3) ticks=5760..11520 note=64 track=2 bar=0 tiesFrom=- tiesTo=-
-== log: empty
+== log
+  WARNING: tie_into_next_part.abc (X:1 One): line 7: a tie with no note of its pitch after it ties nothing
 
 ### profile MAESTRO_NEW_LOTRO (useLotroInstruments=false, enableLotroErrors=false, Lotro Abc)
 == sequence
@@ -178,7 +180,8 @@ divisionType=0.0 resolution=11520 tickLength=11520 tracks=3
   #1 line=13 cols=[0,1) ticks=0..5760 note=62 track=2 bar=0 tiesFrom=- tiesTo=-
   #2 line=6 cols=[2,4) ticks=5760..11520 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
   #3 line=13 cols=[2,3) ticks=5760..11520 note=64 track=2 bar=0 tiesFrom=- tiesTo=-
-== log: empty
+== log
+  WARNING: tie_into_next_part.abc (X:1 One): line 7: a tie with no note of its pitch after it ties nothing
 
 ### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
 == sequence
@@ -230,4 +233,5 @@ divisionType=0.0 resolution=11520 tickLength=11520 tracks=3
   #1 line=13 cols=[0,1) ticks=0..5760 note=74 track=2 bar=0 tiesFrom=- tiesTo=-
   #2 line=6 cols=[2,4) ticks=5760..11520 note=74 track=1 bar=0 tiesFrom=- tiesTo=-
   #3 line=13 cols=[2,3) ticks=5760..11520 note=76 track=2 bar=0 tiesFrom=- tiesTo=-
-== log: empty
+== log
+  WARNING: tie_into_next_part.abc (X:1 One): line 7: a tie with no note of its pitch after it ties nothing

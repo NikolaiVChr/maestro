@@ -46,7 +46,8 @@ divisionType=0.0 resolution=11520 tickLength=29689 tracks=2
 == regions (2)
   #0 line=6 cols=[0,1) ticks=0..5760 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
   #1 line=6 cols=[2,4) ticks=5760..11520 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
-== log: empty
+== log
+  WARNING: tie_unconnected_at_end.abc (X:1 Test): line 7: a tie with no note of its pitch after it ties nothing
 
 ### profile ABC_PLAYER_STRICT (useLotroInstruments=true, enableLotroErrors=true, Lotro Abc)
 == EXCEPTION FileParseException: Error reading tie_unconnected_at_end.abc (X:1 Test) on line 7, column 3:
@@ -88,7 +89,8 @@ divisionType=0.0 resolution=11520 tickLength=11520 tracks=2
 == regions (2)
   #0 line=6 cols=[0,1) ticks=0..5760 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
   #1 line=6 cols=[2,4) ticks=5760..11520 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
-== log: empty
+== log
+  WARNING: tie_unconnected_at_end.abc (X:1 Test): line 7: a tie with no note of its pitch after it ties nothing
 
 ### profile MAESTRO_NEW_LOTRO (useLotroInstruments=false, enableLotroErrors=false, Lotro Abc)
 == sequence
@@ -125,7 +127,8 @@ divisionType=0.0 resolution=11520 tickLength=11520 tracks=2
 == regions (2)
   #0 line=6 cols=[0,1) ticks=0..5760 note=60 track=1 bar=0 tiesFrom=- tiesTo=-
   #1 line=6 cols=[2,4) ticks=5760..11520 note=62 track=1 bar=0 tiesFrom=- tiesTo=-
-== log: empty
+== log
+  WARNING: tie_unconnected_at_end.abc (X:1 Test): line 7: a tie with no note of its pitch after it ties nothing
 
 ### profile MAESTRO_NEW_STANDARD (useLotroInstruments=false, enableLotroErrors=false)
 == sequence
@@ -162,4 +165,5 @@ divisionType=0.0 resolution=11520 tickLength=11520 tracks=2
 == regions (2)
   #0 line=6 cols=[0,1) ticks=0..5760 note=72 track=1 bar=0 tiesFrom=- tiesTo=-
   #1 line=6 cols=[2,4) ticks=5760..11520 note=74 track=1 bar=0 tiesFrom=- tiesTo=-
-== log: empty
+== log
+  WARNING: tie_unconnected_at_end.abc (X:1 Test): line 7: a tie with no note of its pitch after it ties nothing

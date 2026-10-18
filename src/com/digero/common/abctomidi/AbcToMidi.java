@@ -847,6 +847,7 @@ public class AbcToMidi {
 		// Bagpipe drones (Drone): standard ABC only, never a file made for Lotro
 		boolean playDrones = playChords && standardPitch;
 		Map<Integer, List<ChordSymbol>> chordSymbols = new TreeMap<>();
+		String lowerCaseChordWarned = null; // The tune (its fileName) whose lower-case chord name was logged
 		Map<Integer, NavigableSet<Long>> partBarTicks = new HashMap<>();
 		Map<Integer, Long> partEndTicks = new HashMap<>(); // Where each part's written notes end
 		// The Q: of the header being read, checked when the header ends (ABC 2.1 lets M: come after it)
@@ -2136,8 +2137,16 @@ public class AbcToMidi {
 										// On the beat of the note that follows; text that isn't a chord name is skipped
 										ChordSymbol chord = ChordSymbol.parse(line.substring(i + 1, j), Math.round(chordStartTick),
 												beatTicks(info), beatsPerBar(info), groupTicks(info), info.getTranspose());
-										if (chord != null)
+										if (chord != null) {
 											chordSymbols.computeIfAbsent(trackNumber, k -> new ArrayList<>()).add(chord);
+										} else if (!fileName.equals(lowerCaseChordWarned)
+												&& ChordSymbol.isLowerCaseName(line.substring(i + 1, j))) {
+											// Once per tune: a book that writes them so writes them all so
+											lowerCaseChordWarned = fileName;
+											log.warning(fileName + ": line " + lineNumber + ": \"" + line.substring(i + 1, j)
+													+ "\" is skipped, not played as a chord: a chord name starts with a capital letter"
+													+ " (ABC 2.1, 4.18). Later ones in this tune aren't logged");
+										}
 									}
 									// "tr", "^tr": the trill of printed music, as older tune books write it before the note;
 									// "tr=" with a natural upper note. The standard reading plays it as !trill!; Lotro plays
@@ -4558,6 +4567,17 @@ public class AbcToMidi {
 			}
 			return new ChordSymbol(tick, beatTicks, beatsPerBar, groupTicks, pitches, 36 + bass,
 					36 + (root + fifth) % 12);
+		}
+
+		/**
+		 * Whether the text would be a chord name with an upper-case root: "e", "f#m", "d7". ABC 2.1 (4.18) writes the
+		 * root A-G (only the bass may be lower case), so it isn't a chord. Books mean different things by it: a minor
+		 * chord ("e" for Em) or a passing bass note (the Nottingham Music Database's "f#" between "G" and "Em").
+		 */
+		static boolean isLowerCaseName(String text) {
+			String name = text.trim();
+			return !name.isEmpty() && name.charAt(0) >= 'a' && name.charAt(0) <= 'g'
+					&& parse(Character.toUpperCase(name.charAt(0)) + name.substring(1), 0, 1, 1, null, 0) != null;
 		}
 
 		/**

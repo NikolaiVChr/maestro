@@ -242,4 +242,5 @@ divisionType=0.0 resolution=11520 tickLength=17280 tracks=2
   #4 line=6 cols=[7,8) ticks=5760..11520 note=74 track=1 bar=0 tiesFrom=- tiesTo=-
   #5 line=6 cols=[8,9) ticks=5760..11520 note=79 track=1 bar=0 tiesFrom=- tiesTo=-
   #6 line=6 cols=[11,12) ticks=11520..17280 note=72 track=1 bar=0 tiesFrom=- tiesTo=-
-== log: empty
+== log
+  WARNING: tie_over_other_chord.abc (X:1 Test): line 7: a tie to another pitch or a rest ties nothing
