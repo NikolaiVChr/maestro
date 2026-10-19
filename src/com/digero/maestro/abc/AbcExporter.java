@@ -1451,8 +1451,8 @@ public class AbcExporter {
 			for (int i = BAR_LENGTH; i < bar.length(); i += BAR_LENGTH) {
 				for (int j = 0; j < BAR_LENGTH - 1; j++, i--) {
 					if (bar.charAt(i) == ' ') {
-						bar.replace(i, i + 1, "\r\n\t");
-						i += "\r\n\t".length() - 1;
+						bar.replace(i, i + 1, "\n\t");
+						i += "\n\t".length() - 1;
 						break;
 					}
 				}
