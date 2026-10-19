@@ -826,6 +826,15 @@ class AbcToMidiBehaviourTest {
 				// No Q: at all: a bpm of -1, for the notice that the tempo is guessed
 				assertEquals(-1, AbcToMidi.bareTempo(tune("semantic", header("-Q"), "c8|").filesData()).bpm());
 				assertNull(AbcToMidi.bareTempo(tune("semantic", header("M:none"), "c8|").filesData()));
+				// Only in the reading that counts a bare Q: in unit notes (Params.specTempo, the standard reading). Lotro
+				// counts it in the meter's beats whatever L: is (tested: B15, T10, T11, the 60 ms tests), so a Lotro
+				// song gets no notice, also without Q: (Maestro showed it for every Lotro song)
+				AbcToMidi.Params lotro = new AbcToMidi.Params(tune("semantic", "c8|").filesData());
+				assertNull(AbcToMidi.bareTempo(lotro));
+				assertNull(AbcToMidi.bareTempo(new AbcToMidi.Params(tune("semantic", header("-Q"), "c8|").filesData())));
+				AbcToMidi.Params standard = new AbcToMidi.Params(tune("semantic", "c8|").filesData());
+				standard.specTempo = true;
+				assertEquals(new AbcToMidi.BareTempo(120, "1/8", "1/4"), AbcToMidi.bareTempo(standard));
 			}
 
 			@Test

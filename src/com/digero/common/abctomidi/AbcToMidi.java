@@ -736,10 +736,21 @@ public class AbcToMidi {
 	 * Q:C=100). ABC 2.1 (10.1, deprecated form) counts it in unit notes, L:, and so do we, but many files mean beats of
 	 * the meter by it (O'Neill's metronome marks, FolkWiki; abcjs reads it so). The tempo can be changed in Maestro.
 	 *
+	 * @return null if the reading doesn't count a bare Q: in unit notes (Params.specTempo off, as for ABC made for
+	 *         Lotro: Lotro counts the meter's beats whatever L: is, tested B15), or with Lotro errors; else as
+	 *         {@link #bareTempo(List)}
+	 */
+	public static BareTempo bareTempo(Params params) {
+		return (params.specTempo && !params.enableLotroErrors) ? bareTempo(params.filesData) : null;
+	}
+
+	/**
+	 * The first tune's Q: when it is bare, whatever the reading (see {@link #bareTempo(Params)}).
+	 *
 	 * @return null if the first tune's Q: has a note length, or its L: is the meter's beat (both readings are the same);
 	 *         a bpm of -1 (and no notes) if it has no Q: at all, so its tempo is guessed (common.abctomidi.no.tempo)
 	 */
-	public static BareTempo bareTempo(List<FileAndData> filesData) {
+	static BareTempo bareTempo(List<FileAndData> filesData) {
 		String tempo = null;
 		String meter = null;
 		String unitNote = null;

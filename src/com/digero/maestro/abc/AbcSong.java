@@ -286,7 +286,17 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			sourceAbcWasMadeForLotro = result;
 		}
 		chooseAbc(params, file);
-		AbcToMidi.BareTempo bareTempo = AbcToMidi.bareTempo(params.filesData);
+
+		boolean standardAbc = abcImportVersion > 1 && Boolean.FALSE.equals(sourceAbcWasMadeForLotro);
+		params.standardPitch = standardAbc;
+		params.expandRepeats = standardAbc;
+		params.specTempo = standardAbc;
+		params.chordAccompaniment = standardAbc;
+		params.standard2011 = standardAbc;
+		// params.stereo = false;
+		
+		// Only the standard reading counts a bare Q: in unit notes (specTempo), so only it gets the notice
+		AbcToMidi.BareTempo bareTempo = AbcToMidi.bareTempo(params);
 		if (bareTempo != null) {
 			Component parent = null;
 			for (Frame frame : Frame.getFrames()) {
@@ -306,13 +316,6 @@ public class AbcSong implements IDiscardable, AbcMetadataSource {
 			}
 		}
 
-		boolean standardAbc = abcImportVersion > 1 && Boolean.FALSE.equals(sourceAbcWasMadeForLotro);
-		params.standardPitch = standardAbc;
-		params.expandRepeats = standardAbc;
-		params.specTempo = standardAbc;
-		params.chordAccompaniment = standardAbc;
-		params.standard2011 = standardAbc;
-		// params.stereo = false;
 		usingOldVelocities = true;// The abc volumes are tuned to old volume scheme
 		usingOldTempos = true;
 		usingNewMidiLayout = 1;
