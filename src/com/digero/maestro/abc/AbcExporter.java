@@ -1761,7 +1761,7 @@ public class AbcExporter {
             out.append("L: ").append((qtm.getMeter().numerator / (double) qtm.getMeter().denominator) < 0.75d ? "1/16" : "1/8");
             out.append("\n");
         }
-        out.append("K: ").append(keySignature).append("\n");
+        out.append("K: ").append(keySignature).append("\n");// Per abc spec, this is always the last line in the header.
         return out;
 	}
 
