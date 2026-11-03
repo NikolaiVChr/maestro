@@ -33,7 +33,6 @@ import com.digero.maestro.view.ProjectFrame;
 
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.Range;
-import sun.awt.shell.ShellFolder;
 
 public final class Util {
 	public static final @NonNls String MSX_FILE_EXTENSION_NO_DOT = "msx";
