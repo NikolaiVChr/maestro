@@ -14,15 +14,18 @@ import java.awt.Toolkit;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
+import java.util.Locale;
 import java.util.prefs.Preferences;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
+import javax.swing.filechooser.FileSystemView;
 
 import com.digero.common.abc.AbcConstants;
 import com.digero.maestro.MaestroMain;
@@ -346,12 +349,32 @@ public final class Util {
 		return false;
 	}
 
+	/**
+	 * If {@code file} is a Windows shortcut (.lnk), returns the file it points to.
+	 * Otherwise, or if the shortcut cannot be resolved, returns {@code file} unchanged.
+	 * Never returns null for a non-null argument.
+	 * <p>
+	 * Uses the public FileSystemView API instead of sun.awt.shell.ShellFolder, which is not
+	 * exported from java.desktop and fails with IllegalAccessError on Java 16+.
+	 */
 	public static File resolveShortcut(File file) {
-		if (file.getName().toLowerCase().endsWith(".lnk")) {
-			try {
-				return ShellFolder.getShellFolder(file).getLinkLocation();
-			} catch (Exception e) {
+		if (file == null)
+			return null;
+
+		// Cheap name check first, so ordinary files never trigger a shell (COM) lookup on Windows.
+		if (!file.getName().toLowerCase(Locale.ROOT).endsWith(".lnk"))
+			return file;
+
+		FileSystemView fsv = FileSystemView.getFileSystemView();
+		try {
+			if (fsv.isLink(file)) {
+				File target = fsv.getLinkLocation(file);
+				if (target != null)
+					return target;
 			}
+		} catch (FileNotFoundException | SecurityException e) {
+			// Broken or inaccessible shortcut: fall through and return the .lnk itself.
+			// Callers then reject it via their extension filters or report a normal open error.
 		}
 		return file;
 	}
