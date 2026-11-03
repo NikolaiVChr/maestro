@@ -58,6 +58,9 @@ Release notes after 4.6.21 should be in markdown format. Keep the version header
 This changelog is only partial, to see all the way back to v1.0.0 go here:
   https://maestro.miraheze.org/wiki/Version_history
 
+Version 4.7.7
+* Fixed error when opening a windows shortcut instead of midi or abc.
+
 Version 4.7.6
 * When loading projects, the project version number and XML version number are now checked for errors.
 * Maestro and Abc Player will now warn if a part is too large for lotro.
